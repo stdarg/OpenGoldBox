@@ -239,6 +239,32 @@ struct Actor : detail::LifeState {
     detail::EffectState effects;
     bool object_interaction{true};
 };
+// Every class resource that presents as a pool. The member pointers say where
+// the spent and maximum values live, so a new resource feature is a row here
+// rather than a push_back repeated at each presentation site. Storage is still a
+// pair of ints per resource; moving that to a keyed pool needs a combat
+// checkpoint format change, and this table is the place it will enumerate.
+struct ResourceDescriptor {
+    std::string_view id,label;
+    int Actor::*remaining;
+    int Definition::*capacity;
+    int short_rest;   // uses restored by a Short Rest; -1 means the full capacity
+    bool combat_view; // also listed during combat, not only on the rest screen
+};
+constexpr std::array resource_descriptors{
+    ResourceDescriptor{"action_surge","Action Surge",&Actor::surges,&Definition::surges,-1,true},
+    ResourceDescriptor{"adrenaline_rush","Adrenaline Rush",&Actor::rushes,&Definition::rushes,-1,true},
+    ResourceDescriptor{"second_wind","Second Wind",&Actor::winds,&Definition::winds,1,false},
+    ResourceDescriptor{"spell_slot:1","Level-one spell slots",&Actor::slots,&Definition::slots,0,false},
+    ResourceDescriptor{"spell_slot:2","Level-two spell slots",&Actor::slots2,&Definition::slots2,0,false},
+    ResourceDescriptor{"arcane_recovery","Arcane Recovery",&Actor::arcane,&Definition::arcane,0,false}};
+rules::ResourcePool resource_pool(const ResourceDescriptor& descriptor,const Actor& actor,const Definition& d)
+{
+    const auto capacity=unsigned(d.*descriptor.capacity);
+    return {std::string(descriptor.id),{std::string(descriptor.label),{}},
+            unsigned(actor.*descriptor.remaining),capacity,
+            descriptor.short_rest<0?capacity:unsigned(descriptor.short_rest)};
+}
 bool unconscious(const Actor& a){return a.hp==0||a.effects.sleeping;}
 bool conscious(const Actor& a){return !a.dead&&!unconscious(a);}
 struct ArcaneAllocation { std::string_view id,label; unsigned first,second; };
@@ -873,13 +899,15 @@ Snapshot Session::snapshot() const
         if(a.effects.prone)view.conditions.push_back({"Prone",{}});
         if(def(a).cunning)view.bonus_actions={"cunning_dash","cunning_disengage"};
         if(def(a).sneak_level>=3)view.bonus_actions.push_back("steady_aim");
-        if(def(a).surges)view.resources.push_back({"action_surge",{"Action Surge",{}},unsigned(a.surges),unsigned(def(a).surges),unsigned(def(a).surges)});
+        for(const auto& descriptor:resource_descriptors)
+            if(descriptor.combat_view&&def(a).*descriptor.capacity)
+                view.resources.push_back(resource_pool(descriptor,a,def(a)));
         // Explicit display order: this list feeds the combat cantrip dropdown,
         // so its order is observable in the UI and is not the table's order.
         for(const auto* id:{"fire_bolt","chill_touch","shocking_grasp","eldritch_blast",
                             "poison_spray","ray_of_frost","sacred_flame"})
             if(detail::knows_spell(def(a).known_cantrips,id))view.known_cantrips.push_back(id);
-        if(def(a).rushes)view.resources.push_back({"adrenaline_rush",{"Adrenaline Rush",{}},unsigned(a.rushes),unsigned(def(a).rushes),unsigned(def(a).rushes)});
+
         if(def(a).hit_die){
             view.hp_messages.push_back({"Maximum HP includes level {level}, d{die} Hit Die and Constitution modifier {modifier}.",{{"level",std::to_string(def(a).level)},{"die",std::to_string(def(a).hit_die)},{"modifier",std::to_string(def(a).constitution)}}});
             if(def(a).dwarf)view.hp_messages.push_back({"Dwarven Toughness: +{hp} maximum HP.",{{"hp",std::to_string(def(a).level)}}});
@@ -2229,12 +2257,8 @@ public:
         const auto d=character_definition(character_profile(sheet,{}).data);
         Actor actor;actor.definition=d;actor.winds=d.winds;actor.slots=d.slots;actor.slots2=d.slots2;restore_vitals(actor,state);
         RecoveryInfo result{unsigned(d.hit_die),unsigned(actor.hit_dice),unsigned(d.level),!actor.dead&&actor.hp>0,{},actor.temporary_hp};
-        if(d.surges)result.resources.push_back({"action_surge",{"Action Surge",{}},unsigned(actor.surges),unsigned(d.surges),unsigned(d.surges)});
-        if(d.rushes)result.resources.push_back({"adrenaline_rush",{"Adrenaline Rush",{}},unsigned(actor.rushes),unsigned(d.rushes),unsigned(d.rushes)});
-        if(d.winds)result.resources.push_back({"second_wind",{"Second Wind",{}},unsigned(actor.winds),unsigned(d.winds),1});
-        if(d.slots)result.resources.push_back({"spell_slot:1",{"Level-one spell slots",{}},unsigned(actor.slots),unsigned(d.slots),0});
-        if(d.slots2)result.resources.push_back({"spell_slot:2",{"Level-two spell slots",{}},unsigned(actor.slots2),unsigned(d.slots2),0});
-        if(d.arcane)result.resources.push_back({"arcane_recovery",{"Arcane Recovery",{}},unsigned(actor.arcane),unsigned(d.arcane),0});
+        for(const auto& descriptor:resource_descriptors)
+            if(d.*descriptor.capacity)result.resources.push_back(resource_pool(descriptor,actor,d));
         for(const auto& choice:arcane_allocations)if(can_recover(actor,choice))
             result.choices.push_back({std::string(choice.id),{std::string(choice.label),{}}});
         return result;
