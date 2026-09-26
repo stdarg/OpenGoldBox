@@ -50,6 +50,22 @@ the checks are simply **not registered** — confirm they exist with
 `OPENGOLD_DEMO_GODOT` to override. Run Godot tests serially: they share a
 user-data path.
 
+### Known pre-existing Godot failures
+
+As of 2026-09-26, on Windows, two game-side Godot checks fail at the commit that
+first ran them here, and at the earlier baseline `375f58f`. They are recorded so
+a future change is not blamed for them:
+
+| Check | Assertion |
+| --- | --- |
+| `opengold_godot_adrenaline` | Saving pending choice does not refund or reroll |
+| `opengold_godot_rogue_attack` | UI use matches native continuation exactly |
+
+Both compare a UI-driven save against a native one, so both are candidates for a
+platform difference in how the checkpoint is written or read rather than a rules
+defect. Neither has been diagnosed. The expected result on Windows is therefore
+**42 of 44**; treat any other failure as new.
+
 Localization is a separate gate and needs Python:
 
 ```
