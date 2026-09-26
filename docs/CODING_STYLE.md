@@ -3,7 +3,7 @@
 ## Scope
 
 Use this style for project-owned C++ source and headers. Preserve the C++20,
-Godot 4.x, and GDExtension architecture described in [TECH.md](../TECH.md).
+Godot 4.x, and GDExtension architecture described in [TECH.md](TECH.md).
 Exclude third-party, generated, build, and packaged files from formatting.
 
 This document records the agreed style and proposed formatter setup. It does

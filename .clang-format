@@ -1,4 +1,4 @@
-# OpenGoldBox C++ style: docs/CODING/_STYLE.md
+# OpenGoldBox C++ style: docs/CODING_STYLE.md
 # Validated with clang-format 23.1.0, LLVM revision:
 # ea7d852a70e8bdfaf601d6626a760f9771b2c4b4 (VS Code C/C++ bundled binary).
 # Required braces, naming, and ownership rules are checked separately in review.
