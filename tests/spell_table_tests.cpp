@@ -11,12 +11,15 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character_pool.h"
 #include "opengold/srd5.h"
+#include "spell_access.h"
 #include "spell_components.h"
 #include "spell_table.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -160,6 +163,133 @@ void table() {
         check(find_spell(id) != nullptr, "Access catalog ids are all table rows");
 }
 
+// ---- generic per-row behaviour (Phase 2 of the acceleration plan) --------
+//
+// These assertions are written against the table, not against named spells, so
+// a spell added as a row plus a class grant gets baseline coverage with no new
+// test file. The per-spell targets remain the place for a spell's exact dice,
+// save arithmetic and RNG consumption.
+namespace generic {
+using namespace opengold::srd5::detail;
+
+struct Probe { const char* klass; unsigned level; };
+constexpr Probe probes[]{{"wizard", 1}, {"wizard", 4}, {"cleric", 1},
+                         {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}};
+
+// The widest legitimate caster for a class and level: every cantrip its own
+// entitlement offers, plus every levelled row the profile writer accepts.
+// Discovered from the access API so new rows need no edit here.
+CharacterSheet widest(const RulesModule& rules, const Probe& probe) {
+    const auto group = starting_cantrip_options(probe.klass);
+    std::vector<std::string> cantrips;
+    for (const auto& option : group.options) {
+        if (cantrips.size() >= group.count) break;
+        cantrips.push_back(option.id);
+    }
+    auto sheet = hero(probe.klass, probe.level, cantrips).sheet();
+    for (const auto& row : spell_table) {
+        if (!row.level) continue;
+        auto trial = sheet;
+        trial.prepared_spells.push_back(std::string(row.id));
+        try { (void)rules.character_profile(trial, {}); sheet = std::move(trial); }
+        catch (const std::exception&) { /* not available to this class or level */ }
+    }
+    return sheet;
+}
+
+CombatantView unit(const CombatSession& c, EntityId id) {
+    for (const auto& a : c.snapshot().combatants) if (a.id == id) return a;
+    throw std::runtime_error("Missing actor");
+}
+std::optional<Command> find(const CombatSession& c, std::string_view verb, EntityId target) {
+    for (const auto& a : c.legal_commands()) if (a.verb == verb && a.target == target) return a;
+    return std::nullopt;
+}
+
+// Caster at (1,1), wounded ally id 2 and enemy id 3 both exactly `feet` away.
+std::unique_ptr<CombatSession> battle(const RulesModule& rules, const CharacterSheet& sheet,
+                                     int feet, std::vector<std::string> gear = {}) {
+    const auto profile = rules.character_profile(sheet, gear);
+    const int column = 1 + feet / 5;
+    auto c = rules.create({{34, 4, std::vector<std::uint8_t>(34 * 4)},
+        {{1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+         {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
+         {3, "target", "Enemy", 1, {column, 2}}}}, 13);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns) {
+        const auto end = find(*c, "end", 0);
+        check(end && c->submit(*end), "Reach the caster's turn");
+    }
+    check(c->snapshot().actor == 1, "Caster acts");
+    return c;
+}
+
+void row_behaviour(const RulesModule& rules, const SpellDef& row, const CharacterSheet& sheet,
+                   bool& covered) {
+    const EntityId target = row.target == SpellTarget::wounded_ally ? 2 : 3;
+    auto at_range = battle(rules, sheet, row.range);
+    const auto offer = find(*at_range, row.id, target);
+    if (!offer) return; // this caster cannot reach this row; another probe may
+    covered = true;
+
+    // Range is inclusive at `range` and excludes the next square. An
+    // out-of-range submission must change nothing at all.
+    auto beyond = battle(rules, sheet, row.range + 5);
+    check(!find(*beyond, row.id, target), "A spell is not offered past its range");
+    const auto untouched = beyond->save();
+    check(!beyond->submit({beyond->snapshot().revision, 1, target, std::string(row.id)}) &&
+          beyond->save() == untouched, "Out-of-range casting is rejected atomically");
+
+    // Somatic spells need a free hand; a weapon plus shield occupies both.
+    if (row.somatic) {
+        auto encumbered = battle(rules, sheet, row.range, {"quarterstaff", "shield"});
+        check(!find(*encumbered, row.id, target), "A Somatic spell needs a free hand");
+    }
+
+    // Resolution is deterministic: the same ticket on a restored copy must
+    // produce an identical checkpoint, which also pins RNG consumption.
+    auto copy = rules.restore(at_range->save());
+    const auto before_caster = unit(*at_range, 1);
+    const auto before_target = unit(*at_range, target);
+    check(at_range->submit(*offer) && copy->submit(*offer), "The offered ticket resolves");
+    check(at_range->save() == copy->save(), "Resolution is deterministic across a restore");
+
+    const auto after_caster = unit(*at_range, 1);
+    const auto after_target = unit(*at_range, target);
+    if (row.bonus_action)
+        check(!after_caster.bonus_action && after_caster.action == before_caster.action,
+              "A Bonus Action spell spends the Bonus Action and keeps the Action");
+    else
+        check(!after_caster.action, "An Action spell spends the Action");
+
+    if (row.pattern == SpellPattern::heal)
+        check(after_target.hit_points >= before_target.hit_points, "Healing never reduces hit points");
+    else
+        check(after_target.hit_points <= before_target.hit_points, "An attack never restores hit points");
+
+    // A rider is observable whenever the spell actually landed.
+    if (row.rider != Rider::none && after_target.hit_points < before_target.hit_points)
+        check(!after_target.conditions.empty() || row.rider == Rider::chill_touch,
+              "A landed rider is visible on the target");
+
+    // A stale ticket must not resolve twice.
+    const auto settled = at_range->save();
+    check(!at_range->submit(*offer) && at_range->save() == settled, "A spent ticket is inert");
+}
+
+void behaviour() {
+    auto rules = custom();
+    std::vector<CharacterSheet> sheets;
+    for (const auto& probe : probes) sheets.push_back(widest(*rules, probe));
+    for (const auto& row : spell_table) {
+        bool covered = false;
+        for (const auto& sheet : sheets) row_behaviour(*rules, row, sheet, covered);
+        // The payoff: a row no class can actually cast fails here instead of
+        // shipping as dead data.
+        check(covered, ("No probed class can cast " + std::string(row.id)).c_str());
+    }
+}
+}
+
 void offers_match_baseline() {
     const auto path = root / "tests/fixtures/spell-offer-baseline.txt";
     const auto actual = snapshot();
@@ -178,6 +308,7 @@ void offers_match_baseline() {
 int main() {
     try {
         table();
+        generic::behaviour();
         offers_match_baseline();
         // Run twice: the snapshot must not depend on process state or RNG carry-over.
         offers_match_baseline();

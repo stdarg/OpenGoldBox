@@ -1,5 +1,39 @@
 # Native coverage and fuzz testing
 
+## Running the suite: use `build.cmd`
+
+Run verification through the repository script, not hand-written `cmake` and
+`ctest` calls:
+
+```
+build.cmd          # Windows: vcvars, configure, build, then ctest
+```
+
+It checks `errorlevel` between every step, so a compile failure stops it before
+any test runs.
+
+**Why this is mandatory rather than a convenience.** `ctest` executes whatever
+binary is already on disk. If a target fails to compile, the previous binary is
+still there and `ctest` reports it as passing. On 2026-09-26 a hand-rolled
+`cmake --build` / `ctest` pair reported "100% tests passed, 50/50" while one test
+target had failed to compile. Any "all N checks pass" claim produced without
+checking the build result first may be a stale-binary pass.
+
+If you must run the steps separately — to build one target during development —
+inspect the build output for `error` and `FAILED` before believing `ctest`:
+
+```
+cmake --build build --target <one_target> -j6
+ctest --test-dir build --output-on-failure -R '^<one_target>$'
+```
+
+Two tools this document assumes are **not** present on every development
+machine; check before relying on them, and record a check as unverified rather
+than passed if they are missing:
+
+- `python3` (needed by `tools/localization.py --check`)
+- `clang-format`
+
 ## Coverage review (2026-09-18)
 
 The review compared the native CTest suite before and after these additions,
