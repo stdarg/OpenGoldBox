@@ -15,7 +15,34 @@ AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AllowShortBlocksOnASingleLine: Never
 AllowShortLambdasOnASingleLine: None
-SpaceBeforeParens: ControlStatements
+# A space follows a keyword before its parenthesis, but never a function name:
+# "if (x)" and "return f(x);". Spelled out rather than left to the
+# ControlStatements shorthand so the intent covers requires-clauses and
+# placement new as well. clang-format has no option for sizeof/decltype/
+# alignof; those are always written without a space, and the project does not
+# currently use them.
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: true
+  AfterIfMacros: true
+  AfterPlacementOperator: true
+  AfterRequiresInClause: true
+  AfterRequiresInExpression: true
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterOverloadedOperator: false
+  BeforeNonEmptyParentheses: false
+# CODING_STYLE.md requires braces around every if/else/for/while body, but the
+# formatter is not allowed to add them: clang-format warns that InsertBraces
+# "could lead to incorrect code formatting due to clang-format's lack of
+# complete semantic information", because it parses tokens without knowing
+# which identifiers are macros. Adding braces is a semantic edit and belongs to
+# a tool that compiles the code -- clang-tidy's
+# readability-braces-around-statements, run against compile_commands.json.
+# RemoveBracesLLVM stays off so existing braces are never stripped.
+InsertBraces: false
+RemoveBracesLLVM: false
 SortIncludes: Never
 IncludeBlocks: Preserve
 # CODING_STYLE.md: "indivisible tokens and strings may exceed the limit". This
