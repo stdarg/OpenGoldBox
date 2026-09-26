@@ -4,60 +4,76 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/ecl_machine.h"
 
-namespace opengold {
+namespace opengold
+{
 using MemberId = rules::EntityId;
 using RestKind = rules::RestKind;
-enum class RestDenial { none, vitality, cooldown, combat, spending, activity };
+enum class RestDenial
+{
+    none,
+    vitality,
+    cooldown,
+    combat,
+    spending,
+    activity
+};
 using RestWork = rules::RestWork;
 // spell means a non-cantrip; a cantrip does not interrupt rest.
 using RestInterruption = rules::RestInterruption;
-struct MemberRestInfo {
+struct MemberRestInfo
+{
     MemberId id{};
     rules::RecoveryInfo recovery;
     RestDenial denial{RestDenial::none};
     std::uint64_t wait_milliseconds{};
 };
-struct RestTicket {
+struct RestTicket
+{
     std::uint64_t session{}, revision{};
-    auto operator<=>(const RestTicket&) const = default;
+    auto operator<=>(const RestTicket &) const = default;
 };
 // A completed hour grants a bounded spending window, not an undoable preview.
-struct ShortRestSession {
+struct ShortRestSession
+{
     RestTicket ticket;
     std::uint64_t completed_minutes{};
     unsigned completed_subminute_milliseconds{};
     std::vector<MemberId> members;
 };
-struct RestActivity : rules::RestProgress {
+struct RestActivity : rules::RestProgress
+{
     RestTicket ticket;
     std::uint64_t started_minutes{};
     unsigned started_subminute_milliseconds{};
     std::vector<MemberId> members;
 };
-struct RestResult {
+struct RestResult
+{
     RestKind kind{};
     std::uint64_t duration_minutes{};
     std::vector<MemberId> members;
     std::optional<RestTicket> spending;
 };
-struct PartyMember {
+struct PartyMember
+{
     MemberId id{};
     Character character;
     std::string npc_source; // Empty for PCs; explicit campaign conversion identity for NPCs.
     rules::VitalState vitals;
-    std::array<std::uint16_t,7> wealth{};
+    std::array<std::uint16_t, 7> wealth{};
     std::vector<std::uint64_t> equipped;
     unsigned morale{100};
     unsigned experience{};
     std::optional<std::uint64_t> last_rest_minutes;
     unsigned last_rest_subminute_milliseconds{};
-    std::map<std::uint64_t,por::Equipment> item_sources;
+    std::map<std::uint64_t, por::Equipment> item_sources;
     std::string creation_source; // Stable pool candidate identity, empty for authored PCs.
     rules::EquipmentState equipment;
 };
 // Items physically separated from party inventories retain provenance and their
 // encounter location. Cleanup policy is a separate operation, never implicit.
-struct DetachedPartyItem {
+struct DetachedPartyItem
+{
     std::uint64_t scope{};
     unsigned token{};
     MemberId original_owner{}, holder{}; // Zero holder means on the ground.
@@ -68,9 +84,10 @@ struct DetachedPartyItem {
     // stays at this rest session's camp, anchored to original_owner's position.
     std::uint64_t rest_session{};
 };
-struct PartyState {
+struct PartyState
+{
     std::vector<PartyMember> roster;
-    std::array<MemberId,8> slots{};
+    std::array<MemberId, 8> slots{};
     MemberId next_id{1};
     unsigned selected{};
     std::uint64_t time_minutes{}, random_state{42};
@@ -85,68 +102,91 @@ struct PartyState {
 };
 // One shared campaign value store. Sessions share this owner, never separate PCs.
 // While combat owns mutable vitals, roster/equipment/script mutations are barred.
-class CampaignParty {
-public:
+class CampaignParty
+{
+  public:
     explicit CampaignParty(std::unique_ptr<rules::RulesModule> rules);
-    [[nodiscard]] const PartyState& state() const { return state_; }
-    [[nodiscard]] const PartyMember& member(MemberId id) const;
-    [[nodiscard]] MemberId selected() const {return state_.slots.at(state_.selected);}
+    [[nodiscard]] const PartyState &state() const
+    {
+        return state_;
+    }
+    [[nodiscard]] const PartyMember &member(MemberId id) const;
+    [[nodiscard]] MemberId selected() const
+    {
+        return state_.slots.at(state_.selected);
+    }
     void select(unsigned slot);
     MemberId add_pc(Character character);
-    MemberId recruit(std::string source,Character converted,unsigned morale=100);
+    MemberId recruit(std::string source, Character converted, unsigned morale = 100);
     void rejoin(MemberId id);
     void remove(MemberId id);
-    void equip(MemberId id,std::uint64_t item);
-    void unequip(MemberId id,std::uint64_t item);
-    void set_grip(MemberId id,unsigned hands);
-    [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id,std::uint64_t item) const;
-    void purchase(MemberId id,const por::Equipment& item);
-    void set_wealth(MemberId id,std::array<std::uint16_t,7> wealth);
-    void award_experience(unsigned amount,std::string reward_id);
+    void equip(MemberId id, std::uint64_t item);
+    void unequip(MemberId id, std::uint64_t item);
+    void set_grip(MemberId id, unsigned hands);
+    [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
+    void purchase(MemberId id, const por::Equipment &item);
+    void set_wealth(MemberId id, std::array<std::uint16_t, 7> wealth);
+    void award_experience(unsigned amount, std::string reward_id);
     [[nodiscard]] bool can_advance(MemberId id) const;
     [[nodiscard]] rules::AdvancementOptions advancement_options(MemberId id) const;
     [[nodiscard]] rules::AdvancementChoice default_advancement(MemberId id) const;
-    [[nodiscard]] PartyMember preview_advancement(MemberId id,const rules::AdvancementChoice& choice) const;
-    void advance(MemberId id,const rules::AdvancementChoice& choice);
-    [[nodiscard]] PartyMember preview_training(MemberId id,const rules::CharacterRules& creation_rules,
-        const rules::TrainingChoices& choices) const;
-    [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id,bool after_rest=false) const;
-    [[nodiscard]] PartyMember preview_spell_choices(MemberId id,const rules::SpellChoices&,bool after_rest=false) const;
-    void choose_spells(MemberId id,const rules::SpellChoices&,bool after_rest=false);
+    [[nodiscard]] PartyMember preview_advancement(MemberId id,
+                                                  const rules::AdvancementChoice &choice) const;
+    void advance(MemberId id, const rules::AdvancementChoice &choice);
+    [[nodiscard]] PartyMember preview_training(MemberId id,
+                                               const rules::CharacterRules &creation_rules,
+                                               const rules::TrainingChoices &choices) const;
+    [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id,
+                                                                 bool after_rest = false) const;
+    [[nodiscard]] PartyMember preview_spell_choices(MemberId id, const rules::SpellChoices &,
+                                                    bool after_rest = false) const;
+    void choose_spells(MemberId id, const rules::SpellChoices &, bool after_rest = false);
     void keep_rest_spells(MemberId id);
-    void complete_training(MemberId id,const rules::CharacterRules& creation_rules,const rules::TrainingChoices& choices);
+    void complete_training(MemberId id, const rules::CharacterRules &creation_rules,
+                           const rules::TrainingChoices &choices);
     // Atomic original loot delivery. A full set of purses leaves it unclaimed.
-    bool award_loot(const std::array<unsigned,7>& wealth,const std::vector<por::Equipment>& items,std::string reward_id);
+    bool award_loot(const std::array<unsigned, 7> &wealth, const std::vector<por::Equipment> &items,
+                    std::string reward_id);
     [[nodiscard]] bool rest();
     // The campaign service must first approve the location and interruption profile.
     [[nodiscard]] std::vector<MemberRestInfo> rest_info(RestKind kind) const;
     [[nodiscard]] std::optional<RestResult> rest(RestKind kind);
     [[nodiscard]] std::optional<RestTicket> begin_rest(RestKind kind);
     // Advances a caller-approved activity interval; never skips host encounters.
-    [[nodiscard]] std::optional<RestResult> advance_rest(RestTicket ticket,std::uint64_t milliseconds,RestWork work);
-    void interrupt_rest(RestTicket ticket,RestInterruption cause);
+    [[nodiscard]] std::optional<RestResult> advance_rest(RestTicket ticket,
+                                                         std::uint64_t milliseconds, RestWork work);
+    void interrupt_rest(RestTicket ticket, RestInterruption cause);
     void resume_rest(RestTicket ticket);
     void abandon_rest(RestTicket ticket);
     [[nodiscard]] std::uint64_t remaining_rest_milliseconds() const;
-    [[nodiscard]] rules::HitDieResult spend_hit_die(RestTicket ticket,MemberId id);
-    [[nodiscard]] rules::Message recover_rest_choice(RestTicket ticket,MemberId id,std::string_view choice);
+    [[nodiscard]] rules::HitDieResult spend_hit_die(RestTicket ticket, MemberId id);
+    [[nodiscard]] rules::Message recover_rest_choice(RestTicket ticket, MemberId id,
+                                                     std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
     void advance_time(unsigned minutes);
     void advance_time_milliseconds(std::uint64_t milliseconds);
-    [[nodiscard]] std::uint64_t time_hours() const noexcept {return state_.time_minutes/60;}
+    [[nodiscard]] std::uint64_t time_hours() const noexcept
+    {
+        return state_.time_minutes / 60;
+    }
     [[nodiscard]] rules::CharacterProfile profile(MemberId id) const;
-    [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id,unsigned ability,std::string_view skill={},std::string_view tool={}) const;
+    [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, unsigned ability,
+                                                            std::string_view skill = {},
+                                                            std::string_view tool = {}) const;
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
     [[nodiscard]] bool has_item(unsigned original_type) const;
     [[nodiscard]] unsigned strength() const;
-    [[nodiscard]] std::array<unsigned,4> query(unsigned address,unsigned effect) const;
+    [[nodiscard]] std::array<unsigned, 4> query(unsigned address, unsigned effect) const;
     [[nodiscard]] por::EclHostReply character_reply(unsigned slot) const;
-    void read_character(unsigned slot,const por::EclMachine& vm);
-    [[nodiscard]] PartyState checkpoint() const {return state_;}
+    void read_character(unsigned slot, const por::EclMachine &vm);
+    [[nodiscard]] PartyState checkpoint() const
+    {
+        return state_;
+    }
     void restore(PartyState state);
-    static void validate(const PartyState& state);
-    static void validate_rest_activity(const PartyState& state,const rules::RulesModule& rules);
+    static void validate(const PartyState &state);
+    static void validate_rest_activity(const PartyState &state, const rules::RulesModule &rules);
     [[nodiscard]] std::vector<rules::Participant> participants() const;
     // Stage initiative interruption before building combat participants. Pending
     // earned recovery must be resolved before the combat owner takes the lock.
@@ -154,20 +194,34 @@ public:
     // Authored environmental event; the rules module decides waking effects.
     void loud_noise(std::span<const MemberId> affected);
     void begin_combat();
-    void apply_combat(const rules::Snapshot& snapshot, const rules::SafeRecovery& recovery={});
-    void end_combat() noexcept {combat_=false;}
-    [[nodiscard]] bool in_combat() const {return combat_;}
-    [[nodiscard]] const rules::RulesModule& rule_module() const {return *rules_;}
-    [[nodiscard]] const rules::Identity identity() const {return rules_->identity();}
-private:
+    void apply_combat(const rules::Snapshot &snapshot, const rules::SafeRecovery &recovery = {});
+    void end_combat() noexcept
+    {
+        combat_ = false;
+    }
+    [[nodiscard]] bool in_combat() const
+    {
+        return combat_;
+    }
+    [[nodiscard]] const rules::RulesModule &rule_module() const
+    {
+        return *rules_;
+    }
+    [[nodiscard]] const rules::Identity identity() const
+    {
+        return rules_->identity();
+    }
+
+  private:
     std::unique_ptr<rules::RulesModule> rules_;
     PartyState state_;
     bool combat_{};
     bool combat_registered_{};
-    std::uint64_t combat_elapsed_{},combat_scope_{};
-    struct CombatInventoryItem {
-        unsigned token{},equipment_index{};
-        MemberId origin{},holder{},original_owner{};
+    std::uint64_t combat_elapsed_{}, combat_scope_{};
+    struct CombatInventoryItem
+    {
+        unsigned token{}, equipment_index{};
+        MemberId origin{}, holder{}, original_owner{};
         std::uint64_t inventory_id{};
         InventoryItem item;
         std::optional<por::Equipment> original;
@@ -176,24 +230,28 @@ private:
         bool stowed{};
     };
     std::vector<CombatInventoryItem> combat_items_;
-    void apply_physical_items(PartyState&,std::vector<CombatInventoryItem>&,const rules::Snapshot&) const;
-    void apply_combat_items(PartyState&,std::vector<CombatInventoryItem>&,const rules::Snapshot&) const;
-    void release_rest_equipment(PartyState&,PartyMember&) const;
-    void recover_camp(PartyState&) const;
-    void collect_equipment(PartyState&,std::span<const MemberId>,std::uint64_t scope,std::uint64_t rest_session,std::span<const unsigned>) const;
-    void elapse(PartyState& state,std::uint64_t milliseconds,std::span<const MemberId> in_combat={}) const;
+    void apply_physical_items(PartyState &, std::vector<CombatInventoryItem> &,
+                              const rules::Snapshot &) const;
+    void apply_combat_items(PartyState &, std::vector<CombatInventoryItem> &,
+                            const rules::Snapshot &) const;
+    void release_rest_equipment(PartyState &, PartyMember &) const;
+    void recover_camp(PartyState &) const;
+    void collect_equipment(PartyState &, std::span<const MemberId>, std::uint64_t scope,
+                           std::uint64_t rest_session, std::span<const unsigned>) const;
+    void elapse(PartyState &state, std::uint64_t milliseconds,
+                std::span<const MemberId> in_combat = {}) const;
     void editable() const;
     void rewardable() const;
     void commit_reward(PartyState next);
     void outside_combat() const;
     void require_rest_ticket(RestTicket ticket) const;
     void require_activity_ticket(RestTicket ticket) const;
-    void apply_rest_work(PartyState&,std::span<const MemberId>,RestWork) const;
-    void interrupt_rest_state(PartyState& state,RestInterruption cause) const;
-    void short_rest_benefits(PartyState& state,const std::vector<MemberId>& members) const;
-    PartyMember& edit(MemberId id);
-    void join(MemberId id,bool npc);
+    void apply_rest_work(PartyState &, std::span<const MemberId>, RestWork) const;
+    void interrupt_rest_state(PartyState &state, RestInterruption cause) const;
+    void short_rest_benefits(PartyState &state, const std::vector<MemberId> &members) const;
+    PartyMember &edit(MemberId id);
+    void join(MemberId id, bool npc);
 };
-[[nodiscard]] std::string equipment_conversion(const por::Equipment& item);
-}
+[[nodiscard]] std::string equipment_conversion(const por::Equipment &item);
+} // namespace opengold
 #endif

@@ -4,16 +4,19 @@
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 
-class StartupView : public godot::Control {
+class StartupView : public godot::Control
+{
     GDCLASS(StartupView, godot::Control)
-public:
+  public:
     void _ready() override;
     void _process(double delta) override;
     void _notification(int what);
-    void _input(const godot::Ref<godot::InputEvent>& event) override;
-protected:
+    void _input(const godot::Ref<godot::InputEvent> &event) override;
+
+  protected:
     static void _bind_methods();
-private:
+
+  private:
     unsigned screen_{};
     bool finishing_{};
     bool choosing_language_{};
@@ -33,11 +36,11 @@ private:
     void close_language();
     void choose_language();
     void choose_game_path();
-    void show_path(const godot::String& message = {});
+    void show_path(const godot::String &message = {});
     void browse_path();
-    void picked_path(const godot::String& directory);
-    void path_edited(const godot::String& directory);
-    void submitted_path(const godot::String& directory);
+    void picked_path(const godot::String &directory);
+    void path_edited(const godot::String &directory);
+    void submitted_path(const godot::String &directory);
     void accept_path();
     void check_path();
     void continue_path();

@@ -8,14 +8,17 @@
 #include <string>
 #include <vector>
 
-namespace opengold::por {
+namespace opengold::por
+{
 
-struct SpeakerTick {
+struct SpeakerTick
+{
     std::uint16_t divisor{};
     bool enabled{};
 };
 
-struct SoundEffect {
+struct SoundEffect
+{
     unsigned id{};
     std::string name;
     bool unused{};
@@ -27,9 +30,11 @@ struct SoundEffect {
 // Data-only decompression. No relocation, execution, or filesystem writes.
 [[nodiscard]] std::vector<std::uint8_t> unpack_sound_executable(std::span<const std::uint8_t> file);
 // Bounded decoder for the PC bank's command subset; also accepts synthetic data.
-[[nodiscard]] std::vector<SpeakerTick> decode_speaker_sequence(
-    std::span<const std::uint8_t> segment, const std::array<std::uint16_t, 4>& entries);
-[[nodiscard]] std::vector<SoundEffect> load_sound_effects(const std::filesystem::path& game_directory);
+[[nodiscard]] std::vector<SpeakerTick>
+decode_speaker_sequence(std::span<const std::uint8_t> segment,
+                        const std::array<std::uint16_t, 4> &entries);
+[[nodiscard]] std::vector<SoundEffect>
+load_sound_effects(const std::filesystem::path &game_directory);
 
 } // namespace opengold::por
 #endif

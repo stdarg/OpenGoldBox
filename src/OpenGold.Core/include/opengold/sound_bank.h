@@ -3,9 +3,11 @@
 
 #include "opengold/speaker_audio.h"
 
-namespace opengold::por {
+namespace opengold::por
+{
 
-struct SoundClip {
+struct SoundClip
+{
     unsigned id{}; // Original sound-directory ID, independent of UI ordering.
     std::string name;
     bool unused{};
@@ -15,14 +17,19 @@ struct SoundClip {
 
 // Owns immutable prepared clips. No Godot, audio device, environment settings,
 // or extracted files. Construction either succeeds completely or throws.
-class SoundBank {
-public:
+class SoundBank
+{
+  public:
     // Accepts decoded effects, including hand-authored effects for unit tests.
     explicit SoundBank(std::vector<SoundEffect> effects);
-    [[nodiscard]] static SoundBank load(const std::filesystem::path& game_directory);
-    [[nodiscard]] std::span<const SoundClip> clips() const noexcept { return clips_; }
-    [[nodiscard]] const SoundClip& at(unsigned id) const;
-private:
+    [[nodiscard]] static SoundBank load(const std::filesystem::path &game_directory);
+    [[nodiscard]] std::span<const SoundClip> clips() const noexcept
+    {
+        return clips_;
+    }
+    [[nodiscard]] const SoundClip &at(unsigned id) const;
+
+  private:
     std::vector<SoundClip> clips_;
 };
 

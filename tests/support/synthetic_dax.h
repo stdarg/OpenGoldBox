@@ -4,39 +4,43 @@
 #include <algorithm>
 #include <stdexcept>
 
-namespace opengold::test {
-inline void word(std::vector<std::uint8_t>& bytes, std::size_t at, unsigned value)
+namespace opengold::test
+{
+inline void word(std::vector<std::uint8_t> &bytes, std::size_t at, unsigned value)
 {
     bytes.at(at) = value & 255;
-    bytes.at(at+1) = (value >> 8) & 255;
+    bytes.at(at + 1) = (value >> 8) & 255;
 }
 
 // Test-only literal encoder. Expected decoded bytes come from the caller, not
 // the production decoder. All fixtures are authored; none contain game assets.
-inline std::vector<std::uint8_t> literal_dax(const std::vector<DaxRecord>& records)
+inline std::vector<std::uint8_t> literal_dax(const std::vector<DaxRecord> &records)
 {
-    if (records.size() > 256) throw std::logic_error("Too many fixture records");
-    std::vector<std::uint8_t> bytes(2+9*records.size());
-    word(bytes,0,9*records.size());
-    for (std::size_t i = 0; i < records.size(); ++i) {
-        const auto& record = records[i];
+    if (records.size() > 256)
+        throw std::logic_error("Too many fixture records");
+    std::vector<std::uint8_t> bytes(2 + 9 * records.size());
+    word(bytes, 0, 9 * records.size());
+    for (std::size_t i = 0; i < records.size(); ++i)
+    {
+        const auto &record = records[i];
         const auto start = bytes.size();
-        const auto offset = start-2-9*records.size();
-        const auto header = 2+9*i;
+        const auto offset = start - 2 - 9 * records.size();
+        const auto header = 2 + 9 * i;
         bytes[header] = record.id;
-        word(bytes,header+1,offset);
-        word(bytes,header+3,offset >> 16);
-        for (std::size_t at = 0; at < record.bytes.size(); at += 128) {
-            const auto count = std::min<std::size_t>(128,record.bytes.size()-at);
-            bytes.push_back(count-1);
-            bytes.insert(bytes.end(),record.bytes.begin()+at,record.bytes.begin()+at+count);
+        word(bytes, header + 1, offset);
+        word(bytes, header + 3, offset >> 16);
+        for (std::size_t at = 0; at < record.bytes.size(); at += 128)
+        {
+            const auto count = std::min<std::size_t>(128, record.bytes.size() - at);
+            bytes.push_back(count - 1);
+            bytes.insert(bytes.end(), record.bytes.begin() + at, record.bytes.begin() + at + count);
         }
-        if (record.bytes.size() > 65535 || bytes.size()-start > 65535)
+        if (record.bytes.size() > 65535 || bytes.size() - start > 65535)
             throw std::logic_error("Fixture exceeds DAX record limits");
-        word(bytes,header+5,record.bytes.size());
-        word(bytes,header+7,bytes.size()-start);
+        word(bytes, header + 5, record.bytes.size());
+        word(bytes, header + 7, bytes.size() - start);
     }
     return bytes;
 }
-}
+} // namespace opengold::test
 #endif

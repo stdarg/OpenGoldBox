@@ -6,9 +6,17 @@
 #include "opengold/formats.h"
 #include "opengold/campaign_party.h"
 #include "opengold/dungeon_battlefield.h"
-namespace opengold {
-struct CombatArt { rules::EntityId entity{}; Image image; std::optional<Image> action; std::string missing_combination; };
-struct CampaignEncounter {
+namespace opengold
+{
+struct CombatArt
+{
+    rules::EntityId entity{};
+    Image image;
+    std::optional<Image> action;
+    std::string missing_combination;
+};
+struct CampaignEncounter
+{
     por::DungeonBattlefield field;
     std::vector<rules::Participant> enemies;
     std::vector<CombatArt> art;
@@ -20,40 +28,71 @@ struct CampaignEncounter {
 };
 // A bounded demonstration/campaign adapter. It depends on the rules interface,
 // never on a specific edition. The application supplies the selected module.
-class CombatDemo {
-public:
+class CombatDemo
+{
+  public:
     explicit CombatDemo(std::unique_ptr<rules::RulesModule> module);
     ~CombatDemo();
     void campaign_party(std::shared_ptr<CampaignParty> party);
-    void training(std::uint64_t seed=42, bool conditions=false);
-    void slums(const std::filesystem::path& game_directory,std::uint64_t seed=42);
-    void encounter(CampaignEncounter encounter,std::uint64_t seed);
-    [[nodiscard]] const auto& battlefield_tiles() const {return battlefield_tiles_;}
-    [[nodiscard]] const auto& terrain_art() const {return terrain_art_;}
-    [[nodiscard]] const rules::CombatSession& combat() const;
-    bool submit(const rules::Command& command);
+    void training(std::uint64_t seed = 42, bool conditions = false);
+    void slums(const std::filesystem::path &game_directory, std::uint64_t seed = 42);
+    void encounter(CampaignEncounter encounter, std::uint64_t seed);
+    [[nodiscard]] const auto &battlefield_tiles() const
+    {
+        return battlefield_tiles_;
+    }
+    [[nodiscard]] const auto &terrain_art() const
+    {
+        return terrain_art_;
+    }
+    [[nodiscard]] const rules::CombatSession &combat() const;
+    bool submit(const rules::Command &command);
     void continue_script();
     void revisit();
     [[nodiscard]] std::string save_combat() const;
     void restore_combat(std::string_view checkpoint);
-    [[nodiscard]] const std::string& dialogue() const noexcept{return dialogue_;}
-    [[nodiscard]] const std::string& status() const noexcept{return status_;}
-    [[nodiscard]] bool waiting() const noexcept{return menu_ticket_!=0;}
-    [[nodiscard]] bool has_combat() const noexcept{return combat_!=nullptr;}
-    [[nodiscard]] bool is_slums() const noexcept{return vm_.has_value();}
-    [[nodiscard]] bool script_complete() const noexcept{return vm_&&vm_->state()==por::EclState::completed;}
+    [[nodiscard]] const std::string &dialogue() const noexcept
+    {
+        return dialogue_;
+    }
+    [[nodiscard]] const std::string &status() const noexcept
+    {
+        return status_;
+    }
+    [[nodiscard]] bool waiting() const noexcept
+    {
+        return menu_ticket_ != 0;
+    }
+    [[nodiscard]] bool has_combat() const noexcept
+    {
+        return combat_ != nullptr;
+    }
+    [[nodiscard]] bool is_slums() const noexcept
+    {
+        return vm_.has_value();
+    }
+    [[nodiscard]] bool script_complete() const noexcept
+    {
+        return vm_ && vm_->state() == por::EclState::completed;
+    }
     [[nodiscard]] unsigned script_variable(std::uint16_t address) const;
-    [[nodiscard]] const auto& art() const noexcept{return art_;}
-private:
-    class CampaignCombat {
-    public:
+    [[nodiscard]] const auto &art() const noexcept
+    {
+        return art_;
+    }
+
+  private:
+    class CampaignCombat
+    {
+      public:
         explicit CampaignCombat(std::shared_ptr<CampaignParty> party);
         ~CampaignCombat();
-        CampaignCombat(const CampaignCombat&) = delete;
-        CampaignCombat& operator=(const CampaignCombat&) = delete;
-        CampaignCombat(CampaignCombat&&) noexcept = default;
-        CampaignCombat& operator=(CampaignCombat&&) = delete;
-    private:
+        CampaignCombat(const CampaignCombat &) = delete;
+        CampaignCombat &operator=(const CampaignCombat &) = delete;
+        CampaignCombat(CampaignCombat &&) noexcept = default;
+        CampaignCombat &operator=(CampaignCombat &&) = delete;
+
+      private:
         std::shared_ptr<CampaignParty> party_;
     };
     std::unique_ptr<rules::RulesModule> module_;
@@ -71,22 +110,23 @@ private:
     std::vector<std::uint8_t> battlefield_tiles_;
     std::vector<Image> terrain_art_;
     std::filesystem::path game_directory_;
-    std::string dialogue_,status_;
-    std::uint64_t menu_ticket_{},combat_ticket_{},seed_{};
+    std::string dialogue_, status_;
+    std::uint64_t menu_ticket_{}, combat_ticket_{}, seed_{};
     unsigned encounters_{};
     std::string reward_id_;
     void pump();
     void finish_combat();
 };
-struct CombatDemoSetup {
+struct CombatDemoSetup
+{
     std::shared_ptr<CampaignParty> party;
     CampaignEncounter encounter;
 };
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,
-    const rules::CharacterRules& characters,
-    const std::filesystem::path& game_directory,
-    const std::filesystem::path& body_catalog_file={});
+                                               const rules::CharacterRules &characters,
+                                               const std::filesystem::path &game_directory,
+                                               const std::filesystem::path &body_catalog_file = {});
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
-[[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession& session);
-}
+[[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session);
+} // namespace opengold
 #endif

@@ -4,10 +4,12 @@
 #include <cstdint>
 #include <span>
 
-namespace opengold {
+namespace opengold
+{
 
-class Core {
-public:
+class Core
+{
+  public:
     [[nodiscard]] std::uint32_t checksum(std::span<const std::uint8_t> bytes) const;
 };
 

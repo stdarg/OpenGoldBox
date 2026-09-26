@@ -10,31 +10,70 @@
 #include <set>
 #include <functional>
 
-class RolfTourView : public godot::Control {
+class RolfTourView : public godot::Control
+{
     GDCLASS(RolfTourView, godot::Control)
-public:
+  public:
     void _ready() override;
     void _process(double delta) override;
     void _draw() override;
-    void _input(const godot::Ref<godot::InputEvent>& event) override;
-    void campaign_party(std::shared_ptr<opengold::CampaignParty> party){campaign_=std::move(party);embedded_party_=true;}
-    [[nodiscard]] bool can_leave() const {return !session_||session_->can_leave();}
-    void resume_party(){shown_revision_=0;refresh();}
-    [[nodiscard]] const opengold::por::RolfTourSession* saved_session() const {return session_?&*session_:nullptr;}
-    [[nodiscard]] std::optional<opengold::CampaignEncounter> pending_encounter() const {return session_?session_->pending_encounter():std::nullopt;}
-    bool resolve_combat(const opengold::rules::Snapshot& result){if(!session_||!session_->resolve_combat(result))return false;refresh();return true;}
-    bool reject_combat(std::string diagnostic){if(!session_||!session_->reject_combat(std::move(diagnostic)))return false;refresh();return true;}
-    void restore_campaign(std::shared_ptr<opengold::CampaignParty> party,opengold::por::RolfTourSession session);
+    void _input(const godot::Ref<godot::InputEvent> &event) override;
+    void campaign_party(std::shared_ptr<opengold::CampaignParty> party)
+    {
+        campaign_ = std::move(party);
+        embedded_party_ = true;
+    }
+    [[nodiscard]] bool can_leave() const
+    {
+        return !session_ || session_->can_leave();
+    }
+    void resume_party()
+    {
+        shown_revision_ = 0;
+        refresh();
+    }
+    [[nodiscard]] const opengold::por::RolfTourSession *saved_session() const
+    {
+        return session_ ? &*session_ : nullptr;
+    }
+    [[nodiscard]] std::optional<opengold::CampaignEncounter> pending_encounter() const
+    {
+        return session_ ? session_->pending_encounter() : std::nullopt;
+    }
+    bool resolve_combat(const opengold::rules::Snapshot &result)
+    {
+        if (!session_ || !session_->resolve_combat(result))
+            return false;
+        refresh();
+        return true;
+    }
+    bool reject_combat(std::string diagnostic)
+    {
+        if (!session_ || !session_->reject_combat(std::move(diagnostic)))
+            return false;
+        refresh();
+        return true;
+    }
+    void restore_campaign(std::shared_ptr<opengold::CampaignParty> party,
+                          opengold::por::RolfTourSession session);
     void request_save(bool saving);
-    std::function<void(const std::string&)> save_check;
-    [[nodiscard]] bool party_route_checked() const {return shop_check_stage_==4;}
+    std::function<void(const std::string &)> save_check;
+    [[nodiscard]] bool party_route_checked() const
+    {
+        return shop_check_stage_ == 4;
+    }
     void start_recovery_check();
-    [[nodiscard]] bool recovery_checked() const {return recovery_stage_==8;}
+    [[nodiscard]] bool recovery_checked() const
+    {
+        return recovery_stage_ == 8;
+    }
     bool check_expedition_step();
-protected:
+
+  protected:
     static void _bind_methods();
     void _notification(int what);
-private:
+
+  private:
     std::optional<opengold::por::RolfTourSession> session_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::array<godot::Ref<godot::ImageTexture>, 3> sprites_;
@@ -49,14 +88,14 @@ private:
     std::uint64_t displayed_ticket_{};
     std::uint64_t rendered_picture_revision_{};
     bool no_fog_{}, ready_{}, checking_{}, capture_{}, capture_pending_{};
-    bool town_check_{},embedded_party_{};
+    bool town_check_{}, embedded_party_{};
     unsigned shop_check_stage_{};
     unsigned recovery_stage_{};
-    bool save_cancel_checked_{},save_cancel_pending_{};
+    bool save_cancel_checked_{}, save_cancel_pending_{};
     std::uint64_t recovery_capture_ticket_{};
     std::optional<opengold::PartyState> recovery_before_;
-    std::set<std::pair<unsigned,unsigned>> check_refused_edges_;
-    std::optional<std::pair<unsigned,unsigned>> check_pending_edge_;
+    std::set<std::pair<unsigned, unsigned>> check_refused_edges_;
+    std::optional<std::pair<unsigned, unsigned>> check_pending_edge_;
     void layout();
     void refresh();
     void restart();
@@ -75,17 +114,17 @@ private:
     void rest_spend();
     void rest_recover();
     void refresh_rest_spells();
-    void rest_spell_toggled(bool selected,godot::String group,godot::String option);
+    void rest_spell_toggled(bool selected, godot::String group, godot::String option);
     void rest_spell_replaced(std::int64_t index);
     void rest_spell_apply();
     void rest_spell_keep();
-    void rest_spell_input(const godot::Ref<godot::InputEvent>& event);
+    void rest_spell_input(const godot::Ref<godot::InputEvent> &event);
     opengold::MemberId rest_spell_member_{};
     opengold::rules::SpellChoices rest_spell_choice_;
     void rest_finish();
     void rest_resume();
     void rest_save();
-    void rest_input(const godot::Ref<godot::InputEvent>& event);
+    void rest_input(const godot::Ref<godot::InputEvent> &event);
     opengold::MemberId rest_member_{};
     godot::String rest_result_;
     bool rest_save_open_{};
@@ -104,7 +143,7 @@ private:
     void check_run();
     void check_town();
     void check_recovery();
-    void check_walk_to(unsigned x,unsigned y);
-    void capture_frame(const godot::String& name);
+    void check_walk_to(unsigned x, unsigned y);
+    void capture_frame(const godot::String &name);
 };
 #endif

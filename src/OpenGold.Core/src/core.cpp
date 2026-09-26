@@ -2,7 +2,8 @@
 
 #include "opengold/formats.h"
 
-namespace opengold {
+namespace opengold
+{
 
 std::uint32_t Core::checksum(std::span<const std::uint8_t> bytes) const
 {

@@ -6,17 +6,22 @@
 #include <vector>
 
 // Scene-owned shared save UI. Callbacks remain in the campaign host.
-class SaveSlots : public godot::Window {
-    GDCLASS(SaveSlots,godot::Window)
-public:
+class SaveSlots : public godot::Window
+{
+    GDCLASS(SaveSlots, godot::Window)
+  public:
     void _ready() override;
     void open(bool saving);
-    std::function<void(const std::filesystem::path&)> save,load;
-protected:
-    static void _bind_methods() {}
-private:
-    bool saving_{},confirmed_{};
-    std::filesystem::path directory_,pending_;
+    std::function<void(const std::filesystem::path &)> save, load;
+
+  protected:
+    static void _bind_methods()
+    {
+    }
+
+  private:
+    bool saving_{}, confirmed_{};
+    std::filesystem::path directory_, pending_;
     std::vector<std::filesystem::path> paths_;
     void select(std::int64_t index);
     void changed(godot::String text);

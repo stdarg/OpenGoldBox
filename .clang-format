@@ -18,3 +18,9 @@ AllowShortLambdasOnASingleLine: None
 SpaceBeforeParens: ControlStatements
 SortIncludes: Never
 IncludeBlocks: Preserve
+# CODING_STYLE.md: "indivisible tokens and strings may exceed the limit". This
+# also has to be off for correctness, not only style: tools/localization.py
+# extracts translatable text by scraping string literals out of the sources, so
+# splitting a message template across two literals makes it see the fragments
+# and lose the message. LLVM's default is true.
+BreakStringLiterals: false

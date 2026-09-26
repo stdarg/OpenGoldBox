@@ -6,15 +6,20 @@
 #include <optional>
 
 // Temporary real campaign: shared game equipment/rules/rendering, no disk writes.
-class EquipmentSpriteDemo : public godot::Control {
+class EquipmentSpriteDemo : public godot::Control
+{
     GDCLASS(EquipmentSpriteDemo, godot::Control)
-public:
+  public:
     void _ready() override;
-    void _input(const godot::Ref<godot::InputEvent>& event) override;
-protected:
-    static void _bind_methods() {}
+    void _input(const godot::Ref<godot::InputEvent> &event) override;
+
+  protected:
+    static void _bind_methods()
+    {
+    }
     void _notification(int what);
-private:
+
+  private:
     std::unique_ptr<opengold::CampaignParty> campaign_;
     opengold::MemberId member_{};
     std::optional<opengold::por::CharacterArt> art_;

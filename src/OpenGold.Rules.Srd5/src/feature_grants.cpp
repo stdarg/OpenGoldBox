@@ -6,108 +6,222 @@
 #include <set>
 #include <stdexcept>
 
-namespace opengold::srd5::detail {
-namespace {
-constexpr std::array<std::string_view,6> abilities{"strength","dexterity","constitution","intelligence","wisdom","charisma"};
-void require(bool value){if(!value)throw std::runtime_error("Invalid feature or feat grant provenance, choices or prerequisites");}
+namespace opengold::srd5::detail
+{
+namespace
+{
+constexpr std::array<std::string_view, 6> abilities{"strength",     "dexterity", "constitution",
+                                                    "intelligence", "wisdom",    "charisma"};
+void require(bool value)
+{
+    if (!value)
+        throw std::runtime_error(
+            "Invalid feature or feat grant provenance, choices or prerequisites");
 }
-std::string grant_source_id(std::string_view label){
-    std::string result(label);for(auto& c:result)if(c>='A'&&c<='Z')c+=32;return result;
+} // namespace
+std::string grant_source_id(std::string_view label)
+{
+    std::string result(label);
+    for (auto &c : result)
+        if (c >= 'A' && c <= 'Z')
+            c += 32;
+    return result;
 }
-std::vector<rules::FeatureGrant> starting_grants(std::string_view klass,std::string_view race,std::string_view background){
+std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::string_view race,
+                                                 std::string_view background)
+{
     std::vector<rules::FeatureGrant> result;
-    if(background=="soldier")result.push_back({"feat:savage_attacker","background:soldier",1,{}});
-    if(klass=="fighter"){
+    if (background == "soldier")
+        result.push_back({"feat:savage_attacker", "background:soldier", 1, {}});
+    if (klass == "fighter")
+    {
         // Entitlement already used by the existing Defense selection. Completing
         // the level-one style selector is a separate class increment.
-        result.push_back({"feature:fighting_style","class:fighter",1,{}});
-        result.push_back({"feature:second_wind","class:fighter",1,{}});
+        result.push_back({"feature:fighting_style", "class:fighter", 1, {}});
+        result.push_back({"feature:second_wind", "class:fighter", 1, {}});
     }
-    if(klass=="barbarian"||klass=="monk")result.push_back({"feature:unarmored_defense","class:"+std::string(klass),1,{}});
-    if(klass=="cleric"||klass=="wizard")result.push_back({"feature:spellcasting","class:"+std::string(klass),1,{}});
-    if(klass=="rogue")result.push_back({"feature:sneak_attack","class:rogue",1,{}});
-    if(klass=="wizard")result.push_back({"feature:arcane_recovery","class:wizard",1,{}});
-    if(race=="dwarf"){result.push_back({"trait:dwarven_toughness","species:dwarf",1,{}});result.push_back({"trait:dwarven_resilience","species:dwarf",1,{}});}
-    if(race=="orc")result.push_back({"trait:adrenaline_rush","species:orc",1,{}});
-    if(race=="goliath")result.push_back({"trait:speed","species:goliath",1,{}});
+    if (klass == "barbarian" || klass == "monk")
+        result.push_back({"feature:unarmored_defense", "class:" + std::string(klass), 1, {}});
+    if (klass == "cleric" || klass == "wizard")
+        result.push_back({"feature:spellcasting", "class:" + std::string(klass), 1, {}});
+    if (klass == "rogue")
+        result.push_back({"feature:sneak_attack", "class:rogue", 1, {}});
+    if (klass == "wizard")
+        result.push_back({"feature:arcane_recovery", "class:wizard", 1, {}});
+    if (race == "dwarf")
+    {
+        result.push_back({"trait:dwarven_toughness", "species:dwarf", 1, {}});
+        result.push_back({"trait:dwarven_resilience", "species:dwarf", 1, {}});
+    }
+    if (race == "orc")
+        result.push_back({"trait:adrenaline_rush", "species:orc", 1, {}});
+    if (race == "goliath")
+        result.push_back({"trait:speed", "species:goliath", 1, {}});
     return result;
 }
-rules::FeatureGrant advancement_grant(std::string_view klass,unsigned level,const rules::AdvancementChoice& choice){
-    rules::FeatureGrant result{"feat:"+choice.feat,"class:"+std::string(klass)+":ability_score_improvement",level,{}};
-    for(unsigned i=0;i<abilities.size();++i)if(choice.abilities[i])result.choices.emplace(abilities[i],std::to_string(choice.abilities[i]));
+rules::FeatureGrant advancement_grant(std::string_view klass, unsigned level,
+                                      const rules::AdvancementChoice &choice)
+{
+    rules::FeatureGrant result{"feat:" + choice.feat,
+                               "class:" + std::string(klass) + ":ability_score_improvement",
+                               level,
+                               {}};
+    for (unsigned i = 0; i < abilities.size(); ++i)
+        if (choice.abilities[i])
+            result.choices.emplace(abilities[i], std::to_string(choice.abilities[i]));
     return result;
 }
-bool has_grant(std::span<const rules::FeatureGrant> grants,std::string_view id){
-    return std::any_of(grants.begin(),grants.end(),[&](const auto& grant){return grant.id==id;});
+bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
+{
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &grant)
+                       {
+                           return grant.id == id;
+                       });
 }
-GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants,std::string_view klass,
-    std::string_view race,std::string_view background,unsigned level,bool damage_traits,bool rush_trait,bool action_surge,bool archery,bool starting_styles,bool tactical_mind,bool champion,bool arcane_recovery,bool rogue_attacks){
-    require(level>=1&&level<=4&&grants.size()<=32);
-    require(background=="acolyte"||background=="criminal"||background=="sage"||background=="soldier");
-    auto required=starting_grants(klass,race,background);
-    if(!rogue_attacks)std::erase_if(required,[](const auto& g){return g.id=="feature:sneak_attack";});
-    if(rogue_attacks&&klass=="rogue"&&level>=3)required.push_back({"feature:steady_aim","class:rogue",3,{}});
-    if(!arcane_recovery)std::erase_if(required,[](const auto& g){return g.id=="feature:arcane_recovery";});
-    if(klass=="rogue"&&level>=2)required.push_back({"feature:cunning_action","class:rogue",2,{}});
-    if(action_surge&&klass=="fighter"&&level>=2)required.push_back({"feature:action_surge","class:fighter",2,{}});
-    if(tactical_mind&&klass=="fighter"&&level>=2)required.push_back({"feature:tactical_mind","class:fighter",2,{}});
-    if(champion&&klass=="fighter"&&level>=3){required.push_back({"subclass:champion","class:fighter",3,{}});required.push_back({"feature:improved_critical","subclass:fighter:champion",3,{}});required.push_back({"feature:remarkable_athlete","subclass:fighter:champion",3,{}});}
-    if(!damage_traits)std::erase_if(required,[](const auto& g){return g.id=="trait:dwarven_resilience";});
-    if(!rush_trait)std::erase_if(required,[](const auto& g){return g.id=="trait:adrenaline_rush";});
+GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::string_view klass,
+                             std::string_view race, std::string_view background, unsigned level,
+                             bool damage_traits, bool rush_trait, bool action_surge, bool archery,
+                             bool starting_styles, bool tactical_mind, bool champion,
+                             bool arcane_recovery, bool rogue_attacks)
+{
+    require(level >= 1 && level <= 4 && grants.size() <= 32);
+    require(background == "acolyte" || background == "criminal" || background == "sage" ||
+            background == "soldier");
+    auto required = starting_grants(klass, race, background);
+    if (!rogue_attacks)
+        std::erase_if(required,
+                      [](const auto &g)
+                      {
+                          return g.id == "feature:sneak_attack";
+                      });
+    if (rogue_attacks && klass == "rogue" && level >= 3)
+        required.push_back({"feature:steady_aim", "class:rogue", 3, {}});
+    if (!arcane_recovery)
+        std::erase_if(required,
+                      [](const auto &g)
+                      {
+                          return g.id == "feature:arcane_recovery";
+                      });
+    if (klass == "rogue" && level >= 2)
+        required.push_back({"feature:cunning_action", "class:rogue", 2, {}});
+    if (action_surge && klass == "fighter" && level >= 2)
+        required.push_back({"feature:action_surge", "class:fighter", 2, {}});
+    if (tactical_mind && klass == "fighter" && level >= 2)
+        required.push_back({"feature:tactical_mind", "class:fighter", 2, {}});
+    if (champion && klass == "fighter" && level >= 3)
+    {
+        required.push_back({"subclass:champion", "class:fighter", 3, {}});
+        required.push_back({"feature:improved_critical", "subclass:fighter:champion", 3, {}});
+        required.push_back({"feature:remarkable_athlete", "subclass:fighter:champion", 3, {}});
+    }
+    if (!damage_traits)
+        std::erase_if(required,
+                      [](const auto &g)
+                      {
+                          return g.id == "trait:dwarven_resilience";
+                      });
+    if (!rush_trait)
+        std::erase_if(required,
+                      [](const auto &g)
+                      {
+                          return g.id == "trait:adrenaline_rush";
+                      });
     std::set<std::string> nonrepeatable;
-    std::set<std::pair<std::string,unsigned>> entitlements;
-    GrantEffects effects;unsigned advancement_count=0;
-    for(const auto& grant:grants){
-        require(grant.level>=1&&grant.level<=level);
+    std::set<std::pair<std::string, unsigned>> entitlements;
+    GrantEffects effects;
+    unsigned advancement_count = 0;
+    for (const auto &grant : grants)
+    {
+        require(grant.level >= 1 && grant.level <= level);
         // ASI is repeatable, but never twice from the same entitlement. Other
         // implemented feats/features are not repeatable (SRD pp. 87–88).
-        if(grant.id!="feat:ability_score_improvement")require(nonrepeatable.insert(grant.id).second);
-        const auto fixed=std::find(required.begin(),required.end(),grant);
-        if(fixed!=required.end())required.erase(fixed);
-        else if(starting_styles&&grant.source_id=="class:fighter:fighting_style"){
-            require(klass=="fighter"&&grant.level==1&&grant.choices.empty()&&
-                (grant.id=="feat:defense"||grant.id=="feat:archery")&&has_grant(grants,"feature:fighting_style"));
-            require(entitlements.emplace(grant.source_id,grant.level).second);
-        }else {
-            require((klass=="fighter"||klass=="cleric"||klass=="wizard"||(rogue_attacks&&klass=="rogue"))&&grant.level==4&&
-                grant.source_id=="class:"+std::string(klass)+":ability_score_improvement");
-            require(entitlements.emplace(grant.source_id,grant.level).second);++advancement_count;
-            if(grant.id=="feat:ability_score_improvement"){
-                unsigned points=0;
-                for(const auto& [key,value]:grant.choices){
-                    const auto found=std::find(abilities.begin(),abilities.end(),key);
-                    require(found!=abilities.end()&&(value=="1"||value=="2"));
-                    const auto amount=value=="1"?1:2;effects.abilities[found-abilities.begin()]+=amount;points+=amount;
+        if (grant.id != "feat:ability_score_improvement")
+            require(nonrepeatable.insert(grant.id).second);
+        const auto fixed = std::find(required.begin(), required.end(), grant);
+        if (fixed != required.end())
+            required.erase(fixed);
+        else if (starting_styles && grant.source_id == "class:fighter:fighting_style")
+        {
+            require(klass == "fighter" && grant.level == 1 && grant.choices.empty() &&
+                    (grant.id == "feat:defense" || grant.id == "feat:archery") &&
+                    has_grant(grants, "feature:fighting_style"));
+            require(entitlements.emplace(grant.source_id, grant.level).second);
+        }
+        else
+        {
+            require((klass == "fighter" || klass == "cleric" || klass == "wizard" ||
+                     (rogue_attacks && klass == "rogue")) &&
+                    grant.level == 4 &&
+                    grant.source_id ==
+                        "class:" + std::string(klass) + ":ability_score_improvement");
+            require(entitlements.emplace(grant.source_id, grant.level).second);
+            ++advancement_count;
+            if (grant.id == "feat:ability_score_improvement")
+            {
+                unsigned points = 0;
+                for (const auto &[key, value] : grant.choices)
+                {
+                    const auto found = std::find(abilities.begin(), abilities.end(), key);
+                    require(found != abilities.end() && (value == "1" || value == "2"));
+                    const auto amount = value == "1" ? 1 : 2;
+                    effects.abilities[found - abilities.begin()] += amount;
+                    points += amount;
                 }
-                require(points==2);
-            }else {
+                require(points == 2);
+            }
+            else
+            {
                 require(grant.choices.empty());
-                if(grant.id=="feat:defense"||(archery&&grant.id=="feat:archery"))require(has_grant(grants,"feature:fighting_style"));
-                else require(grant.id=="feat:savage_attacker");
+                if (grant.id == "feat:defense" || (archery && grant.id == "feat:archery"))
+                    require(has_grant(grants, "feature:fighting_style"));
+                else
+                    require(grant.id == "feat:savage_attacker");
             }
         }
-        if(grant.id=="feat:defense")effects.feats|=1;
-        if(grant.id=="feat:savage_attacker")effects.feats|=2;
-        if(grant.id=="feat:archery")effects.feats|=4;
+        if (grant.id == "feat:defense")
+            effects.feats |= 1;
+        if (grant.id == "feat:savage_attacker")
+            effects.feats |= 2;
+        if (grant.id == "feat:archery")
+            effects.feats |= 4;
     }
-    require(required.empty()&&advancement_count==(level==4?1u:0u));
+    require(required.empty() && advancement_count == (level == 4 ? 1u : 0u));
     return effects;
 }
-void write_grants(std::ostream& out,std::span<const rules::FeatureGrant> grants){
-    out<<' '<<grants.size();for(const auto& grant:grants){
-        out<<' '<<std::quoted(grant.id)<<' '<<std::quoted(grant.source_id)<<' '<<grant.level<<' '<<grant.choices.size();
-        for(const auto& [key,value]:grant.choices)out<<' '<<std::quoted(key)<<' '<<std::quoted(value);
+void write_grants(std::ostream &out, std::span<const rules::FeatureGrant> grants)
+{
+    out << ' ' << grants.size();
+    for (const auto &grant : grants)
+    {
+        out << ' ' << std::quoted(grant.id) << ' ' << std::quoted(grant.source_id) << ' '
+            << grant.level << ' ' << grant.choices.size();
+        for (const auto &[key, value] : grant.choices)
+            out << ' ' << std::quoted(key) << ' ' << std::quoted(value);
     }
 }
-std::vector<rules::FeatureGrant> read_grants(std::istream& in){
-    unsigned count{};in>>count;require(bool(in)&&count<=32);std::vector<rules::FeatureGrant> result;
-    for(unsigned i=0;i<count;++i){rules::FeatureGrant grant;unsigned choices{};
-        in>>std::quoted(grant.id)>>std::quoted(grant.source_id)>>grant.level>>choices;
-        require(bool(in)&&grant.id.size()<=128&&grant.source_id.size()<=128&&choices<=6);
-        for(unsigned n=0;n<choices;++n){std::string key,value;in>>std::quoted(key)>>std::quoted(value);
-            require(bool(in)&&key.size()<=128&&value.size()<=128&&grant.choices.emplace(key,value).second);}
+std::vector<rules::FeatureGrant> read_grants(std::istream &in)
+{
+    unsigned count{};
+    in >> count;
+    require(bool(in) && count <= 32);
+    std::vector<rules::FeatureGrant> result;
+    for (unsigned i = 0; i < count; ++i)
+    {
+        rules::FeatureGrant grant;
+        unsigned choices{};
+        in >> std::quoted(grant.id) >> std::quoted(grant.source_id) >> grant.level >> choices;
+        require(bool(in) && grant.id.size() <= 128 && grant.source_id.size() <= 128 &&
+                choices <= 6);
+        for (unsigned n = 0; n < choices; ++n)
+        {
+            std::string key, value;
+            in >> std::quoted(key) >> std::quoted(value);
+            require(bool(in) && key.size() <= 128 && value.size() <= 128 &&
+                    grant.choices.emplace(key, value).second);
+        }
         result.push_back(std::move(grant));
     }
     return result;
 }
-}
+} // namespace opengold::srd5::detail

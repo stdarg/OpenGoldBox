@@ -9,40 +9,75 @@
 #include <random>
 #include <set>
 
-namespace opengold { struct SaveCodec; }
-namespace opengold::por {
-struct ScriptId {
+namespace opengold
+{
+struct SaveCodec;
+}
+namespace opengold::por
+{
+struct ScriptId
+{
     std::string archive;
     std::uint8_t record{};
-    auto operator<=>(const ScriptId&) const = default;
+    auto operator<=>(const ScriptId &) const = default;
 };
-class EclCatalog {
-public:
-    [[nodiscard]] static EclCatalog load(const std::filesystem::path& directory);
-    [[nodiscard]] const auto& all() const noexcept { return programs_; }
-    [[nodiscard]] std::shared_ptr<const EclProgram> find(const ScriptId& id) const;
-private:
+class EclCatalog
+{
+  public:
+    [[nodiscard]] static EclCatalog load(const std::filesystem::path &directory);
+    [[nodiscard]] const auto &all() const noexcept
+    {
+        return programs_;
+    }
+    [[nodiscard]] std::shared_ptr<const EclProgram> find(const ScriptId &id) const;
+
+  private:
     std::map<ScriptId, std::shared_ptr<const EclProgram>> programs_;
 };
 
-enum class EclState { idle, running, waiting, completed, faulted };
-enum class EclRequestKind { text, menu, input_number, input_string, host };
-enum class EclArgumentKind { number, address, text };
-struct EclHostArgument {
+enum class EclState
+{
+    idle,
+    running,
+    waiting,
+    completed,
+    faulted
+};
+enum class EclRequestKind
+{
+    text,
+    menu,
+    input_number,
+    input_string,
+    host
+};
+enum class EclArgumentKind
+{
+    number,
+    address,
+    text
+};
+struct EclHostArgument
+{
     EclArgumentKind kind{};
     std::uint16_t value{};
     std::string text;
 };
 using EclConditions = std::array<bool, 6>; // =, <>, <, >, <=, >=
-struct EclMemoryWrite { std::uint16_t address{}, value{}; };
-struct EclHostReply {
+struct EclMemoryWrite
+{
+    std::uint16_t address{}, value{};
+};
+struct EclHostReply
+{
     std::vector<EclMemoryWrite> writes;
     // FIND ITEM must return its condition flags; other host operations preserve them.
     std::optional<EclConditions> conditions;
     // Required only for NEW ECL. The host resolves the current disk/script ID.
     std::shared_ptr<const EclProgram> next_program;
 };
-struct EclRequest {
+struct EclRequest
+{
     std::uint64_t id{};
     EclRequestKind kind{};
     std::string text; // Text to display, or vertical-menu header/delay text operand.
@@ -50,9 +85,10 @@ struct EclRequest {
     std::vector<std::string> choices;
     std::size_t input_limit{};
     std::optional<EclInstruction> instruction; // Original encoded operands and source PC.
-    std::vector<EclHostArgument> arguments; // Resolved numbers/text, encoded addresses.
+    std::vector<EclHostArgument> arguments;    // Resolved numbers/text, encoded addresses.
 };
-struct EclRunResult {
+struct EclRunResult
+{
     EclState state{};
     std::size_t instructions{}; // Running means the caller's instruction budget was exhausted.
     std::optional<EclRequest> request;
@@ -62,8 +98,9 @@ struct EclRunResult {
 // PoR VM with private writable script bytes and explicitly bound logical variables.
 // Engine-dependent operations require opt-in host capabilities, never pretend to
 // run combat or DOS machine code. See docs/SCRIPTS.md for compatibility limits.
-class EclMachine {
-public:
+class EclMachine
+{
+  public:
     explicit EclMachine(std::shared_ptr<const EclProgram> program);
     // Variables persist across invocations; binding is allowed only while idle/completed.
     void bind_variable(std::uint16_t address, std::uint16_t value);
@@ -81,13 +118,23 @@ public:
     // Invalid/stale replies do not change machine state or spend the pending request.
     bool resume(std::uint64_t request_id, std::optional<std::size_t> choice = std::nullopt);
     bool resume_input(std::uint64_t request_id, std::string_view input);
-    bool resume_host(std::uint64_t request_id, const EclHostReply& reply);
+    bool resume_host(std::uint64_t request_id, const EclHostReply &reply);
     // Host dice share the checkpointed script RNG. Returns [0, count).
     unsigned host_random(std::uint64_t request_id, unsigned count);
-    [[nodiscard]] EclState state() const noexcept { return state_; }
-    [[nodiscard]] std::uint32_t address() const noexcept { return pc_; }
-    [[nodiscard]] const auto& trace() const noexcept { return trace_; }
-private:
+    [[nodiscard]] EclState state() const noexcept
+    {
+        return state_;
+    }
+    [[nodiscard]] std::uint32_t address() const noexcept
+    {
+        return pc_;
+    }
+    [[nodiscard]] const auto &trace() const noexcept
+    {
+        return trace_;
+    }
+
+  private:
     friend struct opengold::SaveCodec;
     std::shared_ptr<const EclProgram> program_;
     EclState state_{EclState::idle};
@@ -105,16 +152,16 @@ private:
     std::uint64_t next_request_{1}, total_instructions_{};
     std::string diagnostic_;
     [[nodiscard]] EclInstruction decode(std::uint32_t address);
-    [[nodiscard]] std::uint16_t value(const EclOperand& arg) const;
-    [[nodiscard]] std::uint16_t destination(const EclOperand& arg) const;
-    [[nodiscard]] std::string text(const EclOperand& arg) const;
+    [[nodiscard]] std::uint16_t value(const EclOperand &arg) const;
+    [[nodiscard]] std::uint16_t destination(const EclOperand &arg) const;
+    [[nodiscard]] std::string text(const EclOperand &arg) const;
     void require_configurable() const;
     void write(std::uint16_t address, std::uint16_t value);
     void write_string(std::uint16_t address, std::string_view value);
     void finish_request();
-    void request_host(const EclInstruction& instruction);
+    void request_host(const EclInstruction &instruction);
     void jump(std::uint32_t address);
-    void execute(const EclInstruction& instruction);
+    void execute(const EclInstruction &instruction);
 };
-}
+} // namespace opengold::por
 #endif

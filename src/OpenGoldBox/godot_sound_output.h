@@ -10,21 +10,23 @@
 // Main-thread Godot adapter. The supplied node stays scene-owned and must be
 // dedicated to this output. An instance ID is a checked, non-owning handle:
 // teardown is safe even if the scene frees the node before this adapter.
-class GodotSoundOutput final : public opengold::por::SoundOutput {
-public:
-    explicit GodotSoundOutput(godot::AudioStreamPlayer& player);
+class GodotSoundOutput final : public opengold::por::SoundOutput
+{
+  public:
+    explicit GodotSoundOutput(godot::AudioStreamPlayer &player);
     ~GodotSoundOutput() override;
-    GodotSoundOutput(const GodotSoundOutput&) = delete;
-    GodotSoundOutput& operator=(const GodotSoundOutput&) = delete;
+    GodotSoundOutput(const GodotSoundOutput &) = delete;
+    GodotSoundOutput &operator=(const GodotSoundOutput &) = delete;
 
-    void prepare(const opengold::por::SoundBank& bank) override;
+    void prepare(const opengold::por::SoundBank &bank) override;
     void play(unsigned id) override;
     void stop() noexcept override;
     void set_gain(double linear_gain) noexcept override;
     [[nodiscard]] bool is_playing() const noexcept override;
-private:
+
+  private:
     std::uint64_t player_id_;
     std::map<unsigned, godot::Ref<godot::AudioStreamWAV>> streams_;
-    [[nodiscard]] godot::AudioStreamPlayer* player() const noexcept; // Borrowed, never owned.
+    [[nodiscard]] godot::AudioStreamPlayer *player() const noexcept; // Borrowed, never owned.
 };
 #endif

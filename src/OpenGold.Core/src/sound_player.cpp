@@ -4,12 +4,14 @@
 #include <stdexcept>
 #include <utility>
 
-namespace opengold::por {
+namespace opengold::por
+{
 
 SoundPlayer::SoundPlayer(SoundBank bank, std::unique_ptr<SoundOutput> output)
     : bank_(std::move(bank)), output_(std::move(output))
 {
-    if (!output_) throw std::invalid_argument("Sound player requires an audio output");
+    if (!output_)
+        throw std::invalid_argument("Sound player requires an audio output");
     output_->prepare(bank_);
     output_->set_gain(effective_gain());
 }
@@ -23,9 +25,12 @@ void SoundPlayer::play(unsigned id)
 {
     (void)bank_.at(id);
     stop();
-    try {
+    try
+    {
         output_->play(id);
-    } catch (...) {
+    }
+    catch (...)
+    {
         // A device can fail after partially starting a stream.
         stop();
         throw;
