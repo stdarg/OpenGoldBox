@@ -126,9 +126,11 @@ closures, WIP, added scope and build/test time with the batch's baseline.
 
 ## Verification selection
 
-These Bash examples use the existing local `build/mac-check` configuration.
+These examples use the `default` CMake preset, whose build directory is `build`
+on every platform. Run `build.cmd` (Windows) or `./build.sh` (macOS, Linux) for
+the whole suite; the targeted commands below are for development loops.
 Build changed test targets before running them; `ctest` alone can run stale binaries.
-Discover names with `ctest --test-dir build/mac-check -N` when needed.
+Discover names with `ctest --test-dir build -N` when needed.
 
 | Change | Minimum relevant evidence |
 | --- | --- |
@@ -141,15 +143,15 @@ Discover names with `ctest --test-dir build/mac-check -N` when needed.
 Example focused build and test (replace names for the selected issue):
 
 ```bash
-cmake --build build/mac-check --target opengold_action_surge_tests -j6
-ctest --test-dir build/mac-check --output-on-failure -R '^opengold_action_surge_tests$'
+cmake --build build --target opengold_action_surge_tests -j6
+ctest --test-dir build --output-on-failure -R '^opengold_action_surge_tests$'
 ```
 
 For game changes, prepare once after the last native/scene/localization changes:
 
 ```bash
-cmake --build build/mac-check --target opengoldbox_test_project -j6
-ctest --test-dir build/mac-check --output-on-failure -R '^opengold_godot_surge$' --fixture-exclude-setup godot_project
+cmake --build build --target opengoldbox_test_project -j6
+ctest --test-dir build --output-on-failure -R '^opengold_godot_surge$' --fixture-exclude-setup godot_project
 ```
 
 Fixture exclusion is valid only after successful preparation of the current
@@ -162,7 +164,7 @@ Use `python3 tools/localization.py --check` after message changes.
 For shared rules/persistence changes, build the affected native targets and run:
 
 ```bash
-ctest --test-dir build/mac-check --output-on-failure -E '^opengold_godot_' -j6
+ctest --test-dir build --output-on-failure -E '^opengold_godot_' -j6
 ```
 
 See [testing](TESTING.md) for new-machine setup, sanitizers and fuzzing; use those

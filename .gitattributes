@@ -1,3 +1,8 @@
 # Frozen saves retain original writer bytes, including trailing spaces.
 tests/fixtures/*.ogs binary
 tests/fixtures/*.save binary
+
+# Shell scripts must check out with LF on every platform: a CRLF shebang makes
+# the script unrunnable on macOS and Linux. Batch files are the reverse.
+*.sh text eol=lf
+*.cmd text eol=crlf

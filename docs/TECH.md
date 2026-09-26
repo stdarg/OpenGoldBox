@@ -675,6 +675,56 @@ The chosen stack is optimized for desktop releases:
 
 Web export is not part of the primary design. That aligns with the game’s desktop-oriented workflow and keeps the initial platform scope focused.
 
+### 14.1 Windows and macOS are both first-class for development
+
+**The project must configure, build and test on both Windows and macOS.** This
+is a requirement on the repository, not a preference: work that only builds on
+the machine it was written on cannot be verified by anyone else, and a check
+that cannot run is not a passed check.
+
+Concretely:
+
+- **Do not hard-code a developer's paths, build directory or host tools.** A
+  build directory name that encodes a platform (`build/mac-check`) belongs in a
+  personal note, not in a document that tells the next contributor how to
+  verify. Refer to the CMake presets instead; add a preset when a platform
+  genuinely needs different cache variables.
+- **Do not put host-specific commands in shared instructions.** `afplay`,
+  `/usr/bin/…` and `/Users/<name>/…` are macOS-only and break the Windows
+  workflow silently — the command simply fails and the step gets skipped.
+- **Assume nothing about auxiliary tooling.** As of 2026-09-26 the Windows
+  development machine has no `python3` (the `python` on `PATH` is a Microsoft
+  Store stub) and no `clang-format`. Any procedure that depends on them must
+  either state the install step or degrade to "unverified", never to "passed".
+  `tools/localization.py --check` is affected.
+- **Keep the entry points symmetrical.** `build.cmd` is the Windows path
+  (vcvars, configure, build, `ctest`, with `errorlevel` checked between steps).
+  macOS and Linux need an equivalent shell script with the same contract, so
+  that "run the suite" is one documented command on every platform.
+- **Say which platform a check belongs to.** The Godot runtime tests and the
+  rendered English/Spanish layout reviews require a Godot install; the native
+  CTest suite does not. A coverage claim should record where it ran, so a
+  missing toolchain shows up as a gap instead of an assumed pass.
+
+### 14.2 Portability rules for code
+
+- Prefer the C++20 standard library over platform APIs; use
+  `std::filesystem::path` rather than string concatenation with separators.
+- Never assume a path separator, a case-sensitive filesystem, or a line ending.
+  Original DOS game data is upper-case and case-insensitive; the repository is
+  developed on both a case-insensitive (Windows, default macOS) and a
+  case-sensitive filesystem, so file lookups must not depend on the difference.
+- Keep MSVC and Clang both warning-clean. They disagree on enough of C++20 that
+  code compiled against only one regularly fails on the other; designated
+  initialisers, aggregate initialisation and `constexpr` evaluation limits are
+  the usual culprits.
+- Text written for later parsing is UTF-8 without a BOM and with `\n`, on every
+  platform. On Windows, PowerShell's `Set-Content` and `Out-File` do not default
+  to that; pass the encoding explicitly.
+- CI should build both platforms. Until it does, a change that touches the build
+  system, file IO or tooling is unverified on the platform it was not written on,
+  and should say so.
+
 ## 15. Dependency Policy
 
 Dependency selection should follow the licensing posture described in the source chat:

@@ -29,7 +29,8 @@ and commands. C++20/RAII throughout; no new stack or general rules framework.
 
 ## Local build environment
 
-- Bash/macOS; main build `build/mac-check`, demo build `build/sprite-demo`.
+- Windows and macOS are both supported; main build `build` (the `default`
+  preset), demo build `build/sprite-demo`.
 - Godot `/Applications/Godot_mono.app/Contents/MacOS/Godot`.
 - Main project `src/OpenGoldBox/godot`; original assets `/Users/edmond/POOLRAD`.
 - Prepare `opengoldbox_test_project` after final native/scene/localization edits.
@@ -43,5 +44,5 @@ and commands. C++20/RAII throughout; no new stack or general rules framework.
 
 Use [workflow](SRD-WORKFLOW.md) for commands/check selection and
 [coverage](SRD-COVERAGE.md) for delivery evidence. Discover target names with
-`ctest --test-dir build/mac-check -N` or targeted CMake searches; do not assume a
+`ctest --test-dir build -N` or targeted CMake searches; do not assume a
 previous build contains newly added targets.
