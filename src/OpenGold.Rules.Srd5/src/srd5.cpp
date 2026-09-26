@@ -92,9 +92,49 @@ enum class Cap : unsigned {
     class_skills=19, instruments=20, monk_tools=21, herbalism=22, gaming=23,
     cunning=24, warlock=25, shocking=26, warlock_poison=27, sorcerer=28,
     chill=29, mind=30, champion=31, arcane=32, scholar=33, choices=34,
-    rogue=35
+    rogue=35,
+    // Spells are written as an explicit id list instead of the legacy bitmask.
+    // Only reached once a spell exists that no bit can encode, so profiles
+    // written today are unchanged.
+    explicit_spells=36
 };
-constexpr unsigned max_profile_tag=static_cast<unsigned>(Cap::rogue);
+// Which spells a class may legitimately have stored at a level, given the
+// capabilities its tag implies. This replaces a packed allow-mask, which could
+// not express a spell beyond the 31st bit. Capability gates are monotonic, so
+// one Cap per row is enough: a row requiring a later capability implicitly
+// requires every earlier one. Cap::selected means "no gate beyond being a
+// profile that stores spells at all".
+struct SpellAccessRow { std::string_view klass,spell;unsigned min_level;Cap required; };
+constexpr std::array class_spell_access{
+    SpellAccessRow{"Cleric","cure_wounds",1,Cap::selected},
+    SpellAccessRow{"Cleric","healing_word",1,Cap::selected},
+    SpellAccessRow{"Cleric","blindness",3,Cap::selected},
+    SpellAccessRow{"Cleric","sacred_flame",1,Cap::cleric_cantrips},
+    SpellAccessRow{"Wizard","fire_bolt",1,Cap::selected},
+    SpellAccessRow{"Wizard","magic_missile",1,Cap::selected},
+    SpellAccessRow{"Wizard","scorching_ray",3,Cap::selected},
+    SpellAccessRow{"Wizard","blindness",3,Cap::selected},
+    SpellAccessRow{"Wizard","poison_spray",1,Cap::cantrips},
+    SpellAccessRow{"Wizard","ray_of_frost",1,Cap::frost},
+    SpellAccessRow{"Wizard","shocking_grasp",1,Cap::shocking},
+    SpellAccessRow{"Wizard","chill_touch",1,Cap::chill},
+    SpellAccessRow{"Warlock","eldritch_blast",1,Cap::warlock},
+    SpellAccessRow{"Warlock","poison_spray",1,Cap::warlock_poison},
+    SpellAccessRow{"Warlock","chill_touch",1,Cap::chill},
+    SpellAccessRow{"Sorcerer","fire_bolt",1,Cap::sorcerer},
+    SpellAccessRow{"Sorcerer","poison_spray",1,Cap::sorcerer},
+    SpellAccessRow{"Sorcerer","ray_of_frost",1,Cap::sorcerer},
+    SpellAccessRow{"Sorcerer","shocking_grasp",1,Cap::sorcerer},
+    SpellAccessRow{"Sorcerer","chill_touch",1,Cap::chill}};
+std::vector<std::string> allowed_spells(std::string_view klass,unsigned level,unsigned tag)
+{
+    std::vector<std::string> result;
+    for(const auto& row:class_spell_access)
+        if(row.klass==klass&&level>=row.min_level&&tag>=static_cast<unsigned>(row.required))
+            result.emplace_back(row.spell);
+    return result;
+}
+constexpr unsigned max_profile_tag=static_cast<unsigned>(Cap::explicit_spells);
 // Zero for anything that is not a known PC tag, so the profile validation below
 // rejects it exactly as the previous chain did. Untrusted input: an unknown
 // tag must never be treated as "has everything".
@@ -121,7 +161,14 @@ struct Definition {
     int ranged_bonus{};
     int reach{5};
     Dice ranged;
-    int range{}, long_range{}, winds{}, slots{}, casting{}, level{}, spells{},slots2{},known_cantrips{};
+    int range{}, long_range{}, winds{}, slots{}, casting{}, level{}, slots2{};
+    // Known and prepared spells, by id. Not a bitmask: an int caps the catalog
+    // at 31 spells and the level-four milestone needs 139.
+    std::vector<std::string> spells;
+    // Cantrip knowledge for display. Captured before equipment is applied,
+    // because untrained armor clears `spells` while the character still knows
+    // the cantrip -- knowledge persists while casting is unavailable.
+    std::vector<std::string> known_cantrips;
     bool str_dex_disadvantage{},savage{},stealth_disadvantage{};
     std::string weapon_label;
     bool melee_heavy_disadvantage{},ranged_heavy_disadvantage{};
@@ -252,7 +299,6 @@ Definition character_definition(std::string_view bytes,std::optional<std::span<c
     unsigned level=1,features=0,selected_spells=0;in>>magic;
     const unsigned tag=profile_tag(magic);
     const auto has=[tag](Cap capability){return tag>=static_cast<unsigned>(capability);};
-    const bool with_rogue=has(Cap::rogue);
     const bool with_choices=has(Cap::choices);
     const bool with_scholar=has(Cap::scholar);
     const bool with_arcane=has(Cap::arcane);
@@ -281,7 +327,35 @@ Definition character_definition(std::string_view bytes,std::optional<std::span<c
     const bool with_training=has(Cap::training);
     const bool selected=has(Cap::selected);
     if(magic=="PC2"||selected)in>>level;
-    if(selected)in>>features>>selected_spells;in>>std::quoted(klass)>>std::quoted(race);
+    std::vector<std::string> stored_spells;
+    if(selected){
+        in>>features;
+        if(has(Cap::explicit_spells)){
+            unsigned listed{};in>>listed;
+            // Untrusted input: bound the list and require every id to be a
+            // supported spell before anything else looks at it.
+            if(!in||listed>detail::spell_table.size())throw std::runtime_error("Invalid character profile");
+            for(unsigned n=0;n<listed;++n){
+                std::string id;in>>id;
+                if(!in||!detail::find_spell(id)||detail::knows_spell(stored_spells,id))
+                    throw std::runtime_error("Invalid character profile");
+                stored_spells.push_back(std::move(id));
+            }
+        }else{
+            in>>selected_spells;
+            stored_spells=detail::spells_from_mask(selected_spells);
+            // Every bit must round-trip, so a bit that maps to no spell is
+            // rejected rather than silently dropped.
+            if(detail::mask_from_spells(stored_spells)!=selected_spells)
+                throw std::runtime_error("Invalid character profile");
+        }
+    }
+    in>>std::quoted(klass)>>std::quoted(race);
+    // Rogue attack progression is a class marker the writer encoded in the tag:
+    // it only ever emits PC35 for a Rogue. Now that a higher tag exists, the
+    // capability alone no longer implies the class, so take it from the class.
+    // The exact-PC35 rejection further down preserves the original contract.
+    const bool with_rogue=has(Cap::rogue)&&klass=="Rogue";
     for(auto& score:scores)in>>score;
     if(!in||(magic!="PC1"&&magic!="PC2"&&!selected)||level<1||level>(selected?4u:2u)||features>(with_archery?7u:3u)||selected_spells>(with_chill?4095u:with_shocking?2047u:with_warlock?1023u:with_frost?511u:with_cleric_cantrips?255u:with_cantrips?127u:63u)||std::any_of(scores.begin(),scores.end(),[](int n){return n<3||n>20;}))
         throw std::runtime_error("Invalid character profile");
@@ -306,18 +380,23 @@ Definition character_definition(std::string_view bytes,std::optional<std::span<c
     d.arcane=with_arcane&&klass=="Wizard"?1:0;
     d.medicine=ability_modifier(scores[4]);d.tactical_mind=with_mind&&klass=="Fighter"&&level>=2;
     d.cunning=with_cunning&&klass=="Rogue"&&level>=2;
-    if(with_rogue&&klass!="Rogue")throw std::runtime_error("Rogue profile requires Rogue class");
+    if(tag==static_cast<unsigned>(Cap::rogue)&&klass!="Rogue")throw std::runtime_error("Rogue profile requires Rogue class");
     d.sneak_level=with_rogue?level:0;
     d.surges=with_surge&&klass=="Fighter"&&level>=2?1:0;
     d.winds=klass=="Fighter"?(level==4?3:2):0;d.slots=(klass=="Cleric"||klass=="Wizard")?(level==1?2:level==2?3:4):0;
     d.slots2=(klass=="Cleric"||klass=="Wizard")&&level>=3?(level==3?2:3):0;
-    d.casting=2+ability_modifier(scores[klass=="Cleric"?4:(klass=="Warlock"||(with_sorcerer&&klass=="Sorcerer"))?5:3]);d.spells=klass=="Cleric"?2:klass=="Wizard"?5:0;
+    d.casting=2+ability_modifier(scores[klass=="Cleric"?4:(klass=="Warlock"||(with_sorcerer&&klass=="Sorcerer"))?5:3]);    // Pre-selection defaults for the oldest profiles, which stored no choices.
+    if(klass=="Cleric")d.spells={"cure_wounds"};
+    else if(klass=="Wizard")d.spells={"fire_bolt","magic_missile"};
     if(selected){
-        const unsigned allowed=klass=="Cleric"?((level>=3?42u:10u)|(with_cleric_cantrips?128u:0u)):klass=="Wizard"?((level>=3?53u:5u)|(with_cantrips?64u:0u)|(with_frost?256u:0u)|(with_shocking?1024u:0u)|(with_chill?2048u:0u)):klass=="Warlock"&&with_warlock?(512u|(with_warlock_poison?64u:0u)|(with_chill?2048u:0u)):klass=="Sorcerer"&&with_sorcerer?(1345u|(with_chill?2048u:0u)):0;
-        if(selected_spells&~allowed||(features&1)&&klass!="Fighter")throw std::runtime_error("Invalid prepared spells or feat prerequisites");
-        d.spells=selected_spells;d.savage=(features&2)!=0;
+        const auto allowed=allowed_spells(klass,level,tag);
+        const bool eligible=std::all_of(stored_spells.begin(),stored_spells.end(),
+            [&](const auto& id){return detail::knows_spell(allowed,id);});
+        if(!eligible||(features&1)&&klass!="Fighter")throw std::runtime_error("Invalid prepared spells or feat prerequisites");
+        d.spells=stored_spells;d.savage=(features&2)!=0;
     }
-    d.known_cantrips=d.spells&4033;
+    d.known_cantrips=detail::spells_of_level(d.spells,true);
+    
     bool weapon=false,armor=false,shield=false;unsigned hands=0;
     for(unsigned i=0;i<count;++i){std::string key;in>>std::quoted(key);d.equipment_keys.push_back(std::move(key));}
     if(equipment_override)d.equipment_keys.assign(equipment_override->begin(),equipment_override->end());
@@ -332,7 +411,7 @@ Definition character_definition(std::string_view bytes,std::optional<std::span<c
             if(item->range){d.ranged_bonus=bonus+((item->ranged&&(features&4))?2:0);d.ranged={item->dice,item->sides,item->fixed_damage?item->fixed_damage:modifier};d.ranged_type=item->type;d.range=item->range;d.long_range=item->long_range;d.ranged_heavy_disadvantage=item->heavy_disadvantage(scores);}
         }else if(const auto* item=detail::armor(key);item&&item->category!=detail::ArmorCategory::shield){
             if(armor)throw std::runtime_error("Only one armor may be equipped");
-            if(!trained(klass,key)){d.str_dex_disadvantage=true;d.spells=0;}
+            if(!trained(klass,key)){d.str_dex_disadvantage=true;d.spells.clear();}
             armor=true;d.ac=item->base_ac+item->dexterity_contribution(dex);
             d.stealth_disadvantage=item->stealth_disadvantage;
             if(scores[0]<item->strength)d.speed-=10;
@@ -353,24 +432,27 @@ Definition character_definition(std::string_view bytes,std::optional<std::span<c
         if(with_training){const auto training=detail::training_profile(grants,detail::grant_source_id(klass),background,level,scores,with_scholar?detail::TrainingPolicy::scholar:with_gaming?detail::TrainingPolicy::soldier_gaming:with_herbalism?detail::TrainingPolicy::druid_herbalism:with_monk_tools?detail::TrainingPolicy::monk_tools:with_instruments?detail::TrainingPolicy::bard_instruments:with_class_skills?detail::TrainingPolicy::class_skills:with_styles?detail::TrainingPolicy::fighter_style:with_backgrounds?detail::TrainingPolicy::all_backgrounds:with_sage?detail::TrainingPolicy::sage:detail::TrainingPolicy::legacy);d.medicine=std::find_if(training.skills.begin(),training.skills.end(),[](const auto& skill){return skill.id=="medicine";})->bonus;}
         if(with_spells){
             std::vector<std::string> prepared;
-            if(klass=="Wizard"){
-                if(selected_spells&4)prepared.push_back("magic_missile");
-                if(selected_spells&16)prepared.push_back("scorching_ray");
-                if(selected_spells&32)prepared.push_back("blindness");
-            }
+            if(klass=="Wizard")prepared=detail::spells_of_level(stored_spells,false);
             if(!with_choices&&klass=="Wizard"&&(std::none_of(grants.begin(),grants.end(),[](const auto& g){return g.id=="spell:magic_missile"&&g.level==1;})||std::any_of(grants.begin(),grants.end(),[](const auto& g){return detail::is_spell_grant(g)&&g.choices.contains("learned_at");})))throw std::runtime_error("Invalid legacy Wizard knowledge");
             const auto access=detail::spell_access(grants,klass,level,prepared);
-            if(klass=="Sorcerer"&&((!with_sorcerer&&!access.cantrips.empty())||detail::known_cantrip_mask(access)!=selected_spells))
+            // Compare as sets: the grants and the stored list must describe the
+            // same spells, independent of the order either was written in.
+            const auto same_spells=[](std::vector<std::string> left,std::vector<std::string> right){
+                std::sort(left.begin(),left.end());std::sort(right.begin(),right.end());
+                return left==right;
+            };
+            const auto stored_cantrips=[&]{return detail::spells_of_level(stored_spells,true);};
+            if(klass=="Sorcerer"&&((!with_sorcerer&&!access.cantrips.empty())||!same_spells(detail::known_cantrip_ids(access),stored_spells)))
                 throw std::runtime_error("Character cantrip access disagrees with Sorcerer grants");
-            if(klass=="Warlock"&&((!with_warlock&&!access.cantrips.empty())||detail::known_cantrip_mask(access)!=selected_spells))
+            if(klass=="Warlock"&&((!with_warlock&&!access.cantrips.empty())||!same_spells(detail::known_cantrip_ids(access),stored_spells)))
                 throw std::runtime_error("Character cantrip access disagrees with Warlock grants");
-            if(klass=="Cleric"&&((!with_cleric_cantrips&&!access.cantrips.empty())||detail::known_cantrip_mask(access)!=(selected_spells&128u)))
+            if(klass=="Cleric"&&((!with_cleric_cantrips&&!access.cantrips.empty())||!same_spells(detail::known_cantrip_ids(access),stored_cantrips())))
                 throw std::runtime_error("Character cantrip access disagrees with Cleric grants");
             if(!with_cantrips&&klass=="Wizard"&&
                 (std::any_of(access.cantrips.begin(),access.cantrips.end(),[](const auto& c){return c.id!="fire_bolt";})||
                  std::none_of(access.cantrips.begin(),access.cantrips.end(),[](const auto& c){return c.id=="fire_bolt"&&c.acquired_level==1;})))
                 throw std::runtime_error("Legacy character recipe cannot contain changed cantrip choices");
-            if(klass=="Wizard"&&detail::wizard_casting_mask(access)!=selected_spells)
+            if(klass=="Wizard"&&!same_spells(detail::wizard_casting_ids(access),stored_spells))
                 throw std::runtime_error("Character casting access disagrees with spell grants");
         }else if(std::any_of(grants.begin(),grants.end(),detail::is_spell_grant))
             throw std::runtime_error("Legacy character recipe cannot contain new spell grants");
@@ -495,7 +577,7 @@ public:
                 actors_[i].recovery.death_save_in_ms=i?turn_end_ms(i-1):0;
         }
         log("Combat begins. Each square is 5 feet.");update_outcome();
-        frost_movement_=std::any_of(actors_.begin(),actors_.end(),[](const auto& a){return a.definition.cunning||(a.definition.known_cantrips&256)||detail::speed_penalty(a.effects);});
+        frost_movement_=std::any_of(actors_.begin(),actors_.end(),[](const auto& a){return a.definition.cunning||(detail::knows_spell(a.definition.known_cantrips,"ray_of_frost"))||detail::speed_penalty(a.effects);});
         if(!restoring){
             for(const auto& a:actors_){
                 for(const auto& key:a.definition.equipment_keys)if(const auto* w=detail::weapon(key);w&&w->thrown)physical_inventory_=true;
@@ -788,13 +870,11 @@ Snapshot Session::snapshot() const
         if(def(a).cunning)view.bonus_actions={"cunning_dash","cunning_disengage"};
         if(def(a).sneak_level>=3)view.bonus_actions.push_back("steady_aim");
         if(def(a).surges)view.resources.push_back({"action_surge",{"Action Surge",{}},unsigned(a.surges),unsigned(def(a).surges),unsigned(def(a).surges)});
-        if(def(a).known_cantrips&1)view.known_cantrips.push_back("fire_bolt");
-        if(def(a).known_cantrips&2048)view.known_cantrips.push_back("chill_touch");
-        if(def(a).known_cantrips&1024)view.known_cantrips.push_back("shocking_grasp");
-        if(def(a).known_cantrips&512)view.known_cantrips.push_back("eldritch_blast");
-        if(def(a).known_cantrips&64)view.known_cantrips.push_back("poison_spray");
-        if(def(a).known_cantrips&256)view.known_cantrips.push_back("ray_of_frost");
-        if(def(a).known_cantrips&128)view.known_cantrips.push_back("sacred_flame");
+        // Explicit display order: this list feeds the combat cantrip dropdown,
+        // so its order is observable in the UI and is not the table's order.
+        for(const auto* id:{"fire_bolt","chill_touch","shocking_grasp","eldritch_blast",
+                            "poison_spray","ray_of_frost","sacred_flame"})
+            if(detail::knows_spell(def(a).known_cantrips,id))view.known_cantrips.push_back(id);
         if(def(a).rushes)view.resources.push_back({"adrenaline_rush",{"Adrenaline Rush",{}},unsigned(a.rushes),unsigned(def(a).rushes),unsigned(def(a).rushes)});
         if(def(a).hit_die){
             view.hp_messages.push_back({"Maximum HP includes level {level}, d{die} Hit Die and Constitution modifier {modifier}.",{{"level",std::to_string(def(a).level)},{"die",std::to_string(def(a).hit_die)},{"modifier",std::to_string(def(a).constitution)}}});
@@ -923,7 +1003,7 @@ void Session::offer_spells(std::vector<Command>& commands,const Actor& a,const A
     const auto& d=def(a);
     for(const auto& spell:detail::spell_table){
         if(spell.target!=scope||spell.bonus_action!=bonus_pass)continue;
-        if(!(d.spells&spell.mask))continue;
+        if(!detail::knows_spell(d.spells,spell.id))continue;
         switch(spell.target){
         case detail::SpellTarget::enemy:
             if(other.source.side==a.source.side||other.hp<=0)continue;
@@ -1465,7 +1545,7 @@ Actor read_checkpoint_actor(std::istream& input, unsigned version, const Content
     if(version<20)actor.arcane=definition.arcane;
     if(version<21&&definition.sneak_level)throw std::runtime_error("Rogue attacks require version-21 checkpoint");
     if((actor.sneak_used&&!definition.sneak_level)||(actor.aim_used&&(definition.sneak_level<3||actor.bonus||actor.moved))||(actor.aim_ready&&!actor.aim_used))throw std::runtime_error("Invalid Rogue attack expenditure");
-    if(version<15&&((definition.known_cantrips&256)||definition.cunning))throw std::runtime_error("Movement features require a version-15 checkpoint");
+    if(version<15&&(detail::knows_spell(definition.known_cantrips,"ray_of_frost")||definition.cunning))throw std::runtime_error("Movement features require a version-15 checkpoint");
     if(version>=15&&(actor.dashes<0||actor.dashes>int(!actor.actions.normal)+int(actor.rush_used||(definition.cunning&&!actor.bonus))+int(actor.surge_used&&!actor.actions.surge)||actor.movement>definition.speed*(1+actor.dashes)))throw std::runtime_error("Invalid Dash allowance count");
     if(version<14&&definition.surges)throw std::runtime_error("Action Surge requires a version-14 checkpoint");
     if(version<12)actor.rushes=definition.rushes;
@@ -2285,17 +2365,24 @@ public:
             if(sheet.bonuses[i]!=bonuses||sheet.scores[i]!=sheet.base[i]+bonuses)
                 throw std::runtime_error("Ability totals disagree with acquired choices");
         }
-        unsigned spells=sheet.character_class=="Wizard"?detail::wizard_casting_mask(access):detail::known_cantrip_mask(access);std::set<std::string> selected;
-        if(sheet.prepared_spells.empty()&&sheet.character_class=="Cleric")spells|=2;
+        auto spells=sheet.character_class=="Wizard"?detail::wizard_casting_ids(access):detail::known_cantrip_ids(access);
+        std::set<std::string> selected;
+        const auto record=[&](std::string id){if(!detail::knows_spell(spells,id))spells.push_back(std::move(id));};
+        if(sheet.prepared_spells.empty()&&sheet.character_class=="Cleric")record("cure_wounds");
         for(const auto& spell:sheet.prepared_spells){
             if(!selected.insert(spell).second)throw std::runtime_error("Duplicate prepared spell");
-            if(spell=="cure_wounds"&&sheet.character_class=="Cleric")spells|=2;
-            else if(spell=="healing_word"&&sheet.character_class=="Cleric")spells|=8;
-            else if(spell=="magic_missile"&&sheet.character_class=="Wizard")spells|=4;
-            else if(spell=="scorching_ray"&&sheet.character_class=="Wizard"&&sheet.level>=3)spells|=16;
-            else if(spell=="blindness"&&(sheet.character_class=="Wizard"||sheet.character_class=="Cleric")&&sheet.level>=3)spells|=32;
+            if(spell=="cure_wounds"&&sheet.character_class=="Cleric")record(spell);
+            else if(spell=="healing_word"&&sheet.character_class=="Cleric")record(spell);
+            else if(spell=="magic_missile"&&sheet.character_class=="Wizard")record(spell);
+            else if(spell=="scorching_ray"&&sheet.character_class=="Wizard"&&sheet.level>=3)record(spell);
+            else if(spell=="blindness"&&(sheet.character_class=="Wizard"||sheet.character_class=="Cleric")&&sheet.level>=3)record(spell);
             else throw std::runtime_error("Unsupported prepared spell");
         }
+        // The legacy bitmask is still written whenever it can express the set,
+        // so existing profiles stay byte identical. A spell with no bit forces
+        // the explicit list instead.
+        const unsigned packed=detail::mask_from_spells(spells);
+        const bool list_spells=!spells.empty()&&!packed;
         // One row per capability that raises the written tag. PC28 is the floor
         // because every capability below it is unconditionally written.
         const unsigned tag=highest_present(static_cast<unsigned>(Cap::sorcerer),{
@@ -2307,8 +2394,12 @@ public:
             {static_cast<unsigned>(Cap::arcane),detail::has_grant(sheet.grants,"feature:arcane_recovery")},
             {static_cast<unsigned>(Cap::champion),detail::has_grant(sheet.grants,"subclass:champion")},
             {static_cast<unsigned>(Cap::mind),detail::has_grant(sheet.grants,"feature:tactical_mind")},
-            {static_cast<unsigned>(Cap::chill),(spells&2048)!=0}});
-        std::ostringstream out;out<<"PC"<<tag<<' '<<sheet.level<<' '<<features<<' '<<spells<<' '<<std::quoted(sheet.character_class)<<' '<<std::quoted(sheet.race);
+            {static_cast<unsigned>(Cap::chill),detail::knows_spell(spells,"chill_touch")},
+            {static_cast<unsigned>(Cap::explicit_spells),list_spells}});
+        std::ostringstream out;out<<"PC"<<tag<<' '<<sheet.level<<' '<<features<<' ';
+        if(list_spells){out<<spells.size();for(const auto& id:spells)out<<' '<<id;}
+        else out<<packed;
+        out<<' '<<std::quoted(sheet.character_class)<<' '<<std::quoted(sheet.race);
         for(auto score:sheet.scores)out<<' '<<score;
         for(auto modifier:sheet.hit_point_modifiers)out<<' '<<modifier;
         out<<' '<<gear.size();for(const auto& item:gear)out<<' '<<std::quoted(item);
@@ -2389,7 +2480,7 @@ public:
         if(features&1)result.item_messages.push_back({"Defense feat: +1 AC while wearing armor.",{}});
         if(features&2)result.item_messages.push_back({"Savage Attacker: once per turn on a weapon hit, choose whether to roll damage twice and keep either result.",{}});
         if(gear.empty())result.item_messages.push_back({"No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0).",{{"score",std::to_string(sheet.scores[0])}}});
-        if(d.spells&&!somatic_hand(d)){
+        if(!d.spells.empty()&&!somatic_hand(d)){
             const std::string note="Equipped weapon or wand and shield occupy both hands. Spells with Somatic components are unavailable.";
             result.spell_modifiers=note+"\n"+result.spell_modifiers;
             result.spell_messages.push_back({"Equipped weapon or wand and shield occupy both hands. Spells with Somatic components are unavailable.",{}});
@@ -2514,16 +2605,25 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 for(auto& bonus:definition.saves)row>>bonus;
                 if(std::any_of(definition.saves.begin(),definition.saves.end(),[](int n){return n< -10||n>30;}))throw std::runtime_error("Invalid saving throw bonus");
             }else{
-                row>>definition.slots2>>definition.spells;
-                if(definition.level<3||definition.slots2<0||definition.slots2>20||definition.spells<0||definition.spells>63)throw std::runtime_error("Invalid supplemental spellcasting");
+                // Authored creature rows keep the compact bitmask: they are a
+                // handful of spells, so the 31-bit limit is no constraint there.
+                // It is translated to ids at the boundary; nothing downstream
+                // sees a mask.
+                int casting_spells{};
+                row>>definition.slots2>>casting_spells;
+                if(definition.level<3||definition.slots2<0||definition.slots2>20||casting_spells<0||casting_spells>63)throw std::runtime_error("Invalid supplemental spellcasting");
+                definition.spells=detail::spells_from_mask(unsigned(casting_spells));
+                definition.known_cantrips=detail::spells_of_level(definition.spells,true);
+                if(detail::mask_from_spells(definition.spells)!=unsigned(casting_spells))throw std::runtime_error("Invalid supplemental spellcasting");
             }
             if(!row)throw std::runtime_error("Truncated supplemental creature definition");
             row>>std::ws;if(!row.eof())throw std::runtime_error("Unknown supplemental creature fields");
             continue;
         }
+        int creature_spells{};
         row>>d.ac>>d.hp>>d.initiative>>d.speed>>d.melee_bonus>>d.melee.count>>d.melee.sides>>d.melee.bonus
-            >>d.ranged_bonus>>d.ranged.count>>d.ranged.sides>>d.ranged.bonus>>d.range>>d.long_range>>d.winds>>d.slots>>d.casting>>d.level>>d.spells;
-        d.known_cantrips=d.spells&4033;
+            >>d.ranged_bonus>>d.ranged.count>>d.ranged.sides>>d.ranged.bonus>>d.range>>d.long_range>>d.winds>>d.slots>>d.casting>>d.level>>creature_spells;
+
         const bool ranged_none=d.range==0&&d.long_range==0&&d.ranged_bonus==0&&
             d.ranged.count==0&&d.ranged.sides==0&&d.ranged.bonus==0;
         const bool ranged_weapon=d.range>=5&&d.long_range>=d.range&&d.long_range<=600&&
@@ -2532,9 +2632,13 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         if(!row||tag!="creature"||key.size()>80||content.definitions.contains(key)||d.ac<1||d.ac>40||d.hp<1||d.hp>1000||
             d.initiative< -10||d.initiative>20||d.speed<5||d.speed>120||d.speed%5||d.melee.count<1||d.melee.count>10||d.melee.sides<2||d.melee.sides>20||
             (!ranged_none&&!ranged_weapon)||
-            d.winds<0||d.winds>10||d.slots<0||d.slots>20||d.level<1||d.level>4||d.spells<0||d.spells>7||
+            d.winds<0||d.winds>10||d.slots<0||d.slots>20||d.level<1||d.level>4||creature_spells<0||creature_spells>7||
             d.melee_bonus< -10||d.melee_bonus>30||d.casting< -10||d.casting>30||
             d.melee.bonus< -10||d.melee.bonus>30)
+            throw std::runtime_error("Invalid or unsupported creature definition: "+key);
+        d.spells=detail::spells_from_mask(unsigned(creature_spells));
+        d.known_cantrips=detail::spells_of_level(d.spells,true);
+        if(detail::mask_from_spells(d.spells)!=unsigned(creature_spells))
             throw std::runtime_error("Invalid or unsupported creature definition: "+key);
         row>>std::ws;if(!row.eof())throw std::runtime_error("Unknown creature fields: "+key);
         content.definitions.emplace(std::move(key),d);

@@ -298,21 +298,49 @@ void behaviour() {
 // rejected, never treated as "has everything".
 void profile_tags() {
     auto rules = custom();
-    const auto profile = rules->character_profile(hero("rogue", 1, {}).sheet(), {}).data;
-    check(profile.starts_with("PC35 "), "A Rogue profile writes the highest capability tag");
-    const auto forge = [&](const std::string& tag) {
-        auto forged = profile;
-        forged.replace(0, 4, tag);
-        bool rejected = false;
+    const auto loads = [&](const std::string& profile) {
         try {
             (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                {{1, "campaign-character", "Forged", 0, {1, 1}, forged},
+                {{1, "campaign-character", "Forged", 0, {1, 1}, profile},
                  {2, "target", "Target", 1, {3, 1}}}}, 13);
-        } catch (const std::exception&) { rejected = true; }
-        check(rejected, ("Profile tag " + tag + " must be rejected").c_str());
+            return true;
+        } catch (const std::exception&) { return false; }
     };
-    // Below the floor, above the ceiling, non-numeric, and not a PC tag at all.
-    for (const auto& tag : {"PC00", "PC36", "PC99", "PCxx", "XX35", "PC-1"}) forge(tag);
+
+    const auto rogue = rules->character_profile(hero("rogue", 1, {}).sheet(), {}).data;
+    check(rogue.starts_with("PC35 "), "A Rogue profile writes the Rogue capability tag");
+
+    // A Wizard profile still writes the packed bitmask, because every
+    // implemented spell has a bit. Split it so the tag and the spell field can
+    // be replaced independently.
+    const auto wizard = rules->character_profile(hero("wizard", 1, {"fire_bolt"}).sheet(), {}).data;
+    std::istringstream split(wizard);
+    std::string tag, level, features, packed, rest;
+    split >> tag >> level >> features >> packed;
+    std::getline(split, rest);
+    check(!packed.empty() && packed != "0", "A Wizard profile stores spells as a bitmask");
+    const auto rebuild = [&](const std::string& new_tag, const std::string& spell_field) {
+        return new_tag + " " + level + " " + features + " " + spell_field + rest;
+    };
+    check(loads(rebuild(tag, packed)), "The split profile is reassembled faithfully");
+
+    // Unrecognised tags: below the floor, above the ceiling, non-numeric, and
+    // not a PC tag at all. An unknown tag must never read as "has everything".
+    for (const auto& bad : {"PC00", "PC37", "PC99", "PCxx", "XX35", "PC-1"})
+        check(!loads(rebuild(bad, packed)), ("Profile tag " + std::string(bad) + " must be rejected").c_str());
+
+    // The explicit spell list is the path that lifts the 31-spell ceiling. No
+    // writer emits it yet, because every implemented spell still has a bit, so
+    // exercise it with a hand-built profile.
+    check(loads(rebuild("PC36", "2 fire_bolt magic_missile")),
+          "An explicit spell list loads and satisfies the Wizard grant cross-check");
+    check(!loads(rebuild("PC36", "1 not_a_spell")), "An unknown spell id in the list is rejected");
+    check(!loads(rebuild("PC36", "99 fire_bolt")), "A spell count beyond the catalog is rejected");
+    check(!loads(rebuild("PC36", "2 fire_bolt fire_bolt")), "A duplicate spell id is rejected");
+    check(!loads(rebuild("PC36", "2 fire_bolt sacred_flame")),
+          "A spell the class cannot access is rejected");
+    // A bitmask bit that maps to no spell must reject rather than be dropped.
+    check(!loads(rebuild(tag, "4096")), "An unmapped bitmask bit is rejected");
 }
 
 void offers_match_baseline() {

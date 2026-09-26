@@ -4,7 +4,10 @@
 #include "damage_roll.h"
 #include "status_effects.h"
 #include <array>
+#include <algorithm>
+#include <string>
 #include <string_view>
+#include <vector>
 namespace opengold::srd5::detail {
 // SRD 5.2.1 spell definitions. One row per spell; behaviour lives in
 // Session::offer_spells and Session::resolve_spell, keyed on `pattern`.
@@ -42,7 +45,7 @@ struct Upcast { unsigned extra_dice{}, extra_instances{}; };
 struct SpellDef {
     std::string_view id, label;
     unsigned level{};                // 0 = cantrip
-    unsigned mask{};                 // legacy character-profile bit; retired with the PC chain
+    unsigned mask{};                 // legacy wire encoding only; 0 once the 31 bits run out
     SpellPattern pattern{};
     SpellTarget target{};
     int range{};                     // feet
@@ -118,6 +121,42 @@ inline const SpellDef* find_spell(std::string_view id){
     if(id.ends_with("_2"))id.remove_suffix(2);
     for(const auto& spell:spell_table)if(spell.id==id)return &spell;
     return nullptr;
+}
+
+// `mask` is a legacy wire encoding, not the identity of a spell. It exists only
+// so stored character profiles written before the explicit spell list, and
+// authored creature rows in combat.rules, can still be read. An int holds at
+// most 31 of them, which is why it stops being the internal representation: a
+// row added past that limit simply carries mask 0 and is only representable in
+// the explicit list. Nothing in the rules should branch on a mask.
+inline std::vector<std::string> spells_from_mask(unsigned mask){
+    std::vector<std::string> result;
+    for(const auto& spell:spell_table)if(spell.mask&&(mask&spell.mask))result.emplace_back(spell.id);
+    return result;
+}
+// Zero for a set that cannot be expressed as a mask, which is how the writer
+// decides it needs the explicit list.
+inline unsigned mask_from_spells(const std::vector<std::string>& ids){
+    unsigned mask=0;
+    for(const auto& id:ids){
+        const auto* spell=find_spell(id);
+        if(!spell||!spell->mask)return 0;
+        mask|=spell->mask;
+    }
+    return mask;
+}
+inline bool knows_spell(const std::vector<std::string>& ids,std::string_view id){
+    return std::find(ids.begin(),ids.end(),id)!=ids.end();
+}
+// Split a stored set by spell level. Unknown ids are dropped; callers that must
+// reject them validate with find_spell first.
+inline std::vector<std::string> spells_of_level(const std::vector<std::string>& ids,bool cantrips){
+    std::vector<std::string> result;
+    for(const auto& id:ids){
+        const auto* spell=find_spell(id);
+        if(spell&&(spell->level==0)==cantrips)result.push_back(id);
+    }
+    return result;
 }
 }
 #endif

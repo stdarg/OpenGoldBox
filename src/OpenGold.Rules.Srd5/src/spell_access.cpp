@@ -193,11 +193,15 @@ void apply_spell_choices(CharacterSheet& sheet,const SpellChoices& choices,Spell
     }
     sheet=std::move(candidate);
 }
-unsigned known_cantrip_mask(const SpellAccess& access){
-    unsigned result=0;for(const auto& s:access.cantrips)result|=find(s.id).mask;return result;
+std::vector<std::string> known_cantrip_ids(const SpellAccess& access){
+    std::vector<std::string> result;
+    // find() still rejects an unsupported id, as the mask lookup used to.
+    for(const auto& s:access.cantrips){(void)find(s.id);result.push_back(s.id);}
+    return result;
 }
-unsigned wizard_casting_mask(const SpellAccess& access){
-    unsigned result=known_cantrip_mask(access);
-    for(const auto& id:access.prepared)result|=find(id).mask;return result;
+std::vector<std::string> wizard_casting_ids(const SpellAccess& access){
+    auto result=known_cantrip_ids(access);
+    for(const auto& id:access.prepared){(void)find(id);result.push_back(id);}
+    return result;
 }
 }
