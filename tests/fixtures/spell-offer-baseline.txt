@@ -1,0 +1,415 @@
+# Spell offer characterization. Caster at (1,1); wounded ally and
+# enemy both at exactly the listed distance (Chebyshev x 5).
+wizard-1 @ 5ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    magic_missile|3
+    melee|3
+    poison_spray|1
+    poison_spray|2
+    poison_spray|3
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+wizard-1 @ 30ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    magic_missile|3
+    poison_spray|1
+    poison_spray|2
+    poison_spray|3
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+wizard-1 @ 60ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    magic_missile|3
+    poison_spray|1
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+wizard-1 @ 120ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    magic_missile|3
+    poison_spray|1
+    ray_of_frost|1
+wizard-1 @ 125ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    poison_spray|1
+    ray_of_frost|1
+wizard-4 @ 5ft
+    adrenaline_rush|1
+    blindness|3
+    chill_touch|1
+    chill_touch|2
+    chill_touch|3
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    magic_missile_2|3
+    magic_missile|3
+    melee|3
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+    scorching_ray|3
+    shocking_grasp|1
+    shocking_grasp|2
+    shocking_grasp|3
+wizard-4 @ 30ft
+    adrenaline_rush|1
+    blindness|3
+    chill_touch|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    magic_missile_2|3
+    magic_missile|3
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+    scorching_ray|3
+    shocking_grasp|1
+wizard-4 @ 60ft
+    adrenaline_rush|1
+    blindness|3
+    chill_touch|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    magic_missile_2|3
+    magic_missile|3
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+    scorching_ray|3
+    shocking_grasp|1
+wizard-4 @ 120ft
+    adrenaline_rush|1
+    blindness|3
+    chill_touch|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    magic_missile_2|3
+    magic_missile|3
+    ray_of_frost|1
+    scorching_ray|3
+    shocking_grasp|1
+wizard-4 @ 125ft
+    adrenaline_rush|1
+    chill_touch|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    ray_of_frost|1
+    shocking_grasp|1
+cleric-1 @ 5ft
+    adrenaline_rush|1
+    cure_wounds|2
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    melee|3
+    sacred_flame|1
+    sacred_flame|2
+    sacred_flame|3
+cleric-1 @ 30ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    sacred_flame|1
+    sacred_flame|2
+    sacred_flame|3
+cleric-1 @ 60ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    sacred_flame|1
+    sacred_flame|2
+    sacred_flame|3
+cleric-1 @ 120ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    sacred_flame|1
+cleric-1 @ 125ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    sacred_flame|1
+cleric-4 @ 5ft
+    adrenaline_rush|1
+    blindness|3
+    cure_wounds_2|2
+    cure_wounds|2
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    healing_word_2|2
+    healing_word|2
+    melee|3
+    sacred_flame|1
+    sacred_flame|2
+    sacred_flame|3
+cleric-4 @ 30ft
+    adrenaline_rush|1
+    blindness|3
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    healing_word_2|2
+    healing_word|2
+    sacred_flame|1
+    sacred_flame|2
+    sacred_flame|3
+cleric-4 @ 60ft
+    adrenaline_rush|1
+    blindness|3
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    healing_word_2|2
+    healing_word|2
+    sacred_flame|1
+    sacred_flame|2
+    sacred_flame|3
+cleric-4 @ 120ft
+    adrenaline_rush|1
+    blindness|3
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    sacred_flame|1
+cleric-4 @ 125ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    sacred_flame|1
+warlock-1 @ 5ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    eldritch_blast|1
+    eldritch_blast|2
+    eldritch_blast|3
+    end|0
+    melee|3
+    poison_spray|1
+    poison_spray|2
+    poison_spray|3
+warlock-1 @ 30ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    eldritch_blast|1
+    eldritch_blast|2
+    eldritch_blast|3
+    end|0
+    poison_spray|1
+    poison_spray|2
+    poison_spray|3
+warlock-1 @ 60ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    eldritch_blast|1
+    eldritch_blast|2
+    eldritch_blast|3
+    end|0
+    poison_spray|1
+warlock-1 @ 120ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    eldritch_blast|1
+    eldritch_blast|2
+    eldritch_blast|3
+    end|0
+    poison_spray|1
+warlock-1 @ 125ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    eldritch_blast|1
+    end|0
+    poison_spray|1
+sorcerer-1 @ 5ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    melee|3
+    poison_spray|1
+    poison_spray|2
+    poison_spray|3
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+    shocking_grasp|1
+    shocking_grasp|2
+    shocking_grasp|3
+sorcerer-1 @ 30ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    poison_spray|1
+    poison_spray|2
+    poison_spray|3
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+    shocking_grasp|1
+sorcerer-1 @ 60ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    poison_spray|1
+    ray_of_frost|1
+    ray_of_frost|2
+    ray_of_frost|3
+    shocking_grasp|1
+sorcerer-1 @ 120ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    fire_bolt|3
+    poison_spray|1
+    ray_of_frost|1
+    shocking_grasp|1
+sorcerer-1 @ 125ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    poison_spray|1
+    ray_of_frost|1
+    shocking_grasp|1
+wizard-4+shield @ 5ft
+    adrenaline_rush|1
+    blindness|3
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    melee|3
+wizard-4+shield @ 30ft
+    adrenaline_rush|1
+    blindness|3
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+wizard-4+shield @ 60ft
+    adrenaline_rush|1
+    blindness|3
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+wizard-4+shield @ 120ft
+    adrenaline_rush|1
+    blindness|3
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+wizard-4+shield @ 125ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+wizard-4+plate @ 5ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+    melee|3
+wizard-4+plate @ 30ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+wizard-4+plate @ 60ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+wizard-4+plate @ 120ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0
+wizard-4+plate @ 125ft
+    adrenaline_rush|1
+    dash|0
+    disengage|0
+    dodge|0
+    end|0

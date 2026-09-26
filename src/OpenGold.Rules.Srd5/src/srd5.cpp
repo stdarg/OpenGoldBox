@@ -418,8 +418,11 @@ bool same_command(const Command& a,const Command& b)
 { return a.revision==b.revision && a.actor==b.actor && a.target==b.target && a.verb==b.verb && a.destination==b.destination && a.item==b.item; }
 bool turns_to_attack(std::string_view verb)
 {
-    return verb=="throw"||verb=="chill_touch"||verb=="shocking_grasp"||verb=="eldritch_blast"||verb=="ray_of_frost"||verb=="melee"||verb=="ranged"||verb=="fire_bolt"||verb=="poison_spray"||verb=="sacred_flame"||verb=="magic_missile"||
-        verb=="magic_missile_2"||verb=="scorching_ray"||verb=="blindness";
+    // A caster turns toward a foe, not toward an ally being healed, so every
+    // spell except the ally-targeted ones counts alongside weapon attacks.
+    if(verb=="throw"||verb=="melee"||verb=="ranged")return true;
+    const auto* spell=detail::find_spell(verb);
+    return spell&&spell->target!=detail::SpellTarget::wounded_ally;
 }
 class Session final : public CombatSession {
 public:
@@ -537,6 +540,13 @@ private:
     void clear_departed_overlaps() {
         for(auto& a:actors_)if(a.dead||!shares_occupied_space(a))a.involuntary_overlap=false;
     }
+    // Emits every table spell whose row matches `scope` and pass. Called once
+    // per original offer position so the observable order is unchanged.
+    void offer_spells(std::vector<Command>& commands,const Actor& a,const Actor& other,int feet,
+                      detail::SpellTarget scope,bool bonus_pass) const;
+    // Resolves one table spell. `upcast` is the "_2" level-two slot form.
+    void resolve_spell(const detail::SpellDef& spell,bool upcast,Actor& a,EntityId target_id);
+    void apply_rider(const detail::SpellDef& spell,Actor& a,Actor& target,int dc);
     unsigned next_save_ms(EntityId target) const;
     unsigned next_turn_ms(const Actor& target) const;
     void advance_turn_time();
@@ -777,6 +787,134 @@ Snapshot Session::snapshot() const
     }
     return s;
 }
+void Session::apply_rider(const detail::SpellDef& spell,Actor& a,Actor& target,int dc)
+{
+    // Each rider keeps its own duration rule and its own log line; the wording
+    // is unchanged so the message catalogue does not move.
+    switch(spell.rider){
+    case detail::Rider::none:return;
+    case detail::Rider::chill_touch:{
+        const unsigned slot=turn_end_ms(turn_)-(turn_?turn_end_ms(turn_-1):0);
+        detail::apply_chill_touch(target.effects,scope_,a.source.id,a.source.name,detail::round_ms+slot);
+        log(target.source.name+" cannot regain HP until the end of the caster's next turn.",
+            {"{name} cannot regain HP until the end of the caster's next turn.",{{"name",target.source.name}}});
+        return;
+    }
+    case detail::Rider::shocking_grasp:
+        detail::apply_shocking_grasp(target.effects,scope_,a.source.id,a.source.name,next_turn_ms(target));
+        log(target.source.name+" cannot make Opportunity Attacks until its next turn.",
+            {"{name} cannot make Opportunity Attacks until its next turn.",{{"name",target.source.name}}});
+        return;
+    case detail::Rider::ray_of_frost:
+        detail::apply_ray_of_frost(target.effects,scope_,a.source.id,a.source.name,next_turn_ms(a));
+        log(target.source.name+" is slowed by Ray of Frost.",
+            {"{name} is slowed by Ray of Frost.",{{"name",target.source.name}}});
+        return;
+    case detail::Rider::blindness:
+        detail::apply_blindness(target.effects,scope_,a.source.id,a.source.name,dc,next_save_ms(target.source.id));
+        log(target.source.name+" is Blinded.",{"{name} is Blinded.",{{"name",target.source.name}}});
+        return;
+    }
+}
+void Session::resolve_spell(const detail::SpellDef& spell,bool upcast,Actor& a,EntityId target_id)
+{
+    const auto& d=def(a);
+    // A level-two spell always draws a level-two slot; a level-one spell draws
+    // one only in its upcast form.
+    if(spell.level){
+        if(upcast||spell.level>=2)--a.slots2;else --a.slots;
+        a.spent_slot=true;
+    }
+    auto rolled=spell.dice;
+    rolled.count+=static_cast<int>(upcast?spell.upcast.extra_dice:0u);
+    if(spell.add_casting_modifier)rolled.bonus=d.casting-2;
+    const unsigned instances=spell.instances+(upcast?spell.upcast.extra_instances:0u);
+    const int dc=8+d.casting;
+    const auto name=std::string(spell.label);
+    switch(spell.pattern){
+    case detail::SpellPattern::heal:
+        heal(actor(target_id),dice(rolled));
+        return;
+    case detail::SpellPattern::spell_attack:{
+        auto& target=actor(target_id);
+        if(attack(a,target,!spell.melee,true,rolled,spell.damage))apply_rider(spell,a,target,dc);
+        return;
+    }
+    case detail::SpellPattern::repeat_attack:
+        // Re-read the target each pass: it may drop before the later rays.
+        for(unsigned ray=0;ray<instances&&actor(target_id).hp>0;++ray)
+            attack(a,actor(target_id),!spell.melee,true,rolled,spell.damage);
+        return;
+    case detail::SpellPattern::auto_damage:{
+        auto& target=actor(target_id);int total=0;
+        // Instances resolve separately so resistance applies per instance.
+        for(unsigned n=0;n<instances;++n)total+=resolved_damage(target,spell.damage,dice(rolled));
+        auto lowered=std::string(detail::damage_name(spell.damage));
+        for(auto& c:lowered)if(c>='A'&&c<='Z')c+=32;
+        log(a.source.name+" casts "+name+" for "+std::to_string(total)+" "+lowered+" damage.",
+            {"{name} casts "+name+" for {damage} "+lowered+" damage.",
+             {{"name",a.source.name},{"damage",std::to_string(total)}}});
+        damage(target,total);
+        return;
+    }
+    case detail::SpellPattern::save_damage:{
+        auto& target=actor(target_id);
+        log(a.source.name+" casts "+name+" at "+target.source.name+".",
+            {"{name} casts "+name+" at {target}.",{{"name",a.source.name},{"target",target.source.name}}});
+        if(saving_throw_succeeds(target,spell.save,dc))return;
+        const auto type=std::string(detail::damage_name(spell.damage));
+        const int amount=resolved_damage(target,spell.damage,dice(rolled));
+        log(target.source.name+" takes "+std::to_string(amount)+" "+type+" damage.",
+            {"{name} takes {damage} "+type+" damage.",
+             {{"name",target.source.name},{"damage",std::to_string(amount)}}});
+        damage(target,amount);
+        return;
+    }
+    case detail::SpellPattern::save_condition:{
+        auto& target=actor(target_id);
+        if(!saving_throw_succeeds(target,spell.save,dc))apply_rider(spell,a,target,dc);
+        return;
+    }
+    }
+}
+void Session::offer_spells(std::vector<Command>& commands,const Actor& a,const Actor& other,int feet,
+                          detail::SpellTarget scope,bool bonus_pass) const
+{
+    // The Bonus Action pass runs before the loop that skips corpses, so filter
+    // them here too; the Action pass has already done it and is unaffected.
+    if(other.dead)return;
+    const auto& d=def(a);
+    for(const auto& spell:detail::spell_table){
+        if(spell.target!=scope||spell.bonus_action!=bonus_pass)continue;
+        if(!(d.spells&spell.mask))continue;
+        switch(spell.target){
+        case detail::SpellTarget::enemy:
+            if(other.source.side==a.source.side||other.hp<=0)continue;
+            break;
+        case detail::SpellTarget::wounded_ally:
+            if(other.source.side!=a.source.side||other.hp>=def(other).hp)continue;
+            break;
+        case detail::SpellTarget::any_creature:
+            break;
+        }
+        if(feet>spell.range)continue;
+        if(spell.requires_sight&&!can_see(a,other))continue;
+        if(spell.requires_effect_capacity&&!detail::can_apply(other.effects))continue;
+        const auto* components=detail::spell_components(spell.id);
+        if(!components||(components->somatic&&!somatic_hand(d)))continue;
+        if(spell.bonus_action?!a.bonus:!a.actions.available(true))continue;
+        const auto offer=[&](std::string verb,std::string label){
+            commands.push_back({revision_,a.source.id,other.source.id,std::move(verb),std::move(label),Cell{}});
+        };
+        if(!spell.level){offer(std::string(spell.id),std::string(spell.label));continue;}
+        if(a.spent_slot)continue;
+        // A level-two spell is only ever cast from a level-two slot, so it has
+        // no separate upcast verb.
+        if(spell.level>=2){if(a.slots2>0)offer(std::string(spell.id),std::string(spell.label));continue;}
+        if(a.slots>0)offer(std::string(spell.id),std::string(spell.label));
+        if(a.slots2>0)offer(std::string(spell.id)+"_2",std::string(spell.label)+" (level 2 slot)");
+    }
+}
 std::vector<Command> Session::legal_commands() const
 {
     std::vector<Command> commands;if(outcome_!=Outcome::ongoing)return commands;
@@ -817,18 +955,8 @@ std::vector<Command> Session::legal_commands() const
     if(a.bonus&&d.cunning){add(id,"cunning_dash","Cunning Action: Dash");add(id,"cunning_disengage","Cunning Action: Disengage");}
     if(a.bonus&&a.rushes>0)add(id,"adrenaline_rush","Adrenaline Rush",id);
     if(a.bonus&&a.winds>0&&a.hp<d.hp)add(id,"second_wind","Second Wind",id);
-    const auto can_gesture=[&](std::string_view verb){
-        const auto* components=detail::spell_components(verb);
-        return components&&(!components->somatic||somatic_hand(d));
-    };
-    const auto spell=[&](const char* verb,const char* label,EntityId target){
-        if(a.spent_slot||!can_gesture(verb))return;
-        if(a.slots>0)add(id,verb,label,target);
-        if(a.slots2>0)add(id,std::string(verb)+"_2",std::string(label)+" (level 2 slot)",target);
-    };
-    if(a.bonus&&(d.spells&8))for(const auto& other:actors_)
-        if(!other.dead&&other.source.side==a.source.side&&other.hp<def(other).hp&&distance(a.source.cell,other.source.cell)<=60&&can_see(a,other))
-            spell("healing_word","Healing Word",other.source.id);
+    for(const auto& other:actors_)
+        offer_spells(commands,a,other,distance(a.source.cell,other.source.cell),detail::SpellTarget::wounded_ally,true);
     if(a.actions.available()) {
         add(id,"dash","Dash");add(id,"dodge","Dodge");add(id,"disengage","Disengage");
         for(const auto& other:actors_) {
@@ -838,18 +966,7 @@ std::vector<Command> Session::legal_commands() const
                 add(id,"stabilize","Stabilize",other.source.id);
             if(other.source.side==a.source.side&&other.effects.sleeping&&feet<=5)
                 add(id,"wake_ally","Wake ally",other.source.id);
-            if(a.actions.available(true)&&(d.spells&2048)&&can_gesture("chill_touch")&&feet<=5&&detail::can_apply(other.effects))
-                add(id,"chill_touch","Chill Touch",other.source.id);
-            if(a.actions.available(true)&&(d.spells&1024)&&can_gesture("shocking_grasp")&&feet<=5&&detail::can_apply(other.effects))
-                add(id,"shocking_grasp","Shocking Grasp",other.source.id);
-            if(a.actions.available(true)&&(d.spells&512)&&can_gesture("eldritch_blast")&&feet<=120)
-                add(id,"eldritch_blast","Eldritch Blast",other.source.id);
-            if(a.actions.available(true)&&(d.spells&256)&&can_gesture("ray_of_frost")&&feet<=60&&detail::can_apply(other.effects))
-                add(id,"ray_of_frost","Ray of Frost",other.source.id);
-            if(a.actions.available(true)&&(d.spells&128)&&can_gesture("sacred_flame")&&feet<=60&&can_see(a,other))
-                add(id,"sacred_flame","Sacred Flame",other.source.id);
-            if(a.actions.available(true)&&(d.spells&64)&&can_gesture("poison_spray")&&feet<=30)
-                add(id,"poison_spray","Poison Spray",other.source.id);
+            offer_spells(commands,a,other,feet,detail::SpellTarget::any_creature,false);
             if(other.source.side!=a.source.side && other.hp>0) {
                 if(physical_inventory_)for(const auto& item:items_)if(item.holder==id)if(const auto* w=detail::weapon(item.definition);w&&w->thrown&&feet<=w->long_range){
                     add(id,"throw","Throw",other.source.id);commands.back().item=item.id;
@@ -858,13 +975,8 @@ std::vector<Command> Session::legal_commands() const
                     a.source.definition=="slums-kobold-leader"||a.source.definition=="slums-kobold-leader-sword"?"Short sword attack":"Melee attack",other.source.id);
                 if(d.range>0&&feet<=d.long_range)add(id,"ranged",
                     a.source.definition=="slums-kobold-leader"?"Short bow attack":"Ranged attack",other.source.id);
-                if(a.actions.available(true)&&(d.spells&1)&&can_gesture("fire_bolt")&&feet<=120)add(id,"fire_bolt","Fire Bolt",other.source.id);
-                if(a.actions.available(true)&&(d.spells&4)&&feet<=120&&can_see(a,other))spell("magic_missile","Magic Missile",other.source.id);
-                if(a.actions.available(true)&&(d.spells&16)&&can_gesture("scorching_ray")&&a.slots2>0&&!a.spent_slot&&feet<=120)add(id,"scorching_ray","Scorching Ray",other.source.id);
-                if(a.actions.available(true)&&(d.spells&32)&&can_gesture("blindness")&&a.slots2>0&&!a.spent_slot&&feet<=120&&can_see(a,other)&&detail::can_apply(other.effects))
-                    add(id,"blindness","Blindness",other.source.id);
-            } else if(other.source.side==a.source.side && other.hp<def(other).hp && feet<=5 && a.actions.available(true) && (d.spells&2))
-                spell("cure_wounds","Cure Wounds",other.source.id);
+                offer_spells(commands,a,other,feet,detail::SpellTarget::enemy,false);
+            } else offer_spells(commands,a,other,feet,detail::SpellTarget::wounded_ally,false);
         }
     }
     for(const auto cell:movement_reach(id))add(id,"move","Move",0,cell);
@@ -1145,7 +1257,6 @@ bool Session::submit(const Command& command)
         }
     }
     const bool second=command.verb.ends_with("_2");
-    const auto spend=[&]{if(second||command.verb=="scorching_ray"||command.verb=="blindness")--a.slots2;else --a.slots;a.spent_slot=true;};
     if(champion_move_){
         if(command.verb=="end")finish_champion_move();
         else{const auto grid=movement_grid(a);const auto path=grid.reachable(champion_move_->remaining).path_to(command.destination);
@@ -1210,63 +1321,24 @@ bool Session::submit(const Command& command)
         path_=path_to(a,command.destination);path_index_=0;progress_movement();
     } else if(command.verb=="end")end_turn();
     else if(command.verb=="second_wind") {a.bonus=false;--a.winds;heal(a,roll(10)+d.level);}
-    else if(command.verb=="healing_word"||command.verb=="healing_word_2"){a.bonus=false;spend();heal(actor(command.target),dice({second?4:2,4,d.casting-2}));}
+    else if(const auto* bonus_spell=detail::find_spell(command.verb);bonus_spell&&bonus_spell->bonus_action){
+        // A Bonus Action spell spends no Action, so it resolves outside the
+        // Action block below.
+        a.bonus=false;resolve_spell(*bonus_spell,second,a,command.target);
+    }
     else {
         (void)a.actions.spend(detail::spell_components(command.verb)!=nullptr);
         if(command.verb=="dash"){a.movement+=d.speed;++a.dashes;log(a.source.name+" dashes.",{"{name} dashes.",{{"name",a.source.name}}});}
         else if(command.verb=="dodge"){a.dodge=true;log(a.source.name+" dodges.",{"{name} dodges.",{{"name",a.source.name}}});}
         else if(command.verb=="disengage"){a.disengaged=true;log(a.source.name+" disengages.",{"{name} disengages.",{{"name",a.source.name}}});}
-        else if(command.verb=="cure_wounds"||command.verb=="cure_wounds_2"){spend();heal(actor(command.target),dice({second?4:2,8,d.casting-2}));}
-        else if(command.verb=="magic_missile"||command.verb=="magic_missile_2") {
-            spend();auto& target=actor(command.target);int total=0;
-            for(int dart=0;dart<(second?4:3);++dart)total+=resolved_damage(target,detail::DamageType::force,roll(4)+1);
-            log(a.source.name+" casts Magic Missile for "+std::to_string(total)+" force damage.",
-                {"{name} casts Magic Missile for {damage} force damage.",{{"name",a.source.name},{"damage",std::to_string(total)}}});
-            damage(target,total);
-        } else if(command.verb=="blindness"){
-            spend();auto& target=actor(command.target);
-            const int dc=8+d.casting;
-            if(!saving_throw_succeeds(target,detail::Ability::constitution,dc)){
-                detail::apply_blindness(target.effects,scope_,a.source.id,a.source.name,dc,next_save_ms(target.source.id));
-                log(target.source.name+" is Blinded.",{"{name} is Blinded.",{{"name",target.source.name}}});
-            }
-        } else if(command.verb=="sacred_flame"){
-            auto& target=actor(command.target);
-            log(a.source.name+" casts Sacred Flame at "+target.source.name+".",{"{name} casts Sacred Flame at {target}.",{{"name",a.source.name},{"target",target.source.name}}});
-            if(!saving_throw_succeeds(target,detail::Ability::dexterity,8+d.casting)){
-                const int amount=resolved_damage(target,detail::DamageType::radiant,roll(8));
-                log(target.source.name+" takes "+std::to_string(amount)+" Radiant damage.",{"{name} takes {damage} Radiant damage.",{{"name",target.source.name},{"damage",std::to_string(amount)}}});
-                damage(target,amount);
-            }
-        } else if(command.verb=="scorching_ray"){
-            spend();for(unsigned ray=0;ray<3&&actor(command.target).hp>0;++ray)attack(a,actor(command.target),true,true,{2,6,0});
-        }else if(command.verb=="ray_of_frost"){
-            auto& target=actor(command.target);
-            if(attack(a,target,true,true,{1,8,0},detail::DamageType::cold)){
-                detail::apply_ray_of_frost(target.effects,scope_,a.source.id,a.source.name,next_turn_ms(a));
-                log(target.source.name+" is slowed by Ray of Frost.",{"{name} is slowed by Ray of Frost.",{{"name",target.source.name}}});
-            }
-        }else if(command.verb=="chill_touch"){
-            auto& target=actor(command.target);
-            if(attack(a,target,false,true,{1,10,0},detail::DamageType::necrotic)){
-                const unsigned slot=turn_end_ms(turn_)-(turn_?turn_end_ms(turn_-1):0);
-                detail::apply_chill_touch(target.effects,scope_,a.source.id,a.source.name,detail::round_ms+slot);
-                log(target.source.name+" cannot regain HP until the end of the caster's next turn.",
-                    {"{name} cannot regain HP until the end of the caster's next turn.",{{"name",target.source.name}}});
-            }
-        }else if(command.verb=="shocking_grasp"){
-            auto& target=actor(command.target);
-            if(attack(a,target,false,true,{1,8,0},detail::DamageType::lightning)){
-                detail::apply_shocking_grasp(target.effects,scope_,a.source.id,a.source.name,next_turn_ms(target));
-                log(target.source.name+" cannot make Opportunity Attacks until its next turn.",{"{name} cannot make Opportunity Attacks until its next turn.",{{"name",target.source.name}}});
-            }
-        }else if(command.verb=="eldritch_blast")attack(a,actor(command.target),true,true,{1,10,0},detail::DamageType::force);
-        else if(command.verb=="poison_spray")attack(a,actor(command.target),true,true,{1,12,0},detail::DamageType::poison);
+        else if(const auto* spell=detail::find_spell(command.verb))resolve_spell(*spell,second,a,command.target);
         else if(command.verb=="throw")throw_weapon(a,actor(command.target),command.item);
         else {
             const auto held=std::find_if(items_.begin(),items_.end(),[&](const auto& item){const auto* w=detail::weapon(item.definition);return item.holder==a.source.id&&!item.stowed&&w&&w->thrown;});
             if(physical_inventory_&&command.verb=="ranged"&&held!=items_.end())throw_weapon(a,actor(command.target),held->id);
-            else attack(a,actor(command.target),command.verb!="melee",command.verb=="fire_bolt");
+            // Fire Bolt used to reach this fallthrough and borrow attack()'s
+            // default 1d10 fire arguments; it is now an explicit table row.
+            else attack(a,actor(command.target),command.verb!="melee");
         }
     }
     // Revisions are command tickets; zero is reserved for invalid commands.
