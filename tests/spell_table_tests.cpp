@@ -290,6 +290,31 @@ void behaviour() {
 }
 }
 
+// ---- profile capability tags ---------------------------------------------
+//
+// The PC<n> tag parser replaced a chain of literal comparisons, so it is now
+// the single place that decides which capabilities a stored profile carries.
+// Profiles are untrusted input (PRD section 20): an unrecognised tag must be
+// rejected, never treated as "has everything".
+void profile_tags() {
+    auto rules = custom();
+    const auto profile = rules->character_profile(hero("rogue", 1, {}).sheet(), {}).data;
+    check(profile.starts_with("PC35 "), "A Rogue profile writes the highest capability tag");
+    const auto forge = [&](const std::string& tag) {
+        auto forged = profile;
+        forged.replace(0, 4, tag);
+        bool rejected = false;
+        try {
+            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+                {{1, "campaign-character", "Forged", 0, {1, 1}, forged},
+                 {2, "target", "Target", 1, {3, 1}}}}, 13);
+        } catch (const std::exception&) { rejected = true; }
+        check(rejected, ("Profile tag " + tag + " must be rejected").c_str());
+    };
+    // Below the floor, above the ceiling, non-numeric, and not a PC tag at all.
+    for (const auto& tag : {"PC00", "PC36", "PC99", "PCxx", "XX35", "PC-1"}) forge(tag);
+}
+
 void offers_match_baseline() {
     const auto path = root / "tests/fixtures/spell-offer-baseline.txt";
     const auto actual = snapshot();
@@ -308,6 +333,7 @@ void offers_match_baseline() {
 int main() {
     try {
         table();
+        profile_tags();
         generic::behaviour();
         offers_match_baseline();
         // Run twice: the snapshot must not depend on process state or RNG carry-over.

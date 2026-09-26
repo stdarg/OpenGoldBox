@@ -15,6 +15,8 @@
 #include "armor.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <initializer_list>
+#include <utility>
 #include <array>
 #include <cmath>
 #include <fstream>
@@ -79,6 +81,39 @@ bool module_before(const Identity& identity,std::array<unsigned,3> introduced)
     in>>std::ws;if(!in.eof())throw std::runtime_error("Invalid module version");return version<introduced;
 }
 
+// The character-profile tag is a monotonic capability marker: a profile written
+// as PC<n> contains every capability introduced at or before n. The enum value
+// *is* the introducing tag, so a new feature adds one row here instead of
+// another link in a boolean chain -- the old form required editing the
+// neighbouring line as well, which is what made it error-prone.
+enum class Cap : unsigned {
+    selected=3, training=7, spells=10, cantrips=11, cleric_cantrips=12,
+    surge=13, frost=14, sage=15, backgrounds=16, archery=17, styles=18,
+    class_skills=19, instruments=20, monk_tools=21, herbalism=22, gaming=23,
+    cunning=24, warlock=25, shocking=26, warlock_poison=27, sorcerer=28,
+    chill=29, mind=30, champion=31, arcane=32, scholar=33, choices=34,
+    rogue=35
+};
+constexpr unsigned max_profile_tag=static_cast<unsigned>(Cap::rogue);
+// Zero for anything that is not a known PC tag, so the profile validation below
+// rejects it exactly as the previous chain did. Untrusted input: an unknown
+// tag must never be treated as "has everything".
+unsigned profile_tag(std::string_view magic)
+{
+    if(!magic.starts_with("PC")||magic.size()<3||magic.size()>4)return 0;
+    unsigned value=0;
+    for(const char c:magic.substr(2)){if(c<'0'||c>'9')return 0;value=value*10+unsigned(c-'0');}
+    return value>=1&&value<=max_profile_tag?value:0;
+}
+// Highest capability present decides the written tag. The source lists are in
+// descending tag order, so taking the maximum matches the if-else chains these
+// replaced.
+unsigned highest_present(unsigned floor_tag,std::initializer_list<std::pair<unsigned,bool>> present)
+{
+    unsigned tag=floor_tag;
+    for(const auto& [candidate,is_present]:present)if(is_present)tag=std::max(tag,candidate);
+    return tag;
+}
 using Dice=detail::DamageDice;
 struct Definition {
     int ac{}, hp{}, initiative{}, speed{}, melee_bonus{};
@@ -215,34 +250,36 @@ Definition character_definition(std::string_view bytes,std::optional<std::span<c
     std::istringstream in{std::string(bytes)};
     std::string magic,klass,race;std::array<int,6> scores{};unsigned count{};
     unsigned level=1,features=0,selected_spells=0;in>>magic;
-    const bool with_rogue=magic=="PC35";
-    const bool with_choices=magic=="PC34"||with_rogue;
-    const bool with_scholar=magic=="PC33"||with_choices;
-    const bool with_arcane=magic=="PC32"||with_scholar;
-    const bool with_champion=magic=="PC31"||with_arcane;
-    const bool with_mind=magic=="PC30"||with_champion;
-    const bool with_chill=magic=="PC29"||with_mind;
-    const bool with_sorcerer=magic=="PC28"||with_chill;
-    const bool with_warlock_poison=magic=="PC27"||with_sorcerer;
-    const bool with_shocking=magic=="PC26"||with_warlock_poison;
-    const bool with_warlock=magic=="PC25"||with_shocking;
-    const bool with_cunning=magic=="PC24"||with_warlock;
-    const bool with_gaming=magic=="PC23"||with_cunning;
-    const bool with_herbalism=magic=="PC22"||with_gaming;
-    const bool with_monk_tools=magic=="PC21"||with_herbalism;
-    const bool with_instruments=magic=="PC20"||with_monk_tools;
-    const bool with_class_skills=magic=="PC19"||with_instruments;
-    const bool with_styles=magic=="PC18"||with_class_skills;
-    const bool with_archery=magic=="PC17"||with_styles;
-    const bool with_backgrounds=magic=="PC16"||with_archery;
-    const bool with_sage=magic=="PC15"||with_backgrounds;
-    const bool with_frost=magic=="PC14"||with_sage;
-    const bool with_surge=magic=="PC13"||with_frost;
-    const bool with_cleric_cantrips=magic=="PC12"||with_surge;
-    const bool with_cantrips=magic=="PC11"||with_cleric_cantrips;
-    const bool with_spells=magic=="PC10"||with_cantrips;
-    const bool with_training=magic=="PC7"||magic=="PC8"||magic=="PC9"||with_spells;
-    const bool selected=magic=="PC3"||magic=="PC4"||magic=="PC5"||magic=="PC6"||with_training;
+    const unsigned tag=profile_tag(magic);
+    const auto has=[tag](Cap capability){return tag>=static_cast<unsigned>(capability);};
+    const bool with_rogue=has(Cap::rogue);
+    const bool with_choices=has(Cap::choices);
+    const bool with_scholar=has(Cap::scholar);
+    const bool with_arcane=has(Cap::arcane);
+    const bool with_champion=has(Cap::champion);
+    const bool with_mind=has(Cap::mind);
+    const bool with_chill=has(Cap::chill);
+    const bool with_sorcerer=has(Cap::sorcerer);
+    const bool with_warlock_poison=has(Cap::warlock_poison);
+    const bool with_shocking=has(Cap::shocking);
+    const bool with_warlock=has(Cap::warlock);
+    const bool with_cunning=has(Cap::cunning);
+    const bool with_gaming=has(Cap::gaming);
+    const bool with_herbalism=has(Cap::herbalism);
+    const bool with_monk_tools=has(Cap::monk_tools);
+    const bool with_instruments=has(Cap::instruments);
+    const bool with_class_skills=has(Cap::class_skills);
+    const bool with_styles=has(Cap::styles);
+    const bool with_archery=has(Cap::archery);
+    const bool with_backgrounds=has(Cap::backgrounds);
+    const bool with_sage=has(Cap::sage);
+    const bool with_frost=has(Cap::frost);
+    const bool with_surge=has(Cap::surge);
+    const bool with_cleric_cantrips=has(Cap::cleric_cantrips);
+    const bool with_cantrips=has(Cap::cantrips);
+    const bool with_spells=has(Cap::spells);
+    const bool with_training=has(Cap::training);
+    const bool selected=has(Cap::selected);
     if(magic=="PC2"||selected)in>>level;
     if(selected)in>>features>>selected_spells;in>>std::quoted(klass)>>std::quoted(race);
     for(auto& score:scores)in>>score;
@@ -1353,7 +1390,18 @@ bool Session::submit(const Command& command)
 std::string Session::save() const
 {
     // The module owns the checkpoint format, including RNG and pending reactions.
-    const unsigned format=std::any_of(actors_.begin(),actors_.end(),[](const auto& a){return a.definition.sneak_level;})?21:std::any_of(actors_.begin(),actors_.end(),[](const auto& a){return a.arcane<a.definition.arcane;})?20:physical_inventory_?19:champion_move_?18:check_choice_?17:items_active_?16:frost_movement_?15:std::any_of(actors_.begin(),actors_.end(),[](const auto& a){return a.definition.surges>0;})?14:13;
+    // Combat checkpoint format, one row per feature that widened it. Thirteen is
+    // the floor; the highest present feature decides, matching the descending
+    // if-else chain this replaced.
+    const unsigned format=highest_present(13,{
+        {21,std::any_of(actors_.begin(),actors_.end(),[](const auto& a){return a.definition.sneak_level!=0;})},
+        {20,std::any_of(actors_.begin(),actors_.end(),[](const auto& a){return a.arcane<a.definition.arcane;})},
+        {19,physical_inventory_},
+        {18,bool(champion_move_)},
+        {17,bool(check_choice_)},
+        {16,items_active_},
+        {15,frost_movement_},
+        {14,std::any_of(actors_.begin(),actors_.end(),[](const auto& a){return a.definition.surges>0;})}});
     std::ostringstream out;out<<"OGCOMBAT "<<format<<' '<<std::quoted(content_->identity.module)<<' '<<std::quoted(content_->identity.version)<<' '<<std::quoted(content_->identity.content)<<'\n';
     out<<board_.width<<' '<<board_.height<<'\n';for(auto cell:board_.terrain)out<<unsigned(cell)<<' ';out<<'\n';
     out<<rng_<<' '<<revision_<<' '<<turn_<<' '<<round_<<' '<<static_cast<int>(outcome_)<<' '<<actors_.size()<<'\n';
@@ -2248,7 +2296,19 @@ public:
             else if(spell=="blindness"&&(sheet.character_class=="Wizard"||sheet.character_class=="Cleric")&&sheet.level>=3)spells|=32;
             else throw std::runtime_error("Unsupported prepared spell");
         }
-        std::ostringstream out;out<<(sheet.character_class=="Rogue"?"PC35 ":sheet.character_class=="Wizard"&&(std::none_of(sheet.grants.begin(),sheet.grants.end(),[](const auto& g){return g.id=="spell:magic_missile"&&g.level==1;})||std::any_of(sheet.grants.begin(),sheet.grants.end(),[](const auto& g){return detail::is_spell_grant(g)&&g.choices.contains("learned_at");}))?"PC34 ":std::any_of(sheet.grants.begin(),sheet.grants.end(),[](const auto& g){return g.source_id=="class:wizard:scholar";})?"PC33 ":detail::has_grant(sheet.grants,"feature:arcane_recovery")?"PC32 ":detail::has_grant(sheet.grants,"subclass:champion")?"PC31 ":detail::has_grant(sheet.grants,"feature:tactical_mind")?"PC30 ":(spells&2048)?"PC29 ":"PC28 ")<<sheet.level<<' '<<features<<' '<<spells<<' '<<std::quoted(sheet.character_class)<<' '<<std::quoted(sheet.race);
+        // One row per capability that raises the written tag. PC28 is the floor
+        // because every capability below it is unconditionally written.
+        const unsigned tag=highest_present(static_cast<unsigned>(Cap::sorcerer),{
+            {static_cast<unsigned>(Cap::rogue),sheet.character_class=="Rogue"},
+            {static_cast<unsigned>(Cap::choices),sheet.character_class=="Wizard"&&
+                (std::none_of(sheet.grants.begin(),sheet.grants.end(),[](const auto& g){return g.id=="spell:magic_missile"&&g.level==1;})||
+                 std::any_of(sheet.grants.begin(),sheet.grants.end(),[](const auto& g){return detail::is_spell_grant(g)&&g.choices.contains("learned_at");}))},
+            {static_cast<unsigned>(Cap::scholar),std::any_of(sheet.grants.begin(),sheet.grants.end(),[](const auto& g){return g.source_id=="class:wizard:scholar";})},
+            {static_cast<unsigned>(Cap::arcane),detail::has_grant(sheet.grants,"feature:arcane_recovery")},
+            {static_cast<unsigned>(Cap::champion),detail::has_grant(sheet.grants,"subclass:champion")},
+            {static_cast<unsigned>(Cap::mind),detail::has_grant(sheet.grants,"feature:tactical_mind")},
+            {static_cast<unsigned>(Cap::chill),(spells&2048)!=0}});
+        std::ostringstream out;out<<"PC"<<tag<<' '<<sheet.level<<' '<<features<<' '<<spells<<' '<<std::quoted(sheet.character_class)<<' '<<std::quoted(sheet.race);
         for(auto score:sheet.scores)out<<' '<<score;
         for(auto modifier:sheet.hit_point_modifiers)out<<' '<<modifier;
         out<<' '<<gear.size();for(const auto& item:gear)out<<' '<<std::quoted(item);
