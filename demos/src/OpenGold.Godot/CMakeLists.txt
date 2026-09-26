@@ -60,8 +60,21 @@ add_custom_command(TARGET opengold_godot POST_BUILD
 )
 
 if(OPENGOLD_BUILD_TESTS)
-    find_program(OPENGOLD_DEMO_GODOT NAMES godot godot4 Godot
-        PATHS /Applications/Godot_mono.app/Contents/MacOS /Applications/Godot.app/Contents/MacOS)
+    # Search PATH first, then the usual per-platform install locations. Listing
+    # only macOS bundles here meant the Godot checks silently did not register on
+    # Windows, which reads as "all checks passed" -- see docs/TECH.md 14.1.
+    find_program(OPENGOLD_DEMO_GODOT
+        NAMES godot godot4 Godot Godot_v4 godot_console
+        PATHS
+            /Applications/Godot.app/Contents/MacOS
+            /Applications/Godot_mono.app/Contents/MacOS
+            "$ENV{LOCALAPPDATA}/Programs/Godot"
+            "$ENV{ProgramFiles}/Godot"
+            /usr/local/bin /usr/bin /opt/godot)
+    if(NOT OPENGOLD_DEMO_GODOT)
+        message(STATUS "Godot not found: the Godot runtime checks will not be registered. "
+                       "Set OPENGOLD_DEMO_GODOT to its path to enable them.")
+    endif()
     if(OPENGOLD_DEMO_GODOT)
         set(demo_project "${PROJECT_SOURCE_DIR}/demos/godot")
         add_test(NAME opengold_demo_prepare COMMAND "${OPENGOLD_DEMO_GODOT}"

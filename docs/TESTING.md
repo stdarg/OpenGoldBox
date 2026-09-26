@@ -27,12 +27,41 @@ cmake --build build --target <one_target> -j6
 ctest --test-dir build --output-on-failure -R '^<one_target>$'
 ```
 
-Two tools this document assumes are **not** present on every development
-machine; check before relying on them, and record a check as unverified rather
-than passed if they are missing:
+## The full suite, including Godot and localization
 
-- `python3` (needed by `tools/localization.py --check`)
-- `clang-format`
+`build.cmd` / `build.sh` configure with the `default` preset, which leaves
+`OPENGOLD_BUILD_GODOT` **off**. That is the fast native gate, not the whole
+suite. Running only that and reporting "all checks passed" hides every Godot
+runtime check — the failure mode is silence, not an error.
+
+For the Godot checks, configure a second build directory with them enabled:
+
+```
+cmake -S . -B build-godot -G Ninja -DCMAKE_BUILD_TYPE=Debug ^
+      -DOPENGOLD_BUILD_TESTS=ON -DOPENGOLD_BUILD_GODOT=ON
+cmake --build build-godot -j6
+ctest --test-dir build-godot -R "^opengold_(demo_prepare|godot_)"
+```
+
+Godot is located by `find_program`, which searches `PATH` and the usual install
+locations on each platform. If it is not found, CMake prints a status line and
+the checks are simply **not registered** — confirm they exist with
+`ctest -N` rather than assuming a clean run covered them. Set
+`OPENGOLD_DEMO_GODOT` to override. Run Godot tests serially: they share a
+user-data path.
+
+Localization is a separate gate and needs Python:
+
+```
+python tools/localization.py --check
+```
+
+It scrapes string literals out of the C++ sources, so it catches two things the
+compiler cannot: a message template built by concatenation (the extractor sees
+the fragments, not the message) and a missing Spanish translation. On Windows the
+`python` on `PATH` may be a Microsoft Store stub that cannot run or install
+anything; `winget install --id Python.Python.3.12 -e` provides a real one.
+`clang-format` comes from `winget install --id LLVM.LLVM -e`.
 
 ## Coverage review (2026-09-18)
 

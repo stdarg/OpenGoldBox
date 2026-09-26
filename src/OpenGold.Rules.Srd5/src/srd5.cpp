@@ -102,8 +102,8 @@ enum class Cap : unsigned {
 // capabilities its tag implies. This replaces a packed allow-mask, which could
 // not express a spell beyond the 31st bit. Capability gates are monotonic, so
 // one Cap per row is enough: a row requiring a later capability implicitly
-// requires every earlier one. Cap::selected means "no gate beyond being a
-// profile that stores spells at all".
+// requires every earlier one. Cap::selected imposes no gate beyond the profile
+// storing spell choices at all.
 struct SpellAccessRow { std::string_view klass,spell;unsigned min_level;Cap required; };
 constexpr std::array class_spell_access{
     SpellAccessRow{"Cleric","cure_wounds",1,Cap::selected},
@@ -998,24 +998,29 @@ void Session::resolve_spell(const detail::SpellDef& spell,bool upcast,Actor& a,E
         auto& target=actor(target_id);int total=0;
         // Instances resolve separately so resistance applies per instance.
         for(unsigned n=0;n<instances;++n)total+=resolved_damage(target,spell.damage,dice(rolled));
+        // The plain English keeps its original lower-case damage word so stored
+        // combat logs stay byte identical. The template uses the translatable
+        // capitalised name, matching the convention in resolved_damage().
         auto lowered=std::string(detail::damage_name(spell.damage));
         for(auto& c:lowered)if(c>='A'&&c<='Z')c+=32;
         log(a.source.name+" casts "+name+" for "+std::to_string(total)+" "+lowered+" damage.",
-            {"{name} casts "+name+" for {damage} "+lowered+" damage.",
-             {{"name",a.source.name},{"damage",std::to_string(total)}}});
+            {"{name} casts {spell} for {damage} {type} damage.",
+             {{"name",a.source.name},{"spell",name,true},{"damage",std::to_string(total)},
+              {"type",std::string(detail::damage_name(spell.damage)),true}}});
         damage(target,total);
         return;
     }
     case detail::SpellPattern::save_damage:{
         auto& target=actor(target_id);
         log(a.source.name+" casts "+name+" at "+target.source.name+".",
-            {"{name} casts "+name+" at {target}.",{{"name",a.source.name},{"target",target.source.name}}});
+            {"{name} casts {spell} at {target}.",
+             {{"name",a.source.name},{"spell",name,true},{"target",target.source.name}}});
         if(saving_throw_succeeds(target,spell.save,dc))return;
         const auto type=std::string(detail::damage_name(spell.damage));
         const int amount=resolved_damage(target,spell.damage,dice(rolled));
         log(target.source.name+" takes "+std::to_string(amount)+" "+type+" damage.",
-            {"{name} takes {damage} "+type+" damage.",
-             {{"name",target.source.name},{"damage",std::to_string(amount)}}});
+            {"{name} takes {damage} {type} damage.",
+             {{"name",target.source.name},{"damage",std::to_string(amount)},{"type",type,true}}});
         damage(target,amount);
         return;
     }

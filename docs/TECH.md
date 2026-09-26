@@ -692,11 +692,19 @@ Concretely:
 - **Do not put host-specific commands in shared instructions.** `afplay`,
   `/usr/bin/…` and `/Users/<name>/…` are macOS-only and break the Windows
   workflow silently — the command simply fails and the step gets skipped.
-- **Assume nothing about auxiliary tooling.** As of 2026-09-26 the Windows
-  development machine has no `python3` (the `python` on `PATH` is a Microsoft
-  Store stub) and no `clang-format`. Any procedure that depends on them must
-  either state the install step or degrade to "unverified", never to "passed".
-  `tools/localization.py --check` is affected.
+- **Assume nothing about auxiliary tooling, and state the install step.** On
+  Windows the `python` on `PATH` may be a Microsoft Store stub that cannot run or
+  install anything, so `tools/localization.py --check` silently has no host;
+  `winget install --id Python.Python.3.12 -e` provides a real one, and
+  `winget install --id LLVM.LLVM -e` provides `clang-format`. A procedure that
+  depends on a tool must name how to get it, and a check that cannot run is
+  recorded as unverified, never as passed.
+- **A check that does not register is not a check that passed.** The Godot
+  runtime tests are only added when `OPENGOLD_BUILD_GODOT` is on *and*
+  `find_program` locates Godot. Both failures are silent: `ctest` reports a clean
+  run over the tests that exist. Confirm with `ctest -N` before claiming Godot
+  coverage. Search paths must cover every supported platform — listing only
+  macOS bundles is what hid these checks on Windows.
 - **Keep the entry points symmetrical.** `build.cmd` is the Windows path
   (vcvars, configure, build, `ctest`, with `errorlevel` checked between steps).
   macOS and Linux need an equivalent shell script with the same contract, so

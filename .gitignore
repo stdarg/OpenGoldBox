@@ -1,5 +1,8 @@
 # Native build output
 /build/
+# A second configuration is needed for the Godot and game checks, which the
+# default preset leaves off. Any build-* directory is output, never source.
+/build-*/
 /win-package/
 /mac-package/
 /src/OpenGoldBox/godot/.godot/
