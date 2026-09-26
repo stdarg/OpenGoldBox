@@ -111,6 +111,13 @@ inline constexpr std::array spell_table{
     SpellDef{.id="cure_wounds",.label="Cure Wounds",.level=1,.mask=2,
              .pattern=SpellPattern::heal,.target=SpellTarget::wounded_ally,.range=5,
              .dice={2,8,0},.add_casting_modifier=true,.upcast={.extra_dice=2}},
+    // SRD 5.2.1 p.143. Mask 0 deliberately: bits exist only so profiles written
+    // before the explicit spell list can still be read, and a new spell has no
+    // such history. New spells never get a bit.
+    SpellDef{.id="inflict_wounds",.label="Inflict Wounds",.level=1,
+             .pattern=SpellPattern::spell_attack,.target=SpellTarget::enemy,.range=5,
+             .melee=true,.damage=DamageType::necrotic,.dice={3,10,0},
+             .upcast={.extra_dice=1}},
     SpellDef{.id="healing_word",.label="Healing Word",.level=1,.mask=8,
              .pattern=SpellPattern::heal,.target=SpellTarget::wounded_ally,.range=60,
              .somatic=false,.bonus_action=true,.requires_sight=true,

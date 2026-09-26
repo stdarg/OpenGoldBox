@@ -7,11 +7,15 @@ namespace opengold::srd5::detail {
 using namespace rules;
 namespace {
 constexpr std::string_view source="class:wizard:spellcasting";
-struct Spell {std::string_view id,label;unsigned level,mask;};
+// `wizard` marks a row the Wizard catalog may learn. It was an exclusion list
+// of non-Wizard spell ids repeated at each use; a per-row property means a new
+// spell describes itself in one place.
+struct Spell {std::string_view id,label;unsigned level,mask;bool wizard{true};};
 // Existing spell implementations only. This is not the complete Wizard list.
 constexpr std::array spells{
-    Spell{"chill_touch","Chill Touch",0,2048},Spell{"shocking_grasp","Shocking Grasp",0,1024},Spell{"eldritch_blast","Eldritch Blast",0,512},Spell{"ray_of_frost","Ray of Frost",0,256},Spell{"sacred_flame","Sacred Flame",0,128},Spell{"fire_bolt","Fire Bolt",0,1},Spell{"poison_spray","Poison Spray",0,64},Spell{"magic_missile","Magic Missile",1,4},
-    Spell{"scorching_ray","Scorching Ray",2,16},Spell{"blindness","Blindness",2,32}};
+    Spell{"chill_touch","Chill Touch",0,2048},Spell{"shocking_grasp","Shocking Grasp",0,1024},Spell{"eldritch_blast","Eldritch Blast",0,512,false},Spell{"ray_of_frost","Ray of Frost",0,256},Spell{"sacred_flame","Sacred Flame",0,128,false},Spell{"fire_bolt","Fire Bolt",0,1},Spell{"poison_spray","Poison Spray",0,64},Spell{"magic_missile","Magic Missile",1,4},
+    Spell{"scorching_ray","Scorching Ray",2,16},Spell{"blindness","Blindness",2,32},
+    Spell{"inflict_wounds","Inflict Wounds",1,0,false}};
 void require(bool ok){if(!ok)throw std::runtime_error("Invalid spell grant, spellbook entry or preparation");}
 const Spell& find(std::string_view id){
     for(const auto& spell:spells)if(spell.id==id)return spell;
@@ -107,7 +111,7 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants,std::string_view k
     std::set<std::string> known;std::array<unsigned,5> books{},cantrips{};
     for(const auto& g:grants)if(is_spell_grant(g)){
         require(g.source_id==source&&g.level>=1&&g.level<=level&&known.insert(g.id).second);
-        const auto& spell=find(std::string_view(g.id).substr(6));require(spell.id!="sacred_flame"&&spell.id!="eldritch_blast");
+        const auto& spell=find(std::string_view(g.id).substr(6));require(spell.wizard);
         auto expected=grant(spell.id,g.level);
         unsigned learned=g.level;
         if(const auto replacement=g.choices.find("learned_at");replacement!=g.choices.end()){
@@ -149,7 +153,7 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet& sheet,SpellChoiceC
             if(capacity==used)continue;
             TrainingChoiceGroup group;group.id=std::string(cantrip?"cantrips:":"spellbook:")+std::to_string(level);
             group.label=cantrip?"Wizard cantrips":"Spellbook";group.count=capacity-used;group.acquired_level=level;
-            for(const auto& spell:spells)if((spell.level==0)==cantrip&&spell.id!="sacred_flame"&&spell.id!="eldritch_blast"&&
+            for(const auto& spell:spells)if((spell.level==0)==cantrip&&spell.wizard&&
                 spell.level<=(level>=3?2u:1u)&&!known(spell.id))group.options.push_back({std::string(spell.id),std::string(spell.label),{}});
             result.learning.push_back(std::move(group));
         }

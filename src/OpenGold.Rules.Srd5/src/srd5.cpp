@@ -110,6 +110,10 @@ constexpr std::array class_spell_access{
     SpellAccessRow{"Cleric","healing_word",1,Cap::selected},
     SpellAccessRow{"Cleric","blindness",3,Cap::selected},
     SpellAccessRow{"Cleric","sacred_flame",1,Cap::cleric_cantrips},
+    // A spell with no legacy bit can only appear in an explicit-list profile,
+    // which is what Cap::explicit_spells states. Every spell added from now on
+    // gates here, so no new capability is needed per spell.
+    SpellAccessRow{"Cleric","inflict_wounds",1,Cap::explicit_spells},
     SpellAccessRow{"Wizard","fire_bolt",1,Cap::selected},
     SpellAccessRow{"Wizard","magic_missile",1,Cap::selected},
     SpellAccessRow{"Wizard","scorching_ray",3,Cap::selected},
@@ -2004,6 +2008,7 @@ public:
             {"cure_wounds","Cure Wounds","Action; touch; heals 2d8 + Wisdom modifier."},
             {"healing_word","Healing Word","Bonus action; 60 feet; heals 2d4 + Wisdom modifier."},
             {"blindness","Blindness","Blindness/Deafness (blindness option): Constitution save; repeat at end of turn; up to 1 minute. Level 2 slot.",result.level>=3},
+            {"inflict_wounds","Inflict Wounds","Action; melee spell attack; 3d10 Necrotic damage, +1d10 from a level 2 slot."},
             {"bless","Bless","Unavailable: concentration is not implemented.",false}};
         if(sheet.character_class=="Wizard")result.spells={
             {"magic_missile","Magic Missile","Action; 120 feet; three darts at one target."},
@@ -2369,14 +2374,15 @@ public:
         std::set<std::string> selected;
         const auto record=[&](std::string id){if(!detail::knows_spell(spells,id))spells.push_back(std::move(id));};
         if(sheet.prepared_spells.empty()&&sheet.character_class=="Cleric")record("cure_wounds");
+        // Preparable spells come from the eligibility table, at the newest
+        // capability because a fresh profile is being written. Cantrips are
+        // filtered out: they are known, never prepared. This replaces a chain of
+        // per-spell class and level comparisons.
+        const auto preparable=detail::spells_of_level(allowed_spells(sheet.character_class,sheet.level,max_profile_tag),false);
         for(const auto& spell:sheet.prepared_spells){
             if(!selected.insert(spell).second)throw std::runtime_error("Duplicate prepared spell");
-            if(spell=="cure_wounds"&&sheet.character_class=="Cleric")record(spell);
-            else if(spell=="healing_word"&&sheet.character_class=="Cleric")record(spell);
-            else if(spell=="magic_missile"&&sheet.character_class=="Wizard")record(spell);
-            else if(spell=="scorching_ray"&&sheet.character_class=="Wizard"&&sheet.level>=3)record(spell);
-            else if(spell=="blindness"&&(sheet.character_class=="Wizard"||sheet.character_class=="Cleric")&&sheet.level>=3)record(spell);
-            else throw std::runtime_error("Unsupported prepared spell");
+            if(!detail::knows_spell(preparable,spell))throw std::runtime_error("Unsupported prepared spell");
+            record(spell);
         }
         // The legacy bitmask is still written whenever it can express the set,
         // so existing profiles stay byte identical. A spell with no bit forces

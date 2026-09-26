@@ -131,8 +131,10 @@ void table() {
     for (const auto& spell : spell_table) {
         check(ids.insert(spell.id).second, "Spell ids are unique");
         check(!spell.id.empty() && !spell.label.empty(), "Every row has an id and a label");
-        check(spell.mask && (spell.mask & (spell.mask - 1)) == 0, "Every mask is a power of two");
-        check((seen_masks & spell.mask) == 0, "Every mask bit is distinct");
+        // A mask is a frozen legacy wire encoding. New spells carry none, so
+        // only the rows that have one must be distinct single bits.
+        check(!spell.mask || (spell.mask & (spell.mask - 1)) == 0, "A mask is a single bit");
+        check(!spell.mask || (seen_masks & spell.mask) == 0, "Every mask bit is distinct");
         seen_masks |= spell.mask;
         check(spell.range > 0, "Every row has a range");
         // Components must agree with the catalog the components table served.

@@ -34,8 +34,11 @@ auto battle(const RulesModule& rules,const Character& h,const std::vector<std::s
 }
 void definitions(){
     namespace detail=opengold::srd5::detail;
-    // Components now live on the spell table rather than a parallel array.
-    check(detail::spell_table.size()==12,"All twelve supported spells have explicit component definitions");
+    // Components now live on the spell table rather than a parallel array, so
+    // every supported spell has them by construction. Asserting a row count
+    // here would make adding a spell an edit in this file too.
+    for(const auto& spell:detail::spell_table)
+        check(detail::spell_components(spell.id)!=nullptr,"Every supported spell has explicit component definitions");
     for(const auto* id:{"chill_touch","ray_of_frost","fire_bolt","poison_spray","sacred_flame","cure_wounds","magic_missile","scorching_ray"}){const auto* s=detail::spell_components(id);check(s&&s->verbal&&s->somatic,"Source spells require Verbal and Somatic components");}
     for(const auto* id:{"healing_word","blindness"}){const auto* s=detail::spell_components(id);check(s&&s->verbal&&!s->somatic,"Source spells require only Verbal components");}
     check(detail::spell_components("cure_wounds_2")==detail::spell_components("cure_wounds")&&detail::spell_components("healing_word_2")==detail::spell_components("healing_word"),"Higher slot forms keep base components");
