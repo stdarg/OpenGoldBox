@@ -63,7 +63,11 @@ Spanish grammar. Plural entries have separate singular and plural translations.
 The checker rejects missing/fuzzy entries, missing or changed placeholders, and
 changed BBCode tags. The English catalog is regenerated from source wording.
 The campaign catalog is maintained separately and is never overwritten by the
-interface extractor. Run the build to import changed PO files and rebuild the
+interface extractor. Regeneration refuses to drop a message that is in
+`messages.pot` but no longer extracted, and lists it: a reformat or a
+concatenated template can hide a message from the extractor, and regenerating
+would silently delete its translations. When the removal is intended, rerun
+with `--allow-removals`. Run the build to import changed PO files and rebuild the
 Windows package.
 
 The extractor scans marked game C++ messages, scene text properties, creation

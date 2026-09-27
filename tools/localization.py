@@ -146,6 +146,8 @@ def validate(messages, language):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--allow-removals", action="store_true",
+                        help="regenerate even if messages disappear from the catalogs")
     args = parser.parse_args()
     messages = extract()
     if args.check:
@@ -159,6 +161,12 @@ def main():
             raise SystemExit("\n".join(errors))
         print(f"Localization: {len(messages)} messages; English and Spanish complete; placeholders and BBCode valid.")
     else:
+        # A reformat or a concatenated template can hide a message from the
+        # extractor; regenerating would then silently delete its translations.
+        removed = sorted(key[1] for key in read_po(LOCALE / "messages.pot") if key[1] and key not in messages)
+        if removed and not args.allow_removals:
+            raise SystemExit("These messages are no longer extracted; rerun with --allow-removals "
+                             "if removing them is intended:\n" + "\n".join(removed))
         LOCALE.mkdir(parents=True, exist_ok=True)
         (LOCALE / "messages.pot").write_text(catalog(messages, "", {}), encoding="utf-8")
         for language in ("en", "es"):

@@ -16,7 +16,12 @@ demoEN actual keyboard/mouse controls pass both sizes; creation, advancement and
 neighboring controls pass.1014 messages validate. No live build/test; no unchecked
 runtime edits. [Canonical completion](SRD-COVERAGE.md#alert-complete-74),
 [feature/evidence](ALERT.md). Approximately26 minutes from approval to closure;
-preflight/wait excluded. Main remains375f58f; no merge/release claimed.
+preflight/wait excluded.
+
+Updated 2026-09-27: the whole `codex/srd-alert` branch (Fighting Style routes
+through Alert) is now on `main`, squash-ported as e07ca3e, and `main` has since
+been reformatted with astyle (2c6630d). `main` is at Rules 0.6.61 and is the
+base for new work; do not branch from `codex/srd-alert`.
 
 Previous Weapon Mastery delivery80ce54b and #60/#85 closures remain complete:
 [canonical record](SRD-COVERAGE.md#weapon-mastery-integration-complete-6085).
@@ -32,7 +37,7 @@ No Human selector, new entitlement, equipment policy or crafting action is added
 The packet includes four missing SRD tool **proficiency** entries needed by the
 feat's unrestricted choices. No new issues or silent prerequisite expansion.
 
-After explicit resumption and control approval, branch from this completed delivery, capture actual0.6.61 writer
+After explicit resumption and control approval, branch from `main`, capture actual0.6.61 writer
 fixtures before changing the writer, then implement the recorded packet. Current
 libraries are0.6.61. Read SRD-WORKFLOW, SRD-MODEL-ROUTING and the packet after resets.
 Requested Astra/high for sourced repeatable choices and persistence; actual
