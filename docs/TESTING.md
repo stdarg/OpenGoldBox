@@ -77,7 +77,9 @@ compiler cannot: a message template built by concatenation (the extractor sees
 the fragments, not the message) and a missing Spanish translation. On Windows the
 `python` on `PATH` may be a Microsoft Store stub that cannot run or install
 anything; `winget install --id Python.Python.3.12 -e` provides a real one.
-`clang-format` comes from `winget install --id LLVM.LLVM -e`.
+`astyle`, the pinned C++ formatter (see [CODING_STYLE.md](CODING_STYLE.md)),
+comes from `choco install astyle` or a release at
+[astyle.sourceforge.net](https://astyle.sourceforge.net/install.html).
 
 ## Coverage review (2026-09-18)
 

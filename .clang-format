@@ -1,4 +1,8 @@
 # OpenGoldBox C++ style: docs/CODING_STYLE.md
+# .astylerc, not this file, is the pinned formatter of record; this remains for
+# editors that only integrate clang-format and is not guaranteed to match
+# astyle's output byte for byte (see docs/CODING_STYLE.md's Formatter
+# configuration section).
 # Validated with clang-format 23.1.0, LLVM revision:
 # ea7d852a70e8bdfaf601d6626a760f9771b2c4b4 (VS Code C/C++ bundled binary).
 # Required braces, naming, and ownership rules are checked separately in review.

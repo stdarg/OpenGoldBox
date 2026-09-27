@@ -6,10 +6,10 @@ Use this style for project-owned C++ source and headers. Preserve the C++20,
 Godot 4.x, and GDExtension architecture described in [TECH.md](TECH.md).
 Exclude third-party, generated, build, and packaged files from formatting.
 
-This document records the agreed style and proposed formatter setup. It does
-not install a formatter, add a root `.clang-format`, change editor settings,
-or reformat source. Select and record an exact clang-format release when the
-setup is adopted; use that same release in editors and automated checks.
+This document records the agreed style and the pinned formatter setup. The
+project-owned C++ tree is formatted to this style. Select and record an exact
+Artistic Style (astyle) release when upgrading; use that same release in
+editors and automated checks.
 
 ## Layout and readability
 
@@ -54,63 +54,55 @@ bool attack_hits(int natural, int bonus, int ac) noexcept
   orchestration and transactions; the application injects the rules implementation.
 - Keep formatting changes separate from behavioral changes and refactoring.
 
-clang-format handles layout, not architectural correctness or ownership.
+astyle handles layout, not architectural correctness or ownership.
 Check required braces in review or a separately configured static-analysis check.
 Do not enable automatic brace insertion as part of the initial formatting pass.
 
 ## Formatter configuration
 
-Use LLVM's **clang-format**. For adoption, save the following YAML as
-`.clang-format` in the repository root. LLVM supplies defaults for unspecified
-options; the explicit overrides express this project's layout choices.
+Use **Artistic Style (astyle)**. The pinned configuration is `.astylerc` in the
+repository root; it is the source of truth for the exact options, including the
+reasoning behind each one and the limits of what astyle can express relative to
+this style (see that file's header comment). Validated with Artistic Style
+3.6.18.
 
-```yaml
-BasedOnStyle: LLVM
-Language: Cpp
-Standard: c++20
-IndentWidth: 4
-ContinuationIndentWidth: 4
-UseTab: Never
-ColumnLimit: 100
-BreakBeforeBraces: Allman
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLoopsOnASingleLine: false
-AllowShortBlocksOnASingleLine: Never
-AllowShortLambdasOnASingleLine: None
-SpaceBeforeParens: ControlStatements
-SortIncludes: Never
-IncludeBlocks: Preserve
-```
+Install the selected astyle release, or use an existing binary of that exact
+release, and make it available on `PATH`:
 
-Install the selected LLVM release with clang-format, or use an existing binary
-of that exact release. Make it available on `PATH`. Record its full
-`clang-format --version` output alongside the adopted configuration and pin the
-same release in automated checks. Avoid silently using an editor's different
-bundled version. Upgrade the formatter deliberately and review resulting diffs.
+- macOS: `brew install astyle`
+- Debian/Ubuntu: `apt install astyle`
+- Windows: `choco install astyle`, or download a release from
+  [astyle.sourceforge.net](https://astyle.sourceforge.net/install.html)
+
+Record its full `astyle --version` output alongside the adopted configuration
+and pin the same release in automated checks. Avoid silently using an editor's
+different bundled version. Upgrade the formatter deliberately and review
+resulting diffs.
 
 ## Running the formatter in PowerShell
 
 Run these commands from the repository root, after installing the selected
-release and creating the root configuration above:
+release; `.astylerc` already exists there:
 
 ```powershell
-clang-format --version
-if (-not (Test-Path -LiteralPath .clang-format)) {
-    throw 'Create the agreed root .clang-format before formatting.'
+astyle --version
+if (-not (Test-Path -LiteralPath .astylerc)) {
+    throw 'Missing the repository .astylerc configuration.'
 }
 ```
 
 Preview formatted output without changing the source file:
 
 ```powershell
-clang-format --style=file .\src\OpenGold.Rules.Srd5\src\srd5.cpp
+Get-Content .\src\OpenGold.Rules.Srd5\src\srd5.cpp | astyle --options=.astylerc
 ```
 
-Apply formatting to that file, then review the changes:
+Apply formatting to that file, then review the changes. `--suffix=none` skips
+the `.orig` backup astyle otherwise leaves next to the file; that backup must
+never be committed:
 
 ```powershell
-clang-format --style=file -i .\src\OpenGold.Rules.Srd5\src\srd5.cpp
+astyle --options=.astylerc --suffix=none .\src\OpenGold.Rules.Srd5\src\srd5.cpp
 git diff -- src/OpenGold.Rules.Srd5/src/srd5.cpp
 git diff --check
 ```
@@ -119,7 +111,7 @@ Check formatting without editing files; a nonzero exit code means the check
 failed (for example, formatting differences or an invalid configuration):
 
 ```powershell
-clang-format --style=file --dry-run --Werror .\src\OpenGold.Rules.Srd5\src\srd5.cpp
+astyle --options=.astylerc --dry-run --error-on-changes --formatted .\src\OpenGold.Rules.Srd5\src\srd5.cpp
 if ($LASTEXITCODE -ne 0) {
     throw 'C++ formatting check failed.'
 }
@@ -130,29 +122,32 @@ source/header paths to the same command. Do not recursively format the entire
 working tree. Automated checks should use the pinned release, require the root
 configuration, and run the dry-run check on the agreed file set.
 
-## VS Code integration
+astyle's brace style does not distinguish control/function/class braces from
+aggregate-initializer braces the way clang-format does, so it also breaks
+multi-field struct-literal initializers onto their own line. That changed the
+layout of some data tables enough to need a fix in
+[tools/localization.py](../tools/localization.py)'s extraction regex (its
+structured-data pattern required the opening brace and the first field to be
+adjacent) — check `python tools/localization.py --check` after any
+large-scale reformat, not just the build and tests.
 
-With Microsoft's C/C++ extension installed, merge these settings into
-`.vscode/settings.json` when adopting the setup; preserve existing settings:
+## Editor integration
 
-```json
-{
-    "C_Cpp.formatting": "clangFormat",
-    "C_Cpp.clang_format_style": "file",
-    "C_Cpp.clang_format_fallbackStyle": "none",
-    "[cpp]": {
-        "editor.defaultFormatter": "ms-vscode.cpptools",
-        "editor.formatOnSave": true,
-        "files.trimTrailingWhitespace": true
-    }
-}
-```
+Point the editor at the pinned binary and `.astylerc` rather than trusting a
+bundled formatter's defaults or an unpinned marketplace extension: define a
+task or external tool that runs `astyle --options=.astylerc --suffix=none` (or
+the stdin/stdout form above for a preview) against the active file, and bind
+it to the format command. If a marketplace astyle extension is used instead,
+point its options-file setting at the repository's `.astylerc` and pin the same
+astyle release the extension calls into. Enable format-on-save only after
+reviewing the initial sample, since saving an existing file can reformat the
+whole file.
 
-Set `C_Cpp.clang_format_path` to the full path of the pinned executable in local
-user settings. Do not commit a developer-specific absolute path. The repository
-already associates `.h` files with C++, so the C++ settings cover those headers.
-Use **Format Document** for a manual run. Enable format-on-save after reviewing
-the initial sample, since saving an existing file can reformat the whole file.
+`.clang-format` also remains in the repository from an earlier phase, for
+editors that only integrate clang-format. It is not the pinned formatter and
+is not guaranteed to match astyle's output byte for byte, particularly for
+wrapped expressions and aggregate initializers (see the caveat above);
+`.astylerc` is authoritative.
 
 ## Adoption and validation
 
@@ -162,11 +157,13 @@ the initial sample, since saving an existing file can reformat the whole file.
    a separate formatting-only commit, excluding third-party and generated files.
 4. Review the diff, run `git diff --check`, rebuild affected targets, and run
    relevant tests before committing source changes. Review missing-brace fixes
-   separately from the mechanical formatting pass.
+   separately from the mechanical formatting pass, and re-run
+   `python tools/localization.py --check` since reformatting shifts source-line
+   references and, per the caveat above, can change what its extraction
+   patterns match.
 5. Enable editor format-on-save and an automated formatting check to prevent drift.
 
 ## References
 
-- [clang-format usage](https://clang.llvm.org/docs/ClangFormat.html)
-- [clang-format style options](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)
-- [VS Code C++ formatting](https://code.visualstudio.com/docs/cpp/cpp-ide)
+- [Artistic Style documentation](https://astyle.sourceforge.net/astyle.html)
+- [Artistic Style installation](https://astyle.sourceforge.net/install.html)
