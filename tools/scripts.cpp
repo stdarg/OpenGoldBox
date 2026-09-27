@@ -5,6 +5,7 @@
 #include <set>
 
 using namespace opengold::por;
+
 namespace
 {
 unsigned number(std::string_view s, unsigned max)
@@ -21,6 +22,7 @@ unsigned number(std::string_view s, unsigned max)
         throw EclError("Invalid numeric argument");
     return n;
 }
+
 std::shared_ptr<const EclProgram> demo()
 {
     std::vector<std::uint8_t> bytes{0, 0};
@@ -53,6 +55,7 @@ std::shared_ptr<const EclProgram> demo()
     bytes.insert(bytes.end(), body.begin(), body.end());
     return std::make_shared<const EclProgram>(EclProgram::decode(bytes, "built-in demo"));
 }
+
 int inspect(const EclProgram &p)
 {
     using Edge = std::pair<std::uint32_t, std::optional<std::uint16_t>>;
@@ -112,6 +115,7 @@ int inspect(const EclProgram &p)
     }
     return failed ? 1 : 0;
 }
+
 int run(EclMachine &vm)
 {
     while (true)
@@ -199,6 +203,7 @@ int run(EclMachine &vm)
     }
 }
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

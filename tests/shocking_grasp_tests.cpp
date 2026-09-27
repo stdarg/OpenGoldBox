@@ -10,14 +10,17 @@
 using namespace opengold;
 using namespace opengold::rules;
 namespace fx = opengold::srd5::detail;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 void check(bool v, const char *m)
 {
     if (!v)
         throw std::runtime_error(m);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -31,22 +34,26 @@ template <class F> void rejects(F f)
     }
     check(caught, "Malformed state must reject");
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream f(p);
     check(bool(f), "Read fixture");
     return {std::istreambuf_iterator<char>(f), {}};
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 auto custom(std::string affinity = {}, int speed = 30)
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 " + std::to_string(speed) +
                                " 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" + affinity);
 }
+
 Character hero(unsigned level = 1, std::string spell = "shocking_grasp")
 {
     CharacterDraft d;
@@ -66,6 +73,7 @@ Character hero(unsigned level = 1, std::string spell = "shocking_grasp")
         check(h.advance(*module(), state), "Ordinary advancement");
     return h;
 }
+
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
@@ -73,10 +81,12 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
             return v;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     check(c.submit(command(c, verb, target)), "Submit legal action");
 }
+
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
@@ -84,6 +94,7 @@ bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
             return true;
     return false;
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -91,6 +102,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 fx::EffectState effects(const VitalState &state)
 {
     auto at = state.resources.find("FX");
@@ -99,6 +111,7 @@ fx::EffectState effects(const VitalState &state)
     std::istringstream in(state.resources.substr(at));
     return fx::read_effects(in);
 }
+
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -109,6 +122,7 @@ std::uint64_t rng(const CombatSession &c)
     in >> result;
     return result;
 }
+
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {2, 1},
             std::vector<std::string> gear = {})
 {
@@ -125,6 +139,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
         act(*c, "end");
     return c;
 }
+
 void freeze()
 {
     auto rules = module();
@@ -151,6 +166,7 @@ void freeze()
     act(*c, "end");
     std::ofstream(base / "combat-v15-shocking-continued.save") << c->save();
 }
+
 void access()
 {
     auto rules = module();
@@ -189,6 +205,7 @@ void access()
             (void)rules->character_profile(wrong, {});
         });
 }
+
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
@@ -251,6 +268,7 @@ void damage()
                 check(!c->submit(ticket) && c->save() == saved, "Stale action is atomic");
             }
 }
+
 void timing()
 {
     auto rules = custom();
@@ -272,6 +290,7 @@ void timing()
     check(!fx::opportunity_blocked(effects(unit(*c).persistent)),
           "Self suppression ends at own next turn");
 }
+
 void movement()
 {
     auto rules = custom();
@@ -310,6 +329,7 @@ void movement()
     check(!fx::opportunity_blocked(effects(unit(*c, 2).persistent)) && unit(*c, 2).reaction,
           "Target turn restores ordinary opportunity eligibility");
 }
+
 void reaction_and_armor()
 {
     auto rules = custom();
@@ -372,6 +392,7 @@ void reaction_and_armor()
     check(rng(*c) == random + 2 * 0x9e3779b97f4a7c15ULL && unit(*c, 2).hit_points == hp - 8,
           "Metal armor grants no Advantage; no ability modifier to damage");
 }
+
 void lifecycle()
 {
     fx::EffectState state;
@@ -401,6 +422,7 @@ void lifecycle()
                 (void)fx::read_effects(in);
             });
 }
+
 void legality()
 {
     auto rules = custom();
@@ -432,6 +454,7 @@ void legality()
         check(!c->submit({c->snapshot().revision, 1, id, "shocking_grasp"}) && c->save() == before,
               "Unknown target atomic");
 }
+
 void persistence_guards()
 {
     auto rules = custom();
@@ -470,6 +493,7 @@ void persistence_guards()
               dead->save() == before,
           "Dead creature cannot be targeted");
 }
+
 void campaign()
 {
     auto rules = module();
@@ -523,6 +547,7 @@ void campaign()
             }
         }
 }
+
 void legacy()
 {
     auto rules = module();
@@ -555,6 +580,7 @@ void legacy()
     check(c->save() == upgraded("combat-v15-shocking-continued.save"),
           "Actual prior effect continuation exact");
 }
+
 void fixtures()
 {
     auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "shocking-fixtures";
@@ -574,6 +600,7 @@ void fixtures()
     std::ofstream(path / "suppressed.save") << c->save();
 }
 } // namespace
+
 int main(int argc, char **)
 {
     try

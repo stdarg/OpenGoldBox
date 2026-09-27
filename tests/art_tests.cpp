@@ -9,14 +9,17 @@
 using namespace opengold;
 using namespace opengold::por;
 using namespace opengold::test;
+
 namespace
 {
 using Bytes = std::vector<std::uint8_t>;
+
 void check(bool condition, const char *message)
 {
     if (!condition)
         throw std::logic_error(message);
 }
+
 template <class F> void rejects(F &&operation, std::string_view diagnostic)
 {
     try
@@ -31,6 +34,7 @@ template <class F> void rejects(F &&operation, std::string_view diagnostic)
     }
     throw std::logic_error("Invalid art was accepted");
 }
+
 Bytes picture(unsigned width, unsigned height, unsigned offset = 0)
 {
     Bytes bytes(17 + width * height / 2);
@@ -49,6 +53,7 @@ Bytes picture(unsigned width, unsigned height, unsigned offset = 0)
     }
     return bytes;
 }
+
 std::vector<DaxRecord> components(unsigned count, unsigned height)
 {
     std::vector<DaxRecord> records;
@@ -59,6 +64,7 @@ std::vector<DaxRecord> components(unsigned count, unsigned height)
                                    picture(24, height, id + size / 64 + pose / 32)});
     return records;
 }
+
 class Fixture
 {
   public:
@@ -69,17 +75,21 @@ class Fixture
     {
         check(std::filesystem::create_directory(path_), "Unique art fixture directory");
     }
+
     ~Fixture()
     {
         std::error_code ignored;
         std::filesystem::remove_all(path_, ignored);
     }
+
     Fixture(const Fixture &) = delete;
     Fixture &operator=(const Fixture &) = delete;
+
     const std::filesystem::path &path() const
     {
         return path_;
     }
+
     void write(std::string_view name, const Bytes &bytes) const
     {
         std::ofstream output(path_ / name, std::ios::binary);
@@ -87,6 +97,7 @@ class Fixture
         if (!output)
             throw std::runtime_error("Cannot write art fixture");
     }
+
     void populate() const
     {
         for (unsigned disk = 1; disk <= 8; ++disk)
@@ -287,6 +298,7 @@ void composition_tests(const CharacterArt &art)
         "Invalid character icon components");
 }
 } // namespace
+
 int main()
 {
     try

@@ -29,18 +29,21 @@ inline constexpr std::size_t effect_limit = 128;
 struct RollModifiers
 {
     bool advantage{}, disadvantage{};
+
     // Multiple sources never add extra dice. Opposing sources cancel.
     [[nodiscard]] int mode() const
     {
         return int(advantage) - int(disadvantage);
     }
 };
+
 struct SaveResult
 {
     Ability ability{};
     int natural{}, bonus{}, dc{}, mode{};
     bool success{};
 };
+
 [[nodiscard]] SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifiers,
                                       std::uint64_t &rng);
 [[nodiscard]] int d20(RollModifiers modifiers, std::uint64_t &rng);
@@ -58,6 +61,7 @@ struct Effect
     unsigned remaining_ms{}, save_in_ms{};
     bool operator==(const Effect &) const = default;
 };
+
 struct EffectState
 {
     std::uint64_t next_id{1};
@@ -65,6 +69,7 @@ struct EffectState
     bool sleeping{}, prone{}; // Natural sleep persists until a host wake event.
     bool operator==(const EffectState &) const = default;
 };
+
 struct EffectSubject
 {
     rules::EntityId id{};
@@ -72,6 +77,7 @@ struct EffectSubject
     std::array<int, 6> saves{};
     bool dead{}, str_dex_disadvantage{}, dodge{};
 };
+
 struct EffectEvent
 {
     rules::EntityId target{};
@@ -79,6 +85,7 @@ struct EffectEvent
     std::optional<SaveResult> save;
     bool removed{};
 };
+
 using EffectObserver = std::function<void(const EffectEvent &)>;
 // At a future boundary, effects expiring at that boundary no longer prevent healing.
 [[nodiscard]] bool healing_blocked(const EffectState &effects, std::uint64_t after_ms = 0);

@@ -22,6 +22,7 @@ enum class WallView : unsigned
     near_right,
     far_extension
 };
+
 struct WallArtSet
 {
     // GEO appearance ID n selects appearances[n-1]. ID 0 has no artwork.

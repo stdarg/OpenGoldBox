@@ -11,6 +11,7 @@ Encounter corridor()
          {2, "bandit", "Unconscious enemy", 1, {2, 1}, {}, VitalState{0, false, "SRD1 0 0 0 0 1"}},
          {3, "bandit", "Guard", 1, {5, 1}}}};
 }
+
 void freeze()
 {
     auto module = srd5::load(pack());
@@ -21,6 +22,7 @@ void freeze()
     check(session->submit(command(*session, "dash")), "Prior writer Dash");
     std::ofstream(root / "combat-v13-unconscious-transit-dash.save") << session->save();
 }
+
 void prior_writer()
 {
     auto module = srd5::load(pack());
@@ -45,6 +47,7 @@ void prior_writer()
     check(session->save() == current(read("combat-v13-unconscious-transit-dash.save")),
           "Prior writer Dash continuation remains exact");
 }
+
 void run()
 {
     auto module = srd5::load(pack());

@@ -24,6 +24,7 @@ inline godot::String requirements(const opengold::rules::ClassRequirements &requ
     }
     return result;
 }
+
 inline godot::String adjustment(const opengold::rules::ScoreAdjustment &adjustment)
 {
     godot::String result;

@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 using namespace opengold;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -14,6 +15,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 void rejects(std::string_view bytes)
 {
     try
@@ -27,9 +29,11 @@ void rejects(std::string_view bytes)
     throw std::runtime_error("Malformed content was accepted: " +
                              std::string(bytes.substr(0, 200)));
 }
+
 constexpr auto header = "OPENGOLD_SRD5 1 synthetic.1\n";
 constexpr std::array<int, 19> definition{12, 11, 1,  30,  3, 1, 6, 1, 3, 1,
                                          8,  1,  80, 320, 0, 0, 0, 1, 0};
+
 std::string row(std::array<int, 19> values = definition)
 {
     std::ostringstream out;
@@ -38,6 +42,7 @@ std::string row(std::array<int, 19> values = definition)
         out << ' ' << value;
     return out.str() + '\n';
 }
+
 // This executable links only the SRD static library (and its rules interface),
 // proving rest mechanics can execute without Core, campaign assets or Godot.
 void standalone_rest_rules()
@@ -62,6 +67,7 @@ void standalone_rest_rules()
     check(!module->interrupt_rest(progress, RestInterruption::initiative).progress,
           "SRD Short Rest interruption cancels");
 }
+
 void malformed_content()
 {
     for (const auto *invalid : {"", "OPENGOLD_SRD5", "OPENGOLD_SRD5 2 synthetic.1\n",
@@ -106,6 +112,7 @@ void malformed_content()
     maximum += 'x';
     rejects(maximum);
 }
+
 void identities_and_sessions()
 {
     const auto bytes = std::string(header) + row();
@@ -138,6 +145,7 @@ void identities_and_sessions()
           "File loading and in-memory parsing agree on pinned identity");
 }
 } // namespace
+
 int main()
 {
     try

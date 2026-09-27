@@ -12,6 +12,7 @@ struct FuzzSeed
     std::string name;
     std::vector<std::uint8_t> bytes;
 };
+
 void exercise_formats(std::span<const std::uint8_t> bytes);
 void exercise_checkpoint(std::span<const std::uint8_t> bytes);
 std::vector<FuzzSeed> format_seeds();

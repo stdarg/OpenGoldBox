@@ -8,6 +8,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -15,6 +16,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -28,17 +30,20 @@ template <class F> void rejects(F f)
     }
     check(caught, "Malformed state must reject");
 }
+
 std::string read(const std::filesystem::path &path)
 {
     std::ifstream in(path);
     check(bool(in), "Fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero(std::string klass = "fighter", std::string race = "orc")
 {
     CharacterDraft d;
@@ -53,6 +58,7 @@ Character hero(std::string klass = "fighter", std::string race = "orc")
         r = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
 }
+
 ResourcePool pool(const Character &c, const VitalState &state)
 {
     for (auto p : module()->recovery_info(c.sheet(), state).resources)
@@ -60,6 +66,7 @@ ResourcePool pool(const Character &c, const VitalState &state)
             return p;
     return {};
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (auto a : c.snapshot().combatants)
@@ -67,6 +74,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (auto a : c.legal_commands())
@@ -74,6 +82,7 @@ Command command(const CombatSession &c, std::string_view verb)
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (auto a : c.legal_commands())
@@ -81,10 +90,12 @@ bool has(const CombatSession &c, std::string_view verb)
             return true;
     return false;
 }
+
 void act(CombatSession &c, std::string_view verb)
 {
     check(c.submit(command(c, verb)), "Command accepted");
 }
+
 auto battle(const Character &c, TemporaryHitPoints temporary = {})
 {
     auto rules = module();
@@ -105,12 +116,14 @@ auto battle(const Character &c, TemporaryHitPoints temporary = {})
         act(*combat, "end");
     return combat;
 }
+
 void next_turn(CombatSession &c)
 {
     act(c, "end");
     while (c.snapshot().actor != 1)
         act(c, "end");
 }
+
 void ordinary_classes()
 {
     auto rules = module();
@@ -176,6 +189,7 @@ void ordinary_classes()
     act(*combat, "adrenaline_rush");
     check(!has(*combat, "second_wind"), "Adrenaline Rush spends the shared Bonus Action");
 }
+
 void decisions()
 {
     auto rules = module();
@@ -251,6 +265,7 @@ void decisions()
             });
     }
 }
+
 void movement()
 {
     auto rules = module();
@@ -284,6 +299,7 @@ void movement()
               unit(*combat).temporary_hp.amount == 2,
           "Restored opportunity decline spends only remaining movement and preserves pool");
 }
+
 void campaign()
 {
     auto rules = module();
@@ -322,6 +338,7 @@ void campaign()
     check(pool(copy.member(id).character, copy.member(id).vitals).remaining == 2,
           "Campaign recharge uses the shared rest operation");
 }
+
 void legacy()
 {
     auto rules = module();
@@ -357,6 +374,7 @@ void legacy()
           "Migration becomes canonical and never recharges a current save");
 }
 } // namespace
+
 int main()
 {
     try

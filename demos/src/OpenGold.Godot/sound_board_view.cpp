@@ -20,16 +20,19 @@
 
 using namespace godot;
 using namespace opengold::por;
+
 namespace
 {
 String gs(std::string_view value)
 {
     return String::utf8(value.data(), static_cast<int64_t>(value.size()));
 }
+
 String button_name(int index)
 {
     return "Sound" + String::num_int64(index + 1);
 }
+
 Ref<StyleBoxFlat> box(Color color, Color border, int width = 1)
 {
     Ref<StyleBoxFlat> result;
@@ -42,9 +45,11 @@ Ref<StyleBoxFlat> box(Color color, Color border, int width = 1)
     return result;
 }
 } // namespace
+
 void SoundBoardView::_bind_methods()
 {
 }
+
 void SoundBoardView::_notification(int what)
 {
     if (what == NOTIFICATION_RESIZED && ready_)
@@ -53,6 +58,7 @@ void SoundBoardView::_notification(int what)
         queue_redraw();
     }
 }
+
 void SoundBoardView::_ready()
 {
     ready_ = true;
@@ -117,6 +123,7 @@ void SoundBoardView::_ready()
         }
     }
 }
+
 void SoundBoardView::_exit_tree()
 {
     // Release cached streams and stop the device when leaving this scene.
@@ -125,6 +132,7 @@ void SoundBoardView::_exit_tree()
     loaded_ = false;
     selected_ = -1;
 }
+
 void SoundBoardView::layout()
 {
     const auto width = get_size().x, height = get_size().y;
@@ -149,11 +157,13 @@ void SoundBoardView::layout()
     place("Volume", Rect2(width - 262, height - 66, 234, 30));
     place("Source", Rect2(28, height - 27, width - 56, 20));
 }
+
 void SoundBoardView::_draw()
 {
     draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
     draw_line(Vector2(28, 127), Vector2(get_size().x - 28, 127), Color("405058"));
 }
+
 void SoundBoardView::refresh_buttons()
 {
     for (int i = 0; i < 21; ++i)
@@ -165,6 +175,7 @@ void SoundBoardView::refresh_buttons()
                                                 Color(i == selected_ ? "d7b479" : "405058")));
     }
 }
+
 void SoundBoardView::play(int index)
 {
     if (!loaded_ || index < 0 || static_cast<std::size_t>(index) >= audio_->bank().clips().size())
@@ -186,6 +197,7 @@ void SoundBoardView::play(int index)
         get_node<Label>("Status")->set_text(gs(error.what()));
     }
 }
+
 void SoundBoardView::stop()
 {
     if (audio_)
@@ -195,6 +207,7 @@ void SoundBoardView::stop()
     if (loaded_)
         get_node<Label>("Status")->set_text("Stopped. Choose a sound to play.");
 }
+
 void SoundBoardView::finished()
 {
     if (selected_ >= 0 && audio_->bank().clips()[selected_].audible)
@@ -203,6 +216,7 @@ void SoundBoardView::finished()
     selected_ = -1;
     refresh_buttons();
 }
+
 void SoundBoardView::volume(double value)
 {
     if (audio_)
@@ -210,12 +224,14 @@ void SoundBoardView::volume(double value)
     get_node<Label>("VolumeLabel")
         ->set_text("Volume " + String::num_int64(static_cast<int64_t>(value)) + "%");
 }
+
 void SoundBoardView::mute(bool value)
 {
     get_node<Button>("Mute")->set_text(value ? "Unmute" : "Mute");
     if (audio_)
         audio_->set_muted(value);
 }
+
 void SoundBoardView::_process(double delta)
 {
     ++frames_;

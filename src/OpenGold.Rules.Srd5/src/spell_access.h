@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_SRD5_SPELL_ACCESS_H
 #define OPENGOLD_SRD5_SPELL_ACCESS_H
 #include "opengold/character_rules.h"
+
 namespace opengold::srd5::detail
 {
 bool is_spell_grant(const rules::FeatureGrant &);

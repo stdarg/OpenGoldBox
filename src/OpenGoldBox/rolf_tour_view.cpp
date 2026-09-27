@@ -33,6 +33,7 @@
 
 using namespace godot;
 using namespace opengold::por;
+
 namespace
 {
 // Numeric constructors are safe before Godot initializes the extension interface.
@@ -51,6 +52,7 @@ void RolfTourView::_bind_methods()
     ADD_SIGNAL(MethodInfo("party_member_selected", PropertyInfo(Variant::INT, "slot")));
     ADD_SIGNAL(MethodInfo("level_up_requested", PropertyInfo(Variant::INT, "id")));
 }
+
 void RolfTourView::_notification(int what)
 {
     if (what == NOTIFICATION_RESIZED && ready_)
@@ -59,6 +61,7 @@ void RolfTourView::_notification(int what)
         queue_redraw();
     }
 }
+
 void RolfTourView::_ready()
 {
     i18n::prepare_ui(*this);
@@ -281,6 +284,7 @@ void RolfTourView::restart()
     }
     refresh();
 }
+
 void RolfTourView::next()
 {
     if (!session_)
@@ -301,18 +305,22 @@ void RolfTourView::next()
         session_->choose(s.continue_ticket, selected.is_empty() ? 0 : selected[0]);
     refresh();
 }
+
 void RolfTourView::left()
 {
     movement(ExplorationCommand::turn_left);
 }
+
 void RolfTourView::right()
 {
     movement(ExplorationCommand::turn_right);
 }
+
 void RolfTourView::forward()
 {
     movement(ExplorationCommand::forward);
 }
+
 void RolfTourView::look()
 {
     movement(ExplorationCommand::look);
@@ -326,6 +334,7 @@ void RolfTourView::leave_shop()
         refresh();
     }
 }
+
 void RolfTourView::inventory()
 {
     auto *panel = get_node<Control>("InventoryPanel");
@@ -339,6 +348,7 @@ void RolfTourView::inventory()
     refresh_inventory();
     panel->show();
 }
+
 void RolfTourView::refresh_inventory()
 {
     auto *items = get_node<ItemList>("InventoryPanel/Items");
@@ -371,6 +381,7 @@ void RolfTourView::refresh_inventory()
     if (items->get_item_count())
         inventory_selected(0);
 }
+
 void RolfTourView::inventory_selected(std::int64_t index)
 {
     if (!campaign_ || !campaign_->selected())
@@ -390,6 +401,7 @@ void RolfTourView::inventory_selected(std::int64_t index)
         get_node<Label>("InventoryPanel/Status")->set_text(i18n::text(e.what()));
     }
 }
+
 void RolfTourView::grip_selected(std::int64_t index)
 {
     const auto selection = get_node<ItemList>("InventoryPanel/Items")->get_selected_items();
@@ -414,6 +426,7 @@ void RolfTourView::grip_selected(std::int64_t index)
     if (!error.is_empty())
         get_node<Label>("InventoryPanel/Status")->set_text(error);
 }
+
 void RolfTourView::equip_item(bool equip)
 {
     try
@@ -445,6 +458,7 @@ void RolfTourView::equip_item(bool equip)
         get_node<Label>("InventoryPanel/Status")->set_text(i18n::text(e.what()));
     }
 }
+
 void RolfTourView::party_selected(std::int64_t index)
 {
     if (index < 0 || index >= 8 || !session_ || !campaign_ || !campaign_->state().slots[index])
@@ -474,10 +488,12 @@ void RolfTourView::party_selected(std::int64_t index)
     }
     refresh();
 }
+
 void RolfTourView::close_sheet()
 {
     get_node<Window>("MemberSheet")->hide();
 }
+
 void RolfTourView::level_up_requested(int slot)
 {
     if (embedded_party_ && campaign_ && session_ && session_->can_leave())
@@ -592,6 +608,7 @@ String rest_notice(const std::string &resource, const std::string &text)
     return result;
 }
 } // namespace
+
 void RolfTourView::refresh()
 {
     layout();
@@ -907,6 +924,7 @@ void RolfTourView::capture_frame(const String &name)
         throw std::runtime_error("Failed to capture tour scene");
     UtilityFunctions::print("Screenshot: ", path);
 }
+
 void RolfTourView::check_run()
 {
     try
@@ -1142,6 +1160,7 @@ void RolfTourView::check_town()
         return;
     check_walk_to(13, 8);
 }
+
 void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
 {
     const auto &s = session_->snapshot();
@@ -1203,6 +1222,7 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
         check_pending_edge_ = {{origin, next}};
     get_node<Button>(s.pose.facing == facing ? "Forward" : "Right")->emit_signal("pressed");
 }
+
 bool RolfTourView::check_expedition_step()
 {
     if (!session_)
@@ -1246,6 +1266,7 @@ bool RolfTourView::check_expedition_step()
         check_walk_to(12, 1);
     return false;
 }
+
 void RolfTourView::start_recovery_check()
 {
     // Acceptance-only fixtures exercise mortality through ordinary camp/travel.
@@ -1268,6 +1289,7 @@ void RolfTourView::start_recovery_check()
     check_frames_ = 0;
     checking_ = town_check_ = true;
 }
+
 void RolfTourView::check_recovery()
 {
     const auto &s = session_->snapshot();
@@ -1452,9 +1474,11 @@ godot::String rest_rules_path()
 {
     return game_rules_file();
 }
+
 godot::String rest_text(std::string_view value)
 {
     return i18n::text(value);
 }
 } // namespace
+
 #include "rest_dialog_impl.h"

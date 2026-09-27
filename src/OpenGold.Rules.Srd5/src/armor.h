@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <string_view>
+
 namespace opengold::srd5::detail
 {
 enum class ArmorCategory
@@ -12,6 +13,7 @@ enum class ArmorCategory
     heavy,
     shield
 };
+
 struct Armor
 {
     std::string_view key, label;
@@ -19,6 +21,7 @@ struct Armor
     int base_ac, strength{};
     bool stealth_disadvantage{};
     unsigned weight_pounds{}, cost_cp{}, don_seconds{}, doff_seconds{};
+
     int dexterity_contribution(int modifier) const
     {
         return category == ArmorCategory::light    ? modifier
@@ -26,6 +29,7 @@ struct Armor
                                                    : 0;
     }
 };
+
 // SRD 5.2.1 p.92. Don/doff durations are catalog metadata; #198 owns the
 // campaign activity and shield Utilize action, including interruptions.
 inline constexpr std::array armors{
@@ -44,6 +48,7 @@ inline constexpr std::array armors{
     Armor{"plate", "Plate Armor", ArmorCategory::heavy, 18, 15, true, 65, 150000, 600, 300},
     // Zero duration denotes a Utilize action, not a free equipment change.
     Armor{"shield", "Shield", ArmorCategory::shield, 2, 0, false, 6, 1000, 0, 0}};
+
 inline const Armor *armor(std::string_view key)
 {
     for (const auto &item : armors)
@@ -51,6 +56,7 @@ inline const Armor *armor(std::string_view key)
             return &item;
     return nullptr;
 }
+
 inline bool armor_trained(std::string_view klass, ArmorCategory category)
 {
     const bool heavy = klass == "Fighter" || klass == "Paladin";
@@ -69,6 +75,7 @@ inline bool armor_trained(std::string_view klass, ArmorCategory category)
     }
     return false;
 }
+
 inline std::string_view armor_category_label(ArmorCategory category)
 {
     switch (category)

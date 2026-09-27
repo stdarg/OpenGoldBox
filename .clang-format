@@ -43,6 +43,12 @@ SpaceBeforeParensOptions:
 # RemoveBracesLLVM stays off so existing braces are never stripped.
 InsertBraces: false
 RemoveBracesLLVM: false
+# A blank line before and after every definition block: functions, classes,
+# structs, enums and namespaces. clang-format has no equivalent for control-flow
+# blocks -- nothing separates an if/do/while/for body from its neighbours -- so
+# blank lines around those remain a matter for the author and review.
+SeparateDefinitionBlocks: Always
+MaxEmptyLinesToKeep: 1
 SortIncludes: Never
 IncludeBlocks: Preserve
 # CODING_STYLE.md: "indivisible tokens and strings may exceed the limit". This

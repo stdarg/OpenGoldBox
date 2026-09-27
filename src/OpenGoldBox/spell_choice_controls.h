@@ -3,6 +3,7 @@
 #include "training_control.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/window.hpp>
+
 namespace presentation
 {
 inline godot::VBoxContainer *spell_rows(godot::Node &parent, const godot::String &name)
@@ -18,6 +19,7 @@ inline godot::VBoxContainer *spell_rows(godot::Node &parent, const godot::String
     }
     return rows;
 }
+
 template <class Translate>
 void refresh_spell_groups(godot::VBoxContainer &rows,
                           const opengold::rules::SpellChoiceOptions &options,
@@ -96,6 +98,7 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         }
     }
 }
+
 inline void toggle_spell(opengold::rules::SpellChoices &choice, bool selected, std::string group,
                          std::string value)
 {
@@ -110,6 +113,7 @@ inline void toggle_spell(opengold::rules::SpellChoices &choice, bool selected, s
     else
         std::erase(values, value);
 }
+
 template <class Translate>
 godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name,
                                   const godot::Callable &cancel, const godot::Callable &apply,
@@ -150,6 +154,7 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     ok->connect("pressed", apply);
     return w;
 }
+
 template <class Translate>
 void spell_known(godot::Window &w, const opengold::rules::SpellAccess &access, const Translate &tr)
 {

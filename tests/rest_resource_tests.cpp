@@ -8,6 +8,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -15,6 +16,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -28,11 +30,13 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid recovery must reject");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero(std::string klass = "fighter", unsigned level = 1, int constitution = 15)
 {
     CharacterDraft d;
@@ -53,12 +57,14 @@ Character hero(std::string klass = "fighter", unsigned level = 1, int constituti
         check(result.advance(*module(), scratch), "Fixture level is supported");
     return result;
 }
+
 std::string fixture(const char *name)
 {
     std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
     check(bool(in), "Frozen fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 const ResourcePool &pool(const RecoveryInfo &info, std::string_view id)
 {
     const auto it = std::find_if(info.resources.begin(), info.resources.end(),
@@ -69,6 +75,7 @@ const ResourcePool &pool(const RecoveryInfo &info, std::string_view id)
     check(it != info.resources.end(), "Named pool exists");
     return *it;
 }
+
 Command command(const CombatSession &combat, std::string_view verb)
 {
     for (const auto &c : combat.legal_commands())
@@ -76,6 +83,7 @@ Command command(const CombatSession &combat, std::string_view verb)
             return c;
     throw std::runtime_error("Missing combat command");
 }
+
 void class_dice_and_recharge()
 {
     auto rules = module();
@@ -167,6 +175,7 @@ void class_dice_and_recharge()
               "Long Rest restores both supported slot pools");
     }
 }
+
 void minimum_caps_and_rejection()
 {
     auto rules = module();
@@ -250,6 +259,7 @@ void minimum_caps_and_rejection()
               "Malformed counts, effects and resource pools reject without mutation");
     }
 }
+
 void persistence_and_advancement()
 {
     auto rules = module();
@@ -377,6 +387,7 @@ void persistence_and_advancement()
         });
     check(copy->save() == combat->save(), "Malformed Hit Dice cannot mutate an existing combat");
 }
+
 void old_saves()
 {
     auto rules = module();
@@ -415,6 +426,7 @@ void old_saves()
         "Opportunity damage, movement, RNG, effects and spent resources match the prior writer's continuation");
 }
 } // namespace
+
 int main()
 {
     try

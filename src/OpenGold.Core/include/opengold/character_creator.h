@@ -2,6 +2,7 @@
 #define OPENGOLD_CHARACTER_CREATOR_H
 #include "opengold/character.h"
 #include <functional>
+
 namespace opengold
 {
 enum class CreationStep
@@ -16,6 +17,7 @@ enum class CreationStep
     combat_icon,
     sheet
 };
+
 class CharacterCreator
 {
   public:
@@ -25,22 +27,27 @@ class CharacterCreator
     CharacterCreator(std::unique_ptr<rules::CharacterRules> rules, Character character,
                      const rules::RulesModule &module);
     [[nodiscard]] std::vector<rules::TrainingChoiceGroup> training_options() const;
+
     [[nodiscard]] const rules::CharacterRules &rules() const
     {
         return *rules_;
     }
+
     [[nodiscard]] const rules::CharacterDraft &draft() const
     {
         return draft_;
     }
+
     [[nodiscard]] const por::CharacterAppearance &appearance() const
     {
         return appearance_;
     }
+
     [[nodiscard]] CreationStep step() const
     {
         return step_;
     }
+
     [[nodiscard]] rules::CharacterSheet sheet() const;
     [[nodiscard]] Character create_character() const;
     void select(rules::CreationField field, std::string_view id);

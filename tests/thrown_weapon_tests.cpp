@@ -7,33 +7,39 @@
 
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 const auto fixtures = root / "tests/fixtures";
 constexpr std::array weapons{"dagger", "handaxe", "javelin", "light_hammer",
                              "spear",  "dart",    "trident"};
+
 void check(bool ok, const char *message)
 {
     if (!ok)
         throw std::runtime_error(message);
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 std::string read(const char *name)
 {
     std::ifstream in(fixtures / name);
     check(bool(in), "Open historical thrown fixture");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 void write(const char *name, const std::string &bytes)
 {
     std::ofstream out(fixtures / name);
     out << bytes;
     check(bool(out), "Write actual prior-writer fixture");
 }
+
 Command command(const CombatSession &combat, std::string_view verb, EntityId target = 0)
 {
     for (const auto &option : combat.legal_commands())
@@ -41,10 +47,12 @@ Command command(const CombatSession &combat, std::string_view verb, EntityId tar
             return option;
     throw std::runtime_error("Missing baseline command: " + std::string(verb));
 }
+
 void act(CombatSession &combat, std::string_view verb, EntityId target = 0)
 {
     check(combat.submit(command(combat, verb, target)), "Accept baseline legal command");
 }
+
 Character hero()
 {
     CharacterDraft draft;
@@ -59,6 +67,7 @@ Character hero()
         roll = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), draft, {});
 }
+
 std::string current_identity(std::string bytes, const RulesModule &rules)
 {
     const auto position = bytes.find("0.6.46");
@@ -66,6 +75,7 @@ std::string current_identity(std::string bytes, const RulesModule &rules)
     bytes.replace(position, 6, rules.identity().version);
     return bytes;
 }
+
 void finish_second_throw(CombatSession &combat)
 {
     act(combat, "end"); // Decline the first critical's free movement.
@@ -74,6 +84,7 @@ void finish_second_throw(CombatSession &combat)
     if (combat.snapshot().free_movement)
         act(combat, "end");
 }
+
 void capture_prior_writer()
 {
     auto rules = module();
@@ -133,6 +144,7 @@ void capture_prior_writer()
     }
     check(captured, "Capture actual critical thrown attack sequence");
 }
+
 void prior_writer_continuation()
 {
     auto rules = module();
@@ -186,6 +198,7 @@ void prior_writer_continuation()
     check(encode_campaign(copy, nullptr, "thrown-before") == saved,
           "Campaign migration is canonical");
 }
+
 void settle(CombatSession &combat)
 {
     if (combat.snapshot().savage_attack_choice)
@@ -193,6 +206,7 @@ void settle(CombatSession &combat)
     if (combat.snapshot().free_movement)
         act(combat, "end");
 }
+
 void physical_inventory()
 {
     const std::array classes{"barbarian", "bard",   "cleric", "druid",    "fighter", "monk",
@@ -291,6 +305,7 @@ void physical_inventory()
                       "Post-combat equipment and quantities survive campaign save");
             }
 }
+
 void critical_stack()
 {
     auto rules = module();
@@ -452,6 +467,7 @@ void transfer_and_recovery()
     }
     check(recovered, "Victory recovery exercised with an actual lethal throw");
 }
+
 void control_fixture()
 {
     auto pc = hero();
@@ -480,6 +496,7 @@ void control_fixture()
 }
 
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

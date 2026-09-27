@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
+
 namespace opengold::rules
 {
 AbilityCheckModifier CharacterRules::ability_check(const CharacterSheet &, unsigned,
@@ -9,6 +10,7 @@ AbilityCheckModifier CharacterRules::ability_check(const CharacterSheet &, unsig
 {
     throw std::runtime_error("Ability checks are unsupported by this rules module");
 }
+
 bool CharacterRules::class_eligible(const CharacterDraft &d, std::string_view id) const
 {
     const auto r = class_requirements(id);
@@ -19,6 +21,7 @@ bool CharacterRules::class_eligible(const CharacterDraft &d, std::string_view id
     return r.any ? std::any_of(r.abilities.begin(), r.abilities.end(), meets)
                  : std::all_of(r.abilities.begin(), r.abilities.end(), meets);
 }
+
 std::array<bool, 6> CharacterRules::unmet_targets(const CharacterDraft &d) const
 {
     std::array<bool, 6> result{};
@@ -33,6 +36,7 @@ std::array<bool, 6> CharacterRules::unmet_targets(const CharacterDraft &d) const
     }
     return result;
 }
+
 int AbilityRoll::total() const
 {
     if (discarded >= dice.size() ||

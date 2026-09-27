@@ -9,6 +9,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *why)
@@ -16,6 +17,7 @@ void check(bool ok, const char *why)
     if (!ok)
         throw std::runtime_error(why);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -29,13 +31,16 @@ template <class F> void rejects(F f)
     }
     check(caught, "Malformed Savage Attacker state must reject");
 }
+
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
     check(bool(in), "Fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 auto module(bool target = true, std::string affinity = {})
 {
     auto text = read(root / "data/rules/srd-5.2.1/combat.rules");
@@ -43,6 +48,7 @@ auto module(bool target = true, std::string affinity = {})
         text += "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     return srd5::parse_content(text + affinity);
 }
+
 Character hero(std::string klass = "fighter", std::string background = "soldier")
 {
     CharacterDraft d;
@@ -57,6 +63,7 @@ Character hero(std::string klass = "fighter", std::string background = "soldier"
         r = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
 }
+
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -64,10 +71,12 @@ Command command(const CombatSession &c, std::string_view verb)
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void act(CombatSession &c, std::string_view verb)
 {
     check(c.submit(command(c, verb)), "Command accepted");
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -75,12 +84,14 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 SavageAttackChoice offer(const CombatSession &c)
 {
     const auto s = c.snapshot();
     check(s.savage_attack_choice.has_value(), "Expected damage choice");
     return *s.savage_attack_choice;
 }
+
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -91,6 +102,7 @@ std::uint64_t rng(const CombatSession &c)
     in >> r;
     return r;
 }
+
 auto battle(const RulesModule &rules, const Character &h, std::string gear = "greatsword",
             unsigned seed = 13, bool ranged = false)
 {
@@ -107,11 +119,13 @@ auto battle(const RulesModule &rules, const Character &h, std::string gear = "gr
                           {99, "target", "Target", 1, ranged ? Cell{4, 1} : Cell{2, 1}}}},
                         seed);
 }
+
 void roundtrip(const RulesModule &r, const CombatSession &c)
 {
     check(r.restore(c.save())->save() == c.save(),
           "Pending choice, RNG and costs round trip exactly");
 }
+
 void choices()
 {
     auto rules = module();
@@ -183,6 +197,7 @@ void choices()
     }
     check(count == 12, "All twelve classes receive the Soldier feat's real decisions");
 }
+
 void exceptions_and_turns()
 {
     auto rules = module();
@@ -243,6 +258,7 @@ void exceptions_and_turns()
     check(!c->snapshot().reaction_pending && unit(*c, 99).cell == Cell{3, 1} && !unit(*c).reaction,
           "Resolving damage resumes movement once, Reaction remains spent");
 }
+
 void lethal_and_queues()
 {
     auto rules = module();
@@ -290,6 +306,7 @@ void lethal_and_queues()
         }
     }
 }
+
 void defenses()
 {
     auto rules = module(true, "affinity target ward resistance slashing\n");
@@ -316,6 +333,7 @@ void defenses()
     check(unit(*c, 99).hit_points == 999 && unit(*c, 99).temporary_hp.amount == 0,
           "Chosen 9 rounds to 4 after resistance, then absorbs 3 Temporary HP");
 }
+
 void invalid()
 {
     auto rules = module();
@@ -348,6 +366,7 @@ void invalid()
             (void)rules->restore(bad);
         });
 }
+
 void grants_and_campaign()
 {
     auto rules = module();
@@ -401,6 +420,7 @@ void grants_and_campaign()
         check(!party.can_advance(id), "Existing level band cannot invent another entitlement");
     }
 }
+
 std::string upgraded(std::string bytes)
 {
     const auto at = bytes.find("0.6.19");
@@ -409,6 +429,7 @@ std::string upgraded(std::string bytes)
     bytes.replace(9, 2, "13");
     return bytes + "0\n";
 }
+
 void legacy()
 {
     auto rules = module(false);
@@ -452,6 +473,7 @@ void legacy()
         }
     }
 }
+
 void fixtures(const std::filesystem::path &path)
 {
     std::filesystem::create_directories(path);
@@ -469,6 +491,7 @@ void fixtures(const std::filesystem::path &path)
     std::ofstream(path / "savage-second.save") << c->save();
 }
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

@@ -12,6 +12,7 @@
 using namespace opengold;
 using namespace opengold::rules;
 namespace life = opengold::srd5::detail;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -19,6 +20,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -32,20 +34,24 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid Temporary HP operation must reject");
 }
+
 std::string read(const std::filesystem::path &path)
 {
     std::ifstream in(path);
     check(bool(in), "Fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 std::string content()
 {
     return read(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules");
 }
+
 auto module()
 {
     return srd5::parse_content(content());
 }
+
 Character hero(std::string klass = "fighter", unsigned level = 2)
 {
     CharacterDraft d;
@@ -64,10 +70,12 @@ Character hero(std::string klass = "fighter", unsigned level = 2)
         check(result.advance(*module(), scratch), "Fixture can advance");
     return result;
 }
+
 TemporaryHitPoints pool(const Character &character, const VitalState &state)
 {
     return module()->recovery_info(character.sheet(), state).temporary_hp;
 }
+
 void golden_life()
 {
     struct Case
@@ -75,6 +83,7 @@ void golden_life()
         int hp, temp, damage, want_hp, want_temp;
         bool dead;
     };
+
     for (const auto &c : {Case{10, 5, 7, 8, 0, false}, Case{10, 10, 3, 10, 7, false},
                           Case{5, 7, 17, 0, 0, false}, Case{5, 7, 22, 0, 0, true}})
     {
@@ -123,6 +132,7 @@ void golden_life()
     check(s.hp == 10 && s.temporary_hp.amount == 0,
           "Large valid damage/pools do not overflow or manufacture HP loss");
 }
+
 void rule_operations()
 {
     auto rules = module();
@@ -222,6 +232,7 @@ void rule_operations()
             });
     }
 }
+
 CombatantView unit(const CombatSession &combat, EntityId id)
 {
     for (const auto &a : combat.snapshot().combatants)
@@ -229,6 +240,7 @@ CombatantView unit(const CombatSession &combat, EntityId id)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 Command command(const CombatSession &combat, std::string_view verb, EntityId target = 0)
 {
     for (const auto &c : combat.legal_commands())
@@ -236,6 +248,7 @@ Command command(const CombatSession &combat, std::string_view verb, EntityId tar
             return c;
     throw std::runtime_error("Missing command");
 }
+
 void actual_combat()
 {
     auto rules = srd5::parse_content(
@@ -290,10 +303,12 @@ void actual_combat()
         });
     check(combat->save() == saved, "Rejected restore leaves the original session intact");
 }
+
 std::string saved(const CampaignParty &party)
 {
     return encode_campaign(party, nullptr, "temporary-hp");
 }
+
 CampaignParty loaded(std::string_view bytes)
 {
     CampaignParty party(module());
@@ -301,6 +316,7 @@ CampaignParty loaded(std::string_view bytes)
         decode_campaign(bytes, *srd5::character_rules(), *module(), "temporary-hp", nullptr).party);
     return party;
 }
+
 void campaign()
 {
     auto rules = module();
@@ -356,6 +372,7 @@ void campaign()
     check(pool(copy.member(reserve).character, copy.member(reserve).vitals).amount == 8,
           "Encounter snapshots do not overwrite reserve pools");
 }
+
 std::string upgraded(std::string bytes)
 {
     std::istringstream in(bytes);
@@ -372,6 +389,7 @@ std::string upgraded(std::string bytes)
         result += row + '\n';
     return result + "0\n0\n";
 }
+
 void old_writer()
 {
     const auto path = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
@@ -401,6 +419,7 @@ void old_writer()
         "Campaign migration adds sourced spell grants and preserves old fields including fixed Dwarf grants and clocks");
 }
 } // namespace
+
 int main()
 {
     try

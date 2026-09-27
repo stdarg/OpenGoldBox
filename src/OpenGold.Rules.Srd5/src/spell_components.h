@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <string_view>
+
 namespace opengold::srd5::detail
 {
 struct SpellComponents
@@ -11,6 +12,7 @@ struct SpellComponents
     std::string_view id;
     bool verbal{}, somatic{};
 };
+
 // SRD 5.2.1 spell descriptions, carried on the spell table. These spells have
 // no Material component; component substitution and speech-blocking sources
 // are separate increments.

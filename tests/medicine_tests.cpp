@@ -8,14 +8,17 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 void check(bool ok, const char *why)
 {
     if (!ok)
         throw std::runtime_error(why);
 }
+
 template <class F> void rejects(F f)
 {
     bool bad = false;
@@ -29,21 +32,25 @@ template <class F> void rejects(F f)
     }
     check(bad, "Invalid state must reject");
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
     check(bool(in), "Read fixture");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 auto custom()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature patient 10 100 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
+
 Character hero(std::string klass = "fighter", unsigned level = 2, bool trained = false)
 {
     CharacterDraft d;
@@ -64,6 +71,7 @@ Character hero(std::string klass = "fighter", unsigned level = 2, bool trained =
         check(h.advance(*module(), vitals), "Ordinary advancement");
     return h;
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -71,6 +79,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 Command cmd(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
@@ -78,10 +87,12 @@ Command cmd(const CombatSession &c, std::string_view verb, EntityId target = 0)
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     check(c.submit(cmd(c, verb, target)), "Legal command accepted");
 }
+
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -89,6 +100,7 @@ bool has(const CombatSession &c, std::string_view verb)
             return true;
     return false;
 }
+
 std::uint64_t random(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -99,10 +111,12 @@ std::uint64_t random(const CombatSession &c)
     in >> value;
     return value;
 }
+
 bool stable(const CombatSession &c)
 {
     return unit(c, 2).status.find("Stable") != std::string::npos;
 }
+
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 0, Cell target = {2, 1},
             unsigned side = 0)
 {
@@ -127,6 +141,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 0, Cel
         act(*c, "end");
     return c;
 }
+
 void grants()
 {
     auto rules = module();
@@ -155,6 +170,7 @@ void grants()
         }
     }
 }
+
 void outcomes()
 {
     auto rules = custom();
@@ -259,6 +275,7 @@ void outcomes()
             "Independent success, failure, d10 branches and natural extremes exercised at every Fighter level");
     }
 }
+
 void all_classes()
 {
     auto rules = custom();
@@ -297,6 +314,7 @@ void all_classes()
         check(saw, "Medicine log includes modifier");
     }
 }
+
 void legality_and_surge()
 {
     auto rules = custom();
@@ -323,6 +341,7 @@ void legality_and_surge()
     }
     check(covered, "Surge-backed failed check exercised");
 }
+
 void campaign_and_rest()
 {
     auto rules = module();
@@ -387,6 +406,7 @@ void campaign_and_rest()
         check(covered, "Real party handoff/rest at every eligible Fighter level");
     }
 }
+
 void fixtures()
 {
     auto dir = std::filesystem::path(OPENGOLD_BINARY_DIR) / "medicine-fixtures";
@@ -470,6 +490,7 @@ void fixtures()
     check(done, "Combined Cunning/Wake/Stabilize fixture available");
 }
 } // namespace
+
 int main()
 {
     try

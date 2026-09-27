@@ -21,6 +21,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
+
 namespace
 {
 constexpr double text_fade_seconds = 0.6;
@@ -115,12 +116,14 @@ void StartupView::show_path(const String &message)
     dialog->popup_centered();
     dialog->get_node<LineEdit>("Path")->grab_focus();
 }
+
 void StartupView::browse_path()
 {
     auto *browser = get_node<FileDialog>("PathDialog/BrowseDialog");
     browser->set_current_dir(get_node<LineEdit>("PathDialog/Path")->get_text());
     browser->popup_centered_ratio(.7);
 }
+
 void StartupView::picked_path(const String &directory)
 {
     get_node<LineEdit>("PathDialog/Path")->set_text(directory);
@@ -128,20 +131,24 @@ void StartupView::picked_path(const String &directory)
     path_edited(directory);
     get_node<Button>("PathDialog/Continue")->grab_focus();
 }
+
 void StartupView::path_edited(const String &)
 {
     get_node<Label>("PathDialog/Status")->set_text(String());
 }
+
 void StartupView::submitted_path(const String &)
 {
     accept_path();
 }
+
 void StartupView::accept_path()
 {
     pending_path_ = get_node<LineEdit>("PathDialog/Path")->get_text().strip_edges();
     save_pending_path_ = true;
     check_path();
 }
+
 void StartupView::check_path()
 {
     const auto result = settings::validate_game_path(pending_path_);
@@ -169,6 +176,7 @@ void StartupView::check_path()
     }
     continue_path();
 }
+
 void StartupView::continue_path()
 {
     get_node<Window>("ChecksumWarning")->hide();

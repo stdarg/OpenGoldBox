@@ -20,6 +20,7 @@ unsigned index_field(std::string_view field, unsigned limit)
         throw std::runtime_error("Combat catalog number out of range");
     return static_cast<unsigned>(value);
 }
+
 std::string strip_cr(std::string text)
 {
     if (!text.empty() && text.back() == '\r')
@@ -28,6 +29,7 @@ std::string strip_cr(std::string text)
 }
 
 } // namespace
+
 CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignments,
                                           const std::filesystem::path &options_file)
 {
@@ -113,6 +115,7 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
             body.erase(key);
     return result;
 }
+
 ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
                                                    const CombatBodyCatalog &catalog)
 {
@@ -130,11 +133,13 @@ ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
     auto selection = catalog.choose(equipped, appearance.combat_body);
     return {std::move(appearance), std::move(selection)};
 }
+
 Image ResolvedCombatAppearance::icon(const CharacterArt &art, bool action) const
 {
     // Missing artwork must not falsely show the weapon baked into the saved body.
     return art.equipped_icon(appearance, selection.matched ? selection.body : 0, action);
 }
+
 CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> equipped,
                                               unsigned fallback) const
 {

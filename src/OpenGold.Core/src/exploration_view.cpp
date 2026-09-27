@@ -52,15 +52,18 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
             owners[row * 88 + column] = cell_at(depth, lateral);
         }
     }
+
     struct WallSample
     {
         unsigned id{};
         int cell{-1};
+
         explicit operator bool() const
         {
             return id != 0;
         }
     };
+
     // Read the face of the sampled cell seen by the party. Opposite faces may
     // deliberately have different art. Do not merge neighboring edge records.
     const auto wall = [&](int depth, int lateral, unsigned side) -> WallSample
@@ -135,6 +138,7 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
             view.visible.set(cell);
     return view;
 }
+
 Image compose_exploration_view(const GeoMap &map, const WallArtSet &art, unsigned x, unsigned y,
                                unsigned facing)
 {

@@ -30,18 +30,22 @@
 namespace opengold::srd5
 {
 using namespace rules;
+
 int ability_modifier(int score) noexcept
 {
     return static_cast<int>(std::floor((static_cast<double>(score) - 10) / 2.0));
 }
+
 int minimum_save_roll(int dc, int bonus) noexcept
 {
     return static_cast<int>(std::clamp(static_cast<long long>(dc) - bonus, 1LL, 21LL));
 }
+
 bool attack_hits(int natural, int bonus, int ac) noexcept
 {
     return natural == 20 || (natural != 1 && static_cast<std::int64_t>(natural) + bonus >= ac);
 }
+
 namespace
 {
 std::string weapon_label(std::string_view key)
@@ -52,6 +56,7 @@ std::string weapon_label(std::string_view key)
         return std::string(item->label);
     return std::string(key);
 }
+
 std::string attack_ability(std::string_view key)
 {
     const auto *item = detail::weapon(key);
@@ -59,6 +64,7 @@ std::string attack_ability(std::string_view key)
            : item && item->ranged ? "Dexterity"
                                   : "Strength";
 }
+
 bool trained(std::string_view klass, std::string_view key)
 {
     // Starting-class grants, SRD 5.2.1 pp. 49 and 61. Multiclass entry and
@@ -73,6 +79,7 @@ bool trained(std::string_view klass, std::string_view key)
     throw std::runtime_error("Unsupported equipment conversion: " + std::string(key));
 }
 } // namespace
+
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
     std::string text;
@@ -91,9 +98,11 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
         text += " Plain focus only; no charged wand spell is granted.";
     return text;
 }
+
 namespace
 {
 constexpr std::string_view rush_source = "species:orc/trait:adrenaline_rush";
+
 // Compatibility is checked before this helper. Feature introduction boundaries
 // must stay fixed when the current module version advances.
 bool module_before(const Identity &identity, std::array<unsigned, 3> introduced)
@@ -150,6 +159,7 @@ enum class Cap : unsigned
     // written today are unchanged.
     explicit_spells = 36
 };
+
 // Which spells a class may legitimately have stored at a level, given the
 // capabilities its tag implies. This replaces a packed allow-mask, which could
 // not express a spell beyond the 31st bit. Capability gates are monotonic, so
@@ -162,6 +172,7 @@ struct SpellAccessRow
     unsigned min_level;
     Cap required;
 };
+
 constexpr std::array class_spell_access{
     SpellAccessRow{"Cleric", "cure_wounds", 1, Cap::selected},
     SpellAccessRow{"Cleric", "healing_word", 1, Cap::selected},
@@ -187,6 +198,7 @@ constexpr std::array class_spell_access{
     SpellAccessRow{"Sorcerer", "ray_of_frost", 1, Cap::sorcerer},
     SpellAccessRow{"Sorcerer", "shocking_grasp", 1, Cap::sorcerer},
     SpellAccessRow{"Sorcerer", "chill_touch", 1, Cap::chill}};
+
 std::vector<std::string> allowed_spells(std::string_view klass, unsigned level, unsigned tag)
 {
     std::vector<std::string> result;
@@ -196,7 +208,9 @@ std::vector<std::string> allowed_spells(std::string_view klass, unsigned level, 
             result.emplace_back(row.spell);
     return result;
 }
+
 constexpr unsigned max_profile_tag = static_cast<unsigned>(Cap::explicit_spells);
+
 // Zero for anything that is not a known PC tag, so the profile validation below
 // rejects it exactly as the previous chain did. Untrusted input: an unknown
 // tag must never be treated as "has everything".
@@ -213,6 +227,7 @@ unsigned profile_tag(std::string_view magic)
     }
     return value >= 1 && value <= max_profile_tag ? value : 0;
 }
+
 // Highest capability present decides the written tag. The source lists are in
 // descending tag order, so taking the maximum matches the if-else chains these
 // replaced.
@@ -225,7 +240,9 @@ unsigned highest_present(unsigned floor_tag,
             tag = std::max(tag, candidate);
     return tag;
 }
+
 using Dice = detail::DamageDice;
+
 struct Definition
 {
     int ac{}, hp{}, initiative{}, speed{}, melee_bonus{};
@@ -258,10 +275,12 @@ struct Definition
     std::vector<detail::DamageAffinity> affinities;
     std::vector<std::string> equipment_keys;
 };
+
 bool legacy_two_hands(std::string_view key)
 {
     return key == "quarterstaff" || key == "spear" || key == "battleaxe" || key == "trident";
 }
+
 std::vector<GripOption> grip_options(const Definition &d)
 {
     if (!d.versatile_sides)
@@ -271,18 +290,21 @@ std::vector<GripOption> grip_options(const Definition &d)
              {"Two hands — {dice}", {{"dice", "1d" + std::to_string(d.versatile_sides)}}},
              !d.shield}};
 }
+
 void validate_grip(const Definition &d, unsigned hands)
 {
     if (d.versatile_sides ? (hands != 1 && hands != 2) || (hands == 2 && d.shield)
                           : hands != d.weapon_hands)
         throw std::runtime_error("This grip is incompatible with the equipped weapon or shield.");
 }
+
 struct CombatDisplay
 {
     const char *type;
     const char *melee;
     const char *ranged;
 };
+
 CombatDisplay combat_display(std::string_view definition)
 {
     if (definition == "slums-kobold")
@@ -305,12 +327,14 @@ CombatDisplay combat_display(std::string_view definition)
         return {"Bugbear", nullptr, nullptr};
     return {nullptr, nullptr, nullptr};
 }
+
 struct Content
 {
     Identity identity;
     std::vector<Identity> previous_campaign_identities;
     std::map<std::string, Definition> definitions;
 };
+
 bool somatic_hand(const Definition &d)
 {
     // Two-Handed/Versatile specifies hands when attacking (SRD p.90). A
@@ -318,6 +342,7 @@ bool somatic_hand(const Definition &d)
     // grip. A separate shield occupies the remaining hand; a wand is held too.
     return !d.shield || !d.weapon_hands;
 }
+
 struct Actor : detail::LifeState
 {
     Participant source;
@@ -335,6 +360,7 @@ struct Actor : detail::LifeState
     detail::EffectState effects;
     bool object_interaction{true};
 };
+
 // Every class resource that presents as a pool. The member pointers say where
 // the spent and maximum values live, so a new resource feature is a row here
 // rather than a push_back repeated at each presentation site. Storage is still a
@@ -348,6 +374,7 @@ struct ResourceDescriptor
     int short_rest;   // uses restored by a Short Rest; -1 means the full capacity
     bool combat_view; // also listed during combat, not only on the rest screen
 };
+
 constexpr std::array resource_descriptors{
     ResourceDescriptor{"action_surge", "Action Surge", &Actor::surges, &Definition::surges, -1,
                        true},
@@ -360,6 +387,7 @@ constexpr std::array resource_descriptors{
                        0, false},
     ResourceDescriptor{"arcane_recovery", "Arcane Recovery", &Actor::arcane, &Definition::arcane, 0,
                        false}};
+
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
                                   const Definition &d)
 {
@@ -370,23 +398,28 @@ rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Ac
             capacity,
             descriptor.short_rest < 0 ? capacity : unsigned(descriptor.short_rest)};
 }
+
 bool unconscious(const Actor &a)
 {
     return a.hp == 0 || a.effects.sleeping;
 }
+
 bool conscious(const Actor &a)
 {
     return !a.dead && !unconscious(a);
 }
+
 struct ArcaneAllocation
 {
     std::string_view id, label;
     unsigned first, second;
 };
+
 constexpr std::array arcane_allocations{
     ArcaneAllocation{"arcane_recovery:1:0", "One level-one spell slot", 1, 0},
     ArcaneAllocation{"arcane_recovery:2:0", "Two level-one spell slots", 2, 0},
     ArcaneAllocation{"arcane_recovery:0:1", "One level-two spell slot", 0, 1}};
+
 bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
 {
     const auto &d = actor.definition;
@@ -395,6 +428,7 @@ bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
            choice.first <= unsigned(d.slots - actor.slots) &&
            choice.second <= unsigned(d.slots2 - actor.slots2);
 }
+
 int movement_left(const Actor &a)
 {
     if (!conscious(a) || a.aim_used)
@@ -402,6 +436,7 @@ int movement_left(const Actor &a)
     const int penalty = std::min(a.definition.speed, detail::speed_penalty(a.effects));
     return std::max(0, a.movement - penalty * (1 + a.dashes));
 }
+
 struct ChampionMove
 {
     EntityId actor{}, target{};
@@ -409,12 +444,14 @@ struct ChampionMove
     bool spell{};
     Cell origin;
 };
+
 struct PendingCheck
 {
     EntityId actor{}, target{};
     int natural{};
     bool surge_spent{};
 };
+
 struct PendingWeaponHit
 {
     EntityId attacker{}, target{};
@@ -425,6 +462,7 @@ struct PendingWeaponHit
     bool sneak_pending{}, aimed{};
     int sneak_extra{};
 };
+
 int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers)
 {
     if (modifiers.empty() || modifiers.size() > 4 ||
@@ -445,6 +483,7 @@ int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers)
     }
     return hp;
 }
+
 // Versioned, module-owned character recipe. Original item IDs never enter this layer.
 Definition
 character_definition(std::string_view bytes,
@@ -841,6 +880,7 @@ character_definition(std::string_view bytes,
         throw std::runtime_error("Invalid character profile fields");
     return d;
 }
+
 void restore_vitals(Actor &a, const VitalState &state)
 {
     a.hp = state.hit_points;
@@ -904,6 +944,7 @@ void restore_vitals(Actor &a, const VitalState &state)
     if (a.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
         throw std::runtime_error("Earned recovery requires active healing prevention");
 }
+
 VitalState vitals(const Actor &a)
 {
     const bool arcane = a.arcane < a.definition.arcane,
@@ -984,15 +1025,18 @@ VitalState vitals(const Actor &a)
         description += "\nProne";
     return {a.hp, a.dead, out.str(), description};
 }
+
 int distance(Cell a, Cell b)
 {
     return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)) * 5;
 }
+
 bool same_command(const Command &a, const Command &b)
 {
     return a.revision == b.revision && a.actor == b.actor && a.target == b.target &&
            a.verb == b.verb && a.destination == b.destination && a.item == b.item;
 }
+
 bool turns_to_attack(std::string_view verb)
 {
     // A caster turns toward a foe, not toward an ally being healed, so every
@@ -1002,6 +1046,7 @@ bool turns_to_attack(std::string_view verb)
     const auto *spell = detail::find_spell(verb);
     return spell && spell->target != detail::SpellTarget::wounded_ally;
 }
+
 class Session final : public CombatSession
 {
   public:
@@ -1120,6 +1165,7 @@ class Session final : public CombatSession
         if (!restoring && outcome_ == Outcome::ongoing && !begin_turn())
             end_turn();
     }
+
     Snapshot snapshot() const override;
     SafeRecovery safe_recovery() const override;
     std::vector<Command> legal_commands() const override;
@@ -1162,10 +1208,12 @@ class Session final : public CombatSession
     std::size_t path_index_{};
     std::vector<EntityId> reactors_;
     std::size_t reactor_index_{};
+
     const Definition &def(const Actor &a) const
     {
         return a.definition;
     }
+
     const Actor &actor(EntityId id) const
     {
         return *std::find_if(actors_.begin(), actors_.end(),
@@ -1174,6 +1222,7 @@ class Session final : public CombatSession
                                  return a.source.id == id;
                              });
     }
+
     Actor &actor(EntityId id)
     {
         return *std::find_if(actors_.begin(), actors_.end(),
@@ -1182,14 +1231,17 @@ class Session final : public CombatSession
                                  return a.source.id == id;
                              });
     }
+
     int roll(int sides)
     {
         return roll_die(rng_, sides);
     }
+
     int dice(Dice d, bool critical = false)
     {
         return detail::roll_damage(rng_, d, critical);
     }
+
     void log(std::string english, Message message = {})
     {
         if (message.source.empty())
@@ -1202,19 +1254,23 @@ class Session final : public CombatSession
         log_.push_back(std::move(english));
         log_messages_.push_back(std::move(message));
     }
+
     bool line_of_sight(Cell a, Cell b) const
     {
         return detail::has_line_of_sight(board_, a, b);
     }
+
     bool can_see(const Actor &a, const Actor &b) const
     {
         return conscious(a) && !detail::blinded(a.effects) &&
                line_of_sight(a.source.cell, b.source.cell);
     }
+
     unsigned turn_end_ms(std::size_t index) const
     {
         return unsigned((index + 1) * detail::round_ms / actors_.size());
     }
+
     bool shares_occupied_space(const Actor &who) const
     {
         return std::any_of(actors_.begin(), actors_.end(),
@@ -1224,12 +1280,14 @@ class Session final : public CombatSession
                                       other.source.cell == who.source.cell;
                            });
     }
+
     void clear_departed_overlaps()
     {
         for (auto &a : actors_)
             if (a.dead || !shares_occupied_space(a))
                 a.involuntary_overlap = false;
     }
+
     // Emits every table spell whose row matches `scope` and pass. Called once
     // per original offer position so the observable order is unchanged.
     void offer_spells(std::vector<Command> &commands, const Actor &a, const Actor &other, int feet,
@@ -1244,15 +1302,18 @@ class Session final : public CombatSession
     bool saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc);
     detail::MovementGrid movement_grid(const Actor &mover) const;
     std::vector<Cell> path_to(const Actor &a, Cell destination) const;
+
     EntityId pending() const
     {
         return reactor_index_ < reactors_.size() ? reactors_[reactor_index_] : 0;
     }
+
     bool critical_hit(const Actor &a, const Actor &target, int natural, bool spell = false) const
     {
         return natural == 20 || (!spell && def(a).champion && natural == 19) ||
                (unconscious(target) && distance(a.source.cell, target.source.cell) <= 5);
     }
+
     bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
                 Dice spell_dice = {1, 10, 0},
                 detail::DamageType spell_type = detail::DamageType::fire);
@@ -1343,6 +1404,7 @@ void Session::initialize_items()
         if (unconscious(a))
             drop_held(a);
 }
+
 Definition Session::equipped_definition(const Actor &a,
                                         const std::vector<HeldItemView> &items) const
 {
@@ -1358,6 +1420,7 @@ Definition Session::equipped_definition(const Actor &a,
             keys.push_back(item.definition);
     return character_definition(a.source.character_profile, std::span<const std::string>(keys));
 }
+
 void Session::drop_held(Actor &a)
 {
     if (a.source.character_profile.empty())
@@ -1377,6 +1440,7 @@ void Session::drop_held(Actor &a)
         a.weapon_hands = a.definition.weapon_hands;
     }
 }
+
 Actor Session::thrown_actor(const Actor &a, std::string_view weapon) const
 {
     auto result = a;
@@ -1390,6 +1454,7 @@ Actor Session::thrown_actor(const Actor &a, std::string_view weapon) const
     result.weapon_hands = 1;
     return result;
 }
+
 Actor Session::hit_actor(const PendingWeaponHit &hit) const
 {
     const auto &a = actor(hit.attacker);
@@ -1404,6 +1469,7 @@ Actor Session::hit_actor(const PendingWeaponHit &hit) const
         throw std::runtime_error("Invalid pending thrown weapon position");
     return thrown_actor(a, item.definition);
 }
+
 unsigned Session::ground_one(unsigned token, Cell cell)
 {
     auto &item = items_.at(token - 1);
@@ -1426,6 +1492,7 @@ unsigned Session::ground_one(unsigned token, Cell cell)
     item.cell = cell;
     return token;
 }
+
 Message Session::throw_label(const Actor &a, const HeldItemView &item) const
 {
     Message label{"{weapon} ×{count}",
@@ -1446,6 +1513,7 @@ Message Session::throw_label(const Actor &a, const HeldItemView &item) const
             }
     return label;
 }
+
 void Session::throw_weapon(Actor &a, Actor &target, unsigned token)
 {
     const auto selected = items_.at(token - 1);
@@ -1470,6 +1538,7 @@ void Session::throw_weapon(Actor &a, Actor &target, unsigned token)
     if (previous != a.definition.weapon_label)
         a.weapon_hands = a.definition.weapon_hands;
 }
+
 bool Session::can_pick_up(const Actor &a, const HeldItemView &item) const
 {
     if (item.holder || a.source.character_profile.empty() ||
@@ -1491,6 +1560,7 @@ bool Session::can_pick_up(const Actor &a, const HeldItemView &item) const
         return false;
     }
 }
+
 SafeRecovery Session::safe_recovery() const
 {
     SafeRecovery result;
@@ -1526,6 +1596,7 @@ SafeRecovery Session::safe_recovery() const
     result.items.assign(reachable_items.begin(), reachable_items.end());
     return result;
 }
+
 detail::MovementGrid Session::movement_grid(const Actor &mover) const
 {
     std::vector<detail::Occupant> occupants;
@@ -1721,6 +1792,7 @@ Snapshot Session::snapshot() const
     }
     return s;
 }
+
 void Session::apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target, int dc)
 {
     // Each rider keeps its own duration rule and its own log line; the wording
@@ -1760,6 +1832,7 @@ void Session::apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target
         return;
     }
 }
+
 void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a,
                             EntityId target_id)
 {
@@ -1849,6 +1922,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a
     }
     }
 }
+
 void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const Actor &other,
                            int feet, detail::SpellTarget scope, bool bonus_pass) const
 {
@@ -1913,6 +1987,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             offer(std::string(spell.id) + "_2", std::string(spell.label) + " (level 2 slot)");
     }
 }
+
 std::vector<Command> Session::legal_commands() const
 {
     std::vector<Command> commands;
@@ -2064,6 +2139,7 @@ std::vector<Command> Session::legal_commands() const
         add(id, "move", "Move", 0, cell);
     return commands;
 }
+
 std::vector<Cell> Session::movement_reach(EntityId id) const
 {
     std::vector<Cell> cells;
@@ -2087,6 +2163,7 @@ std::vector<Cell> Session::movement_reach(EntityId id) const
                 cells.push_back({x, y});
     return cells;
 }
+
 int Session::resolved_damage(const Actor &target, detail::DamageType type, int amount)
 {
     const std::array parts{detail::DamagePart{type, amount}};
@@ -2104,6 +2181,7 @@ int Session::resolved_damage(const Actor &target, detail::DamageType type, int a
     }
     return result.total;
 }
+
 void Session::damage(Actor &target, int amount, bool critical)
 {
     if (!amount || target.dead)
@@ -2128,6 +2206,7 @@ void Session::damage(Actor &target, int amount, bool critical)
     }
     clear_departed_overlaps();
 }
+
 void Session::heal(Actor &target, int amount)
 {
     if (target.hp == 0 && shares_occupied_space(target))
@@ -2141,6 +2220,7 @@ void Session::heal(Actor &target, int amount)
         {"{name} recovers {hp} HP.",
          {{"name", target.source.name}, {"hp", std::to_string(restored)}}});
 }
+
 detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &target, bool ranged,
                                                 bool spell) const
 {
@@ -2173,6 +2253,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     }
     return result;
 }
+
 Dice Session::weapon_dice(const Actor &a, bool ranged) const
 {
     const auto &d = def(a);
@@ -2181,6 +2262,7 @@ Dice Session::weapon_dice(const Actor &a, bool ranged) const
         result.sides = d.versatile_sides;
     return result;
 }
+
 void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mode, int amount,
                         bool savage, detail::DamageType type, bool spell)
 {
@@ -2232,6 +2314,7 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
         }
     }
 }
+
 bool Session::sneak_eligible(const Actor &a, const Actor &target, bool ranged, int mode) const
 {
     const auto &d = def(a);
@@ -2250,6 +2333,7 @@ bool Session::sneak_eligible(const Actor &a, const Actor &target, bool ranged, i
         {ranged ? d.range > 0 : !d.weapon_label.empty() && !d.ranged_weapon, d.finesse,
          d.ranged_weapon, mode, ally});
 }
+
 bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spell_dice,
                      detail::DamageType spell_type)
 {
@@ -2286,6 +2370,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
               spell);
     return hit;
 }
+
 void Session::resolve_weapon_hit(int amount)
 {
     const auto h = *weapon_hit_;
@@ -2298,6 +2383,7 @@ void Session::resolve_weapon_hit(int amount)
     if (pending() && !champion_move_)
         finish_reaction();
 }
+
 void Session::finish_reaction()
 {
     ++reactor_index_;
@@ -2315,6 +2401,7 @@ void Session::finish_reaction()
             progress_movement();
     }
 }
+
 void Session::update_outcome()
 {
     bool party = false, enemies = false;
@@ -2332,6 +2419,7 @@ void Session::update_outcome()
         log(outcome_ == Outcome::victory ? "Victory." : "The party is incapacitated. Defeat.");
     }
 }
+
 bool Session::begin_turn()
 {
     auto &a = actors_[turn_];
@@ -2383,6 +2471,7 @@ bool Session::begin_turn()
          {{"round", std::to_string(round_)}, {"name", a.source.name}}});
     return true;
 }
+
 unsigned Session::next_turn_ms(const Actor &target) const
 {
     const auto index = static_cast<std::size_t>(&target - actors_.data());
@@ -2390,6 +2479,7 @@ unsigned Session::next_turn_ms(const Actor &target) const
                    current = turn_ ? turn_end_ms(turn_ - 1) : 0;
     return start > current ? start - current : detail::round_ms - current + start;
 }
+
 unsigned Session::next_save_ms(EntityId target) const
 {
     const auto found = std::find_if(actors_.begin(), actors_.end(),
@@ -2401,6 +2491,7 @@ unsigned Session::next_save_ms(EntityId target) const
     const auto start = turn_ ? turn_end_ms(turn_ - 1) : 0;
     return end > start ? end - start : detail::round_ms - start + end;
 }
+
 void Session::log_save(const Actor &target, const detail::SaveResult &result)
 {
     constexpr std::array names{"Strength",     "Dexterity", "Constitution",
@@ -2424,6 +2515,7 @@ void Session::log_save(const Actor &target, const detail::SaveResult &result)
           {"dc", std::to_string(result.dc)},
           {"result", outcome, true}}});
 }
+
 bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc)
 {
     if (unconscious(target) &&
@@ -2441,6 +2533,7 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     log_save(target, result);
     return result.success;
 }
+
 void Session::advance_turn_time()
 {
     // Partition one six-second round across its fixed initiative slots. Integer
@@ -2492,6 +2585,7 @@ void Session::advance_turn_time()
     elapsed_ms_ +=
         std::min<std::uint64_t>(delta, std::numeric_limits<std::uint64_t>::max() - elapsed_ms_);
 }
+
 void Session::end_turn()
 {
     actors_[turn_].actions.surge = false;
@@ -2508,6 +2602,7 @@ void Session::end_turn()
     }
     update_outcome();
 }
+
 void Session::progress_movement()
 {
     auto &a = actors_[turn_];
@@ -2541,6 +2636,7 @@ void Session::progress_movement()
     reactors_.clear();
     reactor_index_ = 0;
 }
+
 bool Session::submit(const Command &command)
 {
     const auto offered = legal_commands();
@@ -2933,6 +3029,7 @@ std::string Session::save() const
     }
     return out.str();
 }
+
 // Parse one actor independently of session mutation. Old checkpoint versions
 // omit later fields; Actor's value initializers supply their original defaults.
 Actor read_checkpoint_actor(std::istream &input, unsigned version, const Content &content)
@@ -3154,6 +3251,7 @@ void Session::validate_weapon_hit() const
     if (!valid(h.first) || (h.second && !valid(*h.second)))
         throw std::runtime_error("Invalid pending weapon damage roll");
 }
+
 void Session::finish_check(const PendingCheck &check, int boost)
 {
     auto &a = actor(check.actor);
@@ -3177,6 +3275,7 @@ void Session::finish_check(const PendingCheck &check, int boost)
             std::to_string(total) + " vs DC 10: " + (success ? "success" : "failure"),
         message);
 }
+
 void Session::finish_champion_move()
 {
     champion_move_.reset();
@@ -3210,6 +3309,7 @@ void Session::finish_champion_move()
     }
     finish_reaction();
 }
+
 void Session::validate_champion_move() const
 {
     if (!champion_move_)
@@ -3244,6 +3344,7 @@ void Session::validate_champion_move() const
                 !(c.target == actors_[turn_].source.id && target->hp == 0 && !who->reaction))))
         throw std::runtime_error("Invalid Champion movement allowance/trigger");
 }
+
 void Session::validate_check() const
 {
     if (!check_choice_)
@@ -3264,6 +3365,7 @@ void Session::validate_check() const
         (c.surge_spent ? !a.surge_used : a.actions.normal))
         throw std::runtime_error("Invalid pending ability check");
 }
+
 void Session::validate_restored_state(bool legacy_facing_reaction) const
 {
     validate_weapon_hit();
@@ -3840,16 +3942,19 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     }
     return session;
 }
+
 class Module final : public RulesModule
 {
   public:
     explicit Module(Content content) : content_(std::make_shared<const Content>(std::move(content)))
     {
     }
+
     Identity identity() const override
     {
         return content_->identity;
     }
+
     bool accepts_campaign_identity(const Identity &saved) const override
     {
         if (saved.version != content_->identity.version && saved.version != "0.3.0" &&
@@ -3879,6 +3984,7 @@ class Module final : public RulesModule
                          content_->previous_campaign_identities.end(),
                          compatible) != content_->previous_campaign_identities.end();
     }
+
     std::vector<std::string> supported_features() const override
     {
         return {"scholar",
@@ -3945,14 +4051,17 @@ class Module final : public RulesModule
                 "somatic_components",
                 "checkpoint"};
     }
+
     std::unique_ptr<CombatSession> create(Encounter e, std::uint64_t seed) const override
     {
         return std::make_unique<Session>(content_, std::move(e), seed);
     }
+
     std::unique_ptr<CombatSession> restore(std::string_view checkpoint) const override
     {
         return Session::restore(content_, checkpoint);
     }
+
     unsigned experience_for_level(unsigned level) const override
     {
         static constexpr unsigned thresholds[]{0, 0, 300, 900, 2700};
@@ -3960,16 +4069,19 @@ class Module final : public RulesModule
             throw std::runtime_error("Unsupported character level");
         return thresholds[level];
     }
+
     bool advance_character(CharacterSheet &sheet, VitalState &state) const override
     {
         return advance_character(sheet, state, default_advancement(sheet));
     }
+
     std::vector<TrainingChoiceGroup> training_options(const CharacterSheet &sheet) const override
     {
         if (sheet.character_class == "Wizard" && sheet.level >= 2)
             return {detail::scholar_options(sheet.grants)};
         return {};
     }
+
     AdvancementOptions advancement_options(const CharacterSheet &sheet) const override
     {
         if (sheet.level >= 4 ||
@@ -4029,6 +4141,7 @@ class Module final : public RulesModule
                 {"shield", "Shield", "Unavailable: spell reactions are not implemented.", false}};
         return result;
     }
+
     AdvancementChoice default_advancement(const CharacterSheet &sheet) const override
     {
         AdvancementChoice choice;
@@ -4091,6 +4204,7 @@ class Module final : public RulesModule
         }
         return choice;
     }
+
     bool advance_character(CharacterSheet &sheet, VitalState &state,
                            const AdvancementChoice &choice) const override
     {
@@ -4281,6 +4395,7 @@ class Module final : public RulesModule
         state = std::move(continuation);
         return true;
     }
+
     void validate_character_state(const CharacterSheet &sheet,
                                   const VitalState &state) const override
     {
@@ -4291,6 +4406,7 @@ class Module final : public RulesModule
         actor.slots2 = actor.definition.slots2;
         restore_vitals(actor, state);
     }
+
     void validate_saved_grants(const Identity &saved, const CharacterSheet &sheet,
                                std::span<const FeatureGrant> grants) const override
     {
@@ -4479,6 +4595,7 @@ class Module final : public RulesModule
         if (!std::equal(grants.begin(), grants.end(), expected.begin(), expected.end()))
             throw std::runtime_error("Saved grants disagree with creation or advancement choices");
     }
+
     void migrate_character_state(const Identity &saved, const CharacterSheet &sheet,
                                  VitalState &state) const override
     {
@@ -4530,39 +4647,48 @@ class Module final : public RulesModule
         validate_character_state(sheet, next);
         state = std::move(next);
     }
+
     RestPolicy long_rest_policy() const override
     {
         return rest::policy(RestKind::long_rest);
     }
+
     RestPolicy short_rest_policy() const override
     {
         return rest::policy(RestKind::short_rest);
     }
+
     RestProgress begin_rest(RestKind kind) const override
     {
         return rest::begin(kind);
     }
+
     RestTransition advance_rest(const RestProgress &p, std::uint64_t ms,
                                 RestWork work) const override
     {
         return rest::advance(p, ms, work);
     }
+
     RestTransition interrupt_rest(const RestProgress &p, RestInterruption cause) const override
     {
         return rest::interrupt(p, cause);
     }
+
     RestProgress resume_rest(const RestProgress &p) const override
     {
         return rest::resume(p);
     }
+
     std::uint64_t remaining_rest(const RestProgress &p) const override
     {
         return rest::remaining(p);
     }
+
     void validate_rest(const RestProgress &p) const override
     {
         rest::validate(p);
     }
+
     void elapse(std::span<Participant> participants, std::uint64_t milliseconds,
                 std::uint64_t &random_state) const override
     {
@@ -4611,6 +4737,7 @@ class Module final : public RulesModule
                 participants[i].state = std::move(next[i]);
         random_state = rng;
     }
+
     void recover(VitalState &state, const CharacterSheet &sheet) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
@@ -4637,6 +4764,7 @@ class Module final : public RulesModule
         actor.arcane = d.arcane;
         state = vitals(actor);
     }
+
     RecoveryInfo recovery_info(const CharacterSheet &sheet, const VitalState &state) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
@@ -4660,6 +4788,7 @@ class Module final : public RulesModule
                 result.choices.push_back({std::string(choice.id), {std::string(choice.label), {}}});
         return result;
     }
+
     void grant_temporary_hit_points(VitalState &state, const CharacterSheet &sheet,
                                     const TemporaryHitPoints &offered,
                                     TemporaryHpChoice choice) const override
@@ -4675,6 +4804,7 @@ class Module final : public RulesModule
         auto next = vitals(actor);
         state = std::move(next);
     }
+
     void recover_short_rest(VitalState &state, const CharacterSheet &sheet) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
@@ -4691,6 +4821,7 @@ class Module final : public RulesModule
         actor.surges = d.surges;
         state = vitals(actor);
     }
+
     Message recover_rest_choice(VitalState &state, const CharacterSheet &sheet,
                                 std::string_view choice_id) const override
     {
@@ -4718,6 +4849,7 @@ class Module final : public RulesModule
         state = std::move(next);
         return result;
     }
+
     HitDieResult spend_hit_die(VitalState &state, const CharacterSheet &sheet,
                                std::uint64_t &random_state) const override
     {
@@ -4742,6 +4874,7 @@ class Module final : public RulesModule
         random_state = rng;
         return result;
     }
+
     bool recover_at_safety(VitalState &state, const CharacterSheet &sheet,
                            std::span<const std::string> equipment) const override
     {
@@ -4760,6 +4893,7 @@ class Module final : public RulesModule
         }
         return true;
     }
+
     void set_rest_work(VitalState &state, const CharacterSheet &sheet, RestWork work) const override
     {
         if (work != RestWork::sleep && work != RestWork::light_activity &&
@@ -4781,6 +4915,7 @@ class Module final : public RulesModule
             actor.effects.sleeping = false;
         state = vitals(actor);
     }
+
     std::vector<unsigned> released_equipment(const CharacterSheet &sheet, const VitalState &state,
                                              std::span<const std::string> equipment) const override
     {
@@ -4797,6 +4932,7 @@ class Module final : public RulesModule
                     result.push_back(i);
         return result;
     }
+
     void set_hit_points(VitalState &state, const CharacterSheet &sheet, int hp) const override
     {
         if (hp < 0 || hp > sheet.hit_points || (state.dead && hp))
@@ -4817,6 +4953,7 @@ class Module final : public RulesModule
             actor.effects.prone = true;
         state = vitals(actor);
     }
+
     void temple_heal(VitalState &state, const CharacterSheet &sheet,
                      std::uint64_t &random_state) const override
     {
@@ -4841,21 +4978,25 @@ class Module final : public RulesModule
         state = std::move(next);
         random_state = rng;
     }
+
     SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet,
                                             SpellChoiceContext context) const override
     {
         return detail::spell_choice_options(sheet, context);
     }
+
     void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choice,
                              SpellChoiceContext context, bool complete) const override
     {
         detail::apply_spell_choices(sheet, choice, context, complete);
     }
+
     SpellAccess spell_access(const CharacterSheet &sheet) const override
     {
         return detail::spell_access(sheet.grants, sheet.character_class, sheet.level,
                                     sheet.prepared_spells);
     }
+
     EquipmentInfo equipment_info(std::string_view key) const override
     {
         if (detail::ammunition(key))
@@ -4868,6 +5009,7 @@ class Module final : public RulesModule
             return {EquipmentSlot::armor, 0};
         return {};
     }
+
     AbilityCheckModifier ability_check(const CharacterSheet &sheet,
                                        std::span<const std::string> gear, unsigned ability,
                                        std::string_view skill, std::string_view tool,
@@ -4879,6 +5021,7 @@ class Module final : public RulesModule
                               (ability == 1 && skill == "stealth" && d.stealth_disadvantage);
         return result;
     }
+
     EquipmentState migrate_equipment(std::span<const std::string> gear) const override
     {
         for (const auto &key : gear)
@@ -4886,6 +5029,7 @@ class Module final : public RulesModule
                 return {2};
         return {};
     }
+
     CharacterProfile character_profile(const CharacterSheet &sheet,
                                        std::span<const std::string> gear,
                                        EquipmentState equipment = {}) const override
@@ -5310,6 +5454,7 @@ class Module final : public RulesModule
     std::shared_ptr<const Content> content_;
 };
 } // namespace
+
 std::unique_ptr<RulesModule> load(const std::filesystem::path &file)
 {
     if (std::filesystem::file_size(file) > 65536)
@@ -5322,6 +5467,7 @@ std::unique_ptr<RulesModule> load(const std::filesystem::path &file)
         throw std::runtime_error("Invalid rules content size/read");
     return parse_content(bytes);
 }
+
 std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
 {
     if (content_bytes.size() > 65536)

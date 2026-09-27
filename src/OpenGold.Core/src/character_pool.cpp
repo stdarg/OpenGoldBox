@@ -48,6 +48,7 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
     return counts[order[alternate]] ? order[alternate] : order[0];
 }
 } // namespace
+
 std::vector<Character> character_pool(const rules::CharacterRules &rules,
                                       const por::CharacterArt &art)
 {

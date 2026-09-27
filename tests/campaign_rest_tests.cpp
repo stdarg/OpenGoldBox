@@ -8,6 +8,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -15,6 +16,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -28,11 +30,13 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid rest request must reject");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero(std::string klass = "fighter", unsigned level = 4)
 {
     CharacterDraft d;
@@ -51,10 +55,12 @@ Character hero(std::string klass = "fighter", unsigned level = 4)
         check(result.advance(*module(), scratch), "Fixture level is supported");
     return result;
 }
+
 std::string saved(const CampaignParty &p)
 {
     return encode_campaign(p, nullptr, "campaign-rest");
 }
+
 CampaignParty loaded(std::string_view bytes)
 {
     CampaignParty p(module());
@@ -62,6 +68,7 @@ CampaignParty loaded(std::string_view bytes)
                   .party);
     return p;
 }
+
 unsigned winds(const PartyMember &member)
 {
     const auto info = module()->recovery_info(member.character.sheet(), member.vitals);
@@ -70,6 +77,7 @@ unsigned winds(const PartyMember &member)
             return pool.remaining;
     throw std::runtime_error("Missing Second Wind pool");
 }
+
 // Deliberately non-SRD rest behavior proves Core applies module outcomes.
 class AlternateRestRules final : public RulesModule
 {
@@ -78,38 +86,46 @@ class AlternateRestRules final : public RulesModule
     {
         return module()->identity();
     }
+
     std::vector<std::string> supported_features() const override
     {
         return {};
     }
+
     std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
     {
         return {};
     }
+
     std::unique_ptr<CombatSession> restore(std::string_view) const override
     {
         return {};
     }
+
     CharacterProfile character_profile(const CharacterSheet &sheet,
                                        std::span<const std::string> gear,
                                        EquipmentState equipment) const override
     {
         return module()->character_profile(sheet, gear, equipment);
     }
+
     RecoveryInfo recovery_info(const CharacterSheet &, const VitalState &) const override
     {
         RecoveryInfo r;
         r.can_rest = true;
         return r;
     }
+
     RestPolicy short_rest_policy() const override
     {
         return {2, 0};
     }
+
     RestPolicy long_rest_policy() const override
     {
         return {3, 0};
     }
+
     RestProgress begin_rest(RestKind kind) const override
     {
         RestProgress p;
@@ -117,6 +133,7 @@ class AlternateRestRules final : public RulesModule
         p.work = RestWork::light_activity;
         return p;
     }
+
     RestTransition interrupt_rest(const RestProgress &before, RestInterruption cause) const override
     {
         if (before.kind == RestKind::long_rest)
@@ -126,31 +143,37 @@ class AlternateRestRules final : public RulesModule
         p.interruption = cause;
         return {p};
     }
+
     RestProgress resume_rest(const RestProgress &before) const override
     {
         auto p = before;
         p.interrupted = false;
         return p;
     }
+
     std::uint64_t remaining_rest(const RestProgress &) const override
     {
         return 120000;
     }
+
     RestTransition advance_rest(const RestProgress &, std::uint64_t, RestWork work) const override
     {
         check(work == RestWork::light_activity, "Core must use the module's default work");
         return {std::nullopt, RestBenefit::long_rest, 120000};
     }
+
     void recover(VitalState &vitals, const CharacterSheet &) const override
     {
         vitals.hit_points = 7;
     }
+
     std::vector<unsigned> released_equipment(const CharacterSheet &, const VitalState &,
                                              std::span<const std::string> gear) const override
     {
         return gear.empty() ? std::vector<unsigned>{} : std::vector<unsigned>{0};
     }
 };
+
 void alternate_rules_boundary()
 {
     CampaignParty party(std::make_unique<AlternateRestRules>());
@@ -176,6 +199,7 @@ void alternate_rules_boundary()
               !party.state().short_rest && party.state().time_minutes == 2,
           "Core applies module-defined completion benefits instead of branching on rest kind");
 }
+
 void freeze_activity_baseline()
 {
     CampaignParty party(module());
@@ -205,6 +229,7 @@ void freeze_activity_baseline()
     (void)party.spend_hit_die(party.state().short_rest->ticket, id);
     write("campaign-v11-rest-activity-spent.ogs");
 }
+
 void individual_eligibility()
 {
     CampaignParty party(module());
@@ -283,6 +308,7 @@ void individual_eligibility()
               })->denial == RestDenial::none,
           "Exact cooldown boundary permits recovery");
 }
+
 void spending_and_continuation()
 {
     CampaignParty party(module());
@@ -416,6 +442,7 @@ void spending_and_continuation()
               "Next encounter has identical resources and deterministic continuation");
     }
 }
+
 void expiry_and_atomicity()
 {
     CampaignParty one_die(module());
@@ -515,6 +542,7 @@ void expiry_and_atomicity()
     check(!party.rest(RestKind::short_rest) && !party.rest(),
           "Empty parties cannot complete rests");
 }
+
 void effects_once()
 {
     auto rules = module();
@@ -564,7 +592,9 @@ void effects_once()
     check(saved(party) == before && party.member(pc).vitals == state.roster[0].vitals,
           "Invalid resources preserve the whole transaction and recovery RNG");
 }
+
 using Bytes = std::vector<std::uint8_t>;
+
 std::shared_ptr<const por::EclProgram> program(Bytes body)
 {
     Bytes bytes{0, 0};
@@ -574,12 +604,14 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
     bytes.insert(bytes.end(), body.begin(), body.end());
     return std::make_shared<const por::EclProgram>(por::EclProgram::decode(bytes, "rest host"));
 }
+
 void settle(por::RolfTourSession &town)
 {
     for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
         town.advance(.5);
     check(town.snapshot().phase != por::TourPhase::faulted, "Rest fixture script fault");
 }
+
 void campaign_services()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -671,6 +703,7 @@ void campaign_services()
     check(saved(*party) == before && !inn.script_diagnostics().empty(),
           "A failed inn continuation rolls back the entire rest transaction");
 }
+
 void watch_equipment_and_rollback()
 {
     for (const bool failure : {false, true})
@@ -725,6 +758,7 @@ void watch_equipment_and_rollback()
               "Watch wake and collection grant no recovery or RNG draws");
     }
 }
+
 std::string payload(std::string body)
 {
     std::uint64_t hash = 14695981039346656037ULL;
@@ -735,6 +769,7 @@ std::string payload(std::string body)
     }
     return "OPENGOLD-CAMPAIGN 11\n" + std::to_string(hash) + '\n' + body;
 }
+
 void resumption_services()
 {
     for (const auto chance : {0u, 255u, 50u, 100u})
@@ -774,6 +809,7 @@ void resumption_services()
                   "Forbidden and unsupported resumption preserve all rest state and RNG");
     }
 }
+
 void malformed_continuation()
 {
     CampaignParty party(module());
@@ -806,8 +842,10 @@ void malformed_continuation()
     check(saved(party) == exhausted, "Revision exhaustion cannot consume a die or RNG");
     party.finish_short_rest(party.state().short_rest->ticket);
 }
+
 #include "rest_activity_checks.h"
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

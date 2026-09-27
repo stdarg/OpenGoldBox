@@ -22,10 +22,12 @@ void initialize(godot::ModuleInitializationLevel level)
         godot::ClassDB::register_class<SaveSlots>();
     }
 }
+
 void terminate(godot::ModuleInitializationLevel)
 {
 }
 } // namespace
+
 extern "C"
 {
     GDExtensionBool GDE_EXPORT opengold_library_init(

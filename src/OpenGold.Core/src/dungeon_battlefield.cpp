@@ -1,6 +1,7 @@
 #include "opengold/dungeon_battlefield.h"
 #include <array>
 #include <stdexcept>
+
 namespace opengold::por
 {
 namespace
@@ -11,7 +12,9 @@ enum Edge : unsigned
     wall = 1,
     doorway = 3
 };
+
 constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+
 Edge side(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
 {
     if (x < 0 || x >= 16 || y < 0 || y >= 16)
@@ -21,12 +24,14 @@ Edge side(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
         return open;
     return cell.doors[direction] ? doorway : wall;
 }
+
 Edge edge(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
 {
     return static_cast<Edge>(
         side(map, x, y, direction, party_y) |
         side(map, x + dx[direction], y + dy[direction], (direction + 2) % 4, party_y));
 }
+
 // Functional tile patterns observed with synthetic inputs; see combat-geometry.md.
 // Zero means untouched. Values are the original arena's one-based tile indices.
 std::array<std::uint8_t, 35> cell_tiles(Edge west, Edge north, Edge east, Edge upper_west,
@@ -114,6 +119,7 @@ std::array<std::uint8_t, 35> cell_tiles(Edge west, Edge north, Edge east, Edge u
     }
     return tiles;
 }
+
 bool blocked(unsigned tile)
 {
     switch (tile)
@@ -132,6 +138,7 @@ bool blocked(unsigned tile)
     }
 }
 } // namespace
+
 DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y)
 {
     if (x >= 16 || y >= 16)

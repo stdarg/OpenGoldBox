@@ -1,9 +1,11 @@
 #include "rest_activity.h"
 #include <limits>
 #include <stdexcept>
+
 namespace opengold::srd5::rest
 {
 using namespace rules;
+
 namespace
 {
 std::uint64_t add(std::uint64_t a, std::uint64_t b)
@@ -13,6 +15,7 @@ std::uint64_t add(std::uint64_t a, std::uint64_t b)
     return a + b;
 }
 } // namespace
+
 RestPolicy policy(RestKind kind)
 {
     switch (kind)
@@ -24,6 +27,7 @@ RestPolicy policy(RestKind kind)
     }
     throw std::runtime_error("Invalid rest kind");
 }
+
 RestProgress begin(RestKind kind)
 {
     (void)policy(kind);
@@ -32,6 +36,7 @@ RestProgress begin(RestKind kind)
     p.work = kind == RestKind::long_rest ? RestWork::sleep : RestWork::light_activity;
     return p;
 }
+
 std::uint64_t remaining(const RestProgress &p)
 {
     const auto required =
@@ -40,6 +45,7 @@ std::uint64_t remaining(const RestProgress &p)
         throw std::runtime_error("Invalid rest progress");
     return required - p.elapsed_milliseconds;
 }
+
 RestTransition interrupt(const RestProgress &before, RestInterruption cause)
 {
     if (cause != RestInterruption::initiative && cause != RestInterruption::spell &&
@@ -65,6 +71,7 @@ RestTransition interrupt(const RestProgress &before, RestInterruption cause)
     p.segment_milliseconds = 0;
     return {p, benefit};
 }
+
 RestTransition advance(const RestProgress &before, std::uint64_t milliseconds, RestWork work)
 {
     if (!milliseconds || before.interrupted)
@@ -110,6 +117,7 @@ RestTransition advance(const RestProgress &before, std::uint64_t milliseconds, R
             p.kind == RestKind::short_rest ? RestBenefit::short_rest : RestBenefit::long_rest,
             required};
 }
+
 RestProgress resume(const RestProgress &before)
 {
     if (!before.interrupted)
@@ -121,6 +129,7 @@ RestProgress resume(const RestProgress &before)
     p.work = RestWork::sleep;
     return p;
 }
+
 void validate(const RestProgress &p)
 {
     const auto timing = policy(p.kind);

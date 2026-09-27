@@ -3,11 +3,13 @@
 namespace rest_activity_checks
 {
 constexpr std::uint64_t minute = 60000;
+
 RestTicket ticket(const CampaignParty &party)
 {
     check(party.state().rest_activity.has_value(), "Rest activity exists");
     return party.state().rest_activity->ticket;
 }
+
 CampaignParty wounded()
 {
     CampaignParty party(module());
@@ -17,15 +19,18 @@ CampaignParty wounded()
     party.restore(state);
     return party;
 }
+
 void advance(CampaignParty &party, std::uint64_t elapsed, RestWork work = RestWork::sleep)
 {
     (void)party.advance_rest(ticket(party), elapsed, work);
 }
+
 void finish_spending(CampaignParty &party)
 {
     check(party.state().short_rest.has_value(), "Earned spending exists");
     party.finish_short_rest(party.state().short_rest->ticket);
 }
+
 void prior_writer()
 {
     const auto read = [](const char *file)
@@ -43,6 +48,7 @@ void prior_writer()
     check(saved(party) == saved(loaded(read("campaign-v11-rest-activity-spent.ogs"))),
           "Prior writer's next die/RNG/resource continuation remains exact");
 }
+
 void segments()
 {
     auto party = wounded();
@@ -139,6 +145,7 @@ void segments()
     check(saved(party).starts_with("OPENGOLD-CAMPAIGN 11\n"),
           "No activity retains compact version eleven");
 }
+
 void boundaries()
 {
     for (const auto kind : {RestKind::short_rest, RestKind::long_rest})
@@ -194,6 +201,7 @@ void boundaries()
               party.state().subminute_milliseconds == 1,
           "Strenuous activity ends a Short Rest without benefits");
 }
+
 void combat_and_validation()
 {
     auto party = wounded();
@@ -280,6 +288,7 @@ void combat_and_validation()
         });
     check(saved(party) == before, "Revision overflow cannot advance time or effects");
 }
+
 void discard_and_bad_saves()
 {
     auto party = wounded();
@@ -322,6 +331,7 @@ void discard_and_bad_saves()
               party.state().time_minutes == elapsed,
           "Ending unfinished rest retains earned healing/recharge, spent dice, time and RNG");
 }
+
 void host_interruptions()
 {
     for (auto kind : {RestKind::short_rest, RestKind::long_rest})
@@ -401,6 +411,7 @@ void host_interruptions()
         });
     check(saved(party) == before, "Failed initiative preparation rolls back recovery and tickets");
 }
+
 void run()
 {
     host_interruptions();

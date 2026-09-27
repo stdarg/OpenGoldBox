@@ -19,6 +19,7 @@ void require(bool condition, const char *message)
     if (!condition)
         throw std::logic_error(message);
 }
+
 void check_image(const ImageDecodeResult &result)
 {
     if (!result)
@@ -33,6 +34,7 @@ void check_image(const ImageDecodeResult &result)
     for (std::size_t i = 3; i < image.rgba.size(); i += 4)
         require(image.rgba[i] == 0 || image.rgba[i] == 255, "EGA alpha must be binary");
 }
+
 const rules::RulesModule &module()
 {
     static const auto rules =
@@ -44,10 +46,12 @@ const rules::RulesModule &module()
                             "spellcasting caster 2 39\n");
     return *rules;
 }
+
 FuzzSeed text_seed(std::string name, const std::string &bytes)
 {
     return {std::move(name), {bytes.begin(), bytes.end()}};
 }
+
 FuzzSeed format_seed(std::string name, std::uint8_t mode, std::vector<std::uint8_t> bytes)
 {
     bytes.insert(bytes.begin(), mode);

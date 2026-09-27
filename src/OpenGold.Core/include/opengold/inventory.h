@@ -11,6 +11,7 @@ namespace opengold
 {
 struct SaveCodec;
 }
+
 namespace opengold
 {
 struct InventoryItem
@@ -22,6 +23,7 @@ struct InventoryItem
     int original_type{-1};
     bool operator==(const InventoryItem &) const = default;
 };
+
 class Inventory
 {
   public:
@@ -29,10 +31,12 @@ class Inventory
     {
         return items_;
     }
+
     [[nodiscard]] bool empty() const
     {
         return items_.empty();
     }
+
     [[nodiscard]] std::optional<std::reference_wrapper<const InventoryItem>>
     find(std::uint64_t id) const;
     // Each addition creates a separate stack with an inventory-local ID.

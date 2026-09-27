@@ -9,6 +9,7 @@
 
 using namespace opengold;
 using namespace opengold::por;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -16,6 +17,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F action, const char *message)
 {
     bool rejected = false;
@@ -29,6 +31,7 @@ template <class F> void rejects(F action, const char *message)
     }
     check(rejected, message);
 }
+
 void creation_tests()
 {
     using namespace rules;
@@ -430,6 +433,7 @@ void creation_tests()
         },
         "Direct character construction validates creation data");
 }
+
 void inventory_tests()
 {
     Inventory inventory;
@@ -492,6 +496,7 @@ void inventory_tests()
     inventory.remove(third);
     check(inventory.empty(), "All inventory can be removed");
 }
+
 void additional_portrait_tests()
 {
     Image source;
@@ -682,6 +687,7 @@ void additional_portrait_tests()
             prepare_portrait_head(rounded, id).rgba[39 * 88 * 4] == 39,
             "Revised male heads retain the full neck below the chin instead of cropping it into the armor");
 }
+
 void art_tests()
 {
     std::vector<std::uint8_t> raw(17 + 24 * 24 / 2);
@@ -823,6 +829,7 @@ void art_tests()
     }
 }
 } // namespace
+
 int main()
 {
     try

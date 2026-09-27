@@ -35,6 +35,7 @@ std::vector<std::uint8_t> read_file(const std::filesystem::path &path)
 }
 
 using Archive = std::map<std::uint8_t, std::vector<std::uint8_t>>;
+
 Archive read_archive(const std::filesystem::path &path)
 {
     auto decoded = decode_dax_archive(read_file(path));
@@ -151,6 +152,7 @@ std::string CreatureId::archive() const
 {
     return "MON" + std::to_string(bank) + "CHA.DAX";
 }
+
 std::string CreatureId::key() const
 {
     return archive() + ":" + std::to_string(record);

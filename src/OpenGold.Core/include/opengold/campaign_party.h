@@ -20,6 +20,7 @@ enum class RestDenial
 using RestWork = rules::RestWork;
 // spell means a non-cantrip; a cantrip does not interrupt rest.
 using RestInterruption = rules::RestInterruption;
+
 struct MemberRestInfo
 {
     MemberId id{};
@@ -27,11 +28,13 @@ struct MemberRestInfo
     RestDenial denial{RestDenial::none};
     std::uint64_t wait_milliseconds{};
 };
+
 struct RestTicket
 {
     std::uint64_t session{}, revision{};
     auto operator<=>(const RestTicket &) const = default;
 };
+
 // A completed hour grants a bounded spending window, not an undoable preview.
 struct ShortRestSession
 {
@@ -40,6 +43,7 @@ struct ShortRestSession
     unsigned completed_subminute_milliseconds{};
     std::vector<MemberId> members;
 };
+
 struct RestActivity : rules::RestProgress
 {
     RestTicket ticket;
@@ -47,6 +51,7 @@ struct RestActivity : rules::RestProgress
     unsigned started_subminute_milliseconds{};
     std::vector<MemberId> members;
 };
+
 struct RestResult
 {
     RestKind kind{};
@@ -54,6 +59,7 @@ struct RestResult
     std::vector<MemberId> members;
     std::optional<RestTicket> spending;
 };
+
 struct PartyMember
 {
     MemberId id{};
@@ -70,6 +76,7 @@ struct PartyMember
     std::string creation_source; // Stable pool candidate identity, empty for authored PCs.
     rules::EquipmentState equipment;
 };
+
 // Items physically separated from party inventories retain provenance and their
 // encounter location. Cleanup policy is a separate operation, never implicit.
 struct DetachedPartyItem
@@ -84,6 +91,7 @@ struct DetachedPartyItem
     // stays at this rest session's camp, anchored to original_owner's position.
     std::uint64_t rest_session{};
 };
+
 struct PartyState
 {
     std::vector<PartyMember> roster;
@@ -100,21 +108,26 @@ struct PartyState
     std::optional<RestActivity> rest_activity;
     std::vector<DetachedPartyItem> detached_items;
 };
+
 // One shared campaign value store. Sessions share this owner, never separate PCs.
 // While combat owns mutable vitals, roster/equipment/script mutations are barred.
 class CampaignParty
 {
   public:
     explicit CampaignParty(std::unique_ptr<rules::RulesModule> rules);
+
     [[nodiscard]] const PartyState &state() const
     {
         return state_;
     }
+
     [[nodiscard]] const PartyMember &member(MemberId id) const;
+
     [[nodiscard]] MemberId selected() const
     {
         return state_.slots.at(state_.selected);
     }
+
     void select(unsigned slot);
     MemberId add_pc(Character character);
     MemberId recruit(std::string source, Character converted, unsigned morale = 100);
@@ -166,10 +179,12 @@ class CampaignParty
     void temple_heal(MemberId target);
     void advance_time(unsigned minutes);
     void advance_time_milliseconds(std::uint64_t milliseconds);
+
     [[nodiscard]] std::uint64_t time_hours() const noexcept
     {
         return state_.time_minutes / 60;
     }
+
     [[nodiscard]] rules::CharacterProfile profile(MemberId id) const;
     [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, unsigned ability,
                                                             std::string_view skill = {},
@@ -180,10 +195,12 @@ class CampaignParty
     [[nodiscard]] std::array<unsigned, 4> query(unsigned address, unsigned effect) const;
     [[nodiscard]] por::EclHostReply character_reply(unsigned slot) const;
     void read_character(unsigned slot, const por::EclMachine &vm);
+
     [[nodiscard]] PartyState checkpoint() const
     {
         return state_;
     }
+
     void restore(PartyState state);
     static void validate(const PartyState &state);
     static void validate_rest_activity(const PartyState &state, const rules::RulesModule &rules);
@@ -195,18 +212,22 @@ class CampaignParty
     void loud_noise(std::span<const MemberId> affected);
     void begin_combat();
     void apply_combat(const rules::Snapshot &snapshot, const rules::SafeRecovery &recovery = {});
+
     void end_combat() noexcept
     {
         combat_ = false;
     }
+
     [[nodiscard]] bool in_combat() const
     {
         return combat_;
     }
+
     [[nodiscard]] const rules::RulesModule &rule_module() const
     {
         return *rules_;
     }
+
     [[nodiscard]] const rules::Identity identity() const
     {
         return rules_->identity();
@@ -218,6 +239,7 @@ class CampaignParty
     bool combat_{};
     bool combat_registered_{};
     std::uint64_t combat_elapsed_{}, combat_scope_{};
+
     struct CombatInventoryItem
     {
         unsigned token{}, equipment_index{};
@@ -229,6 +251,7 @@ class CampaignParty
         std::uint64_t source_inventory{};
         bool stowed{};
     };
+
     std::vector<CombatInventoryItem> combat_items_;
     void apply_physical_items(PartyState &, std::vector<CombatInventoryItem> &,
                               const rules::Snapshot &) const;
@@ -252,6 +275,7 @@ class CampaignParty
     PartyMember &edit(MemberId id);
     void join(MemberId id, bool npc);
 };
+
 [[nodiscard]] std::string equipment_conversion(const por::Equipment &item);
 } // namespace opengold
 #endif

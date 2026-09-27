@@ -1,5 +1,6 @@
 #include "opengold/geo_map.h"
 #include <stdexcept>
+
 namespace opengold::por
 {
 const MapCell &GeoMap::at(unsigned x, unsigned y) const
@@ -8,6 +9,7 @@ const MapCell &GeoMap::at(unsigned x, unsigned y) const
         throw std::out_of_range("Map coordinate outside 16x16 grid");
     return cells[y * width + x];
 }
+
 std::optional<GeoMap> decode_geo_map(std::span<const std::uint8_t> bytes)
 {
     if (bytes.size() < 1026)

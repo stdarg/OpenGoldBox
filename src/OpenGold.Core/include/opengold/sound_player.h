@@ -39,6 +39,7 @@ class SoundPlayer
     {
         return bank_;
     }
+
     // Unknown IDs fail before interrupting the currently playing sound.
     void play(unsigned id);
     void stop() noexcept;
@@ -46,14 +47,17 @@ class SoundPlayer
     // Linear volume in [0, 1]; non-finite/out-of-range values are rejected.
     void set_volume(double volume);
     void set_muted(bool muted) noexcept;
+
     [[nodiscard]] double volume() const noexcept
     {
         return volume_;
     }
+
     [[nodiscard]] bool muted() const noexcept
     {
         return muted_;
     }
+
     [[nodiscard]] double effective_gain() const noexcept
     {
         return muted_ ? 0 : volume_;

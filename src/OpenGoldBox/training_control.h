@@ -20,6 +20,7 @@ inline godot::String training_string(std::string_view s)
 {
     return godot::String::utf8(s.data(), s.size());
 }
+
 template <class Translate> godot::String training_source(std::string_view id, const Translate &tr)
 {
     if (id == "origin:languages")
@@ -72,6 +73,7 @@ template <class Translate> godot::String training_source(std::string_view id, co
         return tr(N_("Criminal background"));
     return training_string(id);
 }
+
 template <class Translate>
 godot::String training_sources(const std::vector<opengold::rules::FeatureGrant> &grants,
                                const Translate &tr)
@@ -85,6 +87,7 @@ godot::String training_sources(const std::vector<opengold::rules::FeatureGrant> 
     }
     return result;
 }
+
 template <class Translate>
 godot::String training_summary(const opengold::rules::TrainingProfile &profile, const Translate &tr,
                                bool fixed = false)
@@ -120,6 +123,7 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
         text += tr(l.label) + " (" + training_sources(l.sources, tr) + ")\n";
     return text;
 }
+
 inline void style_choice(godot::CheckBox &control)
 {
     using namespace godot;
@@ -143,6 +147,7 @@ inline void style_choice(godot::CheckBox &control)
         check->add_theme_stylebox_override(state, style);
     }
 }
+
 inline void setup_training_controls(godot::Node &parent)
 {
     auto *fixed = add_control<godot::RichTextLabel>(parent, "TrainingFixed", {});
@@ -158,6 +163,7 @@ inline void setup_training_controls(godot::Node &parent)
     owned->add_theme_constant_override("separation", 12);
     attach_child(*scroll, std::move(owned));
 }
+
 // The scene owns every node. Reuse controls across refreshes so toggling does
 // not destroy the focused checkbox or its keyboard navigation position.
 template <class Translate>

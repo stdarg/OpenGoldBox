@@ -12,18 +12,22 @@ bool robe(unsigned id)
 {
     return id >= 27 && id <= 31;
 }
+
 bool garment(unsigned color)
 {
     return color == 1 || color == 9 || color == 3 || color == 11;
 }
+
 bool limb(unsigned color)
 {
     return color == 2 || color == 10 || color == 4 || color == 12;
 }
+
 unsigned bank(const CharacterAppearance &a, bool action)
 {
     return (a.tall ? 64u : 0u) + (action ? 128u : 0u);
 }
+
 const IndexedIcon &body_at(const CharacterArt &art, unsigned id)
 {
     const auto &body = art.combat_bodies.at(id);
@@ -31,6 +35,7 @@ const IndexedIcon &body_at(const CharacterArt &art, unsigned id)
         throw std::runtime_error("Invalid combat layer dimensions");
     return body;
 }
+
 // Region metadata, not extracted artwork. Index 8 is shared by equipment,
 // outlines and boots, so palette filtering alone cannot separate these images.
 // Coordinates below describe tall poses; short equipment is two rows lower.
@@ -74,6 +79,7 @@ bool gray_equipment(unsigned id, bool action, bool tall, int x, int y)
     }
     return rect(0, 0, 7, 15);
 }
+
 bool equipment(unsigned color, unsigned id, bool action, bool tall, int x, int y)
 {
     return color == 6 || color == 14 || color == 7 || color == 15 ||

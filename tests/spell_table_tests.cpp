@@ -36,17 +36,21 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
     check(bool(in), "Read file");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 // Same high-HP inert target the per-spell tests use, so offers are never
 // suppressed by a target dying mid-snapshot.
 auto custom()
@@ -238,6 +242,7 @@ struct Probe
     const char *klass;
     unsigned level;
 };
+
 constexpr Probe probes[]{{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
                          {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}};
 
@@ -280,6 +285,7 @@ CombatantView unit(const CombatSession &c, EntityId id)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 std::optional<Command> find(const CombatSession &c, std::string_view verb, EntityId target)
 {
     for (const auto &a : c.legal_commands())

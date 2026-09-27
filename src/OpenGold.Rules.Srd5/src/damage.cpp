@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
+
 namespace opengold::srd5::detail
 {
 namespace
@@ -14,6 +15,7 @@ constexpr std::array<std::string_view, 13> keys{
 constexpr std::array<std::string_view, 13> names{
     "Acid",     "Bludgeoning", "Cold",    "Fire",    "Force",    "Lightning", "Necrotic",
     "Piercing", "Poison",      "Psychic", "Radiant", "Slashing", "Thunder"};
+
 std::size_t index(DamageType type)
 {
     const auto i = static_cast<unsigned>(type);
@@ -22,6 +24,7 @@ std::size_t index(DamageType type)
     return i;
 }
 } // namespace
+
 DamageType damage_type(std::string_view name)
 {
     const auto found = std::find(keys.begin(), keys.end(), name);
@@ -29,10 +32,12 @@ DamageType damage_type(std::string_view name)
         throw std::runtime_error("Unknown damage type");
     return static_cast<DamageType>(found - keys.begin());
 }
+
 std::string_view damage_name(DamageType type)
 {
     return names[index(type)];
 }
+
 DamageResult resolve_damage(std::span<const DamagePart> parts,
                             std::span<const DamageAffinity> affinities)
 {

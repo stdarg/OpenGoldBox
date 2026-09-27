@@ -28,6 +28,7 @@ void freeze()
           "Prior Eldritch Blast continuation");
     write(base / "combat-v13-warlock-poison-continued.save", c->save());
 }
+
 Character selected(bool both = false)
 {
     auto d = draft();
@@ -35,6 +36,7 @@ Character selected(bool both = false)
                       : std::vector<std::string>{"poison_spray"};
     return Character(*srd5::character_rules(), d, {});
 }
+
 void access()
 {
     auto rules = module();
@@ -89,6 +91,7 @@ void access()
     check(!has(*unselected, "poison_spray"),
           "Having a class entitlement never silently grants an unselected cantrip");
 }
+
 void rolls()
 {
     for (unsigned seed : {0u, 3u, 13u, 40u})
@@ -129,6 +132,7 @@ void rolls()
             check(!c->submit(ticket) && c->save() == saved, "Spent Action rejects atomically");
         }
 }
+
 void eligibility()
 {
     auto rules = custom();
@@ -157,6 +161,7 @@ void eligibility()
               arg(attack(*c), "disadvantage") == " (disadvantage)",
           "Adjacent hostile gives ranged spell Disadvantage");
 }
+
 void campaign()
 {
     auto rules = module();
@@ -209,6 +214,7 @@ void campaign()
         }
     }
 }
+
 void legacy()
 {
     auto rules = module();
@@ -243,6 +249,7 @@ void legacy()
     check(c->save() == upgraded("combat-v13-warlock-poison-continued.save"),
           "Prior attack/RNG continuation exact");
 }
+
 void fixtures()
 {
     auto rules = module();
@@ -259,6 +266,7 @@ void fixtures()
                            2);
     write(path / "both.save", c->save());
 }
+
 void run()
 {
     access();

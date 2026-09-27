@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_CHARACTER_POOL_H
 #define OPENGOLD_CHARACTER_POOL_H
 #include "opengold/character.h"
+
 namespace opengold
 {
 // Curated level-one drafts evaluated by the selected creation rules. Art is

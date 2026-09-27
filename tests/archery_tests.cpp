@@ -8,14 +8,17 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 void check(bool ok, const char *message)
 {
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool failed = false;
@@ -29,16 +32,19 @@ template <class F> void rejects(F f)
     }
     check(failed, "Invalid feat operation must reject");
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
     check(bool(in), "Missing fixture");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero(std::string klass = "fighter", std::string background = "sage")
 {
     CharacterDraft d;
@@ -53,17 +59,20 @@ Character hero(std::string klass = "fighter", std::string background = "sage")
         r = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
 }
+
 void grow(CampaignParty &p, MemberId id, unsigned level)
 {
     while (p.member(id).character.sheet().level < level)
         p.advance(id, p.default_advancement(id));
 }
+
 void replace(std::string &s, std::string_view a, std::string_view b)
 {
     const auto at = s.find(a);
     check(at != s.npos, "Expected fixture field");
     s.replace(at, a.size(), b);
 }
+
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -71,6 +80,7 @@ Command command(const CombatSession &c, std::string_view verb)
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 Message result(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages)
@@ -78,6 +88,7 @@ Message result(const CombatSession &c)
             return m;
     throw std::runtime_error("Missing attack log");
 }
+
 std::string arg(const Message &m, std::string_view key)
 {
     for (const auto &a : m.arguments)
@@ -85,6 +96,7 @@ std::string arg(const Message &m, std::string_view key)
             return a.value;
     throw std::runtime_error("Missing attack argument");
 }
+
 Character leveled(std::string feat = "archery", std::string background = "sage")
 {
     CampaignParty p(module());
@@ -97,6 +109,7 @@ Character leveled(std::string feat = "archery", std::string background = "sage")
     p.advance(id, choice);
     return p.member(id).character;
 }
+
 auto battle(const RulesModule &rules, const Character &h, std::string weapon, Cell target = {3, 1},
             unsigned seed = 89)
 {
@@ -108,6 +121,7 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon, Ce
     check(c->snapshot().actor == 1, "Independent initiative seed starts with archer");
     return c;
 }
+
 void selection()
 {
     auto rules = module();
@@ -200,6 +214,7 @@ void selection()
               "Selected Archery survives canonical campaign reload");
     }
 }
+
 void attacks()
 {
     const auto content = read(root / "data/rules/srd-5.2.1/combat.rules");
@@ -278,6 +293,7 @@ void attacks()
               result(*b).source.find("misses") != std::string::npos,
           "Natural 17 plus Archery 6 hits AC23; baseline 4 misses");
 }
+
 void persistence()
 {
     auto rules = module();
@@ -338,6 +354,7 @@ void persistence()
             rules->validate_saved_grants(saved_identity, sheet, sheet.grants);
         });
 }
+
 void freeze()
 {
     auto rules = module();
@@ -367,6 +384,7 @@ void freeze()
     std::ofstream(root / "tests/fixtures/combat-v13-archery-before.save") << c->save();
 }
 } // namespace
+
 int main(int argc, char **)
 {
     try

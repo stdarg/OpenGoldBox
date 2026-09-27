@@ -6,14 +6,17 @@
 #include <iostream>
 
 using namespace opengold::por;
+
 namespace
 {
 using Bytes = std::vector<std::uint8_t>;
+
 void check(bool condition, const char *message)
 {
     if (!condition)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F fn)
 {
     bool threw = false;
@@ -27,6 +30,7 @@ template <class F> void rejects(F fn)
     }
     check(threw, "Expected ECL error");
 }
+
 Bytes record(const Bytes &body)
 {
     Bytes b{0, 0};
@@ -35,10 +39,12 @@ Bytes record(const Bytes &body)
     b.insert(b.end(), body.begin(), body.end());
     return b;
 }
+
 std::shared_ptr<const EclProgram> program(const Bytes &body)
 {
     return std::make_shared<const EclProgram>(EclProgram::decode(record(body), "TEST:7"));
 }
+
 EclMachine machine(const Bytes &body)
 {
     EclMachine vm(program(body));
@@ -46,6 +52,7 @@ EclMachine machine(const Bytes &body)
     check(vm.start(0), "Start");
     return vm;
 }
+
 void host_random_and_string_copy()
 {
     EclMachine strings(program({9, 129, 0, 0x97, 129, 0x20, 0x97, 0}));
@@ -85,6 +92,7 @@ void host_random_and_string_copy()
             (void)vm.host_random(request->id, 6);
         });
 }
+
 void decoding()
 {
     check(unpack_ecl_text(Bytes{4, 32, 192}) == "ABC", "Six-bit packed text");
@@ -137,6 +145,7 @@ void decoding()
     const auto literal = program({17, 128, 3, 4, 32, 192, 0});
     check(literal->instruction(0x9914).operands[0].text == "ABC", "Inline text operand");
 }
+
 void arithmetic()
 {
     auto vm = machine({9, 2, 255, 255, 1, 0, 0x97, 4, 0, 1, 1, 0, 0x97, 1, 0, 0x97, 0});
@@ -161,6 +170,7 @@ void arithmetic()
     check(unbound.variable(0x9700) == 0, "Fault does not alter other variables");
     check(!unbound.start(0), "Fault cannot silently restart");
 }
+
 void control()
 {
     // CALL subroutine at 9919, return to EXIT at 9918.
@@ -209,6 +219,7 @@ void control()
               "Indexed subroutine first/last/out of range");
     }
 }
+
 void suspension()
 {
     auto vm =
@@ -530,17 +541,21 @@ struct Fixture
         std::filesystem::temp_directory_path() /
         ("opengold-ecl-" +
          std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+
     Fixture()
     {
         check(std::filesystem::create_directory(path), "Temporary directory");
     }
+
     ~Fixture()
     {
         std::error_code ec;
         std::filesystem::remove_all(path, ec);
     }
+
     Fixture(const Fixture &) = delete;
     Fixture &operator=(const Fixture &) = delete;
+
     void write(const std::string &filename, bool invalid = false) const
     {
         auto bytes = record({0});
@@ -561,6 +576,7 @@ struct Fixture
         check(bool(out), "Write fixture");
     }
 };
+
 void catalogs()
 {
     Fixture f;
@@ -595,6 +611,7 @@ void catalogs()
     }
 }
 } // namespace
+
 int main()
 {
     try

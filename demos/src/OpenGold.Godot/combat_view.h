@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <map>
+
 class CombatView : public godot::Control
 {
     GDCLASS(CombatView, godot::Control)
@@ -13,31 +14,37 @@ class CombatView : public godot::Control
     void _process(double delta) override;
     void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
+
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party,
                         std::vector<opengold::CombatArt> art)
     {
         campaign_ = std::move(party);
         campaign_art_ = std::move(art);
     }
+
     [[nodiscard]] bool defeated() const
     {
         return campaign_ && demo_ && demo_->has_combat() &&
                demo_->combat().snapshot().outcome == opengold::rules::Outcome::defeat;
     }
+
     [[nodiscard]] bool can_leave() const
     {
         return !defeated() &&
                (!demo_ || !demo_->has_combat() ||
                 demo_->combat().snapshot().outcome != opengold::rules::Outcome::ongoing);
     }
+
     void campaign_encounter(opengold::CampaignEncounter encounter)
     {
         encounter_ = std::move(encounter);
     }
+
     [[nodiscard]] bool expedition() const
     {
         return encounter_.has_value();
     }
+
     [[nodiscard]] std::optional<opengold::rules::Snapshot> completed_outcome() const
     {
         if (!demo_ || !demo_->has_combat())

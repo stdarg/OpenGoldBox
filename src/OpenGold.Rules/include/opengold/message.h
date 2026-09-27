@@ -13,6 +13,7 @@ struct MessageArgument
     std::string name, value;
     bool translate{};
 };
+
 struct Message
 {
     std::string source;

@@ -4,6 +4,7 @@ namespace rogue_attack_checks
 using cunning_checks::act;
 using cunning_checks::command;
 using cunning_checks::has;
+
 auto rules_module(std::string extra = {})
 {
     std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
@@ -12,6 +13,7 @@ auto rules_module(std::string extra = {})
     return srd5::parse_content(
         text + "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" + extra);
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -19,6 +21,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Rogue test actor missing");
 }
+
 auto battle(const RulesModule &rules, const Character &h, std::string weapon = "dagger",
             bool ally = true, unsigned seed = 13, bool ranged = false, std::string enemy = "target")
 {
@@ -42,10 +45,12 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon = "
     check(c->snapshot().actor == 1, "Rogue receives ordinary turn");
     return c;
 }
+
 void roundtrip(const RulesModule &r, const CombatSession &c)
 {
     check(r.restore(c.save())->save() == c.save(), "Rogue choices/resources/RNG restore exactly");
 }
+
 void move(CombatSession &c, Cell to)
 {
     for (const auto &v : c.legal_commands())
@@ -56,6 +61,7 @@ void move(CombatSession &c, Cell to)
         }
     throw std::runtime_error("Rogue move unavailable");
 }
+
 void reject_hit_field(const RulesModule &rules, const CombatSession &combat, unsigned field,
                       int value)
 {
@@ -84,6 +90,7 @@ void reject_hit_field(const RulesModule &rules, const CombatSession &combat, uns
             (void)rules.restore(bytes);
         });
 }
+
 void run()
 {
     const auto output = std::filesystem::path(OPENGOLD_BINARY_DIR) / "rogue-fixtures";
@@ -525,6 +532,7 @@ void run()
                             encode_campaign(ui, nullptr, campaign_asset_identity(directory)));
     }
 }
+
 void verify_ui(const char *file)
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");

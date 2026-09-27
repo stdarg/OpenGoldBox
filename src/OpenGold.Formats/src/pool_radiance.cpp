@@ -11,19 +11,23 @@ int signed_byte(std::uint8_t value)
 {
     return value < 128 ? value : static_cast<int>(value) - 256;
 }
+
 std::uint16_t u16(std::span<const std::uint8_t> b, std::size_t p)
 {
     return static_cast<std::uint16_t>(b[p] | (b[p + 1] << 8));
 }
+
 std::uint32_t u32(std::span<const std::uint8_t> b, std::size_t p)
 {
     return u16(b, p) | (static_cast<std::uint32_t>(u16(b, p + 2)) << 16);
 }
+
 template <std::size_t N>
 void copy(std::span<const std::uint8_t> b, std::size_t p, std::array<std::uint8_t, N> &out)
 {
     std::copy_n(b.begin() + p, N, out.begin());
 }
+
 DamageDice damage(std::span<const std::uint8_t> b, std::size_t p, std::size_t stride = 1)
 {
     return {b[p], b[p + stride], signed_byte(b[p + stride * 2])};

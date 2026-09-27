@@ -10,11 +10,13 @@ namespace opengold
 namespace
 {
 constexpr std::size_t limit = 16 * 1024 * 1024;
+
 void require(bool ok, const char *message)
 {
     if (!ok)
         throw std::runtime_error(message);
 }
+
 std::uint64_t fingerprint(std::string_view data)
 {
     std::uint64_t n = 14695981039346656037ULL;
@@ -26,6 +28,7 @@ std::uint64_t fingerprint(std::string_view data)
     return n;
 }
 } // namespace
+
 // Explicit field encoding: no pointers, native object layouts or derived sheets.
 struct SaveCodec
 {
@@ -35,18 +38,22 @@ struct SaveCodec
     const rules::CharacterRules *creation{};
     const rules::RulesModule *module{};
     rules::Identity saved_identity;
+
     explicit SaveCodec(std::string_view bytes) : reading(true), stream(std::string(bytes))
     {
         stream.imbue(std::locale::classic());
     }
+
     SaveCodec()
     {
         stream.imbue(std::locale::classic());
     }
+
     template <class... T> void fields(T &...value)
     {
         (field(value), ...);
     }
+
     template <class T>
         requires std::is_integral_v<T>
     void field(T &value)
@@ -82,6 +89,7 @@ struct SaveCodec
             stream << static_cast<std::uint64_t>(value) << ' ';
         require(bool(stream), "Truncated or invalid campaign save");
     }
+
     void field(std::string &value)
     {
         if (reading)
@@ -90,11 +98,13 @@ struct SaveCodec
             stream << std::quoted(value) << ' ';
         require(bool(stream) && value.size() <= limit, "Invalid save string");
     }
+
     template <class T, std::size_t N> void field(std::array<T, N> &values)
     {
         for (auto &v : values)
             field(v);
     }
+
     template <class T> void field(std::vector<T> &values)
     {
         std::uint64_t count = values.size();
@@ -114,6 +124,7 @@ struct SaveCodec
             for (auto &v : values)
                 field(v);
     }
+
     template <class K, class V> void field(std::map<K, V> &values)
     {
         std::uint64_t count = values.size();
@@ -137,6 +148,7 @@ struct SaveCodec
                 fields(k, v);
             }
     }
+
     template <class T> void field(std::optional<T> &value)
     {
         bool present = value.has_value();
@@ -151,18 +163,22 @@ struct SaveCodec
         if (present)
             field(*value);
     }
+
     void field(rules::Identity &v)
     {
         fields(v.module, v.version, v.content);
     }
+
     void field(rules::AbilityRoll &v)
     {
         fields(v.dice, v.discarded);
     }
+
     void field(rules::FeatureGrant &v)
     {
         fields(v.id, v.source_id, v.level, v.choices);
     }
+
     void field(rules::AdvancementChoice &v)
     {
         fields(v.feat, v.abilities, v.spells);
@@ -171,6 +187,7 @@ struct SaveCodec
         if (version >= 16)
             field(v.spell_learning);
     }
+
     void field(rules::CharacterDraft &v)
     {
         fields(v.race, v.gender, v.character_class, v.alignment, v.background, v.name,
@@ -182,24 +199,29 @@ struct SaveCodec
         if (version >= 16)
             field(v.spells);
     }
+
     void field(rules::SpellChoices &v)
     {
         fields(v.learning, v.prepared, v.replace_cantrip, v.replacement);
     }
+
     void field(SpellChoiceEdit &v)
     {
         fields(v.level, v.rest_session, v.choices);
     }
+
     void field(por::CharacterAppearance &v)
     {
         fields(v.portrait_head, v.portrait_body, v.combat_head, v.combat_body, v.tall, v.colors);
         if (version >= 4)
             field(v.portrait);
     }
+
     void field(InventoryItem &v)
     {
         fields(v.id, v.definition_id, v.name, v.quantity, v.original_type);
     }
+
     void field(Inventory &v)
     {
         fields(v.next_id_, v.items_);
@@ -213,38 +235,46 @@ struct SaveCodec
                         "Invalid inventory entry");
         }
     }
+
     void field(por::DamageDice &v)
     {
         fields(v.count, v.sides, v.modifier);
     }
+
     void field(por::ItemRecord &v)
     {
         fields(v.raw, v.stored_name, v.type, v.name_components, v.magic_bonus, v.save_bonus,
                v.readied_raw, v.revealed_components, v.cursed_raw, v.weight, v.value, v.stack_size,
                v.effect_codes);
     }
+
     void field(por::ItemTemplate &v)
     {
         fields(v.raw, v.worn_location, v.hands, v.rate_of_fire, v.protection_raw, v.damage_type,
                v.melee_flag, v.large_damage, v.small_medium_damage, v.range, v.class_restrictions,
                v.ammunition_type);
     }
+
     void field(por::EquipmentBonuses &v)
     {
         fields(v.weapon_to_hit, v.weapon_damage, v.armor_base_ac, v.ac_adjustment, v.save_bonus);
     }
+
     void field(por::Equipment &v)
     {
         fields(v.index, v.stored, v.base, v.bonuses);
     }
+
     void field(RestTicket &v)
     {
         fields(v.session, v.revision);
     }
+
     void field(ShortRestSession &v)
     {
         fields(v.ticket, v.completed_minutes, v.completed_subminute_milliseconds, v.members);
     }
+
     void field(RestActivity &v)
     {
         unsigned kind = static_cast<unsigned>(v.kind), work = static_cast<unsigned>(v.work),
@@ -260,6 +290,7 @@ struct SaveCodec
             v.interruption = static_cast<RestInterruption>(interruption);
         }
     }
+
     void field(DetachedPartyItem &v)
     {
         fields(v.scope, v.token, v.original_owner, v.holder, v.cell.x, v.cell.y, v.item,
@@ -267,6 +298,7 @@ struct SaveCodec
         if (version >= 14)
             field(v.rest_session);
     }
+
     void rest(PartyState &v)
     {
         if (version >= 10)
@@ -278,10 +310,12 @@ struct SaveCodec
         if (version >= 16)
             field(v.spell_rest);
     }
+
     void field(rules::VitalState &v)
     {
         fields(v.hit_points, v.dead, v.resources, v.description);
     }
+
     void member(PartyMember &v)
     {
         fields(v.id, v.npc_source, v.vitals, v.wealth, v.equipped, v.morale, v.experience,
@@ -310,6 +344,7 @@ struct SaveCodec
                     item.definition_id = equipment_conversion(source->second);
             }
     }
+
     void field(PartyState &v)
     {
         fields(v.slots, v.next_id, v.selected, v.time_minutes, v.random_state, v.claimed_rewards);
@@ -432,6 +467,7 @@ struct SaveCodec
                 member->last_rest_subminute_milliseconds = offset;
             }
     }
+
     void machine(por::EclMachine &v)
     {
         require(v.state_ == por::EclState::idle || v.state_ == por::EclState::completed || reading,
@@ -465,6 +501,7 @@ struct SaveCodec
             v.diagnostic_.clear();
         }
     }
+
     void town(por::RolfTourSession &v)
     {
         require(reading || (v.can_leave() && v.snapshot_.tour_finished && !v.checkpoint_ &&
@@ -694,6 +731,7 @@ std::string encode_campaign(const CampaignParty &party, const por::RolfTourSessi
     return "OPENGOLD-CAMPAIGN " + std::to_string(out.version) + "\n" +
            std::to_string(fingerprint(body)) + "\n" + body;
 }
+
 namespace
 {
 void validate_saved_member(const PartyMember &member, const rules::RulesModule &module)
@@ -720,6 +758,7 @@ void validate_saved_member(const PartyMember &member, const rules::RulesModule &
     (void)module.character_profile(member.character.sheet(), gear, member.equipment);
 }
 } // namespace
+
 SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRules &creation,
                               const rules::RulesModule &module, std::string_view assets,
                               const por::RolfTourSession *town_template)
@@ -773,6 +812,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     require(in.stream.eof(), "Trailing campaign save data");
     return result;
 }
+
 std::string read_campaign_file(const std::filesystem::path &path)
 {
     return read_save_file(path, limit);
@@ -802,6 +842,7 @@ std::string campaign_asset_identity(const std::filesystem::path &directory)
         out << name << ':' << hash << ';';
     return out.str();
 }
+
 void write_campaign_file(const std::filesystem::path &path, std::string_view bytes)
 {
     write_save_file(path, bytes, limit);

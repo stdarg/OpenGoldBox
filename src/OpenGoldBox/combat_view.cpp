@@ -46,12 +46,14 @@
 using namespace godot;
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 String gs(std::string_view text)
 {
     return String::utf8(text.data(), text.size());
 }
+
 const std::array<std::pair<const char *, const char *>, 10> action_buttons{
     {{"Melee", "melee"},
      {"Ranged", "ranged"},
@@ -63,12 +65,14 @@ const std::array<std::pair<const char *, const char *>, 10> action_buttons{
      {"Dash", "dash"},
      {"Dodge", "dodge"},
      {"Disengage", "disengage"}}};
+
 std::string spell_verb(std::string verb, unsigned slot)
 {
     if (slot == 2 && (verb == "magic_missile" || verb == "cure_wounds" || verb == "healing_word"))
         verb += "_2";
     return verb;
 }
+
 std::optional<Cell> movement_direction(Key key, bool shift)
 {
     switch (key)
@@ -106,6 +110,7 @@ std::optional<Cell> movement_direction(Key key, bool shift)
     }
 }
 } // namespace
+
 void CombatView::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("selected_character_id"), &CombatView::selected_character_id);
@@ -113,6 +118,7 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
 }
+
 Vector2i CombatView::selected_character_cell() const
 {
     if (!demo_ || !demo_->has_combat())
@@ -126,6 +132,7 @@ Vector2i CombatView::selected_character_cell() const
     return selected == state.combatants.end() ? Vector2i(-1, -1)
                                               : Vector2i(selected->cell.x, selected->cell.y);
 }
+
 bool CombatView::sprite_facing_left(std::int64_t id) const
 {
     if (!demo_ || !demo_->has_combat())
@@ -138,6 +145,7 @@ bool CombatView::sprite_facing_left(std::int64_t id) const
                                     });
     return actor != state.combatants.end() && actor->facing_left;
 }
+
 Ref<Texture2D> CombatView::sprite_texture(EntityId id, bool action) const
 {
     const auto found = art_.find(id);
@@ -145,6 +153,7 @@ Ref<Texture2D> CombatView::sprite_texture(EntityId id, bool action) const
         return {};
     return action ? found->second.action : found->second.texture;
 }
+
 void CombatView::prepare_combat()
 {
     if (demo_)
@@ -173,6 +182,7 @@ void CombatView::prepare_combat()
     demo_ = std::move(next);
     sync_art();
 }
+
 void CombatView::_notification(int what)
 {
     if (what == NOTIFICATION_RESIZED && ready_)
@@ -184,11 +194,13 @@ void CombatView::_notification(int what)
     if (what == NOTIFICATION_MOUSE_EXIT && ready_)
         get_node<PanelContainer>("HoverInfo")->hide();
 }
+
 std::filesystem::path CombatView::local_path(const char *path) const
 {
     return std::filesystem::u8path(
         ProjectSettings::get_singleton()->globalize_path(path).utf8().get_data());
 }
+
 void CombatView::_ready()
 {
     combat_zoom_ = settings::combat_zoom_percent() / 100.0;
@@ -341,6 +353,7 @@ void CombatView::_ready()
         refresh();
     }
 }
+
 void CombatView::layout()
 {
     followed_.reset();
@@ -430,6 +443,7 @@ void CombatView::layout()
     }
     layout_status();
 }
+
 void CombatView::layout_reaction_controls(bool show_controls)
 {
     const double top = board_rect_.get_end().y + 16;
@@ -499,6 +513,7 @@ void CombatView::layout_reaction_controls(bool show_controls)
     get_node<Button>("End")->set_position(Vector2(24, top));
     get_node<Button>("End")->set_size(Vector2(button_width, 36));
 }
+
 void CombatView::layout_status()
 {
     // Let the translated status summary determine its height. The roster keeps
@@ -510,6 +525,7 @@ void CombatView::layout_status()
     roster->set_position(Vector2(turn->get_position().x, top));
     roster->set_size(Vector2(358, std::max(0.0, 308 - top)));
 }
+
 void CombatView::training()
 {
     try
@@ -526,6 +542,7 @@ void CombatView::training()
         refresh();
     }
 }
+
 void CombatView::slums()
 {
     try
@@ -543,6 +560,7 @@ void CombatView::slums()
         refresh();
     }
 }
+
 void CombatView::replay()
 {
     if (demo_ && demo_->is_slums())
@@ -550,6 +568,7 @@ void CombatView::replay()
     else if (demo_)
         training();
 }
+
 void CombatView::next()
 {
     try
@@ -567,6 +586,7 @@ void CombatView::next()
         refresh();
     }
 }
+
 void CombatView::revisit()
 {
     try
@@ -580,6 +600,7 @@ void CombatView::revisit()
         refresh();
     }
 }
+
 void CombatView::sync_art(bool preserve_effects)
 {
     auto prior_dead = std::move(known_dead_);
@@ -751,6 +772,7 @@ void CombatView::sync_art(bool preserve_effects)
         action_seconds_ = std::move(prior_actions);
     }
 }
+
 void CombatView::save_game()
 {
     try
@@ -766,6 +788,7 @@ void CombatView::save_game()
         refresh();
     }
 }
+
 void CombatView::load_game()
 {
     try
@@ -782,6 +805,7 @@ void CombatView::load_game()
         refresh();
     }
 }
+
 void CombatView::select_mode(String verb)
 {
     error_.clear();
@@ -793,6 +817,7 @@ void CombatView::select_mode(String verb)
     }
     refresh();
 }
+
 void CombatView::grip_selected(std::int64_t index)
 {
     auto *grip = get_node<OptionButton>("Grip");
@@ -803,6 +828,7 @@ void CombatView::grip_selected(std::int64_t index)
         immediate(hands == 1 ? "grip_one" : "grip_two");
     refresh();
 }
+
 void CombatView::cantrip_selected(std::int64_t index)
 {
     auto *choices = get_node<OptionButton>("Cantrip");
@@ -812,21 +838,25 @@ void CombatView::cantrip_selected(std::int64_t index)
     mode_ = "move";
     refresh();
 }
+
 void CombatView::use_cunning_action()
 {
     auto *choices = get_node<OptionButton>("CunningAction");
     if (choices->get_selected() >= 0)
         immediate(String(choices->get_item_metadata(choices->get_selected())));
 }
+
 void CombatView::cunning_selected(std::int64_t)
 {
     refresh();
 }
+
 void CombatView::cast_cantrip()
 {
     if (!cantrip_.empty())
         select_mode(gs(cantrip_));
 }
+
 void CombatView::thrown_selected(std::int64_t index)
 {
     auto *choices = get_node<OptionButton>("ThrownWeapon");
@@ -836,6 +866,7 @@ void CombatView::thrown_selected(std::int64_t index)
     mode_ = "move";
     refresh();
 }
+
 void CombatView::begin_throw()
 {
     if (get_node<Button>("Throw")->is_disabled())
@@ -843,11 +874,13 @@ void CombatView::begin_throw()
     get_node<Button>("Throw")->release_focus();
     select_mode("throw");
 }
+
 void CombatView::ground_selected(std::int64_t index)
 {
     ground_item_ = get_node<OptionButton>("GroundItem")->get_item_id(index);
     refresh();
 }
+
 void CombatView::pick_up()
 {
     if (!demo_ || !demo_->has_combat() || get_node<Button>("PickUp")->is_disabled())
@@ -859,12 +892,14 @@ void CombatView::pick_up()
             return;
         }
 }
+
 void CombatView::spell_slot()
 {
     spell_slot_ = spell_slot_ == 1 ? 2 : 1;
     mode_ = "move";
     refresh();
 }
+
 void CombatView::adjust_zoom(int percentage_points)
 {
     const int current = static_cast<int>(std::lround(combat_zoom_ * 100));
@@ -877,6 +912,7 @@ void CombatView::adjust_zoom(int percentage_points)
     // ScrollContainer applies its new child bounds during the layout pass.
     zoom_center_frames_ = 2;
 }
+
 void CombatView::select_party(EntityId id)
 {
     if (!demo_ || !demo_->has_combat())
@@ -897,6 +933,7 @@ void CombatView::select_party(EntityId id)
     center_on(selected->cell);
     refresh();
 }
+
 void CombatView::move_selected(Cell direction)
 {
     if (!demo_ || !demo_->has_combat())
@@ -973,6 +1010,7 @@ void CombatView::move_selected(Cell direction)
     else
         explain("That square is out of movement range. End the turn or use Dash if available.");
 }
+
 void CombatView::immediate(String verb)
 {
     if (!demo_ || !demo_->has_combat())
@@ -997,6 +1035,7 @@ void CombatView::immediate(String verb)
         refresh();
     }
 }
+
 void CombatView::act(const Command &command)
 {
     try
@@ -1071,6 +1110,7 @@ void CombatView::act(const Command &command)
         refresh();
     }
 }
+
 void CombatView::_input(const Ref<InputEvent> &event)
 {
     if (get_node<Window>("SneakAttack")->is_visible() ||
@@ -1360,6 +1400,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
     }
     get_viewport()->set_input_as_handled();
 }
+
 void CombatView::update_hover(const Vector2 &pointer)
 {
     auto *panel = get_node<PanelContainer>("HoverInfo");
@@ -1450,6 +1491,7 @@ void CombatView::update_hover(const Vector2 &pointer)
                    std::max(0.0, static_cast<double>(get_size().y - size.y)))));
     panel->show();
 }
+
 void CombatView::refresh()
 {
     if (!ready_)
@@ -2071,6 +2113,7 @@ void CombatView::refresh()
     queue_redraw();
     update_hover(get_viewport()->get_mouse_position());
 }
+
 void CombatView::center_on(Cell cell)
 {
     auto *scroll = get_node<ScrollContainer>("BattlefieldScroll");
@@ -2078,6 +2121,7 @@ void CombatView::center_on(Cell cell)
     scroll->set_h_scroll(static_cast<int>((cell.x + .5) * tile - scroll->get_size().x * .5));
     scroll->set_v_scroll(static_cast<int>((cell.y + .5) * tile - scroll->get_size().y * .5));
 }
+
 void CombatView::_draw()
 {
     draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
@@ -2131,6 +2175,7 @@ void CombatView::_draw()
              top + 49, 13, Color("a8c1c7"));
     }
 }
+
 void CombatView::draw_battlefield()
 {
     if (!demo_ || !demo_->has_combat())
@@ -2250,6 +2295,7 @@ void CombatView::draw_battlefield()
         }
     }
 }
+
 void CombatView::_process(double delta)
 {
     if (Engine::get_singleton()->is_editor_hint())

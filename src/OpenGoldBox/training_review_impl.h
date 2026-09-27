@@ -7,6 +7,7 @@
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 using namespace godot;
+
 void CharacterCreationView::setup_training_review()
 {
     auto *button =
@@ -49,6 +50,7 @@ void CharacterCreationView::setup_training_review()
     apply->set_text(review_text(N_("Apply Training")));
     apply->connect("pressed", callable_mp(this, &CharacterCreationView::apply_training_review));
 }
+
 void CharacterCreationView::open_training_review()
 {
     if (!campaign_ || campaign_->in_combat() || roster_index_ >= campaign_->state().roster.size())
@@ -75,6 +77,7 @@ void CharacterCreationView::open_training_review()
         refresh_party();
     }
 }
+
 void CharacterCreationView::refresh_training_review()
 {
     if (!training_review_)
@@ -101,6 +104,7 @@ void CharacterCreationView::refresh_training_review()
     }
     window->get_node<Button>("Apply")->set_disabled(!valid);
 }
+
 void CharacterCreationView::review_training_toggled(bool selected, String group, String option)
 {
     if (!training_review_ || campaign_->in_combat())
@@ -121,6 +125,7 @@ void CharacterCreationView::review_training_toggled(bool selected, String group,
     }
     refresh_training_review();
 }
+
 void CharacterCreationView::review_training_selected(std::int64_t index, String group)
 {
     if (!training_review_ || campaign_->in_combat() || index <= 0)
@@ -140,6 +145,7 @@ void CharacterCreationView::review_training_selected(std::int64_t index, String 
     review_training_toggled(true, group,
                             presentation::training_string(found->options[index - 1].id));
 }
+
 void CharacterCreationView::apply_training_review()
 {
     if (!training_review_ || campaign_->in_combat() || !training_review_->training_complete())
@@ -158,6 +164,7 @@ void CharacterCreationView::apply_training_review()
         get_node<Label>("TrainingReview/Error")->set_text(review_text(e.what()));
     }
 }
+
 void CharacterCreationView::close_training_review()
 {
     get_node<Window>("TrainingReview")->hide();
@@ -166,6 +173,7 @@ void CharacterCreationView::close_training_review()
     training_member_ = 0;
     get_node<Button>("PartyPanel/ReviewTraining")->grab_focus();
 }
+
 void CharacterCreationView::training_review_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;

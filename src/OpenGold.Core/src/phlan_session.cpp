@@ -8,6 +8,7 @@ const PhlanResources &RolfTourSession::area_resources() const
 {
     return current_area_ ? *town_->districts.at(current_area_) : *town_;
 }
+
 void RolfTourSession::change_area(unsigned id)
 {
     if (id == current_area_)
@@ -28,11 +29,13 @@ void RolfTourSession::change_area(unsigned id)
     snapshot_.sprite_frame = -1;
     ++snapshot_.revision;
 }
+
 void RolfTourSession::campaign_party(std::shared_ptr<opengold::CampaignParty> party)
 {
     campaign_ = std::move(party);
     restart();
 }
+
 void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignParty> party)
 {
     campaign_ = std::move(party);
@@ -40,6 +43,7 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
         for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 54})
             machine_.enable_host(op);
 }
+
 namespace
 {
 constexpr std::array<std::uint16_t, 7> money{0x6BBB, 0x6BBD, 0x6BBF, 0x6BC1,
@@ -76,11 +80,13 @@ void RolfTourSession::configure_town()
             machine_.enable_host(op);
     synchronize_clock();
 }
+
 void RolfTourSession::synchronize_clock()
 {
     for (const auto &w : clock_reply().writes)
         machine_.bind_variable(w.address, w.value);
 }
+
 EclHostReply RolfTourSession::clock_reply() const
 {
     EclHostReply reply;
@@ -229,6 +235,7 @@ void RolfTourSession::begin_event(unsigned slot)
     snapshot_.choices.clear();
     ++snapshot_.revision;
 }
+
 void RolfTourSession::claim_loot()
 {
     if (!campaign_)
@@ -245,12 +252,14 @@ void RolfTourSession::claim_loot()
             ++it;
     }
 }
+
 void RolfTourSession::commit_rest_recovery()
 {
     if (snapshot_.phase == TourPhase::combat && encounter_ && campaign_ &&
         !campaign_->in_combat() && saved_campaign_)
         saved_campaign_ = campaign_->checkpoint();
 }
+
 bool RolfTourSession::reject_combat(std::string diagnostic)
 {
     if (snapshot_.phase != TourPhase::combat || !encounter_ || !combat_request_ || !campaign_ ||
@@ -259,6 +268,7 @@ bool RolfTourSession::reject_combat(std::string diagnostic)
     fail(std::move(diagnostic));
     return true;
 }
+
 bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
 {
     if (snapshot_.phase != TourPhase::combat || !encounter_ || !combat_request_ || !campaign_ ||
@@ -336,6 +346,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     advance(0);
     return true;
 }
+
 PendingLoot RolfTourSession::slums_loot(std::vector<unsigned> records, std::string reward,
                                         bool items) const
 {
@@ -477,6 +488,7 @@ void RolfTourSession::show_encounter_menu()
     snapshot_.continue_ticket = ++next_ticket_;
     ++snapshot_.revision;
 }
+
 bool RolfTourSession::choose_encounter(std::size_t choice)
 {
     if (!encounter_menu_ || choice > 4)

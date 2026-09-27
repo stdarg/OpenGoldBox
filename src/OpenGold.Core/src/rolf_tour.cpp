@@ -28,6 +28,7 @@ std::filesystem::path resolve_archive(const std::filesystem::path &directory, st
         throw EclError("Missing " + std::string(name));
     return *path;
 }
+
 std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 {
     const auto size = std::filesystem::file_size(path);
@@ -41,6 +42,7 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
         throw EclError("Incomplete archive read");
     return data;
 }
+
 constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
 } // namespace
 
@@ -543,6 +545,7 @@ bool RolfTourSession::camp(RestKind kind)
     advance(0);
     return true;
 }
+
 bool RolfTourSession::resume_camp()
 {
     if (!town_ || !campaign_ || !can_leave() || campaign_->in_combat() ||
@@ -555,6 +558,7 @@ bool RolfTourSession::resume_camp()
     advance(0);
     return true;
 }
+
 bool RolfTourSession::explore(ExplorationCommand command)
 {
     if (command == ExplorationCommand::camp)

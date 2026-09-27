@@ -1,9 +1,11 @@
 #include "opengold/character_creator.h"
 #include <algorithm>
 #include <stdexcept>
+
 namespace opengold
 {
 using namespace rules;
+
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::uint64_t seed)
     : rules_(std::move(rules)), random_(seed)
 {
@@ -11,6 +13,7 @@ CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::u
         throw std::runtime_error("Character creator requires a rules module");
     restart();
 }
+
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, CharacterDraft draft)
     : rules_(std::move(rules)), random_(0), draft_(std::move(draft)), step_(CreationStep::training)
 {
@@ -19,6 +22,7 @@ CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, Charac
     (void)rules_->evaluate(draft_, false);
     locked_training_ = draft_.training;
 }
+
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, Character character,
                                    const RulesModule &module)
     : CharacterCreator(std::move(rules), character.creation_data())
@@ -32,6 +36,7 @@ CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, Charac
     training_character_ = std::move(character);
     training_module_ = std::cref(module);
 }
+
 std::vector<TrainingChoiceGroup> CharacterCreator::training_options() const
 {
     auto draft = draft_;
@@ -49,6 +54,7 @@ std::vector<TrainingChoiceGroup> CharacterCreator::training_options() const
     }
     return groups;
 }
+
 void CharacterCreator::restart()
 {
     draft_ = {};
@@ -66,11 +72,13 @@ void CharacterCreator::restart()
         select(field, options.front().id);
     }
 }
+
 void CharacterCreator::require_editable() const
 {
     if (step_ == CreationStep::sheet)
         throw std::runtime_error("Return to editing before changing the character.");
 }
+
 void CharacterCreator::select(CreationField field, std::string_view id)
 {
     require_editable();
@@ -145,6 +153,7 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     prune_training(candidate);
     draft_ = std::move(candidate);
 }
+
 void CharacterCreator::cantrip_choice(std::string_view option, bool selected)
 {
     require_editable();
@@ -170,6 +179,7 @@ void CharacterCreator::cantrip_choice(std::string_view option, bool selected)
         choices.erase(found);
     draft_ = std::move(candidate);
 }
+
 void CharacterCreator::spell_choice(std::string_view group, std::string_view option, bool selected)
 {
     require_editable();
@@ -235,6 +245,7 @@ void CharacterCreator::spell_choice(std::string_view group, std::string_view opt
     (void)rules_->evaluate(next, false);
     draft_ = std::move(next);
 }
+
 bool CharacterCreator::spell_choices_complete() const
 {
     const auto options = rules_->spell_choice_options(draft_);
@@ -257,6 +268,7 @@ bool CharacterCreator::spell_choices_complete() const
            draft_.spells->prepared->size() ==
                std::min<std::size_t>(options.prepared_count, options.preparation.size());
 }
+
 void CharacterCreator::prune_training(CharacterDraft &candidate) const
 {
     // Removing a parent selection can invalidate a dependent group. Query the
@@ -298,6 +310,7 @@ void CharacterCreator::prune_training(CharacterDraft &candidate) const
             return;
     }
 }
+
 void CharacterCreator::training_choice(std::string_view id, std::string_view option, bool selected)
 {
     require_editable();
@@ -353,6 +366,7 @@ void CharacterCreator::training_choice(std::string_view id, std::string_view opt
     }
     draft_ = std::move(candidate);
 }
+
 bool CharacterCreator::training_complete() const
 {
     for (const auto &group : training_options())
@@ -363,6 +377,7 @@ bool CharacterCreator::training_complete() const
     }
     return true;
 }
+
 void CharacterCreator::target_class(std::string_view id, bool selected)
 {
     require_editable();
@@ -373,6 +388,7 @@ void CharacterCreator::target_class(std::string_view id, bool selected)
     else if (!selected && found != draft_.target_classes.end())
         draft_.target_classes.erase(found);
 }
+
 void CharacterCreator::select_adjustment(unsigned index)
 {
     require_editable();
@@ -380,6 +396,7 @@ void CharacterCreator::select_adjustment(unsigned index)
         throw std::runtime_error("Invalid score adjustment");
     draft_.adjustment = index;
 }
+
 void CharacterCreator::roll()
 {
     require_editable();
@@ -387,6 +404,7 @@ void CharacterCreator::roll()
     draft_.rolled = true;
     draft_.assignment.fill(6);
 }
+
 bool CharacterCreator::scores_assigned() const
 {
     return draft_.rolled && std::all_of(draft_.assignment.begin(), draft_.assignment.end(),
@@ -395,6 +413,7 @@ bool CharacterCreator::scores_assigned() const
                                             return n < 6;
                                         });
 }
+
 void CharacterCreator::assign_roll(unsigned roll, unsigned ability)
 {
     require_editable();
@@ -406,6 +425,7 @@ void CharacterCreator::assign_roll(unsigned roll, unsigned ability)
     else
         draft_.assignment[ability] = roll; // A displaced result returns to the unassigned rolls.
 }
+
 void CharacterCreator::swap_scores(unsigned first, unsigned second)
 {
     require_editable();
@@ -413,17 +433,20 @@ void CharacterCreator::swap_scores(unsigned first, unsigned second)
         throw std::runtime_error("Invalid score swap");
     std::swap(draft_.assignment[first], draft_.assignment[second]);
 }
+
 void CharacterCreator::name(std::string text)
 {
     require_editable();
     const auto first = text.find_first_not_of(" \t\r\n"), last = text.find_last_not_of(" \t\r\n");
     draft_.name = first == std::string::npos ? "" : text.substr(first, last - first + 1);
 }
+
 void CharacterCreator::appearance(por::CharacterAppearance value)
 {
     por::validate_character_appearance(value);
     appearance_ = value;
 }
+
 CharacterSheet CharacterCreator::sheet() const
 {
     if (training_character_)
@@ -432,6 +455,7 @@ CharacterSheet CharacterCreator::sheet() const
             .sheet();
     return rules_->evaluate(draft_, step_ >= CreationStep::combat_icon);
 }
+
 Character CharacterCreator::create_character() const
 {
     if (step_ != CreationStep::sheet)
@@ -442,6 +466,7 @@ Character CharacterCreator::create_character() const
         throw std::runtime_error("Starting class prerequisites are not met.");
     return Character(*rules_, draft_, appearance_);
 }
+
 void CharacterCreator::next()
 {
     if (step_ == CreationStep::sheet)
@@ -464,6 +489,7 @@ void CharacterCreator::next()
         rules_->spell_choice_options(draft_).may_prepare)
         draft_.spells = SpellChoices{};
 }
+
 void CharacterCreator::back()
 {
     if (step_ != CreationStep::race)

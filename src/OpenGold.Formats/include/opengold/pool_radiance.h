@@ -28,6 +28,7 @@ struct BaseAttack
 {
     std::uint8_t attacks_per_two_rounds{};
     DamageDice damage;
+
     [[nodiscard]] double attacks_per_round() const noexcept
     {
         return attacks_per_two_rounds / 2.0;
@@ -97,6 +98,7 @@ struct ItemRecord
     std::uint16_t weight{}, value{};
     std::uint8_t stack_size{};
     std::array<std::uint8_t, 3> effect_codes{};
+
     [[nodiscard]] bool readied() const noexcept
     {
         return readied_raw != 0;

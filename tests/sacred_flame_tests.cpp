@@ -10,6 +10,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -17,17 +18,21 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 void write(const std::filesystem::path &p, const std::string &s)
 {
     std::ofstream out(p);
     out << s;
     check(bool(out), "Write fixture");
 }
+
 CharacterDraft draft()
 {
     CharacterDraft d;
@@ -42,6 +47,7 @@ CharacterDraft draft()
         r = {{6, 5, 4, 1}, 3};
     return d;
 }
+
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
@@ -49,6 +55,7 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void freeze()
 {
     auto rules = module();
@@ -88,12 +95,14 @@ void freeze()
     check(c->submit(command(*c, "cure_wounds", 1)), "Prior Cure Wounds continuation");
     write(base / "combat-v13-sacred-continued.save", c->save());
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
     check(bool(in), "Read fixture");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -107,6 +116,7 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid spell data must reject");
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -114,6 +124,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
@@ -121,6 +132,7 @@ bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
             return true;
     return false;
 }
+
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -131,6 +143,7 @@ std::uint64_t rng(const CombatSession &c)
     in >> n;
     return n;
 }
+
 std::string arg(const Message &m, std::string_view name)
 {
     for (const auto &a : m.arguments)
@@ -138,6 +151,7 @@ std::string arg(const Message &m, std::string_view name)
             return a.value;
     throw std::runtime_error("Missing message argument");
 }
+
 Character hero(unsigned level = 1, bool learned = true)
 {
     auto d = draft();
@@ -148,12 +162,14 @@ Character hero(unsigned level = 1, bool learned = true)
         check(h.advance(*module(), scratch), "Advance real Cleric choices");
     return h;
 }
+
 auto custom(std::string affinity = {}, int dex = 0)
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
                                "saves target 0 " + std::to_string(dex) + " 0 0 0 0\n" + affinity);
 }
+
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
             std::vector<std::string> gear = {}, unsigned side = 1,
             std::optional<VitalState> vital = {})
@@ -169,6 +185,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
     check(c->snapshot().actor == 1, "Independent seed reaches caster");
     return c;
 }
+
 void access()
 {
     auto creation = srd5::character_rules();
@@ -263,6 +280,7 @@ void access()
         }
     check(clerics == 4, "All Cleric presets verified");
 }
+
 Message save_message(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages)
@@ -270,6 +288,7 @@ Message save_message(const CombatSession &c)
             return m;
     throw std::runtime_error("Missing Dexterity save");
 }
+
 void rolls()
 {
     // Independent SplitMix64 values after the two initiative draws:
@@ -328,6 +347,7 @@ void rolls()
               "Failed natural 20 save still deals only one d8");
     }
 }
+
 void targets()
 {
     auto rules = custom();
@@ -428,6 +448,7 @@ void targets()
             }
         }
 }
+
 void modifiers()
 {
     auto rules = custom();
@@ -478,6 +499,7 @@ void modifiers()
     }
     check(checked, "Actual Blindness interaction exercised");
 }
+
 void campaign()
 {
     auto rules = module();
@@ -517,6 +539,7 @@ void campaign()
                   "Campaign replay preserves explicit choices and all resources exactly");
         }
 }
+
 void legacy()
 {
     auto rules = module();
@@ -548,6 +571,7 @@ void legacy()
     check(c->save() == rules->restore(read(base / "combat-v13-sacred-continued.save"))->save(),
           "Actual prior writer healing continuation is identical");
 }
+
 void ui_fixtures()
 {
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "sacred-fixtures";
@@ -570,6 +594,7 @@ void ui_fixtures()
     }
 }
 } // namespace
+
 int main(int argc, char **)
 {
     try

@@ -38,10 +38,12 @@ class CharacterCreationView : public godot::Control
     void refresh_art();
     void load_additional_heads();
     void recommend_portrait();
+
     struct Portrait
     {
         std::string filename, gender, klass, race;
     };
+
     std::vector<Portrait> portraits_;
     std::map<std::string, godot::Ref<godot::ImageTexture>> portrait_textures_;
     std::vector<std::size_t> filtered_portraits_;

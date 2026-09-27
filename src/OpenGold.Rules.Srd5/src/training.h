@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_SRD5_TRAINING_H
 #define OPENGOLD_SRD5_TRAINING_H
 #include "opengold/character_rules.h"
+
 namespace opengold::srd5::detail
 {
 // Profile versions retain the training entitlements available to their writer.

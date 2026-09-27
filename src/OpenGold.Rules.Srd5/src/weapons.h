@@ -4,6 +4,7 @@
 #include "ammunition.h"
 #include <array>
 #include <string_view>
+
 namespace opengold::srd5::detail
 {
 enum class Mastery
@@ -18,6 +19,7 @@ enum class Mastery
     topple,
     vex
 };
+
 // SRD 5.2.1 p.91. Original names are converted by the game adapter.
 // Catalog metadata does not grant mastery or implement ammunition/Loading actions.
 struct Weapon
@@ -38,11 +40,13 @@ struct Weapon
     unsigned weight_quarters{},
         cost_cp{};          // Exact quarter-pounds and copper pieces; dash weight is zero.
     std::string_view label; // Human-readable source label, separate from the saved key.
+
     bool heavy_disadvantage(const std::array<int, 6> &scores) const
     {
         return heavy && scores[ranged ? 1 : 0] < 13;
     } // SRD 5.2.1 p.89: weapon category determines the ability.
 };
+
 inline constexpr std::array weapons{
     Weapon{.key = "club",
            .dice = 1,
@@ -478,6 +482,7 @@ inline constexpr std::array weapons{
            .label = "Pistol"},
     // A plain wand is a held focus, not a free spell or invented damage profile.
     Weapon{.key = "wand", .dice = 0, .sides = 0, .label = "Wand"}};
+
 inline const Weapon *weapon(std::string_view key)
 {
     for (const auto &value : weapons)

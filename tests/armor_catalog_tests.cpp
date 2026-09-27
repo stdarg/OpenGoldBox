@@ -13,6 +13,7 @@
 using namespace opengold;
 using namespace opengold::rules;
 namespace catalog = opengold::srd5::detail;
+
 namespace
 {
 void check(bool value, const char *message)
@@ -20,6 +21,7 @@ void check(bool value, const char *message)
     if (!value)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -33,13 +35,16 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid equipment/check must reject");
 }
+
 const auto fixtures = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
+
 std::string read(const std::filesystem::path &path)
 {
     std::ifstream in(path);
     check(bool(in), "Fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 auto module(bool target = false)
 {
     auto content =
@@ -48,6 +53,7 @@ auto module(bool target = false)
         content += "\ncreature target 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     return srd5::parse_content(content);
 }
+
 struct Expected
 {
     std::string key, category;
@@ -55,6 +61,7 @@ struct Expected
     bool stealth{};
     unsigned weight{}, cost{}, don{}, doff{};
 };
+
 std::vector<Expected> expectations()
 {
     std::istringstream in(read(fixtures / "armor-srd-5.2.1.tsv"));
@@ -73,6 +80,7 @@ std::vector<Expected> expectations()
     }
     return result;
 }
+
 Character hero(std::string klass = "fighter", int strength = 15, int dexterity = 16,
                std::string race = "human", std::string background = "sage")
 {
@@ -98,6 +106,7 @@ Character hero(std::string klass = "fighter", int strength = 15, int dexterity =
                                                   : roll(dexterity);
     return Character(*srd5::character_rules(), d, {});
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &u : c.snapshot().combatants)
@@ -105,6 +114,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return u;
     throw std::runtime_error("Missing actor");
 }
+
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -112,6 +122,7 @@ Command command(const CombatSession &c, std::string_view verb)
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -119,6 +130,7 @@ bool has(const CombatSession &c, std::string_view verb)
             return true;
     return false;
 }
+
 std::string argument(const Message &m, std::string_view key)
 {
     for (const auto &a : m.arguments)
@@ -126,6 +138,7 @@ std::string argument(const Message &m, std::string_view key)
             return a.value;
     throw std::runtime_error("Missing argument");
 }
+
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages)
@@ -133,6 +146,7 @@ Message attack(const CombatSession &c)
             return m;
     throw std::runtime_error("Missing attack");
 }
+
 void definitions()
 {
     const std::map<std::string, catalog::ArmorCategory> categories{
@@ -159,6 +173,7 @@ void definitions()
               "Display name is human-readable");
     }
 }
+
 void all_classes()
 {
     auto rules = module(true);
@@ -241,6 +256,7 @@ void all_classes()
         }
     }
 }
+
 void boundaries()
 {
     auto rules = module();
@@ -324,6 +340,7 @@ void boundaries()
               "Untrained armor affects Strength/Dexterity saves only");
     }
 }
+
 void campaign()
 {
     auto rules = module();
@@ -362,6 +379,7 @@ void campaign()
               "Unequipping removes penalties without restoring resources");
     }
 }
+
 void legacy()
 {
     auto rules = module();
@@ -390,6 +408,7 @@ void legacy()
           "Frozen prior-writer attack continuation remains exact");
 }
 } // namespace
+
 int main()
 {
     try

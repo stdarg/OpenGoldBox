@@ -2,6 +2,7 @@
 namespace scholar_checks
 {
 constexpr auto source = "class:wizard:scholar";
+
 Character wizard(std::string_view proficient)
 {
     auto d = draft("wizard", "soldier");
@@ -10,6 +11,7 @@ Character wizard(std::string_view proficient)
                   {"background:soldier:gaming_set", {"dice"}}};
     return hero(d);
 }
+
 void choices_and_sources()
 {
     auto rules = module();
@@ -115,6 +117,7 @@ void choices_and_sources()
               "Other classes have no Scholar entitlement");
     }
 }
+
 auto prior_module()
 {
     std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
@@ -123,6 +126,7 @@ auto prior_module()
         std::string(std::istreambuf_iterator<char>(in), {}) +
         "\ncreature recovery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
+
 void previous_writer()
 {
     auto rules = prior_module();
@@ -208,6 +212,7 @@ void previous_writer()
     check(combat->save() == expected(fixture("combat-scholar-continued.save")),
           "Actual old combat continues with identical resources and RNG");
 }
+
 void medicine_combat()
 {
     auto rules = prior_module();
@@ -289,6 +294,7 @@ void medicine_combat()
     }
     check(success && failure, "Scholar Medicine success and failure exercised");
 }
+
 void write_ui_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
@@ -317,6 +323,7 @@ void write_ui_fixture()
     write_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) / "scholar-ui.ogs",
                         encode_campaign(party, nullptr, campaign_asset_identity(directory)));
 }
+
 void verify_ui(const char *path)
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
@@ -347,6 +354,7 @@ void verify_ui(const char *path)
         "Actual UI result changes only Scholar choices and the requested level-up; preserves every other campaign field");
     std::cout << "Scholar UI persistence verified\n";
 }
+
 void unchanged_starting_review()
 {
     auto rules = module();
@@ -360,6 +368,7 @@ void unchanged_starting_review()
     check(character.creation_data().training.empty(),
           "Review editor never mutates the original character");
 }
+
 void run()
 {
     unchanged_starting_review();

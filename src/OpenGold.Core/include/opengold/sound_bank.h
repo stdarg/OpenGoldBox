@@ -23,10 +23,12 @@ class SoundBank
     // Accepts decoded effects, including hand-authored effects for unit tests.
     explicit SoundBank(std::vector<SoundEffect> effects);
     [[nodiscard]] static SoundBank load(const std::filesystem::path &game_directory);
+
     [[nodiscard]] std::span<const SoundClip> clips() const noexcept
     {
         return clips_;
     }
+
     [[nodiscard]] const SoundClip &at(unsigned id) const;
 
   private:

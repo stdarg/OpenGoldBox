@@ -14,24 +14,29 @@
 
 using namespace opengold;
 using namespace opengold::por;
+
 namespace
 {
 using Bytes = std::vector<std::uint8_t>;
+
 void require(bool condition, std::string_view message)
 {
     if (!condition)
         throw std::runtime_error(std::string(message));
 }
+
 void u16(Bytes &b, std::size_t p, unsigned n)
 {
     b[p] = n & 255;
     b[p + 1] = (n >> 8) & 255;
 }
+
 void u32(Bytes &b, std::size_t p, unsigned n)
 {
     u16(b, p, n);
     u16(b, p + 2, n >> 16);
 }
+
 Bytes dax(const std::vector<DaxRecord> &records)
 {
     Bytes bytes(2 + records.size() * 9);
@@ -54,6 +59,7 @@ Bytes dax(const std::vector<DaxRecord> &records)
     }
     return bytes;
 }
+
 Bytes character(std::string_view name = "TEST CREATURE")
 {
     Bytes b(285);
@@ -92,6 +98,7 @@ Bytes character(std::string_view name = "TEST CREATURE")
     b[283] = 250; // Retain high raw HP, never assume every value above 127 is a dead character.
     return b;
 }
+
 void write(const std::filesystem::path &path, const Bytes &bytes)
 {
     std::ofstream out(path, std::ios::binary);
@@ -100,6 +107,7 @@ void write(const std::filesystem::path &path, const Bytes &bytes)
     if (!out)
         throw std::runtime_error("Cannot write test fixture");
 }
+
 class Fixture
 {
   public:
@@ -110,17 +118,21 @@ class Fixture
                 ("opengold-creatures-" + std::to_string(suffix));
         require(std::filesystem::create_directory(path_), "Unique temporary directory");
     }
+
     ~Fixture()
     {
         std::error_code ignored;
         std::filesystem::remove_all(path_, ignored);
     }
+
     Fixture(const Fixture &) = delete;
     Fixture &operator=(const Fixture &) = delete;
+
     const std::filesystem::path &path() const
     {
         return path_;
     }
+
     void populate()
     {
         for (unsigned bank = 1; bank <= 8; ++bank)
@@ -171,6 +183,7 @@ class Fixture
   private:
     std::filesystem::path path_;
 };
+
 template <class F> void fails(F operation, std::string_view context)
 {
     try

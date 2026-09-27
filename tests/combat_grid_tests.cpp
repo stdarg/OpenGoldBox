@@ -8,6 +8,7 @@
 
 using namespace opengold::rules;
 using namespace opengold::srd5::detail;
+
 namespace
 {
 void check(bool condition, const char *message)

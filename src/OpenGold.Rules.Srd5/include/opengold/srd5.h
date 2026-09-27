@@ -3,6 +3,7 @@
 #include "opengold/rules.h"
 #include "opengold/character_rules.h"
 #include <filesystem>
+
 namespace opengold::srd5
 {
 // Reads a pinned, curated content pack. Unknown definitions/mechanics fail.

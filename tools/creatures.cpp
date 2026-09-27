@@ -10,6 +10,7 @@ void dice(const opengold::por::DamageDice &d)
     if (d.modifier != 0)
         std::cout << (d.modifier > 0 ? "+" : "") << d.modifier;
 }
+
 void modifier(std::string_view label, const std::optional<int> &value)
 {
     std::cout << "  " << label << ": ";
@@ -19,6 +20,7 @@ void modifier(std::string_view label, const std::optional<int> &value)
         std::cout << "unknown";
     std::cout << '\n';
 }
+
 void print(const opengold::por::Creature &c)
 {
     const auto &s = c.stored;

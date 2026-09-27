@@ -8,6 +8,7 @@
 namespace opengold::srd5::detail
 {
 using namespace rules;
+
 namespace
 {
 constexpr int unreachable = std::numeric_limits<int>::max();

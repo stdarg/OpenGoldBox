@@ -8,14 +8,17 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 void check(bool ok, const char *why)
 {
     if (!ok)
         throw std::runtime_error(why);
 }
+
 template <class F> void rejects(F f)
 {
     bool bad = false;
@@ -29,10 +32,12 @@ template <class F> void rejects(F f)
     }
     check(bad, "Malformed state must reject");
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 auto custom()
 {
     std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
@@ -40,6 +45,7 @@ auto custom()
     return srd5::parse_content(text +
                                "\ncreature dummy 40 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
+
 Character hero(unsigned level = 3, std::string klass = "fighter", bool savage = false)
 {
     CharacterDraft d;
@@ -58,6 +64,7 @@ Character hero(unsigned level = 3, std::string klass = "fighter", bool savage = 
         check(h.advance(*module(), life), "Ordinary level advancement");
     return h;
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -65,6 +72,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &v : c.legal_commands())
@@ -72,6 +80,7 @@ bool has(const CombatSession &c, std::string_view verb)
             return true;
     return false;
 }
+
 Command cmd(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
@@ -79,10 +88,12 @@ Command cmd(const CombatSession &c, std::string_view verb, EntityId target = 0)
             return v;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     check(c.submit(cmd(c, verb, target)), "Accepted legal command");
 }
+
 auto battle(const RulesModule &rules, const Character &h, unsigned seed,
             std::vector<std::string> gear = {"longsword"}, bool prone = false)
 {
@@ -102,6 +113,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed,
         act(*c, "end");
     return c;
 }
+
 int attack_roll(const CombatSession &c)
 {
     const auto state = c.snapshot();
@@ -112,6 +124,7 @@ int attack_roll(const CombatSession &c)
                     return std::stoi(a.value);
     return 0;
 }
+
 std::uint64_t random_state(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -122,6 +135,7 @@ std::uint64_t random_state(const CombatSession &c)
     in >> result;
     return result;
 }
+
 void grants_and_checks()
 {
     auto rules = module();
@@ -180,6 +194,7 @@ void grants_and_checks()
         }
     }
 }
+
 void critical_and_movement()
 {
     auto rules = custom();
@@ -259,6 +274,7 @@ void critical_and_movement()
                   "Both critical thresholds exercised at each level and weapon mode");
         }
 }
+
 void savage_and_prone()
 {
     auto rules = custom();
@@ -285,6 +301,7 @@ void savage_and_prone()
     }
     check(covered, "Savage/Prone critical exercised");
 }
+
 void reaction_continuation()
 {
     auto rules = custom();
@@ -351,6 +368,7 @@ void reaction_continuation()
             check(covered, "Live reaction movement case exercised");
         }
 }
+
 void campaign_and_cancellation()
 {
     auto rules = module();
@@ -424,6 +442,7 @@ void campaign_and_cancellation()
               "Surprise Disadvantage cancels Champion Initiative Advantage without extra dice");
     }
 }
+
 void repeated_criticals_and_terrain()
 {
     auto rules = custom();
@@ -472,6 +491,7 @@ void repeated_criticals_and_terrain()
     }
     check(covered, "Multiple critical triggers exercised in one actual turn");
 }
+
 void fixtures()
 {
     auto rules = module();
@@ -503,6 +523,7 @@ void fixtures()
     check(done, "Actual critical UI fixture captured");
 }
 } // namespace
+
 int main()
 {
     try

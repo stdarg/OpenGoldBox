@@ -12,12 +12,14 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
+
 namespace
 {
 String gs(std::string_view value)
 {
     return String::utf8(value.data(), value.size());
 }
+
 // Substitute once over the template. Braces inside a player-entered name are
 // literal data and must never be interpreted as another format expression.
 String interpolate(const String &message, const Dictionary &values)
@@ -45,10 +47,12 @@ String interpolate(const String &message, const Dictionary &values)
     }
     return result;
 }
+
 String supported(const String &locale)
 {
     return locale.replace("-", "_").get_slice("_", 0).to_lower() == "es" ? "es" : "en";
 }
+
 String substitute(const String &message, std::initializer_list<i18n::Argument> arguments)
 {
     Dictionary values;
@@ -57,6 +61,7 @@ String substitute(const String &message, std::initializer_list<i18n::Argument> a
     return interpolate(message, values);
 }
 } // namespace
+
 namespace i18n
 {
 void prepare_ui(Node &root)
@@ -81,24 +86,29 @@ void prepare_ui(Node &root)
     for (int i = 0; i < root.get_child_count(); ++i)
         prepare_ui(*root.get_child(i));
 }
+
 String text(std::string_view source)
 {
     if (source.empty())
         return {};
     return TranslationServer::get_singleton()->translate(gs(source));
 }
+
 std::string utf8(std::string_view source)
 {
     return text(source).utf8().get_data();
 }
+
 String format(std::string_view source, std::initializer_list<Argument> arguments)
 {
     return substitute(text(source), arguments);
 }
+
 std::string formatted(std::string_view source, std::initializer_list<Argument> arguments)
 {
     return format(source, arguments).utf8().get_data();
 }
+
 String plural(std::string_view singular, std::string_view multiple, int count,
               std::initializer_list<Argument> arguments)
 {
@@ -110,12 +120,14 @@ String plural(std::string_view singular, std::string_view multiple, int count,
     values["count"] = count;
     return interpolate(translated, values);
 }
+
 String campaign(std::string_view resource, std::string_view original)
 {
     const String translated =
         TranslationServer::get_singleton()->translate(gs(original), gs(resource));
     return translated == gs(original) ? text(original) : translated;
 }
+
 String render(const opengold::rules::Message &message)
 {
     Dictionary values;
@@ -123,6 +135,7 @@ String render(const opengold::rules::Message &message)
         values[gs(argument.name)] = argument.translate ? text(argument.value) : gs(argument.value);
     return interpolate(text(message.source), values);
 }
+
 String render(const std::vector<opengold::rules::Message> &messages)
 {
     String result;
@@ -134,14 +147,17 @@ String render(const std::vector<opengold::rules::Message> &messages)
     }
     return result;
 }
+
 String language()
 {
     return supported(TranslationServer::get_singleton()->get_locale());
 }
+
 void initialize()
 {
     TranslationServer::get_singleton()->set_locale(settings::language());
 }
+
 bool select_language(const String &locale)
 {
     if (!settings::save_language(locale))

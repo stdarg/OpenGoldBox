@@ -31,27 +31,32 @@ enum class AffinityKind
     vulnerability,
     immunity
 };
+
 struct DamageAffinity
 {
     AffinityKind kind{};
     std::optional<DamageType> type; // No type means all damage types.
     std::string source_id;
 };
+
 struct DamagePart
 {
     DamageType type{};
     int amount{};
 };
+
 struct ResolvedDamage
 {
     DamageType type{};
     int before{}, after{};
 };
+
 struct DamageResult
 {
     int total{};
     std::vector<ResolvedDamage> parts;
 };
+
 [[nodiscard]] DamageType damage_type(std::string_view name);
 [[nodiscard]] std::string_view damage_name(DamageType type);
 // One instance, possibly with multiple damage types. Bonuses, penalties and

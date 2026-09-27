@@ -12,6 +12,7 @@
 using namespace opengold;
 using namespace opengold::rules;
 namespace fx = opengold::srd5::detail;
+
 namespace
 {
 void check(bool value, const char *message)
@@ -19,6 +20,7 @@ void check(bool value, const char *message)
     if (!value)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool failed = false;
@@ -32,11 +34,13 @@ template <class F> void rejects(F f)
     }
     check(failed, "Invalid effect input accepted");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Command command(const CombatSession &s, std::string_view verb, EntityId target = 0)
 {
     for (const auto &c : s.legal_commands())
@@ -44,6 +48,7 @@ Command command(const CombatSession &s, std::string_view verb, EntityId target =
             return c;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 bool offers(const CombatSession &s, std::string_view verb)
 {
     const auto cs = s.legal_commands();
@@ -53,6 +58,7 @@ bool offers(const CombatSession &s, std::string_view verb)
                            return c.verb == verb;
                        });
 }
+
 CombatantView unit(const CombatSession &s, EntityId id)
 {
     for (const auto &a : s.snapshot().combatants)
@@ -60,6 +66,7 @@ CombatantView unit(const CombatSession &s, EntityId id)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 fx::EffectState effects(const VitalState &state)
 {
     const auto where = state.resources.find("FX1");
@@ -68,6 +75,7 @@ fx::EffectState effects(const VitalState &state)
     std::istringstream input(state.resources.substr(where));
     return fx::read_effects(input);
 }
+
 VitalState with_effects(VitalState state, const fx::EffectState &effects)
 {
     std::istringstream input(state.resources);
@@ -86,6 +94,7 @@ VitalState with_effects(VitalState state, const fx::EffectState &effects)
     state.resources = out.str();
     return state;
 }
+
 fx::EffectState blind(int dc = 38, unsigned remaining = 60000)
 {
     fx::EffectState result;
@@ -93,12 +102,14 @@ fx::EffectState blind(int dc = 38, unsigned remaining = 60000)
     result.active.front().remaining_ms = remaining;
     return result;
 }
+
 Encounter encounter()
 {
     return {{12, 9, std::vector<std::uint8_t>(108)},
             {{1, "blindness-adept", "Caster", 0, {2, 4}}, {2, "bandit", "Target", 1, {3, 4}}},
             123};
 }
+
 Character character(std::string klass, std::string name)
 {
     CharacterDraft d;
@@ -113,6 +124,7 @@ Character character(std::string klass, std::string name)
         r = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
 }
+
 void saving_throws()
 {
     std::array<bool, 20> seen{};
@@ -164,6 +176,7 @@ void saving_throws()
                           "Complete attack modifier truth table");
                 }
 }
+
 void lifecycle()
 {
     auto one = blind(), many = one;
@@ -215,6 +228,7 @@ void lifecycle()
     check(dead.active.empty() && a == before,
           "Dead creatures expire effects without rolling saves");
 }
+
 void codec()
 {
     const auto original = blind();
@@ -246,6 +260,7 @@ void codec()
                 });
     }
 }
+
 void combat()
 {
     auto rules = module();
@@ -361,6 +376,7 @@ void combat()
               "Character Constitution proficiency is used by actual combat saves");
     }
 }
+
 void campaign()
 {
     auto rules = module();
@@ -460,6 +476,7 @@ void campaign()
     restored.advance_time_milliseconds(1);
     check(restored.rest(), "Rest is eligible at the exact sixteen-hour boundary");
 }
+
 void original_encounter_scope()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -489,6 +506,7 @@ void original_encounter_scope()
     check(applied.active.size() == 1 && applied.active[0].source_scope == 11,
           "Original encounter propagates its source scope into effects");
 }
+
 void checkpoint_capacity()
 {
     auto rules = module();
@@ -512,6 +530,7 @@ void checkpoint_capacity()
           "Maximum actors/effects and escaped source names remain loadable");
 }
 } // namespace
+
 int main()
 {
     try

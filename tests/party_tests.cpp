@@ -17,6 +17,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool value, const char *message)
@@ -24,6 +25,7 @@ void check(bool value, const char *message)
     if (!value)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool rejected = false;
@@ -37,6 +39,7 @@ template <class F> void rejects(F f)
     }
     check(rejected, "Operation should reject");
 }
+
 void combat_body_assignments()
 {
     const auto folder = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art";
@@ -104,18 +107,21 @@ void combat_body_assignments()
           "No opposite shield substitution; saved appearance fallback is explicit");
     check(!catalog.choose({}, 30).matched && catalog.choose({}, 30).body == 30,
           "Unmapped unarmed also retains appearance");
+
     struct TemporaryCatalog
     {
         std::filesystem::path path =
             std::filesystem::temp_directory_path() /
             ("opengold-catalog-" +
              std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".tsv");
+
         ~TemporaryCatalog()
         {
             std::error_code error;
             std::filesystem::remove(path, error);
         }
     } temporary;
+
     const auto &path = temporary.path;
     {
         std::ofstream out(path);
@@ -144,11 +150,13 @@ void combat_body_assignments()
     check(deleted.choose(shortbow, 31).matched && deleted.choose(shortbow, 31).body == 1,
           "Deleting one combination preserves other associations");
 }
+
 std::unique_ptr<RulesModule> module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character character(std::string klass = "fighter", std::string name = "Ada")
 {
     CharacterCreator creator(srd5::character_rules(), 42);
@@ -161,6 +169,7 @@ Character character(std::string klass = "fighter", std::string name = "Ada")
     // Authored fixtures may have scores below the creator's optional starting-class minimums.
     return Character(creator.rules(), creator.draft(), creator.appearance());
 }
+
 por::Equipment item(unsigned type, unsigned price = 10)
 {
     por::Equipment e;
@@ -169,6 +178,7 @@ por::Equipment item(unsigned type, unsigned price = 10)
     e.stored.stack_size = 1;
     return e;
 }
+
 void party_combat_appearance()
 {
     const auto folder = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art";
@@ -273,6 +283,7 @@ void party_combat_appearance()
     check(por::resolve_combat_appearance(native, catalog).selection.combination == "type_23",
           "Native weapon definition resolves without original item type");
 }
+
 void all_weapon_equipment()
 {
     const auto folder = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art";
@@ -405,6 +416,7 @@ void all_weapon_equipment()
               "battleaxe",
           "Previously purchased unsupported weapons migrate without losing inventory");
 }
+
 void goliath_occupancy()
 {
     const auto human = character();
@@ -451,6 +463,7 @@ void goliath_occupancy()
                   "Monster independently occupies the upper square after save/restore");
     }
 }
+
 void roster_and_equipment()
 {
     CampaignParty party(module());
@@ -536,6 +549,7 @@ void roster_and_equipment()
     check(wizard.profile(bard).armor_class > 0,
           "All classes can display an equipment profile outside combat");
 }
+
 void class_weapon_proficiency()
 {
     auto rules = module();
@@ -554,12 +568,14 @@ void class_weapon_proficiency()
         draft.rolls[0] = {{4, 4, 4, 1}, 3}; // Soldier produces STR 14, DEX 16.
         return Character(*srd5::character_rules(), draft, {});
     };
+
     // Independent expectations from SRD 5.2.1's starting-class traits.
     struct Training
     {
         const char *klass;
         bool light_martial, other_martial;
     };
+
     const std::array expectations{
         Training{"barbarian", true, true}, Training{"bard", false, false},
         Training{"cleric", false, false},  Training{"druid", false, false},
@@ -660,6 +676,7 @@ void class_weapon_proficiency()
                   "Actual combat uses +5 for the Dexterity-16 Rogue/Monk weapon attack");
         }
 }
+
 void stabilization_handoff()
 {
     CampaignParty party(module());
@@ -717,6 +734,7 @@ void stabilization_handoff()
     check(restored.member(hero).vitals == party.member(hero).vitals,
           "Stable state and cleared counters survive campaign save/reload");
 }
+
 void remaining_turn_handoff()
 {
     CampaignParty party(module());
@@ -779,6 +797,7 @@ void remaining_turn_handoff()
     check(encode_campaign(restored, nullptr, "remaining-turn") == saved,
           "Campaign reload preserves post-combat HP, spent recovery and exact clock");
 }
+
 void untrained_equipment()
 {
     auto rules = module();
@@ -848,12 +867,14 @@ void untrained_equipment()
     }
     check(tested, "Exercised armored wizard combat");
 }
+
 void finish(CombatDemo &fight)
 {
     for (unsigned n = 0; n < 2000 && fight.combat().snapshot().outcome == Outcome::ongoing; ++n)
         check(fight.submit(choose_demo_command(fight.combat())), "Accepted combat command");
     check(fight.combat().snapshot().outcome != Outcome::ongoing, "Fight terminates");
 }
+
 void combat_handoff()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -915,11 +936,13 @@ void combat_handoff()
         finish(fight);
     }
 }
+
 struct EncounterObservation
 {
     Encounter encounter;
     std::uint64_t seed{};
 };
+
 // Observe the adapter boundary while retaining real rules validation and combat.
 class ObservedModule final : public RulesModule
 {
@@ -928,20 +951,24 @@ class ObservedModule final : public RulesModule
         : observation_(std::move(observation)), rules_(module())
     {
     }
+
     Identity identity() const override
     {
         return rules_->identity();
     }
+
     std::vector<std::string> supported_features() const override
     {
         return rules_->supported_features();
     }
+
     std::unique_ptr<CombatSession> create(Encounter encounter, std::uint64_t seed) const override
     {
         observation_->encounter = encounter;
         observation_->seed = seed;
         return rules_->create(std::move(encounter), seed);
     }
+
     std::unique_ptr<CombatSession> restore(std::string_view bytes) const override
     {
         return rules_->restore(bytes);
@@ -951,6 +978,7 @@ class ObservedModule final : public RulesModule
     std::shared_ptr<EncounterObservation> observation_;
     std::unique_ptr<RulesModule> rules_;
 };
+
 CampaignEncounter encounter_fixture()
 {
     CampaignEncounter encounter;
@@ -963,6 +991,7 @@ CampaignEncounter encounter_fixture()
                          {1001, "bandit", "Second enemy", 1, {}}};
     return encounter;
 }
+
 void campaign_encounters()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -1071,6 +1100,7 @@ void campaign_encounters()
     check(fight.has_combat() && party->in_combat(),
           "Valid encounter can start after rejected attempts");
 }
+
 void allied_campaign_movement()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -1117,6 +1147,7 @@ void allied_campaign_movement()
     check(encode_campaign(restored, nullptr, "allied-transit") == saved,
           "Campaign handoff and reload retain exact post-transit vitals, resources and time");
 }
+
 void standalone_checkpoints()
 {
     CombatDemo fight(module());
@@ -1141,6 +1172,7 @@ void standalone_checkpoints()
     check(fight.save_combat() == restored.save_combat(),
           "Adapter checkpoint resumes deterministically");
 }
+
 // A replacement module can create a session whose initial snapshot is invalid.
 // Rejection must not strand a party in combat or install the rejected session.
 class InvalidInitialSession final : public CombatSession
@@ -1150,23 +1182,28 @@ class InvalidInitialSession final : public CombatSession
     {
         return {};
     }
+
     std::vector<Command> legal_commands() const override
     {
         return {};
     }
+
     std::vector<Cell> movement_reach(EntityId) const override
     {
         return {};
     }
+
     bool submit(const Command &) override
     {
         return false;
     }
+
     std::string save() const override
     {
         return {};
     }
 };
+
 class InvalidInitialModule final : public RulesModule
 {
   public:
@@ -1174,19 +1211,23 @@ class InvalidInitialModule final : public RulesModule
     {
         return module()->identity();
     }
+
     std::vector<std::string> supported_features() const override
     {
         return {};
     }
+
     std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
     {
         return std::make_unique<InvalidInitialSession>();
     }
+
     std::unique_ptr<CombatSession> restore(std::string_view) const override
     {
         throw std::runtime_error("Unused test restore");
     }
 };
+
 void combat_ownership()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -1230,6 +1271,7 @@ void combat_ownership()
     check(!party->in_combat(), "Destroying an unfinished combat releases the edit lock");
     party->select(0);
 }
+
 void progression_and_services()
 {
     CampaignParty party(module());
@@ -1324,6 +1366,7 @@ void progression_and_services()
               party.can_advance(pc),
           "Further XP waits for another explicit confirmation");
 }
+
 void caster_advancement()
 {
     for (const auto *klass : {"wizard", "cleric"})
@@ -1359,6 +1402,7 @@ void caster_advancement()
               "Advanced profile and resources round-trip through combat checkpoint");
     }
 }
+
 void temple_pooling()
 {
     CampaignParty party(module());
@@ -1383,6 +1427,7 @@ void temple_pooling()
               party.member(payer).vitals == state.roster[0].vitals,
           "Pooled service heals only the requested target");
 }
+
 void dynamic_checkpoint()
 {
     auto rules = module();
@@ -1438,6 +1483,7 @@ void dynamic_checkpoint()
             (void)rules->create(e, 42);
         });
 }
+
 void combat_demo_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
@@ -1564,7 +1610,9 @@ void combat_demo_fixture()
               "Game combat preserves the surrounded formation");
     }
 }
+
 using Bytes = std::vector<std::uint8_t>;
+
 std::shared_ptr<const por::EclProgram> program(Bytes body)
 {
     Bytes bytes{0, 0};
@@ -1575,12 +1623,14 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
     return std::make_shared<const por::EclProgram>(
         por::EclProgram::decode(bytes, "party integration"));
 }
+
 void settle(por::RolfTourSession &town)
 {
     for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
         town.advance(.5);
     check(town.snapshot().phase != por::TourPhase::faulted, "Town script fault");
 }
+
 void rejected_combat_handoff()
 {
     // Enter a synthetic Slums district, change HP, then request one actual orc.
@@ -1690,6 +1740,7 @@ void rejected_combat_handoff()
             "Failed event rolls back until a player commits recovery; committed spending is never refunded");
     }
 }
+
 void recovery_hosts()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -1798,6 +1849,7 @@ void recovery_hosts()
     check(rollback.choose(rollback.snapshot().continue_ticket, 0) && rollback.can_leave(),
           "Rollback clears pending temple ticket");
 }
+
 void reward_reentry()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -1821,6 +1873,7 @@ void reward_reentry()
         check(!fight.submit({}), "Finished combat rejects more commands");
     }
 }
+
 void interrupted_rest_victory()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -1953,6 +2006,7 @@ void interrupted_rest_victory()
               restored->can_advance(pc),
           "Rest resumes after victory and preserves earned XP through completion");
 }
+
 void script_handoff()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -2021,6 +2075,7 @@ void script_handoff()
           "Unsupported event restores authoritative party checkpoint");
 }
 } // namespace
+
 void original_loot()
 {
     CampaignParty party(module());
@@ -2050,6 +2105,7 @@ void original_loot()
               party.member(first).item_sources.size() == 1,
           "Failed collection changes neither reward history nor inventory");
 }
+
 int main()
 {
     try

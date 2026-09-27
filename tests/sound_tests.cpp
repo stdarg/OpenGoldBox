@@ -6,14 +6,17 @@
 #include <stdexcept>
 
 using namespace opengold::por;
+
 namespace
 {
 using Bytes = std::vector<std::uint8_t>;
+
 void require(bool ok, const char *message)
 {
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F action)
 {
     bool rejected = false;
@@ -27,11 +30,13 @@ template <class F> void rejects(F action)
     }
     require(rejected, "Malformed sound input was accepted");
 }
+
 void word(Bytes &b, std::size_t at, unsigned value)
 {
     b.at(at) = value & 255;
     b.at(at + 1) = (value >> 8) & 255;
 }
+
 void command(Bytes &b, unsigned op, unsigned field, unsigned value)
 {
     b.push_back(static_cast<std::uint8_t>(op));
@@ -39,6 +44,7 @@ void command(Bytes &b, unsigned op, unsigned field, unsigned value)
     b.push_back(value & 255);
     b.push_back((value >> 8) & 255);
 }
+
 void packing()
 {
     // One literal run and one fill run, read backwards, produce 16 bytes.
@@ -88,6 +94,7 @@ void packing()
     plain[32] = 91;
     require(unpack_sound_executable(plain).front() == 91, "Uncompressed image");
 }
+
 void sequences()
 {
     Bytes data(16);
@@ -155,6 +162,7 @@ void sequences()
     require(modulation[1].divisor == 744 && modulation[2].divisor == 1000,
             "Signed modulation/wrap");
 }
+
 void rendering()
 {
     SoundEffect tone{2, "Synthetic", false, 5041, std::vector<SpeakerTick>(100, {1193, true})};
@@ -174,6 +182,7 @@ void rendering()
                         }),
             "Silence renders zero PCM");
 }
+
 void installed()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); // Borrowed environment view.
@@ -203,6 +212,7 @@ void installed()
     require(audible == 19, "All original PC effects render");
 }
 } // namespace
+
 int main()
 {
     try

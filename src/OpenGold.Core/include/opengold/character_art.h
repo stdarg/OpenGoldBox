@@ -24,14 +24,17 @@ struct CharacterAppearance
     std::string portrait; // Complete portrait basename; empty in legacy saves.
     bool operator==(const CharacterAppearance &) const = default;
 };
+
 // Structural validation; CharacterArt additionally checks available portrait IDs.
 void validate_character_appearance(const CharacterAppearance &);
+
 struct PortraitPart
 {
     std::string archive;
     Image image;
     std::string label;
 };
+
 struct AdditionalPortraitHead
 {
     unsigned id;
@@ -40,6 +43,7 @@ struct AdditionalPortraitHead
     // grid. Exclude dangling hair and rounded bottom remnants from the join.
     unsigned neck_left, neck_right, retained_rows;
 };
+
 [[nodiscard]] std::span<const AdditionalPortraitHead> additional_portrait_heads();
 [[nodiscard]] std::optional<unsigned> matching_portrait_head(std::string_view race,
                                                              std::string_view gender);
@@ -47,22 +51,26 @@ struct AdditionalPortraitHead
 // quantization. Trim padding and crop at the cataloged neck baseline. The final
 // neck placement is fitted to the selected original body during composition.
 [[nodiscard]] Image prepare_portrait_head(const Image &source, unsigned head_id);
+
 struct IndexedIcon
 {
     unsigned width{}, height{};
     std::vector<std::uint8_t> pixels;
 };
+
 struct CharacterColorUsage
 {
     // Visible source pixels per Color-1/Color-2 region after head composition.
     std::array<std::array<unsigned, 6>, 2> ready{}, action{};
     [[nodiscard]] bool contains(unsigned bank, unsigned part) const;
 };
+
 // Keeps the source color indices: they identify regions, not final RGB colors.
 [[nodiscard]] IndexedIcon decode_character_icon(std::span<const std::uint8_t> record);
 [[nodiscard]] Image compose_character_icon(const IndexedIcon &head, const IndexedIcon &body,
                                            const CharacterAppearance &appearance);
 [[nodiscard]] std::array<std::uint8_t, 3> character_color(unsigned index);
+
 class CharacterArt
 {
   public:

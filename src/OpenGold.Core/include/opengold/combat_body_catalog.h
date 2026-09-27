@@ -13,6 +13,7 @@ namespace opengold
 {
 struct PartyMember;
 }
+
 namespace opengold::por
 {
 struct CombatLookOption
@@ -20,17 +21,20 @@ struct CombatLookOption
     std::string id, label;
     int original_type{};
 };
+
 struct CombatEquipment
 {
     int original_type{-1};
     std::string name, definition_id;
 };
+
 struct CombatBodySelection
 {
     unsigned body{};
     bool matched{};
     std::string combination, label;
 };
+
 // Body IDs and weapon labels are data, not compiled-in classifications of the art.
 struct CombatBodyCatalog
 {
@@ -42,12 +46,14 @@ struct CombatBodyCatalog
     [[nodiscard]] CombatBodySelection choose(std::span<const CombatEquipment> equipped,
                                              unsigned fallback) const;
 };
+
 struct ResolvedCombatAppearance
 {
     CharacterAppearance appearance;
     CombatBodySelection selection;
     [[nodiscard]] Image icon(const CharacterArt &art, bool action) const;
 };
+
 // Saved anatomy remains unchanged. The selection supplies wielding arms and
 // equipment layers only; encounter creatures do not use this API.
 [[nodiscard]] ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,

@@ -227,6 +227,7 @@ ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std:
     }
     return {FormatResult::ok, std::move(image)};
 }
+
 ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record)
 {
     if (record.size() < 17)

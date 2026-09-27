@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 using namespace opengold::por;
+
 namespace
 {
 void check(bool value, const char *message)
@@ -11,6 +12,7 @@ void check(bool value, const char *message)
     if (!value)
         throw std::runtime_error(message);
 }
+
 std::uint64_t digest(const DungeonBattlefield &field)
 {
     std::uint64_t hash = 14695981039346656037ULL;
@@ -21,6 +23,7 @@ std::uint64_t digest(const DungeonBattlefield &field)
     }
     return hash;
 }
+
 void oracle_tests()
 {
     // Full-arena results from the original PC executable with synthetic maps,
@@ -72,6 +75,7 @@ void oracle_tests()
         check(digest(dungeon_battlefield(mixed, poses[i].first, poses[i].second)) == borders[i],
               "Original mixed-boundary oracle mismatch");
 }
+
 void collision_tests()
 {
     GeoMap map;
@@ -101,6 +105,7 @@ void collision_tests()
     check(rejected, "Reject out-of-map party position");
 }
 } // namespace
+
 int main()
 {
     try

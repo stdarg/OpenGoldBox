@@ -16,45 +16,56 @@ struct SpellChoiceEdit
     rules::SpellChoices choices;
     bool operator==(const SpellChoiceEdit &) const = default;
 };
+
 class Character
 {
   public:
     Character(const rules::CharacterRules &rules, rules::CharacterDraft creation,
               por::CharacterAppearance appearance);
+
     [[nodiscard]] const rules::CharacterDraft &creation_data() const
     {
         return creation_;
     }
+
     [[nodiscard]] const rules::CharacterSheet &sheet() const
     {
         return sheet_;
     }
+
     [[nodiscard]] const por::CharacterAppearance &appearance() const
     {
         return appearance_;
     }
+
     void appearance(por::CharacterAppearance value);
+
     [[nodiscard]] const Inventory &inventory() const
     {
         return inventory_;
     }
+
     [[nodiscard]] Inventory &inventory()
     {
         return inventory_;
     }
+
     bool advance(const rules::RulesModule &rules, rules::VitalState &state);
     bool advance(const rules::RulesModule &rules, rules::VitalState &state,
                  const rules::AdvancementChoice &choice);
     void choose_spells(const rules::RulesModule &, const rules::SpellChoices &,
                        std::uint64_t rest_session = 0, bool require_complete = true);
+
     [[nodiscard]] const auto &spell_edits() const
     {
         return spell_edits_;
     }
+
     [[nodiscard]] const auto &advancements() const
     {
         return advancements_;
     }
+
     // Reconstructs a candidate with missing training filled and the same history.
     // Existing selections cannot be replaced; this does not mutate live vitals.
     [[nodiscard]] Character preview_training(const rules::CharacterRules &creation_rules,

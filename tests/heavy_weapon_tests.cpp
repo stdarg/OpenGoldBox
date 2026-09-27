@@ -10,6 +10,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool value, const char *message)
@@ -17,6 +18,7 @@ void check(bool value, const char *message)
     if (!value)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -30,12 +32,14 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid command must reject");
 }
+
 std::string read(const std::filesystem::path &path)
 {
     std::ifstream in(path);
     check(bool(in), "Fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 auto module(bool target = false)
 {
     auto content =
@@ -44,6 +48,7 @@ auto module(bool target = false)
         content += "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     return srd5::parse_content(content);
 }
+
 Character hero(std::string klass = "fighter", int strength = 12, int dexterity = 15,
                std::string race = "human")
 {
@@ -66,6 +71,7 @@ Character hero(std::string klass = "fighter", int strength = 12, int dexterity =
         d.rolls[1] = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &u : c.snapshot().combatants)
@@ -73,6 +79,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return u;
     throw std::runtime_error("Missing actor");
 }
+
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -80,10 +87,12 @@ Command command(const CombatSession &c, std::string_view verb)
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void act(CombatSession &c, std::string_view verb)
 {
     check(c.submit(command(c, verb)), "Action accepted");
 }
+
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -94,6 +103,7 @@ std::uint64_t rng(const CombatSession &c)
     in >> value;
     return value;
 }
+
 std::string argument(const Message &m, std::string_view key)
 {
     for (const auto &a : m.arguments)
@@ -101,6 +111,7 @@ std::string argument(const Message &m, std::string_view key)
             return a.value;
     throw std::runtime_error("Missing message argument");
 }
+
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages)
@@ -108,6 +119,7 @@ Message attack(const CombatSession &c)
             return m;
     throw std::runtime_error("Missing attack result");
 }
+
 auto battle(const RulesModule &rules, const Character &h, const std::vector<std::string> &gear,
             unsigned seed = 13, Cell target = {2, 1}, bool blind_target = false,
             bool blind_hero = false)
@@ -125,12 +137,14 @@ auto battle(const RulesModule &rules, const Character &h, const std::vector<std:
     check(c->snapshot().actor == 1, "Golden seed begins with the hero");
     return c;
 }
+
 struct Weapon
 {
     const char *key;
     bool ranged;
     int critical, normal, disadvantaged;
 };
+
 // Independent SRD pp.89/91 and fixed SplitMix seed oracles. Seed 0 rolls
 // initiative 16/1 then attack 20/5. Seed 13 rolls 16/2 then 17/8.
 // Damage includes +1 ability; each table entry describes the actual dice.
@@ -140,6 +154,7 @@ constexpr std::array weapons{
     Weapon{"longbow", true, 10, 5, 5},       Weapon{"greataxe", false, 14, 9, 5},
     Weapon{"lance", false, 14, 9, 9},        Weapon{"maul", false, 15, 7, 8},
     Weapon{"heavy_crossbow", true, 14, 9, 9}};
+
 void thresholds()
 {
     auto rules = module(true);
@@ -236,6 +251,7 @@ void thresholds()
               "Small species with Strength 13 are not penalized by the obsolete 2014 rule");
     }
 }
+
 void contextual_modifiers()
 {
     auto rules = module(true);
@@ -287,6 +303,7 @@ void contextual_modifiers()
               rng(*far) == rng(*near),
           "Heavy combines with long-range or nearby-enemy Disadvantage without extra dice");
 }
+
 void campaign()
 {
     auto rules = module(true);
@@ -345,6 +362,7 @@ void campaign()
     check(argument(attack(*c), "roll") == "8" && argument(attack(*c), "disadvantage").empty(),
           "Next campaign encounter uses the advanced score");
 }
+
 void legacy()
 {
     auto rules = module();
@@ -397,6 +415,7 @@ void legacy()
           "Migration is canonical and never repeats grant introduction");
 }
 } // namespace
+
 int main()
 {
     try

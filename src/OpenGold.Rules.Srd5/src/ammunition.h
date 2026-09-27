@@ -15,12 +15,14 @@ enum class Ammunition
     firearm_bullet,
     needle
 };
+
 struct AmmunitionDefinition
 {
     std::string_view key;
     Ammunition type;
     std::string_view label;
 };
+
 inline constexpr std::array ammunition_definitions{
     AmmunitionDefinition{"arrow", Ammunition::arrow, "Arrows"},
     AmmunitionDefinition{"bolt", Ammunition::bolt, "Bolts"},
@@ -28,6 +30,7 @@ inline constexpr std::array ammunition_definitions{
     AmmunitionDefinition{"firearm_bullet", Ammunition::firearm_bullet, "Firearm bullets"},
     AmmunitionDefinition{"needle", Ammunition::needle, "Needles"},
 };
+
 inline constexpr const AmmunitionDefinition *ammunition(std::string_view key)
 {
     for (const auto &item : ammunition_definitions)

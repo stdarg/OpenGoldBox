@@ -12,9 +12,11 @@
 namespace opengold::srd5
 {
 using namespace rules;
+
 namespace
 {
 const std::array<std::string, 6> ability_names{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
+
 struct Class
 {
     const char *id;
@@ -22,6 +24,7 @@ struct Class
     int die;
     const char *description;
 };
+
 constexpr std::array<Class, 12> classes{
     {{"barbarian", "Barbarian", 12, "A fierce warrior. Primary ability: Strength. Hit Die: d12."},
      {"bard", "Bard", 8,
@@ -44,6 +47,7 @@ constexpr std::array<Class, 12> classes{
       "A spellcaster empowered by a pact. Primary ability: Charisma. Hit Die: d8."},
      {"wizard", "Wizard", 6,
       "A scholar of arcane magic. Primary ability: Intelligence. Hit Die: d6."}}};
+
 class CreatorRules final : public CharacterRules
 {
   public:
@@ -68,19 +72,23 @@ class CreatorRules final : public CharacterRules
     }
 
     ClassRequirements class_requirements(std::string_view id) const override;
+
     Identity identity() const override
     {
         return {"srd5", "5.2.1", "character-creation.1"};
     }
+
     std::vector<CreationChoice> choices(CreationField field) const override;
     std::vector<ScoreAdjustment> adjustments(std::string_view background) const override;
     std::array<AbilityRoll, 6> roll(std::uint64_t &state) const override;
     std::optional<int> ability_score(const CharacterDraft &draft, unsigned ability) const override;
     CharacterSheet evaluate(const CharacterDraft &draft, bool require_name) const override;
+
     std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft) const override
     {
         return detail::training_options(draft);
     }
+
     SpellChoiceOptions spell_choice_options(const CharacterDraft &draft) const override
     {
         if (draft.character_class != "wizard")
@@ -99,10 +107,12 @@ class CreatorRules final : public CharacterRules
             detail::spell_choice_options(selected, SpellChoiceContext::advancement).preparation;
         return options;
     }
+
     TrainingChoiceGroup cantrip_options(const CharacterDraft &draft) const override
     {
         return detail::starting_cantrip_options(draft.character_class);
     }
+
     AbilityCheckModifier ability_check(const CharacterSheet &sheet, unsigned ability,
                                        std::string_view skill, std::string_view tool) const override
     {
@@ -111,6 +121,7 @@ class CreatorRules final : public CharacterRules
                                      sheet.scores, ability, skill, tool);
     }
 };
+
 std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
 {
     switch (field)
@@ -162,6 +173,7 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
     }
     throw std::runtime_error("Unknown creation field");
 }
+
 std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view background) const
 {
     std::array<unsigned, 3> allowed;
@@ -194,6 +206,7 @@ std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view backgrou
     result.push_back(a);
     return result;
 }
+
 ClassRequirements CreatorRules::class_requirements(std::string_view id) const
 {
     const std::array<std::vector<unsigned>, 12> primary{
@@ -214,6 +227,7 @@ ClassRequirements CreatorRules::class_requirements(std::string_view id) const
     }
     return result;
 }
+
 std::array<AbilityRoll, 6> CreatorRules::roll(std::uint64_t &state) const
 {
     std::array<AbilityRoll, 6> result;
@@ -226,6 +240,7 @@ std::array<AbilityRoll, 6> CreatorRules::roll(std::uint64_t &state) const
     }
     return result;
 }
+
 std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, unsigned ability) const
 {
     if (ability >= 6 || d.assignment[ability] > 6)
@@ -241,6 +256,7 @@ std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, unsigned
         throw std::runtime_error("Background bonuses cannot raise a score above 20");
     return score;
 }
+
 CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name) const
 {
     const auto label = [&](CreationField field, const std::string &id)
@@ -408,6 +424,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
     return s;
 }
 } // namespace
+
 std::unique_ptr<rules::CharacterRules> character_rules()
 {
     return std::make_unique<CreatorRules>();

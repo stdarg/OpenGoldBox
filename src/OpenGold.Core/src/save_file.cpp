@@ -34,6 +34,7 @@ class TemporaryFile
     explicit TemporaryFile(std::filesystem::path path) : path_(std::move(path))
     {
     }
+
     ~TemporaryFile()
     {
         if (owned_)
@@ -42,16 +43,20 @@ class TemporaryFile
             std::filesystem::remove(path_, ignored);
         }
     }
+
     TemporaryFile(const TemporaryFile &) = delete;
     TemporaryFile &operator=(const TemporaryFile &) = delete;
+
     const std::filesystem::path &path() const noexcept
     {
         return path_;
     }
+
     void acquired() noexcept
     {
         owned_ = true;
     }
+
     void installed() noexcept
     {
         owned_ = false;
@@ -77,13 +82,16 @@ class Descriptor
     explicit Descriptor(int fd) noexcept : fd_(fd)
     {
     }
+
     ~Descriptor()
     {
         if (fd_ >= 0)
             ::close(fd_);
     }
+
     Descriptor(const Descriptor &) = delete;
     Descriptor &operator=(const Descriptor &) = delete;
+
     int get() const noexcept
     {
         return fd_;

@@ -19,6 +19,7 @@ rules::RestPolicy policy(const rules::RulesModule &rules, RestKind kind)
     throw std::runtime_error("Invalid rest kind");
 }
 } // namespace
+
 std::vector<MemberRestInfo> CampaignParty::rest_info(RestKind kind) const
 {
     const auto timing = policy(*rules_, kind);
@@ -54,10 +55,12 @@ std::vector<MemberRestInfo> CampaignParty::rest_info(RestKind kind) const
         }
     return result;
 }
+
 bool CampaignParty::rest()
 {
     return rest(RestKind::long_rest).has_value();
 }
+
 namespace
 {
 void advance_ticket(RestTicket &ticket)
@@ -66,6 +69,7 @@ void advance_ticket(RestTicket &ticket)
         throw std::runtime_error("Rest revision exhausted");
     ++ticket.revision;
 }
+
 RestTicket new_ticket(PartyState &state)
 {
     if (state.next_rest_session == std::numeric_limits<std::uint64_t>::max())
@@ -73,6 +77,7 @@ RestTicket new_ticket(PartyState &state)
     return {state.next_rest_session++, 1};
 }
 } // namespace
+
 std::optional<RestResult> CampaignParty::rest(RestKind kind)
 {
     // Existing safe-camp/inn callers retain an atomic operation. The same
@@ -91,6 +96,7 @@ std::optional<RestResult> CampaignParty::rest(RestKind kind)
         throw;
     }
 }
+
 std::optional<RestTicket> CampaignParty::begin_rest(RestKind kind)
 {
     editable();
@@ -110,18 +116,21 @@ std::optional<RestTicket> CampaignParty::begin_rest(RestKind kind)
     state_ = std::move(next);
     return activity.ticket;
 }
+
 void CampaignParty::require_activity_ticket(RestTicket ticket) const
 {
     outside_combat();
     if (!state_.rest_activity || state_.rest_activity->ticket != ticket)
         throw std::runtime_error("Expired rest activity request");
 }
+
 std::uint64_t CampaignParty::remaining_rest_milliseconds() const
 {
     if (!state_.rest_activity)
         return 0;
     return rules_->remaining_rest(*state_.rest_activity);
 }
+
 void CampaignParty::short_rest_benefits(PartyState &state,
                                         const std::vector<MemberId> &members) const
 {
@@ -144,6 +153,7 @@ void CampaignParty::short_rest_benefits(PartyState &state,
         state.short_rest = ShortRestSession{new_ticket(state), state.time_minutes,
                                             state.subminute_milliseconds, std::move(eligible)};
 }
+
 void CampaignParty::apply_rest_work(PartyState &state, std::span<const MemberId> members,
                                     RestWork work) const
 {
@@ -163,6 +173,7 @@ void CampaignParty::apply_rest_work(PartyState &state, std::span<const MemberId>
         release_rest_equipment(state, *found);
     }
 }
+
 void CampaignParty::release_rest_equipment(PartyState &state, PartyMember &member) const
 {
     if (!state.rest_activity || member.equipped.empty())
@@ -204,6 +215,7 @@ void CampaignParty::release_rest_equipment(PartyState &state, PartyMember &membe
     }
     member.equipment = {};
 }
+
 void CampaignParty::collect_equipment(PartyState &state, std::span<const MemberId> collectors,
                                       std::uint64_t scope, std::uint64_t rest_session,
                                       std::span<const unsigned> tokens) const
@@ -240,6 +252,7 @@ void CampaignParty::collect_equipment(PartyState &state, std::span<const MemberI
         it = state.detached_items.erase(it);
     }
 }
+
 void CampaignParty::recover_camp(PartyState &state) const
 {
     std::vector<MemberId> collectors;
@@ -264,6 +277,7 @@ void CampaignParty::recover_camp(PartyState &state) const
             tokens.push_back(item.token);
     collect_equipment(state, collectors, 0, session, tokens);
 }
+
 void CampaignParty::loud_noise(std::span<const MemberId> affected)
 {
     outside_combat();
@@ -273,6 +287,7 @@ void CampaignParty::loud_noise(std::span<const MemberId> affected)
         advance_ticket(next.rest_activity->ticket);
     state_ = std::move(next);
 }
+
 void CampaignParty::interrupt_rest_state(PartyState &state, RestInterruption cause) const
 {
     const auto outcome = rules_->interrupt_rest(*state.rest_activity, cause);
@@ -286,6 +301,7 @@ void CampaignParty::interrupt_rest_state(PartyState &state, RestInterruption cau
     static_cast<rules::RestProgress &>(*state.rest_activity) = *outcome.progress;
     advance_ticket(state.rest_activity->ticket);
 }
+
 void CampaignParty::interrupt_rest(RestTicket ticket, RestInterruption cause)
 {
     require_activity_ticket(ticket);
@@ -293,6 +309,7 @@ void CampaignParty::interrupt_rest(RestTicket ticket, RestInterruption cause)
     interrupt_rest_state(next, cause);
     state_ = std::move(next);
 }
+
 std::optional<RestResult> CampaignParty::advance_rest(RestTicket ticket, std::uint64_t milliseconds,
                                                       RestWork work)
 {
@@ -373,6 +390,7 @@ void CampaignParty::resume_rest(RestTicket ticket)
     advance_ticket(activity.ticket);
     state_ = std::move(next);
 }
+
 void CampaignParty::abandon_rest(RestTicket ticket)
 {
     require_activity_ticket(ticket);
@@ -383,6 +401,7 @@ void CampaignParty::abandon_rest(RestTicket ticket)
     next.short_rest.reset();
     state_ = std::move(next);
 }
+
 bool CampaignParty::prepare_combat()
 {
     outside_combat();
@@ -394,6 +413,7 @@ bool CampaignParty::prepare_combat()
     }
     return !state_.short_rest && !state_.spell_rest;
 }
+
 void CampaignParty::require_rest_ticket(RestTicket ticket) const
 {
     outside_combat();
@@ -402,6 +422,7 @@ void CampaignParty::require_rest_ticket(RestTicket ticket) const
         state_.short_rest->completed_subminute_milliseconds != state_.subminute_milliseconds)
         throw std::runtime_error("Expired Short Rest spending request");
 }
+
 rules::HitDieResult CampaignParty::spend_hit_die(RestTicket ticket, MemberId id)
 {
     require_rest_ticket(ticket);
@@ -423,6 +444,7 @@ rules::HitDieResult CampaignParty::spend_hit_die(RestTicket ticket, MemberId id)
     state_ = std::move(next);
     return result;
 }
+
 rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id,
                                                   std::string_view choice)
 {
@@ -445,6 +467,7 @@ rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id
     state_ = std::move(next);
     return result;
 }
+
 void CampaignParty::finish_short_rest(RestTicket ticket)
 {
     require_rest_ticket(ticket);

@@ -40,6 +40,7 @@ void freeze()
     cunning_checks::act(*combat, "savage_second");
     write("combat-v15-sneak-resolved.save", combat->save());
 }
+
 void verify()
 {
     auto rules = module();

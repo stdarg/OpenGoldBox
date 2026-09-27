@@ -12,6 +12,7 @@
 #include <algorithm>
 using namespace godot;
 using namespace opengold;
+
 namespace
 {
 String gs(std::string_view s)
@@ -19,6 +20,7 @@ String gs(std::string_view s)
     return String::utf8(s.data(), s.size());
 }
 } // namespace
+
 void CharacterCreationView::pool_layout()
 {
     const double w = std::min(1000.0, double(get_size().x) - 64), h = get_size().y - 120;
@@ -44,6 +46,7 @@ void CharacterCreationView::pool_layout()
     place("TownSheet/Text", Rect2(24, 24, w - 48, h - 100));
     place("TownSheet/Close", Rect2(w - 154, h - 56, 130, 36));
 }
+
 void CharacterCreationView::show_pool()
 {
     try
@@ -71,6 +74,7 @@ void CharacterCreationView::show_pool()
         get_node<Label>("PartyPanel/Status")->set_text(gs(e.what()));
     }
 }
+
 void CharacterCreationView::pool_selected(std::int64_t index)
 {
     if (index < 0 || static_cast<std::size_t>(index) >= pool_.size())
@@ -110,6 +114,7 @@ void CharacterCreationView::pool_selected(std::int64_t index)
                 ? "Starts with 250 gp. Preview portraits and both combat poses before adding."
                 : "Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet.");
 }
+
 void CharacterCreationView::pool_add()
 {
     try
@@ -131,10 +136,12 @@ void CharacterCreationView::pool_add()
         get_node<Label>("PoolModal/Status")->set_text(gs(e.what()));
     }
 }
+
 void CharacterCreationView::close_pool()
 {
     get_node<Window>("PoolModal")->hide();
 }
+
 void CharacterCreationView::town_member_selected(std::int64_t slot)
 {
     if (slot < 0 || slot >= 8 || !campaign_->state().slots[slot])
@@ -143,6 +150,7 @@ void CharacterCreationView::town_member_selected(std::int64_t slot)
     get_node<RichTextLabel>("TownSheet/Text")->set_text(sheet_text(m.character, &m));
     get_node<Window>("TownSheet")->popup_centered();
 }
+
 void CharacterCreationView::close_town_sheet()
 {
     get_node<Window>("TownSheet")->hide();

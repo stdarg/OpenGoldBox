@@ -2,6 +2,7 @@
 #include "opengold/dungeon_battlefield.h"
 #include <charconv>
 #include <iostream>
+
 int main(int argc, char **argv)
 {
     if (argc != 2 && argc != 7)

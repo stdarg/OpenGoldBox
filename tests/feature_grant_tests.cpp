@@ -7,6 +7,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -14,6 +15,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -27,11 +29,13 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid grant must reject");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero(std::string klass = "fighter", std::string background = "soldier",
                std::string race = "human")
 {
@@ -49,26 +53,31 @@ Character hero(std::string klass = "fighter", std::string background = "soldier"
         roll = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), draft, {});
 }
+
 std::string saved(const CampaignParty &party)
 {
     return encode_campaign(party, nullptr, "grant-fixture");
 }
+
 std::string fixture(const char *name)
 {
     std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
     check(bool(in), "Frozen fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 bool has(const CharacterSheet &sheet, const FeatureGrant &grant)
 {
     return std::find(sheet.grants.begin(), sheet.grants.end(), grant) != sheet.grants.end();
 }
+
 void replace(std::string &text, std::string_view from, std::string_view to)
 {
     const auto at = text.find(from);
     check(at != text.npos, "Fixture field exists");
     text.replace(at, from.size(), to);
 }
+
 std::string mutate_save(std::string bytes, std::string_view from, std::string_view to)
 {
     const auto begin = bytes.find('\n', bytes.find('\n') + 1) + 1;
@@ -82,6 +91,7 @@ std::string mutate_save(std::string bytes, std::string_view from, std::string_vi
     }
     return bytes.substr(0, bytes.find('\n') + 1) + std::to_string(hash) + '\n' + body;
 }
+
 void creation()
 {
     auto rules = module();
@@ -158,6 +168,7 @@ void creation()
             (void)rules->character_profile(invalid, {});
         });
 }
+
 void advancement()
 {
     for (const auto &klass : {"fighter", "cleric", "wizard"})
@@ -265,6 +276,7 @@ void advancement()
             check(saved(party) == bytes, "Malformed saved choices do not affect the live campaign");
         }
 }
+
 void profiles_and_migration()
 {
     auto rules = module();
@@ -422,6 +434,7 @@ void profiles_and_migration()
         "Continuation matches the previous writer exactly, including damage, spent feats, turn budgets and RNG");
 }
 } // namespace
+
 int main()
 {
     try

@@ -9,6 +9,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool value, const char *message)
@@ -16,11 +17,14 @@ void check(bool value, const char *message)
     if (!value)
         throw std::runtime_error(message);
 }
+
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero(unsigned level = 1, std::string race = "human", std::string klass = "fighter")
 {
     CharacterDraft d;
@@ -39,6 +43,7 @@ Character hero(unsigned level = 1, std::string race = "human", std::string klass
         check(c.advance(*module(), state), "Advance fixture");
     return c;
 }
+
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
@@ -46,12 +51,14 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
             return v;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void write(const char *name, const std::string &bytes)
 {
     std::ofstream out(root / "tests/fixtures" / name);
     out << bytes;
     check(bool(out), "Write fixture");
 }
+
 void freeze()
 {
     auto rules = module();
@@ -89,6 +96,7 @@ void freeze()
     check(c->submit(command(*c, "dash")), "Old Dash continuation");
     write("combat-v13-surge-continued.save", c->save());
 }
+
 // Capture with the shipped library before adding Tactical Mind/profile changes.
 void freeze_mind_baseline()
 {
@@ -126,6 +134,7 @@ void freeze_mind_baseline()
           "Freeze actual next commands");
     write("combat-v15-mind-continued.save", combat->save());
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -139,6 +148,7 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid state must reject");
 }
+
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &v : c.legal_commands())
@@ -146,10 +156,12 @@ bool has(const CombatSession &c, std::string_view verb)
             return true;
     return false;
 }
+
 void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     check(c.submit(command(c, verb, target)), "Submit legal command");
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -157,12 +169,14 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 std::string read(const char *name)
 {
     std::ifstream in(root / "tests/fixtures" / name);
     check(bool(in), "Read fixture");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -173,6 +187,7 @@ std::uint64_t rng(const CombatSession &c)
     in >> n;
     return n;
 }
+
 unsigned remaining(const Character &h, const VitalState &state)
 {
     for (const auto &p : module()->recovery_info(h.sheet(), state).resources)
@@ -184,6 +199,7 @@ unsigned remaining(const Character &h, const VitalState &state)
         }
     return 99;
 }
+
 auto battle(const Character &h, std::vector<std::string> gear = {},
             std::optional<VitalState> state = {}, unsigned seed = 2)
 {
@@ -203,6 +219,7 @@ auto battle(const Character &h, std::vector<std::string> gear = {},
         act(*c, "end");
     return c;
 }
+
 void budgets()
 {
     using opengold::srd5::detail::ActionBudget;
@@ -219,6 +236,7 @@ void budgets()
     check(b.spend(true) && !b.normal && b.surge && b.spend(),
           "Using Magic first preserves the restricted action");
 }
+
 void grants()
 {
     auto rules = module();
@@ -272,6 +290,7 @@ void grants()
             check(!has(*battle(hero(1, "human", klass.id)), "action_surge"),
                   "Other starting classes do not gain Action Surge");
 }
+
 void actions()
 {
     auto rules = module();
@@ -360,6 +379,7 @@ void actions()
                               2);
     check(!has(*dead, "action_surge"), "Dead character cannot activate");
 }
+
 void attacks_and_malformed()
 {
     auto rules = module();
@@ -407,6 +427,7 @@ void attacks_and_malformed()
             (void)rules->restore(wrong_version);
         });
 }
+
 void savage()
 {
     auto rules = module();
@@ -437,6 +458,7 @@ void savage()
     }
     check(exercised, "Actual extra attack exercises pending damage choice");
 }
+
 void recovery()
 {
     auto rules = module();
@@ -472,6 +494,7 @@ void recovery()
             });
     }
 }
+
 void campaign()
 {
     auto rules = module();
@@ -516,6 +539,7 @@ void campaign()
         copy.finish_short_rest(rest->ticket);
     }
 }
+
 void legacy()
 {
     auto rules = module();
@@ -650,6 +674,7 @@ void freeze_champion_baseline()
     act(*c, "savage_second");
     write("combat-v14-champion-resolved.save", c->save());
 }
+
 void champion_prior_writer()
 {
     auto rules = module();
@@ -722,6 +747,7 @@ void ui_fixtures()
 }
 
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

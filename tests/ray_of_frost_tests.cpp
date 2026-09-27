@@ -9,14 +9,17 @@
 using namespace opengold;
 using namespace opengold::rules;
 namespace fx = opengold::srd5::detail;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 void check(bool v, const char *m)
 {
     if (!v)
         throw std::runtime_error(m);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -30,22 +33,26 @@ template <class F> void rejects(F f)
     }
     check(caught, "Malformed state must reject");
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream f(p);
     check(bool(f), "Read fixture");
     return {std::istreambuf_iterator<char>(f), {}};
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 auto custom(std::string affinity = {}, int speed = 30)
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 " + std::to_string(speed) +
                                " 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" + affinity);
 }
+
 Character hero(unsigned level = 1, bool frost = true)
 {
     CharacterDraft d;
@@ -66,6 +73,7 @@ Character hero(unsigned level = 1, bool frost = true)
         check(h.advance(*module(), state), "Ordinary advancement");
     return h;
 }
+
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
@@ -73,10 +81,12 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
             return v;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     check(c.submit(command(c, verb, target)), "Submit legal action");
 }
+
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
@@ -84,6 +94,7 @@ bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
             return true;
     return false;
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -91,6 +102,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 fx::EffectState effects(const VitalState &state)
 {
     auto at = state.resources.find("FX");
@@ -99,6 +111,7 @@ fx::EffectState effects(const VitalState &state)
     std::istringstream in(state.resources.substr(at));
     return fx::read_effects(in);
 }
+
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -109,6 +122,7 @@ std::uint64_t rng(const CombatSession &c)
     in >> result;
     return result;
 }
+
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
             std::vector<std::string> gear = {})
 {
@@ -125,6 +139,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
         act(*c, "end");
     return c;
 }
+
 void access()
 {
     auto h = hero();
@@ -148,6 +163,7 @@ void access()
     auto c = battle(*custom(), hero(1, false));
     check(!has(*c, "ray_of_frost"), "Unknown spell is not automatically granted");
 }
+
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
@@ -197,6 +213,7 @@ void damage()
                       "Stale command preserves every saved byte");
             }
 }
+
 void timing()
 {
     auto rules = custom();
@@ -235,6 +252,7 @@ void timing()
     act(*c, "dash");
     check(unit(*c, 2).movement_feet == 0, "Speed and Dash allowances floor at zero");
 }
+
 void multiple_casters()
 {
     auto rules = custom();
@@ -271,6 +289,7 @@ void multiple_casters()
     check(effects(unit(*c, 2).persistent).active.empty(),
           "Second caster turn ends the remaining slow");
 }
+
 void effect_lifecycle()
 {
     fx::EffectState state;
@@ -299,6 +318,7 @@ void effect_lifecycle()
                 (void)fx::read_effects(input);
             });
 }
+
 void legality()
 {
     auto rules = custom();
@@ -337,6 +357,7 @@ void legality()
                   c->save() == before,
               "Only real creatures may be targeted");
 }
+
 void campaign()
 {
     auto rules = module();
@@ -377,6 +398,7 @@ void campaign()
     again.restore(decode_campaign(camp, *srd5::character_rules(), *rules, "frost", nullptr).party);
     check(encode_campaign(again, nullptr, "frost") == camp, "Post-camp save/reload is canonical");
 }
+
 void legacy()
 {
     auto rules = module();
@@ -389,6 +411,7 @@ void legacy()
     check(c->save() == expected && !has(*c, "ray_of_frost"),
           "Every old combat byte remains except module identity; no spell invented");
 }
+
 void fixtures()
 {
     auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "frost-fixtures";
@@ -409,6 +432,7 @@ void fixtures()
     std::ofstream(path / "slow.save") << c->save();
 }
 } // namespace
+
 int main()
 {
     try

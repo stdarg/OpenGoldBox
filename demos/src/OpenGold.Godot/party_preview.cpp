@@ -29,12 +29,14 @@
 
 using namespace godot;
 using namespace opengold;
+
 namespace
 {
 String gs(std::string_view text)
 {
     return String::utf8(text.data(), text.size());
 }
+
 struct DeleteNode
 {
     void operator()(Node *node) const
@@ -42,6 +44,7 @@ struct DeleteNode
         memdelete(node);
     }
 };
+
 std::unique_ptr<Node, DeleteNode> scene(const char *path)
 {
     Ref<PackedScene> packed = ResourceLoader::get_singleton()->load(path);
@@ -49,6 +52,7 @@ std::unique_ptr<Node, DeleteNode> scene(const char *path)
         throw std::runtime_error(std::string("Missing scene: ") + path);
     return std::unique_ptr<Node, DeleteNode>(packed->instantiate());
 }
+
 Character preview_guard()
 {
     auto rules = srd5::character_rules();
@@ -65,6 +69,7 @@ Character preview_guard()
     return Character(*rules, std::move(draft), {});
 }
 } // namespace
+
 void CharacterCreationView::setup_party()
 {
     const auto pack = std::filesystem::u8path(
@@ -120,6 +125,7 @@ void CharacterCreationView::setup_party()
     party_layout();
     expedition_check_ = OS::get_singleton()->get_cmdline_user_args().has("--expedition-check");
 }
+
 void CharacterCreationView::party_layout()
 {
     const auto w = get_size().x, h = get_size().y;
@@ -165,6 +171,7 @@ void CharacterCreationView::party_layout()
         if (auto *child = Object::cast_to<Control>(get_node_or_null(name)))
             child->set_size(get_size());
 }
+
 void CharacterCreationView::party_selected(std::int64_t index)
 {
     if (index < 0 || static_cast<std::size_t>(index) >= campaign_->state().roster.size())
@@ -176,6 +183,7 @@ void CharacterCreationView::party_selected(std::int64_t index)
             campaign_->select(slot);
     refresh_party();
 }
+
 void CharacterCreationView::refresh_party()
 {
     auto *list = get_node<ItemList>("PartyPanel/Roster");
@@ -240,6 +248,7 @@ void CharacterCreationView::refresh_party()
          {"Remove", "Rejoin", "Equip", "Unequip", "Explore", "Combat", "Modifiers", "SavingThrows"})
         get_node<Button>(gs(std::string("PartyPanel/") + name))->set_disabled(state.roster.empty());
 }
+
 void CharacterCreationView::party_action(int action)
 {
     try
@@ -394,6 +403,7 @@ void CharacterCreationView::party_action(int action)
         get_node<Button>("ReturnParty")->set_tooltip_text(error_);
     }
 }
+
 void CharacterCreationView::party_check()
 {
     const auto press = [&](const char *node)
@@ -624,6 +634,7 @@ void CharacterCreationView::party_check()
         break;
     }
 }
+
 void CharacterCreationView::update_party_navigation()
 {
     bool allowed = true;
@@ -687,6 +698,7 @@ void CharacterCreationView::update_party_navigation()
         allowed ? "Inspect your party and equipment."
                 : "Finish combat, dialogue or shopping before returning to the party.");
 }
+
 void CharacterCreationView::expedition_check()
 {
     if (++expedition_frames_ > 20000)
@@ -762,6 +774,7 @@ void CharacterCreationView::expedition_check()
     expedition_check_ = false;
     get_tree()->quit(0);
 }
+
 void CharacterCreationView::setup_defeat()
 {
     std::unique_ptr<Window, DeleteNode> window(memnew(Window));
@@ -809,6 +822,7 @@ void CharacterCreationView::setup_defeat()
                   callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
     defeat_check_ = OS::get_singleton()->get_cmdline_user_args().has("--defeat-check");
 }
+
 void CharacterCreationView::show_defeat()
 {
     campaign_defeated_ = true;
@@ -820,6 +834,7 @@ void CharacterCreationView::show_defeat()
         dialog->popup_centered();
     dialog->get_node<Button>("Reload")->grab_focus();
 }
+
 void CharacterCreationView::reload_after_defeat()
 {
     if (!campaign_defeated_)
@@ -827,21 +842,25 @@ void CharacterCreationView::reload_after_defeat()
     get_node<Window>("Defeat")->hide();
     open_saves(false);
 }
+
 void CharacterCreationView::save_dialog_visibility_changed()
 {
     // Window releases its exclusive-child slot after emitting visibility_changed.
     callable_mp(this, &CharacterCreationView::restore_defeat_dialog).call_deferred();
 }
+
 void CharacterCreationView::restore_defeat_dialog()
 {
     if (campaign_defeated_ && !get_node<SaveSlots>("SaveSlots")->is_visible())
         show_defeat();
 }
+
 void CharacterCreationView::exit_after_defeat()
 {
     if (campaign_defeated_)
         get_tree()->quit(0);
 }
+
 void CharacterCreationView::defeat_check()
 {
     auto *dialog = get_node<Window>("Defeat");

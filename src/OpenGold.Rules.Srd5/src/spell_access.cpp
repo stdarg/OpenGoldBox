@@ -3,12 +3,15 @@
 #include <array>
 #include <set>
 #include <stdexcept>
+
 namespace opengold::srd5::detail
 {
 using namespace rules;
+
 namespace
 {
 constexpr std::string_view source = "class:wizard:spellcasting";
+
 // `wizard` marks a row the Wizard catalog may learn. It was an exclusion list
 // of non-Wizard spell ids repeated at each use; a per-row property means a new
 // spell describes itself in one place.
@@ -18,6 +21,7 @@ struct Spell
     unsigned level, mask;
     bool wizard{true};
 };
+
 // Existing spell implementations only. This is not the complete Wizard list.
 constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
                             Spell{"shocking_grasp", "Shocking Grasp", 0, 1024},
@@ -30,11 +34,13 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
                             Spell{"scorching_ray", "Scorching Ray", 2, 16},
                             Spell{"blindness", "Blindness", 2, 32},
                             Spell{"inflict_wounds", "Inflict Wounds", 1, 0, false}};
+
 void require(bool ok)
 {
     if (!ok)
         throw std::runtime_error("Invalid spell grant, spellbook entry or preparation");
 }
+
 const Spell &find(std::string_view id)
 {
     for (const auto &spell : spells)
@@ -42,6 +48,7 @@ const Spell &find(std::string_view id)
             return spell;
     throw std::runtime_error("Unsupported spell knowledge");
 }
+
 FeatureGrant grant(std::string_view id, unsigned level, std::string_view origin = source)
 {
     return {"spell:" + std::string(id),
@@ -50,10 +57,12 @@ FeatureGrant grant(std::string_view id, unsigned level, std::string_view origin 
             {{"access", find(id).level ? "spellbook" : "cantrip"}}};
 }
 } // namespace
+
 bool is_spell_grant(const FeatureGrant &grant)
 {
     return grant.id.starts_with("spell:");
 }
+
 std::vector<FeatureGrant> without_spell_grants(std::span<const FeatureGrant> grants)
 {
     std::vector<FeatureGrant> result;
@@ -62,6 +71,7 @@ std::vector<FeatureGrant> without_spell_grants(std::span<const FeatureGrant> gra
             result.push_back(g);
     return result;
 }
+
 TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
 {
     if (klass == "warlock")
@@ -95,6 +105,7 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
          {"chill_touch", "Chill Touch",
           "Melee spell attack: 1d10 Necrotic damage, Touch; prevents healing until the end of your next turn."}}};
 }
+
 std::vector<FeatureGrant>
 starting_spell_grants(std::string_view klass,
                       const std::optional<std::vector<std::string>> &cantrips)
@@ -157,6 +168,7 @@ starting_spell_grants(std::string_view klass,
     result.push_back(grant("magic_missile", 1));
     return result;
 }
+
 SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view klass,
                          unsigned level, std::span<const std::string> prepared)
 {
@@ -283,6 +295,7 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
     require(result.prepared.size() <= result.prepared_choices);
     return result;
 }
+
 void learn_advancement_spells(CharacterSheet &sheet, std::span<const std::string> selected)
 {
     if (sheet.character_class != "Wizard")
@@ -301,6 +314,7 @@ void learn_advancement_spells(CharacterSheet &sheet, std::span<const std::string
     (void)spell_access(next, sheet.character_class, sheet.level, selected);
     sheet.grants = std::move(next);
 }
+
 SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoiceContext context)
 {
     SpellChoiceOptions result;
@@ -367,6 +381,7 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
     }
     return result;
 }
+
 void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
                          SpellChoiceContext context, bool complete)
 {
@@ -441,6 +456,7 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     }
     sheet = std::move(candidate);
 }
+
 std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
 {
     std::vector<std::string> result;
@@ -452,6 +468,7 @@ std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
     }
     return result;
 }
+
 std::vector<std::string> wizard_casting_ids(const SpellAccess &access)
 {
     auto result = known_cantrip_ids(access);

@@ -25,6 +25,7 @@ struct DaxDecodeResult
 {
     FormatResult status{FormatResult::invalid_data};
     std::vector<DaxRecord> records;
+
     [[nodiscard]] explicit operator bool() const noexcept
     {
         return status == FormatResult::ok;

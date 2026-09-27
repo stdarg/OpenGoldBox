@@ -18,17 +18,20 @@
 
 using namespace godot;
 using namespace opengold;
+
 namespace
 {
 String gs(std::string_view s)
 {
     return String::utf8(s.data(), s.size());
 }
+
 std::filesystem::path path(const String &s)
 {
     return std::filesystem::u8path(s.utf8().get_data());
 }
 } // namespace
+
 void EquipmentSpriteDemo::_ready()
 {
     set_texture_filter(TEXTURE_FILTER_NEAREST);
@@ -125,6 +128,7 @@ void EquipmentSpriteDemo::_ready()
         get_node<Label>("Status")->set_text(gs(e.what()));
     }
 }
+
 void EquipmentSpriteDemo::layout()
 {
     if (!ready_)
@@ -150,11 +154,13 @@ void EquipmentSpriteDemo::layout()
     place("Equipment", {440, 570, w - 464, 112});
     place("Status", {24, h - 60, w - 48, 52});
 }
+
 void EquipmentSpriteDemo::_notification(int what)
 {
     if (what == NOTIFICATION_RESIZED)
         layout();
 }
+
 void EquipmentSpriteDemo::_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
@@ -162,6 +168,7 @@ void EquipmentSpriteDemo::_input(const Ref<InputEvent> &event)
         key->get_keycode() == KEY_X)
         get_tree()->quit();
 }
+
 void EquipmentSpriteDemo::select(std::int64_t index)
 {
     selected_ = static_cast<int>(index);
@@ -173,11 +180,13 @@ void EquipmentSpriteDemo::select(std::int64_t index)
     get_node<Button>("Equip")->set_disabled(equipped);
     get_node<Button>("Unequip")->set_disabled(!equipped);
 }
+
 void EquipmentSpriteDemo::activate(std::int64_t index)
 {
     select(index);
     change_equipment(true);
 }
+
 void EquipmentSpriteDemo::toggle_shield()
 {
     if (!member_)
@@ -200,6 +209,7 @@ void EquipmentSpriteDemo::toggle_shield()
     }
     refresh();
 }
+
 void EquipmentSpriteDemo::refresh()
 {
     if (!member_)
@@ -247,6 +257,7 @@ void EquipmentSpriteDemo::refresh()
                (resolved.selection.matched ? "" : " - No artwork assignment; showing unarmed.") +
                "\nOriginal pixels, enlarged. Both poses use the same scale."));
 }
+
 void EquipmentSpriteDemo::change_equipment(bool equip)
 {
     if (!member_)

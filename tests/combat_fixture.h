@@ -34,6 +34,7 @@ inline unsigned choose_savage_damage(rules::CombatSession &session)
     }
     return choices;
 }
+
 // Format twelve gains one absent Savage Attacker decision, without altering
 // actor rows, existing Temporary HP offers, RNG, logs or movement queues.
 inline std::string with_savage_choice(std::string bytes)
@@ -43,6 +44,7 @@ inline std::string with_savage_choice(std::string bytes)
     bytes.replace(9, 2, "13");
     return bytes + "0\n";
 }
+
 // Independent expected transformation for frozen format-eight files: replace
 // identity/format and append the known Hit Dice and recovery clocks and an empty Temporary HP pool
 // to each actor row. Every other byte (including recipes, RNG, turn state, effects and queues) is

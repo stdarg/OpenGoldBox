@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 using namespace opengold;
+
 namespace
 {
 struct TestDirectory
@@ -19,17 +20,20 @@ struct TestDirectory
     TestDirectory() = default;
     TestDirectory(const TestDirectory &) = delete;
     TestDirectory &operator=(const TestDirectory &) = delete;
+
     ~TestDirectory()
     {
         std::error_code ignored;
         std::filesystem::remove_all(path, ignored);
     }
 };
+
 void check(bool ok, const char *message)
 {
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -43,6 +47,7 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid save must reject");
 }
+
 std::string changed_identity(const std::string &saved, const std::string &identity,
                              const std::string &replacement = "incompatible")
 {
@@ -59,11 +64,13 @@ std::string changed_identity(const std::string &saved, const std::string &identi
     }
     return saved.substr(0, saved.find('\n') + 1) + std::to_string(hash) + '\n' + body;
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character character(std::string klass)
 {
     rules::CharacterDraft d;
@@ -82,6 +89,7 @@ Character character(std::string klass)
     a.portrait = "human-male-fighter-01.png";
     return Character(*srd5::character_rules(), d, a);
 }
+
 auto prototype()
 {
     std::vector<std::uint8_t> bytes{0, 0};
@@ -96,12 +104,14 @@ auto prototype()
     resources->programs[0] = p;
     return por::RolfTourSession({}, p, {}, 0x9914, {}, resources);
 }
+
 void settle(por::RolfTourSession &town)
 {
     for (int i = 0; i < 100 && town.snapshot().phase == por::TourPhase::running; ++i)
         town.advance(1);
     check(town.can_leave(), "Fixture must finish");
 }
+
 std::string campaign_payload(unsigned version, const std::string &body)
 {
     std::uint64_t hash = 14695981039346656037ULL;
@@ -113,6 +123,7 @@ std::string campaign_payload(unsigned version, const std::string &body)
     return "OPENGOLD-CAMPAIGN " + std::to_string(version) + '\n' + std::to_string(hash) + '\n' +
            body;
 }
+
 // These synthetic legacy cases have one member and no grip choice. Locate its
 // final field using the same party serialized without a town, then omit it.
 void remove_v7_grip(std::string &body, const std::string &party_save)
@@ -162,6 +173,7 @@ void remove_v7_grip(std::string &body, const std::string &party_save)
           "Legacy draft has no chosen training or explicit cantrips");
     body.erase(static_cast<std::size_t>(begin), static_cast<std::size_t>(end - begin));
 }
+
 // Versions 1-5 had no sub-minute clock or encounter-scope fields.
 void remove_v6_clock(std::string &body)
 {
@@ -185,6 +197,7 @@ void remove_v6_clock(std::string &body)
     check(bool(in), "Fixture clock fields exist");
     body.erase(static_cast<std::size_t>(begin), static_cast<std::size_t>(end - begin));
 }
+
 void fog_saves(const std::filesystem::path &directory)
 {
     // Two authored resource banks. CAMP is a test travel trigger; ordinary
@@ -294,6 +307,7 @@ void fog_saves(const std::filesystem::path &directory)
     check(encode_campaign(*party, &single, "fog-fixture") == current,
           "Malformed fog saves leave the live campaign untouched");
 }
+
 void file_safety(const std::filesystem::path &directory)
 {
     const auto path = directory / "storage.save";
@@ -360,6 +374,7 @@ void file_safety(const std::filesystem::path &directory)
             (void)read_save_file(directory / "missing.save", 64);
         });
 }
+
 void roundtrip(const std::filesystem::path &directory)
 {
     std::filesystem::create_directories(directory);
@@ -605,6 +620,7 @@ void roundtrip(const std::filesystem::path &directory)
             (void)encode_campaign(*party, &busy, "fixture-v1");
         });
 }
+
 void hp_migration()
 {
     const auto fixture = read_campaign_file(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
@@ -661,6 +677,7 @@ void hp_migration()
     }
 }
 } // namespace
+
 int main()
 {
     try

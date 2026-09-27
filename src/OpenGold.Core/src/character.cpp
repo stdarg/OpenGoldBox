@@ -10,15 +10,18 @@ Character::Character(const rules::CharacterRules &rules, rules::CharacterDraft c
 {
     this->appearance(appearance);
 }
+
 void Character::appearance(por::CharacterAppearance value)
 {
     por::validate_character_appearance(value);
     appearance_ = value;
 }
+
 bool Character::advance(const rules::RulesModule &rules, rules::VitalState &state)
 {
     return advance(rules, state, rules.default_advancement(sheet_));
 }
+
 bool Character::advance(const rules::RulesModule &rules, rules::VitalState &state,
                         const rules::AdvancementChoice &choice)
 {
@@ -33,6 +36,7 @@ bool Character::advance(const rules::RulesModule &rules, rules::VitalState &stat
     advancements_ = std::move(history);
     return true;
 }
+
 void Character::choose_spells(const rules::RulesModule &rules, const rules::SpellChoices &choices,
                               std::uint64_t rest_session, bool complete)
 {
@@ -53,6 +57,7 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
     sheet_ = std::move(candidate);
     spell_edits_ = std::move(history);
 }
+
 rules::TrainingChoices Character::training_choices() const
 {
     auto result = creation_.training;
@@ -61,6 +66,7 @@ rules::TrainingChoices Character::training_choices() const
             result.emplace(id, values);
     return result;
 }
+
 Character Character::preview_training(const rules::CharacterRules &creation_rules,
                                       const rules::RulesModule &rules,
                                       const rules::TrainingChoices &choices,

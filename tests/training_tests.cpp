@@ -13,6 +13,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -20,6 +21,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -33,11 +35,13 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid training must reject");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 CharacterDraft draft(std::string klass = "rogue", std::string background = "criminal")
 {
     CharacterDraft d;
@@ -52,6 +56,7 @@ CharacterDraft draft(std::string klass = "rogue", std::string background = "crim
         r = {{6, 5, 4, 1}, 3};
     return d;
 }
+
 TrainingChoices choices()
 {
     return {{"origin:languages", {"elvish", "dwarvish"}},
@@ -59,10 +64,12 @@ TrainingChoices choices()
             {"class:rogue:expertise", {"stealth", "perception"}},
             {"class:rogue:thieves_cant", {"undercommon"}}};
 }
+
 Character hero(const CharacterDraft &d)
 {
     return Character(*srd5::character_rules(), d, {});
 }
+
 const SkillTraining &skill(const CharacterSheet &sheet, std::string_view id)
 {
     const auto found = std::find_if(sheet.training.skills.begin(), sheet.training.skills.end(),
@@ -73,18 +80,21 @@ const SkillTraining &skill(const CharacterSheet &sheet, std::string_view id)
     check(found != sheet.training.skills.end(), "Skill exists");
     return *found;
 }
+
 std::string fixture(const char *name)
 {
     std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
     check(bool(in), "Frozen fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 void replace(std::string &text, std::string_view from, std::string_view to)
 {
     const auto pos = text.find(from);
     check(pos != text.npos, "Fixture field exists");
     text.replace(pos, from.size(), to);
 }
+
 std::string corrupt(std::string bytes, std::string_view from, std::string_view to)
 {
     auto body = bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1);
@@ -97,6 +107,7 @@ std::string corrupt(std::string bytes, std::string_view from, std::string_view t
     }
     return bytes.substr(0, bytes.find('\n') + 1) + std::to_string(hash) + '\n' + body;
 }
+
 // Complete newly owed advancement choices alongside the historical feature under test.
 TrainingChoices with_advancement_training(const Character &character,
                                           const CharacterRules &creation, const RulesModule &rules,
@@ -116,6 +127,7 @@ TrainingChoices with_advancement_training(const Character &character,
         }
     return choices;
 }
+
 bool preserved_advancement(const Character &after, const Character &before)
 {
     auto actual = after.advancements();
@@ -131,6 +143,7 @@ bool preserved_advancement(const Character &after, const Character &before)
     }
     return actual == expected;
 }
+
 std::vector<std::string> expected_class_skills(std::string_view klass)
 {
     const std::map<std::string_view, std::string_view> lists{
@@ -156,16 +169,19 @@ std::vector<std::string> expected_class_skills(std::string_view klass)
         result.push_back(id);
     return result;
 }
+
 unsigned expected_skill_count(std::string_view klass)
 {
     return klass == "rogue" ? 4 : klass == "bard" || klass == "ranger" ? 3 : 2;
 }
+
 std::vector<std::string> chosen_class_skills(std::string_view klass)
 {
     auto list = expected_class_skills(klass);
     list.resize(expected_skill_count(klass));
     return list;
 }
+
 void all_class_skills()
 {
     auto creation = srd5::character_rules();
@@ -1090,6 +1106,7 @@ void creation_controls()
     check(creator.draft().training.empty() && !creator.training_complete(),
           "Restart clears training selections");
 }
+
 void preset_training()
 {
     por::CharacterArt art;
@@ -1143,6 +1160,7 @@ void preset_training()
                                               }),
           "Every class has four completed presets");
 }
+
 void grants_and_checks()
 {
     auto creation = srd5::character_rules();
@@ -1219,6 +1237,7 @@ void grants_and_checks()
               "Starting languages are available for every class");
     }
 }
+
 void invalid_choices()
 {
     const auto valid = []()
@@ -1297,6 +1316,7 @@ void invalid_choices()
             (void)rules->character_profile(invalid, {});
         });
 }
+
 void persistence()
 {
     auto d = draft();
@@ -1386,6 +1406,7 @@ void persistence()
     check(skill(growing.member(f).character.sheet(), "stealth").bonus == 6,
           "Level-up rebuilds skill totals after an ability modifier changes");
 }
+
 void draft_review_editor()
 {
     auto d = draft();
@@ -1419,6 +1440,7 @@ void draft_review_editor()
               editor.draft().rolls == original.rolls,
           "Review retains unrelated creation fields");
 }
+
 CampaignParty review_fixture()
 {
     auto rules = module();
@@ -1445,6 +1467,7 @@ CampaignParty review_fixture()
     party.add_pc(hero(fighter));
     return party;
 }
+
 void write_review_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
@@ -1454,6 +1477,7 @@ void write_review_fixture()
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "training-review.ogs";
     write_campaign_file(path, encode_campaign(party, nullptr, campaign_asset_identity(directory)));
 }
+
 void verify_review_result(const char *path)
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
@@ -1478,6 +1502,7 @@ void verify_review_result(const char *path)
         encode_campaign(original, nullptr, assets) == encode_campaign(actual, nullptr, assets),
         "UI review only changes selected training; wounds, resources, gear, advancement and campaign history survive");
 }
+
 void complete_saved_training()
 {
     auto creation = srd5::character_rules();
@@ -1639,6 +1664,7 @@ void complete_saved_training()
     check(incomplete.member(id).vitals == unconscious.roster[0].vitals,
           "Training completion does not stabilize or heal an unconscious character");
 }
+
 void sage_training()
 {
     auto rules = module();
@@ -2642,6 +2668,7 @@ void freeze_sage()
 #include "sneak_baseline.h"
 #include "rogue_attack_checks.h"
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

@@ -30,6 +30,7 @@ std::vector<std::uint8_t> PcmBuffer::little_endian_bytes() const
 namespace
 {
 constexpr double pit_clock = 14318180.0 / 12.0;
+
 // Integral of a mode-3 square wave, including the odd-divisor duty cycle.
 double integral(double x, double period)
 {
@@ -39,6 +40,7 @@ double integral(double x, double period)
     return cycles * (2 * high - period) + 2 * std::min(remainder, high) - remainder;
 }
 } // namespace
+
 std::vector<std::int16_t> render_speaker_audio(const SoundEffect &effect)
 {
     if (!effect.tick_divisor || effect.ticks.size() > 4096)

@@ -25,6 +25,7 @@
 #include <algorithm>
 
 using namespace godot;
+
 namespace
 {
 String gs(std::string_view s)
@@ -33,6 +34,7 @@ String gs(std::string_view s)
 }
 
 } // namespace
+
 void CharacterCreationView::setup_advancement()
 {
     get_node<ItemList>("PartyPanel/Roster")->add_theme_constant_override("v_separation", 8);
@@ -115,6 +117,7 @@ void CharacterCreationView::setup_advancement()
     confirm->set_text(i18n::text(N_("Confirm")));
     confirm->connect("pressed", callable_mp(this, &CharacterCreationView::confirm_advancement));
 }
+
 void CharacterCreationView::advancement_spell_page()
 {
     if (!advancing_)
@@ -173,12 +176,14 @@ void CharacterCreationView::advancement_spell_page()
             return i18n::text(source);
         });
 }
+
 void CharacterCreationView::advancement_back()
 {
     advancement_spell_page_ = false;
     advancement_spell_page();
     advancement_changed();
 }
+
 void CharacterCreationView::advancement_learning_toggled(bool selected, String group, String option)
 {
     opengold::rules::SpellChoices choices{
@@ -195,6 +200,7 @@ void CharacterCreationView::advancement_learning_toggled(bool selected, String g
     advancement_spell_page();
     advancement_changed();
 }
+
 void CharacterCreationView::refresh_advancement_arrows()
 {
     auto *list = get_node<ItemList>("PartyPanel/Roster");
@@ -243,6 +249,7 @@ void CharacterCreationView::refresh_advancement_arrows()
                 arrow->hide();
         }
 }
+
 void CharacterCreationView::open_advancement(std::int64_t id)
 {
     if (campaign_defeated_ || !campaign_->can_advance(id))
@@ -327,10 +334,12 @@ void CharacterCreationView::open_advancement(std::int64_t id)
     window->popup_centered();
     window->get_node<Button>("Cancel")->grab_focus();
 }
+
 void CharacterCreationView::advancement_spell_changed(bool, int)
 {
     advancement_changed();
 }
+
 void CharacterCreationView::advancement_changed(std::int64_t)
 {
     if (advancement_refreshing_ || !advancing_)
@@ -397,11 +406,13 @@ void CharacterCreationView::advancement_changed(std::int64_t)
         window->get_node<Button>("Confirm")->set_disabled(true);
     }
 }
+
 void CharacterCreationView::close_advancement()
 {
     get_node<Window>("LevelUp")->hide();
     advancing_ = 0;
 }
+
 void CharacterCreationView::confirm_advancement()
 {
     if (!advancing_)
@@ -427,6 +438,7 @@ void CharacterCreationView::confirm_advancement()
         get_node<Label>("LevelUp/Error")->set_text(i18n::text(e.what()));
     }
 }
+
 void CharacterCreationView::advancement_check()
 {
     if (advancement_frames_ > 6000)

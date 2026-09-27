@@ -5,6 +5,7 @@
 
 using namespace godot;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -12,10 +13,12 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 bool near(double a, double b)
 {
     return std::abs(a - b) < .001;
 }
+
 void sizing()
 {
     // Different padding and proportions represent ready/action and customized art.
@@ -48,6 +51,7 @@ void sizing()
     check(presentation::combat_sprite_rect({24, 24}, {}, {0, 0, 24, 24}, false).size == Vector2(),
           "Empty normal art does not divide by zero");
 }
+
 void ordering()
 {
     const auto actor = [](EntityId id, unsigned side, Cell cell)
@@ -80,6 +84,7 @@ void ordering()
           "Empty battlefield has no figures to draw");
 }
 } // namespace
+
 int main()
 {
     try

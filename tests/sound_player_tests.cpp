@@ -8,6 +8,7 @@
 #include <utility>
 
 using namespace opengold::por;
+
 namespace
 {
 void require(bool condition, const char *message)
@@ -15,6 +16,7 @@ void require(bool condition, const char *message)
     if (!condition)
         throw std::runtime_error(message);
 }
+
 template <class Exception, class F> void rejects(F action)
 {
     bool rejected = false;
@@ -28,10 +30,12 @@ template <class Exception, class F> void rejects(F action)
     }
     require(rejected, "Expected exception was not raised");
 }
+
 SoundEffect tone(unsigned id)
 {
     return {id, "Synthetic tone", false, 5041, {{1193, true}, {1193, true}, {0, false}}};
 }
+
 SoundBank bank()
 {
     // Sparse IDs and reversed ordering catch accidental indexing by ID - 1.
@@ -46,6 +50,7 @@ struct OutputState
     bool playing{}, fail_prepare{}, fail_play{};
     std::vector<unsigned> prepared_ids;
 };
+
 class FakeOutput final : public SoundOutput
 {
   public:
@@ -53,12 +58,14 @@ class FakeOutput final : public SoundOutput
     {
         ++state_.alive;
     }
+
     ~FakeOutput() override
     {
         stop();
         --state_.alive;
         ++state_.destroyed;
     }
+
     void prepare(const SoundBank &sounds) override
     {
         ++state_.prepares;
@@ -70,6 +77,7 @@ class FakeOutput final : public SoundOutput
             throw std::runtime_error("Simulated partial preparation failure");
         }
     }
+
     void play(unsigned id) override
     {
         state_.last_id = id;
@@ -78,15 +86,18 @@ class FakeOutput final : public SoundOutput
         if (state_.fail_play)
             throw std::runtime_error("Simulated device failure after starting");
     }
+
     void stop() noexcept override
     {
         ++state_.stops;
         state_.playing = false;
     }
+
     void set_gain(double gain) noexcept override
     {
         state_.gain = gain;
     }
+
     bool is_playing() const noexcept override
     {
         return state_.playing;

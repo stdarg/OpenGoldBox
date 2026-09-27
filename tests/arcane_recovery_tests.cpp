@@ -9,32 +9,38 @@
 
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 void check(bool value, const char *message)
 {
     if (!value)
         throw std::runtime_error(message);
 }
+
 std::string read(const std::filesystem::path &path)
 {
     std::ifstream input(path);
     check(bool(input), "Read fixture/content");
     return {std::istreambuf_iterator<char>(input), {}};
 }
+
 auto module()
 {
     return srd5::parse_content(
         read(root / "data/rules/srd-5.2.1/combat.rules") +
         "\ncreature recovery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
+
 void write(const std::string &name, const std::string &bytes)
 {
     std::ofstream output(root / "tests/fixtures" / name);
     output << bytes;
     check(bool(output), "Write actual previous-writer fixture");
 }
+
 Character wizard()
 {
     CharacterDraft draft;
@@ -49,6 +55,7 @@ Character wizard()
         roll = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), draft, {});
 }
+
 void act(CombatSession &combat, std::string_view verb)
 {
     for (const auto &command : combat.legal_commands())
@@ -59,12 +66,14 @@ void act(CombatSession &combat, std::string_view verb)
         }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void next_player(CombatSession &combat)
 {
     act(combat, "end");
     while (combat.snapshot().actor != 1)
         act(combat, "end");
 }
+
 void spend_slots(CampaignParty &party, CombatSession &combat)
 {
     while (combat.snapshot().actor != 1)
@@ -75,6 +84,7 @@ void spend_slots(CampaignParty &party, CombatSession &combat)
     act(combat, "magic_missile");
     party.apply_combat(combat.snapshot());
 }
+
 void capture()
 {
     auto rules = module();
@@ -116,6 +126,7 @@ void capture()
               encode_campaign(party, nullptr, "arcane-baseline"));
     }
 }
+
 // Capture with the unmodified 0.6.49 library, before Scholar changes its writer.
 void capture_scholar()
 {
@@ -158,6 +169,7 @@ void capture_scholar()
         }
     }
 }
+
 std::string identity(std::string bytes, const RulesModule &rules)
 {
     const auto position = bytes.find("0.6.48");
@@ -165,6 +177,7 @@ std::string identity(std::string bytes, const RulesModule &rules)
     bytes.replace(position, 6, rules.identity().version);
     return bytes;
 }
+
 void previous_writer()
 {
     auto rules = module();
@@ -201,6 +214,7 @@ void previous_writer()
               identity(read(root / "tests/fixtures/combat-arcane-continued.save"), *rules),
           "Prior combat continuation preserves slots, turn budgets, time and RNG");
 }
+
 PartyState baseline(unsigned level)
 {
     auto rules = module();
@@ -209,6 +223,7 @@ PartyState baseline(unsigned level)
                            *srd5::character_rules(), *rules, "arcane-baseline", nullptr)
         .party;
 }
+
 unsigned remaining(const RecoveryInfo &info, std::string_view id)
 {
     for (const auto &pool : info.resources)
@@ -216,6 +231,7 @@ unsigned remaining(const RecoveryInfo &info, std::string_view id)
             return pool.remaining;
     throw std::runtime_error("Missing recovery pool: " + std::string(id));
 }
+
 template <class Action> void rejected(CampaignParty &party, Action action)
 {
     const auto before = encode_campaign(party, nullptr, "arcane-test");
@@ -231,14 +247,17 @@ template <class Action> void rejected(CampaignParty &party, Action action)
     check(caught && encode_campaign(party, nullptr, "arcane-test") == before,
           "Rejected recovery is completely atomic");
 }
+
 void recovery_transactions()
 {
     auto rules = module();
+
     struct Expected
     {
         const char *id;
         unsigned first, second;
     };
+
     const std::array expected{Expected{"arcane_recovery:1:0", 1, 0},
                               Expected{"arcane_recovery:2:0", 2, 0},
                               Expected{"arcane_recovery:0:1", 0, 1}};
@@ -349,6 +368,7 @@ void recovery_transactions()
                   "Full pools reject under a fresh valid rest ticket without spending the use");
         }
 }
+
 void eligibility_and_effects()
 {
     auto rules = module();
@@ -428,6 +448,7 @@ void eligibility_and_effects()
     }
     check(caught, "Duplicate feature grants are rejected");
 }
+
 void combat_and_advancement()
 {
     auto rules = module();
@@ -492,6 +513,7 @@ void combat_and_advancement()
         "Recovery can use earned Short Rest benefits without completing the interrupted Long Rest");
 }
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

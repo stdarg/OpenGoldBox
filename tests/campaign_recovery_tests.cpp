@@ -8,6 +8,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -15,6 +16,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -28,11 +30,13 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid elapsed operation must reject");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero()
 {
     CharacterDraft d;
@@ -50,10 +54,12 @@ Character hero()
     check(result.advance(*module(), scratch), "Fixture has two levels");
     return result;
 }
+
 std::string saved(const CampaignParty &p)
 {
     return encode_campaign(p, nullptr, "campaign-recovery");
 }
+
 CampaignParty loaded(std::string_view bytes)
 {
     CampaignParty p(module());
@@ -62,16 +68,19 @@ CampaignParty loaded(std::string_view bytes)
             .party);
     return p;
 }
+
 VitalState unstable(unsigned delay = 6000)
 {
     return {0, false, "SRD5 0 0 0 2 1 0 1 " + std::to_string(delay) + " 0 FX1 1 0",
             "Second Wind uses: 0 / 2\nUnconscious; death saves 2 successes, 1 failures"};
 }
+
 VitalState stable(unsigned delay)
 {
     return {0, false, "SRD5 0 0 0 0 0 1 1 0 " + std::to_string(delay) + " FX1 1 0",
             "Second Wind uses: 0 / 2\nStable, unconscious"};
 }
+
 Participant patient(EntityId id, VitalState state)
 {
     return {id,
@@ -82,6 +91,7 @@ Participant patient(EntityId id, VitalState state)
             module()->character_profile(hero().sheet(), {}).data,
             std::move(state)};
 }
+
 void golden_events()
 {
     auto rules = module();
@@ -133,6 +143,7 @@ void golden_events()
     check(people[0].state->hit_points == 1 && rng == 11400714819323198527ULL,
           "Very large elapsed time finishes without overflow or redundant rolls");
 }
+
 void partitions_and_rejection()
 {
     auto rules = module();
@@ -182,6 +193,7 @@ void partitions_and_rejection()
     check(*bad.front().state == first && rng == 34,
           "Ambiguous participant ordering rejects atomically");
 }
+
 void campaign_continuation()
 {
     CampaignParty party(module());
@@ -238,6 +250,7 @@ void campaign_continuation()
         });
     check(saved(party) == overflow, "Clock overflow preserves all vitality and RNG");
 }
+
 Command end(const CombatSession &combat)
 {
     for (const auto &c : combat.legal_commands())
@@ -245,6 +258,7 @@ Command end(const CombatSession &combat)
             return c;
     throw std::runtime_error("No conscious turn available");
 }
+
 void combat_handoff()
 {
     auto rules = module();
@@ -346,7 +360,9 @@ void combat_handoff()
     check(saved(party) == saved(copy),
           "Death cadence transfers out of a new initiative without restarting on campaign load");
 }
+
 using Bytes = std::vector<std::uint8_t>;
+
 std::shared_ptr<const por::EclProgram> program(Bytes body)
 {
     Bytes bytes{0, 0};
@@ -356,12 +372,14 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
     bytes.insert(bytes.end(), body.begin(), body.end());
     return std::make_shared<const por::EclProgram>(por::EclProgram::decode(bytes, "recovery host"));
 }
+
 void settle(por::RolfTourSession &town)
 {
     for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
         town.advance(.5);
     check(town.snapshot().phase != por::TourPhase::faulted, "Recovery fixture script fault");
 }
+
 void event_rollback()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -395,6 +413,7 @@ void event_rollback()
           "Ordinary exploration advances reserve death saves through the original host");
 }
 } // namespace
+
 int main()
 {
     try

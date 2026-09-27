@@ -1,5 +1,6 @@
 #pragma once
 #include "opengold/rules.h"
+
 namespace opengold::srd5::rest
 {
 rules::RestPolicy policy(rules::RestKind);

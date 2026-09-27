@@ -8,10 +8,12 @@
 #include <queue>
 #include <set>
 #include <stdexcept>
+
 namespace opengold
 {
 using namespace rules;
 using namespace por;
+
 namespace
 {
 Battlefield arena()
@@ -24,6 +26,7 @@ Battlefield arena()
     b.terrain[4 * 12 + 6] = 2;
     return b;
 }
+
 std::vector<Participant> party()
 {
     return {{1, "vanguard", "Vanguard", 0, {2, 2}},
@@ -31,6 +34,7 @@ std::vector<Participant> party()
             {3, "adept", "Adept", 0, {1, 3}},
             {4, "healer", "Healer", 0, {1, 5}}};
 }
+
 std::optional<Image> original_icon(const std::filesystem::path &directory, unsigned record)
 {
     for (const auto &file : std::filesystem::directory_iterator(directory))
@@ -55,28 +59,34 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
     return std::nullopt;
 }
 } // namespace
+
 CombatDemo::CombatDemo(std::unique_ptr<RulesModule> module) : module_(std::move(module))
 {
     if (!module_)
         throw std::runtime_error("A combat rules module is required");
 }
+
 CombatDemo::~CombatDemo() = default;
+
 CombatDemo::CampaignCombat::CampaignCombat(std::shared_ptr<CampaignParty> party)
     : party_(std::move(party))
 {
     party_->begin_combat();
 }
+
 CombatDemo::CampaignCombat::~CampaignCombat()
 {
     if (party_)
         party_->end_combat();
 }
+
 void CombatDemo::campaign_party(std::shared_ptr<CampaignParty> party)
 {
     if (combat_)
         throw std::runtime_error("Attach party before starting combat");
     campaign_ = std::move(party);
 }
+
 void CombatDemo::synchronize_party()
 {
     if (!campaign_combat_)
@@ -85,6 +95,7 @@ void CombatDemo::synchronize_party()
     campaign_->apply_combat(state, combat_->safe_recovery());
     finish_campaign_combat(state.outcome);
 }
+
 void CombatDemo::finish_campaign_combat(Outcome outcome)
 {
     if (outcome == Outcome::ongoing)
@@ -96,6 +107,7 @@ void CombatDemo::finish_campaign_combat(Outcome outcome)
         reward_id_.clear();
     }
 }
+
 void CombatDemo::install_combat(std::unique_ptr<CombatSession> next, std::string reward_id)
 {
     if (!next)
@@ -117,6 +129,7 @@ void CombatDemo::install_combat(std::unique_ptr<CombatSession> next, std::string
     reward_id_ = std::move(reward_id);
     finish_campaign_combat(state.outcome);
 }
+
 void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string reward_id)
 {
     auto participants = campaign_ ? campaign_->participants() : party();
@@ -126,6 +139,7 @@ void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string r
         seed_);
     install_combat(std::move(next), std::move(reward_id));
 }
+
 void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
 {
     if (!campaign_ || combat_)
@@ -237,6 +251,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     status_ = "Slums encounter / original dungeon geometry";
     dialogue_ = "The original script has requested combat.";
 }
+
 CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                                  const CharacterRules &characters,
                                  const std::filesystem::path &game_directory,
@@ -323,12 +338,14 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
         }
     return result;
 }
+
 const CombatSession &CombatDemo::combat() const
 {
     if (!combat_)
         throw std::runtime_error("No active combat");
     return *combat_;
 }
+
 void CombatDemo::training(std::uint64_t seed, bool conditions)
 {
     if (campaign_)
@@ -361,6 +378,7 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
     dialogue_ = "Training encounter: one martial test profile and one SRD Bandit.";
     status_ = conditions ? "Blindness training" : "Training arena";
 }
+
 void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t seed)
 {
     if (campaign_combat_)
@@ -396,6 +414,7 @@ void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t see
     status_ = "Slums event 1";
     pump();
 }
+
 void CombatDemo::pump()
 {
     if (!vm_ || menu_ticket_ || combat_ticket_)
@@ -485,6 +504,7 @@ void CombatDemo::pump()
     }
     throw std::runtime_error("Slums script exceeded request budget");
 }
+
 void CombatDemo::continue_script()
 {
     if (!vm_ || !menu_ticket_)
@@ -494,6 +514,7 @@ void CombatDemo::continue_script()
     menu_ticket_ = 0;
     pump();
 }
+
 void CombatDemo::finish_combat()
 {
     if (!vm_ || !combat_ticket_ || !combat_)
@@ -519,6 +540,7 @@ void CombatDemo::finish_combat()
     combat_ticket_ = 0;
     pump();
 }
+
 bool CombatDemo::submit(const Command &command)
 {
     if (!combat_ || !combat_->submit(command))
@@ -527,6 +549,7 @@ bool CombatDemo::submit(const Command &command)
     finish_combat();
     return true;
 }
+
 void CombatDemo::revisit()
 {
     if (!script_complete() || !combat_ || combat_->snapshot().outcome != Outcome::victory)
@@ -536,6 +559,7 @@ void CombatDemo::revisit()
     dialogue_.clear();
     pump();
 }
+
 std::string CombatDemo::save_combat() const
 {
     if (vm_ || campaign_)
@@ -543,6 +567,7 @@ std::string CombatDemo::save_combat() const
             "Campaign checkpoints are pending; save/load currently supports training combat only");
     return combat().save();
 }
+
 void CombatDemo::restore_combat(std::string_view checkpoint)
 {
     if (vm_ || campaign_)
@@ -550,12 +575,14 @@ void CombatDemo::restore_combat(std::string_view checkpoint)
     auto restored = module_->restore(checkpoint);
     combat_ = std::move(restored);
 }
+
 unsigned CombatDemo::script_variable(std::uint16_t address) const
 {
     if (!vm_)
         throw std::runtime_error("No active campaign script");
     return vm_->variable(address);
 }
+
 Command choose_demo_command(const CombatSession &session)
 {
     const auto state = session.snapshot();

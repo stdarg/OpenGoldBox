@@ -15,6 +15,7 @@ int combat_zoom_percent();
 bool valid_language(const godot::String &locale);
 bool save_game_path(const godot::String &directory);
 bool save_language(const godot::String &locale);
+
 struct Validation
 {
     bool usable{};
@@ -22,6 +23,7 @@ struct Validation
     godot::PackedStringArray different;
     godot::String error;
 };
+
 Validation validate_game_path(const godot::String &directory);
 } // namespace settings
 #endif

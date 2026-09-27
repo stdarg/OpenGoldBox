@@ -3,6 +3,7 @@
 #include <limits>
 #include <sstream>
 using namespace opengold::srd5::detail;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -10,8 +11,10 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 const Concentration first{{7, 1, 9}, 600000},
     second{{7, 2, 9}, 600000}; // Silence's maximum duration.
+
 void lifecycle()
 {
     ConcentrationState state, other;
@@ -60,12 +63,14 @@ void lifecycle()
     check(state.end() == first.source && !state.active(),
           "Voluntary release returns cleanup identity");
 }
+
 std::string encode(const ConcentrationState &state)
 {
     std::ostringstream out;
     write_concentration(out, state);
     return out.str();
 }
+
 ConcentrationState decode(const std::string &bytes)
 {
     std::istringstream in(bytes);
@@ -74,6 +79,7 @@ ConcentrationState decode(const std::string &bytes)
     check(in.eof(), "No trailing record fields");
     return result;
 }
+
 void persistence()
 {
     ConcentrationState state;
@@ -181,6 +187,7 @@ void damage()
           "Invalid damage leaves state and RNG intact");
 }
 } // namespace
+
 int main()
 {
     try

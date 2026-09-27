@@ -15,12 +15,14 @@ class EclError : public std::runtime_error
   public:
     using std::runtime_error::runtime_error;
 };
+
 struct EclOperand
 {
     std::uint8_t tag{};
     std::uint16_t value{}; // Encoded value/address; dereferencing depends on opcode role.
     std::string text;
 };
+
 struct EclInstruction
 {
     std::uint16_t address{};
@@ -28,12 +30,14 @@ struct EclInstruction
     std::uint8_t opcode{};
     std::vector<EclOperand> operands;
 };
+
 struct EclOpcode
 {
     std::string_view name;
     unsigned operands{};
     bool variable_list{}, executable{}, requires_host{};
 };
+
 [[nodiscard]] const EclOpcode &ecl_opcode(std::uint8_t opcode);
 [[nodiscard]] std::string unpack_ecl_text(std::span<const std::uint8_t> bytes);
 
@@ -50,18 +54,22 @@ class EclProgram
     // Decode a machine's private, potentially modified copy of this record.
     [[nodiscard]] EclInstruction instruction(std::uint32_t address,
                                              std::span<const std::uint8_t> image) const;
+
     [[nodiscard]] const std::array<std::uint16_t, 5> &entries() const noexcept
     {
         return entries_;
     }
+
     [[nodiscard]] const std::string &source() const noexcept
     {
         return source_;
     }
+
     [[nodiscard]] const std::vector<std::uint8_t> &raw() const noexcept
     {
         return raw_;
     }
+
     [[nodiscard]] std::uint32_t body_start() const noexcept
     {
         return body_start_;

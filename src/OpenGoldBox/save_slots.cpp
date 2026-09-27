@@ -11,6 +11,7 @@
 #include <memory>
 #include <stdexcept>
 using namespace godot;
+
 namespace
 {
 
@@ -25,6 +26,7 @@ std::string encoded(std::string_view name)
     }
     return result;
 }
+
 std::string decoded(std::string_view stem)
 {
     std::string result;
@@ -44,6 +46,7 @@ std::string decoded(std::string_view stem)
     return result;
 }
 } // namespace
+
 void SaveSlots::_ready()
 {
     set_size(Vector2i(620, 470));
@@ -71,6 +74,7 @@ void SaveSlots::_ready()
     directory_ = std::filesystem::u8path(
         ProjectSettings::get_singleton()->globalize_path("user://saves").utf8().get_data());
 }
+
 void SaveSlots::open(bool saving)
 {
     saving_ = saving;
@@ -125,12 +129,14 @@ void SaveSlots::open(bool saving)
     else
         list->grab_focus();
 }
+
 void SaveSlots::changed(String)
 {
     confirmed_ = false;
     pending_.clear();
     get_node<Button>("Action")->set_text(i18n::text(saving_ ? N_("Save") : N_("Load")));
 }
+
 void SaveSlots::select(std::int64_t index)
 {
     changed("");
@@ -140,6 +146,7 @@ void SaveSlots::select(std::int64_t index)
         get_node<LineEdit>("Name")->set_text(
             String::utf8(decoded(paths_[index].stem().string()).c_str()));
 }
+
 void SaveSlots::act()
 {
     try
@@ -184,6 +191,7 @@ void SaveSlots::act()
         get_node<Button>("Action")->set_text(i18n::text(saving_ ? N_("Save") : N_("Load")));
     }
 }
+
 void SaveSlots::close()
 {
     hide();

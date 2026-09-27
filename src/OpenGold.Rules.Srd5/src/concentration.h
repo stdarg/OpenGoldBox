@@ -7,6 +7,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <utility>
+
 namespace opengold::srd5::detail
 {
 // Identifies an application, not just a spell: a recast must retire the old area.
@@ -16,12 +17,14 @@ struct ConcentrationSource
     rules::EntityId caster{};
     bool operator==(const ConcentrationSource &) const = default;
 };
+
 struct Concentration
 {
     ConcentrationSource source;
     std::uint64_t remaining_ms{};
     bool operator==(const Concentration &) const = default;
 };
+
 // One instance per owner. Returned sources tell the integration which effects
 // to remove; this state machine never owns or reaches into combat actors.
 class ConcentrationState
@@ -31,11 +34,13 @@ class ConcentrationState
     {
         return active_;
     }
+
     std::optional<ConcentrationSource> end()
     {
         auto old = std::exchange(active_, std::nullopt);
         return old ? std::optional(old->source) : std::nullopt;
     }
+
     std::optional<ConcentrationSource> begin(Concentration next, bool incapacitated_or_dead = false)
     {
         if (!next.source.scope || !next.source.application || !next.source.caster ||
@@ -45,6 +50,7 @@ class ConcentrationState
         active_ = next;
         return old;
     }
+
     std::optional<ConcentrationSource> elapse(std::uint64_t milliseconds)
     {
         if (!active_)
@@ -54,11 +60,13 @@ class ConcentrationState
         active_->remaining_ms -= milliseconds;
         return std::nullopt;
     }
+
     struct DamageResult
     {
         std::optional<SaveResult> save;
         std::optional<ConcentrationSource> ended;
     };
+
     // damage_taken is post-defense damage, BEFORE subtracting Temporary HP.
     // Check incapacitation/death after applying damage; these end without a roll.
     DamageResult damage(int damage_taken, int constitution_save, RollModifiers modifiers,
@@ -76,15 +84,18 @@ class ConcentrationState
                                  std::clamp(damage_taken / 2, 10, 30), modifiers, rng);
         return {save, save.success ? std::nullopt : end()};
     }
+
     std::optional<ConcentrationSource> incapacitate()
     {
         return end();
     }
+
     bool operator==(const ConcentrationState &) const = default;
 
   private:
     std::optional<Concentration> active_;
 };
+
 inline void write_concentration(std::ostream &out, const ConcentrationState &state)
 {
     out << "CN1 " << int(bool(state.active()));
@@ -92,6 +103,7 @@ inline void write_concentration(std::ostream &out, const ConcentrationState &sta
         out << ' ' << value->source.scope << ' ' << value->source.application << ' '
             << value->source.caster << ' ' << value->remaining_ms;
 }
+
 // Parse into a fresh value; malformed fields cannot partially replace an owner.
 // The enclosing combat/campaign reader must additionally validate the source
 // against its owner and effect registry and enforce the named spell's duration.

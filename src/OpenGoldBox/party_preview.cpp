@@ -35,12 +35,14 @@
 
 using namespace godot;
 using namespace opengold;
+
 namespace
 {
 String gs(std::string_view text)
 {
     return String::utf8(text.data(), text.size());
 }
+
 Character preview_guard()
 {
     auto rules = srd5::character_rules();
@@ -56,6 +58,7 @@ Character preview_guard()
         roll = {{6, 5, 4, 1}, 3};
     return Character(*rules, std::move(draft), {});
 }
+
 presentation::NodeOwner<> combat_scene(const std::shared_ptr<CampaignParty> &party,
                                        const por::CharacterArt &art,
                                        const por::CombatBodyCatalog &catalog,
@@ -81,6 +84,7 @@ presentation::NodeOwner<> combat_scene(const std::shared_ptr<CampaignParty> &par
     return owned;
 }
 } // namespace
+
 void CharacterCreationView::setup_party()
 {
     body_catalog_ = por::CombatBodyCatalog::load(
@@ -139,6 +143,7 @@ void CharacterCreationView::setup_party()
         OS::get_singleton()->get_cmdline_user_args().has("--equipment-art-check");
     expedition_check_ = OS::get_singleton()->get_cmdline_user_args().has("--expedition-check");
 }
+
 void CharacterCreationView::party_layout()
 {
     const auto w = get_size().x, h = get_size().y;
@@ -186,6 +191,7 @@ void CharacterCreationView::party_layout()
         if (auto *child = Object::cast_to<Control>(get_node_or_null(name)))
             child->set_size(get_size());
 }
+
 void CharacterCreationView::party_selected(std::int64_t index)
 {
     if (index < 0 || static_cast<std::size_t>(index) >= campaign_->state().roster.size())
@@ -197,6 +203,7 @@ void CharacterCreationView::party_selected(std::int64_t index)
             campaign_->select(slot);
     refresh_party();
 }
+
 void CharacterCreationView::party_grip_selected(std::int64_t index)
 {
     const auto selection = get_node<ItemList>("PartyPanel/Inventory")->get_selected_items();
@@ -217,6 +224,7 @@ void CharacterCreationView::party_grip_selected(std::int64_t index)
     if (!selection.is_empty())
         get_node<ItemList>("PartyPanel/Inventory")->select(selection[0]);
 }
+
 void CharacterCreationView::refresh_party()
 {
     auto *list = get_node<ItemList>("PartyPanel/Roster");
@@ -284,6 +292,7 @@ void CharacterCreationView::refresh_party()
          {"Remove", "Rejoin", "Equip", "Unequip", "Explore", "Combat", "Modifiers", "SavingThrows"})
         get_node<Button>(gs(std::string("PartyPanel/") + name))->set_disabled(state.roster.empty());
 }
+
 // Original-data integration check, also runnable in the packaged executable.
 // Equipment actions use the real controls and inspect uploaded texture pixels.
 void CharacterCreationView::equipment_art_check()
@@ -440,9 +449,11 @@ void CharacterCreationView::equipment_art_check()
     {
         party_selected(0);
         verify_preview(0, 34);
+
         struct CheckSave
         {
             std::filesystem::path path;
+
             ~CheckSave()
             {
                 std::error_code ignored;
@@ -454,6 +465,7 @@ void CharacterCreationView::equipment_art_check()
                                  String::num_int64(OS::get_singleton()->get_process_id()) + ".ogs")
                 .utf8()
                 .get_data())};
+
         std::filesystem::create_directories(save.path.parent_path());
         save_campaign(save.path);
         gear(2, false);
@@ -548,6 +560,7 @@ void CharacterCreationView::equipment_art_check()
     }
     ++check_stage_;
 }
+
 void CharacterCreationView::party_action(int action)
 {
     try
@@ -688,6 +701,7 @@ void CharacterCreationView::party_action(int action)
         get_node<Button>("ReturnParty")->set_tooltip_text(error_);
     }
 }
+
 void CharacterCreationView::party_check()
 {
     const auto press = [&](const char *node)
@@ -929,6 +943,7 @@ void CharacterCreationView::party_check()
         break;
     }
 }
+
 void CharacterCreationView::update_party_navigation()
 {
     bool allowed = true;
@@ -991,6 +1006,7 @@ void CharacterCreationView::update_party_navigation()
         allowed ? N_("Inspect your party and equipment.")
                 : N_("Finish combat, dialogue or shopping before returning to the party.")));
 }
+
 void CharacterCreationView::expedition_check()
 {
     if (++expedition_frames_ > 20000)
@@ -1062,6 +1078,7 @@ void CharacterCreationView::expedition_check()
     expedition_check_ = false;
     get_tree()->quit(0);
 }
+
 void CharacterCreationView::setup_defeat()
 {
     auto window = presentation::make_node<Window>();
@@ -1105,6 +1122,7 @@ void CharacterCreationView::setup_defeat()
                   callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
     defeat_check_ = OS::get_singleton()->get_cmdline_user_args().has("--defeat-check");
 }
+
 void CharacterCreationView::show_defeat()
 {
     campaign_defeated_ = true;
@@ -1116,6 +1134,7 @@ void CharacterCreationView::show_defeat()
         dialog->popup_centered();
     dialog->get_node<Button>("Reload")->grab_focus();
 }
+
 void CharacterCreationView::reload_after_defeat()
 {
     if (!campaign_defeated_)
@@ -1123,21 +1142,25 @@ void CharacterCreationView::reload_after_defeat()
     get_node<Window>("Defeat")->hide();
     open_saves(false);
 }
+
 void CharacterCreationView::save_dialog_visibility_changed()
 {
     // Window releases its exclusive-child slot after emitting visibility_changed.
     callable_mp(this, &CharacterCreationView::restore_defeat_dialog).call_deferred();
 }
+
 void CharacterCreationView::restore_defeat_dialog()
 {
     if (campaign_defeated_ && !get_node<SaveSlots>("SaveSlots")->is_visible())
         show_defeat();
 }
+
 void CharacterCreationView::exit_after_defeat()
 {
     if (campaign_defeated_)
         get_tree()->quit(0);
 }
+
 void CharacterCreationView::defeat_check()
 {
     auto *dialog = get_node<Window>("Defeat");

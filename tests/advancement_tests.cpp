@@ -6,6 +6,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool value, const char *message)
@@ -13,6 +14,7 @@ void check(bool value, const char *message)
     if (!value)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -26,11 +28,13 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid choice must reject");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character character(std::string klass)
 {
     CharacterDraft d;
@@ -45,10 +49,12 @@ Character character(std::string klass)
         r = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
 }
+
 std::string saved(const CampaignParty &p)
 {
     return encode_campaign(p, nullptr, "advancement-fixture");
 }
+
 bool offers(const CombatSession &s, std::string_view verb)
 {
     const auto commands = s.legal_commands();
@@ -58,6 +64,7 @@ bool offers(const CombatSession &s, std::string_view verb)
                            return c.verb == verb;
                        });
 }
+
 Command command(const CombatSession &s, std::string_view verb)
 {
     for (const auto &c : s.legal_commands())
@@ -65,6 +72,7 @@ Command command(const CombatSession &s, std::string_view verb)
             return c;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 CombatantView unit(const CombatSession &s, EntityId id)
 {
     for (const auto &c : s.snapshot().combatants)
@@ -72,6 +80,7 @@ CombatantView unit(const CombatSession &s, EntityId id)
             return c;
     throw std::runtime_error("Missing actor");
 }
+
 auto duel(const RulesModule &rules, const CampaignParty &party)
 {
     auto participants = party.participants();
@@ -86,6 +95,7 @@ auto duel(const RulesModule &rules, const CampaignParty &party)
     }
     throw std::runtime_error("No first initiative seed");
 }
+
 void dwarf_class_sources()
 {
     for (const auto &[klass, die] : std::vector<std::pair<std::string, int>>{{"barbarian", 12},
@@ -262,6 +272,7 @@ void progression()
     unsupported.award_experience(2700, "xp");
     check(!unsupported.can_advance(id), "Unsupported classes cannot select partial advancement");
 }
+
 void hp_history()
 {
     struct Example
@@ -270,6 +281,7 @@ void hp_history()
         unsigned increase;
         std::array<int, 4> hp;
     };
+
     // SRD p. 23: gain HP using the old modifier, then apply the feat's
     // Constitution modifier increase once per attained level.
     for (const auto example : {Example{3, 2, {2, 3, 4, 9}}, Example{3, 1, {2, 3, 4, 9}},
@@ -395,6 +407,7 @@ void hp_history()
                 }
             }
 }
+
 void ability_sources()
 {
     for (const unsigned ability : {0u, 4u})
@@ -469,6 +482,7 @@ void ability_sources()
               "Source records reconstruct from saved choices without changing campaign bytes");
     }
 }
+
 void feats()
 {
     for (const char *feat : {"defense", "savage_attacker"})
@@ -528,6 +542,7 @@ void feats()
         }
     }
 }
+
 void spells()
 {
     for (const char *klass : {"wizard", "cleric"})
@@ -587,6 +602,7 @@ void spells()
     }
 }
 } // namespace
+
 int main()
 {
     try

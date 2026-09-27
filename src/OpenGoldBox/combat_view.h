@@ -7,6 +7,7 @@
 #include <godot_cpp/classes/texture2d.hpp>
 #include <map>
 #include "opengold/sound_player.h"
+
 class CombatView : public godot::Control
 {
     GDCLASS(CombatView, godot::Control)
@@ -15,45 +16,55 @@ class CombatView : public godot::Control
     void _process(double delta) override;
     void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
+
     [[nodiscard]] std::int64_t selected_character_id() const
     {
         return static_cast<std::int64_t>(selected_);
     }
+
     [[nodiscard]] godot::Vector2i selected_character_cell() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
     [[nodiscard]] godot::Ref<godot::Texture2D> sprite_texture(opengold::rules::EntityId id,
                                                               bool action) const;
+
     [[nodiscard]] bool attack_pose_active(std::int64_t id) const
     {
         return action_seconds_.contains(static_cast<opengold::rules::EntityId>(id));
     }
+
     // Prepare while detached so the caller can keep its current screen on failure.
     void prepare_combat();
+
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party,
                         std::vector<opengold::CombatArt> art)
     {
         campaign_ = std::move(party);
         campaign_art_ = std::move(art);
     }
+
     [[nodiscard]] bool defeated() const
     {
         return campaign_ && demo_ && demo_->has_combat() &&
                demo_->combat().snapshot().outcome == opengold::rules::Outcome::defeat;
     }
+
     [[nodiscard]] bool can_leave() const
     {
         return !defeated() &&
                (!demo_ || !demo_->has_combat() ||
                 demo_->combat().snapshot().outcome != opengold::rules::Outcome::ongoing);
     }
+
     void campaign_encounter(opengold::CampaignEncounter encounter)
     {
         encounter_ = std::move(encounter);
     }
+
     [[nodiscard]] bool expedition() const
     {
         return encounter_.has_value();
     }
+
     [[nodiscard]] std::optional<opengold::rules::Snapshot> completed_outcome() const
     {
         if (!demo_ || !demo_->has_combat())
@@ -73,6 +84,7 @@ class CombatView : public godot::Control
     std::map<opengold::rules::EntityId, std::string> missing_art_;
     std::optional<opengold::CampaignEncounter> encounter_;
     std::vector<godot::Ref<godot::ImageTexture>> terrain_art_;
+
     struct SpriteArt
     {
         godot::Ref<godot::ImageTexture> texture;
@@ -85,6 +97,7 @@ class CombatView : public godot::Control
         godot::Rect2 unconscious_visible;
         bool goliath{};
     };
+
     std::map<opengold::rules::EntityId, SpriteArt> art_;
     godot::Ref<godot::ImageTexture> skull_art_;
     std::map<opengold::rules::EntityId, bool> known_dead_;

@@ -6,31 +6,37 @@
 
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 const auto fixtures = root / "tests/fixtures";
+
 void check(bool condition, const char *message)
 {
     if (!condition)
         throw std::runtime_error(message);
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 std::string read(const char *name)
 {
     std::ifstream file(fixtures / name);
     check(bool(file), "Open actual prior-writer ammunition fixture");
     return {std::istreambuf_iterator<char>(file), {}};
 }
+
 void write(const char *name, const std::string &bytes)
 {
     std::ofstream file(fixtures / name);
     file << bytes;
     check(bool(file), "Write actual prior-writer ammunition fixture");
 }
+
 void act(CombatSession &session, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : session.legal_commands())
@@ -43,6 +49,7 @@ void act(CombatSession &session, std::string_view verb, EntityId target = 0)
     }
     throw std::runtime_error("Missing baseline command: " + std::string(verb));
 }
+
 void continue_attack(CombatSession &session)
 {
     act(session, "ranged", 2);
@@ -51,6 +58,7 @@ void continue_attack(CombatSession &session)
     act(session, "action_surge");
     act(session, "ranged", 2);
 }
+
 void capture_prior_writer()
 {
     auto rules = module();
@@ -97,6 +105,7 @@ void capture_prior_writer()
     continue_attack(*combat);
     write("combat-v19-ammunition-continued.save", combat->save());
 }
+
 std::string current_identity(std::string bytes, const RulesModule &rules)
 {
     const auto position = bytes.find("0.6.47");
@@ -104,6 +113,7 @@ std::string current_identity(std::string bytes, const RulesModule &rules)
     bytes.replace(position, 6, rules.identity().version);
     return bytes;
 }
+
 void prior_writer_continuation()
 {
     auto rules = module();
@@ -132,6 +142,7 @@ void prior_writer_continuation()
     check(combat->save() == current_identity(read("combat-v19-ammunition-continued.save"), *rules),
           "Actual old ranged and Action Surge continuation remains exact");
 }
+
 void inventory_paths()
 {
     auto rules = module();
@@ -210,6 +221,7 @@ void inventory_paths()
     check(classes == 12, "Ammunition inventory and save paths cover all twelve classes");
 }
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

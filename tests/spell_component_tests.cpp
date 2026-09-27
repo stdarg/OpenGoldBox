@@ -9,6 +9,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -16,23 +17,28 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
     check(bool(in), "Frozen fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 void write(const std::filesystem::path &p, const std::string &bytes)
 {
     std::ofstream out(p);
     out << bytes;
     check(bool(out), "Fixture written");
 }
+
 Character hero(std::string klass)
 {
     CharacterDraft d;
@@ -64,6 +70,7 @@ Character hero(std::string klass)
     }
     return c;
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -71,6 +78,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -78,6 +86,7 @@ bool has(const CombatSession &c, std::string_view verb)
             return true;
     return false;
 }
+
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -85,6 +94,7 @@ Command command(const CombatSession &c, std::string_view verb)
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 auto battle(const RulesModule &rules, const Character &h, const std::vector<std::string> &gear,
             unsigned hands = 0)
 {
@@ -105,6 +115,7 @@ auto battle(const RulesModule &rules, const Character &h, const std::vector<std:
     check(c->snapshot().actor == 1, "Caster has its turn");
     return c;
 }
+
 void definitions()
 {
     namespace detail = opengold::srd5::detail;
@@ -132,6 +143,7 @@ void definitions()
     check(!detail::spell_components("invented") && !detail::spell_components("melee"),
           "Unknown spells and non-spell actions have no inferred components");
 }
+
 unsigned slots(const CombatantView &actor, unsigned level)
 {
     std::istringstream in(actor.persistent.resources);
@@ -141,6 +153,7 @@ unsigned slots(const CombatantView &actor, unsigned level)
     check(bool(in) && magic == "SRD2", "Level-three caster uses stored level-one/two slots");
     return level == 1 ? first : second;
 }
+
 void expectations()
 {
     auto rules = module();
@@ -242,6 +255,7 @@ void expectations()
               "Untrained armor still prohibits both Verbal-only and Somatic casting");
     }
 }
+
 CampaignParty party(bool npc = false)
 {
     CampaignParty p(module());
@@ -260,6 +274,7 @@ CampaignParty party(bool npc = false)
     p.restore(std::move(state));
     return p;
 }
+
 auto campaign_battle(const RulesModule &rules, const CampaignParty &p)
 {
     auto actors = p.participants();
@@ -267,6 +282,7 @@ auto campaign_battle(const RulesModule &rules, const CampaignParty &p)
     actors.push_back({99, "vanguard", "Enemy", 1, {3, 1}});
     return rules.create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 2);
 }
+
 void campaign()
 {
     auto rules = module();
@@ -296,6 +312,7 @@ void campaign()
               "Unequipping shield releases a hand and removes only shield AC");
     }
 }
+
 std::string upgrade(std::string bytes)
 {
     const auto at = bytes.find("0.6.20");
@@ -303,6 +320,7 @@ std::string upgrade(std::string bytes)
     bytes.replace(at, 6, module()->identity().version);
     return bytes;
 }
+
 void legacy()
 {
     auto rules = module();
@@ -329,6 +347,7 @@ void legacy()
     check(c->save() == rules->restore(read(base / "combat-v13-components-continued.save"))->save(),
           "Unrestricted spell exactly matches actual prior-writer continuation");
 }
+
 void ui_fixtures()
 {
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "component-fixtures";
@@ -345,6 +364,7 @@ void ui_fixtures()
                   battle(*rules, h, gear, shield ? 1 : 2)->save());
         }
 }
+
 void freeze()
 {
     auto rules = module();
@@ -359,6 +379,7 @@ void freeze()
     write(base / "combat-v13-components-continued.save", c->save());
 }
 } // namespace
+
 int main(int argc, char **)
 {
     try

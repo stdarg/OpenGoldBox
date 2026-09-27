@@ -25,12 +25,14 @@
 using namespace godot;
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 String gs(std::string_view text)
 {
     return String::utf8(text.data(), text.size());
 }
+
 const std::array<std::pair<const char *, const char *>, 10> action_buttons{
     {{"Melee", "melee"},
      {"Ranged", "ranged"},
@@ -42,6 +44,7 @@ const std::array<std::pair<const char *, const char *>, 10> action_buttons{
      {"Dash", "dash"},
      {"Dodge", "dodge"},
      {"Disengage", "disengage"}}};
+
 std::string spell_verb(std::string verb, unsigned slot)
 {
     if (slot == 2 && (verb == "magic_missile" || verb == "cure_wounds" || verb == "healing_word"))
@@ -49,9 +52,11 @@ std::string spell_verb(std::string verb, unsigned slot)
     return verb;
 }
 } // namespace
+
 void CombatView::_bind_methods()
 {
 }
+
 void CombatView::_notification(int what)
 {
     if (what == NOTIFICATION_RESIZED && ready_)
@@ -60,11 +65,13 @@ void CombatView::_notification(int what)
         queue_redraw();
     }
 }
+
 std::filesystem::path CombatView::local_path(const char *path) const
 {
     return std::filesystem::u8path(
         ProjectSettings::get_singleton()->globalize_path(path).utf8().get_data());
 }
+
 void CombatView::_ready()
 {
     ready_ = true;
@@ -172,6 +179,7 @@ void CombatView::_ready()
         refresh();
     }
 }
+
 void CombatView::layout()
 {
     const double width = get_size().x, height = get_size().y, sidebar = 358,
@@ -245,6 +253,7 @@ void CombatView::layout()
                                                      : 0))));
     place("Footer", Rect2(24, height - 34, width - 48, 24));
 }
+
 void CombatView::training()
 {
     try
@@ -261,6 +270,7 @@ void CombatView::training()
         refresh();
     }
 }
+
 void CombatView::slums()
 {
     try
@@ -281,6 +291,7 @@ void CombatView::slums()
         refresh();
     }
 }
+
 void CombatView::replay()
 {
     if (demo_ && demo_->is_slums())
@@ -288,6 +299,7 @@ void CombatView::replay()
     else if (demo_)
         training();
 }
+
 void CombatView::next()
 {
     try
@@ -305,6 +317,7 @@ void CombatView::next()
         refresh();
     }
 }
+
 void CombatView::revisit()
 {
     try
@@ -318,6 +331,7 @@ void CombatView::revisit()
         refresh();
     }
 }
+
 void CombatView::sync_art()
 {
     art_.clear();
@@ -372,6 +386,7 @@ void CombatView::sync_art()
             source.image.width, source.image.height, false, godot::Image::FORMAT_RGBA8, pixels));
     }
 }
+
 void CombatView::save_game()
 {
     try
@@ -415,6 +430,7 @@ void CombatView::save_game()
         refresh();
     }
 }
+
 void CombatView::load_game()
 {
     try
@@ -436,6 +452,7 @@ void CombatView::load_game()
         refresh();
     }
 }
+
 void CombatView::select_mode(String verb)
 {
     mode_ = spell_verb(verb.utf8().get_data(), spell_slot_);
@@ -446,6 +463,7 @@ void CombatView::select_mode(String verb)
     }
     refresh();
 }
+
 void CombatView::thrown_selected(std::int64_t index)
 {
     auto *choices = get_node<OptionButton>("ThrownWeapon");
@@ -455,6 +473,7 @@ void CombatView::thrown_selected(std::int64_t index)
     mode_ = "move";
     refresh();
 }
+
 void CombatView::begin_throw()
 {
     if (get_node<Button>("Throw")->is_disabled())
@@ -462,11 +481,13 @@ void CombatView::begin_throw()
     get_node<Button>("Throw")->release_focus();
     select_mode("throw");
 }
+
 void CombatView::ground_selected(std::int64_t index)
 {
     ground_item_ = get_node<OptionButton>("GroundItem")->get_item_id(index);
     refresh();
 }
+
 void CombatView::pick_up()
 {
     if (!demo_ || !demo_->has_combat() || get_node<Button>("PickUp")->is_disabled())
@@ -478,22 +499,26 @@ void CombatView::pick_up()
             return;
         }
 }
+
 void CombatView::bonus_selected(std::int64_t)
 {
     refresh();
 }
+
 void CombatView::use_bonus_action()
 {
     auto *choices = get_node<OptionButton>("CunningAction");
     if (choices->get_selected() >= 0)
         immediate(String(choices->get_item_metadata(choices->get_selected())));
 }
+
 void CombatView::spell_slot()
 {
     spell_slot_ = spell_slot_ == 1 ? 2 : 1;
     mode_ = "move";
     refresh();
 }
+
 void CombatView::immediate(String verb)
 {
     if (!demo_ || !demo_->has_combat())
@@ -513,6 +538,7 @@ void CombatView::immediate(String verb)
             return;
         }
 }
+
 void CombatView::act(const Command &command)
 {
     try
@@ -531,6 +557,7 @@ void CombatView::act(const Command &command)
         refresh();
     }
 }
+
 void CombatView::_input(const Ref<InputEvent> &event)
 {
     if (get_node<Window>("SneakAttack")->is_visible() ||
@@ -706,6 +733,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
         }
     get_viewport()->set_input_as_handled();
 }
+
 void CombatView::refresh()
 {
     if (!ready_)
@@ -1058,6 +1086,7 @@ void CombatView::refresh()
                " ft\nArrows/click: move | Escape: finish"));
     queue_redraw();
 }
+
 void CombatView::_draw()
 {
     draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
@@ -1145,6 +1174,7 @@ void CombatView::_draw()
                   color);
     }
 }
+
 void CombatView::_process(double delta)
 {
     if (Engine::get_singleton()->is_editor_hint())

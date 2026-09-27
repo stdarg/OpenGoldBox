@@ -12,20 +12,24 @@ namespace
 {
 constexpr std::size_t max_image = 1024 * 1024;
 constexpr unsigned max_ticks = 4096;
+
 [[noreturn]] void invalid(std::string_view reason)
 {
     throw std::runtime_error("Pool of Radiance sound: " + std::string(reason));
 }
+
 std::uint8_t byte(std::span<const std::uint8_t> data, std::size_t p)
 {
     if (p >= data.size())
         invalid("truncated data or out-of-range pointer");
     return data[p];
 }
+
 std::uint16_t word(std::span<const std::uint8_t> data, std::size_t p)
 {
     return static_cast<std::uint16_t>(byte(data, p) | (byte(data, p + 1) << 8));
 }
+
 // Byte offsets are field identifiers in the sound data, not CPU registers.
 enum Field : unsigned
 {
@@ -42,9 +46,11 @@ enum Field : unsigned
     depth = 34,
     period = 36
 };
+
 struct Voice
 {
     std::array<std::uint16_t, 24> fields{};
+
     std::uint16_t &operator[](unsigned offset)
     {
         if (offset % 2 || offset >= 48)
@@ -52,6 +58,7 @@ struct Voice
         return fields[offset / 2];
     }
 };
+
 void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, std::size_t source,
               std::size_t &return_position)
 {

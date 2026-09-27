@@ -9,6 +9,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *why)
@@ -16,6 +17,7 @@ void check(bool ok, const char *why)
     if (!ok)
         throw std::runtime_error(why);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -29,17 +31,21 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid spell grant/preparation must reject");
 }
+
 std::string read(const std::filesystem::path &path)
 {
     std::ifstream in(path);
     check(bool(in), "Fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero(std::string klass = "wizard")
 {
     CharacterDraft d;
@@ -54,6 +60,7 @@ Character hero(std::string klass = "wizard")
         r = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
 }
+
 std::vector<std::string> ids(const std::vector<LearnedSpell> &spells)
 {
     std::vector<std::string> result;
@@ -61,6 +68,7 @@ std::vector<std::string> ids(const std::vector<LearnedSpell> &spells)
         result.push_back(s.id);
     return result;
 }
+
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -68,6 +76,7 @@ bool has(const CombatSession &c, std::string_view verb)
             return true;
     return false;
 }
+
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
@@ -75,6 +84,7 @@ Command command(const CombatSession &c, std::string_view verb)
             return a;
     throw std::runtime_error("Missing command");
 }
+
 CombatantView unit(const CombatSession &c)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -82,6 +92,7 @@ CombatantView unit(const CombatSession &c)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 auto battle(const RulesModule &rules, const CharacterSheet &sheet, VitalState state)
 {
     const auto profile = rules.character_profile(sheet, {});
@@ -90,10 +101,12 @@ auto battle(const RulesModule &rules, const CharacterSheet &sheet, VitalState st
                           {99, "vanguard", "Target", 1, {5, 1}}}},
                         13);
 }
+
 std::string saved(const CampaignParty &p)
 {
     return encode_campaign(p, nullptr, "spell-access");
 }
+
 void creation()
 {
     auto rules = module();
@@ -137,6 +150,7 @@ void creation()
     check(c->submit(command(*c, "fire_bolt")) && unit(*c).persistent == before,
           "Cantrip casting spends no spell slot or source use");
 }
+
 void progression()
 {
     auto rules = module();
@@ -216,6 +230,7 @@ void progression()
               "One spell slot per turn remains enforced");
     }
 }
+
 void invalid()
 {
     auto rules = module();
@@ -297,6 +312,7 @@ void invalid()
                                 13);
         });
 }
+
 void legacy()
 {
     auto rules = module();
@@ -356,6 +372,7 @@ void legacy()
             rules->restore(read(root / "tests/fixtures/combat-v12-spells-continued.save"))->save(),
         "Prior-writer spell damage, slots, action state, RNG and clock continue exactly");
 }
+
 void capture_wizard_choices()
 {
     auto rules = module();
@@ -416,6 +433,7 @@ void capture_wizard_choices()
 
 #include "wizard_choices_checks.h"
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

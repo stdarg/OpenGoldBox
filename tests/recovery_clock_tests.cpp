@@ -12,6 +12,7 @@
 using namespace opengold;
 using namespace opengold::rules;
 namespace life = opengold::srd5::detail;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -19,6 +20,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -32,11 +34,13 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid recovery operation must reject");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero()
 {
     CharacterDraft d;
@@ -54,6 +58,7 @@ Character hero()
     check(result.advance(*module(), scratch), "Fixture has two levels");
     return result;
 }
+
 void golden_transitions()
 {
     life::LifeState state{0, 2, 1, false, false, {1234, 0}};
@@ -128,6 +133,7 @@ void golden_transitions()
     check(state.dead && state.recovery == life::RecoveryClock{},
           "Damage left over equal to maximum HP kills immediately");
 }
+
 void legacy_and_validation()
 {
     life::LifeState state{0, 2, 1, false, false, {}};
@@ -154,12 +160,14 @@ void legacy_and_validation()
                 life::validate_recovery(invalid);
             });
 }
+
 std::string fixture(const char *name)
 {
     std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
     check(bool(in), "Frozen fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 std::vector<std::string> rows(std::string_view bytes)
 {
     std::istringstream in{std::string(bytes)};
@@ -168,6 +176,7 @@ std::vector<std::string> rows(std::string_view bytes)
         result.push_back(line);
     return result;
 }
+
 std::string join(const std::vector<std::string> &lines)
 {
     std::string result;
@@ -175,6 +184,7 @@ std::string join(const std::vector<std::string> &lines)
         result += line + '\n';
     return result;
 }
+
 std::string upgraded(std::string_view bytes)
 {
     auto lines = rows(bytes);
@@ -192,6 +202,7 @@ std::string upgraded(std::string_view bytes)
     lines.push_back("0");
     return join(lines);
 }
+
 void frozen_saves()
 {
     auto rules = module();
@@ -230,6 +241,7 @@ void frozen_saves()
               party.member(5).vitals.hit_points == 0,
           "Stable, dead and reserve fixtures retain vitality");
 }
+
 CombatantView actor(const CombatSession &combat, EntityId id)
 {
     const auto s = combat.snapshot();
@@ -238,6 +250,7 @@ CombatantView actor(const CombatSession &combat, EntityId id)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 void combat_and_campaign()
 {
     auto rules = module();
@@ -327,6 +340,7 @@ void combat_and_campaign()
         });
 }
 } // namespace
+
 int main()
 {
     try

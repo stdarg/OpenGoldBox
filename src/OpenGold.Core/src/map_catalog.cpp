@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iterator>
+
 namespace opengold::por
 {
 MapCatalog MapCatalog::load(const std::filesystem::path &directory)
@@ -62,6 +63,7 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
         throw MapError(e.what());
     }
 }
+
 std::optional<std::reference_wrapper<const GeoMap>> MapCatalog::find(const MapId &id) const
 {
     const auto it = maps_.find(id);

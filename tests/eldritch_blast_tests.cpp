@@ -8,6 +8,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -15,17 +16,21 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 void write(const std::filesystem::path &p, const std::string &s)
 {
     std::ofstream out(p);
     out << s;
     check(bool(out), "Write fixture");
 }
+
 CharacterDraft draft()
 {
     CharacterDraft d;
@@ -41,6 +46,7 @@ CharacterDraft draft()
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     return d;
 }
+
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
@@ -48,6 +54,7 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void freeze()
 {
     auto rules = module();
@@ -78,12 +85,14 @@ void freeze()
     check(c->submit(command(*c, "end")), "Prior continuation");
     write(base / "combat-v13-eldritch-continued.save", c->save());
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
     check(bool(in), "Read fixture");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -97,6 +106,7 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid spell data must reject");
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -104,6 +114,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
@@ -111,6 +122,7 @@ bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
             return true;
     return false;
 }
+
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -121,6 +133,7 @@ std::uint64_t rng(const CombatSession &c)
     in >> n;
     return n;
 }
+
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages)
@@ -128,6 +141,7 @@ Message attack(const CombatSession &c)
             return m;
     throw std::runtime_error("Missing attack log");
 }
+
 std::string arg(const Message &m, std::string_view name)
 {
     for (const auto &a : m.arguments)
@@ -135,6 +149,7 @@ std::string arg(const Message &m, std::string_view name)
             return a.value;
     throw std::runtime_error("Missing attack argument");
 }
+
 Character hero(unsigned level = 1, bool learned = true)
 {
     check(level == 1, "Only real level-one Warlocks supported");
@@ -142,12 +157,14 @@ Character hero(unsigned level = 1, bool learned = true)
     d.cantrips = learned ? std::vector<std::string>{"eldritch_blast"} : std::vector<std::string>{};
     return Character(*srd5::character_rules(), d, {});
 }
+
 auto custom(std::string affinity = {})
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
                                affinity);
 }
+
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
             std::vector<std::string> gear = {}, unsigned side = 1,
             std::optional<VitalState> vital = {})
@@ -163,6 +180,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
     check(c->snapshot().actor == 1, "Independent seed reaches caster");
     return c;
 }
+
 void access()
 {
     auto creation = srd5::character_rules();
@@ -257,6 +275,7 @@ void access()
         }
     check(count > 0, "Preset route exercised");
 }
+
 void rolls()
 {
     // Independent SplitMix64 golden values: two initiative rolls, then attack.
@@ -312,6 +331,7 @@ void rolls()
               unit(*c, 2).hit_points == 992,
           "Conscious adjacent hostile imposes ranged-attack Disadvantage");
 }
+
 void eligibility()
 {
     auto rules = custom();
@@ -386,6 +406,7 @@ void eligibility()
               dead->save() == dead_before,
           "Dead-target rejection preserves all state");
 }
+
 void allies_and_unconscious()
 {
     auto rules = custom();
@@ -427,6 +448,7 @@ void allies_and_unconscious()
             }
         }
 }
+
 void campaign()
 {
     auto rules = module();
@@ -494,6 +516,7 @@ void campaign()
                 "Rest preserves physical equipment, wealth and cast access even when sleep drops the held quarterstaff");
         }
 }
+
 void legacy()
 {
     auto rules = module();
@@ -525,6 +548,7 @@ void legacy()
     check(c->submit(command(*c, "end")), "Prior continuation");
     check(c->save() == upgraded("combat-v13-eldritch-continued.save"), "Prior continuation exact");
 }
+
 void ui_fixtures()
 {
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "eldritch-fixtures";
@@ -549,6 +573,7 @@ void ui_fixtures()
 
 #include "warlock_poison_checks.h"
 } // namespace
+
 int main(int argc, char **)
 {
     try

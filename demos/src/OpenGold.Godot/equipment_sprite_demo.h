@@ -17,6 +17,7 @@ class EquipmentSpriteDemo : public godot::Control
     static void _bind_methods()
     {
     }
+
     void _notification(int what);
 
   private:

@@ -13,6 +13,7 @@ namespace opengold
 {
 struct SaveCodec;
 }
+
 namespace opengold::por
 {
 struct ScriptId
@@ -21,14 +22,17 @@ struct ScriptId
     std::uint8_t record{};
     auto operator<=>(const ScriptId &) const = default;
 };
+
 class EclCatalog
 {
   public:
     [[nodiscard]] static EclCatalog load(const std::filesystem::path &directory);
+
     [[nodiscard]] const auto &all() const noexcept
     {
         return programs_;
     }
+
     [[nodiscard]] std::shared_ptr<const EclProgram> find(const ScriptId &id) const;
 
   private:
@@ -57,17 +61,21 @@ enum class EclArgumentKind
     address,
     text
 };
+
 struct EclHostArgument
 {
     EclArgumentKind kind{};
     std::uint16_t value{};
     std::string text;
 };
+
 using EclConditions = std::array<bool, 6>; // =, <>, <, >, <=, >=
+
 struct EclMemoryWrite
 {
     std::uint16_t address{}, value{};
 };
+
 struct EclHostReply
 {
     std::vector<EclMemoryWrite> writes;
@@ -76,6 +84,7 @@ struct EclHostReply
     // Required only for NEW ECL. The host resolves the current disk/script ID.
     std::shared_ptr<const EclProgram> next_program;
 };
+
 struct EclRequest
 {
     std::uint64_t id{};
@@ -87,6 +96,7 @@ struct EclRequest
     std::optional<EclInstruction> instruction; // Original encoded operands and source PC.
     std::vector<EclHostArgument> arguments;    // Resolved numbers/text, encoded addresses.
 };
+
 struct EclRunResult
 {
     EclState state{};
@@ -121,14 +131,17 @@ class EclMachine
     bool resume_host(std::uint64_t request_id, const EclHostReply &reply);
     // Host dice share the checkpointed script RNG. Returns [0, count).
     unsigned host_random(std::uint64_t request_id, unsigned count);
+
     [[nodiscard]] EclState state() const noexcept
     {
         return state_;
     }
+
     [[nodiscard]] std::uint32_t address() const noexcept
     {
         return pc_;
     }
+
     [[nodiscard]] const auto &trace() const noexcept
     {
         return trace_;

@@ -81,25 +81,30 @@ std::uint16_t encoded_address(const EclOperand &arg)
         throw EclError("Expected encoded address");
     return arg.value;
 }
+
 std::uint16_t indexed_address(std::uint16_t base, std::size_t index)
 {
     if (index > 65535U - base)
         throw EclError("Address calculation overflow");
     return static_cast<std::uint16_t>(base + index);
 }
+
 bool byte_address(std::uint16_t address)
 {
     return (address >= EclProgram::origin && address < EclProgram::limit) ||
            (address >= 0xC04B && address <= 0xC04F);
 }
+
 EclConditions relation(int c)
 {
     return {c == 0, c != 0, c < 0, c > 0, c <= 0, c >= 0};
 }
+
 EclConditions equality(bool equal)
 {
     return {equal, !equal, false, false, false, false};
 }
+
 void validate_string(std::uint16_t address, std::string_view value)
 {
     if (value.size() > 255 || value.find('\0') != std::string_view::npos)
@@ -107,22 +112,26 @@ void validate_string(std::uint16_t address, std::string_view value)
     (void)indexed_address(address, value.size());
 }
 } // namespace
+
 EclMachine::EclMachine(std::shared_ptr<const EclProgram> program) : program_(std::move(program))
 {
     if (!program_)
         throw EclError("EclMachine requires a program");
     image_ = program_->raw();
 }
+
 void EclMachine::require_configurable() const
 {
     if (state_ != EclState::idle && state_ != EclState::completed)
         throw EclError("Cannot configure machine during execution");
 }
+
 void EclMachine::seed_random(std::uint32_t seed)
 {
     require_configurable();
     random_.seed(seed);
 }
+
 void EclMachine::enable_host(std::uint8_t opcode)
 {
     require_configurable();
@@ -130,6 +139,7 @@ void EclMachine::enable_host(std::uint8_t opcode)
         throw EclError("Opcode is not a host operation");
     host_opcodes_.insert(opcode);
 }
+
 void EclMachine::bind_variable(std::uint16_t address, std::uint16_t v)
 {
     require_configurable();
@@ -137,6 +147,7 @@ void EclMachine::bind_variable(std::uint16_t address, std::uint16_t v)
         throw EclError("Program addresses cannot be bound as variables");
     variables_[address] = byte_address(address) ? v & 255 : v;
 }
+
 void EclMachine::bind_string(std::uint16_t address, std::string_view v)
 {
     require_configurable();
@@ -152,6 +163,7 @@ void EclMachine::bind_string(std::uint16_t address, std::string_view v)
         bind_variable(indexed_address(address, n),
                       n == v.size() ? 0 : static_cast<unsigned char>(v[n]));
 }
+
 std::uint16_t EclMachine::variable(std::uint16_t address) const
 {
     if (address >= EclProgram::origin && address < EclProgram::limit)
@@ -166,6 +178,7 @@ std::uint16_t EclMachine::variable(std::uint16_t address) const
         throw EclError("Unbound variable address " + std::to_string(address));
     return it->second;
 }
+
 std::string EclMachine::string(std::uint16_t address) const
 {
     std::string result;
@@ -180,6 +193,7 @@ std::string EclMachine::string(std::uint16_t address) const
     }
     throw EclError("Unterminated ECL string");
 }
+
 void EclMachine::write(std::uint16_t address, std::uint16_t v)
 {
     (void)variable(address);
@@ -199,6 +213,7 @@ void EclMachine::write(std::uint16_t address, std::uint16_t v)
     else
         variables_.at(address) = byte_address(address) ? v & 255 : v;
 }
+
 void EclMachine::write_string(std::uint16_t address, std::string_view v)
 {
     validate_string(address, v);
@@ -207,6 +222,7 @@ void EclMachine::write_string(std::uint16_t address, std::string_view v)
     for (std::size_t n = 0; n <= v.size(); ++n)
         write(indexed_address(address, n), n == v.size() ? 0 : static_cast<unsigned char>(v[n]));
 }
+
 std::uint16_t EclMachine::value(const EclOperand &a) const
 {
     // GetEclVariable returns the encoded length/address for strings in numeric roles.
@@ -216,6 +232,7 @@ std::uint16_t EclMachine::value(const EclOperand &a) const
         return variable(a.value);
     throw EclError("Numeric operand required");
 }
+
 std::uint16_t EclMachine::destination(const EclOperand &a) const
 {
     if (a.tag == 128)
@@ -224,6 +241,7 @@ std::uint16_t EclMachine::destination(const EclOperand &a) const
     (void)variable(a.value); // Validate before any mutation or request.
     return a.value;
 }
+
 std::string EclMachine::text(const EclOperand &a) const
 {
     if (a.tag == 128)
@@ -232,6 +250,7 @@ std::string EclMachine::text(const EclOperand &a) const
         return string(a.value);
     return std::to_string(value(a));
 }
+
 EclInstruction EclMachine::decode(std::uint32_t address)
 {
     if (address < program_->body_start())
@@ -243,11 +262,13 @@ EclInstruction EclMachine::decode(std::uint32_t address)
     instruction_spans_[address] = result.next;
     return result;
 }
+
 void EclMachine::jump(std::uint32_t address)
 {
     (void)decode(address);
     pc_ = address;
 }
+
 bool EclMachine::start(std::size_t slot)
 {
     if (slot >= program_->entries().size() ||
@@ -637,6 +658,7 @@ EclRunResult EclMachine::run(std::size_t budget)
     }
     return {state_, count, pending_, diagnostic_};
 }
+
 bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id)
@@ -652,6 +674,7 @@ bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
     finish_request();
     return true;
 }
+
 void EclMachine::finish_request()
 {
     pending_.reset();
@@ -659,6 +682,7 @@ void EclMachine::finish_request()
     menu_values_.clear();
     state_ = EclState::running;
 }
+
 bool EclMachine::resume_input(std::uint64_t id, std::string_view input)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
@@ -688,6 +712,7 @@ bool EclMachine::resume_input(std::uint64_t id, std::string_view input)
     finish_request();
     return true;
 }
+
 unsigned EclMachine::host_random(std::uint64_t id, unsigned count)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
@@ -701,6 +726,7 @@ unsigned EclMachine::host_random(std::uint64_t id, unsigned count)
     } while (draw < threshold);
     return draw % count;
 }
+
 bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||

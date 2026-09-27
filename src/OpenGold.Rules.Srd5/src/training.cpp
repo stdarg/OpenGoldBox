@@ -7,6 +7,7 @@
 namespace opengold::srd5::detail
 {
 using namespace rules;
+
 namespace
 {
 struct Skill
@@ -14,6 +15,7 @@ struct Skill
     std::string_view id, label;
     unsigned ability;
 };
+
 // SRD 5.2.1 p. 9. The query also accepts another governing ability when a rule
 // calls for it; these are the ordinary character-sheet associations.
 constexpr std::array skills{Skill{"acrobatics", "Acrobatics", 1},
@@ -34,12 +36,14 @@ constexpr std::array skills{Skill{"acrobatics", "Acrobatics", 1},
                             Skill{"sleight_of_hand", "Sleight of Hand", 1},
                             Skill{"stealth", "Stealth", 1},
                             Skill{"survival", "Survival", 4}};
+
 struct ClassSkills
 {
     std::string_view id, label;
     unsigned count;
     std::vector<std::string_view> skills;
 };
+
 // SRD 5.2.1 Core Traits tables; an empty list denotes Bard's unrestricted list.
 const std::array class_skills{
     ClassSkills{
@@ -99,11 +103,13 @@ enum class ToolKind
     instrument,
     gaming
 };
+
 struct Tool
 {
     std::string_view id, label;
     ToolKind kind;
 };
+
 // SRD 5.2.1 p. 94: each instrument variant is a separate proficiency.
 constexpr std::array tools{
     Tool{"dice", "Dice", ToolKind::gaming},
@@ -142,11 +148,13 @@ constexpr std::array tools{
 constexpr std::string_view soldier_gaming = "background:soldier:gaming_set";
 constexpr std::string_view monk_tools = "class:monk:tools";
 constexpr std::string_view bard_instruments = "class:bard:instruments";
+
 struct Language
 {
     std::string_view id, label;
     bool standard;
 };
+
 constexpr std::array languages{Language{"common", "Common", true},
                                Language{"common_sign_language", "Common Sign Language", true},
                                Language{"draconic", "Draconic", true},
@@ -168,20 +176,24 @@ constexpr std::array languages{Language{"common", "Common", true},
                                Language{"undercommon", "Undercommon", false}};
 constexpr std::string_view origin = "origin:languages", rogue = "class:rogue",
                            expertise = "class:rogue:expertise", cant = "class:rogue:thieves_cant";
+
 void require(bool ok)
 {
     if (!ok)
         throw std::runtime_error("Invalid training choices or grant sources");
 }
+
 int modifier(int score)
 {
     return score < 10 ? (score - 11) / 2 : (score - 10) / 2;
 }
+
 int proficiency(unsigned level)
 {
     require(level >= 1 && level <= 20);
     return 2 + int((level - 1) / 4);
 }
+
 bool source(std::span<const FeatureGrant> grants, std::string_view id)
 {
     return std::any_of(grants.begin(), grants.end(),
@@ -190,6 +202,7 @@ bool source(std::span<const FeatureGrant> grants, std::string_view id)
                            return g.id == id;
                        });
 }
+
 std::vector<FeatureGrant> fixed(std::string_view klass, std::string_view background,
                                 TrainingPolicy policy)
 {
@@ -215,12 +228,14 @@ std::vector<FeatureGrant> fixed(std::string_view klass, std::string_view backgro
     }
     return result;
 }
+
 const std::vector<std::string> &selected(const TrainingChoices &choices, std::string_view id)
 {
     static const std::vector<std::string> empty;
     const auto found = choices.find(std::string(id));
     return found == choices.end() ? empty : found->second;
 }
+
 std::vector<CreationChoice> language_options(bool rare)
 {
     std::vector<CreationChoice> result;
@@ -229,6 +244,7 @@ std::vector<CreationChoice> language_options(bool rare)
             result.push_back({std::string(l.id), std::string(l.label), {}});
     return result;
 }
+
 void add_choices(std::vector<FeatureGrant> &grants, const TrainingChoices &choices,
                  const TrainingChoiceGroup &group, std::string_view prefix)
 {
@@ -245,6 +261,7 @@ void add_choices(std::vector<FeatureGrant> &grants, const TrainingChoices &choic
         grants.push_back({std::string(prefix) + value, group.id, 1, {}});
     }
 }
+
 std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_view background,
                                          const TrainingChoices &choices, TrainingPolicy policy)
 {
@@ -325,6 +342,7 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
     }
     return result;
 }
+
 std::vector<FeatureGrant> matching(std::span<const FeatureGrant> grants, std::string_view id,
                                    std::string_view extra = {})
 {
@@ -334,6 +352,7 @@ std::vector<FeatureGrant> matching(std::span<const FeatureGrant> grants, std::st
             result.push_back(g);
     return result;
 }
+
 AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
                                     const std::array<int, 6> &scores, unsigned level,
                                     unsigned ability, std::string_view skill, std::string_view tool)
@@ -381,11 +400,13 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
     return result;
 }
 } // namespace
+
 bool is_training_grant(const FeatureGrant &grant)
 {
     return grant.id.starts_with("skill:") || grant.id.starts_with("tool:") ||
            grant.id.starts_with("expertise:") || grant.id.starts_with("language:");
 }
+
 std::vector<FeatureGrant> without_training(std::span<const FeatureGrant> grants)
 {
     std::vector<FeatureGrant> result;
@@ -394,6 +415,7 @@ std::vector<FeatureGrant> without_training(std::span<const FeatureGrant> grants)
             result.push_back(g);
     return result;
 }
+
 TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
 {
     TrainingChoiceGroup group{"class:wizard:scholar", "Scholar Expertise", 1, {}};
@@ -405,11 +427,13 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
             group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
     return group;
 }
+
 std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft)
 {
     return options(draft.character_class, draft.background, draft.training,
                    TrainingPolicy::soldier_gaming);
 }
+
 std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_view background,
                                           const TrainingChoices &choices, TrainingPolicy policy)
 {
@@ -433,6 +457,7 @@ std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_vi
                                                          : "language:");
     return result;
 }
+
 TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::string_view klass,
                                  std::string_view background, TrainingPolicy policy)
 {
@@ -489,6 +514,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     require(actual == expected);
     return choices;
 }
+
 TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::string_view klass,
                                  std::string_view background, unsigned level,
                                  const std::array<int, 6> &scores, TrainingPolicy policy)
@@ -520,6 +546,7 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
                                         matching(grants, "language:" + std::string(l.id))});
     return result;
 }
+
 AbilityCheckModifier ability_check(std::span<const FeatureGrant> grants, std::string_view klass,
                                    std::string_view background, unsigned level,
                                    const std::array<int, 6> &scores, unsigned ability,

@@ -6,14 +6,17 @@
 #include <queue>
 
 using namespace opengold::por;
+
 namespace
 {
 using Bytes = std::vector<std::uint8_t>;
+
 void check(bool ok, const char *message)
 {
     if (!ok)
         throw std::runtime_error(message);
 }
+
 std::shared_ptr<const EclProgram> program(Bytes body)
 {
     Bytes record{0, 0};
@@ -22,6 +25,7 @@ std::shared_ptr<const EclProgram> program(Bytes body)
     record.insert(record.end(), body.begin(), body.end());
     return std::make_shared<const EclProgram>(EclProgram::decode(record, "synthetic tour"));
 }
+
 void step_to_prompt(RolfTourSession &tour)
 {
     for (int n = 0; n < 500 && tour.snapshot().phase == TourPhase::running; ++n)
@@ -29,6 +33,7 @@ void step_to_prompt(RolfTourSession &tour)
     check(tour.snapshot().phase != TourPhase::faulted, tour.snapshot().diagnostic.c_str());
     check(tour.snapshot().phase != TourPhase::running, "Host must yield a prompt or finish");
 }
+
 void wall_art_tests()
 {
     Bytes picture_record(17 + 8 * 4, 0);
@@ -102,6 +107,7 @@ void wall_art_tests()
     check(compose_exploration_view(empty, *art, 0, 0, 3).rgba == background.rgba,
           "Door interaction bits do not fabricate door artwork at map boundaries");
 }
+
 void fog_visibility_tests()
 {
     WallTiles tiles(2);
@@ -195,6 +201,7 @@ void fog_visibility_tests()
     tour.advance(0);
     check(tour.snapshot().seen.count() == 1, "A new campaign clears previous map knowledge");
 }
+
 void shopping_tests()
 {
     // Tour exits at 9914; every normal entry invokes a generated shop event.
@@ -267,6 +274,7 @@ void shopping_tests()
               failure.snapshot().phase == TourPhase::completed,
           "Acknowledging unsupported event restores free exploration");
 }
+
 std::size_t peaceful_choice(const TourSnapshot &s)
 {
     for (const auto *safe : {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"})
@@ -275,6 +283,7 @@ std::size_t peaceful_choice(const TourSnapshot &s)
                 return n;
     return s.choices.size() - 1;
 }
+
 void settle_town(RolfTourSession &town, unsigned shop_x = 16, unsigned shop_y = 16,
                  unsigned visit_x = 16, unsigned visit_y = 16, bool *reached = nullptr)
 {
@@ -304,6 +313,7 @@ void settle_town(RolfTourSession &town, unsigned shop_x = 16, unsigned shop_y = 
     }
     check(false, "Town event exceeded bounded continuation count");
 }
+
 bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
 {
     constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
@@ -361,6 +371,7 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
     }
     return false;
 }
+
 void installed_town(const RolfTourSession &finished)
 {
     // Reach every numbered town location through actual movement and doors.
@@ -424,6 +435,7 @@ void installed_town(const RolfTourSession &finished)
         settle_town(town);
     }
 }
+
 void synthetic()
 {
     const auto p =
@@ -490,6 +502,7 @@ void synthetic()
     check(unsupported.snapshot().phase == TourPhase::faulted,
           "Unsupported services stop with diagnostics");
 }
+
 void installed(const char *directory)
 {
     auto tour = RolfTourSession::load(directory);
@@ -526,6 +539,7 @@ void installed(const char *directory)
     installed_town(tour);
 }
 } // namespace
+
 int main()
 {
     try

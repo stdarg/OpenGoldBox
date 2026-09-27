@@ -1,6 +1,7 @@
 #include "spell_choice_controls.h"
 #include <godot_cpp/classes/input_event_key.hpp>
 using namespace godot;
+
 void CharacterCreationView::setup_spellbook()
 {
     auto *button =
@@ -16,6 +17,7 @@ void CharacterCreationView::setup_spellbook()
         w->get_node<Control>(name)->hide();
     w->get_node<ScrollContainer>("Choices")->set_size(Vector2(652, 390));
 }
+
 void CharacterCreationView::open_spellbook()
 {
     if (!campaign_ || campaign_->in_combat() || roster_index_ >= campaign_->state().roster.size())
@@ -27,6 +29,7 @@ void CharacterCreationView::open_spellbook()
     w->popup_centered();
     w->get_node<Button>("Cancel")->grab_focus();
 }
+
 void CharacterCreationView::refresh_spellbook()
 {
     if (!spellbook_member_)
@@ -51,12 +54,14 @@ void CharacterCreationView::refresh_spellbook()
         w->get_node<Label>("Error")->set_text(review_text(e.what()));
     }
 }
+
 void CharacterCreationView::spellbook_toggled(bool selected, String group, String option)
 {
     presentation::toggle_spell(spellbook_choice_, selected, group.utf8().get_data(),
                                option.utf8().get_data());
     refresh_spellbook();
 }
+
 void CharacterCreationView::apply_spellbook()
 {
     try
@@ -70,6 +75,7 @@ void CharacterCreationView::apply_spellbook()
         get_node<Label>("SpellbookDialog/Error")->set_text(review_text(e.what()));
     }
 }
+
 void CharacterCreationView::close_spellbook()
 {
     get_node<Window>("SpellbookDialog")->hide();
@@ -77,6 +83,7 @@ void CharacterCreationView::close_spellbook()
     spellbook_choice_ = {};
     get_node<Button>("PartyPanel/Spellbook")->grab_focus();
 }
+
 void CharacterCreationView::spellbook_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;

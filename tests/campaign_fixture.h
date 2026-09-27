@@ -6,6 +6,7 @@
 #include <sstream>
 #include <regex>
 #include <stdexcept>
+
 namespace opengold::test
 {
 // Independent expected migration: insert the one fixed level-one Wizard grant
@@ -82,6 +83,7 @@ inline std::string with_arcane_recovery_grants(std::string body)
     }
     return body;
 }
+
 // Add independently specified fixed background packages to authored campaign
 // fixtures. Locate each draft's background and its following grant ledger;
 // never invoke current grant generation or the production save decoder.
@@ -185,6 +187,7 @@ inline std::string with_background_training_grants(std::string body, unsigned pa
     }
     return body;
 }
+
 // Add only the fixed Druid grant after Common, preserving all other bytes.
 inline std::string with_druid_herbalism_grants(std::string body)
 {
@@ -268,6 +271,7 @@ inline std::string with_druid_herbalism_grants(std::string body)
     }
     return body;
 }
+
 // One fixed level-one Sneak grant before species/training; other bytes preserved.
 inline std::string with_sneak_attack_grants(std::string body)
 {
@@ -358,6 +362,7 @@ inline std::string with_sneak_attack_grants(std::string body)
     }
     return body;
 }
+
 // Independently add the three fixed Champion grants to normalized v11+ fixture
 // bodies. Read attained level from the documented draft/appearance prefix, not
 // from production replay or from the current result being compared.
@@ -469,6 +474,7 @@ inline std::string with_champion_grants(std::string body)
     }
     return body;
 }
+
 // The fixture author supplies one attained-level decision per Fighter ledger.
 // Add fixed level-two grants, then independently migrate Champion entitlements.
 inline std::string with_action_surge_grants(std::string body, std::initializer_list<bool> eligible,
@@ -565,11 +571,13 @@ inline std::string with_action_surge_grants(std::string body, std::initializer_l
         throw std::runtime_error("Missing frozen Fighter ledger");
     return with_arcane_recovery_grants(with_champion_grants(std::move(body)));
 }
+
 // Post-Action-Surge fixtures already carry the level-two eligibility evidence.
 inline std::string with_tactical_mind_grants(std::string body)
 {
     return with_action_surge_grants(std::move(body), {}, true);
 }
+
 // v11 adds one absent optional-cantrip field to each v9/v10 creation draft.
 // Locate drafts by their independently known identity grammar, then skip the
 // published draft fields. Preserve every other byte of these frozen bodies.
@@ -611,6 +619,7 @@ inline std::string with_legacy_cantrip_choices(std::string body)
     }
     return body;
 }
+
 // Independent expected migration for authored Wizard fixtures: their ledger
 // begins with Spellcasting, optionally preceded by Soldier Savage Attacker. Add only the two known
 // old preset selections, leaving all other campaign bytes untouched. No save decoder or current

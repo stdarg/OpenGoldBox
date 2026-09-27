@@ -12,6 +12,7 @@ class ScreenshotService : public godot::Node
     void _ready() override;
     void _process(double delta) override;
     bool request_capture();
+
     godot::String get_directory() const
     {
         return directory_;

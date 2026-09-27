@@ -66,6 +66,7 @@ void RolfTourView::setup_rest()
     button("Recover", N_("Recover slots"), Rect2(482, 446, 214, 36),
            callable_mp(this, &RolfTourView::rest_recover));
 }
+
 void RolfTourView::camp()
 {
     if (!campaign_ || !session_ || !session_->can_leave() || campaign_->in_combat())
@@ -77,6 +78,7 @@ void RolfTourView::camp()
     w->popup_centered();
     w->get_node<OptionButton>("Kind")->grab_focus();
 }
+
 void RolfTourView::rest_selected(std::int64_t)
 {
     auto *list = get_node<Window>("RestDialog")->get_node<ItemList>("Members");
@@ -86,6 +88,7 @@ void RolfTourView::rest_selected(std::int64_t)
             static_cast<unsigned>(static_cast<int64_t>(list->get_item_metadata(selected[0])));
     refresh_rest();
 }
+
 void RolfTourView::refresh_rest()
 {
     refresh_rest_spells();
@@ -226,6 +229,7 @@ void RolfTourView::refresh_rest()
         list->grab_focus();
     }
 }
+
 void RolfTourView::rest_start()
 {
     try
@@ -247,6 +251,7 @@ void RolfTourView::rest_start()
         get_node<Window>("RestDialog")->popup_centered();
     }
 }
+
 void RolfTourView::rest_spend()
 {
     try
@@ -269,6 +274,7 @@ void RolfTourView::rest_spend()
         refresh_rest();
     }
 }
+
 void RolfTourView::rest_recover()
 {
     try
@@ -296,6 +302,7 @@ void RolfTourView::rest_recover()
         refresh_rest();
     }
 }
+
 void RolfTourView::rest_finish()
 {
     try
@@ -320,6 +327,7 @@ void RolfTourView::rest_finish()
         refresh_rest();
     }
 }
+
 void RolfTourView::rest_resume()
 {
     try
@@ -337,12 +345,14 @@ void RolfTourView::rest_resume()
         refresh_rest();
     }
 }
+
 void RolfTourView::rest_save()
 {
     rest_save_open_ = true;
     get_node<Window>("RestDialog")->hide();
     request_save(true);
 }
+
 void RolfTourView::rest_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
@@ -355,6 +365,7 @@ void RolfTourView::rest_input(const Ref<InputEvent> &event)
 
 // Runtime acceptance drives the same signals and controls as a player.
 #include "opengold/campaign_save.h"
+
 void RolfTourView::check_rest_controls()
 {
     try
@@ -869,12 +880,14 @@ void RolfTourView::refresh_rest_spells()
         w->get_node<Button>("Cancel")->grab_focus();
     }
 }
+
 void RolfTourView::rest_spell_toggled(bool selected, String group, String option)
 {
     presentation::toggle_spell(rest_spell_choice_, selected, group.utf8().get_data(),
                                option.utf8().get_data());
     refresh_rest_spells();
 }
+
 void RolfTourView::rest_spell_replaced(std::int64_t)
 {
     auto *w = get_node<Window>("RestSpells");
@@ -884,6 +897,7 @@ void RolfTourView::rest_spell_replaced(std::int64_t)
     rest_spell_choice_.replacement = next.utf8().get_data();
     refresh_rest_spells();
 }
+
 void RolfTourView::rest_spell_apply()
 {
     try
@@ -899,6 +913,7 @@ void RolfTourView::rest_spell_apply()
         get_node<Label>("RestSpells/Error")->set_text(rest_text(e.what()));
     }
 }
+
 void RolfTourView::rest_spell_keep()
 {
     try
@@ -915,6 +930,7 @@ void RolfTourView::rest_spell_keep()
         get_node<Label>("RestSpells/Error")->set_text(rest_text(e.what()));
     }
 }
+
 void RolfTourView::rest_spell_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;

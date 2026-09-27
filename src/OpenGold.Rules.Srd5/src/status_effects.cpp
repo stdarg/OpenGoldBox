@@ -21,6 +21,7 @@ template <class T> void unsigned_field(std::istream &input, T &value)
         throw std::runtime_error("Invalid unsigned effect field");
 }
 } // namespace
+
 int d20(RollModifiers modifiers, std::uint64_t &rng)
 {
     const int first = roll_die(rng, 20), mode = modifiers.mode();
@@ -29,6 +30,7 @@ int d20(RollModifiers modifiers, std::uint64_t &rng)
     const int second = roll_die(rng, 20);
     return mode > 0 ? std::max(first, second) : std::min(first, second);
 }
+
 SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifiers,
                         std::uint64_t &rng)
 {
@@ -37,6 +39,7 @@ SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifi
     // attack rules do not apply here. Widen before adding user-supplied values.
     return {ability, natural, bonus, dc, modifiers.mode(), std::int64_t(natural) + bonus >= dc};
 }
+
 std::array<unsigned, 2> class_save_proficiencies(std::string_view name)
 {
     constexpr std::array<std::string_view, 12> names{"Barbarian", "Bard",     "Cleric",  "Druid",
@@ -59,6 +62,7 @@ std::array<unsigned, 2> class_save_proficiencies(std::string_view name)
         throw std::runtime_error("Unknown saving throw class");
     return saves[found - names.begin()];
 }
+
 bool healing_blocked(const EffectState &effects, std::uint64_t after_ms)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
@@ -67,6 +71,7 @@ bool healing_blocked(const EffectState &effects, std::uint64_t after_ms)
                            return e.kind == EffectKind::chill_touch && e.remaining_ms > after_ms;
                        });
 }
+
 void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                        std::string name, unsigned duration_ms)
 {
@@ -76,6 +81,7 @@ void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityI
     effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
                               EffectKind::chill_touch, 0, duration_ms, 0});
 }
+
 bool opportunity_blocked(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
@@ -84,6 +90,7 @@ bool opportunity_blocked(const EffectState &effects)
                            return e.kind == EffectKind::shocking_grasp;
                        });
 }
+
 void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                           std::string name, unsigned duration_ms)
 {
@@ -93,6 +100,7 @@ void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::Enti
     effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
                               EffectKind::shocking_grasp, 0, duration_ms, 0});
 }
+
 int speed_penalty(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
@@ -103,6 +111,7 @@ int speed_penalty(const EffectState &effects)
                ? 10
                : 0;
 }
+
 void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                         std::string name, unsigned duration_ms)
 {
@@ -112,6 +121,7 @@ void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::Entity
     effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
                               EffectKind::ray_of_frost, 0, duration_ms, 0});
 }
+
 bool blinded(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
@@ -120,11 +130,13 @@ bool blinded(const EffectState &effects)
                            return e.kind == EffectKind::blindness;
                        });
 }
+
 bool can_apply(const EffectState &effects)
 {
     return effects.active.size() < effect_limit &&
            effects.next_id < std::numeric_limits<std::uint64_t>::max();
 }
+
 void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                      std::string name, int dc, unsigned first_save_ms)
 {
@@ -134,15 +146,18 @@ void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId 
     effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
                               EffectKind::blindness, dc, 60000, first_save_ms});
 }
+
 RollModifiers saving_modifiers(Ability ability, bool armor, bool dodge)
 {
     return {dodge && ability == Ability::dexterity,
             armor && (ability == Ability::strength || ability == Ability::dexterity)};
 }
+
 RollModifiers attack_modifiers(bool attacker_blind, bool target_blind, bool dodging, bool other)
 {
     return {target_blind, attacker_blind || (dodging && !target_blind) || other};
 }
+
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,
                     std::uint64_t &rng, const EffectObserver &observe)
 {
@@ -206,6 +221,7 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
         }
     }
 }
+
 void write_effects(std::ostream &out, const EffectState &effects)
 {
     out << (healing_blocked(effects)            ? "FX5 "
@@ -221,6 +237,7 @@ void write_effects(std::ostream &out, const EffectState &effects)
     if (healing_blocked(effects) || effects.sleeping || effects.prone)
         out << ' ' << effects.sleeping << ' ' << effects.prone;
 }
+
 EffectState read_effects(std::istream &in)
 {
     std::string magic;

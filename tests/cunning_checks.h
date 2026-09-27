@@ -8,6 +8,7 @@ Command command(const CombatSession &c, std::string_view verb)
             return v;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &v : c.legal_commands())
@@ -15,10 +16,12 @@ bool has(const CombatSession &c, std::string_view verb)
             return true;
     return false;
 }
+
 void act(CombatSession &c, std::string_view verb)
 {
     check(c.submit(command(c, verb)), "Cunning command accepted");
 }
+
 CombatantView unit(const CombatSession &c)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -26,6 +29,7 @@ CombatantView unit(const CombatSession &c)
             return a;
     throw std::runtime_error("Missing Rogue");
 }
+
 auto battle(const Character &h)
 {
     auto rules = module();
@@ -43,6 +47,7 @@ auto battle(const Character &h)
         act(*c, "end");
     return c;
 }
+
 void run()
 {
     auto rules = module();

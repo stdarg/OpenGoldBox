@@ -8,12 +8,14 @@
 #include <set>
 #include <stdexcept>
 using namespace godot;
+
 namespace
 {
 String gs(std::string_view s)
 {
     return String::utf8(s.data(), s.size());
 }
+
 std::string normalized(std::string s)
 {
     for (auto &c : s)
@@ -30,6 +32,7 @@ std::string normalized(std::string s)
     return s;
 }
 } // namespace
+
 void CharacterCreationView::load_portraits()
 {
     Ref<JSON> json;
@@ -82,6 +85,7 @@ void CharacterCreationView::load_portraits()
                          callable_mp(this, &CharacterCreationView::portrait_filter_selected));
     }
 }
+
 std::string
 CharacterCreationView::recommended_portrait(const opengold::rules::CharacterDraft &draft) const
 {
@@ -100,6 +104,7 @@ CharacterCreationView::recommended_portrait(const opengold::rules::CharacterDraf
     }
     return best->filename;
 }
+
 Ref<ImageTexture>
 CharacterCreationView::portrait_texture(const opengold::por::CharacterAppearance &appearance,
                                         const opengold::rules::CharacterDraft &draft)
@@ -121,6 +126,7 @@ CharacterCreationView::portrait_texture(const opengold::por::CharacterAppearance
     portrait_textures_.emplace(filename, result);
     return result;
 }
+
 void CharacterCreationView::refresh_portraits()
 {
     filtered_portraits_.clear();
@@ -155,11 +161,13 @@ void CharacterCreationView::refresh_portraits()
                               std::to_string(filtered_portraits_.size()) +
                               " matching portraits. Filters do not change your character."));
 }
+
 void CharacterCreationView::portrait_filter_selected(std::int64_t)
 {
     if (!refreshing_)
         refresh();
 }
+
 void CharacterCreationView::portrait_part(int direction)
 {
     if (added_to_party_ || filtered_portraits_.empty())
@@ -169,6 +177,7 @@ void CharacterCreationView::portrait_part(int direction)
     portrait_selected(current < 0 ? (direction > 0 ? 0 : count - 1)
                                   : (current + direction + count) % count);
 }
+
 void CharacterCreationView::portrait_selected(std::int64_t index)
 {
     if (refreshing_ || added_to_party_)

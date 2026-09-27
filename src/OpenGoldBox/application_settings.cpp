@@ -10,9 +10,11 @@
 #include <optional>
 
 using namespace godot;
+
 namespace
 {
 std::optional<String> confirmed_path, confirmed_language;
+
 String read(const char *section, const char *key)
 {
     Ref<ConfigFile> config;
@@ -22,6 +24,7 @@ String read(const char *section, const char *key)
     const Variant value = config->get_value(section, key, String());
     return value.get_type() == Variant::STRING ? String(value).strip_edges() : String();
 }
+
 bool save(const char *section, const char *key, const String &value)
 {
     Ref<ConfigFile> config;
@@ -42,6 +45,7 @@ bool save(const char *section, const char *key, const String &value)
     return false;
 }
 } // namespace
+
 namespace settings
 {
 bool flag(const char *name)
@@ -49,6 +53,7 @@ bool flag(const char *name)
     auto *os = OS::get_singleton();
     return os->get_cmdline_args().has(name) || os->get_cmdline_user_args().has(name);
 }
+
 String path()
 {
     auto *os = OS::get_singleton();
@@ -59,14 +64,17 @@ String path()
         return ProjectSettings::get_singleton()->globalize_path("user://settings.cfg");
     return os->get_executable_path().get_base_dir().path_join("settings.cfg");
 }
+
 String saved_game_path()
 {
     return read("game", "path");
 }
+
 String saved_language()
 {
     return read("interface", "language");
 }
+
 int combat_zoom_percent()
 {
     Ref<ConfigFile> config;
@@ -82,10 +90,12 @@ int combat_zoom_percent()
     return fallback.get_type() == Variant::INT ? std::clamp(static_cast<int>(fallback), 10, 1000)
                                                : 100;
 }
+
 bool valid_language(const String &locale)
 {
     return locale == "en" || locale == "es";
 }
+
 String game_path()
 {
     if (confirmed_path)
@@ -93,6 +103,7 @@ String game_path()
     const auto override = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR").strip_edges();
     return !flag("--reset-game-path") && !override.is_empty() ? override : saved_game_path();
 }
+
 String language()
 {
     if (confirmed_language)
@@ -106,6 +117,7 @@ String language()
         return saved;
     return OS::get_singleton()->get_locale_language().to_lower() == "es" ? "es" : "en";
 }
+
 bool save_game_path(const String &directory)
 {
     if (!save("game", "path", directory))
@@ -113,6 +125,7 @@ bool save_game_path(const String &directory)
     confirmed_path = directory;
     return true;
 }
+
 bool save_language(const String &locale)
 {
     if (!valid_language(locale) || !save("interface", "language", locale))
@@ -120,6 +133,7 @@ bool save_language(const String &locale)
     confirmed_language = locale;
     return true;
 }
+
 Validation validate_game_path(const String &directory)
 {
     Validation result;

@@ -14,6 +14,7 @@ namespace opengold
 {
 struct SaveCodec;
 }
+
 namespace opengold::por
 {
 struct PartyPose
@@ -32,6 +33,7 @@ enum class TourPhase
     combat,
     defeated
 };
+
 struct TownParty
 {
     std::string name{"Fighter"};
@@ -39,6 +41,7 @@ struct TownParty
     std::array<std::uint16_t, 7> wealth{0, 0, 0, 9999, 0, 0, 0};
     std::vector<Equipment> inventory;
 };
+
 struct PendingLoot
 {
     std::array<unsigned, 7> wealth{};
@@ -47,6 +50,7 @@ struct PendingLoot
     std::vector<unsigned> records;
     bool include_items{true};
 };
+
 struct PhlanResources
 {
     std::map<unsigned, std::shared_ptr<const EclProgram>> programs;
@@ -63,6 +67,7 @@ struct PhlanResources
     std::vector<std::uint8_t> combat_archive;
     std::vector<Image> terrain_art;
 };
+
 struct TourSnapshot
 {
     PartyPose pose;
@@ -104,10 +109,12 @@ class RolfTourSession
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party);
     // Attach an already validated replacement without restarting its restored VM.
     void attach_restored_party(std::shared_ptr<opengold::CampaignParty> party);
+
     [[nodiscard]] bool can_leave() const
     {
         return snapshot_.phase == TourPhase::completed;
     }
+
     void advance(double seconds);
     bool continue_dialogue(std::uint64_t ticket);
     bool choose(std::uint64_t ticket, std::size_t choice);
@@ -118,49 +125,61 @@ class RolfTourSession
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
     bool resume_camp();
+
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
     {
         return snapshot_;
     }
+
     [[nodiscard]] const GeoMap &map() const noexcept
     {
         return map_;
     }
+
     [[nodiscard]] const auto &sprites() const noexcept
     {
         return sprites_;
     }
+
     [[nodiscard]] const WallArtSet &wall_art() const noexcept
     {
         return wall_art_;
     }
+
     // Compose the current 3D view and remember its visible cells. Call only
     // when presenting exploration, not when an encounter picture replaces it.
     [[nodiscard]] Image observe_view();
+
     [[nodiscard]] const TownParty &party() const noexcept
     {
         return party_;
     }
+
     [[nodiscard]] const std::vector<Equipment> &shop_stock() const noexcept
     {
         return treasure_;
     }
+
     [[nodiscard]] const std::vector<std::string> &script_diagnostics() const noexcept
     {
         return diagnostics_;
     }
+
     [[nodiscard]] const std::optional<Image> &picture() const noexcept
     {
         return picture_;
     }
+
     [[nodiscard]] std::uint16_t script_variable(std::uint16_t address) const
     {
         return machine_.variable(address);
     }
+
     [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
     {
         return encounter_;
     }
+
     bool resolve_combat(const rules::Snapshot &outcome);
     // Reject a pending handoff before combat starts, using the event rollback path.
     // Commit player recovery choices while an encounter is waiting to start.

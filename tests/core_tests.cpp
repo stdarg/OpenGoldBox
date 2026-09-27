@@ -144,6 +144,7 @@ void decode_tests()
     }
 }
 } // namespace
+
 int main()
 {
     try

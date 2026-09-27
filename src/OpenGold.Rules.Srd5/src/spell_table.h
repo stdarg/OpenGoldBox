@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
 namespace opengold::srd5::detail
 {
 // SRD 5.2.1 spell definitions. One row per spell; behaviour lives in
@@ -255,6 +256,7 @@ inline std::vector<std::string> spells_from_mask(unsigned mask)
             result.emplace_back(spell.id);
     return result;
 }
+
 // Zero for a set that cannot be expressed as a mask, which is how the writer
 // decides it needs the explicit list.
 inline unsigned mask_from_spells(const std::vector<std::string> &ids)
@@ -269,10 +271,12 @@ inline unsigned mask_from_spells(const std::vector<std::string> &ids)
     }
     return mask;
 }
+
 inline bool knows_spell(const std::vector<std::string> &ids, std::string_view id)
 {
     return std::find(ids.begin(), ids.end(), id) != ids.end();
 }
+
 // Split a stored set by spell level. Unknown ids are dropped; callers that must
 // reject them validate with find_spell first.
 inline std::vector<std::string> spells_of_level(const std::vector<std::string> &ids, bool cantrips)

@@ -11,6 +11,7 @@
 using namespace opengold;
 using namespace opengold::rules;
 namespace fx = opengold::srd5::detail;
+
 namespace
 {
 void check(bool b, const char *message)
@@ -18,6 +19,7 @@ void check(bool b, const char *message)
     if (!b)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool failed = false;
@@ -31,11 +33,13 @@ template <class F> void rejects(F f)
     }
     check(failed, "Invalid sleep state accepted");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero(std::string klass = "fighter")
 {
     CharacterDraft d;
@@ -52,6 +56,7 @@ Character hero(std::string klass = "fighter")
         r = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
 }
+
 CombatantView unit(const CombatSession &s, EntityId id)
 {
     for (const auto &a : s.snapshot().combatants)
@@ -59,6 +64,7 @@ CombatantView unit(const CombatSession &s, EntityId id)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 Command command(const CombatSession &s, std::string_view verb, EntityId target = 0)
 {
     for (const auto &c : s.legal_commands())
@@ -66,12 +72,14 @@ Command command(const CombatSession &s, std::string_view verb, EntityId target =
             return c;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void turn(CombatSession &s, EntityId id)
 {
     for (unsigned n = 0; n < 20 && s.snapshot().actor != id; ++n)
         check(s.submit(command(s, "end")), "Advance fixture turn");
     check(s.snapshot().actor == id, "Requested conscious turn reached");
 }
+
 void codec()
 {
     fx::EffectState state;
@@ -103,6 +111,7 @@ void codec()
         check(output.str() == old, "Prior effect codecs retain exact continuation");
     }
 }
+
 void combat()
 {
     const auto rules = module();
@@ -172,6 +181,7 @@ void combat()
                        }),
           "Wake cannot reach through a blocked diagonal");
 }
+
 void damage_and_saves()
 {
     const auto rules = module();
@@ -234,6 +244,7 @@ void damage_and_saves()
     check(failed && !unit(*spell, 2).naturally_sleeping,
           "Unconscious automatically fails Dexterity; resulting damage wakes");
 }
+
 void prior_writer()
 {
     const auto rules = module();
@@ -261,6 +272,7 @@ void prior_writer()
     check(battle->save() == normalized(read("combat-v15-sleep-continued.save")),
           "Prior writer's next commands/resources/RNG remain byte-exact");
 }
+
 void held_items()
 {
     const auto rules = module();
@@ -401,6 +413,7 @@ void held_items()
     check(rules->restore(legacy->save())->save() == legacy->save(),
           "Legacy fall and new drop produce a valid continuation");
 }
+
 void campaign_item_handoff()
 {
     const auto rules = module();
@@ -466,6 +479,7 @@ void campaign_item_handoff()
               copy.state().detached_items.size() == 1,
           "Uncollected equipment persists without assumed automatic cleanup");
 }
+
 void recovery_posture()
 {
     // A legacy zero-HP record gains explicit posture only when it actually recovers.
@@ -483,6 +497,7 @@ void recovery_posture()
               "Adding Prone does not alter recovery RNG");
     }
 }
+
 void rest_ground_equipment()
 {
     const auto rules = module();
@@ -630,6 +645,7 @@ void rest_ground_equipment()
           "Camp-to-combat pickup retains physical item provenance");
     party.end_combat();
 }
+
 void safe_recovery()
 {
     const auto rules = module();
@@ -722,6 +738,7 @@ void safe_recovery()
                   "Safe collection cannot heal or revive an owner");
         }
 }
+
 void prior_equipment_formats()
 {
     const auto rules = module();
@@ -767,6 +784,7 @@ void movement()
           "Crawling reach uses exact weighted path cost");
 }
 } // namespace
+
 int main()
 {
     try

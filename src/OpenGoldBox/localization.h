@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 #include "opengold/message.h"
+
 namespace godot
 {
 class Node;

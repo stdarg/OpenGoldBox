@@ -28,24 +28,29 @@
 #include <stdexcept>
 
 using namespace godot;
+
 namespace
 {
 constexpr double tile_pixels = 24;
 constexpr unsigned player_count = 4;
 constexpr double goliath_height = 1.25;
 constexpr int min_zoom = 10, max_zoom = 1000;
+
 Color figure_color(unsigned index)
 {
     return Color(index < 2 ? "79d6d4" : index == 2 ? "e6c28a" : index == 3 ? "bb9be8" : "dd9874");
 }
+
 String gs(std::string_view value)
 {
     return String::utf8(value.data(), value.size());
 }
+
 String dimensions(Vector2 size)
 {
     return String::num(size.x, 1) + gs(" × ") + String::num(size.y, 1);
 }
+
 Ref<StyleBoxFlat> swatch(Color color, Color border, int width)
 {
     Ref<StyleBoxFlat> box;
@@ -57,6 +62,7 @@ Ref<StyleBoxFlat> swatch(Color color, Color border, int width)
     box->set_content_margin_all(6);
     return box;
 }
+
 void color_button(Button &button, unsigned index, bool selected)
 {
     const auto color = presentation::character_color(index);
@@ -70,6 +76,7 @@ void color_button(Button &button, unsigned index, bool selected)
          {"font_color", "font_hover_color", "font_pressed_color", "font_focus_color"})
         button.add_theme_color_override(state, foreground);
 }
+
 // Original archives remain local. RAII owns both the file and decoded buffers.
 std::vector<std::uint8_t> archive(const std::filesystem::path &directory, std::string_view wanted)
 {
@@ -101,6 +108,7 @@ std::vector<std::uint8_t> archive(const std::filesystem::path &directory, std::s
         throw std::runtime_error("Cannot read art archive: " + std::string(wanted));
     return bytes;
 }
+
 Ref<ImageTexture> icon(const std::vector<std::uint8_t> &bytes, unsigned record, unsigned frame = 0)
 {
     auto decoded = opengold::decode_ega_combat_icon(bytes, record, frame);
@@ -117,6 +125,7 @@ void CombatSpriteDemo::_bind_methods()
     ADD_SIGNAL(MethodInfo("capture_completed", PropertyInfo(Variant::STRING, "path"),
                           PropertyInfo(Variant::STRING, "error")));
 }
+
 void CombatSpriteDemo::_ready()
 {
     set_texture_filter(TEXTURE_FILTER_NEAREST);
@@ -143,6 +152,7 @@ void CombatSpriteDemo::_ready()
                 button->set_disabled(true);
     }
 }
+
 void CombatSpriteDemo::create_controls()
 {
     const auto label =
@@ -226,6 +236,7 @@ void CombatSpriteDemo::create_controls()
     sizes->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
     label("Status", "100% = original pixels • Scrollbars / wheel: pan • Ctrl+S: screenshot");
 }
+
 void CombatSpriteDemo::load_art()
 {
     auto configured = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
@@ -285,6 +296,7 @@ void CombatSpriteDemo::load_art()
         sprite->set_mouse_filter(MOUSE_FILTER_PASS);
     }
 }
+
 void CombatSpriteDemo::refresh_players()
 {
     for (unsigned variant = 0; variant < player_count; ++variant)
@@ -301,6 +313,7 @@ void CombatSpriteDemo::refresh_players()
     refresh_colors();
     refresh_figures();
 }
+
 void CombatSpriteDemo::refresh_colors()
 {
     auto small = appearance_;
@@ -342,6 +355,7 @@ void CombatSpriteDemo::refresh_colors()
         color_button(*get_node<Button>(gs("Palette" + std::to_string(index))), index,
                      appearance_.colors[color_bank_][color_part_] == index);
 }
+
 void CombatSpriteDemo::refresh_figures()
 {
     const double scale = zoom_ / 100.0;
@@ -390,6 +404,7 @@ void CombatSpriteDemo::refresh_figures()
     get_node<RichTextLabel>("Sizes")->set_text(sizes);
     get_node<Control>("BattlefieldScroll/Canvas")->queue_redraw();
 }
+
 void CombatSpriteDemo::layout()
 {
     if (!ready_)
@@ -444,6 +459,7 @@ void CombatSpriteDemo::layout()
         refresh_figures();
     }
 }
+
 void CombatSpriteDemo::_notification(int what)
 {
     if (what == NOTIFICATION_RESIZED && ready_)
@@ -452,10 +468,12 @@ void CombatSpriteDemo::_notification(int what)
         queue_redraw();
     }
 }
+
 void CombatSpriteDemo::_draw()
 {
     draw_rect(Rect2({}, get_size()), Color("121a20"));
 }
+
 void CombatSpriteDemo::draw_map()
 {
     if (!loaded_)
@@ -499,6 +517,7 @@ void CombatSpriteDemo::draw_map()
         }
     }
 }
+
 void CombatSpriteDemo::zoom_by(int amount)
 {
     if (!loaded_)
@@ -511,6 +530,7 @@ void CombatSpriteDemo::zoom_by(int amount)
     zoom_ = std::clamp(zoom_ + amount, min_zoom, max_zoom);
     layout();
 }
+
 void CombatSpriteDemo::change_part(int part, int direction)
 {
     if (!loaded_)
@@ -520,6 +540,7 @@ void CombatSpriteDemo::change_part(int part, int direction)
     index = (static_cast<int>(index) + direction + count) % count;
     refresh_players();
 }
+
 void CombatSpriteDemo::select_color(int bank, int part)
 {
     if (loaded_)
@@ -529,6 +550,7 @@ void CombatSpriteDemo::select_color(int bank, int part)
         refresh_colors();
     }
 }
+
 void CombatSpriteDemo::recolor(int index)
 {
     if (loaded_)
@@ -537,6 +559,7 @@ void CombatSpriteDemo::recolor(int index)
         refresh_players();
     }
 }
+
 void CombatSpriteDemo::_process(double delta)
 {
     if (!loaded_ || !std::isfinite(delta) || delta < 0)
@@ -574,6 +597,7 @@ void CombatSpriteDemo::_input(const Ref<InputEvent> &event)
         request_capture();
     }
 }
+
 void CombatSpriteDemo::request_capture()
 {
     if (capture_pending_)
@@ -587,6 +611,7 @@ void CombatSpriteDemo::request_capture()
     RenderingServer::get_singleton()->connect(
         "frame_post_draw", callable_mp(this, &CombatSpriteDemo::capture_frame), CONNECT_ONE_SHOT);
 }
+
 void CombatSpriteDemo::capture_frame()
 {
     capture_pending_ = false;

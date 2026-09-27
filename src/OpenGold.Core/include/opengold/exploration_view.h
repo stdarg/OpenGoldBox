@@ -12,6 +12,7 @@ struct ExplorationView
     Image image;
     std::bitset<GeoMap::width * GeoMap::height> visible;
 };
+
 // Visibility comes from the same clipped, occluded wall pixels and floor
 // projection as the image. The caller records it only when showing this view.
 [[nodiscard]] ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art,

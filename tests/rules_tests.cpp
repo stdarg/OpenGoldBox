@@ -12,6 +12,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool value, const char *message)
@@ -19,6 +20,7 @@ void check(bool value, const char *message)
     if (!value)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F &&f, const char *message)
 {
     bool failed = false;
@@ -32,10 +34,12 @@ template <class F> void rejects(F &&f, const char *message)
     }
     check(failed, message);
 }
+
 std::filesystem::path pack()
 {
     return std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules";
 }
+
 Encounter duel(std::string profile = "vanguard")
 {
     Battlefield b{12, 9, std::vector<std::uint8_t>(108, 0)};
@@ -43,6 +47,7 @@ Encounter duel(std::string profile = "vanguard")
     b.terrain[2 * 12 + 1] = 2;
     return {b, {{1, profile, "Hero", 0, {2, 2}}, {2, "bandit", "Bandit", 1, {3, 2}}}};
 }
+
 Command command(const CombatSession &session, std::string_view verb, Cell cell = {})
 {
     const auto offered = session.legal_commands();
@@ -55,6 +60,7 @@ Command command(const CombatSession &session, std::string_view verb, Cell cell =
         throw std::runtime_error("Missing command: " + std::string(verb));
     return *it;
 }
+
 std::unique_ptr<CombatSession> hero_first(const RulesModule &module, Encounter encounter)
 {
     for (unsigned seed = 0; seed < 100; ++seed)
@@ -65,6 +71,7 @@ std::unique_ptr<CombatSession> hero_first(const RulesModule &module, Encounter e
     }
     throw std::runtime_error("No hero-first seed");
 }
+
 std::unique_ptr<CombatSession> actor_first(const RulesModule &module, Encounter encounter,
                                            EntityId id)
 {
@@ -76,11 +83,13 @@ std::unique_ptr<CombatSession> actor_first(const RulesModule &module, Encounter 
     }
     throw std::runtime_error("No matching first actor seed");
 }
+
 std::unique_ptr<CombatSession> hero_first(const RulesModule &module,
                                           std::string profile = "vanguard")
 {
     return hero_first(module, duel(profile));
 }
+
 bool offers(const CombatSession &session, std::string_view verb)
 {
     const auto commands = session.legal_commands();
@@ -90,6 +99,7 @@ bool offers(const CombatSession &session, std::string_view verb)
                            return c.verb == verb;
                        });
 }
+
 CombatantView unit(const CombatSession &session, EntityId id)
 {
     const auto state = session.snapshot();
@@ -98,6 +108,7 @@ CombatantView unit(const CombatSession &session, EntityId id)
             return a;
     throw std::runtime_error("Missing combatant");
 }
+
 void next_round(CombatSession &session)
 {
     const auto round = session.snapshot().round;
@@ -106,6 +117,7 @@ void next_round(CombatSession &session)
         check(session.submit(command(session, "end")), "End turn accepted");
     } while (session.snapshot().round == round || session.snapshot().actor != 1);
 }
+
 void turn_budget_tests()
 {
     auto module = srd5::load(pack());
@@ -295,6 +307,7 @@ void turn_budget_tests()
         check(session->snapshot().actor != 2, "Enemy turn cannot stall after its attack");
     }
 }
+
 void boundary_tests()
 {
     auto module = srd5::load(pack());
@@ -511,6 +524,7 @@ void boundary_tests()
     check(!session->snapshot().combatants.empty(),
           "Session owns shared immutable content lifetime");
 }
+
 void mechanics_tests()
 {
     auto legacy_rules = srd5::load(pack());
@@ -747,6 +761,7 @@ void mechanics_tests()
     }
     check(tested, "Exercised all-unconscious party defeat flow");
 }
+
 void death_save_turn_entry_tests()
 {
     auto module = srd5::load(pack());
@@ -861,6 +876,7 @@ void death_save_turn_entry_tests()
               unit(*migrated, 1).persistent.resources.starts_with("SRD5 1 0 0 0 0 1 0 "),
           "Older stable resource state is normalized without rolling or refilling resources");
 }
+
 void allied_transit_tests()
 {
     auto module = srd5::load(pack());
@@ -1006,6 +1022,7 @@ void allied_transit_tests()
     check(recovered && died && natural_recovery,
           "Exercise healing, death and natural-20 recovery after interruption on an ally");
 }
+
 void opportunity_migration_tests()
 {
     auto module = srd5::load(pack());
@@ -1157,6 +1174,7 @@ void opportunity_migration_tests()
         "Invalid training restore rejects");
     check(demo.save_combat() == valid, "Failed migrated restore preserves the live combat");
 }
+
 void checkpoint_validation_tests()
 {
     auto module = srd5::load(pack());
@@ -1339,6 +1357,7 @@ void checkpoint_validation_tests()
     check(unit(*session, 1).cell == Cell{4, 1} && unit(*session, 1).movement_feet == 10,
           "Only the remaining route suffix spends movement after restore");
 }
+
 void installed()
 {
     const auto directory = std::getenv("OPENGOLD_GAME_DIR");
@@ -1377,8 +1396,10 @@ void installed()
     std::cout << "Original Slums event completed with real rules combat: "
               << (outcome == Outcome::victory ? "victory" : "defeat") << ".\n";
 }
+
 #include "unconscious_transit_checks.h"
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

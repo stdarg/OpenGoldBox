@@ -11,11 +11,13 @@ std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::st
 rules::FeatureGrant advancement_grant(std::string_view klass, unsigned level,
                                       const rules::AdvancementChoice &choice);
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id);
+
 struct GrantEffects
 {
     unsigned feats{}; // Internal combat mask: Defense, Savage Attacker, Archery.
     std::array<int, 6> abilities{};
 };
+
 GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::string_view klass,
                              std::string_view race, std::string_view background, unsigned level,
                              bool damage_traits = true, bool rush_trait = true,

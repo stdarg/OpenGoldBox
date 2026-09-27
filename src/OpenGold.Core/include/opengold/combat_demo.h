@@ -6,6 +6,7 @@
 #include "opengold/formats.h"
 #include "opengold/campaign_party.h"
 #include "opengold/dungeon_battlefield.h"
+
 namespace opengold
 {
 struct CombatArt
@@ -15,6 +16,7 @@ struct CombatArt
     std::optional<Image> action;
     std::string missing_combination;
 };
+
 struct CampaignEncounter
 {
     por::DungeonBattlefield field;
@@ -26,6 +28,7 @@ struct CampaignEncounter
     // Optional authored formation. Empty means the usual campaign placement.
     std::vector<rules::Cell> positions;
 };
+
 // A bounded demonstration/campaign adapter. It depends on the rules interface,
 // never on a specific edition. The application supplies the selected module.
 class CombatDemo
@@ -37,45 +40,56 @@ class CombatDemo
     void training(std::uint64_t seed = 42, bool conditions = false);
     void slums(const std::filesystem::path &game_directory, std::uint64_t seed = 42);
     void encounter(CampaignEncounter encounter, std::uint64_t seed);
+
     [[nodiscard]] const auto &battlefield_tiles() const
     {
         return battlefield_tiles_;
     }
+
     [[nodiscard]] const auto &terrain_art() const
     {
         return terrain_art_;
     }
+
     [[nodiscard]] const rules::CombatSession &combat() const;
     bool submit(const rules::Command &command);
     void continue_script();
     void revisit();
     [[nodiscard]] std::string save_combat() const;
     void restore_combat(std::string_view checkpoint);
+
     [[nodiscard]] const std::string &dialogue() const noexcept
     {
         return dialogue_;
     }
+
     [[nodiscard]] const std::string &status() const noexcept
     {
         return status_;
     }
+
     [[nodiscard]] bool waiting() const noexcept
     {
         return menu_ticket_ != 0;
     }
+
     [[nodiscard]] bool has_combat() const noexcept
     {
         return combat_ != nullptr;
     }
+
     [[nodiscard]] bool is_slums() const noexcept
     {
         return vm_.has_value();
     }
+
     [[nodiscard]] bool script_complete() const noexcept
     {
         return vm_ && vm_->state() == por::EclState::completed;
     }
+
     [[nodiscard]] unsigned script_variable(std::uint16_t address) const;
+
     [[nodiscard]] const auto &art() const noexcept
     {
         return art_;
@@ -95,6 +109,7 @@ class CombatDemo
       private:
         std::shared_ptr<CampaignParty> party_;
     };
+
     std::unique_ptr<rules::RulesModule> module_;
     std::unique_ptr<rules::CombatSession> combat_;
     std::shared_ptr<CampaignParty> campaign_;
@@ -117,11 +132,13 @@ class CombatDemo
     void pump();
     void finish_combat();
 };
+
 struct CombatDemoSetup
 {
     std::shared_ptr<CampaignParty> party;
     CampaignEncounter encounter;
 };
+
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,
                                                const rules::CharacterRules &characters,
                                                const std::filesystem::path &game_directory,

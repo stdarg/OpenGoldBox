@@ -12,6 +12,7 @@ namespace
 {
 constexpr std::array<std::string_view, 6> abilities{"strength",     "dexterity", "constitution",
                                                     "intelligence", "wisdom",    "charisma"};
+
 void require(bool value)
 {
     if (!value)
@@ -19,6 +20,7 @@ void require(bool value)
             "Invalid feature or feat grant provenance, choices or prerequisites");
 }
 } // namespace
+
 std::string grant_source_id(std::string_view label)
 {
     std::string result(label);
@@ -27,6 +29,7 @@ std::string grant_source_id(std::string_view label)
             c += 32;
     return result;
 }
+
 std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::string_view race,
                                                  std::string_view background)
 {
@@ -59,6 +62,7 @@ std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::st
         result.push_back({"trait:speed", "species:goliath", 1, {}});
     return result;
 }
+
 rules::FeatureGrant advancement_grant(std::string_view klass, unsigned level,
                                       const rules::AdvancementChoice &choice)
 {
@@ -71,6 +75,7 @@ rules::FeatureGrant advancement_grant(std::string_view klass, unsigned level,
             result.choices.emplace(abilities[i], std::to_string(choice.abilities[i]));
     return result;
 }
+
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
 {
     return std::any_of(grants.begin(), grants.end(),
@@ -79,6 +84,7 @@ bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
                            return grant.id == id;
                        });
 }
+
 GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::string_view klass,
                              std::string_view race, std::string_view background, unsigned level,
                              bool damage_traits, bool rush_trait, bool action_surge, bool archery,
@@ -189,6 +195,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     require(required.empty() && advancement_count == (level == 4 ? 1u : 0u));
     return effects;
 }
+
 void write_grants(std::ostream &out, std::span<const rules::FeatureGrant> grants)
 {
     out << ' ' << grants.size();
@@ -200,6 +207,7 @@ void write_grants(std::ostream &out, std::span<const rules::FeatureGrant> grants
             out << ' ' << std::quoted(key) << ' ' << std::quoted(value);
     }
 }
+
 std::vector<rules::FeatureGrant> read_grants(std::istream &in)
 {
     unsigned count{};

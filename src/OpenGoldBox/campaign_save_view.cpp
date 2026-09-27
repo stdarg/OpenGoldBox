@@ -23,6 +23,7 @@
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 using namespace godot;
 using namespace opengold;
+
 namespace
 {
 std::filesystem::path game_directory()
@@ -30,11 +31,13 @@ std::filesystem::path game_directory()
     const auto dir = settings::game_path();
     return std::filesystem::u8path(dir.utf8().get_data());
 }
+
 auto rules_module()
 {
     return srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data()));
 }
 } // namespace
+
 void CharacterCreationView::setup_saves()
 {
     save_read_check_ = OS::get_singleton()->get_cmdline_user_args().has("--save-check-read");
@@ -59,6 +62,7 @@ void CharacterCreationView::setup_saves()
         presentation::attach_child(*get_node<Control>("PartyPanel"), std::move(button));
     }
 }
+
 void CharacterCreationView::open_saves(bool saving)
 {
     if (campaign_->in_combat())
@@ -70,6 +74,7 @@ void CharacterCreationView::open_saves(bool saving)
         return;
     get_node<SaveSlots>("SaveSlots")->open(saving);
 }
+
 void CharacterCreationView::save_campaign(const std::filesystem::path &path)
 {
     if (campaign_defeated_)
@@ -81,6 +86,7 @@ void CharacterCreationView::save_campaign(const std::filesystem::path &path)
     error_ = i18n::text("Campaign saved.");
     refresh_party();
 }
+
 void CharacterCreationView::load_campaign(const std::filesystem::path &path)
 {
     if (campaign_->in_combat())
@@ -152,6 +158,7 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     refresh_party();
     party_layout();
 }
+
 void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
                                     por::RolfTourSession session)
 {
@@ -170,6 +177,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     refresh();
     rest_save_open_ = false;
 }
+
 void RolfTourView::request_save(bool saving)
 {
     if (embedded_party_ && session_ && session_->can_leave())
@@ -198,6 +206,7 @@ void CharacterCreationView::save_checkpoint_check(const std::string &name)
     }
     UtilityFunctions::print("Saved restart case: ", String::utf8(name.c_str()));
 }
+
 void CharacterCreationView::load_checkpoint_check()
 {
     auto directory = std::filesystem::u8path(ProjectSettings::get_singleton()
@@ -288,6 +297,7 @@ void CharacterCreationView::load_checkpoint_check()
     else
         get_tree()->quit(0);
 }
+
 void CharacterCreationView::capture_save_ui()
 {
     if (++save_capture_frames_ == 4)

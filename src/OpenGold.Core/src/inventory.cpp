@@ -16,6 +16,7 @@ std::optional<std::reference_wrapper<const InventoryItem>> Inventory::find(std::
         return std::nullopt;
     return std::cref(*it);
 }
+
 std::uint64_t Inventory::add(std::string definition_id, std::string name, std::uint32_t quantity,
                              int original_type)
 {
@@ -29,6 +30,7 @@ std::uint64_t Inventory::add(std::string definition_id, std::string name, std::u
         {next_id_, std::move(definition_id), std::move(name), quantity, original_type});
     return next_id_++;
 }
+
 void Inventory::remove(std::uint64_t id, std::uint32_t quantity)
 {
     const auto it = std::find_if(items_.begin(), items_.end(),

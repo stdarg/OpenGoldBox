@@ -17,6 +17,7 @@ struct SneakAttackContext
     int attack_mode{}; // -1 Disadvantage, 0 normal/cancelled, +1 Advantage.
     bool allied_distraction{};
 };
+
 inline bool sneak_attack_eligible(const SneakAttackContext &context)
 {
     if (context.attack_mode < -1 || context.attack_mode > 1)
@@ -24,6 +25,7 @@ inline bool sneak_attack_eligible(const SneakAttackContext &context)
     return context.weapon_attack && (context.finesse || context.ranged_weapon) &&
            (context.attack_mode == 1 || (context.attack_mode == 0 && context.allied_distraction));
 }
+
 // Full source progression is data support, not authorization for unsupported
 // character advancement. Pass Rogue class level, never total multiclass level.
 inline DamageDice sneak_attack_dice(unsigned rogue_level)

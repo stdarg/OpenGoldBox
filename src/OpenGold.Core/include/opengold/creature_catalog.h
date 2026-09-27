@@ -34,6 +34,7 @@ struct AbilityModifiers
     // GBE interprets CHA[170] as strength-bonus permission; GBC leaves it unknown.
     std::optional<bool> strength_bonus_allowed_hint;
 };
+
 [[nodiscard]] AbilityModifiers ability_modifiers(const CharacterRecord &character);
 
 enum class EffectKind
@@ -120,10 +121,12 @@ class CreatureCatalog
     // Throws CatalogError on incomplete/corrupt required input; never returns a partial catalog.
     // Stock PoR has no MON1SPC or MON3SPC; the other six SPC banks are required.
     [[nodiscard]] static CreatureCatalog load(const std::filesystem::path &game_directory);
+
     [[nodiscard]] const std::map<CreatureId, Creature> &all() const noexcept
     {
         return creatures_;
     }
+
     // Returned references are non-owning and valid for this catalog's lifetime.
     [[nodiscard]] std::optional<std::reference_wrapper<const Creature>>
     find(CreatureId id) const noexcept;

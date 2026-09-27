@@ -36,16 +36,19 @@
 using namespace godot;
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 String gs(std::string_view s)
 {
     return String::utf8(s.data(), static_cast<int64_t>(s.size()));
 }
+
 const std::array<const char *, 9> steps{
     N_("Race & Gender"), N_("Alignment"),         N_("Attributes"),
     N_("Class"),         N_("Training"),          N_("Spell Choices"),
     N_("Name"),          N_("Combat appearance"), N_("Character sheet")};
+
 CreationField choice_field(CreationStep step)
 {
     switch (step)
@@ -60,6 +63,7 @@ CreationField choice_field(CreationStep step)
         throw std::runtime_error("This step has no choice list");
     }
 }
+
 const std::array<const char *, 6> abilities{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
 const std::array<const char *, 6> full_abilities{N_("Strength"),     N_("Dexterity"),
                                                  N_("Constitution"), N_("Intelligence"),
@@ -71,15 +75,18 @@ const std::array<const char *, 16> colors{
     N_("Light red"), N_("Pink"),       N_("Yellow"),      N_("White")};
 const std::array<const char *, 6> parts{N_("Weapon"), N_("Body"), N_("Hair / Face"),
                                         N_("Shield"), N_("Arms"), N_("Legs")};
+
 std::string signed_number(int n)
 {
     return (n >= 0 ? "+" : "") + std::to_string(n);
 }
+
 Color ega(unsigned index)
 {
     const auto c = por::character_color(index);
     return Color(c[0] / 255.f, c[1] / 255.f, c[2] / 255.f);
 }
+
 Ref<StyleBoxFlat> box(Color color, Color border, int width = 1)
 {
     Ref<StyleBoxFlat> result;
@@ -91,6 +98,7 @@ Ref<StyleBoxFlat> box(Color color, Color border, int width = 1)
     result->set_content_margin_all(8);
     return result;
 }
+
 std::string selection(const CharacterDraft &d, CreationField f)
 {
     switch (f)
@@ -109,9 +117,11 @@ std::string selection(const CharacterDraft &d, CreationField f)
     return {};
 }
 } // namespace
+
 void CharacterCreationView::_bind_methods()
 {
 }
+
 void CharacterCreationView::_notification(int what)
 {
     if (what == NOTIFICATION_RESIZED && ready_)
@@ -120,6 +130,7 @@ void CharacterCreationView::_notification(int what)
         queue_redraw();
     }
 }
+
 void CharacterCreationView::_ready()
 {
     i18n::prepare_ui(*this);
@@ -265,6 +276,7 @@ void CharacterCreationView::_ready()
                     c->hide();
     }
 }
+
 void CharacterCreationView::layout()
 {
     const double w = get_size().x, h = get_size().y;
@@ -412,6 +424,7 @@ void CharacterCreationView::layout()
     if (creator_ && creator_->step() == CreationStep::sheet)
         place("Description", Rect2(x + 20, y + 124, pw - 40, ph - 194));
 }
+
 void CharacterCreationView::load_additional_heads()
 {
     for (const auto &head : por::additional_portrait_heads())
@@ -433,6 +446,7 @@ void CharacterCreationView::load_additional_heads()
         art_->add_portrait_head(head.id, por::prepare_portrait_head(decoded, head.id));
     }
 }
+
 void CharacterCreationView::recommend_portrait()
 {
     if (portrait_chosen_)
@@ -442,6 +456,7 @@ void CharacterCreationView::recommend_portrait()
     a.portrait = recommended_portrait(d);
     creator_->appearance(a);
 }
+
 void CharacterCreationView::refresh_art()
 {
     if (!creator_ || !art_ || rendered_ == creator_->appearance())
@@ -457,6 +472,7 @@ void CharacterCreationView::refresh_art()
     }
     rendered_ = a;
 }
+
 void CharacterCreationView::refresh()
 {
     if (!creator_)
@@ -805,6 +821,7 @@ void CharacterCreationView::refresh()
     queue_redraw();
     refreshing_ = false;
 }
+
 void CharacterCreationView::_draw()
 {
     draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
@@ -832,6 +849,7 @@ void CharacterCreationView::_draw()
     if (images_[2].is_valid())
         draw_texture_rect(images_[2], action_rect_, false);
 }
+
 void CharacterCreationView::perform(const std::function<void()> &action)
 {
     if (!creator_ || fatal_)
@@ -849,6 +867,7 @@ void CharacterCreationView::perform(const std::function<void()> &action)
         get_node<Label>("Status")->set_text(error_);
     }
 }
+
 void CharacterCreationView::target_toggled(bool selected, int index)
 {
     if (refreshing_)
@@ -860,6 +879,7 @@ void CharacterCreationView::target_toggled(bool selected, int index)
                 creator_->rules().choices(CreationField::character_class).at(index).id, selected);
         });
 }
+
 void CharacterCreationView::creation_spell_toggled(bool selected, String group, String option)
 {
     if (refreshing_ || !creator_)
@@ -870,6 +890,7 @@ void CharacterCreationView::creation_spell_toggled(bool selected, String group, 
             creator_->spell_choice(group.utf8().get_data(), option.utf8().get_data(), selected);
         });
 }
+
 void CharacterCreationView::cantrip_toggled(bool selected, String option)
 {
     if (refreshing_ || !creator_ || creator_->step() != CreationStep::spell_choices)
@@ -880,6 +901,7 @@ void CharacterCreationView::cantrip_toggled(bool selected, String option)
             creator_->cantrip_choice(option.utf8().get_data(), selected);
         });
 }
+
 void CharacterCreationView::training_selected(std::int64_t index, String group)
 {
     if (refreshing_ || !creator_ || creator_->step() != CreationStep::training || index <= 0)
@@ -900,6 +922,7 @@ void CharacterCreationView::training_selected(std::int64_t index, String group)
             creator_->training_choice(found->id, found->options[index - 1].id, true);
         });
 }
+
 void CharacterCreationView::training_toggled(bool selected, String group, String option)
 {
     if (refreshing_ || !creator_ || creator_->step() != CreationStep::training)
@@ -910,6 +933,7 @@ void CharacterCreationView::training_toggled(bool selected, String group, String
             creator_->training_choice(group.utf8().get_data(), option.utf8().get_data(), selected);
         });
 }
+
 void CharacterCreationView::next()
 {
     perform(
@@ -921,6 +945,7 @@ void CharacterCreationView::next()
             selected_score_ = -1;
         });
 }
+
 void CharacterCreationView::back()
 {
     perform(
@@ -931,6 +956,7 @@ void CharacterCreationView::back()
             selected_score_ = -1;
         });
 }
+
 void CharacterCreationView::restart()
 {
     perform(
@@ -945,6 +971,7 @@ void CharacterCreationView::restart()
             selected_score_ = -1;
         });
 }
+
 void CharacterCreationView::choice_selected(std::int64_t index)
 {
     if (refreshing_)
@@ -958,6 +985,7 @@ void CharacterCreationView::choice_selected(std::int64_t index)
                 recommend_portrait();
         });
 }
+
 void CharacterCreationView::gender_selected(std::int64_t index)
 {
     if (refreshing_)
@@ -970,6 +998,7 @@ void CharacterCreationView::gender_selected(std::int64_t index)
             recommend_portrait();
         });
 }
+
 void CharacterCreationView::background_selected(std::int64_t index)
 {
     if (refreshing_)
@@ -981,6 +1010,7 @@ void CharacterCreationView::background_selected(std::int64_t index)
                              creator_->rules().choices(CreationField::background).at(index).id);
         });
 }
+
 void CharacterCreationView::bonus_selected(std::int64_t index)
 {
     if (refreshing_)
@@ -991,6 +1021,7 @@ void CharacterCreationView::bonus_selected(std::int64_t index)
             creator_->select_adjustment(static_cast<unsigned>(index));
         });
 }
+
 void CharacterCreationView::roll()
 {
     perform(
@@ -1000,6 +1031,7 @@ void CharacterCreationView::roll()
             selected_score_ = -1;
         });
 }
+
 void CharacterCreationView::score_selected(int index)
 {
     perform(
@@ -1014,6 +1046,7 @@ void CharacterCreationView::score_selected(int index)
             }
         });
 }
+
 void CharacterCreationView::name_changed(String value)
 {
     perform(
@@ -1022,6 +1055,7 @@ void CharacterCreationView::name_changed(String value)
             creator_->name(value.utf8().get_data());
         });
 }
+
 void CharacterCreationView::combat_part(int part, int direction)
 {
     perform(
@@ -1034,6 +1068,7 @@ void CharacterCreationView::combat_part(int part, int direction)
             creator_->appearance(a);
         });
 }
+
 void CharacterCreationView::toggle_size()
 {
     perform(
@@ -1044,6 +1079,7 @@ void CharacterCreationView::toggle_size()
             creator_->appearance(a);
         });
 }
+
 void CharacterCreationView::color_selected(int bank, int part)
 {
     perform(
@@ -1053,6 +1089,7 @@ void CharacterCreationView::color_selected(int bank, int part)
             color_part_ = part;
         });
 }
+
 void CharacterCreationView::palette_selected(int index)
 {
     perform(
@@ -1063,6 +1100,7 @@ void CharacterCreationView::palette_selected(int index)
             creator_->appearance(a);
         });
 }
+
 void CharacterCreationView::capture(const char *name)
 {
     if (!capture_)
@@ -1077,6 +1115,7 @@ void CharacterCreationView::capture(const char *name)
     if (image.is_null() || image->save_png(gs(path.generic_string())) != OK)
         throw std::runtime_error("Character capture failed");
 }
+
 void CharacterCreationView::_process(double)
 {
     if (equipment_art_check_)

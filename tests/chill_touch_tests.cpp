@@ -11,14 +11,17 @@
 using namespace opengold;
 using namespace opengold::rules;
 namespace fx = opengold::srd5::detail;
+
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
 void check(bool v, const char *m)
 {
     if (!v)
         throw std::runtime_error(m);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -32,22 +35,26 @@ template <class F> void rejects(F f)
     }
     check(caught, "Malformed state must reject");
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream f(p);
     check(bool(f), "Read fixture");
     return {std::istreambuf_iterator<char>(f), {}};
 }
+
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
+
 auto custom(std::string affinity = {})
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
                                affinity);
 }
+
 Character hero(std::string klass = "wizard", unsigned level = 1)
 {
     CharacterDraft d;
@@ -69,6 +76,7 @@ Character hero(std::string klass = "wizard", unsigned level = 1)
         check(h.advance(*module(), state), "Ordinary advancement");
     return h;
 }
+
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
@@ -76,10 +84,12 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
             return v;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     check(c.submit(command(c, verb, target)), "Submit legal action");
 }
+
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
@@ -87,6 +97,7 @@ bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
             return true;
     return false;
 }
+
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
@@ -94,6 +105,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 fx::EffectState effects(const VitalState &state)
 {
     auto at = state.resources.find("FX");
@@ -102,10 +114,12 @@ fx::EffectState effects(const VitalState &state)
     std::istringstream in(state.resources.substr(at));
     return fx::read_effects(in);
 }
+
 bool blocked(const CombatSession &c, EntityId id = 2)
 {
     return fx::healing_blocked(effects(unit(c, id).persistent));
 }
+
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -116,6 +130,7 @@ std::uint64_t rng(const CombatSession &c)
     in >> result;
     return result;
 }
+
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {2, 1},
             std::vector<std::string> gear = {})
 {
@@ -132,6 +147,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
         act(*c, "end");
     return c;
 }
+
 void access()
 {
     auto rules = module();
@@ -202,6 +218,7 @@ void access()
             Character invalid(*srd5::character_rules(), draft, {});
         });
 }
+
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
@@ -245,6 +262,7 @@ void damage()
                 check(!c->submit(ticket) && c->save() == saved, "Repeated command is atomic");
             }
 }
+
 void timing()
 {
     auto rules = custom();
@@ -268,6 +286,7 @@ void timing()
     act(*c, "end");
     check(!blocked(*c, 1), "Self expiry");
 }
+
 void skipped_caster()
 {
     for (bool lethal : {false, true})
@@ -321,6 +340,7 @@ void skipped_caster()
         check(covered, "Caster incapacitation path exercised");
     }
 }
+
 void campaign_handoff()
 {
     auto rules = module();
@@ -360,6 +380,7 @@ void campaign_handoff()
               "Long Rest heals normally after effect elapsed");
     }
 }
+
 void legality()
 {
     auto rules = custom();
@@ -384,6 +405,7 @@ void legality()
               "Components and armor prevent casting");
     }
 }
+
 void lifecycle()
 {
     fx::EffectState state;
@@ -416,6 +438,7 @@ void lifecycle()
                 (void)fx::read_effects(in);
             });
 }
+
 VitalState blocked_state(const RulesModule &rules, const Character &h, int hp)
 {
     auto c = battle(rules, h);
@@ -427,6 +450,7 @@ VitalState blocked_state(const RulesModule &rules, const Character &h, int hp)
                              "FX5 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0");
     return result;
 }
+
 void recovery()
 {
     auto rules = custom();
@@ -476,6 +500,7 @@ void recovery()
     act(*c, "second_wind");
     check(unit(*c).hit_points == 1 && !unit(*c).bonus_action, "Second Wind spent without healing");
 }
+
 void healing_spells()
 {
     auto rules = custom();
@@ -513,6 +538,7 @@ void healing_spells()
               "Healing spell spends correct action");
     }
 }
+
 void combat_death_save()
 {
     const auto rules = custom();
@@ -567,6 +593,7 @@ void combat_death_save()
     }
     check(covered, "Actual blocked combat natural 20 exercised");
 }
+
 void death_save_boundary()
 {
     const auto rules = module();
@@ -620,6 +647,7 @@ void death_save_boundary()
         }
     }
 }
+
 void persistence()
 {
     auto rules = custom();
@@ -658,6 +686,7 @@ void persistence()
         (void)id;
     }
 }
+
 void earned_lifecycle()
 {
     fx::LifeState life{0, 0, 0, true, false, {0, 1000}};
@@ -695,6 +724,7 @@ void earned_lifecycle()
                 fx::validate_recovery(invalid);
             });
 }
+
 void stable_timeline()
 {
     for (auto mode : {fx::RecoveryMode::campaign, fx::RecoveryMode::combat})
@@ -728,12 +758,14 @@ void stable_timeline()
             check(life.hp == 1, "Recovery eventually occurs at the later boundary");
         }
 }
+
 VitalState stable_blocked(unsigned deadline = 1000)
 {
     return {0, false,
             "SRD7 2 0 0 0 0 1 2 0 " + std::to_string(deadline) +
                 " 0 \"\" 2 FX5 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0"};
 }
+
 void stable_continuation()
 {
     auto rules = module();
@@ -810,6 +842,7 @@ void stable_continuation()
     check(unit(*c).hit_points == 1 && rng(*c) == random,
           "Combat expiry restores earned HP without RNG");
 }
+
 void stable_actual_cast()
 {
     auto rules = custom("affinity target test immunity necrotic\n");
@@ -855,6 +888,7 @@ void stable_actual_cast()
     check(saw_due && rng(*c) == random,
           "Actual cast delays the existing deadline without another recovery roll");
 }
+
 void prior_chill_writer()
 {
     auto rules = module();
@@ -881,6 +915,7 @@ void prior_chill_writer()
               party.member(1).vitals.hit_points == before.hit_points,
           "Prior campaign effect expires without invented healing");
 }
+
 void freeze_chill_baseline()
 {
     auto rules = module();
@@ -911,6 +946,7 @@ void freeze_chill_baseline()
     act(*c, "end");
     write("combat-chill-0.6.43-continued.save", c->save());
 }
+
 void fixtures()
 {
     auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "chill-fixtures";
@@ -933,6 +969,7 @@ void fixtures()
     }
 }
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

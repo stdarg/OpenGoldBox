@@ -9,6 +9,7 @@
 #include <memory>
 #include <stdexcept>
 using namespace godot;
+
 namespace
 {
 struct DeleteNode
@@ -18,6 +19,7 @@ struct DeleteNode
         memdelete(n);
     }
 };
+
 template <class T> void add(Window &parent, const char *name, Rect2 rect)
 {
     std::unique_ptr<T, DeleteNode> child(memnew(T));
@@ -27,6 +29,7 @@ template <class T> void add(Window &parent, const char *name, Rect2 rect)
     parent.add_child(child.get());
     child.release();
 }
+
 std::string encoded(std::string_view name)
 {
     static constexpr char hex[] = "0123456789abcdef";
@@ -38,6 +41,7 @@ std::string encoded(std::string_view name)
     }
     return result;
 }
+
 std::string decoded(std::string_view stem)
 {
     std::string result;
@@ -57,6 +61,7 @@ std::string decoded(std::string_view stem)
     return result;
 }
 } // namespace
+
 void SaveSlots::_ready()
 {
     set_size(Vector2i(620, 470));
@@ -83,6 +88,7 @@ void SaveSlots::_ready()
     directory_ = std::filesystem::u8path(
         ProjectSettings::get_singleton()->globalize_path("user://saves").utf8().get_data());
 }
+
 void SaveSlots::open(bool saving)
 {
     saving_ = saving;
@@ -136,12 +142,14 @@ void SaveSlots::open(bool saving)
     else
         list->grab_focus();
 }
+
 void SaveSlots::changed(String)
 {
     confirmed_ = false;
     pending_.clear();
     get_node<Button>("Action")->set_text(saving_ ? "Save" : "Load");
 }
+
 void SaveSlots::select(std::int64_t index)
 {
     changed("");
@@ -151,6 +159,7 @@ void SaveSlots::select(std::int64_t index)
         get_node<LineEdit>("Name")->set_text(
             String::utf8(decoded(paths_[index].stem().string()).c_str()));
 }
+
 void SaveSlots::act()
 {
     try
@@ -194,6 +203,7 @@ void SaveSlots::act()
         get_node<Button>("Action")->set_text(saving_ ? "Save" : "Load");
     }
 }
+
 void SaveSlots::close()
 {
     hide();

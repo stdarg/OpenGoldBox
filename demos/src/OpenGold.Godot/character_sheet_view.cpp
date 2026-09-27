@@ -11,14 +11,17 @@
 
 using namespace godot;
 using namespace opengold;
+
 namespace
 {
 const std::array<const char *, 6> names{"Strength",     "Dexterity", "Constitution",
                                         "Intelligence", "Wisdom",    "Charisma"};
+
 std::string number(int n)
 {
     return (n >= 0 ? "+" : "") + std::to_string(n);
 }
+
 std::string literal(std::string_view value)
 {
     std::string text;
@@ -26,10 +29,12 @@ std::string literal(std::string_view value)
         text += c == '[' ? "[lb]" : std::string(1, c);
     return text;
 }
+
 String gs(std::string_view text)
 {
     return String::utf8(text.data(), text.size());
 }
+
 struct DeleteNode
 {
     void operator()(Node *node) const
@@ -38,6 +43,7 @@ struct DeleteNode
     }
 };
 } // namespace
+
 Variant CharacterCreationView::drag_roll(Vector2, int index)
 {
     if (!creator_ || party_open_ || creator_->step() != CreationStep::attributes ||
@@ -57,6 +63,7 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
     data["opengold_ability_roll"] = roll;
     return data;
 }
+
 bool CharacterCreationView::can_drop_roll(Vector2, const Variant &data, int index)
 {
     if (!creator_ || party_open_ || creator_->step() != CreationStep::attributes ||
@@ -67,6 +74,7 @@ bool CharacterCreationView::can_drop_roll(Vector2, const Variant &data, int inde
     const Variant roll = payload.get("opengold_ability_roll", Variant());
     return roll.get_type() == Variant::INT && int(roll) >= 0 && int(roll) < 6;
 }
+
 void CharacterCreationView::drop_roll(Vector2 position, const Variant &data, int index)
 {
     if (!can_drop_roll(position, data, index))
@@ -80,6 +88,7 @@ void CharacterCreationView::drop_roll(Vector2 position, const Variant &data, int
             selected_score_ = -1;
         });
 }
+
 String CharacterCreationView::sheet_text(const Character &character,
                                          const PartyMember *member) const
 {
@@ -184,6 +193,7 @@ String CharacterCreationView::sheet_text(const Character &character,
                 .get_data();
     return gs(text);
 }
+
 void CharacterCreationView::show_modifiers()
 {
     const PartyMember *member = nullptr; // Borrowed only for this synchronous rendering.
@@ -231,6 +241,7 @@ void CharacterCreationView::show_modifiers()
     modal->popup_centered();
     get_node<Button>("ModifiersModal/Close")->grab_focus();
 }
+
 void CharacterCreationView::close_modifiers()
 {
     get_node<Window>("ModifiersModal")->hide();
@@ -242,10 +253,12 @@ void CharacterCreationView::show_saving_throws()
     get_node<Window>("SavingThrowsModal")->popup_centered();
     get_node<LineEdit>("SavingThrowsModal/DC")->grab_focus();
 }
+
 void CharacterCreationView::close_saving_throws()
 {
     get_node<Window>("SavingThrowsModal")->hide();
 }
+
 void CharacterCreationView::update_saving_throws(String value)
 {
     const PartyMember *member = nullptr; // Borrowed for synchronous rendering.

@@ -1,6 +1,7 @@
 #ifndef OPENGOLDBOX_CANTRIP_CONTROL_H
 #define OPENGOLDBOX_CANTRIP_CONTROL_H
 #include "training_control.h"
+
 namespace presentation
 {
 inline void setup_cantrip_controls(godot::Node &parent)
@@ -22,6 +23,7 @@ inline void setup_cantrip_controls(godot::Node &parent)
         attach_child(*rows, std::move(label));
     }
 }
+
 template <class Translate>
 void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCreator &creator,
                               const godot::Callable &toggled, const Translate &tr)

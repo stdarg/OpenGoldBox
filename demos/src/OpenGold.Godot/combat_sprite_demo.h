@@ -29,6 +29,7 @@ class CombatSpriteDemo : public godot::Control
         stretched,
         proportional
     };
+
     struct Figure
     {
         const char *node;
@@ -39,6 +40,7 @@ class CombatSpriteDemo : public godot::Control
         std::array<godot::Ref<godot::ImageTexture>, 2> poses;
         std::array<godot::Rect2, 2> visible_bounds;
     };
+
     std::optional<opengold::por::CharacterArt> art_;
     opengold::por::CharacterAppearance appearance_;
     opengold::por::DungeonBattlefield battlefield_;

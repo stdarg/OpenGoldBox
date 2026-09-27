@@ -23,6 +23,7 @@ using damage::AffinityKind;
 using damage::DamageAffinity;
 using damage::DamagePart;
 using damage::DamageType;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -30,6 +31,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool caught = false;
@@ -43,20 +45,24 @@ template <class F> void rejects(F f)
     }
     check(caught, "Invalid damage data must reject");
 }
+
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
     check(bool(in), "Fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 std::string content()
 {
     return read(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules");
 }
+
 auto module()
 {
     return srd5::parse_content(content());
 }
+
 Character hero(std::string race = "dwarf", std::string klass = "fighter", unsigned level = 1)
 {
     CharacterDraft d;
@@ -75,11 +81,13 @@ Character hero(std::string race = "dwarf", std::string klass = "fighter", unsign
         check(result.advance(*module(), scratch), "Fixture level is supported");
     return result;
 }
+
 auto resolve(std::initializer_list<DamagePart> parts,
              std::initializer_list<DamageAffinity> affinities)
 {
     return damage::resolve_damage(parts, affinities);
 }
+
 void sneak_attack_foundation()
 {
     // Independent SRD catalog list, including fixed-damage Blowgun and thrown Dart.
@@ -129,6 +137,7 @@ void sneak_attack_foundation()
             (void)damage::sneak_attack_dice(21);
         });
 }
+
 void arithmetic()
 {
     const DamageAffinity resist{AffinityKind::resistance, DamageType::fire, "first"},
@@ -204,6 +213,7 @@ void arithmetic()
     check(!state.dead && state.hp == 0 && state.failures == 0,
           "Massive damage uses the post-resistance amount");
 }
+
 CombatantView unit(const CombatSession &combat, EntityId id)
 {
     for (const auto &a : combat.snapshot().combatants)
@@ -211,6 +221,7 @@ CombatantView unit(const CombatSession &combat, EntityId id)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 Command command(const CombatSession &combat, std::string_view verb, EntityId target = 0)
 {
     for (const auto &c : combat.legal_commands())
@@ -218,12 +229,14 @@ Command command(const CombatSession &combat, std::string_view verb, EntityId tar
             return c;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 void turn(CombatSession &combat, EntityId id)
 {
     for (unsigned n = 0; n < 8 && combat.snapshot().actor != id; ++n)
         check(combat.submit(command(combat, "end")), "Wait for actor");
     check(combat.snapshot().actor == id, "Actor gets a turn");
 }
+
 std::uint64_t rng(const CombatSession &combat)
 {
     std::istringstream in(combat.save());
@@ -234,10 +247,12 @@ std::uint64_t rng(const CombatSession &combat)
     in >> value;
     return value;
 }
+
 std::string attacker()
 {
     return "creature toxin 10 500 0 30 30 1 4 3 30 1 4 3 80 320 0 4 30 3 5\nspellcasting toxin 4 21\ndamage_types toxin poison poison\n";
 }
+
 void species_combat()
 {
     auto rules = srd5::parse_content(content() + attacker());
@@ -296,6 +311,7 @@ void species_combat()
               "Stale commands cannot apply resistance/damage twice");
     }
 }
+
 void weapons_and_spells()
 {
     // The target's one immunity identifies the attack's actual damage type.
@@ -424,10 +440,12 @@ void weapons_and_spells()
     check(instances == 3 && 1000 - unit(*resisted, 2).hit_points == expected,
           "Each Magic Missile dart rounds separately before summing HP loss");
 }
+
 std::string fixture(const char *name)
 {
     return read(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
 }
+
 std::string upgrade(std::string bytes, const Identity &identity)
 {
     std::istringstream in(bytes);
@@ -445,6 +463,7 @@ std::string upgrade(std::string bytes, const Identity &identity)
         result += row + '\n';
     return result + "0\n0\n";
 }
+
 void migration()
 {
     auto rules = module();
@@ -511,6 +530,7 @@ void migration()
               party.member(1).vitals.resources == "SRD5 1 0 0 0 0 1 2 0 4321000 FX1 1 0",
           "Advancement preserves resistance and mortality while adding only the earned Hit Die");
 }
+
 void malformed()
 {
     for (const auto row :
@@ -538,6 +558,7 @@ void malformed()
             (void)module()->character_profile(sheet, {});
         });
 }
+
 void damage_rolls()
 {
     using damage::DamageDieRule;
@@ -582,6 +603,7 @@ void damage_rolls()
               style == 7,
           "Fixed damage gets neither extra damage nor random draws");
 }
+
 void gwf_prior_continuation()
 {
     auto rules = module();
@@ -625,6 +647,7 @@ void gwf_prior_continuation()
     check(combat->save() == current(read(root / "combat-v14-gwf-resolved.save")),
           "Applying the saved roll matches prior HP, action and Savage expenditure");
 }
+
 void freeze_gwf()
 {
     auto rules = module();
@@ -685,6 +708,7 @@ void freeze_gwf()
 }
 
 } // namespace
+
 int main(int argc, char **argv)
 {
     try

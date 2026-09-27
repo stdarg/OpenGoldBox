@@ -11,6 +11,7 @@ inline constexpr std::array<const char *, 16> character_colors{
     "Light red", "Pink",       "Yellow",    "White"};
 inline constexpr std::array<const char *, 6> character_regions{"Weapon", "Body", "Hair / Face",
                                                                "Shield", "Arms", "Legs"};
+
 inline godot::Color character_color(unsigned index)
 {
     const auto c = opengold::por::character_color(index);

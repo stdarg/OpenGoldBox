@@ -8,6 +8,7 @@
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
+
 namespace
 {
 void check(bool ok, const char *message)
@@ -15,6 +16,7 @@ void check(bool ok, const char *message)
     if (!ok)
         throw std::runtime_error(message);
 }
+
 template <class F> void rejects(F f)
 {
     bool rejected = false;
@@ -28,11 +30,13 @@ template <class F> void rejects(F f)
     }
     check(rejected, "Invalid grip/equipment must reject");
 }
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
 }
+
 Character hero()
 {
     CharacterDraft draft;
@@ -47,6 +51,7 @@ Character hero()
         roll = {{6, 5, 4, 1}, 3};
     return Character(*srd5::character_rules(), draft, {});
 }
+
 CombatantView unit(const CombatSession &session, EntityId id)
 {
     for (const auto &a : session.snapshot().combatants)
@@ -54,6 +59,7 @@ CombatantView unit(const CombatSession &session, EntityId id)
             return a;
     throw std::runtime_error("Missing actor");
 }
+
 Command command(const CombatSession &session, std::string_view verb)
 {
     for (const auto &c : session.legal_commands())
@@ -61,24 +67,28 @@ Command command(const CombatSession &session, std::string_view verb)
             return c;
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
+
 std::string fixture(const char *name)
 {
     std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
     check(bool(in), "Fixture exists");
     return {std::istreambuf_iterator<char>(in), {}};
 }
+
 struct WeaponCase
 {
     const char *key;
     int one, two;
     bool thrown;
 };
+
 // Independent SRD 5.2.1 pp. 90-91 expectations, including the 2024 War Pick.
 constexpr std::array weapons{
     WeaponCase{"quarterstaff", 6, 8, false}, WeaponCase{"spear", 6, 8, true},
     WeaponCase{"battleaxe", 8, 10, false},   WeaponCase{"longsword", 8, 10, false},
     WeaponCase{"trident", 8, 10, true},      WeaponCase{"warhammer", 8, 10, false},
     WeaponCase{"war_pick", 8, 10, false}};
+
 void damage_and_resources()
 {
     auto rules = module();
@@ -214,6 +224,7 @@ void damage_and_resources()
             });
     }
 }
+
 void reaction_continuation()
 {
     auto rules = module();
@@ -251,6 +262,7 @@ void reaction_continuation()
               unit(*combat, 1).equipment.weapon_hands == 2,
           "Only the opportunity reaction is consumed");
 }
+
 void campaign_and_migration()
 {
     auto rules = module();
@@ -376,6 +388,7 @@ void campaign_and_migration()
           "Migrated combat can be saved and resumed again");
 }
 } // namespace
+
 int main()
 {
     try
