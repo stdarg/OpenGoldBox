@@ -2829,6 +2829,7 @@ void freeze_sage()
 #include "light_attack_checks.h"
 #include "mastery_baseline.h"
 #include "alert_checks.h"
+#include "skilled_checks.h"
 } // namespace
 
 int main(int argc, char **argv)
@@ -2844,6 +2845,11 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--freeze-alert")
         {
             alert_checks::freeze();
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--freeze-skilled")
+        {
+            skilled_checks::freeze();
             return 0;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--freeze-mastery")
