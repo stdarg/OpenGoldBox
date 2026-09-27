@@ -30,9 +30,9 @@ Battlefield arena()
 std::vector<Participant> party()
 {
     return {{1, "vanguard", "Vanguard", 0, {2, 2}},
-            {2, "scout", "Scout", 0, {2, 4}},
-            {3, "adept", "Adept", 0, {1, 3}},
-            {4, "healer", "Healer", 0, {1, 5}}};
+        {2, "scout", "Scout", 0, {2, 4}},
+        {3, "adept", "Adept", 0, {1, 3}},
+        {4, "healer", "Healer", 0, {1, 5}}};
 }
 
 std::optional<Image> original_icon(const std::filesystem::path &directory, unsigned record)
@@ -135,8 +135,8 @@ void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string r
     auto participants = campaign_ ? campaign_->participants() : party();
     participants.insert(participants.end(), enemies.begin(), enemies.end());
     auto next = module_->create(
-        {arena(), std::move(participants), campaign_ ? campaign_->state().next_combat_scope : 1},
-        seed_);
+    {arena(), std::move(participants), campaign_ ? campaign_->state().next_combat_scope : 1},
+    seed_);
     install_combat(std::move(next), std::move(reward_id));
 }
 
@@ -148,8 +148,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         throw std::runtime_error("Invalid campaign encounter context");
     const auto &board = encounter.field.geometry;
     if (board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64 ||
-        board.terrain.size() != static_cast<std::size_t>(board.width * board.height) ||
-        encounter.surprise > 3)
+            board.terrain.size() != static_cast<std::size_t>(board.width * board.height) ||
+            encounter.surprise > 3)
         throw std::runtime_error("Invalid campaign battlefield");
     // Converted party formation stays inside one reachable component of the
     // original geometry. Never erase walls or silently omit a participant.
@@ -167,9 +167,9 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         throw std::runtime_error("Battlefield has no open cells");
     std::stable_sort(cells.begin(), cells.end(),
                      [&](Cell a, Cell b)
-                     {
-                         return distance(a, origin) < distance(b, origin);
-                     });
+    {
+        return distance(a, origin) < distance(b, origin);
+    });
     std::vector<bool> seen(board.terrain.size(), false);
     std::queue<Cell> frontier;
     frontier.push(cells.front());
@@ -214,13 +214,13 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
                 encounter.enemies[i - participants.size()].cell = cell;
         }
     }
-    const auto place = [&](Participant &participant, Cell target)
+    const auto place = [&](Participant & participant, Cell target)
     {
         const auto cell = std::min_element(cells.begin(), cells.end(),
                                            [&](Cell a, Cell b)
-                                           {
-                                               return distance(a, target) < distance(b, target);
-                                           });
+        {
+            return distance(a, target) < distance(b, target);
+        });
         participant.cell = *cell;
         cells.erase(cell);
     };
@@ -241,8 +241,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         participants.push_back(std::move(enemy));
     }
     auto next = module_->create(
-        {encounter.field.geometry, std::move(participants), campaign_->state().next_combat_scope},
-        seed);
+    {encounter.field.geometry, std::move(participants), campaign_->state().next_combat_scope},
+    seed);
     install_combat(std::move(next), {});
     seed_ = seed;
     battlefield_tiles_ = std::move(encounter.field.tiles);
@@ -262,32 +262,37 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
     auto art = CharacterArt::load(game_directory);
     auto pool = character_pool(characters, art);
     const auto body_catalog = body_catalog_file.empty()
-                                  ? std::optional<CombatBodyCatalog>{}
-                                  : std::optional<CombatBodyCatalog>{CombatBodyCatalog::load(
-                                        body_catalog_file, body_catalog_file.parent_path() /
-                                                               "combat-weapon-options.tsv")};
+                              ? std::optional<CombatBodyCatalog> {}
+                              :
+                              std::optional<CombatBodyCatalog> {CombatBodyCatalog::load(
+                                          body_catalog_file, body_catalog_file.parent_path() /
+                                          "combat-weapon-options.tsv")
+                                                               };
     auto party = std::make_shared<CampaignParty>(std::move(rules));
     CombatDemoSetup result{party, {}};
     result.encounter.field.geometry = {12, 12, std::vector<std::uint8_t>(144, 0)};
     result.encounter.field.tiles = std::vector<std::uint8_t>(144, 0);
     const std::array<std::string_view, 6> classes{"fighter", "paladin", "cleric",
-                                                  "ranger",  "rogue",   "bard"};
+            "ranger",  "rogue",   "bard"};
     const std::array<unsigned, 6> weapons{36, 36, 23, 36, 8, 33};
     const std::array<Cell, 6> positions{{{5, 5}, {6, 5}, {7, 5}, {5, 6}, {6, 6}, {7, 6}}};
     for (std::size_t i = 0; i < classes.size(); ++i)
     {
         const auto found =
             std::find_if(pool.begin(), pool.end(),
-                         [&](const Character &candidate)
-                         {
-                             return candidate.creation_data().character_class == classes[i] &&
-                                    (i != 0 || candidate.creation_data().race == "goliath");
-                         });
+                         [&](const Character & candidate)
+        {
+            return candidate.creation_data().character_class == classes[i] &&
+                   (i != 0 || candidate.creation_data().race == "goliath");
+        });
         if (found == pool.end())
             throw std::runtime_error("Missing showcase hero in character pool");
         const auto id = party->add_pc(*found);
         party->set_wealth(id, {0, 0, 0, 10, 0, 0, 0});
-        for (const unsigned type : {weapons[i], i < 2 ? 55u : 50u})
+        for (const unsigned type :
+                {
+                    weapons[i], i < 2 ? 55u : 50u
+                })
         {
             Equipment item;
             item.stored.type = type;
@@ -304,11 +309,11 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             if (!resolved.selection.matched)
                 missing = resolved.selection.label;
             result.encounter.art.push_back(
-                {id, resolved.icon(art, false), resolved.icon(art, true), missing});
+            {id, resolved.icon(art, false), resolved.icon(art, true), missing});
         }
         else
             result.encounter.art.push_back(
-                {id, art.icon(appearance, false), art.icon(appearance, true), missing});
+        {id, art.icon(appearance, false), art.icon(appearance, true), missing});
     }
     result.encounter.positions.assign(positions.begin(), positions.end());
     const auto kobold = original_icon(game_directory, 0);
@@ -330,11 +335,12 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                 continue;
             const auto id = static_cast<EntityId>(1000 + result.encounter.enemies.size());
             result.encounter.enemies.push_back(
-                {id, is_leader ? "slums-kobold-leader" : "slums-kobold",
-                 is_leader ? "Kobold Leader" : "Kobold " + std::to_string(++number), 1, cell});
+            {
+                id, is_leader ? "slums-kobold-leader" : "slums-kobold",
+                is_leader ? "Kobold Leader" : "Kobold " + std::to_string(++number), 1, cell});
             result.encounter.positions.push_back({x, y});
             result.encounter.art.push_back(
-                {id, is_leader ? *leader : *kobold, is_leader ? leader_action : kobold_action});
+            {id, is_leader ? *leader : *kobold, is_leader ? leader_action : kobold_action});
         }
     return result;
 }
@@ -359,14 +365,17 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
         return;
     }
     auto next =
-        module_->create({arena(),
-                         {{1,
-                           conditions ? "blindness-adept" : "vanguard",
-                           conditions ? "Adept" : "Vanguard",
-                           0,
-                           {2, 4}},
-                          {10, "bandit", "Bandit", 1, conditions ? Cell{3, 4} : Cell{9, 4}}}},
-                        seed);
+    module_->create({arena(),
+        {   {
+                1,
+                conditions ? "blindness-adept" : "vanguard",
+                conditions ? "Adept" : "Vanguard",
+                0,
+                {2, 4}
+            },
+            {10, "bandit", "Bandit", 1, conditions ? Cell{3, 4} : Cell{9, 4}}
+        }},
+    seed);
     combat_ = std::move(next);
     vm_.reset();
     creatures_.reset();
@@ -388,16 +397,24 @@ void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t see
     if (!program)
         throw std::runtime_error("Slums profile requires ECL2.DAX:20");
     auto creatures = CreatureCatalog::load(directory);
-    for (auto record : {4, 13})
+    for (auto record :
+            {
+                4, 13
+            })
         if (!creatures.find({2, static_cast<std::uint8_t>(record)}))
             throw std::runtime_error("Missing Slums creature record");
     EclMachine vm(program);
-    for (auto [first, last] : std::array<std::array<unsigned, 2>, 3>{
-             {{0x4900, 0x4cff}, {0x6b00, 0x6eff}, {0x9700, 0x98ff}}})
-        for (unsigned a = first; a <= last; ++a)
-            vm.bind_variable(static_cast<std::uint16_t>(a), 0);
+    for (auto [first, last] : std::array<std::array<unsigned, 2>, 3>
+{
+    {{0x4900, 0x4cff}, {0x6b00, 0x6eff}, {0x9700, 0x98ff}}
+})
+    for (unsigned a = first; a <= last; ++a)
+        vm.bind_variable(static_cast<std::uint16_t>(a), 0);
     vm.bind_variable(0xC04F, 1);
-    for (std::uint8_t opcode : {11, 12, 13, 14, 28, 36})
+    for (std::uint8_t opcode :
+            {
+                11, 12, 13, 14, 28, 36
+            })
         vm.enable_host(opcode);
     if (!vm.start(1))
         throw std::runtime_error("Cannot enter Slums event 1");
@@ -459,7 +476,7 @@ void CombatDemo::pump()
                 const bool first = enemies_.empty();
                 const unsigned record = first ? 13 : 4, count = first ? 1 : 3;
                 if (a.size() != 3 || a[0].value != record || a[1].value != count ||
-                    a[2].value != 4 || enemies_.size() > 1)
+                        a[2].value != 4 || enemies_.size() > 1)
                     throw std::runtime_error("Unrecognized Slums creature/count/icon profile");
                 const auto &creature =
                     creatures_->find({2, static_cast<std::uint8_t>(record)})->get();
@@ -469,11 +486,12 @@ void CombatDemo::pump()
                 {
                     const auto id = static_cast<EntityId>(1000 + enemies_.size());
                     enemies_.push_back(
-                        {id,
-                         "slums-orc",
-                         creature.stored.name + " " + std::to_string(enemies_.size() + 1),
-                         1,
-                         {9, 2 + static_cast<int>(enemies_.size())}});
+                    {
+                        id,
+                        "slums-orc",
+                        creature.stored.name + " " + std::to_string(enemies_.size() + 1),
+                        1,
+                        {9, 2 + static_cast<int>(enemies_.size())}});
                     if (icon)
                         art_.push_back({id, *icon, action});
                 }
@@ -481,7 +499,7 @@ void CombatDemo::pump()
             else if (opcode == 36)
             {
                 if (enemies_.size() != 4 || encounters_ != 0 || vm_->variable(0x6DC6) != 99 ||
-                    vm_->variable(0x6DCB) != 0)
+                        vm_->variable(0x6DCB) != 0)
                     throw std::runtime_error("Unsupported Slums combat context");
                 start_encounter(enemies_, "por:ECL2:20:search1:orcs:v1");
                 combat_ticket_ = request.id;
@@ -527,14 +545,16 @@ void CombatDemo::finish_combat()
         if (unit.side == 1 && unit.hit_points == 0)
             ++defeated;
     EclHostReply reply;
-    reply.writes = {
+    reply.writes =
+    {
         {0x6DC7, static_cast<std::uint16_t>(state.outcome == Outcome::victory ? 0 : 128)},
         {0x6DC8, static_cast<std::uint16_t>(defeated)},
         {0x6DCB, 0},
         {0x6DE3, 0},
         {0x6E70, 0},
         {0x6E71, 0},
-        {0x6E72, 0}};
+        {0x6E72, 0}
+    };
     if (!vm_->resume_host(combat_ticket_, reply))
         throw std::runtime_error("Combat outcome rejected by ECL");
     combat_ticket_ = 0;
@@ -590,21 +610,21 @@ Command choose_demo_command(const CombatSession &session)
     if (offered.empty())
         throw std::runtime_error("No legal combat command");
     const auto &active = *std::find_if(state.combatants.begin(), state.combatants.end(),
-                                       [&](const auto &a)
-                                       {
-                                           return a.id == state.actor;
-                                       });
+                                       [&](const auto & a)
+    {
+        return a.id == state.actor;
+    });
     // The module orders its pending check choices by its default AI preference.
     if (!state.initiative_choices.empty() || state.effect_targeting ||
-        state.optional_effect_choice || state.ability_check_choice || state.free_movement ||
-        state.sneak_attack_choice)
+            state.optional_effect_choice || state.ability_check_choice || state.free_movement ||
+            state.sneak_attack_choice)
         return offered.front();
     if (state.temporary_hp_offer)
     {
         const auto verb =
             state.temporary_hp_offer->current.amount >= state.temporary_hp_offer->offered.amount
-                ? "temp_hp_keep"
-                : "temp_hp_use";
+            ? "temp_hp_keep"
+            : "temp_hp_use";
         for (const auto &command : offered)
             if (command.verb == verb)
                 return command;
@@ -614,7 +634,7 @@ Command choose_demo_command(const CombatSession &session)
         const auto &hit = *state.savage_attack_choice;
         const auto verb = !hit.second_damage                       ? "savage_use"
                           : hit.first_damage >= *hit.second_damage ? "savage_first"
-                                                                   : "savage_second";
+                          : "savage_second";
         for (const auto &command : offered)
             if (command.verb == verb)
                 return command;
@@ -662,17 +682,17 @@ Command choose_demo_command(const CombatSession &session)
     };
     for (const auto &command : offered)
         if (command.verb == "opportunity" ||
-            (command.verb == "second_wind" && active.hit_points * 2 <= active.max_hit_points))
+                (command.verb == "second_wind" && active.hit_points * 2 <= active.max_hit_points))
             return command;
     for (const auto &command : offered)
         if (command.verb == "cure_wounds" || command.verb == "cure_wounds_2" ||
-            command.verb == "healing_word" || command.verb == "healing_word_2")
+                command.verb == "healing_word" || command.verb == "healing_word_2")
         {
             const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
-                                               [&](const auto &a)
-                                               {
-                                                   return a.id == command.target;
-                                               });
+                                               [&](const auto & a)
+            {
+                return a.id == command.target;
+            });
             if (target.hit_points * 2 < target.max_hit_points)
                 return command;
         }
@@ -680,15 +700,16 @@ Command choose_demo_command(const CombatSession &session)
         if (command.verb == "blindness")
         {
             const auto target = std::find_if(state.combatants.begin(), state.combatants.end(),
-                                             [&](const auto &a)
-                                             {
-                                                 return a.id == command.target;
-                                             });
+                                             [&](const auto & a)
+            {
+                return a.id == command.target;
+            });
             if (target->conditions.empty())
                 return command;
         }
     for (const auto verb :
-         {"magic_missile", "magic_missile_2", "scorching_ray", "melee", "fire_bolt", "ranged"})
+            {"magic_missile", "magic_missile_2", "scorching_ray", "melee", "fire_bolt", "ranged"
+            })
     {
         const Command *best = nullptr;
         int hp = 100000; // Borrowed view into local offered commands.
@@ -696,10 +717,10 @@ Command choose_demo_command(const CombatSession &session)
             if (command.verb == verb)
             {
                 const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
-                                                   [&](const auto &a)
-                                                   {
-                                                       return a.id == command.target;
-                                                   });
+                                                   [&](const auto & a)
+                {
+                    return a.id == command.target;
+                });
                 if (target.hit_points < hp)
                 {
                     best = &command;

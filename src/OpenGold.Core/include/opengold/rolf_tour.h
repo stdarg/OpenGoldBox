@@ -233,7 +233,7 @@ class RolfTourSession
     void change_area(unsigned id);
     unsigned saved_selected_character_{};
     unsigned
-        event_stage_{}; // 0 tour, 1 before step, 2 search, 3 area entry, 4 pre-camp, 5 interrupted.
+    event_stage_{}; // 0 tour, 1 before step, 2 search, 3 area entry, 4 pre-camp, 5 interrupted.
     RestKind camp_kind_{RestKind::long_rest};
     bool resuming_camp_{};
     bool transition_{}, message_only_{};

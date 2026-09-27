@@ -28,8 +28,8 @@ Edge side(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
 Edge edge(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
 {
     return static_cast<Edge>(
-        side(map, x, y, direction, party_y) |
-        side(map, x + dx[direction], y + dy[direction], (direction + 2) % 4, party_y));
+               side(map, x, y, direction, party_y) |
+               side(map, x + dx[direction], y + dy[direction], (direction + 2) % 4, party_y));
 }
 
 // Functional tile patterns observed with synthetic inputs; see combat-geometry.md.
@@ -144,7 +144,7 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
     if (x >= 16 || y >= 16)
         throw std::out_of_range("Dungeon battlefield requires a valid exploration position");
     DungeonBattlefield result{{50, 25, std::vector<std::uint8_t>(1250, 0)},
-                              std::vector<std::uint8_t>(1250, 22)};
+        std::vector<std::uint8_t>(1250, 22)};
     for (int row = -2; row <= 2; ++row)
         for (int column = -6; column <= 6; ++column)
         {

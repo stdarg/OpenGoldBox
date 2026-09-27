@@ -16,7 +16,7 @@ rules::SpellAccess spell_access(std::span<const rules::FeatureGrant>, std::strin
 // retain every earlier entry. Copying and preparation controls are separate.
 void learn_advancement_spells(rules::CharacterSheet &, std::span<const std::string> selected);
 rules::SpellChoiceOptions spell_choice_options(const rules::CharacterSheet &,
-                                               rules::SpellChoiceContext);
+        rules::SpellChoiceContext);
 void apply_spell_choices(rules::CharacterSheet &, const rules::SpellChoices &,
                          rules::SpellChoiceContext, bool require_complete = true);
 // Known and prepared spells as ids. Ids rather than a packed mask because an

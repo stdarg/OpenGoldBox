@@ -23,7 +23,8 @@ struct AmmunitionDefinition
     std::string_view label;
 };
 
-inline constexpr std::array ammunition_definitions{
+inline constexpr std::array ammunition_definitions
+{
     AmmunitionDefinition{"arrow", Ammunition::arrow, "Arrows"},
     AmmunitionDefinition{"bolt", Ammunition::bolt, "Bolts"},
     AmmunitionDefinition{"sling_bullet", Ammunition::sling_bullet, "Sling bullets"},

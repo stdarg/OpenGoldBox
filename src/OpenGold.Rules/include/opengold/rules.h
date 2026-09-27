@@ -77,7 +77,7 @@ struct AdvancementChoice
     std::vector<std::string> spells;
     TrainingChoices training;
     std::optional<std::string>
-        fighting_style; // Class-granted choice/replacement, separate from a level-four feat.
+    fighting_style; // Class-granted choice/replacement, separate from a level-four feat.
     std::optional<TrainingChoices> spell_learning; // Absent only for historical advancement replay.
     bool operator==(const AdvancementChoice &) const = default;
 };
@@ -246,7 +246,7 @@ struct RestPolicy
 {
     unsigned duration_minutes{}, wait_after_rest_minutes{};
     unsigned minimum_sleep_minutes{}, maximum_light_minutes{}, interruption_extension_minutes{},
-        exertion_limit_minutes{};
+             exertion_limit_minutes{};
 };
 
 struct ResourcePool
@@ -388,7 +388,7 @@ struct CombatantView
     std::vector<ResourcePool> resources;
     std::vector<Message> hp_messages;
     std::vector<std::string>
-        bonus_actions; // Entitlements remain visible after spending the Bonus Action.
+    bonus_actions; // Entitlements remain visible after spending the Bonus Action.
     std::vector<std::string> known_cantrips; // Knowledge persists while casting is unavailable.
     bool naturally_sleeping{}, prone{};
     std::vector<ThrownWeaponOption> thrown_weapons;
@@ -532,12 +532,12 @@ class RulesModule
 
     [[nodiscard]] virtual std::vector<std::string> supported_features() const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession> create(Encounter encounter,
-                                                                std::uint64_t seed) const = 0;
+            std::uint64_t seed) const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession>
     restore(std::string_view checkpoint) const = 0;
     [[nodiscard]] virtual CharacterProfile character_profile(const CharacterSheet &,
-                                                             std::span<const std::string>,
-                                                             EquipmentState equipment = {}) const;
+            std::span<const std::string>,
+            EquipmentState equipment = {}) const;
 
     [[nodiscard]] virtual EquipmentState migrate_equipment(std::span<const std::string>) const
     {
@@ -557,9 +557,9 @@ class RulesModule
     }
 
     [[nodiscard]] virtual EquipmentChange equipment_change(const CharacterSheet &,
-                                                           std::span<const std::string> candidates,
-                                                           EquipmentState, unsigned selected,
-                                                           EquipmentOperation) const;
+            std::span<const std::string> candidates,
+            EquipmentState, unsigned selected,
+            EquipmentOperation) const;
 
     [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const
     {
@@ -567,7 +567,7 @@ class RulesModule
     }
 
     [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterSheet &,
-                                                                  SpellChoiceContext) const
+            SpellChoiceContext) const
     {
         return {};
     }
@@ -590,7 +590,7 @@ class RulesModule
 
     // Returns the effective source-group selections after applying a legal edit.
     virtual TrainingChoices replace_rest_training(CharacterSheet &,
-                                                  std::span<const std::string>) const;
+            std::span<const std::string>) const;
 
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
     training_options(const CharacterSheet &) const
@@ -604,7 +604,7 @@ class RulesModule
     }
 
     [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &sheet,
-                                                                 const AdvancementChoice &) const
+            const AdvancementChoice &) const
     {
         return advancement_options(sheet);
     }
@@ -618,7 +618,7 @@ class RulesModule
                                    const AdvancementChoice &) const;
     virtual void recover(VitalState &state, const CharacterSheet &sheet) const;
     [[nodiscard]] virtual RecoveryInfo recovery_info(const CharacterSheet &,
-                                                     const VitalState &) const;
+            const VitalState &) const;
     // A granting feature must establish entitlement and spend its costs before
     // calling this operation. The choice is explicit; pools never stack.
     virtual void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
@@ -627,7 +627,7 @@ class RulesModule
     // these resource operations. Each spend commits one die and its RNG draw.
     virtual void recover_short_rest(VitalState &, const CharacterSheet &) const;
     [[nodiscard]] virtual Message recover_rest_choice(VitalState &, const CharacterSheet &,
-                                                      std::string_view) const;
+            std::string_view) const;
     virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &, std::uint64_t &) const;
 
     // Advances module-owned lasting effects for a group in deterministic order.
@@ -649,9 +649,9 @@ class RulesModule
 
     [[nodiscard]] virtual RestProgress begin_rest(RestKind) const;
     [[nodiscard]] virtual RestTransition advance_rest(const RestProgress &, std::uint64_t,
-                                                      RestWork) const;
+            RestWork) const;
     [[nodiscard]] virtual RestTransition interrupt_rest(const RestProgress &,
-                                                        RestInterruption) const;
+            RestInterruption) const;
     [[nodiscard]] virtual RestProgress resume_rest(const RestProgress &) const;
     [[nodiscard]] virtual std::uint64_t remaining_rest(const RestProgress &) const;
     virtual void validate_rest(const RestProgress &) const;

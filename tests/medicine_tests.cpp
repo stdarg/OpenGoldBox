@@ -118,25 +118,31 @@ bool stable(const CombatSession &c)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 0, Cell target = {2, 1},
-            unsigned side = 0)
+unsigned side = 0)
 {
     auto c = rules.create(
-        {{8, 8, std::vector<std::uint8_t>(64)},
-         {{1,
-           "campaign-character",
-           "Medic",
-           0,
-           {1, 1},
-           rules.character_profile(h.sheet(), std::vector<std::string>{"quarterstaff"}).data},
-          {2,
-           "patient",
-           "Patient",
-           side,
-           target,
-           {},
-           VitalState{0, false, "SRD5 0 0 0 1 1 0 0 6000 0 FX1 1 0"}},
-          {99, "vanguard", "Enemy", 1, {6, 6}}}},
-        seed);
+    {
+        {8, 8, std::vector<std::uint8_t>(64)},
+        {   {
+                1,
+                "campaign-character",
+                "Medic",
+                0,
+                {1, 1},
+                rules.character_profile(h.sheet(), std::vector<std::string>{"quarterstaff"}).data
+            },
+            {
+                2,
+                "patient",
+                "Patient",
+                side,
+                target,
+                {},
+                VitalState{0, false, "SRD5 0 0 0 1 1 0 0 6000 0 FX1 1 0"}
+            },
+            {99, "vanguard", "Enemy", 1, {6, 6}}
+        }},
+    seed);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     return c;
@@ -155,19 +161,20 @@ void grants()
         check(profile.starts_with(level == 4   ? "PC39 "
                                   : level >= 3 ? "PC31 "
                                   : mind       ? "PC30 "
-                                               : "PC28 "),
-              "New feature profile is conditional");
+                                  : "PC28 "),
+                                                 "New feature profile is conditional");
         if (mind)
         {
             profile.replace(0, 4, "PC29");
             rejects(
                 [&]
-                {
-                    (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                         {{1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                                          {2, "vanguard", "Enemy", 1, {5, 5}}}},
-                                        1);
-                });
+            {
+                (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+                    {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
+                        {2, "vanguard", "Enemy", 1, {5, 5}}
+                    }},
+                1);
+            });
         }
     }
 }
@@ -192,7 +199,7 @@ void outcomes()
             const auto ticket = cmd(*c, "stabilize", 2);
             act(*c, "stabilize", 2);
             check(!unit(*c).action && unit(*c).bonus_action &&
-                      unit(*c).hit_points == before.hit_points,
+                  unit(*c).hit_points == before.hit_points,
                   "Help spends Action only and never heals actor");
             const auto check_choice = c->snapshot().ability_check_choice;
             if (check_choice)
@@ -201,27 +208,27 @@ void outcomes()
                 check(level >= 2 && c->legal_commands().size() == 2 && c->movement_reach(1).empty(),
                       "Only check decisions legal while pending");
                 check(check_choice->modifier == (h.sheet().scores[4] - 10) / 2 &&
-                          check_choice->difficulty == 10,
+                      check_choice->difficulty == 10,
                       "Actual Wisdom and fixed DC");
                 auto saved = c->save();
                 check(!c->submit(ticket) && !c->submit({c->snapshot().revision, 1, 0, "end"}) &&
-                          c->save() == saved,
+                      c->save() == saved,
                       "Stale and unrelated commands are atomic while pending");
                 auto malformed = saved;
                 auto tail = malformed.rfind('\n', malformed.size() - 2);
                 malformed.replace(tail + 1, malformed.size() - tail - 1, "1 999 1 0\n");
                 rejects(
                     [&]
-                    {
-                        (void)rules->restore(malformed);
-                    });
+                {
+                    (void)rules->restore(malformed);
+                });
                 malformed = saved;
                 malformed.replace(malformed.find(module()->identity().version), 6, "0.6.44");
                 rejects(
                     [&]
-                    {
-                        (void)rules->restore(malformed);
-                    });
+                {
+                    (void)rules->restore(malformed);
+                });
                 auto copy = rules->restore(saved);
                 check(copy->save() == saved, "Pending choice round trip is canonical");
                 auto decline = rules->restore(saved);
@@ -280,13 +287,15 @@ void outcomes()
 void all_classes()
 {
     auto rules = custom();
-    for (const auto *klass : {"barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin",
-                              "ranger", "rogue", "sorcerer", "warlock", "wizard"})
+    for (const auto *klass :
+            {"barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin",
+             "ranger", "rogue", "sorcerer", "warlock", "wizard"
+            })
     {
         const unsigned max_level = std::string(klass) == "wizard" || std::string(klass) == "cleric"
-                                       ? 4
+                                   ? 4
                                    : std::string(klass) == "rogue" ? 2
-                                                                   : 1;
+                                   : 1;
         for (unsigned level = 1; level <= max_level; ++level)
         {
             auto h = hero(klass, level);
@@ -298,7 +307,9 @@ void all_classes()
                   "Other classes/level one cannot use Tactical Mind");
         }
     }
-    for (const auto *klass : {"bard", "cleric", "druid", "paladin"})
+    for (const auto *klass :
+            {"bard", "cleric", "druid", "paladin"
+            })
     {
         auto h = hero(klass, 1, true);
         auto c = battle(*rules, h);
@@ -377,11 +388,11 @@ void campaign_and_rest()
             party.apply_combat(c->snapshot());
             party.end_combat();
             const auto capacity = level == 4 ? 3u : 2u;
-            auto winds = [&](const CampaignParty &p)
+            auto winds = [&](const CampaignParty & p)
             {
                 for (const auto &pool :
-                     rules->recovery_info(p.member(id).character.sheet(), p.member(id).vitals)
-                         .resources)
+                        rules->recovery_info(p.member(id).character.sheet(), p.member(id).vitals)
+                        .resources)
                     if (pool.id == "second_wind")
                         return pool.remaining;
                 throw std::runtime_error("Missing Second Wind");
@@ -392,7 +403,7 @@ void campaign_and_rest()
             CampaignParty loaded(module());
             loaded.restore(
                 decode_campaign(bytes, *srd5::character_rules(), *rules, "medicine", nullptr)
-                    .party);
+                .party);
             check(encode_campaign(loaded, nullptr, "medicine") == bytes,
                   "Attained-level grants and post-check recovery save exactly");
             check(bool(loaded.rest(RestKind::short_rest)) && winds(loaded) == capacity,
@@ -400,7 +411,7 @@ void campaign_and_rest()
             if (loaded.state().short_rest)
                 loaded.finish_short_rest(loaded.state().short_rest->ticket);
             check(bool(loaded.rest(RestKind::long_rest)) &&
-                      loaded.member(patient).vitals.hit_points > 0 && winds(loaded) == capacity,
+                  loaded.member(patient).vitals.hit_points > 0 && winds(loaded) == capacity,
                   "Long Rest preserves normal recovery and full shared resource");
             covered = true;
         }
@@ -425,20 +436,25 @@ void fixtures()
         // Custom content is used only in native tests; game fixtures require the standard pack.
         auto normal = module();
         auto actors =
-            std::vector<Participant>{{1,
-                                      "campaign-character",
-                                      "Medic",
-                                      0,
-                                      {1, 1},
-                                      normal->character_profile(h.sheet(), {}).data},
-                                     {2,
-                                      "vanguard",
-                                      "Patient",
-                                      0,
-                                      {2, 1},
-                                      {},
-                                      VitalState{0, false, "SRD5 2 0 0 0 0 0 0 6000 0 FX1 1 0"}},
-                                     {99, "vanguard", "Enemy", 1, {6, 6}}};
+        std::vector<Participant> {{
+                1,
+                "campaign-character",
+                "Medic",
+                0,
+                {1, 1},
+                normal->character_profile(h.sheet(), {}).data
+            },
+            {
+                2,
+                "vanguard",
+                "Patient",
+                0,
+                {2, 1},
+                {},
+                VitalState{0, false, "SRD5 2 0 0 0 0 0 0 6000 0 FX1 1 0"}
+            },
+            {99, "vanguard", "Enemy", 1, {6, 6}}
+        };
         auto ui = normal->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, seed);
         while (ui->snapshot().actor != 1)
             act(*ui, "end");
@@ -459,28 +475,35 @@ void fixtures()
     for (unsigned seed = 0; seed < 100 && !done; ++seed)
     {
         auto c = normal->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1,
-                                   "campaign-character",
-                                   "Rogue medic",
-                                   0,
-                                   {1, 1},
-                                   normal->character_profile(rogue.sheet(), {}).data},
-                                  {2,
-                                   "vanguard",
-                                   "Patient",
-                                   0,
-                                   {2, 1},
-                                   {},
-                                   VitalState{0, false, "SRD5 2 0 0 0 0 0 0 6000 0 FX1 1 0"}},
-                                  {3,
-                                   "vanguard",
-                                   "Sleeper",
-                                   0,
-                                   {1, 2},
-                                   {},
-                                   VitalState{28, false, "SRD3 2 0 0 0 0 0 FX4 1 0 1 1"}},
-                                  {99, "vanguard", "Enemy", 1, {6, 6}}}},
-                                seed);
+            {   {
+                    1,
+                    "campaign-character",
+                    "Rogue medic",
+                    0,
+                    {1, 1},
+                    normal->character_profile(rogue.sheet(), {}).data
+                },
+                {
+                    2,
+                    "vanguard",
+                    "Patient",
+                    0,
+                    {2, 1},
+                    {},
+                    VitalState{0, false, "SRD5 2 0 0 0 0 0 0 6000 0 FX1 1 0"}
+                },
+                {
+                    3,
+                    "vanguard",
+                    "Sleeper",
+                    0,
+                    {1, 2},
+                    {},
+                    VitalState{28, false, "SRD3 2 0 0 0 0 0 FX4 1 0 1 1"}
+                },
+                {99, "vanguard", "Enemy", 1, {6, 6}}
+            }},
+        seed);
         while (c->snapshot().actor != 1)
             act(*c, "end");
         if (!has(*c, "stabilize") || !has(*c, "wake_ally"))

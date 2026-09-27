@@ -11,7 +11,7 @@ namespace presentation
 {
 // Rendering bounds only. The occupied cell remains the rules module's one cell.
 inline godot::Rect2 bottom_aligned_sprite(godot::Vector2 source, godot::Rect2 visible,
-                                          godot::Rect2 cell, godot::Vector2 visible_squares)
+        godot::Rect2 cell, godot::Vector2 visible_squares)
 {
     if (source.x <= 0 || source.y <= 0 || visible.size.x <= 0 || visible.size.y <= 0)
         return {};
@@ -45,15 +45,15 @@ combat_sprite_draw_order(std::span<const opengold::rules::CombatantView> actors)
     std::iota(order.begin(), order.end(), 0);
     std::sort(order.begin(), order.end(),
               [&](auto left, auto right)
-              {
-                  const auto &a = actors[left];
-                  const auto &b = actors[right];
-                  if (a.cell.y != b.cell.y)
-                      return a.cell.y > b.cell.y;
-                  if (a.cell.x != b.cell.x)
-                      return a.cell.x < b.cell.x;
-                  return a.id < b.id;
-              });
+    {
+        const auto &a = actors[left];
+        const auto &b = actors[right];
+        if (a.cell.y != b.cell.y)
+            return a.cell.y > b.cell.y;
+        if (a.cell.x != b.cell.x)
+            return a.cell.x < b.cell.x;
+        return a.id < b.id;
+    });
     return order;
 }
 } // namespace presentation

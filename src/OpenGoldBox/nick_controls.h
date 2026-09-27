@@ -34,7 +34,7 @@ void setup_nick(godot::Node &root, Text text, const godot::Callable &open,
     dialog->connect("window_input", input);
     auto *explanation = add_control<Label>(*dialog, "Text", Rect2(24, 18, 592, 84));
     explanation->set_text(text(N_(
-        "Choose a Nick weapon and attack. This uses the Light extra attack for this turn and does not spend your Bonus Action.")));
+                                   "Choose a Nick weapon and attack. This uses the Light extra attack for this turn and does not spend your Bonus Action.")));
     explanation->set("autowrap_mode", 3);
     auto *label = add_control<Label>(*dialog, "Label", Rect2(24, 112, 592, 28));
     label->set_text(text(N_("Weapon and attack")));
@@ -64,8 +64,8 @@ void refresh_nick(godot::Node &root, const opengold::rules::CombatantView *actor
     button->set_disabled(!available_turn || !available);
     auto *choices = root.get_node<OptionButton>("NickAttack/Choices");
     const String old = choices->get_selected() >= 0
-                           ? String(choices->get_item_metadata(choices->get_selected()))
-                           : String();
+                       ? String(choices->get_item_metadata(choices->get_selected()))
+                       : String();
     choices->clear();
     int first = -1, selected = -1;
     if (actor)
@@ -89,8 +89,8 @@ void refresh_nick(godot::Node &root, const opengold::rules::CombatantView *actor
     choices->select(selected >= 0 ? selected : first);
     choices->set_disabled(!available_turn || !available);
     root.get_node<Button>("NickAttack/Target")
-        ->set_disabled(!available_turn || !available || choices->get_selected() < 0 ||
-                       choices->is_item_disabled(choices->get_selected()));
+    ->set_disabled(!available_turn || !available || choices->get_selected() < 0 ||
+                   choices->is_item_disabled(choices->get_selected()));
     if (root.get_node<Window>("NickAttack")->is_visible() && (!available_turn || !available))
         root.get_node<Window>("NickAttack")->hide();
 }

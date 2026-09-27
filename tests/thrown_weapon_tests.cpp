@@ -13,7 +13,7 @@ namespace
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 const auto fixtures = root / "tests/fixtures";
 constexpr std::array weapons{"dagger", "handaxe", "javelin", "light_hammer",
-                             "spear",  "dart",    "trident"};
+    "spear",  "dart",    "trident"};
 
 void check(bool ok, const char *message)
 {
@@ -155,20 +155,26 @@ void prior_writer_continuation()
     check(combat->save() == current_identity(read("combat-v16-thrown-choice.save"), *rules),
           "Prior thrown attack preserves pending Savage dice and resources");
     auto pending = rules->restore(combat->save());
-    for (auto *session : {combat.get(), pending.get()})
+    for (auto *session :
+            {
+                combat.get(), pending.get()
+            })
     {
         act(*session, "savage_use");
         act(*session, "savage_second");
     }
     check(combat->save() == pending->save() &&
-              combat->save() == current_identity(read("combat-v18-thrown-free.save"), *rules),
+          combat->save() == current_identity(read("combat-v18-thrown-free.save"), *rules),
           "Prior critical preserves accepted damage and immediate Champion phase");
     auto free_move = rules->restore(combat->save());
-    for (auto *session : {combat.get(), pending.get(), free_move.get()})
+    for (auto *session :
+            {
+                combat.get(), pending.get(), free_move.get()
+            })
         finish_second_throw(*session);
     check(
         combat->save() == pending->save() && combat->save() == free_move->save() &&
-            combat->save() == current_identity(read("combat-v16-thrown-continued.save"), *rules),
+        combat->save() == current_identity(read("combat-v16-thrown-continued.save"), *rules),
         "Prior writer's second throw continues byte-exactly without changing its inventory semantics");
 
     const auto old = read("campaign-v11-thrown-before.ogs");
@@ -177,7 +183,7 @@ void prior_writer_continuation()
         decode_campaign(old, *srd5::character_rules(), *rules, "thrown-before", nullptr).party);
     const auto &member = party.member(1);
     check(member.character.sheet().level == 4 && member.wealth[3] == 37 &&
-              member.equipped == std::vector<std::uint64_t>{3, 8},
+          member.equipped == std::vector<std::uint64_t> {3, 8},
           "Prior campaign retains level, wealth and equipped identities");
     for (unsigned index = 0; index < weapons.size(); ++index)
     {
@@ -186,7 +192,7 @@ void prior_writer_continuation()
               "Each actual prior carried/held thrown stack retains its quantity and identity");
     }
     const auto saved = encode_campaign(party, nullptr, "thrown-before");
-    const auto body = [](const std::string &bytes)
+    const auto body = [](const std::string & bytes)
     {
         return bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1);
     };
@@ -216,8 +222,8 @@ void physical_inventory()
             for (const auto weapon : weapons)
             {
                 if (level > 1 && std::string_view(klass) != "fighter" &&
-                    std::string_view(klass) != "cleric" && std::string_view(klass) != "wizard" &&
-                    std::string_view(klass) != "rogue")
+                        std::string_view(klass) != "cleric" && std::string_view(klass) != "wizard" &&
+                        std::string_view(klass) != "rogue")
                     continue;
                 CampaignParty party(module());
                 auto draft = hero().creation_data();
@@ -245,8 +251,8 @@ void physical_inventory()
                     act(*combat, "end");
                 auto before = combat->save();
                 check(before.starts_with(std::string_view(klass) == "rogue" ? "OGCOMBAT 21 "
-                                                                            : "OGCOMBAT 19 "),
-                      "New physical encounters use their semantic checkpoint");
+                                         : "OGCOMBAT 19 "),
+                                                                    "New physical encounters use their semantic checkpoint");
                 check(rules->restore(before)->save() == before,
                       "Physical inventory round trips before throw");
                 auto offered = command(*combat, "throw", 2);
@@ -257,20 +263,20 @@ void physical_inventory()
                 const auto snapshot = combat->snapshot();
                 const auto &view =
                     *std::find_if(snapshot.combatants.begin(), snapshot.combatants.end(),
-                                  [&](const auto &a)
-                                  {
-                                      return a.id == id;
-                                  });
+                                  [&](const auto & a)
+                {
+                    return a.id == id;
+                });
                 check(view.thrown_weapons.size() == 1 &&
-                          view.thrown_weapons.front().label.source.find("stow") !=
-                              std::string::npos,
+                      view.thrown_weapons.front().label.source.find("stow") !=
+                      std::string::npos,
                       "Necessary stowing is shown before the attack");
                 check(combat->submit(offered), "Every class can throw carried weapon");
                 check(!combat->submit(offered), "Stale command cannot spend a second weapon");
                 party.apply_combat(combat->snapshot());
                 check(party.member(id).character.inventory().find(stack)->get().quantity == 2,
                       "Exactly one actual inventory unit spent");
-                check(party.member(id).equipped == std::vector<std::uint64_t>{shield},
+                check(party.member(id).equipped == std::vector<std::uint64_t> {shield},
                       "Sword stowed while shield remains equipped");
                 auto after = combat->save();
                 check(rules->restore(after)->save() == after,
@@ -279,12 +285,12 @@ void physical_inventory()
                 party.apply_combat(combat->snapshot());
                 const auto landed = combat->snapshot();
                 const auto item = std::find_if(landed.held_items.begin(), landed.held_items.end(),
-                                               [&](const auto &i)
-                                               {
-                                                   return !i.holder && i.definition == weapon;
-                                               });
+                                               [&](const auto & i)
+                {
+                    return !i.holder && i.definition == weapon;
+                });
                 check(item != landed.held_items.end() && item->cell == Cell{2, 1} &&
-                          item->quantity == 1 && item->inventory_id == stack,
+                      item->quantity == 1 && item->inventory_id == stack,
                       "Thrown unit lands at target with original source identity");
                 const auto original_token = item->id;
                 act(*combat, "pick_up", original_token);
@@ -300,7 +306,7 @@ void physical_inventory()
                 CampaignParty loaded(module());
                 loaded.restore(
                     decode_campaign(bytes, *srd5::character_rules(), *rules, "physical", nullptr)
-                        .party);
+                    .party);
                 check(encode_campaign(loaded, nullptr, "physical") == bytes,
                       "Post-combat equipment and quantities survive campaign save");
             }
@@ -315,7 +321,7 @@ void critical_stack()
         CampaignParty party(module());
         party.restore(decode_campaign(read("campaign-v11-thrown-before.ogs"),
                                       *srd5::character_rules(), *rules, "thrown-before", nullptr)
-                          .party);
+                      .party);
         auto actors = party.participants();
         actors.front().cell = {1, 1};
         actors.push_back({2, "vanguard", "Target", 1, {5, 1}});
@@ -335,7 +341,10 @@ void critical_stack()
         auto restored = rules->restore(combat->save());
         check(restored->save() == combat->save(),
               "Critical thrown choice preserves damage context after weapon leaves hand");
-        for (auto *session : {combat.get(), restored.get()})
+        for (auto *session :
+                {
+                    combat.get(), restored.get()
+                })
         {
             act(*session, "savage_use");
             act(*session, "savage_second");
@@ -353,10 +362,10 @@ void critical_stack()
                 const auto snapshot = combat->snapshot();
                 const auto item =
                     std::find_if(snapshot.held_items.begin(), snapshot.held_items.end(),
-                                 [&](const auto &i)
-                                 {
-                                     return i.id == command.item;
-                                 });
+                                 [&](const auto & i)
+                {
+                    return i.id == command.item;
+                });
                 if (item->inventory_id == 3)
                 {
                     throw_again = command;
@@ -399,10 +408,10 @@ void transfer_and_recovery()
     act(*combat, "throw", 99);
     settle(*combat);
     party.apply_combat(combat->snapshot());
-    check(party.member(first).equipped == std::vector<std::uint64_t>{sword},
+    check(party.member(first).equipped == std::vector<std::uint64_t> {sword},
           "Free hand draws and throws without unnecessarily stowing held weapon");
     check(party.member(first).character.inventory().find(stack)->get().quantity == 999999 &&
-              combat->snapshot().held_items.size() == 3,
+          combat->snapshot().held_items.size() == 3,
           "Large stack splits exactly one physical unit");
     const auto state = combat->snapshot();
     auto forged = state;
@@ -417,15 +426,15 @@ void transfer_and_recovery()
         rejected = true;
     }
     check(rejected &&
-              party.member(first).character.inventory().find(stack)->get().quantity == 999999,
+          party.member(first).character.inventory().find(stack)->get().quantity == 999999,
           "Forged quantity handoff rejects transactionally");
     while (combat->snapshot().actor != second)
         act(*combat, "end");
     act(*combat, "pick_up");
     party.apply_combat(combat->snapshot());
     check(party.member(second).character.inventory().items().size() == 1 &&
-              party.member(second).character.inventory().items()[0].quantity == 1 &&
-              party.member(second).character.inventory().items()[0].name == "Large stack",
+          party.member(second).character.inventory().items()[0].quantity == 1 &&
+          party.member(second).character.inventory().items()[0].name == "Large stack",
           "Companion pickup preserves source metadata and transfers exactly one unit");
     party.end_combat();
     const auto saved = encode_campaign(party, nullptr, "transfer");
@@ -461,7 +470,7 @@ void transfer_and_recovery()
         for (const auto &i : victory.member(id).character.inventory().items())
             quantity += i.quantity;
         check(quantity == 3 && victory.state().detached_items.empty() &&
-                  victory.member(id).character.inventory().find(item)->get().quantity == 2,
+              victory.member(id).character.inventory().find(item)->get().quantity == 2,
               "Safe recovery returns thrown unit to owner while retaining remaining stack ID");
         recovered = true;
     }

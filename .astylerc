@@ -1,0 +1,64 @@
+# Artistic Style options consistent with docs/CODING_STYLE.md and the
+# project's .clang-format (LLVM base, Allman braces, 4-space indent, 100
+# columns). clang-format remains the pinned formatter for CI and the
+# required-braces/blank-line rules; this file is for editors and IDE
+# integrations that use astyle instead. Validated with Artistic Style 3.6.18.
+#
+# Deliberately NOT covered here, matching .clang-format's own limits:
+#   - Braces are required around every if/else/loop body (CODING_STYLE.md),
+#     but neither formatter is allowed to add or remove them automatically:
+#     astyle's brace insertion, like clang-format's InsertBraces, edits code
+#     on token matching alone and can misread macros. Check braces in review.
+#   - A blank line before/after every definition block (function, class,
+#     struct, enum, namespace) is a clang-format-only option
+#     (SeparateDefinitionBlocks); astyle has no equivalent, so leave blank
+#     lines around definitions to the author.
+#   - Line wrapping at the 100-column limit is reflowed by clang-format's
+#     expression-aware algorithm. astyle's max-code-length only breaks at the
+#     limit; it will not match clang-format's wrapping choices exactly.
+#   - Include order and string-literal splitting are left alone by both
+#     formatters; astyle never touches either by default.
+#
+# Treat this file the same way as .clang-format's usage note: format an
+# agreed file set explicitly, never the whole tree recursively, and review
+# the diff before committing a formatting-only change.
+
+mode=c
+
+# Allman: opening and closing braces on their own lines.
+style=allman
+
+# Indent width 4, spaces only, never tabs.
+indent=spaces=4
+convert-tabs
+
+# Continuation lines get one extra 4-space indent level (ContinuationIndentWidth: 4).
+indent-continuation=1
+
+# Half-indent public:/protected:/private: labels; full indent for members.
+indent-modifiers
+
+# 100-column limit. See the caveat above: astyle's wrapping is not
+# expression-aware like clang-format's.
+max-code-length=100
+
+# Space between a control keyword and its opening parenthesis ("if (x)"),
+# never after a function name ("f(x)"); no padding just inside parentheses.
+pad-header
+unpad-paren
+
+# Spaces around binary/assignment operators and after commas.
+pad-oper
+pad-comma
+
+# "*" and "&" attach to the declared name, not the type: "const auto *item",
+# "const Actor &actor".
+align-pointer=name
+align-reference=name
+
+# Collapse runs of blank lines to at most one (MaxEmptyLinesToKeep: 1).
+squeeze-lines=1
+
+# Do not compress short if/loop/function bodies onto one line; keep every
+# statement on its own line (AllowShort...None/Never/false in .clang-format).
+# This is astyle's default: no keep-one-line-blocks / keep-one-line-statements.

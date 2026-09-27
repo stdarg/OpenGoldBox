@@ -7,8 +7,8 @@ std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record)
 {
     // PoR 8X8D: one 17-byte image header, then count packed 8x8 frames.
     if (record.size() < 17 || record[0] != 8 || record[1] != 0 || record[2] != 1 ||
-        record[3] != 0 || !record[8] ||
-        record.size() != 17 + static_cast<std::size_t>(record[8]) * 32)
+            record[3] != 0 || !record[8] ||
+            record.size() != 17 + static_cast<std::size_t>(record[8]) * 32)
         return std::nullopt;
     WallTiles result(record[8]);
     for (std::size_t frame = 0; frame < result.size(); ++frame)
@@ -23,25 +23,25 @@ std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record)
 }
 
 std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definitions,
-                                          std::span<const WallTile> tiles)
+        std::span<const WallTile> tiles)
 {
     constexpr unsigned slice_size = 156;
     if (definitions.empty() || definitions.size() % slice_size ||
-        definitions.size() > 15 * slice_size || tiles.empty() || tiles.size() > 256)
+            definitions.size() > 15 * slice_size || tiles.empty() || tiles.size() > 256)
         return std::nullopt;
     for (const auto &tile : tiles)
         if (std::any_of(tile.begin(), tile.end(),
                         [](auto color)
-                        {
-                            return color > 15;
-                        }))
-            return std::nullopt;
+    {
+        return color > 15;
+    }))
+    return std::nullopt;
     if (std::any_of(definitions.begin(), definitions.end(),
                     [&](auto index)
-                    {
-                        return index >= tiles.size();
-                    }))
-        return std::nullopt;
+{
+    return index >= tiles.size();
+    }))
+    return std::nullopt;
 
     // Data-layout facts: ten stored perspectives per 156-byte appearance.
     constexpr std::array<unsigned, 10> offsets{0, 2, 6, 10, 22, 38, 54, 110, 132, 154};
@@ -49,21 +49,22 @@ std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definiti
     constexpr std::array<unsigned, 10> rows{2, 4, 4, 4, 8, 8, 8, 11, 11, 2};
     // Normal EGA palette. Wall index 8 is gray; black (0) is opaque.
     constexpr std::array<std::array<std::uint8_t, 3>, 16> palette{{{0, 0, 0},
-                                                                   {0, 0, 170},
-                                                                   {0, 170, 0},
-                                                                   {0, 170, 170},
-                                                                   {170, 0, 0},
-                                                                   {170, 0, 170},
-                                                                   {170, 85, 0},
-                                                                   {170, 170, 170},
-                                                                   {85, 85, 85},
-                                                                   {85, 85, 255},
-                                                                   {85, 255, 85},
-                                                                   {85, 255, 255},
-                                                                   {255, 85, 85},
-                                                                   {255, 85, 255},
-                                                                   {255, 255, 85},
-                                                                   {255, 255, 255}}};
+            {0, 0, 170},
+            {0, 170, 0},
+            {0, 170, 170},
+            {170, 0, 0},
+            {170, 0, 170},
+            {170, 85, 0},
+            {170, 170, 170},
+            {85, 85, 85},
+            {85, 85, 255},
+            {85, 255, 85},
+            {85, 255, 255},
+            {255, 85, 85},
+            {255, 85, 255},
+            {255, 255, 85},
+            {255, 255, 255}
+        }};
     WallArtSet result;
     result.appearances.resize(definitions.size() / slice_size);
     for (std::size_t appearance = 0; appearance < result.appearances.size(); ++appearance)

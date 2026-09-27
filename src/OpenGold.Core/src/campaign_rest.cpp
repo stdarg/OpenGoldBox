@@ -140,10 +140,10 @@ void CampaignParty::short_rest_benefits(PartyState &state,
     for (auto id : members)
     {
         auto &member = *std::find_if(state.roster.begin(), state.roster.end(),
-                                     [&](const auto &m)
-                                     {
-                                         return m.id == id;
-                                     });
+                                     [&](const auto & m)
+        {
+            return m.id == id;
+        });
         if (!rules_->recovery_info(member.character.sheet(), member.vitals).can_rest)
             continue;
         rules_->recover_short_rest(member.vitals, member.character.sheet());
@@ -160,15 +160,15 @@ void CampaignParty::apply_rest_work(PartyState &state, std::span<const MemberId>
     for (auto id : members)
     {
         auto found = std::find_if(state.roster.begin(), state.roster.end(),
-                                  [&](const auto &m)
-                                  {
-                                      return m.id == id;
-                                  });
+                                  [&](const auto & m)
+        {
+            return m.id == id;
+        });
         if (found == state.roster.end())
             throw std::runtime_error("Unknown rest member");
         release_rest_equipment(state, *found);
         if (work != RestWork::sleep ||
-            rules_->recovery_info(found->character.sheet(), found->vitals).can_rest)
+                rules_->recovery_info(found->character.sheet(), found->vitals).can_rest)
             rules_->set_rest_work(found->vitals, found->character.sheet(), work);
         release_rest_equipment(state, *found);
     }
@@ -190,7 +190,7 @@ void CampaignParty::release_rest_equipment(PartyState &state, PartyMember &membe
         if (item.rest_session == session)
             token = std::max(token, item.token);
     if (state.detached_items.size() + released.size() > 4096 ||
-        released.size() > std::numeric_limits<unsigned>::max() - token)
+            released.size() > std::numeric_limits<unsigned>::max() - token)
         throw std::runtime_error("Too many detached inventory items");
     std::set<unsigned> indices;
     for (const auto index : released)
@@ -207,7 +207,7 @@ void CampaignParty::release_rest_equipment(PartyState &state, PartyMember &membe
         if (const auto source = member.item_sources.find(id); source != member.item_sources.end())
             original = source->second;
         state.detached_items.push_back(
-            {0, ++token, member.id, 0, {}, std::move(item), std::move(original), session});
+        {0, ++token, member.id, 0, {}, std::move(item), std::move(original), session});
         member.character.inventory().remove(id);
         std::erase(member.equipped, id);
         if (!member.character.inventory().find(id))
@@ -225,28 +225,28 @@ void CampaignParty::collect_equipment(PartyState &state, std::span<const MemberI
     for (auto it = state.detached_items.begin(); it != state.detached_items.end();)
     {
         if (it->holder || it->scope != scope || it->rest_session != rest_session ||
-            std::find(tokens.begin(), tokens.end(), it->token) == tokens.end())
+                std::find(tokens.begin(), tokens.end(), it->token) == tokens.end())
         {
             ++it;
             continue;
         }
         auto owner = std::find_if(state.roster.begin(), state.roster.end(),
-                                  [&](const auto &m)
-                                  {
-                                      return m.id == it->original_owner;
-                                  });
+                                  [&](const auto & m)
+        {
+            return m.id == it->original_owner;
+        });
         if (owner == state.roster.end())
             throw std::runtime_error("Recovery item has no original owner");
         if (owner->vitals.dead)
             owner = std::find_if(state.roster.begin(), state.roster.end(),
-                                 [&](const auto &m)
-                                 {
-                                     return m.id == collectors.front();
-                                 });
+                                 [&](const auto & m)
+        {
+            return m.id == collectors.front();
+        });
         if (owner == state.roster.end())
             throw std::runtime_error("Recovery collector is missing");
         const auto id = owner->character.inventory().add(it->item.definition_id, it->item.name, 1,
-                                                         it->item.original_type);
+            it->item.original_type);
         if (it->original)
             owner->item_sources.emplace(id, *it->original);
         it = state.detached_items.erase(it);
@@ -260,10 +260,10 @@ void CampaignParty::recover_camp(PartyState &state) const
         if (id)
         {
             auto &m = *std::find_if(state.roster.begin(), state.roster.end(),
-                                    [&](const auto &member)
-                                    {
-                                        return member.id == id;
-                                    });
+                                    [&](const auto & member)
+            {
+                return member.id == id;
+            });
             std::vector<std::string> gear;
             for (auto item : m.equipped)
                 gear.push_back(m.character.inventory().find(item)->get().definition_id);
@@ -311,7 +311,7 @@ void CampaignParty::interrupt_rest(RestTicket ticket, RestInterruption cause)
 }
 
 std::optional<RestResult> CampaignParty::advance_rest(RestTicket ticket, std::uint64_t milliseconds,
-                                                      RestWork work)
+        RestWork work)
 {
     require_activity_ticket(ticket);
     if (state_.short_rest)
@@ -336,27 +336,29 @@ std::optional<RestResult> CampaignParty::advance_rest(RestTicket ticket, std::ui
         for (auto id : activity.members)
         {
             auto &member = *std::find_if(next.roster.begin(), next.roster.end(),
-                                         [&](const auto &m)
-                                         {
-                                             return m.id == id;
-                                         });
+                                         [&](const auto & m)
+            {
+                return m.id == id;
+            });
             if (!rules_->recovery_info(member.character.sheet(), member.vitals).can_rest)
                 continue;
             rules_->recover(member.vitals, member.character.sheet());
             const auto choices = rules_->spell_choice_options(member.character.sheet(),
-                                                              rules::SpellChoiceContext::long_rest);
+                rules::SpellChoiceContext::long_rest);
             if (choices.may_prepare || choices.may_replace)
             {
                 if (!next.spell_rest)
-                    next.spell_rest = ShortRestSession{
-                        activity.ticket, next.time_minutes, next.subminute_milliseconds, {}};
+                    next.spell_rest = ShortRestSession
+                {
+                    activity.ticket, next.time_minutes, next.subminute_milliseconds, {}};
                 next.spell_rest->members.push_back(id);
             }
             if (rules_->rest_training_options(member.character.sheet()))
             {
                 if (!next.training_rest)
-                    next.training_rest = ShortRestSession{
-                        activity.ticket, next.time_minutes, next.subminute_milliseconds, {}};
+                    next.training_rest = ShortRestSession
+                {
+                    activity.ticket, next.time_minutes, next.subminute_milliseconds, {}};
                 next.training_rest->members.push_back(id);
             }
             result.members.push_back(id);
@@ -386,10 +388,10 @@ void CampaignParty::resume_rest(RestTicket ticket)
     auto &activity = *next.rest_activity;
     std::erase_if(activity.members,
                   [&](auto id)
-                  {
-                      const auto &m = member(id);
-                      return !rules_->recovery_info(m.character.sheet(), m.vitals).can_rest;
-                  });
+    {
+        const auto &m = member(id);
+        return !rules_->recovery_info(m.character.sheet(), m.vitals).can_rest;
+    });
     if (activity.members.empty())
         throw std::runtime_error("No eligible member can resume resting");
     static_cast<rules::RestProgress &>(activity) = rules_->resume_rest(activity);
@@ -425,8 +427,8 @@ void CampaignParty::require_rest_ticket(RestTicket ticket) const
 {
     outside_combat();
     if (!state_.short_rest || state_.short_rest->ticket != ticket ||
-        state_.short_rest->completed_minutes != state_.time_minutes ||
-        state_.short_rest->completed_subminute_milliseconds != state_.subminute_milliseconds)
+            state_.short_rest->completed_minutes != state_.time_minutes ||
+            state_.short_rest->completed_subminute_milliseconds != state_.subminute_milliseconds)
         throw std::runtime_error("Expired Short Rest spending request");
 }
 
@@ -440,10 +442,10 @@ rules::HitDieResult CampaignParty::spend_hit_die(RestTicket ticket, MemberId id)
         throw std::runtime_error("Rest revision exhausted");
     auto next = state_;
     auto &m = *std::find_if(next.roster.begin(), next.roster.end(),
-                            [&](const auto &value)
-                            {
-                                return value.id == id;
-                            });
+                            [&](const auto & value)
+    {
+        return value.id == id;
+    });
     const auto result = rules_->spend_hit_die(m.vitals, m.character.sheet(), next.random_state);
     ++next.short_rest->ticket.revision;
     if (next.rest_activity)
@@ -453,7 +455,7 @@ rules::HitDieResult CampaignParty::spend_hit_die(RestTicket ticket, MemberId id)
 }
 
 rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id,
-                                                  std::string_view choice)
+        std::string_view choice)
 {
     require_rest_ticket(ticket);
     const auto &session = *state_.short_rest;
@@ -463,10 +465,10 @@ rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id
         throw std::runtime_error("Rest revision exhausted");
     auto next = state_;
     auto &member = *std::find_if(next.roster.begin(), next.roster.end(),
-                                 [&](const auto &value)
-                                 {
-                                     return value.id == id;
-                                 });
+                                 [&](const auto & value)
+    {
+        return value.id == id;
+    });
     auto result = rules_->recover_rest_choice(member.vitals, member.character.sheet(), choice);
     ++next.short_rest->ticket.revision;
     if (next.rest_activity)

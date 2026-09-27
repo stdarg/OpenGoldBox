@@ -47,7 +47,7 @@ Character hero(std::string klass = "fighter")
     d.gender = "female";
     d.character_class = klass;
     if (klass == "cleric")
-        d.cantrips = std::vector<std::string>{"sacred_flame"};
+        d.cantrips = std::vector<std::string> {"sacred_flame"};
     d.background = "soldier";
     d.alignment = "neutral_good";
     d.name = "Sleeper";
@@ -89,20 +89,23 @@ void codec()
     check(out.str() == "FX4 1 0 1 1", "Canonical sleep codec");
     std::istringstream in(out.str());
     check(fx::read_effects(in) == state, "Sleep round trips");
-    for (const auto bad : {"FX4 1 0 1 0", "FX4 1 0 2 1", "FX4 1 0 0 0", "FX4 1 0 -1 1"})
+    for (const auto bad :
+            {"FX4 1 0 1 0", "FX4 1 0 2 1", "FX4 1 0 0 0", "FX4 1 0 -1 1"
+            })
         rejects(
             [&]
-            {
-                std::istringstream input(bad);
-                (void)fx::read_effects(input);
-            });
+    {
+        std::istringstream input(bad);
+        (void)fx::read_effects(input);
+    });
     std::uint64_t rng = 17;
     std::array<fx::EffectSubject, 1> subjects{{{1, state, {}}}};
     fx::elapse_effects(subjects, 86400000, rng);
     check(state.sleeping && state.prone && rng == 17,
           "Sleep has no guessed expiry, saving throw or RNG cost");
     for (const auto old :
-         {"FX1 1 0", "FX2 2 1 1 2 1 1 \"Caster\" 0 6000 0", "FX3 2 1 1 3 1 1 \"Caster\" 0 6000 0"})
+            {"FX1 1 0", "FX2 2 1 1 2 1 1 \"Caster\" 0 6000 0", "FX3 2 1 1 3 1 1 \"Caster\" 0 6000 0"
+            })
     {
         std::istringstream input(old);
         const auto decoded = fx::read_effects(input);
@@ -134,13 +137,13 @@ void combat()
     auto s = rules->create({{9, 7, std::vector<std::uint8_t>(63)}, participants}, 37);
     const auto sleeper = unit(*s, id);
     check(sleeper.naturally_sleeping && sleeper.prone && !sleeper.conscious &&
-              sleeper.movement_feet == 0 && !sleeper.action && !sleeper.reaction &&
-              !sleeper.bonus_action,
+          sleeper.movement_feet == 0 && !sleeper.action && !sleeper.reaction &&
+          !sleeper.bonus_action,
           "Sleep grants Unconscious without changing HP");
     check(s->movement_reach(id).empty(), "Sleeping actor has no movement preview");
     const auto output = std::filesystem::path(OPENGOLD_BINARY_DIR) / "sleep-fixtures";
     std::filesystem::create_directories(output);
-    const auto write = [&](const char *name, const CombatSession &c)
+    const auto write = [&](const char *name, const CombatSession & c)
     {
         std::ofstream out(output / (std::string(name) + ".save"));
         out << c.save();
@@ -175,11 +178,11 @@ void combat()
     write("unreachable", *blocked);
     const auto offers = blocked->legal_commands();
     check(std::none_of(offers.begin(), offers.end(),
-                       [](const auto &c)
-                       {
-                           return c.verb == "wake_ally";
-                       }),
-          "Wake cannot reach through a blocked diagonal");
+                       [](const auto & c)
+    {
+        return c.verb == "wake_ally";
+    }),
+    "Wake cannot reach through a blocked diagonal");
 }
 
 void damage_and_saves()
@@ -194,18 +197,21 @@ void damage_and_saves()
     for (unsigned seed = 1; seed < 100 && !witnessed; ++seed)
     {
         auto battle = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                     {{1, "bandit", "Attacker", 0, {2, 2}},
-                                      {2,
-                                       "campaign-character",
-                                       "Sleeper",
-                                       1,
-                                       {3, 2},
-                                       rules->character_profile(target.sheet(), {}).data,
-                                       state}}},
-                                    seed);
+            {   {1, "bandit", "Attacker", 0, {2, 2}},
+                {
+                    2,
+                    "campaign-character",
+                    "Sleeper",
+                    1,
+                    {3, 2},
+                    rules->character_profile(target.sheet(), {}).data,
+                    state
+                }
+            }},
+        seed);
         const auto initial = battle->save();
         check(!battle->submit({battle->snapshot().revision, 2, 1, "melee"}) &&
-                  battle->save() == initial,
+              battle->save() == initial,
               "Sleeping actor cannot submit attacks");
         check(battle->submit(command(*battle, "melee", 2)), "Attack sleeper");
         const auto victim = unit(*battle, 2);
@@ -222,20 +228,25 @@ void damage_and_saves()
     check(witnessed, "A non-natural-20 hit within five feet is critical against sleep");
     const auto cleric = hero("cleric");
     auto spell = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                {{1,
-                                  "campaign-character",
-                                  "Cleric",
-                                  0,
-                                  {2, 2},
-                                  rules->character_profile(cleric.sheet(), {}).data},
-                                 {2,
-                                  "campaign-character",
-                                  "Sleeper",
-                                  1,
-                                  {4, 2},
-                                  rules->character_profile(target.sheet(), {}).data,
-                                  state}}},
-                               9);
+        {   {
+                1,
+                "campaign-character",
+                "Cleric",
+                0,
+                {2, 2},
+                rules->character_profile(cleric.sheet(), {}).data
+            },
+            {
+                2,
+                "campaign-character",
+                "Sleeper",
+                1,
+                {4, 2},
+                rules->character_profile(target.sheet(), {}).data,
+                state
+            }
+        }},
+    9);
     check(spell->submit(command(*spell, "sacred_flame", 2)),
           "Dexterity-save spell targets sleeper");
     bool failed = false;
@@ -267,7 +278,7 @@ void prior_writer()
     check(battle->save() == normalized(before),
           "Actual 0.6.40 combat retains exact state apart from identity");
     check(battle->submit(command(*battle, "cunning_dash")) &&
-              battle->submit(command(*battle, "dash")),
+          battle->submit(command(*battle, "dash")),
           "Continue actual prior writer's actions");
     check(battle->save() == normalized(read("combat-v15-sleep-continued.save")),
           "Prior writer's next commands/resources/RNG remain byte-exact");
@@ -281,29 +292,34 @@ void held_items()
     rules->set_rest_work(sleep, person.sheet(), RestWork::sleep);
     const std::array<std::string, 2> gear{"longsword", "shield"};
     auto battle = rules->create({{9, 7, std::vector<std::uint8_t>(63)},
-                                 {{1,
-                                   "campaign-character",
-                                   "Sleeper",
-                                   0,
-                                   {2, 2},
-                                   rules->character_profile(person.sheet(), gear).data,
-                                   sleep},
-                                  {2,
-                                   "campaign-character",
-                                   "Ally",
-                                   0,
-                                   {2, 3},
-                                   rules->character_profile(person.sheet(), {}).data},
-                                  {3, "bandit", "Enemy", 1, {6, 2}}}},
-                                37);
+        {   {
+                1,
+                "campaign-character",
+                "Sleeper",
+                0,
+                {2, 2},
+                rules->character_profile(person.sheet(), gear).data,
+                sleep
+            },
+            {
+                2,
+                "campaign-character",
+                "Ally",
+                0,
+                {2, 3},
+                rules->character_profile(person.sheet(), {}).data
+            },
+            {3, "bandit", "Enemy", 1, {6, 2}}
+        }},
+    37);
     const auto state = battle->snapshot();
     check(state.held_items.size() == 2 && state.held_items[0].holder == 0 &&
-              state.held_items[1].holder == 0,
+          state.held_items[1].holder == 0,
           "Sleep drops both held weapon and shield");
     check(unit(*battle, 1).armor_class == rules->character_profile(person.sheet(), {}).armor_class,
           "Dropped shield no longer supplies AC");
     check(battle->save().starts_with("OGCOMBAT 16 ") &&
-              rules->restore(battle->save())->save() == battle->save(),
+          rules->restore(battle->save())->save() == battle->save(),
           "Dropped equipment and budgets round trip");
     turn(*battle, 2);
     const auto fixture_path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "sleep-fixtures";
@@ -324,17 +340,17 @@ void held_items()
     check(battle->save() == saved, "Cross-character pickup persists exactly");
     const auto commands = battle->legal_commands();
     check(std::none_of(commands.begin(), commands.end(),
-                       [](const auto &c)
-                       {
-                           return c.verb == "pick_up";
-                       }),
-          "Shield pickup needs available Utilize action");
+                       [](const auto & c)
+    {
+        return c.verb == "pick_up";
+    }),
+    "Shield pickup needs available Utilize action");
     turn(*battle, 1);
     check(battle->submit(command(*battle, "pick_up", 2)),
           "Owner can recover shield with an Action");
     check(!unit(*battle, 1).action &&
-              unit(*battle, 1).armor_class ==
-                  rules->character_profile(person.sheet(), gear).armor_class,
+          unit(*battle, 1).armor_class ==
+          rules->character_profile(person.sheet(), gear).armor_class,
           "Shield recovery restores only AC and spends Action");
     check(rules->restore(battle->save())->save() == battle->save(),
           "Shield recovery reloads exactly");
@@ -345,28 +361,31 @@ void held_items()
     invalid.replace(suffix + 5, 1, "999");
     rejects(
         [&]
-        {
-            (void)rules->restore(invalid);
-        });
+    {
+        (void)rules->restore(invalid);
+    });
     bool witnessed = false;
     for (unsigned seed = 1; seed < 100 && !witnessed; ++seed)
     {
         auto hit = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                  {{1, "bandit", "Attacker", 0, {2, 2}},
-                                   {2,
-                                    "campaign-character",
-                                    "Wounded",
-                                    1,
-                                    {3, 2},
-                                    rules->character_profile(person.sheet(), gear).data,
-                                    VitalState{1}}}},
-                                 seed);
+            {   {1, "bandit", "Attacker", 0, {2, 2}},
+                {
+                    2,
+                    "campaign-character",
+                    "Wounded",
+                    1,
+                    {3, 2},
+                    rules->character_profile(person.sheet(), gear).data,
+                    VitalState{1}
+                }
+            }},
+        seed);
         const auto available = hit->legal_commands();
         const auto melee = std::find_if(available.begin(), available.end(),
-                                        [](const auto &c)
-                                        {
-                                            return c.verb == "melee";
-                                        });
+                                        [](const auto & c)
+        {
+            return c.verb == "melee";
+        });
         if (melee == available.end())
             continue;
         check(hit->submit(*melee), "Damage fixture attack");
@@ -375,12 +394,12 @@ void held_items()
         witnessed = true;
         const auto fallen = hit->snapshot();
         check(fallen.held_items.size() == 2 &&
-                  std::all_of(fallen.held_items.begin(), fallen.held_items.end(),
-                              [](const auto &i)
-                              {
-                                  return !i.holder;
-                              }),
-              "Falling to zero HP drops held gear");
+              std::all_of(fallen.held_items.begin(), fallen.held_items.end(),
+                          [](const auto & i)
+        {
+            return !i.holder;
+        }),
+        "Falling to zero HP drops held gear");
         check(rules->restore(hit->save())->save() == hit->save(),
               "Lethal hit and dropped gear preserve continuation");
     }
@@ -394,10 +413,10 @@ void held_items()
         const auto available = legacy->legal_commands();
         const auto attack =
             std::find_if(available.begin(), available.end(),
-                         [](const auto &c)
-                         {
-                             return c.actor == 99 && c.verb == "melee" && c.target == 2;
-                         });
+                         [](const auto & c)
+        {
+            return c.actor == 99 && c.verb == "melee" && c.target == 2;
+        });
         check(legacy->submit(attack != available.end() ? *attack : command(*legacy, "end")),
               "Continue legacy combat until another holder falls");
     }
@@ -405,11 +424,11 @@ void held_items()
     check(!migrated.held_items.empty() && !unit(*legacy, 1).conscious,
           "Legacy encounter activates equipment ledger with an already-fallen holder");
     check(std::all_of(migrated.held_items.begin(), migrated.held_items.end(),
-                      [](const auto &i)
-                      {
-                          return i.origin != 1 || !i.holder;
-                      }),
-          "Ledger activation reconciles previously unconscious holders");
+                      [](const auto & i)
+    {
+        return i.origin != 1 || !i.holder;
+    }),
+    "Ledger activation reconciles previously unconscious holders");
     check(rules->restore(legacy->save())->save() == legacy->save(),
           "Legacy fall and new drop produce a valid continuation");
 }
@@ -437,8 +456,8 @@ void campaign_item_handoff()
     party.begin_combat();
     party.apply_combat(battle->snapshot());
     check(party.member(owner).equipped.empty() &&
-              party.member(owner).character.inventory().empty() &&
-              party.state().detached_items.size() == 2,
+          party.member(owner).character.inventory().empty() &&
+          party.state().detached_items.size() == 2,
           "Dropping moves actual inventory to ground without copies");
     party.apply_combat(battle->snapshot());
     check(party.state().detached_items.size() == 2,
@@ -448,19 +467,19 @@ void campaign_item_handoff()
     party.apply_combat(battle->snapshot());
     const auto &acquired = party.member(ally).character.inventory().items();
     check(acquired.size() == 1 && acquired[0].name == "Owned sword" &&
-              party.member(ally).equipped.size() == 1 && party.state().detached_items.size() == 1,
+          party.member(ally).equipped.size() == 1 && party.state().detached_items.size() == 1,
           "Cross-character pickup transfers physical item and name exactly once");
     auto invalid = battle->snapshot();
     invalid.held_items[0].definition = "dagger";
     const auto before = party.checkpoint();
     rejects(
         [&]
-        {
-            party.apply_combat(invalid);
-        });
+    {
+        party.apply_combat(invalid);
+    });
     check(party.member(ally).character.inventory().items().size() == 1 &&
-              party.state().random_state == before.random_state &&
-              party.state().detached_items.size() == 1,
+          party.state().random_state == before.random_state &&
+          party.state().detached_items.size() == 1,
           "Rejected manifest preserves inventory and RNG");
     party.end_combat();
     const auto bytes = encode_campaign(party, nullptr, "detached-items");
@@ -476,17 +495,22 @@ void campaign_item_handoff()
     CampaignParty copy(module());
     copy.restore(decoded.party);
     check(encode_campaign(copy, nullptr, "detached-items") == bytes &&
-              copy.state().detached_items.size() == 1,
+          copy.state().detached_items.size() == 1,
           "Uncollected equipment persists without assumed automatic cleanup");
 }
 
 void recovery_posture()
 {
     // A legacy zero-HP record gains explicit posture only when it actually recovers.
-    for (const bool stable : {false, true})
+    for (const bool stable :
+            {
+                false, true
+            })
     {
-        fx::LifeState life{
-            0, 0, 0, stable, false, stable ? fx::RecoveryClock{0, 1} : fx::RecoveryClock{1, 0}};
+        fx::LifeState life
+        {
+0, 0, 0, stable, false, stable ? fx::RecoveryClock{0, 1} :
+            fx::RecoveryClock{1, 0}};
         fx::EffectState effects;
         std::uint64_t rng = 17;
         std::array<fx::RecoverySubject, 1> subjects{{{{1, effects, {}}, life}}};
@@ -529,7 +553,7 @@ void rest_ground_equipment()
     const std::array<MemberId, 1> wake_owner{owner};
     waking_old_sleep.loud_noise(wake_owner);
     check(waking_old_sleep.state().detached_items.size() == 2 &&
-              waking_old_sleep.member(owner).equipped == std::vector<std::uint64_t>{armor},
+          waking_old_sleep.member(owner).equipped == std::vector<std::uint64_t> {armor},
           "Waking an older resting record reconciles held items before removing sleep");
     CampaignParty damaged_old_sleep(module());
     damaged_old_sleep.restore(legacy_sleep);
@@ -538,23 +562,23 @@ void rest_ground_equipment()
         script.insert(script.end(), {1, 1, 0x15, 0x99});
     script.insert(script.end(), {0, 0});
     por::EclMachine vm(std::make_shared<const por::EclProgram>(
-        por::EclProgram::decode(script, "rest item damage")));
+                           por::EclProgram::decode(script, "rest item damage")));
     for (const auto &write : damaged_old_sleep.character_reply(0).writes)
         vm.bind_variable(write.address, write.value);
     vm.bind_variable(0x6C19, damaged_old_sleep.member(owner).vitals.hit_points - 1);
     damaged_old_sleep.read_character(0, vm);
     check(damaged_old_sleep.state().detached_items.size() == 2 &&
-              damaged_old_sleep.state().rest_activity->interrupted &&
-              damaged_old_sleep.participants()[0].ground_equipment.size() == 2,
+          damaged_old_sleep.state().rest_activity->interrupted &&
+          damaged_old_sleep.participants()[0].ground_equipment.size() == 2,
           "Script damage retains camp drops when it wakes an older sleeping record");
-    check(party.member(owner).equipped == std::vector<std::uint64_t>{armor} &&
-              party.state().detached_items.size() == 2,
+    check(party.member(owner).equipped == std::vector<std::uint64_t> {armor} &&
+          party.state().detached_items.size() == 2,
           "Sleep releases held items but keeps worn armor");
     check(party.member(owner).character.inventory().find(sword)->get().quantity == 1 &&
-              party.member(owner).item_sources.contains(sword),
+          party.member(owner).item_sources.contains(sword),
           "Dropping a held stack member retains the remaining inventory and provenance");
     check(party.state().detached_items[0].rest_session == ticket.session &&
-              party.state().detached_items[0].original->stored.value == 71,
+          party.state().detached_items[0].original->stored.value == 71,
           "Camp ground item retains session and original-item provenance");
     const std::array<MemberId, 2> awake{owner, ally};
     party.loud_noise(awake);
@@ -570,18 +594,18 @@ void rest_ground_equipment()
     malformed.detached_items[0].rest_session = malformed.next_rest_session;
     rejects(
         [&]
-        {
-            party.restore(malformed);
-        });
+    {
+        party.restore(malformed);
+    });
     check(encode_campaign(party, nullptr, "rest-ground") == bytes,
           "Invalid camp item identity preserves the live party");
     malformed = restored.party;
     malformed.detached_items[1].item.definition_id = "invalid:camp-item";
     rejects(
         [&]
-        {
-            party.restore(malformed);
-        });
+    {
+        party.restore(malformed);
+    });
     check(encode_campaign(party, nullptr, "rest-ground") == bytes,
           "Unknown camp equipment rejects without mutating the live party");
     CampaignParty abandoned(module());
@@ -589,38 +613,38 @@ void rest_ground_equipment()
     abandoned.abandon_rest(abandoned.state().rest_activity->ticket);
     const auto unrelated = abandoned.participants();
     check(std::all_of(unrelated.begin(), unrelated.end(),
-                      [](const auto &p)
-                      {
-                          return p.ground_equipment.empty();
-                      }),
-          "Abandoned camp gear does not teleport into another encounter");
+                      [](const auto & p)
+    {
+        return p.ground_equipment.empty();
+    }),
+    "Abandoned camp gear does not teleport into another encounter");
     check(abandoned.state().detached_items.empty() &&
-              abandoned.member(owner).character.inventory().items().size() == 4,
+          abandoned.member(owner).character.inventory().items().size() == 4,
           "Safe cancellation collects the physical gear into inventory");
     check(party.prepare_combat(), "Immediate interruption has no unearned Hit Dice choice");
     auto people = party.participants();
     people[0].cell = {2, 2};
     people[1].cell = {2, 3};
     people.push_back({1000, "bandit", "Enemy", 1, {6, 2}});
-    check(people[0].ground_equipment == std::vector<unsigned>{1, 2},
+    check(people[0].ground_equipment == std::vector<unsigned> {1, 2},
           "Interruption formation carries explicit ground ordinals after worn armor");
     auto bad_people = people;
     bad_people[0].ground_equipment.push_back(99);
     rejects(
         [&]
-        {
-            (void)rules->create({{9, 7, std::vector<std::uint8_t>(63)}, bad_people}, 37);
-        });
+    {
+        (void)rules->create({{9, 7, std::vector<std::uint8_t>(63)}, bad_people}, 37);
+    });
     auto battle = rules->create(
-        {{9, 7, std::vector<std::uint8_t>(63)}, people, party.state().next_combat_scope}, 37);
+    {{9, 7, std::vector<std::uint8_t>(63)}, people, party.state().next_combat_scope}, 37);
     const auto ground = battle->snapshot();
     check(!unit(*battle, owner).naturally_sleeping && ground.held_items.size() == 2 &&
-              std::all_of(ground.held_items.begin(), ground.held_items.end(),
-                          [](const auto &i)
-                          {
-                              return !i.holder;
-                          }),
-          "Waking before initiative does not re-equip camp ground items");
+          std::all_of(ground.held_items.begin(), ground.held_items.end(),
+                      [](const auto & i)
+    {
+        return !i.holder;
+    }),
+    "Waking before initiative does not re-equip camp ground items");
     check(unit(*battle, owner).armor_class == party.profile(owner).armor_class,
           "Initial ground shield supplies no combat AC");
     check(rules->restore(battle->save())->save() == battle->save(),
@@ -629,19 +653,19 @@ void rest_ground_equipment()
     party.apply_combat(battle->snapshot());
     party.apply_combat(battle->snapshot());
     check(party.state().detached_items.size() == 2 &&
-              std::all_of(party.state().detached_items.begin(), party.state().detached_items.end(),
-                          [](const auto &i)
-                          {
-                              return i.scope && !i.rest_session;
-                          }),
-          "Rest inventory converts to positioned encounter inventory exactly once");
+          std::all_of(party.state().detached_items.begin(), party.state().detached_items.end(),
+                      [](const auto & i)
+    {
+        return i.scope && !i.rest_session;
+    }),
+    "Rest inventory converts to positioned encounter inventory exactly once");
     turn(*battle, ally);
     check(battle->submit(command(*battle, "pick_up", 1)),
           "Ally can pick up the camp weapon after interruption");
     party.apply_combat(battle->snapshot());
     const auto acquired = party.member(ally).equipped.front();
     check(party.member(ally).character.inventory().find(acquired)->get().name == "Camp sword" &&
-              party.member(ally).item_sources.at(acquired).stored.value == 71,
+          party.member(ally).item_sources.at(acquired).stored.value == 71,
           "Camp-to-combat pickup retains physical item provenance");
     party.end_combat();
 }
@@ -649,7 +673,10 @@ void rest_ground_equipment()
 void safe_recovery()
 {
     const auto rules = module();
-    for (const bool complete : {false, true})
+    for (const bool complete :
+            {
+                false, true
+            })
     {
         CampaignParty party(module());
         auto person = hero();
@@ -668,11 +695,11 @@ void safe_recovery()
               "Both safe camp endings collect ground equipment");
         auto vitals = party.member(id).vitals;
         check(rules->recover_at_safety(vitals, party.member(id).character.sheet(), {}) &&
-                  vitals == party.member(id).vitals,
+              vitals == party.member(id).vitals,
               "Safe camp ending already leaves able members standing");
         check(party.member(id).vitals.hit_points ==
-                      (complete ? party.member(id).character.sheet().hit_points : 1) &&
-                  party.state().random_state == 42,
+              (complete ? party.member(id).character.sheet().hit_points : 1) &&
+              party.state().random_state == 42,
               "Cancellation grants no healing or recovery RNG");
         const auto bytes = encode_campaign(party, nullptr, "safe-camp");
         party.restore(
@@ -680,8 +707,14 @@ void safe_recovery()
         check(encode_campaign(party, nullptr, "safe-camp") == bytes,
               "Collected camp inventory saves exactly");
     }
-    for (const bool wall : {false, true})
-        for (const bool dead : {false, true})
+    for (const bool wall :
+            {
+                false, true
+            })
+        for (const bool dead :
+                {
+                    false, true
+                })
         {
             CampaignParty party(module());
             auto person = hero();
@@ -703,7 +736,7 @@ void safe_recovery()
             people[0].cell = {1, 2};
             people[1].cell = {5, 2};
             people.push_back(
-                {1000, "bandit", "Defeated enemy", 1, {6, 4}, {}, VitalState{0, true}});
+            {1000, "bandit", "Defeated enemy", 1, {6, 4}, {}, VitalState{0, true}});
             Battlefield board{8, 6, std::vector<std::uint8_t>(48)};
             if (wall)
                 for (int y = 0; y < 6; ++y)
@@ -712,8 +745,8 @@ void safe_recovery()
             check(battle->snapshot().outcome == Outcome::victory, "Fixture has a terminal victory");
             const auto before = battle->save();
             const auto plan = battle->safe_recovery();
-            check(plan.members == std::vector<EntityId>{ally} &&
-                      plan.items.size() == (wall ? 0 : 1),
+            check(plan.members == std::vector<EntityId> {ally} &&
+                  plan.items.size() == (wall ? 0 : 1),
                   "Only conscious allies collect equipment reachable around terrain");
             check(battle->save() == before, "Recovery query leaves combat costs and RNG untouched");
             party.begin_combat();
@@ -734,7 +767,7 @@ void safe_recovery()
                       "Items return to living owner or survivor when owner died");
             }
             check(party.member(owner).vitals.hit_points ==
-                      (dead ? 0 : party.member(owner).character.sheet().hit_points),
+                  (dead ? 0 : party.member(owner).character.sheet().hit_points),
                   "Safe collection cannot heal or revive an owner");
         }
 }
@@ -753,7 +786,7 @@ void prior_equipment_formats()
     CampaignParty party(module());
     party.restore(
         decode_campaign(campaign, *srd5::character_rules(), *rules, "detached-items", nullptr)
-            .party);
+        .party);
     const auto normalized = [&](std::string bytes)
     {
         const auto at = bytes.find("0.6.42");
@@ -761,7 +794,7 @@ void prior_equipment_formats()
         bytes.replace(at, 6, rules->identity().version);
         return bytes;
     };
-    const auto body = [](const std::string &bytes)
+    const auto body = [](const std::string & bytes)
     {
         return bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1);
     };
@@ -780,7 +813,7 @@ void movement()
     check(grid.step_cost({2, 2}, {2, 3}) == 10 && grid.step_cost({2, 2}, {3, 2}) == 15,
           "Crawling and difficult terrain add independent movement costs");
     check(grid.reachable(14).cost_to({3, 2}) == std::nullopt &&
-              grid.reachable(15).cost_to({3, 2}) == 15,
+          grid.reachable(15).cost_to({3, 2}) == 15,
           "Crawling reach uses exact weighted path cost");
 }
 } // namespace

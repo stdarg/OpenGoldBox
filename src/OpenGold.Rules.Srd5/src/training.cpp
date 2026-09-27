@@ -21,23 +21,23 @@ struct Skill
 // SRD 5.2.1 p. 9. The query also accepts another governing ability when a rule
 // calls for it; these are the ordinary character-sheet associations.
 constexpr std::array skills{Skill{"acrobatics", "Acrobatics", 1},
-                            Skill{"animal_handling", "Animal Handling", 4},
-                            Skill{"arcana", "Arcana", 3},
-                            Skill{"athletics", "Athletics", 0},
-                            Skill{"deception", "Deception", 5},
-                            Skill{"history", "History", 3},
-                            Skill{"insight", "Insight", 4},
-                            Skill{"intimidation", "Intimidation", 5},
-                            Skill{"investigation", "Investigation", 3},
-                            Skill{"medicine", "Medicine", 4},
-                            Skill{"nature", "Nature", 3},
-                            Skill{"perception", "Perception", 4},
-                            Skill{"performance", "Performance", 5},
-                            Skill{"persuasion", "Persuasion", 5},
-                            Skill{"religion", "Religion", 3},
-                            Skill{"sleight_of_hand", "Sleight of Hand", 1},
-                            Skill{"stealth", "Stealth", 1},
-                            Skill{"survival", "Survival", 4}};
+    Skill{"animal_handling", "Animal Handling", 4},
+    Skill{"arcana", "Arcana", 3},
+    Skill{"athletics", "Athletics", 0},
+    Skill{"deception", "Deception", 5},
+    Skill{"history", "History", 3},
+    Skill{"insight", "Insight", 4},
+    Skill{"intimidation", "Intimidation", 5},
+    Skill{"investigation", "Investigation", 3},
+    Skill{"medicine", "Medicine", 4},
+    Skill{"nature", "Nature", 3},
+    Skill{"perception", "Perception", 4},
+    Skill{"performance", "Performance", 5},
+    Skill{"persuasion", "Persuasion", 5},
+    Skill{"religion", "Religion", 3},
+    Skill{"sleight_of_hand", "Sleight of Hand", 1},
+    Skill{"stealth", "Stealth", 1},
+    Skill{"survival", "Survival", 4}};
 
 struct ClassSkills
 {
@@ -47,7 +47,8 @@ struct ClassSkills
 };
 
 // SRD 5.2.1 Core Traits tables; an empty list denotes Bard's unrestricted list.
-const std::array class_skills{
+const std::array class_skills
+{
     ClassSkills{
         "barbarian",
         "Barbarian skills",
@@ -57,37 +58,45 @@ const std::array class_skills{
     ClassSkills{
         "cleric", "Cleric skills", 2, {"history", "insight", "medicine", "persuasion", "religion"}},
     ClassSkills{"druid",
-                "Druid skills",
-                2,
-                {"animal_handling", "arcana", "insight", "medicine", "nature", "perception",
-                 "religion", "survival"}},
+        "Druid skills",
+        2,
+        {
+            "animal_handling", "arcana", "insight", "medicine", "nature", "perception",
+            "religion", "survival"
+        }},
     ClassSkills{"fighter",
-                "Fighter skills",
-                2,
-                {"acrobatics", "animal_handling", "athletics", "history", "insight", "intimidation",
-                 "persuasion", "perception", "survival"}},
+        "Fighter skills",
+        2,
+        {
+            "acrobatics", "animal_handling", "athletics", "history", "insight", "intimidation",
+            "persuasion", "perception", "survival"
+        }},
     ClassSkills{"monk",
-                "Monk skills",
-                2,
-                {"acrobatics", "athletics", "history", "insight", "religion", "stealth"}},
+        "Monk skills",
+        2,
+        {"acrobatics", "athletics", "history", "insight", "religion", "stealth"}},
     ClassSkills{"paladin",
-                "Paladin skills",
-                2,
-                {"athletics", "insight", "intimidation", "medicine", "persuasion", "religion"}},
+        "Paladin skills",
+        2,
+        {"athletics", "insight", "intimidation", "medicine", "persuasion", "religion"}},
     ClassSkills{"ranger",
-                "Ranger skills",
-                3,
-                {"animal_handling", "athletics", "insight", "investigation", "nature", "perception",
-                 "stealth", "survival"}},
+        "Ranger skills",
+        3,
+        {
+            "animal_handling", "athletics", "insight", "investigation", "nature", "perception",
+            "stealth", "survival"
+        }},
     ClassSkills{"rogue",
-                "Rogue skills",
-                4,
-                {"acrobatics", "athletics", "deception", "insight", "intimidation", "investigation",
-                 "perception", "persuasion", "sleight_of_hand", "stealth"}},
+        "Rogue skills",
+        4,
+        {
+            "acrobatics", "athletics", "deception", "insight", "intimidation", "investigation",
+            "perception", "persuasion", "sleight_of_hand", "stealth"
+        }},
     ClassSkills{"sorcerer",
-                "Sorcerer skills",
-                2,
-                {"arcana", "deception", "insight", "intimidation", "persuasion", "religion"}},
+        "Sorcerer skills",
+        2,
+        {"arcana", "deception", "insight", "intimidation", "persuasion", "religion"}},
     ClassSkills{
         "warlock",
         "Warlock skills",
@@ -113,7 +122,8 @@ struct Tool
 };
 
 // SRD 5.2.1 p. 94: each instrument variant is a separate proficiency.
-constexpr std::array tools{
+constexpr std::array tools
+{
     Tool{"dice", "Dice", ToolKind::gaming},
     Tool{"dragonchess", "Dragonchess", ToolKind::gaming},
     Tool{"playing_cards", "Playing Cards", ToolKind::gaming},
@@ -158,26 +168,26 @@ struct Language
 };
 
 constexpr std::array languages{Language{"common", "Common", true},
-                               Language{"common_sign_language", "Common Sign Language", true},
-                               Language{"draconic", "Draconic", true},
-                               Language{"dwarvish", "Dwarvish", true},
-                               Language{"elvish", "Elvish", true},
-                               Language{"giant", "Giant", true},
-                               Language{"gnomish", "Gnomish", true},
-                               Language{"goblin", "Goblin", true},
-                               Language{"halfling", "Halfling", true},
-                               Language{"orc", "Orc", true},
-                               Language{"abyssal", "Abyssal", false},
-                               Language{"celestial", "Celestial", false},
-                               Language{"deep_speech", "Deep Speech", false},
-                               Language{"druidic", "Druidic", false},
-                               Language{"infernal", "Infernal", false},
-                               Language{"primordial", "Primordial", false},
-                               Language{"sylvan", "Sylvan", false},
-                               Language{"thieves_cant", "Thieves' Cant", false},
-                               Language{"undercommon", "Undercommon", false}};
+    Language{"common_sign_language", "Common Sign Language", true},
+    Language{"draconic", "Draconic", true},
+    Language{"dwarvish", "Dwarvish", true},
+    Language{"elvish", "Elvish", true},
+    Language{"giant", "Giant", true},
+    Language{"gnomish", "Gnomish", true},
+    Language{"goblin", "Goblin", true},
+    Language{"halfling", "Halfling", true},
+    Language{"orc", "Orc", true},
+    Language{"abyssal", "Abyssal", false},
+    Language{"celestial", "Celestial", false},
+    Language{"deep_speech", "Deep Speech", false},
+    Language{"druidic", "Druidic", false},
+    Language{"infernal", "Infernal", false},
+    Language{"primordial", "Primordial", false},
+    Language{"sylvan", "Sylvan", false},
+    Language{"thieves_cant", "Thieves' Cant", false},
+    Language{"undercommon", "Undercommon", false}};
 constexpr std::string_view origin = "origin:languages", rogue = "class:rogue",
-                           expertise = "class:rogue:expertise", cant = "class:rogue:thieves_cant";
+expertise = "class:rogue:expertise", cant = "class:rogue:thieves_cant";
 
 void require(bool ok)
 {
@@ -199,10 +209,10 @@ int proficiency(unsigned level)
 bool source(std::span<const FeatureGrant> grants, std::string_view id)
 {
     return std::any_of(grants.begin(), grants.end(),
-                       [&](const auto &g)
-                       {
-                           return g.id == id;
-                       });
+                       [&](const auto & g)
+    {
+        return g.id == id;
+    });
 }
 
 std::vector<FeatureGrant> fixed(std::string_view klass, std::string_view background,
@@ -212,16 +222,24 @@ std::vector<FeatureGrant> fixed(std::string_view klass, std::string_view backgro
     if (klass == "druid" && policy >= TrainingPolicy::druid_herbalism)
         result.push_back({"tool:herbalism_kit", "class:druid", 1, {}});
     if (policy >= TrainingPolicy::sage && background == "sage")
-        for (const auto id : {"skill:arcana", "skill:history", "tool:calligraphers_supplies"})
+        for (const auto id :
+                {"skill:arcana", "skill:history", "tool:calligraphers_supplies"
+                })
             result.push_back({id, "background:sage", 1, {}});
     if (policy >= TrainingPolicy::all_backgrounds && background == "acolyte")
-        for (const auto id : {"skill:insight", "skill:religion", "tool:calligraphers_supplies"})
+        for (const auto id :
+                {"skill:insight", "skill:religion", "tool:calligraphers_supplies"
+                })
             result.push_back({id, "background:acolyte", 1, {}});
     if (policy >= TrainingPolicy::all_backgrounds && background == "soldier")
-        for (const auto id : {"skill:athletics", "skill:intimidation"})
+        for (const auto id :
+                {"skill:athletics", "skill:intimidation"
+                })
             result.push_back({id, "background:soldier", 1, {}});
     if (background == "criminal")
-        for (const auto id : {"skill:sleight_of_hand", "skill:stealth", "tool:thieves_tools"})
+        for (const auto id :
+                {"skill:sleight_of_hand", "skill:stealth", "tool:thieves_tools"
+                })
             result.push_back({id, "background:criminal", 1, {}});
     if (klass == "rogue")
     {
@@ -256,45 +274,49 @@ void add_choices(std::vector<FeatureGrant> &grants, const TrainingChoices &choic
     for (const auto &value : values)
     {
         require(seen.insert(value).second && std::any_of(group.options.begin(), group.options.end(),
-                                                         [&](const auto &o)
-                                                         {
-                                                             return o.id == value;
-                                                         }));
+                [&](const auto & o)
+        {
+            return o.id == value;
+        }));
         grants.push_back({std::string(prefix) + value, group.id, 1, {}});
     }
 }
 
 std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_view background,
-                                         const TrainingChoices &choices, TrainingPolicy policy)
+        const TrainingChoices &choices, TrainingPolicy policy)
 {
-    std::vector<TrainingChoiceGroup> result{
+    std::vector<TrainingChoiceGroup> result
+    {
         {std::string(origin), "Starting languages", 2, language_options(false)}};
     if (klass == "fighter" && policy >= TrainingPolicy::fighter_style)
         result.push_back({"class:fighter:fighting_style",
                           "Fighting Style",
                           1,
-                          {{"defense", "Defense", "+1 AC while wearing armor."},
-                           {"archery", "Archery", "+2 to attack rolls with Ranged weapons."}},
-                          TrainingChoiceControl::single_selection});
+    {   {"defense", "Defense", "+1 AC while wearing armor."},
+        {"archery", "Archery", "+2 to attack rolls with Ranged weapons."}
+    },
+    TrainingChoiceControl::single_selection});
     if (klass == "fighter" && policy >= TrainingPolicy::style_routes)
         for (auto &group : result)
             if (group.id == "class:fighter:fighting_style")
                 group.options.push_back(
-                    {"great_weapon_fighting", "Great Weapon Fighting",
-                     "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands."});
+            {
+                "great_weapon_fighting", "Great Weapon Fighting",
+                "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands."});
     if (klass == "fighter" && policy >= TrainingPolicy::style_routes)
         for (auto &group : result)
             if (group.id == "class:fighter:fighting_style")
                 group.options.push_back(
-                    {"two_weapon_fighting", "Two-Weapon Fighting",
-                     "Add your ability modifier to the extra attack granted by the Light property."});
+            {
+                "two_weapon_fighting", "Two-Weapon Fighting",
+                "Add your ability modifier to the extra attack granted by the Light property."});
     if (klass == "rogue" || (policy >= TrainingPolicy::class_skills && !klass.empty()))
     {
         const auto data = std::find_if(class_skills.begin(), class_skills.end(),
-                                       [&](const auto &c)
-                                       {
-                                           return c.id == klass;
-                                       });
+                                       [&](const auto & c)
+        {
+            return c.id == klass;
+        });
         require(data != class_skills.end());
         TrainingChoiceGroup group{"class:" + std::string(klass),
                                   std::string(data->label),
@@ -304,7 +326,7 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
                                   "class_skills"};
         for (const auto &skill : skills)
             if (data->skills.empty() ||
-                std::find(data->skills.begin(), data->skills.end(), skill.id) != data->skills.end())
+                    std::find(data->skills.begin(), data->skills.end(), skill.id) != data->skills.end())
                 group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
         result.push_back(std::move(group));
     }
@@ -333,17 +355,17 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
         const auto &picked = selected(choices, rogue);
         for (const auto &s : skills)
             if (source(known, "skill:" + std::string(s.id)) ||
-                std::find(picked.begin(), picked.end(), s.id) != picked.end())
+                    std::find(picked.begin(), picked.end(), s.id) != picked.end())
                 group.options.push_back({std::string(s.id), std::string(s.label), {}});
         result.push_back(std::move(group));
         group = {std::string(cant), "Additional Rogue language", 1, language_options(true)};
         const auto &starting = selected(choices, origin);
         std::erase_if(group.options,
-                      [&](const auto &o)
-                      {
-                          return std::find(starting.begin(), starting.end(), o.id) !=
-                                 starting.end();
-                      });
+                      [&](const auto & o)
+        {
+            return std::find(starting.begin(), starting.end(), o.id) !=
+                   starting.end();
+        });
         result.push_back(std::move(group));
     }
     if (background == "soldier" && policy >= TrainingPolicy::soldier_gaming)
@@ -359,10 +381,10 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
         auto group = mastery_options(klass, 1);
         const auto &later = selected(choices, mastery_options(klass, 4).id);
         std::erase_if(group.options,
-                      [&](const auto &option)
-                      {
-                          return std::find(later.begin(), later.end(), option.id) != later.end();
-                      });
+                      [&](const auto & option)
+        {
+            return std::find(later.begin(), later.end(), option.id) != later.end();
+        });
         if (group.count)
             result.push_back(std::move(group));
     }
@@ -384,24 +406,24 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
                                     unsigned ability, std::string_view skill, std::string_view tool)
 {
     require(ability < 6 && std::all_of(
-                               scores.begin(), scores.end(),
-                               [](int score)
-                               {
-                                   return score >= 3 && score <= 20;
-                               }));
+                scores.begin(), scores.end(),
+                [](int score)
+    {
+        return score >= 3 && score <= 20;
+    }));
     const auto pb = proficiency(level);
     require(skill.empty() || std::any_of(skills.begin(), skills.end(),
-                                         [&](const auto &s)
-                                         {
-                                             return s.id == skill;
-                                         }));
+                                         [&](const auto & s)
+    {
+        return s.id == skill;
+    }));
     require(tool.empty() || std::any_of(tools.begin(), tools.end(),
-                                        [&](const auto &t)
-                                        {
-                                            return t.id == tool;
-                                        }));
+                                        [&](const auto & t)
+    {
+        return t.id == tool;
+    }));
     const auto skill_id = "skill:" + std::string(skill),
-               expert_id = "expertise:" + std::string(skill), tool_id = "tool:" + std::string(tool);
+    expert_id = "expertise:" + std::string(skill), tool_id = "tool:" + std::string(tool);
     const bool trained_skill = !skill.empty() && source(grants, skill_id),
                trained_tool = !tool.empty() && source(grants, tool_id);
     AbilityCheckModifier result;
@@ -414,14 +436,14 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
     if (ability == 0 && skill == "athletics")
         for (const auto &g : grants)
             if (g.id == "feature:remarkable_athlete" &&
-                g.source_id == "subclass:fighter:champion" && g.level == 3 && level >= 3)
+                    g.source_id == "subclass:fighter:champion" && g.level == 3 && level >= 3)
             {
                 result.advantage = true;
                 result.sources.push_back(g);
             }
     for (const auto &g : grants)
         if ((!skill.empty() && (g.id == skill_id || g.id == expert_id)) ||
-            (!tool.empty() && g.id == tool_id))
+                (!tool.empty() && g.id == tool_id))
             result.sources.push_back(g);
     return result;
 }
@@ -449,8 +471,8 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
     group.acquired_level = 2;
     for (const auto &skill : skills)
         if ((skill.id == "arcana" || skill.id == "history" || skill.id == "investigation" ||
-             skill.id == "medicine" || skill.id == "nature" || skill.id == "religion") &&
-            source(grants, "skill:" + std::string(skill.id)))
+                skill.id == "medicine" || skill.id == "nature" || skill.id == "religion") &&
+                source(grants, "skill:" + std::string(skill.id)))
             group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
     return group;
 }
@@ -462,27 +484,27 @@ std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft)
 }
 
 std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_view background,
-                                          const TrainingChoices &choices, TrainingPolicy policy)
+        const TrainingChoices &choices, TrainingPolicy policy)
 {
     auto result = fixed(klass, background, policy);
     const auto groups = options(klass, background, choices, policy);
     for (const auto &[id, values] : choices)
         require(std::any_of(groups.begin(), groups.end(),
-                            [&](const auto &g)
-                            {
-                                return g.id == id;
-                            }) &&
-                !values.empty());
+                            [&](const auto & g)
+    {
+        return g.id == id;
+    }) &&
+    !values.empty());
     for (const auto &group : groups)
         add_choices(
             result, choices, group,
             (group.id == bard_instruments || group.id == monk_tools || group.id == soldier_gaming)
-                ? "tool:"
+            ? "tool:"
             : group.id.ends_with(":weapon_mastery")      ? "mastery:"
             : group.id == "class:fighter:fighting_style" ? "feat:"
             : group.id == "class:" + std::string(klass)  ? "skill:"
             : group.id == expertise                      ? "expertise:"
-                                                         : "language:");
+            : "language:");
     return result;
 }
 
@@ -509,10 +531,10 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                         grant.level == 2 && grant.choices.empty());
                 const auto group = scholar_options(grants);
                 require(std::any_of(group.options.begin(), group.options.end(),
-                                    [&](const auto &option)
-                                    {
-                                        return grant.id == "expertise:" + option.id;
-                                    }));
+                                    [&](const auto & option)
+                {
+                    return grant.id == "expertise:" + option.id;
+                }));
                 auto &selected = choices[grant.source_id];
                 require(selected.empty());
                 selected.push_back(grant.id.substr(10));
@@ -533,12 +555,12 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             const auto prefix = (grant.source_id == bard_instruments ||
                                  grant.source_id == monk_tools || grant.source_id == soldier_gaming)
-                                    ? "tool:"
+                                ? "tool:"
                                 : grant.source_id.ends_with(":weapon_mastery")      ? "mastery:"
                                 : grant.source_id == "class:fighter:fighting_style" ? "feat:"
                                 : grant.source_id == "class:" + std::string(klass)  ? "skill:"
                                 : grant.source_id == expertise                      ? "expertise:"
-                                                                                    : "language:";
+                                : "language:";
             require(grant.id.starts_with(prefix));
             choices[grant.source_id].push_back(grant.id.substr(std::string_view(prefix).size()));
         }
@@ -547,7 +569,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     starting.erase("class:wizard:scholar");
     starting.erase(mastery_options(klass, 4).id);
     auto expected = training_grants(klass, background, starting, policy);
-    const auto order = [](const FeatureGrant &a, const FeatureGrant &b)
+    const auto order = [](const FeatureGrant & a, const FeatureGrant & b)
     {
         return std::tie(a.id, a.source_id, a.level) < std::tie(b.id, b.source_id, b.level);
     };
@@ -594,7 +616,7 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
     for (const auto &[id, label, kind] : tools)
         if (source(grants, "tool:" + std::string(id)))
             result.tools.push_back(
-                {std::string(id), std::string(label), matching(grants, "tool:" + std::string(id))});
+        {std::string(id), std::string(label), matching(grants, "tool:" + std::string(id))});
     for (const auto &l : languages)
         if (source(grants, "language:" + std::string(l.id)))
             result.languages.push_back({std::string(l.id), std::string(l.label),

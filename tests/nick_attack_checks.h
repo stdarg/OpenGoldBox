@@ -26,7 +26,7 @@ void capture()
     actors.push_back({99, "vanguard", "Target", 1, {2, 1}});
     const auto path = std::filesystem::path(output);
     std::filesystem::create_directories(path);
-    const auto write = [&](const char *name, const CombatSession &c)
+    const auto write = [&](const char *name, const CombatSession & c)
     {
         std::ofstream out(path / name);
         out << c.save();
@@ -67,7 +67,8 @@ CampaignParty party(std::string weapon = "dagger", bool style = false, bool nega
     {
         draft.training["class:" + klass + ":weapon_mastery"].push_back("club");
         draft.training["class:fighter:fighting_style"] = {style ? "two_weapon_fighting"
-                                                                : "defense"};
+                                                          : "defense"
+                                                         };
     }
     if (negative)
         for (auto &roll : draft.rolls)
@@ -106,16 +107,24 @@ void round_trip(const RulesModule &r, CombatSession &c)
 void grants_and_budgets()
 {
     unsigned hits = 0, criticals = 0;
-    for (const auto weapon : {"dagger", "light_hammer", "sickle", "scimitar"})
-        for (bool style : {false, true})
-            for (bool negative : {false, true})
+    for (const auto weapon :
+            {"dagger", "light_hammer", "sickle", "scimitar"
+            })
+        for (bool style :
+                {
+                    false, true
+                })
+            for (bool negative :
+                    {
+                        false, true
+                    })
                 for (unsigned seed = 1; seed <= 48; ++seed)
                 {
                     auto p = party(weapon, style, negative, seed % 2);
                     auto c = battle(p, seed);
                     check(
                         c->save().starts_with("OGCOMBAT 23 ") && unit(*c, 1).nick_mastery &&
-                            !offers(*c, "nick_melee"),
+                        !offers(*c, "nick_melee"),
                         "Chosen Nick creates explicit shared budget, not an attack before qualification");
                     act(*c, "melee", 99);
                     settle(*c);
@@ -131,7 +140,7 @@ void grants_and_budgets()
                         const auto hit = *c->snapshot().savage_attack_choice;
                         check(hit.modifier == (negative ? -2
                                                : style  ? 3
-                                                        : 0),
+                                               : 0),
                               "Nick shares Light damage modifier and Two-Weapon Fighting");
                         ++hits;
                         if (hit.critical)
@@ -143,7 +152,7 @@ void grants_and_budgets()
                     settle(*copy);
                     check(c->save() == copy->save(), "Nick hit continuation exact");
                     check(unit(*c, 1).bonus_action && !unit(*c, 1).action &&
-                              !offers(*c, "light_melee") && !offers(*c, "nick_melee"),
+                          !offers(*c, "light_melee") && !offers(*c, "nick_melee"),
                           "Nick leaves Bonus Action and uses the shared extra attack");
                     const auto before = c->save();
                     check(!c->submit(extra) && c->save() == before, "Stale Nick ticket is atomic");
@@ -160,8 +169,13 @@ void grants_and_budgets()
                 }
     check(hits > 0 && criticals > 0,
           "Matrix actually exercises pending ordinary and critical damage");
-    for (const auto klass : {"fighter", "rogue", "paladin", "ranger", "barbarian"})
-        for (bool npc : {false, true})
+    for (const auto klass :
+            {"fighter", "rogue", "paladin", "ranger", "barbarian"
+            })
+        for (bool npc :
+                {
+                    false, true
+                })
         {
             auto p = party("dagger", false, false, npc, klass);
             auto c = battle(p);
@@ -263,14 +277,14 @@ void pending_interactions()
         act(*c, "savage_use");
         act(*copy, "savage_use");
         check(c->save() == copy->save() &&
-                  c->snapshot().savage_attack_choice->extra_damage == hit.extra_damage,
+              c->snapshot().savage_attack_choice->extra_damage == hit.extra_damage,
               "Savage rerolls only Nick weapon dice");
         copy = p.rule_module().restore(c->save());
         act(*c, "savage_second");
         act(*copy, "savage_second");
         check(
             c->save() == copy->save() && !fx::vexed_by(state(*c, 99), 777, 1) &&
-                !offers(*c, "nick_melee") && !offers(*c, "light_melee"),
+            !offers(*c, "nick_melee") && !offers(*c, "light_melee"),
             "Resolved Nick consumes Vex and all damage choices preserve the shared spent allowance");
         checked = true;
     }
@@ -296,7 +310,7 @@ void pending_interactions()
         act(*c, "end");
         act(*copy, "end");
         check(c->save() == copy->save() && unit(*c, 1).bonus_action && !offers(*c, "nick_melee") &&
-                  !offers(*c, "light_melee"),
+              !offers(*c, "light_melee"),
               "Champion continuation keeps Bonus Action and spent Nick allowance");
         checked = true;
     }
@@ -305,7 +319,9 @@ void pending_interactions()
 
 void throwing_and_provenance()
 {
-    for (const auto weapon : {"dagger", "light_hammer"})
+    for (const auto weapon :
+            {"dagger", "light_hammer"
+            })
     {
         auto p = party(weapon);
         auto c = battle(p);
@@ -322,12 +338,12 @@ void throwing_and_provenance()
               "Thrown Nick keeps ground-item and shared budget continuation");
         const auto items = c->snapshot().held_items;
         check(std::any_of(items.begin(), items.end(),
-                          [&](const auto &item)
-                          {
-                              return item.id == extra.item && !item.holder &&
-                                     item.cell == Cell{2, 1};
-                          }),
-              "Thrown Nick lands at target");
+                          [&](const auto & item)
+        {
+            return item.id == extra.item && !item.holder &&
+                   item.cell == Cell{2, 1};
+        }),
+        "Thrown Nick lands at target");
     }
     auto p = party();
     auto h = p.member(1).character;
@@ -367,8 +383,9 @@ void historical()
 {
     auto r = module();
     for (const auto name :
-         {"combat-v22-nick-before.save", "combat-v22-nick-light-pending.save",
-          "combat-v22-nick-light-spent.save", "combat-v22-nick-other-bonus-spent.save"})
+            {"combat-v22-nick-before.save", "combat-v22-nick-light-pending.save",
+             "combat-v22-nick-light-spent.save", "combat-v22-nick-other-bonus-spent.save"
+            })
     {
         auto bytes = fixture(name);
         const auto at = bytes.find("0.6.56");
@@ -414,9 +431,9 @@ void historical()
                 p.rule_module().identity().version.size(), "0.6.56");
     rejects(
         [&]
-        {
-            (void)p.rule_module().restore(bad);
-        });
+    {
+        (void)p.rule_module().restore(bad);
+    });
     std::size_t row = 0;
     for (unsigned i = 0; i < 4; ++i)
         row = bytes.find('\n', row) + 1;
@@ -424,23 +441,25 @@ void historical()
         row = bytes.find('\n', row) + 1;
     const auto end = bytes.find('\n', row), origin = bytes.rfind(' ', end),
                budget = bytes.rfind(' ', origin - 1);
-    for (const auto value : {"0", "3"})
+    for (const auto value :
+            {"0", "3"
+            })
     {
         bad = bytes;
         bad.replace(budget + 1, origin - budget - 1, value);
         rejects(
             [&]
-            {
-                (void)p.rule_module().restore(bad);
-            });
+        {
+            (void)p.rule_module().restore(bad);
+        });
     }
     bad = bytes;
     bad.replace(origin + 1, end - origin - 1, "0");
     rejects(
         [&]
-        {
-            (void)p.rule_module().restore(bad);
-        });
+    {
+        (void)p.rule_module().restore(bad);
+    });
 }
 
 void ui_fixtures()
@@ -451,7 +470,7 @@ void ui_fixtures()
     auto r = module();
     const auto path = std::filesystem::path(output);
     std::filesystem::create_directories(path);
-    const auto write = [&](const char *name, const CombatSession &c)
+    const auto write = [&](const char *name, const CombatSession & c)
     {
         std::ofstream out(path / (std::string(name) + ".save"));
         out << c.save();

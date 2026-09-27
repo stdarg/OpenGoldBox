@@ -22,7 +22,8 @@ std::optional<GeoMap> decode_geo_map(std::span<const std::uint8_t> bytes)
         c.walls = {static_cast<std::uint8_t>(bytes[2 + i] >> 4),
                    static_cast<std::uint8_t>(bytes[2 + i] & 15),
                    static_cast<std::uint8_t>(bytes[258 + i] >> 4),
-                   static_cast<std::uint8_t>(bytes[258 + i] & 15)};
+                   static_cast<std::uint8_t>(bytes[258 + i] & 15)
+                  };
         c.event_raw = bytes[514 + i];
         for (unsigned d = 0; d < 4; ++d)
             c.doors[d] = (bytes[770 + i] >> (2 * d)) & 3;

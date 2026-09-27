@@ -46,7 +46,7 @@ std::vector<TrainingChoiceGroup> CharacterCreator::training_options() const
     if (training_character_)
     {
         const auto candidate = training_character_->preview_training(
-            *rules_, training_module_->get(), draft_.training, false);
+                                   *rules_, training_module_->get(), draft_.training, false);
         const auto later = training_module_->get().training_options(candidate.sheet());
         groups.insert(groups.end(), later.begin(), later.end());
     }
@@ -61,8 +61,11 @@ void CharacterCreator::restart()
     training_module_.reset();
     appearance_ = {};
     step_ = CreationStep::race;
-    for (auto field : {CreationField::race, CreationField::gender, CreationField::character_class,
-                       CreationField::alignment, CreationField::background})
+    for (auto field :
+            {
+                CreationField::race, CreationField::gender, CreationField::character_class,
+                CreationField::alignment, CreationField::background
+            })
     {
         const auto options = rules_->choices(field);
         if (options.empty())
@@ -82,13 +85,13 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     require_editable();
     const auto choices = rules_->choices(field);
     if (std::none_of(choices.begin(), choices.end(),
-                     [&](const auto &c)
-                     {
-                         return c.id == id;
-                     }))
-        throw std::runtime_error("Unknown character choice");
+                     [&](const auto & c)
+{
+    return c.id == id;
+}))
+    throw std::runtime_error("Unknown character choice");
     if (field == CreationField::character_class && step_ >= CreationStep::character_class &&
-        !rules_->class_eligible(draft_, id))
+            !rules_->class_eligible(draft_, id))
         throw std::runtime_error("This class requires " +
                                  rules_->class_requirements(id).description + ".");
     auto candidate = draft_;
@@ -112,7 +115,7 @@ void CharacterCreator::select(CreationField field, std::string_view id)
         break;
     }
     if (field == CreationField::character_class &&
-        candidate.character_class != draft_.character_class)
+            candidate.character_class != draft_.character_class)
     {
         candidate.spells.reset();
         const auto previous = rules_->training_options(draft_),
@@ -123,10 +126,10 @@ void CharacterCreator::select(CreationField field, std::string_view id)
                 continue;
             const auto values = candidate.training.find(old.id);
             const auto group = std::find_if(next.begin(), next.end(),
-                                            [&](const auto &g)
-                                            {
-                                                return g.continuity_id == old.continuity_id;
-                                            });
+                                            [&](const auto & g)
+            {
+                return g.continuity_id == old.continuity_id;
+            });
             if (values != candidate.training.end() && group != next.end() && group->id != old.id)
             {
                 candidate.training[group->id] = std::move(values->second);
@@ -138,14 +141,14 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     if (!candidate.cantrips)
         candidate.cantrips.emplace();
     std::erase_if(*candidate.cantrips,
-                  [&](const auto &id)
-                  {
-                      return std::none_of(cantrips.options.begin(), cantrips.options.end(),
-                                          [&](const auto &o)
-                                          {
-                                              return o.id == id;
-                                          });
-                  });
+                  [&](const auto & id)
+    {
+        return std::none_of(cantrips.options.begin(), cantrips.options.end(),
+                            [&](const auto & o)
+        {
+            return o.id == id;
+        });
+    });
     if (candidate.cantrips->size() > cantrips.count)
         candidate.cantrips->resize(cantrips.count);
     prune_training(candidate);
@@ -157,11 +160,11 @@ void CharacterCreator::cantrip_choice(std::string_view option, bool selected)
     require_editable();
     const auto group = rules_->cantrip_options(draft_);
     if (std::none_of(group.options.begin(), group.options.end(),
-                     [&](const auto &o)
-                     {
-                         return o.id == option;
-                     }))
-        throw std::runtime_error("Unknown cantrip choice");
+                     [&](const auto & o)
+{
+    return o.id == option;
+}))
+    throw std::runtime_error("Unknown cantrip choice");
     auto candidate = draft_;
     if (!candidate.cantrips)
         candidate.cantrips.emplace();
@@ -201,10 +204,10 @@ void CharacterCreator::spell_choice(std::string_view group, std::string_view opt
     else
     {
         const auto found = std::find_if(options.learning.begin(), options.learning.end(),
-                                        [&](const auto &g)
-                                        {
-                                            return g.id == group;
-                                        });
+                                        [&](const auto & g)
+        {
+            return g.id == group;
+        });
         if (found == options.learning.end())
             throw std::runtime_error("Unknown spell choice group");
         values = &next.spells->learning[std::string(group)];
@@ -212,11 +215,11 @@ void CharacterCreator::spell_choice(std::string_view group, std::string_view opt
         available = &found->options;
     }
     if (std::none_of(available->begin(), available->end(),
-                     [&](const auto &o)
-                     {
-                         return o.id == option;
-                     }))
-        throw std::runtime_error("Unknown spell choice");
+                     [&](const auto & o)
+{
+    return o.id == option;
+}))
+    throw std::runtime_error("Unknown spell choice");
     const auto found = std::find(values->begin(), values->end(), option);
     if (selected && found == values->end())
     {
@@ -234,11 +237,11 @@ void CharacterCreator::spell_choice(std::string_view group, std::string_view opt
         const auto current = rules_->spell_choice_options(next);
         for (const auto &id : before)
             if (std::any_of(current.preparation.begin(), current.preparation.end(),
-                            [&](const auto &o)
-                            {
-                                return o.id == id;
-                            }))
-                next.spells->prepared->push_back(id);
+                            [&](const auto & o)
+        {
+            return o.id == id;
+        }))
+        next.spells->prepared->push_back(id);
     }
     (void)rules_->evaluate(next, false);
     draft_ = std::move(next);
@@ -253,18 +256,18 @@ bool CharacterCreator::spell_choices_complete() const
         return false;
     const auto cantrips = rules_->cantrip_options(draft_);
     if (!draft_.cantrips ||
-        draft_.cantrips->size() != std::min<std::size_t>(cantrips.count, cantrips.options.size()))
+            draft_.cantrips->size() != std::min<std::size_t>(cantrips.count, cantrips.options.size()))
         return false;
     for (const auto &group : options.learning)
     {
         const auto found = draft_.spells->learning.find(group.id);
         if ((found == draft_.spells->learning.end() ? 0 : found->second.size()) !=
-            std::min<std::size_t>(group.count, group.options.size()))
+                std::min<std::size_t>(group.count, group.options.size()))
             return false;
     }
     return draft_.spells->prepared &&
            draft_.spells->prepared->size() ==
-               std::min<std::size_t>(options.prepared_count, options.preparation.size());
+           std::min<std::size_t>(options.prepared_count, options.preparation.size());
 }
 
 void CharacterCreator::prune_training(CharacterDraft &candidate) const
@@ -278,10 +281,10 @@ void CharacterCreator::prune_training(CharacterDraft &candidate) const
         for (auto it = candidate.training.begin(); it != candidate.training.end();)
         {
             const auto group = std::find_if(groups.begin(), groups.end(),
-                                            [&](const auto &g)
-                                            {
-                                                return g.id == it->first;
-                                            });
+                                            [&](const auto & g)
+            {
+                return g.id == it->first;
+            });
             if (group == groups.end())
             {
                 it = candidate.training.erase(it);
@@ -289,14 +292,14 @@ void CharacterCreator::prune_training(CharacterDraft &candidate) const
             }
             auto &values = it->second;
             std::erase_if(values,
-                          [&](const auto &value)
-                          {
-                              return std::none_of(group->options.begin(), group->options.end(),
-                                                  [&](const auto &o)
-                                                  {
-                                                      return o.id == value;
-                                                  });
-                          });
+                          [&](const auto & value)
+            {
+                return std::none_of(group->options.begin(), group->options.end(),
+                                    [&](const auto & o)
+                {
+                    return o.id == value;
+                });
+            });
             if (values.size() > group->count)
                 values.resize(group->count);
             if (values.empty())
@@ -315,16 +318,16 @@ void CharacterCreator::training_choice(std::string_view id, std::string_view opt
     auto candidate = draft_;
     const auto groups = training_options();
     const auto group = std::find_if(groups.begin(), groups.end(),
-                                    [&](const auto &g)
-                                    {
-                                        return g.id == id;
-                                    });
+                                    [&](const auto & g)
+    {
+        return g.id == id;
+    });
     if (group == groups.end() || std::none_of(group->options.begin(), group->options.end(),
-                                              [&](const auto &o)
-                                              {
-                                                  return o.id == option;
-                                              }))
-        throw std::runtime_error("Unknown training choice");
+            [&](const auto & o)
+{
+    return o.id == option;
+}))
+    throw std::runtime_error("Unknown training choice");
     auto &values = candidate.training[std::string(id)];
     const auto found = std::find(values.begin(), values.end(), option);
     if (selected && group->control == TrainingChoiceControl::single_selection)
@@ -346,7 +349,7 @@ void CharacterCreator::training_choice(std::string_view id, std::string_view opt
         if (values.empty())
             candidate.training.erase(std::string(id));
         (void)training_character_->preview_training(*rules_, training_module_->get(),
-                                                    candidate.training, false);
+                candidate.training, false);
     }
     else
         prune_training(candidate);
@@ -354,13 +357,13 @@ void CharacterCreator::training_choice(std::string_view id, std::string_view opt
     {
         const auto found = candidate.training.find(group);
         if (found == candidate.training.end() ||
-            std::any_of(selected.begin(), selected.end(),
-                        [&](const auto &value)
-                        {
-                            return std::find(found->second.begin(), found->second.end(), value) ==
-                                   found->second.end();
-                        }))
-            throw std::runtime_error("Previously selected training cannot be replaced");
+                std::any_of(selected.begin(), selected.end(),
+                            [&](const auto & value)
+    {
+        return std::find(found->second.begin(), found->second.end(), value) ==
+                   found->second.end();
+        }))
+        throw std::runtime_error("Previously selected training cannot be replaced");
     }
     draft_ = std::move(candidate);
 }
@@ -407,9 +410,9 @@ bool CharacterCreator::scores_assigned() const
 {
     return draft_.rolled && std::all_of(draft_.assignment.begin(), draft_.assignment.end(),
                                         [](auto n)
-                                        {
-                                            return n < 6;
-                                        });
+    {
+        return n < 6;
+    });
 }
 
 void CharacterCreator::assign_roll(unsigned roll, unsigned ability)
@@ -449,8 +452,8 @@ CharacterSheet CharacterCreator::sheet() const
 {
     if (training_character_)
         return training_character_
-            ->preview_training(*rules_, training_module_->get(), draft_.training, false)
-            .sheet();
+               ->preview_training(*rules_, training_module_->get(), draft_.training, false)
+               .sheet();
     return rules_->evaluate(draft_, step_ >= CreationStep::combat_icon);
 }
 
@@ -476,7 +479,7 @@ void CharacterCreator::next()
     if (step_ >= CreationStep::attributes)
         (void)rules_->evaluate(draft_, step_ >= CreationStep::name);
     if (step_ >= CreationStep::character_class &&
-        !rules_->class_eligible(draft_, draft_.character_class))
+            !rules_->class_eligible(draft_, draft_.character_class))
         throw std::runtime_error("Choose a qualified starting class. Requires " +
                                  rules_->class_requirements(draft_.character_class).description +
                                  ".");
@@ -484,7 +487,7 @@ void CharacterCreator::next()
     if (step_ == CreationStep::spell_choices && rules_->cantrip_options(draft_).options.empty())
         step_ = CreationStep::name;
     if (step_ == CreationStep::spell_choices && !draft_.spells &&
-        rules_->spell_choice_options(draft_).may_prepare)
+            rules_->spell_choice_options(draft_).may_prepare)
         draft_.spells = SpellChoices{};
 }
 

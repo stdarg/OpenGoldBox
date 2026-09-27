@@ -10,10 +10,12 @@ void CharacterCreationView::setup_spellbook()
     button->hide();
     button->connect("pressed", callable_mp(this, &CharacterCreationView::open_spellbook));
     auto *w = presentation::setup_spell_dialog(
-        *this, "SpellbookDialog", callable_mp(this, &CharacterCreationView::close_spellbook),
-        callable_mp(this, &CharacterCreationView::apply_spellbook), review_text);
+                  *this, "SpellbookDialog", callable_mp(this, &CharacterCreationView::close_spellbook),
+                  callable_mp(this, &CharacterCreationView::apply_spellbook), review_text);
     w->connect("window_input", callable_mp(this, &CharacterCreationView::spellbook_input));
-    for (const char *name : {"ReplaceLabel", "WithLabel", "Replace", "With"})
+    for (const char *name :
+            {"ReplaceLabel", "WithLabel", "Replace", "With"
+            })
         w->get_node<Control>(name)->hide();
     w->get_node<ScrollContainer>("Choices")->set_size(Vector2(652, 390));
 }

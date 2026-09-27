@@ -58,8 +58,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     const auto intro = program->instruction(0xB0B9);
     const auto setup = program->instruction(0xB0AD);
     if (first.opcode != 9 || first.operands[0].value != 1 || first.operands[1].value != 0x4AC5 ||
-        intro.opcode != 18 || intro.operands[0].tag != 128 || setup.opcode != 12 ||
-        setup.operands[0].value != 12)
+            intro.opcode != 18 || intro.operands[0].tag != 128 || setup.opcode != 12 ||
+            setup.operands[0].value != 12)
         throw EclError("This ECL3:0 does not match the supported Rolf entry profile");
     const auto maps = MapCatalog::load(directory);
     const auto map = maps.find({"GEO3.DAX", 0});
@@ -69,12 +69,12 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     // operand semantics or assume that every map shares its GEO/art record ID.
     const auto pieces = program->instruction(0x9B11);
     if (pieces.opcode != 55 || pieces.operands.size() != 3 ||
-        std::any_of(pieces.operands.begin(), pieces.operands.end(),
-                    [](const auto &a)
-                    {
-                        return a.tag != 0 || a.value != 127;
-                    }))
-        throw EclError("Unsupported Phlan wall resource profile");
+            std::any_of(pieces.operands.begin(), pieces.operands.end(),
+                        [](const auto & a)
+{
+    return a.tag != 0 || a.value != 127;
+}))
+    throw EclError("Unsupported Phlan wall resource profile");
     const auto archive = [&](const char *name)
     {
         auto records = decode_dax_archive(read_archive(resolve_archive(directory, name)));
@@ -82,7 +82,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             throw EclError(std::string("Invalid wall archive ") + name);
         return records;
     };
-    const auto find_record = [](const DaxDecodeResult &records,
+    const auto find_record = [](const DaxDecodeResult & records,
                                 unsigned id) -> const std::vector<std::uint8_t> &
     {
         for (const auto &record : records.records)
@@ -102,7 +102,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         tiles.insert(tiles.end(), decoded->begin(), decoded->end());
     };
     append(find_record(shared, 203), 45);
-    for (unsigned id : {101, 102, 103})
+    for (unsigned id :
+            {
+                101, 102, 103
+            })
         append(find_record(local, id), 70);
     auto wall_art = decode_wall_art(find_record(definitions, 0), tiles);
     if (!wall_art || wall_art->appearances.size() != 15)
@@ -117,7 +120,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         sprites[i] = std::move(result.image);
     }
     auto town = std::make_shared<PhlanResources>();
-    for (unsigned id : {0, 8, 11})
+    for (unsigned id :
+            {
+                0, 8, 11
+            })
     {
         auto p = catalog.find({"ECL3.DAX", static_cast<std::uint8_t>(id)});
         if (!p)
@@ -145,7 +151,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         }
     }
     town->sprite_archive = bytes;
-    const auto pictures = [&](const char *name, auto &destination)
+    const auto pictures = [&](const char *name, auto & destination)
     {
         for (const auto &record : archive(name).records)
         {
@@ -169,7 +175,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     const auto slums_definitions = archive("WALLDEF2.DAX"), slums_tiles = archive("8X8D2.DAX");
     // LOAD PIECES 2,4,1: three five-appearance banks, each with common tiles
     // followed by its own 70 tiles. Decode independently before concatenating.
-    for (unsigned id : {2, 4, 1})
+    for (unsigned id :
+            {
+                2, 4, 1
+            })
     {
         WallTiles bank(1);
         auto common = decode_wall_tiles(find_record(shared, 203));
@@ -187,7 +196,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     }
     district->sprite_archive = read_archive(resolve_archive(directory, "SPRIT2.DAX"));
     const auto creatures = CreatureCatalog::load(directory);
-    for (unsigned id : {0, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 63})
+    for (unsigned id :
+            {
+                0, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 63
+            })
     {
         const auto creature = creatures.find({2, static_cast<std::uint8_t>(id)});
         if (!creature)
@@ -268,11 +280,16 @@ void RolfTourSession::restart()
         }
     // Minimal explicit isolated state, not a fabricated whole party/world model.
     for (const std::uint16_t address :
-         {0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
-          0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F})
+            {
+                0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
+                0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F
+            })
         machine_.bind_variable(address, 0);
     machine_.bind_variable(0x49C9, 12); // Research fixture: midday.
-    for (const std::uint8_t opcode : {12, 13, 14, 45, 49, 58})
+    for (const std::uint8_t opcode :
+            {
+                12, 13, 14, 45, 49, 58
+            })
         machine_.enable_host(opcode);
     if (town_)
         configure_town();
@@ -368,7 +385,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
     {
     case 12:
         if (request.arguments[0].value != 12 || request.arguments[1].value != 2 ||
-            request.arguments[2].value != 9)
+                request.arguments[2].value != 9)
             throw EclError("Unsupported encounter setup in Rolf tour");
         snapshot_.sprite_frame = 2;
         break;
@@ -402,9 +419,10 @@ void RolfTourSession::handle_host(const EclRequest &request)
             pose.y = (static_cast<int>(pose.y) + dy[pose.facing] + 16) % 16;
             const auto &cell = map_.at(pose.x, pose.y);
             reply.writes = {{0xC04B, static_cast<std::uint16_t>(pose.x)},
-                            {0xC04C, static_cast<std::uint16_t>(pose.y)},
-                            {0xC04E, cell.walls[pose.facing]},
-                            {0xC04F, cell.event_raw}};
+                {0xC04C, static_cast<std::uint16_t>(pose.y)},
+                {0xC04E, cell.walls[pose.facing]},
+                {0xC04F, cell.event_raw}
+            };
         }
         else if (service == 0x2C90 || service == 0xC018)
         {
@@ -432,7 +450,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
     if (!machine_.resume_host(request.id, reply))
         throw EclError("Tour host reply rejected");
     if (opcode == 45 &&
-        (request.arguments[0].value == 0x2C90 || request.arguments[0].value == 0xC01E))
+            (request.arguments[0].value == 0x2C90 || request.arguments[0].value == 0xC01E))
         publish_pose();
     ++snapshot_.revision;
 }
@@ -536,8 +554,8 @@ bool RolfTourSession::camp(RestKind kind)
     if (kind != RestKind::short_rest && kind != RestKind::long_rest)
         return false;
     if (!town_ || !campaign_ || snapshot_.phase != TourPhase::completed || campaign_->in_combat() ||
-        campaign_->state().short_rest || campaign_->state().spell_rest ||
-        campaign_->state().training_rest || campaign_->state().rest_activity)
+            campaign_->state().short_rest || campaign_->state().spell_rest ||
+            campaign_->state().training_rest || campaign_->state().rest_activity)
         return false;
     resuming_camp_ = false;
     camp_kind_ = kind;
@@ -549,9 +567,9 @@ bool RolfTourSession::camp(RestKind kind)
 bool RolfTourSession::resume_camp()
 {
     if (!town_ || !campaign_ || !can_leave() || campaign_->in_combat() ||
-        campaign_->state().short_rest || campaign_->state().spell_rest ||
-        campaign_->state().training_rest || !campaign_->state().rest_activity ||
-        !campaign_->state().rest_activity->interrupted)
+            campaign_->state().short_rest || campaign_->state().spell_rest ||
+            campaign_->state().training_rest || !campaign_->state().rest_activity ||
+            !campaign_->state().rest_activity->interrupted)
         return false;
     resuming_camp_ = true;
     camp_kind_ = RestKind::long_rest;
@@ -565,9 +583,9 @@ bool RolfTourSession::explore(ExplorationCommand command)
     if (command == ExplorationCommand::camp)
         return camp(RestKind::long_rest);
     if (snapshot_.phase != TourPhase::completed ||
-        (campaign_ && (campaign_->in_combat() || campaign_->state().short_rest ||
-                       campaign_->state().spell_rest || campaign_->state().training_rest ||
-                       campaign_->state().rest_activity)))
+            (campaign_ && (campaign_->in_combat() || campaign_->state().short_rest ||
+                           campaign_->state().spell_rest || campaign_->state().training_rest ||
+                           campaign_->state().rest_activity)))
         return false;
     if (town_)
     {
@@ -599,7 +617,7 @@ bool RolfTourSession::explore(ExplorationCommand command)
         const int x = static_cast<int>(pose.x) + dx[pose.facing],
                   y = static_cast<int>(pose.y) + dy[pose.facing];
         if (x < 0 || y < 0 || x >= 16 || y >= 16 || edge.walls[pose.facing] ||
-            edge.doors[pose.facing])
+                edge.doors[pose.facing])
             return false;
         const auto &other = map_.at(x, y);
         const auto reverse = (pose.facing + 2) % 4;

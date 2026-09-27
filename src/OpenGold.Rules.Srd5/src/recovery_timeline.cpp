@@ -9,10 +9,10 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
 {
     std::vector<RecoverySubject> ordered(subjects.begin(), subjects.end());
     std::sort(ordered.begin(), ordered.end(),
-              [](const auto &a, const auto &b)
-              {
-                  return a.effects.id < b.effects.id;
-              });
+              [](const auto & a, const auto & b)
+    {
+        return a.effects.id < b.effects.id;
+    });
     for (std::size_t i = 0; i < ordered.size(); ++i)
     {
         if (!ordered[i].effects.id || (i && ordered[i - 1].effects.id == ordered[i].effects.id))
@@ -71,7 +71,7 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
             (void)advance_recovery_clock(life, step,
                                          !healing_blocked(subject.effects.effects.get(), step));
             if (mode == RecoveryMode::campaign && life.hp == 0 && !life.dead && !life.stable &&
-                !life.recovery.death_save_in_ms)
+                    !life.recovery.death_save_in_ms)
                 (void)death_save(life, rng, !healing_blocked(subject.effects.effects.get(), step));
             if (was_unconscious && life.hp > 0)
                 subject.effects.effects.get().prone = true;

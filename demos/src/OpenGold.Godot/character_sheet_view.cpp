@@ -15,7 +15,7 @@ using namespace opengold;
 namespace
 {
 const std::array<const char *, 6> names{"Strength",     "Dexterity", "Constitution",
-                                        "Intelligence", "Wisdom",    "Charisma"};
+    "Intelligence", "Wisdom",    "Charisma"};
 
 std::string number(int n)
 {
@@ -47,17 +47,17 @@ struct DeleteNode
 Variant CharacterCreationView::drag_roll(Vector2, int index)
 {
     if (!creator_ || party_open_ || creator_->step() != CreationStep::attributes ||
-        !creator_->draft().rolled || index < 0 || index >= 12)
+            !creator_->draft().rolled || index < 0 || index >= 12)
         return {};
     const auto &d = creator_->draft();
     const unsigned roll = index < 6 ? index : d.assignment[index - 6];
     if (roll >= 6 || (index < 6 && std::find(d.assignment.begin(), d.assignment.end(), roll) !=
-                                       d.assignment.end()))
+                      d.assignment.end()))
         return {};
     auto preview = std::unique_ptr<Label, DeleteNode>(memnew(Label));
     preview->set_text(gs(std::to_string(d.rolls[roll].total())));
     get_node<Control>(gs(std::string(index < 6 ? "Dice" : "Score") + std::to_string(index % 6)))
-        ->set_drag_preview(preview.get());
+    ->set_drag_preview(preview.get());
     preview.release();
     Dictionary data;
     data["opengold_ability_roll"] = roll;
@@ -67,8 +67,8 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
 bool CharacterCreationView::can_drop_roll(Vector2, const Variant &data, int index)
 {
     if (!creator_ || party_open_ || creator_->step() != CreationStep::attributes ||
-        !creator_->draft().rolled || index < 0 || index >= 6 ||
-        data.get_type() != Variant::DICTIONARY)
+            !creator_->draft().rolled || index < 0 || index >= 6 ||
+            data.get_type() != Variant::DICTIONARY)
         return false;
     const Dictionary payload = data;
     const Variant roll = payload.get("opengold_ability_roll", Variant());
@@ -83,14 +83,14 @@ void CharacterCreationView::drop_roll(Vector2 position, const Variant &data, int
     const unsigned roll = int(payload["opengold_ability_roll"]);
     perform(
         [&]
-        {
-            creator_->assign_roll(roll, index);
-            selected_score_ = -1;
-        });
+    {
+        creator_->assign_roll(roll, index);
+        selected_score_ = -1;
+    });
 }
 
 String CharacterCreationView::sheet_text(const Character &character,
-                                         const PartyMember *member) const
+        const PartyMember *member) const
 {
     const auto &s = character.sheet();
     std::string text = "[font_size=24]" + literal(s.name) + "[/font_size]\nLevel " +
@@ -118,8 +118,8 @@ String CharacterCreationView::sheet_text(const Character &character,
     {
         const auto value = std::to_string(hp);
         return hp_modifier == 0 ? value
-                                : "[color=" + std::string(hp_modifier > 0 ? "#f3d55b" : "#f08080") +
-                                      "]" + value + "[/color]";
+               : "[color=" + std::string(hp_modifier > 0 ? "#f3d55b" : "#f08080") +
+               "]" + value + "[/color]";
     };
     text += "[b]HP " + hp_number(member ? member->vitals.hit_points : s.hit_points) + " / " +
             hp_number(s.hit_points) + "[/b]   Hit Dice: " + std::to_string(s.level) + "d" +
@@ -131,7 +131,7 @@ String CharacterCreationView::sheet_text(const Character &character,
         text += "   XP " + std::to_string(member->experience);
     if (member && campaign_->can_advance(member->id))
         text += "   [b]Ready to level up[/b]";
-    const auto display = [](const std::string &id)
+    const auto display = [](const std::string & id)
     {
         std::string label = id;
         std::replace(label.begin(), label.end(), '_', ' ');
@@ -157,9 +157,9 @@ String CharacterCreationView::sheet_text(const Character &character,
         const auto score = std::to_string(s.scores[i]);
         const auto colored =
             s.modifiers[i] == 0
-                ? score
-                : "[color=" + std::string(s.modifiers[i] > 0 ? "#f3d55b" : "#f08080") + "]" +
-                      score + "[/color]";
+            ? score
+            : "[color=" + std::string(s.modifiers[i] > 0 ? "#f3d55b" : "#f08080") + "]" +
+            score + "[/color]";
         text += "[cell]" + std::string(names[i]) + "[/cell][cell]" + colored + "[/cell][cell]" +
                 number(s.saving_throws[i]) + (s.save_proficiencies[i] ? " *" : "") + "[/cell]";
     }
@@ -183,7 +183,7 @@ String CharacterCreationView::sheet_text(const Character &character,
     if (character.inventory().empty())
         text += "\nEmpty";
     const auto positions =
-        member ? campaign_->profile(member->id).equipment_positions : std::vector<rules::Message>{};
+        member ? campaign_->profile(member->id).equipment_positions : std::vector<rules::Message> {};
     for (const auto &item : character.inventory().items())
     {
         text += "\n" + literal(std::string(item.name)) + " x" + std::to_string(item.quantity);
@@ -196,11 +196,11 @@ String CharacterCreationView::sheet_text(const Character &character,
     }
     text += presentation::training_summary(s.training,
                                            [](std::string_view source)
-                                           {
-                                               return gs(source);
-                                           })
-                .utf8()
-                .get_data();
+    {
+        return gs(source);
+    })
+    .utf8()
+    .get_data();
     return gs(text);
 }
 
@@ -230,10 +230,10 @@ void CharacterCreationView::show_modifiers()
     try
     {
         const auto pack = std::filesystem::u8path(
-            ProjectSettings::get_singleton()
-                ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                .utf8()
-                .get_data());
+                              ProjectSettings::get_singleton()
+                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
+                              .utf8()
+                              .get_data());
         const auto profile =
             member ? campaign_->profile(member->id) : srd5::load(pack)->character_profile(s, {});
         text += "\n\n[b]Items[/b]\n" + profile.item_modifiers + "\n\n[b]Spells[/b]\n" +
@@ -295,13 +295,13 @@ void CharacterCreationView::update_saving_throws(String value)
         text += "[b]" + std::string(names[i]) + " save: " + number(s.saving_throws[i]) + " | ";
         text += needed > 20   ? "Cannot reach this DC on a d20"
                 : needed == 1 ? "Any d20 roll saves"
-                              : "Roll " + std::to_string(needed) + " or higher";
+                : "Roll " + std::to_string(needed) + " or higher";
         text += "[/b]\n" + number(s.modifiers[i]) + " from " + names[i] + " score " +
                 std::to_string(s.scores[i]) + " (score minus 10, divided by 2, rounded down).\n";
         text += s.save_proficiencies[i] ? number(s.saving_throws[i] - s.modifiers[i]) + " from " +
-                                              s.character_class + " saving throw proficiency."
-                                        : "+0 proficiency: " + s.character_class +
-                                              " does not grant proficiency in this save.";
+                s.character_class + " saving throw proficiency."
+                : "+0 proficiency: " + s.character_class +
+                            " does not grant proficiency in this save.";
         if (disadvantage && i < 2)
             text += "\nDisadvantage from untrained armor: roll two d20s and use the lower roll.";
         text += "\n\n";

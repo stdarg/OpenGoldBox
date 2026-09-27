@@ -27,16 +27,20 @@ void matrix()
     {
         const auto kind = weapon.mastery;
         if (kind != fx::Mastery::slow && kind != fx::Mastery::topple &&
-            kind != fx::Mastery::cleave && kind != fx::Mastery::push)
+                kind != fx::Mastery::cleave && kind != fx::Mastery::push)
             continue;
-        for (bool ranged : {false, true})
+        for (bool ranged :
+                {
+                    false, true
+                })
         {
             if ((!ranged && weapon.ranged) || (ranged && !weapon.ranged && !weapon.thrown))
                 continue;
             // Club is already selected by the common fixture helper.
             auto draft = hero("quarterstaff").creation_data();
             draft.training["class:fighter:weapon_mastery"] = {std::string(weapon.key), "dagger",
-                                                              "mace"};
+                                                              "mace"
+                                                             };
             auto e = encounter(*r, Character(*srd5::character_rules(), draft, {}),
                                std::string(weapon.key), ranged);
             e.participants.push_back({98, "mastery_target", "Second", 1, {2, 2}});
@@ -49,17 +53,17 @@ void matrix()
                 if (!c->snapshot().optional_effect_choice)
                     continue;
                 check(c->snapshot().optional_effect_choice->title.source ==
-                          (kind == fx::Mastery::slow     ? "Slow"
-                           : kind == fx::Mastery::topple ? "Topple"
-                           : kind == fx::Mastery::cleave ? "Cleave"
-                                                         : "Push"),
+                      (kind == fx::Mastery::slow     ? "Slow"
+                       : kind == fx::Mastery::topple ? "Topple"
+                       : kind == fx::Mastery::cleave ? "Cleave"
+                       : "Push"),
                       "Actual weapon selects its mastery");
                 roundtrip(*r, *c);
                 const auto pending = c->save();
                 auto skipped = r->restore(pending);
                 choose(*skipped, "effect_skip", 1);
                 check(!skipped->snapshot().optional_effect_choice &&
-                          !offers(*skipped, ranged ? "ranged" : "melee"),
+                      !offers(*skipped, ranged ? "ranged" : "melee"),
                       "Skip consumes no further action and does not refund attack");
                 auto invalid = command(*c, "effect_use");
                 invalid.item = 99;
@@ -103,14 +107,19 @@ void matrix()
 void simultaneous()
 {
     auto r = module();
-    for (const auto weapon : {"longbow", "maul"})
-        for (bool movement_first : {false, true})
+    for (const auto weapon :
+            {"longbow", "maul"
+            })
+        for (bool movement_first :
+                {
+                    false, true
+                })
         {
             auto c = r->restore(mastery_choice_checks::fixture(weapon, "-before"));
             act(*c, std::string_view(weapon) == "longbow" ? "ranged" : "melee", 99);
             act(*c, "savage_skip");
             check(c->snapshot().optional_effect_choice &&
-                      c->snapshot().optional_effect_choice->options.size() == 2,
+                  c->snapshot().optional_effect_choice->options.size() == 2,
                   "Critical retains mastery and Champion as separate options");
             roundtrip(*r, *c);
             if (movement_first)
@@ -127,7 +136,7 @@ void simultaneous()
             {
                 choose(*c, "effect_use", 1);
                 check(c->snapshot().optional_effect_choice &&
-                          c->snapshot().optional_effect_choice->options.size() == 1,
+                      c->snapshot().optional_effect_choice->options.size() == 1,
                       "Using mastery retains movement");
                 roundtrip(*r, *c);
                 choose(*c, "effect_use", 2);
@@ -143,7 +152,8 @@ void historical_graze()
 {
     auto r = module();
     for (const auto name :
-         {"combat-v24-graze-pending-0.6.59.save", "combat-v24-zero-graze-0.6.59.save"})
+            {"combat-v24-graze-pending-0.6.59.save", "combat-v24-zero-graze-0.6.59.save"
+            })
     {
         const auto bytes = nick_attack_checks::fixture(name);
         auto c = r->restore(bytes);
@@ -161,8 +171,13 @@ void historical_graze()
 void reactions()
 {
     auto r = rules();
-    for (const auto key : {"javelin", "maul", "halberd", "warhammer"})
-        for (bool move_first : {false, true})
+    for (const auto key :
+            {"javelin", "maul", "halberd", "warhammer"
+            })
+        for (bool move_first :
+                {
+                    false, true
+                })
         {
             CampaignParty p(module());
             auto h = hero(key, "fighter", "soldier");
@@ -190,7 +205,7 @@ void reactions()
                       "Mastery source gets a real opportunity");
                 act(*c, "opportunity", 99);
                 if (!c->snapshot().savage_attack_choice ||
-                    !c->snapshot().savage_attack_choice->critical)
+                        !c->snapshot().savage_attack_choice->critical)
                     continue;
                 act(*c, "savage_skip");
                 if (!c->snapshot().optional_effect_choice)
@@ -268,14 +283,14 @@ void cleave_criticals()
         roundtrip(*r, *c);
         act(*c, "savage_skip");
         check(c->snapshot().optional_effect_choice &&
-                  c->snapshot().optional_effect_choice->options.size() == 2,
+              c->snapshot().optional_effect_choice->options.size() == 2,
               "Two critical hits retain two separate movement entitlements");
         roundtrip(*r, *c);
         choose(*c, "effect_use", 2);
         roundtrip(*r, *c);
         act(*c, "end");
         check(c->snapshot().optional_effect_choice &&
-                  c->snapshot().optional_effect_choice->options.size() == 1,
+              c->snapshot().optional_effect_choice->options.size() == 1,
               "Finishing first movement retains second");
         choose(*c, "effect_use", 2);
         act(*c, "end");
@@ -285,8 +300,8 @@ void cleave_criticals()
         if (c->snapshot().savage_attack_choice)
             act(*c, "savage_skip");
         check(!c->snapshot().effect_targeting &&
-                  (!c->snapshot().optional_effect_choice ||
-                   c->snapshot().optional_effect_choice->title.source != "Cleave"),
+              (!c->snapshot().optional_effect_choice ||
+               c->snapshot().optional_effect_choice->title.source != "Cleave"),
               "Action Surge does not reset Cleave once-per-turn budget");
         tested = true;
     }
@@ -301,19 +316,21 @@ void ui_fixtures()
     auto r = module();
     const auto directory = std::filesystem::path(output);
     std::filesystem::create_directories(directory);
-    const auto write = [&](const std::string &name, const std::string &data)
+    const auto write = [&](const std::string & name, const std::string & data)
     {
         std::ofstream out(directory / (name + ".save"));
         out << data;
         check(bool(out), "Write optional mastery UI checkpoint");
     };
-    for (const auto key : {"javelin", "maul", "greataxe", "warhammer"})
+    for (const auto key :
+            {"javelin", "maul", "greataxe", "warhammer"
+            })
     {
         const std::string name = key;
         auto e = encounter(*r, hero(key), key);
         e.participants.back().definition = "vanguard";
         e.participants.push_back(
-            {98, "vanguard", "Second", std::string_view(key) == "greataxe" ? 0u : 1u, {2, 2}});
+        {98, "vanguard", "Second", std::string_view(key) == "greataxe" ? 0u : 1u, {2, 2}});
         bool written = false;
         for (unsigned seed = 1; seed < 64 && !written; ++seed)
         {
@@ -364,7 +381,9 @@ void boundaries()
         return std::string{std::istreambuf_iterator<char>(in), {}} +
                "\ncreature mastery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" + suffix;
     };
-    for (const auto size : {"tiny", "small", "medium", "large", "huge", "gargantuan"})
+    for (const auto size :
+            {"tiny", "small", "medium", "large", "huge", "gargantuan"
+            })
     {
         auto r = srd5::parse_content(content(std::string("size mastery_target ") + size + "\n"));
         auto e = encounter(*r, hero("warhammer"), "warhammer");
@@ -375,18 +394,20 @@ void boundaries()
             act(*c, "melee", 99);
             const bool hit = !result(*c).source.ends_with("misses.");
             check(bool(c->snapshot().optional_effect_choice) ==
-                      (hit && std::string_view(size) != "huge" &&
-                       std::string_view(size) != "gargantuan"),
+                  (hit && std::string_view(size) != "huge" &&
+                   std::string_view(size) != "gargantuan"),
                   "Push size limit is Large or smaller");
         }
     }
     rejects(
         [&]
-        {
-            (void)srd5::parse_content(
-                content("size mastery_target large\nsize mastery_target small\n"));
-        });
-    for (const auto key : {"javelin", "maul"})
+    {
+        (void)srd5::parse_content(
+        content("size mastery_target large\nsize mastery_target small\n"));
+    });
+    for (const auto key :
+            {"javelin", "maul"
+            })
     {
         auto r = rules(true);
         auto e = encounter(*r, hero(key), key);
@@ -405,7 +426,10 @@ void boundaries()
         check(tested, "Immune target hit");
     }
     auto r = rules();
-    for (bool blocked : {false, true})
+    for (bool blocked :
+            {
+                false, true
+            })
     {
         auto e = encounter(*r, hero("warhammer"), "warhammer");
         if (blocked)
@@ -423,7 +447,7 @@ void boundaries()
                 if (command.verb == "effect_push")
                 {
                     check(command.destination.y == 1 &&
-                              (command.destination.x == 3 || command.destination.x == 4),
+                          (command.destination.x == 3 || command.destination.x == 4),
                           "Push allows only five or ten feet straight away");
                     ++count;
                 }
@@ -453,7 +477,9 @@ void boundaries()
 void movement_enables_mastery()
 {
     auto r = rules();
-    for (const auto key : {"halberd", "warhammer"})
+    for (const auto key :
+            {"halberd", "warhammer"
+            })
     {
         CampaignParty p(module());
         auto h = hero(key, "fighter", "soldier");
@@ -479,16 +505,17 @@ void movement_enables_mastery()
             turn(*c, 1);
             act(*c, "melee", 99);
             if (!c->snapshot().savage_attack_choice ||
-                !c->snapshot().savage_attack_choice->critical)
+                    !c->snapshot().savage_attack_choice->critical)
                 continue;
             act(*c, "savage_skip");
             check(c->snapshot().optional_effect_choice &&
-                      c->snapshot().optional_effect_choice->options.size() == 2 &&
-                      !c->snapshot().optional_effect_choice->options[0].available,
+                  c->snapshot().optional_effect_choice->options.size() == 2 &&
+                  !c->snapshot().optional_effect_choice->options[0].available,
                   "Position-dependent effect retained while Champion can enable it");
             roundtrip(*r, *c);
             choose(*c, "effect_use", 2);
-            const Cell destination = cleave ? Cell{2, 1} : Cell{2, 2};
+            const Cell destination = cleave ? Cell{2, 1} :
+                                     Cell{2, 2};
             bool moved = false;
             for (const auto &cmd : c->legal_commands())
                 if (cmd.verb == "move" && cmd.destination == destination)
@@ -501,7 +528,7 @@ void movement_enables_mastery()
             act(*c, "end");
             roundtrip(*r, *c);
             check(c->snapshot().optional_effect_choice &&
-                      c->snapshot().optional_effect_choice->options[0].available,
+                  c->snapshot().optional_effect_choice->options[0].available,
                   "Moved source re-evaluates mastery geometry");
             choose(*c, "effect_use", 1);
             act(*c, cleave ? "effect_attack" : "effect_push", cleave ? 98 : 99);
@@ -565,8 +592,12 @@ void slain_reaction_mover()
 void physical_and_damage()
 {
     auto r = rules();
-    for (const auto key : {"javelin", "trident"})
-        for (const auto background : {"sage", "soldier"})
+    for (const auto key :
+            {"javelin", "trident"
+            })
+        for (const auto background :
+                {"sage", "soldier"
+                })
         {
             CampaignParty p(module());
             auto h = hero(key, "fighter", background);
@@ -598,7 +629,10 @@ void physical_and_damage()
             }
             check(tested, "Immediate and deferred thrown mastery provenance covered");
         }
-    for (int score : {3, 18})
+    for (int score :
+            {
+                3, 18
+            })
     {
         auto draft = hero("greataxe", "fighter", "soldier").creation_data();
         const int face = score / 3;
@@ -623,7 +657,7 @@ void physical_and_damage()
             if (!c->snapshot().savage_attack_choice)
                 continue;
             check(c->snapshot().savage_attack_choice->modifier ==
-                      std::min(0, h.sheet().modifiers[0]),
+                  std::min(0, h.sheet().modifiers[0]),
                   "Cleave retains negative ability modifiers and omits positive ones");
             roundtrip(*r, *c);
             act(*c, "savage_use");
@@ -649,24 +683,26 @@ void malformed()
     const auto end = bytes.find('\n', start + 1);
     const auto row = bytes.substr(start + 1, end - start - 1);
     for (const auto replacement :
-         {std::string("99999 99 ") + row.substr(5), std::string("1 1 ") + row.substr(5),
-          std::string("1 99 99 20 0 0 \"maul\" 1 1 0")})
+            {
+                std::string("99999 99 ") + row.substr(5), std::string("1 1 ") + row.substr(5),
+                std::string("1 99 99 20 0 0 \"maul\" 1 1 0")
+            })
     {
         auto bad = bytes;
         bad.replace(start + 1, end - start - 1, replacement);
         rejects(
             [&]
-            {
-                (void)r->restore(bad);
-            });
+        {
+            (void)r->restore(bad);
+        });
     }
     auto bad = bytes;
     bad.replace(bad.find(r->identity().version), r->identity().version.size(), "0.6.59");
     rejects(
         [&]
-        {
-            (void)r->restore(bad);
-        });
+    {
+        (void)r->restore(bad);
+    });
     // The tail is one Champion offer followed by the absent reaction-origin marker.
     const auto offer_start = end + 3;
     const auto offer_end = bytes.find('\n', offer_start);
@@ -674,12 +710,12 @@ void malformed()
     bad = bytes;
     bad.replace(end + 1, offer_end - end,
                 std::string("2\n") + bytes.substr(offer_start, offer_end - offer_start) + "\n" +
-                    bytes.substr(offer_start, offer_end - offer_start) + "\n");
+                bytes.substr(offer_start, offer_end - offer_start) + "\n");
     rejects(
         [&]
-        {
-            (void)r->restore(bad);
-        });
+    {
+        (void)r->restore(bad);
+    });
     roundtrip(*r, *c);
 }
 

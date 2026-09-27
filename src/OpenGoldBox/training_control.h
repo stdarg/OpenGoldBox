@@ -100,7 +100,7 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
     if (!fixed)
         text = "\n\n[b]" + tr(N_("Training")) + "[/b]\n" +
                tr(profile.complete ? N_("Supported training choices complete")
-                                   : N_("Training choices pending")) +
+                  : N_("Training choices pending")) +
                "\n";
     for (const auto &s : profile.skills)
     {
@@ -135,17 +135,19 @@ inline void style_choice(godot::CheckBox &control)
 {
     using namespace godot;
     auto *check = &control;
-    for (const char *state : {"normal", "hover", "pressed", "hover_pressed", "disabled", "focus"})
+    for (const char *state :
+            {"normal", "hover", "pressed", "hover_pressed", "disabled", "focus"
+            })
     {
         Ref<StyleBoxFlat> style;
         style.instantiate();
         style->set_bg_color(
             Color(state == std::string_view("pressed") || state == std::string_view("hover_pressed")
-                      ? "304851"
-                      : "19262e"));
+                  ? "304851"
+                  : "19262e"));
         style->set_border_color(Color(state == std::string_view("focus")   ? "ebcb80"
                                       : state == std::string_view("hover") ? "b0c5cc"
-                                                                           : "506570"));
+                                      : "506570"));
         style->set_border_width_all(state == std::string_view("focus") ? 2 : 1);
         style->set_corner_radius_all(3);
         style->set_content_margin_all(7);
@@ -184,8 +186,8 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     auto fixed = creator.draft();
     fixed.training.clear();
     parent.get_node<RichTextLabel>("TrainingFixed")
-        ->set_text("[b]" + tr(N_("Fixed training")) + "[/b]\n" +
-                   training_summary(creator.rules().evaluate(fixed, false).training, tr, true));
+    ->set_text("[b]" + tr(N_("Fixed training")) + "[/b]\n" +
+               training_summary(creator.rules().evaluate(fixed, false).training, tr, true));
     const auto groups = creator.training_options();
     for (unsigned i = groups.size(); i < static_cast<unsigned>(rows->get_child_count()); ++i)
         rows->get_node<Control>(String("Group") + String::num_uint64(i))->hide();
@@ -268,10 +270,10 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             if (auto *check = Object::cast_to<CheckBox>(box->get_child(j)))
             {
                 if (std::none_of(group.options.begin(), group.options.end(),
-                                 [&](const auto &o)
-                                 {
-                                     return training_string(o.id) == String(check->get_name());
-                                 }))
+                                 [&](const auto & o)
+            {
+                return training_string(o.id) == String(check->get_name());
+                }))
                 {
                     check->hide();
                     check->set_disabled(true);
@@ -305,8 +307,8 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             const bool selected =
                 std::find(picked.begin(), picked.end(), option.id) != picked.end();
             check->set_text(tr(option.label) + (option.description.empty()
-                                                    ? String()
-                                                    : String(" / ") + tr(option.description)));
+                                                ? String()
+                                                : String(" / ") + tr(option.description)));
             check->set_pressed_no_signal(selected);
             check->set_disabled(
                 (has_locked && std::find(original->second.begin(), original->second.end(),
@@ -320,7 +322,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     for (const auto &group : groups)
         signature += training_string(group.id) + ";";
     if (!rows->has_meta("training_groups") ||
-        String(rows->get_meta("training_groups")) != signature)
+            String(rows->get_meta("training_groups")) != signature)
         parent.get_node<ScrollContainer>("Training")->set_v_scroll(0);
     rows->set_meta("training_groups", signature);
     unsigned first = 0;

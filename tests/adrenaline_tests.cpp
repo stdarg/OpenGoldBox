@@ -103,14 +103,17 @@ auto battle(const Character &c, TemporaryHitPoints temporary = {})
     if (temporary.amount)
         rules->grant_temporary_hit_points(state, c.sheet(), temporary, TemporaryHpChoice::use_new);
     Encounter e{{20, 20, std::vector<std::uint8_t>(400)},
-                {{1,
-                  "campaign-character",
-                  c.sheet().name,
-                  0,
-                  {2, 2},
-                  rules->character_profile(c.sheet(), {}).data,
-                  state},
-                 {99, "vanguard", "Opponent", 1, {18, 18}}}};
+        {   {
+                1,
+                "campaign-character",
+                c.sheet().name,
+                 0,
+                {2, 2},
+                rules->character_profile(c.sheet(), {}).data,
+                state
+            },
+            {99, "vanguard", "Opponent", 1, {18, 18}}
+        }};
     auto combat = rules->create(e, 42);
     while (combat->snapshot().actor != 1)
         act(*combat, "end");
@@ -135,21 +138,21 @@ void ordinary_classes()
         const auto rush = command(*combat, "adrenaline_rush");
         check(pool(c, before.persistent).remaining == 2, "All twelve classes start with PB uses");
         check(std::any_of(c.sheet().grants.begin(), c.sheet().grants.end(),
-                          [](const auto &g)
-                          {
-                              return g.id == "trait:adrenaline_rush" &&
-                                     g.source_id == "species:orc" && g.level == 1;
-                          }),
-              "Orc entitlement has species provenance");
+                          [](const auto & g)
+        {
+            return g.id == "trait:adrenaline_rush" &&
+                   g.source_id == "species:orc" && g.level == 1;
+        }),
+        "Orc entitlement has species provenance");
         check(combat->submit(rush), "Normally created Orc can use Adrenaline Rush");
         const auto after = unit(*combat);
         check(!after.bonus_action && after.action &&
-                  after.movement_feet == before.movement_feet + 30 &&
-                  after.hit_points == before.hit_points &&
-                  after.temporary_hp == TemporaryHitPoints{2, "species:orc/trait:adrenaline_rush"},
+              after.movement_feet == before.movement_feet + 30 &&
+              after.hit_points == before.hit_points &&
+              after.temporary_hp == TemporaryHitPoints{2, "species:orc/trait:adrenaline_rush"},
               "Bonus Action Dash grants PB Temporary HP without healing or using the action");
         check(pool(c, after.persistent).remaining == 1 && !combat->snapshot().temporary_hp_offer &&
-                  !has(*combat, "adrenaline_rush"),
+              !has(*combat, "adrenaline_rush"),
               "Empty pool autoaccepts and consumes one use");
         const auto saved = combat->save();
         check(!combat->submit(rush) && combat->save() == saved,
@@ -172,11 +175,11 @@ void ordinary_classes()
         auto state = unit(*combat).persistent;
         rules->recover_short_rest(state, c.sheet());
         check(pool(c, state).remaining == 2 &&
-                  rules->recovery_info(c.sheet(), state).temporary_hp.amount == 2,
+              rules->recovery_info(c.sheet(), state).temporary_hp.amount == 2,
               "Short Rest fully recharges uses and retains Temporary HP");
         rules->recover(state, c.sheet());
         check(pool(c, state).remaining == 2 &&
-                  rules->recovery_info(c.sheet(), state).temporary_hp.amount == 0,
+              rules->recovery_info(c.sheet(), state).temporary_hp.amount == 0,
               "Long Rest recharges and expires Temporary HP");
     }
     auto human = battle(hero("fighter", "human"));
@@ -194,17 +197,22 @@ void decisions()
 {
     auto rules = module();
     const auto c = hero();
-    for (int previous : {1, 2, 7})
-        for (const auto verb : {"temp_hp_keep", "temp_hp_use"})
+    for (int previous :
+            {
+                1, 2, 7
+            })
+        for (const auto verb :
+                {"temp_hp_keep", "temp_hp_use"
+                })
         {
             auto combat = battle(c, {previous, "spell:fixture"});
             const auto stale = command(*combat, "dash");
             act(*combat, "adrenaline_rush");
             const auto snapshot = combat->snapshot();
             check(snapshot.temporary_hp_offer &&
-                      snapshot.temporary_hp_offer->current ==
-                          TemporaryHitPoints{previous, "spell:fixture"} &&
-                      snapshot.temporary_hp_offer->offered.amount == 2,
+                  snapshot.temporary_hp_offer->current ==
+                  TemporaryHitPoints{previous, "spell:fixture"} &&
+                  snapshot.temporary_hp_offer->offered.amount == 2,
                   "Decision exposes both amounts and sources");
             check(combat->legal_commands().size() == 2 && combat->movement_reach(1).empty(),
                   "All other actions/movement wait for the choice");
@@ -219,12 +227,12 @@ void decisions()
                   "Restored choice has identical continuation");
             const auto after = unit(*combat);
             check(after.temporary_hp ==
-                      (std::string_view(verb) == "temp_hp_keep"
-                           ? TemporaryHitPoints{previous, "spell:fixture"}
-                           : TemporaryHitPoints{2, "species:orc/trait:adrenaline_rush"}),
+                  (std::string_view(verb) == "temp_hp_keep"
+                   ? TemporaryHitPoints{previous, "spell:fixture"}
+                   : TemporaryHitPoints{2, "species:orc/trait:adrenaline_rush"}),
                   "Explicit smaller/equal/larger choice never stacks");
             check(pool(c, after.persistent).remaining == 1 && !after.bonus_action && after.action &&
-                      after.movement_feet == 60,
+                  after.movement_feet == 60,
                   "Both choices retain all spent costs");
             const auto saved = combat->save();
             check(!combat->submit(choice) && combat->save() == saved,
@@ -235,9 +243,9 @@ void decisions()
             corrupt.replace(at, 1, "3");
             rejects(
                 [&]
-                {
-                    (void)rules->restore(corrupt);
-                });
+            {
+                (void)rules->restore(corrupt);
+            });
         }
     auto combat = battle(c, {7, "spell:fixture"});
     act(*combat, "adrenaline_rush");
@@ -251,7 +259,9 @@ void decisions()
     std::ofstream(directory / "adrenaline-initial.save") << initial->save();
     const auto data = unit(*combat).persistent;
     check(data.resources.starts_with("SRD7 "), "Orc uses persist even with other-source HP");
-    for (const auto remaining : {"-1", "3", "2147483648"})
+    for (const auto remaining :
+            {"-1", "3", "2147483648"
+            })
     {
         auto bad = data;
         auto at = bad.resources.find(" FX1");
@@ -260,9 +270,9 @@ void decisions()
         bad.resources.replace(start + 1, at - start - 1, remaining);
         rejects(
             [&]
-            {
-                rules->validate_character_state(c.sheet(), bad);
-            });
+        {
+            rules->validate_character_state(c.sheet(), bad);
+        });
     }
 }
 
@@ -271,23 +281,26 @@ void movement()
     auto rules = module();
     const auto c = hero();
     Encounter e{{10, 10, std::vector<std::uint8_t>(100)},
-                {{1,
-                  "campaign-character",
-                  c.sheet().name,
-                  0,
-                  {2, 2},
-                  rules->character_profile(c.sheet(), {}).data},
-                 {99, "vanguard", "Opponent", 1, {3, 2}}}};
+        {   {
+                1,
+                "campaign-character",
+                c.sheet().name,
+                 0,
+                {2, 2},
+                rules->character_profile(c.sheet(), {}).data
+            },
+            {99, "vanguard", "Opponent", 1, {3, 2}}
+        }};
     auto combat = rules->create(e, 42);
     while (combat->snapshot().actor != 1)
         act(*combat, "end");
     act(*combat, "adrenaline_rush");
     const auto offered = combat->legal_commands();
     const auto move = std::find_if(offered.begin(), offered.end(),
-                                   [](const auto &c)
-                                   {
-                                       return c.verb == "move" && c.destination == Cell{0, 2};
-                                   });
+                                   [](const auto & c)
+    {
+        return c.verb == "move" && c.destination == Cell{0, 2};
+    });
     check(move != offered.end() && combat->submit(*move) && combat->snapshot().reaction_pending,
           "Bonus Dash movement still provokes opportunity attacks");
     check(!has(*combat, "adrenaline_rush") && !combat->snapshot().temporary_hp_offer,
@@ -296,7 +309,7 @@ void movement()
     act(*combat, "decline");
     act(*copy, "decline");
     check(combat->save() == copy->save() && unit(*combat).movement_feet == 50 &&
-              unit(*combat).temporary_hp.amount == 2,
+          unit(*combat).temporary_hp.amount == 2,
           "Restored opportunity decline spends only remaining movement and preserves pool");
 }
 
@@ -320,11 +333,13 @@ void campaign()
     check(encode_campaign(copy, nullptr, "adrenaline") == bytes,
           "Campaign save/load preserves pool and spent use");
     copy.complete_training(id, *srd5::character_rules(),
-                           {{"origin:languages", {"elvish", "orc"}},
-                            {"class:fighter:fighting_style", {"archery"}},
-                            {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-                            {"class:fighter", {"athletics", "history"}},
-                            {"background:soldier:gaming_set", {"dice"}}});
+    {
+        {"origin:languages", {"elvish", "orc"}},
+        {"class:fighter:fighting_style", {"archery"}},
+        {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
+        {"class:fighter", {"athletics", "history"}},
+        {"background:soldier:gaming_set", {"dice"}}
+    });
     copy.award_experience(900, "rush-xp");
     copy.advance(id, copy.default_advancement(id));
     check(pool(copy.member(id).character, copy.member(id).vitals).remaining == 1,
@@ -333,7 +348,7 @@ void campaign()
     actors.push_back({99, "vanguard", "Opponent", 1, {18, 18}});
     auto second = rules->create({{20, 20, std::vector<std::uint8_t>(400)}, actors}, 42);
     check(unit(*second).temporary_hp.amount == 2 &&
-              pool(copy.member(id).character, unit(*second).persistent).remaining == 1,
+          pool(copy.member(id).character, unit(*second).persistent).remaining == 1,
           "Next encounter inherits buffer and expenditure");
     check(bool(copy.rest(RestKind::short_rest)), "Campaign Short Rest completes");
     check(pool(copy.member(id).character, copy.member(id).vitals).remaining == 2,
@@ -358,11 +373,11 @@ void legacy()
     CampaignParty party(module());
     party.restore(decode_campaign(read(path / "campaign-v10-adrenaline.ogs"),
                                   *srd5::character_rules(), *rules, "adrenaline-fixture", nullptr)
-                      .party);
+                  .party);
     const auto &c = party.member(1);
     check(c.vitals.hit_points == 0 && !c.vitals.dead &&
-              rules->recovery_info(c.character.sheet(), c.vitals).temporary_hp.amount == 7 &&
-              pool(c.character, c.vitals).remaining == 2,
+          rules->recovery_info(c.character.sheet(), c.vitals).temporary_hp.amount == 7 &&
+          pool(c.character, c.vitals).remaining == 2,
           "Legacy campaign Orc retains mortality/resources/pool and gains the new use capacity");
     check(c.vitals.resources == "SRD7 1 0 0 0 0 1 1 0 4321000 7 \"spell:fixture\" 2 FX1 1 0",
           "Legacy migration preserves exact spent Wind, die and recovery deadline");
@@ -370,7 +385,7 @@ void legacy()
     CampaignParty again(module());
     again.restore(
         decode_campaign(bytes, *srd5::character_rules(), *rules, "adrenaline-fixture", nullptr)
-            .party);
+        .party);
     check(encode_campaign(again, nullptr, "adrenaline-fixture") == bytes,
           "Migration becomes canonical and never recharges a current save");
 }

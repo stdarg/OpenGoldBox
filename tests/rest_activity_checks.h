@@ -60,29 +60,29 @@ void segments()
     const auto before = saved(party);
     rejects(
         [&]
-        {
-            advance(party, 0);
-        });
+    {
+        advance(party, 0);
+    });
     rejects(
         [&]
-        {
-            (void)party.advance_rest(*start, minute, RestWork::sleep);
-        });
+    {
+        (void)party.advance_rest(*start, minute, RestWork::sleep);
+    });
     rejects(
         [&]
-        {
-            party.advance_time(1);
-        });
+    {
+        party.advance_time(1);
+    });
     rejects(
         [&]
-        {
-            party.remove(1);
-        });
+    {
+        party.remove(1);
+    });
     rejects(
         [&]
-        {
-            party.begin_combat();
-        });
+    {
+        party.begin_combat();
+    });
     check(saved(party) == before,
           "Invalid, stale and out-of-band requests leave active rest unchanged");
     check(before.starts_with("OPENGOLD-CAMPAIGN 12\n"), "Active rest uses version twelve");
@@ -92,29 +92,29 @@ void segments()
     const auto interrupted_ticket = ticket(party);
     party.interrupt_rest(interrupted_ticket, RestInterruption::damage);
     check(winds(party.member(1)) == 1 && party.state().short_rest &&
-              party.remaining_rest_milliseconds() == 470 * minute,
+          party.remaining_rest_milliseconds() == 470 * minute,
           "70-minute interruption grants one Short Rest and adds one hour");
     const auto paused = saved(party);
     rejects(
         [&]
-        {
-            party.interrupt_rest(interrupted_ticket, RestInterruption::damage);
-        });
+    {
+        party.interrupt_rest(interrupted_ticket, RestInterruption::damage);
+    });
     rejects(
         [&]
-        {
-            party.resume_rest(ticket(party));
-        });
+    {
+        party.resume_rest(ticket(party));
+    });
     rejects(
         [&]
-        {
-            party.begin_combat();
-        });
+    {
+        party.begin_combat();
+    });
     rejects(
         [&]
-        {
-            party.advance_time(1);
-        });
+    {
+        party.advance_time(1);
+    });
     check(saved(party) == paused,
           "Duplicate interruption, premature resume and combat cannot lose pending choices");
     party = loaded(paused);
@@ -125,7 +125,7 @@ void segments()
     advance(party, 10 * minute);
     party.interrupt_rest(ticket(party), RestInterruption::spell);
     check(!party.state().short_rest && winds(party.member(1)) == 1 &&
-              party.state().rest_activity->extension_milliseconds == 120 * minute,
+          party.state().rest_activity->extension_milliseconds == 120 * minute,
           "Ten fresh minutes cannot credit the earlier 70-minute segment");
     party.resume_rest(ticket(party));
     advance(party, 60 * minute);
@@ -137,10 +137,10 @@ void segments()
     const auto result =
         party.advance_rest(ticket(party), party.remaining_rest_milliseconds(), RestWork::sleep);
     check(result && result->duration_minutes == 660 && !party.state().rest_activity &&
-              !party.state().short_rest && party.state().time_minutes == 660,
+          !party.state().short_rest && party.state().time_minutes == 660,
           "Three interruptions require eleven resting hours without repeating earlier time");
     check(party.member(1).vitals.hit_points == party.member(1).character.sheet().hit_points &&
-              party.member(1).last_rest_minutes == 660 && winds(party.member(1)) == 3,
+          party.member(1).last_rest_minutes == 660 && winds(party.member(1)) == 3,
           "Long Rest completion restores resources and records its actual completion time once");
     check(saved(party).starts_with("OPENGOLD-CAMPAIGN 11\n"),
           "No activity retains compact version eleven");
@@ -148,17 +148,22 @@ void segments()
 
 void boundaries()
 {
-    for (const auto kind : {RestKind::short_rest, RestKind::long_rest})
+    for (const auto kind :
+            {
+                RestKind::short_rest, RestKind::long_rest
+            })
         for (const auto cause :
-             {RestInterruption::initiative, RestInterruption::spell, RestInterruption::damage})
+                {
+                    RestInterruption::initiative, RestInterruption::spell, RestInterruption::damage
+                })
         {
             auto party = wounded();
             (void)party.begin_rest(kind);
             advance(party, 60 * minute - 1, RestWork::light_activity);
             party.interrupt_rest(ticket(party), cause);
             check(!party.state().short_rest && winds(party.member(1)) == 0 &&
-                      party.state().time_minutes == 59 &&
-                      party.state().subminute_milliseconds == 59999,
+                  party.state().time_minutes == 59 &&
+                  party.state().subminute_milliseconds == 59999,
                   "Interrupting before one hour grants no benefits for every cause");
             check(party.state().rest_activity.has_value() == (kind == RestKind::long_rest),
                   "Only Long Rest is resumable");
@@ -169,9 +174,9 @@ void boundaries()
     const auto before = saved(party);
     rejects(
         [&]
-        {
-            advance(party, 1, RestWork::light_activity);
-        });
+    {
+        advance(party, 1, RestWork::light_activity);
+    });
     check(saved(party) == before,
           "Light activity cannot exceed two hours or consume time on rejection");
     advance(party, 360 * minute - 1);
@@ -185,11 +190,11 @@ void boundaries()
     advance(party, 10 * minute);
     advance(party, 60 * minute - 1, RestWork::exertion);
     check(!party.state().rest_activity->interrupted &&
-              party.state().rest_activity->elapsed_milliseconds == 10 * minute,
+          party.state().rest_activity->elapsed_milliseconds == 10 * minute,
           "Exertion consumes campaign time but does not count as resting");
     advance(party, 1, RestWork::exertion);
     check(party.state().rest_activity->interrupted && !party.state().short_rest &&
-              party.state().time_minutes == 70,
+          party.state().time_minutes == 70,
           "One hour exertion interrupts without inventing an hour of rest");
     party.abandon_rest(ticket(party));
     check(party.state().time_minutes == 70 && !party.state().rest_activity,
@@ -198,7 +203,7 @@ void boundaries()
     (void)party.begin_rest(RestKind::short_rest);
     advance(party, 1, RestWork::exertion);
     check(!party.state().rest_activity && !party.state().short_rest &&
-              party.state().subminute_milliseconds == 1,
+          party.state().subminute_milliseconds == 1,
           "Strenuous activity ends a Short Rest without benefits");
 }
 
@@ -213,20 +218,22 @@ void combat_and_validation()
     Snapshot invalid;
     rejects(
         [&]
-        {
-            party.apply_combat(invalid);
-        });
+    {
+        party.apply_combat(invalid);
+    });
     party.end_combat();
     check(saved(party) == before,
           "Failed combat initialization preserves suspended progress and RNG");
     auto actors = party.participants();
     actors.push_back({999, "bandit", "Enemy", 1, {6, 6}});
-    const auto combat = module()->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);
+    const auto combat = module()->create(
+    { {8, 8, std::vector<std::uint8_t>(64)}, actors
+    }, 42);
     party.begin_combat();
     party.apply_combat(combat->snapshot());
     party.end_combat();
     check(party.state().rest_activity && party.state().rest_activity->interrupted &&
-              party.state().rest_activity->elapsed_milliseconds == minute,
+          party.state().rest_activity->elapsed_milliseconds == minute,
           "Successful combat handoff retains rest progress");
     party = loaded(saved(party));
     party.resume_rest(ticket(party));
@@ -272,9 +279,9 @@ void combat_and_validation()
         }
         rejects(
             [&]
-            {
-                party.restore(state);
-            });
+        {
+            party.restore(state);
+        });
         check(saved(party) == before, "Malformed activity cannot replace campaign state");
     }
     auto state = party.checkpoint();
@@ -283,9 +290,9 @@ void combat_and_validation()
     before = saved(party);
     rejects(
         [&]
-        {
-            advance(party, minute);
-        });
+    {
+        advance(party, minute);
+    });
     check(saved(party) == before, "Revision overflow cannot advance time or effects");
 }
 
@@ -298,7 +305,10 @@ void discard_and_bad_saves()
     const std::string suffix = "2 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 1 1 ";
     check(body.ends_with(suffix),
           "Independent version-twelve activity footer matches documented fields");
-    for (const auto field : {5u, 7u, 13u, 15u})
+    for (const auto field :
+            {
+                5u, 7u, 13u, 15u
+            })
     {
         std::array<std::uint64_t, 19> values{2, 0, 1, 1, 1, 1, 0, 0, 0, 0,
                                              0, 0, 0, 0, 0, 0, 0, 1, 1};
@@ -310,10 +320,10 @@ void discard_and_bad_saves()
         bytes.replace(0, bytes.find('\n') + 1, "OPENGOLD-CAMPAIGN 12\n");
         rejects(
             [&]
-            {
-                (void)decode_campaign(bytes, *srd5::character_rules(), *module(), "campaign-rest",
-                                      nullptr);
-            });
+        {
+            (void)decode_campaign(bytes, *srd5::character_rules(), *module(), "campaign-rest",
+            nullptr);
+        });
         check(saved(party) == original,
               "Correct-checksum malformed activity decoding cannot alter live state");
     }
@@ -327,15 +337,21 @@ void discard_and_bad_saves()
     const auto elapsed = party.state().time_minutes;
     party.abandon_rest(ticket(party));
     check(!party.state().rest_activity && !party.state().short_rest &&
-              party.member(1).vitals == vitals && party.state().random_state == rng &&
-              party.state().time_minutes == elapsed,
+          party.member(1).vitals == vitals && party.state().random_state == rng &&
+          party.state().time_minutes == elapsed,
           "Ending unfinished rest retains earned healing/recharge, spent dice, time and RNG");
 }
 
 void host_interruptions()
 {
-    for (auto kind : {RestKind::short_rest, RestKind::long_rest})
-        for (auto elapsed : {minute - 1, 70 * minute})
+    for (auto kind :
+            {
+                RestKind::short_rest, RestKind::long_rest
+            })
+        for (auto elapsed :
+                {
+                    minute - 1, 70 * minute
+                })
         {
             if (kind == RestKind::short_rest && elapsed >= 60 * minute)
                 continue;
@@ -356,9 +372,9 @@ void host_interruptions()
             {
                 rejects(
                     [&]
-                    {
-                        party.begin_combat();
-                    });
+                {
+                    party.begin_combat();
+                });
                 check(saved(party) == prepared, "Combat cannot skip pending Hit Dice");
                 party = loaded(prepared);
                 (void)party.spend_hit_die(party.state().short_rest->ticket, 1);
@@ -369,8 +385,14 @@ void host_interruptions()
             party.end_combat();
         }
     // Actual ECL HP readback, including a zero-HP victim and rejected wealth writes.
-    for (auto kind : {RestKind::short_rest, RestKind::long_rest})
-        for (int hp : {0, 1})
+    for (auto kind :
+            {
+                RestKind::short_rest, RestKind::long_rest
+            })
+        for (int hp :
+                {
+                    0, 1
+                })
         {
             CampaignParty party(module());
             party.add_pc(hero());
@@ -406,9 +428,9 @@ void host_interruptions()
     const auto before = saved(party);
     rejects(
         [&]
-        {
-            (void)party.prepare_combat();
-        });
+    {
+        (void)party.prepare_combat();
+    });
     check(saved(party) == before, "Failed initiative preparation rolls back recovery and tickets");
 }
 

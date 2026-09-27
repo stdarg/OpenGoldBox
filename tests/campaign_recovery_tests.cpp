@@ -65,7 +65,7 @@ CampaignParty loaded(std::string_view bytes)
     CampaignParty p(module());
     p.restore(
         decode_campaign(bytes, *srd5::character_rules(), *module(), "campaign-recovery", nullptr)
-            .party);
+        .party);
     return p;
 }
 
@@ -101,8 +101,8 @@ void golden_events()
     check(people[0].state == unstable(1) && rng == 17, "No death save occurs before six seconds");
     rules->elapse(people, 1, rng);
     check(people[0].state->hit_points == 1 &&
-              people[0].state->resources == "SRD4 0 0 0 0 0 0 1 FX4 1 0 0 1" &&
-              rng == 11400714819323198502ULL,
+          people[0].state->resources == "SRD4 0 0 0 0 0 0 1 FX4 1 0 0 1" &&
+          rng == 11400714819323198502ULL,
           "Natural 20 at the exact campaign turn restores one HP without replenishing spent pools");
     // At a shared deadline, entity 1 stabilizes (10), rolls two hours (2),
     // succeeds on its Blinded save (18); entity 2 then wakes on natural 20.
@@ -113,7 +113,7 @@ void golden_events()
     rules->elapse(people, 6000, rng);
     check(
         people[1].state->resources == "SRD5 0 0 0 0 0 1 1 0 7200000 FX1 2 0" &&
-            people[0].state->hit_points == 1 && rng == 8709371129873690742ULL,
+        people[0].state->hit_points == 1 && rng == 8709371129873690742ULL,
         "One chronological queue uses entity ID, mortality then effect order for simultaneous events");
     rules->elapse(people, 7199999, rng);
     check(people[1].state->hit_points == 0, "Stable recovery waits until its exact deadline");
@@ -126,7 +126,7 @@ void golden_events()
     rng = 29;
     rules->elapse(people, 60000, rng);
     check(people[0].state->dead && people[0].state->resources == "SRD4 0 0 0 2 3 0 1 FX1 2 0" &&
-              rng == 11400714819323198514ULL,
+          rng == 11400714819323198514ULL,
           "A natural-one death ends mortality rolls and skips saves on lingering effects");
     people = {patient(1, {0, false, "SRD1 0 0 3 2 1"})};
     rng = 42;
@@ -137,7 +137,7 @@ void golden_events()
     rules->elapse(people, 1, rng);
     check(
         people[0].state->resources == "SRD5 0 0 0 0 0 1 2 0 7199999 FX1 1 0" &&
-            rng == 11400714819323198527ULL,
+        rng == 11400714819323198527ULL,
         "Legacy Stable delay initializes exactly once on positive time, retaining its unspent dice");
     rules->elapse(people, std::numeric_limits<std::uint64_t>::max(), rng);
     check(people[0].state->hit_points == 1 && rng == 11400714819323198527ULL,
@@ -159,7 +159,9 @@ void partitions_and_rejection()
         rules->elapse(whole, 14406001, big_rng);
         std::uint64_t remaining = 14406001;
         for (const auto amount :
-             {1ULL, 1110ULL, 1000ULL, 3890ULL, 7123ULL, 48001ULL, 3523456ULL, 61ULL})
+                {
+                    1ULL, 1110ULL, 1000ULL, 3890ULL, 7123ULL, 48001ULL, 3523456ULL, 61ULL
+                })
         {
             rules->elapse(split, amount, small_rng);
             remaining -= amount;
@@ -178,18 +180,18 @@ void partitions_and_rejection()
     const auto first = *bad.front().state;
     rejects(
         [&]
-        {
-            rules->elapse(bad, 60000, rng);
-        });
+    {
+        rules->elapse(bad, 60000, rng);
+    });
     check(*bad.front().state == first && rng == 34,
           "Malformed late member cannot partly advance earlier members or RNG");
     bad = initial;
     bad.back().id = bad.front().id;
     rejects(
         [&]
-        {
-            rules->elapse(bad, 60000, rng);
-        });
+    {
+        rules->elapse(bad, 60000, rng);
+    });
     check(*bad.front().state == first && rng == 34,
           "Ambiguous participant ordering rejects atomically");
 }
@@ -216,7 +218,7 @@ void campaign_continuation()
     copy.advance_time_milliseconds(1);
     copy.advance_time_milliseconds(14400000);
     check(saved(party) == saved(copy) && party.member(pc).vitals.hit_points == 1 &&
-              party.member(npc).vitals.hit_points == 1,
+          party.member(npc).vitals.hit_points == 1,
           "PCs, recruited NPCs and reserves continue through save/load and subdivisions");
     check(party.member(reserve).vitals.hit_points != 0 || party.member(reserve).vitals.dead,
           "Reserve mortality continues outside the active party");
@@ -229,14 +231,17 @@ void campaign_continuation()
     state.roster[2].vitals = stable(1000);
     party.restore(state);
     const auto rest = party.rest(RestKind::long_rest);
-    check(rest && rest->members == std::vector<MemberId>{pc} &&
-              party.member(npc).vitals.hit_points == 1 &&
-              party.member(reserve).vitals.hit_points == 1,
+    check(rest && rest->members == std::vector<MemberId> {pc} &&
+          party.member(npc).vitals.hit_points == 1 &&
+          party.member(reserve).vitals.hit_points == 1,
           "An eight-hour rest advances natural recovery for ineligible companions and reserves");
-    for (auto id : {npc, reserve})
+    for (auto id :
+            {
+                npc, reserve
+            })
         check(!party.member(id).last_rest_minutes &&
-                  party.member(id).vitals.resources ==
-                      (id == npc ? "SRD4 0 0 0 0 0 0 1 FX1 1 0" : "SRD4 0 0 0 0 0 0 1 FX4 1 0 0 1"),
+              party.member(id).vitals.resources ==
+              (id == npc ? "SRD4 0 0 0 0 0 0 1 FX1 1 0" : "SRD4 0 0 0 0 0 0 1 FX4 1 0 0 1"),
               "Natural recovery grants neither recharge, Hit Dice nor a rest completion timestamp");
     state = party.checkpoint();
     state.time_minutes = std::numeric_limits<std::uint64_t>::max();
@@ -245,9 +250,9 @@ void campaign_continuation()
     const auto overflow = saved(party);
     rejects(
         [&]
-        {
-            party.advance_time(1);
-        });
+    {
+        party.advance_time(1);
+    });
     check(saved(party) == overflow, "Clock overflow preserves all vitality and RNG");
 }
 
@@ -292,7 +297,7 @@ void combat_handoff()
             break;
         }
     check(declined && migrated->save() ==
-                          rules->restore(frozen("combat-v9-recovery-continued.save"))->save(),
+          rules->restore(frozen("combat-v9-recovery-continued.save"))->save(),
           "Prior writer recovery/reaction continuation stays exact");
     auto old_identity = rules->identity();
     old_identity.version = "0.6.11";
@@ -312,10 +317,10 @@ void combat_handoff()
         const auto once = party.checkpoint();
         party.apply_combat(snap);
         check(party.state().random_state == once.random_state &&
-                  party.member(reserve).vitals == once.roster[2].vitals,
+              party.member(reserve).vitals == once.roster[2].vitals,
               "Repeated combat snapshots never repeat reserve mortality or RNG");
         check(party.member(reserve).vitals == direct.member(reserve).vitals &&
-                  party.state().random_state == direct.state().random_state,
+              party.state().random_state == direct.state().random_state,
               "Reserve mortality advances exactly once during combat");
         for (const auto &a : snap.combatants)
             if (a.id == npc)
@@ -328,12 +333,12 @@ void combat_handoff()
                 a.max_hit_points += 1;
         rejects(
             [&]
-            {
-                party.apply_combat(bad);
-            });
+        {
+            party.apply_combat(bad);
+        });
         check(party.state().random_state == once.random_state &&
-                  party.member(reserve).vitals == once.roster[2].vitals &&
-                  party.state().subminute_milliseconds == once.subminute_milliseconds,
+              party.member(reserve).vitals == once.roster[2].vitals &&
+              party.state().subminute_milliseconds == once.subminute_milliseconds,
               "Rejected snapshot rolls back candidate reserve recovery and time");
     }
     party.end_combat();
@@ -409,7 +414,7 @@ void event_rollback()
     check(travel.explore(por::ExplorationCommand::forward), "Ordinary exploration starts");
     settle(travel);
     check(party->member(reserve).vitals.hit_points == 1 &&
-              party->state().random_state == 11400714819323198502ULL,
+          party->state().random_state == 11400714819323198502ULL,
           "Ordinary exploration advances reserve death saves through the original host");
 }
 } // namespace

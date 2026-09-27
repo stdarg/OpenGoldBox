@@ -36,9 +36,9 @@ rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> gra
                                         unsigned level, const std::array<int, 6> &scores,
                                         TrainingPolicy policy = TrainingPolicy::weapon_mastery);
 rules::AbilityCheckModifier ability_check(std::span<const rules::FeatureGrant> grants,
-                                          std::string_view klass, std::string_view background,
-                                          unsigned level, const std::array<int, 6> &scores,
-                                          unsigned ability, std::string_view skill,
-                                          std::string_view tool);
+        std::string_view klass, std::string_view background,
+        unsigned level, const std::array<int, 6> &scores,
+        unsigned ability, std::string_view skill,
+        std::string_view tool);
 } // namespace opengold::srd5::detail
 #endif

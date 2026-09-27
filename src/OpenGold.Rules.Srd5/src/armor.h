@@ -26,17 +26,18 @@ struct Armor
     {
         return category == ArmorCategory::light    ? modifier
                : category == ArmorCategory::medium ? std::min(2, modifier)
-                                                   : 0;
+               : 0;
     }
 };
 
 // SRD 5.2.1 p.92. Don/doff durations are catalog metadata; #198 owns the
 // campaign activity and shield Utilize action, including interruptions.
-inline constexpr std::array armors{
+inline constexpr std::array armors
+{
     Armor{"padded", "Padded Armor", ArmorCategory::light, 11, 0, true, 8, 500, 60, 60},
     Armor{"leather", "Leather Armor", ArmorCategory::light, 11, 0, false, 10, 1000, 60, 60},
     Armor{"studded_leather", "Studded Leather Armor", ArmorCategory::light, 12, 0, false, 13, 4500,
-          60, 60},
+        60, 60},
     Armor{"hide", "Hide Armor", ArmorCategory::medium, 12, 0, false, 12, 1000, 300, 60},
     Armor{"chain_shirt", "Chain Shirt", ArmorCategory::medium, 13, 0, false, 20, 5000, 300, 60},
     Armor{"scale_mail", "Scale Mail", ArmorCategory::medium, 14, 0, true, 45, 5000, 300, 60},

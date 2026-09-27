@@ -49,7 +49,7 @@ std::uint64_t remaining(const RestProgress &p)
 RestTransition interrupt(const RestProgress &before, RestInterruption cause)
 {
     if (cause != RestInterruption::initiative && cause != RestInterruption::spell &&
-        cause != RestInterruption::damage && cause != RestInterruption::exertion)
+            cause != RestInterruption::damage && cause != RestInterruption::exertion)
         throw std::runtime_error("Invalid rest interruption");
     if (before.interrupted)
         throw std::runtime_error("Rest is already interrupted");
@@ -65,9 +65,9 @@ RestTransition interrupt(const RestProgress &before, RestInterruption cause)
     // Approved Q32 interpretation: previously credited time cannot earn benefits again.
     const auto benefit =
         p.segment_milliseconds >=
-                std::uint64_t(policy(RestKind::short_rest).duration_minutes) * 60000
-            ? RestBenefit::short_rest
-            : RestBenefit::none;
+        std::uint64_t(policy(RestKind::short_rest).duration_minutes) * 60000
+        ? RestBenefit::short_rest
+        : RestBenefit::none;
     p.segment_milliseconds = 0;
     return {p, benefit};
 }
@@ -87,7 +87,7 @@ RestTransition advance(const RestProgress &before, std::uint64_t milliseconds, R
             return interrupt(p, RestInterruption::exertion);
         const auto limit = std::uint64_t(timing.exertion_limit_minutes) * 60000;
         if (!limit || p.exertion_milliseconds >= limit ||
-            milliseconds > limit - p.exertion_milliseconds)
+                milliseconds > limit - p.exertion_milliseconds)
             throw std::runtime_error("Advance only to the next rest interruption");
         p.exertion_milliseconds += milliseconds;
         if (p.exertion_milliseconds == limit)
@@ -100,7 +100,7 @@ RestTransition advance(const RestProgress &before, std::uint64_t milliseconds, R
     {
         p.light_milliseconds = add(p.light_milliseconds, milliseconds);
         if (p.kind == RestKind::long_rest &&
-            p.light_milliseconds > std::uint64_t(timing.maximum_light_minutes) * 60000)
+                p.light_milliseconds > std::uint64_t(timing.maximum_light_minutes) * 60000)
             throw std::runtime_error("Long Rest light activity limit exceeded");
     }
     else
@@ -135,17 +135,17 @@ void validate(const RestProgress &p)
     const auto timing = policy(p.kind);
     const auto base = std::uint64_t(timing.duration_minutes) * 60000;
     if ((p.interrupted && (p.kind != RestKind::long_rest || p.segment_milliseconds)) || !base ||
-        p.extension_milliseconds > std::numeric_limits<std::uint64_t>::max() - base ||
-        p.elapsed_milliseconds >= base + p.extension_milliseconds ||
-        (p.kind == RestKind::short_rest && (p.extension_milliseconds || p.exertion_milliseconds)) ||
-        (p.kind == RestKind::long_rest &&
-         (!timing.interruption_extension_minutes ||
-          p.extension_milliseconds %
+            p.extension_milliseconds > std::numeric_limits<std::uint64_t>::max() - base ||
+            p.elapsed_milliseconds >= base + p.extension_milliseconds ||
+            (p.kind == RestKind::short_rest && (p.extension_milliseconds || p.exertion_milliseconds)) ||
+            (p.kind == RestKind::long_rest &&
+             (!timing.interruption_extension_minutes ||
+              p.extension_milliseconds %
               (std::uint64_t(timing.interruption_extension_minutes) * 60000) ||
-          (p.interrupted && !p.extension_milliseconds) ||
-          (!p.extension_milliseconds && p.segment_milliseconds != p.elapsed_milliseconds) ||
-          p.light_milliseconds > std::uint64_t(timing.maximum_light_minutes) * 60000 ||
-          p.exertion_milliseconds > std::uint64_t(timing.exertion_limit_minutes) * 60000)))
+              (p.interrupted && !p.extension_milliseconds) ||
+              (!p.extension_milliseconds && p.segment_milliseconds != p.elapsed_milliseconds) ||
+              p.light_milliseconds > std::uint64_t(timing.maximum_light_minutes) * 60000 ||
+              p.exertion_milliseconds > std::uint64_t(timing.exertion_limit_minutes) * 60000)))
         throw std::runtime_error("Rest activity disagrees with rules timing");
 }
 } // namespace opengold::srd5::rest

@@ -8,7 +8,7 @@ namespace presentation
 {
 template <class Translate>
 godot::Window *setup_training_replacement(godot::Node &parent, const godot::Callable &keep,
-                                          const godot::Callable &apply, const Translate &tr)
+        const godot::Callable &apply, const Translate &tr)
 {
     using namespace godot;
     auto owned = make_node<Window>();
@@ -68,11 +68,11 @@ void refresh_training_replacement(godot::Window &w,
         if (auto *box = Object::cast_to<CheckBox>(rows->get_child(n)))
         {
             if (std::none_of(options.group.options.begin(), options.group.options.end(),
-                             [&](const auto &o)
-                             {
-                                 return training_string(o.id) == box->get_name();
-                             }))
-                box->hide();
+                             [&](const auto & o)
+        {
+            return training_string(o.id) == box->get_name();
+            }))
+            box->hide();
         }
     for (const auto &option : options.group.options)
     {

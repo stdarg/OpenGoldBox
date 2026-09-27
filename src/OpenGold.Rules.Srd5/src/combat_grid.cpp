@@ -17,13 +17,13 @@ constexpr int unreachable = std::numeric_limits<int>::max();
 void validate_battlefield(const Battlefield &board)
 {
     if (board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64 ||
-        board.terrain.size() != static_cast<std::size_t>(board.width * board.height) ||
-        std::any_of(board.terrain.begin(), board.terrain.end(),
-                    [](auto tile)
-                    {
-                        return tile > 2;
-                    }))
-        throw std::runtime_error("Invalid battlefield");
+            board.terrain.size() != static_cast<std::size_t>(board.width * board.height) ||
+            std::any_of(board.terrain.begin(), board.terrain.end(),
+                        [](auto tile)
+{
+    return tile > 2;
+}))
+    throw std::runtime_error("Invalid battlefield");
 }
 
 bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
@@ -47,7 +47,7 @@ bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
             // Exact corner contact touches both side cells as well as the
             // diagonal cell. Checking all three prevents sight through walls.
             if (board.at({current.x + step_x, current.y}) == 1 ||
-                board.at({current.x, current.y + step_y}) == 1)
+                    board.at({current.x, current.y + step_y}) == 1)
                 return false;
             current.x += step_x;
             current.y += step_y;
@@ -87,8 +87,8 @@ MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
         // a conscious enemy blocks; an incapacitated enemy adds difficult terrain.
         const auto candidate =
             occupant.hostile
-                ? (occupant.incapacitated ? Occupancy::incapacitated_enemy : Occupancy::enemy)
-                : Occupancy::ally;
+            ? (occupant.incapacitated ? Occupancy::incapacitated_enemy : Occupancy::enemy)
+            : Occupancy::ally;
         entry = std::max(entry, candidate);
     }
 }
@@ -172,7 +172,7 @@ ReachableCells MovementGrid::reachable(int budget) const
 std::optional<int> ReachableCells::cost_to(Cell destination) const
 {
     if (destination.x < 0 || destination.y < 0 || destination.x >= width_ ||
-        destination.y >= height_)
+            destination.y >= height_)
         return std::nullopt;
     const auto index = destination.y * width_ + destination.x;
     if (!destinations_[index] || costs_[index] == unreachable)

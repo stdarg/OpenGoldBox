@@ -34,7 +34,7 @@ void ui_fixtures()
         act(*c, "melee", 99);
         if (!c->snapshot().optional_effect_choice)
             continue;
-        const auto write = [&](const char *name, const std::string &bytes)
+        const auto write = [&](const char *name, const std::string & bytes)
         {
             std::ofstream out(directory / (std::string(name) + ".save"));
             out << bytes;
@@ -54,7 +54,9 @@ void ui_fixtures()
 
 void reactions_and_limits()
 {
-    for (const auto key : {"glaive", "greatsword"})
+    for (const auto key :
+            {"glaive", "greatsword"
+            })
     {
         auto r = rules("");
         auto e = encounter(*r, hero(key), key);
@@ -93,7 +95,10 @@ void reactions_and_limits()
         }
         check(tested, "Actual missed opportunity tested");
     }
-    for (int score : {3, 8, 18})
+    for (int score :
+            {
+                3, 8, 18
+            })
     {
         auto draft = hero("greatsword", "fighter", "soldier").creation_data();
         const int face = score / 3;
@@ -145,7 +150,9 @@ void reactions_and_limits()
 
 void advancement_and_rejection()
 {
-    for (const auto klass : {"fighter", "paladin", "ranger"})
+    for (const auto klass :
+            {"fighter", "paladin", "ranger"
+            })
         for (unsigned level = 1; level <= 4; ++level)
         {
             auto r = rules("");
@@ -177,7 +184,7 @@ void advancement_and_rejection()
                 const int hp = unit(*c, 99).hit_points;
                 act(*c, "effect_use");
                 check(hp - unit(*c, 99).hit_points ==
-                          std::max(0, party.member(id).character.sheet().modifiers[0]),
+                      std::max(0, party.member(id).character.sheet().modifiers[0]),
                       "Advancement changes actual attack ability damage");
                 const auto after = c->save();
                 check(!c->submit(stale) && c->save() == after,
@@ -189,19 +196,21 @@ void advancement_and_rejection()
                 bad.replace(bad.find(r->identity().version), 6, "0.6.58");
                 rejects(
                     [&]
-                    {
-                        (void)r->restore(bad);
-                    });
+                {
+                    (void)r->restore(bad);
+                });
                 const auto tail = pending.rfind('\n', pending.size() - 2) + 1;
-                for (const char *invalid : {"99999 99 1 1 1\n", "1 1 1 1 1\n", "1 99 20 1 1\n"})
+                for (const char *invalid :
+                        {"99999 99 1 1 1\n", "1 1 1 1 1\n", "1 99 20 1 1\n"
+                        })
                 {
                     bad = pending;
                     bad.replace(tail, std::string::npos, invalid);
                     rejects(
                         [&]
-                        {
-                            (void)r->restore(bad);
-                        });
+                    {
+                        (void)r->restore(bad);
+                    });
                 }
                 tested = true;
             }
@@ -212,11 +221,19 @@ void advancement_and_rejection()
 void run()
 {
     unsigned cases = 0;
-    for (const auto key : {"glaive", "greatsword"})
-        for (const auto klass : {"fighter", "barbarian", "paladin", "ranger"})
-            for (bool npc : {false, true})
+    for (const auto key :
+            {"glaive", "greatsword"
+            })
+        for (const auto klass :
+                {"fighter", "barbarian", "paladin", "ranger"
+                })
+            for (bool npc :
+                    {
+                        false, true
+                    })
                 for (const auto defense :
-                     {"", "resistance", "vulnerability", "immunity", "resistance_vulnerability"})
+                        {"", "resistance", "vulnerability", "immunity", "resistance_vulnerability"
+                        })
                 {
                     auto r = rules(defense);
                     auto h = hero(key, klass, "soldier");
@@ -236,7 +253,7 @@ void run()
                         if (!c->snapshot().optional_effect_choice)
                         {
                             if (std::string_view(defense) == "immunity" &&
-                                result(*c).source.ends_with("misses."))
+                                    result(*c).source.ends_with("misses."))
                             {
                                 check(
                                     unit(*c, 99).hit_points == 1000 && !offers(*c, "melee"),
@@ -265,14 +282,14 @@ void run()
                         const int modifier = h.sheet().modifiers[0];
                         const int expected = std::string_view(defense) == "immunity" ? 0
                                              : std::string_view(defense).starts_with("resistance")
-                                                 ? std::max(0, modifier) / 2
-                                                 : std::max(0, modifier);
+                                             ? std::max(0, modifier) / 2
+                                             : std::max(0, modifier);
                         act(*c, "effect_use");
                         check(unit(*c, 99).hit_points == hp - expected,
                               "Graze typed defense and vulnerability cap");
                         check(!c->snapshot().savage_attack_choice &&
-                                  !c->snapshot().sneak_attack_choice &&
-                                  !c->snapshot().free_movement,
+                              !c->snapshot().sneak_attack_choice &&
+                              !c->snapshot().free_movement,
                               "Miss damage never triggers hit/critical dice features");
                         check(!offers(*c, "melee") && r->restore(c->save())->save() == c->save(),
                               "Resolved Graze retains spent Action and continuation");

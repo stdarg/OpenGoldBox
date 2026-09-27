@@ -80,7 +80,7 @@ std::vector<Expected> expectations()
         std::istringstream fields(row);
         Expected e;
         fields >> e.key >> e.martial >> e.ranged >> e.damage >> e.type >> e.properties >> e.range >>
-            e.long_range >> e.versatile >> e.ammunition >> e.mastery >> e.weight >> e.cost;
+               e.long_range >> e.versatile >> e.ammunition >> e.mastery >> e.weight >> e.cost;
         check(bool(fields), "Complete independent source row");
         result.push_back(e);
     }
@@ -161,13 +161,14 @@ Message attack(const CombatSession &c)
 }
 
 auto battle(const RulesModule &rules, const Character &h, const std::string &weapon,
-            unsigned seed = 13, Cell target = {3, 1})
+unsigned seed = 13, Cell target = {3, 1})
 {
     auto profile = rules.character_profile(h.sheet(), std::array{weapon});
     auto c = rules.create({{64, 4, std::vector<std::uint8_t>(256)},
-                           {{1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-                            {2, "target", "Target", 1, target}}},
-                          seed);
+        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
+            {2, "target", "Target", 1, target}
+        }},
+    seed);
     test::keep_initiative(*c);
     check(c->snapshot().actor == 1, "Golden seed begins with hero");
     return c;
@@ -175,19 +176,22 @@ auto battle(const RulesModule &rules, const Character &h, const std::string &wea
 
 void definitions()
 {
-    const std::map<std::string, catalog::Ammunition> ammo{
+    const std::map<std::string, catalog::Ammunition> ammo
+    {
         {"none", catalog::Ammunition::none},
         {"arrow", catalog::Ammunition::arrow},
         {"bolt", catalog::Ammunition::bolt},
         {"sling_bullet", catalog::Ammunition::sling_bullet},
         {"firearm_bullet", catalog::Ammunition::firearm_bullet},
         {"needle", catalog::Ammunition::needle}};
-    const std::map<std::string, catalog::Mastery> masteries{
+    const std::map<std::string, catalog::Mastery> masteries
+    {
         {"cleave", catalog::Mastery::cleave}, {"graze", catalog::Mastery::graze},
         {"nick", catalog::Mastery::nick},     {"push", catalog::Mastery::push},
         {"sap", catalog::Mastery::sap},       {"slow", catalog::Mastery::slow},
         {"topple", catalog::Mastery::topple}, {"vex", catalog::Mastery::vex}};
-    const std::map<std::string, catalog::DamageType> types{
+    const std::map<std::string, catalog::DamageType> types
+    {
         {"bludgeoning", catalog::DamageType::bludgeoning},
         {"piercing", catalog::DamageType::piercing},
         {"slashing", catalog::DamageType::slashing}};
@@ -200,25 +204,25 @@ void definitions()
         const auto *w = catalog::weapon(e.key);
         check(w && keys.insert(e.key).second, "Each source weapon has exactly one definition");
         check(!w->label.empty() && w->label.front() >= 'A' && w->label.front() <= 'Z' &&
-                  w->label.find('_') == std::string_view::npos,
+              w->label.find('_') == std::string_view::npos,
               "Display names are human-readable labels, independent of stable keys");
         const auto damage = w->fixed_damage
-                                ? std::to_string(w->fixed_damage)
-                                : std::to_string(w->dice) + "d" + std::to_string(w->sides);
+                            ? std::to_string(w->fixed_damage)
+                            : std::to_string(w->dice) + "d" + std::to_string(w->sides);
         check(damage == e.damage && w->type == types.at(e.type) && w->martial == e.martial &&
-                  w->ranged == e.ranged,
+              w->ranged == e.ranged,
               "Category, damage and damage type match SRD table");
         check(w->range == e.range && w->long_range == e.long_range &&
-                  w->hands == (e.has("two-handed") ? 2u : 1u) &&
-                  w->reach == (e.has("reach") ? 10 : 5) && w->versatile_sides == e.versatile,
+              w->hands == (e.has("two-handed") ? 2u : 1u) &&
+              w->reach == (e.has("reach") ? 10 : 5) && w->versatile_sides == e.versatile,
               "Ranges, reach, hands and Versatile match source");
         check(w->finesse == e.has("finesse") && w->light == e.has("light") &&
-                  w->heavy == e.has("heavy") && w->thrown == e.has("thrown") &&
-                  w->loading == e.has("loading") &&
-                  w->mounted_one_handed == e.has("mounted-one-handed"),
+              w->heavy == e.has("heavy") && w->thrown == e.has("thrown") &&
+              w->loading == e.has("loading") &&
+              w->mounted_one_handed == e.has("mounted-one-handed"),
               "Every weapon property matches the source, including Lance's conditional hands");
         check(w->ammunition == ammo.at(e.ammunition) && w->mastery == masteries.at(e.mastery) &&
-                  w->weight_quarters == e.weight && w->cost_cp == e.cost,
+              w->weight_quarters == e.weight && w->cost_cp == e.cost,
               "Ammunition/mastery identity, weight and cost are source-verified metadata");
     }
 }
@@ -227,9 +231,9 @@ void all_classes()
 {
     auto rules = module(true);
     const std::map<std::string, int> normal{{"1d4", 4},  {"1d6", 2},  {"1d8", 4},
-                                            {"1d10", 8}, {"1d12", 8}, {"2d6", 6}};
+        {"1d10", 8}, {"1d12", 8}, {"2d6", 6}};
     const std::map<std::string, int> critical{{"1d4", 5},   {"1d6", 7},   {"1d8", 9},
-                                              {"1d10", 13}, {"1d12", 13}, {"2d6", 14}};
+        {"1d10", 13}, {"1d12", 13}, {"2d6", 14}};
     unsigned classes = 0;
     for (const auto &klass : srd5::character_rules()->choices(CreationField::character_class))
     {
@@ -238,7 +242,10 @@ void all_classes()
         check(h.sheet().modifiers[0] == 2 && h.sheet().modifiers[1] == 3,
               "Asymmetric ability oracle");
         for (const auto &e : expectations())
-            for (unsigned seed : {0u, 13u, 40u})
+            for (unsigned seed :
+                    {
+                        0u, 13u, 40u
+                    })
             {
                 const bool trained =
                     !e.martial || klass.id == "barbarian" || klass.id == "fighter" ||
@@ -254,22 +261,22 @@ void all_classes()
                       "All class/weapon attacks survive checkpoint continuation");
                 const auto result = attack(*c);
                 check(argument(result, "roll") == std::to_string(seed == 0    ? 20
-                                                                 : seed == 13 ? 17
-                                                                              : 1) &&
-                          argument(result, "bonus") == std::to_string(modifier + (trained ? 2 : 0)),
+                        : seed == 13 ? 17
+                        : 1) &&
+                      argument(result, "bonus") == std::to_string(modifier + (trained ? 2 : 0)),
                       "Independent seed and all-class proficiency/ability expectations");
                 const int damage =
                     seed == 40 ? 0
                     : e.damage == "1"
-                        ? 1
-                        : (seed == 0 ? critical.at(e.damage) : normal.at(e.damage)) + modifier;
+                    ? 1
+                    : (seed == 0 ? critical.at(e.damage) : normal.at(e.damage)) + modifier;
                 check(
                     unit(*c, 2).hit_points == 1000 - damage,
                     "Normal, critical and miss damage match independent golden rolls, including fixed Blowgun damage");
                 check(!unit(*c).action && unit(*c).bonus_action == before.bonus_action &&
-                          unit(*c).reaction == before.reaction &&
-                          unit(*c).movement_feet == before.movement_feet &&
-                          unit(*c).persistent == before.persistent,
+                      unit(*c).reaction == before.reaction &&
+                      unit(*c).movement_feet == before.movement_feet &&
+                      unit(*c).persistent == before.persistent,
                       "Each attack consumes only its action");
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved,
@@ -290,22 +297,25 @@ void boundaries()
         if (e.has("two-handed"))
             rejects(
                 [&]
-                {
-                    (void)rules->character_profile(h.sheet(),
-                                                   std::array<std::string, 2>{e.key, "shield"});
-                });
+        {
+            (void)rules->character_profile(h.sheet(),
+            std::array<std::string, 2>{e.key, "shield"});
+        });
         else
             check(
-                rules->character_profile(h.sheet(), std::array<std::string, 2>{e.key, "shield"})
-                        .armor_class == 15,
+                rules->character_profile(h.sheet(), std::array<std::string, 2> {e.key, "shield"})
+                .armor_class == 15,
                 "One-handed equipment preserves the shield; ammo loading is a separate property action");
         if (e.range)
         {
-            for (const int feet : {e.range, e.range + 5, e.long_range, e.long_range + 5, 310})
+            for (const int feet :
+                    {
+                        e.range, e.range + 5, e.long_range, e.long_range + 5, 310
+                    })
             {
                 if (feet > 310)
                     continue; // Larger long ranges are source-checked; the battlefield is capped at
-                              // 64 cells.
+                // 64 cells.
                 auto c = battle(*rules, h, e.key, 13, {1 + feet / 5, 1});
                 check(has(*c, "ranged") == (feet <= e.long_range),
                       "Exact normal/long-range command boundaries");
@@ -313,7 +323,7 @@ void boundaries()
                 {
                     act(*c, "ranged");
                     check(argument(attack(*c), "disadvantage") ==
-                              (feet > e.range ? " (disadvantage)" : ""),
+                          (feet > e.range ? " (disadvantage)" : ""),
                           "Only beyond-normal range applies range Disadvantage");
                 }
             }
@@ -326,21 +336,28 @@ void boundaries()
         }
     }
     // No damage dice are rolled or doubled for Blowgun, even with Savage Attacker.
-    for (unsigned seed : {0u, 13u})
+    for (unsigned seed :
+            {
+                0u, 13u
+            })
     {
         auto c = battle(*rules, hero("fighter", "soldier"), "blowgun", seed);
         const auto before = rng(*c);
         act(*c, "ranged");
         check(unit(*c, 2).hit_points == 999 && rng(*c) == before + 0x9e3779b97f4a7c15ULL &&
-                  argument(attack(*c), "savage").empty(),
+              argument(attack(*c), "savage").empty(),
               "Blowgun fixed damage never adds ability/Savage Attacker dice or critical damage");
     }
-    for (int dexterity : {3, 20})
+    for (int dexterity :
+            {
+                3, 20
+            })
     {
         auto draft = h.creation_data();
         draft.background = dexterity == 20 ? "criminal" : "sage";
         draft.rolls[1] =
-            dexterity == 20 ? AbilityRoll{{6, 6, 6, 1}, 3} : AbilityRoll{{1, 1, 1, 1}, 3};
+dexterity == 20 ? AbilityRoll{{6, 6, 6, 1}, 3} :
+        AbilityRoll{{1, 1, 1, 1}, 3};
         Character extreme(*srd5::character_rules(), draft, {});
         check(extreme.sheet().scores[1] == dexterity, "Fixed damage extreme ability fixture");
         auto c = battle(*rules, extreme, "blowgun");
@@ -348,9 +365,9 @@ void boundaries()
         check(unit(*c, 2).hit_points == 999,
               "Negative or maximum Dexterity never changes Blowgun's fixed damage");
     }
-    const auto profile = rules->character_profile(h.sheet(), std::array<std::string, 1>{"blowgun"});
+    const auto profile = rules->character_profile(h.sheet(), std::array<std::string, 1> {"blowgun"});
     check(profile.item_modifiers.find("damage is fixed at 1 without an ability modifier") !=
-              std::string::npos,
+          std::string::npos,
           "Existing equipment explanation describes fixed damage accurately");
 }
 
@@ -374,9 +391,9 @@ void campaign()
         {
             rejects(
                 [&]
-                {
-                    party.equip(id, shield);
-                });
+            {
+                party.equip(id, shield);
+            });
             check(encode_campaign(party, nullptr, "catalog") == before,
                   "Rejected shield changes no equipment, HP or resources");
         }
@@ -386,8 +403,8 @@ void campaign()
         check(encode_campaign(restored, nullptr, "catalog") == before,
               "All 38 catalog weapons reconstruct canonically through campaign saves");
         check(restored.member(id).vitals == party.member(id).vitals &&
-                  restored.participants()[0].character_profile ==
-                      party.participants()[0].character_profile,
+              restored.participants()[0].character_profile ==
+              party.participants()[0].character_profile,
               "Next encounter inherits identical equipment and expenditure");
     }
     por::Equipment original;
@@ -404,7 +421,7 @@ void campaign()
     const auto purchased = bought.member(buyer).character.inventory().items().front();
     check(
         purchased.definition_id == "longbow" && bought.member(buyer).wealth[3] == 50 &&
-            bought.member(buyer).item_sources.at(purchased.id).stored.type == 45,
+        bought.member(buyer).item_sources.at(purchased.id).stored.type == 45,
         "Ordinary purchase retains original price, quantity, provenance and existing bow conversion");
     bought.equip(buyer, purchased.id);
     check(bought.profile(buyer).equipment.weapon_hands == 2,
@@ -424,14 +441,14 @@ void legacy()
     check(party.member(1).character.inventory().find(1)->get().definition_id == "longbow",
           "Legacy original type-45 bow must retain its established conversion");
     check(party.member(2).character.inventory().find(1)->get().definition_id == "longbow" &&
-              party.member(3).character.inventory().find(1)->get().definition_id == "longbow",
+          party.member(3).character.inventory().find(1)->get().definition_id == "longbow",
           "Real Longbow and item without source provenance are preserved");
     auto expected = old.substr(old.find('\n', old.find('\n') + 1) + 1);
     expected.replace(expected.find("0.6.16"), 6, rules->identity().version);
     const auto bytes = encode_campaign(party, nullptr, "catalog-fixture");
     check(
         bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1) ==
-            test::with_alert_grants(test::with_initial_wizard_spell_grants(expected)),
+        test::with_alert_grants(test::with_initial_wizard_spell_grants(expected)),
         "Migration adds only explicit spell/Sage/Alert grants and module identity, retaining original and authored weapons, grants, pools, wounds and clock");
     CampaignParty again(module());
     again.restore(

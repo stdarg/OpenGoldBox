@@ -13,21 +13,21 @@ void RulesModule::validate_saved_grants(const Identity &, const CharacterSheet &
 }
 
 CharacterProfile RulesModule::character_profile(const CharacterSheet &,
-                                                std::span<const std::string>, EquipmentState) const
+        std::span<const std::string>, EquipmentState) const
 {
     throw std::runtime_error("This rules module does not support campaign characters");
 }
 
 EquipmentChange RulesModule::equipment_change(const CharacterSheet &, std::span<const std::string>,
-                                              EquipmentState, unsigned, EquipmentOperation) const
+        EquipmentState, unsigned, EquipmentOperation) const
 {
     throw std::runtime_error("This rules module does not support equipment changes");
 }
 
 AbilityCheckModifier RulesModule::ability_check(const CharacterSheet &,
-                                                std::span<const std::string>, unsigned,
-                                                std::string_view, std::string_view,
-                                                EquipmentState) const
+        std::span<const std::string>, unsigned,
+        std::string_view, std::string_view,
+        EquipmentState) const
 {
     throw std::runtime_error("This rules module does not support equipped ability checks");
 }
@@ -44,7 +44,7 @@ void RulesModule::apply_spell_choices(CharacterSheet &, const SpellChoices &, Sp
 }
 
 TrainingChoices RulesModule::replace_rest_training(CharacterSheet &,
-                                                   std::span<const std::string>) const
+        std::span<const std::string>) const
 {
     throw std::runtime_error("Long Rest training replacement is not supported");
 }
@@ -111,7 +111,7 @@ RecoveryInfo RulesModule::recovery_info(const CharacterSheet &, const VitalState
 }
 
 void RulesModule::grant_temporary_hit_points(VitalState &, const CharacterSheet &,
-                                             const TemporaryHitPoints &, TemporaryHpChoice) const
+        const TemporaryHitPoints &, TemporaryHpChoice) const
 {
     throw std::runtime_error("This rules module does not support Temporary Hit Points");
 }
@@ -122,7 +122,7 @@ void RulesModule::recover_short_rest(VitalState &, const CharacterSheet &) const
 }
 
 Message RulesModule::recover_rest_choice(VitalState &, const CharacterSheet &,
-                                         std::string_view) const
+        std::string_view) const
 {
     throw std::runtime_error("This rules module does not support optional rest recovery");
 }
@@ -158,7 +158,7 @@ unsigned Battlefield::at(Cell p) const noexcept
 } // namespace opengold::rules
 
 void opengold::rules::RulesModule::validate_character_state(const CharacterSheet &,
-                                                            const VitalState &) const
+        const VitalState &) const
 {
     throw std::runtime_error("Character state validation is unsupported by this rules module");
 }

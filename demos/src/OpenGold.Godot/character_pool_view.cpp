@@ -30,7 +30,9 @@ void CharacterCreationView::pool_layout()
         n->set_position(r.position);
         n->set_size(r.size);
     };
-    for (const char *name : {"PoolModal", "TownSheet"})
+    for (const char *name :
+            {"PoolModal", "TownSheet"
+            })
         get_node<Window>(name)->set_size(Vector2i(w, h));
     place("PoolModal/Background", Rect2(0, 0, w, h));
     place("TownSheet/Background", Rect2(0, 0, w, h));
@@ -83,7 +85,7 @@ void CharacterCreationView::pool_selected(std::int64_t index)
     const auto &character = pool_[pool_index_];
     get_node<RichTextLabel>("PoolModal/Text")->set_text(sheet_text(character));
     get_node<TextureRect>("PoolModal/Portrait")
-        ->set_texture(portrait_texture(character.appearance(), character.creation_data()));
+    ->set_texture(portrait_texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)
     {
         const auto source = art_->icon(character.appearance(), i == 2);
@@ -92,27 +94,27 @@ void CharacterCreationView::pool_selected(std::int64_t index)
         std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());
         get_node<TextureRect>(i == 0   ? "PoolModal/Portrait"
                               : i == 1 ? "PoolModal/Ready"
-                                       : "PoolModal/Action")
-            ->set_texture(ImageTexture::create_from_image(godot::Image::create_from_data(
-                source.width, source.height, false, godot::Image::FORMAT_RGBA8, pixels)));
+                              : "PoolModal/Action")
+        ->set_texture(ImageTexture::create_from_image(godot::Image::create_from_data(
+                    source.width, source.height, false, godot::Image::FORMAT_RGBA8, pixels)));
     }
     const bool added =
         std::find(pool_added_.begin(), pool_added_.end(), pool_index_) != pool_added_.end();
     const bool full =
         std::none_of(campaign_->state().slots.begin(), campaign_->state().slots.begin() + 6,
                      [](auto id)
-                     {
-                         return !id;
-                     });
+    {
+        return !id;
+    });
     get_node<Button>("PoolModal/Add")->set_disabled(added || full);
     const auto &c = character.sheet().character_class;
     get_node<Label>("PoolModal/Status")
-        ->set_text(
-            added  ? "Already added. Use Rejoin party for a reserved member."
-            : full ? "All six PC positions are occupied."
-            : (c == "Fighter" || c == "Cleric" || c == "Wizard")
-                ? "Starts with 250 gp. Preview portraits and both combat poses before adding."
-                : "Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet.");
+    ->set_text(
+        added  ? "Already added. Use Rejoin party for a reserved member."
+        : full ? "All six PC positions are occupied."
+        : (c == "Fighter" || c == "Cleric" || c == "Wizard")
+        ? "Starts with 250 gp. Preview portraits and both combat poses before adding."
+        : "Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet.");
 }
 
 void CharacterCreationView::pool_add()

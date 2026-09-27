@@ -27,7 +27,7 @@ inline const SpellComponents *spell_components(std::string_view command)
     {
         std::array<SpellComponents, spell_table.size()> out{};
         for (std::size_t i = 0; i < spell_table.size(); ++i)
-            out[i] = {spell_table[i].id, spell_table[i].verbal, spell_table[i].somatic};
+        out[i] = {spell_table[i].id, spell_table[i].verbal, spell_table[i].somatic};
         return out;
     }();
     return &views[static_cast<std::size_t>(spell - spell_table.data())];

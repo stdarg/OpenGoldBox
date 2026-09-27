@@ -143,7 +143,7 @@ std::string read_save_file(const std::filesystem::path &path, std::size_t limit)
 {
     const auto size = std::filesystem::file_size(path);
     require(size <= limit &&
-                size <= static_cast<std::uintmax_t>(std::numeric_limits<std::streamsize>::max()),
+            size <= static_cast<std::uintmax_t>(std::numeric_limits<std::streamsize>::max()),
             "Save file too large");
     std::ifstream input(path, std::ios::binary);
     require(bool(input), "Cannot open save file");
@@ -159,7 +159,8 @@ void write_save_file(const std::filesystem::path &path, std::string_view bytes, 
     require(bytes.size() <= limit, "Save file too large");
     const auto directory = path.has_parent_path() ? path.parent_path() : std::filesystem::path(".");
     std::filesystem::create_directories(directory);
-    static std::atomic<std::uint64_t> sequence{
+    static std::atomic<std::uint64_t> sequence
+    {
         static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count())};
     auto temporary = path;
     temporary += ".tmp." + std::to_string(sequence.fetch_add(1, std::memory_order_relaxed));

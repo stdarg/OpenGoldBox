@@ -80,7 +80,10 @@ void capture_prior_writer()
     CampaignParty party(module());
     const auto id = party.add_pc(std::move(hero));
     party.equip(id, bow);
-    for (const auto [type, quantity] : {std::pair{73u, 7u}, {73u, 3u}, {28u, 5u}})
+    for (const auto [type, quantity] :
+            {
+                std::pair{73u, 7u}, {73u, 3u}, {28u, 5u}
+            })
     {
         por::Equipment ammunition;
         ammunition.stored.type = type;
@@ -120,16 +123,19 @@ void prior_writer_continuation()
     CampaignParty party(module());
     party.restore(decode_campaign(read("campaign-v11-ammunition-before.ogs"),
                                   *srd5::character_rules(), *rules, "ammunition-before", nullptr)
-                      .party);
+                  .party);
     const auto &member = party.member(1);
-    check(member.character.sheet().level == 4 && member.equipped == std::vector<std::uint64_t>{1},
+    check(member.character.sheet().level == 4 && member.equipped == std::vector<std::uint64_t> {1},
           "Prior campaign retains advancement and equipped item identity");
-    for (const auto [id, quantity] : {std::pair{3u, 7u}, {4u, 3u}, {5u, 5u}})
+    for (const auto [id, quantity] :
+            {
+                std::pair{3u, 7u}, {4u, 3u}, {5u, 5u}
+            })
     {
         const auto item = member.character.inventory().find(id);
         check(item && item->get().quantity == quantity && member.item_sources.contains(id) &&
-                  item->get().original_type == (id == 5 ? 28 : 73) &&
-                  item->get().definition_id == equipment_conversion(member.item_sources.at(id)),
+              item->get().original_type == (id == 5 ? 28 : 73) &&
+              item->get().definition_id == equipment_conversion(member.item_sources.at(id)),
               "Prior campaign retains distinct ammunition stacks without invented stock");
         check(item->get().definition_id == (id == 5 ? "bolt" : "arrow"),
               "Old ordinary original ammunition migrates to its supported SRD supply");
@@ -161,7 +167,9 @@ void inventory_paths()
         for (auto &roll : draft.rolls)
             roll = {{6, 5, 4, 1}, 3};
         Character hero(*srd5::character_rules(), draft, {});
-        for (const auto key : {"arrow", "bolt", "sling_bullet", "firearm_bullet", "needle"})
+        for (const auto key :
+                {"arrow", "bolt", "sling_bullet", "firearm_bullet", "needle"
+                })
             hero.inventory().add(key, key, 21);
         const auto bow = hero.inventory().add("shortbow", "Shortbow");
         CampaignParty party(module());
@@ -187,10 +195,13 @@ void inventory_paths()
         CampaignParty restored(module());
         restored.restore(decode_campaign(before, *srd5::character_rules(), *rules,
                                          "ammunition-inventory", nullptr)
-                             .party);
+                         .party);
         check(encode_campaign(restored, nullptr, "ammunition-inventory") == before,
               "Every class preserves all five authored ammunition stacks across saves");
-        for (const auto type : {28u, 73u})
+        for (const auto type :
+                {
+                    28u, 73u
+                })
         {
             por::Equipment original;
             original.stored.type = type;
@@ -214,7 +225,7 @@ void inventory_paths()
         const auto with_special = encode_campaign(party, nullptr, "ammunition-inventory");
         restored.restore(decode_campaign(with_special, *srd5::character_rules(), *rules,
                                          "ammunition-inventory", nullptr)
-                             .party);
+                         .party);
         check(encode_campaign(restored, nullptr, "ammunition-inventory") == with_special,
               "Special original ammunition retains quantities and complete provenance");
     }

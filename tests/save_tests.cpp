@@ -209,14 +209,17 @@ void fog_saves(const std::filesystem::path &directory)
         {
             const unsigned address = slot == 2 ? 0x9915 : slot == 4 ? 0x9919 : 0x9914;
             bytes.insert(bytes.end(), {1, 1, static_cast<std::uint8_t>(address & 255),
-                                       static_cast<std::uint8_t>(address >> 8)});
+                                       static_cast<std::uint8_t>(address >> 8)
+                                      });
         }
         bytes.insert(bytes.end(),
-                     {0, 32, 0, static_cast<std::uint8_t>(destination), 0, 33, 0,
-                      static_cast<std::uint8_t>(area), 0, static_cast<std::uint8_t>(area ? 2 : 0),
-                      0, static_cast<std::uint8_t>(area ? 255 : 0), 0});
+        {
+            0, 32, 0, static_cast<std::uint8_t>(destination), 0, 33, 0,
+            static_cast<std::uint8_t>(area), 0, static_cast<std::uint8_t>(area ? 2 : 0),
+            0, static_cast<std::uint8_t>(area ? 255 : 0), 0
+        });
         return std::make_shared<const por::EclProgram>(
-            por::EclProgram::decode(bytes, "fog travel fixture"));
+                   por::EclProgram::decode(bytes, "fog travel fixture"));
     };
     auto resources = std::make_shared<por::PhlanResources>();
     resources->map = por::GeoMap{};
@@ -240,7 +243,7 @@ void fog_saves(const std::filesystem::path &directory)
     town.explore(por::ExplorationCommand::camp);
     settle(town);
     check(town.snapshot().area_id == 20 && town.snapshot().seen.count() == 1 &&
-              !town.snapshot().seen.test(3),
+          !town.snapshot().seen.test(3),
           "A new district does not inherit knowledge from matching coordinates in the city");
     town.explore(por::ExplorationCommand::turn_around);
     (void)town.observe_view();
@@ -266,7 +269,7 @@ void fog_saves(const std::filesystem::path &directory)
     restored.explore(por::ExplorationCommand::camp);
     settle(restored);
     check(restored.snapshot().area_id == 0 && restored.snapshot().seen == city.seen &&
-              restored.snapshot().visited == city.visited,
+          restored.snapshot().visited == city.visited,
           "Returning after reload recovers the inactive district's exact history");
     restored.explore(por::ExplorationCommand::camp);
     settle(restored);
@@ -296,14 +299,16 @@ void fog_saves(const std::filesystem::path &directory)
     check(legacy.town->snapshot().seen == single.snapshot().seen,
           "Displaying the restored view discovers its current sightline");
     for (const auto &invalid :
-         {std::string("0 "), "1 0 \"" + std::string(256, '0') + "\" ",
-          "1 99 \"" + std::string(256, '1') + "\" ", "1 0 \"" + std::string(255, '1') + "x\" "})
+            {
+                std::string("0 "), "1 0 \"" + std::string(256, '0') + "\" ",
+                "1 99 \"" + std::string(256, '1') + "\" ", "1 0 \"" + std::string(255, '1') + "x\" "
+            })
         rejects(
             [&]
-            {
-                (void)decode_campaign(campaign_payload(5, body + invalid), *srd5::character_rules(),
-                                      *rules, "fog-fixture", &old_base);
-            });
+    {
+        (void)decode_campaign(campaign_payload(5, body + invalid), *srd5::character_rules(),
+        *rules, "fog-fixture", &old_base);
+    });
     check(encode_campaign(*party, &single, "fog-fixture") == current,
           "Malformed fog saves leave the live campaign untouched");
 }
@@ -317,12 +322,12 @@ void file_safety(const std::filesystem::path &directory)
     backup += ".bak";
     const auto has_temporary = [&]
     {
-        for (const auto &entry : std::filesystem::directory_iterator(directory))
-            if (entry.path().filename().string().starts_with("storage.save.tmp"))
-                return true;
-        return false;
-    };
-    const std::string first("first\0checkpoint", 16);
+for (const auto &entry : std::filesystem::directory_iterator(directory))
+        if (entry.path().filename().string().starts_with("storage.save.tmp"))
+            return true;
+            return false;
+        };
+const std::string first("first\0checkpoint", 16);
     write_save_file(path, first, 64);
     check(read_save_file(path, 64) == first, "Storage preserves binary checkpoint bytes");
     check(!has_temporary(), "Successful save consumes its temporary file");
@@ -330,14 +335,14 @@ void file_safety(const std::filesystem::path &directory)
     check(read_save_file(backup, 64) == first, "Storage retains the preceding checkpoint");
     rejects(
         [&]
-        {
-            write_save_file(path, "oversized", 4);
-        });
+    {
+        write_save_file(path, "oversized", 4);
+    });
     rejects(
         [&]
-        {
-            (void)read_save_file(path, 4);
-        });
+    {
+        (void)read_save_file(path, 4);
+    });
     check(read_save_file(path, 64) == "second" && !has_temporary(),
           "Size rejection leaves the current save intact");
 
@@ -346,9 +351,9 @@ void file_safety(const std::filesystem::path &directory)
     std::filesystem::create_directory(backup);
     rejects(
         [&]
-        {
-            write_save_file(path, "third", 64);
-        });
+    {
+        write_save_file(path, "third", 64);
+    });
     check(read_save_file(path, 64) == "second",
           "Failed backup/replacement preserves the current save");
     check(!has_temporary(), "Failed replacement removes its owned temporary file");
@@ -370,9 +375,9 @@ void file_safety(const std::filesystem::path &directory)
     check(read_save_file(path, 64).empty(), "Empty checkpoints round trip");
     rejects(
         [&]
-        {
-            (void)read_save_file(directory / "missing.save", 64);
-        });
+    {
+        (void)read_save_file(directory / "missing.save", 64);
+    });
 }
 
 void roundtrip(const std::filesystem::path &directory)
@@ -390,8 +395,8 @@ void roundtrip(const std::filesystem::path &directory)
             if (!line.empty() && line.back() == '\r')
                 line.pop_back();
             if (line.starts_with("damage_types ") || line.starts_with("affinity ") ||
-                line.starts_with("saves ") || line.starts_with("spellcasting ") ||
-                line.starts_with("creature blindness-adept "))
+                    line.starts_with("saves ") || line.starts_with("spellcasting ") ||
+                    line.starts_with("creature blindness-adept "))
                 continue;
             if (line.starts_with("creature slums-") && !line.starts_with("creature slums-orc "))
                 continue;
@@ -422,20 +427,25 @@ void roundtrip(const std::filesystem::path &directory)
                         *srd5::character_rules(), *module(), "fixture-v1", nullptr);
     check(legacy_v3.party.roster[0].character.appearance().portrait.empty(),
           "Version 3 loads without inventing a saved portrait");
-    for (const auto *filename : {"../portrait.png", "a/b.png", "a\\b.png", "portrait.jpg"})
+    for (const auto *filename :
+            {"../portrait.png", "a/b.png", "a\\b.png", "portrait.jpg"
+            })
         rejects(
             [&]
-            {
-                por::CharacterAppearance a;
-                a.portrait = filename;
-                por::validate_character_appearance(a);
-            });
+    {
+        por::CharacterAppearance a;
+        a.portrait = filename;
+        por::validate_character_appearance(a);
+    });
     const auto imported =
         decode_campaign(old_save, *srd5::character_rules(), *module(), "fixture-v1", nullptr);
     check(imported.party.roster.size() == 1 &&
-              imported.party.roster[0].character.sheet().level == 1,
+          imported.party.roster[0].character.sheet().level == 1,
           "Preceding content pack remains compatible");
-    for (unsigned version : {1, 2})
+    for (unsigned version :
+            {
+                1, 2
+            })
     {
         const auto fixture =
             read_campaign_file(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
@@ -443,7 +453,7 @@ void roundtrip(const std::filesystem::path &directory)
         const auto legacy =
             decode_campaign(fixture, *srd5::character_rules(), *module(), "fixture-v1", nullptr);
         check(legacy.party.roster.size() == 1 &&
-                  legacy.party.roster[0].character.sheet().level == version,
+              legacy.party.roster[0].character.sheet().level == version,
               "Frozen saves from the old binary migrate without losing levels");
     }
     auto party = std::make_shared<CampaignParty>(module());
@@ -486,19 +496,20 @@ void roundtrip(const std::filesystem::path &directory)
     check(encode_campaign(*replacement, &*loaded.town, "fixture-v1") == saved,
           "Complete serialized state round trips");
     for (const std::string prior_version :
-         {"0.6.0", "0.6.1", "0.6.2", "0.6.3", "0.6.4", "0.6.5", "0.6.6"})
+            {"0.6.0", "0.6.1", "0.6.2", "0.6.3", "0.6.4", "0.6.5", "0.6.6"
+            })
     {
         // Current spell grants cannot masquerade as an older writer's records.
         // Genuine frozen previous-writer fixtures above cover migration instead.
         rejects(
             [&]
-            {
-                (void)decode_campaign(
-                    changed_identity(saved, rules->identity().version, prior_version),
-                    *srd5::character_rules(), *rules, "fixture-v1", &base);
-            });
+        {
+            (void)decode_campaign(
+            changed_identity(saved, rules->identity().version, prior_version),
+            *srd5::character_rules(), *rules, "fixture-v1", &base);
+        });
     }
-    const auto encounter = [](const CampaignParty &p)
+    const auto encounter = [](const CampaignParty & p)
     {
         rules::Encounter e{{8, 8, std::vector<std::uint8_t>(64)}, p.participants()};
         e.participants.push_back({99, "bandit", "Bandit", 1, {6, 6}});
@@ -510,7 +521,7 @@ void roundtrip(const std::filesystem::path &directory)
     {
         auto command = choose_demo_command(*combat_a);
         check(combat_a->submit(command) && combat_b->submit(command) &&
-                  combat_a->save() == combat_b->save(),
+              combat_a->save() == combat_b->save(),
               "Next combat continues deterministically after disk reload");
     }
     check(replacement->member(fighter).wealth[3] == 390, "Temple charge survives load");
@@ -524,7 +535,7 @@ void roundtrip(const std::filesystem::path &directory)
     replacement->rejoin(reserve);
     check(replacement->rest(), "A newly eligible reserve can rest after rejoining");
     check(replacement->member(fighter).last_rest_minutes == fighter_rest &&
-              replacement->member(mage).vitals == mage_vitals,
+          replacement->member(mage).vitals == mage_vitals,
           "The rejoined member does not bypass other members' cooldowns or refill their resources");
     replacement->remove(reserve);
     auto wounded = replacement->checkpoint();
@@ -534,7 +545,7 @@ void roundtrip(const std::filesystem::path &directory)
     replacement->temple_heal(fighter);
     party->temple_heal(fighter);
     check(replacement->member(fighter).vitals == party->member(fighter).vitals &&
-              replacement->state().random_state == party->state().random_state,
+          replacement->state().random_state == party->state().random_state,
           "Service RNG continuation matches");
     loaded.town->explore(por::ExplorationCommand::look);
     town.explore(por::ExplorationCommand::look);
@@ -553,39 +564,41 @@ void roundtrip(const std::filesystem::path &directory)
     write_campaign_file(directory / "truncated.ogs", truncated);
     rejects(
         [&]
-        {
-            (void)decode_campaign(read_campaign_file(directory / "truncated.ogs"),
-                                  *srd5::character_rules(), *rules, "fixture-v1", &base);
-        });
+    {
+        (void)decode_campaign(read_campaign_file(directory / "truncated.ogs"),
+        *srd5::character_rules(), *rules, "fixture-v1", &base);
+    });
     auto corrupt = saved;
     corrupt.back() ^= 1;
     rejects(
         [&]
-        {
-            (void)decode_campaign(corrupt, *srd5::character_rules(), *rules, "fixture-v1", &base);
-        });
+    {
+        (void)decode_campaign(corrupt, *srd5::character_rules(), *rules, "fixture-v1", &base);
+    });
     rejects(
         [&]
-        {
-            (void)decode_campaign(saved, *srd5::character_rules(), *rules, "different-assets",
-                                  &base);
-        });
+    {
+        (void)decode_campaign(saved, *srd5::character_rules(), *rules, "different-assets",
+        &base);
+    });
     for (const auto &identity :
-         {rules->identity().module, rules->identity().version, rules->identity().content})
+            {
+                rules->identity().module, rules->identity().version, rules->identity().content
+            })
         rejects(
             [&]
-            {
-                (void)decode_campaign(changed_identity(saved, identity), *srd5::character_rules(),
-                                      *rules, "fixture-v1", &base);
-            });
+    {
+        (void)decode_campaign(changed_identity(saved, identity), *srd5::character_rules(),
+        *rules, "fixture-v1", &base);
+    });
 #ifdef _WIN32
     {
         std::ifstream held(path, std::ios::binary);
         rejects(
             [&]
-            {
-                write_campaign_file(path, next);
-            });
+        {
+            write_campaign_file(path, next);
+        });
         check(read_campaign_file(path) == saved, "Failed file replacement preserves existing save");
     }
 #endif
@@ -593,32 +606,32 @@ void roundtrip(const std::filesystem::path &directory)
     version.replace(18, 1, "99");
     rejects(
         [&]
-        {
-            (void)decode_campaign(version, *srd5::character_rules(), *rules, "fixture-v1", &base);
-        });
+    {
+        (void)decode_campaign(version, *srd5::character_rules(), *rules, "fixture-v1", &base);
+    });
     auto invalid = party->checkpoint();
     invalid.roster[0].vitals.resources = "SRD1 999 0 0 0 0";
     party->restore(invalid);
     auto malformed = encode_campaign(*party, nullptr, "fixture-v1");
     rejects(
         [&]
-        {
-            (void)decode_campaign(malformed, *srd5::character_rules(), *rules, "fixture-v1",
-                                  nullptr);
-        });
+    {
+        (void)decode_campaign(malformed, *srd5::character_rules(), *rules, "fixture-v1",
+        nullptr);
+    });
     party->begin_combat();
     rejects(
         [&]
-        {
-            (void)encode_campaign(*party, nullptr, "fixture-v1");
-        });
+    {
+        (void)encode_campaign(*party, nullptr, "fixture-v1");
+    });
     party->end_combat();
     auto busy = prototype();
     rejects(
         [&]
-        {
-            (void)encode_campaign(*party, &busy, "fixture-v1");
-        });
+    {
+        (void)encode_campaign(*party, &busy, "fixture-v1");
+    });
 }
 
 void hp_migration()
@@ -627,7 +640,9 @@ void hp_migration()
                                             "tests/fixtures/campaign-v6-low-con.ogs");
     auto rules = module();
     const auto creation = srd5::character_rules();
-    for (const std::string version : {"0.4.0", "0.5.0", "0.6.0", "0.6.1", "0.6.2"})
+    for (const std::string version :
+            {"0.4.0", "0.5.0", "0.6.0", "0.6.1", "0.6.2"
+            })
     {
         const auto bytes =
             version == "0.6.2" ? fixture : changed_identity(fixture, "0.6.2", version);
@@ -641,19 +656,19 @@ void hp_migration()
             const auto &member = party.member(i + 1);
             const auto &sources = member.character.sheet().ability_adjustments;
             check(sources.size() == 2 && sources[0].source_id == "background:sage" &&
-                      sources[0].level == 1 && sources[0].bonuses[2] == 0 &&
-                      sources[1].source_id == "feat:ability_score_improvement" &&
-                      sources[1].level == 4 && sources[1].bonuses[2] == 2,
+                  sources[0].level == 1 && sources[0].bonuses[2] == 0 &&
+                  sources[1].source_id == "feat:ability_score_improvement" &&
+                  sources[1].level == 4 && sources[1].bonuses[2] == 2,
                   "Frozen prior-module saves reconstruct separate background and feat sources");
             check(
                 member.character.sheet().hit_points == maximum[i] &&
-                    party.profile(i + 1).hit_points == maximum[i],
+                party.profile(i + 1).hit_points == maximum[i],
                 "Legacy advancement reconstructs corrected HP, including Dwarf and normal Constitution");
             check(member.vitals.hit_points == current[i] && member.vitals.dead == (i == 3),
                   "Migration preserves health deficits, unconsciousness and death");
             const std::string expected = i == 2   ? "SRD2 0 1 1 1 2 0"
                                          : i == 3 ? "SRD2 0 1 1 1 3 0"
-                                                  : "SRD2 0 1 1 0 0 0";
+                                         : "SRD2 0 1 1 0 0 0";
             check(member.vitals.resources == expected,
                   "Migration leaves spell expenditure and death-save counters intact");
         }
@@ -669,10 +684,10 @@ void hp_migration()
         old_identity.version = version;
         rejects(
             [&]
-            {
-                rules->migrate_character_state(old_identity, party.member(1).character.sheet(),
-                                               invalid);
-            });
+        {
+            rules->migrate_character_state(old_identity, party.member(1).character.sheet(),
+            invalid);
+        });
         check(invalid == original, "Rejected legacy state migration is atomic");
     }
 }

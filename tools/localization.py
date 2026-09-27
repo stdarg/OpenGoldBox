@@ -51,7 +51,7 @@ def extract():
                 if re.search(r"\{\w+\}",source):
                     add(source,path,content.count("\n",0,match.start())+1)
             # Creation/advancement data labels and descriptions, never the IDs.
-            for match in re.finditer(rf'\{{{LITERAL},\s*({LITERAL}),\s*(?:\d+,\s*)?({LITERAL})\s*[,}}]', content):
+            for match in re.finditer(rf'\{{\s*{LITERAL},\s*({LITERAL}),\s*(?:\d+,\s*)?({LITERAL})\s*[,}}]', content):
                 if not re.match(r"[A-Z]", ast.literal_eval(match[1])):
                     continue
                 for group in (1, 2):

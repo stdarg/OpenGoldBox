@@ -41,10 +41,10 @@ std::filesystem::path game_directory()
 auto rules_module()
 {
     return srd5::load(std::filesystem::u8path(
-        ProjectSettings::get_singleton()
-            ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-            .utf8()
-            .get_data()));
+                          ProjectSettings::get_singleton()
+                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
+                          .utf8()
+                          .get_data()));
 }
 } // namespace
 
@@ -53,17 +53,20 @@ void CharacterCreationView::setup_saves()
     save_read_check_ = OS::get_singleton()->get_cmdline_user_args().has("--save-check-read");
     std::unique_ptr<SaveSlots, DeleteNode> dialog(memnew(SaveSlots));
     dialog->set_name("SaveSlots");
-    dialog->save = [this](const auto &p)
+    dialog->save = [this](const auto & p)
     {
         save_campaign(p);
     };
-    dialog->load = [this](const auto &p)
+    dialog->load = [this](const auto & p)
     {
         load_campaign(p);
     };
     add_child(dialog.get());
     dialog.release();
-    for (bool saving : {true, false})
+    for (bool saving :
+            {
+                true, false
+            })
     {
         std::unique_ptr<Button, DeleteNode> button(memnew(Button));
         button->set_name(saving ? "Save" : "Load");
@@ -82,7 +85,7 @@ void CharacterCreationView::open_saves(bool saving)
     if (campaign_defeated_ && saving)
         return;
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
-        town && !town->can_leave() && !campaign_defeated_)
+            town && !town->can_leave() && !campaign_defeated_)
         return;
     get_node<SaveSlots>("SaveSlots")->open(saving);
 }
@@ -206,9 +209,9 @@ void CharacterCreationView::save_checkpoint_check(const std::string &name)
 {
     auto directory =
         std::filesystem::u8path(ProjectSettings::get_singleton()
-                                    ->globalize_path("res://../../user-data/save-check")
-                                    .utf8()
-                                    .get_data());
+                                ->globalize_path("res://../../user-data/save-check")
+                                .utf8()
+                                .get_data());
     save_campaign(directory / (name + ".ogs"));
     error_ = "";
     if (name == "final")
@@ -230,13 +233,14 @@ void CharacterCreationView::load_checkpoint_check()
 {
     auto directory =
         std::filesystem::u8path(ProjectSettings::get_singleton()
-                                    ->globalize_path("res://../../user-data/save-check")
-                                    .utf8()
-                                    .get_data());
+                                ->globalize_path("res://../../user-data/save-check")
+                                .utf8()
+                                .get_data());
     const auto assets = campaign_asset_identity(game_directory());
     for (const char *name :
-         {"advancement", "interrupted-rest", "cancelled-service", "temple-payment", "inn-rest",
-          "rejected-service", "denied-rest", "short-rest-spending", "final"})
+            {"advancement", "interrupted-rest", "cancelled-service", "temple-payment", "inn-rest",
+             "rejected-service", "denied-rest", "short-rest-spending", "final"
+            })
     {
         auto path = directory / (std::string(name) + ".ogs");
         load_campaign(path);
@@ -325,7 +329,7 @@ void CharacterCreationView::capture_save_ui()
         auto *dialog = get_node<SaveSlots>("SaveSlots");
         const auto image = dialog->get_texture()->get_image();
         if (image.is_null() || image->save_png(ProjectSettings::get_singleton()->globalize_path(
-                                   "res://../../user-data/campaign-load-dialog.png")) != OK)
+                "res://../../user-data/campaign-load-dialog.png")) != OK)
             throw std::runtime_error("Cannot capture save dialog");
         dialog->hide();
     }

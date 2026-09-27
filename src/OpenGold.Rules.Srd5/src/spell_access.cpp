@@ -24,16 +24,16 @@ struct Spell
 
 // Existing spell implementations only. This is not the complete Wizard list.
 constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
-                            Spell{"shocking_grasp", "Shocking Grasp", 0, 1024},
-                            Spell{"eldritch_blast", "Eldritch Blast", 0, 512, false},
-                            Spell{"ray_of_frost", "Ray of Frost", 0, 256},
-                            Spell{"sacred_flame", "Sacred Flame", 0, 128, false},
-                            Spell{"fire_bolt", "Fire Bolt", 0, 1},
-                            Spell{"poison_spray", "Poison Spray", 0, 64},
-                            Spell{"magic_missile", "Magic Missile", 1, 4},
-                            Spell{"scorching_ray", "Scorching Ray", 2, 16},
-                            Spell{"blindness", "Blindness", 2, 32},
-                            Spell{"inflict_wounds", "Inflict Wounds", 1, 0, false}};
+    Spell{"shocking_grasp", "Shocking Grasp", 0, 1024},
+    Spell{"eldritch_blast", "Eldritch Blast", 0, 512, false},
+    Spell{"ray_of_frost", "Ray of Frost", 0, 256},
+    Spell{"sacred_flame", "Sacred Flame", 0, 128, false},
+    Spell{"fire_bolt", "Fire Bolt", 0, 1},
+    Spell{"poison_spray", "Poison Spray", 0, 64},
+    Spell{"magic_missile", "Magic Missile", 1, 4},
+    Spell{"scorching_ray", "Scorching Ray", 2, 16},
+    Spell{"blindness", "Blindness", 2, 32},
+    Spell{"inflict_wounds", "Inflict Wounds", 1, 0, false}};
 
 void require(bool ok)
 {
@@ -54,7 +54,7 @@ FeatureGrant grant(std::string_view id, unsigned level, std::string_view origin 
     return {"spell:" + std::string(id),
             std::string(origin),
             level,
-            {{"access", find(id).level ? "spellbook" : "cantrip"}}};
+    {{"access", find(id).level ? "spellbook" : "cantrip"}}};
 }
 } // namespace
 
@@ -75,35 +75,52 @@ std::vector<FeatureGrant> without_spell_grants(std::span<const FeatureGrant> gra
 TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
 {
     if (klass == "warlock")
-        return {
-            "class:warlock:pact_magic",
-            "Warlock cantrips",
-            2,
-            {{"eldritch_blast", "Eldritch Blast",
-              "Ranged spell attack: 1d10 Force damage, 120 feet; creature targets currently supported."},
-             {"poison_spray", "Poison Spray", "Ranged spell attack: 1d12 Poison damage, 30 feet."},
-             {"chill_touch", "Chill Touch",
-              "Melee spell attack: 1d10 Necrotic damage, Touch; prevents healing until the end of your next turn."}}};
+        return
+    {
+        "class:warlock:pact_magic",
+        "Warlock cantrips",
+        2,
+        {   {
+                "eldritch_blast", "Eldritch Blast",
+                "Ranged spell attack: 1d10 Force damage, 120 feet; creature targets currently supported."
+            },
+            {"poison_spray", "Poison Spray", "Ranged spell attack: 1d12 Poison damage, 30 feet."},
+            {
+                "chill_touch", "Chill Touch",
+                "Melee spell attack: 1d10 Necrotic damage, Touch; prevents healing until the end of your next turn."
+            }
+        }};
     if (klass == "cleric")
         return {"class:cleric:spellcasting",
                 "Cleric cantrips",
                 3,
-                {{"sacred_flame", "Sacred Flame",
-                  "Dexterity save: 1d8 Radiant damage, visible creature within 60 feet."}}};
+    {   {
+            "sacred_flame", "Sacred Flame",
+            "Dexterity save: 1d8 Radiant damage, visible creature within 60 feet."
+        }
+    }};
     if (klass != "wizard" && klass != "sorcerer")
         return {};
-    return {
+    return
+    {
         klass == "sorcerer" ? "class:sorcerer:spellcasting" : std::string(source),
         klass == "sorcerer" ? "Sorcerer cantrips" : "Wizard cantrips",
         klass == "sorcerer" ? 4u : 3u,
-        {{"fire_bolt", "Fire Bolt", "Ranged spell attack: 1d10 Fire damage, 120 feet."},
-         {"poison_spray", "Poison Spray", "Ranged spell attack: 1d12 Poison damage, 30 feet."},
-         {"ray_of_frost", "Ray of Frost",
-          "Ranged spell attack: 1d8 Cold damage, 60 feet; Speed reduced by 10 feet until your next turn."},
-         {"shocking_grasp", "Shocking Grasp",
-          "Melee spell attack: 1d8 Lightning damage, Touch; prevents Opportunity Attacks until the target’s next turn."},
-         {"chill_touch", "Chill Touch",
-          "Melee spell attack: 1d10 Necrotic damage, Touch; prevents healing until the end of your next turn."}}};
+        {   {"fire_bolt", "Fire Bolt", "Ranged spell attack: 1d10 Fire damage, 120 feet."},
+            {"poison_spray", "Poison Spray", "Ranged spell attack: 1d12 Poison damage, 30 feet."},
+            {
+                "ray_of_frost", "Ray of Frost",
+                "Ranged spell attack: 1d8 Cold damage, 60 feet; Speed reduced by 10 feet until your next turn."
+            },
+            {
+                "shocking_grasp", "Shocking Grasp",
+                "Melee spell attack: 1d8 Lightning damage, Touch; prevents Opportunity Attacks until the target’s next turn."
+            },
+            {
+                "chill_touch", "Chill Touch",
+                "Melee spell attack: 1d10 Necrotic damage, Touch; prevents healing until the end of your next turn."
+            }
+        }};
 }
 
 std::vector<FeatureGrant>
@@ -114,7 +131,7 @@ starting_spell_grants(std::string_view klass,
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
-        const auto chosen = cantrips.value_or(std::vector<std::string>{});
+        const auto chosen = cantrips.value_or(std::vector<std::string> {});
         require(chosen.size() <= 4);
         for (const auto &id : chosen)
         {
@@ -130,7 +147,7 @@ starting_spell_grants(std::string_view klass,
         require(!cantrips || cantrips->size() <= 2);
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
-        for (const auto &id : cantrips.value_or(std::vector<std::string>{}))
+        for (const auto &id : cantrips.value_or(std::vector<std::string> {}))
         {
             require((id == "eldritch_blast" || id == "poison_spray" || id == "chill_touch") &&
                     unique.insert(id).second);
@@ -142,7 +159,7 @@ starting_spell_grants(std::string_view klass,
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
-        for (const auto &id : cantrips.value_or(std::vector<std::string>{}))
+        for (const auto &id : cantrips.value_or(std::vector<std::string> {}))
         {
             require(id == "sacred_flame" && unique.insert(id).second);
             result.push_back(grant(id, 1, "class:cleric:spellcasting"));
@@ -154,7 +171,7 @@ starting_spell_grants(std::string_view klass,
         require(!cantrips || cantrips->empty());
         return {};
     }
-    const auto chosen = cantrips.value_or(std::vector<std::string>{"fire_bolt"});
+    const auto chosen = cantrips.value_or(std::vector<std::string> {"fire_bolt"});
     require(chosen.size() <= 3);
     std::set<std::string> unique;
     std::vector<FeatureGrant> result;
@@ -189,7 +206,7 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
                 require(g == grant(spell.id, 1, "class:sorcerer:spellcasting") &&
                         known.insert(g.id).second);
                 result.cantrips.push_back(
-                    {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
+                {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
             }
         require(result.cantrips.size() <= 4);
         return result;
@@ -209,7 +226,7 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
                 require(g == grant(spell.id, 1, "class:warlock:pact_magic") &&
                         known.insert(g.id).second);
                 result.cantrips.push_back(
-                    {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
+                {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
             }
         require(result.cantrips.size() <= 2);
         return result;
@@ -255,7 +272,7 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
             auto expected = grant(spell.id, g.level);
             unsigned learned = g.level;
             if (const auto replacement = g.choices.find("learned_at");
-                replacement != g.choices.end())
+                    replacement != g.choices.end())
             {
                 require(spell.level == 0);
                 bool valid = false;
@@ -286,10 +303,10 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
     {
         require(selected.insert(id).second &&
                 std::any_of(result.spellbook.begin(), result.spellbook.end(),
-                            [&](const auto &s)
-                            {
-                                return s.id == id;
-                            }));
+                            [&](const auto & s)
+        {
+            return s.id == id;
+        }));
         result.prepared.push_back(id);
     }
     require(result.prepared.size() <= result.prepared_choices);
@@ -305,11 +322,11 @@ void learn_advancement_spells(CharacterSheet &sheet, std::span<const std::string
     {
         require(find(id).level != 0);
         if (std::none_of(next.begin(), next.end(),
-                         [&](const auto &g)
-                         {
-                             return g.id == "spell:" + id;
-                         }))
-            next.push_back(grant(id, sheet.level));
+                         [&](const auto & g)
+    {
+        return g.id == "spell:" + id;
+    }))
+        next.push_back(grant(id, sheet.level));
     }
     (void)spell_access(next, sheet.character_class, sheet.level, selected);
     sheet.grants = std::move(next);
@@ -325,29 +342,32 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
     auto known = [&](std::string_view id)
     {
         return std::any_of(sheet.grants.begin(), sheet.grants.end(),
-                           [&](const auto &g)
-                           {
-                               return g.id == "spell:" + std::string(id);
-                           });
+                           [&](const auto & g)
+        {
+            return g.id == "spell:" + std::string(id);
+        });
     };
     if (context != SpellChoiceContext::long_rest)
         for (unsigned level = 1; level <= unsigned(sheet.level); ++level)
         {
             if (context == SpellChoiceContext::advancement && level != unsigned(sheet.level))
                 continue;
-            for (bool cantrip : {true, false})
+            for (bool cantrip :
+                    {
+                        true, false
+                    })
             {
                 const unsigned capacity = cantrip ? (level == 1   ? 3
                                                      : level == 4 ? 1
-                                                                  : 0)
-                                                  : (level == 1 ? 6 : 2);
+                                                     : 0)
+                                          : (level == 1 ? 6 : 2);
                 const unsigned used = std::count_if(
-                    sheet.grants.begin(), sheet.grants.end(),
-                    [&](const auto &g)
-                    {
-                        return is_spell_grant(g) && g.level == level &&
-                               (find(std::string_view(g.id).substr(6)).level == 0) == cantrip;
-                    });
+                                          sheet.grants.begin(), sheet.grants.end(),
+                                          [&](const auto & g)
+                {
+                    return is_spell_grant(g) && g.level == level &&
+                           (find(std::string_view(g.id).substr(6)).level == 0) == cantrip;
+                });
                 if (capacity == used)
                     continue;
                 TrainingChoiceGroup group;
@@ -358,9 +378,9 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
                 group.acquired_level = level;
                 for (const auto &spell : spells)
                     if ((spell.level == 0) == cantrip && spell.wizard &&
-                        spell.level <= (level >= 3 ? 2u : 1u) && !known(spell.id))
+                            spell.level <= (level >= 3 ? 2u : 1u) && !known(spell.id))
                         group.options.push_back(
-                            {std::string(spell.id), std::string(spell.label), {}});
+                    {std::string(spell.id), std::string(spell.label), {}});
                 result.learning.push_back(std::move(group));
             }
         }
@@ -388,28 +408,28 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     require(sheet.character_class == "Wizard");
     auto candidate = sheet;
     if (complete && context == SpellChoiceContext::pending &&
-        std::none_of(choices.learning.begin(), choices.learning.end(),
-                     [](const auto &entry)
-                     {
-                         return !entry.second.empty();
-                     }))
-        throw std::runtime_error("No supported missing spell choices.");
+            std::none_of(choices.learning.begin(), choices.learning.end(),
+                         [](const auto & entry)
+{
+    return !entry.second.empty();
+    }))
+    throw std::runtime_error("No supported missing spell choices.");
     const auto options = spell_choice_options(sheet, context);
     for (const auto &[id, values] : choices.learning)
     {
         const auto group = std::find_if(options.learning.begin(), options.learning.end(),
-                                        [&](const auto &g)
-                                        {
-                                            return g.id == id;
-                                        });
+                                        [&](const auto & g)
+        {
+            return g.id == id;
+        });
         require(group != options.learning.end() && values.size() <= group->count);
         for (const auto &value : values)
         {
             require(std::any_of(group->options.begin(), group->options.end(),
-                                [&](const auto &o)
-                                {
-                                    return o.id == value;
-                                }));
+                                [&](const auto & o)
+            {
+                return o.id == value;
+            }));
             candidate.grants.push_back(grant(value, group->acquired_level));
         }
     }
@@ -418,20 +438,20 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     {
         require(options.may_replace &&
                 std::any_of(options.replaceable.begin(), options.replaceable.end(),
-                            [&](const auto &o)
-                            {
-                                return o.id == choices.replace_cantrip;
-                            }) &&
-                std::any_of(options.replacements.begin(), options.replacements.end(),
-                            [&](const auto &o)
-                            {
-                                return o.id == choices.replacement;
-                            }));
+                            [&](const auto & o)
+        {
+            return o.id == choices.replace_cantrip;
+        }) &&
+        std::any_of(options.replacements.begin(), options.replacements.end(),
+                    [&](const auto & o)
+        {
+            return o.id == choices.replacement;
+        }));
         auto existing = std::find_if(candidate.grants.begin(), candidate.grants.end(),
-                                     [&](const auto &g)
-                                     {
-                                         return g.id == "spell:" + choices.replace_cantrip;
-                                     });
+                                     [&](const auto & g)
+        {
+            return g.id == "spell:" + choices.replace_cantrip;
+        });
         *existing = grant(choices.replacement, existing->level);
         existing->choices.emplace("learned_at", std::to_string(sheet.level));
     }

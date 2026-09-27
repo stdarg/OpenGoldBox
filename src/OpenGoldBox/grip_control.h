@@ -28,7 +28,7 @@ inline void refresh_grip(godot::OptionButton &control,
         control.select(0);
     }
     control.set_tooltip_text(i18n::text(N_(
-        "Grip of the equipped weapon. Two hands require a free hand; thrown attacks use the one-handed damage die.")));
+                                            "Grip of the equipped weapon. Two hands require a free hand; thrown attacks use the one-handed damage die.")));
 }
 } // namespace presentation
 #endif

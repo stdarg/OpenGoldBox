@@ -110,14 +110,17 @@ auto battle(const RulesModule &rules, const Character &h, std::string gear = "gr
     if (!gear.empty())
         equipment.push_back(gear);
     return rules.create({{8, 8, std::vector<std::uint8_t>(64)},
-                         {{1,
-                           "campaign-character",
-                           "Hero",
-                           0,
-                           {1, 1},
-                           rules.character_profile(h.sheet(), equipment).data},
-                          {99, "target", "Target", 1, ranged ? Cell{4, 1} : Cell{2, 1}}}},
-                        seed);
+        {   {
+                1,
+                "campaign-character",
+                "Hero",
+                0,
+                {1, 1},
+                rules.character_profile(h.sheet(), equipment).data
+            },
+            {99, "target", "Target", 1, ranged ? Cell{4, 1} : Cell{2, 1}}
+        }},
+    seed);
 }
 
 void roundtrip(const RulesModule &r, const CombatSession &c)
@@ -142,14 +145,14 @@ void choices()
         check(c->submit(attack), "Ordinary weapon attack hits");
         const auto first = offer(*c);
         check(first.first_damage == 9 && !first.second_damage && first.dice_count == 2 &&
-                  first.dice_sides == 6 && first.modifier == 3 && !first.critical &&
-                  first.weapon == "Greatsword",
+              first.dice_sides == 6 && first.modifier == 3 && !first.critical &&
+              first.weapon == "Greatsword",
               "Seed 13 rolls 2+4 weapon dice, plus 3 once");
         check(unit(*c, 99).hit_points == 1000 && !unit(*c).action &&
-                  unit(*c).reaction == before.reaction &&
-                  unit(*c).bonus_action == before.bonus_action &&
-                  unit(*c).movement_feet == before.movement_feet &&
-                  unit(*c).persistent == before.persistent,
+              unit(*c).reaction == before.reaction &&
+              unit(*c).bonus_action == before.bonus_action &&
+              unit(*c).movement_feet == before.movement_feet &&
+              unit(*c).persistent == before.persistent,
               "First hit spends Action only and postpones all damage");
         check(c->legal_commands().size() == 2 && c->movement_reach(1).empty(),
               "Only the first-stage decision is legal");
@@ -165,13 +168,13 @@ void choices()
         auto skip = rules->restore(first_bytes);
         act(*skip, "savage_skip");
         check(!skip->snapshot().savage_attack_choice && unit(*skip, 99).hit_points == 991 &&
-                  rng(*skip) == random,
+              rng(*skip) == random,
               "Declining applies first damage without consuming extra dice");
         const auto use = command(*c, "savage_use");
         check(c->submit(use), "Player elects to spend feat");
         const auto second = offer(*c);
         check(second.first_damage == 9 && second.second_damage == 10 &&
-                  unit(*c, 99).hit_points == 1000 && rng(*c) == random + 2 * 0x9e3779b97f4a7c15ULL,
+              unit(*c, 99).hit_points == 1000 && rng(*c) == random + 2 * 0x9e3779b97f4a7c15ULL,
               "Only the second set of weapon dice is rolled; damage still waits");
         roundtrip(*rules, *c);
         const auto second_bytes = c->save();
@@ -188,7 +191,7 @@ void choices()
         auto ranged = battle(*rules, h, "longbow", 0, true);
         act(*ranged, "ranged");
         check(offer(*ranged).critical && offer(*ranged).dice_count == 2 &&
-                  offer(*ranged).first_damage == 12,
+              offer(*ranged).first_damage == 12,
               "Critical weapon dice double, flat modifier does not");
         act(*ranged, "savage_use");
         check(offer(*ranged).second_damage == 8, "Critical reroll uses 3+2 plus 3 once");
@@ -202,7 +205,9 @@ void exceptions_and_turns()
 {
     auto rules = module();
     const auto h = hero();
-    for (const auto &gear : {"", "blowgun"})
+    for (const auto &gear :
+            {"", "blowgun"
+            })
     {
         auto c = battle(*rules, h, gear, 13, true);
         act(*c, *gear ? "ranged" : "end");
@@ -222,7 +227,7 @@ void exceptions_and_turns()
     const auto before = rng(*c);
     act(*c, "melee");
     check(!c->snapshot().savage_attack_choice && unit(*c, 99).hit_points == 1000 &&
-              rng(*c) == before + 0x9e3779b97f4a7c15ULL,
+          rng(*c) == before + 0x9e3779b97f4a7c15ULL,
           "Miss uses only its attack roll and never offers feat");
     c = battle(*rules, hero("wizard"), "greatsword", 13, true);
     act(*c, "fire_bolt");
@@ -246,8 +251,8 @@ void exceptions_and_turns()
     const auto movement = c->snapshot();
     act(*c, "opportunity");
     check(c->snapshot().savage_attack_choice.has_value() && !unit(*c).reaction &&
-              !unit(*c).action &&
-              c->snapshot().elapsed_milliseconds == movement.elapsed_milliseconds,
+          !unit(*c).action &&
+          c->snapshot().elapsed_milliseconds == movement.elapsed_milliseconds,
           "Feat refreshes each turn, including enemy turns, without refreshing Action");
     roundtrip(*rules, *c);
     const auto cell = unit(*c, 99).cell;
@@ -264,15 +269,20 @@ void lethal_and_queues()
     auto rules = module();
     const auto h = hero();
     const auto profile =
-        rules->character_profile(h.sheet(), std::array<std::string, 1>{"greatsword"}).data;
-    for (bool lethal : {false, true})
+        rules->character_profile(h.sheet(), std::array<std::string, 1> {"greatsword"}).data;
+    for (bool lethal :
+            {
+                false, true
+            })
     {
         auto c = rules->create(
-            {{8, 8, std::vector<std::uint8_t>(64)},
-             {{1, "campaign-character", "First", 0, {1, 1}, profile},
-              {2, "campaign-character", "Second", 0, {2, 0}, profile},
-              {99, "target", "Target", 1, {2, 1}, "", VitalState{lethal ? 1 : 1000, false, {}}}}},
-            13);
+        {
+            {8, 8, std::vector<std::uint8_t>(64)},
+            {   {1, "campaign-character", "First", 0, {1, 1}, profile},
+                {2, "campaign-character", "Second", 0, {2, 0}, profile},
+                {99, "target", "Target", 1, {2, 1}, "", VitalState{lethal ? 1 : 1000, false, {}}}
+            }},
+        13);
         while (c->snapshot().actor != 99)
             act(*c, "end");
         bool moved = false;
@@ -290,7 +300,7 @@ void lethal_and_queues()
         if (lethal)
         {
             check(c->snapshot().outcome == Outcome::victory && !c->snapshot().reaction_pending &&
-                      unit(*c, 99).cell == Cell{2, 1},
+                  unit(*c, 99).cell == Cell{2, 1},
                   "Lethal chosen damage cancels movement and later reactions");
             roundtrip(*rules, *c);
         }
@@ -312,18 +322,21 @@ void defenses()
     auto rules = module(true, "affinity target ward resistance slashing\n");
     const auto h = hero();
     const auto profile =
-        rules->character_profile(h.sheet(), std::array<std::string, 1>{"greatsword"}).data;
+        rules->character_profile(h.sheet(), std::array<std::string, 1> {"greatsword"}).data;
     auto c =
-        rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                       {{1, "campaign-character", "Hero", 0, {1, 1}, profile},
-                        {99,
-                         "target",
-                         "Target",
-                         1,
-                         {2, 1},
-                         "",
-                         VitalState{1000, false, "SRD7 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 FX1 1 0"}}}},
-                      13);
+    rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile},
+            {
+                99,
+                "target",
+                "Target",
+                1,
+                {2, 1},
+                "",
+                VitalState{1000, false, "SRD7 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 FX1 1 0"}
+            }
+        }},
+    13);
     act(*c, "melee");
     check(offer(*c).first_damage == 9 && unit(*c, 99).temporary_hp.amount == 3,
           "Choice shows pre-defense damage without consuming the buffer");
@@ -341,16 +354,18 @@ void invalid()
     act(*c, "melee");
     const auto saved = c->save();
     const auto line = saved.rfind('\n', saved.size() - 2) + 1;
-    for (const auto &fields : {"0 99 0 17 0 9 -1", "1 1 0 17 0 9 -1", "1 99 0 1 0 9 -1",
-                               "1 99 0 17 1 9 -1", "1 99 0 17 0 2 -1", "1 99 0 17 0 99 -1",
-                               "1 99 0 17 0 9 -2", "1 99 0 17 0 9 10", "1 99 1 17 0 9 -1"})
+    for (const auto &fields :
+            {"0 99 0 17 0 9 -1", "1 1 0 17 0 9 -1", "1 99 0 1 0 9 -1",
+             "1 99 0 17 1 9 -1", "1 99 0 17 0 2 -1", "1 99 0 17 0 99 -1",
+             "1 99 0 17 0 9 -2", "1 99 0 17 0 9 10", "1 99 1 17 0 9 -1"
+            })
     {
         const auto bad = saved.substr(0, line) + fields + '\n';
         rejects(
             [&]
-            {
-                (void)rules->restore(bad);
-            });
+        {
+            (void)rules->restore(bad);
+        });
         check(c->save() == saved, "Malformed pending state leaves live combat intact");
     }
     auto choice = command(*c, "savage_use");
@@ -362,15 +377,17 @@ void invalid()
     bad.replace(bad.rfind(' ') + 1, std::string::npos, "999\n");
     rejects(
         [&]
-        {
-            (void)rules->restore(bad);
-        });
+    {
+        (void)rules->restore(bad);
+    });
 }
 
 void grants_and_campaign()
 {
     auto rules = module();
-    for (const auto &klass : {"fighter", "cleric", "wizard"})
+    for (const auto &klass :
+            {"fighter", "cleric", "wizard"
+            })
     {
         CampaignParty party(module());
         const auto id = party.add_pc(hero(klass, "sage"));
@@ -390,22 +407,22 @@ void grants_and_campaign()
                                  4,
                                  {}};
         check(std::find(sheet.grants.begin(), sheet.grants.end(), grant) != sheet.grants.end() &&
-                  sheet.grants == preview.character.sheet().grants,
+              sheet.grants == preview.character.sheet().grants,
               "Selected feat retains real entitlement and acquisition level");
         auto broken = sheet;
         broken.grants.push_back(grant);
         rejects(
             [&]
-            {
-                (void)rules->character_profile(broken, {});
-            });
+        {
+            (void)rules->character_profile(broken, {});
+        });
         broken = sheet;
         broken.grants.back().source_id = "background:soldier";
         rejects(
             [&]
-            {
-                (void)rules->character_profile(broken, {});
-            });
+        {
+            (void)rules->character_profile(broken, {});
+        });
         const auto bytes = encode_campaign(party, nullptr, "savage");
         CampaignParty copy(module());
         copy.restore(
@@ -443,32 +460,37 @@ void legacy()
     const auto bytes = encode_campaign(p, nullptr, "savage-fixture");
     check(
         bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1) ==
-            test::with_background_training_grants(test::with_action_surge_grants(
-                test::with_legacy_cantrip_choices(expected), {false, true})),
+        test::with_background_training_grants(test::with_action_surge_grants(
+                    test::with_legacy_cantrip_choices(expected), {false, true})),
         "Only the justified Action Surge and background grants are added; existing equipment, wounds, pools and clocks unchanged");
-    for (const auto suffix : {"", "-reaction"})
+    for (const auto suffix :
+            {"", "-reaction"
+            })
     {
         auto c = rules->restore(read(base / (std::string("combat-v12-savage") + suffix + ".save")));
         check(c->save() ==
-                  upgraded(read(base / (std::string("combat-v12-savage") + suffix + ".save"))),
+              upgraded(read(base / (std::string("combat-v12-savage") + suffix + ".save"))),
               "Old checkpoint adds only empty decision and identities");
         act(*c, *suffix ? "opportunity" : "melee");
         act(*c, "savage_use");
         act(*c,
             offer(*c).first_damage >= *offer(*c).second_damage ? "savage_first" : "savage_second");
         auto prior = rules->restore(
-            read(base / (std::string("combat-v12-savage") + suffix + "-continued.save")));
+                         read(base / (std::string("combat-v12-savage") + suffix + "-continued.save")));
         check(rng(*c) == rng(*prior) &&
-                  c->snapshot().elapsed_milliseconds == prior->snapshot().elapsed_milliseconds &&
-                  c->snapshot().outcome == prior->snapshot().outcome,
+              c->snapshot().elapsed_milliseconds == prior->snapshot().elapsed_milliseconds &&
+              c->snapshot().outcome == prior->snapshot().outcome,
               "Explicit higher-result choice matches old automatic RNG/time/outcome");
-        for (auto id : {1u, 99u})
+        for (auto id :
+                {
+                    1u, 99u
+                })
         {
             const auto a = unit(*c, id), b = unit(*prior, id);
             check(a.hit_points == b.hit_points && a.persistent == b.persistent &&
-                      a.cell == b.cell && a.action == b.action &&
-                      a.bonus_action == b.bonus_action && a.reaction == b.reaction &&
-                      a.movement_feet == b.movement_feet,
+                  a.cell == b.cell && a.action == b.action &&
+                  a.bonus_action == b.bonus_action && a.reaction == b.reaction &&
+                  a.movement_feet == b.movement_feet,
                   "Old writer's damage, resources and movement continue exactly");
         }
     }
@@ -480,11 +502,12 @@ void fixtures(const std::filesystem::path &path)
     auto rules = module(false);
     const auto h = hero();
     const auto profile =
-        rules->character_profile(h.sheet(), std::array<std::string, 1>{"greatsword"}).data;
+        rules->character_profile(h.sheet(), std::array<std::string, 1> {"greatsword"}).data;
     auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                            {{1, "campaign-character", "Hero", 0, {1, 1}, profile},
-                             {99, "vanguard", "Target", 1, {2, 1}}}},
-                           13);
+        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile},
+            {99, "vanguard", "Target", 1, {2, 1}}
+        }},
+    13);
     act(*c, "melee");
     std::ofstream(path / "savage-first.save") << c->save();
     act(*c, "savage_use");

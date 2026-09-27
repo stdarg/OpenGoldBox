@@ -53,20 +53,20 @@ inline std::string with_arcane_recovery_grants(std::string body)
             throw std::runtime_error("Truncated frozen Wizard grants");
         const auto length = static_cast<std::size_t>(input.tellg());
         if (std::none_of(grants.begin(), grants.end(),
-                         [](const auto &g)
-                         {
-                             return g.id == "feature:arcane_recovery";
-                         }))
+                         [](const auto & g)
+    {
+        return g.id == "feature:arcane_recovery";
+    }))
         {
             const auto spellcasting = std::find_if(grants.begin(), grants.end(),
-                                                   [](const auto &g)
-                                                   {
-                                                       return g.id == "feature:spellcasting";
-                                                   });
+                                                   [](const auto & g)
+            {
+                return g.id == "feature:spellcasting";
+            });
             if (spellcasting == grants.end())
                 throw std::runtime_error("Missing frozen Spellcasting grant");
             grants.insert(std::next(spellcasting),
-                          {"feature:arcane_recovery", "class:wizard", 1, {}});
+            {"feature:arcane_recovery", "class:wizard", 1, {}});
         }
         std::ostringstream out;
         out << grants.size();
@@ -113,7 +113,7 @@ inline std::string with_background_training_grants(std::string body, unsigned pa
             throw std::runtime_error("Malformed frozen draft identity");
         search = start + static_cast<std::size_t>(fields.tellg());
         if (!((background == "sage" && (packages & 1)) ||
-              ((background == "acolyte" || background == "soldier") && (packages & 2))))
+                ((background == "acolyte" || background == "soldier") && (packages & 2))))
             continue;
         rest = body.substr(search);
         if (!std::regex_search(rest, match, first_grant))
@@ -148,29 +148,32 @@ inline std::string with_background_training_grants(std::string body, unsigned pa
         const auto length = static_cast<std::size_t>(input.tellg());
         const auto common =
             std::find_if(grants.begin(), grants.end(),
-                         [](const auto &g)
-                         {
-                             return g.id == "language:common" && g.source_id == "origin:languages";
-                         });
+                         [](const auto & g)
+        {
+            return g.id == "language:common" && g.source_id == "origin:languages";
+        });
         std::vector<rules::FeatureGrant> added;
         if (background == "sage")
             added = {{"skill:arcana", "background:sage", 1, {}},
-                     {"skill:history", "background:sage", 1, {}},
-                     {"tool:calligraphers_supplies", "background:sage", 1, {}}};
+            {"skill:history", "background:sage", 1, {}},
+            {"tool:calligraphers_supplies", "background:sage", 1, {}}
+        };
         else if (background == "acolyte")
             added = {{"skill:insight", "background:acolyte", 1, {}},
-                     {"skill:religion", "background:acolyte", 1, {}},
-                     {"tool:calligraphers_supplies", "background:acolyte", 1, {}}};
+            {"skill:religion", "background:acolyte", 1, {}},
+            {"tool:calligraphers_supplies", "background:acolyte", 1, {}}
+        };
         else
             added = {{"skill:athletics", "background:soldier", 1, {}},
-                     {"skill:intimidation", "background:soldier", 1, {}}};
+            {"skill:intimidation", "background:soldier", 1, {}}
+        };
         if (common == grants.end() || std::any_of(added.begin(), added.end(),
-                                                  [&](const auto &g)
-                                                  {
-                                                      return std::find(grants.begin(), grants.end(),
-                                                                       g) != grants.end();
-                                                  }))
-            throw std::runtime_error("Unexpected prior background grants");
+                [&](const auto & g)
+    {
+        return std::find(grants.begin(), grants.end(),
+                         g) != grants.end();
+        }))
+        throw std::runtime_error("Unexpected prior background grants");
         grants.insert(common + 1, added.begin(), added.end());
         std::ostringstream out;
         out << grants.size();
@@ -243,18 +246,18 @@ inline std::string with_druid_herbalism_grants(std::string body)
         const auto length = static_cast<std::size_t>(input.tellg());
         const auto common =
             std::find_if(grants.begin(), grants.end(),
-                         [](const auto &g)
-                         {
-                             return g.id == "language:common" && g.source_id == "origin:languages";
-                         });
+                         [](const auto & g)
+        {
+            return g.id == "language:common" && g.source_id == "origin:languages";
+        });
         const std::vector<rules::FeatureGrant> added{{"tool:herbalism_kit", "class:druid", 1, {}}};
         if (common == grants.end() || std::any_of(added.begin(), added.end(),
-                                                  [&](const auto &g)
-                                                  {
-                                                      return std::find(grants.begin(), grants.end(),
-                                                                       g) != grants.end();
-                                                  }))
-            throw std::runtime_error("Unexpected prior Druid grants");
+                [&](const auto & g)
+    {
+        return std::find(grants.begin(), grants.end(),
+                         g) != grants.end();
+        }))
+        throw std::runtime_error("Unexpected prior Druid grants");
         grants.insert(common + 1, added.begin(), added.end());
         std::ostringstream out;
         out << grants.size();
@@ -327,18 +330,18 @@ inline std::string with_alert_grants(std::string body)
         const auto length = static_cast<std::size_t>(input.tellg());
         const auto common =
             std::find_if(grants.begin(), grants.end(),
-                         [](const auto &g)
-                         {
-                             return g.id == "language:common" && g.source_id == "origin:languages";
-                         });
+                         [](const auto & g)
+        {
+            return g.id == "language:common" && g.source_id == "origin:languages";
+        });
         const std::vector<rules::FeatureGrant> added{{"feat:alert", "background:criminal", 1, {}}};
         if (common == grants.end() || std::any_of(added.begin(), added.end(),
-                                                  [&](const auto &g)
-                                                  {
-                                                      return std::find(grants.begin(), grants.end(),
-                                                                       g) != grants.end();
-                                                  }))
-            throw std::runtime_error("Unexpected prior Criminal grants");
+                [&](const auto & g)
+    {
+        return std::find(grants.begin(), grants.end(),
+                         g) != grants.end();
+        }))
+        throw std::runtime_error("Unexpected prior Criminal grants");
         grants.insert(grants.begin(), added.begin(), added.end());
         std::ostringstream out;
         out << grants.size();
@@ -411,25 +414,26 @@ inline std::string with_sneak_attack_grants(std::string body)
         const auto length = static_cast<std::size_t>(input.tellg());
         const auto common =
             std::find_if(grants.begin(), grants.end(),
-                         [](const auto &g)
-                         {
-                             return g.id == "language:common" && g.source_id == "origin:languages";
-                         });
-        const std::vector<rules::FeatureGrant> added{
+                         [](const auto & g)
+        {
+            return g.id == "language:common" && g.source_id == "origin:languages";
+        });
+        const std::vector<rules::FeatureGrant> added
+        {
             {"feature:sneak_attack", "class:rogue", 1, {}}};
         if (common == grants.end() || std::any_of(added.begin(), added.end(),
-                                                  [&](const auto &g)
-                                                  {
-                                                      return std::find(grants.begin(), grants.end(),
-                                                                       g) != grants.end();
-                                                  }))
-            throw std::runtime_error("Unexpected prior Rogue grants");
+                [&](const auto & g)
+    {
+        return std::find(grants.begin(), grants.end(),
+                         g) != grants.end();
+        }))
+        throw std::runtime_error("Unexpected prior Rogue grants");
         const auto position =
             std::find_if(grants.begin(), grants.end(),
-                         [](const auto &g)
-                         {
-                             return g.id.starts_with("trait:") || g.id == "language:common";
-                         });
+                         [](const auto & g)
+        {
+            return g.id.starts_with("trait:") || g.id == "language:common";
+        });
         grants.insert(position, added.begin(), added.end());
         std::ostringstream out;
         out << grants.size();
@@ -528,21 +532,22 @@ inline std::string with_champion_grants(std::string body)
             throw std::runtime_error("Truncated frozen Champion ledger");
         const auto length = static_cast<std::size_t>(input.tellg());
         if (std::any_of(grants.begin(), grants.end(),
-                        [](const auto &g)
-                        {
-                            return g.id == "subclass:champion";
-                        }))
-            throw std::runtime_error("Champion fixture already upgraded");
-        const std::vector<rules::FeatureGrant> added{
+                        [](const auto & g)
+    {
+        return g.id == "subclass:champion";
+    }))
+        throw std::runtime_error("Champion fixture already upgraded");
+        const std::vector<rules::FeatureGrant> added
+        {
             {"subclass:champion", "class:fighter", 3, {}},
             {"feature:improved_critical", "subclass:fighter:champion", 3, {}},
             {"feature:remarkable_athlete", "subclass:fighter:champion", 3, {}}};
         grants.insert(std::find_if(grants.begin(), grants.end(),
-                                   [](const auto &g)
-                                   {
-                                       return g.level > 3;
-                                   }),
-                      added.begin(), added.end());
+                                   [](const auto & g)
+        {
+            return g.level > 3;
+        }),
+        added.begin(), added.end());
         std::ostringstream out;
         out << grants.size();
         for (const auto &g : grants)
@@ -562,7 +567,7 @@ inline std::string with_champion_grants(std::string body)
 // The fixture author supplies one attained-level decision per Fighter ledger.
 // Add fixed level-two grants, then independently migrate Champion entitlements.
 inline std::string with_action_surge_grants(std::string body, std::initializer_list<bool> eligible,
-                                            bool only_tactical = false)
+        bool only_tactical = false)
 {
     const std::string marker = "\"feature:fighting_style\" \"class:fighter\" 1 0";
     auto wanted = eligible.begin();
@@ -611,15 +616,15 @@ inline std::string with_action_surge_grants(std::string body, std::initializer_l
         const auto length = static_cast<std::size_t>(input.tellg());
         if (only_tactical)
             add = std::any_of(grants.begin(), grants.end(),
-                              [](const auto &g)
-                              {
-                                  return g.id == "feature:action_surge";
-                              }) &&
-                  !std::any_of(grants.begin(), grants.end(),
-                               [](const auto &g)
-                               {
-                                   return g.id == "feature:tactical_mind";
-                               });
+                              [](const auto & g)
+        {
+            return g.id == "feature:action_surge";
+        }) &&
+        !std::any_of(grants.begin(), grants.end(),
+                     [](const auto & g)
+        {
+            return g.id == "feature:tactical_mind";
+        });
         if (!add)
         {
             search = begin + length;
@@ -627,17 +632,17 @@ inline std::string with_action_surge_grants(std::string body, std::initializer_l
         }
         if (!only_tactical)
             grants.insert(std::find_if(grants.begin(), grants.end(),
-                                       [](const auto &g)
-                                       {
-                                           return g.level > 2;
-                                       }),
-                          {"feature:action_surge", "class:fighter", 2, {}});
+                                       [](const auto & g)
+        {
+            return g.level > 2;
+        }),
+        {"feature:action_surge", "class:fighter", 2, {}});
         grants.insert(std::find_if(grants.begin(), grants.end(),
-                                   [](const auto &g)
-                                   {
-                                       return g.level > 2;
-                                   }),
-                      {"feature:tactical_mind", "class:fighter", 2, {}});
+                                   [](const auto & g)
+        {
+            return g.level > 2;
+        }),
+        {"feature:tactical_mind", "class:fighter", 2, {}});
         std::ostringstream out;
         out << grants.size();
         for (const auto &g : grants)
@@ -750,14 +755,14 @@ inline std::string with_initial_wizard_spell_grants(std::string body)
             throw std::runtime_error("Truncated frozen grant ledger");
         const auto length = static_cast<std::size_t>(input.tellg());
         grants.push_back(
-            {"spell:fire_bolt", "class:wizard:spellcasting", 1, {{"access", "cantrip"}}});
+        {"spell:fire_bolt", "class:wizard:spellcasting", 1, {{"access", "cantrip"}}});
         grants.push_back(
-            {"spell:magic_missile", "class:wizard:spellcasting", 1, {{"access", "spellbook"}}});
+        {"spell:magic_missile", "class:wizard:spellcasting", 1, {{"access", "spellbook"}}});
         std::stable_sort(grants.begin(), grants.end(),
-                         [](const auto &a, const auto &b)
-                         {
-                             return a.level < b.level;
-                         });
+                         [](const auto & a, const auto & b)
+        {
+            return a.level < b.level;
+        });
         std::ostringstream out;
         out << grants.size();
         for (const auto &g : grants)
@@ -772,7 +777,7 @@ inline std::string with_initial_wizard_spell_grants(std::string body)
         search = begin + next.size();
     }
     return with_arcane_recovery_grants(
-        with_background_training_grants(with_legacy_cantrip_choices(std::move(body))));
+               with_background_training_grants(with_legacy_cantrip_choices(std::move(body))));
 }
 } // namespace opengold::test
 #endif

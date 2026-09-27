@@ -27,10 +27,10 @@ EclCatalog EclCatalog::load(const std::filesystem::path &directory)
             const auto digits = name.substr(3, name.size() - 7);
             if (!std::all_of(digits.begin(), digits.end(),
                              [](char c)
-                             {
-                                 return c >= '0' && c <= '9';
-                             }))
-                continue;
+        {
+            return c >= '0' && c <= '9';
+        }))
+            continue;
             if (!files.emplace(name, entry.path()).second)
                 throw EclError("Ambiguous script archive " + name);
         }
@@ -272,7 +272,7 @@ void EclMachine::jump(std::uint32_t address)
 bool EclMachine::start(std::size_t slot)
 {
     if (slot >= program_->entries().size() ||
-        (state_ != EclState::idle && state_ != EclState::completed))
+            (state_ != EclState::idle && state_ != EclState::completed))
         return false;
     pc_ = program_->entries()[slot];
     state_ = EclState::running;
@@ -346,7 +346,7 @@ void EclMachine::execute(const EclInstruction &i)
     {
         const auto address = encoded_address(a[0]);
         if (address != 0x2C90 && address != 0x8000 && address != 0x8001 && address != 0xBA03 &&
-            address != 0xC018 && address != 0xC01E)
+                address != 0xC018 && address != 0xC01E)
         {
             pc_ = i.next;
             return;
@@ -456,7 +456,8 @@ void EclMachine::execute(const EclInstruction &i)
         do
         {
             draw = static_cast<std::uint32_t>(random_());
-        } while (draw < threshold);
+        }
+        while (draw < threshold);
         write(dest, static_cast<std::uint16_t>(draw % count));
         break;
     }
@@ -607,8 +608,8 @@ void EclMachine::request_host(const EclInstruction &i)
         {
             arg.kind = EclArgumentKind::address;
             arg.value = output ? destination(operand)
-                               : (op == 60 && operand.tag == 129 ? operand.value
-                                                                 : encoded_address(operand));
+                        : (op == 60 && operand.tag == 129 ? operand.value
+                           : encoded_address(operand));
         }
         else if (is_text)
         {
@@ -686,7 +687,7 @@ void EclMachine::finish_request()
 bool EclMachine::resume_input(std::uint64_t id, std::string_view input)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
-        input.size() > pending_->input_limit)
+            input.size() > pending_->input_limit)
         return false;
     try
     {
@@ -716,33 +717,34 @@ bool EclMachine::resume_input(std::uint64_t id, std::string_view input)
 unsigned EclMachine::host_random(std::uint64_t id, unsigned count)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
-        pending_->kind != EclRequestKind::host || !count || count > 65536)
+            pending_->kind != EclRequestKind::host || !count || count > 65536)
         throw EclError("Invalid host random request");
     const std::uint32_t threshold = (0U - count) % count;
     std::uint32_t draw;
     do
     {
         draw = static_cast<std::uint32_t>(random_());
-    } while (draw < threshold);
+    }
+    while (draw < threshold);
     return draw % count;
 }
 
 bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
-        pending_->kind != EclRequestKind::host)
+            pending_->kind != EclRequestKind::host)
         return false;
     const auto opcode = pending_->instruction->opcode;
     if ((opcode == 32) != static_cast<bool>(reply.next_program) ||
-        (opcode == 50) != reply.conditions.has_value())
+            (opcode == 50) != reply.conditions.has_value())
         return false;
     if (reply.conditions && ((*reply.conditions)[0] == (*reply.conditions)[1] ||
                              std::any_of(reply.conditions->begin() + 2, reply.conditions->end(),
                                          [](bool v)
-                                         {
-                                             return v;
-                                         })))
-        return false;
+{
+    return v;
+})))
+    return false;
     // Validate the entire reply, including required output arguments, before applying writes.
     std::set<std::uint16_t> addresses;
     try
@@ -755,15 +757,15 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         }
         for (std::size_t n = 0; n < pending_->arguments.size(); ++n)
             if (((opcode == 29 && n == 0) || (opcode == 30 && n >= 2) || opcode == 34 ||
-                 (opcode == 41 && n == 3)) &&
-                !addresses.contains(pending_->arguments[n].value))
+                    (opcode == 41 && n == 3)) &&
+                    !addresses.contains(pending_->arguments[n].value))
                 return false;
     }
     catch (const EclError &)
     {
         return false;
     }
-    auto next_image = reply.next_program ? reply.next_program->raw() : std::vector<std::uint8_t>{};
+    auto next_image = reply.next_program ? reply.next_program->raw() : std::vector<std::uint8_t> {};
     for (const auto &w : reply.writes)
         write(w.address, w.value);
     if (reply.conditions)

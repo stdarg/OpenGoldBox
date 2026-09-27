@@ -91,7 +91,7 @@ int main(int argc, char **argv)
                 throw std::runtime_error("Could not read replay input");
             const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input), {}};
             (std::string_view(argv[1]) == "--replay-formats" ? exercise_formats
-                                                             : exercise_checkpoint)(bytes);
+             : exercise_checkpoint)(bytes);
             std::cout << "Fuzz input replay passed\n";
             return 0;
         }

@@ -111,13 +111,14 @@ Character leveled(std::string feat = "archery", std::string background = "sage")
 }
 
 auto battle(const RulesModule &rules, const Character &h, std::string weapon, Cell target = {3, 1},
-            unsigned seed = 89)
+unsigned seed = 89)
 {
-    const auto profile = rules.character_profile(h.sheet(), std::array<std::string, 1>{weapon});
+    const auto profile = rules.character_profile(h.sheet(), std::array<std::string, 1> {weapon});
     auto c = rules.create({{40, 8, std::vector<std::uint8_t>(320)},
-                           {{1, "campaign-character", "Archer", 0, {1, 1}, profile.data},
-                            {99, "target", "Target", 1, target}}},
-                          seed);
+        {   {1, "campaign-character", "Archer", 0, {1, 1}, profile.data},
+            {99, "target", "Target", 1, target}
+        }},
+    seed);
     check(c->snapshot().actor == 1, "Independent initiative seed starts with archer");
     return c;
 }
@@ -131,7 +132,7 @@ void selection()
         auto id = p.add_pc(hero(klass.id));
         p.award_experience(2700, "archery");
         if (klass.id != "fighter" && klass.id != "wizard" && klass.id != "cleric" &&
-            klass.id != "rogue" && klass.id != "paladin" && klass.id != "ranger")
+                klass.id != "rogue" && klass.id != "paladin" && klass.id != "ranger")
         {
             check(!p.can_advance(id),
                   "Unsupported later advancement does not invent Fighting Style entitlement");
@@ -143,22 +144,22 @@ void selection()
         choice.abilities = {};
         const auto options = p.advancement_options(id);
         const auto option = std::find_if(options.feats.begin(), options.feats.end(),
-                                         [](const auto &f)
-                                         {
-                                             return f.id == "archery";
-                                         });
+                                         [](const auto & f)
+        {
+            return f.id == "archery";
+        });
         check(option != options.feats.end() &&
-                  option->available ==
-                      (klass.id == "fighter" || klass.id == "paladin" || klass.id == "ranger"),
+              option->available ==
+              (klass.id == "fighter" || klass.id == "paladin" || klass.id == "ranger"),
               "Existing feat selector requires Fighting Style");
         const auto before = encode_campaign(p, nullptr, "archery");
         if (klass.id != "fighter" && klass.id != "paladin" && klass.id != "ranger")
         {
             rejects(
                 [&]
-                {
-                    p.advance(id, choice);
-                });
+            {
+                p.advance(id, choice);
+            });
             check(encode_campaign(p, nullptr, "archery") == before,
                   "Missing entitlement rejects atomically");
             continue;
@@ -167,9 +168,9 @@ void selection()
         invalid.abilities[0] = 1;
         rejects(
             [&]
-            {
-                p.advance(id, invalid);
-            });
+        {
+            p.advance(id, invalid);
+        });
         const auto preview = p.preview_advancement(id, choice);
         check(encode_campaign(p, nullptr, "archery") == before,
               "Preview and rejected allocation preserve campaign");
@@ -187,28 +188,28 @@ void selection()
         bad.grants.push_back({"feat:archery", "class:fighter:ability_score_improvement", 4, {}});
         rejects(
             [&]
-            {
-                (void)rules->character_profile(bad, {});
-            });
+        {
+            (void)rules->character_profile(bad, {});
+        });
         bad = sheet;
         std::erase_if(bad.grants,
-                      [](const auto &g)
-                      {
-                          return g.id == "feature:fighting_style";
-                      });
+                      [](const auto & g)
+        {
+            return g.id == "feature:fighting_style";
+        });
         rejects(
             [&]
-            {
-                (void)rules->character_profile(bad, {});
-            });
+        {
+            (void)rules->character_profile(bad, {});
+        });
         auto before_four = hero().sheet();
         before_four.grants.push_back(
-            {"feat:archery", "class:fighter:ability_score_improvement", 1, {}});
+        {"feat:archery", "class:fighter:ability_score_improvement", 1, {}});
         rejects(
             [&]
-            {
-                (void)rules->character_profile(before_four, {});
-            });
+        {
+            (void)rules->character_profile(before_four, {});
+        });
         const auto saved = encode_campaign(p, nullptr, "archery");
         CampaignParty restored(module());
         restored.restore(
@@ -224,9 +225,11 @@ void attacks()
     const auto target = "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     auto rules = srd5::parse_content(content + target);
     const auto archer = leveled(), baseline = leveled("defense");
-    for (const auto weapon : {"dart", "light_crossbow", "shortbow", "sling", "blowgun",
-                              "hand_crossbow", "heavy_crossbow", "longbow", "musket", "pistol",
-                              "dagger", "handaxe", "javelin", "light_hammer", "spear", "trident"})
+    for (const auto weapon :
+            {"dart", "light_crossbow", "shortbow", "sling", "blowgun",
+             "hand_crossbow", "heavy_crossbow", "longbow", "musket", "pistol",
+             "dagger", "handaxe", "javelin", "light_hammer", "spear", "trident"
+            })
     {
         const bool ranged =
             std::string_view(weapon) == "dart" || std::string_view(weapon) == "light_crossbow" ||
@@ -234,7 +237,10 @@ void attacks()
             std::string_view(weapon) == "blowgun" || std::string_view(weapon) == "hand_crossbow" ||
             std::string_view(weapon) == "heavy_crossbow" || std::string_view(weapon) == "longbow" ||
             std::string_view(weapon) == "musket" || std::string_view(weapon) == "pistol";
-        for (unsigned seed : {72u, 89u, 11u})
+        for (unsigned seed :
+                {
+                    72u, 89u, 11u
+                })
         {
             auto a = battle(*rules, archer, weapon, {3, 1}, seed),
                  b = battle(*rules, baseline, weapon, {3, 1}, seed);
@@ -248,12 +254,12 @@ void attacks()
             const auto actual = result(*a), control = result(*b);
             check(
                 arg(actual, "bonus") == std::to_string(ranged ? 6 : 4) &&
-                    arg(control, "bonus") == "4",
+                arg(control, "bonus") == "4",
                 "Only Ranged weapon category gets Archery, including darts but excluding thrown melee weapons");
             check(arg(actual, "roll") == std::to_string(seed == 72   ? 20
-                                                        : seed == 89 ? 17
-                                                                     : 1) &&
-                      arg(actual, "roll") == arg(control, "roll"),
+                    : seed == 89 ? 17
+                    : 1) &&
+                  arg(actual, "roll") == arg(control, "roll"),
                   "Archery preserves independent natural rolls, criticals and natural-one misses");
             if (seed != 11)
                 check(arg(actual, "damage") == arg(control, "damage"),
@@ -271,7 +277,7 @@ void attacks()
         check(soldier->submit(command(*soldier, "end")),
               "Decline optional Champion movement before Surge");
     check(soldier->submit(command(*soldier, "action_surge")) &&
-              soldier->submit(command(*soldier, "ranged")),
+          soldier->submit(command(*soldier, "ranged")),
           "Archery remains usable on the additional non-Magic action");
     check(rules->restore(soldier->save())->save() == soldier->save(),
           "Spent Surge and Savage state round trip with Archery");
@@ -284,16 +290,16 @@ void attacks()
     a = battle(*rules, archer, "shortbow", {20, 1});
     check(a->submit(command(*a, "ranged")), "Long-range shot allowed");
     check(arg(result(*a), "bonus") == "6" && arg(result(*a), "roll") == "8" &&
-              arg(result(*a), "disadvantage") == " (disadvantage)",
+          arg(result(*a), "disadvantage") == " (disadvantage)",
           "Archery retains long-range Disadvantage and its +2 bonus");
     auto hard = srd5::parse_content(
-        content + "\ncreature target 23 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                    content + "\ncreature target 23 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
     a = battle(*hard, archer, "shortbow");
     b = battle(*hard, baseline, "shortbow");
     check(a->submit(command(*a, "ranged")) && b->submit(command(*b, "ranged")),
           "Boundary attacks accepted");
     check(result(*a).source.find("{damage}") != std::string::npos &&
-              result(*b).source.find("misses") != std::string::npos,
+          result(*b).source.find("misses") != std::string::npos,
           "Natural 17 plus Archery 6 hits AC23; baseline 4 misses");
 }
 
@@ -309,7 +315,7 @@ void persistence()
     CampaignParty p(module());
     p.restore(decode_campaign(old, *srd5::character_rules(), *rules, "archery", nullptr).party);
     const auto now = encode_campaign(p, nullptr, "archery");
-    auto body = [](const auto &s)
+    auto body = [](const auto & s)
     {
         return s.substr(s.find('\n', s.find('\n') + 1) + 1);
     };
@@ -323,47 +329,49 @@ void persistence()
     // not be the reason a forged historical Archery recipe rejects.
     auto legacy_sheet = leveled().sheet();
     std::erase_if(legacy_sheet.grants,
-                  [](const auto &g)
-                  {
-                      return g.id.starts_with("mastery:");
-                  });
+                  [](const auto & g)
+    {
+        return g.id.starts_with("mastery:");
+    });
     auto profile =
-        rules->character_profile(legacy_sheet, std::array<std::string, 1>{"shortbow"}).data;
+        rules->character_profile(legacy_sheet, std::array<std::string, 1> {"shortbow"}).data;
     auto encounter = Encounter{{8, 8, std::vector<std::uint8_t>(64)},
-                               {{1, "campaign-character", "Archer", 0, {1, 1}, profile},
-                                {99, "vanguard", "Target", 1, {5, 1}}}};
+        {   {1, "campaign-character", "Archer", 0, {1, 1}, profile},
+            {99, "vanguard", "Target", 1, {5, 1}}
+        }};
     auto mislabeled = rules->create(encounter, 13)->save();
     replace(mislabeled, rules->identity().version, "0.6.27");
     rejects(
         [&]
-        {
-            (void)rules->restore(mislabeled);
-        });
+    {
+        (void)rules->restore(mislabeled);
+    });
     auto wrong_mask = profile;
     replace(wrong_mask, "PC31 4 4 ", "PC31 4 0 ");
     encounter.participants[0].character_profile = wrong_mask;
     rejects(
         [&]
-        {
-            (void)rules->create(encounter, 13);
-        });
+    {
+        (void)rules->create(encounter, 13);
+    });
     replace(profile, "PC31", "PC16");
     rejects(
         [&]
-        {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                                  {99, "vanguard", "Target", 1, {5, 1}}}},
-                                13);
-        });
+    {
+        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
+                {99, "vanguard", "Target", 1, {5, 1}}
+            }},
+        13);
+    });
     auto saved_identity = rules->identity();
     saved_identity.version = "0.6.27";
     const auto sheet = leveled().sheet();
     rejects(
         [&]
-        {
-            rules->validate_saved_grants(saved_identity, sheet, sheet.grants);
-        });
+    {
+        rules->validate_saved_grants(saved_identity, sheet, sheet.grants);
+    });
 }
 
 void freeze()
@@ -383,13 +391,13 @@ void freeze()
     state.roster[0].vitals.resources = "SRD1 1 0 0 0 0";
     p.restore(state);
     std::ofstream(root / "tests/fixtures/campaign-v11-archery-before.ogs")
-        << encode_campaign(p, nullptr, "archery");
+            << encode_campaign(p, nullptr, "archery");
     auto members = p.participants();
     members[0].cell = {1, 1};
     members[0].character_profile = rules
-                                       ->character_profile(p.member(id).character.sheet(),
-                                                           std::array<std::string, 1>{"shortbow"})
-                                       .data;
+                                   ->character_profile(p.member(id).character.sheet(),
+                                       std::array<std::string, 1> {"shortbow"})
+                                   .data;
     members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
     auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 13);
     std::ofstream(root / "tests/fixtures/combat-v13-archery-before.save") << c->save();

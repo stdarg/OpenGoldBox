@@ -41,16 +41,16 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
                               std::uint64_t rest_session, bool complete)
 {
     if (rest_session && std::any_of(spell_edits_.begin(), spell_edits_.end(),
-                                    [&](const auto &edit)
-                                    {
-                                        return edit.rest_session >= rest_session;
-                                    }))
-        throw std::runtime_error("Spell choices already used for this rest");
+                                    [&](const auto & edit)
+{
+    return edit.rest_session >= rest_session;
+}))
+    throw std::runtime_error("Spell choices already used for this rest");
     auto candidate = sheet_;
     auto history = spell_edits_;
     rules.apply_spell_choices(candidate, choices,
                               rest_session ? rules::SpellChoiceContext::long_rest
-                                           : rules::SpellChoiceContext::pending,
+                              : rules::SpellChoiceContext::pending,
                               complete);
     history.push_back({unsigned(sheet_.level), rest_session, choices});
     (void)rules.character_profile(candidate, {});
@@ -63,11 +63,11 @@ void Character::replace_rest_training(const rules::RulesModule &rules,
                                       std::uint64_t session)
 {
     if (!session || std::any_of(training_edits_.begin(), training_edits_.end(),
-                                [&](const auto &edit)
-                                {
-                                    return edit.rest_session >= session;
-                                }))
-        throw std::runtime_error("Training choices already used for this rest");
+                                [&](const auto & edit)
+{
+    return edit.rest_session >= session;
+}))
+    throw std::runtime_error("Training choices already used for this rest");
     auto candidate = sheet_;
     auto history = training_edits_;
     auto choices = rules.replace_rest_training(candidate, selections);
@@ -102,13 +102,13 @@ Character Character::preview_training(const rules::CharacterRules &creation_rule
     {
         const auto found = choices.find(group);
         if (found == choices.end() ||
-            std::any_of(selected.begin(), selected.end(),
-                        [&](const auto &value)
-                        {
-                            return std::find(found->second.begin(), found->second.end(), value) ==
-                                   found->second.end();
-                        }))
-            throw std::runtime_error("Previously selected training cannot be replaced");
+                std::any_of(selected.begin(), selected.end(),
+                            [&](const auto & value)
+    {
+        return std::find(found->second.begin(), found->second.end(), value) ==
+                   found->second.end();
+        }))
+        throw std::runtime_error("Previously selected training cannot be replaced");
     }
     auto draft = creation_;
     draft.training = choices;
@@ -129,19 +129,19 @@ Character Character::preview_training(const rules::CharacterRules &creation_rule
     rules::VitalState replay{candidate.sheet_.hit_points, false, {}};
     auto replay_spells = [&]
     {
-        for (const auto &edit : spell_edits_)
-            if (edit.level == unsigned(candidate.sheet_.level))
+for (const auto &edit : spell_edits_)
+        if (edit.level == unsigned(candidate.sheet_.level))
                 candidate.choose_spells(rules, edit.choices, edit.rest_session, false);
-        for (const auto &edit : training_edits_)
-            if (edit.level == unsigned(candidate.sheet_.level))
-                candidate.replace_rest_training(rules, edit.selections, edit.rest_session);
-    };
+for (const auto &edit : training_edits_)
+                if (edit.level == unsigned(candidate.sheet_.level))
+                        candidate.replace_rest_training(rules, edit.selections, edit.rest_session);
+                    };
     replay_spells();
     for (auto choice : advancements_)
     {
         for (const auto &group : later)
             if (group.acquired_level == candidate.sheet_.level + 1 &&
-                !replaced_training_.contains(group.id))
+                    !replaced_training_.contains(group.id))
             {
                 choice.training.erase(group.id);
                 if (const auto found = choices.find(group.id); found != choices.end())

@@ -9,10 +9,12 @@ namespace opengold::srd5::detail
 {
 namespace
 {
-constexpr std::array<std::string_view, 13> keys{
+constexpr std::array<std::string_view, 13> keys
+{
     "acid",     "bludgeoning", "cold",    "fire",    "force",    "lightning", "necrotic",
     "piercing", "poison",      "psychic", "radiant", "slashing", "thunder"};
-constexpr std::array<std::string_view, 13> names{
+constexpr std::array<std::string_view, 13> names
+{
     "Acid",     "Bludgeoning", "Cold",    "Fire",    "Force",    "Lightning", "Necrotic",
     "Piercing", "Poison",      "Psychic", "Radiant", "Slashing", "Thunder"};
 
@@ -90,7 +92,7 @@ DamageResult resolve_damage(std::span<const DamagePart> parts,
                 amount = 0;
             total += amount;
             if (amounts[i] > std::numeric_limits<int>::max() ||
-                total > std::numeric_limits<int>::max())
+                    total > std::numeric_limits<int>::max())
                 throw std::runtime_error("Damage amount overflow");
             result.parts.push_back({static_cast<DamageType>(i), static_cast<int>(amounts[i]),
                                     static_cast<int>(amount)});

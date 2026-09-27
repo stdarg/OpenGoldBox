@@ -83,21 +83,22 @@ RecordResult extract_record(std::span<const std::uint8_t> dax, std::uint8_t want
 }
 
 constexpr std::array<std::array<std::uint8_t, 3>, 16> ega_palette{{{0, 0, 0},
-                                                                   {0, 0, 170},
-                                                                   {0, 170, 0},
-                                                                   {0, 170, 170},
-                                                                   {170, 0, 0},
-                                                                   {170, 0, 170},
-                                                                   {170, 85, 0},
-                                                                   {170, 170, 170},
-                                                                   {85, 85, 85},
-                                                                   {85, 85, 255},
-                                                                   {85, 255, 85},
-                                                                   {85, 255, 255},
-                                                                   {255, 85, 85},
-                                                                   {0, 0, 0},
-                                                                   {255, 255, 85},
-                                                                   {255, 255, 255}}};
+        {0, 0, 170},
+        {0, 170, 0},
+        {0, 170, 170},
+        {170, 0, 0},
+        {170, 0, 170},
+        {170, 85, 0},
+        {170, 170, 170},
+        {85, 85, 85},
+        {85, 85, 255},
+        {85, 255, 85},
+        {85, 255, 255},
+        {255, 85, 85},
+        {0, 0, 0},
+        {255, 255, 85},
+        {255, 255, 255}
+    }};
 
 } // namespace
 
@@ -156,8 +157,8 @@ ImageDecodeResult decode_ega_sprite(std::span<const std::uint8_t> dax, std::uint
         const std::size_t packed_size = static_cast<std::size_t>(height) * width_bytes * 4;
         const std::size_t pixel_start = cursor + 21;
         if (height == 0 || width_bytes == 0 ||
-            width_bytes > std::numeric_limits<std::uint16_t>::max() / 8 ||
-            packed_size > record.size() - pixel_start)
+                width_bytes > std::numeric_limits<std::uint16_t>::max() / 8 ||
+                packed_size > record.size() - pixel_start)
             return {};
         if (frame != frame_index)
         {
@@ -172,7 +173,7 @@ ImageDecodeResult decode_ega_sprite(std::span<const std::uint8_t> dax, std::uint
         image.y_offset = static_cast<std::int16_t>(read_u16(record, cursor + 10) * 8);
         image.rgba.resize(static_cast<std::size_t>(image.width) * image.height * 4);
         for (std::size_t pixel = 0; pixel < static_cast<std::size_t>(image.width) * image.height;
-             ++pixel)
+                ++pixel)
         {
             const auto packed = record[pixel_start + pixel / 2];
             const auto index =
@@ -188,7 +189,7 @@ ImageDecodeResult decode_ega_sprite(std::span<const std::uint8_t> dax, std::uint
 }
 
 ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std::uint8_t record_id,
-                                         std::uint8_t frame_index)
+        std::uint8_t frame_index)
 {
     const auto extracted = extract_record(dax, record_id);
     if (extracted.status != FormatResult::ok)
@@ -200,7 +201,7 @@ ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std:
     const auto count = record[8];
     const std::size_t frame_size = static_cast<std::size_t>(height) * width_bytes * 4;
     if (!height || height > 200 || !width_bytes || width_bytes > 40 || !count ||
-        record.size() != 17 + frame_size * count)
+            record.size() != 17 + frame_size * count)
         return {};
     if (frame_index >= count)
         return {FormatResult::not_found, {}};
@@ -235,7 +236,7 @@ ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record)
     const auto height = read_u16(record, 0), width_bytes = read_u16(record, 2);
     const unsigned count = record[8];
     if (!height || height > 200 || !width_bytes || width_bytes > 40 || !count ||
-        record.size() != 17 + static_cast<std::size_t>(height) * width_bytes * 4 * count)
+            record.size() != 17 + static_cast<std::size_t>(height) * width_bytes * 4 * count)
         return {};
     Image image;
     image.width = width_bytes * 8;

@@ -12,7 +12,9 @@ void capture()
     check(r->identity().version == "0.6.57", "Capture only the actual pre-choice writer");
     const auto directory = std::filesystem::path(output);
     std::filesystem::create_directories(directory);
-    for (const auto weapon : {"longbow", "maul"})
+    for (const auto weapon :
+            {"longbow", "maul"
+            })
     {
         CampaignParty p(module());
         auto h = hero(weapon, "fighter", "soldier");
@@ -25,7 +27,7 @@ void capture()
         auto actors = p.participants();
         actors.front().cell = {1, 1};
         actors.push_back(
-            {99, "vanguard", "Target", 1, {std::string_view(weapon) == "longbow" ? 3 : 2, 1}});
+        {99, "vanguard", "Target", 1, {std::string_view(weapon) == "longbow" ? 3 : 2, 1}});
         bool written = false;
         for (unsigned seed = 1; seed <= 128 && !written; ++seed)
         {
@@ -34,9 +36,9 @@ void capture()
             const auto before = c->save();
             act(*c, std::string_view(weapon) == "longbow" ? "ranged" : "melee", 99);
             if (!c->snapshot().savage_attack_choice ||
-                !c->snapshot().savage_attack_choice->critical)
+                    !c->snapshot().savage_attack_choice->critical)
                 continue;
-            const auto write = [&](const char *suffix, const std::string &bytes)
+            const auto write = [&](const char *suffix, const std::string & bytes)
             {
                 std::ofstream out(directory /
                                   (std::string("combat-v23-") + weapon + suffix + ".save"));
@@ -68,7 +70,9 @@ std::string fixture(const char *weapon, const char *suffix)
 void historical()
 {
     auto r = module();
-    for (const auto weapon : {"longbow", "maul"})
+    for (const auto weapon :
+            {"longbow", "maul"
+            })
     {
         const auto current = [&](const char *suffix)
         {
@@ -79,7 +83,9 @@ void historical()
             bytes.replace(at, 6, r->identity().version);
             return bytes;
         };
-        for (const auto suffix : {"-before", "-damage", "-move", "-settled"})
+        for (const auto suffix :
+                {"-before", "-damage", "-move", "-settled"
+                })
         {
             const auto bytes = fixture(weapon, suffix);
             check(r->restore(bytes)->save() == current(suffix),
@@ -90,7 +96,7 @@ void historical()
         const auto fresh = c->snapshot().savage_attack_choice;
         const auto old = r->restore(fixture(weapon, "-damage"))->snapshot().savage_attack_choice;
         check(fresh && old && fresh->first_damage == old->first_damage &&
-                  fresh->dice_count == old->dice_count && fresh->modifier == old->modifier,
+              fresh->dice_count == old->dice_count && fresh->modifier == old->modifier,
               "New attack preserves historical damage before offering new mastery choices");
         c = r->restore(fixture(weapon, "-damage"));
         c = r->restore(c->save());

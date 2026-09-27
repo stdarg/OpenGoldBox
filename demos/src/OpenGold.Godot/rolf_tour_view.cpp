@@ -41,10 +41,10 @@ struct DeleteNode
 
 // Numeric constructors are safe before Godot initializes the extension interface.
 const Color background(18 / 255.f, 26 / 255.f, 32 / 255.f),
-    panel(28 / 255.f, 39 / 255.f, 46 / 255.f), line(65 / 255.f, 80 / 255.f, 88 / 255.f),
-    gold(215 / 255.f, 180 / 255.f, 121 / 255.f), party_color(121 / 255.f, 214 / 255.f, 212 / 255.f);
+      panel(28 / 255.f, 39 / 255.f, 46 / 255.f), line(65 / 255.f, 80 / 255.f, 88 / 255.f),
+      gold(215 / 255.f, 180 / 255.f, 121 / 255.f), party_color(121 / 255.f, 214 / 255.f, 212 / 255.f);
 const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0, 1),
-                                       Vector2(-1, 0)};
+    Vector2(-1, 0)};
 const std::array<const char *, 4> direction_name{"North", "East", "South", "West"};
 
 } // namespace
@@ -80,7 +80,7 @@ void RolfTourView::_ready()
     get_node<Button>("Camp")->connect("pressed", callable_mp(this, &RolfTourView::camp));
     get_node<Button>("Inventory")->connect("pressed", callable_mp(this, &RolfTourView::inventory));
     get_node<Button>("InventoryPanel/Close")
-        ->connect("pressed", callable_mp(this, &RolfTourView::inventory));
+    ->connect("pressed", callable_mp(this, &RolfTourView::inventory));
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         auto *member = get_node<Button>(String("PartyList/Rows/Member") + String::num_uint64(slot));
@@ -95,18 +95,21 @@ void RolfTourView::_ready()
         arrow.release();
     }
     get_node<ItemList>("InventoryPanel/Items")
-        ->connect("item_selected", callable_mp(this, &RolfTourView::inventory_selected));
+    ->connect("item_selected", callable_mp(this, &RolfTourView::inventory_selected));
     get_node<Button>("InventoryPanel/Equip")
-        ->connect("pressed", callable_mp(this, &RolfTourView::equip_item).bind(true));
+    ->connect("pressed", callable_mp(this, &RolfTourView::equip_item).bind(true));
     get_node<Button>("InventoryPanel/Unequip")
-        ->connect("pressed", callable_mp(this, &RolfTourView::equip_item).bind(false));
+    ->connect("pressed", callable_mp(this, &RolfTourView::equip_item).bind(false));
     get_node<Button>("MemberSheet/Close")
-        ->connect("pressed", callable_mp(this, &RolfTourView::close_sheet));
+    ->connect("pressed", callable_mp(this, &RolfTourView::close_sheet));
     get_node<Window>("MemberSheet")
-        ->connect("close_requested", callable_mp(this, &RolfTourView::close_sheet));
+    ->connect("close_requested", callable_mp(this, &RolfTourView::close_sheet));
     get_node<Button>("LeaveShop")->connect("pressed", callable_mp(this, &RolfTourView::leave_shop));
     get_window()->set_min_size(Vector2i(960, 720));
-    for (bool saving : {true, false})
+    for (bool saving :
+            {
+                true, false
+            })
     {
         std::unique_ptr<Button, DeleteNode> button(memnew(Button));
         button->set_name(saving ? "SaveGame" : "LoadGame");
@@ -210,9 +213,9 @@ void RolfTourView::layout()
     auto *inventory_panel = get_node<Control>("InventoryPanel");
     get_node<Control>("InventoryPanel/Items")->set_position(Vector2(20, 70));
     get_node<Control>("InventoryPanel/Items")
-        ->set_size(inventory_panel->get_size() - Vector2(40, 210));
+    ->set_size(inventory_panel->get_size() - Vector2(40, 210));
     get_node<Control>("InventoryPanel/Close")
-        ->set_position(Vector2(20, inventory_panel->get_size().y - 54));
+    ->set_position(Vector2(20, inventory_panel->get_size().y - 54));
     get_node<Control>("InventoryPanel/Close")->set_size(Vector2(180, 36));
     const auto iw = inventory_panel->get_size().x, ih = inventory_panel->get_size().y;
     get_node<Control>("InventoryPanel/Header")->set_position(Vector2(20, 18));
@@ -236,9 +239,9 @@ void RolfTourView::restart()
         if (!campaign_ || !embedded_party_)
         {
             const auto pack = ProjectSettings::get_singleton()->globalize_path(
-                "res://../../data/rules/srd-5.2.1/combat.rules");
+                                  "res://../../data/rules/srd-5.2.1/combat.rules");
             campaign_ = std::make_shared<opengold::CampaignParty>(
-                opengold::srd5::load(std::filesystem::u8path(pack.utf8().get_data())));
+                            opengold::srd5::load(std::filesystem::u8path(pack.utf8().get_data())));
             opengold::rules::CharacterDraft d;
             d.race = "human";
             d.gender = "female";
@@ -275,7 +278,7 @@ void RolfTourView::restart()
                 pixels.resize(source.rgba.size());
                 std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());
                 const auto image = godot::Image::create_from_data(
-                    source.width, source.height, false, godot::Image::FORMAT_RGBA8, pixels);
+                                       source.width, source.height, false, godot::Image::FORMAT_RGBA8, pixels);
                 sprites_[i] = ImageTexture::create_from_image(image);
             }
         }
@@ -366,23 +369,23 @@ void RolfTourView::refresh_inventory()
         return;
     const auto &m = campaign_->member(campaign_->selected());
     get_node<Label>("InventoryPanel/Header")
-        ->set_text(
-            String::utf8((m.character.sheet().name + " / " + m.character.sheet().character_class +
-                          " / " + std::to_string(m.wealth[3]) + " gp")
-                             .c_str()));
+    ->set_text(
+        String::utf8((m.character.sheet().name + " / " + m.character.sheet().character_class +
+                      " / " + std::to_string(m.wealth[3]) + " gp")
+                     .c_str()));
     for (const auto &item : m.character.inventory().items())
         items->add_item(String::utf8(
-            ((std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
-                  ? "Equipped / "
-                  : "") +
-             item.name + " x" + std::to_string(item.quantity))
-                .c_str()));
+                            ((std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
+                              ? "Equipped / "
+                              : "") +
+                             item.name + " x" + std::to_string(item.quantity))
+                            .c_str()));
     if (items->get_item_count())
         items->select(0);
     get_node<Button>("InventoryPanel/Equip")->set_disabled(!items->get_item_count());
     get_node<Button>("InventoryPanel/Unequip")->set_disabled(!items->get_item_count());
     get_node<Label>("InventoryPanel/Status")
-        ->set_text("Inventory is empty. Visit a shop to buy equipment.");
+    ->set_text("Inventory is empty. Visit a shop to buy equipment.");
     if (items->get_item_count())
         inventory_selected(0);
 }
@@ -398,9 +401,9 @@ void RolfTourView::inventory_selected(std::int64_t index)
     try
     {
         get_node<Label>("InventoryPanel/Status")
-            ->set_text(String::utf8(
-                opengold::srd5::equipment_note(m.character.sheet(), items[index].definition_id)
-                    .c_str()));
+        ->set_text(String::utf8(
+                       opengold::srd5::equipment_note(m.character.sheet(), items[index].definition_id)
+                       .c_str()));
     }
     catch (const std::exception &e)
     {
@@ -429,11 +432,11 @@ void RolfTourView::equip_item(bool equip)
         get_node<ItemList>("InventoryPanel/Items")->select(selection[0]);
         refresh();
         get_node<Label>("InventoryPanel/Status")
-            ->set_text(equip ? String::utf8(("Equipped. " + opengold::srd5::equipment_note(
-                                                                m.character.sheet(),
-                                                                items[selection[0]].definition_id))
-                                                .c_str())
-                             : String("Item unequipped."));
+        ->set_text(equip ? String::utf8(("Equipped. " + opengold::srd5::equipment_note(
+                                             m.character.sheet(),
+                                             items[selection[0]].definition_id))
+                                        .c_str())
+                   : String("Item unequipped."));
     }
     catch (const std::exception &e)
     {
@@ -510,9 +513,9 @@ void RolfTourView::_input(const Ref<InputEvent> &event)
     if (get_node<LineEdit>("Answer")->has_focus() && key->get_keycode() != Key::KEY_ENTER)
         return;
     if (session_ &&
-        (session_->snapshot().choices.size() > 1 ||
-         session_->snapshot().phase == TourPhase::shopping) &&
-        key->get_keycode() != Key::KEY_ENTER)
+            (session_->snapshot().choices.size() > 1 ||
+             session_->snapshot().phase == TourPhase::shopping) &&
+            key->get_keycode() != Key::KEY_ENTER)
         return;
     switch (key->get_keycode())
     {
@@ -594,7 +597,7 @@ void RolfTourView::refresh()
             pixels.resize(source.rgba.size());
             std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());
             sprites_[n] = ImageTexture::create_from_image(godot::Image::create_from_data(
-                source.width, source.height, false, godot::Image::FORMAT_RGBA8, pixels));
+                    source.width, source.height, false, godot::Image::FORMAT_RGBA8, pixels));
         }
         rendered_sprite_id_ = session_->snapshot().sprite_id;
     }
@@ -606,14 +609,14 @@ void RolfTourView::refresh()
             const auto pose = session_->snapshot().pose;
             const auto source =
                 session_->picture()
-                    ? *session_->picture()
-                    : compose_exploration_view(session_->map(), session_->wall_art(), pose.x,
-                                               pose.y, pose.facing);
+                ? *session_->picture()
+                : compose_exploration_view(session_->map(), session_->wall_art(), pose.x,
+                                           pose.y, pose.facing);
             PackedByteArray pixels;
             pixels.resize(source.rgba.size());
             std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());
             const auto image = godot::Image::create_from_data(source.width, source.height, false,
-                                                              godot::Image::FORMAT_RGBA8, pixels);
+                godot::Image::FORMAT_RGBA8, pixels);
             if (wall_view_.is_null())
                 wall_view_ = ImageTexture::create_from_image(image);
             else
@@ -640,37 +643,39 @@ void RolfTourView::refresh()
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
     get_node<Label>("Location")
-        ->set_text("New Phlan  /  " + String(direction_name[s.pose.facing]) + " view");
+    ->set_text("New Phlan  /  " + String(direction_name[s.pose.facing]) + " view");
     get_node<Label>("Coordinates")
-        ->set_text("Party  (" + String::num_uint64(s.pose.x) + ", " + String::num_uint64(s.pose.y) +
-                   ")   " + String(direction_name[s.pose.facing]));
+    ->set_text("Party  (" + String::num_uint64(s.pose.x) + ", " + String::num_uint64(s.pose.y) +
+               ")   " + String(direction_name[s.pose.facing]));
     get_node<Label>("Speaker")->set_text(faulted           ? "Unable to continue"
                                          : shopping        ? "Shop / select an item"
                                          : s.tour_finished ? "New Phlan"
-                                                           : "Rolf  /  Council guide");
+                                         : "Rolf  /  Council guide");
     get_node<RichTextLabel>("Dialogue")
-        ->set_text(
-            faulted
-                ? (loaded ? String::utf8(s.diagnostic.c_str()) : error_) +
-                      "\nSet OPENGOLD_GAME_DIR to your Pool of Radiance data folder, then restart."
-            : s.dialogue.empty() ? "Following Rolf..."
-                                 : String::utf8(s.dialogue.c_str()));
+    ->set_text(
+        faulted
+        ? (loaded ? String::utf8(s.diagnostic.c_str()) : error_) +
+        "\nSet OPENGOLD_GAME_DIR to your Pool of Radiance data folder, then restart."
+        : s.dialogue.empty() ? "Following Rolf..."
+        : String::utf8(s.dialogue.c_str()));
     get_node<Button>("Continue")->set_disabled(!waiting && !shopping && !answer);
     get_node<Button>("Continue")
-        ->set_text(shopping   ? "Buy [Enter]"
-                   : multiple ? "Choose [Enter]"
-                   : answer   ? "Submit [Enter]"
-                              : "Continue [Enter]");
+    ->set_text(shopping   ? "Buy [Enter]"
+               : multiple ? "Choose [Enter]"
+               : answer   ? "Submit [Enter]"
+               : "Continue [Enter]");
     if (waiting && s.choices.size() == 1 && s.choices[0] == "Cancel")
         get_node<Button>("Continue")->set_text("Leave temple [Enter]");
     get_node<Button>("Continue")->set_visible(!completed);
     get_node<Label>("Progress")
-        ->set_text(faulted           ? "Stopped"
-                   : s.tour_finished ? ""
-                   : waiting         ? "Pause " + String::num_uint64(s.prompts)
-                                     : "Following the guide");
+    ->set_text(faulted           ? "Stopped"
+               : s.tour_finished ? ""
+               : waiting         ? "Pause " + String::num_uint64(s.prompts)
+               : "Following the guide");
     get_node<Label>("Movement")->set_text(completed ? "Explore  /  arrow keys" : "Movement paused");
-    for (const char *name : {"Left", "Forward", "Right", "Look", "Camp"})
+    for (const char *name :
+            {"Left", "Forward", "Right", "Look", "Camp"
+            })
         get_node<Button>(name)->set_disabled(!completed);
     get_node<Button>("LeaveShop")->set_visible(shopping);
     get_node<LineEdit>("Answer")->set_visible(answer);
@@ -683,7 +688,7 @@ void RolfTourView::refresh()
         if (shopping)
             for (const auto &item : session_->shop_stock())
                 choices->add_item(String::utf8(
-                    (item.label() + " — " + std::to_string(item.stored.value) + " gp").c_str()));
+                                      (item.label() + " — " + std::to_string(item.stored.value) + " gp").c_str()));
         else
             for (const auto &c : s.choices)
                 choices->add_item(String::utf8(c.c_str()));
@@ -699,15 +704,15 @@ void RolfTourView::refresh()
         displayed_ticket_ = s.continue_ticket;
     }
     get_node<RichTextLabel>("Dialogue")
-        ->set_size(
-            Vector2(dialogue_rect_.size.x - 36,
-                    (shopping || multiple) ? 36 : dialogue_rect_.size.y - (answer ? 160 : 112)));
+    ->set_size(
+        Vector2(dialogue_rect_.size.x - 36,
+                (shopping || multiple) ? 36 : dialogue_rect_.size.y - (answer ? 160 : 112)));
     if (multiple)
     {
         const double text_height = std::min((dialogue_rect_.size.y - 122) * .55,
                                             std::max<double>(28.0, dialogue_rect_.size.y - 192));
         get_node<RichTextLabel>("Dialogue")
-            ->set_size(Vector2(dialogue_rect_.size.x - 36, text_height));
+        ->set_size(Vector2(dialogue_rect_.size.x - 36, text_height));
         choices->set_position(dialogue_rect_.position + Vector2(18, 56 + text_height));
         choices->set_size(
             Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 120 - text_height));
@@ -719,13 +724,13 @@ void RolfTourView::refresh()
     }
     if (shopping)
         get_node<RichTextLabel>("Dialogue")
-            ->set_text(s.diagnostic.empty() ? "Prices are per listed item or bundle."
-                                            : String::utf8(s.diagnostic.c_str()));
+        ->set_text(s.diagnostic.empty() ? "Prices are per listed item or bundle."
+                   : String::utf8(s.diagnostic.c_str()));
     if (answer && !s.diagnostic.empty())
         get_node<RichTextLabel>("Dialogue")->add_text("\n" + String::utf8(s.diagnostic.c_str()));
     if (waiting && !s.diagnostic.empty())
         get_node<RichTextLabel>("Dialogue")
-            ->set_text(String::utf8((s.diagnostic + "\n" + s.dialogue).c_str()));
+        ->set_text(String::utf8((s.diagnostic + "\n" + s.dialogue).c_str()));
     if (loaded)
     {
         const auto &p = session_->party();
@@ -738,10 +743,10 @@ void RolfTourView::refresh()
     {
         const auto &m = campaign_->member(campaign_->selected());
         get_node<Label>("Party")->set_text(String::utf8(
-            (m.character.sheet().name + " / HP " + std::to_string(m.vitals.hit_points) + "/" +
-             std::to_string(m.character.sheet().hit_points) + "\n" + std::to_string(m.wealth[3]) +
-             " gp / " + std::to_string(m.character.inventory().items().size()) + " items")
-                .c_str()));
+                                               (m.character.sheet().name + " / HP " + std::to_string(m.vitals.hit_points) + "/" +
+                                                std::to_string(m.character.sheet().hit_points) + "\n" + std::to_string(m.wealth[3]) +
+                                                " gp / " + std::to_string(m.character.inventory().items().size()) + " items")
+                                               .c_str()));
     }
     for (unsigned slot = 0; slot < 8; ++slot)
     {
@@ -761,7 +766,7 @@ void RolfTourView::refresh()
         const auto width = Vector2(button->get_theme_font("font")->call(
                                        "get_string_size", String::utf8(cs.name.c_str()), 0, -1,
                                        button->get_theme_font_size("font_size")))
-                               .x;
+                           .x;
         arrow->set_position(Vector2(std::min(width + 16, button->get_size().x - 36), 2));
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());
     }
@@ -802,7 +807,7 @@ void RolfTourView::draw_scene()
         const Vector2 sprite_size(source.width * pixel_scale.x, source.height * pixel_scale.y);
         draw_texture_rect(sprites_[state.sprite_frame],
                           Rect2(view.position + Vector2((view.size.x - sprite_size.x) * .5,
-                                                        view.size.y - sprite_size.y),
+                                  view.size.y - sprite_size.y),
                                 sprite_size),
                           false);
     }
@@ -882,7 +887,7 @@ void RolfTourView::check_run()
         };
         if (!session_ || session_->snapshot().phase == TourPhase::faulted)
             throw std::runtime_error(session_ ? session_->snapshot().diagnostic
-                                              : error_.utf8().get_data());
+                                     : error_.utf8().get_data());
         if (++check_frames_ > 2000)
             throw std::runtime_error("Tour integration check timed out; recovery stage " +
                                      std::to_string(recovery_stage_) + ", position " +
@@ -909,7 +914,7 @@ void RolfTourView::check_run()
                 capture_frame("rolf-tour-" + String::num_uint64(check_prompts_));
                 capture_pending_ = false;
                 if (get_node<Button>("Continue")->is_disabled() ||
-                    !get_node<Button>("Forward")->is_disabled())
+                        !get_node<Button>("Forward")->is_disabled())
                     throw std::runtime_error("Incorrect input lock at tour prompt");
                 UtilityFunctions::print("Tour pause ", check_prompts_, " at ", s.pose.x, ",",
                                         s.pose.y, " facing ", s.pose.facing);
@@ -965,13 +970,13 @@ void RolfTourView::check_town()
     const auto inventory_size = [&]
     {
         return campaign_
-                   ? campaign_->member(campaign_->selected()).character.inventory().items().size()
-                   : session_->party().inventory.size();
+        ? campaign_->member(campaign_->selected()).character.inventory().items().size()
+        : session_->party().inventory.size();
     };
     const auto gold = [&]
     {
         return campaign_ ? campaign_->member(campaign_->selected()).wealth[3]
-                         : session_->party().wealth[3];
+        : session_->party().wealth[3];
     };
     if (check_prompts_ != 8)
         throw std::runtime_error("Town started before the full tour");
@@ -1007,7 +1012,7 @@ void RolfTourView::check_town()
             const auto gold_before = gold();
             const auto price = session_->shop_stock()[0].stored.value;
             if (get_node<ItemList>("Choices")->get_item_count() != 57 ||
-                get_node<Button>("Continue")->is_disabled())
+                    get_node<Button>("Continue")->is_disabled())
                 throw std::runtime_error("Arms shop list is not available in Godot");
             get_node<Button>("Continue")->emit_signal("pressed");
             if (gold() != gold_before - price || inventory_size() != 1)
@@ -1046,8 +1051,8 @@ void RolfTourView::check_town()
         get_node<ItemList>("InventoryPanel/Items")->select(0);
         get_node<Button>("InventoryPanel/Equip")->emit_signal("pressed");
         if (!get_node<Label>("InventoryPanel/Status")
-                 ->get_text()
-                 .contains("Untrained shield: no AC bonus"))
+                ->get_text()
+                .contains("Untrained shield: no AC bonus"))
             throw std::runtime_error("Equip must display the untrained penalty");
         campaign_->restore(retained);
         refresh_inventory();
@@ -1060,7 +1065,9 @@ void RolfTourView::check_town()
     if (s.phase == TourPhase::awaiting_continue)
     {
         std::size_t selection = s.choices.size() - 1;
-        for (const auto *safe : {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"})
+        for (const auto *safe :
+                {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"
+                })
             for (std::size_t n = 0; n < s.choices.size(); ++n)
                 if (s.choices[n] == safe)
                     selection = n;
@@ -1094,7 +1101,7 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
             check_refused_edges_.insert(*check_pending_edge_);
         check_pending_edge_.reset();
     }
-    constexpr int dx[]{0, 1, 0, -1}, dy[]{-1, 0, 1, 0};
+    constexpr int dx[] {0, 1, 0, -1}, dy[] {-1, 0, 1, 0};
     std::array<int, 256> previous;
     previous.fill(-1);
     std::queue<int> cells;
@@ -1114,7 +1121,7 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
             const auto &b = session_->map().at(x, y);
             const int r = (d + 2) % 4;
             if (a.doors[d] > 1 || b.doors[r] > 1 || (a.walls[d] && !a.doors[d]) ||
-                (b.walls[r] && !b.doors[r]))
+                    (b.walls[r] && !b.doors[r]))
                 continue;
             const int next = y * 16 + x;
             if (previous[next] >= 0 || check_refused_edges_.contains({cell, next}))
@@ -1139,7 +1146,7 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
     const unsigned facing = next % 16 > int(s.pose.x)   ? 1
                             : next % 16 < int(s.pose.x) ? 3
                             : next / 16 > int(s.pose.y) ? 2
-                                                        : 0;
+                            : 0;
     if (s.pose.facing == facing)
         check_pending_edge_ = {{origin, next}};
     get_node<Button>(s.pose.facing == facing ? "Forward" : "Right")->emit_signal("pressed");
@@ -1240,7 +1247,9 @@ void RolfTourView::check_recovery()
             return;
         }
         std::size_t selection = s.choices.size() - 1;
-        for (const auto *safe : {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT", "Cancel"})
+        for (const auto *safe :
+                {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT", "Cancel"
+                })
             for (std::size_t n = 0; n < s.choices.size(); ++n)
                 if (s.choices[n] == safe)
                     selection = n;
@@ -1248,7 +1257,7 @@ void RolfTourView::check_recovery()
         // Temple cells can be transit cells: enter, then cancel the native service.
         // Answering NO makes the original script move the party back to its prior cell.
         if (((recovery_stage_ == 3 || recovery_stage_ == 5) && event == 6) ||
-            (recovery_stage_ == 5 && event == 9))
+                (recovery_stage_ == 5 && event == 9))
         {
             for (std::size_t n = 0; n < s.choices.size(); ++n)
                 if (s.choices[n] == "YES")
@@ -1276,7 +1285,7 @@ void RolfTourView::check_recovery()
     if (save_cancel_pending_)
     {
         if (member.wealth != recovery_before_->roster.at(0).wealth ||
-            member.vitals != recovery_before_->roster.at(0).vitals)
+                member.vitals != recovery_before_->roster.at(0).vitals)
             throw std::runtime_error("Cancelled temple service changed party");
         save_check("cancelled-service");
         save_cancel_pending_ = false;
@@ -1291,7 +1300,7 @@ void RolfTourView::check_recovery()
     if (recovery_stage_ == 2)
     {
         if (campaign_->state().time_minutes != recovery_before_->time_minutes + 5 ||
-            member.vitals != recovery_before_->roster.at(0).vitals)
+                member.vitals != recovery_before_->roster.at(0).vitals)
             throw std::runtime_error(
                 "Original city-watch interruption must consume five minutes without recovery");
         if (save_check)
@@ -1301,7 +1310,7 @@ void RolfTourView::check_recovery()
     if (recovery_stage_ == 4)
     {
         if (member.wealth[3] != recovery_before_->roster.at(0).wealth[3] - 100 ||
-            member.vitals.hit_points <= 1 || session_->script_variable(0x6de2) != 0)
+                member.vitals.hit_points <= 1 || session_->script_variable(0x6de2) != 0)
             throw std::runtime_error("Original temple must charge 100 gp, heal and resume ECL");
         if (save_check)
             save_check("temple-payment");
@@ -1310,11 +1319,11 @@ void RolfTourView::check_recovery()
     }
     // Include the travel time to the inn, as the game integration check does.
     if (recovery_stage_ == 5 && member.last_rest_minutes &&
-        member.last_rest_minutes != recovery_before_->roster.at(0).last_rest_minutes)
+            member.last_rest_minutes != recovery_before_->roster.at(0).last_rest_minutes)
     {
         if (*member.last_rest_minutes < recovery_before_->time_minutes + 480 ||
-            member.vitals.hit_points != member.character.sheet().hit_points ||
-            member.wealth[4] != 0)
+                member.vitals.hit_points != member.character.sheet().hit_points ||
+                member.wealth[4] != 0)
             throw std::runtime_error("Original inn payment and full recovery must persist");
         if (save_check)
             save_check("inn-rest");
@@ -1345,7 +1354,7 @@ void RolfTourView::check_recovery()
     if (recovery_stage_ == 7)
     {
         if (campaign_->state().time_minutes != recovery_before_->time_minutes ||
-            !get_node<Window>("RestDialog")->get_node<Button>("Start")->is_disabled())
+                !get_node<Window>("RestDialog")->get_node<Button>("Start")->is_disabled())
             throw std::runtime_error("Immediate repeated long rest must be denied");
         get_node<Window>("RestDialog")->get_node<Button>("Finish")->emit_signal("pressed");
         if (save_check)
@@ -1379,7 +1388,7 @@ namespace
 godot::String rest_rules_path()
 {
     return ProjectSettings::get_singleton()->globalize_path(
-        "res://../../data/rules/srd-5.2.1/combat.rules");
+               "res://../../data/rules/srd-5.2.1/combat.rules");
 }
 
 godot::String rest_text(std::string_view value)

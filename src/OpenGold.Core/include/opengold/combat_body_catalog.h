@@ -42,9 +42,9 @@ struct CombatBodyCatalog
     std::vector<CombatLookOption> options;
     std::set<std::string> deleted;
     [[nodiscard]] static CombatBodyCatalog load(const std::filesystem::path &assignments,
-                                                const std::filesystem::path &options_file);
+            const std::filesystem::path &options_file);
     [[nodiscard]] CombatBodySelection choose(std::span<const CombatEquipment> equipped,
-                                             unsigned fallback) const;
+            unsigned fallback) const;
 };
 
 struct ResolvedCombatAppearance
@@ -57,6 +57,6 @@ struct ResolvedCombatAppearance
 // Saved anatomy remains unchanged. The selection supplies wielding arms and
 // equipment layers only; encounter creatures do not use this API.
 [[nodiscard]] ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
-                                                                 const CombatBodyCatalog &catalog);
+        const CombatBodyCatalog &catalog);
 } // namespace opengold::por
 #endif

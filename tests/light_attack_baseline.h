@@ -25,7 +25,9 @@ std::string normalized(std::string bytes, const RulesModule &rules)
 CampaignParty party()
 {
     CampaignParty p(rogue_attack_checks::rules_module());
-    for (const auto *klass : {"fighter", "paladin", "ranger"})
+    for (const auto *klass :
+            {"fighter", "paladin", "ranger"
+            })
     {
         auto h = style_route_checks::starter(klass);
         h.inventory().add("greatsword", "Greatsword");
@@ -33,12 +35,15 @@ CampaignParty party()
         h.inventory().add("hand_crossbow", "Hand Crossbow");
         h.inventory().add("shield", "Shield");
         const auto id = std::string_view(klass) == "fighter"
-                            ? p.add_pc(std::move(h))
-                            : p.recruit(std::string("baseline:") + klass, std::move(h));
+                        ? p.add_pc(std::move(h))
+                        : p.recruit(std::string("baseline:") + klass, std::move(h));
         p.equip(id, 1);
     }
     p.award_experience(2700, "light-baseline");
-    for (const auto id : {1u, 2u, 3u})
+    for (const auto id :
+            {
+                1u, 2u, 3u
+            })
         for (unsigned level = 2; level <= 4; ++level)
         {
             auto choice = p.default_advancement(id);
@@ -128,7 +133,7 @@ void verify()
     CampaignParty p(rogue_attack_checks::rules_module());
     p.restore(
         decode_campaign(bytes, *srd5::character_rules(), *rules, "light-before", nullptr).party);
-    const auto body = [](const auto &text)
+    const auto body = [](const auto & text)
     {
         return text.substr(text.find('\n', text.find('\n') + 1) + 1);
     };
@@ -136,14 +141,14 @@ void verify()
         body(encode_campaign(p, nullptr, "light-before")) == normalized(body(bytes), *rules),
         "Prior three-class campaign preserves inventory identities, grip, wounds, training and styles");
     check(p.state().roster.size() == 3 &&
-              p.member(2).character.sheet().character_class == "Paladin" &&
-              p.member(3).character.sheet().character_class == "Ranger",
+          p.member(2).character.sheet().character_class == "Paladin" &&
+          p.member(3).character.sheet().character_class == "Ranger",
           "Baseline retains recruited source classes");
     for (const auto &member : p.state().roster)
     {
         check(member.character.inventory().find(2)->get().quantity == 3 &&
-                  member.equipped.size() == 1 && member.equipped.front() == 1 &&
-                  member.vitals.hit_points == member.character.sheet().hit_points - 2,
+              member.equipped.size() == 1 && member.equipped.front() == 1 &&
+              member.vitals.hit_points == member.character.sheet().hit_points - 2,
               "Historical carried dagger stack, single held weapon and wounds are unchanged");
     }
     auto c = rules->restore(read("combat-v21-light-before-attack.save"));
@@ -154,7 +159,7 @@ void verify()
     act(*c, "savage_use");
     act(*restored, "savage_use");
     check(c->save() == restored->save() &&
-              c->save() == normalized(read("combat-v21-light-before-second.save"), *rules),
+          c->save() == normalized(read("combat-v21-light-before-second.save"), *rules),
           "Prior second damage roll and pending weapon identity remain exact");
     act(*c, "savage_second");
     if (c->snapshot().free_movement)
@@ -169,11 +174,11 @@ void verify()
     const auto actual_actor = rogue_attack_checks::unit(*loading);
     const auto expected_actor = rogue_attack_checks::unit(*expected);
     check(!actual_actor.action && actual_actor.bonus_action &&
-              actual_actor.persistent == expected_actor.persistent &&
-              rogue_attack_checks::unit(*loading, 99).hit_points ==
-                  rogue_attack_checks::unit(*expected, 99).hit_points &&
-              style_route_checks::random_state(*loading) ==
-                  style_route_checks::random_state(*expected),
+          actual_actor.persistent == expected_actor.persistent &&
+          rogue_attack_checks::unit(*loading, 99).hit_points ==
+          rogue_attack_checks::unit(*expected, 99).hit_points &&
+          style_route_checks::random_state(*loading) ==
+          style_route_checks::random_state(*expected),
           "Separate Loading actions retain actual rolls, HP, resources and unused Bonus Action");
 }
 
@@ -196,7 +201,10 @@ void verify_hands_ui(const std::filesystem::path &path)
     auto baseline = party();
     CampaignParty p(module());
     p.restore(baseline.checkpoint());
-    for (auto id : {1u, 2u})
+    for (auto id :
+            {
+                1u, 2u
+            })
     {
         p.equip(id, 2, EquipmentOperation::equip_main);
         p.equip(id, 2, EquipmentOperation::equip_other);
@@ -206,7 +214,7 @@ void verify_hands_ui(const std::filesystem::path &path)
     CampaignParty actual(module());
     actual.restore(
         decode_campaign(read_campaign_file(path), *srd5::character_rules(), *rules, assets, nullptr)
-            .party);
+        .party);
     auto expected = p.checkpoint();
     expected.selected = actual.state().selected;
     p.restore(std::move(expected));
@@ -219,7 +227,10 @@ void freeze_hands()
     auto rules = rogue_attack_checks::rules_module();
     check(rules->identity().version == "0.6.54", "Hand baseline requires actual0.6.54 writer");
     auto p = party();
-    for (auto id : {1u, 2u})
+    for (auto id :
+            {
+                1u, 2u
+            })
     {
         p.equip(id, 2, EquipmentOperation::equip_main);
         p.equip(id, 3, EquipmentOperation::equip_other);
@@ -265,13 +276,15 @@ void verify_hands_baseline()
     CampaignParty p(rogue_attack_checks::rules_module());
     p.restore(
         decode_campaign(bytes, *srd5::character_rules(), *rules, "hands-before", nullptr).party);
-    const auto body = [](const std::string &s)
+    const auto body = [](const std::string & s)
     {
         return s.substr(s.find('\n', s.find('\n') + 1) + 1);
     };
     check(body(encode_campaign(p, nullptr, "hands-before")) == normalize(body(bytes)),
           "Actual dual-hand campaign preserves both weapons, carried counts, styles and wounds");
-    for (const auto *phase : {"attack", "first", "second", "settled"})
+    for (const auto *phase :
+            {"attack", "first", "second", "settled"
+            })
     {
         const auto saved =
             read((std::string("combat-v21-hands-before-") + phase + ".save").c_str());

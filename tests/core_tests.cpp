@@ -54,10 +54,10 @@ void sprite_boundaries()
     record[7] = 1;
     record.insert(record.end(), {0x12, 0x34, 0x56, 0x70});
     check(opengold::decode_ega_sprite(archive(record), 9).status ==
-              opengold::FormatResult::not_found,
+          opengold::FormatResult::not_found,
           "Absent record is distinct from invalid sprite data");
     check(opengold::decode_ega_sprite(archive(record), 2, 1).status ==
-              opengold::FormatResult::not_found,
+          opengold::FormatResult::not_found,
           "Out-of-range sprite frame is absent");
     const auto first = std::vector<std::uint8_t>(record.begin() + 1, record.end());
     record[0] = 2;
@@ -66,7 +66,10 @@ void sprite_boundaries()
     const auto second = opengold::decode_ega_sprite(archive(record), 2, 1);
     check(second && second.image.width == 8 && second.image.rgba[31] == 255,
           "Later sprite frames use their own header and pixels");
-    for (const auto size : {std::size_t(1), std::size_t(21), record.size() - 1})
+    for (const auto size :
+            {
+                std::size_t(1), std::size_t(21), record.size() - 1
+            })
     {
         auto truncated = record;
         truncated.resize(size);
@@ -105,7 +108,8 @@ void decode_tests()
     check(core.checksum(bytes) == 0xcb4b7229u, "Known checksum");
 
     // One 2x1-byte (16x1 pixel) synthetic EGA sprite frame in a DAX record.
-    const std::array<std::uint8_t, 42> dax{
+    const std::array<std::uint8_t, 42> dax
+    {
         9, 0, 2, 0, 0, 0, 0, 30, 0, 31, 0, 29, 1, 0,    0,    0,    0,    1,    0,    2,    0,
         0, 0, 0, 0, 1, 0, 0, 0,  0, 0,  0, 0,  0, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0};
     const auto decoded = opengold::decode_ega_sprite(dax, 2);
@@ -136,7 +140,7 @@ void decode_tests()
     {
         std::ifstream input(std::filesystem::path(game_dir) / "SPRIT1.DAX", std::ios::binary);
         const std::vector<std::uint8_t> installed{std::istreambuf_iterator<char>(input),
-                                                  std::istreambuf_iterator<char>()};
+                std::istreambuf_iterator<char>()};
         const auto installed_image = opengold::decode_ega_sprite(installed, 2);
         check(bool(installed_image), "Installed sprite decodes");
         check(installed_image.image.width == 48 && installed_image.image.height == 80,

@@ -30,8 +30,8 @@ std::string read(const std::filesystem::path &path)
 auto module()
 {
     return srd5::parse_content(
-        read(root / "data/rules/srd-5.2.1/combat.rules") +
-        "\ncreature recovery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+               read(root / "data/rules/srd-5.2.1/combat.rules") +
+               "\ncreature recovery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 void write(const std::string &name, const std::string &bytes)
@@ -188,9 +188,9 @@ void previous_writer()
             decode_campaign(read(root / "tests/fixtures" /
                                  ("campaign-arcane-level" + std::to_string(level) + ".ogs")),
                             *srd5::character_rules(), *rules, "arcane-baseline", nullptr)
-                .party);
+            .party);
         check(party.member(1).character.sheet().level == level && party.state().short_rest &&
-                  party.state().short_rest->members == std::vector<MemberId>{1},
+              party.state().short_rest->members == std::vector<MemberId> {1},
               "Prior attained Wizard level and pending Short Rest eligibility survive");
         const auto resources = party.recovery_info(1).resources;
         for (const auto &pool : resources)
@@ -198,7 +198,7 @@ void previous_writer()
                 check(pool.remaining == (level == 1   ? 0u
                                          : level == 2 ? 1u
                                          : level == 3 ? 2u
-                                                      : 1u),
+                                         : 1u),
                       "Prior spent first-level slots remain spent");
         for (const auto &pool : resources)
             if (pool.id == "spell_slot:2")
@@ -211,7 +211,7 @@ void previous_writer()
     next_player(*combat);
     act(*combat, "magic_missile");
     check(combat->save() ==
-              identity(read(root / "tests/fixtures/combat-arcane-continued.save"), *rules),
+          identity(read(root / "tests/fixtures/combat-arcane-continued.save"), *rules),
           "Prior combat continuation preserves slots, turn budgets, time and RNG");
 }
 
@@ -221,7 +221,7 @@ PartyState baseline(unsigned level)
     return decode_campaign(read(root / "tests/fixtures" /
                                 ("campaign-arcane-level" + std::to_string(level) + ".ogs")),
                            *srd5::character_rules(), *rules, "arcane-baseline", nullptr)
-        .party;
+           .party;
 }
 
 unsigned remaining(const RecoveryInfo &info, std::string_view id)
@@ -271,76 +271,76 @@ void recovery_transactions()
             const auto info = party.recovery_info(1);
             check(
                 remaining(info, "arcane_recovery") == 1 &&
-                    info.choices.size() == (level < 3 ? 1u : 3u),
+                info.choices.size() == (level < 3 ? 1u : 3u),
                 "Every attained Wizard level gains one use and the exact legal recovery combinations");
             rejected(party,
                      [&]
-                     {
-                         (void)party.recover_rest_choice({ticket.session, ticket.revision + 1}, 1,
-                                                         choice.id);
-                     });
+            {
+                (void)party.recover_rest_choice({ticket.session, ticket.revision + 1}, 1,
+                choice.id);
+            });
             rejected(party,
                      [&]
-                     {
-                         (void)party.recover_rest_choice(ticket, 99, choice.id);
-                     });
+            {
+                (void)party.recover_rest_choice(ticket, 99, choice.id);
+            });
             rejected(party,
                      [&]
-                     {
-                         (void)party.recover_rest_choice(ticket, 1, "");
-                     });
+            {
+                (void)party.recover_rest_choice(ticket, 1, "");
+            });
             rejected(party,
                      [&]
-                     {
-                         (void)party.recover_rest_choice(ticket, 1, "arcane_recovery:9:0");
-                     });
+            {
+                (void)party.recover_rest_choice(ticket, 1, "arcane_recovery:9:0");
+            });
             if (level < 3 && (choice.first > 1 || choice.second))
             {
                 rejected(party,
                          [&]
-                         {
-                             (void)party.recover_rest_choice(ticket, 1, choice.id);
-                         });
+                {
+                    (void)party.recover_rest_choice(ticket, 1, choice.id);
+                });
                 continue;
             }
             (void)party.recover_rest_choice(ticket, 1, choice.id);
             const auto after = party.recovery_info(1);
             check(
                 remaining(after, "arcane_recovery") == 0 && after.choices.empty() &&
-                    remaining(after, "spell_slot:1") ==
-                        remaining(info, "spell_slot:1") + choice.first,
+                remaining(after, "spell_slot:1") ==
+                remaining(info, "spell_slot:1") + choice.first,
                 "A legal nonempty choice restores exactly its first-level slots and spends the entire use");
             if (level >= 3)
                 check(
                     remaining(after, "spell_slot:2") ==
-                        remaining(info, "spell_slot:2") + choice.second,
+                    remaining(info, "spell_slot:2") + choice.second,
                     "Second-level allocation is exact and mutually exclusive with first-level recovery");
             check(party.state().random_state == before.random_state &&
-                      party.state().time_minutes == before.time_minutes &&
-                      party.state().subminute_milliseconds == before.subminute_milliseconds &&
-                      party.member(1).vitals.hit_points ==
-                          before.roster.front().vitals.hit_points &&
-                      party.member(1).equipped == before.roster.front().equipped &&
-                      after.hit_dice == info.hit_dice,
+                  party.state().time_minutes == before.time_minutes &&
+                  party.state().subminute_milliseconds == before.subminute_milliseconds &&
+                  party.member(1).vitals.hit_points ==
+                  before.roster.front().vitals.hit_points &&
+                  party.member(1).equipped == before.roster.front().equipped &&
+                  after.hit_dice == info.hit_dice,
                   "Recovery changes neither time/RNG nor wounds, gear or Hit Dice");
             rejected(party,
                      [&]
-                     {
-                         (void)party.recover_rest_choice(ticket, 1, choice.id);
-                     });
+            {
+                (void)party.recover_rest_choice(ticket, 1, choice.id);
+            });
             rejected(party,
                      [&]
-                     {
-                         (void)party.recover_rest_choice(party.state().short_rest->ticket, 1,
-                                                         choice.id);
-                     });
+            {
+                (void)party.recover_rest_choice(party.state().short_rest->ticket, 1,
+                choice.id);
+            });
             const auto saved = encode_campaign(party, nullptr, "arcane-test");
             CampaignParty copy(module());
             copy.restore(
                 decode_campaign(saved, *srd5::character_rules(), *rules, "arcane-test", nullptr)
-                    .party);
+                .party);
             check(encode_campaign(copy, nullptr, "arcane-test") == saved &&
-                      remaining(copy.recovery_info(1), "arcane_recovery") == 0,
+                  remaining(copy.recovery_info(1), "arcane_recovery") == 0,
                   "Pending rest save/reload preserves committed slots and spent Arcane Recovery");
             party.finish_short_rest(party.state().short_rest->ticket);
             (void)party.rest(RestKind::short_rest);
@@ -349,21 +349,21 @@ void recovery_transactions()
             party.finish_short_rest(party.state().short_rest->ticket);
             (void)party.rest(RestKind::long_rest);
             check(remaining(party.recovery_info(1), "arcane_recovery") == 1 &&
-                      party.recovery_info(1).choices.empty(),
+                  party.recovery_info(1).choices.empty(),
                   "Long Rest restores the use and full slots leave no recovery choice");
             rejected(party,
                      [&]
-                     {
-                         (void)party.recover_rest_choice(ticket, 1, choice.id);
-                     });
+            {
+                (void)party.recover_rest_choice(ticket, 1, choice.id);
+            });
             party.keep_rest_spells(1);
             (void)party.rest(RestKind::short_rest);
             rejected(party,
                      [&]
-                     {
-                         (void)party.recover_rest_choice(party.state().short_rest->ticket, 1,
-                                                         choice.id);
-                     });
+            {
+                (void)party.recover_rest_choice(party.state().short_rest->ticket, 1,
+                choice.id);
+            });
             check(remaining(party.recovery_info(1), "arcane_recovery") == 1,
                   "Full pools reject under a fresh valid rest ticket without spending the use");
         }
@@ -411,7 +411,7 @@ void eligibility_and_effects()
     const auto &elapsed = *participants.front().state;
     std::istringstream decoded(elapsed.resources.substr(elapsed.resources.find("FX")));
     check(srd5::detail::read_effects(decoded).active.empty() && rng == 123 &&
-              remaining(rules->recovery_info(sheet, elapsed), "arcane_recovery") == 0,
+          remaining(rules->recovery_info(sheet, elapsed), "arcane_recovery") == 0,
           "Campaign time expires effects without refreshing the spent feature or consuming RNG");
     auto old = rules->identity();
     old.version = "0.6.48";
@@ -452,7 +452,10 @@ void eligibility_and_effects()
 void combat_and_advancement()
 {
     auto rules = module();
-    for (bool physical : {false, true})
+    for (bool physical :
+            {
+                false, true
+            })
     {
         CampaignParty party(module());
         party.restore(baseline(3));
@@ -460,7 +463,7 @@ void combat_and_advancement()
         party.finish_short_rest(party.state().short_rest->ticket);
         party.advance(1, party.default_advancement(1));
         check(party.member(1).character.sheet().level == 4 &&
-                  remaining(party.recovery_info(1), "arcane_recovery") == 0,
+              remaining(party.recovery_info(1), "arcane_recovery") == 0,
               "Ordinary advancement retains the spent use");
         if (physical)
         {
@@ -481,7 +484,10 @@ void combat_and_advancement()
         auto copy = rules->restore(before);
         check(copy->save() == before && copy->snapshot().physical_inventory == physical,
               "New checkpoint preserves either ordinary or physical inventory mode exactly");
-        for (auto *session : {combat.get(), copy.get()})
+        for (auto *session :
+                {
+                    combat.get(), copy.get()
+                })
         {
             while (session->snapshot().actor != 1)
                 act(*session, "end");
@@ -509,7 +515,7 @@ void combat_and_advancement()
                                        "arcane_recovery:1:0");
     check(
         remaining(declined.recovery_info(1), "arcane_recovery") == 0 &&
-            declined.state().rest_activity->interrupted,
+        declined.state().rest_activity->interrupted,
         "Recovery can use earned Short Rest benefits without completing the interrupted Long Rest");
 }
 } // namespace

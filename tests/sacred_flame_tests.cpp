@@ -155,7 +155,8 @@ std::string arg(const Message &m, std::string_view name)
 Character hero(unsigned level = 1, bool learned = true)
 {
     auto d = draft();
-    d.cantrips = learned ? std::vector<std::string>{"sacred_flame"} : std::vector<std::string>{};
+    d.cantrips = learned ? std::vector<std::string> {"sacred_flame"} :
+                 std::vector<std::string> {};
     Character h(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned n = 1; n < level; ++n)
@@ -171,14 +172,15 @@ auto custom(std::string affinity = {}, int dex = 0)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-            std::vector<std::string> gear = {}, unsigned side = 1,
-            std::optional<VitalState> vital = {})
+std::vector<std::string> gear = {}, unsigned side = 1,
+std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
     auto c = rules.create({{10, 8, std::vector<std::uint8_t>(80)},
-                           {{1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                            {2, "target", "Target", side, target, {}, vital}}},
-                          seed);
+        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+            {2, "target", "Target", side, target, {}, vital}
+        }},
+    seed);
     // A side-zero target requires a living opposing actor to keep combat active.
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 2; ++turns)
         check(c->submit(command(*c, "end")), "Reach caster");
@@ -196,8 +198,8 @@ void access()
     auto h = hero();
     auto access = rules->spell_access(h.sheet());
     check(access.cantrip_choices == 3 && access.cantrips.size() == 1 &&
-              access.cantrips[0].source_id == "class:cleric:spellcasting" &&
-              access.cantrips[0].acquired_level == 1,
+          access.cantrips[0].source_id == "class:cleric:spellcasting" &&
+          access.cantrips[0].acquired_level == 1,
           "Cleric cantrip has its actual source and entitlement");
     for (unsigned level = 1; level <= 4; ++level)
     {
@@ -205,60 +207,63 @@ void access()
         check(a.cantrip_choices == (level == 4 ? 4u : 3u) && a.cantrips == access.cantrips,
               "Advancement preserves the selected starting cantrip and correct entitlement");
     }
-    for (const auto &bad : std::vector<std::vector<std::string>>{{"sacred_flame", "sacred_flame"},
-                                                                 {"fire_bolt"},
-                                                                 {"poison_spray"},
-                                                                 {"cure_wounds"},
-                                                                 {"unknown"}})
+    for (const auto &bad : std::vector<std::vector<std::string>> {{"sacred_flame", "sacred_flame"},
+    {"fire_bolt"},
+    {"poison_spray"},
+    {"cure_wounds"},
+    {"unknown"}
+})
     {
         d.cantrips = bad;
         rejects(
             [&]
-            {
-                (void)creation->evaluate(d, true);
-            });
+        {
+            (void)creation->evaluate(d, true);
+        });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
         if (klass.id != "cleric")
         {
             d = draft();
             d.character_class = klass.id;
-            d.cantrips = std::vector<std::string>{"sacred_flame"};
+            d.cantrips = std::vector<std::string> {"sacred_flame"};
             rejects(
                 [&]
-                {
-                    (void)creation->evaluate(d, true);
-                });
+            {
+                (void)creation->evaluate(d, true);
+            });
         }
     auto profile = rules->character_profile(h.sheet(), {}).data;
     check(profile.starts_with("PC28 1 0 130 "), "New recipe records sourced Cleric access");
     profile.replace(0, 4, "PC11");
     rejects(
         [&]
-        {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                                  {2, "vanguard", "Target", 1, {3, 1}}}},
-                                13);
-        });
+    {
+        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
+                {2, "vanguard", "Target", 1, {3, 1}}
+            }},
+        13);
+    });
     profile.replace(profile.find("130"), 3, "2");
     rejects(
         [&]
-        {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                                  {2, "vanguard", "Target", 1, {3, 1}}}},
-                                13);
-        });
+    {
+        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
+                {2, "vanguard", "Target", 1, {3, 1}}
+            }},
+        13);
+    });
     auto invalid = h.sheet();
     for (auto &g : invalid.grants)
         if (g.id == "spell:sacred_flame")
             g.source_id = "class:wizard:spellcasting";
     rejects(
         [&]
-        {
-            (void)rules->character_profile(invalid, {});
-        });
+    {
+        (void)rules->character_profile(invalid, {});
+    });
     por::CharacterArt art;
     Image head;
     head.width = 88;
@@ -295,9 +300,12 @@ void rolls()
     // seed 40 -> save 1, d8 5; seed 0 -> save 20, d8 5;
     // seed 2 -> save 12, d8 5. Ordinary saves have no automatic 1/20 result.
     for (unsigned level = 1; level <= 4; ++level)
-        for (unsigned seed : {0u, 2u, 40u})
+        for (unsigned seed :
+                {
+                    0u, 2u, 40u
+                })
             for (const auto &defense :
-                 std::vector<std::string>{"", "resistance", "vulnerability", "immunity"})
+                    std::vector<std::string> {"", "resistance", "vulnerability", "immunity"})
             {
                 auto rules =
                     custom(defense.empty() ? "" : "affinity target test " + defense + " radiant\n");
@@ -310,33 +318,33 @@ void rolls()
                       "Saved actual cantrip command resumes identically");
                 const bool success = seed == 0 || (seed == 2 && level < 4);
                 const int raw = success ? 0 : 5, damage = defense == "immunity"        ? 0
-                                                          : defense == "resistance"    ? raw / 2
-                                                          : defense == "vulnerability" ? raw * 2
-                                                                                       : raw;
+                    : defense == "resistance"    ? raw / 2
+                    : defense == "vulnerability" ? raw * 2
+                    : raw;
                 const auto save = save_message(*c);
                 check(
                     arg(save, "roll") == std::to_string(seed == 0   ? 20
                                                         : seed == 2 ? 12
-                                                                    : 1) &&
-                        arg(save, "dc") == std::to_string(level == 4 ? 13 : 12) &&
-                        arg(save, "bonus") == "0",
+                                                        : 1) &&
+                    arg(save, "dc") == std::to_string(level == 4 ? 13 : 12) &&
+                    arg(save, "bonus") == "0",
                     "Wisdom/proficiency DC and target Dexterity bonus are independent from AC and Intelligence");
                 check(
                     unit(*c, 2).hit_points == 1000 - damage &&
-                        arg(save, "result") == (success ? "success" : "failure"),
+                    arg(save, "result") == (success ? "success" : "failure"),
                     "Save success deals zero damage; failure deals unmodified d8 Radiant damage with typed defenses");
                 check(rng(*c) == random + 0x9e3779b97f4a7c15ULL * (success ? 1u : 2u),
                       "No attack roll, critical dice or damage roll on a successful save");
                 const auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
-                          after.movement_feet == before.movement_feet &&
-                          after.persistent == before.persistent,
+                      after.movement_feet == before.movement_feet &&
+                      after.persistent == before.persistent,
                       "Only Action is spent; pools, movement and other budgets remain");
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Stale cast is atomic");
             }
     for (const auto [seed, bonus, success] :
-         std::vector<std::tuple<unsigned, int, bool>>{{40, 20, true}, {0, -10, false}})
+    std::vector<std::tuple<unsigned, int, bool>> {{40, 20, true}, {0, -10, false}})
     {
         auto rules = custom({}, bonus);
         auto c = battle(*rules, hero(), seed);
@@ -352,13 +360,17 @@ void targets()
 {
     auto rules = custom();
     const auto h = hero();
-    for (int feet : {5, 60, 65})
+    for (int feet :
+            {
+                5, 60, 65
+            })
     {
         auto profile = rules->character_profile(h.sheet(), {});
         auto c = rules->create({{16, 8, std::vector<std::uint8_t>(128)},
-                                {{1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                                 {2, "target", "Enemy", 1, {1 + feet / 5, 1}}}},
-                               40);
+            {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+                {2, "target", "Enemy", 1, {1 + feet / 5, 1}}
+            }},
+        40);
         check(has(*c, "sacred_flame", 2) == (feet <= 60), "Range includes 60 feet and excludes 65");
         if (feet <= 60)
         {
@@ -372,14 +384,16 @@ void targets()
                   "Out-of-range rejection is atomic");
         }
     }
-    for (const auto &gear : std::vector<std::vector<std::string>>{
-             {}, {"shield"}, {"mace"}, {"mace", "shield"}, {"plate"}})
+    for (const auto &gear : std::vector<std::vector<std::string>>
+{
+    {}, {"shield"}, {"mace"}, {"mace", "shield"}, {"plate"}
+})
     {
         auto c = battle(*rules, h, 13, {3, 1}, gear);
         const bool allowed = gear.size() < 2 && (gear.empty() || gear[0] != "plate");
         check(has(*c, "sacred_flame", 2) == allowed,
               "Somatic hands and untrained heavy armor restrict casting");
-        check(unit(*c).known_cantrips == std::vector<std::string>{"sacred_flame"},
+        check(unit(*c).known_cantrips == std::vector<std::string> {"sacred_flame"},
               "Known spell remains listed while unavailable");
         if (!allowed)
         {
@@ -394,38 +408,51 @@ void targets()
     Battlefield board{10, 8, std::vector<std::uint8_t>(80)};
     board.terrain[12] = 1;
     auto blocked = rules->create({board,
-                                  {{1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                                   {2, "target", "Enemy", 1, {3, 1}}}},
-                                 13);
+        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+            {2, "target", "Enemy", 1, {3, 1}}
+        }},
+    13);
     check(!has(*blocked, "sacred_flame", 2), "Total cover remains ineligible");
     const auto blocked_before = blocked->save();
     check(!blocked->submit({blocked->snapshot().revision, 1, 2, "sacred_flame"}) &&
-              blocked->save() == blocked_before,
+          blocked->save() == blocked_before,
           "Total-cover rejection preserves all state");
     auto c = battle(*rules, h, 40);
     const auto before = c->save();
-    for (EntityId id : {0u, 999u})
+    for (EntityId id :
+            {
+                0u, 999u
+            })
         check(!c->submit({c->snapshot().revision, 1, id, "sacred_flame"}) && c->save() == before,
               "Unknown and noncreature targets reject atomically");
     const auto hp = unit(*c).hit_points;
     check(c->submit(command(*c, "sacred_flame", 1)) && unit(*c).hit_points == hp - 5,
           "Self-target resolves a Dexterity save and actual damage");
-    for (bool down : {false, true})
-        for (bool dead : {false, true})
+    for (bool down :
+            {
+                false, true
+            })
+        for (bool dead :
+                {
+                    false, true
+                })
         {
             auto c = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
-                                    {{1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                                     {2,
-                                      "target",
-                                      "Ally",
-                                      0,
-                                      {2, 1},
-                                      {},
-                                      dead   ? std::optional<VitalState>{{0, true, {}}}
-                                      : down ? std::optional<VitalState>{{0, false, {}}}
-                                             : std::nullopt},
-                                     {3, "target", "Enemy", 1, {8, 1}}}},
-                                   13);
+                {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+                    {
+                        2,
+                        "target",
+                        "Ally",
+                        0,
+                        {2, 1},
+                        {},
+                        dead   ? std::optional<VitalState>{{0, true, {}}}
+: down ? std::optional<VitalState>{{0, false, {}}}
+: std::nullopt
+                    },
+                    {3, "target", "Enemy", 1, {8, 1}}
+                }},
+            13);
             check(has(*c, "sacred_flame", 2) == !dead,
                   "Living allies, including unconscious targets, are eligible; corpses are not");
             const auto before = c->save();
@@ -433,7 +460,7 @@ void targets()
             if (dead)
             {
                 check(!c->submit({c->snapshot().revision, 1, 2, "sacred_flame"}) &&
-                          c->save() == before,
+                      c->save() == before,
                       "Dead-target rejection is atomic");
                 continue;
             }
@@ -454,35 +481,37 @@ void modifiers()
     auto rules = custom();
     auto c = battle(*rules, hero(4), 2);
     check(c->submit(command(*c, "end")) && c->submit(command(*c, "dodge")) &&
-              c->submit(command(*c, "end")),
+          c->submit(command(*c, "end")),
           "Target Dodges before caster turn");
     const auto start = rng(*c);
     check(c->submit(command(*c, "sacred_flame", 2)), "Cast against Dodge");
     check(arg(save_message(*c), "roll") == "17" && unit(*c, 2).hit_points == 1000 &&
-              rng(*c) == start + 2 * 0x9e3779b97f4a7c15ULL,
+          rng(*c) == start + 2 * 0x9e3779b97f4a7c15ULL,
           "Dodge grants Advantage on Dexterity saves");
     auto d = draft();
     d.character_class = "wizard";
     Character wizard(*srd5::character_rules(), d, {});
-    auto target = rules->character_profile(wizard.sheet(), std::vector<std::string>{"plate"});
+    auto target = rules->character_profile(wizard.sheet(), std::vector<std::string> {"plate"});
     auto caster = rules->character_profile(hero().sheet(), {});
     auto armored = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
-                                  {{1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
-                                   {2, "campaign-character", "Armored", 1, {3, 1}, target.data}}},
-                                 13);
+        {   {1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
+            {2, "campaign-character", "Armored", 1, {3, 1}, target.data}
+        }},
+    13);
     const auto random = rng(*armored);
     check(armored->submit(command(*armored, "sacred_flame", 2)), "Cast against untrained armor");
     check(arg(save_message(*armored), "roll") == "8" &&
-              arg(save_message(*armored), "bonus") == "2" &&
-              rng(*armored) == random + 3 * 0x9e3779b97f4a7c15ULL,
+          arg(save_message(*armored), "bonus") == "2" &&
+          rng(*armored) == random + 3 * 0x9e3779b97f4a7c15ULL,
           "Untrained armor imposes Dexterity save Disadvantage");
     bool checked = false;
     for (unsigned seed = 0; seed < 32 && !checked; ++seed)
     {
         auto blinded = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
-                                      {{1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
-                                       {2, "blindness-adept", "Enemy", 1, {3, 1}}}},
-                                     seed);
+            {   {1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
+                {2, "blindness-adept", "Enemy", 1, {3, 1}}
+            }},
+        seed);
         if (blinded->snapshot().actor == 1)
             check(blinded->submit(command(*blinded, "end")), "Reach enemy caster");
         check(blinded->submit(command(*blinded, "blindness", 1)), "Actual Blindness source casts");
@@ -493,7 +522,7 @@ void modifiers()
               "Blindness blocks every sight-required target including self");
         const auto before = blinded->save();
         check(!blinded->submit({blinded->snapshot().revision, 1, 2, "sacred_flame"}) &&
-                  blinded->save() == before,
+              blinded->save() == before,
               "Sight rejection is atomic");
         checked = true;
     }
@@ -504,7 +533,10 @@ void campaign()
 {
     auto rules = module();
     auto creation = srd5::character_rules();
-    for (bool npc : {false, true})
+    for (bool npc :
+            {
+                false, true
+            })
         for (unsigned level = 1; level <= 4; ++level)
         {
             CampaignParty p(module());
@@ -535,7 +567,7 @@ void campaign()
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "sacred", nullptr).party);
             check(encode_campaign(restored, nullptr, "sacred") == saved &&
-                      restored.profile(id).data == p.profile(id).data,
+                  restored.profile(id).data == p.profile(id).data,
                   "Campaign replay preserves explicit choices and all resources exactly");
         }
 }
@@ -555,12 +587,12 @@ void legacy()
     const auto old = read(base / "campaign-v11-sacred.ogs");
     CampaignParty p(module());
     p.restore(decode_campaign(old, *creation, *rules, "sacred", nullptr).party);
-    auto body = [](const auto &s)
+    auto body = [](const auto & s)
     {
         return s.substr(s.find('\n', s.find('\n') + 1) + 1);
     };
     check(body(encode_campaign(p, nullptr, "sacred")) ==
-              test::with_background_training_grants(body(upgrade(old))),
+          test::with_background_training_grants(body(upgrade(old))),
           "Prior campaign changes only module identity and owed background grants");
     check(rules->spell_access(p.member(1).character.sheet()).cantrips.empty(),
           "No Sacred Flame appears in historical Cleric saves");
@@ -577,19 +609,22 @@ void ui_fixtures()
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "sacred-fixtures";
     std::filesystem::create_directories(path);
     auto rules = module();
-    for (const auto &name : {"known", "blocked", "unknown"})
+    for (const auto &name :
+            {"known", "blocked", "unknown"
+            })
     {
         const auto h = hero(3, std::string_view(name) != "unknown");
         const auto profile =
             rules->character_profile(h.sheet(), std::string_view(name) == "blocked"
-                                                    ? std::vector<std::string>{"mace", "shield"}
-                                                    : std::vector<std::string>{"quarterstaff"});
+                                     ? std::vector<std::string> {"mace", "shield"}
+                                     : std::vector<std::string> {"quarterstaff"});
         auto c =
-            rules->create({{12, 9, std::vector<std::uint8_t>(108)},
-                           {{1, "campaign-character", "Sacred Cleric", 0, {1, 1}, profile.data},
-                            {2, "vanguard", "Ally", 0, {3, 1}},
-                            {99, "vanguard", "Enemy", 1, {5, 1}}}},
-                          2);
+        rules->create({{12, 9, std::vector<std::uint8_t>(108)},
+            {   {1, "campaign-character", "Sacred Cleric", 0, {1, 1}, profile.data},
+                {2, "vanguard", "Ally", 0, {3, 1}},
+                {99, "vanguard", "Enemy", 1, {5, 1}}
+            }},
+        2);
         write(path / (std::string(name) + ".save"), c->save());
     }
 }

@@ -12,7 +12,7 @@ inline godot::String game_rules_file()
     if (os->has_feature("editor"))
     {
         return godot::ProjectSettings::get_singleton()->globalize_path(godot::String("res://") +
-                                                                       relative);
+                relative);
     }
     const auto executable_dir = os->get_executable_path().get_base_dir();
     if (os->has_feature("macos"))
@@ -26,7 +26,7 @@ inline godot::String game_combat_body_file()
     auto *os = godot::OS::get_singleton();
     if (os->has_feature("editor"))
         return godot::ProjectSettings::get_singleton()->globalize_path(godot::String("res://") +
-                                                                       relative);
+                relative);
     const auto executable_dir = os->get_executable_path().get_base_dir();
     if (os->has_feature("macos"))
         return executable_dir.get_base_dir().path_join("Resources").path_join(relative);
@@ -39,7 +39,7 @@ inline godot::String game_combat_weapon_file()
     auto *os = godot::OS::get_singleton();
     if (os->has_feature("editor"))
         return godot::ProjectSettings::get_singleton()->globalize_path(godot::String("res://") +
-                                                                       relative);
+                relative);
     const auto executable_dir = os->get_executable_path().get_base_dir();
     if (os->has_feature("macos"))
         return executable_dir.get_base_dir().path_join("Resources").path_join(relative);

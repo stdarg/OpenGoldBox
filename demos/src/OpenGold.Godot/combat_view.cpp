@@ -45,17 +45,19 @@ String render_weapon_message(const Message &message)
     return text;
 }
 
-const std::array<std::pair<const char *, const char *>, 10> action_buttons{
-    {{"Melee", "melee"},
-     {"Ranged", "ranged"},
-     {"FireBolt", "fire_bolt"},
-     {"MagicMissile", "magic_missile"},
-     {"CureWounds", "cure_wounds"},
-     {"HealingWord", "healing_word"},
-     {"ScorchingRay", "scorching_ray"},
-     {"Dash", "dash"},
-     {"Dodge", "dodge"},
-     {"Disengage", "disengage"}}};
+const std::array<std::pair<const char *, const char *>, 10> action_buttons
+{
+    {   {"Melee", "melee"},
+        {"Ranged", "ranged"},
+        {"FireBolt", "fire_bolt"},
+        {"MagicMissile", "magic_missile"},
+        {"CureWounds", "cure_wounds"},
+        {"HealingWord", "healing_word"},
+        {"ScorchingRay", "scorching_ray"},
+        {"Dash", "dash"},
+        {"Dodge", "dodge"},
+        {"Disengage", "disengage"}
+    }};
 
 std::string spell_verb(std::string verb, unsigned slot)
 {
@@ -81,7 +83,7 @@ void CombatView::_notification(int what)
 std::filesystem::path CombatView::local_path(const char *path) const
 {
     return std::filesystem::u8path(
-        ProjectSettings::get_singleton()->globalize_path(path).utf8().get_data());
+               ProjectSettings::get_singleton()->globalize_path(path).utf8().get_data());
 }
 
 void CombatView::_ready()
@@ -114,24 +116,26 @@ void CombatView::_ready()
         "pressed", callable_mp(this, &CombatView::select_mode).bind(String("move")));
     get_node<Button>("SpellSlot")->connect("pressed", callable_mp(this, &CombatView::spell_slot));
     get_node<OptionButton>("CunningAction")
-        ->connect("item_selected", callable_mp(this, &CombatView::bonus_selected));
+    ->connect("item_selected", callable_mp(this, &CombatView::bonus_selected));
     get_node<Button>("UseCunningAction")
-        ->connect("pressed", callable_mp(this, &CombatView::use_bonus_action));
+    ->connect("pressed", callable_mp(this, &CombatView::use_bonus_action));
     get_node<Button>("SecondWind")
-        ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String("second_wind")));
+    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String("second_wind")));
     for (const auto &[node, verb] :
-         std::array<std::pair<const char *, const char *>, 4>{{{"Use", "savage_use"},
-                                                               {"Skip", "savage_skip"},
-                                                               {"First", "savage_first"},
-                                                               {"Second", "savage_second"}}})
-        get_node<Button>(String("SavageAttacker/") + node)
-            ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String(verb)));
+    std::array<std::pair<const char *, const char *>, 4> {{{"Use", "savage_use"},
+        {"Skip", "savage_skip"},
+        {"First", "savage_first"},
+        {"Second", "savage_second"}
+    }
+})
+    get_node<Button>(String("SavageAttacker/") + node)
+    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String(verb)));
     get_node<Button>("SneakAttack/Use")
-        ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("sneak_use"));
+    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("sneak_use"));
     get_node<Button>("SneakAttack/Skip")
-        ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("sneak_skip"));
+    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("sneak_skip"));
     get_node<Window>("SneakAttack")
-        ->connect("close_requested", callable_mp(this, &CombatView::immediate).bind("sneak_skip"));
+    ->connect("close_requested", callable_mp(this, &CombatView::immediate).bind("sneak_skip"));
     get_node<Button>("End")->connect("pressed",
                                      callable_mp(this, &CombatView::immediate).bind(String("end")));
     get_node<Button>("React")->connect(
@@ -141,20 +145,20 @@ void CombatView::_ready()
     get_node<Button>("Training")->connect("pressed", callable_mp(this, &CombatView::training));
     get_node<Button>("Slums")->connect("pressed", callable_mp(this, &CombatView::slums));
     get_node<Button>("Stabilize")
-        ->connect("pressed", callable_mp(this, &CombatView::select_mode).bind("stabilize"));
+    ->connect("pressed", callable_mp(this, &CombatView::select_mode).bind("stabilize"));
     get_node<Button>("TacticalMind/Use")
-        ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("mind_use"));
+    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("mind_use"));
     get_node<Button>("TacticalMind/Skip")
-        ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("mind_skip"));
+    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("mind_skip"));
     get_node<Button>("WakeAlly")
-        ->connect("pressed", callable_mp(this, &CombatView::select_mode).bind("wake_ally"));
+    ->connect("pressed", callable_mp(this, &CombatView::select_mode).bind("wake_ally"));
     get_node<Button>("StandUp")->connect(
         "pressed", callable_mp(this, &CombatView::immediate).bind("stand_up"));
     get_node<OptionButton>("ThrownWeapon")
-        ->connect("item_selected", callable_mp(this, &CombatView::thrown_selected));
+    ->connect("item_selected", callable_mp(this, &CombatView::thrown_selected));
     get_node<Button>("Throw")->connect("pressed", callable_mp(this, &CombatView::begin_throw));
     get_node<OptionButton>("GroundItem")
-        ->connect("item_selected", callable_mp(this, &CombatView::ground_selected));
+    ->connect("item_selected", callable_mp(this, &CombatView::ground_selected));
     get_node<Button>("PickUp")->connect("pressed", callable_mp(this, &CombatView::pick_up));
     get_node<Button>("Replay")->connect("pressed", callable_mp(this, &CombatView::replay));
     get_node<Button>("Continue")->connect("pressed", callable_mp(this, &CombatView::next));
@@ -172,7 +176,7 @@ void CombatView::_ready()
     try
     {
         demo_ = std::make_unique<CombatDemo>(
-            srd5::load(local_path("res://../../data/rules/srd-5.2.1/combat.rules")));
+                    srd5::load(local_path("res://../../data/rules/srd-5.2.1/combat.rules")));
         if (campaign_)
             demo_->campaign_party(campaign_);
         if (encounter_)
@@ -187,13 +191,15 @@ void CombatView::_ready()
         get_node<Button>("Save")->hide();
         get_node<Button>("Load")->hide();
         if (campaign_)
-            for (const char *name : {"Training", "Slums", "Replay", "Save", "Load", "Revisit"})
+            for (const char *name :
+                    {"Training", "Slums", "Replay", "Save", "Load", "Revisit"
+                    })
                 get_node<Control>(name)->hide();
         if (encounter_)
         {
             get_node<Label>("Title")->set_text("SLUMS / Combat");
             get_node<Label>("Subtitle")
-                ->set_text("Choose an action, then click its target. Enter ends your turn.");
+            ->set_text("Choose an action, then click its target. Enter ends your turn.");
             get_node<Label>("Footer")->set_text(
                 "Each square is 5 feet. Victory returns your party to exploration.");
             get_node<Label>("Help")->set_text(
@@ -212,7 +218,7 @@ void CombatView::layout()
     const double width = get_size().x, height = get_size().y, sidebar = 358,
                  left_width = width - sidebar - 72;
     const auto board = demo_ && demo_->has_combat() ? demo_->combat().snapshot().battlefield
-                                                    : Battlefield{12, 9, {}};
+                       : Battlefield{12, 9, {}};
     const bool recovery = get_node<Button>("Stabilize")->is_visible() ||
                           get_node<Button>("WakeAlly")->is_visible() ||
                           get_node<Button>("StandUp")->is_visible() ||
@@ -223,8 +229,8 @@ void CombatView::layout()
                                  (height - weapon_height - bonus_height -
                                   (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 368
                                    : recovery                                           ? 324
-                                                                                        : 280)) /
-                                     board.height);
+                                   : 280)) /
+                                 board.height);
     board_rect_ = Rect2(24, 116, tile * board.width, tile * board.height);
     const double right = width - sidebar - 24;
     const auto place = [&](const char *name, Rect2 rect)
@@ -242,9 +248,11 @@ void CombatView::layout()
     place("Roster", Rect2(right, 148, sidebar, 160));
     place("Prompt", Rect2(right, 318, sidebar, 46));
     unsigned index = 0;
-    for (const char *name : {"Move", "Melee", "Ranged", "FireBolt", "MagicMissile", "CureWounds",
-                             "HealingWord", "ScorchingRay", "SpellSlot", "SecondWind", "Dash",
-                             "Dodge", "Disengage", "End", "Continue"})
+    for (const char *name :
+            {"Move", "Melee", "Ranged", "FireBolt", "MagicMissile", "CureWounds",
+             "HealingWord", "ScorchingRay", "SpellSlot", "SecondWind", "Dash",
+             "Dodge", "Disengage", "End", "Continue"
+            })
     {
         const unsigned row = index / 3, column = index % 3;
         place(name, Rect2(right + column * 122, 370 + row * 43, 114, 36));
@@ -278,12 +286,12 @@ void CombatView::layout()
           Rect2(24,
                 top + (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 132
                        : recovery                                           ? 88
-                                                                            : 0),
+                       : 0),
                 left_width,
                 std::max(0.0, height - board_rect_.get_end().y - 64 - weapon_height - bonus_height -
-                                  (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 132
-                                   : recovery                                           ? 88
-                                                                                        : 0))));
+                         (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 132
+                          : recovery                                           ? 88
+                          : 0))));
     place("Footer", Rect2(24, height - 34, width - 48, 24));
 }
 
@@ -379,7 +387,7 @@ void CombatView::sync_art()
         pixels.resize(source.rgba.size());
         std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());
         terrain_art_.push_back(ImageTexture::create_from_image(godot::Image::create_from_data(
-            source.width, source.height, false, godot::Image::FORMAT_RGBA8, pixels)));
+                    source.width, source.height, false, godot::Image::FORMAT_RGBA8, pixels)));
     }
     for (const auto &source : demo_->art())
     {
@@ -387,7 +395,7 @@ void CombatView::sync_art()
         pixels.resize(source.image.rgba.size());
         std::copy(source.image.rgba.begin(), source.image.rgba.end(), pixels.ptrw());
         const auto image = godot::Image::create_from_data(
-            source.image.width, source.image.height, false, godot::Image::FORMAT_RGBA8, pixels);
+                               source.image.width, source.image.height, false, godot::Image::FORMAT_RGBA8, pixels);
         art_[source.entity] = ImageTexture::create_from_image(image);
     }
     if (campaign_)
@@ -399,8 +407,8 @@ void CombatView::sync_art()
         const auto originals =
             por::CharacterArt::load(std::filesystem::u8path(directory.utf8().get_data()));
         const auto catalog = por::CombatBodyCatalog::load(
-            local_path("res://../../data/art/combat-body-looks.tsv"),
-            local_path("res://../../data/art/combat-weapon-options.tsv"));
+                                 local_path("res://../../data/art/combat-body-looks.tsv"),
+                                 local_path("res://../../data/art/combat-weapon-options.tsv"));
         campaign_art_.clear();
         for (const auto id : campaign_->state().slots)
             if (id)
@@ -408,8 +416,9 @@ void CombatView::sync_art()
                 const auto resolved =
                     por::resolve_combat_appearance(campaign_->member(id), catalog);
                 campaign_art_.push_back(
-                    {id, resolved.icon(originals, false), resolved.icon(originals, true),
-                     resolved.selection.matched ? std::string{} : resolved.selection.label});
+                {
+                    id, resolved.icon(originals, false), resolved.icon(originals, true),
+resolved.selection.matched ? std::string{} : resolved.selection.label});
             }
     }
     for (const auto &source : campaign_art_)
@@ -418,7 +427,7 @@ void CombatView::sync_art()
         pixels.resize(source.image.rgba.size());
         std::copy(source.image.rgba.begin(), source.image.rgba.end(), pixels.ptrw());
         art_[source.entity] = ImageTexture::create_from_image(godot::Image::create_from_data(
-            source.image.width, source.image.height, false, godot::Image::FORMAT_RGBA8, pixels));
+                source.image.width, source.image.height, false, godot::Image::FORMAT_RGBA8, pixels));
     }
 }
 
@@ -593,15 +602,15 @@ void CombatView::immediate(String verb)
     if (state.effect_targeting && wanted == "end")
         wanted = "effect_skip";
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
-                     [&](const auto &a)
-                     {
-                         return a.id == state.actor && a.side == 0;
-                     }))
-        return;
+                     [&](const auto & a)
+{
+    return a.id == state.actor && a.side == 0;
+}))
+    return;
     for (const auto &c : demo_->combat().legal_commands())
         if (c.verb == wanted && presentation::initiative_command(*this, c) &&
-            ((wanted != "effect_use" && wanted != "effect_skip") ||
-             c.item == presentation::optional_effect_item(*this, state)))
+                ((wanted != "effect_use" && wanted != "effect_skip") ||
+                 c.item == presentation::optional_effect_item(*this, state)))
         {
             act(c);
             return;
@@ -632,7 +641,7 @@ void CombatView::initiative_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-        key->get_keycode() == Key::KEY_ESCAPE)
+            key->get_keycode() == Key::KEY_ESCAPE)
     {
         get_node<Window>("InitiativeChoice")->set_input_as_handled();
         immediate("initiative_keep");
@@ -643,7 +652,7 @@ void CombatView::optional_effect_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-        key->get_keycode() == Key::KEY_ESCAPE)
+            key->get_keycode() == Key::KEY_ESCAPE)
     {
         get_node<Window>("OptionalEffect")->set_input_as_handled();
         immediate("effect_skip");
@@ -659,32 +668,32 @@ void CombatView::_input(const Ref<InputEvent> &event)
     if (get_node<Window>("NickAttack")->is_visible())
         return;
     if (get_node<Window>("SneakAttack")->is_visible() ||
-        get_node<Window>("SavageAttacker")->is_visible() ||
-        get_node<Window>("TacticalMind")->is_visible())
+            get_node<Window>("SavageAttacker")->is_visible() ||
+            get_node<Window>("TacticalMind")->is_visible())
         return;
     if (!demo_ || defeated() || Engine::get_singleton()->is_editor_hint())
         return;
     const Ref<InputEventKey> key = event;
     if (demo_->has_combat() && presentation::effect_target_input(
-                                   event, demo_->combat().snapshot(),
-                                   demo_->combat().legal_commands(), effect_target_index_,
-                                   [&](const Command &c)
-                                   {
-                                       act(c);
-                                   },
-                                   [&]
-                                   {
-                                       refresh();
-                                   }))
+                event, demo_->combat().snapshot(),
+                demo_->combat().legal_commands(), effect_target_index_,
+                [&](const Command & c)
+{
+    act(c);
+    },
+    [&]
+    {
+        refresh();
+    }))
     {
         get_viewport()->set_input_as_handled();
         return;
     }
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && demo_->has_combat() &&
-        demo_->combat().snapshot().free_movement)
+            demo_->combat().snapshot().free_movement)
     {
         if (key->get_keycode() == Key::KEY_ESCAPE ||
-            (key->get_keycode() == Key::KEY_SPACE && get_node<Button>("End")->has_focus()))
+                (key->get_keycode() == Key::KEY_SPACE && get_node<Button>("End")->has_focus()))
         {
             immediate("end");
             get_viewport()->set_input_as_handled();
@@ -712,14 +721,14 @@ void CombatView::_input(const Ref<InputEvent> &event)
         {
             const auto state = demo_->combat().snapshot();
             const auto actor = std::find_if(state.combatants.begin(), state.combatants.end(),
-                                            [&](const auto &a)
-                                            {
-                                                return a.id == state.actor && a.side == 0;
-                                            });
+                                            [&](const auto & a)
+            {
+                return a.id == state.actor && a.side == 0;
+            });
             if (actor != state.combatants.end())
                 for (const auto &command : demo_->combat().legal_commands())
                     if (command.verb == "move" &&
-                        command.destination ==
+                            command.destination ==
                             Cell{actor->cell.x + direction.x, actor->cell.y + direction.y})
                     {
                         act(command);
@@ -739,16 +748,16 @@ void CombatView::_input(const Ref<InputEvent> &event)
                            get_node<OptionButton>("ThrownWeapon")->get_popup()->is_visible()))
         return;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-        (mode_ == "stabilize" || mode_ == "throw" ||
-         (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
-        demo_->has_combat())
+            (mode_ == "stabilize" || mode_ == "throw" ||
+             (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
+            demo_->has_combat())
     {
         const auto state = demo_->combat().snapshot();
         const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
-                                         [&](const auto &a)
-                                         {
-                                             return a.id == state.actor && a.side == 0;
-                                         });
+                                         [&](const auto & a)
+        {
+            return a.id == state.actor && a.side == 0;
+        });
         std::vector<Command> targets;
         for (const auto &command : demo_->combat().legal_commands())
             if (command.verb == mode_ && matches_item(command))
@@ -756,18 +765,19 @@ void CombatView::_input(const Ref<InputEvent> &event)
         if (active != state.combatants.end() && !targets.empty())
         {
             const auto found = std::find_if(targets.begin(), targets.end(),
-                                            [&](const auto &c)
-                                            {
-                                                return c.target == aid_target_;
-                                            });
+                                            [&](const auto & c)
+            {
+                return c.target == aid_target_;
+            });
             const auto index =
-                found == targets.end() ? std::size_t{0} : std::size_t(found - targets.begin());
+                found == targets.end() ? std::size_t{0} :
+                std::size_t(found - targets.begin());
             const auto code = key->get_keycode();
             if (code == Key::KEY_LEFT || code == Key::KEY_RIGHT)
             {
                 aid_target_ = targets[(index + (code == Key::KEY_RIGHT ? 1 : targets.size() - 1)) %
                                       targets.size()]
-                                  .target;
+                              .target;
                 refresh();
                 get_viewport()->set_input_as_handled();
                 return;
@@ -784,16 +794,16 @@ void CombatView::_input(const Ref<InputEvent> &event)
                            get_node<OptionButton>("GroundItem")->get_popup()->is_visible()))
         return;
     if (key.is_valid() &&
-        (get_node<Button>("Nick")->has_focus() ||
-         get_node<Button>("UseCunningAction")->has_focus() ||
-         get_node<Button>("Throw")->has_focus() || get_node<Button>("PickUp")->has_focus() ||
-         get_node<Button>("Stabilize")->has_focus() || get_node<Button>("WakeAlly")->has_focus() ||
-         get_node<Button>("StandUp")->has_focus()) &&
-        (key->get_keycode() == Key::KEY_ENTER || key->get_keycode() == Key::KEY_SPACE))
+            (get_node<Button>("Nick")->has_focus() ||
+             get_node<Button>("UseCunningAction")->has_focus() ||
+             get_node<Button>("Throw")->has_focus() || get_node<Button>("PickUp")->has_focus() ||
+             get_node<Button>("Stabilize")->has_focus() || get_node<Button>("WakeAlly")->has_focus() ||
+             get_node<Button>("StandUp")->has_focus()) &&
+            (key->get_keycode() == Key::KEY_ENTER || key->get_keycode() == Key::KEY_SPACE))
         return;
     if (key.is_valid() && key->is_pressed() && key->get_keycode() == Key::KEY_ESCAPE &&
-        (mode_ == "wake_ally" || mode_ == "stabilize" || mode_ == "throw" ||
-         (mode_.starts_with("light_") || mode_.starts_with("nick_"))))
+            (mode_ == "wake_ally" || mode_ == "stabilize" || mode_ == "throw" ||
+             (mode_.starts_with("light_") || mode_.starts_with("nick_"))))
     {
         mode_ = "move";
         refresh();
@@ -801,7 +811,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
         return;
     }
     if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-        key->get_keycode() == Key::KEY_ENTER)
+            key->get_keycode() == Key::KEY_ENTER)
     {
         if (demo_->waiting())
             next();
@@ -812,7 +822,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
     }
     const Ref<InputEventMouseButton> mouse = event;
     if (mouse.is_null() || !mouse->is_pressed() ||
-        mouse->get_button_index() != MouseButton::MOUSE_BUTTON_LEFT || !demo_->has_combat())
+            mouse->get_button_index() != MouseButton::MOUSE_BUTTON_LEFT || !demo_->has_combat())
         return;
     const auto local =
         get_global_transform_with_canvas().affine_inverse().xform(mouse->get_position());
@@ -820,10 +830,10 @@ void CombatView::_input(const Ref<InputEvent> &event)
         return;
     const auto s = demo_->combat().snapshot();
     const auto current = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                      [&](const auto &a)
-                                      {
-                                          return a.id == s.actor;
-                                      });
+                                      [&](const auto & a)
+    {
+        return a.id == s.actor;
+    });
     if (current == s.combatants.end() || current->side != 0)
         return;
     const auto relative = (local - board_rect_.position) /
@@ -840,10 +850,10 @@ void CombatView::_input(const Ref<InputEvent> &event)
             if (c.target && c.verb != "effect_push")
             {
                 const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                                 [&](const auto &a)
-                                                 {
-                                                     return a.id == c.target;
-                                                 });
+                                                 [&](const auto & a)
+                {
+                    return a.id == c.target;
+                });
                 if (target != s.combatants.end() && target->cell == cell)
                 {
                     act(c);
@@ -889,12 +899,12 @@ void CombatView::refresh()
         const auto &check = *s.ability_check_choice;
         const bool changed = !mind->is_visible();
         get_node<Label>("TacticalMind/Text")
-            ->set_text(gs(
-                "Failed Medicine check: d20 " + std::to_string(check.natural) + " + " +
-                std::to_string(check.modifier) + " = " + std::to_string(check.total) + " vs DC " +
-                std::to_string(check.difficulty) +
-                ".\nSecond Wind uses: " + std::to_string(check.resource_uses) +
-                "\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent."));
+        ->set_text(gs(
+                       "Failed Medicine check: d20 " + std::to_string(check.natural) + " + " +
+                       std::to_string(check.modifier) + " = " + std::to_string(check.total) + " vs DC " +
+                       std::to_string(check.difficulty) +
+                       ".\nSecond Wind uses: " + std::to_string(check.resource_uses) +
+                       "\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent."));
         if (changed)
         {
             mind->popup_centered();
@@ -911,16 +921,16 @@ void CombatView::refresh()
     {
         const auto &hit = *s.sneak_attack_choice;
         const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                         [&](const auto &a)
-                                         {
-                                             return a.id == hit.target;
-                                         });
+                                         [&](const auto & a)
+        {
+            return a.id == hit.target;
+        });
         get_node<Label>("SneakAttack/Text")
-            ->set_text(
-                String("Target: ") + (target == s.combatants.end() ? String() : gs(target->name)) +
-                "\nExtra damage: " + String::num_int64(hit.dice_count) + "d" +
-                String::num_int64(hit.dice_sides) +
-                "\n\nUse Sneak Attack once this turn, or keep the hit and save it.\nSavage Attacker can reroll weapon dice afterward.\nThe attack's Action or Reaction is already spent.");
+        ->set_text(
+            String("Target: ") + (target == s.combatants.end() ? String() : gs(target->name)) +
+            "\nExtra damage: " + String::num_int64(hit.dice_count) + "d" +
+            String::num_int64(hit.dice_sides) +
+            "\n\nUse Sneak Attack once this turn, or keep the hit and save it.\nSavage Attacker can reroll weapon dice afterward.\nThe attack's Action or Reaction is already spent.");
         if (!sneak->is_visible())
         {
             sneak->popup_centered();
@@ -940,9 +950,13 @@ void CombatView::refresh()
         const bool second = hit.second_damage.has_value();
         const bool changed = !modal->is_visible() ||
                              get_node<Button>("SavageAttacker/First")->is_visible() != second;
-        for (const char *name : {"Use", "Skip"})
+        for (const char *name :
+                {"Use", "Skip"
+                })
             get_node<Button>(String("SavageAttacker/") + name)->set_visible(!second);
-        for (const char *name : {"First", "Second"})
+        for (const char *name :
+                {"First", "Second"
+                })
             get_node<Button>(String("SavageAttacker/") + name)->set_visible(second);
         std::string text = (hit.critical ? "Critical hit\n" : "Weapon hit\n") + hit.weapon + ": " +
                            std::to_string(hit.dice_count) + "d" + std::to_string(hit.dice_sides) +
@@ -954,9 +968,9 @@ void CombatView::refresh()
                 "\nSecond damage: " + std::to_string(*hit.second_damage) +
                 "\n\nKeep either roll. Defenses apply afterward.\nSavage Attacker is spent for this turn.";
             get_node<Button>("SavageAttacker/First")
-                ->set_text(gs("First roll: " + std::to_string(hit.first_damage)));
+            ->set_text(gs("First roll: " + std::to_string(hit.first_damage)));
             get_node<Button>("SavageAttacker/Second")
-                ->set_text(gs("Second roll: " + std::to_string(*hit.second_damage)));
+            ->set_text(gs("Second roll: " + std::to_string(*hit.second_damage)));
         }
         else
             text +=
@@ -974,63 +988,63 @@ void CombatView::refresh()
         modal->hide();
     get_node<Button>("End")->set_text(gs(s.effect_targeting ? "Skip effect"
                                          : s.free_movement  ? "Finish free move"
-                                                            : "End turn"));
+                                         : "End turn"));
     get_node<Button>("End")->set_size(Vector2(s.free_movement
-                                                  ? get_node<Button>("Continue")->get_position().x +
-                                                        get_node<Button>("Continue")->get_size().x -
-                                                        get_node<Button>("End")->get_position().x
-                                                  : get_node<Button>("Continue")->get_size().x,
-                                              36));
+            ? get_node<Button>("Continue")->get_position().x +
+            get_node<Button>("Continue")->get_size().x -
+            get_node<Button>("End")->get_position().x
+            : get_node<Button>("Continue")->get_size().x,
+            36));
     get_node<Button>("Continue")->set_visible(!s.free_movement);
     if (s.free_movement)
         mode_ = "move";
     if (s.effect_targeting)
         mode_ = s.effect_targeting->verb;
-    const auto offered = loaded ? demo_->combat().legal_commands() : std::vector<Command>{};
+    const auto offered = loaded ? demo_->combat().legal_commands() : std::vector<Command> {};
     const auto enabled = [&](std::string_view verb)
     {
         return player && std::any_of(offered.begin(), offered.end(),
-                                     [&](const auto &c)
-                                     {
-                                         return c.verb == verb ||
-                                                (verb == "end" && s.effect_targeting &&
-                                                 c.verb == "effect_skip");
-                                     });
+                                     [&](const auto & c)
+        {
+            return c.verb == verb ||
+                   (verb == "end" && s.effect_targeting &&
+                    c.verb == "effect_skip");
+        });
     };
     const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                     [&](const auto &a)
-                                     {
-                                         return a.id == s.actor && a.side == 0;
-                                     });
+                                     [&](const auto & a)
+    {
+        return a.id == s.actor && a.side == 0;
+    });
     const auto *choice_actor =
         active != s.combatants.end() && s.outcome == Outcome::ongoing ? &*active : nullptr;
     const bool weapon_layout =
         presentation::refresh_weapons(*this, choice_actor, player,
-                                      [](const Message &message)
-                                      {
-                                          return render_weapon_message(message);
-                                      });
+                                      [](const Message & message)
+    {
+        return render_weapon_message(message);
+    });
     const bool bonus_layout =
         presentation::refresh_bonus_attacks(*this, choice_actor, offered, player, gs,
-                                            [](const Message &message)
-                                            {
-                                                return render_weapon_message(message);
-                                            });
+                                            [](const Message & message)
+    {
+        return render_weapon_message(message);
+    });
     presentation::refresh_nick(*this, choice_actor, player && !s.reaction_pending,
-                               [](const Message &message)
-                               {
-                                   return render_weapon_message(message);
-                               });
+                               [](const Message & message)
+    {
+        return render_weapon_message(message);
+    });
     presentation::refresh_initiative(*this, s, offered, gs,
-                                     [](const Message &m)
-                                     {
-                                         return render_weapon_message(m);
-                                     });
+                                     [](const Message & m)
+    {
+        return render_weapon_message(m);
+    });
     presentation::refresh_optional_effect(*this, s.optional_effect_choice, player,
-                                          [](const Message &m)
-                                          {
-                                              return render_weapon_message(m);
-                                          });
+                                          [](const Message & m)
+    {
+        return render_weapon_message(m);
+    });
     if (s.reaction_pending)
         get_node<Button>("Nick")->hide();
     get_node<Button>("Decline")->set_visible(!get_node<Button>("Nick")->is_visible());
@@ -1050,10 +1064,10 @@ void CombatView::refresh()
     thrown->set_fit_to_longest_item(false);
     thrown->clear();
     const auto throwing = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                       [&](const auto &a)
-                                       {
-                                           return a.id == s.actor && a.side == 0;
-                                       });
+                                       [&](const auto & a)
+    {
+        return a.id == s.actor && a.side == 0;
+    });
     if (throwing != s.combatants.end())
         for (const auto &option : throwing->thrown_weapons)
         {
@@ -1080,14 +1094,16 @@ void CombatView::refresh()
     thrown->set_tooltip_text(throw_index >= 0 ? thrown->get_item_text(throw_index) : String());
     const bool show_thrown = s.outcome == Outcome::ongoing && thrown->get_item_count() > 0;
     const bool thrown_layout_changed = thrown->is_visible() != show_thrown;
-    for (const char *name : {"ThrownWeaponLabel", "ThrownWeapon", "Throw"})
+    for (const char *name :
+            {"ThrownWeaponLabel", "ThrownWeapon", "Throw"
+            })
         get_node<Control>(name)->set_visible(show_thrown);
     const bool can_throw =
         player && std::any_of(offered.begin(), offered.end(),
-                              [&](const auto &c)
-                              {
-                                  return c.verb == "throw" && c.item == thrown_item_;
-                              });
+                              [&](const auto & c)
+    {
+        return c.verb == "throw" && c.item == thrown_item_;
+    });
     thrown->set_disabled(!enabled("throw"));
     get_node<Button>("Throw")->set_disabled(!can_throw);
     auto *ground = get_node<OptionButton>("GroundItem");
@@ -1112,68 +1128,72 @@ void CombatView::refresh()
     ground->set_block_signals(false);
     const bool show_ground = s.outcome == Outcome::ongoing && ground->get_item_count() > 0;
     const bool ground_layout_changed = ground->is_visible() != show_ground;
-    for (const char *name : {"GroundItemLabel", "GroundItem", "PickUp"})
+    for (const char *name :
+            {"GroundItemLabel", "GroundItem", "PickUp"
+            })
         get_node<Control>(name)->set_visible(show_ground);
     ground->set_disabled(!player);
     const auto pickup = std::find_if(offered.begin(), offered.end(),
-                                     [&](const auto &c)
-                                     {
-                                         return c.verb == "pick_up" && c.target == ground_item_;
-                                     });
+                                     [&](const auto & c)
+    {
+        return c.verb == "pick_up" && c.target == ground_item_;
+    });
     get_node<Button>("PickUp")->set_disabled(!player || pickup == offered.end());
     get_node<Button>("PickUp")->set_text(pickup == offered.end() ? String("Pick up")
-                                                                 : gs(pickup->label));
+                                         : gs(pickup->label));
     get_node<Button>("WakeAlly")
-        ->set_visible(s.outcome == Outcome::ongoing &&
-                      std::any_of(s.combatants.begin(), s.combatants.end(),
-                                  [](const auto &a)
-                                  {
-                                      return a.side == 0 && a.naturally_sleeping;
-                                  }));
+    ->set_visible(s.outcome == Outcome::ongoing &&
+                  std::any_of(s.combatants.begin(), s.combatants.end(),
+                              [](const auto & a)
+    {
+        return a.side == 0 && a.naturally_sleeping;
+    }));
     get_node<Button>("WakeAlly")->set_disabled(!enabled("wake_ally"));
     get_node<Button>("Stabilize")
-        ->set_visible(s.outcome == Outcome::ongoing &&
-                      std::any_of(s.combatants.begin(), s.combatants.end(),
-                                  [](const auto &a)
-                                  {
-                                      return !a.dead && a.hit_points == 0;
-                                  }));
+    ->set_visible(s.outcome == Outcome::ongoing &&
+                  std::any_of(s.combatants.begin(), s.combatants.end(),
+                              [](const auto & a)
+    {
+        return !a.dead && a.hit_points == 0;
+    }));
     get_node<Button>("Stabilize")->set_disabled(!enabled("stabilize"));
     get_node<Button>("StandUp")->set_visible(s.outcome == Outcome::ongoing &&
-                                             std::any_of(s.combatants.begin(), s.combatants.end(),
-                                                         [&](const auto &a)
-                                                         {
-                                                             return a.id == s.actor &&
-                                                                    a.side == 0 && a.prone;
-                                                         }));
+            std::any_of(s.combatants.begin(), s.combatants.end(),
+                        [&](const auto & a)
+    {
+        return a.id == s.actor &&
+               a.side == 0 && a.prone;
+    }));
     get_node<Button>("StandUp")->set_disabled(!enabled("stand_up"));
     layout();
     for (const auto &[node, verb] : action_buttons)
         get_node<Button>(node)->set_disabled(!enabled(spell_verb(verb, spell_slot_)));
     get_node<Button>("SpellSlot")->set_text("Slot level " + String::num_uint64(spell_slot_));
     get_node<Button>("SpellSlot")
-        ->set_disabled(!enabled("magic_missile") && !enabled("magic_missile_2") &&
-                       !enabled("cure_wounds") && !enabled("cure_wounds_2") &&
-                       !enabled("healing_word") && !enabled("healing_word_2"));
+    ->set_disabled(!enabled("magic_missile") && !enabled("magic_missile_2") &&
+                   !enabled("cure_wounds") && !enabled("cure_wounds_2") &&
+                   !enabled("healing_word") && !enabled("healing_word_2"));
     for (const auto &[node, verb] :
-         std::array<std::pair<const char *, const char *>, 5>{{{"Move", "move"},
-                                                               {"End", "end"},
-                                                               {"SecondWind", "second_wind"},
-                                                               {"React", "opportunity"},
-                                                               {"Decline", "decline"}}})
-        get_node<Button>(node)->set_disabled(!enabled(verb));
+    std::array<std::pair<const char *, const char *>, 5> {{{"Move", "move"},
+        {"End", "end"},
+        {"SecondWind", "second_wind"},
+        {"React", "opportunity"},
+        {"Decline", "decline"}
+    }
+})
+    get_node<Button>(node)->set_disabled(!enabled(verb));
     get_node<Button>("Continue")->set_disabled(!demo_ || !demo_->waiting());
     get_node<Button>("Save")->set_disabled(!loaded || demo_->is_slums());
     get_node<Button>("Load")->set_disabled(!loaded || demo_->is_slums());
     get_node<Button>("Revisit")->set_disabled(!loaded || !demo_->script_complete() ||
-                                              s.outcome != Outcome::victory);
+            s.outcome != Outcome::victory);
     get_node<Label>("Prompt")->set_text(
         gs(!error_.empty()                           ? error_
            : demo_ && demo_->waiting()               ? "Read the encounter text, then Continue."
            : loaded && s.outcome != Outcome::ongoing ? demo_->status()
            : s.reaction_pending                      ? "Use or decline the opportunity attack."
            : player ? "Selected: " + mode_ + ". Click a highlighted square."
-                    : "Enemy turn"));
+           : "Enemy turn"));
     std::string log = demo_ ? demo_->dialogue() + "\n\n" : "";
     for (const auto &entry : s.log)
         log += entry + "\n";
@@ -1192,21 +1212,21 @@ void CombatView::refresh()
         if (!targets.empty())
         {
             if (std::none_of(targets.begin(), targets.end(),
-                             [&](const auto &c)
-                             {
-                                 return c.target == aid_target_;
-                             }))
-                aid_target_ = targets.front().target;
+                             [&](const auto & c)
+        {
+            return c.target == aid_target_;
+        }))
+            aid_target_ = targets.front().target;
             const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                             [&](const auto &a)
-                                             {
-                                                 return a.id == aid_target_;
-                                             });
+                                             [&](const auto & a)
+            {
+                return a.id == aid_target_;
+            });
             if (target != s.combatants.end())
                 get_node<Label>("Prompt")->set_text(
                     gs(std::string(mode_.starts_with("nick_") ? "Nick attack: "
                                    : mode_ == "throw"         ? "Throw: "
-                                                              : "Stabilize: ") +
+                                   : "Stabilize: ") +
                        target->name + "\nLeft/Right: target | Space: use"));
         }
     }
@@ -1237,20 +1257,20 @@ void CombatView::_draw()
                              Vector2(tile, tile));
             const auto terrain = s.battlefield.at({x, y});
             draw_rect(cell, terrain == 1   ? Color("64716d")
-                            : terrain == 2 ? Color("665238")
-                                           : ((x + y) % 2 ? Color("29373c") : Color("253137")));
+                      : terrain == 2 ? Color("665238")
+                      : ((x + y) % 2 ? Color("29373c") : Color("253137")));
             const auto index = y * s.battlefield.width + x;
             if (index < demo_->battlefield_tiles().size() &&
-                demo_->battlefield_tiles()[index] < terrain_art_.size())
+                    demo_->battlefield_tiles()[index] < terrain_art_.size())
                 draw_texture_rect(terrain_art_[demo_->battlefield_tiles()[index]], cell, false);
             else
                 draw_rect(cell, Color("172228"), false);
         }
     const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                     [&](const auto &a)
-                                     {
-                                         return a.id == s.actor;
-                                     });
+                                     [&](const auto & a)
+    {
+        return a.id == s.actor;
+    });
     unsigned effect_index = 0;
     if (active != s.combatants.end() && active->side == 0)
         for (const auto &c : demo_->combat().legal_commands())
@@ -1260,10 +1280,10 @@ void CombatView::_draw()
                 if (c.target && c.verb != "effect_push")
                 {
                     const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                                     [&](const auto &a)
-                                                     {
-                                                         return a.id == c.target;
-                                                     });
+                                                     [&](const auto & a)
+                    {
+                        return a.id == c.target;
+                    });
                     if (target == s.combatants.end())
                         continue;
                     p = target->cell;
@@ -1272,12 +1292,12 @@ void CombatView::_draw()
                                 Vector2(tile - 4, tile - 4)),
                           Color(.4, .8, .75,
                                 s.effect_targeting
-                                    ? (effect_index++ == effect_target_index_ ? .65 : .17)
+                                ? (effect_index++ == effect_target_index_ ? .65 : .17)
                                 : (mode_ == "stabilize" || mode_ == "throw" ||
                                    (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
-                                        c.target == aid_target_
-                                    ? .6
-                                    : .17));
+                                c.target == aid_target_
+                                ? .6
+                                : .17));
             }
     for (const auto &a : s.combatants)
     {
@@ -1339,7 +1359,7 @@ void CombatView::_process(double delta)
             const auto file =
                 local_path(expedition_check_ ? "res://../../user-data/slums-battlefield.png"
                            : check_slums_    ? "res://../../user-data/slums-combat.png"
-                                             : "res://../../user-data/training-combat.png");
+                           : "res://../../user-data/training-combat.png");
             std::filesystem::create_directories(file.parent_path());
             const auto image = get_viewport()->get_texture()->get_image();
             if (image.is_null() || image->save_png(gs(file.generic_string())) != OK)
@@ -1367,10 +1387,10 @@ void CombatView::_process(double delta)
             return;
         }
         const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                         [&](const auto &a)
-                                         {
-                                             return a.id == s.actor;
-                                         });
+                                         [&](const auto & a)
+        {
+            return a.id == s.actor;
+        });
         if (checking_ && active->side == 1)
         {
             Ref<InputEventKey> key;
@@ -1390,18 +1410,18 @@ void CombatView::_process(double delta)
                     {
                         get_node<Button>(node)->emit_signal("pressed");
                         const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                                         [&](const auto &a)
-                                                         {
-                                                             return a.id == command.target;
-                                                         });
+                                                         [&](const auto & a)
+                        {
+                            return a.id == command.target;
+                        });
                         Ref<InputEventMouseButton> mouse;
                         mouse.instantiate();
                         mouse->set_button_index(MouseButton::MOUSE_BUTTON_LEFT);
                         mouse->set_pressed(true);
                         mouse->set_position(board_rect_.position +
                                             Vector2(target->cell.x + .5, target->cell.y + .5) *
-                                                (board_rect_.size.x /
-                                                 demo_->combat().snapshot().battlefield.width));
+                                            (board_rect_.size.x /
+                                             demo_->combat().snapshot().battlefield.width));
                         get_viewport()->push_input(mouse, true);
                         if (demo_->combat().snapshot().revision != s.revision + 1)
                             throw std::runtime_error(
@@ -1426,10 +1446,10 @@ void CombatView::_process(double delta)
                     const auto offered = demo_->combat().legal_commands();
                     const auto pass =
                         std::find_if(offered.begin(), offered.end(),
-                                     [&](const auto &c)
-                                     {
-                                         return c.verb == (s.reaction_pending ? "decline" : "end");
-                                     });
+                                     [&](const auto & c)
+                    {
+                        return c.verb == (s.reaction_pending ? "decline" : "end");
+                    });
                     if (pass == offered.end())
                         throw std::runtime_error("Defeat check cannot pass party turn");
                     act(*pass);

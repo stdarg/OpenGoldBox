@@ -22,8 +22,14 @@ bool near(double a, double b)
 void sizing()
 {
     // Different padding and proportions represent ready/action and customized art.
-    for (const Rect2 visible : {Rect2(2, 1, 20, 22), Rect2(1, 3, 22, 19), Rect2(6, 0, 12, 24)})
-        for (const double tile : {2.4, 24., 60., 72., 240.})
+    for (const Rect2 visible :
+            {
+                Rect2(2, 1, 20, 22), Rect2(1, 3, 22, 19), Rect2(6, 0, 12, 24)
+            })
+        for (const double tile :
+                {
+                    2.4, 24., 60., 72., 240.
+                })
         {
             const Vector2 source(24, 24);
             const Rect2 occupied(Vector2(4 * tile, 5 * tile), Vector2(tile, tile));
@@ -33,7 +39,7 @@ void sizing()
             check(near(rendered.size.x, tile) && near(rendered.size.y, 1.25 * tile),
                   "Goliath has stretched one-square width and 1.25-square visible height");
             check(near(rendered.position.x, occupied.position.x) &&
-                      near(rendered.get_end().y, occupied.get_end().y),
+                  near(rendered.get_end().y, occupied.get_end().y),
                   "Visible feet align with the occupied square regardless of padding");
             check(near(rendered.position.y, occupied.position.y - .25 * tile),
                   "Only the lower quarter of the upper square receives Goliath art");
@@ -72,13 +78,13 @@ void ordering()
             result.push_back(actors[index].id);
         return result;
     };
-    check(ids() == std::vector<EntityId>{9, 20, 12, 11},
+    check(ids() == std::vector<EntityId> {9, 20, 12, 11},
           "Lower monster and Goliath draw before monsters above; same-row order is deterministic");
     for (std::size_t i = 0; i < actors.size(); ++i)
         check(actors[i].id == original[i].id && actors[i].cell == original[i].cell,
               "Rendering preserves initiative order and occupied cells");
     std::reverse(actors.begin(), actors.end());
-    check(ids() == std::vector<EntityId>{9, 20, 12, 11},
+    check(ids() == std::vector<EntityId> {9, 20, 12, 11},
           "Initiative order cannot change sprite overlap");
     check(presentation::combat_sprite_draw_order({}).empty(),
           "Empty battlefield has no figures to draw");

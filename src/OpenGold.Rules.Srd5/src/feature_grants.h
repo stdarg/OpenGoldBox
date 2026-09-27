@@ -7,7 +7,7 @@ namespace opengold::srd5::detail
 {
 std::string grant_source_id(std::string_view label);
 std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::string_view race,
-                                                 std::string_view background);
+        std::string_view background);
 rules::FeatureGrant advancement_grant(std::string_view klass, unsigned level,
                                       const rules::AdvancementChoice &choice);
 std::vector<rules::AdvancementOption> fighting_styles();
@@ -16,7 +16,7 @@ bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
 struct GrantEffects
 {
     unsigned
-        feats{}; // Internal combat mask: Defense, Savage Attacker, Archery, Great Weapon Fighting.
+    feats{}; // Internal combat mask: Defense, Savage Attacker, Archery, Great Weapon Fighting.
     std::array<int, 6> abilities{};
 };
 

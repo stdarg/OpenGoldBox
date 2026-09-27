@@ -38,7 +38,7 @@ void run()
     ui_fixture();
     auto rules = module();
     auto creation = srd5::character_rules();
-    auto roundtrip = [&](const CampaignParty &party)
+    auto roundtrip = [&](const CampaignParty & party)
     {
         CampaignParty next(module());
         const auto bytes = saved(party);
@@ -47,8 +47,13 @@ void run()
               "Pending/rest-edited training retains canonical campaign continuation");
         return next;
     };
-    for (const auto klass : {"fighter", "barbarian", "rogue", "paladin", "ranger"})
-        for (bool npc : {false, true})
+    for (const auto klass :
+            {"fighter", "barbarian", "rogue", "paladin", "ranger"
+            })
+        for (bool npc :
+                {
+                    false, true
+                })
         {
             CampaignParty party(module());
             auto h = mastery_grant_checks::chosen(klass);
@@ -57,9 +62,9 @@ void run()
             check(!party.state().training_rest, "Creation does not invent a rest entitlement");
             rejects(
                 [&]
-                {
-                    party.keep_rest_training({1, 1}, id);
-                });
+            {
+                party.keep_rest_training({1, 1}, id);
+            });
             const auto short_rest = party.rest(RestKind::short_rest);
             check(bool(short_rest) && !party.state().training_rest,
                   "Short Rest never permits replacement");
@@ -72,7 +77,7 @@ void run()
             (void)party.advance_rest(party.state().rest_activity->ticket,
                                      party.remaining_rest_milliseconds(), RestWork::sleep);
             check(party.state().training_rest &&
-                      party.state().training_rest->members == std::vector<MemberId>{id},
+                  party.state().training_rest->members == std::vector<MemberId> {id},
                   "Only qualified completed rest grants one per-member replacement");
             party = roundtrip(party);
             const auto ticket = party.state().training_rest->ticket;
@@ -88,39 +93,39 @@ void run()
             const auto member = party.member(id);
             rejects(
                 [&]
-                {
-                    party.advance_time(1);
-                });
+            {
+                party.advance_time(1);
+            });
             rejects(
                 [&]
-                {
-                    party.begin_combat();
-                });
+            {
+                party.begin_combat();
+            });
             rejects(
                 [&]
-                {
-                    party.remove(id);
-                });
+            {
+                party.remove(id);
+            });
             rejects(
                 [&]
-                {
-                    party.replace_rest_training({ticket.session, ticket.revision + 1}, id,
-                                                selected);
-                });
+            {
+                party.replace_rest_training({ticket.session, ticket.revision + 1}, id,
+                selected);
+            });
             auto bad = selected;
             bad[1] = bad[0];
             rejects(
                 [&]
-                {
-                    party.replace_rest_training(ticket, id, bad);
-                });
+            {
+                party.replace_rest_training(ticket, id, bad);
+            });
             bad = selected;
             bad[0] = "wand";
             rejects(
                 [&]
-                {
-                    party.replace_rest_training(ticket, id, bad);
-                });
+            {
+                party.replace_rest_training(ticket, id, bad);
+            });
             check(saved(party) == before,
                   "Blocked exploration and rejected replacements are atomic");
             const auto preview = party.preview_rest_training(ticket, id, selected);
@@ -128,21 +133,21 @@ void run()
             party.replace_rest_training(ticket, id, selected);
             const auto &after = party.member(id);
             check(!party.state().training_rest &&
-                      after.character.sheet().grants == preview.character.sheet().grants,
+                  after.character.sheet().grants == preview.character.sheet().grants,
                   "Apply consumes this member's entitlement and matches preview");
             check(after.vitals == member.vitals && after.equipped == member.equipped &&
-                      after.character.inventory().items().size() ==
-                          member.character.inventory().items().size() &&
-                      after.character.advancements() == member.character.advancements(),
+                  after.character.inventory().items().size() ==
+                  member.character.inventory().items().size() &&
+                  after.character.advancements() == member.character.advancements(),
                   "Replacing training preserves health, resources, equipment and advancement");
             check(after.character.training_edits().size() == 1 &&
-                      after.character.training_edits().front().rest_session == ticket.session,
+                  after.character.training_edits().front().rest_session == ticket.session,
                   "Replacement retains exact rest provenance");
             rejects(
                 [&]
-                {
-                    party.replace_rest_training(ticket, id, selected);
-                });
+            {
+                party.replace_rest_training(ticket, id, selected);
+            });
             party = roundtrip(party);
             check(saved(party).starts_with("OPENGOLD-CAMPAIGN 18\n"),
                   "Actual training history uses campaign18");
@@ -152,7 +157,7 @@ void run()
             const auto keep_before = party.member(id).character.sheet().grants;
             party.keep_rest_training(party.state().training_rest->ticket, id);
             check(party.member(id).character.sheet().grants == keep_before &&
-                      !party.state().training_rest,
+                  !party.state().training_rest,
                   "Keep retains exact grants and consumes the window");
             party = roundtrip(party);
             check(party.member(id).character.training_edits().size() == 2,
@@ -167,7 +172,7 @@ void run()
     check(bool(p.rest(RestKind::long_rest)) && p.state().training_rest,
           "Mastery replacement does not require unrelated training to be complete");
     p.replace_rest_training(p.state().training_rest->ticket, id,
-                            std::vector<std::string>{"greatsword", "longsword", "shortbow"});
+                            std::vector<std::string> {"greatsword", "longsword", "shortbow"});
     auto choices = p.member(id).character.training_choices();
     CharacterDraft effective = draft;
     effective.training = choices;
@@ -176,14 +181,14 @@ void run()
         auto &selected = choices[g.id];
         for (const auto &o : g.options)
             if (selected.size() < g.count &&
-                std::find(selected.begin(), selected.end(), o.id) == selected.end())
+                    std::find(selected.begin(), selected.end(), o.id) == selected.end())
                 selected.push_back(o.id);
     }
     const auto history = p.member(id).character.training_edits();
     p.complete_training(id, *creation, choices);
     check(p.member(id).character.training_edits() == history &&
-              p.member(id).character.training_choices().at("class:fighter:weapon_mastery") ==
-                  std::vector<std::string>({"greatsword", "longsword", "shortbow"}),
+          p.member(id).character.training_choices().at("class:fighter:weapon_mastery") ==
+          std::vector<std::string>({"greatsword", "longsword", "shortbow"}),
           "Review Training retains effective masteries and their original replacement history");
     p.award_experience(2700, "rest-mastery-levels");
     for (unsigned level = 2; level <= 4; ++level)
@@ -212,7 +217,7 @@ void run()
     std::istringstream fields(old.substr(old.find('\n', old.find('\n') + 1) + 1));
     std::string module_id, version, content_id, assets;
     fields >> std::quoted(module_id) >> std::quoted(version) >> std::quoted(content_id) >>
-        std::quoted(assets);
+           std::quoted(assets);
     check(version == "0.6.56", "Frozen acquisition fixture retains its real writer identity");
     CampaignParty old_party(module());
     old_party.restore(decode_campaign(old, *creation, *rules, assets, nullptr).party);
@@ -221,16 +226,16 @@ void run()
     const auto rewritten = encode_campaign(old_party, nullptr, assets);
     check(
         rewritten.substr(0, rewritten.find('\n')) == old.substr(0, old.find('\n')) &&
-            rewritten.substr(rewritten.find('\n', rewritten.find('\n') + 1) + 1) ==
-                test::with_alert_grants(expected),
+        rewritten.substr(rewritten.find('\n', rewritten.find('\n') + 1) + 1) ==
+        test::with_alert_grants(expected),
         "Actual acquired-masteries save adds fixed Alert and retains other grants, wounds, resources, inventories and history apart from module identity and checksum");
     check(!old_party.state().training_rest &&
-              std::all_of(old_party.state().roster.begin(), old_party.state().roster.end(),
-                          [](const auto &m)
-                          {
-                              return m.character.training_edits().empty();
-                          }),
-          "Loading an acquired-masteries save does not invent rest windows or history");
+          std::all_of(old_party.state().roster.begin(), old_party.state().roster.end(),
+                      [](const auto & m)
+    {
+        return m.character.training_edits().empty();
+    }),
+    "Loading an acquired-masteries save does not invent rest windows or history");
     // Missing old-save mastery, reserve members and dead actors get no window.
     CampaignParty excluded(module());
     excluded.add_pc(hero("fighter"));

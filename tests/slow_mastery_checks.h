@@ -30,10 +30,10 @@ void lifecycle()
     forged.replace(0, 3, "FX6");
     rejects(
         [&]
-        {
-            std::istringstream bytes(forged);
-            (void)fx::read_effects(bytes);
-        });
+    {
+        std::istringstream bytes(forged);
+        (void)fx::read_effects(bytes);
+    });
     auto whole = e;
     std::uint64_t rng = 41, whole_rng = rng;
     std::array<fx::EffectSubject, 1> subjects{{{1, e, {}}}}, whole_subjects{{{1, whole, {}}}};
@@ -55,29 +55,34 @@ void lifecycle()
         fx::apply_attack_mastery(full, fx::EffectKind::slow, 777, full.active.size() + 100,
                                  "Source", 6000);
     check(!fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 999) &&
-              fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 99),
+          fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 99),
           "Full store permits same-source Slow refresh only");
     fx::apply_attack_mastery(full, fx::EffectKind::slow, 777, 99, "Master", 3000);
     check(full.active.size() == fx::effect_limit, "Refresh does not consume storage");
-    for (unsigned duration : {0u, 6001u})
+    for (unsigned duration :
+            {
+                0u, 6001u
+            })
     {
         auto before = e;
         rejects(
             [&]
-            {
-                fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 99, "Master", duration);
-            });
+        {
+            fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 99, "Master", duration);
+        });
         check(e == before, "Malformed Slow duration rejects atomically");
     }
-    for (const auto bytes : {"FX7 1 0 0 0", "FX7 2 1 1 7 777 99 \"Master\" 1 6000 0 0 0",
-                             "FX7 2 1 1 7 777 99 \"Master\" 0 6001 0 0 0",
-                             "FX7 2 1 1 7 777 99 \"Master\" 0 6000 1 0 0"})
+    for (const auto bytes :
+            {"FX7 1 0 0 0", "FX7 2 1 1 7 777 99 \"Master\" 1 6000 0 0 0",
+             "FX7 2 1 1 7 777 99 \"Master\" 0 6001 0 0 0",
+             "FX7 2 1 1 7 777 99 \"Master\" 0 6000 1 0 0"
+            })
         rejects(
             [&]
-            {
-                std::istringstream input(bytes);
-                (void)fx::read_effects(input);
-            });
+    {
+        std::istringstream input(bytes);
+        (void)fx::read_effects(input);
+    });
 }
 
 void consumers()
@@ -93,30 +98,33 @@ void consumers()
     {
         auto roster = actors;
         auto base =
-            p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
+        p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
         inject(roster[0], unit(*base, 1).persistent, e);
         auto c = p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
         turn(*c, 1);
         return c;
     };
-    for (bool frost : {false, true})
+    for (bool frost :
+            {
+                false, true
+            })
     {
         auto c = make(slow(frost));
         const int speed = frost ? 10 : 20;
         check(unit(*c, 1).movement_feet == speed, "Slow participates in live combat Speed");
         const auto statuses = unit(*c, 1).status_messages;
         check(std::any_of(statuses.begin(), statuses.end(),
-                          [](const auto &m)
-                          {
-                              return m.source.starts_with("Slow (");
-                          }),
-              "Slow status identifies its source");
+                          [](const auto & m)
+        {
+            return m.source.starts_with("Slow (");
+        }),
+        "Slow status identifies its source");
         check(std::any_of(statuses.begin(), statuses.end(),
-                          [](const auto &m)
-                          {
-                              return m.source.starts_with("Ray of Frost:");
-                          }) == frost,
-              "Slow is never mislabeled Ray of Frost");
+                          [](const auto & m)
+        {
+            return m.source.starts_with("Ray of Frost:");
+        }) == frost,
+        "Slow is never mislabeled Ray of Frost");
         act(*c, "dash");
         check(unit(*c, 1).movement_feet == speed * 2, "Action Dash gains reduced Speed");
         act(*c, "cunning_dash");
@@ -129,9 +137,9 @@ void consumers()
         old.replace(old.find(p.identity().version), p.identity().version.size(), "0.6.57");
         rejects(
             [&]
-            {
-                (void)p.rule_module().restore(old);
-            });
+        {
+            (void)p.rule_module().restore(old);
+        });
         auto e = slow(frost);
         e.prone = true;
         c = make(e);
@@ -159,14 +167,14 @@ void consumers()
     auto vitals = p.member(1).vitals;
     rejects(
         [&]
-        {
-            p.rule_module().migrate_character_state(old, p.member(1).character.sheet(), vitals);
-        });
+    {
+        p.rule_module().migrate_character_state(old, p.member(1).character.sheet(), vitals);
+    });
     p.advance_time_milliseconds(6000);
     for (unsigned n = 0; n < 6; ++n)
         copy.advance_time_milliseconds(1000);
     check(encode_campaign(copy, nullptr, "slow-consumers") ==
-              encode_campaign(p, nullptr, "slow-consumers"),
+          encode_campaign(p, nullptr, "slow-consumers"),
           "Campaign chunking preserves Slow/Frost expiry and random state");
 }
 

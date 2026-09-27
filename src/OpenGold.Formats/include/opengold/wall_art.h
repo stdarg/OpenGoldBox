@@ -32,6 +32,6 @@ struct WallArtSet
 // Inputs are decompressed DAX records. Resource selection belongs to the host.
 [[nodiscard]] std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record);
 [[nodiscard]] std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definitions,
-                                                        std::span<const WallTile> tiles);
+        std::span<const WallTile> tiles);
 } // namespace opengold::por
 #endif

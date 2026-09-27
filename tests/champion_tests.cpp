@@ -95,20 +95,26 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed,
-            std::vector<std::string> gear = {"longsword"}, bool prone = false)
+std::vector<std::string> gear = {"longsword"}, bool prone = false)
 {
     auto c = rules.create({{8, 8, std::vector<std::uint8_t>(64)},
-                           {{1,
-                             "campaign-character",
-                             "Champion",
-                             0,
-                             {2, 2},
-                             rules.character_profile(h.sheet(), gear).data,
-                             prone ? std::optional<VitalState>{{h.sheet().hit_points, false,
-                                                                "SRD3 2 0 0 0 0 0 FX4 1 0 0 1"}}
-                                   : std::nullopt},
-                            {2, "dummy", "Target", 1, {3, 2}}}},
-                          seed);
+        {   {
+                1,
+                "campaign-character",
+                "Champion",
+                0,
+                {2, 2},
+                rules.character_profile(h.sheet(), gear).data,
+                prone ? std::optional<VitalState>{{
+                        h.sheet().hit_points, false,
+                         "SRD3 2 0 0 0 0 0 FX4 1 0 0 1"
+                    }
+                }
+: std::nullopt
+            },
+            {2, "dummy", "Target", 1, {3, 2}}
+        }},
+    seed);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     return c;
@@ -146,43 +152,43 @@ void grants_and_checks()
         auto has_grant = [&](std::string_view id)
         {
             return std::any_of(h.sheet().grants.begin(), h.sheet().grants.end(),
-                               [&](const auto &g)
-                               {
-                                   return g.id == id;
-                               });
+                               [&](const auto & g)
+            {
+                return g.id == id;
+            });
         };
         check(has_grant("subclass:champion") == champion &&
-                  has_grant("feature:remarkable_athlete") == champion,
+              has_grant("feature:remarkable_athlete") == champion,
               "Subclass and both feature grants follow ordinary level three acquisition");
         check(rules->character_profile(h.sheet(), {})
-                  .data.starts_with(level == 4   ? "PC39 "
-                                    : champion   ? "PC31 "
-                                    : level == 2 ? "PC30 "
-                                                 : "PC28 "),
+              .data.starts_with(level == 4   ? "PC39 "
+                                : champion   ? "PC31 "
+                                : level == 2 ? "PC30 "
+                                : "PC28 "),
               "Champion profile is conditional");
         const auto athletics = rules->ability_check(h.sheet(), {}, 0, "athletics", {}, {});
         check(athletics.advantage == champion,
               "Strength Athletics gains Advantage only for Champion");
         check(!rules->ability_check(h.sheet(), {}, 1, "athletics", {}, {}).advantage &&
-                  !rules->ability_check(h.sheet(), {}, 0, "acrobatics", {}, {}).advantage,
+              !rules->ability_check(h.sheet(), {}, 0, "acrobatics", {}, {}).advantage,
               "Other ability/skill combinations excluded");
-        const auto armored = rules->ability_check(h.sheet(), std::vector<std::string>{"hide"}, 0,
-                                                  "athletics", {}, {});
+        const auto armored = rules->ability_check(h.sheet(), std::vector<std::string> {"hide"}, 0,
+            "athletics", {}, {});
         check(armored.advantage == champion && !armored.disadvantage,
               "Trained Fighter armor does not cancel Advantage");
         if (champion)
         {
             auto forged = h.sheet();
             std::erase_if(forged.grants,
-                          [](const auto &g)
-                          {
-                              return g.id == "feature:improved_critical";
-                          });
+                          [](const auto & g)
+            {
+                return g.id == "feature:improved_critical";
+            });
             rejects(
                 [&]
-                {
-                    (void)rules->character_profile(forged, {});
-                });
+            {
+                (void)rules->character_profile(forged, {});
+            });
         }
         for (unsigned seed = 0; seed < 24; ++seed)
         {
@@ -200,15 +206,18 @@ void critical_and_movement()
 {
     auto rules = custom();
     for (unsigned level = 1; level <= 4; ++level)
-        for (bool unarmed : {false, true})
+        for (bool unarmed :
+                {
+                    false, true
+                })
         {
             bool nineteen = false, twenty = false;
             for (unsigned seed = 0; seed < 400 && !(nineteen && twenty); ++seed)
             {
                 auto h = hero(level);
                 auto c = battle(*rules, h, seed,
-                                unarmed ? std::vector<std::string>{}
-                                        : std::vector<std::string>{"longsword"});
+                                unarmed ? std::vector<std::string> {}
+                                : std::vector<std::string> {"longsword"});
                 const auto before = unit(*c);
                 auto expected_rng = random_state(*c);
                 const int expected_roll = srd5::roll_die(expected_rng, 20);
@@ -226,12 +235,12 @@ void critical_and_movement()
                 if (critical)
                 {
                     const int expected_damage = unarmed ? 1 + h.sheet().modifiers[0]
-                                                        : srd5::roll_die(expected_rng, 8) +
-                                                              srd5::roll_die(expected_rng, 8) +
-                                                              h.sheet().modifiers[0];
+                                                : srd5::roll_die(expected_rng, 8) +
+                                                srd5::roll_die(expected_rng, 8) +
+                                                h.sheet().modifiers[0];
                     check(
                         unit(*c, 2).hit_points == 1000 - expected_damage &&
-                            random_state(*c) == expected_rng,
+                        random_state(*c) == expected_rng,
                         "Critical doubles weapon dice, never flat damage, with exact RNG consumption");
                 }
                 check(bool(c->snapshot().free_movement) == (critical && level >= 3),
@@ -239,7 +248,7 @@ void critical_and_movement()
                 if (!c->snapshot().free_movement)
                     continue;
                 check(c->snapshot().free_movement->remaining_feet == 15 && !has(*c, "dash") &&
-                          !has(*c, "action_surge"),
+                      !has(*c, "action_surge"),
                       "Half Speed allowance and exclusive legal actions");
                 const auto saved = c->save();
                 auto copy = rules->restore(saved);
@@ -251,9 +260,9 @@ void critical_and_movement()
                 malformed.replace(tail + 1, malformed.size() - tail - 1, "1 2 19 999 0 2 2\n");
                 rejects(
                     [&]
-                    {
-                        (void)rules->restore(malformed);
-                    });
+                {
+                    (void)rules->restore(malformed);
+                });
                 Command step;
                 for (const auto &offered : c->legal_commands())
                     if (offered.verb == "move" && offered.destination == Cell{1, 2})
@@ -262,13 +271,13 @@ void critical_and_movement()
                 check(c->submit(step) && copy->submit(step) && c->save() == copy->save(),
                       "Free movement resumes identically and provokes no reaction");
                 check(c->snapshot().free_movement &&
-                          c->snapshot().free_movement->remaining_feet == 10 &&
-                          !c->snapshot().reaction_pending,
+                      c->snapshot().free_movement->remaining_feet == 10 &&
+                      !c->snapshot().reaction_pending,
                       "Free movement spends its own budget");
                 act(*c, "end");
                 check(!c->snapshot().free_movement && c->snapshot().actor == 1 &&
-                          unit(*c).movement_feet == before.movement_feet && !unit(*c).action &&
-                          unit(*c).reaction == before.reaction,
+                      unit(*c).movement_feet == before.movement_feet && !unit(*c).action &&
+                      unit(*c).reaction == before.reaction,
                       "Finish free move does not end turn or restore/spend other budgets");
             }
             check(nineteen && twenty,
@@ -306,31 +315,43 @@ void savage_and_prone()
 void reaction_continuation()
 {
     auto rules = custom();
-    for (bool block : {false, true})
-        for (bool lethal : {false, true})
+    for (bool block :
+            {
+                false, true
+            })
+        for (bool lethal :
+                {
+                    false, true
+                })
         {
             bool covered = false;
             for (unsigned seed = 0; seed < 400 && !covered; ++seed)
             {
                 auto h = hero();
                 auto c = rules->create(
-                    {{8, 8, std::vector<std::uint8_t>(64)},
-                     {{1,
-                       "campaign-character",
-                       "Champion",
-                       0,
-                       {2, 2},
-                       rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"})
-                           .data},
-                      {2,
-                       "dummy",
-                       "Mover",
-                       1,
-                       {3, 2},
-                       {},
-                       lethal ? std::optional<VitalState>{{1, false, {}}} : std::nullopt},
-                      {3, "dummy", "Reserve", 1, {7, 7}}}},
-                    seed);
+                {
+                    {8, 8, std::vector<std::uint8_t>(64)},
+                    {   {
+                            1,
+                            "campaign-character",
+                            "Champion",
+                            0,
+                            {2, 2},
+                            rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"})
+                            .data
+                        },
+                        {
+                            2,
+                            "dummy",
+                            "Mover",
+                            1,
+                            {3, 2},
+                            {},
+lethal ? std::optional<VitalState>{{1, false, {}}} : std::nullopt
+                        },
+                        {3, "dummy", "Reserve", 1, {7, 7}}
+                    }},
+                seed);
                 while (c->snapshot().actor != 2)
                     act(*c, "end");
                 Command ticket;
@@ -347,7 +368,8 @@ void reaction_continuation()
                 auto copy = rules->restore(c->save());
                 check(copy->save() == c->save(),
                       "Critical reaction phase restores exactly, including a killed mover");
-                const Cell destination = block ? Cell{4, 2} : Cell{2, 1};
+                const Cell destination = block ? Cell{4, 2} :
+                                         Cell{2, 1};
                 Command step;
                 for (const auto &v : c->legal_commands())
                     if (v.verb == "move" && v.destination == destination)
@@ -411,9 +433,9 @@ void campaign_and_cancellation()
             CampaignParty copy(module());
             copy.restore(decode_campaign(bytes, *srd5::character_rules(), *rules,
                                          "champion-current", nullptr)
-                             .party);
+                         .party);
             check(encode_campaign(copy, nullptr, "champion-current") == bytes &&
-                      copy.ability_check(id, 0, "athletics").advantage,
+                  copy.ability_check(id, 0, "athletics").advantage,
                   "Ordinary campaign save/reload keeps subclass and check source");
             check(bool(copy.rest(RestKind::short_rest)), "Champion uses ordinary Short Rest");
             if (copy.state().short_rest)
@@ -432,14 +454,14 @@ void campaign_and_cancellation()
                       "campaign-character",
                       "Surprised Champion",
                       0,
-                      {1, 1},
-                      rules->character_profile(h.sheet(), {}).data};
+        {1, 1},
+        rules->character_profile(h.sheet(), {}).data};
         p.surprised = true;
         std::uint64_t rng = seed;
         const int expected = srd5::roll_die(rng, 20) + h.sheet().modifiers[1];
         auto c = rules->create(
-            {{8, 8, std::vector<std::uint8_t>(64)}, {p, {2, "vanguard", "Enemy", 1, {6, 6}}}},
-            seed);
+        {{8, 8, std::vector<std::uint8_t>(64)}, {p, {2, "vanguard", "Enemy", 1, {6, 6}}}},
+        seed);
         check(unit(*c).initiative == expected,
               "Surprise Disadvantage cancels Champion Initiative Advantage without extra dice");
     }
@@ -455,15 +477,19 @@ void repeated_criticals_and_terrain()
         Battlefield board{8, 8, std::vector<std::uint8_t>(64)};
         board.terrain[2 * 8 + 1] = 2;
         auto c = rules->create(
-            {board,
-             {{1,
-               "campaign-character",
-               "Champion",
-               0,
-               {2, 2},
-               rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data},
-              {2, "dummy", "Target", 1, {3, 2}}}},
-            seed);
+        {
+            board,
+            {   {
+                    1,
+                    "campaign-character",
+                    "Champion",
+                    0,
+                    {2, 2},
+                    rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data
+                },
+                {2, "dummy", "Target", 1, {3, 2}}
+            }},
+        seed);
         while (c->snapshot().actor != 1)
             act(*c, "end");
         act(*c, "melee", 2);
@@ -475,7 +501,7 @@ void repeated_criticals_and_terrain()
             if (v.verb == "move" && v.destination == Cell{1, 2})
                 step = v;
         check(step.actor == 1 && copy->submit(step) &&
-                  copy->snapshot().free_movement->remaining_feet == 5,
+              copy->snapshot().free_movement->remaining_feet == 5,
               "Difficult Terrain consumes ten feet of free movement");
         act(*c, "end");
         act(*c, "action_surge");
@@ -504,16 +530,20 @@ void fixtures()
     {
         auto h = hero();
         auto c = rules->create(
-            {{8, 8, std::vector<std::uint8_t>(64)},
-             {{1,
-               "campaign-character",
-               "Champion",
-               0,
-               {2, 2},
-               rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data},
-              {2, "vanguard", "Enemy", 1, {3, 2}},
-              {3, "vanguard", "Reserve", 1, {6, 6}}}},
-            seed);
+        {
+            {8, 8, std::vector<std::uint8_t>(64)},
+            {   {
+                    1,
+                    "campaign-character",
+                    "Champion",
+                    0,
+                    {2, 2},
+                    rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data
+                },
+                {2, "vanguard", "Enemy", 1, {3, 2}},
+                {3, "vanguard", "Reserve", 1, {6, 6}}
+            }},
+        seed);
         while (c->snapshot().actor != 1)
             act(*c, "end");
         act(*c, "melee", 2);

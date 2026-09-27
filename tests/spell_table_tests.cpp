@@ -56,8 +56,8 @@ auto module()
 auto custom()
 {
     return srd5::parse_content(
-        read(root / "data/rules/srd-5.2.1/combat.rules") +
-        "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\nsaves target 0 0 0 0 0 0\n");
+               read(root / "data/rules/srd-5.2.1/combat.rules") +
+               "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\nsaves target 0 0 0 0 0 0\n");
 }
 
 Character hero(std::string klass, unsigned level, std::vector<std::string> cantrips)
@@ -97,7 +97,8 @@ std::vector<Caster> casters()
     };
     add("wizard-1", hero("wizard", 1, {"fire_bolt", "poison_spray", "ray_of_frost"}).sheet());
     add("wizard-4", hero("wizard", 4, {"shocking_grasp", "chill_touch", "fire_bolt"}).sheet());
-    { // Cleric prepared lists are set directly on the sheet, as in chill_touch_tests.
+    {
+        // Cleric prepared lists are set directly on the sheet, as in chill_touch_tests.
         auto s = hero("cleric", 1, {"sacred_flame"}).sheet();
         s.prepared_spells = {"cure_wounds"};
         add("cleric-1", s);
@@ -110,14 +111,14 @@ std::vector<Caster> casters()
     add("warlock-1", hero("warlock", 1, {"eldritch_blast", "poison_spray"}).sheet());
     add("sorcerer-1",
         hero("sorcerer", 1, {"fire_bolt", "poison_spray", "ray_of_frost", "shocking_grasp"})
-            .sheet());
+        .sheet());
     // Gear variants exercise the somatic-hand and untrained-armor gates that
     // suppress every spell offer.
     add("wizard-4+shield",
-        hero("wizard", 4, {"shocking_grasp", "chill_touch", "fire_bolt"}).sheet(),
-        {"quarterstaff", "shield"});
+    hero("wizard", 4, {"shocking_grasp", "chill_touch", "fire_bolt"}).sheet(),
+    {"quarterstaff", "shield"});
     add("wizard-4+plate", hero("wizard", 4, {"shocking_grasp", "chill_touch", "fire_bolt"}).sheet(),
-        {"plate"});
+    {"plate"});
     return result;
 }
 
@@ -148,15 +149,19 @@ std::string snapshot()
     for (const auto &caster : casters())
     {
         const auto profile = rules->character_profile(caster.sheet, caster.gear);
-        for (int feet : {5, 30, 60, 120, 125})
+        for (int feet :
+                {
+                    5, 30, 60, 120, 125
+                })
         {
             const int column = 1 + feet / 5;
             auto c =
-                rules->create({{28, 4, std::vector<std::uint8_t>(28 * 4)},
-                               {{1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                                {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
-                                {3, "target", "Enemy", 1, {column, 2}}}},
-                              13);
+            rules->create({{28, 4, std::vector<std::uint8_t>(28 * 4)},
+                {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+                    {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
+                    {3, "target", "Enemy", 1, {column, 2}}
+                }},
+            13);
             // Seed 13 does not always start the caster; advance to their turn.
             for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             {
@@ -195,13 +200,13 @@ void table()
         // Components must agree with the catalog the components table served.
         const auto *components = spell_components(spell.id);
         check(components && components->verbal == spell.verbal &&
-                  components->somatic == spell.somatic,
+              components->somatic == spell.somatic,
               "Row components match the component catalog");
         const bool saves = spell.pattern == SpellPattern::save_damage ||
                            spell.pattern == SpellPattern::save_condition;
         check(saves || spell.save == Ability::strength, "Only save patterns carry a save ability");
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
-                  spell.pattern == SpellPattern::repeat_attack,
+              spell.pattern == SpellPattern::repeat_attack,
               "Only multi-instance patterns repeat");
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
                             spell.pattern == SpellPattern::save_condition;
@@ -221,9 +226,11 @@ void table()
           "Non-spell verbs are not rows");
     // Every id the access catalog knows must exist in the table, so the two
     // cannot drift apart.
-    for (const auto *id : {"chill_touch", "shocking_grasp", "eldritch_blast", "ray_of_frost",
-                           "sacred_flame", "fire_bolt", "poison_spray", "cure_wounds",
-                           "healing_word", "magic_missile", "scorching_ray", "blindness"})
+    for (const auto *id :
+            {"chill_touch", "shocking_grasp", "eldritch_blast", "ray_of_frost",
+             "sacred_flame", "fire_bolt", "poison_spray", "cure_wounds",
+             "healing_word", "magic_missile", "scorching_ray", "blindness"
+            })
         check(find_spell(id) != nullptr, "Access catalog ids are all table rows");
 }
 
@@ -243,8 +250,9 @@ struct Probe
     unsigned level;
 };
 
-constexpr Probe probes[]{{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
-                         {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}};
+constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
+    {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}
+};
 
 // The widest legitimate caster for a class and level: every cantrip its own
 // entitlement offers, plus every levelled row the profile writer accepts.
@@ -272,7 +280,8 @@ CharacterSheet widest(const RulesModule &rules, const Probe &probe)
             sheet = std::move(trial);
         }
         catch (const std::exception &)
-        { /* not available to this class or level */
+        {
+            /* not available to this class or level */
         }
     }
     return sheet;
@@ -301,10 +310,11 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const CharacterS
     const auto profile = rules.character_profile(sheet, gear);
     const int column = 1 + feet / 5;
     auto c = rules.create({{34, 4, std::vector<std::uint8_t>(34 * 4)},
-                           {{1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                            {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
-                            {3, "target", "Enemy", 1, {column, 2}}}},
-                          13);
+        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+            {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
+            {3, "target", "Enemy", 1, {column, 2}}
+        }},
+    13);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
     {
         const auto end = find(*c, "end", 0);
@@ -330,7 +340,7 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     check(!find(*beyond, row.id, target), "A spell is not offered past its range");
     const auto untouched = beyond->save();
     check(!beyond->submit({beyond->snapshot().revision, 1, target, std::string(row.id)}) &&
-              beyond->save() == untouched,
+          beyond->save() == untouched,
           "Out-of-range casting is rejected atomically");
 
     // Somatic spells need a free hand; a weapon plus shield occupies both.
@@ -400,14 +410,15 @@ void behaviour()
 void profile_tags()
 {
     auto rules = custom();
-    const auto loads = [&](const std::string &profile)
+    const auto loads = [&](const std::string & profile)
     {
         try
         {
             (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                                  {2, "target", "Target", 1, {3, 1}}}},
-                                13);
+                {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
+                    {2, "target", "Target", 1, {3, 1}}
+                }},
+            13);
             return true;
         }
         catch (const std::exception &)
@@ -428,7 +439,7 @@ void profile_tags()
     split >> tag >> level >> features >> packed;
     std::getline(split, rest);
     check(!packed.empty() && packed != "0", "A Wizard profile stores spells as a bitmask");
-    const auto rebuild = [&](const std::string &new_tag, const std::string &spell_field)
+    const auto rebuild = [&](const std::string & new_tag, const std::string & spell_field)
     {
         return new_tag + " " + level + " " + features + " " + spell_field + rest;
     };
@@ -436,7 +447,9 @@ void profile_tags()
 
     // Unrecognised tags: below the floor, above the ceiling, non-numeric, and
     // not a PC tag at all. An unknown tag must never read as "has everything".
-    for (const auto &bad : {"PC00", "PC42", "PC99", "PCxx", "XX35", "PC-1"})
+    for (const auto &bad :
+            {"PC00", "PC42", "PC99", "PCxx", "XX35", "PC-1"
+            })
         check(!loads(rebuild(bad, packed)),
               ("Profile tag " + std::string(bad) + " must be rejected").c_str());
 

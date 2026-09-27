@@ -88,8 +88,8 @@ presentation::NodeOwner<> combat_scene(const std::shared_ptr<CampaignParty> &par
 void CharacterCreationView::setup_party()
 {
     body_catalog_ = por::CombatBodyCatalog::load(
-        std::filesystem::u8path(game_combat_body_file().utf8().get_data()),
-        std::filesystem::u8path(game_combat_weapon_file().utf8().get_data()));
+                        std::filesystem::u8path(game_combat_body_file().utf8().get_data()),
+                        std::filesystem::u8path(game_combat_weapon_file().utf8().get_data()));
     const auto pack = std::filesystem::u8path(game_rules_file().utf8().get_data());
     campaign_ = std::make_shared<CampaignParty>(srd5::load(pack));
     auto panel = presentation::instantiate_scene("res://scenes/party_panel.tscn");
@@ -97,40 +97,40 @@ void CharacterCreationView::setup_party()
     presentation::attach_child(*this, std::move(panel));
     get_node<Control>("PartyPanel")->hide();
     get_node<OptionButton>("PartyPanel/Grip")
-        ->connect("item_selected", callable_mp(this, &CharacterCreationView::party_grip_selected));
+    ->connect("item_selected", callable_mp(this, &CharacterCreationView::party_grip_selected));
     get_node<Button>("Party")->connect(
         "pressed", callable_mp(this, &CharacterCreationView::party_action).bind(0));
     get_node<Button>("AddParty")
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::party_action).bind(1));
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::party_action).bind(1));
     get_node<Button>("ReturnParty")
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::party_action).bind(9));
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::party_action).bind(9));
     const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
-                                              "Unequip", "Explore", "Combat", "Close"};
+            "Unequip", "Explore", "Combat", "Close"};
     const std::array<int, 9> actions{2, 3, 4, 5, 6, 10, 7, 8, 11};
     for (unsigned i = 0; i < buttons.size(); ++i)
         get_node<Button>(gs(std::string("PartyPanel/") + buttons[i]))
-            ->connect("pressed",
-                      callable_mp(this, &CharacterCreationView::party_action).bind(actions[i]));
+        ->connect("pressed",
+                  callable_mp(this, &CharacterCreationView::party_action).bind(actions[i]));
     get_node<ItemList>("PartyPanel/Roster")
-        ->connect("item_selected", callable_mp(this, &CharacterCreationView::party_selected));
+    ->connect("item_selected", callable_mp(this, &CharacterCreationView::party_selected));
     get_node<Button>("PartyPanel/Pool")
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::show_pool));
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::show_pool));
     get_node<ItemList>("PoolModal/List")
-        ->connect("item_selected", callable_mp(this, &CharacterCreationView::pool_selected));
+    ->connect("item_selected", callable_mp(this, &CharacterCreationView::pool_selected));
     get_node<Button>("PoolModal/Add")
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::pool_add));
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::pool_add));
     get_node<Button>("PoolModal/Close")
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::close_pool));
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::close_pool));
     get_node<Window>("PoolModal")
-        ->connect("close_requested", callable_mp(this, &CharacterCreationView::close_pool));
+    ->connect("close_requested", callable_mp(this, &CharacterCreationView::close_pool));
     get_node<Button>("TownSheet/Close")
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::close_town_sheet));
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::close_town_sheet));
     get_node<Window>("TownSheet")
-        ->connect("close_requested", callable_mp(this, &CharacterCreationView::close_town_sheet));
+    ->connect("close_requested", callable_mp(this, &CharacterCreationView::close_town_sheet));
     get_node<Button>("PartyPanel/Modifiers")
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::show_modifiers));
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::show_modifiers));
     get_node<Button>("PartyPanel/SavingThrows")
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::show_saving_throws));
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::show_saving_throws));
     get_node<RichTextLabel>("PartyPanel/Sheet")->set_use_bbcode(true);
     setup_saves();
     setup_defeat();
@@ -171,7 +171,7 @@ void CharacterCreationView::party_layout()
     place("PartyPanel/ReviewTraining", Rect2(610, h - 176, w - 844, 36));
     place("PartyPanel/Spellbook", Rect2(w - 224, h - 176, 200, 36));
     const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
-                                              "Unequip", "Explore", "Combat", "Close"};
+            "Unequip", "Explore", "Combat", "Close"};
     const double bw = (w - 64) / 5;
     for (unsigned i = 0; i < buttons.size(); ++i)
         place((std::string("PartyPanel/") + buttons[i]).c_str(),
@@ -180,14 +180,16 @@ void CharacterCreationView::party_layout()
     place("PartyPanel/Load", Rect2(w - 370, 24, 140, 36));
     place("PartyPanel/Pool", Rect2(w - 220, 24, 196, 36));
     if (auto *review = Object::cast_to<Window>(get_node_or_null("TrainingReview"));
-        review && review->is_visible())
+            review && review->is_visible())
         review->popup_centered();
     pool_layout();
     place("PartyPanel/Status", Rect2(24, h - 39, w - 48, 32));
     place("PartyPanel/Modifiers", Rect2(24 + 4 * (bw + 4), h - 81, bw * 0.42f, 36));
     place("PartyPanel/SavingThrows",
           Rect2(28 + 4 * (bw + 4) + bw * 0.42f, h - 81, bw * 0.58f - 4, 36));
-    for (const auto *name : {"CampaignTown", "CampaignCombat"})
+    for (const auto *name :
+            {"CampaignTown", "CampaignCombat"
+            })
         if (auto *child = Object::cast_to<Control>(get_node_or_null(name)))
             child->set_size(get_size());
 }
@@ -239,7 +241,7 @@ void CharacterCreationView::refresh_party()
     auto *items = get_node<ItemList>("PartyPanel/Inventory");
     items->clear();
     std::string sheet = i18n::utf8(
-        "Create a character, finish its sheet, then Add to party.\n\nSix PC positions and two NPC positions. Removed members remain in the roster.");
+                            "Create a character, finish its sheet, then Add to party.\n\nSix PC positions and two NPC positions. Removed members remain in the roster.");
     presentation::refresh_grip(*get_node<OptionButton>("PartyPanel/Grip"), {}, {});
     if (!state.roster.empty())
     {
@@ -262,24 +264,25 @@ void CharacterCreationView::refresh_party()
                             gs(std::to_string(item.quantity)));
         }
         get_node<TextureRect>("PartyPanel/Portrait")
-            ->set_texture(portrait_texture(m.character.appearance(), m.character.creation_data()));
+        ->set_texture(portrait_texture(m.character.appearance(), m.character.creation_data()));
         const auto resolved = por::resolve_combat_appearance(m, *body_catalog_);
         for (unsigned pose = 0; pose < 2; ++pose)
         {
             const auto icon = resolved.icon(*art_, pose != 0);
             get_node<TextureRect>(pose ? "PartyPanel/ActionSprite" : "PartyPanel/ReadySprite")
-                ->set_texture(presentation::image_texture(icon));
+            ->set_texture(presentation::image_texture(icon));
         }
     }
     if (state.roster.empty())
         for (const char *name :
-             {"PartyPanel/Portrait", "PartyPanel/ReadySprite", "PartyPanel/ActionSprite"})
+                {"PartyPanel/Portrait", "PartyPanel/ReadySprite", "PartyPanel/ActionSprite"
+                })
             get_node<TextureRect>(name)->set_texture({});
     auto *spellbook = get_node<Button>("PartyPanel/Spellbook");
     spellbook->set_visible(!state.roster.empty() &&
                            campaign_->rule_module()
-                                   .spell_access(state.roster[roster_index_].character.sheet())
-                                   .spellbook_choices > 0);
+                           .spell_access(state.roster[roster_index_].character.sheet())
+                           .spellbook_choices > 0);
     spellbook->set_disabled(campaign_->in_combat() || state.rest_activity.has_value() ||
                             state.short_rest.has_value() || state.spell_rest.has_value() ||
                             state.training_rest.has_value());
@@ -289,12 +292,13 @@ void CharacterCreationView::refresh_party()
     review->set_disabled(campaign_->in_combat());
     get_node<RichTextLabel>("PartyPanel/Sheet")->set_text(gs(sheet));
     get_node<Label>("PartyPanel/Status")
-        ->set_text(
-            error_.is_empty()
-                ? i18n::text("New PCs receive 250 gp / Save game stores this campaign on disk.")
-                : error_);
+    ->set_text(
+        error_.is_empty()
+        ? i18n::text("New PCs receive 250 gp / Save game stores this campaign on disk.")
+        : error_);
     for (const char *name :
-         {"Remove", "Rejoin", "Equip", "Unequip", "Explore", "Combat", "Modifiers", "SavingThrows"})
+            {"Remove", "Rejoin", "Equip", "Unequip", "Explore", "Combat", "Modifiers", "SavingThrows"
+            })
         get_node<Button>(gs(std::string("PartyPanel/") + name))->set_disabled(state.roster.empty());
 }
 
@@ -318,7 +322,7 @@ void CharacterCreationView::equipment_art_check()
         get_node<ItemList>("PartyPanel/Inventory")->select(index);
         press(equip ? "PartyPanel/Equip" : "PartyPanel/Unequip");
         if (auto *choice = Object::cast_to<Window>(get_node_or_null("EquipmentChoice"));
-            choice && choice->is_visible())
+                choice && choice->is_visible())
         {
             auto *hand = choice->get_node<OptionButton>("Hand");
             hand->select(0);
@@ -333,13 +337,16 @@ void CharacterCreationView::equipment_art_check()
     };
     const auto verify_preview = [&](unsigned member, unsigned body)
     {
-        for (bool action : {false, true})
+        for (bool action :
+                {
+                    false, true
+                })
         {
             const auto texture =
                 get_node<TextureRect>(action ? "PartyPanel/ActionSprite" : "PartyPanel/ReadySprite")
-                    ->get_texture();
+                ->get_texture();
             require(texture.is_valid() &&
-                        texture->get_image()->get_data() == expected(member, body, action),
+                    texture->get_image()->get_data() == expected(member, body, action),
                     "Party preview differs from equipped body in ready/action pose");
         }
         require(campaign_->state().roster.at(member).character.appearance().combat_body == 24,
@@ -350,13 +357,13 @@ void CharacterCreationView::equipment_art_check()
         auto *combat = get_node<CombatView>("CampaignCombat");
         for (unsigned member = 0; member < 2; ++member)
             for (bool action : {false, true})
-            {
-                const auto texture =
-                    combat->sprite_texture(campaign_->state().roster.at(member).id, action);
-                require(texture.is_valid() &&
-                            texture->get_image()->get_data() == expected(member, 34, action),
-                        "Combat textures differ from the equipment shown in party previews");
-            }
+        {
+            const auto texture =
+            combat->sprite_texture(campaign_->state().roster.at(member).id, action);
+            require(texture.is_valid() &&
+                    texture->get_image()->get_data() == expected(member, 34, action),
+                    "Combat textures differ from the equipment shown in party previews");
+        }
     };
     if (check_stage_ == 0)
     {
@@ -371,9 +378,12 @@ void CharacterCreationView::equipment_art_check()
             a.portrait = recommended_portrait(draft);
             Character character(*srd5::character_rules(), draft, a);
             const auto id = member
-                                ? campaign_->recruit("check:equipment-guard", std::move(character))
-                                : campaign_->add_pc(std::move(character));
-            for (const unsigned type : {36u, 8u, 59u, 55u})
+                            ? campaign_->recruit("check:equipment-guard", std::move(character))
+                            : campaign_->add_pc(std::move(character));
+            for (const unsigned type :
+                    {
+                        36u, 8u, 59u, 55u
+                    })
             {
                 por::Equipment item;
                 item.stored.type = type;
@@ -389,7 +399,8 @@ void CharacterCreationView::equipment_art_check()
     {
         const unsigned member = (check_stage_ - 1) / 8, step = (check_stage_ - 1) % 8;
         const std::array<por::CombatEquipment, 1> sword{{{36, "Long Sword", "longsword"}}};
-        const std::array<unsigned, 8> bodies{
+        const std::array<unsigned, 8> bodies
+        {
             0, body_catalog_->choose(sword, 24).body, 24, 32, 34, 33, 0, 34};
         verify_preview(member, bodies[step]);
         if (step < 5)
@@ -411,7 +422,7 @@ void CharacterCreationView::equipment_art_check()
                     "Party inventory offers both longsword grips");
             grip->emit_signal("item_selected", 1);
             require(campaign_->profile(id).equipment.weapon_hands == 2 &&
-                        grip->get_selected_id() == 2,
+                    grip->get_selected_id() == 2,
                     "Party dropdown applies two hands");
             grip->emit_signal("item_selected", 0);
             require(campaign_->profile(id).equipment.weapon_hands == 1,
@@ -473,11 +484,11 @@ void CharacterCreationView::equipment_art_check()
                 std::filesystem::remove(path, ignored);
             }
         } save{std::filesystem::u8path(
-            ProjectSettings::get_singleton()
-                ->globalize_path("user://checks/equipment-art-" +
-                                 String::num_int64(OS::get_singleton()->get_process_id()) + ".ogs")
-                .utf8()
-                .get_data())};
+                   ProjectSettings::get_singleton()
+                   ->globalize_path("user://checks/equipment-art-" +
+                                    String::num_int64(OS::get_singleton()->get_process_id()) + ".ogs")
+                   .utf8()
+                   .get_data())};
 
         std::filesystem::create_directories(save.path.parent_path());
         save_campaign(save.path);
@@ -510,12 +521,15 @@ void CharacterCreationView::equipment_art_check()
         presentation::attach_child(
             *this, combat_scene(campaign_, *art_, *body_catalog_, std::move(encounter)));
         verify_combat();
-        for (bool action : {false, true})
+        for (bool action :
+                {
+                    false, true
+                })
         {
             const auto texture =
                 get_node<CombatView>("CampaignCombat")->sprite_texture(1000, action);
             require(texture.is_valid() && texture->get_image()->get_data() ==
-                                              presentation::rgba_image(enemy)->get_data(),
+                    presentation::rgba_image(enemy)->get_data(),
                     "Party equipment changed an encounter creature's texture");
         }
     }
@@ -548,19 +562,22 @@ void CharacterCreationView::equipment_art_check()
         {
             gear(index, true);
             require(campaign_->member(id).equipped ==
-                        std::vector<std::uint64_t>{inventory[index].id},
+                    std::vector<std::uint64_t> {inventory[index].id},
                     "Game Equip did not replace the weapon");
             const auto resolved =
                 por::resolve_combat_appearance(campaign_->member(id), *body_catalog_);
             require(resolved.appearance == appearance, "Game equipment changed character anatomy");
-            for (bool action : {false, true})
+            for (bool action :
+                    {
+                        false, true
+                    })
                 require(get_node<TextureRect>(action ? "PartyPanel/ActionSprite"
-                                                     : "PartyPanel/ReadySprite")
-                                ->get_texture()
-                                ->get_image()
-                                ->get_data() ==
-                            presentation::rgba_image(resolved.icon(*art_, action))->get_data(),
-                        "Game preview differs from shared compositor");
+                                              : "PartyPanel/ReadySprite")
+                        ->get_texture()
+                        ->get_image()
+                        ->get_data() ==
+                        presentation::rgba_image(resolved.icon(*art_, action))->get_data(),
+                                                       "Game preview differs from shared compositor");
         }
         require(inventory.size() == 48, "Game integration fixture missed reviewer weapons");
     }
@@ -611,11 +628,11 @@ void CharacterCreationView::party_action(int action)
             const auto recruited = campaign_->recruit("preview:guard", preview_guard());
             const auto &roster = campaign_->state().roster;
             roster_index_ = std::find_if(roster.begin(), roster.end(),
-                                         [&](const auto &m)
-                                         {
-                                             return m.id == recruited;
-                                         }) -
-                            roster.begin();
+                                         [&](const auto & m)
+            {
+                return m.id == recruited;
+            }) -
+            roster.begin();
         }
         if (action == 6 || action == 10)
         {
@@ -653,10 +670,10 @@ void CharacterCreationView::party_action(int action)
                     town->set_name("CampaignTown");
                     town->campaign_party(campaign_);
                     if (OS::get_singleton()->get_cmdline_user_args().has("--save-check-write"))
-                        town->save_check = [this](const auto &name)
-                        {
-                            save_checkpoint_check(name);
-                        };
+                        town->save_check = [this](const auto & name)
+                    {
+                        save_checkpoint_check(name);
+                    };
                     town->connect("save_requested",
                                   callable_mp(this, &CharacterCreationView::open_saves));
                     town->connect("party_member_selected",
@@ -744,7 +761,7 @@ void CharacterCreationView::party_check()
                 ++classes[s.character_class];
                 names.insert(s.name);
                 if (s.level != 1 || *std::min_element(s.scores.begin(), s.scores.end()) < 13 ||
-                    *std::max_element(s.scores.begin(), s.scores.end()) > 20)
+                        *std::max_element(s.scores.begin(), s.scores.end()) > 20)
                     throw std::runtime_error("Invalid pool ability range");
                 if (!s.training.complete)
                     throw std::runtime_error("Preset training must be complete");
@@ -752,12 +769,12 @@ void CharacterCreationView::party_check()
                 pool_selected(i);
             }
             if (names.size() != 48 || classes.size() != 12 ||
-                std::any_of(classes.begin(), classes.end(),
-                            [](const auto &c)
-                            {
-                                return c.second != 4;
-                            }))
-                throw std::runtime_error("Pool class counts or names invalid");
+                    std::any_of(classes.begin(), classes.end(),
+                                [](const auto & c)
+        {
+            return c.second != 4;
+        }))
+            throw std::runtime_error("Pool class counts or names invalid");
             pool_selected(19);
             get_node<ItemList>("PoolModal/List")->select(19);
         }
@@ -768,7 +785,7 @@ void CharacterCreationView::party_check()
                 const auto image = get_node<Window>("PoolModal")->get_texture()->get_image();
                 if (image.is_valid())
                     image->save_png(ProjectSettings::get_singleton()->globalize_path(
-                        "user://checks/character-pool.png"));
+                                        "user://checks/character-pool.png"));
             }
             const auto state = campaign_->checkpoint();
             pool_add();
@@ -789,18 +806,18 @@ void CharacterCreationView::party_check()
     {
         creator_->select(rules::CreationField::race,
                          OS::get_singleton()->get_cmdline_user_args().has("--adrenaline-check")
-                             ? "orc"
-                             : "dwarf");
+                         ? "orc"
+                         : "dwarf");
         creator_->select(rules::CreationField::character_class, "fighter");
         recommend_portrait();
         creator_->roll();
         creator_->name(OS::get_singleton()->get_cmdline_user_args().has("--adrenaline-check")
-                           ? "Party check Orc fighter"
-                           : "Party check Dwarf fighter");
+                       ? "Party check Orc fighter"
+                       : "Party check Dwarf fighter");
         for (unsigned i = 0; i < 6; ++i)
             creator_->assign_roll(i, i);
         for (unsigned attempt = 0; !creator_->rules().class_eligible(creator_->draft(), "fighter");
-             ++attempt)
+                ++attempt)
         {
             if (attempt == 100)
                 throw std::runtime_error("Could not roll qualified party-check fixture");
@@ -819,7 +836,7 @@ void CharacterCreationView::party_check()
                 get_node<CheckBox>("Training/Rows/Group2/history")->set_pressed(true);
                 get_node<OptionButton>("Training/Rows/Group1/Choice")->select(2);
                 get_node<OptionButton>("Training/Rows/Group1/Choice")
-                    ->emit_signal("item_selected", 2);
+                ->emit_signal("item_selected", 2);
             }
             next();
             if (creator_->step() == before)
@@ -831,11 +848,11 @@ void CharacterCreationView::party_check()
         if (campaign_->state().slots[0] == 0)
             throw std::runtime_error("Add party callback failed");
         if (!get_node<Button>("PortraitNext")->is_disabled() ||
-            !get_node<Button>("PortraitSelect")->is_disabled())
+                !get_node<Button>("PortraitSelect")->is_disabled())
             throw std::runtime_error("Added portrait controls remained enabled");
         portrait_part(1);
         if (completed_->appearance() != chosen ||
-            campaign_->member(campaign_->state().slots[0]).character.appearance() != chosen)
+                campaign_->member(campaign_->state().slots[0]).character.appearance() != chosen)
             throw std::runtime_error("Party portrait changed after adding");
         press("PartyPanel/Recruit");
         if (!campaign_->state().slots[6])
@@ -869,20 +886,20 @@ void CharacterCreationView::party_check()
         if (!get_node<RichTextLabel>("ModifiersModal/Text")->get_text().contains("Shield: +2 AC"))
             throw std::runtime_error("Party modifiers omitted equipped shield");
         if (!get_node<RichTextLabel>("ModifiersModal/Text")
-                 ->get_text()
-                 .contains(OS::get_singleton()->get_cmdline_user_args().has("--adrenaline-check")
-                               ? "Adrenaline Rush"
-                               : "Resistance to Poison damage"))
+                ->get_text()
+                .contains(OS::get_singleton()->get_cmdline_user_args().has("--adrenaline-check")
+                          ? "Adrenaline Rush"
+                          : "Resistance to Poison damage"))
             throw std::runtime_error("Created Dwarf is missing its sourced damage resistance");
         press("ModifiersModal/Close");
         press("PartyPanel/SavingThrows");
         if (!get_node<Label>("SavingThrowsModal/Title")
-                 ->get_text()
-                 .contains(
-                     gs(campaign_->state().roster.at(roster_index_).character.sheet().name)) ||
-            !get_node<RichTextLabel>("SavingThrowsModal/Text")
-                 ->get_text()
-                 .contains("saving throw proficiency"))
+                ->get_text()
+                .contains(
+                    gs(campaign_->state().roster.at(roster_index_).character.sheet().name)) ||
+                !get_node<RichTextLabel>("SavingThrowsModal/Text")
+                ->get_text()
+                .contains("saving throw proficiency"))
             throw std::runtime_error("Party saving throws did not use selected character");
         press("SavingThrowsModal/Close");
         capture("party-equipped.png");
@@ -897,7 +914,7 @@ void CharacterCreationView::party_check()
         press("ReturnParty");
         capture("party-after-combat.png");
         if (campaign_->in_combat() ||
-            campaign_->member(campaign_->state().slots[0]).vitals.resources.empty())
+                campaign_->member(campaign_->state().slots[0]).vitals.resources.empty())
             throw std::runtime_error("Combat state was not returned");
         const auto id = campaign_->state().slots[0];
         if (campaign_->member(id).character.sheet().level != 1 || !campaign_->can_advance(id))
@@ -920,7 +937,7 @@ void CharacterCreationView::party_check()
                 press("LevelUp/Confirm");
             }
         if (!get_node<RichTextLabel>("PartyPanel/Sheet")->get_text().contains("Level 2") ||
-            !get_node<RichTextLabel>("PartyPanel/Sheet")->get_text().contains("XP 300"))
+                !get_node<RichTextLabel>("PartyPanel/Sheet")->get_text().contains("XP 300"))
             throw std::runtime_error("Victory advancement is missing from character sheet");
         if (OS::get_singleton()->get_cmdline_user_args().has("--save-check-write"))
             save_checkpoint_check("advancement");
@@ -965,7 +982,7 @@ void CharacterCreationView::update_party_navigation()
     auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
     auto *fight = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat"));
     if (!fight && town && town->is_visible() && town->pending_encounter() &&
-        !campaign_->state().short_rest)
+            !campaign_->state().short_rest)
     {
         presentation::NodeOwner<> owned;
         try
@@ -1018,8 +1035,8 @@ void CharacterCreationView::update_party_navigation()
     auto *button = get_node<Button>("ReturnParty");
     button->set_disabled(!allowed);
     button->set_tooltip_text(i18n::text(
-        allowed ? N_("Inspect your party and equipment.")
-                : N_("Finish combat, dialogue or shopping before returning to the party.")));
+                                 allowed ? N_("Inspect your party and equipment.")
+                                 : N_("Finish combat, dialogue or shopping before returning to the party.")));
 }
 
 void CharacterCreationView::expedition_check()
@@ -1033,7 +1050,10 @@ void CharacterCreationView::expedition_check()
             auto character = preview_guard();
             const auto id = campaign_->add_pc(std::move(character));
             campaign_->set_wealth(id, {0, 0, 0, 500, 0, 0, 0});
-            for (unsigned type : {36, 55, 59})
+            for (unsigned type :
+                    {
+                        36, 55, 59
+                    })
             {
                 por::Equipment gear;
                 gear.stored.type = type;
@@ -1067,7 +1087,7 @@ void CharacterCreationView::expedition_check()
         return;
     auto *town = get_node<RolfTourView>("CampaignTown");
     if (const auto *state = town->saved_session();
-        state && state->can_leave() && state->snapshot().area_id == 20 && !expedition_saved_)
+            state && state->can_leave() && state->snapshot().area_id == 20 && !expedition_saved_)
     {
         const auto pack = std::filesystem::u8path(game_rules_file().utf8().get_data());
         const auto saved = encode_campaign(*campaign_, state, "expedition-fixture");
@@ -1119,7 +1139,10 @@ void CharacterCreationView::setup_defeat()
     body->set_position(Vector2(24, 90));
     body->set_size(Vector2(472, 36));
     presentation::attach_child(*dialog, std::move(body));
-    for (bool reload : {true, false})
+    for (bool reload :
+            {
+                true, false
+            })
     {
         auto button = presentation::make_node<Button>();
         button->set_name(reload ? "Reload" : "Exit");
@@ -1128,13 +1151,13 @@ void CharacterCreationView::setup_defeat()
         button->set_size(Vector2(reload ? 268 : 188, 44));
         button->connect("pressed",
                         reload ? callable_mp(this, &CharacterCreationView::reload_after_defeat)
-                               : callable_mp(this, &CharacterCreationView::exit_after_defeat));
+                        : callable_mp(this, &CharacterCreationView::exit_after_defeat));
         presentation::attach_child(*dialog, std::move(button));
     }
     dialog->connect("close_requested", callable_mp(this, &CharacterCreationView::show_defeat));
     get_node<SaveSlots>("SaveSlots")
-        ->connect("visibility_changed",
-                  callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
+    ->connect("visibility_changed",
+              callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
     defeat_check_ = OS::get_singleton()->get_cmdline_user_args().has("--defeat-check");
 }
 
@@ -1203,7 +1226,7 @@ void CharacterCreationView::defeat_check()
             return;
         auto *fight = get_node<CombatView>("CampaignCombat");
         if (!dialog->is_visible() || fight->can_leave() || campaign_->in_combat() ||
-            campaign_->state().roster.at(0).vitals.hit_points)
+                campaign_->state().roster.at(0).vitals.hit_points)
             throw std::runtime_error("Defeat did not lock gameplay with persisted zero HP");
         party_action(9);
         if (!get_node_or_null("CampaignCombat") || !dialog->is_visible())
@@ -1221,10 +1244,10 @@ void CharacterCreationView::defeat_check()
             throw std::runtime_error("Cancel bypassed defeat");
         auto *fight = get_node<CombatView>("CampaignCombat");
         const auto broken = std::filesystem::u8path(
-            ProjectSettings::get_singleton()
-                ->globalize_path("user://checks/save-check/defeat-corrupt.ogs")
-                .utf8()
-                .get_data());
+                                ProjectSettings::get_singleton()
+                                ->globalize_path("user://checks/save-check/defeat-corrupt.ogs")
+                                .utf8()
+                                .get_data());
         write_campaign_file(broken, "corrupt");
         const auto original = campaign_;
         bool rejected = false;
@@ -1250,7 +1273,7 @@ void CharacterCreationView::defeat_check()
         {
             const auto image = dialog->get_texture()->get_image();
             if (image.is_null() || image->save_png(ProjectSettings::get_singleton()->globalize_path(
-                                       "user://checks/party-defeat.png")) != OK)
+                    "user://checks/party-defeat.png")) != OK)
                 throw std::runtime_error("Cannot capture defeat screen");
         }
         dialog->get_node<Button>("Reload")->emit_signal("pressed");
@@ -1268,8 +1291,8 @@ void CharacterCreationView::defeat_check()
             throw std::runtime_error("Defeat load skipped confirmation");
         saves->get_node<Button>("Action")->emit_signal("pressed");
         if (campaign_defeated_ || dialog->is_visible() || saves->is_visible() ||
-            get_node_or_null("CampaignCombat") ||
-            campaign_->state().roster.at(0).vitals.hit_points == 0)
+                get_node_or_null("CampaignCombat") ||
+                campaign_->state().roster.at(0).vitals.hit_points == 0)
             throw std::runtime_error("Confirmed reload did not replace defeated campaign");
         party_action(8);
         ++defeat_check_stage_;

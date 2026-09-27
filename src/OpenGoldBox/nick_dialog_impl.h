@@ -11,8 +11,8 @@ void CombatView::nick_selected(std::int64_t index)
 {
     auto *choices = get_node<OptionButton>("NickAttack/Choices");
     get_node<Button>("NickAttack/Target")
-        ->set_disabled(index < 0 || index >= choices->get_item_count() ||
-                       choices->is_item_disabled(index));
+    ->set_disabled(index < 0 || index >= choices->get_item_count() ||
+                   choices->is_item_disabled(index));
 }
 
 void CombatView::cancel_nick()

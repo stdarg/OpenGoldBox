@@ -10,7 +10,7 @@ godot::String equipment_message(const opengold::rules::Message &message)
     for (const auto &argument : message.arguments)
         text = text.replace(godot::String::utf8(("{" + argument.name + "}").c_str()),
                             argument.translate ? review_text(argument.value)
-                                               : godot::String::utf8(argument.value.c_str()));
+                            : godot::String::utf8(argument.value.c_str()));
     return text;
 }
 } // namespace
@@ -99,7 +99,7 @@ void CharacterCreationView::apply_equipment_choice()
     auto *window = get_node<Window>("EquipmentChoice");
     const auto selected = window->get_node<OptionButton>("Hand")->get_selected();
     if (selected < 0 || static_cast<std::size_t>(selected) >= equipment_choices_.size() ||
-        !equipment_choices_[selected].available)
+            !equipment_choices_[selected].available)
         return;
     try
     {

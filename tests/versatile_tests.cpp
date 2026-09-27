@@ -83,7 +83,8 @@ struct WeaponCase
 };
 
 // Independent SRD 5.2.1 pp. 90-91 expectations, including the 2024 War Pick.
-constexpr std::array weapons{
+constexpr std::array weapons
+{
     WeaponCase{"quarterstaff", 6, 8, false}, WeaponCase{"spear", 6, 8, true},
     WeaponCase{"battleaxe", 8, 10, false},   WeaponCase{"longsword", 8, 10, false},
     WeaponCase{"trident", 8, 10, true},      WeaponCase{"warhammer", 8, 10, false},
@@ -102,44 +103,54 @@ void damage_and_resources()
         return seed == 40  ? 0
                : seed == 0 ? (sides == 6   ? 9
                               : sides == 8 ? 11
-                                           : 15)
-                           : (sides == 6   ? 4
-                              : sides == 8 ? 6
-                                           : 10);
+                              : 15)
+               : (sides == 6   ? 4
+                  : sides == 8 ? 6
+                  : 10);
     };
     for (const auto &weapon : weapons)
-        for (const unsigned hands : {1u, 2u})
-            for (const int seed : {0, 13, 40})
-                for (const bool thrown : {false, true})
+        for (const unsigned hands :
+                {
+                    1u, 2u
+                })
+            for (const int seed :
+                    {
+                        0, 13, 40
+                    })
+                for (const bool thrown :
+                        {
+                            false, true
+                        })
                 {
                     if (thrown && !weapon.thrown)
                         continue;
                     const std::array<std::string, 1> gear{weapon.key};
                     auto profile = rules->character_profile(sheet, gear, {hands});
                     check(profile.equipment.weapon_hands == hands && profile.grips.size() == 2 &&
-                              profile.grips[1].available,
+                          profile.grips[1].available,
                           "Rules report the selected grip and both legal options");
                     Encounter e{{8, 8, std::vector<std::uint8_t>(64)},
-                                {{1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-                                 {2, "vanguard", "Target", 1, {thrown ? 3 : 2, 1}}}};
+                        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
+                            {2, "vanguard", "Target", 1, {thrown ? 3 : 2, 1}}
+                        }};
                     auto combat = rules->create(e, seed);
                     check(combat->snapshot().actor == 1, "Fixed seed starts the hero");
                     if (hands == 2)
                     {
                         check(combat->submit(command(*combat, "grip_one")) &&
-                                  combat->submit(command(*combat, "grip_two")),
+                              combat->submit(command(*combat, "grip_two")),
                               "Change grip before attacking");
                     }
                     const auto before = unit(*combat, 1);
                     const auto attack = command(*combat, thrown ? "ranged" : "melee");
                     check(combat->submit(attack), "Weapon attack accepted");
                     check(unit(*combat, 2).hit_points ==
-                              28 - damage(seed, thrown || hands == 1 ? weapon.one : weapon.two),
+                          28 - damage(seed, thrown || hands == 1 ? weapon.one : weapon.two),
                           "Melee/thrown/critical damage matches fixed SRD dice oracle");
                     const auto after = unit(*combat, 1);
                     check(!after.action && after.bonus_action == before.bonus_action &&
-                              after.reaction == before.reaction &&
-                              after.movement_feet == before.movement_feet,
+                          after.reaction == before.reaction &&
+                          after.movement_feet == before.movement_feet,
                           "Weapon attack spends only its action");
                     const auto saved = combat->save();
                     auto restored = rules->restore(saved);
@@ -151,21 +162,21 @@ void damage_and_resources()
                               "A thrown-away weapon no longer offers grip changes");
                         const auto state = combat->snapshot();
                         check(state.held_items.size() == 1 && !state.held_items[0].holder &&
-                                  state.held_items[0].cell == Cell{3, 1},
+                              state.held_items[0].cell == Cell{3, 1},
                               "Hit and miss both leave the weapon on its target square");
                         continue;
                     }
                     const auto change = command(*combat, hands == 1 ? "grip_two" : "grip_one");
                     check(combat->submit(change) && restored->submit(change) &&
-                              combat->save() == restored->save(),
+                          combat->save() == restored->save(),
                           "Grip can change after spending the action and resumes identically");
                     const auto changed = unit(*combat, 1);
                     check(changed.persistent == after.persistent &&
-                              changed.action == after.action &&
-                              changed.bonus_action == after.bonus_action &&
-                              changed.reaction == after.reaction &&
-                              changed.movement_feet == after.movement_feet &&
-                              combat->snapshot().elapsed_milliseconds == 0,
+                          changed.action == after.action &&
+                          changed.bonus_action == after.bonus_action &&
+                          changed.reaction == after.reaction &&
+                          changed.movement_feet == after.movement_feet &&
+                          combat->snapshot().elapsed_milliseconds == 0,
                           "Grip change spends and restores no resources or elapsed time");
                     const auto unchanged = combat->save();
                     check(!combat->submit(change) && combat->save() == unchanged,
@@ -179,18 +190,19 @@ void damage_and_resources()
               "One hand retains trained shield AC; two hands unavailable");
         rejects(
             [&]
-            {
-                (void)rules->character_profile(sheet, gear, {2});
-            });
+        {
+            (void)rules->character_profile(sheet, gear, {2});
+        });
         rejects(
             [&]
-            {
-                (void)rules->character_profile(sheet, gear, {3});
-            });
+        {
+            (void)rules->character_profile(sheet, gear, {3});
+        });
         auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                     {{1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-                                      {2, "vanguard", "Target", 1, {2, 1}}}},
-                                    0);
+            {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
+                {2, "vanguard", "Target", 1, {2, 1}}
+            }},
+        0);
         const auto saved = combat->save();
         std::istringstream input(saved);
         std::string row, corrupt;
@@ -203,25 +215,27 @@ void damage_and_resources()
         }
         rejects(
             [&]
-            {
-                (void)rules->restore(corrupt);
-            });
+        {
+            (void)rules->restore(corrupt);
+        });
         check(combat->save() == saved, "Malformed saved shield/grip leaves the session intact");
         Command invalid{combat->snapshot().revision, 1, 0, "grip_two"};
         check(!combat->submit(invalid) && combat->save() == saved,
               "Forged two-hand command with a shield rejects atomically");
     }
-    for (const std::string key : {"greatsword", "shortbow", "mace", "wand"})
+    for (const std::string key :
+            {"greatsword", "shortbow", "mace", "wand"
+            })
     {
         const std::array gear{key};
         check(rules->character_profile(sheet, gear).grips.empty(),
               "Fixed-grip weapons and foci do not offer Versatile");
         rejects(
             [&]
-            {
-                (void)rules->character_profile(
-                    sheet, gear, {key == "greatsword" || key == "shortbow" ? 1u : 2u});
-            });
+        {
+            (void)rules->character_profile(
+            sheet, gear, {key == "greatsword" || key == "shortbow" ? 1u : 2u});
+        });
     }
 }
 
@@ -231,8 +245,9 @@ void reaction_continuation()
     const std::array<std::string, 1> gear{"longsword"};
     const auto profile = rules->character_profile(hero().sheet(), gear, {1});
     Encounter e{{8, 8, std::vector<std::uint8_t>(64)},
-                {{1, "campaign-character", "Reactor", 0, {1, 1}, profile.data},
-                 {2, "vanguard", "Mover", 1, {2, 1}}}};
+        {   {1, "campaign-character", "Reactor", 0, {1, 1}, profile.data},
+            {2, "vanguard", "Mover", 1, {2, 1}}
+        }};
     std::unique_ptr<CombatSession> combat;
     for (unsigned seed = 0; seed < 100; ++seed)
     {
@@ -251,15 +266,15 @@ void reaction_continuation()
     const auto two = command(*combat, "grip_two");
     check(combat->submit(two), "Switch grip during a pending reaction");
     check(combat->snapshot().reaction_pending && unit(*combat, 1).reaction == before.reaction &&
-              unit(*combat, 2).cell == target.cell &&
-              combat->snapshot().elapsed_milliseconds == elapsed,
+          unit(*combat, 2).cell == target.cell &&
+          combat->snapshot().elapsed_milliseconds == elapsed,
           "Grip selection neither resolves nor bypasses the pending attack");
     auto restored = rules->restore(combat->save());
     const auto attack = command(*combat, "opportunity");
     check(combat->submit(attack) && restored->submit(attack) && combat->save() == restored->save(),
           "Opportunity damage and interrupted movement continue identically after save");
     check(!unit(*combat, 1).reaction && unit(*combat, 1).action == before.action &&
-              unit(*combat, 1).equipment.weapon_hands == 2,
+          unit(*combat, 1).equipment.weapon_hands == 2,
           "Only the opportunity reaction is consumed");
 }
 
@@ -281,25 +296,25 @@ void campaign_and_migration()
     const auto saved = encode_campaign(party, nullptr, "grip");
     rejects(
         [&]
-        {
-            party.equip(id, shield);
-        });
+    {
+        party.equip(id, shield);
+    });
     check(encode_campaign(party, nullptr, "grip") == saved,
           "Shield rejection preserves equipment, grip, vitals and campaign state");
     auto decoded = decode_campaign(saved, *srd5::character_rules(), *rules, "grip", nullptr);
     CampaignParty restored(module());
     restored.restore(std::move(decoded.party));
     check(encode_campaign(restored, nullptr, "grip") == saved &&
-              restored.profile(id).equipment.weapon_hands == 2,
+          restored.profile(id).equipment.weapon_hands == 2,
           "Campaign persists the selected grip canonically");
     party.set_grip(id, 1);
     party.equip(id, shield);
     const auto with_shield = encode_campaign(party, nullptr, "grip");
     rejects(
         [&]
-        {
-            party.set_grip(id, 2);
-        });
+    {
+        party.set_grip(id, 2);
+    });
     check(encode_campaign(party, nullptr, "grip") == with_shield,
           "Grip rejection preserves shield and all campaign state");
     party.unequip(id, shield);
@@ -319,28 +334,28 @@ void campaign_and_migration()
     party.begin_combat();
     rejects(
         [&]
-        {
-            party.set_grip(id, 2);
-        });
+    {
+        party.set_grip(id, 2);
+    });
     check(combat->submit(command(*combat, "grip_two")), "Combat owns grip while active");
     party.apply_combat(combat->snapshot());
     party.end_combat();
     check(party.member(id).equipment.weapon_hands == 2 && party.member(id).vitals.hit_points == 5,
           "Combat hands the chosen grip and wounds back to the campaign");
     check(party.participants()[0].character_profile ==
-              rules
-                  ->character_profile(party.member(id).character.sheet(),
-                                      std::array<std::string, 1>{"quarterstaff"}, {2})
-                  .data,
+          rules
+          ->character_profile(party.member(id).character.sheet(),
+                              std::array<std::string, 1> {"quarterstaff"}, {2})
+          .data,
           "Next encounter uses the retained grip");
     auto invalid = party.checkpoint();
     invalid.roster[0].equipped.push_back(shield);
     const auto valid = encode_campaign(party, nullptr, "grip");
     rejects(
         [&]
-        {
-            party.restore(invalid);
-        });
+    {
+        party.restore(invalid);
+    });
     check(encode_campaign(party, nullptr, "grip") == valid,
           "Invalid equipment checkpoint does not replace the live campaign");
     auto body = valid.substr(valid.find('\n', valid.find('\n') + 1) + 1);
@@ -356,10 +371,10 @@ void campaign_and_migration()
     }
     rejects(
         [&]
-        {
-            (void)decode_campaign("OPENGOLD-CAMPAIGN 11\n" + std::to_string(checksum) + "\n" + body,
-                                  *srd5::character_rules(), *rules, "grip", nullptr);
-        });
+    {
+        (void)decode_campaign("OPENGOLD-CAMPAIGN 11\n" + std::to_string(checksum) + "\n" + body,
+        *srd5::character_rules(), *rules, "grip", nullptr);
+    });
     check(encode_campaign(party, nullptr, "grip") == valid,
           "Malformed serialized grip cannot replace the current campaign");
 
@@ -397,7 +412,7 @@ int main()
         reaction_continuation();
         campaign_and_migration();
         std::cout
-            << "Versatile tests passed: seven weapons, damage, shields, reactions, campaign and migration\n";
+                << "Versatile tests passed: seven weapons, damage, shields, reactions, campaign and migration\n";
         return 0;
     }
     catch (const std::exception &e)

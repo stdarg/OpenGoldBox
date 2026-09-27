@@ -53,7 +53,7 @@ class EclProgram
     [[nodiscard]] EclInstruction instruction(std::uint32_t address) const;
     // Decode a machine's private, potentially modified copy of this record.
     [[nodiscard]] EclInstruction instruction(std::uint32_t address,
-                                             std::span<const std::uint8_t> image) const;
+            std::span<const std::uint8_t> image) const;
 
     [[nodiscard]] const std::array<std::uint16_t, 5> &entries() const noexcept
     {

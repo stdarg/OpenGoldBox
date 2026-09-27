@@ -18,7 +18,8 @@ inline int roll_die(std::uint64_t &state, int sides)
         value = (value ^ (value >> 30)) * 0xbf58476d1ce4e5b9ULL;
         value = (value ^ (value >> 27)) * 0x94d049bb133111ebULL;
         value ^= value >> 31;
-    } while (value < threshold);
+    }
+    while (value < threshold);
     return static_cast<int>(value % count) + 1;
 }
 } // namespace opengold::srd5

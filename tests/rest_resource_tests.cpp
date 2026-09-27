@@ -68,10 +68,10 @@ std::string fixture(const char *name)
 const ResourcePool &pool(const RecoveryInfo &info, std::string_view id)
 {
     const auto it = std::find_if(info.resources.begin(), info.resources.end(),
-                                 [&](const auto &p)
-                                 {
-                                     return p.id == id;
-                                 });
+                                 [&](const auto & p)
+    {
+        return p.id == id;
+    });
     check(it != info.resources.end(), "Named pool exists");
     return *it;
 }
@@ -88,15 +88,15 @@ void class_dice_and_recharge()
 {
     auto rules = module();
     check(rules->short_rest_policy().duration_minutes == 60 &&
-              rules->short_rest_policy().wait_after_rest_minutes == 0,
+          rules->short_rest_policy().wait_after_rest_minutes == 0,
           "Short Rest lasts an hour without a once-per-day limit");
     check(rules->long_rest_policy().duration_minutes == 480 &&
-              rules->long_rest_policy().wait_after_rest_minutes == 960,
+          rules->long_rest_policy().wait_after_rest_minutes == 960,
           "Long Rest uses eight hours and the sixteen-hour starting cooldown");
     const std::map<std::string, unsigned> dice{{"barbarian", 12}, {"bard", 8},     {"cleric", 8},
-                                               {"druid", 8},      {"fighter", 10}, {"monk", 8},
-                                               {"paladin", 10},   {"ranger", 10},  {"rogue", 8},
-                                               {"sorcerer", 6},   {"warlock", 8},  {"wizard", 6}};
+        {"druid", 8},      {"fighter", 10}, {"monk", 8},
+        {"paladin", 10},   {"ranger", 10},  {"rogue", 8},
+        {"sorcerer", 6},   {"warlock", 8},  {"wizard", 6}};
     const std::map<unsigned, int> first_roll{{6, 2}, {8, 8}, {10, 6}, {12, 8}};
     const std::map<unsigned, int> first_healing{{6, 4}, {8, 9}, {10, 8}, {12, 10}};
     for (const auto &[klass, die] : dice)
@@ -107,29 +107,29 @@ void class_dice_and_recharge()
         const auto initial = state;
         auto info = rules->recovery_info(sheet, state);
         check(state == initial && info.can_rest && info.hit_die == die && info.hit_dice == 1 &&
-                  info.hit_dice_max == 1,
+              info.hit_dice_max == 1,
               "Each starting class has its correct unspent Hit Die and a pure resource query");
         std::uint64_t rng = 0;
         const auto spent = rules->spend_hit_die(state, sheet, rng);
         check(spent.die == die && spent.roll == first_roll.at(die) && spent.modifier == 2 &&
-                  spent.healing == first_healing.at(die) && spent.remaining == 0,
+              spent.healing == first_healing.at(die) && spent.remaining == 0,
               "Golden first rolls heal by the class die plus Constitution, capped at maximum HP");
         check(state.hit_points == 1 + spent.healing && rng == 11400714819323198485ULL,
               "One spend consumes exactly one known RNG draw");
         check(state.resources.starts_with("SRD4 ") &&
-                  rules->recovery_info(sheet, state).hit_dice == 0,
+              rules->recovery_info(sheet, state).hit_dice == 0,
               "Expenditure persists in the versioned continuation");
         const auto depleted = state;
         const auto used_rng = rng;
         rejects(
             [&]
-            {
-                rules->spend_hit_die(state, sheet, rng);
-            });
+        {
+            rules->spend_hit_die(state, sheet, rng);
+        });
         check(state == depleted && rng == used_rng, "Exhausted dice reject atomically");
         rules->recover_short_rest(state, sheet);
         check(rules->recovery_info(sheet, state).hit_dice == 0 &&
-                  state.hit_points == depleted.hit_points,
+              state.hit_points == depleted.hit_points,
               "Short Rest does not restore Hit Dice or heal automatically");
         rules->recover(state, sheet);
         info = rules->recovery_info(sheet, state);
@@ -141,7 +141,7 @@ void class_dice_and_recharge()
     VitalState state{1, false, "SRD1 0 0 0 0 0"};
     auto info = rules->recovery_info(sheet, state);
     check(info.hit_dice == 4 && pool(info, "second_wind").capacity == 3 &&
-              pool(info, "second_wind").short_rest_recovery == 1,
+          pool(info, "second_wind").short_rest_recovery == 1,
           "Level-four capacity is four dice and three Second Wind uses");
     rules->recover_short_rest(state, sheet);
     info = rules->recovery_info(sheet, state);
@@ -159,19 +159,21 @@ void class_dice_and_recharge()
     info = rules->recovery_info(sheet, state);
     check(info.hit_dice == 4 && pool(info, "second_wind").remaining == 3,
           "Long Rest restores every spent die and Second Wind use");
-    for (const auto klass : {"cleric", "wizard"})
+    for (const auto klass :
+            {"cleric", "wizard"
+            })
     {
         const auto caster = hero(klass, 4);
         VitalState slots{1, false, "SRD2 0 1 1 0 0 0"};
         rules->recover_short_rest(slots, caster.sheet());
         info = rules->recovery_info(caster.sheet(), slots);
         check(pool(info, "spell_slot:1").remaining == 1 &&
-                  pool(info, "spell_slot:2").remaining == 1,
+              pool(info, "spell_slot:2").remaining == 1,
               "Ordinary caster slots do not recharge on a Short Rest");
         rules->recover(slots, caster.sheet());
         info = rules->recovery_info(caster.sheet(), slots);
         check(pool(info, "spell_slot:1").remaining == 4 &&
-                  pool(info, "spell_slot:2").remaining == 3,
+              pool(info, "spell_slot:2").remaining == 3,
               "Long Rest restores both supported slot pools");
     }
 }
@@ -196,14 +198,17 @@ void minimum_caps_and_rejection()
     state = {character.sheet().hit_points - 1, false, {}};
     rng = 0;
     check(rules->spend_hit_die(state, character.sheet(), rng).healing == 1 &&
-              state.hit_points == character.sheet().hit_points,
+          state.hit_points == character.sheet().hit_points,
           "Hit Die healing stops at maximum HP");
     state = {character.sheet().hit_points, false, {}};
     rng = 0;
     check(rules->spend_hit_die(state, character.sheet(), rng).healing == 0 &&
-              rules->recovery_info(character.sheet(), state).hit_dice == 0,
+          rules->recovery_info(character.sheet(), state).hit_dice == 0,
           "A voluntarily spent die is consumed even if no HP is missing");
-    for (const auto dead : {false, true})
+    for (const auto dead :
+            {
+                false, true
+            })
     {
         state = {0, dead, dead ? "SRD1 0 0 0 3 0" : "SRD1 0 0 1 2 0"};
         const auto before = state;
@@ -212,49 +217,50 @@ void minimum_caps_and_rejection()
               "Unconscious and dead characters cannot start a rest");
         rejects(
             [&]
-            {
-                rules->spend_hit_die(state, character.sheet(), rng);
-            });
+        {
+            rules->spend_hit_die(state, character.sheet(), rng);
+        });
         rejects(
             [&]
-            {
-                rules->recover_short_rest(state, character.sheet());
-            });
+        {
+            rules->recover_short_rest(state, character.sheet());
+        });
         rejects(
             [&]
-            {
-                rules->recover(state, character.sheet());
-            });
+        {
+            rules->recover(state, character.sheet());
+        });
         check(state == before && rng == 42,
               "Rejected recovery never wakes, stabilizes or revives a character");
     }
     for (const auto malformed :
-         {"SRD4 0 0 0 0 0 0 -1 FX1 1 0", "SRD4 0 0 0 0 0 0 2 FX1 1 0", "SRD4 0 0 0 0 0 0 0",
-          "SRD4 0 0 0 0 0 0 0 FX1 1 0 junk", "SRD4 999 0 0 0 0 0 0 FX1 1 0"})
+            {"SRD4 0 0 0 0 0 0 -1 FX1 1 0", "SRD4 0 0 0 0 0 0 2 FX1 1 0", "SRD4 0 0 0 0 0 0 0",
+             "SRD4 0 0 0 0 0 0 0 FX1 1 0 junk", "SRD4 999 0 0 0 0 0 0 FX1 1 0"
+            })
     {
         state = {1, false, malformed};
         const auto before = state;
         rng = 42;
         rejects(
             [&]
-            {
-                (void)rules->recovery_info(character.sheet(), state);
-            });
+        {
+            (void)rules->recovery_info(character.sheet(), state);
+        });
         rejects(
             [&]
-            {
-                rules->spend_hit_die(state, character.sheet(), rng);
-            });
+        {
+            rules->spend_hit_die(state, character.sheet(), rng);
+        });
         rejects(
             [&]
-            {
-                rules->recover_short_rest(state, character.sheet());
-            });
+        {
+            rules->recover_short_rest(state, character.sheet());
+        });
         rejects(
             [&]
-            {
-                rules->recover(state, character.sheet());
-            });
+        {
+            rules->recover(state, character.sheet());
+        });
         check(state == before && rng == 42,
               "Malformed counts, effects and resource pools reject without mutation");
     }
@@ -267,7 +273,8 @@ void persistence_and_advancement()
     const auto id = party.add_pc(hero());
     auto state = party.checkpoint();
     state.roster[0].vitals = {1, false,
-                              "SRD3 1 0 0 0 0 0 FX1 2 1 1 1 77 99 \"Source caster\" 13 43000 2000"};
+                              "SRD3 1 0 0 0 0 0 FX1 2 1 1 1 77 99 \"Source caster\" 13 43000 2000"
+                             };
     const auto effect =
         state.roster[0].vitals.resources.substr(state.roster[0].vitals.resources.find("FX1"));
     rules->spend_hit_die(state.roster[0].vitals, state.roster[0].character.sheet(),
@@ -294,22 +301,24 @@ void persistence_and_advancement()
     }
     rejects(
         [&]
-        {
-            (void)decode_campaign("OPENGOLD-CAMPAIGN 11\n" + std::to_string(checksum) + '\n' +
-                                      bad_body,
-                                  *srd5::character_rules(), *rules, "rest", nullptr);
-        });
+    {
+        (void)decode_campaign("OPENGOLD-CAMPAIGN 11\n" + std::to_string(checksum) + '\n' +
+        bad_body,
+        *srd5::character_rules(), *rules, "rest", nullptr);
+    });
     check(
         encode_campaign(restored, nullptr, "rest") == saved,
         "An excessive die count rejects even with a correct checksum and cannot replace the campaign");
     party.complete_training(id, *srd5::character_rules(),
-                            {{"origin:languages", {"elvish", "orc"}},
-                             {"class:fighter:fighting_style", {"archery"}},
-                             {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-                             {"class:fighter", {"athletics", "history"}},
-                             {"background:soldier:gaming_set", {"dice"}}});
+    {
+        {"origin:languages", {"elvish", "orc"}},
+        {"class:fighter:fighting_style", {"archery"}},
+        {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
+        {"class:fighter", {"athletics", "history"}},
+        {"background:soldier:gaming_set", {"dice"}}
+    });
     check(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
-                  .hit_dice == 0,
+          .hit_dice == 0,
           "Training completion cannot replenish Hit Dice");
     party.award_experience(300, "rest-xp");
     party.advance(id, party.default_advancement(id));
@@ -326,12 +335,12 @@ void persistence_and_advancement()
     rules->spend_hit_die(second, next_load.party.roster[0].character.sheet(), second_rng);
     check(
         next_die.roll == 2 && first == second && first_rng == second_rng &&
-            first_rng == 4354685564936845396ULL,
+        first_rng == 4354685564936845396ULL,
         "The next chosen die after save/reload consumes the known second RNG draw and gives the same healing");
     party.advance_time_milliseconds(1000);
     check(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
-                      .hit_dice == 1 &&
-              party.member(id).vitals.resources.find("42000 1000") != std::string::npos,
+          .hit_dice == 1 &&
+          party.member(id).vitals.resources.find("42000 1000") != std::string::npos,
           "Effect elapsed time retains Hit Dice in SRD4");
     auto healed = party.member(id).vitals;
     auto healing_rng = party.state().random_state;
@@ -344,7 +353,7 @@ void persistence_and_advancement()
     auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
     const auto checkpoint = combat->save();
     check(checkpoint.starts_with("OGCOMBAT 23 ") &&
-              rules->restore(checkpoint)->save() == checkpoint,
+          rules->restore(checkpoint)->save() == checkpoint,
           "Combat checkpoint stores remaining dice exactly");
     auto copy = rules->restore(checkpoint);
     for (unsigned turn = 0; turn < 6; ++turn)
@@ -357,7 +366,7 @@ void persistence_and_advancement()
     party.apply_combat(combat->snapshot());
     party.end_combat();
     check(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
-                  .hit_dice == 1,
+          .hit_dice == 1,
           "Campaign combat handoff preserves expenditure");
     // Corrupt only the appended count for the character; all other checkpoint data remains valid.
     std::istringstream in(checkpoint);
@@ -383,9 +392,9 @@ void persistence_and_advancement()
         bad += row + '\n';
     rejects(
         [&]
-        {
-            (void)rules->restore(bad);
-        });
+    {
+        (void)rules->restore(bad);
+    });
     check(copy->save() == combat->save(), "Malformed Hit Dice cannot mutate an existing combat");
 }
 
@@ -400,7 +409,7 @@ void old_saves()
     {
         const auto info = rules->recovery_info(member.character.sheet(), member.vitals);
         check(info.hit_dice == unsigned(member.character.sheet().level) &&
-                  member.vitals.hit_points == member.character.sheet().hit_points - 5,
+              member.vitals.hit_points == member.character.sheet().hit_points - 5,
               "Old characters start with unspent dice and retain their wounds");
     }
     auto expected = old.substr(old.find('\n', old.find('\n') + 1) + 1);
@@ -410,20 +419,20 @@ void old_saves()
     const auto rewritten = encode_campaign(party, nullptr, "rest-fixture");
     check(
         rewritten.substr(rewritten.find('\n', rewritten.find('\n') + 1) + 1) ==
-            test::with_alert_grants(test::with_sneak_attack_grants(test::with_action_surge_grants(
-                test::with_initial_wizard_spell_grants(expected), {true}))) +
-                "1 0 ",
+        test::with_alert_grants(test::with_sneak_attack_grants(test::with_action_surge_grants(
+                    test::with_initial_wizard_spell_grants(expected), {true}))) +
+        "1 0 ",
         "Campaign migration adds sourced spell/Alert grants, the empty rest window and module identity, preserving all original training, resources, effects, equipment and timers");
     const std::map<unsigned, unsigned> counts{{1, 4}, {2, 4}, {3, 4}, {4, 1}, {99, 0}};
     auto combat = rules->restore(fixture("combat-v8-rest.save"));
     check(combat->save() ==
-              test::with_hit_dice(fixture("combat-v8-rest.save"), rules->identity(), counts),
+          test::with_hit_dice(fixture("combat-v8-rest.save"), rules->identity(), counts),
           "Pending combat migration adds only the unspent Hit Dice counts and format identity");
     check(combat->snapshot().reaction_pending && combat->submit(command(*combat, "opportunity")),
           "The old pending movement still resolves its reaction");
     check(
         combat->save() == test::with_hit_dice(fixture("combat-v8-rest-continued.save"),
-                                              rules->identity(), counts),
+                rules->identity(), counts),
         "Opportunity damage, movement, RNG, effects and spent resources match the prior writer's continuation");
 }
 } // namespace

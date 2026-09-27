@@ -60,10 +60,10 @@ bool offers(const CombatSession &s, std::string_view verb)
 {
     const auto commands = s.legal_commands();
     return std::any_of(commands.begin(), commands.end(),
-                       [&](const auto &c)
-                       {
-                           return c.verb == verb;
-                       });
+                       [&](const auto & c)
+    {
+        return c.verb == verb;
+    });
 }
 
 Command command(const CombatSession &s, std::string_view verb)
@@ -99,18 +99,19 @@ auto duel(const RulesModule &rules, const CampaignParty &party)
 
 void dwarf_class_sources()
 {
-    for (const auto &[klass, die] : std::vector<std::pair<std::string, int>>{{"barbarian", 12},
-                                                                             {"bard", 8},
-                                                                             {"cleric", 8},
-                                                                             {"druid", 8},
-                                                                             {"fighter", 10},
-                                                                             {"monk", 8},
-                                                                             {"paladin", 10},
-                                                                             {"ranger", 10},
-                                                                             {"rogue", 8},
-                                                                             {"sorcerer", 6},
-                                                                             {"warlock", 8},
-                                                                             {"wizard", 6}})
+    for (const auto &[klass, die] : std::vector<std::pair<std::string, int>> {{"barbarian", 12},
+    {"bard", 8},
+    {"cleric", 8},
+    {"druid", 8},
+    {"fighter", 10},
+    {"monk", 8},
+    {"paladin", 10},
+    {"ranger", 10},
+    {"rogue", 8},
+    {"sorcerer", 6},
+    {"warlock", 8},
+    {"wizard", 6}
+})
     {
         auto draft = character(klass).creation_data();
         draft.race = "dwarf";
@@ -145,16 +146,16 @@ void dwarf_class_sources()
                 sheet.hit_points == expected,
                 "All starting classes and supported advancement have independent Dwarf HP totals");
             check(sheet.racial_messages.front().source == "Dwarven Toughness: +{hp} maximum HP." &&
-                      sheet.racial_messages.front().arguments[0].value == std::to_string(level),
+                  sheet.racial_messages.front().arguments[0].value == std::to_string(level),
                   "All class paths expose the attained Toughness contribution");
             auto bytes = saved(party);
             CampaignParty restored(module());
             restored.restore(decode_campaign(bytes, *srd5::character_rules(), *module(),
                                              "advancement-fixture", nullptr)
-                                 .party);
+                             .party);
             check(restored.member(id).character.sheet().racial_modifiers ==
-                          sheet.racial_modifiers &&
-                      saved(restored) == bytes,
+                  sheet.racial_modifiers &&
+                  saved(restored) == bytes,
                   "Reload preserves source explanation and campaign bytes");
         }
     }
@@ -162,16 +163,18 @@ void dwarf_class_sources()
 
 void progression()
 {
-    for (const char *klass : {"fighter", "cleric", "wizard"})
+    for (const char *klass :
+            {"fighter", "cleric", "wizard"
+            })
     {
         CampaignParty party(module());
         const auto id = party.add_pc(character(klass));
         const auto level1 = saved(party);
         rejects(
             [&]
-            {
-                party.advance(id, {});
-            });
+        {
+            party.advance(id, {});
+        });
         check(saved(party) == level1, "Insufficient XP is atomic");
         party.award_experience(2700, "fourth-level");
         check(party.member(id).character.sheet().level == 1, "XP does not auto-advance");
@@ -184,9 +187,9 @@ void progression()
         check(!party.can_advance(id), "Advancement unavailable during combat");
         rejects(
             [&]
-            {
-                party.advance(id, {});
-            });
+        {
+            party.advance(id, {});
+        });
         party.end_combat();
         for (unsigned level = 2; level <= 4; ++level)
         {
@@ -202,9 +205,9 @@ void progression()
             bad.spells.push_back("unimplemented");
             rejects(
                 [&]
-                {
-                    party.advance(id, bad);
-                });
+            {
+                party.advance(id, bad);
+            });
             check(saved(party) == before, "Rejected spell cannot change state or choices");
             if (level == 4)
             {
@@ -212,9 +215,9 @@ void progression()
                 bad.abilities[2] = 1;
                 rejects(
                     [&]
-                    {
-                        party.advance(id, bad);
-                    });
+                {
+                    party.advance(id, bad);
+                });
                 check(saved(party) == before, "Incomplete ability allocation is atomic");
             }
             const auto preview = party.preview_advancement(id, choice);
@@ -234,7 +237,7 @@ void progression()
                 const int expected =
                     old.character.sheet().hit_die / 2 + 1 + old.character.sheet().modifiers[2] + 4;
                 check(now.character.sheet().hit_points - old.character.sheet().hit_points ==
-                          expected,
+                      expected,
                       "Constitution growth applies retroactively to all four levels");
             }
             const auto bytes = saved(party);
@@ -247,7 +250,7 @@ void progression()
         }
         check(!party.can_advance(id), "Supported progression stops at level four");
         check(party.member(id).vitals.resources ==
-                  (std::string_view(klass) == "fighter" ? "SRD1 2 0 0 0 0" : "SRD2 0 3 3 0 0 0"),
+              (std::string_view(klass) == "fighter" ? "SRD1 2 0 0 0 0" : "SRD2 0 3 3 0 0 0"),
               "Only new resource capacity is added across three advancements");
     }
     CampaignParty capped(module());
@@ -264,9 +267,9 @@ void progression()
     const auto unchanged = saved(capped);
     rejects(
         [&]
-        {
-            capped.advance(cap, invalid);
-        });
+    {
+        capped.advance(cap, invalid);
+    });
     check(saved(capped) == unchanged, "Ability cap rejects without partially applying level or HP");
     CampaignParty unsupported(module());
     const auto id = unsupported.add_pc(character("bard"));
@@ -285,18 +288,28 @@ void hp_history()
 
     // SRD p. 23: gain HP using the old modifier, then apply the feat's
     // Constitution modifier increase once per attained level.
-    for (const auto example : {Example{3, 2, {2, 3, 4, 9}}, Example{3, 1, {2, 3, 4, 9}},
-                               Example{4, 1, {3, 4, 5, 6}}, Example{4, 2, {3, 4, 5, 10}},
-                               Example{5, 2, {3, 4, 5, 10}}, Example{14, 2, {8, 14, 20, 30}}})
-        for (const bool dwarf : {false, true})
-            for (const bool unconscious : {false, true})
+    for (const auto example :
+            {
+                Example{3, 2, {2, 3, 4, 9}}, Example{3, 1, {2, 3, 4, 9}},
+                Example{4, 1, {3, 4, 5, 6}}, Example{4, 2, {3, 4, 5, 10}},
+                Example{5, 2, {3, 4, 5, 10}}, Example{14, 2, {8, 14, 20, 30}}
+            })
+        for (const bool dwarf :
+                {
+                    false, true
+                })
+            for (const bool unconscious :
+                    {
+                        false, true
+                    })
             {
                 auto draft = character("wizard").creation_data();
                 draft.race = dwarf ? "dwarf" : "human";
                 // Authored legal dice, with the fourth (lowest) die discarded.
                 draft.rolls[2] = example.constitution == 14
-                                     ? AbilityRoll{{6, 4, 4, 1}, 3}
-                                     : AbilityRoll{{example.constitution - 2, 1, 1, 1}, 3};
+                ? AbilityRoll{{6, 4, 4, 1}, 3}
+:
+                AbilityRoll{{example.constitution - 2, 1, 1, 1}, 3};
                 const auto adjustments = srd5::character_rules()->adjustments("sage");
                 for (unsigned i = 0; i < adjustments.size(); ++i)
                     if (adjustments[i].bonuses[2] == 0)
@@ -332,7 +345,7 @@ void hp_history()
                         "HP history follows the SRD sequence even when earlier gains were clamped");
                     check(party.profile(id).hit_points == expected,
                           "Combat profile independently reconstructs the HP history");
-                    const auto correct_source = [&](const Message &m)
+                    const auto correct_source = [&](const Message & m)
                     {
                         return m.source == "Dwarven Toughness: +{hp} maximum HP." &&
                                m.arguments.size() == 1 && m.arguments[0].name == "hp" &&
@@ -366,42 +379,42 @@ void hp_history()
                     member.vitals.hit_points == (unconscious ? 0 : maximum - 2),
                     "Constitution advancement preserves wounds and does not wake an unconscious character");
                 check(member.vitals.resources ==
-                          (unconscious ? "SRD5 0 1 2 1 2 0 4 6000 0 FX1 1 0" : "SRD2 0 1 2 0 0 0"),
+                      (unconscious ? "SRD5 0 1 2 1 2 0 4 6000 0 FX1 1 0" : "SRD2 0 1 2 0 0 0"),
                       "HP growth preserves death saves and existing spell expenditure");
                 auto malformed = member.character.sheet();
                 ++malformed.hit_points;
                 rejects(
                     [&]
-                    {
-                        (void)module()->character_profile(malformed, {});
-                    });
+                {
+                    (void)module()->character_profile(malformed, {});
+                });
                 malformed = member.character.sheet();
                 malformed.hit_point_modifiers.pop_back();
                 rejects(
                     [&]
-                    {
-                        (void)module()->character_profile(malformed, {});
-                    });
+                {
+                    (void)module()->character_profile(malformed, {});
+                });
                 malformed = member.character.sheet();
                 malformed.hit_point_modifiers[1] = 6;
                 rejects(
                     [&]
-                    {
-                        (void)module()->character_profile(malformed, {});
-                    });
+                {
+                    (void)module()->character_profile(malformed, {});
+                });
                 malformed = member.character.sheet();
                 --malformed.hit_point_modifiers.back();
                 rejects(
                     [&]
-                    {
-                        (void)module()->character_profile(malformed, {});
-                    });
+                {
+                    (void)module()->character_profile(malformed, {});
+                });
                 if (!unconscious)
                 {
                     auto rules = module();
                     auto combat = duel(*rules, party);
                     check(unit(*combat, id).max_hit_points == maximum &&
-                              unit(*combat, id).hit_points == maximum - 2,
+                          unit(*combat, id).hit_points == maximum - 2,
                           "Combat uses corrected maximum and wounded current HP");
                     check(rules->restore(combat->save())->save() == combat->save(),
                           "HP history survives a combat checkpoint");
@@ -411,21 +424,24 @@ void hp_history()
 
 void ability_sources()
 {
-    for (const unsigned ability : {0u, 4u})
+    for (const unsigned ability :
+            {
+                0u, 4u
+            })
     {
         auto draft = character("fighter").creation_data();
         draft.background = "soldier";
         CampaignParty party(module());
         const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {}));
-        const auto verify = [&](const CharacterSheet &sheet, unsigned count)
+        const auto verify = [&](const CharacterSheet & sheet, unsigned count)
         {
             check(sheet.ability_adjustments.size() == count,
                   "Only acquired ability grants appear as sources");
             const auto &background = sheet.ability_adjustments.front();
             check(background.source_id == "background:soldier" && background.level == 1 &&
-                      background.label == "Soldier background",
+                  background.label == "Soldier background",
                   "Background source has its own stable identity and acquisition level");
-            check(background.bonuses == std::array<int, 6>{2, 1, 0, 0, 0, 0},
+            check(background.bonuses == std::array<int, 6> {2, 1, 0, 0, 0, 0},
                   "Soldier bonuses remain the original +2 Strength and +1 Dexterity");
             if (count == 2)
             {
@@ -434,10 +450,10 @@ void ability_sources()
                 expected[ability] = 2;
                 check(
                     feat.source_id == "feat:ability_score_improvement" && feat.level == 4 &&
-                        feat.bonuses == expected,
+                    feat.bonuses == expected,
                     "Level-four feat points retain their source, including abilities outside the background");
                 check(feat.label == "Level 4 Ability Score Improvement" &&
-                          feat.label_message.source == "Level {level} Ability Score Improvement",
+                      feat.label_message.source == "Level {level} Ability Score Improvement",
                       "The feat explanation identifies its acquisition level");
             }
             for (unsigned i = 0; i < 6; ++i)
@@ -463,9 +479,9 @@ void ability_sources()
         invalid.abilities[ability] = 1;
         rejects(
             [&]
-            {
-                party.advance(id, invalid);
-            });
+        {
+            party.advance(id, invalid);
+        });
         verify(party.member(id).character.sheet(), 1);
         const auto before = saved(party);
         const auto preview = party.preview_advancement(id, choice);
@@ -491,8 +507,10 @@ void asi_conformance()
     const auto rules = module();
     constexpr std::array names{"strength",     "dexterity", "constitution",
                                "intelligence", "wisdom",    "charisma"};
-    for (const char *klass : {"barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin",
-                              "ranger", "rogue", "sorcerer", "warlock", "wizard"})
+    for (const char *klass :
+            {"barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin",
+             "ranger", "rogue", "sorcerer", "warlock", "wizard"
+            })
     {
         CampaignParty early(module());
         const auto id = early.add_pc(character(klass));
@@ -503,14 +521,17 @@ void asi_conformance()
         const auto before = saved(early);
         rejects(
             [&]
-            {
-                early.advance(id, choice);
-            });
+        {
+            early.advance(id, choice);
+        });
         check(saved(early) == before,
               "All twelve classes reject a level-one ASI entitlement atomically");
     }
     for (unsigned ability = 0; ability < 6; ++ability)
-        for (unsigned bonus : {1u, 2u})
+        for (unsigned bonus :
+                {
+                    1u, 2u
+                })
         {
             auto d = character("fighter").creation_data();
             d.background = ability < 2 ? "soldier" : ability < 5 ? "sage" : "acolyte";
@@ -539,9 +560,9 @@ void asi_conformance()
             const auto before = saved(capped);
             rejects(
                 [&]
-                {
-                    capped.advance(id, choice);
-                });
+            {
+                capped.advance(id, choice);
+            });
             check(saved(capped) == before, "Every ability rejects21 atomically");
             if (bonus == 1)
             {
@@ -549,18 +570,23 @@ void asi_conformance()
                 choice.abilities[(ability + 1) % 6] = 1;
                 capped.advance(id, choice);
                 check(capped.member(id).character.sheet().scores[ability] == 20 &&
-                          capped.member(id).character.sheet().modifiers[ability] == 5,
+                      capped.member(id).character.sheet().modifiers[ability] == 5,
                       "Every ability can legally reach20");
             }
         }
-    for (const char *klass : {"fighter", "cleric", "wizard", "rogue", "paladin", "ranger"})
-        for (bool npc : {false, true})
+    for (const char *klass :
+            {"fighter", "cleric", "wizard", "rogue", "paladin", "ranger"
+            })
+        for (bool npc :
+                {
+                    false, true
+                })
         {
             CampaignParty baseline(module());
             auto h = character(klass);
             h.inventory().add("quarterstaff", "Quarterstaff");
             const auto id = npc ? baseline.recruit("asi:recruited", std::move(h))
-                                : baseline.add_pc(std::move(h));
+                            : baseline.add_pc(std::move(h));
             baseline.equip(id, 1);
             baseline.award_experience(2700, "asi-matrix");
             for (unsigned level = 2; level <= 3; ++level)
@@ -574,7 +600,7 @@ void asi_conformance()
                 if (const auto *dir = std::getenv("OPENGOLD_GAME_DIR"); dir && *dir)
                     write_campaign_file(
                         std::filesystem::path(OPENGOLD_BINARY_DIR) /
-                            ("asi-" + std::string(klass) + "-ui.ogs"),
+                        ("asi-" + std::string(klass) + "-ui.ogs"),
                         encode_campaign(baseline, nullptr, campaign_asset_identity(dir)));
             for (unsigned first = 0; first < 6; ++first)
                 for (unsigned second = first; second < 6; ++second)
@@ -590,18 +616,18 @@ void asi_conformance()
                     --invalid.abilities[first];
                     rejects(
                         [&]
-                        {
-                            p.advance(id, invalid);
-                        });
+                    {
+                        p.advance(id, invalid);
+                    });
                     check(saved(p) == initial,
                           "Incomplete allocation preserves entire PC/recruited campaign");
                     invalid = choice;
                     ++invalid.abilities[first];
                     rejects(
                         [&]
-                        {
-                            p.advance(id, invalid);
-                        });
+                    {
+                        p.advance(id, invalid);
+                    });
                     check(saved(p) == initial, "Excess allocation preserves entire campaign");
                     const auto preview = p.preview_advancement(id, choice);
                     check(saved(p) == initial, "All legal ASI previews preserve state and RNG");
@@ -617,15 +643,15 @@ void asi_conformance()
                         const int modifier = score / 2 - 5;
                         check(
                             sheet.scores[i] == score && sheet.modifiers[i] == modifier &&
-                                sheet.saving_throws[i] ==
-                                    modifier + (sheet.save_proficiencies[i] ? 2 : 0),
+                            sheet.saving_throws[i] ==
+                            modifier + (sheet.save_proficiencies[i] ? 2 : 0),
                             "ASI updates each score, modifier and trained/untrained saving throw exactly once");
                     }
                     for (const auto &skill : sheet.training.skills)
                         check(skill.bonus == sheet.scores[skill.ability] / 2 - 5 +
-                                                 (skill.expertise    ? 4
-                                                  : skill.proficient ? 2
-                                                                     : 0),
+                              (skill.expertise    ? 4
+                               : skill.proficient ? 2
+                               : 0),
                               "Skill totals use final ability and unchanged training");
                     const int old_con = original.character.sheet().scores[2] / 2 - 5,
                               new_con = sheet.scores[2] / 2 - 5;
@@ -635,8 +661,8 @@ void asi_conformance()
                     check(sheet.hit_points == maximum && member.vitals.hit_points == maximum - 3,
                           "Retroactive Constitution applies once while preserving wounds");
                     check(member.equipped == original.equipped &&
-                              member.character.inventory().items().size() ==
-                                  original.character.inventory().items().size(),
+                          member.character.inventory().items().size() ==
+                          original.character.inventory().items().size(),
                           "Advancement preserves physical equipment");
                     std::map<std::string, std::string> selections;
                     for (unsigned i = 0; i < 6; ++i)
@@ -644,7 +670,7 @@ void asi_conformance()
                             selections[names[i]] = std::to_string(choice.abilities[i]);
                     const FeatureGrant expected{"feat:ability_score_improvement",
                                                 "class:" + std::string(klass) +
-                                                    ":ability_score_improvement",
+                                                ":ability_score_improvement",
                                                 4, selections};
                     check(std::count(sheet.grants.begin(), sheet.grants.end(), expected) == 1,
                           "ASI has one exact source, acquisition level and allocation record");
@@ -652,27 +678,27 @@ void asi_conformance()
                     forged.grants.push_back(expected);
                     rejects(
                         [&]
-                        {
-                            (void)rules->character_profile(forged, {});
-                        });
+                    {
+                        (void)rules->character_profile(forged, {});
+                    });
                     forged = sheet;
                     for (auto &grant : forged.grants)
                         if (grant == expected)
                             grant.level = 3;
                     rejects(
                         [&]
-                        {
-                            (void)rules->character_profile(forged, {});
-                        });
+                    {
+                        (void)rules->character_profile(forged, {});
+                    });
                     const auto profile = p.profile(id);
                     check(
                         profile.hit_points == maximum &&
-                            profile.melee_attack_bonus == sheet.scores[0] / 2 - 5 + 2 &&
-                            profile.armor_class == 10 + sheet.scores[1] / 2 - 5,
+                        profile.melee_attack_bonus == sheet.scores[0] / 2 - 5 + 2 &&
+                        profile.armor_class == 10 + sheet.scores[1] / 2 - 5,
                         "Actual combat profile uses advanced HP, Strength attack and Dexterity AC");
                     auto c = duel(*rules, p);
                     check(unit(*c, id).max_hit_points == maximum &&
-                              unit(*c, id).hit_points == maximum - 3,
+                          unit(*c, id).hit_points == maximum - 3,
                           "Combat receives advanced HP and wounds");
                     check(rules->restore(c->save())->save() == c->save(),
                           "Advanced combat checkpoint preserves exact state");
@@ -680,7 +706,7 @@ void asi_conformance()
                     CampaignParty restored(module());
                     restored.restore(decode_campaign(bytes, *srd5::character_rules(), *rules,
                                                      "advancement-fixture", nullptr)
-                                         .party);
+                                     .party);
                     check(saved(restored) == bytes,
                           "All allocation/class/ownership histories reconstruct canonically");
                     if (first == 2 && second == 2)
@@ -705,16 +731,16 @@ void verify_asi_ui(const char *klass, const char *file)
     const auto assets = campaign_asset_identity(dir);
     CampaignParty expected(module());
     expected.restore(decode_campaign(read_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) /
-                                                        ("asi-" + std::string(klass) + "-ui.ogs")),
+            ("asi-" + std::string(klass) + "-ui.ogs")),
                                      *srd5::character_rules(), *rules, assets, nullptr)
-                         .party);
+                     .party);
     auto choice = expected.default_advancement(1);
     choice.abilities = {0, 0, 1, 1, 0, 0};
     expected.advance(1, choice);
     CampaignParty actual(module());
     actual.restore(
         decode_campaign(read_campaign_file(file), *srd5::character_rules(), *rules, assets, nullptr)
-            .party);
+        .party);
     auto state = expected.checkpoint();
     state.selected = actual.state().selected;
     expected.restore(state);
@@ -726,7 +752,9 @@ void verify_asi_ui(const char *klass, const char *file)
 
 void feats()
 {
-    for (const char *feat : {"defense", "savage_attacker"})
+    for (const char *feat :
+            {"defense", "savage_attacker"
+            })
     {
         CampaignParty party(module());
         const auto id = party.add_pc(character("fighter"));
@@ -734,7 +762,10 @@ void feats()
         for (unsigned level = 2; level <= 3; ++level)
             party.advance(id, party.default_advancement(id));
         party.set_wealth(id, {0, 0, 0, 100, 0, 0, 0});
-        for (unsigned type : {36, 55})
+        for (unsigned type :
+                {
+                    36, 55
+                })
         {
             por::Equipment e;
             e.stored.type = type;
@@ -755,7 +786,7 @@ void feats()
             check(party.profile(id).armor_class == ac + 1, "Defense adds AC in armor");
             party.unequip(id, 2);
             check(party.profile(id).armor_class ==
-                      10 + party.member(id).character.sheet().modifiers[1],
+                  10 + party.member(id).character.sheet().modifiers[1],
                   "Defense does not grant unarmored AC");
         }
         else
@@ -786,7 +817,9 @@ void feats()
 
 void spells()
 {
-    for (const char *klass : {"wizard", "cleric"})
+    for (const char *klass :
+            {"wizard", "cleric"
+            })
     {
         CampaignParty party(module());
         const auto id = party.add_pc(character(klass));

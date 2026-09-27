@@ -31,7 +31,9 @@ std::shared_ptr<const EclProgram> demo()
     // Compute 12, display it, then prompt for a choice and display the script result.
     std::vector<std::uint8_t> body{9, 0,    7,  1, 0, 0x97, 4,  0, 5, 1,    0, 0x97, 1,
                                    0, 0x97, 17, 1, 0, 0x97, 43, 1, 0, 0x97, 0, 2};
-    for (std::string_view label : {"CONTINUE", "LEAVE"})
+    for (std::string_view label :
+            {"CONTINUE", "LEAVE"
+            })
     {
         std::vector<std::uint8_t> packed;
         unsigned buffer = 0, bits = 0;
@@ -162,7 +164,7 @@ int run(EclMachine &vm)
                 else
                     std::cout << "Input (up to " << r.input_limit
                               << (r.kind == EclRequestKind::input_number ? " digits): "
-                                                                         : " characters): ");
+                                  : " characters): ");
                 std::cout << std::flush;
                 std::string input;
                 if (!std::getline(std::cin, input))
@@ -175,7 +177,7 @@ int run(EclMachine &vm)
                 if (selection.starts_with("\xEF\xBB\xBF"))
                     selection.remove_prefix(3);
                 if (r.kind == EclRequestKind::input_string ||
-                    r.kind == EclRequestKind::input_number)
+                        r.kind == EclRequestKind::input_number)
                 {
                     if (vm.resume_input(r.id, selection))
                         break;
@@ -183,7 +185,7 @@ int run(EclMachine &vm)
                     continue;
                 }
                 while (!selection.empty() &&
-                       (selection.front() == ' ' || selection.front() == '\t'))
+                        (selection.front() == ' ' || selection.front() == '\t'))
                     selection.remove_prefix(1);
                 while (!selection.empty() && (selection.back() == ' ' || selection.back() == '\t' ||
                                               selection.back() == '\r'))
@@ -195,7 +197,8 @@ int run(EclMachine &vm)
                         break;
                 }
                 catch (const EclError &)
-                { /* Reprompt without losing continuation. */
+                {
+                    /* Reprompt without losing continuation. */
                 }
                 std::cout << "Invalid choice.\n";
             }
@@ -222,7 +225,7 @@ int main(int argc, char **argv)
         if (mode != "--list" && mode != "--inspect" && mode != "--run")
             throw EclError("Unknown mode");
         if ((mode == "--list" && argc != 3) || (mode == "--inspect" && argc != 5) ||
-            (mode == "--run" && argc < 6))
+                (mode == "--run" && argc < 6))
             throw EclError("Incorrect argument count");
         const auto catalog = EclCatalog::load(argv[2]);
         if (mode == "--list")

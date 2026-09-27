@@ -20,10 +20,10 @@ inline void keep_initiative(rules::CombatSession &session)
     {
         const auto commands = session.legal_commands();
         const auto choice = std::find_if(commands.begin(), commands.end(),
-                                         [](const auto &c)
-                                         {
-                                             return c.verb == "initiative_keep";
-                                         });
+                                         [](const auto & c)
+        {
+            return c.verb == "initiative_keep";
+        });
         if (choice == commands.end() || !session.submit(*choice))
             throw std::runtime_error("Missing Initiative decline");
     }
@@ -38,7 +38,7 @@ inline unsigned choose_savage_damage(rules::CombatSession &session)
     {
         const auto verb = !hit->second_damage                        ? "savage_use"
                           : hit->first_damage >= *hit->second_damage ? "savage_first"
-                                                                     : "savage_second";
+                          : "savage_second";
         bool accepted = false;
         for (const auto &command : session.legal_commands())
             if (command.verb == verb)
@@ -80,7 +80,7 @@ inline std::string with_hit_dice(std::string_view bytes, const rules::Identity &
     std::string magic, module, previous, content;
     unsigned format{};
     header >> magic >> format >> std::quoted(module) >> std::quoted(previous) >>
-        std::quoted(content);
+           std::quoted(content);
     if (!header || magic != "OGCOMBAT" || format != 8)
         throw std::runtime_error("Expected frozen format eight");
     std::ostringstream next;

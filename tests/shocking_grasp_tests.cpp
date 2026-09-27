@@ -66,7 +66,7 @@ Character hero(unsigned level = 1, std::string spell = "shocking_grasp")
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.cantrips = std::vector<std::string>{spell};
+    d.cantrips = std::vector<std::string> {spell};
     Character h(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < level; ++n)
@@ -124,17 +124,20 @@ std::uint64_t rng(const CombatSession &c)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {2, 1},
-            std::vector<std::string> gear = {})
+std::vector<std::string> gear = {})
 {
     auto c = rules.create({{20, 8, std::vector<std::uint8_t>(160)},
-                           {{1,
-                             "campaign-character",
-                             "Caster",
-                             0,
-                             {1, 1},
-                             rules.character_profile(h.sheet(), gear).data},
-                            {2, "target", "Target", 1, target}}},
-                          seed);
+        {   {
+                1,
+                "campaign-character",
+                "Caster",
+                0,
+                {1, 1},
+                rules.character_profile(h.sheet(), gear).data
+            },
+            {2, "target", "Target", 1, target}
+        }},
+    seed);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     return c;
@@ -152,7 +155,7 @@ void freeze()
     party.restore(state);
     const auto base = root / "tests/fixtures";
     std::ofstream(base / "campaign-v11-shocking-before.ogs")
-        << encode_campaign(party, nullptr, "shocking");
+            << encode_campaign(party, nullptr, "shocking");
     auto actors = party.participants();
     actors[0].cell = {1, 1};
     actors.push_back({99, "vanguard", "Enemy", 1, {3, 1}});
@@ -173,26 +176,27 @@ void access()
     auto h = hero();
     const auto access = rules->spell_access(h.sheet());
     check(access.cantrips.size() == 1 && access.cantrips[0].id == "shocking_grasp" &&
-              access.cantrips[0].source_id == "class:wizard:spellcasting",
+          access.cantrips[0].source_id == "class:wizard:spellcasting",
           "Real Wizard source");
     auto profile = rules->character_profile(h.sheet(), {}).data;
     check(profile.starts_with("PC32 1 0 1028 "), "Selected bit in versioned recipe");
     profile.replace(0, 4, "PC25");
     rejects(
         [&]
-        {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                                  {2, "vanguard", "Enemy", 1, {2, 1}}}},
-                                13);
-        });
+    {
+        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
+                {2, "vanguard", "Enemy", 1, {2, 1}}
+            }},
+        13);
+    });
     auto old_identity = rules->identity();
     old_identity.version = "0.6.37";
     rejects(
         [&]
-        {
-            rules->validate_saved_grants(old_identity, h.sheet(), h.sheet().grants);
-        });
+    {
+        rules->validate_saved_grants(old_identity, h.sheet(), h.sheet().grants);
+    });
     auto c = battle(*custom(), hero(1, "fire_bolt"));
     check(!has(*c, "shocking_grasp"), "Unknown spell unavailable");
     auto wrong = h.sheet();
@@ -201,19 +205,24 @@ void access()
             g.source_id = "species:elf";
     rejects(
         [&]
-        {
-            (void)rules->character_profile(wrong, {});
-        });
+    {
+        (void)rules->character_profile(wrong, {});
+    });
 }
 
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
-        for (unsigned seed : {0u, 13u, 40u})
-            for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
+        for (unsigned seed :
+                {
+                    0u, 13u, 40u
+                })
+            for (const std::string defense :
+                    {"", "resistance", "vulnerability", "immunity"
+                    })
             {
                 auto rules = custom(
-                    defense.empty() ? "" : "affinity target test " + defense + " lightning\n");
+                                 defense.empty() ? "" : "affinity target test " + defense + " lightning\n");
                 auto c = battle(*rules, hero(level), seed);
                 auto copy = rules->restore(c->save());
                 auto before = unit(*c);
@@ -237,17 +246,17 @@ void damage()
                 check(logged, "Attack bonus recorded");
                 const int raw = seed == 0    ? 9
                                 : seed == 13 ? 4
-                                             : 0,
-                          expected = defense == "immunity"        ? 0
-                                     : defense == "resistance"    ? raw / 2
-                                     : defense == "vulnerability" ? raw * 2
-                                                                  : raw;
+                                : 0,
+                                expected = defense == "immunity"        ? 0
+                                           : defense == "resistance"    ? raw / 2
+                                           : defense == "vulnerability" ? raw * 2
+                                           : raw;
                 check(unit(*c, 2).hit_points == 1000 - expected,
                       "Melee spell hit/miss/critical and Lightning defenses");
                 check(
                     rng(*c) == random + 0x9e3779b97f4a7c15ULL * (seed == 0    ? 3u
-                                                                 : seed == 13 ? 2u
-                                                                              : 1u),
+                            : seed == 13 ? 2u
+                            : 1u),
                     "Melee spell has no adjacent-hostile Disadvantage or extra save/damage modifier");
                 const auto status = effects(unit(*c, 2).persistent);
                 check(fx::opportunity_blocked(status) == (seed != 40),
@@ -256,13 +265,13 @@ void damage()
                       "Target Reaction and movement preserved");
                 if (seed != 40)
                     check(status.active.size() == 1 && status.active[0].source_actor == 1 &&
-                              status.active[0].remaining_ms == 3000 &&
-                              status.active[0].save_in_ms == 0,
+                          status.active[0].remaining_ms == 3000 &&
+                          status.active[0].save_in_ms == 0,
                           "Effect lasts until target turn, not caster turn");
                 const auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
-                          after.movement_feet == before.movement_feet &&
-                          after.persistent == before.persistent,
+                      after.movement_feet == before.movement_feet &&
+                      after.persistent == before.persistent,
                       "Only Magic action spent");
                 auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Stale action is atomic");
@@ -278,7 +287,7 @@ void timing()
     act(*c, "end");
     act(*copy, "end");
     check(c->save() == copy->save() && c->snapshot().actor == 2 &&
-              !fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
+          !fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
           "Expires at next target turn with identical continuation");
     c = battle(*rules, hero());
     act(*c, "shocking_grasp", 1);
@@ -297,16 +306,17 @@ void movement()
     auto profile = rules->character_profile(hero().sheet(), {}).data;
     // A second adjacent enemy remains able to interrupt; the shocked enemy is omitted.
     auto c = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
-                            {{1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-                             {2, "target", "Shocked", 1, {2, 1}},
-                             {3, "target", "Other", 1, {1, 2}}}},
-                           13);
+        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
+            {2, "target", "Shocked", 1, {2, 1}},
+            {3, "target", "Other", 1, {1, 2}}
+        }},
+    13);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     act(*c, "shocking_grasp", 2);
     check(fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
           "Actual hit applies suppression");
-    auto find_move = [&](const CombatSession &s)
+    auto find_move = [&](const CombatSession & s)
     {
         for (const auto &v : s.legal_commands())
             if (v.verb == "move" && v.destination == Cell{0, 0})
@@ -358,32 +368,38 @@ void reaction_and_armor()
         act(*c, "end");
         act(*copy, "end");
         check(c->save() == copy->save() && unit(*c, 2).reaction &&
-                  !fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
+              !fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
               "Only target turn refreshes the previously spent Reaction");
     }
     check(covered, "Hit with spent Reaction exercised");
     auto d = hero().creation_data();
     d.character_class = "fighter";
-    d.cantrips = std::vector<std::string>{};
+    d.cantrips = std::vector<std::string> {};
     Character fighter(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < 4; ++n)
         check(fighter.advance(*rules, state), "Ordinary armored Fighter advancement");
     auto c = rules->create(
-        {{8, 8, std::vector<std::uint8_t>(64)},
-         {{1,
-           "campaign-character",
-           "Wizard",
-           0,
-           {1, 1},
-           rules->character_profile(hero().sheet(), {}).data},
-          {2,
-           "campaign-character",
-           "Plate Fighter",
-           1,
-           {2, 1},
-           rules->character_profile(fighter.sheet(), std::vector<std::string>{"plate"}).data}}},
-        89);
+    {
+        {8, 8, std::vector<std::uint8_t>(64)},
+        {   {
+                1,
+                "campaign-character",
+                "Wizard",
+                0,
+                {1, 1},
+                rules->character_profile(hero().sheet(), {}).data
+            },
+            {
+                2,
+                "campaign-character",
+                "Plate Fighter",
+                1,
+                {2, 1},
+                rules->character_profile(fighter.sheet(), std::vector<std::string>{"plate"}).data
+            }
+        }},
+    89);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     const auto random = rng(*c);
@@ -412,21 +428,25 @@ void lifecycle()
     fx::elapse_effects(std::span(&subject, 1), 4000, random);
     check(state.active.empty() && random == 17, "Last source expires without RNG");
     for (const char *bad :
-         {"FX1 2 1 1 3 5 1 \"Caster\" 0 6000 0", "FX2 2 1 1 3 5 1 \"Caster\" 0 6000 0",
-          "FX3 2 1 1 3 5 1 \"Caster\" 1 6000 0", "FX3 2 1 1 3 5 1 \"Caster\" 0 6001 0",
-          "FX3 2 1 1 3 5 1 \"Caster\" 0 6000 1", "FX3 1 0"})
+            {"FX1 2 1 1 3 5 1 \"Caster\" 0 6000 0", "FX2 2 1 1 3 5 1 \"Caster\" 0 6000 0",
+             "FX3 2 1 1 3 5 1 \"Caster\" 1 6000 0", "FX3 2 1 1 3 5 1 \"Caster\" 0 6001 0",
+             "FX3 2 1 1 3 5 1 \"Caster\" 0 6000 1", "FX3 1 0"
+            })
         rejects(
             [&]
-            {
-                std::istringstream in(bad);
-                (void)fx::read_effects(in);
-            });
+    {
+        std::istringstream in(bad);
+        (void)fx::read_effects(in);
+    });
 }
 
 void legality()
 {
     auto rules = custom();
-    for (int feet : {5, 10})
+    for (int feet :
+            {
+                5, 10
+            })
     {
         auto c = battle(*rules, hero(), 13, {1 + feet / 5, 1}, {"whip"});
         check(has(*c, "shocking_grasp", 2) == (feet == 5), "Touch ignores weapon reach");
@@ -434,23 +454,28 @@ void legality()
         {
             auto before = c->save();
             check(!c->submit({c->snapshot().revision, 1, 2, "shocking_grasp"}) &&
-                      c->save() == before,
+                  c->save() == before,
                   "Range rejection atomic");
         }
     }
-    for (auto gear : std::vector<std::vector<std::string>>{
-             {"quarterstaff", "shield"}, {"wand", "shield"}, {"plate"}})
+    for (auto gear : std::vector<std::vector<std::string>>
+{
+    {"quarterstaff", "shield"}, {"wand", "shield"}, {"plate"}
+})
     {
         auto c = battle(*rules, hero(), 13, {2, 1}, gear);
         auto before = c->save();
         check(!has(*c, "shocking_grasp") &&
-                  !c->submit({c->snapshot().revision, 1, 2, "shocking_grasp"}) &&
-                  c->save() == before,
+              !c->submit({c->snapshot().revision, 1, 2, "shocking_grasp"}) &&
+              c->save() == before,
               "Hands/untrained armor reject without mutation");
     }
     auto c = battle(*rules, hero());
     auto before = c->save();
-    for (EntityId id : {0u, 999u})
+    for (EntityId id :
+            {
+                0u, 999u
+            })
         check(!c->submit({c->snapshot().revision, 1, id, "shocking_grasp"}) && c->save() == before,
               "Unknown target atomic");
 }
@@ -465,32 +490,33 @@ void persistence_guards()
     old.replace(old.find(module()->identity().version), 6, "0.6.37");
     rejects(
         [&]
-        {
-            (void)rules->restore(old);
-        });
+    {
+        (void)rules->restore(old);
+    });
     auto malformed = current;
     const auto fx = malformed.find("FX3 ");
     check(fx != malformed.npos, "Actual live effect encoded as FX3");
     malformed.replace(fx, 3, "FX2");
     rejects(
         [&]
-        {
-            (void)rules->restore(malformed);
-        });
+    {
+        (void)rules->restore(malformed);
+    });
     check(c->save() == current, "Rejected restore preserves current session");
     auto board = Battlefield{8, 8, std::vector<std::uint8_t>(64)};
     auto profile = rules->character_profile(hero().sheet(), {}).data;
     auto dead = rules->create({board,
-                               {{1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-                                {2, "target", "Dead", 1, {2, 1}, {}, VitalState{0, true, {}}},
-                                {3, "target", "Enemy", 1, {6, 1}}}},
-                              13);
+        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
+            {2, "target", "Dead", 1, {2, 1}, {}, VitalState{0, true, {}}},
+            {3, "target", "Enemy", 1, {6, 1}}
+        }},
+    13);
     while (dead->snapshot().actor != 1)
         act(*dead, "end");
     auto before = dead->save();
     check(!has(*dead, "shocking_grasp", 2) &&
-              !dead->submit({dead->snapshot().revision, 1, 2, "shocking_grasp"}) &&
-              dead->save() == before,
+          !dead->submit({dead->snapshot().revision, 1, 2, "shocking_grasp"}) &&
+          dead->save() == before,
           "Dead creature cannot be targeted");
 }
 
@@ -498,7 +524,10 @@ void campaign()
 {
     auto rules = module();
     for (unsigned level = 1; level <= 4; ++level)
-        for (bool npc : {false, true})
+        for (bool npc :
+                {
+                    false, true
+                })
         {
             CampaignParty party(module());
             const auto id =
@@ -519,7 +548,7 @@ void campaign()
             CampaignParty restored(module());
             restored.restore(
                 decode_campaign(saved, *srd5::character_rules(), *rules, "shocking", nullptr)
-                    .party);
+                .party);
             check(encode_campaign(restored, nullptr, "shocking") == saved,
                   "Campaign exact round trip");
             auto participants = restored.participants();
@@ -530,7 +559,10 @@ void campaign()
             rules->elapse(participants, 1, random);
             check(!fx::opportunity_blocked(effects(*participants[0].state)) && random == 123,
                   "Expires at exact campaign deadline");
-            for (auto kind : {RestKind::short_rest, RestKind::long_rest})
+            for (auto kind :
+                    {
+                        RestKind::short_rest, RestKind::long_rest
+                    })
             {
                 check(bool(restored.rest(kind)), "Rest accepted");
                 if (restored.state().short_rest)
@@ -541,7 +573,7 @@ void campaign()
                 CampaignParty again(module());
                 again.restore(
                     decode_campaign(camp, *srd5::character_rules(), *rules, "shocking", nullptr)
-                        .party);
+                    .party);
                 check(encode_campaign(again, nullptr, "shocking") == camp,
                       "Rest-save reload retains grants and state");
             }
@@ -556,7 +588,7 @@ void legacy()
     CampaignParty party(module());
     party.restore(
         decode_campaign(prior, *srd5::character_rules(), *rules, "shocking", nullptr).party);
-    auto body = [](const std::string &s)
+    auto body = [](const std::string & s)
     {
         return s.substr(s.find('\n', s.find('\n') + 1) + 1);
     };
@@ -564,7 +596,7 @@ void legacy()
     expected.replace(expected.find("0.6.37"), 6, rules->identity().version);
     check(
         body(encode_campaign(party, nullptr, "shocking")) ==
-            test::with_arcane_recovery_grants(expected),
+        test::with_arcane_recovery_grants(expected),
         "Real previous campaign changes only identity/checksum and the fixed Arcane Recovery grant");
     auto upgraded = [&](const char *name)
     {
@@ -589,10 +621,11 @@ void fixtures()
     auto h = hero(3);
     auto profile = rules->character_profile(h.sheet(), {}).data;
     auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
-                            {{1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-                             {2, "vanguard", "Ally", 0, {2, 1}},
-                             {99, "vanguard", "Enemy", 1, {5, 1}}}},
-                           2);
+        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
+            {2, "vanguard", "Ally", 0, {2, 1}},
+            {99, "vanguard", "Enemy", 1, {5, 1}}
+        }},
+    2);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     std::ofstream(path / "known.save") << c->save();

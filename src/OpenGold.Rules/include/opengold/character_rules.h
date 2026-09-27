@@ -139,10 +139,10 @@ class CharacterRules
     adjustments(std::string_view background) const = 0;
     [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(std::uint64_t &random_state) const = 0;
     [[nodiscard]] virtual std::optional<int> ability_score(const CharacterDraft &draft,
-                                                           unsigned ability) const = 0;
+            unsigned ability) const = 0;
 
     [[nodiscard]] virtual std::array<unsigned, 6> preset_ability_priority(std::string_view,
-                                                                          unsigned) const
+            unsigned) const
     {
         return {0, 1, 2, 3, 4, 5};
     }
@@ -151,7 +151,7 @@ class CharacterRules
     [[nodiscard]] bool class_eligible(const CharacterDraft &draft, std::string_view id) const;
     [[nodiscard]] std::array<bool, 6> unmet_targets(const CharacterDraft &draft) const;
     [[nodiscard]] virtual CharacterSheet evaluate(const CharacterDraft &draft,
-                                                  bool require_name) const = 0;
+            bool require_name) const = 0;
 
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
     training_options(const CharacterDraft &) const
@@ -170,9 +170,9 @@ class CharacterRules
     }
 
     [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
-                                                             unsigned ability,
-                                                             std::string_view skill = {},
-                                                             std::string_view tool = {}) const;
+            unsigned ability,
+            std::string_view skill = {},
+            std::string_view tool = {}) const;
 };
 } // namespace opengold::rules
 #endif

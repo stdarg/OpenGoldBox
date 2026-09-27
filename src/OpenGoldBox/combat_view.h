@@ -25,7 +25,7 @@ class CombatView : public godot::Control
     [[nodiscard]] godot::Vector2i selected_character_cell() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
     [[nodiscard]] godot::Ref<godot::Texture2D> sprite_texture(opengold::rules::EntityId id,
-                                                              bool action) const;
+            bool action) const;
 
     [[nodiscard]] bool attack_pose_active(std::int64_t id) const
     {

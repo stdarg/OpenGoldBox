@@ -25,10 +25,10 @@ std::string normalized(std::string s)
     }
     s.erase(std::remove_if(s.begin(), s.end(),
                            [](char c)
-                           {
-                               return c == '-' || c == '_' || c == ' ';
-                           }),
-            s.end());
+    {
+        return c == '-' || c == '_' || c == ' ';
+    }),
+    s.end());
     return s;
 }
 } // namespace
@@ -38,7 +38,7 @@ void CharacterCreationView::load_portraits()
     Ref<JSON> json;
     json.instantiate();
     if (json->parse(FileAccess::get_file_as_string("res://bin/portraits/portraits.json")) != OK ||
-        json->get_data().get_type() != Variant::DICTIONARY)
+            json->get_data().get_type() != Variant::DICTIONARY)
         throw std::runtime_error("Cannot read portrait catalog. Run demos/build-rolf.cmd.");
     const Dictionary catalog = json->get_data();
     const Array keys = catalog.keys();
@@ -50,7 +50,7 @@ void CharacterCreationView::load_portraits()
         const auto field = [&](const char *key)
         {
             if (!entry.has(key) || entry[key].get_type() != Variant::STRING ||
-                String(entry[key]).is_empty())
+                    String(entry[key]).is_empty())
                 throw std::runtime_error("Missing portrait metadata");
             return std::string(String(entry[key]).utf8().get_data());
         };
@@ -66,14 +66,14 @@ void CharacterCreationView::load_portraits()
     if (portraits_.empty())
         throw std::runtime_error("Empty portrait catalog");
     std::sort(portraits_.begin(), portraits_.end(),
-              [](const auto &a, const auto &b)
-              {
-                  return a.filename < b.filename;
-              });
+              [](const auto & a, const auto & b)
+    {
+        return a.filename < b.filename;
+    });
     for (int field = 0; field < 3; ++field)
     {
-        const char *names[]{"PortraitGender", "PortraitClass", "PortraitRace"};
-        const char *labels[]{"All genders", "All classes", "All races"};
+        const char *names[] {"PortraitGender", "PortraitClass", "PortraitRace"};
+        const char *labels[] {"All genders", "All classes", "All races"};
         auto *control = get_node<OptionButton>(names[field]);
         control->add_item(labels[field]);
         std::set<std::string> values;
@@ -111,11 +111,11 @@ CharacterCreationView::portrait_texture(const opengold::por::CharacterAppearance
 {
     auto filename = appearance.portrait;
     if (std::none_of(portraits_.begin(), portraits_.end(),
-                     [&](const auto &p)
-                     {
-                         return p.filename == filename;
-                     }))
-        filename = recommended_portrait(draft);
+                     [&](const auto & p)
+{
+    return p.filename == filename;
+}))
+    filename = recommended_portrait(draft);
     if (const auto found = portrait_textures_.find(filename); found != portrait_textures_.end())
         return found->second;
     Ref<Texture2D> texture =
@@ -132,7 +132,7 @@ void CharacterCreationView::refresh_portraits()
     filtered_portraits_.clear();
     auto *list = get_node<OptionButton>("PortraitSelect");
     list->clear();
-    const auto matches = [&](const char *node, const std::string &value)
+    const auto matches = [&](const char *node, const std::string & value)
     {
         auto *c = get_node<OptionButton>(node);
         return c->get_selected() <= 0 || c->get_item_text(c->get_selected()) == gs(value);
@@ -142,7 +142,7 @@ void CharacterCreationView::refresh_portraits()
     {
         const auto &p = portraits_[i];
         if (!matches("PortraitGender", p.gender) || !matches("PortraitClass", p.klass) ||
-            !matches("PortraitRace", p.race))
+                !matches("PortraitRace", p.race))
             continue;
         if (p.filename == creator_->appearance().portrait)
             selected = filtered_portraits_.size();
@@ -175,7 +175,7 @@ void CharacterCreationView::portrait_part(int direction)
     const int current = get_node<OptionButton>("PortraitSelect")->get_selected(),
               count = filtered_portraits_.size();
     portrait_selected(current < 0 ? (direction > 0 ? 0 : count - 1)
-                                  : (current + direction + count) % count);
+                      : (current + direction + count) % count);
 }
 
 void CharacterCreationView::portrait_selected(std::int64_t index)
@@ -184,14 +184,14 @@ void CharacterCreationView::portrait_selected(std::int64_t index)
         return;
     perform(
         [&]
-        {
-            if (index < 0 || static_cast<std::size_t>(index) >= filtered_portraits_.size())
-                throw std::runtime_error("Invalid portrait selection");
-            auto a = creator_->appearance();
-            a.portrait = portraits_.at(filtered_portraits_[index]).filename;
-            creator_->appearance(a);
-            if (completed_)
-                completed_->appearance(a);
-            portrait_chosen_ = true;
-        });
+    {
+        if (index < 0 || static_cast<std::size_t>(index) >= filtered_portraits_.size())
+            throw std::runtime_error("Invalid portrait selection");
+        auto a = creator_->appearance();
+        a.portrait = portraits_.at(filtered_portraits_[index]).filename;
+        creator_->appearance(a);
+        if (completed_)
+            completed_->appearance(a);
+        portrait_chosen_ = true;
+    });
 }

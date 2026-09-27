@@ -43,8 +43,8 @@ void wall_art_tests()
     picture_record[17] = 0x8d;
     const auto picture = opengold::decode_ega_picture(picture_record);
     check(picture && picture.image.width == 8 && picture.image.rgba[0] == 85 &&
-              picture.image.rgba[3] == 255 && picture.image.rgba[4] == 255 &&
-              picture.image.rgba[5] == 85,
+          picture.image.rgba[3] == 255 && picture.image.rgba[4] == 255 &&
+          picture.image.rgba[5] == 85,
           "Picture decoder uses opaque normal EGA colors");
     picture_record.pop_back();
     check(!opengold::decode_ega_picture(picture_record), "Truncated portrait rejected");
@@ -76,7 +76,7 @@ void wall_art_tests()
     definitions[55] = 0;
     const auto cutouts = decode_wall_art(definitions, *tiles);
     check(cutouts && cutouts->appearances[0][6].rgba[3] == 0 &&
-              cutouts->appearances[0][6].rgba[8 * 4 + 3] == 0,
+          cutouts->appearances[0][6].rgba[8 * 4 + 3] == 0,
           "Pink and tile zero reveal the backdrop");
     definitions[55] = 4;
     check(!decode_wall_art(definitions, *tiles), "Out-of-bank tile reference rejected");
@@ -122,7 +122,7 @@ void fog_visibility_tests()
     corridor.cells[7 * 16 + 8].walls[0] = 0;
     auto view = render_exploration_view(corridor, art, 8, 8, 0);
     check(view.visible.count() == 3 && view.visible.test(8 * 16 + 8) &&
-              view.visible.test(7 * 16 + 8) && view.visible.test(6 * 16 + 8),
+          view.visible.test(7 * 16 + 8) && view.visible.test(6 * 16 + 8),
           "The three rendered corridor cells are visible, without rooms behind side walls");
     corridor.cells[7 * 16 + 8].walls[0] = 1;
     check(render_exploration_view(corridor, art, 8, 8, 0).visible.count() == 2,
@@ -149,7 +149,7 @@ void fog_visibility_tests()
 
     const auto open = render_exploration_view({}, {}, 8, 8, 0);
     check(open.visible.test(7 * 16 + 8) && open.visible.test(6 * 16 + 8) &&
-              !open.visible.test(5 * 16 + 8) && !open.visible.test(9 * 16 + 8),
+          !open.visible.test(5 * 16 + 8) && !open.visible.test(9 * 16 + 8),
           "Open floor reveals the forward view, not distant or rear cells");
     for (unsigned facing = 0; facing < 4; ++facing)
     {
@@ -170,8 +170,14 @@ void fog_visibility_tests()
                 }
         check(rotated.visible == expected, "Visibility rotates with all four facings");
     }
-    for (unsigned x : {0u, 15u})
-        for (unsigned y : {0u, 15u})
+    for (unsigned x :
+            {
+                0u, 15u
+            })
+        for (unsigned y :
+                {
+                    0u, 15u
+                })
             for (unsigned facing = 0; facing < 4; ++facing)
             {
                 const auto edge = render_exploration_view({}, {}, x, y, facing);
@@ -234,7 +240,7 @@ void shopping_tests()
     check(!town.buy(ticket, 1) && town.party().wealth[3] == 9999,
           "Unaffordable item cannot deduct gold");
     check(town.buy(ticket, 0) && town.party().wealth[3] == 9989 &&
-              town.party().inventory.size() == 1,
+          town.party().inventory.size() == 1,
           "Purchase charges actual price and adds inventory");
     for (int i = 1; i < 16; ++i)
         check(town.buy(ticket, 0), "Separate purchased instances fit inventory");
@@ -260,24 +266,26 @@ void shopping_tests()
                              0x6b, 56, 0, 0, 0}; // Purse write, then unimplemented training.
     failing_bytes.insert(failing_bytes.end(), failing_body.begin(), failing_body.end());
     auto failing_program = std::make_shared<const EclProgram>(
-        EclProgram::decode(failing_bytes, "unsupported town service"));
+                               EclProgram::decode(failing_bytes, "unsupported town service"));
     RolfTourSession failure({}, failing_program, {}, 0x9914, {}, resources);
     failure.advance(0);
     failure.explore(ExplorationCommand::look);
     step_to_prompt(failure);
     check(failure.snapshot().phase == TourPhase::awaiting_continue &&
-              failure.script_diagnostics().size() == 1,
+          failure.script_diagnostics().size() == 1,
           "Unsupported service produces a recoverable event notice");
     check(failure.party().wealth[3] == 9999 && failure.script_variable(0x6BC1) == 9999,
           "Unsupported event rolls back script and party mutations");
     check(failure.continue_dialogue(failure.snapshot().continue_ticket) &&
-              failure.snapshot().phase == TourPhase::completed,
+          failure.snapshot().phase == TourPhase::completed,
           "Acknowledging unsupported event restores free exploration");
 }
 
 std::size_t peaceful_choice(const TourSnapshot &s)
 {
-    for (const auto *safe : {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"})
+    for (const auto *safe :
+            {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"
+            })
         for (std::size_t n = 0; n < s.choices.size(); ++n)
             if (s.choices[n] == safe)
                 return n;
@@ -297,9 +305,9 @@ void settle_town(RolfTourSession &town, unsigned shop_x = 16, unsigned shop_y = 
         check(s.phase != TourPhase::faulted, s.diagnostic.c_str());
         if (s.phase == TourPhase::awaiting_continue)
             town.choose(s.continue_ticket, s.pose.x == shop_x && s.pose.y == shop_y &&
-                                                   s.dialogue.find("SHOP") != std::string::npos
-                                               ? 0
-                                               : peaceful_choice(s));
+                        s.dialogue.find("SHOP") != std::string::npos
+                        ? 0
+                        : peaceful_choice(s));
         else if (s.phase == TourPhase::awaiting_input)
             town.input(s.continue_ticket, "0");
         else if (s.phase == TourPhase::shopping)
@@ -342,7 +350,7 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
                 const auto &b = town.map().at(x, y);
                 const unsigned reverse = (d + 2) % 4;
                 if (a.doors[d] > 1 || b.doors[reverse] > 1 || (a.walls[d] && !a.doors[d]) ||
-                    (b.walls[reverse] && !b.doors[reverse]))
+                        (b.walls[reverse] && !b.doors[reverse]))
                     continue;
                 const int next = y * 16 + x;
                 if (previous[next] >= 0 || refused_edges.contains({cell, next}))
@@ -359,7 +367,7 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
         const unsigned facing = next % 16 > int(p.x)   ? 1
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
-                                                       : 0;
+                                : 0;
         const bool forward = p.facing == facing;
         town.explore(forward ? ExplorationCommand::forward : ExplorationCommand::turn_right);
         bool reached = false;
@@ -408,10 +416,12 @@ void installed_town(const RolfTourSession &finished)
               << scripts.size() << " programs.\n";
     for (const auto &d : limitations)
         std::cout << "Town unsupported branch: " << d << '\n';
-    check(events.size() >= 30 && scripts == std::set<unsigned>{0, 8, 11},
+    check(events.size() >= 30 && scripts == std::set<unsigned> {0, 8, 11},
           "Walkable town includes City Hall and training scripts");
-    for (const auto target : std::array<std::array<unsigned, 3>, 4>{
-             {{15, 8, 7}, {8, 10, 11}, {13, 8, 57}, {11, 10, 13}}})
+    for (const auto target : std::array<std::array<unsigned, 3>, 4>
+{
+    {{15, 8, 7}, {8, 10, 11}, {13, 8, 57}, {11, 10, 13}}
+})
     {
         auto town = finished;
         check(walk_to(town, target[0], target[1], true), "Walk to original shop");
@@ -419,10 +429,10 @@ void installed_town(const RolfTourSession &finished)
               "Entering shop and answering Yes opens actual stock");
         check(town.shop_stock().size() == target[2], "Original shop-specific stock count");
         const auto affordable = std::find_if(town.shop_stock().begin(), town.shop_stock().end(),
-                                             [](const auto &item)
-                                             {
-                                                 return item.stored.value <= 9999;
-                                             });
+                                             [](const auto & item)
+        {
+            return item.stored.value <= 9999;
+        });
         check(affordable != town.shop_stock().end(),
               "Shop has merchandise affordable with starting purse");
         const auto item_index = static_cast<std::size_t>(affordable - town.shop_stock().begin());
@@ -474,7 +484,7 @@ void synthetic()
     const auto before_turn = tour.snapshot().pose;
     check(tour.explore(ExplorationCommand::turn_around), "Turn around succeeds");
     check(tour.snapshot().pose ==
-              PartyPose{before_turn.x, before_turn.y, (before_turn.facing + 2) % 4},
+          PartyPose{before_turn.x, before_turn.y, (before_turn.facing + 2) % 4},
           "Turn around changes facing without moving");
     tour.explore(ExplorationCommand::turn_around);
     check(tour.snapshot().pose == before_turn, "Two half turns restore facing");
@@ -510,7 +520,7 @@ void installed(const char *directory)
     check(tour.wall_art().appearances[5][6].rgba != tour.wall_art().appearances[7][6].rgba,
           "Distinct stone masonry patterns retained");
     check(tour.map().at(4, 3).walls[2] == 11 && tour.map().at(5, 2).walls[1] == 12 &&
-              tour.map().at(11, 2).walls[2] == 13,
+          tour.map().at(11, 2).walls[2] == 13,
           "Original landmark IDs select city hall, training hall and temple");
     unsigned prompts = 0;
     while (true)
@@ -525,7 +535,7 @@ void installed(const char *directory)
         check(prompts <= 16, "Bounded installed tour");
         check(!s.dialogue.empty(), "Original dialogue shown at each pause");
         const auto image = compose_exploration_view(tour.map(), tour.wall_art(), s.pose.x, s.pose.y,
-                                                    s.pose.facing);
+            s.pose.facing);
         check(image.rgba.size() == 88 * 88 * 4, "Every tour pause composes original artwork");
         check(!tour.explore(ExplorationCommand::forward), "No movement during original dialogue");
         check(tour.continue_dialogue(s.continue_ticket), "Original Continue accepted");

@@ -46,7 +46,7 @@ struct AdditionalPortraitHead
 
 [[nodiscard]] std::span<const AdditionalPortraitHead> additional_portrait_heads();
 [[nodiscard]] std::optional<unsigned> matching_portrait_head(std::string_view race,
-                                                             std::string_view gender);
+        std::string_view gender);
 // Fit approved source artwork to the original head panel without palette
 // quantization. Trim padding and crop at the cataloged neck baseline. The final
 // neck placement is fitted to the selected original body during composition.
@@ -68,7 +68,7 @@ struct CharacterColorUsage
 // Keeps the source color indices: they identify regions, not final RGB colors.
 [[nodiscard]] IndexedIcon decode_character_icon(std::span<const std::uint8_t> record);
 [[nodiscard]] Image compose_character_icon(const IndexedIcon &head, const IndexedIcon &body,
-                                           const CharacterAppearance &appearance);
+        const CharacterAppearance &appearance);
 [[nodiscard]] std::array<std::uint8_t, 3> character_color(unsigned index);
 
 class CharacterArt

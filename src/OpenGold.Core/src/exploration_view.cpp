@@ -23,9 +23,9 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
     for (int row = 0; row < 88; ++row)
     {
         const std::array<std::uint8_t, 4> color =
-            row < 44 ? (interior ? std::array<std::uint8_t, 4>{85, 85, 85, 255}
-                                 : std::array<std::uint8_t, 4>{85, 255, 255, 255})
-                     : std::array<std::uint8_t, 4>{170, 85, 0, 255};
+            row < 44 ? (interior ? std::array<std::uint8_t, 4> {85, 85, 85, 255}
+                        : std::array<std::uint8_t, 4> {85, 255, 255, 255})
+            : std::array<std::uint8_t, 4> {170, 85, 0, 255};
         for (int column = 0; column < 88; ++column)
             std::copy(color.begin(), color.end(), result.rgba.begin() + (row * 88 + column) * 4);
     }
@@ -45,7 +45,7 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         const int depth = row < 56 ? 2 : row < 72 ? 1 : 0;
         const double width = row < 56   ? 16 + (row - 48 + .5)
                              : row < 72 ? 24 + 2 * (row - 56 + .5)
-                                        : 56 + 2 * (row - 72 + .5);
+                             : 56 + 2 * (row - 72 + .5);
         for (int column = 0; column < 88; ++column)
         {
             const int lateral = static_cast<int>(std::floor((column + .5 - 44) / width + .5));
@@ -69,7 +69,8 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
     const auto wall = [&](int depth, int lateral, unsigned side) -> WallSample
     {
         const int cell = cell_at(depth, lateral);
-        return cell < 0 ? WallSample{} : WallSample{map.cells[cell].walls[side], cell};
+return cell < 0 ? WallSample{} :
+        WallSample{map.cells[cell].walls[side], cell};
     };
     const auto draw = [&](WallSample sample, WallView perspective, int left, int top)
     {
@@ -105,7 +106,7 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         const auto front = wall(2, lateral, facing);
         draw(front, WallView::far_front, 40 + lateral * 16, 32);
         if (lateral <= 0 && lateral > -3 &&
-            (wall(2, lateral, left_side) || wall(2, lateral - 1, facing)))
+                (wall(2, lateral, left_side) || wall(2, lateral - 1, facing)))
             draw(front, WallView::far_extension, 32 + lateral * 16, 32);
         if (lateral > 0 && (front || wall(2, lateral - 1, right_side)))
             draw(wall(2, lateral - 1, facing), WallView::far_extension, 32 + lateral * 16, 32);

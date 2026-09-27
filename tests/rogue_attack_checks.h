@@ -11,7 +11,7 @@ auto rules_module(std::string extra = {})
                      "data/rules/srd-5.2.1/combat.rules");
     std::string text{std::istreambuf_iterator<char>(in), {}};
     return srd5::parse_content(
-        text + "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" + extra);
+               text + "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" + extra);
 }
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
@@ -28,15 +28,19 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon = "
     std::vector<std::string> gear;
     if (!weapon.empty())
         gear.push_back(weapon);
-    const Cell target = ranged ? Cell{5, 1} : Cell{2, 1};
+    const Cell target = ranged ? Cell{5, 1} :
+                        Cell{2, 1};
     Encounter e{{12, 8, std::vector<std::uint8_t>(96)},
-                {{1,
-                  "campaign-character",
-                  "Rogue",
-                  0,
-                  {1, 1},
-                  rules.character_profile(h.sheet(), gear).data},
-                 {99, enemy, "Target", 1, target}}};
+        {   {
+                1,
+                "campaign-character",
+                "Rogue",
+                0,
+                {1, 1},
+                rules.character_profile(h.sheet(), gear).data
+            },
+            {99, enemy, "Target", 1, target}
+        }};
     if (ally)
         e.participants.push_back({2, "vanguard", "Ally", 0, {target.x, 2}});
     auto c = rules.create(std::move(e), seed);
@@ -75,9 +79,9 @@ void reject_hit_field(const RulesModule &rules, const CombatSession &combat, uns
     while (in >> n)
         fields.push_back(n);
     check(fields.size() == ((bytes.starts_with("OGCOMBAT 22 ") || bytes.starts_with("OGCOMBAT 23 "))
-                                ? 14u
-                                : 12u) &&
-              field < fields.size(),
+                            ? 14u
+                            : 12u) &&
+          field < fields.size(),
           "Versioned pending hit field shape");
     fields[field] = value;
     std::ostringstream out;
@@ -90,16 +94,16 @@ void reject_hit_field(const RulesModule &rules, const CombatSession &combat, uns
     bytes.replace(start + 1, end - start - 1, out.str());
     rejects(
         [&]
-        {
-            (void)rules.restore(bytes);
-        });
+    {
+        (void)rules.restore(bytes);
+    });
 }
 
 void run()
 {
     const auto output = std::filesystem::path(OPENGOLD_BINARY_DIR) / "rogue-fixtures";
     std::filesystem::create_directories(output);
-    auto write = [&](const std::string &name, const CombatSession &c)
+    auto write = [&](const std::string & name, const CombatSession & c)
     {
         std::ofstream out(output / (name + ".save"));
         out << c.save();
@@ -123,10 +127,10 @@ void run()
         const auto offer = c->snapshot().sneak_attack_choice;
         check(bool(offer), "Ally near target enables live Sneak hit");
         check(offer->dice_sides == 6 &&
-                  offer->dice_count == int(level < 3 ? 1 : 2) * (offer->critical ? 2 : 1),
+              offer->dice_count == int(level < 3 ? 1 : 2) * (offer->critical ? 2 : 1),
               "Independent attained-level/critical extra dice");
         check(!unit(*c).action && unit(*c, 99).hit_points == 1000 &&
-                  !c->snapshot().savage_attack_choice,
+              !c->snapshot().savage_attack_choice,
               "Sneak decision precedes damage/Savage and preserves action cost");
         roundtrip(*rules, *c);
         reject_hit_field(*rules, *c, 11, 1);
@@ -156,15 +160,15 @@ void run()
         roundtrip(*rules, *c);
         auto bad = h.sheet();
         std::erase_if(bad.grants,
-                      [](const auto &g)
-                      {
-                          return g.id == "feature:sneak_attack";
-                      });
+                      [](const auto & g)
+        {
+            return g.id == "feature:sneak_attack";
+        });
         rejects(
             [&]
-            {
-                (void)rules->character_profile(bad, {});
-            });
+        {
+            (void)rules->character_profile(bad, {});
+        });
         if (level < 3)
         {
             c = battle(*rules, h);
@@ -175,7 +179,7 @@ void run()
         check(has(*c, "steady_aim"), "Steady Aim offered at attained Rogue level three/four");
         act(*c, "steady_aim");
         check(!unit(*c).bonus_action && unit(*c).action && unit(*c).movement_feet == 0 &&
-                  c->movement_reach(1).empty(),
+              c->movement_reach(1).empty(),
               "Aim spends only Bonus Action and makes Speed zero");
         roundtrip(*rules, *c);
         act(*c, "dash");
@@ -236,7 +240,7 @@ void run()
         CampaignParty restored(rules_module());
         restored.restore(
             decode_campaign(saved, *srd5::character_rules(), *rules, "recruited-rogue", nullptr)
-                .party);
+            .party);
         check(encode_campaign(restored, nullptr, "recruited-rogue") == saved,
               "Recruited ownership/history and grants survive campaign reload");
     }
@@ -263,7 +267,7 @@ void run()
             act(*c, "steady_aim");
             act(*c, "ranged");
             if (unit(*c, 99).hit_points != 1000 || c->snapshot().sneak_attack_choice ||
-                c->snapshot().savage_attack_choice)
+                    c->snapshot().savage_attack_choice)
                 continue;
             const auto saved = c->save();
             const auto start = saved.find("\n1 \"campaign-character\"");
@@ -278,7 +282,7 @@ void run()
             check(actor_fields && !sneak_used && aim_used && !aim_ready && !moved,
                   "Miss clears saved Aim readiness while keeping Speed restriction");
             check(!unit(*c).action && !unit(*c).bonus_action && unit(*c).movement_feet == 0 &&
-                      !has(*c, "steady_aim"),
+                  !has(*c, "steady_aim"),
                   "Miss preserves spent Action/Bonus Action and zero Speed");
             roundtrip(*hard, *c);
             checked = true;
@@ -289,12 +293,14 @@ void run()
     old_identity.version = "0.6.51";
     rejects(
         [&]
-        {
-            auto state = wounds;
-            rules->migrate_character_state(old_identity, h.sheet(), state);
-        });
+    {
+        auto state = wounds;
+        rules->migrate_character_state(old_identity, h.sheet(), state);
+    });
     check(!rules->advancement_options(h.sheet()).level, "This batch does not enable level five");
-    for (const auto &weapon : {"dagger", "shortbow", "blowgun"})
+    for (const auto &weapon :
+            {"dagger", "shortbow", "blowgun"
+            })
     {
         const bool ranged = std::string_view(weapon) != "dagger";
         auto c = battle(*rules, h, weapon, true, 13, ranged);
@@ -307,15 +313,23 @@ void run()
             act(*c, "savage_skip");
         roundtrip(*rules, *c);
     }
-    for (const auto &weapon : {"handaxe", ""})
+    for (const auto &weapon :
+            {"handaxe", ""
+            })
     {
         auto c = battle(*rules, h, weapon);
         act(*c, "melee");
         check(!c->snapshot().sneak_attack_choice, "Non-Finesse and unarmed attacks do not qualify");
     }
     // Live cancellation cases: close ranged attacks have Disadvantage; Aim cancels it.
-    for (bool ally : {false, true})
-        for (bool aim : {false, true})
+    for (bool ally :
+            {
+                false, true
+            })
+        for (bool aim :
+                {
+                    false, true
+                })
         {
             bool checked = false;
             for (unsigned seed = 1; seed <= 64 && !checked; ++seed)
@@ -357,22 +371,28 @@ void run()
         bool checked = false;
         for (unsigned seed = 1; seed <= 64 && !checked; ++seed)
         {
-            Encounter e{
+            Encounter e
+            {
                 {8, 8, std::vector<std::uint8_t>(64)},
-                {{1,
-                  "campaign-character",
-                  "Rogue",
-                  0,
-                  {1, 1},
-                  rules->character_profile(h.sheet(), std::array<std::string, 1>{"dagger"}).data},
-                 {2,
-                  "campaign-character",
-                  "Sleeping ally",
-                  0,
-                  {2, 2},
-                  rules->character_profile(h.sheet(), {}).data,
-                  sleep},
-                 {99, "target", "Target", 1, {2, 1}}}};
+                {   {
+                        1,
+                        "campaign-character",
+                        "Rogue",
+                        0,
+                        {1, 1},
+                        rules->character_profile(h.sheet(), std::array<std::string, 1>{"dagger"}).data
+                    },
+                    {
+                        2,
+                        "campaign-character",
+                        "Sleeping ally",
+                        0,
+                        {2, 2},
+                        rules->character_profile(h.sheet(), {}).data,
+                        sleep
+                    },
+                    {99, "target", "Target", 1, {2, 1}}
+                }};
             auto c = rules->create(std::move(e), seed);
             while (c->snapshot().actor != 1)
                 act(*c, "end");
@@ -384,7 +404,9 @@ void run()
         check(checked, "Hit with incapacitated ally exercised");
     }
     // Real inventory throws retain the selected weapon while the held item lands.
-    for (const auto *weapon : {"dagger", "dart", "handaxe"})
+    for (const auto *weapon :
+            {"dagger", "dart", "handaxe"
+            })
     {
         bool checked = false;
         for (unsigned seed = 1; seed <= 64 && !checked; ++seed)
@@ -405,7 +427,7 @@ void run()
             if (!c->snapshot().sneak_attack_choice && !c->snapshot().savage_attack_choice)
                 continue;
             check(c->snapshot().sneak_attack_choice.has_value() ==
-                      (std::string_view(weapon) != "handaxe"),
+                  (std::string_view(weapon) != "handaxe"),
                   "Thrown Finesse/Ranged weapon qualifies; thrown Handaxe does not");
             roundtrip(*rules, *c);
             if (c->snapshot().sneak_attack_choice)
@@ -441,7 +463,10 @@ void run()
               "Reaction is spent and enemy movement suspended for Sneak decision");
         roundtrip(*rules, *c);
         auto restored = rules->restore(c->save());
-        for (auto *session : {c.get(), restored.get()})
+        for (auto *session :
+                {
+                    c.get(), restored.get()
+                })
         {
             act(*session, "sneak_use");
             act(*session, "savage_skip");
@@ -473,7 +498,7 @@ void run()
         roundtrip(*resisted, *c);
         act(*c, "savage_skip");
         check(unit(*c, 99).hit_points ==
-                  1000 - std::max(0, hit.first_damage + hit.extra_damage) / 2,
+              1000 - std::max(0, hit.first_damage + hit.extra_damage) / 2,
               "Signed weapon plus Sneak damage is resisted once");
         negative_verified = true;
     }
@@ -481,7 +506,9 @@ void run()
     auto live = module();
     auto aimed = battle(*live, h, "shortbow", false, 13, true, "vanguard");
     write("aim-available", *aimed);
-    for (const auto *verb : {"cunning_dash", "cunning_disengage"})
+    for (const auto *verb :
+            {"cunning_dash", "cunning_disengage"
+            })
     {
         auto bonus = live->restore(aimed->save());
         act(*bonus, verb);
@@ -518,7 +545,7 @@ void run()
     CampaignParty copy(module());
     copy.restore(
         decode_campaign(bytes, *srd5::character_rules(), *module(), "rogue-attacks", nullptr)
-            .party);
+        .party);
     check(encode_campaign(copy, nullptr, "rogue-attacks") == bytes,
           "XP-driven Rogue level-four campaign replay is exact");
     check(bool(copy.rest(RestKind::short_rest)), "Rogue Short Rest completes");
@@ -526,10 +553,10 @@ void run()
     check(bool(copy.rest(RestKind::long_rest)), "Rogue Long Rest completes");
     rejects(
         [&]
-        {
-            (void)decode_campaign(corrupt(bytes, module()->identity().version, "0.6.51"),
-                                  *srd5::character_rules(), *module(), "rogue-attacks", nullptr);
-        });
+    {
+        (void)decode_campaign(corrupt(bytes, module()->identity().version, "0.6.51"),
+        *srd5::character_rules(), *module(), "rogue-attacks", nullptr);
+    });
     if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
     {
         CampaignParty ui(module());
@@ -552,9 +579,9 @@ void verify_ui(const char *file)
     const auto assets = campaign_asset_identity(directory);
     CampaignParty expected(module());
     expected.restore(decode_campaign(read_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) /
-                                                        "rogue-advancement-ui.ogs"),
+            "rogue-advancement-ui.ogs"),
                                      *creation, *rules, assets, nullptr)
-                         .party);
+                     .party);
     for (unsigned level = 2; level <= 4; ++level)
         expected.advance(1, expected.default_advancement(1));
     CampaignParty actual(module());

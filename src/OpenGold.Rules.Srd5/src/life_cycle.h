@@ -46,6 +46,6 @@ void start_stable_recovery(LifeState &state, std::uint64_t &rng);
 // Combat rolls death saves at turn entry; this only retains its remaining
 // cadence and advances natural recovery. Campaign event scheduling is separate.
 [[nodiscard]] bool advance_recovery_clock(LifeState &state, std::uint64_t milliseconds,
-                                          bool can_heal = true);
+        bool can_heal = true);
 } // namespace opengold::srd5::detail
 #endif

@@ -106,7 +106,7 @@ struct PartyState
     std::optional<ShortRestSession> short_rest;
     std::optional<ShortRestSession> spell_rest; // Completed-rest choices, consumed once per member.
     std::optional<ShortRestSession>
-        training_rest; // Rule-owned training replacements after spell choices.
+    training_rest; // Rule-owned training replacements after spell choices.
     std::optional<RestActivity> rest_activity;
     std::vector<DetachedPartyItem> detached_items;
 };
@@ -136,7 +136,7 @@ class CampaignParty
     void rejoin(MemberId id);
     void remove(MemberId id);
     [[nodiscard]] std::vector<rules::EquipmentChoice> equipment_choices(MemberId id,
-                                                                        std::uint64_t item) const;
+            std::uint64_t item) const;
     void equip(MemberId id, std::uint64_t item,
                rules::EquipmentOperation operation = rules::EquipmentOperation::equip);
     void unequip(MemberId id, std::uint64_t item);
@@ -150,19 +150,19 @@ class CampaignParty
     advancement_options(MemberId id, const rules::AdvancementChoice &choice = {}) const;
     [[nodiscard]] rules::AdvancementChoice default_advancement(MemberId id) const;
     [[nodiscard]] PartyMember preview_advancement(MemberId id,
-                                                  const rules::AdvancementChoice &choice) const;
+            const rules::AdvancementChoice &choice) const;
     void advance(MemberId id, const rules::AdvancementChoice &choice);
     [[nodiscard]] PartyMember preview_training(MemberId id,
-                                               const rules::CharacterRules &creation_rules,
-                                               const rules::TrainingChoices &choices) const;
+            const rules::CharacterRules &creation_rules,
+            const rules::TrainingChoices &choices) const;
     [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id,
-                                                                 bool after_rest = false) const;
+            bool after_rest = false) const;
     [[nodiscard]] PartyMember preview_spell_choices(MemberId id, const rules::SpellChoices &,
-                                                    bool after_rest = false) const;
+            bool after_rest = false) const;
     void choose_spells(MemberId id, const rules::SpellChoices &, bool after_rest = false);
     void keep_rest_spells(MemberId id);
     [[nodiscard]] PartyMember preview_rest_training(RestTicket, MemberId,
-                                                    std::span<const std::string>) const;
+            std::span<const std::string>) const;
     void replace_rest_training(RestTicket, MemberId, std::span<const std::string>);
     void keep_rest_training(RestTicket, MemberId);
     void complete_training(MemberId id, const rules::CharacterRules &creation_rules,
@@ -177,14 +177,14 @@ class CampaignParty
     [[nodiscard]] std::optional<RestTicket> begin_rest(RestKind kind);
     // Advances a caller-approved activity interval; never skips host encounters.
     [[nodiscard]] std::optional<RestResult> advance_rest(RestTicket ticket,
-                                                         std::uint64_t milliseconds, RestWork work);
+            std::uint64_t milliseconds, RestWork work);
     void interrupt_rest(RestTicket ticket, RestInterruption cause);
     void resume_rest(RestTicket ticket);
     void abandon_rest(RestTicket ticket);
     [[nodiscard]] std::uint64_t remaining_rest_milliseconds() const;
     [[nodiscard]] rules::HitDieResult spend_hit_die(RestTicket ticket, MemberId id);
     [[nodiscard]] rules::Message recover_rest_choice(RestTicket ticket, MemberId id,
-                                                     std::string_view choice);
+            std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
     void advance_time(unsigned minutes);
@@ -197,8 +197,8 @@ class CampaignParty
 
     [[nodiscard]] rules::CharacterProfile profile(MemberId id) const;
     [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, unsigned ability,
-                                                            std::string_view skill = {},
-                                                            std::string_view tool = {}) const;
+            std::string_view skill = {},
+            std::string_view tool = {}) const;
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
     [[nodiscard]] bool has_item(unsigned original_type) const;
     [[nodiscard]] unsigned strength() const;

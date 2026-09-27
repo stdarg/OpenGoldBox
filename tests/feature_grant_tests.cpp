@@ -109,75 +109,79 @@ void creation()
         check(rules->character_profile(sheet, {}).data.starts_with(
                   klass.id == "wizard"  ? "PC32 1 2 "
                   : klass.id == "rogue" ? "PC35 1 2 "
-                                        : "PC28 1 2 "),
+                  : "PC28 1 2 "),
               "Creation grant supplies Savage Attacker to combat without a level-four feat");
         auto invalid = sheet;
         invalid.grants.push_back(sheet.grants.front());
         rejects(
             [&]
-            {
-                (void)rules->character_profile(invalid, {});
-            });
+        {
+            (void)rules->character_profile(invalid, {});
+        });
         invalid = sheet;
         invalid.grants.erase(invalid.grants.begin());
         rejects(
             [&]
-            {
-                (void)rules->character_profile(invalid, {});
-            });
+        {
+            (void)rules->character_profile(invalid, {});
+        });
         invalid = sheet;
         invalid.grants.front().source_id = "background:sage";
         rejects(
             [&]
-            {
-                (void)rules->character_profile(invalid, {});
-            });
+        {
+            (void)rules->character_profile(invalid, {});
+        });
         invalid = sheet;
         invalid.grants.front().level = 4;
         rejects(
             [&]
-            {
-                (void)rules->character_profile(invalid, {});
-            });
+        {
+            (void)rules->character_profile(invalid, {});
+        });
         invalid = sheet;
         invalid.grants.front().choices = {{"free", "yes"}};
         rejects(
             [&]
-            {
-                (void)rules->character_profile(invalid, {});
-            });
+        {
+            (void)rules->character_profile(invalid, {});
+        });
     }
     check(has(hero().sheet(), {"feature:fighting_style", "class:fighter", 1, {}}) &&
-              has(hero().sheet(), {"feature:second_wind", "class:fighter", 1, {}}),
+          has(hero().sheet(), {"feature:second_wind", "class:fighter", 1, {}}),
           "Existing Fighter entitlement and recovery have class provenance");
     check(has(hero("wizard", "sage", "dwarf").sheet(),
-              {"trait:dwarven_toughness", "species:dwarf", 1, {}}),
-          "Existing HP trait records its species source");
+    {"trait:dwarven_toughness", "species:dwarf", 1, {}}),
+    "Existing HP trait records its species source");
     check(has(hero("cleric", "sage").sheet(), {"feature:spellcasting", "class:cleric", 1, {}}),
           "Existing Spellcasting records its class source");
     auto invalid = hero("wizard", "sage").sheet();
     invalid.grants.push_back({"feat:defense", "class:wizard:ability_score_improvement", 1, {}});
     rejects(
         [&]
-        {
-            (void)rules->character_profile(invalid, {});
-        });
+    {
+        (void)rules->character_profile(invalid, {});
+    });
     invalid = hero("fighter", "sage").sheet();
     invalid.grants.push_back({"feat:ability_score_improvement",
                               "class:fighter:ability_score_improvement",
                               1,
-                              {{"strength", "2"}}});
+    {{"strength", "2"}}});
     rejects(
         [&]
-        {
-            (void)rules->character_profile(invalid, {});
-        });
+    {
+        (void)rules->character_profile(invalid, {});
+    });
 }
 
 void advancement()
 {
-    for (const auto &klass : {"fighter", "cleric", "wizard"})
-        for (const auto &background : {"soldier", "sage"})
+    for (const auto &klass :
+            {"fighter", "cleric", "wizard"
+            })
+        for (const auto &background :
+                {"soldier", "sage"
+                })
         {
             CampaignParty party(module());
             const auto id = party.add_pc(hero(klass, background));
@@ -205,9 +209,9 @@ void advancement()
             {
                 rejects(
                     [&]
-                    {
-                        party.advance(id, choice);
-                    });
+                {
+                    party.advance(id, choice);
+                });
                 check(saved(party) == before,
                       "Duplicate feat rejection preserves history and all party state");
             }
@@ -216,9 +220,9 @@ void advancement()
             {
                 rejects(
                     [&]
-                    {
-                        party.advance(id, choice);
-                    });
+                {
+                    party.advance(id, choice);
+                });
                 check(saved(party) == before, "Missing prerequisite rejection is atomic");
             }
             choice = party.default_advancement(id);
@@ -228,9 +232,9 @@ void advancement()
             const auto preview = party.preview_advancement(id, choice);
             const FeatureGrant expected{"feat:ability_score_improvement",
                                         std::string("class:") + klass +
-                                            ":ability_score_improvement",
+                                        ":ability_score_improvement",
                                         4,
-                                        {{"constitution", "1"}, {"wisdom", "1"}}};
+            {{"constitution", "1"}, {"wisdom", "1"}}};
             check(has(preview.character.sheet(), expected) && saved(party) == before,
                   "Preview records both choices without mutating the campaign");
             party.advance(id, choice);
@@ -244,40 +248,42 @@ void advancement()
             check(saved(restored) == bytes,
                   "Explicit grants and choices survive campaign reconstruction exactly");
             check(restored.member(id).character.sheet().grants ==
-                      party.member(id).character.sheet().grants,
+                  party.member(id).character.sheet().grants,
                   "Reconstructed provenance matches acquired grants");
-            for (const auto &bad : {"0", "3", "-1", "01", "two"})
+            for (const auto &bad :
+                    {"0", "3", "-1", "01", "two"
+                    })
             {
                 auto invalid = party.member(id).character.sheet();
                 invalid.grants.back().choices["constitution"] = bad;
                 rejects(
                     [&]
-                    {
-                        (void)module()->character_profile(invalid, {});
-                    });
+                {
+                    (void)module()->character_profile(invalid, {});
+                });
             }
             auto invalid = party.member(id).character.sheet();
             invalid.grants.push_back(invalid.grants.back());
             rejects(
                 [&]
-                {
-                    (void)module()->character_profile(invalid, {});
-                });
+            {
+                (void)module()->character_profile(invalid, {});
+            });
             invalid = party.member(id).character.sheet();
             invalid.grants.back().choices = {{"strength", "2"}};
             rejects(
                 [&]
-                {
-                    (void)module()->character_profile(invalid, {});
-                });
+            {
+                (void)module()->character_profile(invalid, {});
+            });
             const auto tampered =
                 mutate_save(bytes, "\"constitution\" \"1\"", "\"constitution\" \"2\"");
             rejects(
                 [&]
-                {
-                    (void)decode_campaign(tampered, *srd5::character_rules(), *module(),
-                                          "grant-fixture", nullptr);
-                });
+            {
+                (void)decode_campaign(tampered, *srd5::character_rules(), *module(),
+                "grant-fixture", nullptr);
+            });
             check(saved(party) == bytes, "Malformed saved choices do not affect the live campaign");
         }
 }
@@ -296,49 +302,53 @@ void profiles_and_migration()
         const auto &member = party.member(n + 1);
         const auto profile = party.profile(n + 1);
         check(profile.hit_points == maxima[n] && member.vitals.hit_points == maxima[n] - 3 &&
-                  profile.armor_class == armor[n],
+              profile.armor_class == armor[n],
               "Legacy feat/HP/armor totals survive source migration");
         check(member.vitals.resources == (n < 4 ? "SRD1 1 0 0 0 0" : "SRD2 0 1 1 0 0 0"),
               "Legacy spent resources are preserved");
     }
     check(has(party.member(1).character.sheet(),
-              {"feat:savage_attacker", "background:soldier", 1, {}}),
-          "Old implicit Soldier feat gains explicit background provenance");
+    {"feat:savage_attacker", "background:soldier", 1, {}}),
+    "Old implicit Soldier feat gains explicit background provenance");
     check(has(party.member(2).character.sheet(), {"feat:ability_score_improvement",
-                                                  "class:fighter:ability_score_improvement",
-                                                  4,
-                                                  {{"constitution", "2"}}}),
-          "Old ability choice is migrated without collapsing the Soldier grant");
+            "class:fighter:ability_score_improvement",
+            4,
+    {{"constitution", "2"}}
+                                                 }),
+    "Old ability choice is migrated without collapsing the Soldier grant");
     check(has(party.member(3).character.sheet(),
-              {"feat:defense", "class:fighter:ability_score_improvement", 4, {}}),
-          "Old Defense retains the actual level-four acquisition source");
+    {"feat:defense", "class:fighter:ability_score_improvement", 4, {}}),
+    "Old Defense retains the actual level-four acquisition source");
     check(has(party.member(4).character.sheet(),
-              {"feat:savage_attacker", "class:fighter:ability_score_improvement", 4, {}}),
-          "Chosen Savage Attacker remains distinct from a background grant");
+    {"feat:savage_attacker", "class:fighter:ability_score_improvement", 4, {}}),
+    "Chosen Savage Attacker remains distinct from a background grant");
     const auto bytes = saved(party);
     auto again = decode_campaign(bytes, *srd5::character_rules(), *rules, "grant-fixture", nullptr);
     CampaignParty twice(module());
     twice.restore(std::move(again.party));
     check(saved(twice) == bytes, "Grant migration happens once and saves canonically");
     for (const auto &bad :
-         {mutate_save(bytes, "\"background:soldier\" 1", "\"background:soldier\" 4"),
-          mutate_save(bytes, "\"feat:defense\"", "\"feat:unknown\""),
-          mutate_save(bytes, "\"constitution\" \"2\"", "\"strength\" \"2\"")})
+            {
+                mutate_save(bytes, "\"background:soldier\" 1", "\"background:soldier\" 4"),
+                mutate_save(bytes, "\"feat:defense\"", "\"feat:unknown\""),
+                mutate_save(bytes, "\"constitution\" \"2\"", "\"strength\" \"2\"")
+            })
         rejects(
             [&]
-            {
-                (void)decode_campaign(bad, *srd5::character_rules(), *rules, "grant-fixture",
-                                      nullptr);
-            });
+    {
+        (void)decode_campaign(bad, *srd5::character_rules(), *rules, "grant-fixture",
+        nullptr);
+    });
     const auto encounter = [&](std::string profile)
     {
         return Encounter{{8, 8, std::vector<std::uint8_t>(64)},
-                         {{1, "campaign-character", "Hero", 0, {1, 1}, profile},
-                          {2, "vanguard", "Target", 1, {2, 1}}}};
+            {   {1, "campaign-character", "Hero", 0, {1, 1}, profile},
+                {2, "vanguard", "Target", 1, {2, 1}}
+            }};
     };
     auto profile = party.profile(2).data;
     check(profile.find("background:soldier") != profile.npos &&
-              profile.find("constitution") != profile.npos,
+          profile.find("constitution") != profile.npos,
           "Combat recipe persists full provenance and selected abilities");
     auto combat = rules->create(encounter(profile), 13);
     check(rules->restore(combat->save())->save() == combat->save(),
@@ -347,23 +357,23 @@ void profiles_and_migration()
     replace(wrong, "background:soldier", "background:sage");
     rejects(
         [&]
-        {
-            (void)rules->create(encounter(wrong), 13);
-        });
+    {
+        (void)rules->create(encounter(wrong), 13);
+    });
     wrong = profile;
     replace(wrong, "PC31 4 2 ", "PC31 4 0 ");
     rejects(
         [&]
-        {
-            (void)rules->create(encounter(wrong), 13);
-        });
+    {
+        (void)rules->create(encounter(wrong), 13);
+    });
     wrong = profile;
     replace(wrong, "\"constitution\" \"2\"", "\"strength\" \"2\"");
     rejects(
         [&]
-        {
-            (void)rules->create(encounter(wrong), 13);
-        });
+    {
+        (void)rules->create(encounter(wrong), 13);
+    });
     auto legacy = rules->restore(fixture("combat-v8-grants.save"));
     auto continued = rules->restore(legacy->save());
     // Older combat recipes lack a background/history; preserve their effects
@@ -377,16 +387,16 @@ void profiles_and_migration()
         if (commands.empty())
             break;
         auto command = std::find_if(commands.begin(), commands.end(),
-                                    [](const auto &c)
-                                    {
-                                        return c.verb == "melee";
-                                    });
+                                    [](const auto & c)
+        {
+            return c.verb == "melee";
+        });
         if (command == commands.end())
             command = std::find_if(commands.begin(), commands.end(),
-                                   [](const auto &c)
-                                   {
-                                       return c.verb == "end";
-                                   });
+                                   [](const auto & c)
+        {
+            return c.verb == "end";
+        });
         check(command != commands.end(), "Legacy encounter can continue");
         check(legacy->submit(*command) && continued->submit(*command),
               "Both continuations accept identical commands");
@@ -396,7 +406,7 @@ void profiles_and_migration()
     }
     auto reference =
         test::with_hit_dice(fixture("combat-v8-grants-continued.save"), rules->identity(),
-                            {{1, 1}, {2, 4}, {3, 4}, {4, 4}, {5, 4}, {6, 3}, {99, 0}}, {{1, 5143}});
+    {{1, 1}, {2, 4}, {3, 4}, {4, 4}, {5, 4}, {6, 3}, {99, 0}}, {{1, 5143}});
     // The old writer resolved Savage Attacker inside the attack command. Only
     // revision gains the new decision tickets; the remaining oracle is frozen.
     std::size_t state = 0;

@@ -66,7 +66,8 @@ Character hero(unsigned level = 1, bool frost = true)
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.cantrips =
-        frost ? std::vector<std::string>{"ray_of_frost"} : std::vector<std::string>{"fire_bolt"};
+        frost ? std::vector<std::string> {"ray_of_frost"} :
+        std::vector<std::string> {"fire_bolt"};
     Character h(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < level; ++n)
@@ -124,17 +125,20 @@ std::uint64_t rng(const CombatSession &c)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-            std::vector<std::string> gear = {})
+std::vector<std::string> gear = {})
 {
     auto c = rules.create({{20, 8, std::vector<std::uint8_t>(160)},
-                           {{1,
-                             "campaign-character",
-                             "Caster",
-                             0,
-                             {1, 1},
-                             rules.character_profile(h.sheet(), gear).data},
-                            {2, "target", "Target", 1, target}}},
-                          seed);
+        {   {
+                1,
+                "campaign-character",
+                "Caster",
+                0,
+                {1, 1},
+                rules.character_profile(h.sheet(), gear).data
+            },
+            {2, "target", "Target", 1, target}
+        }},
+    seed);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     return c;
@@ -146,20 +150,21 @@ void access()
     auto rules = module();
     auto access = rules->spell_access(h.sheet());
     check(access.cantrips.size() == 1 && access.cantrips[0].id == "ray_of_frost" &&
-              access.cantrips[0].source_id == "class:wizard:spellcasting" &&
-              access.cantrips[0].acquired_level == 1,
+          access.cantrips[0].source_id == "class:wizard:spellcasting" &&
+          access.cantrips[0].acquired_level == 1,
           "Ordinary starting choice has real source and acquisition level");
     auto profile = rules->character_profile(h.sheet(), {}).data;
     check(profile.starts_with("PC32 1 0 260 "), "New profile validates new spell bit");
     profile.replace(0, 4, "PC13");
     rejects(
         [&]
-        {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                                  {2, "vanguard", "Enemy", 1, {3, 1}}}},
-                                13);
-        });
+    {
+        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
+                {2, "vanguard", "Enemy", 1, {3, 1}}
+            }},
+        13);
+    });
     auto c = battle(*custom(), hero(1, false));
     check(!has(*c, "ray_of_frost"), "Unknown spell is not automatically granted");
 }
@@ -167,8 +172,13 @@ void access()
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
-        for (unsigned seed : {0u, 13u, 40u})
-            for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
+        for (unsigned seed :
+                {
+                    0u, 13u, 40u
+                })
+            for (const std::string defense :
+                    {"", "resistance", "vulnerability", "immunity"
+                    })
             {
                 auto rules =
                     custom(defense.empty() ? "" : "affinity target test " + defense + " cold\n");
@@ -185,12 +195,12 @@ void damage()
                 const int expected = defense == "immunity"        ? 0
                                      : defense == "resistance"    ? raw / 2
                                      : defense == "vulnerability" ? raw * 2
-                                                                  : raw;
+                                     : raw;
                 check(unit(*c, 2).hit_points == 1000 - expected,
                       "Independent Cold damage and critical/defense values");
                 check(rng(*c) == random + 0x9e3779b97f4a7c15ULL * (seed == 0    ? 3u
-                                                                   : seed == 13 ? 2u
-                                                                                : 1u),
+                        : seed == 13 ? 2u
+                        : 1u),
                       "Miss/normal/critical consume only their required dice");
                 auto target = unit(*c, 2);
                 auto status = effects(target.persistent);
@@ -200,13 +210,13 @@ void damage()
                       "Speed reduction affects movement allowance");
                 if (seed != 40)
                     check(status.active.size() == 1 && status.active[0].source_actor == 1 &&
-                              status.active[0].remaining_ms == 6000 &&
-                              status.active[0].save_in_ms == 0,
+                          status.active[0].remaining_ms == 6000 &&
+                          status.active[0].save_in_ms == 0,
                           "Slow records caster and exact next-turn duration without saves");
                 auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
-                          after.movement_feet == before.movement_feet &&
-                          after.persistent == before.persistent,
+                      after.movement_feet == before.movement_feet &&
+                      after.persistent == before.persistent,
                       "Cast consumes only Magic action");
                 auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved,
@@ -228,7 +238,7 @@ void timing()
     act(*c, "end");
     act(*copy, "end");
     check(c->save() == copy->save() && c->snapshot().actor == 1 &&
-              effects(unit(*c, 2).persistent).active.empty(),
+          effects(unit(*c, 2).persistent).active.empty(),
           "Slow expires at caster turn start with exact restored continuation");
     check(unit(*c, 2).movement_feet == 60,
           "Expiry restores both Speed-derived allowances, not spent movement");
@@ -258,10 +268,11 @@ void multiple_casters()
     auto rules = custom();
     const auto profile = rules->character_profile(hero(3).sheet(), {}).data;
     auto c = rules->create({{20, 8, std::vector<std::uint8_t>(160)},
-                            {{1, "campaign-character", "First", 0, {1, 1}, profile},
-                             {2, "target", "Target", 1, {8, 1}},
-                             {3, "campaign-character", "Second", 0, {3, 1}, profile}}},
-                           2);
+        {   {1, "campaign-character", "First", 0, {1, 1}, profile},
+            {2, "target", "Target", 1, {8, 1}},
+            {3, "campaign-character", "Second", 0, {3, 1}, profile}
+        }},
+    2);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     act(*c, "ray_of_frost", 2);
@@ -277,15 +288,17 @@ void multiple_casters()
     {
         act(*c, "end");
         act(*copy, "end");
-    } while (c->snapshot().actor != 1);
+    }
+    while (c->snapshot().actor != 1);
     state = effects(unit(*c, 2).persistent);
     check(c->save() == copy->save() && state.active.size() == 1 &&
-              state.active[0].source_actor == 3,
+          state.active[0].source_actor == 3,
           "First caster turn expires only its application after reload");
     do
     {
         act(*c, "end");
-    } while (c->snapshot().actor != 3);
+    }
+    while (c->snapshot().actor != 3);
     check(effects(unit(*c, 2).persistent).active.empty(),
           "Second caster turn ends the remaining slow");
 }
@@ -309,20 +322,24 @@ void effect_lifecycle()
     fx::elapse_effects(std::span(&subject, 1), 4000, random);
     check(state.active.empty() && random == 17, "Last application expires without consuming RNG");
     for (const char *bad :
-         {"FX1 2 1 1 2 5 1 \"Caster\" 0 6000 0", "FX2 2 1 1 2 5 1 \"Caster\" 1 6000 0",
-          "FX2 2 1 1 2 5 1 \"Caster\" 0 6001 0", "FX2 2 1 1 2 5 1 \"Caster\" 0 6000 1"})
+            {"FX1 2 1 1 2 5 1 \"Caster\" 0 6000 0", "FX2 2 1 1 2 5 1 \"Caster\" 1 6000 0",
+             "FX2 2 1 1 2 5 1 \"Caster\" 0 6001 0", "FX2 2 1 1 2 5 1 \"Caster\" 0 6000 1"
+            })
         rejects(
             [&]
-            {
-                std::istringstream input(bad);
-                (void)fx::read_effects(input);
-            });
+    {
+        std::istringstream input(bad);
+        (void)fx::read_effects(input);
+    });
 }
 
 void legality()
 {
     auto rules = custom();
-    for (int feet : {60, 65})
+    for (int feet :
+            {
+                60, 65
+            })
     {
         auto c = battle(*rules, hero(), 13, {1 + feet / 5, 1});
         check(has(*c, "ray_of_frost", 2) == (feet == 60), "Range includes 60 feet and excludes 65");
@@ -341,20 +358,26 @@ void legality()
     auto board = Battlefield{20, 8, std::vector<std::uint8_t>(160)};
     board.terrain[22] = 1;
     c = rules->create({board,
-                       {{1,
-                         "campaign-character",
-                         "Caster",
-                         0,
-                         {1, 1},
-                         rules->character_profile(hero().sheet(), {}).data},
-                        {2, "target", "Target", 1, {3, 1}}}},
-                      13);
+        {   {
+                1,
+                "campaign-character",
+                "Caster",
+                0,
+                {1, 1},
+                rules->character_profile(hero().sheet(), {}).data
+            },
+            {2, "target", "Target", 1, {3, 1}}
+        }},
+    13);
     check(!has(*c, "ray_of_frost", 2), "Opaque terrain blocks casting");
     c = battle(*rules, hero());
     before = c->save();
-    for (EntityId target : {0u, 999u})
+    for (EntityId target :
+            {
+                0u, 999u
+            })
         check(!c->submit({c->snapshot().revision, 1, target, "ray_of_frost"}) &&
-                  c->save() == before,
+              c->save() == before,
               "Only real creatures may be targeted");
 }
 
@@ -419,12 +442,13 @@ void fixtures()
     auto rules = module();
     auto h = hero(3);
     auto profile =
-        rules->character_profile(h.sheet(), std::vector<std::string>{"quarterstaff"}).data;
+        rules->character_profile(h.sheet(), std::vector<std::string> {"quarterstaff"}).data;
     auto c = rules->create({{20, 8, std::vector<std::uint8_t>(160)},
-                            {{1, "campaign-character", "Frost Wizard", 0, {1, 1}, profile},
-                             {2, "vanguard", "Ally", 0, {3, 1}},
-                             {99, "vanguard", "Enemy", 1, {8, 1}}}},
-                           2);
+        {   {1, "campaign-character", "Frost Wizard", 0, {1, 1}, profile},
+            {2, "vanguard", "Ally", 0, {3, 1}},
+            {99, "vanguard", "Enemy", 1, {8, 1}}
+        }},
+    2);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     std::ofstream(path / "known.save") << c->save();

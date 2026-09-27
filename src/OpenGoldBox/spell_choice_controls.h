@@ -33,7 +33,7 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
     auto groups = options.learning;
     if (options.may_prepare)
         groups.push_back(
-            {"prepared", "Prepared spells", options.prepared_count, options.preparation});
+    {"prepared", "Prepared spells", options.prepared_count, options.preparation});
     int position = 0;
     for (const auto &group : groups)
     {
@@ -48,13 +48,14 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         }
         const auto it = choices.learning.find(group.id);
         const auto picked = group.id == "prepared"
-                                ? choices.prepared.value_or(std::vector<std::string>{})
-                            : it == choices.learning.end() ? std::vector<std::string>{}
-                                                           : it->second;
+                            ? choices.prepared.value_or(std::vector<std::string> {})
+                            : it == choices.learning.end() ? std::vector<std::string> {}
+                            :
+                            it->second;
         label->set_text(tr(group.label) +
                         (group.id == "prepared" ? String()
-                                                : " / " + tr(N_("Level")) + " " +
-                                                      String::num_uint64(group.acquired_level)) +
+                         : " / " + tr(N_("Level")) + " " +
+                         String::num_uint64(group.acquired_level)) +
                         " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
         auto *pending = Object::cast_to<Label>(section->get_node_or_null("Pending"));
@@ -139,7 +140,7 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     scroll->set_follow_focus(true);
     spell_rows(*scroll, "Rows");
     add_control<Label>(*w, "ReplaceLabel", Rect2(24, 518, 318, 26))
-        ->set_text(tr(N_("Replace cantrip")));
+    ->set_text(tr(N_("Replace cantrip")));
     add_control<Label>(*w, "WithLabel", Rect2(358, 518, 318, 26))->set_text(tr(N_("With")));
     add_control<OptionButton>(*w, "Replace", Rect2(24, 550, 318, 36));
     add_control<OptionButton>(*w, "With", Rect2(358, 550, 318, 36));

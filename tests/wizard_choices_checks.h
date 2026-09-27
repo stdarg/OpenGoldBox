@@ -18,11 +18,11 @@ void wizard_choices_checks()
               "Real old-writer wounds survive");
         const auto recovery = rules->recovery_info(m.character.sheet(), m.vitals);
         check(std::any_of(recovery.resources.begin(), recovery.resources.end(),
-                          [](const auto &p)
-                          {
-                              return p.id == "arcane_recovery" && p.remaining == 0;
-                          }),
-              "Old Arcane Recovery expenditure survives");
+                          [](const auto & p)
+        {
+            return p.id == "arcane_recovery" && p.remaining == 0;
+        }),
+        "Old Arcane Recovery expenditure survives");
         const auto bytes = saved(party);
         CampaignParty again(module());
         again.restore(
@@ -39,15 +39,17 @@ void wizard_choices_checks()
         rules->restore(read(root / "tests/fixtures/combat-wizard-choices-before.save"));
     check(old_combat->submit(command(*old_combat, "end")), "Old Wizard combat ends turn");
     check(old_combat->save() ==
-              rules->restore(read(root / "tests/fixtures/combat-wizard-choices-continued.save"))
-                  ->save(),
+          rules->restore(read(root / "tests/fixtures/combat-wizard-choices-continued.save"))
+          ->save(),
           "Actual 0.6.50 combat RNG, effects, expenditure continue exactly");
     auto draft = hero().creation_data();
-    draft.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
-    draft.spells = SpellChoices{
+    draft.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost", "chill_touch"};
+    draft.spells = SpellChoices
+    {
         {{"spellbook:1", {"magic_missile"}}}, std::vector<std::string>{"magic_missile"}, {}, {}};
     draft.training = {{"origin:languages", {"elvish", "dwarvish"}},
-                      {"class:wizard", {"medicine", "nature"}}};
+        {"class:wizard", {"medicine", "nature"}}
+    };
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*creation_rules, draft, {}));
     party.award_experience(2700, "wizard-choice-xp");
@@ -55,20 +57,20 @@ void wizard_choices_checks()
     check(original.starts_with("OPENGOLD-CAMPAIGN 16\n"),
           "Explicit independent creation uses campaign16");
     SpellChoices bad;
-    bad.prepared = std::vector<std::string>{};
+    bad.prepared = std::vector<std::string> {};
     rejects(
         [&]
-        {
-            party.choose_spells(id, bad);
-        });
+    {
+        party.choose_spells(id, bad);
+    });
     check(saved(party) == original, "Pending learning cannot change preparation");
     bad = {};
     bad.learning["spellbook:1"] = {"scorching_ray"};
     rejects(
         [&]
-        {
-            party.choose_spells(id, bad);
-        });
+    {
+        party.choose_spells(id, bad);
+    });
     check(saved(party) == original,
           "Acquisition-level eligibility rejects late spell in level-one entitlement atomically");
     auto second = party.default_advancement(id);
@@ -76,23 +78,23 @@ void wizard_choices_checks()
     party.advance(id, second);
     (void)party.rest(RestKind::long_rest);
     check(party.state().spell_rest &&
-              party.state().spell_rest->members == std::vector<MemberId>{id},
+          party.state().spell_rest->members == std::vector<MemberId> {id},
           "Completed Long Rest grants a real choice window");
     const auto after_rest = saved(party);
     const auto vitals = party.member(id).vitals;
     rejects(
         [&]
-        {
-            party.advance_time(1);
-        });
+    {
+        party.advance_time(1);
+    });
     rejects(
         [&]
-        {
-            party.begin_combat();
-        });
+    {
+        party.begin_combat();
+    });
     check(saved(party) == after_rest, "Rest choices block time/combat without spending them");
     SpellChoices rest;
-    rest.prepared = std::vector<std::string>{"magic_missile"};
+    rest.prepared = std::vector<std::string> {"magic_missile"};
     rest.replace_cantrip = "fire_bolt";
     rest.replacement = "poison_spray";
     const auto preview = party.preview_spell_choices(id, rest, true);
@@ -110,22 +112,22 @@ void wizard_choices_checks()
     const auto used = saved(party);
     rejects(
         [&]
-        {
-            party.choose_spells(id, rest, true);
-        });
+    {
+        party.choose_spells(id, rest, true);
+    });
     check(saved(party) == used, "Repeated rest choice is rejected atomically");
     const auto replaced = rules->spell_access(party.member(id).character.sheet());
     check(std::none_of(replaced.cantrips.begin(), replaced.cantrips.end(),
-                       [](const auto &s)
-                       {
-                           return s.id == "fire_bolt";
-                       }) &&
-              std::any_of(replaced.cantrips.begin(), replaced.cantrips.end(),
-                          [](const auto &s)
-                          {
-                              return s.id == "poison_spray" && s.acquired_level == 2;
-                          }),
-          "Replacement preserves entitlement and records actual learning level");
+                       [](const auto & s)
+    {
+        return s.id == "fire_bolt";
+    }) &&
+    std::any_of(replaced.cantrips.begin(), replaced.cantrips.end(),
+                [](const auto & s)
+    {
+        return s.id == "poison_spray" && s.acquired_level == 2;
+    }),
+    "Replacement preserves entitlement and records actual learning level");
     auto c = battle(*rules, party.member(id).character.sheet(), party.member(id).vitals);
     check(has(*c, "poison_spray") && !has(*c, "fire_bolt"), "Replacement reaches actual casting");
     check(rules->restore(c->save())->save() == c->save(), "PC34 replacement combat roundtrip");
@@ -134,44 +136,44 @@ void wizard_choices_checks()
     invalid.spells = {"scorching_ray", "blindness"};
     rejects(
         [&]
-        {
-            party.advance(id, invalid);
-        });
+    {
+        party.advance(id, invalid);
+    });
     check(saved(party) == used, "New level-up cannot replace existing preparation");
     invalid = third;
     invalid.spell_learning = TrainingChoices{};
     rejects(
         [&]
-        {
-            party.advance(id, invalid);
-        });
+    {
+        party.advance(id, invalid);
+    });
     check(saved(party) == used, "Preparation cannot learn missing book entries");
     invalid = third;
     invalid.spell_learning.reset();
     rejects(
         [&]
-        {
-            party.advance(id, invalid);
-        });
+    {
+        party.advance(id, invalid);
+    });
     check(saved(party) == used,
           "Current player advancement cannot use the historical learning bypass");
     party.advance(id, third);
     party.advance(id, party.default_advancement(id));
     const auto fourth = rules->spell_access(party.member(id).character.sheet());
     check(fourth.cantrips.size() == 4 && fourth.spellbook.size() == 3 &&
-              fourth.prepared.size() == 3,
+          fourth.prepared.size() == 3,
           "Level four adds one cantrip and retains known/prepared book spells");
     check(fourth.cantrip_choices == 4 && fourth.spellbook_choices == 12 &&
-              fourth.prepared_choices == 7,
+          fourth.prepared_choices == 7,
           "Incomplete catalog never reduces SRD entitlements");
     const auto bytes = saved(party);
     restored.restore(
         decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
     check(saved(restored) == bytes, "Rest edit before later advancement replays chronologically");
     const auto trained = party.member(id).character.preview_training(
-        *creation_rules, *rules, party.member(id).character.training_choices(), false);
+                             *creation_rules, *rules, party.member(id).character.training_choices(), false);
     check(trained.sheet().grants == party.member(id).character.sheet().grants &&
-              trained.sheet().prepared_spells == party.member(id).character.sheet().prepared_spells,
+          trained.sheet().prepared_spells == party.member(id).character.sheet().prepared_spells,
           "Training replay preserves spell edits interleaved with advancement");
     (void)party.rest(RestKind::short_rest);
     check(!party.state().spell_rest, "Short Rest never grants spell replacement");
@@ -191,9 +193,9 @@ void wizard_choices_checks()
     bad.learning["cantrips:1"] = {"fire_bolt"};
     rejects(
         [&]
-        {
-            pending.choose_spells(pending_id, bad);
-        });
+    {
+        pending.choose_spells(pending_id, bad);
+    });
     auto pending_bytes = saved(pending);
     restored.restore(
         decode_campaign(pending_bytes, *creation_rules, *rules, "spell-access", nullptr).party);
@@ -211,17 +213,17 @@ void wizard_choices_checks()
     const auto canceled = saved(pending);
     rejects(
         [&]
-        {
-            pending.choose_spells(pending_id, rest, true);
-        });
+    {
+        pending.choose_spells(pending_id, rest, true);
+    });
     check(saved(pending) == canceled, "Canceled-rest replacement rejects atomically");
     auto forged = party.checkpoint();
     forged.next_rest_session = 1;
     rejects(
         [&]
-        {
-            restored.restore(forged);
-        });
+    {
+        restored.restore(forged);
+    });
 }
 
 void write_wizard_ui_fixture()
@@ -231,13 +233,16 @@ void write_wizard_ui_fixture()
         return;
     auto rules = module();
     CampaignParty party(module());
-    for (unsigned level : {1u, 4u})
+    for (unsigned level :
+            {
+                1u, 4u
+            })
     {
         auto old =
             decode_campaign(read(root / ("tests/fixtures/campaign-wizard-choices-level" +
                                          std::to_string(level) + ".ogs")),
                             *srd5::character_rules(), *rules, "wizard-choices-baseline", nullptr)
-                .party.roster.front();
+            .party.roster.front();
         const auto id = party.add_pc(old.character);
         auto state = party.checkpoint();
         state.roster.back().vitals = old.vitals;
@@ -257,9 +262,9 @@ void verify_wizard_ui(const char *file)
     const auto assets = campaign_asset_identity(directory);
     CampaignParty expected(module());
     expected.restore(decode_campaign(read_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) /
-                                                        "wizard-choices-ui.ogs"),
+            "wizard-choices-ui.ogs"),
                                      *creation, *rules, assets, nullptr)
-                         .party);
+                     .party);
     expected.advance(1, expected.default_advancement(1));
     expected.advance(1, expected.default_advancement(1));
     SpellChoices missing;

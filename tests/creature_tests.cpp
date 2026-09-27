@@ -166,7 +166,7 @@ class Fixture
         write(path_ / "ITEMS", templates);
         write(path_ / "MON2CHA.DAX", dax({{31, character()}}));
         write(path_ / "MON5CHA.DAX",
-              dax({{31, character()}})); // Same ID/name, different bank/equipment.
+        dax({{31, character()}})); // Same ID/name, different bank/equipment.
         Bytes items(126);
         items[46] = 36;
         items[50] = 1;
@@ -176,8 +176,11 @@ class Fixture
         items[63 + 52] = 0; // Carried armor.
         write(path_ / "MON2ITM.DAX", dax({{31, items}}));
         write(path_ / "MON2SPC.DAX",
-              dax({{31, Bytes{0x64, 0, 0, 255, 0,    7,  0, 106, 25, 0x65, 0, 0, 255, 0,
-                              0,    0, 0, 0,   0xee, 44, 1, 4,   2,  1,    2, 3, 4}}}));
+        dax({{
+                31, Bytes{
+                    0x64, 0, 0, 255, 0,    7,  0, 106, 25, 0x65, 0, 0, 255, 0,
+                    0,    0, 0, 0,   0xee, 44, 1, 4,   2,  1,    2, 3, 4}
+            }}));
     }
 
   private:
@@ -242,17 +245,19 @@ void parsing()
 void modifiers_and_effects()
 {
     auto c = *decode_character(character());
-    for (const auto [percent, hit, damage] : std::array<std::array<int, 3>, 11>{{{0, 1, 2},
-                                                                                 {1, 1, 3},
-                                                                                 {50, 1, 3},
-                                                                                 {51, 2, 3},
-                                                                                 {75, 2, 3},
-                                                                                 {76, 2, 4},
-                                                                                 {90, 2, 4},
-                                                                                 {91, 2, 5},
-                                                                                 {99, 2, 5},
-                                                                                 {100, 3, 6},
-                                                                                 {101, 0, 0}}})
+    for (const auto [percent, hit, damage] : std::array<std::array<int, 3>, 11> {{{0, 1, 2},
+        {1, 1, 3},
+        {50, 1, 3},
+        {51, 2, 3},
+        {75, 2, 3},
+        {76, 2, 4},
+        {90, 2, 4},
+        {91, 2, 5},
+        {99, 2, 5},
+        {100, 3, 6},
+        {101, 0, 0}
+    }
+})
     {
         c.abilities.exceptional_strength = static_cast<std::uint8_t>(percent);
         const auto m = ability_modifiers(c);
@@ -276,17 +281,19 @@ void modifiers_and_effects()
     require(ability_modifiers(c).constitution_hp_per_hit_die == 2, "Non-warrior CON cap");
     c.character_class = 8;
     require(!ability_modifiers(c).constitution_hp_per_hit_die &&
-                ability_modifiers(c).constitution_hp_per_hit_die_by_class[0] == 2 &&
-                ability_modifiers(c).constitution_hp_per_hit_die_by_class[2] == 4,
+            ability_modifiers(c).constitution_hp_per_hit_die_by_class[0] == 2 &&
+            ability_modifiers(c).constitution_hp_per_hit_die_by_class[2] == 4,
             "Multiclass CON retains each class rate, no misleading scalar");
-    for (const auto [score, missile, ac] : std::array<std::array<int, 3>, 8>{{{3, -3, 4},
-                                                                              {4, -2, 3},
-                                                                              {5, -1, 2},
-                                                                              {6, 0, 1},
-                                                                              {7, 0, 0},
-                                                                              {14, 0, 0},
-                                                                              {15, 0, -1},
-                                                                              {19, 3, -4}}})
+    for (const auto [score, missile, ac] : std::array<std::array<int, 3>, 8> {{{3, -3, 4},
+        {4, -2, 3},
+        {5, -1, 2},
+        {6, 0, 1},
+        {7, 0, 0},
+        {14, 0, 0},
+        {15, 0, -1},
+        {19, 3, -4}
+    }
+})
     {
         c.abilities.dexterity = static_cast<std::uint8_t>(score);
         const auto dex = ability_modifiers(c);
@@ -296,7 +303,7 @@ void modifiers_and_effects()
     c.abilities.dexterity = 0;
     require(!ability_modifiers(c).dexterity_ac_adjustment, "Unknown score not silently neutral");
     require(describe_effect(0x65).regeneration->hp_per_round == 3 &&
-                describe_effect(0x65).regeneration->revival_delay_rounds->count == 3,
+            describe_effect(0x65).regeneration->revival_delay_rounds->count == 3,
             "Pool troll regeneration");
     require(describe_effect(0x64).kind == EffectKind::vulnerability,
             "Troll fire/acid vulnerability");
@@ -307,7 +314,7 @@ void modifiers_and_effects()
     require(describe_effect(0x73).incoming_damage_multiplier == 0.5,
             "Physical resistance magnitude");
     require(describe_effect(0x41).target_save_adjustment == 4 &&
-                describe_effect(0x56).levels_drained == 2,
+            describe_effect(0x56).levels_drained == 2,
             "Attack effects");
     require(describe_effect(0xee).kind == EffectKind::unknown && describe_effect(0xee).code == 0xee,
             "Unknown code preserved");
@@ -318,9 +325,9 @@ void effect_contracts()
     // Exhaust the byte namespace: reserved codes must remain explicitly
     // unknown, and optional magnitudes must never acquire invented defaults.
     constexpr std::array<unsigned, 9> reserved{0x39, 0x3c, 0x3f, 0x4a, 0x4b,
-                                               0x4e, 0x5c, 0x66, 0x69};
+            0x4e, 0x5c, 0x66, 0x69};
     const std::map<unsigned, int> saves{{0x40, 0}, {0x41, 4},  {0x42, 2}, {0x43, 0},
-                                        {0x44, 0}, {0x45, -2}, {0x46, -2}};
+        {0x44, 0}, {0x45, -2}, {0x46, -2}};
     const std::map<unsigned, int> resistances{{0x6a, 100}, {0x6b, 90}, {0x7c, 30}};
     constexpr std::array<unsigned, 6> halves{0x5d, 0x5e, 0x72, 0x73, 0x74, 0x76};
     for (unsigned code = 0; code < 256; ++code)
@@ -331,16 +338,16 @@ void effect_contracts()
         require(effect.code == code && !effect.name.empty(),
                 "Every effect preserves its code and display name");
         require((effect.kind == EffectKind::unknown) == unknown &&
-                    (effect.name == "Unknown effect") == unknown,
+                (effect.name == "Unknown effect") == unknown,
                 "Unrecognized Pool effect IDs retain explicit unknown metadata");
         require((effect.kind == EffectKind::none) == (code == 0),
                 "Only zero is the no-effect sentinel");
         require(effect.target_save_adjustment ==
-                    (saves.contains(code) ? std::optional(saves.at(code)) : std::nullopt),
+                (saves.contains(code) ? std::optional(saves.at(code)) : std::nullopt),
                 "Save adjustments preserve sign, including explicit zero versus absent");
         require(
             effect.resistance_percent ==
-                (resistances.contains(code) ? std::optional(resistances.at(code)) : std::nullopt),
+            (resistances.contains(code) ? std::optional(resistances.at(code)) : std::nullopt),
             "Only quantified resistances carry percentages");
         const bool half = std::find(halves.begin(), halves.end(), code) != halves.end();
         require(effect.incoming_damage_multiplier == (half ? std::optional(0.5) : std::nullopt),
@@ -350,14 +357,14 @@ void effect_contracts()
                     "Resistance identifies its damage or effect subject");
         const auto drain = code == 0x55   ? std::optional(1)
                            : code == 0x56 ? std::optional(2)
-                                          : std::nullopt;
+                           : std::nullopt;
         require(effect.levels_drained == drain, "Only level-drain attacks carry a drain count");
         require(effect.regeneration.has_value() == (code == 0x62 || code == 0x65),
                 "Generic regeneration does not invent a rate");
         if (effect.regeneration)
         {
             require(effect.kind == EffectKind::regeneration &&
-                        effect.regeneration->hp_per_round == 3,
+                    effect.regeneration->hp_per_round == 3,
                     "Quantified regeneration restores three HP");
             const auto delay = effect.regeneration->revival_delay_rounds;
             require(delay.has_value() == (code == 0x65),
@@ -367,12 +374,15 @@ void effect_contracts()
                         "Troll revival takes 3d6 rounds");
         }
     }
-    for (const auto pair : {std::pair{0x19, 0x47}, std::pair{0x23, 0x31}, std::pair{0x3b, 0x3e},
-                            std::pair{0x67, 0x77}})
+    for (const auto pair :
+            {
+                std::pair{0x19, 0x47}, std::pair{0x23, 0x31}, std::pair{0x3b, 0x3e},
+                std::pair{0x67, 0x77}
+            })
     {
         const auto first = describe_effect(pair.first), second = describe_effect(pair.second);
         require(first.code != second.code && first.name == second.name &&
-                    first.kind == second.kind && first.subject == second.subject,
+                first.kind == second.kind && first.subject == second.subject,
                 "Effect aliases share meaning while retaining original identifiers");
     }
 }
@@ -390,15 +400,15 @@ void catalog()
     require(creature.equipment.size() == 2 && c.find({5, 31})->get().equipment.empty(),
             "Equipment never leaks between banks");
     require(creature.equipment[0].bonuses.weapon_to_hit == 1 &&
-                creature.equipment[0].base.large_damage.sides == 12,
+            creature.equipment[0].base.large_damage.sides == 12,
             "Weapon bonus and damage template");
     require(creature.equipment[1].bonuses.armor_base_ac == 5 &&
-                creature.equipment[1].bonuses.ac_adjustment == -1,
+            creature.equipment[1].bonuses.ac_adjustment == -1,
             "Armor decoding and magic contribution");
     require(!creature.equipment[1].stored.readied(), "Carried equipment not silently equipped");
     require(creature.effects.size() == 3 && creature.effects.back().stored.duration_raw == 300 &&
-                creature.effects.back().stored.table_flag == 2 &&
-                creature.effects.back().stored.next_pointer_raw == 0x04030201,
+            creature.effects.back().stored.table_flag == 2 &&
+            creature.effects.back().stored.next_pointer_raw == 0x04030201,
             "Effect duration, parameters and disk pointers preserved");
     require(!creature.interpretation_notes.empty(), "Unknown effect diagnosed");
     std::filesystem::rename(f.path() / "MON1CHA.DAX", f.path() / "mon1cha.dax");
@@ -407,10 +417,10 @@ void catalog()
     write(f.path() / "MON2SPC.DAX", dax({{31, Bytes(8)}}));
     fails(
         [&]
-        {
-            (void)CreatureCatalog::load(f.path());
-        },
-        "MON2SPC.DAX:31");
+    {
+        (void)CreatureCatalog::load(f.path());
+    },
+    "MON2SPC.DAX:31");
     require(c.all().size() == 2, "Existing snapshot survives failed load");
     f.populate();
     Bytes protection(4 * 63);
@@ -439,36 +449,36 @@ void catalog()
     write(f.path() / "MON2ITM.DAX", dax({{200, Bytes(63)}}));
     fails(
         [&]
-        {
-            (void)CreatureCatalog::load(f.path());
-        },
-        "MON2ITM.DAX:200");
+    {
+        (void)CreatureCatalog::load(f.path());
+    },
+    "MON2ITM.DAX:200");
     f.populate();
     write(f.path() / "MON2ITM.DAX", dax({{31, Bytes(62)}}));
     fails(
         [&]
-        {
-            (void)CreatureCatalog::load(f.path());
-        },
-        "MON2ITM.DAX:31");
+    {
+        (void)CreatureCatalog::load(f.path());
+    },
+    "MON2ITM.DAX:31");
     f.populate();
     auto invalid_item = Bytes(63);
     invalid_item[46] = 255;
     write(f.path() / "MON2ITM.DAX", dax({{31, invalid_item}}));
     fails(
         [&]
-        {
-            (void)CreatureCatalog::load(f.path());
-        },
-        "Missing item template 255");
+    {
+        (void)CreatureCatalog::load(f.path());
+    },
+    "Missing item template 255");
     f.populate();
     std::filesystem::remove(f.path() / "MON8CHA.DAX");
     fails(
         [&]
-        {
-            (void)CreatureCatalog::load(f.path());
-        },
-        "MON8CHA.DAX");
+    {
+        (void)CreatureCatalog::load(f.path());
+    },
+    "MON8CHA.DAX");
 }
 
 void instances()
@@ -487,22 +497,22 @@ void instances()
             "Factory preserves bank variants");
     fails(
         [&]
-        {
-            (void)factory.create({1, 255});
-        },
-        "MON1CHA.DAX:255");
+    {
+        (void)factory.create({1, 255});
+    },
+    "MON1CHA.DAX:255");
     fails(
         [&]
-        {
-            (void)factory.create({2, 31}, 0);
-        },
-        "Positive instance HP");
+    {
+        (void)factory.create({2, 31}, 0);
+    },
+    "Positive instance HP");
     fails(
         [&]
-        {
-            (void)factory.create({2, 31}, -1);
-        },
-        "Positive instance HP");
+    {
+        (void)factory.create({2, 31}, -1);
+    },
+    "Positive instance HP");
     require(factory.create({2, 31}, 42).max_hit_points() == 42, "Explicit encounter HP");
     require(first.available_actions().empty() && !first.try_attack(0), "No actions before turn");
     require(first.begin_turn(1, {{2, 1}, 6}), "Begin allocated turn");
@@ -513,7 +523,7 @@ void instances()
     require(first.try_attack(1) && !first.try_attack(1) && !first.try_attack(99),
             "Secondary attack budget and bounds");
     require(!first.try_move(0) && !first.try_move(7) && first.try_move(4) && first.try_move(2) &&
-                !first.try_move(1),
+            !first.try_move(1),
             "Movement consumes only valid distances");
     require(first.available_actions().size() == 1, "Only end turn remains");
     first.end_turn();
@@ -521,12 +531,12 @@ void instances()
     require(first.begin_turn(2, {{1, 0}, 3}), "Next turn can have different rules budget");
     auto snapshot = first;
     require(first.take_damage(10) == 10 && first.hit_points() == 26 && second.hit_points() == 36 &&
-                snapshot.hit_points() == 36,
+            snapshot.hit_points() == 36,
             "Damage isolated across instances and snapshots");
     require(first.heal(std::numeric_limits<int>::max()) == 10 && first.hit_points() == 36,
             "Healing clamps without overflow");
     require(first.take_damage(std::numeric_limits<int>::max()) == 36 && first.hit_points() == 0 &&
-                first.available_actions().empty(),
+            first.available_actions().empty(),
             "Lethal damage clamps and cancels turn");
     require(!first.try_move(1) && !first.try_attack(0), "Zero HP disables actions");
     require(first.heal(1) == 1 && !first.can_act(), "Healing cannot restore a cancelled turn");
@@ -535,8 +545,11 @@ void instances()
     require(!first.can_act() && !first.begin_turn(4, {{1, 0}, 1}), "Incapacitation blocks turn");
     first.set_incapacitated(false);
     require(!first.begin_turn(4, {{1, 0}, 1}) && first.begin_turn(5, {{1, 0}, 1}),
-            "Recovery cannot replay skipped turn");
-    for (const bool healing : {false, true})
+    "Recovery cannot replay skipped turn");
+    for (const bool healing :
+            {
+                false, true
+            })
     {
         bool rejected = false;
         try
@@ -566,10 +579,10 @@ void instances()
     const auto zero_factory = CreatureFactory::load(f.path());
     fails(
         [&]
-        {
-            (void)zero_factory.create({5, 31});
-        },
-        "Positive instance HP");
+    {
+        (void)zero_factory.create({5, 31});
+    },
+    "Positive instance HP");
     auto overridden = zero_factory.create({5, 31}, 8);
     bool rejected = false;
     try
@@ -581,7 +594,7 @@ void instances()
         rejected = true;
     }
     require(rejected && overridden.begin_turn(1, {{0, 0}, 0}),
-            "Invalid attack budget leaves turn unchanged");
+    "Invalid attack budget leaves turn unchanged");
 }
 
 void maps()
@@ -601,17 +614,20 @@ void maps()
     const auto decoded = decode_geo_map(bytes);
     require(decoded && decoded->raw == bytes, "GEO header and trailing bytes retained");
     const auto &a = decoded->at(0, 0);
-    require(a.walls == std::array<std::uint8_t, 4>{1, 2, 3, 4} &&
-                a.doors == std::array<std::uint8_t, 4>{0, 1, 2, 3},
+    require(a.walls == std::array<std::uint8_t, 4> {1, 2, 3, 4} &&
+            a.doors == std::array<std::uint8_t, 4> {0, 1, 2, 3},
             "GEO cardinal nibble and door bit order");
     require(a.event_number() == 5 && a.event_high_bit() && a.event_raw == 0x85,
             "Event high bit retained separately");
     const auto &b = decoded->at(15, 15);
-    require(b.walls == std::array<std::uint8_t, 4>{10, 11, 12, 13} &&
-                b.doors == std::array<std::uint8_t, 4>{3, 2, 1, 0} && b.event_number() == 127 &&
-                !b.event_high_bit(),
+    require(b.walls == std::array<std::uint8_t, 4> {10, 11, 12, 13} &&
+            b.doors == std::array<std::uint8_t, 4> {3, 2, 1, 0} && b.event_number() == 127 &&
+            !b.event_high_bit(),
             "Last GEO cell decoded without transpose");
-    for (const auto point : {std::array<unsigned, 2>{16, 0}, {0, 16}})
+    for (const auto point :
+            {
+                std::array<unsigned, 2> {16, 0}, {0, 16}
+            })
     {
         bool rejected = false;
         try
@@ -631,8 +647,8 @@ void maps()
     write(f.path() / "GEO-not-a-map.DAX", Bytes(1));
     const auto loaded = MapCatalog::load(f.path());
     require(loaded.all().size() == 3 &&
-                loaded.find({"GEO1.DAX", 7})->get().at(0, 0).event_raw == 0x85 &&
-                loaded.find({"GEO2.DAX", 7})->get().at(0, 0).event_raw == 0,
+            loaded.find({"GEO1.DAX", 7})->get().at(0, 0).event_raw == 0x85 &&
+            loaded.find({"GEO2.DAX", 7})->get().at(0, 0).event_raw == 0,
             "Map archive identity and case normalization");
     require(!loaded.find({"GEO1.DAX", 8}), "Absent map explicit");
     write(f.path() / "GEO2.DAX", dax({{7, Bytes(1025)}}));
@@ -682,28 +698,28 @@ void installed()
     require(c.all().size() == 172, "Stock Pool of Radiance has 172 records");
     const auto &troll = c.find({2, 31})->get();
     require(troll.stored.name == "TROLL" && troll.stored.max_hit_points == 36 &&
-                troll.stored.base_armor_class == 4 && troll.stored.base_thac0 == 13,
+            troll.stored.base_armor_class == 4 && troll.stored.base_thac0 == 13,
             "Installed troll base stats");
     require(troll.stored.base_attacks[0].attacks_per_round() == 2 &&
-                troll.stored.base_attacks[0].damage.modifier == 4 &&
-                troll.stored.base_attacks[1].damage.count == 2,
+            troll.stored.base_attacks[0].damage.modifier == 4 &&
+            troll.stored.base_attacks[1].damage.count == 2,
             "Installed troll attacks not double-adjusted by STR");
     require(troll.effects.size() == 2 &&
-                troll.effects[0].definition.kind == EffectKind::vulnerability &&
-                troll.effects[1].definition.regeneration->hp_per_round == 3,
+            troll.effects[0].definition.kind == EffectKind::vulnerability &&
+            troll.effects[1].definition.regeneration->hp_per_round == 3,
             "Installed troll effects");
     const auto &fighter = c.find({1, 41})->get();
     require(fighter.equipment.size() == 3, "Installed fighter inventory");
     const auto sword = std::find_if(fighter.equipment.begin(), fighter.equipment.end(),
-                                    [](const auto &i)
-                                    {
-                                        return i.stored.type == 36;
-                                    });
+                                    [](const auto & i)
+    {
+        return i.stored.type == 36;
+    });
     require(sword != fighter.equipment.end() && sword->bonuses.weapon_to_hit == 1 &&
-                sword->base.small_medium_damage.sides == 8,
+            sword->base.small_medium_damage.sides == 8,
             "Installed fighter longsword +1");
     require(c.find({7, 42})->get().stored.name == "HASSAD" &&
-                c.find({7, 42})->get().stored.max_hit_points == 45,
+            c.find({7, 42})->get().stored.max_hit_points == 45,
             "Named NPC included");
     std::cout << "Installed-game checks passed for all " << c.all().size() << " records.\n";
 }

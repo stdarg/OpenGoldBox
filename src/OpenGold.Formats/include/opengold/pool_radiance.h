@@ -79,7 +79,7 @@ struct CharacterRecord
     std::uint16_t base_xp_award{};
     std::uint8_t xp_per_hit_point{};
     std::array<std::uint16_t, 7>
-        wealth{}; // Copper, silver, electrum, gold, platinum, gems, jewelry.
+    wealth{}; // Copper, silver, electrum, gold, platinum, gems, jewelry.
     std::uint8_t strength_bonus_flag_raw{}, item_count{}, item_limit{}, hands_equipped{};
     int save_bonus{};
     std::uint16_t encumbrance{};

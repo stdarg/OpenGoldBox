@@ -65,29 +65,29 @@ void packing()
     bad[41] = 255;
     rejects(
         [&]
-        {
-            (void)unpack_sound_executable(bad);
-        });
+    {
+        (void)unpack_sound_executable(bad);
+    });
     bad = file;
     bad[42] = 0x90;
     rejects(
         [&]
-        {
-            (void)unpack_sound_executable(bad);
-        });
+    {
+        (void)unpack_sound_executable(bad);
+    });
     bad = file;
     word(bad, 8, 0xffff);
     rejects(
         [&]
-        {
-            (void)unpack_sound_executable(bad);
-        });
+    {
+        (void)unpack_sound_executable(bad);
+    });
     for (std::size_t i = 0; i < 32; ++i)
         rejects(
             [&]
-            {
-                (void)unpack_sound_executable(std::span(file).first(i));
-            });
+    {
+        (void)unpack_sound_executable(std::span(file).first(i));
+    });
     Bytes plain(32 + 4);
     word(plain, 0, 0x5a4d);
     word(plain, 8, 2);
@@ -115,38 +115,38 @@ void sequences()
     bad[17] = 49;
     rejects(
         [&]
-        {
-            (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
-        });
+    {
+        (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
+    });
     bad = data;
     bad[16] = 0xfa;
     rejects(
         [&]
-        {
-            (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
-        });
+    {
+        (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
+    });
     bad = data;
     command(bad, 254, 38, 65535);
     rejects(
         [&]
-        {
-            (void)decode_speaker_sequence(bad,
-                                          {static_cast<std::uint16_t>(bad.size() - 4), 0, 0, 0});
-        });
+    {
+        (void)decode_speaker_sequence(bad,
+        {static_cast<std::uint16_t>(bad.size() - 4), 0, 0, 0});
+    });
     bad = Bytes(16);
     command(bad, 254, 38, 16);
     rejects(
         [&]
-        {
-            (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
-        });
+    {
+        (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
+    });
     bad = Bytes(16);
     command(bad, 255, 0, 65535);
     rejects(
         [&]
-        {
-            (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
-        });
+    {
+        (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
+    });
     // Table bytes and depth are signed. The second tick samples table byte -64.
     data = Bytes(16);
     data[1] = 192;
@@ -177,10 +177,10 @@ void rendering()
     const auto silence = render_speaker_audio(tone);
     require(std::all_of(silence.begin(), silence.end(),
                         [](auto v)
-                        {
-                            return v == 0;
-                        }),
-            "Silence renders zero PCM");
+    {
+        return v == 0;
+    }),
+    "Silence renders zero PCM");
 }
 
 void installed()
@@ -199,9 +199,9 @@ void installed()
         const auto pcm = render_speaker_audio(effect);
         const auto energy = std::any_of(pcm.begin(), pcm.end(),
                                         [](auto v)
-                                        {
-                                            return v != 0;
-                                        });
+        {
+            return v != 0;
+        });
         require(energy == effect.audible(), "Decoded gate agrees with PCM energy");
         require(effect.audible() == (effect.id >= 2 && effect.id <= 20),
                 "Audible and silent entries");

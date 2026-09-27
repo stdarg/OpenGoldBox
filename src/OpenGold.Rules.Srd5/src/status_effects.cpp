@@ -43,20 +43,21 @@ SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifi
 std::array<unsigned, 2> class_save_proficiencies(std::string_view name)
 {
     constexpr std::array<std::string_view, 12> names{"Barbarian", "Bard",     "Cleric",  "Druid",
-                                                     "Fighter",   "Monk",     "Paladin", "Ranger",
-                                                     "Rogue",     "Sorcerer", "Warlock", "Wizard"};
+            "Fighter",   "Monk",     "Paladin", "Ranger",
+            "Rogue",     "Sorcerer", "Warlock", "Wizard"};
     constexpr std::array<std::array<unsigned, 2>, 12> saves{{{0, 2},
-                                                             {1, 5},
-                                                             {4, 5},
-                                                             {3, 4},
-                                                             {0, 2},
-                                                             {0, 1},
-                                                             {4, 5},
-                                                             {0, 1},
-                                                             {1, 3},
-                                                             {2, 5},
-                                                             {4, 5},
-                                                             {3, 4}}};
+            {1, 5},
+            {4, 5},
+            {3, 4},
+            {0, 2},
+            {0, 1},
+            {4, 5},
+            {0, 1},
+            {1, 3},
+            {2, 5},
+            {4, 5},
+            {3, 4}
+        }};
     const auto found = std::find(names.begin(), names.end(), name);
     if (found == names.end())
         throw std::runtime_error("Unknown saving throw class");
@@ -66,17 +67,17 @@ std::array<unsigned, 2> class_save_proficiencies(std::string_view name)
 bool healing_blocked(const EffectState &effects, std::uint64_t after_ms)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
-                       [&](const auto &e)
-                       {
-                           return e.kind == EffectKind::chill_touch && e.remaining_ms > after_ms;
-                       });
+                       [&](const auto & e)
+    {
+        return e.kind == EffectKind::chill_touch && e.remaining_ms > after_ms;
+    });
 }
 
 void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                        std::string name, unsigned duration_ms)
 {
     if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
-        !duration_ms || duration_ms > 2 * round_ms)
+            !duration_ms || duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid Chill Touch application");
     effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
                               EffectKind::chill_touch, 0, duration_ms, 0});
@@ -85,17 +86,17 @@ void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityI
 bool opportunity_blocked(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
-                       [](const auto &e)
-                       {
-                           return e.kind == EffectKind::shocking_grasp;
-                       });
+                       [](const auto & e)
+    {
+        return e.kind == EffectKind::shocking_grasp;
+    });
 }
 
 void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                           std::string name, unsigned duration_ms)
 {
     if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
-        !duration_ms || duration_ms > round_ms)
+            !duration_ms || duration_ms > round_ms)
         throw std::runtime_error("Invalid Shocking Grasp application");
     effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
                               EffectKind::shocking_grasp, 0, duration_ms, 0});
@@ -111,26 +112,26 @@ int speed_penalty(const EffectState &effects)
 bool slowed(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
-                       [](const auto &e)
-                       {
-                           return e.kind == EffectKind::slow;
-                       });
+                       [](const auto & e)
+    {
+        return e.kind == EffectKind::slow;
+    });
 }
 
 bool frosted(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
-                       [](const auto &e)
-                       {
-                           return e.kind == EffectKind::ray_of_frost;
-                       });
+                       [](const auto & e)
+    {
+        return e.kind == EffectKind::ray_of_frost;
+    });
 }
 
 void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                         std::string name, unsigned duration_ms)
 {
     if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
-        !duration_ms || duration_ms > round_ms)
+            !duration_ms || duration_ms > round_ms)
         throw std::runtime_error("Invalid Ray of Frost application");
     effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
                               EffectKind::ray_of_frost, 0, duration_ms, 0});
@@ -139,30 +140,30 @@ void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::Entity
 bool sapped(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
-                       [](const auto &e)
-                       {
-                           return e.kind == EffectKind::sap;
-                       });
+                       [](const auto & e)
+    {
+        return e.kind == EffectKind::sap;
+    });
 }
 
 bool vexed_by(const EffectState &effects, std::uint64_t scope, rules::EntityId source)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
-                       [&](const auto &e)
-                       {
-                           return e.kind == EffectKind::vex && e.source_scope == scope &&
-                                  e.source_actor == source;
-                       });
+                       [&](const auto & e)
+    {
+        return e.kind == EffectKind::vex && e.source_scope == scope &&
+               e.source_actor == source;
+    });
 }
 
 bool has_attack_mastery(const EffectState &effects)
 {
     return sapped(effects) || slowed(effects) ||
            std::any_of(effects.active.begin(), effects.active.end(),
-                       [](const auto &e)
-                       {
-                           return e.kind == EffectKind::vex;
-                       });
+                       [](const auto & e)
+    {
+        return e.kind == EffectKind::vex;
+    });
 }
 
 bool can_apply_attack_mastery(const EffectState &effects, EffectKind kind, std::uint64_t scope,
@@ -176,26 +177,26 @@ bool can_apply_attack_mastery(const EffectState &effects, EffectKind kind, std::
            (effects.active.size() < effect_limit ||
             std::any_of(
                 effects.active.begin(), effects.active.end(),
-                [&](const auto &e)
-                {
-                    return e.source_scope == scope && e.source_actor == source &&
-                           (e.kind == kind || e.kind == EffectKind::vex);
-                }));
+                [&](const auto & e)
+    {
+        return e.source_scope == scope && e.source_actor == source &&
+               (e.kind == kind || e.kind == EffectKind::vex);
+    }));
 }
 
 void apply_attack_mastery(EffectState &effects, EffectKind kind, std::uint64_t scope,
                           rules::EntityId source, std::string name, unsigned duration)
 {
     if ((kind != EffectKind::sap && kind != EffectKind::vex && kind != EffectKind::slow) ||
-        !scope || !source || name.empty() || name.size() > 160 || !duration ||
-        duration > (kind == EffectKind::vex ? 2 * round_ms : round_ms))
+            !scope || !source || name.empty() || name.size() > 160 || !duration ||
+            duration > (kind == EffectKind::vex ? 2 * round_ms : round_ms))
         throw std::runtime_error("Invalid attack mastery effect");
     const auto existing = std::find_if(effects.active.begin(), effects.active.end(),
-                                       [&](const auto &e)
-                                       {
-                                           return e.kind == kind && e.source_scope == scope &&
-                                                  e.source_actor == source;
-                                       });
+                                       [&](const auto & e)
+    {
+        return e.kind == kind && e.source_scope == scope &&
+               e.source_actor == source;
+    });
     if (existing != effects.active.end())
     {
         existing->remaining_ms = duration;
@@ -205,32 +206,32 @@ void apply_attack_mastery(EffectState &effects, EffectKind kind, std::uint64_t s
     if (!can_apply(effects))
         throw std::runtime_error("Attack mastery effect storage exhausted");
     effects.active.push_back(
-        {effects.next_id++, scope, source, std::move(name), kind, 0, duration, 0});
+    {effects.next_id++, scope, source, std::move(name), kind, 0, duration, 0});
 }
 
 void consume_attack_masteries(EffectState &attacker, EffectState &target, std::uint64_t scope,
                               rules::EntityId source)
 {
     std::erase_if(attacker.active,
-                  [](const auto &e)
-                  {
-                      return e.kind == EffectKind::sap;
-                  });
+                  [](const auto & e)
+    {
+        return e.kind == EffectKind::sap;
+    });
     std::erase_if(target.active,
-                  [&](const auto &e)
-                  {
-                      return e.kind == EffectKind::vex && e.source_scope == scope &&
-                             e.source_actor == source;
-                  });
+                  [&](const auto & e)
+    {
+        return e.kind == EffectKind::vex && e.source_scope == scope &&
+               e.source_actor == source;
+    });
 }
 
 bool blinded(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
-                       [](const auto &e)
-                       {
-                           return e.kind == EffectKind::blindness;
-                       });
+                       [](const auto & e)
+    {
+        return e.kind == EffectKind::blindness;
+    });
 }
 
 bool can_apply(const EffectState &effects)
@@ -243,7 +244,7 @@ void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId 
                      std::string name, int dc, unsigned first_save_ms)
 {
     if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
-        dc > 38 || !first_save_ms || first_save_ms > round_ms)
+            dc > 38 || !first_save_ms || first_save_ms > round_ms)
         throw std::runtime_error("Invalid blindness application");
     effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
                               EffectKind::blindness, dc, 60000, first_save_ms});
@@ -267,10 +268,10 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
     // independent of roster layout and initiative order.
     std::vector<EffectSubject> ordered(subjects.begin(), subjects.end());
     std::sort(ordered.begin(), ordered.end(),
-              [](const auto &a, const auto &b)
-              {
-                  return a.id < b.id;
-              });
+              [](const auto & a, const auto & b)
+    {
+        return a.id < b.id;
+    });
     while (milliseconds)
     {
         std::uint64_t step = milliseconds;
@@ -304,8 +305,8 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                     {
                         event.save = saving_throw(Ability::constitution, subject.saves[2], e.dc,
                                                   saving_modifiers(Ability::constitution,
-                                                                   subject.str_dex_disadvantage,
-                                                                   subject.dodge),
+                                                      subject.str_dex_disadvantage,
+                                                      subject.dodge),
                                                   rng);
                         event.removed = event.save->success;
                     }
@@ -316,10 +317,10 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                     observe(event);
             }
             std::erase_if(effects,
-                          [](const auto &e)
-                          {
-                              return !e.remaining_ms;
-                          });
+                          [](const auto & e)
+            {
+                return !e.remaining_ms;
+            });
         }
     }
 }
@@ -332,14 +333,14 @@ void write_effects(std::ostream &out, const EffectState &effects)
             : effects.sleeping || effects.prone ? "FX4 "
             : opportunity_blocked(effects)      ? "FX3 "
             : frosted(effects)                  ? "FX2 "
-                                                : "FX1 ")
+            : "FX1 ")
         << effects.next_id << ' ' << effects.active.size();
     for (const auto &e : effects.active)
         out << ' ' << e.id << ' ' << unsigned(e.kind) << ' ' << e.source_scope << ' '
             << e.source_actor << ' ' << std::quoted(e.source_name) << ' ' << e.dc << ' '
             << e.remaining_ms << ' ' << e.save_in_ms;
     if (has_attack_mastery(effects) || healing_blocked(effects) || effects.sleeping ||
-        effects.prone)
+            effects.prone)
         out << ' ' << effects.sleeping << ' ' << effects.prone;
 }
 
@@ -352,9 +353,9 @@ EffectState read_effects(std::istream &in)
     unsigned_field(in, result.next_id);
     unsigned_field(in, count);
     if (!in ||
-        (magic != "FX1" && magic != "FX2" && magic != "FX3" && magic != "FX4" && magic != "FX5" &&
-         magic != "FX6" && magic != "FX7") ||
-        !result.next_id || count > effect_limit)
+            (magic != "FX1" && magic != "FX2" && magic != "FX3" && magic != "FX4" && magic != "FX5" &&
+             magic != "FX6" && magic != "FX7") ||
+            !result.next_id || count > effect_limit)
         throw std::runtime_error("Invalid effect state");
     std::uint64_t previous{};
     for (std::size_t n = 0; n < count; ++n)
@@ -379,13 +380,13 @@ EffectState read_effects(std::istream &in)
              (kind == unsigned(EffectKind::sap) || kind == unsigned(EffectKind::vex))) ||
             (magic == "FX7" && kind == unsigned(EffectKind::slow));
         if (!in || (!timed && kind != unsigned(EffectKind::blindness)) || e.id <= previous ||
-            e.id >= result.next_id || !e.source_scope || !e.source_actor || e.source_name.empty() ||
-            e.source_name.size() > 160 ||
-            (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
-                        !e.save_in_ms || e.save_in_ms > round_ms)) ||
-            (timed && (e.dc != 0 || e.save_in_ms != 0 || !e.remaining_ms ||
-                       e.remaining_ms > ((kind == unsigned(EffectKind::chill_touch) ||
-                                          kind == unsigned(EffectKind::vex))
+                e.id >= result.next_id || !e.source_scope || !e.source_actor || e.source_name.empty() ||
+                e.source_name.size() > 160 ||
+                (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
+                            !e.save_in_ms || e.save_in_ms > round_ms)) ||
+                (timed && (e.dc != 0 || e.save_in_ms != 0 || !e.remaining_ms ||
+                           e.remaining_ms > ((kind == unsigned(EffectKind::chill_touch) ||
+                                              kind == unsigned(EffectKind::vex))
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

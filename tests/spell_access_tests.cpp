@@ -97,9 +97,10 @@ auto battle(const RulesModule &rules, const CharacterSheet &sheet, VitalState st
 {
     const auto profile = rules.character_profile(sheet, {});
     return rules.create({{8, 8, std::vector<std::uint8_t>(64)},
-                         {{1, "campaign-character", "Wizard", 0, {1, 1}, profile.data, state},
-                          {99, "vanguard", "Target", 1, {5, 1}}}},
-                        13);
+        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile.data, state},
+            {99, "vanguard", "Target", 1, {5, 1}}
+        }},
+    13);
 }
 
 std::string saved(const CampaignParty &p)
@@ -121,13 +122,13 @@ void creation()
                   "Other preparation policies are not invented");
             continue;
         }
-        check(ids(access.cantrips) == std::vector<std::string>{"fire_bolt"} &&
-                  ids(access.spellbook) == std::vector<std::string>{"magic_missile"} &&
-                  access.prepared == std::vector<std::string>{"magic_missile"},
+        check(ids(access.cantrips) == std::vector<std::string> {"fire_bolt"} &&
+              ids(access.spellbook) == std::vector<std::string> {"magic_missile"} &&
+              access.prepared == std::vector<std::string> {"magic_missile"},
               "Existing playable Wizard preset has separate cantrip, book and preparation");
         check(
             access.cantrip_choices == 3 && access.spellbook_choices == 6 &&
-                access.prepared_choices == 4,
+            access.prepared_choices == 4,
             "Independent level-one SRD entitlements remain explicit beyond the implemented preset");
         for (const auto &s : access.cantrips)
             check(s.source_id == "class:wizard:spellcasting" && s.acquired_level == 1,
@@ -169,9 +170,9 @@ void progression()
         bad.spells = {"shield"};
         rejects(
             [&]
-            {
-                party.advance(id, bad);
-            });
+        {
+            party.advance(id, bad);
+        });
         check(saved(party) == before, "Rejected learning changes no state, RNG, XP or history");
         const auto preview = party.preview_advancement(id, choice);
         check(saved(party) == before, "Preview is isolated");
@@ -179,45 +180,45 @@ void progression()
         const auto &member = party.member(id);
         const auto access = rules->spell_access(member.character.sheet());
         check(access.cantrip_choices == (level == 4 ? 4u : 3u) &&
-                  access.spellbook_choices == 6 + 2 * (level - 1) &&
-                  access.prepared_choices == level + 3,
+              access.spellbook_choices == 6 + 2 * (level - 1) &&
+              access.prepared_choices == level + 3,
               "Independent SRD level-two/three/four entitlement table");
         check(access.prepared == choice.spells &&
-                  access.spellbook == rules->spell_access(preview.character.sheet()).spellbook,
+              access.spellbook == rules->spell_access(preview.character.sheet()).spellbook,
               "Confirmed learning/preparation matches preview");
         check(ids(access.spellbook) ==
-                  (level == 2
-                       ? std::vector<std::string>{"magic_missile"}
-                       : std::vector<std::string>{"magic_missile", "scorching_ray", "blindness"}),
+              (level == 2
+               ? std::vector<std::string> {"magic_missile"}
+               : std::vector<std::string> {"magic_missile", "scorching_ray", "blindness"}),
               "Previously learned spells remain even when all are unprepared at different levels");
         if (level >= 3)
         {
             check(access.spellbook[1].acquired_level == 3 &&
-                      access.spellbook[2].acquired_level == 3,
+                  access.spellbook[2].acquired_level == 3,
                   "New entries retain first learning level rather than latest preparation level");
         }
         check(member.vitals.hit_points == member.character.sheet().hit_points - deficit,
               "Advancement preserves wounds");
         const auto info = rules->recovery_info(member.character.sheet(), member.vitals);
         check(info.temporary_hp.amount == 7 &&
-                  std::any_of(info.resources.begin(), info.resources.end(),
-                              [](const auto &r)
-                              {
-                                  return r.id == "adrenaline_rush" && r.remaining == 1;
-                              }),
-              "Spellbook changes preserve sourced Temporary HP and spent Adrenaline Rush");
+              std::any_of(info.resources.begin(), info.resources.end(),
+                          [](const auto & r)
+        {
+            return r.id == "adrenaline_rush" && r.remaining == 1;
+        }),
+        "Spellbook changes preserve sourced Temporary HP and spent Adrenaline Rush");
         const auto bytes = saved(party);
         CampaignParty restored(module());
         restored.restore(
             decode_campaign(bytes, *srd5::character_rules(), *rules, "spell-access", nullptr)
-                .party);
+            .party);
         check(
             saved(restored) == bytes,
             "Canonical grant/history reconstruction retains unprepared book entries and resource state");
         auto c = battle(*rules, restored.member(id).character.sheet(), restored.member(id).vitals);
         check(
             has(*c, "fire_bolt") && has(*c, "magic_missile") &&
-                has(*c, "scorching_ray") == (level >= 3) && has(*c, "blindness") == (level >= 3),
+            has(*c, "scorching_ray") == (level >= 3) && has(*c, "blindness") == (level >= 3),
             "Actual casting availability comes from known cantrips and current preparation, not all book entries");
         auto copy = rules->restore(c->save());
         const auto ticket = command(*c, level == 3 ? "scorching_ray" : "magic_missile");
@@ -239,9 +240,9 @@ void invalid()
     {
         rejects(
             [&]
-            {
-                (void)rules->character_profile(s, {});
-            });
+        {
+            (void)rules->character_profile(s, {});
+        });
     };
     auto s = base;
     s.prepared_spells = {"fire_bolt"};
@@ -253,18 +254,23 @@ void invalid()
     s.prepared_spells = {"magic_missile", "magic_missile"};
     test(s);
     const auto index = std::find_if(base.grants.begin(), base.grants.end(),
-                                    [](const auto &g)
-                                    {
-                                        return g.id == "spell:magic_missile";
-                                    }) -
-                       base.grants.begin();
-    for (const auto source : {"class:cleric:spellcasting", "feat:magic_initiate", "class:wizard"})
+                                    [](const auto & g)
+    {
+        return g.id == "spell:magic_missile";
+    }) -
+    base.grants.begin();
+    for (const auto source :
+            {"class:cleric:spellcasting", "feat:magic_initiate", "class:wizard"
+            })
     {
         s = base;
         s.grants[index].source_id = source;
         test(s);
     }
-    for (unsigned level : {0u, 2u, 4u})
+    for (unsigned level :
+            {
+                0u, 2u, 4u
+            })
     {
         s = base;
         s.grants[index].level = level;
@@ -284,7 +290,7 @@ void invalid()
     test(s);
     s = base;
     s.grants.push_back(
-        {"spell:scorching_ray", "class:wizard:spellcasting", 1, {{"access", "spellbook"}}});
+    {"spell:scorching_ray", "class:wizard:spellcasting", 1, {{"access", "spellbook"}}});
     test(s);
     s = hero("fighter").sheet();
     s.grants.push_back(base.grants[index]);
@@ -295,22 +301,24 @@ void invalid()
     bad.replace(0, 4, "PC9");
     rejects(
         [&]
-        {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1, "campaign-character", "Wizard", 0, {1, 1}, bad},
-                                  {99, "vanguard", "Target", 1, {5, 1}}}},
-                                13);
-        });
+    {
+        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            {   {1, "campaign-character", "Wizard", 0, {1, 1}, bad},
+                {99, "vanguard", "Target", 1, {5, 1}}
+            }},
+        13);
+    });
     bad = profile;
     bad.replace(bad.find(" 0 5 ") + 3, 1, "4");
     rejects(
         [&]
-        {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                                 {{1, "campaign-character", "Wizard", 0, {1, 1}, bad},
-                                  {99, "vanguard", "Target", 1, {5, 1}}}},
-                                13);
-        });
+    {
+        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            {   {1, "campaign-character", "Wizard", 0, {1, 1}, bad},
+                {99, "vanguard", "Target", 1, {5, 1}}
+            }},
+        13);
+    });
 }
 
 void legacy()
@@ -319,28 +327,28 @@ void legacy()
     CampaignParty party(module());
     party.restore(decode_campaign(read(root / "tests/fixtures/campaign-v10-spells.ogs"),
                                   *srd5::character_rules(), *rules, "spells-fixture", nullptr)
-                      .party);
+                  .party);
     for (unsigned id = 1; id <= 3; ++id)
     {
         const auto &m = party.member(id);
         const auto access = rules->spell_access(m.character.sheet());
         check(m.character.sheet().level == (id == 1   ? 1
                                             : id == 2 ? 3
-                                                      : 4) &&
-                  m.vitals.hit_points == m.character.sheet().hit_points - 2,
+                                            : 4) &&
+              m.vitals.hit_points == m.character.sheet().hit_points - 2,
               "Frozen legacy levels and wounds retained");
         check(
             ids(access.spellbook) ==
-                (id == 1 ? std::vector<std::string>{"magic_missile"}
-                         : std::vector<std::string>{"magic_missile", "scorching_ray", "blindness"}),
+            (id == 1 ? std::vector<std::string> {"magic_missile"}
+             : std::vector<std::string> {"magic_missile", "scorching_ray", "blindness"}),
             "Only history-backed book entries are recovered, including no-longer-prepared spells");
-        check(access.prepared == (id == 1   ? std::vector<std::string>{"magic_missile"}
-                                  : id == 2 ? std::vector<std::string>{"scorching_ray", "blindness"}
-                                            : std::vector<std::string>{"blindness"}),
+        check(access.prepared == (id == 1   ? std::vector<std::string> {"magic_missile"}
+                                  : id == 2 ? std::vector<std::string> {"scorching_ray", "blindness"}
+                                  : std::vector<std::string> {"blindness"}),
               "Current prepared list is preserved independently");
         if (id > 1)
             check(access.spellbook[1].acquired_level == 3 &&
-                      access.spellbook[2].acquired_level == (id == 2 ? 3u : 4u),
+                  access.spellbook[2].acquired_level == (id == 2 ? 3u : 4u),
                   "Legacy learning levels follow saved history rather than the current level");
         const std::string expected = "SRD7 0 1 " + std::to_string(id == 1 ? 0 : 1) + " 0 0 0 " +
                                      std::to_string(m.character.sheet().level) +
@@ -349,7 +357,7 @@ void legacy()
         check(m.vitals.resources == expected,
               "Prior-writer slots, Hit Dice, Temporary HP and source uses are never reset");
         check(m.character.inventory().find(1)->get().definition_id == "wand" &&
-                  m.equipped == std::vector<std::uint64_t>{1},
+              m.equipped == std::vector<std::uint64_t> {1},
               "Equipment is retained");
     }
     check(party.state().time_minutes == 123 && party.state().subminute_milliseconds == 456,
@@ -369,7 +377,7 @@ void legacy()
     check(c->submit(command(*c, "scorching_ray")), "Legacy prepared spell still casts");
     check(
         c->save() ==
-            rules->restore(read(root / "tests/fixtures/combat-v12-spells-continued.save"))->save(),
+        rules->restore(read(root / "tests/fixtures/combat-v12-spells-continued.save"))->save(),
         "Prior-writer spell damage, slots, action state, RNG and clock continue exactly");
 }
 
@@ -377,7 +385,7 @@ void capture_wizard_choices()
 {
     auto rules = module();
     check(rules->identity().version == "0.6.50", "Capture requires actual 0.6.50 writer");
-    const auto write = [](const std::string &name, const std::string &bytes)
+    const auto write = [](const std::string & name, const std::string & bytes)
     {
         std::ofstream out(root / "tests/fixtures" / name);
         out << bytes;
@@ -387,9 +395,10 @@ void capture_wizard_choices()
     {
         CampaignParty party(module());
         auto draft = hero().creation_data();
-        draft.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
+        draft.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost", "chill_touch"};
         draft.training = {{"origin:languages", {"elvish", "dwarvish"}},
-                          {"class:wizard", {"medicine", "nature"}}};
+            {"class:wizard", {"medicine", "nature"}}
+        };
         const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {}));
         party.award_experience(2700, "choice-baseline");
         for (unsigned n = 2; n <= level; ++n)

@@ -16,7 +16,7 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
         {
             const auto p = (y * image.width + x) * 4;
             if (image.rgba[p + 3] < 128 ||
-                std::max({image.rgba[p], image.rgba[p + 1], image.rgba[p + 2]}) < 40)
+                    std::max({image.rgba[p], image.rgba[p + 1], image.rgba[p + 2]}) < 40)
                 continue;
             unsigned nearest = 0;
             int distance = 200000;
@@ -42,9 +42,9 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
     std::iota(order.begin(), order.end(), 0);
     std::stable_sort(order.begin(), order.end(),
                      [&](auto a, auto b)
-                     {
-                         return counts[a] > counts[b];
-                     });
+    {
+        return counts[a] > counts[b];
+    });
     return counts[order[alternate]] ? order[alternate] : order[0];
 }
 } // namespace
@@ -58,14 +58,16 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
     const auto classes = rules.choices(CreationField::character_class);
     const auto alignments = rules.choices(CreationField::alignment);
     // Every pool member has a distinct given name and surname.
-    const std::array<const char *, 48> first{
+    const std::array<const char *, 48> first
+    {
         "Arlen",  "Mira",  "Toren",  "Selene", "Borin",   "Lyra",   "Cedric",  "Nessa",
         "Dorian", "Elara", "Finn",   "Mara",   "Garrick", "Isolde", "Hadrian", "Jessa",
         "Ivor",   "Kaela", "Joren",  "Liora",  "Kael",    "Maeve",  "Lucan",   "Nadia",
         "Merric", "Orla",  "Nolan",  "Petra",  "Oren",    "Quinn",  "Perrin",  "Rhea",
         "Rolan",  "Sable", "Silas",  "Talia",  "Theron",  "Una",    "Ulric",   "Vera",
         "Valen",  "Wren",  "Willem", "Xara",   "Yoren",   "Ysolde", "Zev",     "Zinnia"};
-    const std::array<const char *, 48> surnames{
+    const std::array<const char *, 48> surnames
+    {
         "Ashfall",      "Songbrook",   "Dawnward",   "Greenbough",  "Ironvale",    "Stillwater",
         "Brightshield", "Thornpath",   "Nightwind",  "Emberheart",  "Duskwatch",   "Starweave",
         "Amberforge",   "Bramblewood", "Cinderhill", "Deepwell",    "Eaglecrest",  "Frostmere",
@@ -96,13 +98,15 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             {
                 const int score = 18 - int(rank) - (variant == 3 && rank == 0 ? 1 : 0);
                 // Authored, valid 4d6-drop-lowest provenance for each strong score.
-                d.rolls[priority[rank]] = {
-                    {6, score >= 17 ? 6 : 5, score - 6 - (score >= 17 ? 6 : 5), 1}, 3};
+                d.rolls[priority[rank]] =
+                {
+                    {6, score >= 17 ? 6 : 5, score - 6 - (score >= 17 ? 6 : 5), 1}, 3
+                };
             }
             d.background = primary == 0   ? "soldier"
                            : primary == 1 ? "criminal"
                            : primary == 3 ? "sage"
-                                          : "acolyte";
+                           : "acolyte";
             const auto bonuses = rules.adjustments(d.background);
             for (unsigned a = 0; a < bonuses.size(); ++a)
                 if (bonuses[a].bonuses[primary] == 2)
@@ -118,10 +122,10 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             {
                 const auto current = rules.training_options(d);
                 const auto group = std::find_if(current.begin(), current.end(),
-                                                [&](const auto &g)
-                                                {
-                                                    return g.id == requested.id;
-                                                });
+                                                [&](const auto & g)
+                {
+                    return g.id == requested.id;
+                });
                 if (group == current.end() || group->options.size() < group->count)
                     throw std::runtime_error("Incomplete preset training options");
                 for (unsigned n = 0; n < group->count; ++n)
@@ -172,8 +176,10 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             const auto cloth = dominant(portrait, 40, portrait.height),
                        trim = dominant(portrait, 40, portrait.height, 1),
                        skin = dominant(portrait, 14, 38);
-            appearance.colors = {
-                {{7, cloth, skin, trim, cloth, trim}, {15, trim, skin, cloth, trim, cloth}}};
+            appearance.colors =
+            {
+                {{7, cloth, skin, trim, cloth, trim}, {15, trim, skin, cloth, trim, cloth}}
+            };
             art.validate(appearance);
             result.emplace_back(rules, std::move(d), appearance);
         }

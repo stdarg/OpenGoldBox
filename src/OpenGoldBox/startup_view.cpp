@@ -48,29 +48,29 @@ void StartupView::choose_game_path()
     auto *dialog = get_node<Window>("PathDialog"); // scene-owned
     dialog->connect("close_requested", callable_mp(this, &StartupView::close_language));
     dialog->get_node<Button>("Cancel")->connect("pressed",
-                                                callable_mp(this, &StartupView::close_language));
+            callable_mp(this, &StartupView::close_language));
     dialog->get_node<Button>("Continue")
-        ->connect("pressed", callable_mp(this, &StartupView::accept_path));
+    ->connect("pressed", callable_mp(this, &StartupView::accept_path));
     dialog->get_node<Button>("Browse")->connect("pressed",
-                                                callable_mp(this, &StartupView::browse_path));
+            callable_mp(this, &StartupView::browse_path));
     dialog->get_node<LineEdit>("Path")->connect("text_submitted",
-                                                callable_mp(this, &StartupView::submitted_path));
+            callable_mp(this, &StartupView::submitted_path));
     dialog->get_node<LineEdit>("Path")->connect("text_changed",
-                                                callable_mp(this, &StartupView::path_edited));
+            callable_mp(this, &StartupView::path_edited));
     dialog->get_node<FileDialog>("BrowseDialog")
-        ->connect("dir_selected", callable_mp(this, &StartupView::picked_path));
+    ->connect("dir_selected", callable_mp(this, &StartupView::picked_path));
     auto *warning = get_node<Window>("ChecksumWarning");
     warning->connect("close_requested", callable_mp(this, &StartupView::close_language));
     warning->get_node<Button>("Quit")->connect("pressed",
-                                               callable_mp(this, &StartupView::close_language));
+            callable_mp(this, &StartupView::close_language));
     warning->get_node<Button>("Continue")
-        ->connect("pressed", callable_mp(this, &StartupView::continue_path));
+    ->connect("pressed", callable_mp(this, &StartupView::continue_path));
     const auto saved = settings::saved_game_path();
     pending_path_ = settings::game_path();
     if (pending_path_.is_empty())
         pending_path_ = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
     if (settings::flag("--reset-game-path") || saved.is_empty() ||
-        !settings::validate_game_path(saved).usable)
+            !settings::validate_game_path(saved).usable)
     {
         show_path();
         return;
@@ -97,7 +97,7 @@ void StartupView::choose_language()
         preview_language(choices->get_selected_items()[0]);
         choices->connect("item_activated", callable_mp(this, &StartupView::activate_language));
         dialog->get_node<Button>("Continue")
-            ->connect("pressed", callable_mp(this, &StartupView::accept_language));
+        ->connect("pressed", callable_mp(this, &StartupView::accept_language));
         dialog->popup_centered();
         choices->grab_focus();
         dialog->get_node<Button>("Cancel")->connect(
@@ -155,7 +155,7 @@ void StartupView::check_path()
     if (!result.usable)
     {
         String message = result.error.is_empty() ? i18n::text("Missing or unreadable game files:")
-                                                 : i18n::text(result.error.utf8().get_data());
+                         : i18n::text(result.error.utf8().get_data());
         for (int i = 0; i < std::min<int>(result.missing.size(), 5); ++i)
             message += " " + result.missing[i];
         if (result.missing.size() > 5)
@@ -169,7 +169,7 @@ void StartupView::check_path()
         choosing_path_ = true;
         auto *warning = get_node<Window>("ChecksumWarning");
         warning->get_node<RichTextLabel>("Files")->set_text(pending_path_ + "\n\n" +
-                                                            String("\n").join(result.different));
+                String("\n").join(result.different));
         warning->popup_centered();
         warning->get_node<Button>("Quit")->grab_focus();
         return;
@@ -183,7 +183,7 @@ void StartupView::continue_path()
     if (save_pending_path_ && !settings::save_game_path(pending_path_))
     {
         show_path(i18n::text(
-            "Cannot save settings beside the executable. Check that the folder is writable and settings.cfg is valid."));
+                      "Cannot save settings beside the executable. Check that the folder is writable and settings.cfg is valid."));
         return;
     }
     save_pending_path_ = false;
@@ -263,7 +263,7 @@ void StartupView::show_screen()
     if (image->get_texture().is_null())
     {
         Ref<Texture2D> texture = ResourceLoader::get_singleton()->load(
-            "res://bin/splashes/OpenGoldBoxSplashBackground.png");
+                                     "res://bin/splashes/OpenGoldBoxSplashBackground.png");
         if (texture.is_null())
         {
             UtilityFunctions::push_error("Missing shared splash background");
@@ -329,7 +329,7 @@ void StartupView::_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (finishing_ || choosing_language_ || choosing_path_ || key.is_null() || !key->is_pressed() ||
-        key->is_echo())
+            key->is_echo())
         return;
     // Application shortcuts must not advance a splash.
     if (key->is_ctrl_pressed() && (key->get_keycode() == KEY_X || key->get_keycode() == KEY_S))
@@ -360,7 +360,7 @@ void StartupView::open_character_creation()
 {
     const bool demo = settings::flag("--combat-demo");
     if (get_tree()->change_scene_to_file(demo ? "res://scenes/combat_demo.tscn"
-                                              : "res://scenes/character_creation.tscn") != OK)
+                                         : "res://scenes/character_creation.tscn") != OK)
     {
         UtilityFunctions::push_error("Cannot open game scene.");
         get_tree()->quit(1);

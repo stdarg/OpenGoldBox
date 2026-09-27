@@ -115,10 +115,10 @@ bool effect_target_input(const godot::Ref<godot::InputEvent> &event,
     if (!state.effect_targeting)
         return false;
     const auto actor = std::find_if(state.combatants.begin(), state.combatants.end(),
-                                    [&](const auto &a)
-                                    {
-                                        return a.id == state.actor;
-                                    });
+                                    [&](const auto & a)
+    {
+        return a.id == state.actor;
+    });
     if (actor == state.combatants.end() || actor->side != 0)
         return false;
     const Ref<InputEventKey> key = event;
@@ -143,7 +143,7 @@ bool effect_target_input(const godot::Ref<godot::InputEvent> &event,
         return false;
     selected %= targets.size();
     if (code == Key::KEY_LEFT || code == Key::KEY_UP || code == Key::KEY_RIGHT ||
-        code == Key::KEY_DOWN)
+            code == Key::KEY_DOWN)
     {
         selected = (selected +
                     ((code == Key::KEY_RIGHT || code == Key::KEY_DOWN) ? 1 : targets.size() - 1)) %

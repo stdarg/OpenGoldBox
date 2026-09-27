@@ -64,6 +64,6 @@ struct DamageResult
 // then apply resistance (round down), vulnerability and immunity. Separate
 // instances (e.g. Magic Missile darts) must be resolved separately.
 [[nodiscard]] DamageResult resolve_damage(std::span<const DamagePart> parts,
-                                          std::span<const DamageAffinity> affinities);
+        std::span<const DamageAffinity> affinities);
 } // namespace opengold::srd5::detail
 #endif

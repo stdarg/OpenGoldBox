@@ -57,8 +57,14 @@ Bytes picture(unsigned width, unsigned height, unsigned offset = 0)
 std::vector<DaxRecord> components(unsigned count, unsigned height)
 {
     std::vector<DaxRecord> records;
-    for (unsigned size : {0u, 64u})
-        for (unsigned pose : {0u, 128u})
+    for (unsigned size :
+            {
+                0u, 64u
+            })
+        for (unsigned pose :
+                {
+                    0u, 128u
+                })
             for (unsigned id = 0; id < count; ++id)
                 records.push_back({static_cast<std::uint8_t>(size + pose + id),
                                    picture(24, height, id + size / 64 + pose / 32)});
@@ -118,22 +124,28 @@ CharacterArt archive_tests()
     Fixture fixture;
     rejects(
         [&]
-        {
-            (void)CharacterArt::load(fixture.path());
-        },
-        "Missing character art");
+    {
+        (void)CharacterArt::load(fixture.path());
+    },
+    "Missing character art");
     fixture.populate();
     auto art = CharacterArt::load(fixture.path());
     check(art.heads.size() == 1 && art.bodies.size() == 1,
           "Identical portrait IDs across disks merge");
     check(art.combat_heads.size() == 56 && art.combat_bodies.size() == 140,
           "Original and derived bodies load in all sizes and poses");
-    for (unsigned bank : {0u, 64u, 128u, 192u})
-        for (unsigned id : {33u, 34u})
+    for (unsigned bank :
+            {
+                0u, 64u, 128u, 192u
+            })
+        for (unsigned id :
+                {
+                    33u, 34u
+                })
         {
             const auto source_id = id == 33 ? 7u : 24u;
             const auto original = decode_character_icon(
-                picture(24, 24, source_id + (bank % 128) / 64 + (bank / 128) * 4));
+                                      picture(24, 24, source_id + (bank % 128) / 64 + (bank / 128) * 4));
             check(art.combat_bodies.at(bank + source_id).pixels == original.pixels,
                   "Dagger derivation leaves source sword intact");
             const auto &dagger = art.combat_bodies.at(bank + id).pixels;
@@ -143,7 +155,7 @@ CharacterArt archive_tests()
                 {
                     check(
                         (original.pixels[p] == 7 || original.pixels[p] == 15) &&
-                            (dagger[p] == 0 || dagger[p] == 15),
+                        (dagger[p] == 0 || dagger[p] == 15),
                         "Dagger derivation only changes blade pixels, preserving hands, shield and body");
                     ++changes;
                 }
@@ -155,21 +167,21 @@ CharacterArt archive_tests()
     std::filesystem::rename(fixture.path() / "chead.dax", fixture.path() / "CHEAD.DAX");
 
     const auto invalid_archive =
-        [&](const char *filename, const Bytes &replacement, const char *message)
+        [&](const char *filename, const Bytes & replacement, const char *message)
     {
         fixture.write(filename, replacement);
         rejects(
             [&]
-            {
-                (void)CharacterArt::load(fixture.path());
-            },
-            message);
+        {
+            (void)CharacterArt::load(fixture.path());
+        },
+        message);
         fixture.populate();
     };
     invalid_archive("HEAD8.DAX", literal_dax({{1, picture(88, 40, 1)}}),
-                    "Conflicting player portrait ID");
+    "Conflicting player portrait ID");
     invalid_archive("HEAD8.DAX", literal_dax({{2, picture(24, 8)}}),
-                    "Unsupported player portrait layout");
+    "Unsupported player portrait layout");
     invalid_archive("HEAD8.DAX", Bytes{9, 0}, "Invalid character art archive");
     auto heads = components(14, 8);
     heads.pop_back();
@@ -182,18 +194,18 @@ CharacterArt archive_tests()
         fixture.write("HEAD" + std::to_string(disk) + ".DAX", literal_dax({}));
     rejects(
         [&]
-        {
-            (void)CharacterArt::load(fixture.path());
-        },
-        "Missing portraits");
+    {
+        (void)CharacterArt::load(fixture.path());
+    },
+    "Missing portraits");
     fixture.populate();
     std::filesystem::resize_file(fixture.path() / "HEAD1.DAX", 32 * 1024 * 1024 + 1);
     rejects(
         [&]
-        {
-            (void)CharacterArt::load(fixture.path());
-        },
-        "exceeds size limit");
+    {
+        (void)CharacterArt::load(fixture.path());
+    },
+    "exceeds size limit");
     return art; // Its files disappear here; decoded art must own its data.
 }
 
@@ -202,10 +214,16 @@ void composition_tests(const CharacterArt &art)
     CharacterAppearance appearance;
     check(art.portrait(appearance).rgba.size() == 88 * 88 * 4,
           "Portrait survives fixture destruction");
-    for (bool tall : {false, true})
+    for (bool tall :
+            {
+                false, true
+            })
         for (unsigned head = 0; head < 14; ++head)
             for (unsigned body = 0; body < 35; ++body)
-                for (bool action : {false, true})
+                for (bool action :
+                        {
+                            false, true
+                        })
                 {
                     appearance.tall = tall;
                     appearance.combat_head = head;
@@ -216,12 +234,18 @@ void composition_tests(const CharacterArt &art)
                 }
 
     constexpr std::array<unsigned, 6> masks{7, 1, 4, 6, 2, 3};
-    for (bool tall : {false, true})
+    for (bool tall :
+            {
+                false, true
+            })
     {
         appearance = {};
         appearance.tall = tall;
         const auto usage = art.color_usage(appearance);
-        for (bool action : {false, true})
+        for (bool action :
+                {
+                    false, true
+                })
         {
             const unsigned source_bank = (tall ? 64 : 0) + (action ? 128 : 0);
             const auto &head = art.combat_heads.at(source_bank);
@@ -240,8 +264,8 @@ void composition_tests(const CharacterArt &art)
                         for (unsigned p = 0; p < 576; ++p)
                         {
                             const auto source = p < head.pixels.size() && head.pixels[p]
-                                                    ? head.pixels[p]
-                                                    : body.pixels[p];
+                                                ? head.pixels[p]
+                                                : body.pixels[p];
                             const bool selected = source == masks[part] + 8 * bank;
                             const bool differs = !std::equal(before.rgba.begin() + 4 * p,
                                                              before.rgba.begin() + 4 * p + 4,
@@ -255,7 +279,7 @@ void composition_tests(const CharacterArt &art)
                     check(targeted == (action ? usage.action : usage.ready)[bank][part],
                           "Usage count equals the pixels recolored in each pose");
                     check(usage.contains(bank, part) ==
-                              (usage.ready[bank][part] + usage.action[bank][part] > 0),
+                          (usage.ready[bank][part] + usage.action[bank][part] > 0),
                           "A control is relevant if either pose uses its region");
                 }
             check(art.icon(appearance, action).rgba == before.rgba,
@@ -264,38 +288,38 @@ void composition_tests(const CharacterArt &art)
     }
     rejects(
         [&]
-        {
-            (void)art.color_usage(appearance).contains(2, 0);
-        },
-        "Invalid character color region");
+    {
+        (void)art.color_usage(appearance).contains(2, 0);
+    },
+    "Invalid character color region");
     rejects(
         [&]
-        {
-            (void)art.color_usage(appearance).contains(0, 6);
-        },
-        "Invalid character color region");
+    {
+        (void)art.color_usage(appearance).contains(0, 6);
+    },
+    "Invalid character color region");
     appearance.portrait_head = 2;
     rejects(
         [&]
-        {
-            (void)art.portrait(appearance);
-        },
-        "Invalid character appearance selection");
+    {
+        (void)art.portrait(appearance);
+    },
+    "Invalid character appearance selection");
     auto head = art.combat_heads.at(0), body = art.combat_bodies.at(0);
     head.pixels[0] = 16;
     rejects(
         [&]
-        {
-            (void)compose_character_icon(head, body, {});
-        },
-        "Invalid character icon pixel");
+    {
+        (void)compose_character_icon(head, body, {});
+    },
+    "Invalid character icon pixel");
     head.pixels.pop_back();
     rejects(
         [&]
-        {
-            (void)compose_character_icon(head, body, {});
-        },
-        "Invalid character icon components");
+    {
+        (void)compose_character_icon(head, body, {});
+    },
+    "Invalid character icon components");
 }
 } // namespace
 
@@ -307,7 +331,10 @@ int main()
         composition_tests(art);
         // Distinct authored anatomy makes whole-body substitution observable.
         // Equipment/body colors deliberately differ even where silhouettes overlap.
-        for (unsigned bank : {0u, 64u, 128u, 192u})
+        for (unsigned bank :
+                {
+                    0u, 64u, 128u, 192u
+                })
         {
             for (unsigned id = 0; id < 35; ++id)
                 art.combat_bodies.at(bank + id).pixels.assign(576, 0);
@@ -317,7 +344,10 @@ int main()
             base[10 * 24 + 10] = 1;
             base[20 * 24 + 10] = 3;
             base[22 * 24 + 10] = 8;
-            for (unsigned donor : {6u, 28u})
+            for (unsigned donor :
+                    {
+                        6u, 28u
+                    })
             {
                 auto &pixels = art.combat_bodies.at(bank + donor).pixels;
                 pixels[10 * 24 + 10] = 9;
@@ -326,8 +356,14 @@ int main()
                 pixels[4 * 24 + 5] = donor == 6 ? 7 : 15;
             }
         }
-        for (bool tall : {false, true})
-            for (bool action : {false, true})
+        for (bool tall :
+                {
+                    false, true
+                })
+            for (bool action :
+                    {
+                        false, true
+                    })
             {
                 CharacterAppearance a;
                 a.tall = tall;
@@ -335,12 +371,15 @@ int main()
                 const auto before = art.icon(a, action);
                 const auto axe = art.equipped_icon(a, 6, action),
                            staff = art.equipped_icon(a, 28, action);
-                const auto pixel_equal = [](const Image &first, const Image &second, unsigned p)
+                const auto pixel_equal = [](const Image & first, const Image & second, unsigned p)
                 {
                     return std::equal(first.rgba.begin() + 4 * p, first.rgba.begin() + 4 * p + 4,
                                       second.rgba.begin() + 4 * p);
                 };
-                for (const auto p : {0u, 250u, 490u, 538u})
+                for (const auto p :
+                        {
+                            0u, 250u, 490u, 538u
+                        })
                     check(
                         pixel_equal(before, axe, p) && pixel_equal(before, staff, p),
                         "Equipment preserves saved head, torso, legs and boots in both sizes and poses");

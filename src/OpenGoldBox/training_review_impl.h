@@ -31,7 +31,7 @@ void CharacterCreationView::setup_training_review()
                     callable_mp(this, &CharacterCreationView::training_review_input));
     auto *note = presentation::add_control<Label>(*window, "Note", Rect2(24, 18, 652, 54));
     note->set_text(review_text(N_(
-        "Complete missing training. Existing selections are locked.\nCancel discards your changes.")));
+                                   "Complete missing training. Existing selections are locked.\nCancel discards your changes.")));
     note->add_theme_font_size_override("font_size", 16);
     presentation::setup_training_controls(*window);
     auto *fixed = window->get_node<RichTextLabel>("TrainingFixed");
@@ -61,7 +61,7 @@ void CharacterCreationView::open_training_review()
     try
     {
         auto editor = std::make_unique<opengold::CharacterCreator>(
-            opengold::srd5::character_rules(), member.character, campaign_->rule_module());
+                          opengold::srd5::character_rules(), member.character, campaign_->rule_module());
         locked_training_ = member.character.training_choices();
         training_member_ = member.id;
         training_review_ = std::move(editor);
@@ -112,7 +112,7 @@ void CharacterCreationView::review_training_toggled(bool selected, String group,
     const std::string id = group.utf8().get_data(), value = option.utf8().get_data();
     const auto locked = locked_training_.find(id);
     if (locked != locked_training_.end() &&
-        std::find(locked->second.begin(), locked->second.end(), value) != locked->second.end())
+            std::find(locked->second.begin(), locked->second.end(), value) != locked->second.end())
         return;
     try
     {
@@ -136,10 +136,10 @@ void CharacterCreationView::review_training_selected(std::int64_t index, String 
         return;
     const auto groups = training_review_->training_options();
     const auto found = std::find_if(groups.begin(), groups.end(),
-                                    [&](const auto &g)
-                                    {
-                                        return g.id == id;
-                                    });
+                                    [&](const auto & g)
+    {
+        return g.id == id;
+    });
     if (found == groups.end() || static_cast<std::size_t>(index) > found->options.size())
         return;
     review_training_toggled(true, group,

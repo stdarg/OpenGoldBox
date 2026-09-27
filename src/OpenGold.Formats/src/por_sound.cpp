@@ -110,7 +110,9 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
             selected = offset / 48;
             // Synthesis fields reset; sequencing and loop counters remain intact.
             for (const unsigned field :
-                 {4U, 6U, 8U, 10U, 12U, 16U, 18U, 22U, 24U, 26U, 28U, 30U, 32U, 34U, 36U})
+                    {
+                        4U, 6U, 8U, 10U, 12U, 16U, 18U, 22U, 24U, 26U, 28U, 30U, 32U, 34U, 36U
+                    })
                 voices[selected][field] = 0;
         }
         else
@@ -125,10 +127,10 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
 bool SoundEffect::audible() const noexcept
 {
     return std::any_of(ticks.begin(), ticks.end(),
-                       [](const auto &tick)
-                       {
-                           return tick.enabled;
-                       });
+                       [](const auto & tick)
+    {
+        return tick.enabled;
+    });
 }
 
 std::vector<std::uint8_t> unpack_sound_executable(std::span<const std::uint8_t> file)
@@ -190,7 +192,7 @@ std::vector<std::uint8_t> unpack_sound_executable(std::span<const std::uint8_t> 
 }
 
 std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> data,
-                                                 const std::array<std::uint16_t, 4> &entries)
+        const std::array<std::uint16_t, 4> &entries)
 {
     if (data.size() > 65536)
         invalid("sound segment too large");
@@ -231,8 +233,8 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
                     static_cast<std::int32_t>(sample) * 256 * std::bit_cast<std::int16_t>(v[depth]);
                 modulation =
                     product >= 0
-                        ? product / 65536
-                        : -static_cast<int>((-static_cast<std::int64_t>(product) + 65535) / 65536);
+                    ? product / 65536
+                    : -static_cast<int>((-static_cast<std::int64_t>(product) + 65535) / 65536);
             }
             v[output] = static_cast<std::uint16_t>(v[pitch] + modulation);
             if (--v[delay] == 0)
@@ -275,7 +277,8 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directo
     }
     if (image.size() != 0x10bf0 || fingerprint != 0x4bd7cdf744ac2004ULL)
         invalid("unsupported START.EXE revision; this demo requires the Steam PC 1.3 image");
-    constexpr std::array<std::string_view, 21> names{
+    constexpr std::array<std::string_view, 21> names
+    {
         "Silence",          "Cast spell",       "Magic damage",
         "Magic effect",     "Reduced to 0 HP",  "Ranged attack launched",
         "Melee hit",        "Lightning bolt",   "Melee miss",

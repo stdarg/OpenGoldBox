@@ -57,11 +57,11 @@ struct ImageDecodeResult
 
 [[nodiscard]] std::uint32_t formats_checksum(std::span<const std::uint8_t> bytes) noexcept;
 [[nodiscard]] ImageDecodeResult decode_ega_sprite(std::span<const std::uint8_t> dax,
-                                                  std::uint8_t record_id,
-                                                  std::uint8_t frame_index = 0);
+        std::uint8_t record_id,
+        std::uint8_t frame_index = 0);
 [[nodiscard]] ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax,
-                                                       std::uint8_t record_id,
-                                                       std::uint8_t frame_index = 0);
+        std::uint8_t record_id,
+        std::uint8_t frame_index = 0);
 // A decompressed 17-byte-header HEAD/BODY/PIC record, using normal EGA colors.
 [[nodiscard]] ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record);
 

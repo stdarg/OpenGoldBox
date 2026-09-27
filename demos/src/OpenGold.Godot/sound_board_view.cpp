@@ -95,16 +95,16 @@ void SoundBoardView::_ready()
             throw std::runtime_error(
                 "Set OPENGOLD_GAME_DIR to your Pool of Radiance folder, then restart.");
         audio_ = std::make_unique<SoundPlayer>(
-            SoundBank::load(std::filesystem::path(directory.utf16().get_data())),
-            std::make_unique<GodotSoundOutput>(*get_node<AudioStreamPlayer>("Player")));
+                     SoundBank::load(std::filesystem::path(directory.utf16().get_data())),
+                     std::make_unique<GodotSoundOutput>(*get_node<AudioStreamPlayer>("Player")));
         for (std::size_t i = 0; i < audio_->bank().clips().size(); ++i)
         {
             const auto &clip = audio_->bank().clips()[i];
             const auto detail =
                 clip.audible ? String::num(clip.pcm.duration(), 2) + " s" : "Silent control";
             get_node<Button>(button_name(static_cast<int>(i)))
-                ->set_text(String::num_int64(clip.id).pad_zeros(2) + "   " + gs(clip.name) + "\n" +
-                           detail);
+            ->set_text(String::num_int64(clip.id).pad_zeros(2) + "   " + gs(clip.name) + "\n" +
+                       detail);
         }
         volume(get_node<HSlider>("Volume")->get_value());
         mute(get_node<Button>("Mute")->is_pressed());
@@ -188,7 +188,7 @@ void SoundBoardView::play(int index)
         refresh_buttons();
         get_node<Label>("Status")->set_text(
             clip.audible ? "Playing: " + gs(clip.name)
-                         : gs(clip.name) + " - this entry contains no audible effect.");
+            : gs(clip.name) + " - this entry contains no audible effect.");
     }
     catch (const std::exception &error)
     {
@@ -222,7 +222,7 @@ void SoundBoardView::volume(double value)
     if (audio_)
         audio_->set_volume(value / 100);
     get_node<Label>("VolumeLabel")
-        ->set_text("Volume " + String::num_int64(static_cast<int64_t>(value)) + "%");
+    ->set_text("Volume " + String::num_int64(static_cast<int64_t>(value)) + "%");
 }
 
 void SoundBoardView::mute(bool value)
@@ -258,8 +258,8 @@ void SoundBoardView::_process(double delta)
         teardown_check_output_.reset();
         UtilityFunctions::print(
             check_passed_
-                ? "Sound board check passed: 21 buttons, completion, replay, switching, stop, volume, mute, RAII teardown, freed node"
-                : "Sound board control check failed");
+            ? "Sound board check passed: 21 buttons, completion, replay, switching, stop, volume, mute, RAII teardown, freed node"
+            : "Sound board control check failed");
         check_finishing_ = false;
         checking_ = false;
         get_tree()->quit(check_passed_ ? 0 : 1);
@@ -270,7 +270,7 @@ void SoundBoardView::_process(double delta)
     if (capture_ && !captured_ && frames_ > 5)
     {
         const auto path = ProjectSettings::get_singleton()->globalize_path(
-            "res://../../user-data/sound-board.png");
+                              "res://../../user-data/sound-board.png");
         get_viewport()->get_texture()->get_image()->save_png(path);
         captured_ = true;
     }
@@ -311,7 +311,7 @@ void SoundBoardView::_process(double delta)
         // This adapter must survive the scene-owned node being freed first.
         teardown_check_output_ = std::make_unique<GodotSoundOutput>(*player);
         teardown_check_output_->prepare(
-            SoundBank({SoundEffect{99, "Lifecycle fixture", false, 5041, {{1000, true}}}}));
+        SoundBank({SoundEffect{99, "Lifecycle fixture", false, 5041, {{1000, true}}}}));
         player->queue_free();
         check_elapsed_ = 0;
         check_finishing_ = true;
@@ -321,7 +321,7 @@ void SoundBoardView::_process(double delta)
     get_node<Button>(button_name(check_index_))->emit_signal("pressed");
     const auto &clip = audio_->bank().clips()[check_index_];
     if (audio_->current_sound() != clip.id || player->get_stream().is_null() ||
-        std::abs(player->get_stream()->get_length() - clip.pcm.duration()) > .0001)
+            std::abs(player->get_stream()->get_length() - clip.pcm.duration()) > .0001)
     {
         UtilityFunctions::printerr("Sound button did not start its stream");
         checking_ = false;

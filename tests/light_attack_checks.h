@@ -15,7 +15,7 @@ Character hero_for(bool feat = false, bool negative = false, std::string klass =
         for (auto &roll : d.rolls)
             roll = {{2, 2, 1, 1}, 3};
     if (klass == "wizard")
-        d.cantrips = std::vector<std::string>{"fire_bolt"};
+        d.cantrips = std::vector<std::string> {"fire_bolt"};
     auto creation = srd5::character_rules();
     for (const auto &group : creation->training_options(d))
         for (unsigned i = 0; i < group.count; ++i)
@@ -111,7 +111,7 @@ void ui_fixtures()
     actors.push_back({99, "vanguard", "Target", 1, {2, 1}});
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "light-fixtures";
     std::filesystem::create_directories(path);
-    const auto write = [&](const char *name, const CombatSession &c)
+    const auto write = [&](const char *name, const CombatSession & c)
     {
         std::ofstream out(path / name);
         out << c.save();
@@ -135,8 +135,14 @@ void run()
 {
     ui_fixtures();
     unsigned hits = 0, criticals = 0;
-    for (bool feat : {false, true})
-        for (bool negative : {false, true})
+    for (bool feat :
+            {
+                false, true
+            })
+        for (bool negative :
+                {
+                    false, true
+                })
             for (unsigned seed = 1; seed <= 32; ++seed)
             {
                 auto p = party(feat, negative, seed % 2);
@@ -148,7 +154,7 @@ void run()
                           "Style does not double normal attack modifiers");
                 settle(*c);
                 check(!unit(*c).action && unit(*c).bonus_action && offered(*c, "light_melee", 2) &&
-                          !offered(*c, "light_melee", 1),
+                      !offered(*c, "light_melee", 1),
                       "Different identical weapon qualifies even after an initial miss");
                 exact_restore(*c);
                 act(*c, "light_melee", 2);
@@ -163,7 +169,7 @@ void run()
                     check(
                         choice->modifier == (negative ? -2
                                              : feat   ? 3
-                                                      : 0),
+                                             : 0),
                         "Light removes only positive modifier; TWF retains normal modifier exactly once");
                     const auto hp = unit(*c, 99).hit_points;
                     const auto first = choice->first_damage;
@@ -193,7 +199,7 @@ void run()
         const auto before = unit(*c);
         act(*c, "weapon_select", 2);
         check(unit(*c).selected_weapon == 2 && unit(*c).action == before.action &&
-                  unit(*c).bonus_action == before.bonus_action,
+              unit(*c).bonus_action == before.bonus_action,
               "Weapon selection is free");
         exact_restore(*c);
         act(*c, "melee");
@@ -261,7 +267,7 @@ void run()
                 break;
             }
         check(moved && c->snapshot().reaction_pending && !offered(*c, "opportunity") &&
-                  offered(*c, "weapon_select", 2),
+              offered(*c, "weapon_select", 2),
               "Other held reach can provoke while selected Whip remains in reach");
         exact_restore(*c);
         act(*c, "weapon_select", 2);
@@ -311,8 +317,8 @@ void run()
             exact_restore(*c);
             act(*c, "sneak_use");
             check(c->snapshot().savage_attack_choice &&
-                      c->snapshot().savage_attack_choice->modifier == 0 &&
-                      c->snapshot().savage_attack_choice->extra_damage > 0,
+                  c->snapshot().savage_attack_choice->modifier == 0 &&
+                  c->snapshot().savage_attack_choice->extra_damage > 0,
                   "Light omits positive weapon modifier without changing Sneak dice");
             exact_restore(*c);
             act(*c, "savage_use");
@@ -323,7 +329,10 @@ void run()
         }
         check(checked, "Actual Rogue Light attack can spend reserved Sneak Attack");
     }
-    for (bool npc : {false, true})
+    for (bool npc :
+            {
+                false, true
+            })
     {
         auto p = party(true, false, npc);
         auto c = battle(p, 13, {2, 1}, 20);
@@ -349,7 +358,7 @@ void run()
         CampaignParty restored(rules());
         restored.restore(
             decode_campaign(saved, *srd5::character_rules(), *rules(), "light-campaign", nullptr)
-                .party);
+            .party);
         check(encode_campaign(restored, nullptr, "light-campaign") == saved,
               "PC/recruited physical inventory and TWF survive campaign reload");
         unsigned count = 0;
@@ -361,7 +370,9 @@ void run()
         restored.finish_short_rest(restored.state().short_rest->ticket);
         check(bool(restored.rest(RestKind::long_rest)), "Light user can Long Rest");
     }
-    for (const auto *klass : {"fighter", "paladin", "ranger"})
+    for (const auto *klass :
+            {"fighter", "paladin", "ranger"
+            })
     {
         auto h = style_route_checks::leveled(*rules(), klass, "defense", 3);
         auto choice = rules()->default_advancement(h.sheet());
@@ -372,12 +383,12 @@ void run()
               "Independent level-four TWF feat available to every style class");
         auto bad = h.sheet();
         bad.grants.push_back(
-            {"feat:two_weapon_fighting", "class:" + std::string(klass) + ":fighting_style", 2, {}});
+        {"feat:two_weapon_fighting", "class:" + std::string(klass) + ":fighting_style", 2, {}});
         rejects(
             [&]
-            {
-                (void)rules()->character_profile(bad, {});
-            });
+        {
+            (void)rules()->character_profile(bad, {});
+        });
     }
     {
         auto h = style_route_checks::leveled(*rules(), "fighter", "two_weapon_fighting", 3);
@@ -389,19 +400,21 @@ void run()
         check(h.advance(*rules(), vitals, choice),
               "Fighter replaces class TWF and independently retains it as level-four feat");
     }
-    for (const auto *klass : {"fighter", "paladin", "ranger"})
+    for (const auto *klass :
+            {"fighter", "paladin", "ranger"
+            })
         for (unsigned level = 2; level <= 4; ++level)
         {
             auto h = style_route_checks::leveled(*rules(), klass, "two_weapon_fighting", level);
             check(std::any_of(h.sheet().grants.begin(), h.sheet().grants.end(),
-                              [](const auto &g)
-                              {
-                                  return g.id == "feat:two_weapon_fighting";
-                              }),
-                  "Actual supported class advancement grants TWF");
+                              [](const auto & g)
+            {
+                return g.id == "feat:two_weapon_fighting";
+            }),
+            "Actual supported class advancement grants TWF");
             check(rules()
-                      ->character_profile(h.sheet(), std::vector<std::string>{"dagger"})
-                      .data.starts_with("PC39 "),
+                  ->character_profile(h.sheet(), std::vector<std::string> {"dagger"})
+                  .data.starts_with("PC39 "),
                   "TWF and mastery have versioned sourced profiles");
         }
 }

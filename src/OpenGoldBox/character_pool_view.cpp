@@ -32,7 +32,9 @@ void CharacterCreationView::pool_layout()
         n->set_position(r.position);
         n->set_size(r.size);
     };
-    for (const char *name : {"PoolModal", "TownSheet"})
+    for (const char *name :
+            {"PoolModal", "TownSheet"
+            })
         get_node<Window>(name)->set_size(Vector2i(w, h));
     place("PoolModal/Background", Rect2(0, 0, w, h));
     place("TownSheet/Background", Rect2(0, 0, w, h));
@@ -86,32 +88,32 @@ void CharacterCreationView::pool_selected(std::int64_t index)
     const auto &character = pool_[pool_index_];
     get_node<RichTextLabel>("PoolModal/Text")->set_text(sheet_text(character));
     get_node<TextureRect>("PoolModal/Portrait")
-        ->set_texture(portrait_texture(character.appearance(), character.creation_data()));
+    ->set_texture(portrait_texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)
     {
         const auto source = art_->icon(character.appearance(), i == 2);
         get_node<TextureRect>(i == 0   ? "PoolModal/Portrait"
                               : i == 1 ? "PoolModal/Ready"
-                                       : "PoolModal/Action")
-            ->set_texture(presentation::image_texture(source));
+                              : "PoolModal/Action")
+        ->set_texture(presentation::image_texture(source));
     }
     const bool added =
         std::find(pool_added_.begin(), pool_added_.end(), pool_index_) != pool_added_.end();
     const bool full =
         std::none_of(campaign_->state().slots.begin(), campaign_->state().slots.begin() + 6,
                      [](auto id)
-                     {
-                         return !id;
-                     });
+    {
+        return !id;
+    });
     get_node<Button>("PoolModal/Add")->set_disabled(added || full);
     const auto &c = character.sheet().character_class;
     get_node<Label>("PoolModal/Status")
-        ->set_text(i18n::text(
-            added  ? N_("Already added. Use Rejoin party for a reserved member.")
-            : full ? N_("All six PC positions are occupied.")
-            : (c == "Fighter" || c == "Cleric" || c == "Wizard")
-                ? N_("Starts with 250 gp. Preview portraits and both combat poses before adding.")
-                : N_("Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet.")));
+    ->set_text(i18n::text(
+                   added  ? N_("Already added. Use Rejoin party for a reserved member.")
+                   : full ? N_("All six PC positions are occupied.")
+                   : (c == "Fighter" || c == "Cleric" || c == "Wizard")
+                   ? N_("Starts with 250 gp. Preview portraits and both combat poses before adding.")
+                   : N_("Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet.")));
 }
 
 void CharacterCreationView::pool_add()

@@ -107,7 +107,7 @@ void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::Entity
                             rules::EntityId source);
 [[nodiscard]] bool has_attack_mastery(const EffectState &effects);
 [[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, std::uint64_t scope,
-                                            rules::EntityId source);
+        rules::EntityId source);
 void apply_attack_mastery(EffectState &, EffectKind, std::uint64_t scope, rules::EntityId source,
                           std::string name, unsigned duration_ms);
 void consume_attack_masteries(EffectState &attacker, EffectState &target, std::uint64_t scope,
@@ -118,7 +118,7 @@ void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId 
                      std::string name, int dc, unsigned first_save_ms);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);
 [[nodiscard]] RollModifiers attack_modifiers(bool attacker_blind, bool target_blind,
-                                             bool target_dodging, bool other_disadvantage);
+        bool target_dodging, bool other_disadvantage);
 // All subjects share one chronological event queue. Advancing 12 seconds once
 // must consume exactly the same rolls as advancing 1 second twelve times.
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,

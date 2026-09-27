@@ -11,7 +11,7 @@ namespace opengold::srd5::detail
 namespace
 {
 constexpr std::array<std::string_view, 6> abilities{"strength",     "dexterity", "constitution",
-                                                    "intelligence", "wisdom",    "charisma"};
+    "intelligence", "wisdom",    "charisma"};
 
 void require(bool value)
 {
@@ -31,7 +31,7 @@ std::string grant_source_id(std::string_view label)
 }
 
 std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::string_view race,
-                                                 std::string_view background)
+        std::string_view background)
 {
     std::vector<rules::FeatureGrant> result;
     if (background == "criminal")
@@ -80,22 +80,27 @@ rules::FeatureGrant advancement_grant(std::string_view klass, unsigned level,
 
 std::vector<rules::AdvancementOption> fighting_styles()
 {
-    return {
+    return
+    {
         {"defense", "Defense", "+1 AC while wearing armor."},
         {"archery", "Archery", "+2 to attack rolls with Ranged weapons."},
-        {"great_weapon_fighting", "Great Weapon Fighting",
-         "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands."},
-        {"two_weapon_fighting", "Two-Weapon Fighting",
-         "Add your ability modifier to the extra attack granted by the Light property."}};
+        {
+            "great_weapon_fighting", "Great Weapon Fighting",
+            "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands."
+        },
+        {
+            "two_weapon_fighting", "Two-Weapon Fighting",
+            "Add your ability modifier to the extra attack granted by the Light property."
+        }};
 }
 
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
 {
     return std::any_of(grants.begin(), grants.end(),
-                       [&](const auto &grant)
-                       {
-                           return grant.id == id;
-                       });
+                       [&](const auto & grant)
+    {
+        return grant.id == id;
+    });
 }
 
 GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::string_view klass,
@@ -111,26 +116,26 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     auto required = starting_grants(klass, race, background);
     if (!alert)
         std::erase_if(required,
-                      [](const auto &g)
-                      {
-                          return g.id == "feat:alert";
-                      });
+                      [](const auto & g)
+    {
+        return g.id == "feat:alert";
+    });
     if (style_routes && (klass == "paladin" || klass == "ranger") && level >= 2)
         required.push_back({"feature:fighting_style", "class:" + std::string(klass), 2, {}});
     if (!rogue_attacks)
         std::erase_if(required,
-                      [](const auto &g)
-                      {
-                          return g.id == "feature:sneak_attack";
-                      });
+                      [](const auto & g)
+    {
+        return g.id == "feature:sneak_attack";
+    });
     if (rogue_attacks && klass == "rogue" && level >= 3)
         required.push_back({"feature:steady_aim", "class:rogue", 3, {}});
     if (!arcane_recovery)
         std::erase_if(required,
-                      [](const auto &g)
-                      {
-                          return g.id == "feature:arcane_recovery";
-                      });
+                      [](const auto & g)
+    {
+        return g.id == "feature:arcane_recovery";
+    });
     if (klass == "rogue" && level >= 2)
         required.push_back({"feature:cunning_action", "class:rogue", 2, {}});
     if (action_surge && klass == "fighter" && level >= 2)
@@ -145,16 +150,16 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     }
     if (!damage_traits)
         std::erase_if(required,
-                      [](const auto &g)
-                      {
-                          return g.id == "trait:dwarven_resilience";
-                      });
+                      [](const auto & g)
+    {
+        return g.id == "trait:dwarven_resilience";
+    });
     if (!rush_trait)
         std::erase_if(required,
-                      [](const auto &g)
-                      {
-                          return g.id == "trait:adrenaline_rush";
-                      });
+                      [](const auto & g)
+    {
+        return g.id == "trait:adrenaline_rush";
+    });
     std::set<std::string> nonrepeatable;
     std::set<std::pair<std::string, unsigned>> entitlements;
     GrantEffects effects;
@@ -189,7 +194,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
                      (style_routes && (klass == "paladin" || klass == "ranger"))) &&
                     grant.level == 4 &&
                     grant.source_id ==
-                        "class:" + std::string(klass) + ":ability_score_improvement");
+                    "class:" + std::string(klass) + ":ability_score_improvement");
             require(entitlements.emplace(grant.source_id, grant.level).second);
             ++advancement_count;
             if (grant.id == "feat:ability_score_improvement")
@@ -209,8 +214,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
             {
                 require(grant.choices.empty());
                 if (grant.id == "feat:defense" || (archery && grant.id == "feat:archery") ||
-                    (style_routes && grant.id == "feat:great_weapon_fighting") ||
-                    (two_weapon_fighting && grant.id == "feat:two_weapon_fighting"))
+                        (style_routes && grant.id == "feat:great_weapon_fighting") ||
+                        (two_weapon_fighting && grant.id == "feat:two_weapon_fighting"))
                     require(has_grant(grants, "feature:fighting_style"));
                 else
                     require(grant.id == "feat:savage_attacker" ||

@@ -13,7 +13,7 @@ void check(bool ok, const char *message)
 }
 
 const Concentration first{{7, 1, 9}, 600000},
-    second{{7, 2, 9}, 600000}; // Silence's maximum duration.
+second{{7, 2, 9}, 600000}; // Silence's maximum duration.
 
 void lifecycle()
 {
@@ -24,8 +24,11 @@ void lifecycle()
     other.begin({{8, 1, 9}, 1000});
     check(other.end() == ConcentrationSource{8, 1, 9} && state.active(),
           "Separate encounter/owner state stays independent");
-    for (auto invalid : {Concentration{{0, 1, 9}, 1}, Concentration{{7, 0, 9}, 1},
-                         Concentration{{7, 1, 0}, 1}, Concentration{{7, 1, 9}, 0}})
+    for (auto invalid :
+            {
+    Concentration{{0, 1, 9}, 1}, Concentration{{7, 0, 9}, 1},
+Concentration{{7, 1, 0}, 1}, Concentration{{7, 1, 9}, 0}
+        })
     {
         auto before = state;
         bool rejected = false;
@@ -95,12 +98,14 @@ void persistence()
     check(a == b && left.save->natural == right.save->natural && encode(state) == encode(restored),
           "Same external RNG and saved state give exact damage continuation");
     check(state.elapse(598766) == first.source && restored.elapse(598766) == first.source &&
-              state == restored,
+          state == restored,
           "Restored expiry removes identical source");
-    for (const char *bad : {"", "CN2 0", "CN1 -1", "CN1 2", "CN1 1", "CN1 1 0 1 9 1",
-                            "CN1 1 7 0 9 1", "CN1 1 7 1 0 1", "CN1 1 7 1 9 0", "CN1 1 7 1 9 -1",
-                            "CN1 1 -7 1 9 1", "CN1 1 7 1 9 18446744073709551616",
-                            "CN1 1 7 1 4294967296 1", "CN1 1 7 1 9 12junk", "CN1 0 trailing"})
+    for (const char *bad :
+            {"", "CN2 0", "CN1 -1", "CN1 2", "CN1 1", "CN1 1 0 1 9 1",
+             "CN1 1 7 0 9 1", "CN1 1 7 1 0 1", "CN1 1 7 1 9 0", "CN1 1 7 1 9 -1",
+             "CN1 1 -7 1 9 1", "CN1 1 7 1 9 18446744073709551616",
+             "CN1 1 7 1 4294967296 1", "CN1 1 7 1 9 12junk", "CN1 0 trailing"
+            })
     {
         state.begin(first);
         auto before = state;
@@ -121,7 +126,10 @@ void persistence()
 
 void damage()
 {
-    for (int amount : {0, 1, 19, 20, 21, 22, 59, 60, 61, std::numeric_limits<int>::max()})
+    for (int amount :
+            {
+                0, 1, 19, 20, 21, 22, 59, 60, 61, std::numeric_limits<int>::max()
+            })
     {
         ConcentrationState state;
         state.begin(first);
@@ -129,7 +137,7 @@ void damage()
         const auto result = state.damage(amount, 100, {}, false, random);
         const int expected = amount < 22 ? 10 : amount == 22 ? 11 : amount == 59 ? 29 : 30;
         check(amount ? result.save && result.save->dc == expected && !result.ended
-                     : !result.save && !result.ended,
+              : !result.save && !result.ended,
               "Independent damage DC boundaries and zero damage");
         check(random == (amount ? 13 + 0x9e3779b97f4a7c15ULL : 13),
               "Exactly one save draw for positive damage");
@@ -138,7 +146,10 @@ void damage()
     bool one = false, twenty = false;
     for (unsigned seed = 0; seed < 200; ++seed)
     {
-        for (int bonus : {-100, 100})
+        for (int bonus :
+                {
+                    -100, 100
+                })
         {
             ConcentrationState state;
             state.begin(first);
@@ -154,14 +165,16 @@ void damage()
     }
     check(one && twenty, "Both natural extremes exercised");
     for (auto modifiers :
-         {RollModifiers{true, false}, RollModifiers{false, true}, RollModifiers{true, true}})
+            {
+                RollModifiers{true, false}, RollModifiers{false, true}, RollModifiers{true, true}
+            })
     {
         ConcentrationState state;
         state.begin(first);
         std::uint64_t random = 13;
         auto result = state.damage(25, 100, modifiers, false, random);
         check(result.save->mode == modifiers.mode() &&
-                  random == 13 + 0x9e3779b97f4a7c15ULL * (modifiers.mode() ? 2 : 1),
+              random == 13 + 0x9e3779b97f4a7c15ULL * (modifiers.mode() ? 2 : 1),
               "Shared advantage/disadvantage cancellation and draw count");
     }
     ConcentrationState state;

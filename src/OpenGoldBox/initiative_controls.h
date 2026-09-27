@@ -84,11 +84,12 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     const auto label = [&](unsigned id)
     {
         const auto a = std::find_if(state.combatants.begin(), state.combatants.end(),
-                                    [&](const auto &c)
-                                    {
-                                        return c.id == id;
-                                    });
-        return render(opengold::rules::Message{
+                                    [&](const auto & c)
+        {
+            return c.id == id;
+        });
+        return render(opengold::rules::Message
+        {
             N_("{name}: Initiative {total}"),
             {{"name", a->name}, {"total", std::to_string(a->initiative)}}});
     };

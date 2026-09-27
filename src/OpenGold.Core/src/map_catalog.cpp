@@ -24,10 +24,10 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
             const auto bank = name.substr(3, name.size() - 7);
             if (!std::all_of(bank.begin(), bank.end(),
                              [](char c)
-                             {
-                                 return c >= '0' && c <= '9';
-                             }))
-                continue;
+        {
+            return c >= '0' && c <= '9';
+        }))
+            continue;
             if (!archives.emplace(name, entry.path()).second)
                 throw MapError("Ambiguous map archive " + name);
         }

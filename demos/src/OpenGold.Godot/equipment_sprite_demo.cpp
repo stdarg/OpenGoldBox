@@ -36,7 +36,9 @@ void EquipmentSpriteDemo::_ready()
 {
     set_texture_filter(TEXTURE_FILTER_NEAREST);
     get_window()->set_min_size({1120, 800});
-    for (const char *name : {"Title", "Help", "ReadyLabel", "ActionLabel", "Equipment", "Status"})
+    for (const char *name :
+            {"Title", "Help", "ReadyLabel", "ActionLabel", "Equipment", "Status"
+            })
         presentation::add_control<Label>(*this, name, {});
     get_node<Label>("Title")->set_text("Equipment sprite demo");
     get_node<Label>("Title")->add_theme_font_size_override("font_size", 28);
@@ -44,7 +46,9 @@ void EquipmentSpriteDemo::_ready()
         "Double-click a weapon (or press Enter) to equip. Toggle the shield separately.");
     get_node<Label>("ReadyLabel")->set_text("Ready");
     get_node<Label>("ActionLabel")->set_text("Action");
-    for (const char *name : {"Equipment", "Status"})
+    for (const char *name :
+            {"Equipment", "Status"
+            })
         get_node<Label>(name)->set("autowrap_mode", 3);
     auto *list = presentation::add_control<ItemList>(*this, "Items", {});
     list->connect("item_selected", callable_mp(this, &EquipmentSpriteDemo::select));
@@ -54,7 +58,10 @@ void EquipmentSpriteDemo::_ready()
     shield->set_text("Shield: Off");
     shield->set_disabled(true);
     shield->connect("pressed", callable_mp(this, &EquipmentSpriteDemo::toggle_shield));
-    for (bool equip : {true, false})
+    for (bool equip :
+            {
+                true, false
+            })
     {
         auto *button = presentation::add_control<Button>(*this, equip ? "Equip" : "Unequip", {});
         button->set_text(equip ? "Equip" : "Unequip");
@@ -62,7 +69,9 @@ void EquipmentSpriteDemo::_ready()
                         callable_mp(this, &EquipmentSpriteDemo::change_equipment).bind(equip));
         button->set_disabled(true);
     }
-    for (const char *name : {"Ready", "Action"})
+    for (const char *name :
+            {"Ready", "Action"
+            })
     {
         auto *preview = presentation::add_control<TextureRect>(*this, name, {});
         preview->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
@@ -97,10 +106,10 @@ void EquipmentSpriteDemo::_ready()
         appearance.combat_body = 24;
         Character character(*srd5::character_rules(), draft, appearance);
         campaign_ = std::make_unique<CampaignParty>(
-            srd5::load(path(ProjectSettings::get_singleton()->globalize_path(
-                "res://../../data/rules/srd-5.2.1/combat.rules"))));
+                        srd5::load(path(ProjectSettings::get_singleton()->globalize_path(
+                                            "res://../../data/rules/srd-5.2.1/combat.rules"))));
         std::set<int> seen;
-        const auto add = [&](int type, const std::string &name)
+        const auto add = [&](int type, const std::string & name)
         {
             if (type < 1 || !seen.insert(type).second)
                 return;
@@ -165,7 +174,7 @@ void EquipmentSpriteDemo::_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && key->is_ctrl_pressed() &&
-        key->get_keycode() == KEY_X)
+            key->get_keycode() == KEY_X)
         get_tree()->quit();
 }
 
@@ -245,17 +254,20 @@ void EquipmentSpriteDemo::refresh()
     get_node<Button>("Equip")->set_disabled(equipped);
     get_node<Button>("Unequip")->set_disabled(!equipped);
     const auto resolved = por::resolve_combat_appearance(member, catalog_);
-    for (bool action : {false, true})
+    for (bool action :
+            {
+                false, true
+            })
         get_node<TextureRect>(action ? "Action" : "Ready")
-            ->set_texture(presentation::image_texture(resolved.icon(*art_, action)));
+        ->set_texture(presentation::image_texture(resolved.icon(*art_, action)));
     set_meta("body", resolved.appearance.combat_body);
     set_meta("equipment_body", resolved.selection.body);
     get_node<Label>("Equipment")
-        ->set_text(
-            gs(resolved.selection.label + "\nCharacter body " +
-               std::to_string(resolved.appearance.combat_body) +
-               (resolved.selection.matched ? "" : " - No artwork assignment; showing unarmed.") +
-               "\nOriginal pixels, enlarged. Both poses use the same scale."));
+    ->set_text(
+        gs(resolved.selection.label + "\nCharacter body " +
+           std::to_string(resolved.appearance.combat_body) +
+           (resolved.selection.matched ? "" : " - No artwork assignment; showing unarmed.") +
+           "\nOriginal pixels, enlarged. Both poses use the same scale."));
 }
 
 void EquipmentSpriteDemo::change_equipment(bool equip)

@@ -73,7 +73,8 @@ void color_button(Button &button, unsigned index, bool selected)
     const auto foreground =
         color.r * .299 + color.g * .587 + color.b * .114 > .5 ? Color("101820") : Color("ffffff");
     for (const char *state :
-         {"font_color", "font_hover_color", "font_pressed_color", "font_focus_color"})
+            {"font_color", "font_hover_color", "font_pressed_color", "font_focus_color"
+            })
         button.add_theme_color_override(state, foreground);
 }
 
@@ -103,8 +104,8 @@ std::vector<std::uint8_t> archive(const std::filesystem::path &directory, std::s
     std::ifstream input(*path, std::ios::binary);
     std::vector<std::uint8_t> bytes(static_cast<std::size_t>(size));
     if (!input ||
-        !input.read(reinterpret_cast<char *>(bytes.data()), static_cast<std::streamsize>(size)) ||
-        input.peek() != EOF)
+            !input.read(reinterpret_cast<char *>(bytes.data()), static_cast<std::streamsize>(size)) ||
+            input.peek() != EOF)
         throw std::runtime_error("Cannot read art archive: " + std::string(wanted));
     return bytes;
 }
@@ -166,7 +167,7 @@ void CombatSpriteDemo::create_controls()
         result->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
         return result;
     };
-    const auto button = [&](const char *name, const char *text, const Callable &pressed)
+    const auto button = [&](const char *name, const char *text, const Callable & pressed)
     {
         auto *result = presentation::add_control<Button>(*this, name, {});
         result->set_text(gs(text));
@@ -175,7 +176,7 @@ void CombatSpriteDemo::create_controls()
         return result;
     };
     label("Title", "Combat sprite scale demo", 27)
-        ->add_theme_color_override("font_color", Color("e6c28a"));
+    ->add_theme_color_override("font_color", Color("e6c28a"));
     label(
         "Subtitle",
         "Compare original sprite sizes on the same battlefield. All poses change together every second.");
@@ -189,13 +190,13 @@ void CombatSpriteDemo::create_controls()
     label("Head", "");
     label("Body", "");
     button("HeadPrevious", "‹", callable_mp(this, &CombatSpriteDemo::change_part).bind(0, -1))
-        ->set_tooltip_text(gs("Previous head"));
+    ->set_tooltip_text(gs("Previous head"));
     button("HeadNext", "›", callable_mp(this, &CombatSpriteDemo::change_part).bind(0, 1))
-        ->set_tooltip_text(gs("Next head"));
+    ->set_tooltip_text(gs("Next head"));
     button("BodyPrevious", "‹", callable_mp(this, &CombatSpriteDemo::change_part).bind(1, -1))
-        ->set_tooltip_text(gs("Previous weapon"));
+    ->set_tooltip_text(gs("Previous weapon"));
     button("BodyNext", "›", callable_mp(this, &CombatSpriteDemo::change_part).bind(1, 1))
-        ->set_tooltip_text(gs("Next weapon"));
+    ->set_tooltip_text(gs("Next weapon"));
     label("Color1", "Color-1");
     label("Color2", "Color-2");
     for (unsigned part = 0; part < 6; ++part)
@@ -262,20 +263,23 @@ void CombatSpriteDemo::load_art()
     }
     battlefield_ = opengold::por::dungeon_battlefield(map, 8, 8);
     figures_ = {{"SmallPlayer", "Short player", {23, 13}},
-                {"NormalPlayer", "Human", {25, 13}},
-                {"GoliathStretched", "1 — Goliath, stretched", {28, 12}, {1, 2}, Sizing::stretched},
-                {"GoliathProportional",
-                 "2 — Goliath, proportional",
-                 {31, 12},
-                 {1, 2},
-                 Sizing::proportional}};
+        {"NormalPlayer", "Human", {25, 13}},
+        {"GoliathStretched", "1 — Goliath, stretched", {28, 12}, {1, 2}, Sizing::stretched},
+        {
+            "GoliathProportional",
+            "2 — Goliath, proportional",
+            {31, 12},
+            {1, 2},
+            Sizing::proportional
+        }
+    };
     // Deliberate art-review selections, not gameplay monster-to-art bindings.
     const auto monsters = archive(directory, "CPIC2.DAX");
     constexpr std::array<unsigned, 5> records{0, 2, 4, 26, 31};
     const std::array<Vector2, 5> cells{{{23, 10}, {25, 10}, {28, 10}, {23, 16}, {28, 16}}};
     constexpr std::array<const char *, 5> names{"Kobold", "Goblin", "Orc", "Basilisk", "Troll"};
     constexpr std::array<const char *, 5> nodes{"Monster0", "Monster1", "Monster2", "Monster3",
-                                                "Monster4"};
+            "Monster4"};
     for (unsigned i = 0; i < records.size(); ++i)
     {
         Figure figure{nodes[i], names[i], cells[i]};
@@ -336,8 +340,8 @@ void CombatSpriteDemo::refresh_colors()
     get_node<Label>("Body")->set_text(gs("Weapon ") +
                                       String::num_int64(appearance_.combat_body + 1) + " / 35");
     get_node<Label>("PaletteHint")
-        ->set_text(gs(presentation::character_regions[color_part_]) + " / Color-" +
-                   String::num_int64(color_bank_ + 1) + ": choose a color");
+    ->set_text(gs(presentation::character_regions[color_part_]) + " / Color-" +
+               String::num_int64(color_bank_ + 1) + ": choose a color");
     for (unsigned bank = 0; bank < 2; ++bank)
         for (unsigned part = 0; part < 6; ++part)
         {
@@ -346,8 +350,8 @@ void CombatSpriteDemo::refresh_colors()
             const bool available = present(bank, part);
             button->set_disabled(!available);
             button->set_text(gs(available
-                                    ? presentation::character_colors[appearance_.colors[bank][part]]
-                                    : "Not present"));
+                                ? presentation::character_colors[appearance_.colors[bank][part]]
+                                : "Not present"));
             color_button(*button, appearance_.colors[bank][part],
                          color_bank_ == bank && color_part_ == part);
         }
@@ -362,9 +366,13 @@ void CombatSpriteDemo::refresh_figures()
     get_node<Label>("Zoom")->set_text(gs("Zoom ") + String::num_int64(zoom_) + "%");
     get_node<Label>("Pose")->set_text(
         gs(action_ ? "Action pose · 1 second" : "Ready pose · 1 second"));
-    for (const char *name : {"Minus100", "Minus10"})
+    for (const char *name :
+            {"Minus100", "Minus10"
+            })
         get_node<Button>(name)->set_disabled(zoom_ == min_zoom);
-    for (const char *name : {"Plus100", "Plus10"})
+    for (const char *name :
+            {"Plus100", "Plus10"
+            })
         get_node<Button>(name)->set_disabled(zoom_ == max_zoom);
     String sizes = "[b]" + gs("Sprite dimensions — source → displayed pixels") + "[/b]\n";
     for (unsigned i = 0; i < figures_.size(); ++i)
@@ -379,7 +387,7 @@ void CombatSpriteDemo::refresh_figures()
         {
             const double height_scale = goliath_height * tile_pixels / bounds.size.y;
             art_scale = Vector2(figure.sizing == Sizing::stretched ? tile_pixels / bounds.size.x
-                                                                   : height_scale,
+                                : height_scale,
                                 height_scale);
         }
         Rect2 sprite_rect(figure.cell * tile_pixels * scale, source * scale);
@@ -388,7 +396,7 @@ void CombatSpriteDemo::refresh_figures()
             const double tile = tile_pixels * scale;
             const Rect2 occupied(figure.cell * tile + Vector2(0, tile), Vector2(tile, tile));
             sprite_rect = presentation::bottom_aligned_sprite(
-                source, bounds, occupied, bounds.size * art_scale / tile_pixels);
+                              source, bounds, occupied, bounds.size * art_scale / tile_pixels);
         }
         sprite->set_texture(texture);
         sprite->set_position(sprite_rect.position);
@@ -420,8 +428,8 @@ void CombatSpriteDemo::layout()
     place("Title", {24, 16, size.x - 48, 36});
     place("Subtitle", {24, 58, size.x - 48, 30});
     for (unsigned i = 0; i < 4; ++i)
-        place(std::array<const char *, 4>{"Minus100", "Minus10", "Plus10", "Plus100"}[i],
-              {24 + i * 100.0f, 98, 92, 38});
+        place(std::array<const char *, 4> {"Minus100", "Minus10", "Plus10", "Plus100"} [i],
+    {24 + i * 100.0f, 98, 92, 38});
     place("Zoom", {436, 100, 160, 34});
     place("Pose", {24, 144, left, 28});
     place("BattlefieldScroll", {24, 182, left, size.y - 460});
@@ -441,20 +449,20 @@ void CombatSpriteDemo::layout()
         place(gs("Part" + std::to_string(part)), {right, 266 + part * 38.0f, 120, 34});
         for (unsigned bank = 0; bank < 2; ++bank)
             place(gs("Color" + std::to_string(bank) + "_" + std::to_string(part)),
-                  {right + 124 + bank * 160.0f, 266 + part * 38.0f, 148, 34});
+        {right + 124 + bank * 160.0f, 266 + part * 38.0f, 148, 34});
     }
     place("PaletteHint", {right, 500, sidebar, 40});
     for (unsigned index = 0; index < 16; ++index)
         place(gs("Palette" + std::to_string(index)),
-              {right + (index % 8) * 55.0f, 546 + (index / 8) * 44.0f, 48, 38});
+    {right + (index % 8) * 55.0f, 546 + (index / 8) * 44.0f, 48, 38});
     place("AppearanceHelp", {right, 636, sidebar, 46});
     place("GoliathHelp", {right, 692, sidebar, 70});
     if (loaded_)
     {
         get_node<Control>("BattlefieldScroll/Canvas")
-            ->set_custom_minimum_size(
-                Vector2(battlefield_.geometry.width, battlefield_.geometry.height) * tile_pixels *
-                (zoom_ / 100.0));
+        ->set_custom_minimum_size(
+            Vector2(battlefield_.geometry.width, battlefield_.geometry.height) * tile_pixels *
+            (zoom_ / 100.0));
         center_pending_ = true;
         refresh_figures();
     }
@@ -508,7 +516,8 @@ void CombatSpriteDemo::draw_map()
         }
         if (i < player_count && tile >= 24)
         {
-            constexpr std::array<const char *, player_count> captions{
+            constexpr std::array<const char *, player_count> captions
+            {
                 "Short", "Human", "1 — Stretched", "2 — Proportional"};
             // draw_string's optional TextServer enums are omitted from the demo's trimmed bindings.
             canvas->call("draw_string", get_theme_default_font(),
@@ -591,7 +600,7 @@ void CombatSpriteDemo::_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && key->is_ctrl_pressed() &&
-        key->get_keycode() == KEY_S)
+            key->get_keycode() == KEY_S)
     {
         get_viewport()->set_input_as_handled();
         request_capture();
@@ -627,14 +636,14 @@ void CombatSpriteDemo::capture_frame()
         const auto stamp =
             Time::get_singleton()->get_datetime_string_from_system(true).replace(":", "-");
         path = directory.path_join(
-            stamp + gs("-") + String::num_int64(OS::get_singleton()->get_process_id()) + "-" +
-            String::num_uint64(Time::get_singleton()->get_ticks_usec()) + ".png");
+                   stamp + gs("-") + String::num_int64(OS::get_singleton()->get_process_id()) + "-" +
+                   String::num_uint64(Time::get_singleton()->get_ticks_usec()) + ".png");
         const auto image = get_viewport()->get_texture()->get_image();
         if (image.is_null() || image->save_png(path) != OK)
             error = "Cannot save screenshot.";
     }
     get_node<Label>("Status")->set_text(error.is_empty() ? gs("Screenshot saved (Ctrl+S).")
-                                                         : error);
+                                        : error);
     get_node<Label>("Status")->set_tooltip_text(path);
     emit_signal("capture_completed", path, error);
 }

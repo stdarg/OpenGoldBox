@@ -9,7 +9,7 @@ inline godot::String hp_color(int hp, int maximum)
 {
     return hp <= 0 || std::int64_t(hp) * 5 <= maximum ? "#f08080"
            : hp < maximum                             ? "#f3d55b"
-                                                      : "#80d99a";
+           : "#80d99a";
 }
 
 inline godot::String bbcode_literal(const godot::String &value)
@@ -20,8 +20,8 @@ inline godot::String bbcode_literal(const godot::String &value)
 inline godot::String temporary_hp_source(const opengold::rules::TemporaryHitPoints &pool)
 {
     return pool.source_id == "species:orc/trait:adrenaline_rush"
-               ? i18n::text("Orc / Adrenaline Rush")
-               : godot::String::utf8(pool.source_id.c_str());
+           ? i18n::text("Orc / Adrenaline Rush")
+           : godot::String::utf8(pool.source_id.c_str());
 }
 
 inline godot::String hp_hint(int hp, int maximum, bool dead,
@@ -33,8 +33,8 @@ inline godot::String hp_hint(int hp, int maximum, bool dead,
         if (!hint.is_empty())
             hint += "\n";
         hint += i18n::format(
-            "Missing HP: {amount}. Damage and other HP losses are not individually recorded.",
-            {{"amount", maximum - hp}});
+                    "Missing HP: {amount}. Damage and other HP losses are not individually recorded.",
+        {{"amount", maximum - hp}});
     }
     if (dead || hp == 0)
     {
@@ -60,19 +60,19 @@ inline godot::String hp_text(int hp, int maximum, bool dead,
                              const std::vector<opengold::rules::Message> &sources)
 {
     auto text = hp_hint_tag(
-        hp_hint(hp, maximum, dead, sources),
-        "[color=" + hp_color(hp, maximum) + "]" +
-            i18n::format("HP {current} / {maximum}", {{"current", hp}, {"maximum", maximum}}) +
-            "[/color]");
+                    hp_hint(hp, maximum, dead, sources),
+                    "[color=" + hp_color(hp, maximum) + "]" +
+    i18n::format("HP {current} / {maximum}", {{"current", hp}, {"maximum", maximum}}) +
+    "[/color]");
     if (pool.amount)
     {
         const auto hint = i18n::format(
-            "Temporary HP from {source}. Absorbs damage before ordinary HP; does not heal or stack.",
-            {{"source", temporary_hp_source(pool)}});
+                              "Temporary HP from {source}. Absorbs damage before ordinary HP; does not heal or stack.",
+        {{"source", temporary_hp_source(pool)}});
         text += "   " +
                 hp_hint_tag(hint, "[color=#80d99a]" +
-                                      i18n::format("Temp HP {amount}", {{"amount", pool.amount}}) +
-                                      "[/color]");
+        i18n::format("Temp HP {amount}", {{"amount", pool.amount}}) +
+        "[/color]");
     }
     return text;
 }

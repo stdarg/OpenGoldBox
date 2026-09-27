@@ -31,8 +31,8 @@ void terminate(godot::ModuleInitializationLevel)
 extern "C"
 {
     GDExtensionBool GDE_EXPORT opengold_library_init(
-        GDExtensionInterfaceGetProcAddress get_proc_address,
-        const GDExtensionClassLibraryPtr library, GDExtensionInitialization *initialization)
+    GDExtensionInterfaceGetProcAddress get_proc_address,
+    const GDExtensionClassLibraryPtr library, GDExtensionInitialization *initialization)
     {
         // Pointers above are borrowed C ABI arguments owned by Godot.
         godot::GDExtensionBinding::InitObject init(get_proc_address, library, initialization);

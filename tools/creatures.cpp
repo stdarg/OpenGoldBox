@@ -74,7 +74,7 @@ void print(const opengold::por::Creature &c)
             modifier("  Armor base AC", item.bonuses.armor_base_ac);
         if (item.bonuses.ac_adjustment)
             modifier("  Item AC adjustment", item.bonuses.ac_adjustment);
-        if (item.stored.effect_codes != std::array<std::uint8_t, 3>{})
+        if (item.stored.effect_codes != std::array<std::uint8_t, 3> {})
         {
             std::cout << "    Item activation/effect bytes (not SPC IDs):";
             for (auto code : item.stored.effect_codes)
@@ -127,8 +127,8 @@ int main(int argc, char **argv)
     {
         const auto catalog = opengold::por::CreatureCatalog::load(argv[1]);
         std::cout
-            << "Loaded " << catalog.all().size() << " monster/NPC records.\n"
-            << "Template statistics and separate modifier contributions; no encounter/effect stacking applied.\n\n";
+                << "Loaded " << catalog.all().size() << " monster/NPC records.\n"
+                << "Template statistics and separate modifier contributions; no encounter/effect stacking applied.\n\n";
         if (argc == 3)
         {
             const auto matches = catalog.find_by_name(argv[2]);

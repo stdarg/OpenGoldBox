@@ -32,7 +32,7 @@ void rejects(std::string_view bytes)
 
 constexpr auto header = "OPENGOLD_SRD5 1 synthetic.1\n";
 constexpr std::array<int, 19> definition{12, 11, 1,  30,  3, 1, 6, 1, 3, 1,
-                                         8,  1,  80, 320, 0, 0, 0, 1, 0};
+    8,  1,  80, 320, 0, 0, 0, 1, 0};
 
 std::string row(std::array<int, 19> values = definition)
 {
@@ -55,13 +55,13 @@ void standalone_rest_rules()
           "Sleep advances without early benefits");
     step = module->interrupt_rest(*step.progress, RestInterruption::damage);
     check(step.progress && step.progress->interrupted && step.benefit == RestBenefit::short_rest &&
-              module->remaining_rest(*step.progress) == 470 * 60000,
+          module->remaining_rest(*step.progress) == 470 * 60000,
           "SRD library determines interruption and benefits");
     progress = module->resume_rest(*step.progress);
     module->validate_rest(progress);
     step = module->advance_rest(progress, module->remaining_rest(progress), progress.work);
     check(!step.progress && step.benefit == RestBenefit::long_rest &&
-              step.completed_duration_milliseconds == 540 * 60000,
+          step.completed_duration_milliseconds == 540 * 60000,
           "Standalone SRD library completes the extended rest");
     progress = module->begin_rest(RestKind::short_rest);
     check(!module->interrupt_rest(progress, RestInterruption::initiative).progress,
@@ -70,8 +70,10 @@ void standalone_rest_rules()
 
 void malformed_content()
 {
-    for (const auto *invalid : {"", "OPENGOLD_SRD5", "OPENGOLD_SRD5 2 synthetic.1\n",
-                                "OTHER 1 synthetic.1\n", "OPENGOLD_SRD5 1 synthetic.1 extra\n"})
+    for (const auto *invalid :
+            {"", "OPENGOLD_SRD5", "OPENGOLD_SRD5 2 synthetic.1\n",
+             "OTHER 1 synthetic.1\n", "OPENGOLD_SRD5 1 synthetic.1 extra\n"
+            })
         rejects(std::string(invalid) + row());
     rejects(header);
     rejects(std::string(header) + "# comments without definitions\n");
@@ -89,14 +91,20 @@ void malformed_content()
                                        20, 30,   320, 600, 10, 20, 30, 4,  7};
     for (std::size_t i = 0; i < definition.size(); ++i)
     {
-        for (auto boundary : {low[i], high[i]})
+        for (auto boundary :
+                {
+                    low[i], high[i]
+                })
         {
             auto values = definition;
             values[i] = boundary;
             check(bool(srd5::parse_content(std::string(header) + row(values))),
                   "Valid field boundary accepts");
         }
-        for (auto invalid : {low[i] - 1, high[i] + 1})
+        for (auto invalid :
+                {
+                    low[i] - 1, high[i] + 1
+                })
         {
             auto values = definition;
             values[i] = invalid;
@@ -130,7 +138,8 @@ void identities_and_sessions()
     changed[1] = 12;
     check(module->identity() != srd5::parse_content(std::string(header) + row(changed))->identity(),
           "Changing mechanics changes rules identity");
-    rules::Encounter encounter{
+    rules::Encounter encounter
+    {
         {4, 4, std::vector<std::uint8_t>(16)},
         {{1, "bandit", "Ally", 0, {0, 0}}, {2, "bandit", "Enemy", 1, {3, 3}}}};
     const auto checkpoint = module->create(encounter, 42)->save();

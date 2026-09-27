@@ -36,8 +36,8 @@ void ScreenshotService::_ready()
     set_process_mode(PROCESS_MODE_ALWAYS);
     const auto override = OS::get_singleton()->get_environment("OPENGOLD_SCREENSHOT_DIR");
     directory_ = override.is_empty()
-                     ? ProjectSettings::get_singleton()->globalize_path("user://screenshots")
-                     : override;
+                 ? ProjectSettings::get_singleton()->globalize_path("user://screenshots")
+                 : override;
     if (!directory_.is_absolute_path())
     {
         UtilityFunctions::printerr("OPENGOLD_SCREENSHOT_DIR must be an absolute path");
@@ -58,7 +58,10 @@ void ScreenshotService::_ready()
     Ref<StyleBoxFlat> style;
     style.instantiate();
     style->set_bg_color(Color(.04, .05, .08, .96));
-    for (auto side : {SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM})
+    for (auto side :
+            {
+                SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM
+            })
     {
         style->set_content_margin(side, 14);
         style->set_border_width(side, 1);
@@ -122,7 +125,7 @@ bool ScreenshotService::request_capture()
     get_node<PanelContainer>("NoticeLayer/Notice")->hide();
     notice_time_ = 0;
     if (directory_.is_empty() || DirAccess::make_dir_recursive_absolute(directory_) != OK ||
-        !DirAccess::dir_exists_absolute(directory_))
+            !DirAccess::dir_exists_absolute(directory_))
     {
         complete({}, i18n::text("Cannot create the screenshots folder."));
         return true;
@@ -134,8 +137,8 @@ bool ScreenshotService::request_capture()
     }
     // Read back the next completed frame, after any preceding notice is hidden.
     const auto error = RenderingServer::get_singleton()->connect(
-        "frame_post_draw", callable_mp(this, &ScreenshotService::capture_frame),
-        Object::CONNECT_ONE_SHOT);
+                           "frame_post_draw", callable_mp(this, &ScreenshotService::capture_frame),
+                           Object::CONNECT_ONE_SHOT);
     if (error != OK)
         complete({}, i18n::text("Cannot capture the current game frame."));
     return true;
@@ -148,12 +151,12 @@ void ScreenshotService::capture_windows(Node &node, const String &prefix, Array 
     if (window && window->is_visible())
     {
         const auto texture = window->get_texture();
-        const auto image = texture.is_valid() ? texture->get_image() : Ref<Image>{};
+        const auto image = texture.is_valid() ? texture->get_image() : Ref<Image> {};
         const bool main = window == get_tree()->get_root();
         const auto path =
             prefix +
             (main ? String("-main.png")
-                  : String("-window-") + String::num_uint64(window->get_instance_id()) + ".png");
+             : String("-window-") + String::num_uint64(window->get_instance_id()) + ".png");
         if (image.is_null() || image->is_empty())
         {
             error = i18n::text("Cannot capture the current game frame.");
@@ -191,7 +194,8 @@ void ScreenshotService::capture_frame()
     {
         prefix = directory_.path_join(stamp + String("-") + process + String("-") +
                                       String::num_uint64(Time::get_singleton()->get_ticks_usec()));
-    } while (FileAccess::file_exists(prefix + "-main.png"));
+    }
+    while (FileAccess::file_exists(prefix + "-main.png"));
     Array files;
     String error;
     capture_windows(*get_tree()->get_root(), prefix, files, error);
@@ -235,8 +239,8 @@ void ScreenshotService::complete(const Array &files, String error)
     file_request_ = false;
     request_id_ = String();
     const auto message = error.is_empty()
-                             ? i18n::format("Screenshot saved to {path}", {{"path", directory_}})
-                             : error;
+    ? i18n::format("Screenshot saved to {path}", {{"path", directory_}})
+        : error;
     get_node<Label>("NoticeLayer/Notice/Text")->set_text(message);
     get_node<PanelContainer>("NoticeLayer/Notice")->show();
     notice_time_ = 5;

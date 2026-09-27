@@ -31,7 +31,7 @@ std::string strip_cr(std::string text)
 } // namespace
 
 CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignments,
-                                          const std::filesystem::path &options_file)
+        const std::filesystem::path &options_file)
 {
     CombatBodyCatalog result;
     std::ifstream options(options_file);
@@ -47,16 +47,17 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
         const auto first = line.find('\t'), second = line.find('\t', first + 1),
                    third = line.find('\t', second + 1);
         if (first == std::string::npos || second == std::string::npos ||
-            third == std::string::npos || line.find('\t', third + 1) != std::string::npos)
+                third == std::string::npos || line.find('\t', third + 1) != std::string::npos)
             throw std::runtime_error("Invalid combat look option row");
         const auto variant = strip_cr(line.substr(third + 1));
-        CombatLookOption option{
+        CombatLookOption option
+        {
             line.substr(0, first), line.substr(first + 1, second - first - 1),
             static_cast<int>(
-                index_field(std::string_view(line).substr(second + 1, third - second - 1), 256))};
+            index_field(std::string_view(line).substr(second + 1, third - second - 1), 256))};
         if (variant != "ordinary" || option.id.empty() || option.label.empty() ||
-            !keys.insert(option.id).second || !keys.insert(option.id + "_shield").second ||
-            !item_types.emplace(option.original_type).second)
+                !keys.insert(option.id).second || !keys.insert(option.id + "_shield").second ||
+                !item_types.emplace(option.original_type).second)
             throw std::runtime_error("Duplicate or invalid combat look option");
         result.options.push_back(std::move(option));
     }
@@ -103,13 +104,13 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
         ++count;
     }
     if (!in.eof() || count < 33 ||
-        !std::all_of(
-            seen.begin(), seen.begin() + 33,
-            [](bool present)
-            {
-                return present;
-            }))
-        throw std::runtime_error("Combat body catalog must contain all original 33 bodies");
+            !std::all_of(
+                seen.begin(), seen.begin() + 33,
+                [](bool present)
+{
+    return present;
+}))
+    throw std::runtime_error("Combat body catalog must contain all original 33 bodies");
     for (auto &body : result.bodies)
         for (const auto &key : result.deleted)
             body.erase(key);
@@ -117,7 +118,7 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
 }
 
 ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
-                                                   const CombatBodyCatalog &catalog)
+        const CombatBodyCatalog &catalog)
 {
     std::vector<CombatEquipment> equipped;
     equipped.reserve(member.equipped.size());
@@ -127,7 +128,7 @@ ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
         if (!item)
             throw std::runtime_error("Equipped item is missing");
         equipped.push_back(
-            {item->get().original_type, item->get().name, item->get().definition_id});
+        {item->get().original_type, item->get().name, item->get().definition_id});
     }
     auto appearance = member.character.appearance();
     auto selection = catalog.choose(equipped, appearance.combat_body);
@@ -141,7 +142,7 @@ Image ResolvedCombatAppearance::icon(const CharacterArt &art, bool action) const
 }
 
 CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> equipped,
-                                              unsigned fallback) const
+        unsigned fallback) const
 {
     bool shield = false;
     const CombatEquipment *weapon = nullptr;
@@ -169,10 +170,10 @@ CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> e
                     type = 44;
             }
             if (!weapon && std::any_of(options.begin(), options.end(),
-                                       [&](const auto &option)
-                                       {
-                                           return option.original_type == type;
-                                       }))
+                                       [&](const auto & option)
+        {
+            return option.original_type == type;
+        }))
             {
                 weapon = &item;
                 weapon_type = type;
@@ -181,10 +182,10 @@ CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> e
     }
     const auto type = weapon ? weapon_type : 0;
     const auto option = std::find_if(options.begin(), options.end(),
-                                     [&](const auto &value)
-                                     {
-                                         return value.original_type == type;
-                                     });
+                                     [&](const auto & value)
+    {
+        return value.original_type == type;
+    });
     const auto key = (option == options.end() ? "type_" + std::to_string(type) : option->id) +
                      (shield ? "_shield" : "");
     const auto label =

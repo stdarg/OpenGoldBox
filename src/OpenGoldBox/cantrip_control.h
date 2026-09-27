@@ -14,7 +14,9 @@ inline void setup_cantrip_controls(godot::Node &parent)
     box->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     box->add_theme_constant_override("separation", 12);
     auto *rows = attach_child(*scroll, std::move(box));
-    for (const char *name : {"Count", "Pending"})
+    for (const char *name :
+            {"Count", "Pending"
+            })
     {
         auto label = make_node<godot::Label>();
         label->set_name(name);
@@ -31,23 +33,23 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
     using namespace godot;
     auto *rows = parent.get_node<VBoxContainer>("SpellChoices/Rows");
     const auto group = creator.rules().cantrip_options(creator.draft());
-    const auto picked = creator.draft().cantrips.value_or(std::vector<std::string>{});
+    const auto picked = creator.draft().cantrips.value_or(std::vector<std::string> {});
     rows->get_node<Label>("Count")->set_text(tr(group.label) + " (" +
-                                             String::num_uint64(picked.size()) + " / " +
-                                             String::num_uint64(group.count) + ")");
+            String::num_uint64(picked.size()) + " / " +
+            String::num_uint64(group.count) + ")");
     rows->get_node<Label>("Pending")->set_text(tr(N_(
-        "Unfilled cantrip choices remain pending. More choices will become available as spell support expands.")));
+                "Unfilled cantrip choices remain pending. More choices will become available as spell support expands.")));
     rows->get_node<Label>("Pending")->set_visible(picked.size() < group.count);
     for (int i = 0; i < rows->get_child_count(); ++i)
         if (auto *check = Object::cast_to<CheckBox>(rows->get_child(i)))
         {
             const auto id = check->get_name();
             if (std::none_of(group.options.begin(), group.options.end(),
-                             [&](const auto &option)
-                             {
-                                 return training_string(option.id) == id;
-                             }))
-                check->hide();
+                             [&](const auto & option)
+        {
+            return training_string(option.id) == id;
+            }))
+            check->hide();
         }
     for (const auto &option : group.options)
     {

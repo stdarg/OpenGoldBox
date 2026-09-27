@@ -86,7 +86,7 @@ void SaveSlots::_ready()
     connect("close_requested", callable_mp(this, &SaveSlots::close));
     hide();
     directory_ = std::filesystem::u8path(
-        ProjectSettings::get_singleton()->globalize_path("user://saves").utf8().get_data());
+                     ProjectSettings::get_singleton()->globalize_path("user://saves").utf8().get_data());
 }
 
 void SaveSlots::open(bool saving)
@@ -98,7 +98,7 @@ void SaveSlots::open(bool saving)
     set_title(saving ? "Save game" : "Load game");
     get_node<Label>("Help")->set_text(
         saving ? "Select a save to overwrite, or enter a new name."
-               : "Select a save. Previous versions are available for recovery.");
+        : "Select a save. Previous versions are available for recovery.");
     auto *list = get_node<ItemList>("Slots");
     list->clear();
     try
@@ -186,7 +186,7 @@ void SaveSlots::act()
             pending_ = path;
             get_node<Label>("Status")->set_text(
                 saving_ ? "Overwrite this save? Its previous version will be retained."
-                        : "Load this save? Any unsaved campaign progress will be discarded.");
+                : "Load this save? Any unsaved campaign progress will be discarded.");
             get_node<Button>("Action")->set_text(saving_ ? "Overwrite" : "Confirm load");
             return;
         }

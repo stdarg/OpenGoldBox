@@ -15,19 +15,24 @@ void write(std::string_view name, const std::string &bytes)
 auto party()
 {
     CampaignParty p(light_attack_checks::rules());
-    for (const auto *klass : {"fighter", "rogue", "paladin", "ranger", "barbarian"})
+    for (const auto *klass :
+            {"fighter", "rogue", "paladin", "ranger", "barbarian"
+            })
     {
         auto h = light_attack_checks::hero_for(false, false, klass);
         h.inventory().add("dagger", "Dagger", 3);
         h.inventory().add("longsword", "Longsword");
         const bool recruited = p.state().roster.size() == 2 || p.state().roster.size() == 3;
         const auto id = recruited
-                            ? p.recruit(std::string("mastery-baseline:") + klass, std::move(h))
-                            : p.add_pc(std::move(h));
+                        ? p.recruit(std::string("mastery-baseline:") + klass, std::move(h))
+                        : p.add_pc(std::move(h));
         p.equip(id, 1);
     }
     p.award_experience(2700, "mastery-baseline");
-    for (const auto id : {1u, 2u, 3u, 4u})
+    for (const auto id :
+            {
+                1u, 2u, 3u, 4u
+            })
         for (unsigned level = 2; level <= 4; ++level)
             p.advance(id, p.default_advancement(id));
     auto state = p.checkpoint();
@@ -81,7 +86,7 @@ void verify()
     CampaignParty p(light_attack_checks::rules());
     p.restore(
         decode_campaign(old, *srd5::character_rules(), *module, "mastery-before", nullptr).party);
-    const auto body = [](const std::string &s)
+    const auto body = [](const std::string & s)
     {
         return s.substr(s.find('\n', s.find('\n') + 1) + 1);
     };

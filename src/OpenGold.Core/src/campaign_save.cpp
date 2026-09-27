@@ -36,7 +36,7 @@ struct SaveCodec
     unsigned version{11};
     std::stringstream stream;
     const rules::CharacterRules *creation{};
-    const rules::RulesModule *module{};
+    const rules::RulesModule *module {};
     rules::Identity saved_identity;
 
     explicit SaveCodec(std::string_view bytes) : reading(true), stream(std::string(bytes))
@@ -55,12 +55,12 @@ struct SaveCodec
     }
 
     template <class T>
-        requires std::is_integral_v<T>
+    requires std::is_integral_v<T>
     void field(T &value)
     {
         if (reading)
         {
-            if constexpr (std::is_signed_v<T>)
+            if constexpr(std::is_signed_v<T>)
             {
                 std::int64_t n{};
                 stream >> n;
@@ -73,17 +73,17 @@ struct SaveCodec
                 std::string token;
                 stream >> token;
                 require(!token.empty() &&
-                            token.find_first_not_of("0123456789") == std::string::npos,
+                        token.find_first_not_of("0123456789") == std::string::npos,
                         "Invalid save integer");
                 std::size_t used{};
                 auto n = std::stoull(token, &used);
                 require(used == token.size() &&
-                            n <= static_cast<std::uint64_t>(std::numeric_limits<T>::max()),
+                        n <= static_cast<std::uint64_t>(std::numeric_limits<T>::max()),
                         "Save integer out of range");
                 value = static_cast<T>(n);
             }
         }
-        else if constexpr (std::is_signed_v<T>)
+        else if constexpr(std::is_signed_v<T>)
             stream << static_cast<std::int64_t>(value) << ' ';
         else
             stream << static_cast<std::uint64_t>(value) << ' ';
@@ -238,7 +238,7 @@ struct SaveCodec
             require(v.next_id_ != 0, "Invalid next inventory ID");
             for (const auto &i : v.items_)
                 require(i.id && i.id < v.next_id_ && ids.insert(i.id).second && i.quantity &&
-                            !i.definition_id.empty() && !i.name.empty(),
+                        !i.definition_id.empty() && !i.name.empty(),
                         "Invalid inventory entry");
         }
     }
@@ -348,8 +348,8 @@ struct SaveCodec
             {
                 const auto source = v.item_sources.find(item.id);
                 if (source != v.item_sources.end() &&
-                    item.original_type == source->second.stored.type &&
-                    item.definition_id == "por:unsupported:" + std::to_string(item.original_type))
+                        item.original_type == source->second.stored.type &&
+                        item.definition_id == "por:unsupported:" + std::to_string(item.original_type))
                     item.definition_id = equipment_conversion(source->second);
             }
     }
@@ -399,7 +399,7 @@ struct SaveCodec
                     for (const auto &edit : training)
                     {
                         require(edit.level >= prior_level && edit.level <= unsigned(level) &&
-                                    edit.rest_session > prior_session,
+                                edit.rest_session > prior_session,
                                 "Invalid training replacement history");
                         prior_level = edit.level;
                         prior_session = edit.rest_session;
@@ -419,15 +419,15 @@ struct SaveCodec
                     }
                     auto replay = [&]
                     {
-                        for (const auto &edit : edits)
-                            if (edit.level == unsigned(character.sheet().level))
+for (const auto &edit : edits)
+                        if (edit.level == unsigned(character.sheet().level))
                                 character.choose_spells(*module, edit.choices, edit.rest_session,
                                                         false);
-                        for (const auto &edit : training)
-                            if (edit.level == unsigned(character.sheet().level))
-                                character.replace_rest_training(*module, edit.selections,
-                                                                edit.rest_session);
-                    };
+for (const auto &edit : training)
+                                if (edit.level == unsigned(character.sheet().level))
+                                        character.replace_rest_training(*module, edit.selections,
+                                                                        edit.rest_session);
+                                    };
                     replay();
                     for (const auto &choice : history)
                     {
@@ -489,10 +489,10 @@ struct SaveCodec
             for (const auto &[id, offset] : rest_offsets)
             {
                 auto member = std::find_if(v.roster.begin(), v.roster.end(),
-                                           [&](const auto &m)
-                                           {
-                                               return m.id == id;
-                                           });
+                                           [&](const auto & m)
+                {
+                    return m.id == id;
+                });
                 require(member != v.roster.end() && member->last_rest_minutes && offset < 60000,
                         "Invalid rest time offset");
                 member->last_rest_subminute_milliseconds = offset;
@@ -569,7 +569,7 @@ struct SaveCodec
                 for (const auto &[id, cells] : explored)
                 {
                     require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
-                                cells.find_first_not_of("01") == std::string::npos,
+                            cells.find_first_not_of("01") == std::string::npos,
                             "Invalid saved district exploration");
                     v.visited_areas_[id] = std::bitset<256>(cells);
                 }
@@ -617,10 +617,13 @@ struct SaveCodec
         if (reading)
         {
             require(v.town_ && v.town_->programs.contains(v.current_script_) &&
-                        v.selected_character_ < 8,
+                    v.selected_character_ < 8,
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
-            for (const std::uint8_t op : {12, 13, 14, 45, 49, 58})
+            for (const std::uint8_t op :
+                    {
+                        12, 13, 14, 45, 49, 58
+                    })
                 v.machine_.enable_host(op);
             v.configure_town();
         }
@@ -658,7 +661,7 @@ struct SaveCodec
                 for (const auto &[id, cells] : known)
                 {
                     require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
-                                cells.find_first_not_of("01") == std::string::npos,
+                            cells.find_first_not_of("01") == std::string::npos,
                             "Invalid saved map knowledge");
                     v.seen_areas_[id] = std::bitset<256>(cells);
                 }
@@ -695,7 +698,7 @@ struct SaveCodec
             v.who_slots_.clear();
             v.temple_targets_.clear();
             v.menu_request_ = v.delayed_request_ = v.who_request_ = v.temple_request_ =
-                v.shop_request_ = 0;
+            v.shop_request_ = 0;
             v.remaining_delay_ = 0;
             v.transition_ = v.message_only_ = false;
             v.event_stage_ = 0;
@@ -712,57 +715,57 @@ std::string encode_campaign(const CampaignParty &party, const por::RolfTourSessi
     SaveCodec out;
     out.version =
         party.state().training_rest ||
-                std::any_of(party.state().roster.begin(), party.state().roster.end(),
-                            [](const auto &member)
-                            {
-                                return !member.character.training_edits().empty();
-                            })
-            ? 18
-        : std::any_of(party.state().roster.begin(), party.state().roster.end(),
-                      [](const auto &member)
-                      {
-                          return std::any_of(member.character.advancements().begin(),
-                                             member.character.advancements().end(),
-                                             [](const auto &choice)
-                                             {
-                                                 return choice.fighting_style.has_value();
-                                             });
-                      })
-            ? 17
-        : party.state().spell_rest ||
-                std::any_of(party.state().roster.begin(), party.state().roster.end(),
-                            [](const auto &member)
-                            {
-                                return member.character.creation_data().spells.has_value() ||
-                                       !member.character.spell_edits().empty() ||
-                                       std::any_of(member.character.advancements().begin(),
-                                                   member.character.advancements().end(),
-                                                   [](const auto &choice)
-                                                   {
-                                                       return choice.spell_learning.has_value();
-                                                   });
-                            })
-            ? 16
-        : std::any_of(party.state().roster.begin(), party.state().roster.end(),
-                      [](const auto &member)
-                      {
-                          return std::any_of(member.character.advancements().begin(),
-                                             member.character.advancements().end(),
-                                             [](const auto &choice)
-                                             {
-                                                 return !choice.training.empty();
-                                             });
-                      })
-            ? 15
-        : std::any_of(party.state().detached_items.begin(), party.state().detached_items.end(),
-                      [](const auto &item)
-                      {
-                          return item.rest_session != 0;
-                      })
-            ? 14
-        : !party.state().detached_items.empty() ? 13
-        : party.state().rest_activity           ? 12
-                                                : 11;
+        std::any_of(party.state().roster.begin(), party.state().roster.end(),
+                    [](const auto & member)
+    {
+        return !member.character.training_edits().empty();
+    })
+    ? 18
+    : std::any_of(party.state().roster.begin(), party.state().roster.end(),
+                  [](const auto & member)
+    {
+        return std::any_of(member.character.advancements().begin(),
+                           member.character.advancements().end(),
+                           [](const auto & choice)
+        {
+            return choice.fighting_style.has_value();
+        });
+    })
+    ? 17
+    : party.state().spell_rest ||
+           std::any_of(party.state().roster.begin(), party.state().roster.end(),
+                       [](const auto & member)
+    {
+        return member.character.creation_data().spells.has_value() ||
+               !member.character.spell_edits().empty() ||
+               std::any_of(member.character.advancements().begin(),
+                           member.character.advancements().end(),
+                           [](const auto & choice)
+        {
+            return choice.spell_learning.has_value();
+        });
+    })
+    ? 16
+    : std::any_of(party.state().roster.begin(), party.state().roster.end(),
+                  [](const auto & member)
+    {
+        return std::any_of(member.character.advancements().begin(),
+                           member.character.advancements().end(),
+                           [](const auto & choice)
+        {
+            return !choice.training.empty();
+        });
+    })
+    ? 15
+    : std::any_of(party.state().detached_items.begin(), party.state().detached_items.end(),
+                  [](const auto & item)
+    {
+        return item.rest_session != 0;
+    })
+    ? 14
+    : !party.state().detached_items.empty() ? 13
+            : party.state().rest_activity           ? 12
+            : 11;
     auto identity = party.identity();
     std::string asset(assets);
     auto state = party.checkpoint();
@@ -790,7 +793,7 @@ void validate_saved_member(const PartyMember &member, const rules::RulesModule &
     {
         const auto item = member.character.inventory().find(id);
         require(item.has_value() && item->get().definition_id == equipment_conversion(source) &&
-                    item->get().original_type == source.stored.type,
+                item->get().original_type == source.stored.type,
                 "Saved item provenance mismatch");
     }
     for (const auto &item : member.character.inventory().items())
