@@ -18,23 +18,25 @@ enum class TrainingPolicy
     soldier_gaming,
     scholar,
     style_routes,
-    weapon_mastery
+    weapon_mastery,
+    skilled
 };
 rules::TrainingChoiceGroup scholar_options(std::span<const rules::FeatureGrant> grants);
+rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);
 std::vector<rules::TrainingChoiceGroup> training_options(const rules::CharacterDraft &draft);
 std::vector<rules::FeatureGrant>
 training_grants(std::string_view klass, std::string_view background,
                 const rules::TrainingChoices &choices,
-                TrainingPolicy policy = TrainingPolicy::weapon_mastery);
+                TrainingPolicy policy = TrainingPolicy::skilled);
 bool is_training_grant(const rules::FeatureGrant &grant);
 std::vector<rules::FeatureGrant> without_training(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoices training_choices(std::span<const rules::FeatureGrant> grants,
                                         std::string_view klass, std::string_view background,
-                                        TrainingPolicy policy = TrainingPolicy::weapon_mastery);
+                                        TrainingPolicy policy = TrainingPolicy::skilled);
 rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> grants,
                                         std::string_view klass, std::string_view background,
                                         unsigned level, const std::array<int, 6> &scores,
-                                        TrainingPolicy policy = TrainingPolicy::weapon_mastery);
+                                        TrainingPolicy policy = TrainingPolicy::skilled);
 rules::AbilityCheckModifier ability_check(std::span<const rules::FeatureGrant> grants,
         std::string_view klass, std::string_view background,
         unsigned level, const std::array<int, 6> &scores,

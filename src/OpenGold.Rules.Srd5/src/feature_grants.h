@@ -27,7 +27,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
                              bool starting_styles = true, bool tactical_mind = true,
                              bool champion = true, bool arcane_recovery = true,
                              bool rogue_attacks = true, bool style_routes = true,
-                             bool two_weapon_fighting = true, bool alert = true);
+                             bool two_weapon_fighting = true, bool alert = true,
+                             bool skilled = true);
 void write_grants(std::ostream &out, std::span<const rules::FeatureGrant> grants);
 std::vector<rules::FeatureGrant> read_grants(std::istream &in);
 } // namespace opengold::srd5::detail

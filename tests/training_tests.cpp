@@ -2847,6 +2847,12 @@ int main(int argc, char **argv)
             alert_checks::freeze();
             return 0;
         }
+        if (argc == 2 && std::string_view(argv[1]) == "--skilled")
+        {
+            skilled_checks::run();
+            std::cout << "Skilled acceptance passed\n";
+            return 0;
+        }
         if (argc == 2 && std::string_view(argv[1]) == "--freeze-skilled")
         {
             skilled_checks::freeze();
@@ -2974,6 +2980,7 @@ int main(int argc, char **argv)
             }
         };
         run(alert_checks::run, "Alert");
+        run(skilled_checks::run, "Skilled");
         run(mastery_baseline::verify, "Mastery prior writer");
         run(light_attack_checks::run, "Light attacks");
         run(light_attack_baseline::verify_hands_baseline, "Hand baseline");

@@ -108,7 +108,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
                              bool damage_traits, bool rush_trait, bool action_surge, bool archery,
                              bool starting_styles, bool tactical_mind, bool champion,
                              bool arcane_recovery, bool rogue_attacks, bool style_routes,
-                             bool two_weapon_fighting, bool alert)
+                             bool two_weapon_fighting, bool alert, bool skilled)
 {
     require(level >= 1 && level <= 4 && grants.size() <= 32);
     require(background == "acolyte" || background == "criminal" || background == "sage" ||
@@ -167,9 +167,10 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     for (const auto &grant : grants)
     {
         require(grant.level >= 1 && grant.level <= level);
-        // ASI is repeatable, but never twice from the same entitlement. Other
+        // ASI and Skilled are repeatable, but never twice from the same
+        // entitlement; the entitlements set below enforces that. Other
         // implemented feats/features are not repeatable (SRD pp. 87–88).
-        if (grant.id != "feat:ability_score_improvement")
+        if (grant.id != "feat:ability_score_improvement" && grant.id != "feat:skilled")
             require(nonrepeatable.insert(grant.id).second);
         const auto fixed = std::find(required.begin(), required.end(), grant);
         if (fixed != required.end())
@@ -219,7 +220,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
                     require(has_grant(grants, "feature:fighting_style"));
                 else
                     require(grant.id == "feat:savage_attacker" ||
-                            (alert && grant.id == "feat:alert"));
+                            (alert && grant.id == "feat:alert") ||
+                            (skilled && grant.id == "feat:skilled"));
             }
         }
         if (grant.id == "feat:alert")

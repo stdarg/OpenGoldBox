@@ -164,6 +164,7 @@ constexpr std::array tools
 constexpr std::string_view soldier_gaming = "background:soldier:gaming_set";
 constexpr std::string_view monk_tools = "class:monk:tools";
 constexpr std::string_view bard_instruments = "class:bard:instruments";
+constexpr std::string_view skilled = "feat:skilled";
 
 struct Language
 {
@@ -481,6 +482,23 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
     return group;
 }
 
+// Skilled grants three proficiencies chosen from the whole catalog. Entries the
+// character already holds are omitted, which is what makes an already-known pick
+// fail the membership check rather than silently add a second identical grant.
+TrainingChoiceGroup skilled_options(std::span<const FeatureGrant> grants)
+{
+    TrainingChoiceGroup group{std::string(skilled),             "Skilled Training", 3, {},
+                              TrainingChoiceControl::checkboxes};
+    group.acquired_level = 4;
+    for (const auto &s : skills)
+        if (!source(grants, "skill:" + std::string(s.id)))
+            group.options.push_back({"skill:" + std::string(s.id), std::string(s.label), {}});
+    for (const auto &t : tools)
+        if (!source(grants, "tool:" + std::string(t.id)))
+            group.options.push_back({"tool:" + std::string(t.id), std::string(t.label), {}});
+    return group;
+}
+
 std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft)
 {
     return options(draft.character_class, draft.background, draft.training,
@@ -529,6 +547,25 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                 choices[grant.source_id].push_back(grant.id.substr(8));
                 continue;
             }
+            // Skilled proficiencies are chosen at level four and keep the whole
+            // prefixed id, so the skill/tool split survives the round trip.
+            if (grant.source_id == skilled)
+            {
+                require(policy >= TrainingPolicy::skilled && grant.level == 4 &&
+                        grant.choices.empty());
+                auto &selected = choices[grant.source_id];
+                require(selected.size() < 3 &&
+                        std::find(selected.begin(), selected.end(), grant.id) == selected.end());
+                // A proficiency already held from any other source is not offered,
+                // so asserting it here is an invalid save rather than a second grant.
+                require(std::none_of(grants.begin(), grants.end(),
+                                     [&](const auto & other)
+                {
+                    return other.id == grant.id && other.source_id != grant.source_id;
+                }));
+                selected.push_back(grant.id);
+                continue;
+            }
             if (grant.source_id == "class:wizard:scholar")
             {
                 require(policy >= TrainingPolicy::scholar && klass == "wizard" &&
@@ -571,6 +608,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     require(required.empty());
     auto starting = choices;
     starting.erase("class:wizard:scholar");
+    starting.erase(std::string(skilled));
     starting.erase(mastery_options(klass, 4).id);
     auto expected = training_grants(klass, background, starting, policy);
     const auto order = [](const FeatureGrant & a, const FeatureGrant & b)
@@ -606,6 +644,11 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
             const auto *item = weapon(g.id.substr(8));
             result.masteries.push_back({std::string(item->key), std::string(item->label), {g}});
         }
+    const auto &picked = selected(choices, skilled);
+    const bool has_skilled = bool(source(grants, std::string(skilled)));
+    require((picked.empty() && !has_skilled) || (policy >= TrainingPolicy::skilled && level >= 4));
+    if (has_skilled)
+        result.complete &= picked.size() == 3;
     const auto &scholar = selected(choices, "class:wizard:scholar");
     require(scholar.empty() || level >= 2);
     if (policy >= TrainingPolicy::scholar && klass == "wizard" && level >= 2)

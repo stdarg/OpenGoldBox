@@ -157,10 +157,16 @@ enum class Cap : unsigned
     light = 38,
     mastery = 39,
     alert = 40,
+    // Skilled carries no combat effect, so it adds no feats bit; the capability
+    // exists to keep its proficiency grants out of older profiles.
+    skilled = 41,
     // Spells are written as an explicit id list instead of the legacy bitmask.
     // Only reached once a spell exists that no bit can encode, so profiles
-    // written today are unchanged.
-    explicit_spells = 41
+    // written today are unchanged. This must stay the highest capability: the
+    // reader decides the spell format from has(explicit_spells), so any tag
+    // above it would be misread as carrying an explicit list. A new capability
+    // is inserted below and this value moves up.
+    explicit_spells = 42
 };
 
 // Which spells a class may legitimately have stored at a level, given the
@@ -550,6 +556,7 @@ character_definition(std::string_view bytes,
         return tag >= static_cast<unsigned>(capability);
     };
     const bool with_alert = has(Cap::alert);
+    const bool with_skilled = has(Cap::skilled);
     const bool with_mastery = has(Cap::mastery);
     const bool with_light = has(Cap::light);
     const bool with_hands = has(Cap::hands);
@@ -838,7 +845,8 @@ character_definition(std::string_view bytes,
         {
             const auto training = detail::training_profile(
                                       grants, detail::grant_source_id(klass), background, level, scores,
-                                      with_mastery        ? detail::TrainingPolicy::weapon_mastery
+                                      with_skilled        ? detail::TrainingPolicy::skilled
+                                      : with_mastery      ? detail::TrainingPolicy::weapon_mastery
                                       : with_style_routes ? detail::TrainingPolicy::style_routes
                                       : with_scholar      ? detail::TrainingPolicy::scholar
                                       : with_gaming       ? detail::TrainingPolicy::soldier_gaming
@@ -930,7 +938,8 @@ character_definition(std::string_view bytes,
                                  features_only, detail::grant_source_id(klass), detail::grant_source_id(race),
                                  background, level, magic == "PC8" || magic == "PC9" || with_spells,
                                  magic == "PC9" || with_spells, with_surge, with_archery, with_styles, with_mind,
-                                 with_champion, with_arcane, with_rogue, with_style_routes, with_light, with_alert);
+                                 with_champion, with_arcane, with_rogue, with_style_routes, with_light, with_alert,
+                                 with_skilled);
         if (effects.feats != features)
             throw std::runtime_error("Character effects disagree with acquired grants");
         const int initial_con = ability_modifier(scores[2] - effects.abilities[2]);
@@ -4683,7 +4692,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     auto compatible_identity = identity;
     compatible_identity.version = content->identity.version;
     const bool previous_module =
-        (((version >= 13 && version <= 25) && identity.version == "0.6.60") ||
+        // Skilled adds no combat state, so 0.6.61 keeps checkpoint format 26.
+        (((version >= 13 && version <= 26) && identity.version == "0.6.61") ||
+         ((version >= 13 && version <= 25) && identity.version == "0.6.60") ||
          ((version >= 13 && version <= 24) && identity.version == "0.6.59") ||
          ((version >= 13 && version <= 23) && identity.version == "0.6.58") ||
          ((version >= 13 && version <= 23) && identity.version == "0.6.57") ||
@@ -5218,7 +5229,8 @@ class Module final : public RulesModule
 
     bool accepts_campaign_identity(const Identity &saved) const override
     {
-        if (saved.version != content_->identity.version && saved.version != "0.6.60" &&
+        if (saved.version != content_->identity.version && saved.version != "0.6.61" &&
+                saved.version != "0.6.60" &&
                 saved.version != "0.6.59" && saved.version != "0.6.58" && saved.version != "0.6.57" &&
                 saved.version != "0.6.56" && saved.version != "0.6.55" && saved.version != "0.6.54" &&
                 saved.version != "0.6.53" && saved.version != "0.3.0" && saved.version != "0.4.0" &&
@@ -5252,6 +5264,7 @@ class Module final : public RulesModule
     std::vector<std::string> supported_features() const override
     {
         return {"alert",
+                "skilled",
                 "light",
                 "two_weapon_fighting",
                 "loading",
@@ -5483,6 +5496,13 @@ class Module final : public RulesModule
                 "alert", "Alert",
                 "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn.",
                 !detail::has_grant(sheet.grants, "feat:alert")
+            },
+            // Repeatable: availability does not exclude already holding it. Only
+            // one level-four entitlement exists, so a second acquisition is not
+            // reachable yet; the entitlement check rejects reusing this one.
+            {
+                "skilled", "Skilled",
+                "Gain proficiency in any three skills or tools of your choice."
             }
         };
         if (sheet.character_class == "Cleric")
@@ -5527,6 +5547,10 @@ class Module final : public RulesModule
                                            const AdvancementChoice &choice) const override
     {
         auto options = advancement_options(sheet);
+        // Skilled's proficiency page exists only while Skilled is the selection,
+        // so switching away from it drops the group and its unconfirmed picks.
+        if (choice.feat == "skilled" && options.level == 4)
+            options.training.push_back(detail::skilled_options(sheet.grants));
         if (choice.fighting_style && sheet.character_class == "Fighter")
         {
             const auto source = "class:fighter:fighting_style";
@@ -5648,6 +5672,10 @@ class Module final : public RulesModule
                 throw std::runtime_error("Choose an available feat or ability points");
             if (points != (choice.feat == "ability_score_improvement" ? 2u : 0u))
                 throw std::runtime_error("Assign exactly two ability points, or choose a feat");
+            // The training loop below checks the count only when the group is
+            // present, so require the picks rather than granting Skilled empty.
+            if (choice.feat == "skilled" && !choice.training.contains("feat:skilled"))
+                throw std::runtime_error("Choose exactly three Skilled proficiencies");
         }
         else if (!choice.feat.empty() || points)
             throw std::runtime_error("Feats and ability points are available at level 4");
@@ -5697,6 +5725,7 @@ class Module final : public RulesModule
                 return g.id == id;
             });
             if (group == options.training.end() || values.size() != group->count ||
+                    std::set<std::string>(values.begin(), values.end()).size() != values.size() ||
                     std::any_of(values.begin(), values.end(),
                                 [&](const auto & value)
         {
@@ -5710,7 +5739,10 @@ class Module final : public RulesModule
             for (const auto &value : values)
                 next.grants.push_back(
             {
-                (id == "class:wizard:scholar" ? "expertise:" : "mastery:") + value,
+                // Skilled spans both catalogs, so its options carry the prefixed id.
+                id == "feat:skilled"             ? value
+                : id == "class:wizard:scholar" ? "expertise:" + value
+                : "mastery:" + value,
                 id,
                 unsigned(next.level),
                 {}});
@@ -6762,7 +6794,11 @@ class Module final : public RulesModule
                 std::any_of(sheet.grants.begin(), sheet.grants.end(), detail::is_mastery_grant)
             },
             {static_cast<unsigned>(Cap::alert), (features & 32) != 0},
-            {static_cast<unsigned>(Cap::explicit_spells), list_spells}
+            {static_cast<unsigned>(Cap::explicit_spells), list_spells},
+            {
+                static_cast<unsigned>(Cap::skilled),
+                detail::has_grant(sheet.grants, "feat:skilled")
+            }
         });
         std::ostringstream out;
         out << "PC" << tag << ' ' << sheet.level << ' ' << features << ' ';
@@ -7191,7 +7227,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.61", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.62", revision + "/" + std::to_string(hash)};
     // Preserve campaign saves from the preceding pack and the frozen v1/v2 fixtures.
     if (revision == "srd-5.2.1-demo.1")
         for (const auto fingerprint :
