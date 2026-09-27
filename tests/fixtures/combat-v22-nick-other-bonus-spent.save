@@ -1,0 +1,29 @@
+OGCOMBAT 22 "opengold.srd5" "0.6.56" "srd-5.2.1-demo.1/11527001048282323879"
+12 8
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+1663341875487337578 5 1 1 0 2
+99 "vanguard" "Target" 1 2 1 23 21 30 2 0 0 0 1 1 1 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 0 0 0
+1 "campaign-character" "Master" 0 1 1 20 9 30 1 0 0 0 0 0 1 0 0 0 0 "PC39 2 2 0 \"Fighter\" \"Human\" 17 16 15 15 15 15 2 2 2 \"dagger\" \"dagger\" 0 \"soldier\" 11 \"feat:savage_attacker\" \"background:soldier\" 1 0 \"feature:fighting_style\" \"class:fighter\" 1 0 \"feature:second_wind\" \"class:fighter\" 1 0 \"language:common\" \"origin:languages\" 1 0 \"skill:athletics\" \"background:soldier\" 1 0 \"skill:intimidation\" \"background:soldier\" 1 0 \"mastery:handaxe\" \"class:fighter:weapon_mastery\" 1 0 \"mastery:club\" \"class:fighter:weapon_mastery\" 1 0 \"mastery:dagger\" \"class:fighter:weapon_mastery\" 1 0 \"feature:action_surge\" \"class:fighter\" 2 0 \"feature:tactical_mind\" \"class:fighter\" 2 0" 0 0 0 0 0 1 2 0 0 0 "" 0 0 1 0 0 0 0 0 0 0 0 0 1 1
+0 0
+
+0 0
+
+5
+"Combat begins. Each square is 5 feet."
+"Round 1: Target acts."
+"Round 1: Master acts."
+"Master recovers 3 HP."
+"Master -> Target: d20 16 + 5 vs AC 17 hits for 5 damage."
+777 3000 2
+FX1 1 0
+FX1 1 0
+0
+0
+0 1
+1
+2
+1 1 0 1 "dagger" 1 0 1 0 0
+2 1 1 2 "dagger" 1 0 1 0 0
+1 1 
+0
+0

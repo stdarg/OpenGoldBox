@@ -105,6 +105,8 @@ struct PartyState
     std::uint64_t next_rest_session{1};
     std::optional<ShortRestSession> short_rest;
     std::optional<ShortRestSession> spell_rest; // Completed-rest choices, consumed once per member.
+    std::optional<ShortRestSession>
+        training_rest; // Rule-owned training replacements after spell choices.
     std::optional<RestActivity> rest_activity;
     std::vector<DetachedPartyItem> detached_items;
 };
@@ -133,7 +135,10 @@ class CampaignParty
     MemberId recruit(std::string source, Character converted, unsigned morale = 100);
     void rejoin(MemberId id);
     void remove(MemberId id);
-    void equip(MemberId id, std::uint64_t item);
+    [[nodiscard]] std::vector<rules::EquipmentChoice> equipment_choices(MemberId id,
+                                                                        std::uint64_t item) const;
+    void equip(MemberId id, std::uint64_t item,
+               rules::EquipmentOperation operation = rules::EquipmentOperation::equip);
     void unequip(MemberId id, std::uint64_t item);
     void set_grip(MemberId id, unsigned hands);
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
@@ -141,7 +146,8 @@ class CampaignParty
     void set_wealth(MemberId id, std::array<std::uint16_t, 7> wealth);
     void award_experience(unsigned amount, std::string reward_id);
     [[nodiscard]] bool can_advance(MemberId id) const;
-    [[nodiscard]] rules::AdvancementOptions advancement_options(MemberId id) const;
+    [[nodiscard]] rules::AdvancementOptions
+    advancement_options(MemberId id, const rules::AdvancementChoice &choice = {}) const;
     [[nodiscard]] rules::AdvancementChoice default_advancement(MemberId id) const;
     [[nodiscard]] PartyMember preview_advancement(MemberId id,
                                                   const rules::AdvancementChoice &choice) const;
@@ -155,6 +161,10 @@ class CampaignParty
                                                     bool after_rest = false) const;
     void choose_spells(MemberId id, const rules::SpellChoices &, bool after_rest = false);
     void keep_rest_spells(MemberId id);
+    [[nodiscard]] PartyMember preview_rest_training(RestTicket, MemberId,
+                                                    std::span<const std::string>) const;
+    void replace_rest_training(RestTicket, MemberId, std::span<const std::string>);
+    void keep_rest_training(RestTicket, MemberId);
     void complete_training(MemberId id, const rules::CharacterRules &creation_rules,
                            const rules::TrainingChoices &choices);
     // Atomic original loot delivery. A full set of purses leaves it unclaimed.
@@ -234,6 +244,7 @@ class CampaignParty
     }
 
   private:
+    void change_equipment(MemberId id, std::uint64_t item, rules::EquipmentOperation operation);
     std::unique_ptr<rules::RulesModule> rules_;
     PartyState state_;
     bool combat_{};

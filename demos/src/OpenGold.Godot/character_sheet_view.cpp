@@ -182,8 +182,18 @@ String CharacterCreationView::sheet_text(const Character &character,
     text += "\n\n[b]Inventory[/b]";
     if (character.inventory().empty())
         text += "\nEmpty";
+    const auto positions =
+        member ? campaign_->profile(member->id).equipment_positions : std::vector<rules::Message>{};
     for (const auto &item : character.inventory().items())
-        text += "\n" + literal(item.name) + " x" + std::to_string(item.quantity);
+    {
+        text += "\n" + literal(std::string(item.name)) + " x" + std::to_string(item.quantity);
+        if (member)
+        {
+            const auto held = std::find(member->equipped.begin(), member->equipped.end(), item.id);
+            if (held != member->equipped.end())
+                text += " / " + std::string(positions.at(held - member->equipped.begin()).source);
+        }
+    }
     text += presentation::training_summary(s.training,
                                            [](std::string_view source)
                                            {

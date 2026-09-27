@@ -595,7 +595,9 @@ Command choose_demo_command(const CombatSession &session)
                                            return a.id == state.actor;
                                        });
     // The module orders its pending check choices by its default AI preference.
-    if (state.ability_check_choice || state.free_movement || state.sneak_attack_choice)
+    if (!state.initiative_choices.empty() || state.effect_targeting ||
+        state.optional_effect_choice || state.ability_check_choice || state.free_movement ||
+        state.sneak_attack_choice)
         return offered.front();
     if (state.temporary_hp_offer)
     {

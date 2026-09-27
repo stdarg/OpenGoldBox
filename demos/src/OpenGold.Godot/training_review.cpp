@@ -11,3 +11,5 @@ godot::String review_text(std::string_view value)
 #include "../../../src/OpenGoldBox/training_review_impl.h"
 
 #include "../../../src/OpenGoldBox/spellbook_dialog_impl.h"
+
+#include "../../../src/OpenGoldBox/equipment_choice_impl.h"

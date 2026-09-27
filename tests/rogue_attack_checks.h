@@ -74,7 +74,11 @@ void reject_hit_field(const RulesModule &rules, const CombatSession &combat, uns
     int n;
     while (in >> n)
         fields.push_back(n);
-    check(fields.size() == 12 && field < fields.size(), "Version-21 pending hit field shape");
+    check(fields.size() == ((bytes.starts_with("OGCOMBAT 22 ") || bytes.starts_with("OGCOMBAT 23 "))
+                                ? 14u
+                                : 12u) &&
+              field < fields.size(),
+          "Versioned pending hit field shape");
     fields[field] = value;
     std::ostringstream out;
     for (unsigned i = 0; i < fields.size(); ++i)
@@ -265,7 +269,13 @@ void run()
             const auto start = saved.find("\n1 \"campaign-character\"");
             check(start != std::string::npos, "Locate saved aimed actor");
             const auto end = saved.find('\n', start + 1);
-            check(saved.substr(end - 8, 8) == " 0 1 0 0",
+            std::istringstream actor_fields(saved.substr(start + 1, end - start - 1));
+            std::string field;
+            for (unsigned n = 0; n < 39; ++n)
+                actor_fields >> std::quoted(field);
+            bool sneak_used, aim_used, aim_ready, moved;
+            actor_fields >> sneak_used >> aim_used >> aim_ready >> moved;
+            check(actor_fields && !sneak_used && aim_used && !aim_ready && !moved,
                   "Miss clears saved Aim readiness while keeping Speed restriction");
             check(!unit(*c).action && !unit(*c).bonus_action && unit(*c).movement_feet == 0 &&
                       !has(*c, "steady_aim"),

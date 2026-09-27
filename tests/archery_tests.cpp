@@ -131,7 +131,7 @@ void selection()
         auto id = p.add_pc(hero(klass.id));
         p.award_experience(2700, "archery");
         if (klass.id != "fighter" && klass.id != "wizard" && klass.id != "cleric" &&
-            klass.id != "rogue")
+            klass.id != "rogue" && klass.id != "paladin" && klass.id != "ranger")
         {
             check(!p.can_advance(id),
                   "Unsupported later advancement does not invent Fighting Style entitlement");
@@ -147,10 +147,12 @@ void selection()
                                          {
                                              return f.id == "archery";
                                          });
-        check(option != options.feats.end() && option->available == (klass.id == "fighter"),
+        check(option != options.feats.end() &&
+                  option->available ==
+                      (klass.id == "fighter" || klass.id == "paladin" || klass.id == "ranger"),
               "Existing feat selector requires Fighting Style");
         const auto before = encode_campaign(p, nullptr, "archery");
-        if (klass.id != "fighter")
+        if (klass.id != "fighter" && klass.id != "paladin" && klass.id != "ranger")
         {
             rejects(
                 [&]
@@ -175,10 +177,11 @@ void selection()
         check(p.member(id).character.sheet().grants == preview.character.sheet().grants,
               "Confirmation retains previewed grant");
         const auto &sheet = p.member(id).character.sheet();
-        check(std::find(
-                  sheet.grants.begin(), sheet.grants.end(),
-                  FeatureGrant{"feat:archery", "class:fighter:ability_score_improvement", 4, {}}) !=
-                  sheet.grants.end(),
+        check(std::find(sheet.grants.begin(), sheet.grants.end(),
+                        FeatureGrant{"feat:archery",
+                                     "class:" + klass.id + ":ability_score_improvement",
+                                     4,
+                                     {}}) != sheet.grants.end(),
               "Feat records its real entitlement and acquisition level");
         auto bad = sheet;
         bad.grants.push_back({"feat:archery", "class:fighter:ability_score_improvement", 4, {}});
@@ -316,8 +319,16 @@ void persistence()
     const auto old_combat = read(root / "tests/fixtures/combat-v13-archery-before.save");
     check(rules->restore(old_combat)->save() == upgrade(old_combat),
           "Actual PC16 combat retains exact recipe, state and RNG");
+    // Isolate the original Archery/profile boundary: mastery provenance must
+    // not be the reason a forged historical Archery recipe rejects.
+    auto legacy_sheet = leveled().sheet();
+    std::erase_if(legacy_sheet.grants,
+                  [](const auto &g)
+                  {
+                      return g.id.starts_with("mastery:");
+                  });
     auto profile =
-        rules->character_profile(leveled().sheet(), std::array<std::string, 1>{"shortbow"}).data;
+        rules->character_profile(legacy_sheet, std::array<std::string, 1>{"shortbow"}).data;
     auto encounter = Encounter{{8, 8, std::vector<std::uint8_t>(64)},
                                {{1, "campaign-character", "Archer", 0, {1, 1}, profile},
                                 {99, "vanguard", "Target", 1, {5, 1}}}};

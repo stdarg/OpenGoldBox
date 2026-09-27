@@ -43,6 +43,7 @@ auto battle(const Character &h)
            rules->character_profile(h.sheet(), std::array<std::string, 1>{"dagger"}).data},
           {99, "vanguard", "Enemy", 1, {2, 1}}}},
         2);
+    test::keep_initiative(*c);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     return c;
@@ -99,7 +100,7 @@ void run()
                 (void)rules->character_profile(bad, {});
             });
         auto profile = rules->character_profile(h.sheet(), {}).data;
-        replace(profile, "PC35", "PC23");
+        replace(profile, profile.substr(0, profile.find(' ')), "PC23");
         rejects(
             [&]
             {
@@ -205,7 +206,11 @@ void run()
             (void)rules->restore(forged);
         });
     forged = hit->save();
-    replace(forged, "OGCOMBAT 21", "OGCOMBAT 14");
+    replace(forged,
+            forged.starts_with("OGCOMBAT 23 ")   ? "OGCOMBAT 23"
+            : forged.starts_with("OGCOMBAT 22 ") ? "OGCOMBAT 22"
+                                                 : "OGCOMBAT 21",
+            "OGCOMBAT 14");
     rejects(
         [&]
         {
@@ -236,6 +241,7 @@ void run()
                                  {5, 1},
                                  rules->character_profile(wizard.sheet(), {}).data}}},
                               2);
+    test::keep_initiative(*slow);
     while (slow->snapshot().actor != 99)
         act(*slow, "end");
     act(*slow, "ray_of_frost");

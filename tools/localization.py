@@ -34,7 +34,7 @@ def extract():
     paths = sorted((ROOT / "src/OpenGoldBox").glob("*.cpp"))
     paths += sorted((ROOT / "src/OpenGoldBox").glob("*.h"))
     paths += sorted((ROOT / "src/OpenGoldBox/godot/scenes").glob("*.tscn"))
-    paths += [ROOT / "src/OpenGold.Rules.Srd5/src/character_rules.cpp", ROOT / "src/OpenGold.Rules.Srd5/src/srd5.cpp"]
+    paths += [ROOT / "src/OpenGold.Rules.Srd5/src/character_rules.cpp", ROOT / "src/OpenGold.Rules.Srd5/src/srd5.cpp", ROOT / "src/OpenGold.Rules.Srd5/src/mastery_resolution_impl.h"]
     for path in paths:
         content = path.read_text(encoding="utf-8-sig")
         patterns = [rf'\b(?:N_|i18n::(?:text|utf8|format|formatted))\(\s*({LITERAL})']
@@ -45,7 +45,7 @@ def extract():
                 add(ast.literal_eval(match[1]), path, content.count("\n", 0, match.start()) + 1)
         for match in re.finditer(rf'i18n::plural\(\s*({LITERAL})\s*,\s*({LITERAL})', content):
             add(ast.literal_eval(match[1]), path, content.count("\n", 0, match.start()) + 1, ast.literal_eval(match[2]))
-        if path.name in ("character_rules.cpp", "srd5.cpp"):
+        if path.name in ("character_rules.cpp", "srd5.cpp", "mastery_resolution_impl.h"):
             for match in re.finditer(LITERAL, content):
                 source=ast.literal_eval(match[0])
                 if re.search(r"\{\w+\}",source):

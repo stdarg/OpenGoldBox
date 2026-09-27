@@ -205,12 +205,16 @@ void CharacterCreationView::refresh_party()
         list->select(roster_index_);
         const auto &m = state.roster[roster_index_];
         sheet = sheet_text(m.character, &m).utf8().get_data();
+        const auto profile = campaign_->profile(m.id);
         for (const auto &item : m.character.inventory().items())
-            items->add_item(gs(std::string(std::find(m.equipped.begin(), m.equipped.end(),
-                                                     item.id) != m.equipped.end()
-                                               ? "Equipped / "
-                                               : "") +
-                               item.name + " x" + std::to_string(item.quantity)));
+        {
+            const auto found = std::find(m.equipped.begin(), m.equipped.end(), item.id);
+            String prefix;
+            if (found != m.equipped.end())
+                prefix =
+                    gs(profile.equipment_positions.at(found - m.equipped.begin()).source) + " / ";
+            items->add_item(prefix + gs(item.name) + " x" + gs(std::to_string(item.quantity)));
+        }
         get_node<TextureRect>("PartyPanel/Portrait")
             ->set_texture(portrait_texture(m.character.appearance(), m.character.creation_data()));
         for (unsigned pose = 0; pose < 2; ++pose)
@@ -234,7 +238,8 @@ void CharacterCreationView::refresh_party()
                                    .spell_access(state.roster[roster_index_].character.sheet())
                                    .spellbook_choices > 0);
     spellbook->set_disabled(campaign_->in_combat() || state.rest_activity.has_value() ||
-                            state.short_rest.has_value() || state.spell_rest.has_value());
+                            state.short_rest.has_value() || state.spell_rest.has_value() ||
+                            state.training_rest.has_value());
     auto *review = get_node<Button>("PartyPanel/ReviewTraining");
     review->set_visible(!state.roster.empty() &&
                         !state.roster[roster_index_].character.sheet().training.complete);
@@ -301,6 +306,8 @@ void CharacterCreationView::party_action(int action)
             const auto selected = items[selection[0]].id;
             if (action == 6)
             {
+                if (open_equipment_choice(id, selected))
+                    return;
                 campaign_->equip(id, selected);
                 equipment_notice =
                     gs("Equipped. " + srd5::equipment_note(campaign_->member(id).character.sheet(),

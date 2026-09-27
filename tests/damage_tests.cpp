@@ -507,11 +507,13 @@ void migration()
     auto waiting = pending.checkpoint();
     waiting.roster[0].vitals = party.member(1).vitals;
     pending.restore(waiting);
-    pending.complete_training(pending_id, *srd5::character_rules(),
-                              {{"origin:languages", {"elvish", "orc"}},
-                               {"class:fighter:fighting_style", {"archery"}},
-                               {"class:fighter", {"athletics", "history"}},
-                               {"background:soldier:gaming_set", {"dice"}}});
+    pending.complete_training(
+        pending_id, *srd5::character_rules(),
+        {{"origin:languages", {"elvish", "orc"}},
+         {"class:fighter:fighting_style", {"archery"}},
+         {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
+         {"class:fighter", {"athletics", "history"}},
+         {"background:soldier:gaming_set", {"dice"}}});
     check(pending.member(pending_id).vitals == waiting.roster[0].vitals,
           "Completing missing training preserves resistance and the full vital continuation");
     const auto &dwarf = party.member(1);

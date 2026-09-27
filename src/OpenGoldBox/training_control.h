@@ -37,6 +37,10 @@ template <class Translate> godot::String training_source(std::string_view id, co
         return tr(N_("Cleric class"));
     if (id == "class:druid")
         return tr(N_("Druid class"));
+    if (id.ends_with(":weapon_mastery:4"))
+        return training_source(id.substr(0, id.size() - 17), tr) + " / " + tr(N_("Weapon Mastery"));
+    if (id.ends_with(":weapon_mastery"))
+        return training_source(id.substr(0, id.size() - 15), tr) + " / " + tr(N_("Weapon Mastery"));
     if (id == "class:fighter")
         return tr(N_("Fighter class"));
     if (id == "class:monk:tools")
@@ -121,6 +125,9 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
         text += tr(t.label) + " (" + training_sources(t.sources, tr) + ")\n";
     for (const auto &l : profile.languages)
         text += tr(l.label) + " (" + training_sources(l.sources, tr) + ")\n";
+    for (const auto &m : profile.masteries)
+        text += tr(N_("Weapon Mastery")) + ": " + tr(m.label) + " (" +
+                training_sources(m.sources, tr) + ")\n";
     return text;
 }
 
@@ -297,7 +304,9 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             box->move_child(check, option_index++);
             const bool selected =
                 std::find(picked.begin(), picked.end(), option.id) != picked.end();
-            check->set_text(tr(option.label));
+            check->set_text(tr(option.label) + (option.description.empty()
+                                                    ? String()
+                                                    : String(" / ") + tr(option.description)));
             check->set_pressed_no_signal(selected);
             check->set_disabled(
                 (has_locked && std::find(original->second.begin(), original->second.end(),

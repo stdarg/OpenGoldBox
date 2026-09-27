@@ -272,6 +272,90 @@ inline std::string with_druid_herbalism_grants(std::string body)
     return body;
 }
 
+// Independent expectation: fixed Alert is the first Criminal feature grant.
+inline std::string with_alert_grants(std::string body)
+{
+    const std::regex draft(
+        R"re("(?:dragonborn|dwarf|elf|gnome|goliath|halfling|human|orc|tiefling)" "(?:female|male|nonbinary)" "(?:barbarian|bard|cleric|druid|fighter|monk|paladin|ranger|rogue|sorcerer|warlock|wizard)" "[^"]+" "criminal" )re");
+    const std::regex first_grant(
+        R"re("(?:feature:|feat:|trait:|language:)[^"]+" "[^"]+" [0-9]+ [0-9]+)re");
+    std::size_t search = 0;
+    std::smatch match;
+    while (search < body.size())
+    {
+        auto rest = body.substr(search);
+        if (!std::regex_search(rest, match, draft))
+            break;
+        const auto start = search + match.position();
+        std::istringstream fields(body.substr(start));
+        std::string field;
+        for (unsigned n = 0; n < 6; ++n)
+            fields >> std::quoted(field);
+        if (!fields)
+            throw std::runtime_error("Malformed frozen draft identity");
+        search = start + static_cast<std::size_t>(fields.tellg());
+        rest = body.substr(search);
+        if (!std::regex_search(rest, match, first_grant))
+            throw std::runtime_error("Missing Criminal ledger");
+        const auto first = search + match.position();
+        auto begin = first - 2;
+        while (begin && body[begin - 1] >= '0' && body[begin - 1] <= '9')
+            --begin;
+        std::istringstream input(body.substr(begin));
+        unsigned count{};
+        input >> count;
+        if (!input || !count || count > 128)
+            throw std::runtime_error("Invalid Criminal ledger count");
+        std::vector<rules::FeatureGrant> grants;
+        for (unsigned n = 0; n < count; ++n)
+        {
+            rules::FeatureGrant g;
+            unsigned choices{};
+            input >> std::quoted(g.id) >> std::quoted(g.source_id) >> g.level >> choices;
+            if (!input || choices > 6)
+                throw std::runtime_error("Malformed frozen Criminal grant");
+            for (unsigned k = 0; k < choices; ++k)
+            {
+                std::string key, value;
+                input >> std::quoted(key) >> std::quoted(value);
+                g.choices.emplace(key, value);
+            }
+            grants.push_back(std::move(g));
+        }
+        if (!input)
+            throw std::runtime_error("Truncated Criminal ledger");
+        const auto length = static_cast<std::size_t>(input.tellg());
+        const auto common =
+            std::find_if(grants.begin(), grants.end(),
+                         [](const auto &g)
+                         {
+                             return g.id == "language:common" && g.source_id == "origin:languages";
+                         });
+        const std::vector<rules::FeatureGrant> added{{"feat:alert", "background:criminal", 1, {}}};
+        if (common == grants.end() || std::any_of(added.begin(), added.end(),
+                                                  [&](const auto &g)
+                                                  {
+                                                      return std::find(grants.begin(), grants.end(),
+                                                                       g) != grants.end();
+                                                  }))
+            throw std::runtime_error("Unexpected prior Criminal grants");
+        grants.insert(grants.begin(), added.begin(), added.end());
+        std::ostringstream out;
+        out << grants.size();
+        for (const auto &g : grants)
+        {
+            out << ' ' << std::quoted(g.id) << ' ' << std::quoted(g.source_id) << ' ' << g.level
+                << ' ' << g.choices.size();
+            for (const auto &[k, v] : g.choices)
+                out << ' ' << std::quoted(k) << ' ' << std::quoted(v);
+        }
+        const auto next = out.str();
+        body.replace(begin, length, next);
+        search = begin + next.size();
+    }
+    return body;
+}
+
 // One fixed level-one Sneak grant before species/training; other bytes preserved.
 inline std::string with_sneak_attack_grants(std::string body)
 {

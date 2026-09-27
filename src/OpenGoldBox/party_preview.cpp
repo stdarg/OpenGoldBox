@@ -251,12 +251,16 @@ void CharacterCreationView::refresh_party()
         presentation::refresh_grip(*get_node<OptionButton>("PartyPanel/Grip"), profile.equipment,
                                    profile.grips);
         for (const auto &item : m.character.inventory().items())
-            items->add_item(
-                (std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
-                     ? i18n::text("Equipped / ")
-                     : String()) +
-                i18n::format("{item} x{quantity}",
-                             {{"item", i18n::text(item.name)}, {"quantity", item.quantity}}));
+        {
+            const auto found = std::find(m.equipped.begin(), m.equipped.end(), item.id);
+            String prefix;
+            if (found != m.equipped.end())
+                prefix =
+                    i18n::text(profile.equipment_positions.at(found - m.equipped.begin()).source) +
+                    " / ";
+            items->add_item(prefix + i18n::text(item.name) + " x" +
+                            gs(std::to_string(item.quantity)));
+        }
         get_node<TextureRect>("PartyPanel/Portrait")
             ->set_texture(portrait_texture(m.character.appearance(), m.character.creation_data()));
         const auto resolved = por::resolve_combat_appearance(m, *body_catalog_);
@@ -277,7 +281,8 @@ void CharacterCreationView::refresh_party()
                                    .spell_access(state.roster[roster_index_].character.sheet())
                                    .spellbook_choices > 0);
     spellbook->set_disabled(campaign_->in_combat() || state.rest_activity.has_value() ||
-                            state.short_rest.has_value() || state.spell_rest.has_value());
+                            state.short_rest.has_value() || state.spell_rest.has_value() ||
+                            state.training_rest.has_value());
     auto *review = get_node<Button>("PartyPanel/ReviewTraining");
     review->set_visible(!state.roster.empty() &&
                         !state.roster[roster_index_].character.sheet().training.complete);
@@ -312,6 +317,14 @@ void CharacterCreationView::equipment_art_check()
     {
         get_node<ItemList>("PartyPanel/Inventory")->select(index);
         press(equip ? "PartyPanel/Equip" : "PartyPanel/Unequip");
+        if (auto *choice = Object::cast_to<Window>(get_node_or_null("EquipmentChoice"));
+            choice && choice->is_visible())
+        {
+            auto *hand = choice->get_node<OptionButton>("Hand");
+            hand->select(0);
+            hand->emit_signal("item_selected", 0);
+            press("EquipmentChoice/Equip");
+        }
     };
     const auto expected = [&](unsigned member, unsigned body, bool action)
     {
@@ -613,6 +626,8 @@ void CharacterCreationView::party_action(int action)
             const auto selected = items[selection[0]].id;
             if (action == 6)
             {
+                if (open_equipment_choice(id, selected))
+                    return;
                 campaign_->equip(id, selected);
                 equipment_notice =
                     i18n::text("Equipped.") + " " +

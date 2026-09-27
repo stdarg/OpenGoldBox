@@ -152,9 +152,10 @@ void grants()
         check(srd5::detail::has_grant(h.sheet().grants, "feature:tactical_mind") == mind,
               "Tactical Mind attained from level two");
         auto profile = rules->character_profile(h.sheet(), {}).data;
-        check(profile.starts_with(level >= 3 ? "PC31 "
-                                  : mind     ? "PC30 "
-                                             : "PC28 "),
+        check(profile.starts_with(level == 4   ? "PC39 "
+                                  : level >= 3 ? "PC31 "
+                                  : mind       ? "PC30 "
+                                               : "PC28 "),
               "New feature profile is conditional");
         if (mind)
         {

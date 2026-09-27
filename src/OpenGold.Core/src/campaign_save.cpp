@@ -186,6 +186,8 @@ struct SaveCodec
             field(v.training);
         if (version >= 16)
             field(v.spell_learning);
+        if (version >= 17)
+            field(v.fighting_style);
     }
 
     void field(rules::CharacterDraft &v)
@@ -208,6 +210,11 @@ struct SaveCodec
     void field(SpellChoiceEdit &v)
     {
         fields(v.level, v.rest_session, v.choices);
+    }
+
+    void field(TrainingChoiceEdit &v)
+    {
+        fields(v.level, v.rest_session, v.selections);
     }
 
     void field(por::CharacterAppearance &v)
@@ -309,6 +316,8 @@ struct SaveCodec
             field(v.detached_items);
         if (version >= 16)
             field(v.spell_rest);
+        if (version >= 18)
+            field(v.training_rest);
     }
 
     void field(rules::VitalState &v)
@@ -382,6 +391,19 @@ struct SaveCodec
                     std::vector<SpellChoiceEdit> edits;
                     if (version >= 16)
                         field(edits);
+                    std::vector<TrainingChoiceEdit> training;
+                    if (version >= 18)
+                        field(training);
+                    unsigned prior_level = 1;
+                    std::uint64_t prior_session = 0;
+                    for (const auto &edit : training)
+                    {
+                        require(edit.level >= prior_level && edit.level <= unsigned(level) &&
+                                    edit.rest_session > prior_session,
+                                "Invalid training replacement history");
+                        prior_level = edit.level;
+                        prior_session = edit.rest_session;
+                    }
                     unsigned previous = 1;
                     std::uint64_t rest = 0;
                     for (const auto &edit : edits)
@@ -401,6 +423,10 @@ struct SaveCodec
                             if (edit.level == unsigned(character.sheet().level))
                                 character.choose_spells(*module, edit.choices, edit.rest_session,
                                                         false);
+                        for (const auto &edit : training)
+                            if (edit.level == unsigned(character.sheet().level))
+                                character.replace_rest_training(*module, edit.selections,
+                                                                edit.rest_session);
                     };
                     replay();
                     for (const auto &choice : history)
@@ -449,6 +475,11 @@ struct SaveCodec
                 if (version >= 16)
                 {
                     auto edits = m.character.spell_edits();
+                    field(edits);
+                }
+                if (version >= 18)
+                {
+                    auto edits = m.character.training_edits();
                     field(edits);
                 }
                 field(m.character.inventory());
@@ -680,7 +711,25 @@ std::string encode_campaign(const CampaignParty &party, const por::RolfTourSessi
     require(!party.in_combat(), "Cannot save during combat");
     SaveCodec out;
     out.version =
-        party.state().spell_rest ||
+        party.state().training_rest ||
+                std::any_of(party.state().roster.begin(), party.state().roster.end(),
+                            [](const auto &member)
+                            {
+                                return !member.character.training_edits().empty();
+                            })
+            ? 18
+        : std::any_of(party.state().roster.begin(), party.state().roster.end(),
+                      [](const auto &member)
+                      {
+                          return std::any_of(member.character.advancements().begin(),
+                                             member.character.advancements().end(),
+                                             [](const auto &choice)
+                                             {
+                                                 return choice.fighting_style.has_value();
+                                             });
+                      })
+            ? 17
+        : party.state().spell_rest ||
                 std::any_of(party.state().roster.begin(), party.state().roster.end(),
                             [](const auto &member)
                             {
@@ -766,7 +815,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     require(bytes.size() <= limit, "Campaign save too large");
     unsigned version{};
     std::size_t header_size{};
-    for (unsigned v = 1; v <= 16; ++v)
+    for (unsigned v = 1; v <= 18; ++v)
     {
         const auto header = "OPENGOLD-CAMPAIGN " + std::to_string(v) + '\n';
         if (bytes.starts_with(header))

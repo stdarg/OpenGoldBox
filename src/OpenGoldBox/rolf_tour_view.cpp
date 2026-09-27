@@ -580,6 +580,11 @@ void RolfTourView::_process(double delta)
         if (session_->snapshot().revision != shown_revision_)
             refresh();
     }
+    if (OS::get_singleton()->get_cmdline_user_args().has("--mastery-rest-check"))
+    {
+        check_mastery_rest_controls();
+        return;
+    }
     if (OS::get_singleton()->get_cmdline_user_args().has("--rest-check"))
     {
         check_rest_controls();

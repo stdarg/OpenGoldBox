@@ -113,6 +113,14 @@ class CharacterCreationView : public godot::Control
     void pool_layout();
     void town_member_selected(std::int64_t slot);
     void close_town_sheet();
+    bool open_equipment_choice(opengold::MemberId member, std::uint64_t item);
+    void equipment_choice_selected(std::int64_t index);
+    void apply_equipment_choice();
+    void close_equipment_choice();
+    void equipment_choice_input(const godot::Ref<godot::InputEvent> &event);
+    opengold::MemberId equipment_member_{};
+    std::uint64_t equipment_item_{};
+    std::vector<opengold::rules::EquipmentChoice> equipment_choices_;
     void setup_training_review();
     void open_training_review();
     void refresh_training_review();

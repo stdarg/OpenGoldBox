@@ -521,10 +521,12 @@ void campaign()
         copy.restore(decode_campaign(bytes, *creation, *rules, "surge", nullptr).party);
         check(encode_campaign(copy, nullptr, "surge") == bytes,
               "Campaign replay retains grants, state and history");
-        copy.complete_training(id, *creation,
-                               {{"origin:languages", {"elvish", "orc"}},
-                                {"class:fighter:fighting_style", {"archery"}},
-                                {"class:fighter", {"athletics", "history"}}});
+        copy.complete_training(
+            id, *creation,
+            {{"origin:languages", {"elvish", "orc"}},
+             {"class:fighter:fighting_style", {"archery"}},
+             {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
+             {"class:fighter", {"athletics", "history"}}});
         check(remaining(copy.member(id).character, copy.member(id).vitals) == 0,
               "Training completion does not refund uses");
         copy.advance(id, copy.default_advancement(id));

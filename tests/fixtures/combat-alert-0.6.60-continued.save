@@ -1,0 +1,31 @@
+OGCOMBAT 23 "opengold.srd5" "0.6.60" "srd-5.2.1-demo.1/11527001048282323879"
+12 8
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+8709371129873690745 2 1 1 0 3
+1 "campaign-character" "Training tester" 0 1 1 38 11 30 3 0 0 0 1 1 1 0 0 0 0 "PC39 4 1 0 \"Fighter\" \"Human\" 17 17 16 15 15 15 3 3 3 3 1 \"dagger\" 0 \"criminal\" 21 \"feature:fighting_style\" \"class:fighter\" 1 0 \"feature:second_wind\" \"class:fighter\" 1 0 \"language:common\" \"origin:languages\" 1 0 \"skill:sleight_of_hand\" \"background:criminal\" 1 0 \"skill:stealth\" \"background:criminal\" 1 0 \"tool:thieves_tools\" \"background:criminal\" 1 0 \"language:common_sign_language\" \"origin:languages\" 1 0 \"language:draconic\" \"origin:languages\" 1 0 \"feat:defense\" \"class:fighter:fighting_style\" 1 0 \"skill:acrobatics\" \"class:fighter\" 1 0 \"skill:animal_handling\" \"class:fighter\" 1 0 \"mastery:club\" \"class:fighter:weapon_mastery\" 1 0 \"mastery:dagger\" \"class:fighter:weapon_mastery\" 1 0 \"mastery:greatclub\" \"class:fighter:weapon_mastery\" 1 0 \"feature:action_surge\" \"class:fighter\" 2 0 \"feature:tactical_mind\" \"class:fighter\" 2 0 \"subclass:champion\" \"class:fighter\" 3 0 \"feature:improved_critical\" \"subclass:fighter:champion\" 3 0 \"feature:remarkable_athlete\" \"subclass:fighter:champion\" 3 0 \"mastery:handaxe\" \"class:fighter:weapon_mastery:4\" 4 0 \"feat:ability_score_improvement\" \"class:fighter:ability_score_improvement\" 4 1 \"strength\" \"2\"" 0 0 0 0 0 1 4 0 0 0 "" 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0
+2 "campaign-character" "Training tester" 0 2 1 33 11 30 0 0 0 0 1 1 1 0 0 0 0 "PC39 4 0 0 \"Rogue\" \"Human\" 15 19 16 15 15 15 3 3 3 3 1 \"dagger\" 0 \"criminal\" 21 \"feature:sneak_attack\" \"class:rogue\" 1 0 \"language:common\" \"origin:languages\" 1 0 \"skill:sleight_of_hand\" \"background:criminal\" 1 0 \"skill:stealth\" \"background:criminal\" 1 0 \"tool:thieves_tools\" \"background:criminal\" 1 0 \"tool:thieves_tools\" \"class:rogue\" 1 0 \"language:thieves_cant\" \"class:rogue:thieves_cant\" 1 0 \"language:elvish\" \"origin:languages\" 1 0 \"language:dwarvish\" \"origin:languages\" 1 0 \"skill:acrobatics\" \"class:rogue\" 1 0 \"skill:investigation\" \"class:rogue\" 1 0 \"skill:perception\" \"class:rogue\" 1 0 \"skill:persuasion\" \"class:rogue\" 1 0 \"expertise:stealth\" \"class:rogue:expertise\" 1 0 \"expertise:perception\" \"class:rogue:expertise\" 1 0 \"language:undercommon\" \"class:rogue:thieves_cant\" 1 0 \"mastery:dagger\" \"class:rogue:weapon_mastery\" 1 0 \"mastery:shortbow\" \"class:rogue:weapon_mastery\" 1 0 \"feature:cunning_action\" \"class:rogue\" 2 0 \"feature:steady_aim\" \"class:rogue\" 3 0 \"feat:ability_score_improvement\" \"class:rogue:ability_score_improvement\" 4 1 \"dexterity\" \"2\"" 0 0 0 0 0 1 4 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+99 "vanguard" "Enemy" 1 8 6 28 7 30 2 0 0 0 1 1 1 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0
+
+0 0
+
+3
+"Combat begins. Each square is 5 feet."
+"Round 1: Training tester acts."
+"Round 1: Training tester acts."
+1 2000 3
+FX1 1 0
+FX1 1 0
+FX1 1 0
+0
+0
+1 1
+1
+4
+1 1 0 1 "dagger" 1 0 1 0 0
+2 2 0 1 "dagger" 1 0 2 0 0
+3 1 0 1 "dagger" 1 1 1 0 0
+4 2 0 1 "dagger" 1 1 2 0 0
+1 1 1 
+0
+0

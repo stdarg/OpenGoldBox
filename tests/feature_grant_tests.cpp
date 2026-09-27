@@ -1,9 +1,14 @@
 #include "opengold/campaign_save.h"
+#include "opengold/rolf_tour.h"
+#include "opengold/character_creator.h"
 #include "opengold/srd5.h"
 #include "combat_fixture.h"
+#include "campaign_fixture.h"
+#include "../src/OpenGold.Rules.Srd5/src/weapon_mastery.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
@@ -433,12 +438,17 @@ void profiles_and_migration()
         legacy->save() == reference,
         "Continuation matches the previous writer exactly, including damage, spent feats, turn budgets and RNG");
 }
+
+#include "mastery_grant_checks.h"
+#include "mastery_rest_checks.h"
 } // namespace
 
 int main()
 {
     try
     {
+        mastery_grant_checks::run();
+        mastery_rest_checks::run();
         creation();
         advancement();
         profiles_and_migration();

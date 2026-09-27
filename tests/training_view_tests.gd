@@ -1,9 +1,11 @@
 extends SceneTree
 
 var captures := ""
+var locales := ["en", "es"]
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
+		if arg == "--training-demo": locales = ["en"]
 		if arg.begins_with("--training-capture="):
 			captures = arg.trim_prefix("--training-capture=")
 	call_deferred("run_checks")
@@ -79,7 +81,7 @@ func keyboard(key: Key) -> void:
 		await settle()
 
 func background_captures(background: String, translated: String) -> void:
-	for locale in ["en", "es"]:
+	for locale in locales:
 		TranslationServer.set_locale(locale)
 		await press("Back")
 		await press("Next")
@@ -148,6 +150,7 @@ func all_class_skill_controls() -> void:
 			await press("Next")
 			require(tool.button_pressed, "Back preserves Monk tool")
 		if klass == "Fighter": await choose("Training/Rows/Group1/Choice", "Defense")
+		await complete_mastery(klass)
 		require(not current_scene.get_node("Next").disabled, "Every class can finish all supported Training choices: " + klass)
 		await press("Next")
 		require(current_scene.get_node("PageTitle").text == ("Spell Choices" if klass in ["Cleric", "Sorcerer", "Warlock", "Wizard"] else "Name"), "Completed Training reaches the next creation step: " + klass)
@@ -165,12 +168,13 @@ func all_class_skill_controls() -> void:
 		await press("Back")
 		await pick(0, "elvish", false)
 		await pick(0, "dwarvish", false)
-		if klass in ["Bard", "Monk", "Druid", "Wizard"]:
-			for locale in ["en", "es"]:
+		if klass in ["Bard", "Monk", "Druid", "Wizard", "Barbarian", "Fighter", "Paladin", "Ranger", "Rogue"]:
+			for locale in locales:
 				TranslationServer.set_locale(locale)
 				await press("Back")
 				await press("Next")
 				require(box.get_node("Title").text.begins_with(klass + " skills" if locale == "en" else "Habilidades de"), "Class skill heading is translated")
+				await complete_mastery(klass)
 				if klass == "Druid":
 					require(current_scene.get_node("TrainingFixed").text.contains("Herbalism Kit (Druid class)" if locale == "en" else "Útiles de herboristería (Clase de druida)"), "Translated Druid tool and source")
 				for size in [Vector2i(1120, 800), Vector2i(1920, 1080)]:
@@ -193,6 +197,28 @@ func all_class_skill_controls() -> void:
 			if check.button_pressed: check.set_pressed(false)
 		await settle()
 		await press("Back")
+
+func complete_mastery(klass: String) -> void:
+	if not klass in ["Barbarian", "Fighter", "Paladin", "Ranger", "Rogue"]: return
+	var box: VBoxContainer
+	for candidate in current_scene.get_node("Training/Rows").get_children():
+		if candidate.visible and candidate.has_node("dagger") and candidate.get_node("dagger").visible: box = candidate
+	require(box != null, "Eligible class has a Weapon Mastery group: " + klass)
+	var count := 3 if klass == "Fighter" else 2
+	var picked := 0
+	for child in box.get_children():
+		if child is CheckBox and child.visible and child.button_pressed: picked += 1
+	for child in box.get_children():
+		if child is CheckBox and child.visible and not child.disabled and not child.button_pressed and picked < count:
+			child.grab_focus(); await keyboard(KEY_SPACE)
+			require(child.button_pressed and child.has_focus(), "Mastery supports keyboard selection with retained focus")
+			picked += 1
+	require(box.get_node("Title").text.ends_with("(%d / %d)" % [count, count]), "Mastery count is complete")
+	for child in box.get_children():
+		if child is CheckBox and child.visible and not child.button_pressed: require(child.disabled, "Mastery selection cannot exceed entitlement")
+	for size in [Vector2i(1120,800), Vector2i(1920,1080)]:
+		root.size = size; await settle(); box.get_node("dagger").grab_focus(); await settle()
+		await capture("mastery-" + klass.to_lower() + "-" + TranslationServer.get_locale() + "-" + str(size.x))
 
 func run_checks() -> void:
 	change_scene_to_file("res://scenes/character_creation.tscn")
@@ -234,6 +260,7 @@ func run_checks() -> void:
 	await pick(2, "stealth")
 	await pick(2, "perception")
 	await pick(3, "undercommon")
+	await complete_mastery("Rogue")
 	require(not current_scene.get_node("Next").disabled, "Complete Rogue training cannot continue")
 	var last: CheckBox = current_scene.get_node("Training/Rows/Group3/undercommon")
 	last.grab_focus()
@@ -284,6 +311,7 @@ func run_checks() -> void:
 	await press("Back")
 	await choose("Choices", "Fighter")
 	await press("Next")
+	await complete_mastery("Fighter")
 	var style: OptionButton = current_scene.get_node("Training/Rows/Group1/Choice")
 	require(current_scene.get_node("Training/Rows/Group3/dice").button_pressed, "Class change preserves Soldier Gaming Set")
 	require(style.is_visible_in_tree() and style.selected == 0 and current_scene.get_node("Next").disabled, "Fighter must choose a starting style")
@@ -298,9 +326,11 @@ func run_checks() -> void:
 	await press("Next")
 	await press("Back")
 	require(style.selected == 2, "Back must preserve the chosen style")
+	await choose("Training/Rows/Group1/Choice", "Great Weapon Fighting")
+	require(style.selected == 3 and not current_scene.get_node("Next").disabled, "GWF completes starting style choice")
 	await choose("Training/Rows/Group1/Choice", "Defense")
 	require(style.selected == 1 and not current_scene.get_node("Next").disabled, "Changing style must replace its selection")
-	for locale in ["en", "es"]:
+	for locale in locales:
 		TranslationServer.set_locale(locale)
 		await press("Back")
 		await press("Next")
@@ -324,6 +354,7 @@ func run_checks() -> void:
 	await pick(2, "perception")
 	await pick(2, "investigation")
 	await pick(3, "undercommon")
+	await complete_mastery("Rogue")
 	current_scene.get_node("Training/Rows/Group2/perception").grab_focus()
 	await settle()
 	await capture("training-rogue-expertise")

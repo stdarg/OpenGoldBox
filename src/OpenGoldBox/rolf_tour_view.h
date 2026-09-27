@@ -119,6 +119,7 @@ class RolfTourView : public godot::Control
     void camp();
     void setup_rest();
     void check_rest_controls();
+    void check_mastery_rest_controls();
     unsigned rest_check_stage_{};
     void refresh_rest();
     void rest_selected(std::int64_t index);
@@ -133,6 +134,14 @@ class RolfTourView : public godot::Control
     void rest_spell_input(const godot::Ref<godot::InputEvent> &event);
     opengold::MemberId rest_spell_member_{};
     opengold::rules::SpellChoices rest_spell_choice_;
+    void refresh_rest_training();
+    void rest_training_toggled(bool selected, godot::String option);
+    void rest_training_apply();
+    void rest_training_keep();
+    void rest_training_input(const godot::Ref<godot::InputEvent> &event);
+    opengold::MemberId rest_training_member_{};
+    opengold::RestTicket rest_training_ticket_{};
+    std::vector<std::string> rest_training_choice_;
     void rest_finish();
     void rest_resume();
     void rest_save();

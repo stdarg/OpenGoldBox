@@ -51,8 +51,18 @@ Character hero(std::string klass = "fighter", unsigned level = 4)
         r = {{6, 5, 4, 1}, 3};
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
+    // Keep this legacy-rest fixture's later training pending so it continues to
+    // exercise compact campaign formats 11/12, independently of newer choices.
     for (unsigned n = 2; n <= level; ++n)
-        check(result.advance(*module(), scratch), "Fixture level is supported");
+    {
+        auto choice = module()->default_advancement(result.sheet());
+        std::erase_if(choice.training,
+                      [](const auto &group)
+                      {
+                          return group.first.find(":weapon_mastery") != std::string::npos;
+                      });
+        check(result.advance(*module(), scratch, choice), "Fixture level is supported");
+    }
     return result;
 }
 
@@ -107,6 +117,13 @@ class AlternateRestRules final : public RulesModule
                                        EquipmentState equipment) const override
     {
         return module()->character_profile(sheet, gear, equipment);
+    }
+
+    EquipmentChange equipment_change(const CharacterSheet &sheet, std::span<const std::string> gear,
+                                     EquipmentState state, unsigned selected,
+                                     EquipmentOperation operation) const override
+    {
+        return module()->equipment_change(sheet, gear, state, selected, operation);
     }
 
     RecoveryInfo recovery_info(const CharacterSheet &, const VitalState &) const override

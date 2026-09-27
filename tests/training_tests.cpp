@@ -62,7 +62,21 @@ TrainingChoices choices()
     return {{"origin:languages", {"elvish", "dwarvish"}},
             {"class:rogue", {"acrobatics", "investigation", "perception", "persuasion"}},
             {"class:rogue:expertise", {"stealth", "perception"}},
-            {"class:rogue:thieves_cant", {"undercommon"}}};
+            {"class:rogue:thieves_cant", {"undercommon"}},
+            {"class:rogue:weapon_mastery", {"dagger", "shortbow"}}};
+}
+
+void complete_mastery(CharacterDraft &d)
+{
+    for (const auto &group : srd5::character_rules()->training_options(d))
+        if (group.id.ends_with(":weapon_mastery"))
+        {
+            auto &selected = d.training[group.id];
+            for (const auto &option : group.options)
+                if (selected.size() < group.count &&
+                    std::find(selected.begin(), selected.end(), option.id) == selected.end())
+                    selected.push_back(option.id);
+        }
 }
 
 Character hero(const CharacterDraft &d)
@@ -116,6 +130,12 @@ TrainingChoices with_advancement_training(const Character &character,
     for (const auto &advancement : character.advancements())
         for (const auto &[id, values] : advancement.training)
             choices.emplace(id, values);
+    auto draft = character.creation_data();
+    draft.training = choices;
+    for (const auto &group : creation.training_options(draft))
+        if (group.id.ends_with(":weapon_mastery") && !choices.contains(group.id))
+            for (unsigned i = 0; i < group.count; ++i)
+                choices[group.id].push_back(group.options.at(i).id);
     const auto candidate = character.preview_training(creation, rules, choices, false);
     for (const auto &group : rules.training_options(candidate.sheet()))
         if (!choices.contains(group.id))
@@ -223,6 +243,7 @@ void all_class_skills()
             if (klass.id != "rogue")
                 check(!hero(d).sheet().training.complete,
                       "New class skill choices are required, not invented");
+            complete_mastery(d);
             for (const auto &first : expected)
             {
                 auto selected = chosen_class_skills(klass.id);
@@ -352,7 +373,8 @@ void all_class_skills()
     };
     auto expected = body(prior);
     replace(expected, "0.6.29", rules->identity().version);
-    expected = test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected));
+    expected = test::with_alert_grants(
+        test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected)));
     check(
         body(encode_campaign(party, nullptr, "class-skills")) ==
             test::with_druid_herbalism_grants(expected),
@@ -365,8 +387,8 @@ void all_class_skills()
     for (const auto &member : party.checkpoint().roster)
     {
         const auto klass = member.character.creation_data().character_class;
-        check(member.character.sheet().training.complete == (klass == "rogue"),
-              "Old Rogue stays complete; other class skill choices stay pending");
+        check(!member.character.sheet().training.complete,
+              "Historical characters retain missing skill or mastery choices as pending");
         if (klass == "rogue")
             continue;
         auto selected = member.character.creation_data().training;
@@ -723,7 +745,8 @@ void druid_herbalism()
             const auto current = rules->create(encounter, 13)->save();
             check(rules->restore(current)->save() == current,
                   "Druid's current Herbalism Kit profile round trips");
-            replace(encounter.participants[0].character_profile, "PC28", "PC21");
+            replace(encounter.participants[0].character_profile,
+                    profile.substr(0, profile.find(' ')), "PC21");
             rejects(
                 [&]
                 {
@@ -748,7 +771,8 @@ void druid_herbalism()
     };
     auto expected = body(prior);
     replace(expected, "0.6.32", rules->identity().version);
-    expected = test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected));
+    expected = test::with_alert_grants(
+        test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected)));
     const auto current = encode_campaign(party, nullptr, "druid-herbalism");
     check(
         body(current) == test::with_druid_herbalism_grants(expected),
@@ -802,7 +826,11 @@ void soldier_gaming()
             if (klass.id == "monk")
                 d.training["class:monk:tools"] = {"smiths_tools"};
             const auto groups = creation->training_options(d);
-            const auto &offered = groups.back();
+            const auto &offered = *std::find_if(groups.begin(), groups.end(),
+                                                [&](const auto &group)
+                                                {
+                                                    return group.id == group_id;
+                                                });
             std::vector<std::string> ids;
             for (const auto &option : offered.options)
                 ids.push_back(option.id);
@@ -811,6 +839,7 @@ void soldier_gaming()
             check(!hero(d).sheet().training.complete,
                   "Gaming Set choice is required independently of class choices");
             d.training[group_id] = {variant};
+            complete_mastery(d);
             const auto h = hero(d);
             const auto &sheet = h.sheet();
             check(sheet.training.complete,
@@ -853,6 +882,14 @@ void soldier_gaming()
             const auto current = rules->create(encounter, 13)->save();
             check(rules->restore(current)->save() == current,
                   "Gaming Set current combat continuation is canonical");
+            auto older_sheet = sheet;
+            std::erase_if(older_sheet.grants,
+                          [](const auto &g)
+                          {
+                              return g.id.starts_with("mastery:");
+                          });
+            encounter.participants[0].character_profile =
+                rules->character_profile(older_sheet, {}).data;
             replace(encounter.participants[0].character_profile,
                     klass.id == "wizard"  ? "PC32"
                     : klass.id == "rogue" ? "PC35"
@@ -922,7 +959,8 @@ void soldier_gaming()
     };
     auto expected = body(prior);
     replace(expected, "0.6.33", rules->identity().version);
-    expected = test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected));
+    expected = test::with_alert_grants(
+        test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected)));
     check(
         body(encode_campaign(party, nullptr, "soldier-gaming")) == expected,
         "All twelve historical Soldiers retain every field except module identity/checksum and fixed Tactical Mind grant");
@@ -1002,8 +1040,8 @@ void creation_controls()
         });
     // Independent, authored choices exercise dependent groups in UI order.
     const auto selected = choices();
-    for (const auto *group :
-         {"origin:languages", "class:rogue", "class:rogue:expertise", "class:rogue:thieves_cant"})
+    for (const auto *group : {"origin:languages", "class:rogue", "class:rogue:expertise",
+                              "class:rogue:thieves_cant", "class:rogue:weapon_mastery"})
         for (const auto &value : selected.at(group))
             creator.training_choice(group, value, true);
     check(creator.training_complete() && creator.sheet().training.complete,
@@ -1047,7 +1085,7 @@ void creation_controls()
     creator.training_choice("class:rogue:thieves_cant", "undercommon", true);
     creator.select(CreationField::character_class, "fighter");
     check(
-        creator.draft().training.size() == 2 && creator.draft().training.at("origin:languages") ==
+        creator.draft().training.size() == 3 && creator.draft().training.at("origin:languages") ==
                                                     std::vector<std::string>({"elvish", "orc"}),
         "Class change preserves languages and compatible skills while clearing Rogue-only groups");
     check(!creator.training_complete(), "Fighter requires its own starting style choice");
@@ -1055,8 +1093,9 @@ void creation_controls()
     check(creator.draft().training.at("class:fighter") ==
               std::vector<std::string>({"acrobatics", "persuasion"}),
           "Class change keeps the first two valid selected skills");
+    creator.training_choice("class:fighter:weapon_mastery", "longsword", true);
     check(creator.training_complete(),
-          "Fighter languages, style and skills complete supported training");
+          "Fighter languages, style, skills and three mastery kinds complete supported training");
     creator.training_choice("class:fighter:fighting_style", "archery", true);
     check(creator.draft().training.at("class:fighter:fighting_style") ==
               std::vector<std::string>{"archery"},
@@ -1076,7 +1115,8 @@ void creation_controls()
     check(!creator.draft().training.contains("class:fighter:fighting_style") &&
               !creator.training_complete(),
           "Returning to Rogue clears the invalid style without inventing cleared choices");
-    for (const auto *group : {"class:rogue", "class:rogue:expertise", "class:rogue:thieves_cant"})
+    for (const auto *group : {"class:rogue", "class:rogue:expertise", "class:rogue:thieves_cant",
+                              "class:rogue:weapon_mastery"})
         for (const auto &value : selected.at(group))
             creator.training_choice(group, value, true);
     creator.next();
@@ -1128,6 +1168,10 @@ void preset_training()
     {
         const auto &c = pool[i];
         ++classes[c.creation_data().character_class];
+        if (c.creation_data().background == "criminal")
+            check(std::count(c.sheet().grants.begin(), c.sheet().grants.end(),
+                             FeatureGrant{"feat:alert", "background:criminal", 1, {}}) == 1,
+                  "Criminal presets receive exactly one fixed Alert grant");
         check(c.sheet().training.complete &&
                   c.creation_data().training == again[i].creation_data().training,
               "Preset training is complete and deterministic");
@@ -1900,7 +1944,8 @@ void remaining_backgrounds()
     };
     auto expected = body(bytes);
     replace(expected, "0.6.26", rules->identity().version);
-    expected = test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected));
+    expected = test::with_alert_grants(
+        test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected)));
     const auto current = encode_campaign(party, nullptr, "backgrounds-migration");
     check(
         body(current) == test::with_background_training_grants(expected, 2),
@@ -1963,6 +2008,7 @@ void starting_styles()
                 continue;
             }
             d.training["class:fighter"] = {"athletics", "history"};
+            complete_mastery(d);
             auto c = hero(d);
             const auto &sheet = c.sheet();
             check(sheet.training.complete && std::find(sheet.grants.begin(), sheet.grants.end(),
@@ -1986,7 +2032,7 @@ void starting_styles()
                     (void)hero(invalid);
                 });
             invalid = d;
-            invalid.training["class:fighter:fighting_style"] = {"great_weapon_fighting"};
+            invalid.training["class:fighter:fighting_style"] = {"dueling"};
             rejects(
                 [&]
                 {
@@ -2020,6 +2066,14 @@ void starting_styles()
                         }
             check(checked && rules->restore(battle->save())->save() == battle->save(),
                   "Starting style and spent attack retain canonical combat continuation");
+            auto style_only = sheet;
+            std::erase_if(style_only.grants,
+                          [](const auto &g)
+                          {
+                              return g.id.starts_with("mastery:");
+                          });
+            profile =
+                rules->character_profile(style_only, std::array<std::string, 1>{"shortbow"}).data;
             replace(profile, "PC28", "PC17");
             encounter.participants[0].character_profile = profile;
             rejects(
@@ -2065,7 +2119,8 @@ void starting_styles()
     };
     auto expected = body(old);
     replace(expected, "0.6.28", rules->identity().version);
-    expected = test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected));
+    expected = test::with_alert_grants(
+        test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected)));
     check(
         body(encode_campaign(p, nullptr, "style-migration")) == expected,
         "Actual prior campaign retains every choice, grant, wound and resource byte except module identity");
@@ -2082,6 +2137,8 @@ void starting_styles()
         auto choices = before.character.creation_data().training;
         choices["class:fighter"] = {"athletics", "history"};
         choices["class:fighter:fighting_style"] = {id == 2 ? "archery" : "defense"};
+        choices =
+            with_advancement_training(before.character, *creation, *rules, std::move(choices));
         if (id == 2)
         {
             auto duplicate = choices;
@@ -2099,7 +2156,7 @@ void starting_styles()
         const auto &after = p.member(id);
         check(
             after.character.sheet().training.complete && after.vitals == before.vitals &&
-                after.character.advancements() == before.character.advancements() &&
+                preserved_advancement(after.character, before.character) &&
                 after.character.sheet().hit_points == before.character.sheet().hit_points,
             "Completing old style preserves vitals, levels, HP history and previous feat choices");
     }
@@ -2192,15 +2249,17 @@ void cunning_prior_writer()
     };
     auto expected = body(prior);
     replace(expected, "0.6.34", rules->identity().version);
-    expected = test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected));
+    expected = test::with_alert_grants(
+        test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected)));
     check(
         body(encode_campaign(party, nullptr, "cunning")) == expected,
         "Prior Rogue campaign retains every field except module identity/checksum and fixed Tactical Mind grant");
     check(party.state().roster.size() == 4, "Cunning baseline covers all four backgrounds");
     for (const auto &member : party.state().roster)
-        check(member.character.sheet().level == 1 && member.character.sheet().training.complete &&
+        check(member.character.sheet().level == 1 && !member.character.sheet().training.complete &&
+                  member.character.sheet().training.masteries.empty() &&
                   member.vitals.hit_points == member.character.sheet().hit_points - 2,
-              "Prior Rogues retain complete training, level and wounds");
+              "Prior Rogues retain existing training, level and wounds with mastery pending");
     const auto frozen = fixture("combat-v13-cunning-before.save");
     auto migrated = frozen;
     replace(migrated, "0.6.34", rules->identity().version);
@@ -2349,7 +2408,8 @@ void monk_tool_prior_writer()
     };
     auto expected = body(saved);
     replace(expected, "0.6.31", rules->identity().version);
-    expected = test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected));
+    expected = test::with_alert_grants(
+        test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected)));
     check(body(encode_campaign(party, nullptr, "monk-tools")) == expected,
           "Prior Monk campaign retains all recorded data except module identity");
     check(party.state().roster.size() == 4, "Prior Monk fixture covers all four backgrounds");
@@ -2400,7 +2460,8 @@ void bard_instrument_prior_writer()
     };
     auto expected = body(saved);
     replace(expected, "0.6.30", rules->identity().version);
-    expected = test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected));
+    expected = test::with_alert_grants(
+        test::with_sneak_attack_grants(test::with_tactical_mind_grants(expected)));
     check(body(encode_campaign(party, nullptr, "bard-instruments")) == expected,
           "Prior Bard campaign retains all recorded data except module identity");
     check(party.state().roster.size() == 4, "Prior Bard fixture covers all four backgrounds");
@@ -2667,12 +2728,91 @@ void freeze_sage()
 #include "cunning_checks.h"
 #include "sneak_baseline.h"
 #include "rogue_attack_checks.h"
+#include "style_route_checks.h"
+#include "light_attack_baseline.h"
+#include "light_attack_checks.h"
+#include "mastery_baseline.h"
+#include "alert_checks.h"
 } // namespace
 
 int main(int argc, char **argv)
 {
     try
     {
+        if (argc == 2 && std::string_view(argv[1]) == "--alert")
+        {
+            alert_checks::run();
+            std::cout << "Alert acceptance passed\n";
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--freeze-alert")
+        {
+            alert_checks::freeze();
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--freeze-mastery")
+        {
+            mastery_baseline::freeze();
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--mastery-baseline")
+        {
+            mastery_baseline::verify();
+            std::cout << "Mastery prior-writer checks passed\n";
+            return 0;
+        }
+        if (argc == 4 && std::string_view(argv[1]) == "--verify-light-style-ui")
+        {
+            style_route_checks::verify_ui(argv[2], argv[3], true);
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--light-attacks")
+        {
+            light_attack_checks::run();
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--freeze-hands")
+        {
+            light_attack_baseline::freeze_hands();
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--hands-baseline")
+        {
+            light_attack_baseline::verify_hands_baseline();
+            return 0;
+        }
+        if (argc == 3 && std::string_view(argv[1]) == "--verify-hands-ui")
+        {
+            light_attack_baseline::verify_hands_ui(argv[2]);
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--hands-ui")
+        {
+            light_attack_baseline::write_hands_ui_fixture();
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--freeze-light")
+        {
+            light_attack_baseline::freeze();
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--light-baseline")
+        {
+            light_attack_baseline::verify();
+            std::cout << "Light prior-writer checks passed\n";
+            return 0;
+        }
+        if (argc == 4 && std::string_view(argv[1]) == "--verify-style-ui")
+        {
+            style_route_checks::verify_ui(argv[2], argv[3]);
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--style-routes")
+        {
+            style_route_checks::run();
+            std::cout << "Fighting Style route checks passed\n";
+            return 0;
+        }
         if (argc == 3 && std::string_view(argv[1]) == "--verify-rogue-ui")
         {
             rogue_attack_checks::verify_ui(argv[2]);
@@ -2718,18 +2858,25 @@ int main(int argc, char **argv)
                 freeze_sage();
             return 0;
         }
-        auto run = [](auto test, const char *name)
+        bool failed = false;
+        auto run = [&](auto test, const char *name)
         {
             try
             {
                 test();
             }
-            catch (...)
+            catch (const std::exception &e)
             {
-                std::cerr << name << ": ";
-                throw;
+                std::cerr << name << ": " << e.what() << "\n";
+                failed = true;
             }
         };
+        run(alert_checks::run, "Alert");
+        run(mastery_baseline::verify, "Mastery prior writer");
+        run(light_attack_checks::run, "Light attacks");
+        run(light_attack_baseline::verify_hands_baseline, "Hand baseline");
+        run(light_attack_baseline::verify, "Light baseline");
+        run(style_route_checks::run, "Fighting Style routes");
         run(rogue_attack_checks::run, "Rogue attacks");
         run(scholar_checks::run, "Scholar");
         run(sneak_baseline::verify, "Sneak baseline");
@@ -2752,6 +2899,8 @@ int main(int argc, char **argv)
         run(persistence, "persistence");
         run(complete_saved_training, "complete_saved_training");
         run(draft_review_editor, "draft_review_editor");
+        if (failed)
+            return 1;
         write_review_fixture();
         std::cout << "Training grant and creation tests passed\n";
         return 0;

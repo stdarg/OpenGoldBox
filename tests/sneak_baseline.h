@@ -58,9 +58,11 @@ void verify()
               test::with_sneak_attack_grants(expected),
           "Actual pre-Sneak campaign changes only fixed Sneak grant and module identity/checksum");
     for (const auto &m : party.state().roster)
-        check(m.character.sheet().level == m.id && m.character.sheet().training.complete &&
-                  m.vitals.hit_points == m.character.sheet().hit_points - 2 && m.wealth[3] == 37,
-              "Both ordinary Rogue levels preserve training, wounds and wealth");
+        check(
+            m.character.sheet().level == m.id && !m.character.sheet().training.complete &&
+                m.character.sheet().training.masteries.empty() &&
+                m.vitals.hit_points == m.character.sheet().hit_points - 2 && m.wealth[3] == 37,
+            "Both ordinary Rogue levels preserve training, wounds and wealth with newly owed masteries pending");
     auto upgraded = [&](const char *name)
     {
         auto text = fixture(name);

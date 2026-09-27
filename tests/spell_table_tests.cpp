@@ -436,19 +436,19 @@ void profile_tags()
 
     // Unrecognised tags: below the floor, above the ceiling, non-numeric, and
     // not a PC tag at all. An unknown tag must never read as "has everything".
-    for (const auto &bad : {"PC00", "PC37", "PC99", "PCxx", "XX35", "PC-1"})
+    for (const auto &bad : {"PC00", "PC42", "PC99", "PCxx", "XX35", "PC-1"})
         check(!loads(rebuild(bad, packed)),
               ("Profile tag " + std::string(bad) + " must be rejected").c_str());
 
     // The explicit spell list is the path that lifts the 31-spell ceiling. No
     // writer emits it yet, because every implemented spell still has a bit, so
     // exercise it with a hand-built profile.
-    check(loads(rebuild("PC36", "2 fire_bolt magic_missile")),
+    check(loads(rebuild("PC41", "2 fire_bolt magic_missile")),
           "An explicit spell list loads and satisfies the Wizard grant cross-check");
-    check(!loads(rebuild("PC36", "1 not_a_spell")), "An unknown spell id in the list is rejected");
-    check(!loads(rebuild("PC36", "99 fire_bolt")), "A spell count beyond the catalog is rejected");
-    check(!loads(rebuild("PC36", "2 fire_bolt fire_bolt")), "A duplicate spell id is rejected");
-    check(!loads(rebuild("PC36", "2 fire_bolt sacred_flame")),
+    check(!loads(rebuild("PC41", "1 not_a_spell")), "An unknown spell id in the list is rejected");
+    check(!loads(rebuild("PC41", "99 fire_bolt")), "A spell count beyond the catalog is rejected");
+    check(!loads(rebuild("PC41", "2 fire_bolt fire_bolt")), "A duplicate spell id is rejected");
+    check(!loads(rebuild("PC41", "2 fire_bolt sacred_flame")),
           "A spell the class cannot access is rejected");
     // A bitmask bit that maps to no spell must reject rather than be dropped.
     check(!loads(rebuild(tag, "4096")), "An unmapped bitmask bit is rejected");

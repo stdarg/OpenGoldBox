@@ -311,14 +311,14 @@ restart tests cover pending spending through the real save/load host.
 | [Dwarven Toughness explanation #210](https://github.com/stdarg/OpenGold/issues/210) | SRD 5.2.1 p. 84; current +1 per attained level in the existing racial section. | Independent HP/source checks: all 12 starting classes; Fighter/Cleric/Wizard through 4; Constitution increases and reloads. | Display correction only; arithmetic/formats unchanged. Dwarf #66 stays open. [Details](DAMAGE.md#dwarven-toughness-source-display). |
 | [Sage fixed training #211](https://github.com/stdarg/OpenGold/issues/211) | SRD 5.2.1 p. 83: Arcana, History and Calligrapher's Supplies with background provenance. | All 12 starting classes, Rogue Expertise, tool/skill checks, ASI and actual 0.6.25 migration; existing Training display. | Rules 0.6.26 / PC15. No new choices, items or feat grant. Sage #63 remains open. [Evidence and limits](SAGE-TRAINING.md). |
 | [Acolyte/Soldier fixed training #212](https://github.com/stdarg/OpenGold/issues/212) | SRD 5.2.1 p. 83: Acolyte Insight, Religion, Calligrapher's Supplies; Soldier Athletics, Intimidation. | All 12 starting classes, Rogue Expertise, ASI, actual 0.6.26 migration and existing translated Training display. | Rules 0.6.27 / PC16. #61/#64 remain open for remaining package choices. [Evidence and limits](BACKGROUND-TRAINING.md). |
-| [Archery #78](https://github.com/stdarg/OpenGold/issues/78) | SRD 5.2.1 p. 87: +2 with Ranged weapons, Fighting Style prerequisite, nonrepeatable. | Existing Fighter level-four feat selection, attack/category oracles, old/current saves, Godot confirmation. | Rules 0.6.28 / PC17. Starting Fighter selection is now delivered below; replacement and other class routes remain #85/#140/#147. [Evidence and limits](ARCHERY.md). |
-| [Fighter starting styles #85](https://github.com/stdarg/OpenGold/issues/85) | SRD 5.2.1 pp. 47, 87–88: one level-one style, prerequisite and nonrepeatability. | Approved Training dropdown, presets, independent AC/attack and provenance checks, old/current saves, keyboard and translated layouts. | Rules 0.6.29 / PC18. Old choices remain pending. Other styles, level-up replacement and mastery remain open. [Evidence and limits](FIGHTER-STYLES.md). |
+| [Archery #78](https://github.com/stdarg/OpenGold/issues/78) | SRD 5.2.1 p. 87: +2 with Ranged weapons; prerequisite and nonrepeatability. | Actual Fighter/Paladin/Ranger grants, ordinary levels1–4, attack/category oracles, campaign/recruited/reload and main/demo controls. | Rules0.6.53 completes supported source routes. [Style-route evidence](FIGHTING-STYLE-ROUTES.md). |
+| [Fighter styles #85](https://github.com/stdarg/OpenGold/issues/85) | Starting choice and replacement whenever gaining a Fighter level. | Training/Review Training and separate advancement control; initial and independently acquired feats retain distinct provenance. | All four SRD styles and mastery through4 delivered; see the Weapon Mastery integration completion record below. [Scope](FIGHTER-STYLES.md). |
 | [Starting class skills #213](https://github.com/stdarg/OpenGold/issues/213) | SRD 5.2.1 Core Traits tables for all twelve classes; exact skill lists and counts. | Shared Training controls, generated presets, sourced bonuses, all-class/background native oracles, actual prior-writer migration and keyboard checks. | Rules 0.6.30 / PC19. Missing old choices remain pending; full class packages remain in their trackers. [Evidence and limits](CLASS-SKILLS.md). |
 | [Bard instruments #214](https://github.com/stdarg/OpenGold/issues/214) | SRD 5.2.1 pp. 31, 94: three of ten instrument proficiencies. | Normal Training, generated presets, sourced sheet/check bonuses, all 120 triples, prior-writer campaign/combat and translated keyboard/render checks. | Rules 0.6.31 / PC20. Old choices stay pending; equipment, Utilize actions and remaining Bard features stay separate. [Evidence](BARD-INSTRUMENTS.md). |
 | [Monk tools #215](https://github.com/stdarg/OpenGold/issues/215) | SRD 5.2.1 pp. 49, 93–94: one artisan tool or instrument from all 27 options. | Training, generated presets, sourced checks, overlap and class-change preservation, prior-writer continuation. | Rules 0.6.32 / PC21; old choices pending. Equipment, Utilize and other Monk features remain separate. [Evidence](MONK-TOOLS.md). |
 | [Druid Herbalism Kit #216](https://github.com/stdarg/OpenGold/issues/216) | SRD 5.2.1 pp. 41, 94: fixed class tool proficiency. | Ordinary creation/presets, sourced checks and fixed display, validated old-ledger migration with exactly the owed grant. | Rules 0.6.33 / PC22. Equipment, crafting/Utilize and other Druid features remain separate. [Evidence](DRUID-HERBALISM.md). |
 | [Soldier Gaming Set #217](https://github.com/stdarg/OpenGold/issues/217) | SRD 5.2.1 pp. 83–94: one of four Gaming Set variants. | Normal Training, presets, sourced checks, all 48 class/variant combinations, actual prior-save continuation and completion. | Rules 0.6.34 / PC23; old choices pending. Equipment/wealth and Utilize remain separate. [Evidence](SOLDIER-GAMING.md). |
-| [Great Weapon Fighting #80](https://github.com/stdarg/OpenGold/issues/80) | SRD 5.2.1 p. 88: optional per-die replacement, eligible melee weapon held with two hands. | Shared damage roller and independent sums/RNG checks; actual pre-change critical Savage Attacker continuation. | Foundation only: no selectable feat or active benefit yet. Q23 awaits combat-behavior approval; eligibility, grants and player integration remain. [Evidence](GREAT-WEAPON-FIGHTING.md). |
+| [Great Weapon Fighting #80](https://github.com/stdarg/OpenGold/issues/80) | SRD 5.2.1 p. 88: eligible two-hand Melee damage dice1/2 count as3. | Independent actual dice/RNG oracles, critical/Savage/reaction/grip/thrown/Ranged exclusions and sourced acquisition through Fighter/Paladin/Ranger. | Rules0.6.53, STYLE-1 automatic benefit approved; PC36/campaign17 and retained historical fixtures. [Evidence](GREAT-WEAPON-FIGHTING.md). |
 | [FTR02](https://github.com/stdarg/OpenGold/issues/86): Action Surge through level four | SRD 5.2.1 p. 48. Fixed Fighter level-two grant, one restricted extra action, one use per Short/Long Rest through level 4. | [Native](../tests/action_surge_tests.cpp), [combat controls](../tests/action_surge_view_tests.gd), actual 0.6.23 writer campaign/Dash fixtures. | Rules 0.6.24 / PC13 / combat 14 when a Surge-capable Fighter participates / spent resource SRD8; campaign 11 retained. Historical campaigns gain their justified fixed grant; old combat retains recorded access. Approved mouse/keyboard button, remaining uses and disabled states verified in English/Spanish; #86 complete. [Scope](ACTION-SURGE.md). |
 
 Light extra attacks, Monk Martial Arts, optional feature-granted proficiency,
@@ -433,3 +433,195 @@ Search/execution share the occupancy model. Interrupted enemy overlap preserves
 spent movement through recovery and reload. See [Unconscious transit](UNCONSCIOUS-TRANSIT.md).
 Tiny/size differences, large footprints, other Incapacitated sources and the Prone
 consequence remain tracked by #44/#45/#35; this increment does not close them.
+
+### Fighting Style routes (#78/#79/#80)
+
+Rules0.6.53 implements Archery, Defense and Great Weapon Fighting through actual
+Fighter starting/replacement and Paladin/Ranger level-two grants, plus independent
+level-four feats. Defense is armor-only; shields alone do not grant its bonus.
+Fighter replacement history remains separate from starting Training and feat
+choices. Campaign17/PC36 preserve source and acquisition level; no old fixture or
+supported history was removed. Rules stay in the static SRD library.
+
+[Packet and verification](FIGHTING-STYLE-ROUTES.md) records the final runtime
+revision and commands. Main EN/ES and demo EN advancement controls pass at both
+sizes; saved results match independent native advancement. Training and Review
+Training exercise GWF; recruited routes, spent resources, wounds, rest and old
+save continuations pass. #85/#140/#147 retain other styles, mastery and cantrip
+alternatives. Whole Paladin/Ranger classes and later levels remain incomplete.
+
+### Light attacks, Two-Weapon Fighting and Loading (#59/#81/#56)
+
+Runtime/test commit `69771eb`, rules0.6.55, delivers the three original
+requirements on `codex/srd-light-attacks`. All three issues are closed after push.
+The [fixed packet](LIGHT-ATTACKS.md#integrated-implementation--rules0655) records
+mechanics, scope, commands, compatibility and timings. Actual two-hand equipment
+was delivered in`c539347`; genuine0.6.53/0.6.54 writer fixtures are retained.
+
+An Attack action qualifies a later Bonus Action attack with a different physical
+Light weapon, including misses, thrown units and identical weapon types. Actual
+held weapon selection supports ordinary attacks and eligible reactions. TWF is
+available through Fighter starting/replacement choices, Paladin/Ranger level-two
+choices and independent level-four feats, with provenance and nonrepeatability.
+Its modifier applies once; negative modifiers, Savage, Sneak and critical damage
+remain correct. Loading respects separate Action/Surge/Bonus Action transactions.
+PC38/Combat22 retain selected identities and pending Light damage; supported
+historical saves retain their recorded state and continuation.
+
+All78 integrated checks pass on fresh binaries (61.48s final run). Focused main
+EN/ES + demoEN combat/advancement tests pass at both supported sizes, with exact
+native combat-state and six campaign-save comparisons. Actual PC/recruited safe
+recovery and rest/save paths are covered.960 localized messages validate. An
+unchanged party test caught delayed initialization of non-thrown Light weapon
+identities; initializing them at encounter creation fixed live/restored divergence.
+Core gained no SRD calculations. No new issues, agents, ammunition tracking or
+combat-save controls were added. Nick/mastery, level-five Extra Attack, other
+styles and remaining class/spell requirements stay open under their existing scope.
+
+### Ability Score Improvement conformance (#82)
+
+Reconciled by test/build commit`c3a88b4` on`codex/srd-asi-conformance`; #82 closed.
+The existing rules0.6.55 implementation was verified rather than duplicated.
+[Acceptance, limits and evidence](ASI-CONFORMANCE.md):252 allocation/class/ownership
+cases, all-ability caps, all12 early-entitlement checks, exact provenance,
+modifiers/saves/skills/combat effects, Constitution HP, wounds/resources, rests
+and saved histories. Duplicate use of one entitlement is rejected; ASI remains
+repeatable when further legal entitlements become available. The current1–4 band
+provides one; unavailable class progression and later levels remain open.
+
+The extended advancement suite passes. Existing controls pass for six classes,
+mainEN/ES + demoEN at both sizes, and all18 saved UI results match native
+advancement exactly. Production code/formats are unchanged from the78-check
+Light batch baseline. The obsolete embedded single-page Wizard check is noted
+as deferred test maintenance; current two-page checks pass. No broader Fighter,
+class integration or higher-level completion is claimed.
+
+### Weapon Mastery acquisition checkpoint (batch incomplete)
+
+The feature-branch commit containing this entry implements the acquisition part
+of [Weapon Mastery](WEAPON-MASTERY.md): five starting class routes, all38 eligible
+weapon kinds, Fighter4 additional selection, preset choices, pending historical
+training, chosen-grant validation and conditional PC39 recipes. Rules remain in
+`opengold_rules_srd5`; Core passes choice context and UI renders approved controls.
+The branch rules identity is0.6.56; no main/release integration is claimed.
+
+Fresh native regression51/51 passes (`/tmp/mastery-native-final.log`); mainEN/ES
+and demoEN Training/Review Training/Fighter4 ASI controls pass at both sizes,
+with five UI saves matching native expectations. Genuine0.6.55 campaign/combat
+fixtures retain exact continuation.972 localized messages validate. The committed
+acquisition tree is the tested revision; full batch verification is still due.
+
+**No original issue closed:** eight combat properties and completed-Long-Rest
+replacement transactions/UI remain outstanding. The pure replacement policy is
+unit-tested, not yet a playable rest path. This entry is partial evidence, not a
+claim that #60/#85 or the class issues are complete.
+
+Weapon Mastery Long Rest checkpoint (commit containing this entry): five-class
+PC/NPC replacement, one-use completed-rest windows, original source preservation,
+level/rest history replay and conditional campaign18 are implemented. Interrupted,
+ineligible and reserve members do not gain windows; applying or keeping a choice
+preserves vitals, inventory and advancement. Review Training cannot undo earlier
+replacements. Actual acquisition writer0.6.56/format15 remains byte-identical on
+reload;1–17 compatibility is retained.
+
+Fresh native51/51 passes (4.03s). MainEN/ES and demoEN rest controls pass at both
+sizes, including keyboard/Cancel, sequential members, spell-before-training and
+pending-codec reload; the existing full rest-control suite also passes.976 messages
+validate. See [packet evidence](WEAPON-MASTERY.md#long-rest-implementation-evidence-wip).
+Combat masteries remain unfinished. Saving pending choices is verified in the
+codec, but an accessible Save button in the modal awaits MASTERY-7 approval.
+No issue closure or completed full mastery implementation is claimed.
+
+Weapon Mastery Sap/Vex checkpoint (commit containing this entry): chosen weapons
+now apply sourced automatic combat effects, with next-roll consumption, exact
+source-turn expiry, shared Advantage/Disadvantage, typed damage gating and
+conditional FX6 persistence. Native coverage includes all applicable weapons,
+PC/NPC physical/Light/thrown attacks, reactions, Surge, Sneak/Savage/Champion
+continuation, bounds and legacy rejection. **51/51 native PASS**, mainEN/ES and
+demoEN visible attack/log flows at both sizes pass;980 messages validate.
+See [packet](WEAPON-MASTERY.md#sap-and-vex-combat-checkpoint) and
+[tests](../tests/mastery_combat_checks.h). Six combat properties and pending
+MASTERY-5/6/7 remain; #60/#85 are not closed. No added scope or new issues.
+
+
+Weapon Mastery Nick checkpoint (commit containing this entry): chosen Nick kinds
+now offer the approved physical-weapon selector and targeted extra attack, sharing
+Light's once-per-turn allowance while preserving the Bonus Action. Current Attack
+action timing, Surge, Two-Weapon Fighting, thrown items, Sneak/Savage/Vex/Champion
+and conditional combat23 continuation have native evidence. Actual0.6.56 fixtures
+retain old current-turn behavior; Nick activates at the next fresh turn. **51/51
+native PASS**; mainEN/ES and demoEN Nick and neighboring Light UI/native checks
+pass at both sizes;988 messages validate. See
+[packet](WEAPON-MASTERY.md#nick-combat-checkpoint) and
+[tests](../tests/nick_attack_checks.h). Three of eight properties are delivered;
+Cleave/Graze/Push/Slow/Topple and MASTERY-5/6/7 remain. #60/#85 stay open.
+
+
+Slow lifecycle checkpoint (commit containing this entry) supplies bounded sourced
+Slow effects, stacking/expiry and shared movement/persistence consumers in SRD
+rules0.6.58. **51/51 native PASS**,989 messages validate; actual0.6.57 continuation
+is retained. [Evidence](WEAPON-MASTERY.md#slow-effect-lifecycle-checkpoint-combat-integration-incomplete).
+This is partial rules support: the weapon-hit decision is not integrated and
+Slow is not counted as a fourth playable property. No issue closure or new UI
+verification is claimed. MASTERY-5/6/7 remain pending.
+
+Weapon Mastery pending-save control (commit containing this entry): approved
+MASTERY-7 Save game opens the existing campaign SaveSlots window and returns to
+the same unapplied mastery selections after Cancel or saving. Reload retains
+the entitlement and original grants; Apply then resolves it. Newly loaded town
+views stay hidden while SaveSlots owns the exclusive window. MainEN/ES and
+demoEN controls pass at1120×800/1920×1080; native grants/rest/save checks3/3 and
+neighboring rest controls pass.989 localization messages validate.
+[Evidence and commands](WEAPON-MASTERY.md#pending-mastery-save-control). MASTERY-5/6
+are now approved but their combat implementation remains. No issue closed.
+
+Graze checkpoint (commit containing this entry): both eligible weapons now offer
+Use/Skip after a miss, retaining Action/Reaction costs and applying only the
+attack ability modifier with the approved reduction/cap policy. Main/demo actual
+controls and retained pending/reaction continuation work. All51 native checks,
+mainEN/ES + demoEN at both sizes, neighboring Savage/Champion controls and993
+localized messages pass. [Evidence](WEAPON-MASTERY.md#graze-playable-checkpoint)
+and [native tests](../tests/graze_checks.h). Four of eight mastery properties are
+playable. Slow/Topple choices, Cleave, Push and simultaneous ordering remain;
+#60/#85 are still open. No added issue or scope.
+
+### Weapon Mastery integration complete (#60/#85)
+
+The commit containing this record completes all eight mastery properties in the
+[approved batch](WEAPON-MASTERY.md#frozen-batch), including creation/review,
+Fighter's fourth kind at4, Long Rest replacement and retained-save continuation.
+Slow/Topple/Cleave/Push now use actual hits and the approved optional controls;
+simultaneous Champion movement preserves separate entitlements and interrupted
+routes. All calculations and decisions stay in the static SRD library.
+[Mechanics, commands and evidence](WEAPON-MASTERY.md#optional-hit-mastery-integration).
+
+Rules0.6.60/combat25 preserves prior supported formats and actual0.6.57–0.6.59
+writer fixtures.51/51 native checks pass; mainEN/ES and demoEN rendered controls
+pass at1120×800/1920×1080;1005 localized messages validate. This completes #60 and
+Fighter #85's level1–4 style/mastery scope, with all four SRD styles supplied by
+this and the preceding style/Light deliveries. #140/#147/#111/#103 retain their
+other original requirements; Barbarian progression and all later-level/multiclass
+requirements remain. No issue or feature scope was added. Source: [SRD Fighting
+Style feats](https://www.dndbeyond.com/sources/dnd/br-2024/feats#FightingStyleFeats).
+
+### Alert complete (#74)
+
+Tested implementation **2320701**, pushed on`codex/srd-alert`; #74 closed
+2026-09-26T16:39:33Z. GitHub GraphQL confirms141 open SRD issues. Criminal
+characters from all12 creation/preset routes receive the fixed grant; existing
+six level4 feat routes offer Alert without duplicate acquisition. Initiative
+Proficiency and optional pre-turn swaps work through the approved main/demo
+dialog, including multiple holders, incapacitation and exact pending saves.
+Mechanics remain in the static SRD library. Rules0.6.61/PC40/combat26 retains all
+previous supported formats; historical combats keep their rolls and current turn.
+
+51/51 native tests pass in9.06s after affected rebuilds. MainEN/ES and demoEN
+keyboard/mouse checks pass at1120×800/1920×1080; creation, Fighter advancement
+with native save comparison and adjacent Savage/Champion controls pass.1014
+localized messages validate. [Scope, mechanics, commands and timing](ALERT.md),
+[native evidence](../tests/alert_checks.h), [rendered controls](../tests/alert_view_tests.gd).
+One original requirement closed in approximately26 minutes after approval;
+this excludes preflight and approval wait. No new issue or scope was added.
+Human's independent extra Origin-feat source remains#71; background equipment
+and other class progression remain their original issues. Main stays375f58f;
+branch delivery is not a merge or release claim.

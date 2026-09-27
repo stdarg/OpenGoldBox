@@ -179,6 +179,191 @@ por::Equipment item(unsigned type, unsigned price = 10)
     return e;
 }
 
+// An intentionally different equipment policy proves Core applies rules-owned
+// choices, rather than retaining the SRD single-weapon replacement decision.
+class AlternateEquipmentRules final : public RulesModule
+{
+  public:
+    Identity identity() const override
+    {
+        return {"equipment-test", "1", "owned-plans"};
+    }
+
+    std::vector<std::string> supported_features() const override
+    {
+        return {};
+    }
+
+    std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
+    {
+        return {};
+    }
+
+    std::unique_ptr<CombatSession> restore(std::string_view) const override
+    {
+        return {};
+    }
+
+    EquipmentInfo equipment_info(std::string_view) const override
+    {
+        return {EquipmentSlot::weapon, 1};
+    }
+
+    CharacterProfile character_profile(const CharacterSheet &sheet,
+                                       std::span<const std::string> gear,
+                                       EquipmentState state) const override
+    {
+        CharacterProfile result;
+        result.hit_points = sheet.hit_points;
+        result.armor_class = 10 + int(gear.size());
+        result.equipment = state;
+        return result;
+    }
+
+    EquipmentChange equipment_change(const CharacterSheet &, std::span<const std::string> gear,
+                                     EquipmentState, unsigned selected,
+                                     EquipmentOperation operation) const override
+    {
+        if (gear[selected] == "bad_index")
+            return {{unsigned(gear.size())}, {7}};
+        if (gear[selected] == "duplicate_index")
+            return {{selected, selected}, {7}};
+        if (gear[selected] == "rejected")
+            throw std::runtime_error("Alternate rules reject this equipment");
+        EquipmentChange result;
+        result.equipment = {operation == EquipmentOperation::equip ? 7u : 5u};
+        for (unsigned n = gear.size(); n > 0; --n)
+            if (operation != EquipmentOperation::unequip || n - 1 != selected)
+                result.indices.push_back(n - 1);
+        return result;
+    }
+};
+
+void equipment_rule_boundary()
+{
+    CampaignParty party(std::make_unique<AlternateEquipmentRules>());
+    auto person = character();
+    const auto sword = person.inventory().add("longsword", "Sword");
+    const auto dagger = person.inventory().add("dagger", "Dagger");
+    std::vector<std::uint64_t> invalid;
+    for (const char *key : {"bad_index", "duplicate_index", "rejected"})
+        invalid.push_back(person.inventory().add(key, key));
+    const auto id = party.add_pc(std::move(person));
+    const auto vitals = party.member(id).vitals;
+    party.equip(id, sword);
+    party.equip(id, dagger);
+    check(party.member(id).equipped == std::vector<std::uint64_t>{dagger, sword} &&
+              party.member(id).equipment.weapon_hands == 7,
+          "Core applies the module's two-weapon order and non-SRD equipment state");
+    check(party.profile(id).armor_class == 12,
+          "Profile query receives the module-selected loadout");
+    const auto before = party.member(id).equipped;
+    for (auto item : invalid)
+    {
+        rejects(
+            [&]
+            {
+                party.equip(id, item);
+            });
+        check(
+            party.member(id).equipped == before && party.member(id).equipment.weapon_hands == 7 &&
+                party.member(id).vitals == vitals &&
+                party.member(id).character.inventory().items().size() == 5,
+            "Invalid rules results and rejections preserve owned items, loadout, equipment state and vitals");
+    }
+    party.unequip(id, sword);
+    check(party.member(id).equipped == std::vector<std::uint64_t>{dagger} &&
+              party.member(id).equipment.weapon_hands == 5,
+          "Unequip uses the module's equipment continuation");
+    party.equip(id, dagger);
+    party.unequip(id, sword);
+    check(party.member(id).equipment.weapon_hands == 5 && party.member(id).vitals == vitals,
+          "Existing equip/unequip no-ops preserve state");
+}
+
+void two_weapon_equipment()
+{
+    for (bool recruited : {false, true})
+    {
+        CampaignParty party(module());
+        auto c = character("fighter", "Hands");
+        const auto sword = c.inventory().add("longsword", "Longsword"),
+                   daggers = c.inventory().add("dagger", "Dagger", 3, 8);
+        const auto shield = c.inventory().add("shield", "Shield"),
+                   great = c.inventory().add("greatsword", "Greatsword");
+        const auto id = recruited ? party.recruit("hands:npc", c) : party.add_pc(c);
+        const auto vitals = party.member(id).vitals;
+        auto sourced = party.checkpoint();
+        auto provenance = item(8);
+        provenance.stored.stack_size = 3;
+        sourced.roster.front().item_sources.emplace(daggers, provenance);
+        party.restore(std::move(sourced));
+        party.equip(id, sword);
+        party.set_grip(id, 2);
+        const auto unchanged = encode_campaign(party, nullptr, "hands");
+        const auto choices = party.equipment_choices(id, daggers);
+        check(choices.size() == 2 && choices[0].available && choices[1].available,
+              "Both hand choices are rules-provided");
+        check(unchanged == encode_campaign(party, nullptr, "hands"),
+              "Querying hand choices has no effects");
+        party.equip(id, daggers, EquipmentOperation::equip_other);
+        const auto held = party.member(id).equipped;
+        const auto unit = held.back();
+        check(held.size() == 2 && held[0] == sword && unit != daggers &&
+                  party.member(id).character.inventory().find(unit)->get().quantity == 1 &&
+                  party.member(id).character.inventory().find(daggers)->get().quantity == 2,
+              "Second hand separates one actual stack unit");
+        check(party.member(id).item_sources.contains(unit) &&
+                  party.member(id).item_sources.at(unit).stored.type == 8,
+              "A split equipped unit retains the original item provenance");
+        const auto profile = party.profile(id);
+        check(profile.data.starts_with("PC37 ") && profile.equipment.weapon_hands == 1 &&
+                  !profile.grips[1].available &&
+                  profile.equipment_positions[0].source == "Main hand" &&
+                  profile.equipment_positions[1].source == "Other hand",
+              "Dual weapons use one hand each and report both positions");
+        rejects(
+            [&]
+            {
+                party.set_grip(id, 2);
+            });
+        rejects(
+            [&]
+            {
+                party.equip(id, shield);
+            });
+        check(party.member(id).equipped == held && party.member(id).vitals == vitals,
+              "Illegal shield/grip preserves loadout and resources");
+        const auto saved = encode_campaign(party, nullptr, "hands");
+        CampaignParty loaded(module());
+        loaded.restore(
+            decode_campaign(saved, *srd5::character_rules(), *module(), "hands", nullptr).party);
+        check(encode_campaign(loaded, nullptr, "hands") == saved,
+              "PC/NPC dual-hand campaign save roundtrips exactly");
+        party.equip(id, daggers, EquipmentOperation::equip_main);
+        check(party.member(id).equipped[0] != unit && party.member(id).equipped[1] == unit &&
+                  party.member(id).character.inventory().find(daggers)->get().quantity == 1,
+              "Identical weapons in separate hands remain distinct physical units");
+        party.equip(id, great);
+        const auto blocked = party.equipment_choices(id, daggers);
+        check(blocked[0].available && !blocked[1].available,
+              "Other hand is disabled for a two-handed main weapon");
+        const auto before = encode_campaign(party, nullptr, "hands");
+        rejects(
+            [&]
+            {
+                party.equip(id, daggers, EquipmentOperation::equip_other);
+            });
+        check(encode_campaign(party, nullptr, "hands") == before,
+              "Failed hand operation does not split or consume inventory");
+        party.equip(id, daggers);
+        party.equip(id, shield);
+        const auto another = party.member(id).character.inventory().items().front().id;
+        check(!party.equipment_choices(id, another)[1].available,
+              "Shield blocks the additional weapon");
+    }
+}
+
 void party_combat_appearance()
 {
     const auto folder = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art";
@@ -2110,6 +2295,8 @@ int main()
 {
     try
     {
+        two_weapon_equipment();
+        equipment_rule_boundary();
         combat_body_assignments();
         party_combat_appearance();
         all_weapon_equipment();

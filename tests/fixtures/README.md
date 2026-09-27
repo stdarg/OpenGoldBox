@@ -734,3 +734,207 @@ They preserve explicit cantrips, acquired Scholar, known but unprepared book
 spells, wounds, spent slots and spent Arcane Recovery. Campaign formats 11/15
 and the combat continuation are old-writer output, not synthetic rewrites.
 See [the frozen packet](../../docs/WIZARD-SPELL-CHOICES.md).
+
+## Light/hand-state baseline — actual 0.6.53 writer
+
+Generated on2026-09-26 before changing the runtime in `bf9ec73`. The only
+capture additions are `tests/light_attack_baseline.h` and its training-test CLI;
+`git diff bf9ec73 -- src demos/src` was empty at capture. The generator rejects
+any writer other than0.6.53. It calls ordinary creation, XP advancement,
+equipment, public combat commands and campaign serialization; no bytes are
+edited to impersonate an older writer. The custom target is loaded by the same
+stable fixture content helper on capture and verification.
+
+The campaign holds a Fighter PC and recruited Paladin/Ranger, all level4, with
+actual GWF/Archery grants, wounds, an equipped Greatsword, three carried Daggers,
+a Hand Crossbow and a Shield. Combat21 captures a real critical hit, both Savage
+Attacker decisions and resolved Champion movement. A second sequence fires a
+Loading Hand Crossbow twice through two distinct actions using Action Surge.
+It preserves unused Bonus Action, spent resources, HP and RNG. Future attacks
+can acquire new Light history; the Loading continuation compares those gameplay
+values independently rather than forbidding newly implemented legal actions.
+Restoring the historical already-spent checkpoint must not invent new history.
+
+Reproduce capture only with the genuine0.6.53 runtime:
+`opengold_training_tests --freeze-light`. Verify with `--light-baseline` or the
+full training test, which now includes these checks. Focused CTest passes after
+rebuilding `opengold_training_tests`; runtime inputs are unchanged.
+
+| File | SHA-256 |
+| --- | --- |
+| `campaign-v17-light-before.ogs` | `8247a44eee1c4e128ca3ceb51ac2ed1f2b3ed5587b5c5e39956804b905dc5bdb` |
+| `combat-v21-light-before-attack.save` | `dee3402f18b691d664b97a687baa9b0d0b87d520b828d53865739811a9b846e7` |
+| `combat-v21-light-before-first.save` | `613969267a8ed9be8e9b218d7ab981fad961b47ffd80dc77933636ff453b0a51` |
+| `combat-v21-light-before-second.save` | `a21b2e6f9deb59d656e2f71275c1140dcf42e0aba2073862b3af7b8b794ac3be` |
+| `combat-v21-light-before-settled.save` | `b258e60c77783ec7727d843f25d799be7a68b2b19aeeb18b4f9acb1ac44f611a` |
+| `combat-v21-loading-before.save` | `b49d73576583173380549120340cdd318343cf81da260641ea3f414446e2e54d` |
+| `combat-v21-loading-two-actions.save` | `e06afeed956b27bd5fbca84c0f44184cda19e9eb01559a6dfbfcb71ea8758a05` |
+
+## Dual-hand baseline — actual0.6.54 writer
+
+Captured from production runtime`c539347` before combat weapon-selection/Light
+changes, using `opengold_training_tests --freeze-hands`; verified using
+`--hands-baseline`. The only capture edits were the test harness. Includes
+PC/recruited dual equipment, distinct stack units, pending Savage/RNG stages
+and wounds. These are genuine writer outputs, never rewritten version tags.
+
+| Fixture | SHA-256 |
+| --- | --- |
+| campaign-v17-hands-before.ogs | `9f675cd35d362127ac0b9aff92610634439f8a33f675ccfc68f3af32e9e383c1` |
+| combat-v21-hands-before-attack.save | `8e9e282a8cb351f180bb7e9c3af4653390c0f0903996a76c3927bc6ccb2e58cb` |
+| combat-v21-hands-before-first.save | `441629aaa3e56b2c01598bcce121be82a019722f05b707f2e85ea500e43281f7` |
+| combat-v21-hands-before-second.save | `579b15007c02ce438e5194495eb7f27df278413d6193083fb575c94289d55d71` |
+| combat-v21-hands-before-settled.save | `33c45dea2b30e1ec48171ff9ba2275c8de7ff689acdd3f1b3970081e770ceae5` |
+
+## Weapon Mastery baseline — actual 0.6.55 writer
+
+Captured2026-09-26 before any mastery runtime edits. Production writer is
+`69771eb` (rules0.6.55), inherited at preflight HEAD`7f35c89`.
+`tests/mastery_baseline.h` is included by the existing training target;
+`--freeze-mastery` checks the exact writer version before producing files.
+Do not regenerate these historical fixtures with a later writer.
+
+The five-class campaign covers Fighter/Rogue/Paladin/Ranger at4 and Barbarian1,
+three PCs/two recruited NPCs, prior choices, equipment and wounds. Combat covers
+physical Light qualification and a TWF extra attack through both Savage decisions
+and settlement. `--mastery-baseline` and the ordinary training suite verify exact
+restoration and deterministic continuation (only module version is normalized).
+No new mastery behavior is claimed.
+
+| Fixture | SHA-256 |
+| --- | --- |
+| `campaign-v17-mastery-before.ogs` | `e7815e705693472598a2919cf391c1aebc8a748df0ca6f58e1b21e999948520b` |
+| `combat-v22-mastery-light-first.save` | `e8edb6ac1c2d51b31781100895430018151c6af26907a2afdb07fe204e72c10c` |
+| `combat-v22-mastery-light-qualified.save` | `679f703fb77b89d6605ad1a2f76b2fe4dc04b23d3e014a6158ec02d61841f5d0` |
+| `combat-v22-mastery-light-second.save` | `f1602842a8d4a35a99a713d2dfce4bef3e660838e7fd606e2f6370a2e9a47a24` |
+| `combat-v22-mastery-light-settled.save` | `9e5f26067519e30523607b39db1fdec55bd0224d6fffd20fe203232843a661eb` |
+
+### Mastery acquisition before rest replacement — actual 0.6.56 writer
+
+`campaign-v15-mastery-acquired-before.ogs` is the unchanged main-game Review
+Training output `/tmp/mastery-review-main.ogs`, captured during acquisition
+verification before Long Rest replacement edits. Its production writer is the
+acquisition tree committed as `5b978df`; that commit's later regression changes
+only adjusted tests. MainEN/ES/demoEN UI outputs were independently compared with
+native results before this fixture was retained. No current replacement writer
+was used to synthesize an older format.
+
+SHA-256: `182d59edb78ae4e61d32033a8e24b13baf7177991a3324cc1f22e65deaf63431`.
+`mastery_rest_checks.h` verifies exact canonical re-encoding with no invented
+replacement history/window, including acquired masteries and prior advancement.
+
+### Nick shared-budget baseline — actual0.6.56 writer
+
+Captured before Nick production edits, with production revision `86ac760` and
+rules0.6.56. `OPENGOLD_NICK_BASELINE=tests/fixtures` runs the guarded capture path
+in `opengold_status_effect_tests` (`tests/nick_attack_checks.h`). Capture requires
+that old writer identity and used seed1. These are complete, unmodified writer
+outputs, not edited examples or re-created old formats.
+
+- `combat-v22-nick-before.save`: a wounded Fighter2 with two physical daggers and
+  actual chosen Nick mastery, before its Attack action (Nick not yet implemented).
+- `combat-v22-nick-light-pending.save`: Light extra attack has spent the Bonus
+  Action; the old Savage Attacker choice is unresolved.
+- `combat-v22-nick-light-spent.save`: the preceding choice is skipped/resolved.
+- `combat-v22-nick-other-bonus-spent.save`: Second Wind spent the Bonus Action,
+  then the first Attack qualified for Light. No Light extra attack was made.
+
+The last two states demonstrate why the old Bonus Action flag alone cannot
+reconstruct whether the extra attack was used. New code preserves the entire
+old current turn and enables Nick only at the first fresh turn boundary; the
+old pending choice resolves to the old settled oracle byte for byte apart from
+the module identity. New format23 records the shared allowance and the current
+Attack action's physical qualifying weapon explicitly. No old format is dropped.
+
+SHA256:
+
+```
+2e0ba1df72f12b7b5464953867a24a58e028828b35e9d4b2bb44aa7fc70bd3af  combat-v22-nick-before.save
+c8d4893b059650dc520d33237e8f40d4dd119496babc5ad7a1d791e43ccfe7b3  combat-v22-nick-light-pending.save
+3a6db3e16f7ef02af3db7422deef24ef2ccb863adc54725c63cd18fd6be4ddea  combat-v22-nick-light-spent.save
+0ca778093241e1cc1a681baec16c7dea632f0ef5190dd6e3175453fe102e2cb0  combat-v22-nick-other-bonus-spent.save
+```
+
+
+## Optional mastery choices baseline — actual0.6.57 writer
+
+Captured2026-09-26 from production `0bba07e` before Slow/Topple or optional
+mastery choice implementation. `tests/mastery_choice_checks.h::capture` asserts
+the actual writer identity and writes its unmodified `CombatSession::save()`.
+Both scenarios use seed30, a Soldier Champion3 with the selected Longbow or Maul,
+physical equipment and the normal content-pack Vanguard target. Each has four
+states: `before` the critical attack, pending Savage `damage`, pending Champion
+`move` after skipping Savage, and `settled` after declining free movement.
+
+The status-effect target verifies exact round trips and command-by-command
+continuation against all eight actual writer files. No bytes were relabeled as
+historical evidence. Capture command after building that target:
+
+```bash
+OPENGOLD_MASTERY_CHOICE_BASELINE=tests/fixtures build/mac-check/opengold_status_effect_tests
+```
+
+Do not rerun this capture with a newer production writer. Build/capture/test logs
+are `/tmp/mastery-choice-baseline-{build,capture,test}.log`.
+
+```text
+a59d63d32a990efe8d32db93852035f7ba17b703c5f176c44b318d7034d131d3  combat-v23-longbow-before.save
+225c1ba93d948ba1ff6fb167bd9c66073124d44065281e0fcc5fa5b247a889ab  combat-v23-longbow-damage.save
+2d0ba8d28b7e319b65ca7592dcad85765f2b6b0a1d83e1468e37fadbf3d4ad60  combat-v23-longbow-move.save
+b1fed47245de38c7249f0d5f875e8a050357388dc7c3d410cac0d6817c78066b  combat-v23-longbow-settled.save
+47b3f0eaa274cb0cf9a371511fbd88994b615c0b3b8661af3ba49a26e280f945  combat-v23-maul-before.save
+bd1953e3ef2117f94ba47582c7d049bb8e0c46932f3941882c0b0e552e1a4c6e  combat-v23-maul-damage.save
+ba61d92a73b7d58e26d7a4d2196652375842f68306d27ad42e02f25636205ebf  combat-v23-maul-move.save
+bb56c8397ddf26eaa87f880a44ef2f0a2c066c7caa6460b252193ca538c8718c  combat-v23-maul-settled.save
+```
+
+### Actual0.6.58 Slow writer before Graze
+
+`combat-v15-slow-0.6.58.save` was captured2026-09-26 from the actual0.6.58
+`build/sprite-demo/libopengold_rules_srd5.a`, built at `a0514a9` before that build
+was updated for Graze. The capture driver used the matching `rules.h` from that
+commit and asserted the runtime identity was0.6.58. It created a12×8 empty board,
+Vanguard1 at(1,1), Bandit99 at(3,1), scope777 and seed89. Bandit initial vitality
+carried one six-second Slow sourced from1; the old module created, saved and
+round-tripped the session before writing this file. This is real writer output,
+not a current checkpoint with a changed version header.
+
+SHA256: `758e1934fba8b5db82d58e2825f72cfa42d19f64fe3495cc17070b0bdd010a45`.
+`graze_checks.h` requires exact continuation encoding except the expected module
+identity update and verifies that Slow survives. Earlier actual0.6.57 mastery
+critical-phase and0.6.56 Nick fixtures are retained unchanged.
+
+## Pending Graze before optional hit masteries
+
+`combat-v24-graze-pending-0.6.59.save` and
+`combat-v24-zero-graze-0.6.59.save` are genuine **0.6.59** writer output from the
+libraries built at `a038d91`, before the format25 writer was compiled. The first
+retains a positive Graze choice from an actual Greatsword miss; the second retains
+an actual miss by a Strength10 Fighter, for whom the old writer offered zero
+damage. New attacks suppress futile zero-damage prompts, but migration preserves
+and resolves this already-pending historical choice. No original game assets are
+included. Do not regenerate these fixtures with the current writer.
+
+SHA-256:
+
+- positive: `b4c2cdbb824e7ed859edafbe866fee2ee851a6e7d199083fe97d2db20b29453d`
+- zero: `8820cafc280de2d5c229a121d51ebcf8e64df393bd4efd4107e75383c6f552ea`
+
+`optional_mastery_checks.h` verifies unchanged pending bodies apart from module
+identity and exact continuation. Existing0.6.57 pending damage/movement fixtures
+retain their original continuation; fresh attacks after loading an older settled
+checkpoint may offer the newly implemented properties.
+
+## Alert baseline — actual0.6.60 writer
+
+Captured2026-09-26 before any Alert runtime changes, from production80ce54b
+(inherited at63936c1), using `opengold_training_tests --freeze-alert`.
+The generator requires exactly0.6.60. The campaign contains normally advanced
+Criminal Fighter/Rogue4, actual equipment, chosen training/masteries and wounds.
+Combat captures retain their original Initiative order and one End Turn
+continuation; loading must never reopen Initiative choices. Campaign migration
+adds only the fixed Criminal Alert grant. No fixture bytes were relabeled.
+
+- `campaign-alert-0.6.60.ogs`: `cdeb881c090315272b68de3d52ccb847f97f01891040ce639f29d8daf3cfe9b9`
+- `combat-alert-0.6.60.save`: `405a4626789d490371e7194d8e245112cac69561d1570ae503494b61d06bc8fb`
+- `combat-alert-0.6.60-continued.save`: `7d2d3c6895947c003f5695426d112e367509d85dda10e48edc858e4911110ca5`

@@ -46,6 +46,13 @@ enum class SpellChoiceContext
     long_rest
 };
 
+struct TrainingReplacementOptions
+{
+    TrainingChoiceGroup group;
+    std::vector<std::string> selected;
+    unsigned replacement_limit{};
+};
+
 struct SpellChoices
 {
     TrainingChoices learning;
@@ -69,6 +76,8 @@ struct AdvancementChoice
     std::array<unsigned, 6> abilities{};
     std::vector<std::string> spells;
     TrainingChoices training;
+    std::optional<std::string>
+        fighting_style; // Class-granted choice/replacement, separate from a level-four feat.
     std::optional<TrainingChoices> spell_learning; // Absent only for historical advancement replay.
     bool operator==(const AdvancementChoice &) const = default;
 };
@@ -82,7 +91,7 @@ struct AdvancementOption
 struct AdvancementOptions
 {
     unsigned level{};
-    std::vector<AdvancementOption> feats, spells;
+    std::vector<AdvancementOption> feats, spells, fighting_styles;
     std::vector<TrainingChoiceGroup> training;
     std::string description;
 };
@@ -109,6 +118,29 @@ struct EquipmentState
     unsigned weapon_hands{};
     bool operator==(const EquipmentState &) const = default;
 };
+enum class EquipmentOperation
+{
+    equip,
+    unequip,
+    equip_main,
+    equip_other
+};
+
+struct EquipmentChoice
+{
+    EquipmentOperation operation;
+    Message label, explanation;
+    bool available{};
+};
+
+// Indices reference the supplied candidates, not inventory IDs. The module
+// determines the resulting loadout; Core maps indices back to owned items.
+struct EquipmentChange
+{
+    std::vector<unsigned> indices;
+    EquipmentState equipment;
+    bool separate_selected_unit{};
+};
 
 struct GripOption
 {
@@ -124,6 +156,7 @@ struct CharacterProfile
     std::string description;
     int movement_feet{}, melee_attack_bonus{};
     std::string item_modifiers, spell_modifiers;
+    std::vector<Message> equipment_positions;
     bool strength_dexterity_disadvantage{};
     std::vector<Message> item_messages, spell_messages;
     EquipmentState equipment;
@@ -327,6 +360,14 @@ struct ThrownWeaponOption
     bool available{};
 };
 
+struct ItemAttackOption
+{
+    unsigned item{};
+    std::string verb;
+    Message label;
+    bool available{};
+};
+
 struct CombatantView
 {
     EntityId id{};
@@ -351,6 +392,11 @@ struct CombatantView
     std::vector<std::string> known_cantrips; // Knowledge persists while casting is unavailable.
     bool naturally_sleeping{}, prone{};
     std::vector<ThrownWeaponOption> thrown_weapons;
+    std::vector<ThrownWeaponOption> weapons;
+    unsigned selected_weapon{};
+    std::vector<ItemAttackOption> light_attacks;
+    bool nick_mastery{};
+    std::vector<ItemAttackOption> nick_attacks;
 };
 
 struct TemporaryHpOffer
@@ -382,6 +428,28 @@ struct AbilityCheckChoice
     int natural{}, modifier{}, total{}, difficulty{}, resource_uses{};
 };
 
+struct EffectOption
+{
+    unsigned id{};
+    Message title, description;
+    bool available{true};
+};
+
+struct OptionalEffectChoice
+{
+    EntityId actor{}, target{};
+    Message title, description;
+    std::vector<EffectOption> options;
+};
+
+struct EffectTargeting
+{
+    EntityId actor{};
+    std::string verb;
+    Message prompt;
+    bool destination{};
+};
+
 struct FreeMovement
 {
     EntityId actor{};
@@ -406,6 +474,10 @@ struct Snapshot
     std::optional<SneakAttackChoice> sneak_attack_choice;
     std::optional<AbilityCheckChoice> ability_check_choice;
     std::optional<FreeMovement> free_movement;
+    std::optional<OptionalEffectChoice> optional_effect_choice;
+    std::optional<EffectTargeting> effect_targeting;
+    // Pre-turn decisions; legal commands carry eligible actors and allies.
+    std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;
     bool physical_inventory{};
 };
@@ -477,6 +549,18 @@ class RulesModule
         return {};
     }
 
+    [[nodiscard]] virtual std::vector<EquipmentChoice>
+    equipment_choices(const CharacterSheet &, std::span<const std::string>, EquipmentState,
+                      unsigned) const
+    {
+        return {};
+    }
+
+    [[nodiscard]] virtual EquipmentChange equipment_change(const CharacterSheet &,
+                                                           std::span<const std::string> candidates,
+                                                           EquipmentState, unsigned selected,
+                                                           EquipmentOperation) const;
+
     [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const
     {
         return {};
@@ -498,6 +582,16 @@ class RulesModule
     // False means this module's supported advancement ceiling was reached.
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state) const;
 
+    [[nodiscard]] virtual std::optional<TrainingReplacementOptions>
+    rest_training_options(const CharacterSheet &) const
+    {
+        return {};
+    }
+
+    // Returns the effective source-group selections after applying a legal edit.
+    virtual TrainingChoices replace_rest_training(CharacterSheet &,
+                                                  std::span<const std::string>) const;
+
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
     training_options(const CharacterSheet &) const
     {
@@ -507,6 +601,12 @@ class RulesModule
     [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &) const
     {
         return {};
+    }
+
+    [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &sheet,
+                                                                 const AdvancementChoice &) const
+    {
+        return advancement_options(sheet);
     }
 
     [[nodiscard]] virtual AdvancementChoice default_advancement(const CharacterSheet &) const

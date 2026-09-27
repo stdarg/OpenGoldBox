@@ -303,6 +303,7 @@ void combat_and_campaign()
     party.complete_training(id, *srd5::character_rules(),
                             {{"origin:languages", {"elvish", "orc"}},
                              {"class:fighter:fighting_style", {"archery"}},
+                             {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
                              {"class:fighter", {"athletics", "history"}},
                              {"background:soldier:gaming_set", {"dice"}}});
     check(party.member(id).vitals == stable, "Review Training preserves the recovery continuation");

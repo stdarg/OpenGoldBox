@@ -95,6 +95,10 @@ void CharacterCreationView::setup_advancement()
     }
     presentation::add_control<Label>(*window, "SpellLabel", Rect2(24, 292, 652, 28))
         ->set_text(i18n::text(N_("Prepared spells")));
+    auto *style =
+        presentation::add_control<OptionButton>(*window, "FightingStyle", Rect2(24, 325, 652, 38));
+    style->hide();
+    style->connect("item_selected", callable_mp(this, &CharacterCreationView::advancement_changed));
     for (int i = 0; i < 4; ++i)
     {
         auto *spell = presentation::add_control<CheckBox>(
@@ -285,24 +289,31 @@ void CharacterCreationView::open_advancement(std::int64_t id)
     }
     feat->set_disabled(advancement_options_.feats.empty());
     const bool has_training = !advancement_options_.training.empty();
+    const bool supplemental_training = has_training && !advancement_options_.feats.empty();
     auto *training = window->get_node<OptionButton>("AdvancementTraining");
     training->clear();
     training->set_visible(has_training);
     window->get_node<Label>("AdvancementTrainingLabel")->set_visible(has_training);
+    window->get_node<Label>("AdvancementTrainingLabel")
+        ->set_position(Vector2(24, supplemental_training ? 374 : 205));
+    training->set_position(Vector2(24, supplemental_training ? 406 : 236));
     for (unsigned i = 0; i < 6; ++i)
     {
         window->get_node<Control>(String("Ability") + String::num_uint64(i))
-            ->set_visible(!has_training);
+            ->set_visible(!has_training || supplemental_training);
         window->get_node<Control>(String("AbilityLabel") + String::num_uint64(i))
-            ->set_visible(!has_training);
+            ->set_visible(!has_training || supplemental_training);
     }
     if (has_training)
     {
         const auto &group = advancement_options_.training.front();
         window->get_node<Label>("AdvancementTrainingLabel")->set_text(i18n::text(group.label));
-        training->add_item(i18n::text("Choose a proficient skill"));
+        training->add_item(i18n::text("Choose an option"));
         for (const auto &option : group.options)
-            training->add_item(i18n::text(option.label));
+            training->add_item(i18n::text(option.label) +
+                               (option.description.empty()
+                                    ? String()
+                                    : String(" / ") + i18n::text(option.description)));
         training->select(0);
         advancement_choice_.training.clear();
     }
@@ -328,6 +339,24 @@ void CharacterCreationView::open_advancement(std::int64_t id)
                                                advancement_choice_.spells.end(),
                                                option.id) != advancement_choice_.spells.end());
     }
+    auto *style = window->get_node<OptionButton>("FightingStyle");
+    style->clear();
+    style->set_visible(!advancement_options_.fighting_styles.empty());
+    if (!advancement_options_.fighting_styles.empty())
+    {
+        window->get_node<Label>("SpellLabel")->set_text(i18n::text("Fighting Style"));
+        for (const auto &option : advancement_options_.fighting_styles)
+        {
+            const int i = style->get_item_count();
+            style->add_item(i18n::text(option.label));
+            style->set_item_disabled(i, !option.available);
+            style->set_item_tooltip(i, i18n::text(option.description));
+            if ((advancement_choice_.fighting_style &&
+                 option.id == *advancement_choice_.fighting_style) ||
+                (!advancement_choice_.fighting_style && option.id == "keep"))
+                style->select(i);
+        }
+    }
     advancement_refreshing_ = false;
     advancement_spell_page();
     advancement_changed();
@@ -345,6 +374,28 @@ void CharacterCreationView::advancement_changed(std::int64_t)
     if (advancement_refreshing_ || !advancing_)
         return;
     auto *window = get_node<Window>("LevelUp");
+    if (!advancement_options_.fighting_styles.empty())
+    {
+        const auto index = window->get_node<OptionButton>("FightingStyle")->get_selected();
+        if (index >= 0)
+        {
+            const auto &option = advancement_options_.fighting_styles.at(index);
+            if (option.id == "keep")
+                advancement_choice_.fighting_style.reset();
+            else
+                advancement_choice_.fighting_style = option.id;
+        }
+        advancement_options_ = campaign_->advancement_options(advancing_, advancement_choice_);
+        auto *feats = window->get_node<OptionButton>("Feat");
+        for (unsigned i = 0; i < advancement_options_.feats.size(); ++i)
+        {
+            const auto &option = advancement_options_.feats[i];
+            feats->set_item_disabled(i, !option.available);
+            feats->set_item_text(i,
+                                 i18n::text(option.label) +
+                                     (option.available ? String() : i18n::text(" (Unavailable)")));
+        }
+    }
     if (!advancement_options_.feats.empty())
         advancement_choice_.feat =
             advancement_options_.feats.at(window->get_node<OptionButton>("Feat")->get_selected())

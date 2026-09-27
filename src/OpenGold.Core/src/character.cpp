@@ -58,12 +58,34 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
     spell_edits_ = std::move(history);
 }
 
+void Character::replace_rest_training(const rules::RulesModule &rules,
+                                      std::span<const std::string> selections,
+                                      std::uint64_t session)
+{
+    if (!session || std::any_of(training_edits_.begin(), training_edits_.end(),
+                                [&](const auto &edit)
+                                {
+                                    return edit.rest_session >= session;
+                                }))
+        throw std::runtime_error("Training choices already used for this rest");
+    auto candidate = sheet_;
+    auto history = training_edits_;
+    auto choices = rules.replace_rest_training(candidate, selections);
+    history.push_back({unsigned(sheet_.level), session, {selections.begin(), selections.end()}});
+    (void)rules.character_profile(candidate, {});
+    sheet_ = std::move(candidate);
+    training_edits_ = std::move(history);
+    replaced_training_ = std::move(choices);
+}
+
 rules::TrainingChoices Character::training_choices() const
 {
     auto result = creation_.training;
     for (const auto &advancement : advancements_)
         for (const auto &[id, values] : advancement.training)
             result.emplace(id, values);
+    for (const auto &[id, values] : replaced_training_)
+        result[id] = values;
     return result;
 }
 
@@ -90,6 +112,14 @@ Character Character::preview_training(const rules::CharacterRules &creation_rule
     }
     auto draft = creation_;
     draft.training = choices;
+    // Replay edits from their original acquisition choices, while adding only
+    // the genuinely pending groups. Effective replacement choices remain locked.
+    for (const auto &[id, values] : replaced_training_)
+    {
+        draft.training.erase(id);
+        if (const auto found = creation_.training.find(id); found != creation_.training.end())
+            draft.training.emplace(*found);
+    }
     const auto later = rules.training_options(sheet_);
     for (const auto &group : later)
         draft.training.erase(group.id);
@@ -102,12 +132,16 @@ Character Character::preview_training(const rules::CharacterRules &creation_rule
         for (const auto &edit : spell_edits_)
             if (edit.level == unsigned(candidate.sheet_.level))
                 candidate.choose_spells(rules, edit.choices, edit.rest_session, false);
+        for (const auto &edit : training_edits_)
+            if (edit.level == unsigned(candidate.sheet_.level))
+                candidate.replace_rest_training(rules, edit.selections, edit.rest_session);
     };
     replay_spells();
     for (auto choice : advancements_)
     {
         for (const auto &group : later)
-            if (group.acquired_level == candidate.sheet_.level + 1)
+            if (group.acquired_level == candidate.sheet_.level + 1 &&
+                !replaced_training_.contains(group.id))
             {
                 choice.training.erase(group.id);
                 if (const auto found = choices.find(group.id); found != choices.end())

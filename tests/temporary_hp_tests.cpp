@@ -339,6 +339,7 @@ void campaign()
     party.complete_training(active, *srd5::character_rules(),
                             {{"origin:languages", {"elvish", "orc"}},
                              {"class:fighter:fighting_style", {"archery"}},
+                             {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
                              {"class:fighter", {"athletics", "history"}},
                              {"background:soldier:gaming_set", {"dice"}}});
     check(pool(party.member(active).character, party.member(active).vitals).amount == 8,
@@ -363,6 +364,17 @@ void campaign()
           "Long Rest expiry is individual and never applies to a reserve");
     copy = loaded(saved(party));
     check(saved(copy) == saved(party), "Pool expiry remains canonical after reload");
+    if (copy.state().training_rest)
+    {
+        rejects(
+            [&]
+            {
+                copy.begin_combat();
+            });
+        while (copy.state().training_rest)
+            copy.keep_rest_training(copy.state().training_rest->ticket,
+                                    copy.state().training_rest->members.front());
+    }
     auto actors = copy.participants();
     actors.push_back({99, "bandit", "Enemy", 1, {7, 7}});
     auto battle = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);

@@ -1,0 +1,28 @@
+OGCOMBAT 23 "opengold.srd5" "0.6.57" "srd-5.2.1-demo.1/11527001048282323879"
+12 8
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+13064056694810536092 4 1 1 0 2
+99 "vanguard" "Target" 1 3 1 21 18 30 2 0 0 0 1 1 1 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+1 "campaign-character" "Master" 0 1 1 28 14 30 2 0 0 0 0 1 1 0 0 0 0 "PC39 3 2 0 \"Fighter\" \"Human\" 17 16 15 15 15 15 2 2 2 1 \"longbow\" 0 \"soldier\" 14 \"feat:savage_attacker\" \"background:soldier\" 1 0 \"feature:fighting_style\" \"class:fighter\" 1 0 \"feature:second_wind\" \"class:fighter\" 1 0 \"language:common\" \"origin:languages\" 1 0 \"skill:athletics\" \"background:soldier\" 1 0 \"skill:intimidation\" \"background:soldier\" 1 0 \"mastery:longbow\" \"class:fighter:weapon_mastery\" 1 0 \"mastery:club\" \"class:fighter:weapon_mastery\" 1 0 \"mastery:dagger\" \"class:fighter:weapon_mastery\" 1 0 \"feature:action_surge\" \"class:fighter\" 2 0 \"feature:tactical_mind\" \"class:fighter\" 2 0 \"subclass:champion\" \"class:fighter\" 3 0 \"feature:improved_critical\" \"subclass:fighter:champion\" 3 0 \"feature:remarkable_athlete\" \"subclass:fighter:champion\" 3 0" 0 0 0 0 0 2 3 0 0 0 "" 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0
+0 0
+
+0 0
+
+4
+"Combat begins. Each square is 5 feet."
+"Round 1: Target acts."
+"Round 1: Master acts."
+"Master -> Target: d20 20 + 5 vs AC 17 CRITICAL for 7 damage."
+777 3000 2
+FX1 1 0
+FX1 1 0
+0
+0
+0 1
+1
+1
+1 1 0 1 "longbow" 1 0 1 0 0
+1 1 
+0
+1
+1 99 20 15 0 1 1

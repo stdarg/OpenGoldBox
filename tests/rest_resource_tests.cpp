@@ -305,6 +305,7 @@ void persistence_and_advancement()
     party.complete_training(id, *srd5::character_rules(),
                             {{"origin:languages", {"elvish", "orc"}},
                              {"class:fighter:fighting_style", {"archery"}},
+                             {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
                              {"class:fighter", {"athletics", "history"}},
                              {"background:soldier:gaming_set", {"dice"}}});
     check(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
@@ -342,7 +343,7 @@ void persistence_and_advancement()
     members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
     auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
     const auto checkpoint = combat->save();
-    check(checkpoint.starts_with("OGCOMBAT 14 ") &&
+    check(checkpoint.starts_with("OGCOMBAT 23 ") &&
               rules->restore(checkpoint)->save() == checkpoint,
           "Combat checkpoint stores remaining dice exactly");
     auto copy = rules->restore(checkpoint);
@@ -409,10 +410,10 @@ void old_saves()
     const auto rewritten = encode_campaign(party, nullptr, "rest-fixture");
     check(
         rewritten.substr(rewritten.find('\n', rewritten.find('\n') + 1) + 1) ==
-            test::with_sneak_attack_grants(test::with_action_surge_grants(
-                test::with_initial_wizard_spell_grants(expected), {true})) +
+            test::with_alert_grants(test::with_sneak_attack_grants(test::with_action_surge_grants(
+                test::with_initial_wizard_spell_grants(expected), {true}))) +
                 "1 0 ",
-        "Campaign migration adds sourced spell grants, the empty rest window and module identity, preserving all original training, resources, effects, equipment and timers");
+        "Campaign migration adds sourced spell/Alert grants, the empty rest window and module identity, preserving all original training, resources, effects, equipment and timers");
     const std::map<unsigned, unsigned> counts{{1, 4}, {2, 4}, {3, 4}, {4, 1}, {99, 0}};
     auto combat = rules->restore(fixture("combat-v8-rest.save"));
     check(combat->save() ==

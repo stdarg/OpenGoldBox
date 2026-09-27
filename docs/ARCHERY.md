@@ -36,10 +36,15 @@ hit threshold, Savage Attacker, Action Surge and prior/current saves.
 The existing Godot advancement check additionally selects and confirms Archery
 for a Soldier Fighter and reloads the acquired grant alongside Savage Attacker.
 
-#78 remains open for its other granting routes. Fighter level-one Fighting Style
-selection/replacement belongs to #85; Paladin and Ranger style acquisition belongs
-to #140/#147. This increment does not complete those class choices or their later
-advancement. Once these paths are integrated, reconcile #78 against every source.
+Rules 0.6.53 completes the other supported source routes: starting Fighter
+selection, Fighter replacement at gained levels 2–4, and Paladin/Ranger level-two
+acquisition. All three classes can choose Archery as a distinct level-four feat
+when they do not already possess it. Provenance, nonrepeatability and the actual
+Ranged weapon effect share the same rules implementation.
+
+See the [style-route packet](FIGHTING-STYLE-ROUTES.md) for current acceptance,
+save formats and evidence. The class trackers retain other styles, mastery and
+cantrip alternatives; higher-level/multiclass requirements remain separate.
 
 Verification: 41 native/tool regression checks pass, followed by the final
 focused Archery checks for stale-command atomicity, forged feature masks and
@@ -49,7 +54,3 @@ Archery; English/Spanish dialogs were rendered and inspected at 1120×800 and
 1920×1080. Main/demo extensions build and 750 localization messages validate.
 The advancement test's existing bonus-source assertions now use translated
 message templates so that the same checks can run in Spanish.
-
-The subsequent [Fighter starting-style increment](FIGHTER-STYLES.md) implements
-approved question 22 and adds the level-one Archery route. Level-up replacement
-and other class routes remain open.

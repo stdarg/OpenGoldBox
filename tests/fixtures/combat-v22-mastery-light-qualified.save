@@ -1,0 +1,31 @@
+OGCOMBAT 22 "opengold.srd5" "0.6.55" "srd-5.2.1-demo.1/10035149980024252575"
+12 8
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+8709371129873690709 4 1 1 0 2
+99 "target" "Target" 1 2 1 993 20 30 0 0 0 0 1 1 1 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 0 0 0
+1 "campaign-character" "Training tester" 0 1 1 12 9 30 2 0 0 0 0 1 1 0 0 0 0 "PC38 1 18 0 \"Fighter\" \"Human\" 17 16 15 15 15 15 2 2 \"dagger\" \"dagger\" 0 \"soldier\" 12 \"feat:savage_attacker\" \"background:soldier\" 1 0 \"feature:fighting_style\" \"class:fighter\" 1 0 \"feature:second_wind\" \"class:fighter\" 1 0 \"language:common\" \"origin:languages\" 1 0 \"skill:athletics\" \"background:soldier\" 1 0 \"skill:intimidation\" \"background:soldier\" 1 0 \"language:common_sign_language\" \"origin:languages\" 1 0 \"language:draconic\" \"origin:languages\" 1 0 \"feat:two_weapon_fighting\" \"class:fighter:fighting_style\" 1 0 \"skill:acrobatics\" \"class:fighter\" 1 0 \"skill:animal_handling\" \"class:fighter\" 1 0 \"tool:dice\" \"background:soldier:gaming_set\" 1 0" 0 0 0 0 0 1 1 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 0 0 1 1
+0 0
+
+0 0
+
+4
+"Combat begins. Each square is 5 feet."
+"Round 1: Target acts."
+"Round 1: Training tester acts."
+"Training tester -> Target: d20 11 + 5 vs AC 1 hits for 7 damage."
+1 3000 2
+FX1 1 0
+FX1 1 0
+0
+0
+0 1
+1
+5
+1 1 0 1 "dagger" 1 0 1 0 0
+2 1 1 2 "dagger" 1 0 1 0 0
+3 1 0 3 "dagger" 3 1 1 0 0
+4 1 0 4 "hand_crossbow" 1 1 1 0 0
+5 1 0 5 "hand_crossbow" 1 1 1 0 0
+1 1 
+0
+0

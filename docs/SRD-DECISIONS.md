@@ -116,6 +116,17 @@ This supersedes Q25; earlier Wizard approvals remain independently recorded.
 Wake/Stabilize, as specified in [the packet](ROGUE-ATTACKS.md#demo-placement-discovery--rogue-demo-1-approved).
 This separate approval authorizes the new placement and shared keyboard/disabled behavior.
 
+**STYLE-1/2 — APPROVED 2026-09-26:** User replied “1. Yes. 2. yes.”
+[Fighting Style routes](FIGHTING-STYLE-ROUTES.md#approved-decisions) records the
+exact main/demo controls and source routes. STYLE-1 supersedes Q23 and selects
+automatic beneficial die replacement; STYLE-2 approves the Training/Review
+Training additions and the separate advancement dropdown.
+
+LIGHT-1/2/3 APPROVED2026-09-26: the user approved2/3 with “2. Yes. 3. Yes”
+and then1 with “1. Yes.” [Exact scope](LIGHT-ATTACKS.md#approved-controls)
+covers the equipment hand-choice dialog, Weapon/Light combat controls, and
+TWF selectors/automatic benefit. Do not ask these again.
+
 ## Pending — do not implement dependent choices
 
 
@@ -126,7 +137,6 @@ This separate approval authorizes the new placement and shared keyboard/disabled
 | Q21 | #208/#209 Cleric preparation | Proposed current level 3–4 limits/confirmation, explicit Silence selection, existing saved preparations unchanged. Pending. |
 | Q43 | #58 Thrown controls | Proposed Thrown weapon dropdown/Throw row below Ground item/Pick up; held/carried quantities, legal target highlighting, keyboard/mouse, explicit necessary stowing before confirmation, free cancellation; proper SRD hand/action costs. APPROVED 2026-09-25 by “43. Approved.”. |
 | Q44 | #58 landing policy | Proposed target square on hit/miss, no embedding/breakage/scatter; ground item, ordinary pickup and approved Q37 safe recovery. SRD-unspecified policy. APPROVED 2026-09-25 by “44. Approved.”. |
-| Q23 | #80 Great Weapon Fighting | Automatic beneficial replacement of weapon-die 1/2 with 3, versus optional per-hit choice. Helper exists; neither live behavior is approved. |
 
 ## Approved patterns and policies
 
@@ -154,3 +164,26 @@ with concrete options. Play `/usr/bin/afplay /System/Library/Sounds/Glass.aiff`.
 Append new decisions here once; other documents should link to this register.
 
 User instruction 2026-09-25: restart visible question numbering at 1 for each new set. Existing Q identifiers remain historical references; new durable entries use topic-specific identifiers to avoid collisions.
+
+STYLE-1/2 APPROVED2026-09-26: user replied “1. Yes. 2. yes.”
+Implementation continues in the frozen batch; no repeated approval needed.
+
+MASTERY-1–4 APPROVED2026-09-26: user replied “1. Yes. 2. Yes. 3. Yes. 4. Yes.” [exact proposed controls](WEAPON-MASTERY.md#approved-controls)
+cover Training/fourth Fighter choice, completed Long Rest replacement, optional
+combat mastery decisions and Nick attack. All four proposals are explicitly approved.
+
+MASTERY-5–7 APPROVED2026-09-26: user replied “1. Approved. 2. Approved.
+3. Approved.” MASTERY-5 approves the simultaneous Champion/mastery Resolve next
+selector, separate Cleave critical movement entitlements, and enemy-turn ordering.
+MASTERY-6 approves Graze's ability-modifier cap after typed defenses, including
+Vulnerability. MASTERY-7 approves the rest-window Save game button and return to
+the same pending choice. See [combat proposals](WEAPON-MASTERY.md#additional-combat-decisions-approved)
+and [rest proposal](WEAPON-MASTERY.md#long-rest-implementation-evidence-wip).
+These decisions resolve the recorded approval blockers; do not ask again.
+
+## ALERT-1 — approved2026-09-26
+
+User reply: “1. Approved”. Approves the centered640×360 pre-turn Alert dialog
+in main/demo, Ally and conditional Resolve next dropdowns, current totals,
+Swap initiative / Keep initiative, Escape decline, keyboard/mouse and action
+blocking. Enemy AI keeps rolls. See [frozen scope](ALERT.md). No other scope added.

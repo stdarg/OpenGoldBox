@@ -168,6 +168,7 @@ auto battle(const RulesModule &rules, const Character &h, const std::string &wea
                            {{1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
                             {2, "target", "Target", 1, target}}},
                           seed);
+    test::keep_initiative(*c);
     check(c->snapshot().actor == 1, "Golden seed begins with hero");
     return c;
 }
@@ -430,8 +431,8 @@ void legacy()
     const auto bytes = encode_campaign(party, nullptr, "catalog-fixture");
     check(
         bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1) ==
-            test::with_initial_wizard_spell_grants(expected),
-        "Migration adds only explicit spell/Sage grants and module identity, retaining original and authored weapons, grants, pools, wounds and clock");
+            test::with_alert_grants(test::with_initial_wizard_spell_grants(expected)),
+        "Migration adds only explicit spell/Sage/Alert grants and module identity, retaining original and authored weapons, grants, pools, wounds and clock");
     CampaignParty again(module());
     again.restore(
         decode_campaign(bytes, *srd5::character_rules(), *rules, "catalog-fixture", nullptr).party);

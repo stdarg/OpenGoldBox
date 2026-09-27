@@ -1,5 +1,7 @@
 extends SceneTree
 var fixture := ""
+var prefer_gwf := false
+var selected_gwf := false
 var captures := ""
 var output := ""
 var originals := {}
@@ -7,6 +9,7 @@ var locales := ["en", "es"]
 const SLOT = "SRD Review Training test"
 func _initialize() -> void:
     for arg in OS.get_cmdline_user_args():
+        if arg == "--review-gwf": prefer_gwf = true
         if arg == "--review-demo": locales = ["en"]
         if arg.begins_with("--review-fixture="): fixture = arg.trim_prefix("--review-fixture=")
         if arg.begins_with("--review-capture="): captures = arg.trim_prefix("--review-capture=")
@@ -57,7 +60,12 @@ func choose_missing() -> void:
             if not group.visible: continue
             for control in group.get_children():
                 if control is OptionButton and control.visible and not control.disabled and control.selected == 0:
-                    control.select(1); control.item_selected.emit(1); await settle()
+                    var chosen := 1
+                    if prefer_gwf:
+                        for i in range(control.item_count):
+                            if control.get_item_text(i) in ["Great Weapon Fighting", "Combate con armas a dos manos"] and not control.is_item_disabled(i):
+                                chosen = i; selected_gwf = true
+                    control.select(chosen); control.item_selected.emit(chosen); await settle()
                 elif control is CheckBox and control.visible and not control.disabled and not control.button_pressed:
                     control.button_pressed = true; await settle()
     var style: OptionButton = current_scene.get_node_or_null("TrainingReview/Training/Rows/Group1/Choice")
@@ -134,6 +142,7 @@ func run_checks() -> void:
         await load_slot(); await press("PartyPanel/Combat")
         current_scene.get_node("PartyPanel/ReviewTraining").pressed.emit(); await settle()
         require(not current_scene.get_node("TrainingReview").visible, "Combat blocks review even when invoked directly")
+    require(not prefer_gwf or selected_gwf, "Review Training selected Great Weapon Fighting")
     restore_files()
     print("Review Training view checks passed")
     quit(0)

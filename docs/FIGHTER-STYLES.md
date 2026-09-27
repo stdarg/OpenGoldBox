@@ -22,7 +22,7 @@ are unchanged. Prior profiles retain their original validation. Old campaign
 characters retain their choices and have a pending starting style; migration
 never assigns one or converts a level-four feat into a starting feat. Completion
 through the existing core training API preserves advancement, wounds and spent
-resources. The player-facing Review Training flow remains #189.
+resources. The player-facing Review Training flow is delivered; see [training review](TRAINING.md).
 
 Tests use actual 0.6.28 campaign/combat files from `dda8d0c`, with four Fighters:
 level one, level-four Defense, level-four Archery and level-four Constitution
@@ -33,10 +33,17 @@ Constitution history, current save round trips and rejection of future grants
 under old version identities. Godot checks cover keyboard selection, Next,
 Back, class changes and English/Spanish layouts at both supported test sizes.
 
-This is a partial increment under [#85](https://github.com/stdarg/OpenGold/issues/85).
-Other styles, replacement when gaining a Fighter level and weapon mastery remain.
-Archery/Defense also retain their other class routes under #140/#147. These issues
-remain open; this selector does not establish full Fighter or feat completion.
+Rules 0.6.53 adds Great Weapon Fighting to these same controls and supports
+replacing the class style at gained Fighter levels 2–4. Keep current is the
+default. A missing historical starting selection remains pending in Review
+Training; replacement requires an existing class-granted style. Completing other
+training later replays advancement choices and preserves the replacement.
+
+The [style-route packet](FIGHTING-STYLE-ROUTES.md) also covers actual Paladin and
+Ranger level-two entitlements and level-four feat selection. #85 is now completed by Two-Weapon Fighting and the
+[Weapon Mastery integration](WEAPON-MASTERY.md#optional-hit-mastery-integration).
+#140/#147 retain their remaining class and cantrip alternatives. Full class support
+is not claimed.
 
 Verification: all 41 native/tool checks pass across the regression run and the
 focused rerun of six updated training-completion fixtures. All 16 Godot runtime

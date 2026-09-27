@@ -2,6 +2,9 @@
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
+#include "weapons.h"
+#include <fstream>
+#include <cstdlib>
 #include <algorithm>
 #include <array>
 #include <iostream>
@@ -529,12 +532,35 @@ void checkpoint_capacity()
     check(rules->restore(saved)->save() == saved,
           "Maximum actors/effects and escaped source names remain loadable");
 }
+
+#include "mastery_combat_checks.h"
+#include "nick_attack_checks.h"
+#include "mastery_choice_checks.h"
+#include "slow_mastery_checks.h"
+#include "graze_checks.h"
+#include "optional_mastery_checks.h"
 } // namespace
 
 int main()
 {
     try
     {
+        if (std::getenv("OPENGOLD_MASTERY_CHOICE_BASELINE"))
+        {
+            mastery_choice_checks::capture();
+            return 0;
+        }
+        if (std::getenv("OPENGOLD_NICK_BASELINE"))
+        {
+            nick_attack_checks::capture();
+            return 0;
+        }
+        optional_mastery_checks::run();
+        graze_checks::run();
+        mastery_combat_checks::run();
+        nick_attack_checks::run();
+        mastery_choice_checks::historical();
+        slow_mastery_checks::run();
         saving_throws();
         lifecycle();
         codec();

@@ -322,6 +322,7 @@ void campaign()
     copy.complete_training(id, *srd5::character_rules(),
                            {{"origin:languages", {"elvish", "orc"}},
                             {"class:fighter:fighting_style", {"archery"}},
+                            {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
                             {"class:fighter", {"athletics", "history"}},
                             {"background:soldier:gaming_set", {"dice"}}});
     copy.award_experience(900, "rush-xp");

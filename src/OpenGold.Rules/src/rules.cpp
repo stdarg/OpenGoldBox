@@ -18,6 +18,12 @@ CharacterProfile RulesModule::character_profile(const CharacterSheet &,
     throw std::runtime_error("This rules module does not support campaign characters");
 }
 
+EquipmentChange RulesModule::equipment_change(const CharacterSheet &, std::span<const std::string>,
+                                              EquipmentState, unsigned, EquipmentOperation) const
+{
+    throw std::runtime_error("This rules module does not support equipment changes");
+}
+
 AbilityCheckModifier RulesModule::ability_check(const CharacterSheet &,
                                                 std::span<const std::string>, unsigned,
                                                 std::string_view, std::string_view,
@@ -35,6 +41,12 @@ void RulesModule::apply_spell_choices(CharacterSheet &, const SpellChoices &, Sp
                                       bool) const
 {
     throw std::runtime_error("Spell choices are not supported");
+}
+
+TrainingChoices RulesModule::replace_rest_training(CharacterSheet &,
+                                                   std::span<const std::string>) const
+{
+    throw std::runtime_error("Long Rest training replacement is not supported");
 }
 
 bool RulesModule::advance_character(CharacterSheet &, VitalState &) const

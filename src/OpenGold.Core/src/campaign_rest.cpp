@@ -43,7 +43,7 @@ std::vector<MemberRestInfo> CampaignParty::rest_info(RestKind kind) const
             }
             if (combat_)
                 info.denial = RestDenial::combat;
-            else if (state_.short_rest || state_.spell_rest)
+            else if (state_.short_rest || state_.spell_rest || state_.training_rest)
                 info.denial = RestDenial::spending;
             else if (state_.rest_activity)
                 info.denial = RestDenial::activity;
@@ -352,6 +352,13 @@ std::optional<RestResult> CampaignParty::advance_rest(RestTicket ticket, std::ui
                         activity.ticket, next.time_minutes, next.subminute_milliseconds, {}};
                 next.spell_rest->members.push_back(id);
             }
+            if (rules_->rest_training_options(member.character.sheet()))
+            {
+                if (!next.training_rest)
+                    next.training_rest = ShortRestSession{
+                        activity.ticket, next.time_minutes, next.subminute_milliseconds, {}};
+                next.training_rest->members.push_back(id);
+            }
             result.members.push_back(id);
             member.last_rest_minutes = next.time_minutes;
             member.last_rest_subminute_milliseconds = next.subminute_milliseconds;
@@ -411,7 +418,7 @@ bool CampaignParty::prepare_combat()
         interrupt_rest_state(next, RestInterruption::initiative);
         state_ = std::move(next);
     }
-    return !state_.short_rest && !state_.spell_rest;
+    return !state_.short_rest && !state_.spell_rest && !state_.training_rest;
 }
 
 void CampaignParty::require_rest_ticket(RestTicket ticket) const

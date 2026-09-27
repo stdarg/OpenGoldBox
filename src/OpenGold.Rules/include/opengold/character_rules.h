@@ -69,7 +69,7 @@ struct TrainingProfile
 {
     bool complete{};
     std::vector<SkillTraining> skills;
-    std::vector<TrainingEntry> tools, languages;
+    std::vector<TrainingEntry> tools, languages, masteries;
 };
 
 struct AbilityCheckModifier

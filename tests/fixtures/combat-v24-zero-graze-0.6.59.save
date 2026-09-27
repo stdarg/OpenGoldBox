@@ -1,0 +1,28 @@
+OGCOMBAT 24 "opengold.srd5" "0.6.59" "srd-5.2.1-demo.1/11527001048282323879"
+12 8
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+8709371129873690709 3 1 1 0 2
+99 "vanguard" "Target" 1 2 1 28 21 30 2 0 0 0 1 1 1 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+1 "campaign-character" "Zero modifier" 0 1 1 11 6 30 2 0 0 0 0 1 1 0 0 0 0 "PC39 1 0 0 \"Fighter\" \"Human\" 10 10 12 11 10 10 1 1 \"greatsword\" 0 \"sage\" 9 \"feature:fighting_style\" \"class:fighter\" 1 0 \"feature:second_wind\" \"class:fighter\" 1 0 \"language:common\" \"origin:languages\" 1 0 \"skill:arcana\" \"background:sage\" 1 0 \"skill:history\" \"background:sage\" 1 0 \"tool:calligraphers_supplies\" \"background:sage\" 1 0 \"mastery:greatsword\" \"class:fighter:weapon_mastery\" 1 0 \"mastery:club\" \"class:fighter:weapon_mastery\" 1 0 \"mastery:dagger\" \"class:fighter:weapon_mastery\" 1 0" 0 0 0 0 0 2 1 0 0 0 "" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0
+
+0 0
+
+4
+"Combat begins. Each square is 5 feet."
+"Round 1: Target acts."
+"Round 1: Zero modifier acts."
+"Zero modifier -> Target: d20 11 + 2 vs AC 17 (disadvantage) misses."
+777 3000 2
+FX1 1 0
+FX1 1 0
+0
+0
+0 1
+1
+1
+1 1 0 0 "greatsword" 1 0 1 0 0
+1 1 
+0
+0
+1 99 11 1 1

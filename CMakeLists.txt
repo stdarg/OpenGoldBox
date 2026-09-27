@@ -45,6 +45,7 @@ target_include_directories(opengold_rules PUBLIC src/OpenGold.Rules/include)
 add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/srd5.cpp
     src/OpenGold.Rules.Srd5/src/character_rules.cpp
+    src/OpenGold.Rules.Srd5/src/weapon_mastery.cpp
     src/OpenGold.Rules.Srd5/src/feature_grants.cpp
     src/OpenGold.Rules.Srd5/src/training.cpp
     src/OpenGold.Rules.Srd5/src/spell_access.cpp
@@ -150,7 +151,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_archery_tests COMMAND opengold_archery_tests)
     add_executable(opengold_advancement_tests tests/advancement_tests.cpp)
     target_link_libraries(opengold_advancement_tests PRIVATE opengold_core opengold_rules_srd5)
-    target_compile_definitions(opengold_advancement_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    target_compile_definitions(opengold_advancement_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_advancement_tests COMMAND opengold_advancement_tests)
     add_executable(opengold_feature_grant_tests tests/feature_grant_tests.cpp)
     target_link_libraries(opengold_feature_grant_tests PRIVATE opengold_core opengold_rules_srd5)

@@ -21,7 +21,10 @@ enum class EffectKind : unsigned
     blindness = 1,
     ray_of_frost = 2,
     shocking_grasp = 3,
-    chill_touch = 4
+    chill_touch = 4,
+    sap = 5,
+    vex = 6,
+    slow = 7
 };
 inline constexpr unsigned round_ms = 6000;
 inline constexpr std::size_t effect_limit = 128;
@@ -95,8 +98,20 @@ void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityI
 void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                           std::string name, unsigned duration_ms);
 [[nodiscard]] int speed_penalty(const EffectState &effects);
+[[nodiscard]] bool slowed(const EffectState &effects);
+[[nodiscard]] bool frosted(const EffectState &effects);
 void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                         std::string name, unsigned duration_ms);
+[[nodiscard]] bool sapped(const EffectState &effects);
+[[nodiscard]] bool vexed_by(const EffectState &effects, std::uint64_t scope,
+                            rules::EntityId source);
+[[nodiscard]] bool has_attack_mastery(const EffectState &effects);
+[[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, std::uint64_t scope,
+                                            rules::EntityId source);
+void apply_attack_mastery(EffectState &, EffectKind, std::uint64_t scope, rules::EntityId source,
+                          std::string name, unsigned duration_ms);
+void consume_attack_masteries(EffectState &attacker, EffectState &target, std::uint64_t scope,
+                              rules::EntityId source);
 [[nodiscard]] bool blinded(const EffectState &effects);
 [[nodiscard]] bool can_apply(const EffectState &effects);
 void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId caster,

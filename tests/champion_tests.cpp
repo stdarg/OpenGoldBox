@@ -155,7 +155,8 @@ void grants_and_checks()
                   has_grant("feature:remarkable_athlete") == champion,
               "Subclass and both feature grants follow ordinary level three acquisition");
         check(rules->character_profile(h.sheet(), {})
-                  .data.starts_with(champion     ? "PC31 "
+                  .data.starts_with(level == 4   ? "PC39 "
+                                    : champion   ? "PC31 "
                                     : level == 2 ? "PC30 "
                                                  : "PC28 "),
               "Champion profile is conditional");
@@ -418,7 +419,8 @@ void campaign_and_cancellation()
             if (copy.state().short_rest)
                 copy.finish_short_rest(copy.state().short_rest->ticket);
             check(bool(copy.rest(RestKind::long_rest)), "Champion uses ordinary Long Rest");
-            check(copy.profile(id).data.starts_with("PC31 "), "Rests retain Champion entitlement");
+            check(copy.profile(id).data.starts_with(level == 4 ? "PC39 " : "PC31 "),
+                  "Rests retain Champion entitlement");
             covered = true;
         }
         check(covered, "All attained Champion levels use real combat/campaign/rest path");

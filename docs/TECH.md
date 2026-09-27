@@ -849,8 +849,8 @@ maps need no schema change. Old choices remain pending. See
 [Fighter starting styles](FIGHTER-STYLES.md) for evidence and remaining work.
 
 The internal damage roller owns no resources and accepts value-only dice and
-an explicit die-value rule. Current combat invokes the normal rule; the Great
-Weapon Fighting replacement helper is tested but awaits feat/control integration.
+an explicit die-value rule. Combat selects normal or Great
+Weapon Fighting die treatment from the validated entitlement and current weapon/grip.
 It never rerolls or doubles flat modifiers on critical hits. Actual pre-extraction
 Savage Attacker checkpoints prove unchanged continuation. See
 [Great Weapon Fighting](GREAT-WEAPON-FIGHTING.md).
@@ -956,3 +956,10 @@ format 15) and replays isolated candidates for Review Training, preserving live
 vitals. The static SRD module owns eligibility, level-two source validation and
 Expertise arithmetic; PC33 validates combat provenance. Godot presents the
 approved dropdown/checkbox controls without SRD decisions. See [Scholar](SCHOLAR.md).
+
+Rules 0.6.53 adds [Fighting Style routes](FIGHTING-STYLE-ROUTES.md). The static
+SRD library owns class entitlements, Fighter replacement, feat nonrepeatability
+and damage eligibility. Core stores the optional class choice separately in
+conditional campaign17 and replays ordinary advancement; it contains no style
+rules. Main/demo controls present rules-provided options. PC36 validates new
+provenance while existing profiles and prior-writer combat fixtures remain valid.

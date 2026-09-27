@@ -130,6 +130,7 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
         if (!town)
             throw std::runtime_error("Invalid town scene");
         town->set_name("CampaignTown");
+        town->hide();
         town->campaign_party(replacement);
         town->connect("party_member_selected",
                       callable_mp(this, &CharacterCreationView::town_member_selected));

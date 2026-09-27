@@ -9,9 +9,8 @@ it is not the older reroll rule. Feats are nonrepeatable unless stated otherwise
 ## Delivered foundation
 
 The internal [damage roller](../src/OpenGold.Rules.Srd5/src/damage_roll.h) supports
-an explicit normal or Great Weapon Fighting die rule. Combat delegates its
-existing dice calculation to the normal rule, preserving behavior and random
-continuation. The helper doubles dice for critical hits, adds the flat modifier
+an explicit normal or Great Weapon Fighting die rule. Combat selects its die rule from validated feats, weapon properties and grip.
+Normal rolls preserve existing behavior and random continuation. The helper doubles dice for critical hits, adds the flat modifier
 once and floors only the final total at zero. Choosing the replacement consumes
 exactly the same random draws. It can be used for each damage component of an
 eligible attack when additional attack damage is implemented.
@@ -24,22 +23,25 @@ The combat files record a critical Greatsword hit before the Savage decision,
 after the second roll and after accepting it. Current combat reproduces these
 files apart from module identity on later writers, including action expenditure, HP, grants and random state.
 
-## Remaining integration
+## Playable routes
 
-[#80](https://github.com/stdarg/OpenGold/issues/80) is open. The feat is not yet
-selectable or applied in combat. No format or module-version change is introduced
-by the foundation. Remaining work includes entitlement/provenance validation,
-starting and advancement selection, eligibility from weapon category/properties
-and current grip, spell/unarmed/thrown exclusions, reaction attacks, current
-save validation and the other class routes. Savage Attacker must show the actual
-modified totals and preserve both decisions through internal continuation.
+Rules 0.6.53 adds selection through Fighter starting Training/Review Training,
+Paladin/Ranger level-two advancement, and the independent level-four feat choice.
+Fighters can replace their class-granted style when gaining levels 2–4. The
+class entitlement and feat entitlement stay distinct and cannot duplicate a feat.
 
-Question 23 is pending: automatically apply the beneficial replacement, or offer
-a choice on each eligible hit. The SRD makes use optional; AGENTS.md requires
-confirmation of new control behavior. Do not enable either behavior until the
-user answers. Existing question 22 approves the starting selector layout, but
-does not resolve this combat decision. No combat saving controls are planned.
+STYLE-1 approves automatically applying the beneficial replacement. Eligible
+Melee attacks held in two hands use it for each damage die, including critical
+and Savage Attacker rolls. One-handed, Ranged, thrown, spell and unarmed attacks
+do not benefit. The existing Savage dialog displays the resulting totals.
+There are no new combat saving controls.
 
-Verification for the foundation: all 41 native/tool regression checks pass;
-main/demo extensions build; Godot combat and Savage Attacker runtime checks and
-their native prerequisite pass. No UI layout or localization changes are made.
+PC36 validates the new grants; internal combat21 retains signed pending damage
+and the exact RNG continuation. Campaign17 stores a class style choice separately
+from the level-four feat and from locked starting training. Older recipes and
+campaign formats retain their existing validation and support. The real 0.6.29
+fixtures above remain unchanged.
+
+The [delivery packet](FIGHTING-STYLE-ROUTES.md) records acceptance and verification;
+[coverage](SRD-COVERAGE.md) is the completion record. Full Paladin/Ranger features,
+other styles, mastery, level5+ and multiclassing remain outside this increment.
