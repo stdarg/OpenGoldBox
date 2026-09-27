@@ -1130,6 +1130,10 @@ msgstr "Desventaja por falta de entrenamiento con la armadura: tira dos d20 y us
 msgid "Disengage"
 msgstr "Destrabarse"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Disguise Kit"
+msgstr "Útiles de disfraz"
+
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:72
 msgid "Dodge"
 msgstr "Esquivar"
@@ -1448,6 +1452,10 @@ msgstr "Siguiendo al guía"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Force"
 msgstr "Fuerza"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Forgery Kit"
+msgstr "Útiles de falsificación"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Free move"
@@ -2129,6 +2137,10 @@ msgid "Nature"
 msgstr "Naturaleza"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Navigator's Tools"
+msgstr "Herramientas de navegante"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Necrotic"
 msgstr "Necrótico"
 
@@ -2452,6 +2464,10 @@ msgstr "Veneno"
 #: src/OpenGoldBox/combat_view.cpp:1751
 msgid "Poison Spray"
 msgstr "Rociada venenosa"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Poisoner's Kit"
+msgstr "Útiles de envenenador"
 
 #: src/OpenGoldBox/godot/scenes/startup.tscn:116 src/OpenGoldBox/godot/scenes/startup.tscn:95
 msgid "Pool of Radiance game files"

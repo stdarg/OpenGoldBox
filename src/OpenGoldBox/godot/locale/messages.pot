@@ -1130,6 +1130,10 @@ msgstr ""
 msgid "Disengage"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Disguise Kit"
+msgstr ""
+
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:72
 msgid "Dodge"
 msgstr ""
@@ -1447,6 +1451,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Force"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Forgery Kit"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -2129,6 +2137,10 @@ msgid "Nature"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Navigator's Tools"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Necrotic"
 msgstr ""
 
@@ -2451,6 +2463,10 @@ msgstr ""
 
 #: src/OpenGoldBox/combat_view.cpp:1751
 msgid "Poison Spray"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Poisoner's Kit"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/startup.tscn:116 src/OpenGoldBox/godot/scenes/startup.tscn:95

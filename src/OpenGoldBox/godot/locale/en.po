@@ -1130,6 +1130,10 @@ msgstr "Disadvantage from untrained armor: roll two d20s and use the lower roll.
 msgid "Disengage"
 msgstr "Disengage"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Disguise Kit"
+msgstr "Disguise Kit"
+
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:72
 msgid "Dodge"
 msgstr "Dodge"
@@ -1448,6 +1452,10 @@ msgstr "Following the guide"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Force"
 msgstr "Force"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Forgery Kit"
+msgstr "Forgery Kit"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Free move"
@@ -2129,6 +2137,10 @@ msgid "Nature"
 msgstr "Nature"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Navigator's Tools"
+msgstr "Navigator's Tools"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Necrotic"
 msgstr "Necrotic"
 
@@ -2452,6 +2464,10 @@ msgstr "Poison"
 #: src/OpenGoldBox/combat_view.cpp:1751
 msgid "Poison Spray"
 msgstr "Poison Spray"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Poisoner's Kit"
+msgstr "Poisoner's Kit"
 
 #: src/OpenGoldBox/godot/scenes/startup.tscn:116 src/OpenGoldBox/godot/scenes/startup.tscn:95
 msgid "Pool of Radiance game files"
