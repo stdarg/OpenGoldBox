@@ -57,9 +57,10 @@
   existing saves; Thrown weapons still use physical weapon inventory. See
   `docs/AMMUNITION.md`. Reintroducing ammunition tracking requires explicit approval.
 
-- Start with `docs/SRD-HANDOFF.md`, then follow `docs/SRD-WORKFLOW.md`.
-  Use `docs/SRD-REPO-MAP.md` for targeted navigation and
+- Start with `docs/SRD-COVERAGE.md` for what is already delivered, then follow
+  `docs/SRD-WORKFLOW.md`. Use `docs/SRD-REPO-MAP.md` for targeted navigation and
   `docs/SRD-DECISIONS.md` for approvals; do not reload the whole history.
+  `CLAUDE.md` is the only source of instructions about how to work.
 - Follow `docs/SRD-MODEL-ROUTING.md` before each implementation batch and any
   authorized delegation. Record and visibly announce model/effort and reason;
   distinguish the requested model from the actual configured model. Re-read

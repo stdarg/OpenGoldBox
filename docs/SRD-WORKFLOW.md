@@ -1,7 +1,7 @@
 # SRD implementation workflow
 
-Use [the handoff](SRD-HANDOFF.md) as the entry point, [the issue index](https://github.com/stdarg/OpenGold/issues/186)
-as the backlog, and [coverage](SRD-COVERAGE.md) as completion evidence. Keep the
+Use [coverage](SRD-COVERAGE.md) as the entry point and as completion evidence, and
+[the issue index](https://github.com/stdarg/OpenGold/issues/186) as the backlog. Keep the
 [full implementation plan](SRD-IMPLEMENTATION.md), all twelve classes and later
 level/multiclass milestones intact. Efficiency changes execution, not acceptance.
 
@@ -201,7 +201,7 @@ replacement work. A fresh task does not inherit an active goal automatically.
 
 Suggested starting message after explicit resumption:
 
-> Read AGENTS.md and docs/SRD-HANDOFF.md. Implement the named next milestone using
+> Read AGENTS.md and docs/SRD-COVERAGE.md. Implement the named next milestone using
 > docs/SRD-WORKFLOW.md, preserving the full SRD scope and recorded approvals.
 > Verify current repository/issue state, complete the issue's acceptance checks,
-> commit and push owned changes, and update the handoff and coverage ledger.
+> commit and push owned changes, and update the coverage ledger.

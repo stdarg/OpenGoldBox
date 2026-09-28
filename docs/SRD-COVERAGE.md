@@ -207,8 +207,7 @@ Documentation/delivery followed. Token/cost deltas unavailable.
 
 2026-09-24: adopted batch execution in [AGENTS.md](../AGENTS.md) and
 [workflow](SRD-WORKFLOW.md), with a compact [repository map](SRD-REPO-MAP.md),
-[decision register](SRD-DECISIONS.md) and current batch card in the
-[handoff](SRD-HANDOFF.md). Related requirements share implementation/evidence;
+[decision register](SRD-DECISIONS.md). Related requirements share implementation/evidence;
 mandatory ticket splitting is superseded without reducing acceptance.
 This ledger is the canonical completion record. Feature docs hold behavior and
 durable evidence, the spell inventory holds source/coverage requirements, and
