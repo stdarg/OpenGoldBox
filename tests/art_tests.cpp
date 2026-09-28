@@ -298,6 +298,20 @@ void composition_tests(const CharacterArt &art)
         (void)art.color_usage(appearance).contains(0, 6);
     },
     "Invalid character color region");
+    // Combat icons never draw the portrait head. A newer race's head is only
+    // registered where portraits are shown, so combat must not require it.
+    appearance.portrait_head = 260;
+    check(art.icon(appearance, false).width == 24 &&
+          art.equipped_icon(appearance, 0, true).width == 24 &&
+          art.combat_anatomy(appearance, false).width == 24,
+          "Combat icons do not require the portrait head to be loaded");
+    (void)art.color_usage(appearance);
+    rejects(
+        [&]
+    {
+        (void)art.portrait(appearance);
+    },
+    "Invalid character appearance selection");
     appearance.portrait_head = 2;
     rejects(
         [&]

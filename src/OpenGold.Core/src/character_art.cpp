@@ -428,7 +428,7 @@ Image CharacterArt::portrait(const CharacterAppearance &a) const
 
 Image CharacterArt::icon(const CharacterAppearance &a, bool action) const
 {
-    validate(a);
+    validate_character_appearance(a);
     const unsigned bank = (a.tall ? 64u : 0u) + (action ? 128u : 0u);
     return compose_character_icon(combat_heads.at(bank + a.combat_head),
                                   combat_bodies.at(bank + a.combat_body), a);
@@ -436,7 +436,7 @@ Image CharacterArt::icon(const CharacterAppearance &a, bool action) const
 
 CharacterColorUsage CharacterArt::color_usage(const CharacterAppearance &a) const
 {
-    validate(a);
+    validate_character_appearance(a);
     CharacterColorUsage usage;
     for (bool action :
             {

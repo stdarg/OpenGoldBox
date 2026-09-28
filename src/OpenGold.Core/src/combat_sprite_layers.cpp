@@ -89,7 +89,7 @@ bool equipment(unsigned color, unsigned id, bool action, bool tall, int x, int y
 
 IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, bool action) const
 {
-    validate(a);
+    validate_character_appearance(a);
     const auto offset = bank(a, action);
     const auto &original = body_at(*this, offset + a.combat_body);
     IndexedIcon result{24, 24, std::vector<std::uint8_t>(576)};
