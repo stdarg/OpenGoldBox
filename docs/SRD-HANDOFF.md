@@ -12,10 +12,29 @@ validate. [Canonical record](SRD-COVERAGE.md#skilled-complete-77),
 
 `Cap::explicit_spells` moved 41 -> 42 and must stay the highest capability; the
 enum documents why. A pre-existing Cleric level-up crash in `advancement_changed`
-was fixed to allow verification and is recorded in SRD-COVERAGE. #77 closure was
-not performed in this session. The next queued items remain #84 starting
-equipment and #89 other Fighter 4 acceptance; #97/#165 and #98/#101 Wizard work
-remain open.
+was fixed to allow verification and is recorded in SRD-COVERAGE. #77 is CLOSED
+(2026-09-28T02:15:09Z). The next queued items remain #84 starting equipment and
+#89 other Fighter 4 acceptance; #97/#165 and #98/#101 Wizard work remain open.
+
+## Delivery target: `origin/main`
+
+CLAUDE.md section 6 is authoritative: work in a git worktree, ensure all tests
+pass, then commit and **push to `origin/main`**. Skilled was delivered that way —
+`srd-skilled` was fast-forwarded onto `main` at b1bb204 and pushed, and the branch
+also remains on the remote.
+
+This supersedes the older convention visible in earlier SRD-COVERAGE records,
+which delivered on a `codex/*` branch and stated things like "Main stays 375f58f;
+branch delivery is not a merge or release claim", leaving `main` to be updated
+later by a separate squash-port (e07ca3e). Do not re-derive that convention from
+those historical entries: they record how past increments shipped, not where new
+work goes. Finished, fully verified work now lands on `main`.
+
+An audit of every issue named in a SRD-COVERAGE completion heading confirms all of
+them are closed; #44 appears only as the parent of the delivered child #222 and
+stays open by its own record. #49 feats coverage, #75 Magic Initiate and #83
+Grappler remain open and are genuinely incomplete — the latter two are still
+written as unavailable in the feat list.
 
 Updated2026-09-26. Standing goal remains incomplete: close all `SRD_improvements`,
 preserving all twelve classes through4 and planned higher levels/multiclassing.

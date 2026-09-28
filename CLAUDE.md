@@ -67,7 +67,7 @@ origin.
 
 ## 6. Do your work in git worktrees.
 
-Before commiting and psuhing to origin/main, ensure all tests pass. Always
+Before committing and pushing to origin/main, ensure all tests pass. Always
 commit your work when done and push to origin/main.
 
 ## 7. Write readable code.
