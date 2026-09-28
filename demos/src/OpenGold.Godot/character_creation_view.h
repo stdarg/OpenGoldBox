@@ -71,8 +71,24 @@ class CharacterCreationView : public godot::Control
     void spellbook_input(const godot::Ref<godot::InputEvent> &event);
     opengold::MemberId spellbook_member_{};
     opengold::rules::SpellChoices spellbook_choice_;
-    bool advancement_spell_page_{};
-    void advancement_spell_page();
+    // The level-up window is a sequence of pages, not a single optional extra:
+    // Skilled and a Wizard's spell choices can both follow the first page, so a
+    // flag cannot say which one is showing.
+    enum class AdvancementPage
+    {
+        choices,
+        skilled,
+        spells
+    };
+    AdvancementPage advancement_page_{};
+    void advancement_pages();
+    [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_skilled_group() const;
+    // The single training dropdown never shows Skilled, which owns a whole page.
+    [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_dropdown_group() const;
+    [[nodiscard]] AdvancementPage advancement_next_page(AdvancementPage from) const;
+    [[nodiscard]] AdvancementPage advancement_previous_page(AdvancementPage from) const;
+    void refresh_advancement_skilled();
+    void advancement_skilled_toggled(bool selected, godot::String option);
     void advancement_back();
     void advancement_learning_toggled(bool selected, godot::String group, godot::String option);
     void cantrip_toggled(bool selected, godot::String option);

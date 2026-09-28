@@ -90,3 +90,51 @@ owns the skill/tool catalog and check grants; `srd5.cpp` owns advancement/profil
 and module-version validation. Main/demo `level_up_view.cpp` own the existing
 700×670 page flow. `training_control.h` supplies styled checkbox controls.
 Keep `rules.h` contracts generic and preserve Core's transaction boundary.
+
+## Delivered
+
+Implemented on `srd-skilled` from `main` at 314244b. SKILLED-1 was approved with
+one change: `advancement_spell_page_` became a three-state page enum rather than
+a second boolean, because a Wizard taking Skilled needs three pages
+(choices → Skilled → spells) and Back must therefore appear on any page after the
+first, not only a Wizard's spell page. Everything else in the proposal was taken
+unchanged. [Canonical completion record](SRD-COVERAGE.md#skilled-complete-77).
+
+Grant shape: the three picks are ordinary `skill:`/`tool:` grants sourced to
+`feat:skilled`, alongside a `feat:skilled` grant sourced to the level-four
+entitlement. Option ids keep their `skill:`/`tool:` prefix so one list can span
+both catalogs; the view derives its "Skill:"/"Tool:" label prefix from that id.
+
+### Reproduction (Bash, from repository root)
+
+Native rules and migration:
+
+```bash
+sh ./build.sh                                   # 50/50, includes Skilled
+./build/opengold_training_tests --skilled        # acceptance only
+python3 tools/localization.py --check            # 1026 messages
+```
+
+The prior-writer fixtures are frozen and must not be regenerated with the current
+writer; `--freeze-skilled` asserts the writer is 0.6.61 and so refuses to run now.
+
+Rendered controls, per class and surface. The game must be built in its own
+directory (`OPENGOLD_BUILD_GAME=ON` only) because the game and demo each force a
+different `GODOTCPP_BUILD_PROFILE`:
+
+```bash
+cmake --build build-game -j6
+OPENGOLD_GAME_DIR=/path/to/POOLRAD build-game/opengold_advancement_tests   # writes asi-CLASS-ui.ogs
+OPENGOLD_GAME_DIR=/path/to/POOLRAD OPENGOLD_LANG=en cmake \
+  "-DGODOT=$GODOT" "-DPROJECT=$PWD/src/OpenGoldBox/godot" \
+  "-DSCRIPT=$PWD/tests/skilled_view_tests.gd" "-DEXPECTED=Skilled controls passed" \
+  "-DARGS=--style-class=CLASS;--style-fixture=$PWD/build-game/asi-CLASS-ui.ogs" \
+  -DTEST_TIMEOUT=240 -P tests/run_godot_test.cmake
+```
+
+`OPENGOLD_GAME_DIR` must match the value used to write the fixture, or the
+campaign asset identity will not load. Add `--style-demo` and point `PROJECT` at
+`demos/godot` for the demo, which runs English only. The fixtures are the existing
+ASI ones: a level-three character of each class ready for the level-four choice,
+so no new fixture generator was added. Like `asi_view_tests.gd`, this check is not
+registered in CTest and is run through `tests/run_godot_test.cmake`.

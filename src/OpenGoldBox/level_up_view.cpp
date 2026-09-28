@@ -60,6 +60,16 @@ void CharacterCreationView::setup_advancement()
     spell_page->set_follow_focus(true);
     spell_page->hide();
     presentation::spell_rows(*spell_page, "Rows");
+    // Skilled reuses the same page area and scrolling behaviour as the spell page.
+    auto *skilled_count = presentation::add_control<Label>(*window, "SkilledCount",
+        Rect2(24, 44, 652, 24));
+    skilled_count->hide();
+    auto *skilled_page = presentation::add_control<ScrollContainer>(*window, "SkilledPage",
+        Rect2(24, 70, 652, 475));
+    skilled_page->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
+    skilled_page->set_follow_focus(true);
+    skilled_page->hide();
+    presentation::spell_rows(*skilled_page, "Rows");
     auto *back = presentation::add_control<Button>(*window, "Back", Rect2(236, 610, 136, 40));
     back->set_text(i18n::text(N_("Back")));
     back->hide();
@@ -122,39 +132,102 @@ void CharacterCreationView::setup_advancement()
     confirm->connect("pressed", callable_mp(this, &CharacterCreationView::confirm_advancement));
 }
 
-void CharacterCreationView::advancement_spell_page()
+const opengold::rules::TrainingChoiceGroup *
+CharacterCreationView::advancement_skilled_group() const
+{
+    const auto found = std::find_if(advancement_options_.training.begin(),
+                                    advancement_options_.training.end(),
+                                    [](const auto & g)
+    {
+        return g.id == "feat:skilled";
+    });
+    return found == advancement_options_.training.end() ? nullptr : &*found;
+}
+
+const opengold::rules::TrainingChoiceGroup *
+CharacterCreationView::advancement_dropdown_group() const
+{
+    const auto found = std::find_if(advancement_options_.training.begin(),
+                                    advancement_options_.training.end(),
+                                    [](const auto & g)
+    {
+        return g.id != "feat:skilled";
+    });
+    return found == advancement_options_.training.end() ? nullptr : &*found;
+}
+
+CharacterCreationView::AdvancementPage
+CharacterCreationView::advancement_next_page(AdvancementPage from) const
+{
+    if (from == AdvancementPage::choices && advancement_skilled_group())
+        return AdvancementPage::skilled;
+    if (from != AdvancementPage::spells && advancement_choice_.spell_learning)
+        return AdvancementPage::spells;
+    return from;
+}
+
+CharacterCreationView::AdvancementPage
+CharacterCreationView::advancement_previous_page(AdvancementPage from) const
+{
+    if (from == AdvancementPage::spells && advancement_skilled_group())
+        return AdvancementPage::skilled;
+    return AdvancementPage::choices;
+}
+
+void CharacterCreationView::advancement_pages()
 {
     if (!advancing_)
         return;
     auto *w = get_node<Window>("LevelUp");
     const bool wizard = advancement_choice_.spell_learning.has_value();
-    w->get_node<Control>("SpellChoicesPage")->set_visible(wizard && advancement_spell_page_);
-    w->get_node<Button>("Back")->set_visible(wizard && advancement_spell_page_);
-    w->get_node<Button>("Confirm")->set_text(i18n::text(N_("Confirm")));
-    if (!wizard)
-        return;
-    w->get_node<Button>("Confirm")->set_text(advancement_spell_page_ ? i18n::text(N_("Confirm"))
-            : i18n::text(N_("Next")));
+    const auto *skilled = advancement_skilled_group();
+    const bool on_first = advancement_page_ == AdvancementPage::choices;
+    w->get_node<Control>("SpellChoicesPage")
+    ->set_visible(wizard && advancement_page_ == AdvancementPage::spells);
+    w->get_node<Control>("SkilledPage")
+    ->set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
+    w->get_node<Control>("SkilledCount")
+    ->set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
+    // Back appears on any page after the first rather than only a Wizard's
+    // spell page, so a non-Wizard taking Skilled can still step back.
+    w->get_node<Button>("Back")->set_visible(!on_first);
+    w->get_node<Button>("Confirm")
+    ->set_text(advancement_next_page(advancement_page_) == advancement_page_
+               ? i18n::text(N_("Confirm"))
+               : i18n::text(N_("Next")));
     for (const char *name :
             {"HP", "FeatLabel", "Feat", "Note"
             })
-        w->get_node<Control>(name)->set_visible(!advancement_spell_page_);
-    const bool training = !advancement_options_.training.empty();
+        w->get_node<Control>(name)->set_visible(on_first);
+    // Match open_advancement exactly: a dropdown alongside a feat choice is
+    // supplemental, and then the ability controls stay visible beside it.
+    const bool has_training = advancement_dropdown_group() != nullptr;
+    const bool supplemental = has_training && !advancement_options_.feats.empty();
     for (const char *name :
             {"AdvancementTrainingLabel", "AdvancementTraining"
             })
-        w->get_node<Control>(name)->set_visible(!advancement_spell_page_ && training);
+        w->get_node<Control>(name)->set_visible(on_first && has_training);
     for (unsigned i = 0; i < 6; ++i)
     {
         w->get_node<Control>(String("Ability") + String::num_uint64(i))
-        ->set_visible(!advancement_spell_page_ && !training);
+        ->set_visible(on_first && (!has_training || supplemental));
         w->get_node<Control>(String("AbilityLabel") + String::num_uint64(i))
-        ->set_visible(!advancement_spell_page_ && !training);
+        ->set_visible(on_first && (!has_training || supplemental));
+    }
+    if (advancement_page_ == AdvancementPage::skilled)
+        refresh_advancement_skilled();
+    if (!wizard)
+    {
+        w->get_node<Control>("SpellLabel")->set_visible(on_first);
+        for (unsigned i = 0; i < 4; ++i)
+            w->get_node<Control>(String("Spell") + String::num_uint64(i))
+            ->set_visible(on_first && i < advancement_options_.spells.size());
+        return;
     }
     w->get_node<Control>("SpellLabel")->hide();
     for (unsigned i = 0; i < 4; ++i)
         w->get_node<Control>(String("Spell") + String::num_uint64(i))->hide();
-    if (!advancement_spell_page_)
+    if (advancement_page_ != AdvancementPage::spells)
         return;
     auto sheet = campaign_->member(advancing_).character.sheet();
     sheet.level = advancement_options_.level;
@@ -186,10 +259,77 @@ void CharacterCreationView::advancement_spell_page()
     });
 }
 
+// One checkbox per offered proficiency, prefixed so the two catalogs stay
+// distinguishable in a single list. Controls are reused across refreshes so
+// toggling never destroys the focused checkbox.
+void CharacterCreationView::refresh_advancement_skilled()
+{
+    const auto *group = advancement_skilled_group();
+    if (!group)
+        return;
+    auto *w = get_node<Window>("LevelUp");
+    auto &rows = *w->get_node<VBoxContainer>("SkilledPage/Rows");
+    const auto &picked = advancement_choice_.training["feat:skilled"];
+    w->get_node<Label>("SkilledCount")
+    ->set_text(i18n::format("Selected: {count}/{total}", {{"count", unsigned(picked.size())},
+        {"total", group->count}
+    }));
+    // Hide every row first; the loop below shows only what is still offered, so
+    // no reverse name mapping is needed (ids contain underscores of their own).
+    for (int n = 0; n < rows.get_child_count(); ++n)
+        if (auto *box = Object::cast_to<CheckBox>(rows.get_child(n)))
+            box->hide();
+    for (const auto &option : group->options)
+    {
+        const auto name = presentation::training_string(option.id).replace(":", "_");
+        auto *box = Object::cast_to<CheckBox>(rows.get_node_or_null(name));
+        if (!box)
+        {
+            auto owned = presentation::make_node<CheckBox>();
+            owned->set_name(name);
+            box = owned.get();
+            presentation::style_choice(*box);
+            box->connect("toggled", callable_mp(this,
+                                                &CharacterCreationView::advancement_skilled_toggled)
+                         .bind(presentation::training_string(option.id)));
+            presentation::attach_child(rows, std::move(owned));
+        }
+        // Each template has to sit directly inside the i18n::format call: the
+        // catalog extractor matches on that call, so a literal behind a ternary
+        // is never collected and would ship untranslated.
+        box->set_text(option.id.starts_with("skill:")
+        ? i18n::format("Skill: {name}", {{"name", i18n::text(option.label)}})
+        : i18n::format("Tool: {name}", {{"name", i18n::text(option.label)}}));
+        const bool on = std::find(picked.begin(), picked.end(), option.id) != picked.end();
+        box->set_pressed_no_signal(on);
+        // A full selection leaves only the chosen three toggleable, so the
+        // count cannot be exceeded by clicking.
+        box->set_disabled(!on && picked.size() >= group->count);
+        box->show();
+    }
+}
+
+void CharacterCreationView::advancement_skilled_toggled(bool selected, String option)
+{
+    const std::string id = option.utf8().get_data();
+    auto &picked = advancement_choice_.training["feat:skilled"];
+    const auto *group = advancement_skilled_group();
+    if (selected)
+    {
+        if (std::find(picked.begin(), picked.end(), id) == picked.end() &&
+                (!group || picked.size() < group->count))
+            picked.push_back(id);
+    }
+    else
+        std::erase(picked, id);
+    refresh_advancement_skilled();
+    advancement_changed();
+}
+
 void CharacterCreationView::advancement_back()
 {
-    advancement_spell_page_ = false;
-    advancement_spell_page();
+    advancement_page_ = advancement_previous_page(advancement_page_);
+    advancement_pages();
     advancement_changed();
 }
 
@@ -207,7 +347,7 @@ void CharacterCreationView::advancement_learning_toggled(bool selected, String g
         const std::string id = option.utf8().get_data();
         std::erase(advancement_choice_.spells, id);
     }
-    advancement_spell_page();
+    advancement_pages();
     advancement_changed();
 }
 
@@ -267,7 +407,7 @@ void CharacterCreationView::open_advancement(std::int64_t id)
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
             town && town->is_visible() && !town->can_leave())
         return;
-    advancement_spell_page_ = false;
+    advancement_page_ = AdvancementPage::choices;
     advancing_ = id;
     advancement_options_ = campaign_->advancement_options(id);
     advancement_choice_ = campaign_->default_advancement(id);
@@ -297,7 +437,8 @@ void CharacterCreationView::open_advancement(std::int64_t id)
             feat->select(i);
     }
     feat->set_disabled(advancement_options_.feats.empty());
-    const bool has_training = !advancement_options_.training.empty();
+    const auto *dropdown = advancement_dropdown_group();
+    const bool has_training = dropdown != nullptr;
     const bool supplemental_training = has_training && !advancement_options_.feats.empty();
     auto *training = window->get_node<OptionButton>("AdvancementTraining");
     training->clear();
@@ -315,7 +456,7 @@ void CharacterCreationView::open_advancement(std::int64_t id)
     }
     if (has_training)
     {
-        const auto &group = advancement_options_.training.front();
+        const auto &group = *dropdown;
         window->get_node<Label>("AdvancementTrainingLabel")->set_text(i18n::text(group.label));
         training->add_item(i18n::text("Choose an option"));
         for (const auto &option : group.options)
@@ -367,7 +508,7 @@ void CharacterCreationView::open_advancement(std::int64_t id)
         }
     }
     advancement_refreshing_ = false;
-    advancement_spell_page();
+    advancement_pages();
     advancement_changed();
     window->popup_centered();
     window->get_node<Button>("Cancel")->grab_focus();
@@ -406,17 +547,27 @@ void CharacterCreationView::advancement_changed(std::int64_t)
         }
     }
     if (!advancement_options_.feats.empty())
+    {
         advancement_choice_.feat =
             advancement_options_.feats.at(window->get_node<OptionButton>("Feat")->get_selected())
             .id;
-    advancement_choice_.training.clear();
-    if (!advancement_options_.training.empty())
-    {
-        const auto &group = advancement_options_.training.front();
-        const auto index = window->get_node<OptionButton>("AdvancementTraining")->get_selected();
-        if (index > 0 && static_cast<std::size_t>(index) <= group.options.size())
-            advancement_choice_.training[group.id] = {group.options[index - 1].id};
+        // The Skilled page is offered by the rules only while Skilled is the
+        // selection, so the options have to follow the feat for every class, not
+        // just the ones with a Fighting Style.
+        advancement_options_ = campaign_->advancement_options(advancing_, advancement_choice_);
     }
+    // Keep the Skilled picks: they come from their own page, not this dropdown,
+    // and switching away from Skilled drops them by dropping the group instead.
+    auto skilled_picks = advancement_choice_.training["feat:skilled"];
+    advancement_choice_.training.clear();
+    if (const auto *group = advancement_dropdown_group())
+    {
+        const auto index = window->get_node<OptionButton>("AdvancementTraining")->get_selected();
+        if (index > 0 && static_cast<std::size_t>(index) <= group->options.size())
+            advancement_choice_.training[group->id] = {group->options[index - 1].id};
+    }
+    if (advancement_choice_.feat == "skilled")
+        advancement_choice_.training["feat:skilled"] = std::move(skilled_picks);
     const bool ability = advancement_choice_.feat == "ability_score_improvement";
     for (unsigned i = 0; i < 6; ++i)
     {
@@ -435,12 +586,36 @@ void CharacterCreationView::advancement_changed(std::int64_t)
     if (!advancement_choice_.spell_learning)
     {
         advancement_choice_.spells.clear();
-        for (unsigned i = 0; i < advancement_options_.spells.size(); ++i)
+        // The window has four spell checkboxes while a catalog may list more -- the
+        // Cleric's fifth entry is its permanently unavailable Bless row, which the
+        // display loop above already declines to show. Reading past the fourth
+        // control asked for a node that does not exist and aborted every Cleric
+        // level-up, so this bound matches the controls that were actually built.
+        for (unsigned i = 0; i < std::min<std::size_t>(4, advancement_options_.spells.size()); ++i)
             if (window->get_node<CheckBox>(String("Spell") + String::num_uint64(i))->is_pressed())
                 advancement_choice_.spells.push_back(advancement_options_.spells[i].id);
     }
     auto preview_choice = advancement_choice_;
-    if (preview_choice.spell_learning && !advancement_spell_page_)
+    // The HP preview and the Next button both come from previewing the whole
+    // transaction, so a page the player has not reached yet must preview with a
+    // valid stand-in rather than blocking the way to it. Once the Skilled page is
+    // showing, the real picks apply and an incomplete three gates Confirm.
+    if (advancement_page_ == AdvancementPage::choices)
+        if (const auto *group = advancement_skilled_group())
+        {
+            auto &fill = preview_choice.training["feat:skilled"];
+            if (fill.size() != group->count)
+            {
+                fill.clear();
+                for (const auto &option : group->options)
+                {
+                    if (fill.size() == group->count)
+                        break;
+                    fill.push_back(option.id);
+                }
+            }
+        }
+    if (preview_choice.spell_learning && advancement_page_ != AdvancementPage::spells)
     {
         const auto defaults = campaign_->default_advancement(advancing_);
         preview_choice.spell_learning = defaults.spell_learning;
@@ -467,6 +642,10 @@ void CharacterCreationView::advancement_changed(std::int64_t)
         window->get_node<Label>("Error")->set_text(i18n::text(e.what()));
         window->get_node<Button>("Confirm")->set_disabled(true);
     }
+    // Selecting or leaving Skilled changes which pages exist, so the page state
+    // has to follow every choice change, not only Back/Next. Nothing reached
+    // from here calls back into this function.
+    advancement_pages();
 }
 
 void CharacterCreationView::close_advancement()
@@ -479,10 +658,12 @@ void CharacterCreationView::confirm_advancement()
 {
     if (!advancing_)
         return;
-    if (advancement_choice_.spell_learning && !advancement_spell_page_)
+    // Confirm doubles as Next until the last page; only then does it apply the
+    // whole advancement in one transaction.
+    if (const auto next = advancement_next_page(advancement_page_); next != advancement_page_)
     {
-        advancement_spell_page_ = true;
-        advancement_spell_page();
+        advancement_page_ = next;
+        advancement_pages();
         advancement_changed();
         return;
     }

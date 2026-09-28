@@ -625,3 +625,63 @@ this excludes preflight and approval wait. No new issue or scope was added.
 Human's independent extra Origin-feat source remains#71; background equipment
 and other class progression remain their original issues. Main stays375f58f;
 branch delivery is not a merge or release claim.
+
+### Skilled complete (#77)
+
+Tested implementation on `srd-skilled`, branched from `main` at 314244b. Skilled
+is offered at every supported level-four feat entitlement and grants three
+proficiencies chosen from the whole catalog: 18 skills and 37 tool variants, the
+latter completed here with Disguise Kit, Forgery Kit, Navigator's Tools and
+Poisoner's Kit. Entries the character already holds are not offered, so an
+already-known pick fails the membership check instead of adding a second grant.
+Picks become ordinary `skill:`/`tool:` grants sourced to `feat:skilled`, which is
+why check effects need no new query: a pick supplies the proficiency bonus, a
+skill and tool pair reports `tool_advantage`, and proficiency cannot stack
+because the query tests presence. Expertise is unchanged.
+
+Rules 0.6.62/PC41/combat 26. `Cap::skilled` is 41 and `Cap::explicit_spells`
+moved to 42, which it must remain: the reader chooses the spell wire format from
+`has(explicit_spells)` and `has()` is monotonic, so a capability above it makes
+every profile claim an explicit spell list. No committed fixture is written above
+PC40, so no stored profile changes meaning. 0.6.61 campaigns load and combat
+checkpoint format 26 is retained, since Skilled adds no combat state and no feats
+bit. Repeatable: Skilled joins ASI as exempt from the non-repeatable feat set,
+with duplicate use of one entitlement still rejected. Only one level-four
+entitlement exists, so a second acquisition is unreachable and none was invented.
+
+Control SKILLED-1 as approved: a Skilled Training page inside the existing
+700×670 window, reusing the (24,70) 652×475 scroll area, one prefixed checkbox
+list with a shared `Selected: n/3`, and the existing Back/Cancel/Next-Confirm
+positions. `advancement_spell_page_` became a three-state page enum, because a
+Wizard taking Skilled needs choices → Skilled → spells and a flag cannot express
+it; Back is now visible on any page after the first rather than only a Wizard's
+spell page.
+
+50/50 native tests pass after affected rebuilds. New `--skilled` acceptance covers
+options and provenance, real check effects, nine rejections, PC41 persistence and
+canonical reload, and the frozen 0.6.61 saves migrating with no invented Skilled
+acquisition. `skilled_view_tests.gd` passes for all six progression classes in
+main EN/ES and demo EN at 1120×800/1920×1080, covering the catalog offered once
+each, the count and three-pick limit, the Confirm gate, Back preserving picks,
+switching feat discarding them, Cancel and window close committing nothing, and
+keyboard commitment through every page. `asi_view_tests.gd` passes for all six
+classes, so the page refactor broke no existing flow. 1026 localized messages
+validate; astyle reports every touched file unchanged.
+
+[Scope, mechanics, commands and timing](SKILLED.md),
+[native evidence](../tests/skilled_checks.h),
+[rendered controls](../tests/skilled_view_tests.gd).
+
+Two view defects were found by running the real UI and are fixed here. Next was
+unreachable because the preview validated picks the player could not yet make;
+it now previews an unreached page with a valid stand-in, as the Wizard spell page
+already did. Page state did not follow the feat dropdown, so selecting Skilled
+left Confirm reading "Confirm". A third defect was **pre-existing on main**, not
+introduced by this work: `advancement_changed` read `Spell{i}` for every catalog
+entry while only four checkboxes exist, so the Cleric's five spell options
+requested a missing `Spell4` and aborted every Cleric level-up. Verified by
+restoring the old bound and watching `asi_view_tests.gd` fail for the Cleric on
+that exact node, then pass with the bound restored to the four controls actually
+built. #84 starting equipment, #89 other Fighter 4 acceptance, #97/#165 spellbooks
+and missing spells, and #98/#101 Wizard work remain their original issues.
+Human's independent extra Origin-feat source remains #71.

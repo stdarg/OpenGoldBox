@@ -33,7 +33,7 @@ msgstr " (Reserva)"
 msgid " (Savage Attacker)"
 msgstr " (Atacante salvaje)"
 
-#: src/OpenGoldBox/level_up_view.cpp:293 src/OpenGoldBox/level_up_view.cpp:344 src/OpenGoldBox/level_up_view.cpp:405
+#: src/OpenGoldBox/level_up_view.cpp:433 src/OpenGoldBox/level_up_view.cpp:485 src/OpenGoldBox/level_up_view.cpp:546
 msgid " (Unavailable)"
 msgstr " (No disponible)"
 
@@ -391,7 +391,7 @@ msgstr "Recuperación Arcana"
 msgid "Arcane Recovery restored {first} level-one and {second} level-two spell slots."
 msgstr "Recuperación Arcana restauró {first} espacios de conjuro de nivel 1 y {second} de nivel 2."
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:5477 src/OpenGoldBox/level_up_view.cpp:754
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:5477 src/OpenGoldBox/level_up_view.cpp:935
 msgid "Archery"
 msgstr "Tiro con arco"
 
@@ -443,7 +443,7 @@ msgstr "Bonificaciones: Fuerza, Destreza y Constitución."
 msgid "Attributes"
 msgstr "Características"
 
-#: src/OpenGoldBox/character_creation_view.cpp:577 src/OpenGoldBox/godot/scenes/character_creation.tscn:126 src/OpenGoldBox/level_up_view.cpp:64
+#: src/OpenGoldBox/character_creation_view.cpp:577 src/OpenGoldBox/godot/scenes/character_creation.tscn:126 src/OpenGoldBox/level_up_view.cpp:74
 msgid "Back"
 msgstr "Atrás"
 
@@ -628,7 +628,7 @@ msgstr "Campaña cargada."
 msgid "Campaign saved."
 msgstr "Campaña guardada."
 
-#: src/OpenGoldBox/equipment_choice_impl.h:56 src/OpenGoldBox/godot/scenes/startup.tscn:155 src/OpenGoldBox/godot/scenes/startup.tscn:92 src/OpenGoldBox/level_up_view.cpp:118 src/OpenGoldBox/nick_controls.h:46 src/OpenGoldBox/rest_dialog_impl.h:235 src/OpenGoldBox/rest_dialog_impl.h:69 src/OpenGoldBox/save_slots.cpp:70 src/OpenGoldBox/spell_choice_controls.h:151 src/OpenGoldBox/startup_view.cpp:246 src/OpenGoldBox/training_review_impl.h:47
+#: src/OpenGoldBox/equipment_choice_impl.h:56 src/OpenGoldBox/godot/scenes/startup.tscn:155 src/OpenGoldBox/godot/scenes/startup.tscn:92 src/OpenGoldBox/level_up_view.cpp:128 src/OpenGoldBox/nick_controls.h:46 src/OpenGoldBox/rest_dialog_impl.h:235 src/OpenGoldBox/rest_dialog_impl.h:69 src/OpenGoldBox/save_slots.cpp:70 src/OpenGoldBox/spell_choice_controls.h:151 src/OpenGoldBox/startup_view.cpp:246 src/OpenGoldBox/training_review_impl.h:47
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -808,7 +808,7 @@ msgstr "Elige un Estilo de combate válido"
 msgid "Choose an existing folder containing the Pool of Radiance game files."
 msgstr "Elige una carpeta existente con los archivos de Pool of Radiance."
 
-#: src/OpenGoldBox/level_up_view.cpp:320 src/OpenGoldBox/training_control.h:252
+#: src/OpenGoldBox/level_up_view.cpp:461 src/OpenGoldBox/training_control.h:252
 msgid "Choose an option"
 msgstr "Elige una opción"
 
@@ -840,7 +840,7 @@ msgstr "Elige la carpeta que contiene START.EXE y los archivos DAX originales de
 msgid "Choose the required training options. Back preserves your selections."
 msgstr "Elige las opciones de entrenamiento requeridas. Atrás conserva tus selecciones."
 
-#: src/OpenGoldBox/level_up_view.cpp:466
+#: src/OpenGoldBox/level_up_view.cpp:641
 msgid "Choose valid options to preview your new HP."
 msgstr "Elige opciones válidas para ver tus nuevos PG."
 
@@ -961,7 +961,7 @@ msgstr "Completa las elecciones de conjuros disponibles."
 msgid "Complete the required training choices."
 msgstr "Completa las opciones de entrenamiento requeridas."
 
-#: src/OpenGoldBox/level_up_view.cpp:121 src/OpenGoldBox/level_up_view.cpp:133 src/OpenGoldBox/level_up_view.cpp:136
+#: src/OpenGoldBox/level_up_view.cpp:131 src/OpenGoldBox/level_up_view.cpp:196
 msgid "Confirm"
 msgstr "Confirmar"
 
@@ -1198,7 +1198,7 @@ msgstr "Dulcémele"
 msgid "Dwarf"
 msgstr "Enano"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:414 src/OpenGold.Rules.Srd5/src/srd5.cpp:2238 src/OpenGold.Rules.Srd5/src/srd5.cpp:5814 src/OpenGoldBox/level_up_view.cpp:654
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:414 src/OpenGold.Rules.Srd5/src/srd5.cpp:2238 src/OpenGold.Rules.Srd5/src/srd5.cpp:5814 src/OpenGoldBox/level_up_view.cpp:835
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dwarven Toughness: +{hp} maximum HP."
 msgstr "Dureza enana: +{hp} PG máximos."
@@ -1325,7 +1325,7 @@ msgstr "Prueba de Medicina fallida: d20 {roll} + {modifier} = {total} contra CD 
 msgid "Failure"
 msgstr "Fracaso"
 
-#: src/OpenGoldBox/level_up_view.cpp:72
+#: src/OpenGoldBox/level_up_view.cpp:82
 msgid "Feat or ability points"
 msgstr "Dote o puntos de característica"
 
@@ -1359,7 +1359,7 @@ msgstr "Clase de guerrero"
 msgid "Fighter skills"
 msgstr "Habilidades de guerrero"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:356
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:497
 msgid "Fighting Style"
 msgstr "Estilo de combate"
 
@@ -1371,7 +1371,7 @@ msgstr "Estilo de combate, PG fijos y dote o puntos de característica al nivel 
 msgid "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgstr "Completa las seis casillas para continuar.\nLas puntuaciones incluyen bonificaciones."
 
-#: src/OpenGoldBox/character_sheet_view.cpp:236 src/OpenGoldBox/level_up_view.cpp:648
+#: src/OpenGoldBox/character_sheet_view.cpp:236 src/OpenGoldBox/level_up_view.cpp:829
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Final score: {score}"
 msgstr "Puntuación final: {score}"
@@ -1425,7 +1425,7 @@ msgstr "Primera tirada: {damage}"
 msgid "Fixed training"
 msgstr "Entrenamiento fijo"
 
-#: src/OpenGoldBox/level_up_view.cpp:111
+#: src/OpenGoldBox/level_up_view.cpp:121
 msgid "Fixed-average HP growth. Existing resource expenditure is preserved.\nAdditional class and subclass features are unavailable in this version."
 msgstr "Aumento de PG con media fija. Se mantienen los recursos ya gastados.\nEsta versión no incluye otros rasgos de clase o subclase."
 
@@ -1860,12 +1860,12 @@ msgstr "Niveles 1–4: PG, algunas dotes, conjuros preparados compatibles y espa
 msgid "Level up"
 msgstr "Subir de nivel"
 
-#: src/OpenGoldBox/level_up_view.cpp:231 src/OpenGoldBox/level_up_view.cpp:238
+#: src/OpenGoldBox/level_up_view.cpp:371 src/OpenGoldBox/level_up_view.cpp:378
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Level up {name}"
 msgstr "Subir de nivel: {name}"
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:5784 src/OpenGoldBox/level_up_view.cpp:647
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:5784 src/OpenGoldBox/level_up_view.cpp:828
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Level {level} Ability Score Improvement"
 msgstr "Nivel {level}: Mejora de característica"
@@ -2041,7 +2041,7 @@ msgstr "Maza a dos manos"
 msgid "Maximum HP includes level {level}, d{die} Hit Die and Constitution modifier {modifier}."
 msgstr "Los PG máximos incluyen el nivel {level}, el Dado de Golpe d{die} y el modificador de Constitución {modifier}."
 
-#: src/OpenGoldBox/level_up_view.cpp:454
+#: src/OpenGoldBox/level_up_view.cpp:629
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Maximum HP: {old} -> {new} / Current HP: {current}"
 msgstr "PG máximos: {old} -> {new} / PG actuales: {current}"
@@ -2177,7 +2177,7 @@ msgstr "Nueva Phlan    N ↑"
 msgid "New Phlan / {direction} view"
 msgstr "Nueva Phlan / vista hacia {direction}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:581 src/OpenGoldBox/godot/scenes/character_creation.tscn:129 src/OpenGoldBox/level_up_view.cpp:137
+#: src/OpenGoldBox/character_creation_view.cpp:581 src/OpenGoldBox/godot/scenes/character_creation.tscn:129 src/OpenGoldBox/level_up_view.cpp:197
 msgid "Next"
 msgstr "Siguiente"
 
@@ -2230,7 +2230,7 @@ msgstr "No se ha asignado una imagen de combate"
 msgid "No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0)."
 msgstr "Sin modificadores de equipo. Origen: ataque sin armas y Fuerza {score}. Ataque: modificador de Fuerza +2 por competencia de nivel 1; daño: 1 + modificador de Fuerza (mínimo 0)."
 
-#: src/OpenGoldBox/level_up_view.cpp:288
+#: src/OpenGoldBox/level_up_view.cpp:428
 msgid "No feat or ability increase at this level"
 msgstr "Este nivel no otorga dotes ni mejoras de características"
 
@@ -2242,7 +2242,7 @@ msgstr "No hay retratos coincidentes"
 msgid "No numeric racial modifiers are currently applied."
 msgstr "No se aplican modificadores numéricos de raza actualmente."
 
-#: src/OpenGoldBox/level_up_view.cpp:334
+#: src/OpenGoldBox/level_up_view.cpp:475
 msgid "No spell choices for this class"
 msgstr "Esta clase no tiene conjuros que elegir"
 
@@ -2497,11 +2497,11 @@ msgstr "Elegir retrato"
 msgid "Potter's Tools"
 msgstr "Herramientas de alfarero"
 
-#: src/OpenGoldBox/level_up_view.cpp:97 src/OpenGoldBox/spell_choice_controls.h:168
+#: src/OpenGoldBox/level_up_view.cpp:107 src/OpenGoldBox/spell_choice_controls.h:168
 msgid "Prepared spells"
 msgstr "Conjuros preparados"
 
-#: src/OpenGoldBox/level_up_view.cpp:335
+#: src/OpenGoldBox/level_up_view.cpp:476
 msgid "Prepared spells: select at least one"
 msgstr "Conjuros preparados: elige al menos uno"
 
@@ -2854,7 +2854,7 @@ msgstr "FUE"
 msgid "Sacred Flame"
 msgstr "Llama sagrada"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:207 src/OpenGoldBox/level_up_view.cpp:645 src/OpenGoldBox/level_up_view.cpp:650
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:207 src/OpenGoldBox/level_up_view.cpp:826 src/OpenGoldBox/level_up_view.cpp:831
 msgid "Sage"
 msgstr "Sabio"
 
@@ -2983,6 +2983,11 @@ msgstr "Seleccionadas"
 msgid "Selected: {action}. Click a highlighted square."
 msgstr "Selección: {action}. Haz clic en una casilla resaltada."
 
+#: src/OpenGoldBox/level_up_view.cpp:274
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Selected: {count}/{total}"
+msgstr "Seleccionadas: {count}/{total}"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shawm"
 msgstr "Chirimía"
@@ -3050,6 +3055,11 @@ msgstr "Tamaño: bajo"
 #: src/OpenGoldBox/character_creation_view.cpp:780 src/OpenGoldBox/godot/scenes/character_creation.tscn:117
 msgid "Size: Tall"
 msgstr "Tamaño: alto"
+
+#: src/OpenGoldBox/level_up_view.cpp:301
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Skill: {name}"
+msgstr "Habilidad: {name}"
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:5503
 msgid "Skilled"
@@ -3524,6 +3534,11 @@ msgstr "Tiefling"
 msgid "Tinker's Tools"
 msgstr "Herramientas de hojalatero"
 
+#: src/OpenGoldBox/level_up_view.cpp:302
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Tool: {name}"
+msgstr "Herramienta: {name}"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Topple"
 msgstr "Derribar"
@@ -3854,7 +3869,7 @@ msgstr "[font_size=24]{name}[/font_size]\nNivel {level} / {race} / {gender} / {c
 msgid "ability score improvement"
 msgstr "mejora de características"
 
-#: src/OpenGoldBox/character_sheet_view.cpp:139 src/OpenGoldBox/level_up_view.cpp:770
+#: src/OpenGoldBox/character_sheet_view.cpp:139 src/OpenGoldBox/level_up_view.cpp:951
 msgid "archery"
 msgstr "tiro con arco"
 
@@ -3874,7 +3889,7 @@ msgstr "curar heridas"
 msgid "dagger"
 msgstr "daga"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:706
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:887
 msgid "defense"
 msgstr "defensa"
 
@@ -3914,7 +3929,7 @@ msgstr "proyectil mágico"
 msgid "quarterstaff"
 msgstr "bastón"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:706
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:887
 msgid "savage attacker"
 msgstr "atacante salvaje"
 
@@ -3969,7 +3984,7 @@ msgstr "{actor} intenta estabilizar a {target}: d20 {roll} + {modifier} + {boost
 msgid "{alignment} / {hp} HP"
 msgstr "{alignment} / {hp} PG"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:342 src/OpenGoldBox/level_up_view.cpp:645 src/OpenGoldBox/level_up_view.cpp:650
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:342 src/OpenGoldBox/level_up_view.cpp:826 src/OpenGoldBox/level_up_view.cpp:831
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{background} background"
 msgstr "Trasfondo {background}"
@@ -4033,7 +4048,7 @@ msgstr "{name}\n{class} / CA {ac} / PG {current}/{maximum}"
 msgid "{name} / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr "{name} / PG {current}/{maximum}\n{gold} po / {items}"
 
-#: src/OpenGoldBox/level_up_view.cpp:280
+#: src/OpenGoldBox/level_up_view.cpp:420
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / Level {level}"
 msgstr "{name} / Nivel {level}"

@@ -1,5 +1,22 @@
 # SRD handoff
 
+## Updated 2026-09-28: Skilled (#77) implemented
+
+Resumed on explicit instruction at 2026-09-27 21:55:08 UTC. SKILLED-1 was asked,
+answered and implemented on branch `srd-skilled` from `main` at 314244b. Rules are
+0.6.62/PC41/combat 26. All original acceptance is met and verified: 50/50 native
+tests, a new `--skilled` acceptance group, and `skilled_view_tests.gd` passing for
+all six progression classes in main EN/ES and demo EN at both sizes. 1026 messages
+validate. [Canonical record](SRD-COVERAGE.md#skilled-complete-77),
+[packet and reproduction](SKILLED.md).
+
+`Cap::explicit_spells` moved 41 -> 42 and must stay the highest capability; the
+enum documents why. A pre-existing Cleric level-up crash in `advancement_changed`
+was fixed to allow verification and is recorded in SRD-COVERAGE. #77 closure was
+not performed in this session. The next queued items remain #84 starting
+equipment and #89 other Fighter 4 acceptance; #97/#165 and #98/#101 Wizard work
+remain open.
+
 Updated2026-09-26. Standing goal remains incomplete: close all `SRD_improvements`,
 preserving all twelve classes through4 and planned higher levels/multiclassing.
 The user requested pausing after the current issue. Alert#74 was already complete,
