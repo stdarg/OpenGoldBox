@@ -180,6 +180,14 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD OPENGOLD_LANG=en godot \
   -- --capture
 ```
 
+When a packaged portrait cannot be loaded, combat composes one from the
+original art. To check that this works for a Goliath's additional head:
+
+```bash
+OPENGOLD_GAME_DIR=/path/to/POOLRAD OPENGOLD_LANG=en godot --headless \
+  --path src/OpenGoldBox/godot --script ../../../tests/portrait_fallback_tests.gd
+```
+
 ## Screenshots
 
 Press **Ctrl+S** at any time to save timestamped PNGs in **user://screenshots**.

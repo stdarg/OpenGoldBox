@@ -767,7 +767,7 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
     }
     if (campaign_)
     {
-        const auto legacy = por::CharacterArt::load(
+        auto legacy = por::CharacterArt::load(
                                 std::filesystem::u8path(settings::game_path().utf8().get_data()));
         Ref<JSON> catalog_json;
         catalog_json.instantiate();
@@ -811,8 +811,11 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
                         continue;
                     }
                 }
-                const auto image = presentation::rgba_image(
-                                       legacy.portrait(campaign_->member(id).character.appearance()));
+                const auto &appearance = member.character.appearance();
+                if (appearance.portrait_head > 255 &&
+                        !legacy.heads.contains(appearance.portrait_head))
+                    presentation::load_additional_portrait_heads(legacy);
+                const auto image = presentation::rgba_image(legacy.portrait(appearance));
                 portraits_.emplace(id, ImageTexture::create_from_image(image));
             }
     }

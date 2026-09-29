@@ -254,7 +254,7 @@ void CharacterCreationView::_ready()
     {
         const auto directory = settings::game_path();
         art_ = por::CharacterArt::load(std::filesystem::u8path(directory.utf8().get_data()));
-        load_additional_heads();
+        presentation::load_additional_portrait_heads(*art_);
         load_portraits();
         const auto seed =
             (checking_ || args.has("--party-check"))
@@ -433,28 +433,6 @@ void CharacterCreationView::layout()
         party_layout();
     if (creator_ && creator_->step() == CreationStep::sheet)
         place("Description", Rect2(x + 20, y + 124, pw - 40, ph - 194));
-}
-
-void CharacterCreationView::load_additional_heads()
-{
-    for (const auto &head : por::additional_portrait_heads())
-    {
-        const auto path = gs("res://bin/portraits/" + std::string(head.filename));
-        Ref<Texture2D> texture = ResourceLoader::get_singleton()->load(path);
-        if (texture.is_null())
-            throw std::runtime_error("Missing portrait: " + std::string(head.filename) +
-                                     ". Run build-opengoldbox.cmd and opengoldbox.exe.");
-        auto source = texture->get_image();
-        if (source.is_null() || (source->is_compressed() && source->decompress() != OK))
-            throw std::runtime_error("Cannot decode portrait: " + std::string(head.filename));
-        source->convert(godot::Image::FORMAT_RGBA8);
-        const auto pixels = source->get_data();
-        opengold::Image decoded;
-        decoded.width = source->get_width();
-        decoded.height = source->get_height();
-        decoded.rgba.assign(pixels.ptr(), pixels.ptr() + pixels.size());
-        art_->add_portrait_head(head.id, por::prepare_portrait_head(decoded, head.id));
-    }
 }
 
 void CharacterCreationView::recommend_portrait()

@@ -36,7 +36,6 @@ class CharacterCreationView : public godot::Control
     void layout();
     void refresh();
     void refresh_art();
-    void load_additional_heads();
     void recommend_portrait();
 
     struct Portrait
