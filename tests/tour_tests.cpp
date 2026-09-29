@@ -532,6 +532,9 @@ void installed(const char *directory)
         ++prompts;
         std::cout << "Prompt " << prompts << " at " << s.pose.x << ',' << s.pose.y << " facing "
                   << s.pose.facing << '\n';
+        // The view shows Rolf's portrait exactly when he is fully approached.
+        check((s.sprite_frame == 0) == (prompts == 1),
+              "Rolf is fully approached for his welcome only");
         check(prompts <= 16, "Bounded installed tour");
         check(!s.dialogue.empty(), "Original dialogue shown at each pause");
         const auto image = compose_exploration_view(tour.map(), tour.wall_art(), s.pose.x, s.pose.y,

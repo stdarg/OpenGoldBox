@@ -18,6 +18,7 @@
 #include <godot_cpp/classes/line_edit.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
@@ -117,6 +118,7 @@ void RolfTourView::_ready()
         button->set_visible(embedded_party_);
         presentation::attach_child(*this, std::move(button));
     }
+    rolf_portrait_ = ResourceLoader::get_singleton()->load("res://bin/portraits/NPCs/rolf.png");
     ready_ = true;
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -704,8 +706,7 @@ void RolfTourView::refresh()
     get_node<Button>("Continue")->set_visible(!completed);
     get_node<Label>("Progress")
     ->set_text(faulted           ? i18n::text("Stopped")
-               : s.tour_finished ? String()
-    : waiting         ? i18n::format("Pause {number}", {{"number", s.prompts}})
+               : s.tour_finished || waiting ? String()
     : i18n::text("Following the guide"));
     get_node<Label>("Movement")
     ->set_text(i18n::text(completed ? N_("Explore  /  arrow keys") : N_("Movement paused")));
@@ -857,7 +858,19 @@ void RolfTourView::draw_scene()
     const Rect2 view(scene_rect_.position + (scene_rect_.size - size) * .5, size);
     draw_texture_rect(wall_view_, view, false);
     const auto &state = session_->snapshot();
-    if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
+    // Frame 0 is Rolf's nearest pose; once he has arrived and speaks, his
+    // portrait replaces the small encounter sprite.
+    const bool rolf_speaking =
+        !state.tour_finished && state.sprite_frame == 0 && !state.dialogue.empty();
+    if (rolf_speaking && rolf_portrait_.is_valid())
+    {
+        const double side = std::min(view.size.x, view.size.y);
+        draw_texture_rect(rolf_portrait_,
+                          Rect2(view.position + (view.size - Vector2(side, side)) * .5,
+                                Vector2(side, side)),
+                          false);
+    }
+    else if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
     {
         const auto &source = session_->sprites()[state.sprite_frame];
         const Vector2 sprite_size(source.width * pixel_scale.x, source.height * pixel_scale.y);
