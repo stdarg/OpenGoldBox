@@ -28,7 +28,7 @@ void capture()
     std::filesystem::create_directories(path);
     const auto write = [&](const char *name, const CombatSession & c)
     {
-        std::ofstream out(path / name);
+        std::ofstream out(path / name, std::ios::binary);
         out << c.save();
         check(bool(out), "Write actual pre-Nick checkpoint");
     };
@@ -472,7 +472,7 @@ void ui_fixtures()
     std::filesystem::create_directories(path);
     const auto write = [&](const char *name, const CombatSession & c)
     {
-        std::ofstream out(path / (std::string(name) + ".save"));
+        std::ofstream out(path / (std::string(name) + ".save"), std::ios::binary);
         out << c.save();
         check(bool(out), "Write actual Nick UI fixture");
     };

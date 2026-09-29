@@ -509,9 +509,9 @@ void fixtures(const std::filesystem::path &path)
         }},
     13);
     act(*c, "melee");
-    std::ofstream(path / "savage-first.save") << c->save();
+    std::ofstream(path / "savage-first.save", std::ios::binary) << c->save();
     act(*c, "savage_use");
-    std::ofstream(path / "savage-second.save") << c->save();
+    std::ofstream(path / "savage-second.save", std::ios::binary) << c->save();
 }
 } // namespace
 

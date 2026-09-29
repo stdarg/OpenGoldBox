@@ -28,7 +28,7 @@ auto module()
 
 void write(const std::filesystem::path &p, const std::string &s)
 {
-    std::ofstream out(p);
+    std::ofstream out(p, std::ios::binary);
     out << s;
     check(bool(out), "Write fixture");
 }

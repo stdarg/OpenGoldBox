@@ -41,7 +41,8 @@ void capture()
             const auto write = [&](const char *suffix, const std::string & bytes)
             {
                 std::ofstream out(directory /
-                                  (std::string("combat-v23-") + weapon + suffix + ".save"));
+                                  (std::string("combat-v23-") + weapon + suffix + ".save"),
+                                  std::ios::binary);
                 out << bytes;
                 check(bool(out), "Write actual pre-choice writer fixture");
             };

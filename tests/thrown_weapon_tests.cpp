@@ -35,7 +35,7 @@ std::string read(const char *name)
 
 void write(const char *name, const std::string &bytes)
 {
-    std::ofstream out(fixtures / name);
+    std::ofstream out(fixtures / name, std::ios::binary);
     out << bytes;
     check(bool(out), "Write actual prior-writer fixture");
 }
@@ -501,7 +501,7 @@ void control_fixture()
         act(*combat, "end");
     const auto folder = std::filesystem::path(OPENGOLD_BINARY_DIR) / "thrown-fixtures";
     std::filesystem::create_directories(folder);
-    std::ofstream(folder / "before.save") << combat->save();
+    std::ofstream(folder / "before.save", std::ios::binary) << combat->save();
 }
 
 } // namespace

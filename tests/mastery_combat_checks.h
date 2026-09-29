@@ -480,7 +480,7 @@ void ui_fixtures()
                     {"-before", "-after"
                     })
             {
-                std::ofstream out(path / (std::string(key) + suffix + ".save"));
+                std::ofstream out(path / (std::string(key) + suffix + ".save"), std::ios::binary);
                 out << (std::string_view(suffix) == "-before" ? before : c->save());
                 check(bool(out), "Write actual mastery UI checkpoint");
             }

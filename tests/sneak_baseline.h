@@ -24,7 +24,7 @@ void freeze()
     const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
     auto write = [&](const char *name, const std::string & bytes)
     {
-        std::ofstream out(root / name);
+        std::ofstream out(root / name, std::ios::binary);
         out << bytes;
         check(bool(out), "Write actual prior Sneak fixture");
     };

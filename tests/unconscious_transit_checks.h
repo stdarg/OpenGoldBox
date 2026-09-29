@@ -20,9 +20,11 @@ void freeze()
     check(module->identity().version == "0.6.35", "Transit capture requires actual prior writer");
     auto session = hero_first(*module, corridor());
     const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
-    std::ofstream(root / "combat-v13-unconscious-transit-before.save") << session->save();
+    std::ofstream(root / "combat-v13-unconscious-transit-before.save", std::ios::binary)
+            << session->save();
     check(session->submit(command(*session, "dash")), "Prior writer Dash");
-    std::ofstream(root / "combat-v13-unconscious-transit-dash.save") << session->save();
+    std::ofstream(root / "combat-v13-unconscious-transit-dash.save", std::ios::binary)
+            << session->save();
 }
 
 void prior_writer()

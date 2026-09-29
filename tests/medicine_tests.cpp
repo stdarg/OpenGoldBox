@@ -464,8 +464,8 @@ void fixtures()
         act(*ui, "stabilize", 2);
         if (!ui->snapshot().ability_check_choice)
             continue;
-        std::ofstream(dir / "available.save") << available;
-        std::ofstream(dir / "pending.save") << ui->save();
+        std::ofstream(dir / "available.save", std::ios::binary) << available;
+        std::ofstream(dir / "pending.save", std::ios::binary) << ui->save();
         done = true;
     }
     check(done, "UI fixture produced from actual check");
@@ -508,7 +508,7 @@ void fixtures()
             act(*c, "end");
         if (!has(*c, "stabilize") || !has(*c, "wake_ally"))
             continue;
-        std::ofstream(dir / "combined.save") << c->save();
+        std::ofstream(dir / "combined.save", std::ios::binary) << c->save();
         done = true;
     }
     check(done, "Combined Cunning/Wake/Stabilize fixture available");

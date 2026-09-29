@@ -451,9 +451,9 @@ void fixtures()
     2);
     while (c->snapshot().actor != 1)
         act(*c, "end");
-    std::ofstream(path / "known.save") << c->save();
+    std::ofstream(path / "known.save", std::ios::binary) << c->save();
     act(*c, "ray_of_frost", 2);
-    std::ofstream(path / "slow.save") << c->save();
+    std::ofstream(path / "slow.save", std::ios::binary) << c->save();
 }
 } // namespace
 

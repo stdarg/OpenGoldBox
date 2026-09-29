@@ -549,7 +549,7 @@ void fixtures()
         act(*c, "melee", 2);
         if (!c->snapshot().free_movement)
             continue;
-        std::ofstream(folder / "pending.save") << c->save();
+        std::ofstream(folder / "pending.save", std::ios::binary) << c->save();
         done = true;
     }
     check(done, "Actual critical UI fixture captured");

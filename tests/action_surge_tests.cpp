@@ -54,7 +54,7 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
 
 void write(const char *name, const std::string &bytes)
 {
-    std::ofstream out(root / "tests/fixtures" / name);
+    std::ofstream out(root / "tests/fixtures" / name, std::ios::binary);
     out << bytes;
     check(bool(out), "Write fixture");
 }
@@ -747,10 +747,11 @@ void ui_fixtures()
 {
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "surge-fixtures";
     std::filesystem::create_directories(path);
-    std::ofstream(path / "level1.save") << battle(hero(1))->save();
-    std::ofstream(path / "cleric.save") << battle(hero(1, "human", "cleric"))->save();
+    std::ofstream(path / "level1.save", std::ios::binary) << battle(hero(1))->save();
+    std::ofstream(path / "cleric.save", std::ios::binary)
+            << battle(hero(1, "human", "cleric"))->save();
     for (unsigned level = 3; level <= 4; ++level)
-        std::ofstream(path / ("level" + std::to_string(level) + ".save"))
+        std::ofstream(path / ("level" + std::to_string(level) + ".save"), std::ios::binary)
                 << battle(hero(level, "orc"), {"longsword"})->save();
     auto h = hero(3);
     auto state = VitalState{h.sheet().hit_points};
@@ -765,14 +766,14 @@ void ui_fixtures()
         act(*pending, "melee", 2);
         if (!pending->snapshot().savage_attack_choice)
             continue;
-        std::ofstream(path / "decision.save") << pending->save();
+        std::ofstream(path / "decision.save", std::ios::binary) << pending->save();
         captured = true;
     }
     check(captured, "UI pending damage choice");
     auto c = battle(hero(2), {"longsword"});
-    std::ofstream(path / "available.save") << c->save();
+    std::ofstream(path / "available.save", std::ios::binary) << c->save();
     act(*c, "action_surge");
-    std::ofstream(path / "pending.save") << c->save();
+    std::ofstream(path / "pending.save", std::ios::binary) << c->save();
 }
 
 } // namespace

@@ -52,7 +52,8 @@ auto battle(CampaignParty &p, unsigned seed = 29)
 
 void write(const char *name, const std::string &bytes)
 {
-    std::ofstream out(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
+    std::ofstream out(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name,
+                      std::ios::binary);
     out << bytes;
     check(bool(out), "Write Skilled prior writer fixture");
 }

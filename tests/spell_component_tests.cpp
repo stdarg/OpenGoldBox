@@ -34,7 +34,7 @@ std::string read(const std::filesystem::path &p)
 
 void write(const std::filesystem::path &p, const std::string &bytes)
 {
-    std::ofstream out(p);
+    std::ofstream out(p, std::ios::binary);
     out << bytes;
     check(bool(out), "Fixture written");
 }

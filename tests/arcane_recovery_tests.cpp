@@ -36,7 +36,7 @@ auto module()
 
 void write(const std::string &name, const std::string &bytes)
 {
-    std::ofstream output(root / "tests/fixtures" / name);
+    std::ofstream output(root / "tests/fixtures" / name, std::ios::binary);
     output << bytes;
     check(bool(output), "Write actual previous-writer fixture");
 }

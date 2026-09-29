@@ -32,7 +32,7 @@ std::string read(const char *name)
 
 void write(const char *name, const std::string &bytes)
 {
-    std::ofstream file(fixtures / name);
+    std::ofstream file(fixtures / name, std::ios::binary);
     file << bytes;
     check(bool(file), "Write actual prior-writer ammunition fixture");
 }

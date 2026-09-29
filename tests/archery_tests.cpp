@@ -390,7 +390,7 @@ void freeze()
     state.roster[0].vitals.hit_points -= 3;
     state.roster[0].vitals.resources = "SRD1 1 0 0 0 0";
     p.restore(state);
-    std::ofstream(root / "tests/fixtures/campaign-v11-archery-before.ogs")
+    std::ofstream(root / "tests/fixtures/campaign-v11-archery-before.ogs", std::ios::binary)
             << encode_campaign(p, nullptr, "archery");
     auto members = p.participants();
     members[0].cell = {1, 1};
@@ -400,7 +400,8 @@ void freeze()
                                    .data;
     members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
     auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 13);
-    std::ofstream(root / "tests/fixtures/combat-v13-archery-before.save") << c->save();
+    std::ofstream(root / "tests/fixtures/combat-v13-archery-before.save", std::ios::binary)
+            << c->save();
 }
 } // namespace
 

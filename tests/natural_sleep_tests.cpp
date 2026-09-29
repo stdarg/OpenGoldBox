@@ -145,7 +145,7 @@ void combat()
     std::filesystem::create_directories(output);
     const auto write = [&](const char *name, const CombatSession & c)
     {
-        std::ofstream out(output / (std::string(name) + ".save"));
+        std::ofstream out(output / (std::string(name) + ".save"), std::ios::binary);
         out << c.save();
         check(bool(out), "Sleep UI fixture written");
     };
@@ -324,7 +324,7 @@ void held_items()
     turn(*battle, 2);
     const auto fixture_path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "sleep-fixtures";
     {
-        std::ofstream out(fixture_path / "ground.save");
+        std::ofstream out(fixture_path / "ground.save", std::ios::binary);
         out << battle->save();
     }
     check(battle->submit(command(*battle, "wake_ally", 1)), "Spend Action waking item owner");
@@ -487,7 +487,7 @@ void campaign_item_handoff()
           "Detached items use versioned campaign persistence");
     {
         std::ofstream out(std::filesystem::path(OPENGOLD_BINARY_DIR) /
-                          "sleep-fixtures/campaign-detached.ogs");
+                          "sleep-fixtures/campaign-detached.ogs", std::ios::binary);
         out << bytes;
     }
     auto decoded =

@@ -318,7 +318,7 @@ void ui_fixtures()
     std::filesystem::create_directories(directory);
     const auto write = [&](const std::string & name, const std::string & data)
     {
-        std::ofstream out(directory / (name + ".save"));
+        std::ofstream out(directory / (name + ".save"), std::ios::binary);
         out << data;
         check(bool(out), "Write optional mastery UI checkpoint");
     };

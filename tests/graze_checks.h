@@ -36,7 +36,7 @@ void ui_fixtures()
             continue;
         const auto write = [&](const char *name, const std::string & bytes)
         {
-            std::ofstream out(directory / (std::string(name) + ".save"));
+            std::ofstream out(directory / (std::string(name) + ".save"), std::ios::binary);
             out << bytes;
             check(bool(out), "Write actual Graze UI checkpoint");
         };

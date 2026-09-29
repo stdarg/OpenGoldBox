@@ -473,14 +473,14 @@ void offers_match_baseline()
     const auto actual = snapshot();
     if (!std::filesystem::exists(path))
     {
-        std::ofstream(path) << actual;
+        std::ofstream(path, std::ios::binary) << actual;
         throw std::runtime_error(
             "Baseline recorded at tests/fixtures/spell-offer-baseline.txt; re-run to verify");
     }
     if (read(path) != actual)
     {
         const auto dump = std::filesystem::path(OPENGOLD_BINARY_DIR) / "spell-offer-actual.txt";
-        std::ofstream(dump) << actual;
+        std::ofstream(dump, std::ios::binary) << actual;
         throw std::runtime_error(
             "Spell offers changed; compare tests/fixtures/spell-offer-baseline.txt with " +
             dump.string());

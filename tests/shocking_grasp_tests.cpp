@@ -154,7 +154,7 @@ void freeze()
     state.roster[0].wealth[3] = 37;
     party.restore(state);
     const auto base = root / "tests/fixtures";
-    std::ofstream(base / "campaign-v11-shocking-before.ogs")
+    std::ofstream(base / "campaign-v11-shocking-before.ogs", std::ios::binary)
             << encode_campaign(party, nullptr, "shocking");
     auto actors = party.participants();
     actors[0].cell = {1, 1};
@@ -164,10 +164,10 @@ void freeze()
         act(*c, "end");
     act(*c, "ray_of_frost", 99);
     act(*c, "adrenaline_rush");
-    std::ofstream(base / "combat-v15-shocking-before.save") << c->save();
+    std::ofstream(base / "combat-v15-shocking-before.save", std::ios::binary) << c->save();
     act(*c, "end");
     act(*c, "end");
-    std::ofstream(base / "combat-v15-shocking-continued.save") << c->save();
+    std::ofstream(base / "combat-v15-shocking-continued.save", std::ios::binary) << c->save();
 }
 
 void access()
@@ -628,9 +628,9 @@ void fixtures()
     2);
     while (c->snapshot().actor != 1)
         act(*c, "end");
-    std::ofstream(path / "known.save") << c->save();
+    std::ofstream(path / "known.save", std::ios::binary) << c->save();
     act(*c, "shocking_grasp", 2);
-    std::ofstream(path / "suppressed.save") << c->save();
+    std::ofstream(path / "suppressed.save", std::ios::binary) << c->save();
 }
 } // namespace
 

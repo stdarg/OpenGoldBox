@@ -1,3 +1,7 @@
+# Store text with LF whatever a contributor's core.autocrlf is, so macOS,
+# Linux and Windows commit the same bytes. Checkouts may still use CRLF.
+* text=auto
+
 # Frozen saves retain original writer bytes, including trailing spaces.
 tests/fixtures/*.ogs binary
 tests/fixtures/*.save binary

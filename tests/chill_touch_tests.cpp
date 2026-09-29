@@ -998,7 +998,7 @@ void freeze_chill_baseline()
     check(blocked(*c, id), "Freeze actual Chill hit");
     auto write = [](const char *name, const std::string & bytes)
     {
-        std::ofstream out(root / "tests/fixtures" / name);
+        std::ofstream out(root / "tests/fixtures" / name, std::ios::binary);
         out << bytes;
         check(bool(out), "Write baseline");
     };
@@ -1031,9 +1031,9 @@ void fixtures()
         2);
         while (c->snapshot().actor != 1)
             act(*c, "end");
-        std::ofstream(path / (std::string(klass) + ".save")) << c->save();
+        std::ofstream(path / (std::string(klass) + ".save"), std::ios::binary) << c->save();
         act(*c, "chill_touch", 2);
-        std::ofstream(path / (std::string(klass) + "-blocked.save")) << c->save();
+        std::ofstream(path / (std::string(klass) + "-blocked.save"), std::ios::binary) << c->save();
     }
 }
 } // namespace

@@ -127,7 +127,7 @@ void combat_body_assignments()
 
     const auto &path = temporary.path;
     {
-        std::ofstream out(path);
+        std::ofstream out(path, std::ios::binary);
         for (unsigned id = 0; id < 33; ++id)
             out << id << '\t'
                 << (id == 1   ? "type_43,type_44"
@@ -142,7 +142,7 @@ void combat_body_assignments()
           migrated.bodies[7].contains("type_23"),
           "Load multiple, singleton and silver assignments without duplicates");
     {
-        std::ofstream out(path, std::ios::app);
+        std::ofstream out(path, std::ios::app | std::ios::binary);
         out << "deleted\ttype_43\n";
     }
     const auto deleted = por::CombatBodyCatalog::load(path, folder / "combat-weapon-options.tsv");

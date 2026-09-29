@@ -168,10 +168,14 @@ def main():
             raise SystemExit("These messages are no longer extracted; rerun with --allow-removals "
                              "if removing them is intended:\n" + "\n".join(removed))
         LOCALE.mkdir(parents=True, exist_ok=True)
-        (LOCALE / "messages.pot").write_text(catalog(messages, "", {}), encoding="utf-8")
+        # Write "\n" on every platform; text mode would write "\r\n" on Windows.
+        with open(LOCALE / "messages.pot", "w", encoding="utf-8", newline="\n") as out:
+            out.write(catalog(messages, "", {}))
         for language in ("en", "es"):
             path = LOCALE / f"{language}.po"
-            path.write_text(catalog(messages, language, read_po(path)), encoding="utf-8")
+            content = catalog(messages, language, read_po(path))
+            with open(path, "w", encoding="utf-8", newline="\n") as out:
+                out.write(content)
         print(f"Updated {len(messages)} messages in {LOCALE}")
 
 

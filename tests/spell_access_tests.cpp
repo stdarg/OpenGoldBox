@@ -387,7 +387,7 @@ void capture_wizard_choices()
     check(rules->identity().version == "0.6.50", "Capture requires actual 0.6.50 writer");
     const auto write = [](const std::string & name, const std::string & bytes)
     {
-        std::ofstream out(root / "tests/fixtures" / name);
+        std::ofstream out(root / "tests/fixtures" / name, std::ios::binary);
         out << bytes;
         check(bool(out), "Write previous-writer spell-choice fixture");
     };

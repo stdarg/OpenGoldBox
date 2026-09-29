@@ -45,7 +45,8 @@ auto battle(CampaignParty &p, unsigned seed = 37)
 
 void write(const char *name, const std::string &bytes)
 {
-    std::ofstream out(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
+    std::ofstream out(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name,
+                      std::ios::binary);
     out << bytes;
     check(bool(out), "Write Alert prior writer fixture");
 }
@@ -356,7 +357,7 @@ void run()
     std::filesystem::create_directories(dir);
     const auto save = [&](const char *name, const CombatSession & battle)
     {
-        std::ofstream out(dir / (std::string(name) + ".save"));
+        std::ofstream out(dir / (std::string(name) + ".save"), std::ios::binary);
         out << battle.save();
         check(bool(out), "Write Alert UI oracle");
     };

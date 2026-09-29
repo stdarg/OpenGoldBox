@@ -61,7 +61,7 @@ void run()
     std::filesystem::create_directories(output);
     auto write = [&](std::string_view name, const CombatSession & c)
     {
-        std::ofstream out(output / (std::string(name) + ".save"));
+        std::ofstream out(output / (std::string(name) + ".save"), std::ios::binary);
         out << c.save();
         check(bool(out), "Cunning UI fixture written");
     };
