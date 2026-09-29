@@ -1,5 +1,6 @@
 ## Use the ./docs folder
-Read ./doc/PRD.md for context and know that useful docs outline key dynamics of game systems.
+Read ./doc/PRD.md for context and know that useful docs outline key dynamics of game systems. Look at the documents for helpful context.
+Do not blindly read all the documents, just search for relevant documents by name or keywords in the contents.
 
 ## 1. Think Before Coding
 
@@ -83,13 +84,11 @@ commit your work when done and push to origin/main.
 - Write comments for why a choice or constraint exists, not to narrate code the reader can already see.
 - Follow one consistent local style for formatting, error handling, and naming; consistency matters more than a particular style.
 - Test behavior at meaningful boundaries. Clear tests double as executable examples of intended use.
-- Use blank lines for readability before and after functions and methods, any
+- Use blank lines for readability before and after functions and methods, as well as any
   C++ block.
 
 A useful rule: a capable teammate should be able to infer ownership, invariants, inputs, outputs, and side effects from the type signatures and a quick read of the function body.
 
----
+## 8. Keep the Git Repository Tidy
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer
-rewrites due to overcomplication, and clarifying questions come before
-implementation rather than after mistakes.
+- Do it a git pull from orgin / main before working.
