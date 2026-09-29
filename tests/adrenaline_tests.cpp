@@ -254,9 +254,9 @@ void decisions()
     // Inputs for the real Godot Load/Save/buttons test: created through ordinary character rules.
     const auto directory = std::filesystem::path(OPENGOLD_BINARY_DIR) / "adrenaline-fixtures";
     std::filesystem::create_directories(directory);
-    std::ofstream(directory / "adrenaline-pending.save") << combat->save();
+    std::ofstream(directory / "adrenaline-pending.save", std::ios::binary) << combat->save();
     auto initial = battle(c);
-    std::ofstream(directory / "adrenaline-initial.save") << initial->save();
+    std::ofstream(directory / "adrenaline-initial.save", std::ios::binary) << initial->save();
     const auto data = unit(*combat).persistent;
     check(data.resources.starts_with("SRD7 "), "Orc uses persist even with other-source HP");
     for (const auto remaining :

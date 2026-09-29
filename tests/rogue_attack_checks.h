@@ -105,7 +105,7 @@ void run()
     std::filesystem::create_directories(output);
     auto write = [&](const std::string & name, const CombatSession & c)
     {
-        std::ofstream out(output / (name + ".save"));
+        std::ofstream out(output / (name + ".save"), std::ios::binary);
         out << c.save();
         check(bool(out), "Write current Rogue UI fixture");
     };
