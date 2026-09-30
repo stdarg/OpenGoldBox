@@ -7,9 +7,10 @@ planned increment and recurring work queue. All use `SRD_improvements`.
 The all-twelve-class level-four milestone is
 [#8](https://github.com/stdarg/OpenGold/issues/8).
 
-The [level-four spell inventory](SPELL-INVENTORY.md) records **139 required
-spells**, including source discrepancies between class tables and descriptions.
-Twelve have partial playable paths and 127 are missing. It links grant routes,
+The [level-four spell inventory](SPELL-INVENTORY.md) records **106 required
+spells** (139 before [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)
+removed 33 DM-adjudicated spells), including source discrepancies between class
+tables and descriptions. Twelve have partial playable paths and 94 are missing. It links grant routes,
 dependencies, current evidence and bounded child issues; inventory work alone
 does not close [#165](https://github.com/stdarg/OpenGold/issues/165).
 
@@ -314,10 +315,10 @@ and no migration code remains.
 | [Archery #78](https://github.com/stdarg/OpenGold/issues/78) | SRD 5.2.1 p. 87: +2 with Ranged weapons; prerequisite and nonrepeatability. | Actual Fighter/Paladin/Ranger grants, ordinary levels1–4, attack/category oracles, campaign/recruited/reload and main/demo controls. | Rules0.6.53 completes supported source routes. [Style-route evidence](FIGHTING-STYLE-ROUTES.md). |
 | [Fighter styles #85](https://github.com/stdarg/OpenGold/issues/85) | Starting choice and replacement whenever gaining a Fighter level. | Training and separate advancement control; initial and independently acquired feats retain distinct provenance. | All four SRD styles and mastery through4 delivered; see the Weapon Mastery integration completion record below. [Scope](FIGHTER-STYLES.md). |
 | [Starting class skills #213](https://github.com/stdarg/OpenGold/issues/213) | SRD 5.2.1 Core Traits tables for all twelve classes; exact skill lists and counts. | Shared Training controls, generated presets, sourced bonuses, all-class/background native oracles, actual prior-writer migration and keyboard checks. | Rules 0.6.30 / PC19. Missing old choices remain pending; full class packages remain in their trackers. [Evidence and limits](CLASS-SKILLS.md). |
-| [Bard instruments #214](https://github.com/stdarg/OpenGold/issues/214) | SRD 5.2.1 pp. 31, 94: three of ten instrument proficiencies. | Normal Training, generated presets, sourced sheet/check bonuses, all 120 triples, prior-writer campaign/combat and translated keyboard/render checks. | Rules 0.6.31 / PC20. Old choices stay pending; equipment, Utilize actions and remaining Bard features stay separate. [Evidence](BARD-INSTRUMENTS.md). |
-| [Monk tools #215](https://github.com/stdarg/OpenGold/issues/215) | SRD 5.2.1 pp. 49, 93–94: one artisan tool or instrument from all 27 options. | Training, generated presets, sourced checks, overlap and class-change preservation, prior-writer continuation. | Rules 0.6.32 / PC21; old choices pending. Equipment, Utilize and other Monk features remain separate. [Evidence](MONK-TOOLS.md). |
-| [Druid Herbalism Kit #216](https://github.com/stdarg/OpenGold/issues/216) | SRD 5.2.1 pp. 41, 94: fixed class tool proficiency. | Ordinary creation/presets, sourced checks and fixed display, validated old-ledger migration with exactly the owed grant. | Rules 0.6.33 / PC22. Equipment, crafting/Utilize and other Druid features remain separate. [Evidence](DRUID-HERBALISM.md). |
-| [Soldier Gaming Set #217](https://github.com/stdarg/OpenGold/issues/217) | SRD 5.2.1 pp. 83–94: one of four Gaming Set variants. | Normal Training, presets, sourced checks, all 48 class/variant combinations, actual prior-save continuation and completion. | Rules 0.6.34 / PC23; old choices pending. Equipment/wealth and Utilize remain separate. [Evidence](SOLDIER-GAMING.md). |
+| [Bard instruments #214](https://github.com/stdarg/OpenGold/issues/214) | SRD 5.2.1 pp. 31, 94: three of ten instrument proficiencies. | Normal Training, generated presets, sourced sheet/check bonuses, all 120 triples, prior-writer campaign/combat and translated keyboard/render checks. | Rules 0.6.31 / PC20. Old choices stay pending; equipment, Utilize actions and remaining Bard features stay separate. Removed 2026-09-30 by [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells). |
+| [Monk tools #215](https://github.com/stdarg/OpenGold/issues/215) | SRD 5.2.1 pp. 49, 93–94: one artisan tool or instrument from all 27 options. | Training, generated presets, sourced checks, overlap and class-change preservation, prior-writer continuation. | Rules 0.6.32 / PC21; old choices pending. Equipment, Utilize and other Monk features remain separate. Removed 2026-09-30 by [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells). |
+| [Druid Herbalism Kit #216](https://github.com/stdarg/OpenGold/issues/216) | SRD 5.2.1 pp. 41, 94: fixed class tool proficiency. | Ordinary creation/presets, sourced checks and fixed display, validated old-ledger migration with exactly the owed grant. | Rules 0.6.33 / PC22. Equipment, crafting/Utilize and other Druid features remain separate. Removed 2026-09-30 by [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells). |
+| [Soldier Gaming Set #217](https://github.com/stdarg/OpenGold/issues/217) | SRD 5.2.1 pp. 83–94: one of four Gaming Set variants. | Normal Training, presets, sourced checks, all 48 class/variant combinations, actual prior-save continuation and completion. | Rules 0.6.34 / PC23; old choices pending. Equipment/wealth and Utilize remain separate. Removed 2026-09-30 by [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells). |
 | [Great Weapon Fighting #80](https://github.com/stdarg/OpenGold/issues/80) | SRD 5.2.1 p. 88: eligible two-hand Melee damage dice1/2 count as3. | Independent actual dice/RNG oracles, critical/Savage/reaction/grip/thrown/Ranged exclusions and sourced acquisition through Fighter/Paladin/Ranger. | Rules0.6.53, STYLE-1 automatic benefit approved; PC36/campaign17 and retained historical fixtures. [Evidence](GREAT-WEAPON-FIGHTING.md). |
 | [FTR02](https://github.com/stdarg/OpenGold/issues/86): Action Surge through level four | SRD 5.2.1 p. 48. Fixed Fighter level-two grant, one restricted extra action, one use per Short/Long Rest through level 4. | [Native](../tests/action_surge_tests.cpp), [combat controls](../tests/action_surge_view_tests.gd), actual 0.6.23 writer campaign/Dash fixtures. | Rules 0.6.24 / PC13 / combat 14 when a Surge-capable Fighter participates / spent resource SRD8; campaign 11 retained. Historical campaigns gain their justified fixed grant; old combat retains recorded access. Approved mouse/keyboard button, remaining uses and disabled states verified in English/Spanish; #86 complete. [Scope](ACTION-SURGE.md). |
 
@@ -629,7 +630,8 @@ already-known pick fails the membership check instead of adding a second grant.
 Picks become ordinary `skill:`/`tool:` grants sourced to `feat:skilled`, which is
 why check effects need no new query: a pick supplies the proficiency bonus, a
 skill and tool pair reports `tool_advantage`, and proficiency cannot stack
-because the query tests presence. Expertise is unchanged.
+because the query tests presence. Expertise is unchanged. [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells) later
+removed tool proficiencies; Skilled now offers the 18 skills only.
 
 Rules 0.6.62. Skilled adds no combat state. Repeatable: Skilled joins ASI as exempt from the non-repeatable feat set,
 with duplicate use of one entitlement still rejected. Only one level-four

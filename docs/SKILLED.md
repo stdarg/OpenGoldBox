@@ -1,5 +1,9 @@
 # Skilled feat delivery packet
 
+Since [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells) (2026-09-30) removed tool proficiencies, Skilled offers
+the eighteen skills only: three distinct skills not already held. The tool
+entries below are historical.
+
 ## Frozen next batch
 
 - Original requirement#77 from backlog familyB01. One owner, no agents/new tasks.

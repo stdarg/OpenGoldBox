@@ -69,16 +69,16 @@ struct TrainingProfile
 {
     bool complete{};
     std::vector<SkillTraining> skills;
-    std::vector<TrainingEntry> tools, languages, masteries;
+    std::vector<TrainingEntry> masteries;
 };
 
 struct AbilityCheckModifier
 {
     int ability_modifier{}, proficiency{}, total{};
-    bool expertise{}, tool_advantage{};
+    bool expertise{};
     std::vector<FeatureGrant> sources;
-    bool advantage{};    // All sourced advantage, including tool advantage.
-    bool disadvantage{}; // Independent of tool_advantage; both cancel on a roll.
+    bool advantage{};    // All sourced advantage.
+    bool disadvantage{}; // Independent of advantage; both cancel on a roll.
 };
 
 struct ClassRequirements
@@ -171,8 +171,7 @@ class CharacterRules
 
     [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
             unsigned ability,
-            std::string_view skill = {},
-            std::string_view tool = {}) const;
+            std::string_view skill = {}) const;
 };
 } // namespace opengold::rules
 #endif

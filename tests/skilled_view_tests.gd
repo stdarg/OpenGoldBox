@@ -47,20 +47,16 @@ func run_checks() -> void:
         var before: String = current_scene.get_node("PartyPanel/Sheet").text
         var level: Window = current_scene.get_node("LevelUp")
 
-        # The whole catalog less what this character already holds, each offered once.
+        # Every skill less what this character already holds, each offered once.
         await press("PartyPanel/Roster/Advance1"); await choose_skilled()
         var boxes := skilled_boxes()
-        require(boxes.size() > 40, "The page offers the catalog, not one class list")
+        require(boxes.size() > 3 and boxes.size() < 18, "The page offers the unheld skills")
         var labels := {}
-        var skills := 0
-        var tools := 0
         for box in boxes:
             require(not labels.has(box.text), "Every proficiency is offered exactly once")
             labels[box.text] = true
             require(box.focus_mode == Control.FOCUS_ALL, "Each proficiency is keyboard accessible")
-            if box.name.begins_with("skill_"): skills += 1
-            else: tools += 1
-        require(skills > 0 and tools > 0, "Both skills and tools are offered in one list")
+            require(box.name.begins_with("skill_"), "Only skills are offered")
         require(not labels.has(current_scene.get_node("PartyPanel/Sheet").text), "Sanity")
 
         # Count, limit and the confirm gate.

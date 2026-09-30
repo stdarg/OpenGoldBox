@@ -137,11 +137,11 @@ class CreatorRules final : public CharacterRules
     }
 
     AbilityCheckModifier ability_check(const CharacterSheet &sheet, unsigned ability,
-                                       std::string_view skill, std::string_view tool) const override
+                                       std::string_view skill) const override
     {
         return detail::ability_check(sheet.grants, detail::grant_source_id(sheet.character_class),
                                      detail::grant_source_id(sheet.background), sheet.level,
-                                     sheet.scores, ability, skill, tool);
+                                     sheet.scores, ability, skill);
     }
 };
 

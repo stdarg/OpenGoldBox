@@ -162,14 +162,14 @@ void grants_and_checks()
               "Subclass and both feature grants follow ordinary level three acquisition");
         check(rules->character_profile(h.sheet(), {}).data.starts_with("PC42 "),
               "Every profile uses the current profile tag");
-        const auto athletics = rules->ability_check(h.sheet(), {}, 0, "athletics", {}, {});
+        const auto athletics = rules->ability_check(h.sheet(), {}, 0, "athletics", {});
         check(athletics.advantage == champion,
               "Strength Athletics gains Advantage only for Champion");
-        check(!rules->ability_check(h.sheet(), {}, 1, "athletics", {}, {}).advantage &&
-              !rules->ability_check(h.sheet(), {}, 0, "acrobatics", {}, {}).advantage,
+        check(!rules->ability_check(h.sheet(), {}, 1, "athletics", {}).advantage &&
+              !rules->ability_check(h.sheet(), {}, 0, "acrobatics", {}).advantage,
               "Other ability/skill combinations excluded");
         const auto armored = rules->ability_check(h.sheet(), std::vector<std::string> {"hide"}, 0,
-            "athletics", {}, {});
+            "athletics", {});
         check(armored.advantage == champion && !armored.disadvantage,
               "Trained Fighter armor does not cancel Advantage");
         if (champion)

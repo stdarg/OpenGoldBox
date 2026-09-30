@@ -109,7 +109,6 @@ void run()
     auto d = draft("rogue", "soldier");
     d.training = choices();
     d.training["class:rogue:expertise"] = {"investigation", "perception"};
-    d.training["background:soldier:gaming_set"] = {"dice"};
     auto h = hero(d);
     VitalState wounds{h.sheet().hit_points - 2};
     for (unsigned level = 1; level <= 4; ++level)

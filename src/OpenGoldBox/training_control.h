@@ -23,14 +23,10 @@ inline godot::String training_string(std::string_view s)
 
 template <class Translate> godot::String training_source(std::string_view id, const Translate &tr)
 {
-    if (id == "origin:languages")
-        return tr(N_("Starting languages"));
     if (id == "class:fighter:fighting_style")
         return tr(N_("Fighter Fighting Style"));
     if (id == "class:barbarian")
         return tr(N_("Barbarian class"));
-    if (id == "class:bard:instruments")
-        return tr(N_("Bard class"));
     if (id == "class:bard")
         return tr(N_("Bard class"));
     if (id == "class:cleric")
@@ -43,8 +39,6 @@ template <class Translate> godot::String training_source(std::string_view id, co
         return training_source(id.substr(0, id.size() - 15), tr) + " / " + tr(N_("Weapon Mastery"));
     if (id == "class:fighter")
         return tr(N_("Fighter class"));
-    if (id == "class:monk:tools")
-        return tr(N_("Monk class"));
     if (id == "class:monk")
         return tr(N_("Monk class"));
     if (id == "class:paladin")
@@ -61,12 +55,8 @@ template <class Translate> godot::String training_source(std::string_view id, co
         return tr(N_("Rogue class"));
     if (id == "class:rogue:expertise")
         return tr(N_("Rogue Expertise"));
-    if (id == "class:rogue:thieves_cant")
-        return tr(N_("Rogue / Thieves' Cant"));
     if (id == "background:acolyte")
         return tr(N_("Acolyte background"));
-    if (id == "background:soldier:gaming_set")
-        return tr(N_("Soldier background"));
     if (id == "background:soldier")
         return tr(N_("Soldier background"));
     if (id == "background:sage")
@@ -121,10 +111,6 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
             text += " (" + sources + ")";
         text += "\n";
     }
-    for (const auto &t : profile.tools)
-        text += tr(t.label) + " (" + training_sources(t.sources, tr) + ")\n";
-    for (const auto &l : profile.languages)
-        text += tr(l.label) + " (" + training_sources(l.sources, tr) + ")\n";
     for (const auto &m : profile.masteries)
         text += tr(N_("Weapon Mastery")) + ": " + tr(m.label) + " (" +
                 training_sources(m.sources, tr) + ")\n";

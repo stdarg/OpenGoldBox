@@ -352,9 +352,9 @@ void campaign()
     check(encode_campaign(party, nullptr, "grip") == valid,
           "Invalid equipment checkpoint does not replace the live campaign");
     auto body = valid.substr(valid.find('\n', valid.find('\n') + 1) + 1);
-    const auto grip = body.find("2 6 \"feature:fighting_style\"");
+    const auto grip = body.find("2 4 \"feature:fighting_style\"");
     check(grip != body.npos,
-          "Single-member fixture stores grip before Fighter and language grants");
+          "Single-member fixture stores grip before Fighter grants");
     body[grip] = '3';
     std::uint64_t checksum = 14695981039346656037ULL;
     for (unsigned char c : body)

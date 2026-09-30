@@ -16,7 +16,8 @@ recommendations remain proposals; no issue acceptance has been reduced.
   10 in the cross-cutting tracker group**. Cross-references are dependencies,
   not extra work counted again. Families are scheduling groups, not promises
   that a whole class or system fits one commit or two hours.
-- The ledger records **139 required spells: 11 partial, 128 missing**. Most
+- The ledger records **139 required spells: 11 partial, 128 missing** (106 after
+  the 2026-09-30 DM-1 removals). Most
   missing spells are rows under #165, not separate issues. Consequently neither
   168 open issues nor 42 closures measures functional completion or remaining hours.
 - The plan/workflow encourages fragmentation: one issue at a time, mandatory

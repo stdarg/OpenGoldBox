@@ -40,10 +40,9 @@ const FeatureGrant *grant(const CharacterSheet &sheet, std::string_view id)
     return found == sheet.grants.end() ? nullptr : &*found;
 }
 
-AbilityCheckModifier probe(const CharacterSheet &sheet, unsigned ability, std::string_view skill,
-                           std::string_view tool)
+AbilityCheckModifier probe(const CharacterSheet &sheet, unsigned ability, std::string_view skill)
 {
-    return srd5::character_rules()->ability_check(sheet, ability, skill, tool);
+    return srd5::character_rules()->ability_check(sheet, ability, skill);
 }
 
 void options_and_grants()
@@ -74,13 +73,13 @@ void options_and_grants()
     check(group->acquired_level == 4, "Skilled proficiencies are acquired at level four");
     unsigned already = 0;
     for (const auto &g : sheet.grants)
-        if (g.id.starts_with("skill:") || g.id.starts_with("tool:"))
+        if (g.id.starts_with("skill:"))
             ++already;
-    check(already && group->options.size() == 18 + 37 - already,
-          "Every catalog entry not already held is offered exactly once");
+    check(already && group->options.size() == 18 - already,
+          "Every skill not already held is offered exactly once");
     for (const auto &option : group->options)
         check(!grant(sheet, option.id), "An already-known proficiency is never offered");
-    p.advance(1, pick(p, {"skill:arcana", "tool:dice", "skill:medicine"}));
+    p.advance(1, pick(p, {"skill:arcana", "skill:nature", "skill:medicine"}));
     const auto next = p.member(1).character.sheet();
     check(next.level == 4, "Skilled advancement completes");
     const auto *feat_grant = grant(next, "feat:skilled");
@@ -89,7 +88,7 @@ void options_and_grants()
           feat_grant->choices.empty(),
           "Skilled records its entitlement as provenance and stores no sub-choices");
     for (const auto *id :
-            {"skill:arcana", "tool:dice", "skill:medicine"
+            {"skill:arcana", "skill:nature", "skill:medicine"
             })
     {
         const auto *g = grant(next, id);
@@ -104,24 +103,19 @@ void check_effects()
 {
     auto p = ready("fighter", "criminal");
     const auto before = p.member(1).character.sheet();
-    const auto cold = probe(before, 3, "nature", {});
-    p.advance(1, pick(p, {"skill:nature", "tool:herbalism_kit", "tool:navigators_tools"}));
+    const auto cold = probe(before, 3, "nature");
+    p.advance(1, pick(p, {"skill:nature", "skill:arcana", "skill:medicine"}));
     const auto after = p.member(1).character.sheet();
-    const auto warm = probe(after, 3, "nature", {});
+    const auto warm = probe(after, 3, "nature");
     check(warm.proficiency > cold.proficiency && warm.total > cold.total,
           "A Skilled skill pick changes the real check result");
-    check(probe(after, 3, {}, "herbalism_kit").proficiency > 0,
-          "A Skilled tool pick supplies the proficiency bonus");
-    const auto combined = probe(after, 3, "nature", "herbalism_kit");
-    check(combined.tool_advantage && combined.advantage,
-          "Proficiency in both the skill and the tool grants advantage");
-    const auto stealth_before = probe(before, 1, "stealth", {});
-    const auto stealth_after = probe(after, 1, "stealth", {});
+    const auto stealth_before = probe(before, 1, "stealth");
+    const auto stealth_after = probe(after, 1, "stealth");
     check(stealth_after.total == stealth_before.total &&
           stealth_after.expertise == stealth_before.expertise,
           "Existing proficiencies and Expertise are unchanged");
-    check(probe(after, 3, "nature", {}).sources.size() == 1 &&
-          probe(after, 3, "nature", {}).sources.front().source_id == "feat:skilled",
+    check(probe(after, 3, "nature").sources.size() == 1 &&
+          probe(after, 3, "nature").sources.front().source_id == "feat:skilled",
           "The new proficiency reports Skilled as its only source");
 }
 
@@ -180,7 +174,7 @@ void rejections()
 void persistence()
 {
     auto p = ready("wizard", "sage");
-    p.advance(1, pick(p, {"skill:stealth", "tool:poisoners_kit", "tool:disguise_kit"}));
+    p.advance(1, pick(p, {"skill:stealth", "skill:perception", "skill:insight"}));
     const auto sheet = p.member(1).character.sheet();
     check(p.rule_module().character_profile(sheet, {}).data.starts_with("PC42 "),
           "A Skilled profile is written in the current profile format");
@@ -193,8 +187,8 @@ void persistence()
           "A Skilled campaign reload is canonical");
     const auto back = reloaded.member(1).character.sheet();
     check(back.grants == sheet.grants, "Reload preserves every Skilled grant and its provenance");
-    check(probe(back, 1, "stealth", {}).proficiency == probe(sheet, 1, "stealth", {}).proficiency &&
-          probe(back, 4, {}, "poisoners_kit").proficiency > 0,
+    check(probe(back, 1, "stealth").proficiency == probe(sheet, 1, "stealth").proficiency &&
+          probe(back, 4, "perception").proficiency > 0,
           "Skilled check effects survive a reload");
 }
 

@@ -74,7 +74,7 @@ substeps. Q38/Q39 audio completed successfully; approval widget is visible.
 The `ability_check` path currently derives modifiers only:
 `training.cpp::check_modifier` → `CharacterRules::ability_check` →
 `RulesModule::ability_check` → `CampaignParty::ability_check`. It preserves
-training/provenance, Expertise, tool advantage and equipment penalties. No game
+training/provenance, Expertise, sourced advantage and equipment penalties. No game
 or demo action currently executes a rolled SRD skill check. Combat's other d20
 sites are attack rolls, saving throws/death saves and initiative; initiative has
 no failed-check DC, so Tactical Mind cannot boost it. Do not apply Tactical Mind

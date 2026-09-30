@@ -4689,7 +4689,7 @@ class Module final : public RulesModule
             // reachable yet; the entitlement check rejects reusing this one.
             {
                 "skilled", "Skilled",
-                "Gain proficiency in any three skills or tools of your choice."
+                "Gain proficiency in any three skills of your choice."
             }
         };
         if (sheet.character_class == "Cleric")
@@ -5550,11 +5550,11 @@ class Module final : public RulesModule
 
     AbilityCheckModifier ability_check(const CharacterSheet &sheet,
                                        std::span<const std::string> gear, unsigned ability,
-                                       std::string_view skill, std::string_view tool,
+                                       std::string_view skill,
                                        EquipmentState equipment) const override
     {
         const auto d = character_definition(character_profile(sheet, gear, equipment).data);
-        auto result = character_rules()->ability_check(sheet, ability, skill, tool);
+        auto result = character_rules()->ability_check(sheet, ability, skill);
         result.disadvantage = (ability < 2 && d.str_dex_disadvantage) ||
                               (ability == 1 && skill == "stealth" && d.stealth_disadvantage);
         return result;

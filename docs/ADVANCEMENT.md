@@ -77,7 +77,7 @@ repeatable under the SRD, but the current level cap provides only one entitlemen
 Advancement adds only the newly acquired Hit Die, preserving previous dice
 expenditure in the rules continuation; see [rest resources](REST-RESOURCES.md).
 
-Campaign saves and profiles also store skill, tool, Expertise and language grants.
+Campaign saves and profiles also store skill and Expertise grants.
 Advancement refreshes skill totals after ability changes; training choices are
 described in [training support](TRAINING.md).
 

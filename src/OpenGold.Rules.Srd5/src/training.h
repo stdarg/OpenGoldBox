@@ -20,7 +20,6 @@ rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> gra
 rules::AbilityCheckModifier ability_check(std::span<const rules::FeatureGrant> grants,
         std::string_view klass, std::string_view background,
         unsigned level, const std::array<int, 6> &scores,
-        unsigned ability, std::string_view skill,
-        std::string_view tool);
+        unsigned ability, std::string_view skill);
 } // namespace opengold::srd5::detail
 #endif

@@ -8,9 +8,7 @@ void wizard_choices_checks()
     draft.spells = SpellChoices
     {
         {{"spellbook:1", {"magic_missile"}}}, std::vector<std::string>{"magic_missile"}, {}, {}};
-    draft.training = {{"origin:languages", {"elvish", "dwarvish"}},
-        {"class:wizard", {"medicine", "nature"}}
-    };
+    draft.training = {{"class:wizard", {"medicine", "nature"}}};
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*creation_rules, draft, {}));
     party.award_experience(2700, "wizard-choice-xp");
@@ -166,9 +164,7 @@ void write_wizard_ui_fixture()
     draft.spells = SpellChoices
     {
         {{"spellbook:1", {"magic_missile"}}}, std::vector<std::string>{"magic_missile"}, {}, {}};
-    draft.training = {{"origin:languages", {"elvish", "dwarvish"}},
-        {"class:wizard", {"medicine", "nature"}}
-    };
+    draft.training = {{"class:wizard", {"medicine", "nature"}}};
     CampaignParty party(module());
     (void)party.add_pc(Character(*srd5::character_rules(), draft, {}));
     party.award_experience(2700, "wizard-ui");

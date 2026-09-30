@@ -307,6 +307,10 @@ Passive Perception also need durable representation. They affect class and
 species benefits even outside combat. Broad "other features unsupported"
 messages do not make these bonuses optional.
 
+Update 2026-09-30: tool proficiencies and languages were later removed as an
+intentional exception ([DM-1](../SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells));
+the tool and language items in this audit no longer apply.
+
 ### G3 — P1: Feat acquisition is conflated with the level-four choice
 
 `CharacterSheet::feats` contains advancement feats; `character_profile` expects

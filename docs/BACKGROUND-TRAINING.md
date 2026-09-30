@@ -1,14 +1,15 @@
 # Acolyte and Soldier fixed training
 
-[#212](https://github.com/stdarg/OpenGold/issues/212) supplies Acolyte Insight,
-Religion and Calligrapher's Supplies, and Soldier Athletics and Intimidation.
+[#212](https://github.com/stdarg/OpenGold/issues/212) supplies Acolyte Insight and
+Religion, and Soldier Athletics and Intimidation. Acolyte's Calligrapher's Supplies
+and Soldier's Gaming Set were removed with all tool proficiencies
+([DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)).
 The source is [SRD 5.2.1 p. 83](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=83).
 Each grant records its background source and acquisition at level one.
 
 All twelve starting classes receive the fixed grants. Rogue Expertise can select
 these skills through its existing choice group. Overlapping class/background
-proficiency applies once; Expertise doubles proficiency. An applicable proficient
-skill/tool combination grants Advantage without adding proficiency again.
+proficiency applies once; Expertise doubles proficiency.
 Changing backgrounds retains valid choices and clears Expertise that loses its
 prerequisite proficiency. Presets use the existing deterministic training choices.
 
@@ -25,9 +26,8 @@ ability improvements. [Godot checks](../tests/training_view_tests.gd) cover the
 actual choice groups, background switching, keyboard access and final party sheet.
 
 Acolyte #61 remains open for Magic Initiate and starting equipment/wealth.
-Soldier #64 retains Savage Attacker; [Gaming Set selection](SOLDIER-GAMING.md)
-is delivered separately in #217. Starting equipment/wealth remains open. This
-original increment completed only the fixed skill/tool grants.
+Soldier #64 retains Savage Attacker. Starting equipment/wealth remains open. This
+original increment completed only the fixed skill grants.
 
 Verification: all 40 native/tool regression checks pass; the final focused
 training check also verifies valid preceding PC15 Sage profiles. All 16 Godot

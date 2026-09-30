@@ -46,8 +46,9 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
    level-one restriction. Background bonuses count toward eligibility.
    Return to Attributes to change assignments or bonuses if needed.
 5. Complete **Training**: fixed grants appear above scrollable labeled checkbox
-   groups for starting languages and, for Rogue, skills, Expertise and an additional
-   language. Counts show progress and Next requires every supported choice.
+   groups for class skills and, for Rogue, Expertise (plus Fighting Style and
+   Weapon Mastery where the class has them). There are no tool or language
+   choices ([DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)). Counts show progress and Next requires every supported choice.
    Back preserves choices; class/background edits clear only invalid choices and
    their dependencies. The full first package and limits are in [TRAINING.md](TRAINING.md).
 6. Wizards and Clerics choose supported cantrips in **Spell Choices**, after

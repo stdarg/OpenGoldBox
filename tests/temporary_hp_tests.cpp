@@ -63,11 +63,9 @@ Character hero(std::string klass = "fighter", unsigned level = 2, bool trained =
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     if (trained)
-        d.training = {{"origin:languages", {"elvish", "orc"}},
-            {"class:fighter:fighting_style", {"archery"}},
+        d.training = {{"class:fighter:fighting_style", {"archery"}},
             {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-            {"class:fighter", {"athletics", "history"}},
-            {"background:soldier:gaming_set", {"dice"}}
+            {"class:fighter", {"athletics", "history"}}
         };
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;

@@ -194,7 +194,7 @@ each class.
 | Sorcerer | Spell access and Innate Sorcery; Sorcery Points and slot conversion; individual Metamagic options; Draconic features/spells; level-four integration. |
 | Paladin | Level-one spellcasting; Lay On Hands; mastery/style choices; Smite trigger and casting; Channel Divinity/Devotion features and spells; level-four integration. |
 | Ranger | Level-one spellcasting; Hunter's Mark/free-cast grants; mastery/style choices; Deft Explorer; Hunter features; level-four integration. |
-| Druid | Spell access/Druidic/Primal Order choices; Wild Shape form catalog; transformation and retained statistics; form actions/reversion; Wild Companion; Land features/spells; level-four integration. |
+| Druid | Spell access/Primal Order choices; Wild Shape form catalog; transformation and retained statistics; form actions/reversion; Wild Companion; Land features/spells; level-four integration. |
 | Warlock | Pact Magic; individual invocations, including their prerequisites; Magical Cunning; Fiend features/spells; level-four integration. |
 
 Suggested order is Fighter, Cleric and Wizard to exercise existing paths, then
@@ -209,7 +209,8 @@ class/level is marked complete. First inventory every SRD spell accessible in
 the target tier, including species, feats and subclass grants. The inventory
 must link each spell to its implementation, tests and any reviewed adaptation.
 
-The [level-four spell inventory](SPELL-INVENTORY.md) records 139 distinct spells,
+The [level-four spell inventory](SPELL-INVENTORY.md) records 106 distinct spells
+(139 before DM-1 removed 33 DM-adjudicated spells),
 their class and additional grant routes, dependencies and current evidence.
 It reconciles the printed class lists with spell descriptions, including
 Phantasmal Force and Sorcerer access to Mind Spike. Current counts and delivery evidence live in the coverage ledger; do not

@@ -195,3 +195,22 @@ User reply: “1. Approved”. Approves the centered640×360 pre-turn Alert dial
 in main/demo, Ally and conditional Resolve next dropdowns, current totals,
 Swap initiative / Keep initiative, Escape decline, keyboard/mouse and action
 blocking. Enemy AI keeps rolls. See [frozen scope](ALERT.md). No other scope added.
+
+## DM-1 (2026-09-30): tools, languages and DM-adjudicated spells
+
+Tools, languages and DM-adjudicated spells are removed as intentional SRD
+exceptions. The user approved this on 2026-09-30 for this scripted campaign,
+which has no DM to adjudicate them. Skills and Expertise stay.
+
+- **Tool proficiencies:** all of them, including Rogue and Criminal Thieves'
+  Tools, the Bard's three instruments, the Monk's tool or instrument, the Druid's
+  Herbalism Kit, the Soldier's Gaming Set and Sage/Acolyte Calligrapher's
+  Supplies. Skilled offers skills only, and ability checks take no tool.
+- **Languages:** Common, the two chosen standard languages, the Rogue's Thieves'
+  Cant and extra language, and Druidic.
+- **Spells:** the 33 narrative-only spells listed in
+  [Removed: needs a DM](SPELL-INVENTORY.md#removed-needs-a-dm), plus ritual
+  casting (Ritual Adept) and the features that exist only to cast removed spells:
+  Mask of Many Faces, Misty Visions, Pact of the Chain, Wild Companion, the Forest
+  and Rock Gnome lineage spells, Tiefling Thaumaturgy and High Elf
+  Prestidigitation. The High Elf takes a Wizard cantrip instead.

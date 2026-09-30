@@ -191,8 +191,7 @@ class CampaignParty
 
     [[nodiscard]] rules::CharacterProfile profile(MemberId id) const;
     [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, unsigned ability,
-            std::string_view skill = {},
-            std::string_view tool = {}) const;
+            std::string_view skill = {}) const;
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
     [[nodiscard]] bool has_item(unsigned original_type) const;
     [[nodiscard]] unsigned strength() const;

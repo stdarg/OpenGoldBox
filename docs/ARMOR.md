@@ -32,8 +32,8 @@ Dexterity D20 Tests, including actual initiative and weapon attacks, and
 prevent casting. Saving throws use the existing shared modifier resolver.
 The equipped ability-check query combines training with these penalties and
 armor-specific Dexterity (Stealth) Disadvantage. Alternate-ability Stealth
-checks do not receive the armor-specific penalty. Tool Advantage remains a
-separate source so a roll can cancel opposing modifiers. Campaign skill
+checks do not receive the armor-specific penalty. Sourced Advantage remains a
+separate flag so a roll can cancel opposing modifiers. Campaign skill
 actions consuming this query remain [#172](https://github.com/stdarg/OpenGold/issues/172).
 
 Existing inventory equip/unequip and Modifiers presentation support every

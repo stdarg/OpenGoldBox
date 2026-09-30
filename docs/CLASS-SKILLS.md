@@ -54,7 +54,7 @@ selects by keyboard, checks limits, preserves choices on Back and continues the
 existing Rogue/Fighter flow. Wizard/Cleric cantrip creation and main/demo party
 fixtures now make the required skill selections through their existing controls.
 
-Class tools, Druidic, further Expertise features, spell choices, equipment,
+Class tools and Druidic were removed by [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells). Further Expertise features, spell choices, equipment,
 subclasses, higher levels and multiclass acquisition remain in their own issues.
 This increment does not complete the full starting-class trackers or #29/#52.
 

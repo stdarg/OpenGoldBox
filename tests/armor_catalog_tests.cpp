@@ -337,9 +337,9 @@ void boundaries()
     });
     const auto rogue = hero("rogue", 15, 16, "human", "criminal");
     const auto both = rules->ability_check(rogue.sheet(), std::array<std::string, 1> {"padded"}, 1,
-                                           "stealth", "thieves_tools");
-    check(both.tool_advantage && both.disadvantage,
-          "Tool Advantage and armor Disadvantage remain independent sources for cancellation");
+                                           "stealth");
+    check(both.proficiency == 2 && both.disadvantage,
+          "Skill proficiency and armor Disadvantage remain independent");
     // Existing saving throw engine consumes the same profile penalty as live combat.
     const auto mage = hero("wizard");
     const auto p = rules->character_profile(mage.sheet(), std::array<std::string, 1> {"plate"});

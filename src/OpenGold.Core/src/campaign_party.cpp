@@ -295,8 +295,7 @@ rules::CharacterProfile CampaignParty::profile(MemberId id) const
 }
 
 rules::AbilityCheckModifier CampaignParty::ability_check(MemberId id, unsigned ability,
-        std::string_view skill,
-        std::string_view tool) const
+        std::string_view skill) const
 {
     const auto &m = member(id);
     std::vector<std::string> keys;
@@ -307,7 +306,7 @@ rules::AbilityCheckModifier CampaignParty::ability_check(MemberId id, unsigned a
             throw std::runtime_error("Equipped item is missing");
         keys.push_back(item->get().definition_id);
     }
-    return rules_->ability_check(m.character.sheet(), keys, ability, skill, tool, m.equipment);
+    return rules_->ability_check(m.character.sheet(), keys, ability, skill, m.equipment);
 }
 
 std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id,

@@ -313,11 +313,9 @@ void campaign()
 {
     auto rules = module();
     auto draft = hero().creation_data();
-    draft.training = {{"origin:languages", {"elvish", "orc"}},
-        {"class:fighter:fighting_style", {"archery"}},
+    draft.training = {{"class:fighter:fighting_style", {"archery"}},
         {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-        {"class:fighter", {"athletics", "history"}},
-        {"background:soldier:gaming_set", {"dice"}}
+        {"class:fighter", {"athletics", "history"}}
     };
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {})),

@@ -95,14 +95,13 @@ func run_checks() -> void:
 	await choose("Choices", "Wizard")
 	await press("Next")
 	var fixed: RichTextLabel = current_scene.get_node("TrainingFixed")
-	for label in ["Arcana", "History", "Calligrapher's Supplies"]:
+	for label in ["Arcana", "History"]:
 		require(fixed.get_parsed_text().contains(label), "Sage fixed training is visible: " + label)
 	for locale in ["en", "es"]:
 		TranslationServer.set_locale(locale)
 		await press("Back")
 		await press("Next")
 		require(fixed.get_parsed_text().contains("Sage background" if locale == "en" else "Trasfondo de sabio"), "Sage source label is human-readable and localized")
-		require(fixed.get_parsed_text().contains("Calligrapher's Supplies" if locale == "en" else "Útiles de caligrafía"), "Tool proficiency label is localized")
 		for size in [Vector2i(1120, 800), Vector2i(1920, 1080)]:
 			root.size = size
 			await settle()
@@ -112,10 +111,8 @@ func run_checks() -> void:
 	await press("Next")
 	root.size = Vector2i(1120, 800)
 	await settle()
-	await pick(0, "elvish")
-	await pick(0, "dwarvish")
-	await pick(1, "nature")
-	await pick(1, "investigation")
+	await pick(0, "nature")
+	await pick(0, "investigation")
 	await press("Next")
 	require(current_scene.get_node("PageTitle").text == "Spell Choices", "Spell Choices follows Training")
 	var blast: CheckBox = current_scene.get_node("SpellChoices/Rows/shocking_grasp")

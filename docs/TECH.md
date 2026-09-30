@@ -855,25 +855,10 @@ Core uses that metadata to carry selections across class changes, then prunes
 options and counts against the new group. Rules remain responsible for lists,
 counts and provenance; Core contains no SRD class-specific transfer logic.
 
-Rules 0.6.31 / PC20 adds Bard instrument choices to the existing rules-owned
-training service. Campaign choice maps need no schema change. The shared Training controls render the new
-group and translated tool sources without SRD mechanics in Core or Godot. See
-[Bard instruments](BARD-INSTRUMENTS.md).
-
-Rules 0.6.32 / PC21 adds Monk starting tool choices. Tool-category eligibility
-stays in SRD rules, with the existing generic Training controls and choice
-continuity metadata shared by Bard and Monk. No Core class-specific behavior or
-new persistence schema is introduced. See [Monk tools](MONK-TOOLS.md).
-
-Rules 0.6.33 / PC22 adds fixed Druid Herbalism Kit proficiency. No new control
-or save schema is needed. See
-[Druid Herbalism Kit](DRUID-HERBALISM.md).
-
-Rules 0.6.34 / PC23 adds Soldier Gaming Set choices through the existing training
-service and checkbox presentation. Tools use an explicit category enum to keep
-artisan, instrument and gaming entitlements distinct. Source validation
-remains rules-owned; Core and save schemas are unchanged.
-See [Soldier Gaming Set](SOLDIER-GAMING.md).
+Rules 0.6.31–0.6.34 (PC20–PC23) added Bard instrument, Monk tool, Druid
+Herbalism Kit and Soldier Gaming Set proficiencies. All tool proficiencies and
+languages were later removed by [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells); the training service now grants
+skills, Expertise, Fighting Styles and Weapon Mastery only.
 
 Rules 0.6.35 / PC24 adds bounded Rogue level-two advancement and Cunning Action
 Dash/Disengage. Rules-derived Bonus Action entitlements feed the approved combat

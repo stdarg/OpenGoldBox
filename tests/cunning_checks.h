@@ -184,7 +184,6 @@ void run()
     auto soldier_draft = draft("rogue", "soldier");
     soldier_draft.training = choices();
     soldier_draft.training["class:rogue:expertise"] = {"investigation", "perception"};
-    soldier_draft.training["background:soldier:gaming_set"] = {"dice"};
     auto soldier = hero(soldier_draft);
     VitalState soldier_state;
     check(soldier.advance(*rules, soldier_state), "Soldier Rogue advances normally");
@@ -271,8 +270,6 @@ void run()
         rogue_draft.race = "orc";
         rogue_draft.training = choices();
         rogue_draft.training["class:rogue:expertise"] = {"investigation", "perception"};
-        if (std::string_view(background) == "soldier")
-            rogue_draft.training["background:soldier:gaming_set"] = {"dice"};
         party.add_pc(hero(rogue_draft));
     }
     auto wounded = party.checkpoint();

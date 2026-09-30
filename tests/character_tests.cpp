@@ -317,8 +317,6 @@ void creation_tests()
         creator.next();
     },
     "Required training blocks Name");
-    creator.training_choice("origin:languages", "elvish", true);
-    creator.training_choice("origin:languages", "dwarvish", true);
     creator.training_choice("class:cleric", "medicine", true);
     creator.training_choice("class:cleric", "persuasion", true);
     creator.next();

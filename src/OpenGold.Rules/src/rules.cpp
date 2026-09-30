@@ -18,8 +18,7 @@ EquipmentChange RulesModule::equipment_change(const CharacterSheet &, std::span<
 
 AbilityCheckModifier RulesModule::ability_check(const CharacterSheet &,
         std::span<const std::string>, unsigned,
-        std::string_view, std::string_view,
-        EquipmentState) const
+        std::string_view, EquipmentState) const
 {
     throw std::runtime_error("This rules module does not support equipped ability checks");
 }

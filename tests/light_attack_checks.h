@@ -24,7 +24,6 @@ Character hero_for(bool feat = false, bool negative = false, std::string klass =
     {
         d.training = choices();
         d.training["class:rogue:expertise"] = {"investigation", "perception"};
-        d.training["background:soldier:gaming_set"] = {"dice"};
     }
     if (klass == "fighter")
         d.training["class:fighter:fighting_style"] = {feat ? "two_weapon_fighting" : "defense"};

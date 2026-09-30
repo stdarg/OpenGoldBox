@@ -59,10 +59,8 @@ CharacterDraft draft(std::string klass = "rogue", std::string background = "crim
 
 TrainingChoices choices()
 {
-    return {{"origin:languages", {"elvish", "dwarvish"}},
-        {"class:rogue", {"acrobatics", "investigation", "perception", "persuasion"}},
+    return {{"class:rogue", {"acrobatics", "investigation", "perception", "persuasion"}},
         {"class:rogue:expertise", {"stealth", "perception"}},
-        {"class:rogue:thieves_cant", {"undercommon"}},
         {"class:rogue:weapon_mastery", {"dagger", "shortbow"}}};
 }
 
@@ -182,7 +180,6 @@ void all_class_skills()
                 })
         {
             auto d = draft(klass.id, bg);
-            d.training = {{"origin:languages", {"elvish", "dwarvish"}}};
             if (klass.id == "rogue")
             {
                 d.training = choices();
@@ -190,12 +187,6 @@ void all_class_skills()
             }
             if (klass.id == "fighter")
                 d.training["class:fighter:fighting_style"] = {"defense"};
-            if (klass.id == "bard")
-                d.training["class:bard:instruments"] = {"flute", "lute", "viol"};
-            if (klass.id == "monk")
-                d.training["class:monk:tools"] = {"flute"};
-            if (std::string_view(bg) == "soldier")
-                d.training["background:soldier:gaming_set"] = {"dice"};
             const auto groups = creation->training_options(d);
             const auto found = std::find_if(groups.begin(), groups.end(),
                                             [&](const auto & g)
@@ -330,465 +321,6 @@ void all_class_skills()
         }
 }
 
-void bard_instruments()
-{
-    auto creation = srd5::character_rules();
-    auto rules = module();
-    const std::vector<std::string> instruments{"bagpipes", "drum", "dulcimer",  "flute", "horn",
-            "lute",     "lyre", "pan_flute", "shawm", "viol"};
-    auto d = draft("bard", "soldier");
-    d.training = {{"origin:languages", {"elvish", "dwarvish"}},
-        {"class:bard", {"performance", "persuasion", "perception"}},
-        {"background:soldier:gaming_set", {"dice"}}
-    };
-    check(!hero(d).sheet().training.complete,
-          "Bard must choose instruments after skills and languages");
-    const auto groups = creation->training_options(d);
-    const auto &group = *std::find_if(groups.begin(), groups.end(),
-                                      [](const auto & g)
-    {
-        return g.id == "class:bard:instruments";
-    });
-    std::vector<std::string> offered;
-    for (const auto &option : group.options)
-        offered.push_back(option.id);
-    check(group.id == "class:bard:instruments" && group.count == 3 && offered == instruments,
-          "Bard offers all ten SRD instruments and exactly three choices");
-    for (unsigned a = 0; a < 8; ++a)
-        for (unsigned b = a + 1; b < 9; ++b)
-            for (unsigned c = b + 1; c < 10; ++c)
-            {
-                d.training[group.id] = {instruments[a], instruments[b], instruments[c]};
-                const auto h = hero(d);
-                const auto &sheet = h.sheet();
-                check(sheet.training.complete && sheet.training.tools.size() == 4,
-                      "Every distinct instrument triple completes Training");
-                for (const auto &id : d.training.at(group.id))
-                {
-                    check(std::find(sheet.grants.begin(), sheet.grants.end(),
-                                    FeatureGrant{"tool:" + id, group.id, 1, {}}) !=
-                          sheet.grants.end(),
-                          "Instrument grant has Bard provenance");
-                    const auto alone = creation->ability_check(sheet, 5, {}, id);
-                    const auto combined = creation->ability_check(sheet, 5, "performance", id);
-                    check(alone.proficiency == 2 && !alone.tool_advantage &&
-                          alone.total == sheet.modifiers[5] + 2,
-                          "Instrument adds proficiency once");
-                    check(combined.proficiency == 2 && combined.tool_advantage &&
-                          combined.total == alone.total,
-                          "Skill and instrument give Advantage without double proficiency");
-                }
-                CampaignParty party(module());
-                party.add_pc(h);
-                const auto bytes = encode_campaign(party, nullptr, "bard-new");
-                CampaignParty restored(module());
-                restored.restore(
-                    decode_campaign(bytes, *creation, *rules, "bard-new", nullptr).party);
-                check(encode_campaign(restored, nullptr, "bard-new") == bytes,
-                      "Every instrument triple persists canonically");
-            }
-    for (const std::vector<std::string> bad :
-            {
-                std::vector<std::string> {"flute", "flute"}, {"piano"}, {"flute", "lute", "viol", "horn"}
-            })
-    {
-        d.training[group.id] = bad;
-        rejects(
-            [&]
-        {
-            (void)hero(d);
-        });
-    }
-    d.training[group.id] = {"flute", "lute", "viol"};
-    const auto h = hero(d);
-    auto profile = rules->character_profile(h.sheet(), {}).data;
-    const Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
-        {   {1, "campaign-character", "Bard", 0, {1, 1}, profile},
-            {99, "vanguard", "Enemy", 1, {6, 6}}
-        }};
-    const auto current = rules->create(encounter, 13)->save();
-    check(rules->restore(current)->save() == current,
-          "Current Bard instrument combat profile round trips");
-    for (const auto *source :
-            {"class:rogue:instruments", "background:sage"
-            })
-    {
-        auto forged = encounter;
-        replace(forged.participants[0].character_profile, "class:bard:instruments", source);
-        rejects(
-            [&]
-        {
-            (void)rules->create(forged, 13);
-        });
-    }
-    d.character_class = "wizard";
-    rejects(
-        [&]
-    {
-        (void)hero(d);
-    });
-    CharacterCreator creator(srd5::character_rules(), 42);
-    creator.select(CreationField::character_class, "bard");
-    creator.training_choice(group.id, "flute", true);
-    creator.training_choice(group.id, "lute", true);
-    creator.training_choice(group.id, "viol", true);
-    const auto before = creator.draft().training;
-    rejects(
-        [&]
-    {
-        creator.training_choice(group.id, "horn", true);
-    });
-    check(creator.draft().training == before, "Excess instrument choice rejection is atomic");
-    creator.select(CreationField::background, "sage");
-    check(creator.draft().training.at(group.id) == before.at(group.id),
-          "Background change preserves instruments");
-    creator.select(CreationField::character_class, "wizard");
-    check(!creator.draft().training.contains(group.id),
-          "Class change removes Bard-only entitlement");
-}
-
-void monk_tools()
-{
-    auto creation = srd5::character_rules();
-    auto rules = module();
-    std::vector<std::string> expected{"alchemists_supplies",
-                                      "brewers_supplies",
-                                      "calligraphers_supplies",
-                                      "carpenters_tools",
-                                      "cartographers_tools",
-                                      "cobblers_tools",
-                                      "cooks_utensils",
-                                      "glassblowers_tools",
-                                      "jewelers_tools",
-                                      "leatherworkers_tools",
-                                      "masons_tools",
-                                      "painters_supplies",
-                                      "potters_tools",
-                                      "smiths_tools",
-                                      "tinkers_tools",
-                                      "weavers_tools",
-                                      "woodcarvers_tools",
-                                      "bagpipes",
-                                      "drum",
-                                      "dulcimer",
-                                      "flute",
-                                      "horn",
-                                      "lute",
-                                      "lyre",
-                                      "pan_flute",
-                                      "shawm",
-                                      "viol"};
-    auto d = draft("monk", "sage");
-    d.training = {{"origin:languages", {"elvish", "dwarvish"}},
-        {"class:monk", {"history", "insight"}}
-    };
-    check(!hero(d).sheet().training.complete, "Monk must choose a tool");
-    const auto groups = creation->training_options(d);
-    const auto &group = groups.back();
-    std::vector<std::string> offered;
-    for (const auto &option : group.options)
-        offered.push_back(option.id);
-    std::sort(offered.begin(), offered.end());
-    std::sort(expected.begin(), expected.end());
-    check(group.id == "class:monk:tools" && group.count == 1 && offered == expected,
-          "Monk has exactly seventeen artisan tools and ten instruments");
-    for (const auto &id : expected)
-    {
-        d.training[group.id] = {id};
-        const auto h = hero(d);
-        const auto &sheet = h.sheet();
-        check(sheet.training.complete, "Each permitted Monk tool completes Training");
-        const auto grant = FeatureGrant{"tool:" + id, group.id, 1, {}};
-        check(std::find(sheet.grants.begin(), sheet.grants.end(), grant) != sheet.grants.end(),
-              "Monk tool records exact level-one source");
-        const auto tool = std::find_if(sheet.training.tools.begin(), sheet.training.tools.end(),
-                                       [&](const auto & t)
-        {
-            return t.id == id;
-        });
-        check(tool != sheet.training.tools.end() &&
-              tool->sources.size() == (id == "calligraphers_supplies" ? 2u : 1u),
-              "Background overlap retains both sources without duplicate tool entries");
-        const auto alone = creation->ability_check(sheet, 3, {}, id),
-                   combined = creation->ability_check(sheet, 3, "history", id);
-        check(alone.proficiency == 2 && alone.total == sheet.modifiers[3] + 2 &&
-              !alone.tool_advantage,
-              "Tool proficiency adds once including background overlap");
-        check(combined.proficiency == 2 && combined.total == alone.total && combined.tool_advantage,
-              "Tool and skill add Advantage without duplicate proficiency");
-        CampaignParty party(module());
-        party.add_pc(h);
-        const auto bytes = encode_campaign(party, nullptr, "monk-new");
-        CampaignParty restored(module());
-        restored.restore(decode_campaign(bytes, *creation, *rules, "monk-new", nullptr).party);
-        check(encode_campaign(restored, nullptr, "monk-new") == bytes,
-              "Every Monk tool persists canonically");
-        const auto profile = rules->character_profile(sheet, {}).data;
-        Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Monk", 0, {1, 1}, profile},
-                {99, "vanguard", "Enemy", 1, {6, 6}}
-            }};
-        const auto saved = rules->create(encounter, 13)->save();
-        check(rules->restore(saved)->save() == saved, "Every Monk tool combat profile persists");
-        rejects(
-            [&]
-        {
-            (void)decode_campaign(corrupt(bytes, "class:monk:tools", "class:bard:instruments"),
-            *creation, *rules, "monk-new", nullptr);
-        });
-    }
-    for (const std::vector<std::string> bad :
-            {
-    std::vector<std::string> {"flute", "flute"},
-{"flute", "lute"},
-{"thieves_tools"},
-{"herbalism_kit"},
-{"piano"}
-        })
-    {
-        d.training[group.id] = bad;
-        rejects(
-            [&]
-        {
-            (void)hero(d);
-        });
-    }
-    CharacterCreator creator(srd5::character_rules(), 42);
-    creator.select(CreationField::character_class, "bard");
-    for (const auto *id :
-            {"lute", "flute", "viol"
-            })
-        creator.training_choice("class:bard:instruments", id, true);
-    creator.select(CreationField::character_class, "monk");
-    check(creator.draft().training.at(group.id) == std::vector<std::string> {"lute"},
-          "Bard to Monk keeps first compatible instrument");
-    const auto before = creator.draft().training;
-    rejects(
-        [&]
-    {
-        creator.training_choice(group.id, "flute", true);
-    });
-    check(creator.draft().training == before, "Excess Monk tool rejects atomically");
-    creator.select(CreationField::character_class, "bard");
-    check(creator.draft().training.at("class:bard:instruments") == std::vector<std::string> {"lute"},
-          "Monk instrument transfers back to Bard without inventing remaining choices");
-    creator.select(CreationField::character_class, "monk");
-    creator.training_choice(group.id, "lute", false);
-    creator.training_choice(group.id, "smiths_tools", true);
-    creator.select(CreationField::background, "soldier");
-    check(creator.draft().training.at(group.id) == std::vector<std::string> {"smiths_tools"},
-          "Background change keeps a valid Monk tool");
-    creator.select(CreationField::character_class, "bard");
-    check(!creator.draft().training.contains("class:bard:instruments"),
-          "Artisan tool cannot transfer to Bard's instrument entitlement");
-}
-
-void druid_herbalism()
-{
-    auto creation = srd5::character_rules();
-    auto rules = module();
-    for (const auto &klass : creation->choices(CreationField::character_class))
-        for (const auto *background :
-                {"sage", "acolyte", "criminal", "soldier"
-                })
-        {
-            auto d = draft(klass.id, background);
-            if (klass.id == "druid")
-                d.training = {{"origin:languages", {"elvish", "dwarvish"}},
-                {"class:druid", {"nature", "medicine"}}
-            };
-            if (std::string_view(background) == "soldier")
-                d.training["background:soldier:gaming_set"] = {"dice"};
-            const auto h = hero(d);
-            const auto &sheet = h.sheet();
-            const bool druid = klass.id == "druid";
-            const auto found =
-                std::find_if(sheet.training.tools.begin(), sheet.training.tools.end(),
-                             [](const auto & t)
-            {
-                return t.id == "herbalism_kit";
-            });
-            check((found != sheet.training.tools.end()) == druid,
-                  "Only Druids receive fixed Herbalism Kit proficiency");
-            const auto alone = creation->ability_check(sheet, 3, {}, "herbalism_kit");
-            check(alone.proficiency == (druid ? 2 : 0) &&
-                  alone.total == sheet.modifiers[3] + (druid ? 2 : 0),
-                  "Herbalism checks use Intelligence modifier and proficiency once");
-            if (!druid)
-                continue;
-            check(sheet.training.complete &&
-                  found->sources ==
-            std::vector<FeatureGrant> {{"tool:herbalism_kit", "class:druid", 1, {}}},
-            "Druid's fixed grant is complete with exact source");
-            const auto combined = creation->ability_check(sheet, 3, "nature", "herbalism_kit");
-            check(combined.total == alone.total && combined.tool_advantage,
-                  "Applicable skill plus Herbalism Kit adds Advantage");
-            for (unsigned mode = 0; mode < 3; ++mode)
-            {
-                auto bad = sheet;
-                if (mode == 0)
-                    std::erase_if(bad.grants,
-                                  [](const auto & g)
-                {
-                    return g.id == "tool:herbalism_kit";
-                });
-                else if (mode == 1)
-                    bad.grants.push_back({"tool:herbalism_kit", "class:druid", 1, {}});
-                else
-                    for (auto &g : bad.grants)
-                        if (g.id == "tool:herbalism_kit")
-                            g.source_id = "background:sage";
-                rejects(
-                    [&]
-                {
-                    (void)rules->character_profile(bad, {});
-                });
-            }
-            auto profile = rules->character_profile(sheet, {}).data;
-            Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
-                {   {1, "campaign-character", "Druid", 0, {1, 1}, profile},
-                    {99, "vanguard", "Enemy", 1, {6, 6}}
-                }};
-            const auto current = rules->create(encounter, 13)->save();
-            check(rules->restore(current)->save() == current,
-                  "Druid's current Herbalism Kit profile round trips");
-        }
-}
-
-void soldier_gaming()
-{
-    auto creation = srd5::character_rules();
-    auto rules = module();
-    const std::string group_id = "background:soldier:gaming_set";
-    const std::vector<std::string> variants{"dice", "dragonchess", "playing_cards",
-                                            "three_dragon_ante"};
-    for (const auto &klass : creation->choices(CreationField::character_class))
-        for (const auto &variant : variants)
-        {
-            auto d = draft(klass.id, "soldier");
-            d.training = {{"origin:languages", {"elvish", "dwarvish"}},
-                {"class:" + klass.id, chosen_class_skills(klass.id)}
-            };
-            if (klass.id == "rogue")
-            {
-                d.training["class:rogue:expertise"] = {d.training["class:rogue"][0],
-                                                       d.training["class:rogue"][1]
-                                                      };
-                d.training["class:rogue:thieves_cant"] = {"undercommon"};
-            }
-            if (klass.id == "fighter")
-                d.training["class:fighter:fighting_style"] = {"defense"};
-            if (klass.id == "bard")
-                d.training["class:bard:instruments"] = {"flute", "lute", "viol"};
-            if (klass.id == "monk")
-                d.training["class:monk:tools"] = {"smiths_tools"};
-            const auto groups = creation->training_options(d);
-            const auto &offered = *std::find_if(groups.begin(), groups.end(),
-                                                [&](const auto & group)
-            {
-                return group.id == group_id;
-            });
-            std::vector<std::string> ids;
-            for (const auto &option : offered.options)
-                ids.push_back(option.id);
-            check(offered.id == group_id && offered.count == 1 && ids == variants,
-                  "Every Soldier class offers exactly the four Gaming Set variants");
-            check(!hero(d).sheet().training.complete,
-                  "Gaming Set choice is required independently of class choices");
-            d.training[group_id] = {variant};
-            complete_mastery(d);
-            const auto h = hero(d);
-            const auto &sheet = h.sheet();
-            check(sheet.training.complete,
-                  "Every variant completes every class's Soldier training");
-            const auto tool = std::find_if(sheet.training.tools.begin(), sheet.training.tools.end(),
-                                           [&](const auto & t)
-            {
-                return t.id == variant;
-            });
-            check(tool != sheet.training.tools.end() &&
-                  tool->sources ==
-            std::vector<FeatureGrant> {{"tool:" + variant, group_id, 1, {}}},
-            "Gaming Set has exact level-one Soldier provenance");
-            const auto alone = creation->ability_check(sheet, 4, {}, variant),
-                       combined = creation->ability_check(sheet, 4, "intimidation", variant);
-            check(alone.proficiency == 2 && alone.total == sheet.modifiers[4] + 2 &&
-                  !alone.tool_advantage,
-                  "Gaming Set adds proficiency once to Wisdom checks");
-            check(combined.proficiency == 2 && combined.total == alone.total &&
-                  combined.tool_advantage,
-                  "Applicable trained skill adds Advantage without duplicate proficiency");
-            CampaignParty party(module());
-            party.add_pc(h);
-            const auto bytes = encode_campaign(party, nullptr, "gaming-new");
-            CampaignParty restored(module());
-            restored.restore(
-                decode_campaign(bytes, *creation, *rules, "gaming-new", nullptr).party);
-            check(encode_campaign(restored, nullptr, "gaming-new") == bytes,
-                  "Every class and Gaming Set combination saves canonically");
-            const auto profile = rules->character_profile(sheet, {}).data;
-            Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
-                {   {1, "campaign-character", "Soldier", 0, {1, 1}, profile},
-                    {99, "vanguard", "Enemy", 1, {6, 6}}
-                }};
-            const auto current = rules->create(encounter, 13)->save();
-            check(rules->restore(current)->save() == current,
-                  "Gaming Set current combat continuation is canonical");
-            auto wrong = sheet;
-            for (auto &grant : wrong.grants)
-                if (grant.source_id == group_id)
-                    grant.source_id = "background:criminal";
-            rejects(
-                [&]
-            {
-                (void)rules->character_profile(wrong, {});
-            });
-            for (const std::vector<std::string> bad :
-                    {
-            std::vector<std::string> {"dice", "dice"},
-        {"dice", "dragonchess"},
-        {"flute"},
-        {"thieves_tools"},
-        {"chess"}
-                })
-            {
-                auto broken = d;
-                broken.training[group_id] = bad;
-                rejects(
-                    [&]
-                {
-                    (void)hero(broken);
-                });
-            }
-            auto wrong_background = d;
-            wrong_background.background = "criminal";
-            rejects(
-                [&]
-            {
-                (void)hero(wrong_background);
-            });
-        }
-    CharacterCreator creator(srd5::character_rules(), 42);
-    creator.select(CreationField::background, "soldier");
-    creator.training_choice(group_id, "playing_cards", true);
-    const auto before = creator.draft().training;
-    rejects(
-        [&]
-    {
-        creator.training_choice(group_id, "dice", true);
-    });
-    check(creator.draft().training == before, "Rejected second Gaming Set is atomic");
-    for (const auto &klass : creation->choices(CreationField::character_class))
-    {
-        creator.select(CreationField::character_class, klass.id);
-        check(creator.draft().training.at(group_id) == std::vector<std::string> {"playing_cards"},
-              "All class changes retain Soldier's Gaming Set");
-    }
-    creator.select(CreationField::background, "sage");
-    check(!creator.draft().training.contains(group_id),
-          "Background change removes ineligible Gaming Set grant");
-}
-
 void creation_controls()
 {
     CharacterCreator creator(srd5::character_rules(), 42);
@@ -817,12 +349,7 @@ void creation_controls()
     rejects(
         [&]
     {
-        creator.training_choice("unknown", "elvish", true);
-    });
-    rejects(
-        [&]
-    {
-        creator.training_choice("origin:languages", "abyssal", true);
+        creator.training_choice("unknown", "stealth", true);
     });
     rejects(
         [&]
@@ -832,19 +359,18 @@ void creation_controls()
     // Independent, authored choices exercise dependent groups in UI order.
     const auto selected = choices();
     for (const auto *group :
-            {"origin:languages", "class:rogue", "class:rogue:expertise",
-             "class:rogue:thieves_cant", "class:rogue:weapon_mastery"
+            {"class:rogue", "class:rogue:expertise", "class:rogue:weapon_mastery"
             })
         for (const auto &value : selected.at(group))
             creator.training_choice(group, value, true);
     check(creator.training_complete() && creator.sheet().training.complete,
           "Every required choice permits completion");
     const auto before = creator.draft().training;
-    creator.training_choice("origin:languages", "elvish", true);
+    creator.training_choice("class:rogue", "acrobatics", true);
     rejects(
         [&]
     {
-        creator.training_choice("origin:languages", "orc", true);
+        creator.training_choice("class:rogue", "stealth", true);
     });
     check(creator.draft().training == before,
           "Duplicate selection is idempotent; excessive selection rejects atomically");
@@ -869,18 +395,9 @@ void creation_controls()
           "Changing background preserves valid skill choices");
     creator.select(CreationField::background, "criminal");
     creator.training_choice("class:rogue:expertise", "stealth", true);
-    creator.training_choice("class:rogue:thieves_cant", "undercommon", false);
-    creator.training_choice("class:rogue:thieves_cant", "orc", true);
-    creator.training_choice("origin:languages", "dwarvish", false);
-    creator.training_choice("origin:languages", "orc", true);
-    check(!creator.draft().training.contains("class:rogue:thieves_cant"),
-          "Moving a language into starting choices invalidates only the duplicate Rogue choice");
-    creator.training_choice("class:rogue:thieves_cant", "undercommon", true);
     creator.select(CreationField::character_class, "fighter");
-    check(
-        creator.draft().training.size() == 3 && creator.draft().training.at("origin:languages") ==
-        std::vector<std::string>({"elvish", "orc"}),
-        "Class change preserves languages and compatible skills while clearing Rogue-only groups");
+    check(creator.draft().training.size() == 2,
+          "Class change preserves compatible skills and mastery while clearing Rogue-only groups");
     check(!creator.training_complete(), "Fighter requires its own starting style choice");
     creator.training_choice("class:fighter:fighting_style", "defense", true);
     check(creator.draft().training.at("class:fighter") ==
@@ -888,7 +405,7 @@ void creation_controls()
           "Class change keeps the first two valid selected skills");
     creator.training_choice("class:fighter:weapon_mastery", "longsword", true);
     check(creator.training_complete(),
-          "Fighter languages, style, skills and three mastery kinds complete supported training");
+          "Fighter style, skills and three mastery kinds complete supported training");
     creator.training_choice("class:fighter:fighting_style", "archery", true);
     check(creator.draft().training.at("class:fighter:fighting_style") ==
           std::vector<std::string> {"archery"},
@@ -909,8 +426,7 @@ void creation_controls()
           !creator.training_complete(),
           "Returning to Rogue clears the invalid style without inventing cleared choices");
     for (const auto *group :
-            {"class:rogue", "class:rogue:expertise", "class:rogue:thieves_cant",
-             "class:rogue:weapon_mastery"
+            {"class:rogue", "class:rogue:expertise", "class:rogue:weapon_mastery"
             })
         for (const auto &value : selected.at(group))
             creator.training_choice(group, value, true);
@@ -935,7 +451,7 @@ void creation_controls()
     rejects(
         [&]
     {
-        creator.training_choice("origin:languages", "elvish", false);
+        creator.training_choice("class:rogue", "acrobatics", false);
     });
     creator.restart();
     check(creator.draft().training.empty() && !creator.training_complete(),
@@ -1040,9 +556,6 @@ void preset_training()
             c.sheet().grants.end(),
              "Every preset Fighter has one pre-generated style and its grant");
         }
-        check(c.sheet().training.languages.size() ==
-              (c.creation_data().character_class == "rogue" ? 5u : 3u),
-              "Preset languages are distinct and include all fixed and selected grants");
         CampaignParty party(module());
         const auto id = party.add_pc(c);
         const auto bytes = encode_campaign(party, nullptr, "preset");
@@ -1067,50 +580,36 @@ void grants_and_checks()
     auto sheet = hero(d).sheet();
     check(!sheet.training.complete && sheet.training.skills.size() == 18,
           "Missing choices stay pending while all ordinary skill modifiers are available");
-    check(sheet.training.languages.size() == 2 && sheet.training.tools.size() == 1,
-          "Common, Thieves' Cant and Thieves' Tools are fixed grants");
-    check(sheet.training.tools[0].sources.size() == 2,
-          "Rogue and Criminal tool grants retain both sources");
     check(skill(sheet, "stealth").bonus == 5 && !skill(sheet, "stealth").expertise,
           "Criminal grants Dexterity +3 plus proficiency +2 without inventing Expertise");
     d.training = choices();
     sheet = hero(d).sheet();
-    check(
-        sheet.training.complete && sheet.training.languages.size() == 5,
-        "Two standard languages and a distinct Rogue language complete the fixed language grants");
+    check(sheet.training.complete, "Skill, Expertise and mastery choices complete Rogue training");
     check(skill(sheet, "stealth").bonus == 7 && skill(sheet, "perception").bonus == 6,
           "Expertise adds doubled +2 proficiency to the governing ability");
     check(skill(sheet, "investigation").bonus == 4 && skill(sheet, "arcana").bonus == 2,
           "Proficient and untrained skills use different bonuses");
     check(skill(sheet, "stealth").sources.size() == 2,
           "Expertise and background proficiency have separate provenance");
-    auto result = creation->ability_check(sheet, 1, {}, "thieves_tools");
+    auto result = creation->ability_check(sheet, 1, "sleight_of_hand");
     check(result.ability_modifier == 3 && result.proficiency == 2 && result.total == 5 &&
-          !result.tool_advantage && result.sources.size() == 2,
-          "Duplicate tool grants add proficiency only once");
-    result = creation->ability_check(sheet, 1, "sleight_of_hand", "thieves_tools");
-    check(result.total == 5 && result.tool_advantage && !result.expertise,
-          "Using a proficient skill and tool grants advantage without stacking proficiency");
-    result = creation->ability_check(sheet, 1, "stealth", "thieves_tools");
-    check(result.total == 7 && result.tool_advantage && result.expertise,
-          "Tool proficiency does not add again on top of Expertise");
-    result = creation->ability_check(sheet, 0, "stealth", {});
+          !result.expertise && !result.advantage && result.sources.size() == 1,
+          "A proficient skill adds proficiency once");
+    result = creation->ability_check(sheet, 1, "stealth");
+    check(result.total == 7 && result.expertise && result.sources.size() == 2,
+          "Expertise doubles proficiency and keeps both sources");
+    result = creation->ability_check(sheet, 0, "stealth");
     check(result.total == 6,
           "A rule can choose another governing ability without changing training");
     rejects(
         [&]
     {
-        creation->ability_check(sheet, 6, "stealth", {});
+        creation->ability_check(sheet, 6, "stealth");
     });
     rejects(
         [&]
     {
-        creation->ability_check(sheet, 1, "unknown", {});
-    });
-    rejects(
-        [&]
-    {
-        creation->ability_check(sheet, 1, {}, "unknown");
+        creation->ability_check(sheet, 1, "unknown");
     });
     // Independent proficiency table boundaries. This query is shared math,
     // not a claim that Rogue advancement beyond level one is integrated.
@@ -1122,21 +621,13 @@ void grants_and_checks()
     {
         auto later = sheet;
         later.level = level;
-        check(creation->ability_check(later, 1, "stealth", {}).total == 3 + 2 * bonus,
+        check(creation->ability_check(later, 1, "stealth").total == 3 + 2 * bonus,
               "Expertise uses the character-level proficiency table");
     }
     d.training["class:rogue"] = {"stealth", "investigation", "perception", "persuasion"};
     sheet = hero(d).sheet();
     check(skill(sheet, "stealth").sources.size() == 3 && skill(sheet, "stealth").bonus == 7,
           "Overlapping class/background skill and Expertise grants do not stack bonuses");
-    for (const auto &klass : creation->choices(CreationField::character_class))
-    {
-        auto other = draft(klass.id, "sage");
-        other.training = {{"origin:languages", {"common_sign_language", "orc"}}};
-        const auto s = hero(other).sheet();
-        check(s.training.languages.size() == (klass.id == "rogue" ? 4u : 3u),
-              "Starting languages are available for every class");
-    }
 }
 
 void invalid_choices()
@@ -1149,20 +640,14 @@ void invalid_choices()
     };
     const std::vector<std::pair<std::string, std::vector<std::string>>> bad
     {
-        {"origin:languages", {"elvish", "elvish"}},
-        {"origin:languages", {"common", "elvish"}},
-        {"origin:languages", {"abyssal", "elvish"}},
-        {"origin:languages", {"elvish", "dwarvish", "orc"}},
         {"class:rogue", {"acrobatics", "arcana", "perception", "persuasion"}},
         {"class:rogue", {"acrobatics", "acrobatics", "perception", "persuasion"}},
         {"class:rogue:expertise", {"arcana", "stealth"}},
         {"class:rogue:expertise", {"thieves_tools", "stealth"}},
         {"class:rogue:expertise", {"stealth", "stealth"}},
-        {"class:rogue:thieves_cant", {"elvish"}},
-        {"class:rogue:thieves_cant", {"thieves_cant"}},
-        {"class:rogue:thieves_cant", {"unknown"}},
         {"class:rogue:expertise", {"stealth", "perception", "persuasion"}},
-        {"unknown", {"elvish"}}};
+        {"class:rogue:thieves_cant", {"undercommon"}},
+        {"unknown", {"stealth"}}};
     for (const auto &[group, values] : bad)
     {
         auto d = valid();
@@ -1196,7 +681,7 @@ void invalid_choices()
     std::vector<FeatureGrant> {{"skill:arcana", "class:rogue", 1, {}},
     {"expertise:stealth", "class:rogue:expertise", 1, {}},
     {"tool:thieves_tools", "background:criminal", 1, {}},
-    {"language:abyssal", "origin:languages", 1, {}}
+    {"language:common", "origin:languages", 1, {}}
 })
     {
         auto invalid = sheet;
@@ -1207,17 +692,6 @@ void invalid_choices()
             (void)rules->character_profile(invalid, {});
         });
     }
-    auto invalid = sheet;
-    std::erase_if(invalid.grants,
-                  [](const auto & g)
-    {
-        return g.id == "language:common";
-    });
-    rejects(
-        [&]
-    {
-        (void)rules->character_profile(invalid, {});
-    });
 }
 
 void persistence()
@@ -1239,8 +713,8 @@ void persistence()
           "Choice order, source grants and wounded state round trip exactly");
     for (const auto &bad :
             {
-                corrupt(bytes, "\"elvish\"", "\"abyssal\""),
-                corrupt(bytes, "\"tool:thieves_tools\"", "\"tool:unknown\"")
+                corrupt(bytes, "\"acrobatics\"", "\"arcana\""),
+                corrupt(bytes, "\"skill:stealth\"", "\"tool:thieves_tools\"")
             })
         rejects(
             [&]
@@ -1267,7 +741,6 @@ void persistence()
         (void)rules->restore(invalid);
     });
     auto fighter = draft("fighter");
-    fighter.training = {{"origin:languages", {"elvish", "orc"}}};
     CampaignParty growing(module());
     const auto f = growing.add_pc(hero(fighter));
     growing.award_experience(2700, "training-xp");
@@ -1306,13 +779,10 @@ void sage_training()
                   trained.sources[0].source_id == "background:sage",
                   "Every starting class gets sourced +2 Sage proficiency");
         }
-        const auto tool = creation->ability_check(sheet, 3, {}, "calligraphers_supplies");
-        check(tool.total == 4 && tool.proficiency == 2 && tool.sources.size() == 1 &&
-              tool.sources[0].id == "tool:calligraphers_supplies",
-              "Fixed tool proficiency participates in ability-check API");
-        const auto combined = creation->ability_check(sheet, 3, "arcana", "calligraphers_supplies");
-        check(combined.total == 4 && combined.tool_advantage,
-              "Applicable skill plus tool grants Advantage, not doubled proficiency");
+        const auto arcana = creation->ability_check(sheet, 3, "arcana");
+        check(arcana.total == 4 && arcana.proficiency == 2 && arcana.sources.size() == 1 &&
+              arcana.sources[0].id == "skill:arcana",
+              "Fixed skill proficiency participates in ability-check API");
         auto bad = sheet;
         std::erase_if(bad.grants,
                       [](const auto & g)
@@ -1341,7 +811,6 @@ void sage_training()
     }
     auto wizard = draft("wizard", "sage");
     wizard.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost"};
-    wizard.training = {{"origin:languages", {"elvish", "dwarvish"}}};
     choose_first_options(wizard);
     CampaignParty party(module());
     const auto id = party.add_pc(hero(wizard));
@@ -1408,13 +877,6 @@ void remaining_backgrounds()
             }
             check(skill(sheet, first).bonus == 5 && skill(sheet, second).bonus == (acolyte ? 5 : 4),
                   "Independent fixed-background ability and proficiency totals");
-            if (acolyte)
-            {
-                const auto result =
-                    creation->ability_check(sheet, 3, "religion", "calligraphers_supplies");
-                check(result.total == 5 && result.proficiency == 2 && result.tool_advantage,
-                      "Acolyte skill and tool grant Advantage without stacking proficiency");
-            }
             auto bad = sheet;
             std::erase_if(bad.grants,
                           [&](const auto & g)
@@ -1452,7 +914,6 @@ void remaining_backgrounds()
             })
     {
         auto d = draft(background == std::string_view("acolyte") ? "cleric" : "fighter", background);
-        d.training = {{"origin:languages", {"elvish", "dwarvish"}}};
         choose_first_options(d);
         party.add_pc(hero(d));
     }
@@ -1505,9 +966,7 @@ void starting_styles()
                 })
         {
             auto d = draft(klass.id, "sage");
-            d.training = {{"origin:languages", {"elvish", "dwarvish"}},
-                {"class:fighter:fighting_style", {style}}
-            };
+            d.training = {{"class:fighter:fighting_style", {style}}};
             if (klass.id != "fighter")
             {
                 rejects(
@@ -1701,10 +1160,6 @@ int main(int argc, char **argv)
         run(rogue_attack_checks::run, "Rogue attacks");
         run(scholar_checks::run, "Scholar");
         run(cunning_checks::run, "Cunning Action");
-        run(soldier_gaming, "Soldier gaming");
-        run(druid_herbalism, "druid_herbalism");
-        run(monk_tools, "monk_tools");
-        run(bard_instruments, "bard_instruments");
         run(all_class_skills, "all_class_skills");
         run(sage_training, "sage_training");
         run(remaining_backgrounds, "remaining_backgrounds");

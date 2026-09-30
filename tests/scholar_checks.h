@@ -6,10 +6,7 @@ constexpr auto source = "class:wizard:scholar";
 Character wizard(std::string_view proficient)
 {
     auto d = draft("wizard", "soldier");
-    d.training = {{"class:wizard", {std::string(proficient), "insight"}},
-        {"origin:languages", {"elvish", "dwarvish"}},
-        {"background:soldier:gaming_set", {"dice"}}
-    };
+    d.training = {{"class:wizard", {std::string(proficient), "insight"}}};
     return hero(d);
 }
 

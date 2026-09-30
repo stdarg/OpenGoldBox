@@ -569,8 +569,7 @@ class RulesModule
                                      bool require_complete = true) const;
     [[nodiscard]] virtual AbilityCheckModifier
     ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
-                  std::string_view skill = {}, std::string_view tool = {},
-                  EquipmentState equipment = {}) const;
+                  std::string_view skill = {}, EquipmentState equipment = {}) const;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const;
     // False means this module's supported advancement ceiling was reached.
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state) const;
