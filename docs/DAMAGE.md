@@ -62,27 +62,9 @@ Poison damage or an invented hazard conversion.
 
 ## Saves
 
-The following records F05 at delivery. The later [Temporary HP foundation](TEMPORARY-HP.md)
-uses module 0.6.14, combat 11 and SRD6 while retaining the same damage/profile rules.
-
-Rules **0.6.13** writes **PC8** recipes that require the new sourced resistance.
-PC1–PC7 remain readable: their declared Dwarf species supplies the fixed trait
-without fabricated player selections, and their old grant schema is validated.
-Campaign format **10**, combat format **10** and vital formats **SRD1–SRD5** are
-unchanged. Campaign reconstruction validates old grants against the saved module
-before accepting the newly supported fixed grant. Current records must contain
-it; missing, forged or wrongly sourced grants reject.
-
-The installed pack adds only damage metadata. Its migration recognizes the exact
-previous pack fingerprint by removing those new rows and checking the resulting
-bytes. Supported old combat modules through 0.6.12 retain profiles, wounds,
-resources, RNG, mortality clocks and pending movement; unrelated content still
-rejects. Migration never heals, rolls, spends or resets a timer. A current save
-loads identically on the next pass.
-
-Frozen 0.6.12 writer fixtures from commit `4557cf2` cover Dwarf/Human active and
-reserve members, a dead Dwarf, rolled Stable time, spent Hit Dice/slots and a
-pending opportunity decision. See [fixture provenance](../tests/fixtures/README.md).
+**PC42** recipes require the sourced Dwarf resistance. Records must contain it;
+missing, forged or wrongly sourced grants reject. A save loads identically on
+the next pass.
 
 ## Verification
 
@@ -92,8 +74,8 @@ It runs actual Poison melee attacks against newly created Dwarves in all twelve
 classes, compares them with Human damage, and checks action expenditure, RNG,
 checkpoint continuation and stale-command rejection. An independent weapon table
 checks all 26 supported damaging weapons against an immune target; Fire Bolt,
-Scorching Ray and Magic Missile exercise the same live path. Campaign migration,
-training, advancement and the frozen pending-reaction continuation are covered.
+Scorching Ray and Magic Missile exercise the same live path. Training and
+advancement are covered.
 The game `--party-check` now creates a Dwarf, verifies the existing Modifiers
 explanation, and continues through shopping, combat, advancement and recovery.
 

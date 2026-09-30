@@ -54,15 +54,10 @@ whole advancement. Earlier knowledge stays locked; preparation at level-up keeps
 attained preparation count. Presets receive pre-generated supported choices;
 unsupported catalog choices stay pending instead of shrinking SRD counts.
 
-WIZCHOICE-2: Put a 200-pixel Spellbook button at the right of the existing
-Grip/Review Training row below inventory, shortening Grip to 180 pixels and
-letting Review Training occupy the middle. At minimum width, x350 label64,
-x420 Grip180, x610 Review276, x896 Spellbook200; preserve the row and inventory.
-Open a centered 700x700 dialog listing known/prepared spells and scrollable
-checkbox groups for pending cantrip/book choices, grouped by acquisition level.
-Existing selections stay locked; Apply fills eligible missing knowledge;
-Cancel/Escape discards edits. Preparation remains unchanged here. Combat blocks
-editing. Existing wounds/resources/equipment and ordinary save controls remain.
+WIZCHOICE-2: A party panel Spellbook dialog that completed Wizard knowledge
+missing from old saves. It was later removed with the pre-1.0 save cutoff; see
+[saves](SAVES.md#pre-10-format-policy). Wizard spells are learned only at
+creation and level-up.
 
 WIZCHOICE-3: After a completed Long Rest, present each eligible Wizard's centered
 700x700 spell dialog before exploration/encounter continuation. It offers the
@@ -71,34 +66,19 @@ Apply commits once; Keep current declines. Choices are limited to known book
 spells/current Wizard cantrips, with counts and keyboard access. Canceled or
 interrupted rests and Short Rests grant no preparation/replacement entitlement.
 
-## Prior-writer capture — completed before implementation
-
-`opengold_spell_access_tests --capture-wizard-choices` ran against unchanged
-module 0.6.50 and refuses another writer version. It produced the four
-`campaign-wizard-choices-level*.ogs` fixtures and the combat before/continued
-pair. They contain actual attained levels, explicit three-cantrip selections,
-level-two Scholar, retained unprepared book entries, wounds, spent spell slots
-and spent Arcane Recovery. Campaign 11/15 and PC33/combat continuation are real
-writer output, not hand-edited current saves. Existing spell-access tests passed
-after capturing. Log: `/tmp/wizard-choices-capture-build.log`.
-Implementation began after all three approvals. Real fixtures remain immutable.
-
-## Implementation and compatibility
+## Implementation
 
 The static SRD library offers eligible choices and validates their sources,
 acquisition levels, counts, preparation and replacement. Core records independent
 starting choices, independent advancement learning, and a chronological list of
 subsequent spell edits at the character's attained level. Rebuilding a character
-interleaves those edits with advancement, including during Review Training.
+interleaves those edits with advancement.
 This preserves preparation changes made before later level-ups.
 
-Campaign format 16 is conditional on independent spell choices/history or a
-pending completed-rest choice window. Formats 1–15 retain their original replay:
-old advancement selections may have coupled learning and preparation. Current
-player advancement cannot use that historical bypass. Conditional PC34 records
-cantrip replacement provenance; PC1–33 retain their original grant restrictions.
-A replacement retains its original entitlement level and records its actual
-learning level. The real 0.6.50 fixture bytes are unchanged.
+Campaign saves store independent spell choices/history and any pending
+completed-rest choice window. Advancing a Wizard requires explicit spell-learning
+choices. The profile records cantrip replacement provenance. A replacement
+retains its original entitlement level and records its actual learning level.
 
 Only a completed, individually eligible Long Rest creates the generic Core
 choice window. Each member may apply or decline once. Time advancement, combat
@@ -115,16 +95,15 @@ copying/replacement costs and new spell effects remain excluded.
 ## Verification
 
 Independent native checks are in `tests/wizard_choices_checks.h`, run by
-`opengold_spell_access_tests`. They include actual prior-writer campaign/combat
-continuation, independent creation/learning/preparation, illegal-source/level
-rejection, repeated-rest rejection, preview atomicity, casting after cantrip
-replacement, rest edits before advancement, and Review Training replay.
+`opengold_spell_access_tests`. They include independent
+creation/learning/preparation, illegal-source/level rejection, repeated-rest
+rejection, preview atomicity, casting after cantrip replacement, rest edits
+before advancement, and training replay.
 
-`tests/wizard_choices_view_tests.gd` exercises the real game/demo controls, Back,
-Cancel/Escape, keyboard selection, locked preparations, missing old-save choices,
-save/reload and combat restrictions. Its saved output has a separate native
-whole-campaign comparison via `--verify-wizard-ui`. The existing creator and
-shared rest checks also cover the new groups and two consecutive Wizard dialogs.
+`tests/wizard_choices_view_tests.gd` exercises the real game/demo level-up
+controls, Back, keyboard selection, locked preparations and save/reload. The
+existing creator and shared rest checks also cover the new groups and two
+consecutive Wizard dialogs.
 Final verification results and tested revision are recorded at delivery.
 
 
@@ -144,13 +123,10 @@ cmake --build build/mac-check --target opengold_spell_access_tests -j6
 OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD build/mac-check/opengold_spell_access_tests
 ```
 
-The optional asset environment writes `wizard-choices-ui.ogs` in the configured
-build directory. Run `tests/wizard_choices_view_tests.gd` with the established
-Godot executable/project and `--wizard-fixture=<absolute fixture path>`, optional
+Run `tests/wizard_choices_view_tests.gd` with the established Godot
+executable/project and `--wizard-fixture=<absolute fixture path>`, optional
 `--wizard-captures=<absolute directory>` and `--wizard-output=<absolute save>`.
-For the demo add `--wizard-demo`. Compare saved output using
-`opengold_spell_access_tests --verify-wizard-ui <save>` with the same asset
-environment. Creator checks use `tests/cantrip_view_tests.gd`; the demo accepts
+For the demo add `--wizard-demo`. Creator checks use `tests/cantrip_view_tests.gd`; the demo accepts
 `--cantrip-demo`. Shared rest checks use `tests/rest_view_tests.gd -- --rest-check`.
 Run Godot instances serially because their user-data directory is shared.
 

@@ -1,34 +1,6 @@
 // Included by the shared Warlock cantrip test harness.
 namespace warlock_poison
 {
-void freeze()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.38", "Freeze requires actual prior writer");
-    CampaignParty party(module());
-    party.add_pc(hero());
-    auto state = party.checkpoint();
-    state.roster[0].vitals.hit_points -= 2;
-    state.roster[0].wealth[3] = 37;
-    state.random_state = 789;
-    party.restore(state);
-    const auto base = root / "tests/fixtures";
-    write(base / "campaign-v11-warlock-poison-before.ogs",
-          encode_campaign(party, nullptr, "warlock-poison"));
-    auto actors = party.participants();
-    actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
-    check(c->snapshot().actor == 1, "Prior Warlock starts");
-    check(c->submit(command(*c, "dash")) && c->submit(command(*c, "adrenaline_rush")),
-          "Prior action budgets spent");
-    write(base / "combat-v13-warlock-poison-before.save", c->save());
-    check(c->submit(command(*c, "end")) && c->submit(command(*c, "end")) &&
-          c->submit(command(*c, "eldritch_blast", 99)),
-          "Prior Eldritch Blast continuation");
-    write(base / "combat-v13-warlock-poison-continued.save", c->save());
-}
-
 Character selected(bool both = false)
 {
     auto d = draft();
@@ -72,15 +44,9 @@ void access()
     {
         (void)rules->character_profile(bad, {});
     });
-    auto old_identity = rules->identity();
-    old_identity.version = "0.6.38";
-    rejects(
-        [&]
-    {
-        rules->validate_saved_grants(old_identity, h.sheet(), h.sheet().grants);
-    });
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC28 1 2 64 "), "Versioned Warlock mask");
+    check(profile.starts_with("PC42 1 ") && profile.find(" poison_spray ") != profile.npos,
+          "Warlock profile lists the chosen cantrip");
     profile.replace(0, 4, "PC26");
     rejects(
         [&]
@@ -235,41 +201,6 @@ void campaign()
     }
 }
 
-void legacy()
-{
-    auto rules = module();
-    auto base = root / "tests/fixtures";
-    const auto prior = read(base / "campaign-v11-warlock-poison-before.ogs");
-    CampaignParty party(module());
-    party.restore(
-        decode_campaign(prior, *srd5::character_rules(), *rules, "warlock-poison", nullptr).party);
-    auto body = [](const std::string & s)
-    {
-        return s.substr(s.find('\n', s.find('\n') + 1) + 1);
-    };
-    auto expected = body(prior);
-    expected.replace(expected.find("0.6.38"), 6, rules->identity().version);
-    check(body(encode_campaign(party, nullptr, "warlock-poison")) == expected,
-          "Actual old campaign preserves all fields except module identity/checksum");
-    check(rules->spell_access(party.member(1).character.sheet()).cantrips.size() == 1,
-          "Missing second choice stays pending on old Warlocks");
-    auto upgraded = [&](const char *name)
-    {
-        auto s = read(base / name);
-        s.replace(s.find("0.6.38"), 6, rules->identity().version);
-        return s;
-    };
-    auto c = rules->restore(read(base / "combat-v13-warlock-poison-before.save"));
-    check(c->save() == upgraded("combat-v13-warlock-poison-before.save") &&
-          !has(*c, "poison_spray"),
-          "Actual prior recipe and budgets retained");
-    check(c->submit(command(*c, "end")) && c->submit(command(*c, "end")) &&
-          c->submit(command(*c, "eldritch_blast", 99)),
-          "Prior selected spell continues");
-    check(c->save() == upgraded("combat-v13-warlock-poison-continued.save"),
-          "Prior attack/RNG continuation exact");
-}
-
 void fixtures()
 {
     auto rules = module();
@@ -296,7 +227,6 @@ void run()
     rolls();
     eligibility();
     campaign();
-    legacy();
     fixtures();
 }
 } // namespace warlock_poison

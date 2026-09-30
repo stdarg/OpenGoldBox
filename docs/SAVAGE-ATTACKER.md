@@ -49,18 +49,13 @@ flag is already part of combat state; those features must respect it.
 
 ## Persistence
 
-Module **0.6.20** writes combat format **13**, appending an optional pending
-weapon hit. It records the participants, attack roll/mode, weapon attack kind,
+The internal combat checkpoint records an optional pending weapon hit. It
+records the participants, attack roll/mode, weapon attack kind,
 first damage and optional second damage. Dice, modifiers and eligibility derive
 from the validated actor/equipment state. Restoring validates the hit, roll
 bounds, feat use, spent Action/Reaction and any movement queue before publishing
 the session. It never rerolls, refunds an action, or applies damage early.
 
-PC10, campaign 10 and SRD1–7 remain unchanged. Prior combat formats gain no
-pending choice; old completed damage and expenditure stay intact. Future
-qualifying hits offer the new decisions. The frozen **0.6.19** writer proves
-that explicitly choosing the higher roll reproduces its old automatic damage,
-RNG, movement, resources and time, with two additional decision command tickets.
 Campaign saves preserve all grants, equipment, wounds, pools and clocks.
 Player saving remains restricted to camping or an inn.
 
@@ -69,8 +64,8 @@ Player saving remains restricted to camping or an inn.
 `savage_attacker_tests.cpp` uses independent fixed-roll expectations across all
 twelve classes, both decision stages, lower/critical results, ranged/melee and
 Versatile weapons, misses and exclusions, defenses/Temporary HP, queued and
-lethal opportunity hits, malformed checkpoints, real advancement grants and
-prior-writer saves. `savage_view_tests.gd` exercises actual buttons, keyboard
+lethal opportunity hits, malformed checkpoints and real advancement grants.
+`savage_view_tests.gd` exercises actual buttons, keyboard
 focus, both supported window sizes, deferred target HP and internal checkpoint
 continuation. The normal party and advancement walkthroughs exercise acquisition
 and use through the existing game flow.

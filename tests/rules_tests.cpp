@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -38,6 +37,17 @@ template <class F> void rejects(F &&f, const char *message)
 std::filesystem::path pack()
 {
     return std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules";
+}
+
+// A complete vital record for a creature profile, which has no Hit Dice, temporary HP,
+// class pools or effects. An unstable creature at 0 HP needs its death-save timer.
+std::string creature_resources(int second_winds, int successes = 0, int failures = 0,
+                               bool stable = false, unsigned death_save_in_ms = 0)
+{
+    std::ostringstream out;
+    out << "SRD9 " << second_winds << " 0 0 " << successes << ' ' << failures
+        << ' ' << stable << " 0 " << death_save_in_ms << " 0 0 \"\" 0 0 0 FX7 1 0 0 0";
+    return out.str();
 }
 
 Encounter duel(std::string profile = "vanguard")
@@ -156,7 +166,7 @@ void turn_budget_tests()
             const bool weapon =
                 std::string_view(verb) == "melee" || std::string_view(verb) == "ranged";
             if (weapon)
-                e.participants[0].state = VitalState{10, false, "SRD1 2 0 0 0 0"};
+                e.participants[0].state = VitalState{10, false, creature_resources(2)};
             else
                 e.participants[0].character_profile = module->character_profile(sheet, {}).data;
             auto session = hero_first(*module, e);
@@ -173,11 +183,17 @@ void turn_budget_tests()
                   after.reaction == before.reaction &&
                   after.movement_feet == before.movement_feet,
                   "Only the action and applicable spell slot are spent by the attack");
+            // The level-3 Wizard keeps its 3 Hit Dice and 1 Arcane Recovery use.
+            const auto wizard = [](int slots, int slots2)
+            {
+                return "SRD9 0 " + std::to_string(slots) + ' ' + std::to_string(slots2) +
+                       " 0 0 0 3 0 0 0 \"\" 0 0 1 FX7 1 0 0 0";
+            };
             const std::string resources =
-                weapon                                      ? "SRD1 2 0 0 0 0"
-                : std::string_view(verb) == "fire_bolt"     ? "SRD2 0 4 2 0 0 0"
-                : std::string_view(verb) == "magic_missile" ? "SRD2 0 3 2 0 0 0"
-                : "SRD2 0 4 1 0 0 0";
+                weapon                                      ? creature_resources(2)
+                : std::string_view(verb) == "fire_bolt"     ? wizard(4, 2)
+                : std::string_view(verb) == "magic_missile" ? wizard(3, 2)
+                : wizard(4, 1);
             check(after.persistent.resources == resources,
                   "Cantrips preserve slots; leveled spells spend exactly the selected slot");
             const auto saved = session->save();
@@ -203,7 +219,7 @@ void turn_budget_tests()
                       session->save() == restored->save(),
                       "Second Wind remains usable after attacking and moving");
                 check(!unit(*session, 1).bonus_action && !unit(*session, 1).action &&
-                      unit(*session, 1).persistent.resources == "SRD1 1 0 0 0 0",
+                      unit(*session, 1).persistent.resources == creature_resources(1),
                       "Bonus healing does not refund the action or Second Wind");
             }
             const auto end = command(*session, "end");
@@ -242,7 +258,7 @@ void turn_budget_tests()
     // A used Bonus Action must stay used when the action is taken afterward.
     auto e = duel();
     e.participants[1].definition = "vanguard";
-    e.participants[0].state = VitalState{10, false, "SRD1 2 0 0 0 0"};
+    e.participants[0].state = VitalState{10, false, creature_resources(2)};
     auto session = hero_first(*module, e);
     session->submit(command(*session, "second_wind"));
     session->submit(command(*session, "melee"));
@@ -303,7 +319,7 @@ void turn_budget_tests()
         e.participants[1].cell = {8, 2};
         e.participants[1].facing_left = true;
         if (injured)
-            e.participants[1].state = VitalState{5, false, "SRD1 2 0 0 0 0"};
+            e.participants[1].state = VitalState{5, false, creature_resources(2)};
         session = actor_first(*module, e, 2);
         session->submit(command(*session, "ranged"));
         check(session->snapshot().actor == 2, "Enemy attacks also retain their turn");
@@ -449,7 +465,7 @@ void boundary_tests()
     check(!session->snapshot().reaction_pending, "Disengage prevents opportunity attacks");
 
     auto vulnerable = duel();
-    vulnerable.participants[0].state = VitalState{1, false, "SRD1 1 0 0 0 0"};
+    vulnerable.participants[0].state = VitalState{1, false, creature_resources(1)};
     vulnerable.participants.push_back({3, "vanguard", "Second reactor", 1, {3, 1}});
     vulnerable.participants.push_back({4, "vanguard", "Conscious ally", 0, {8, 6}});
     bool interrupted = false;
@@ -539,10 +555,6 @@ void boundary_tests()
 
 void mechanics_tests()
 {
-    auto legacy_rules = srd5::load(pack());
-    check(legacy_rules->accepts_campaign_identity(
-    {"opengold.srd5", "0.5.0", "srd-5.2.1-demo.1/15286736505479635800"}),
-    "Saved campaigns from the previous Kobold rules remain loadable");
     auto kobolds = duel();
     kobolds.participants[1].definition = "slums-kobold";
     auto leader = kobolds;
@@ -803,7 +815,8 @@ void death_save_turn_entry_tests()
             if ((healthy->snapshot().actor == 1) != first)
                 continue;
             auto wounded = encounter;
-            wounded.participants[0].state = VitalState{0, false, "SRD1 1 0 2 1 0"};
+            wounded.participants[0].state =
+                VitalState{0, false, creature_resources(1, 2, 1, false, 6000)};
             auto combat = module->create(wounded, seed);
             if (!first)
             {
@@ -824,7 +837,8 @@ void death_save_turn_entry_tests()
                 natural_twenty = true;
                 check(
                     hero.hit_points == 1 && !hero.dead && hero.prone &&
-                    hero.persistent.resources == "SRD3 1 0 0 0 0 0 FX4 1 0 0 1",
+                    hero.persistent.resources ==
+                    "SRD9 1 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX7 1 0 0 1",
                     "Natural 20 restores 1 HP and clears both counters without restoring spent resources");
                 check(combat->snapshot().actor == 1 && hero.action && hero.bonus_action &&
                       hero.reaction,
@@ -837,20 +851,20 @@ void death_save_turn_entry_tests()
             {
                 success = true;
                 check(hero.hit_points == 0 && !hero.dead &&
-                      hero.persistent.resources.starts_with("SRD5 1 0 0 0 0 1 0 "),
+                      hero.persistent.resources.starts_with("SRD9 1 0 0 0 0 1 0 "),
                       "Third success stabilizes and resets successes and failures");
                 check(combat->snapshot().actor != 1, "Stable unconscious actors cannot act");
             }
             else if (roll == 1)
             {
                 natural_one = true;
-                check(hero.dead && hero.persistent.resources == "SRD1 1 0 2 3 0",
+                check(hero.dead && hero.persistent.resources == creature_resources(1, 2, 3),
                       "Natural 1 adds two failures and reaches death at three");
             }
             else
             {
                 failure = true;
-                check(!hero.dead && hero.persistent.resources.starts_with("SRD5 1 0 0 2 2 0 0 "),
+                check(!hero.dead && hero.persistent.resources.starts_with("SRD9 1 0 0 2 2 0 0 "),
                       "Ordinary failure adds one and retains prior successes");
             }
             const auto saved = combat->save();
@@ -881,7 +895,8 @@ void death_save_turn_entry_tests()
     {
         auto skipped = encounter;
         skipped.participants[0].state =
-            VitalState{0, dead, dead ? "SRD1 1 0 0 3 0" : "SRD1 1 0 0 0 1"};
+            VitalState{0, dead,
+                       dead ? creature_resources(1, 0, 3) : creature_resources(1, 0, 0, true)};
         auto combat = module->create(skipped, first_seed);
         check(combat->snapshot().actor != 1 && death_rolls(*combat).empty(),
               "Stable and dead initial actors do not make death saves");
@@ -889,12 +904,6 @@ void death_save_turn_entry_tests()
         check(restored->save() == combat->save(),
               "Skipped initial actor preserves exact checkpoint state");
     }
-    auto legacy = encounter;
-    legacy.participants[0].state = VitalState{0, false, "SRD1 1 0 3 2 1"};
-    auto migrated = module->create(legacy, first_seed);
-    check(death_rolls(*migrated).empty() &&
-          unit(*migrated, 1).persistent.resources.starts_with("SRD5 1 0 0 0 0 1 0 "),
-          "Older stable resource state is normalized without rolling or refilling resources");
 }
 
 void allied_transit_tests()
@@ -997,7 +1006,7 @@ void allied_transit_tests()
     }
     // Knockdown during transit is involuntary: persist the shared position
     // through healing, and clear the exceptional state when either ally leaves.
-    e.participants[0].state = VitalState{1, false, "SRD1 1 0 0 0 0"};
+    e.participants[0].state = VitalState{1, false, creature_resources(1)};
     bool recovered = false, died = false, natural_recovery = false;
     for (unsigned seed = 0; seed < 500 && !(recovered && died && natural_recovery); ++seed)
     {
@@ -1053,166 +1062,33 @@ void allied_transit_tests()
           "Exercise healing, death and natural-20 recovery after interruption on an ally");
 }
 
-void opportunity_migration_tests()
+// A declined opportunity keeps the enemy's Reaction for a later departure; an attack
+// spends it.
+void opportunity_reuse_tests()
 {
     auto module = srd5::load(pack());
-    const auto fixture = [](const char *name)
-    {
-        std::ifstream file(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
-        check(bool(file), "Frozen previous-module combat fixture exists");
-        return std::string(std::istreambuf_iterator<char>(file), {});
-    };
-    const auto lines = [](const std::string & bytes)
-    {
-        std::vector<std::string> result;
-        std::istringstream input(bytes);
-        for (std::string line; std::getline(input, line);)
-            result.push_back(line);
-        return result;
-    };
-    const auto encode = [](const std::vector<std::string> &rows)
-    {
-        std::string bytes;
-        for (const auto &row : rows)
-            bytes += row + '\n';
-        return bytes;
-    };
-    const auto upgraded = [&](const std::string & bytes)
-    {
-        auto rows = lines(bytes);
-        rows[0].replace(9, 1, "13");
-        for (std::size_t i = 4; i < 8; ++i)
-            rows[i] += " 0 0 0 0 0 0 \"\" 0 0";
-        rows[0].replace(rows[0].find("0.6.4"), 5, module->identity().version);
-        const std::string old_content = "srd-5.2.1-demo.1/15052881321234871607";
-        rows[0].replace(rows[0].find(old_content), old_content.size(), module->identity().content);
-        rows.back() = "0";
-        rows.push_back("0");
-        return rows;
-    };
-    const auto facing = fixture("combat-v5-facing.save");
-    auto session = module->restore(facing);
-    auto expected = upgraded(facing);
-    // The frozen old writer recorded ticket 4, two facing reactors and no path.
-    expected[3] = "6018027440424182934 5 0 1 0 4";
-    expected[10] = "0 0";
-    expected[11] = "";
-    check(session->save() == encode(expected),
-          "Facing migration changes only identity/format, obsolete queue and command ticket");
-    const auto hero = unit(*session, 1);
-    check(
-        session->snapshot().actor == 1 && !session->snapshot().reaction_pending &&
-        hero.facing_left && hero.cell == Cell{2, 3} && hero.hit_points == 20 && !hero.action &&
-        !hero.bonus_action && hero.movement_feet == 25 &&
-        hero.persistent.resources == "SRD1 0 0 0 0 0",
-        "Obsolete reaction cancellation preserves wounds, spent action/recovery and remaining movement");
-    auto restored = module->restore(session->save());
-    const auto move = command(*session, "move", {1, 2});
-    check(session->submit(move) && restored->submit(move) && session->save() == restored->save(),
-          "Migrated facing turn can begin a genuine leave-reach reaction deterministically");
-    while (session->snapshot().reaction_pending)
-    {
-        const auto decline = command(*session, "decline");
-        check(session->submit(decline) && restored->submit(decline) &&
-              session->save() == restored->save(),
-              "Migrated movement resumes identically after each declined reaction");
-    }
-    check(unit(*session, 1).cell == Cell{1, 2} && !unit(*session, 1).action,
-          "Cancellation neither ends the turn nor refunds the action");
-    auto old_end = lines(facing);
-    old_end.back() = "2";
-    check(module->restore(encode(old_end))->save() == encode(expected),
-          "Legacy end-after-facing state also resumes the remaining turn");
-    const auto movement = fixture("combat-v5-movement.save");
-    session = module->restore(movement);
-    check(session->save() == encode(upgraded(movement)),
-          "Movement migration retains every queue position, resource, ticket, RNG and clock value");
-    check(session->snapshot().actor == 4 && session->snapshot().reaction_pending &&
-          unit(*session, 1).cell == Cell{2, 2},
-          "Already-declined reactor stays declined and movement still waits before leaving reach");
-    for (const auto reactor :
-            {
-                4u, 2u
-            })
-    {
-        check(session->snapshot().actor == reactor,
-              "Pending movement reactors preserve initiative order");
-        restored = module->restore(session->save());
-        const auto attack = command(*session, "opportunity");
-        check(session->submit(attack) && restored->submit(attack) &&
-              session->save() == restored->save(),
-              "Each migrated opportunity attack retains deterministic rolls and continuation");
-    }
-    check(session->save() == encode(upgraded(fixture("combat-v5-movement-resolved.save"))),
-          "Resolved movement matches the frozen old writer's RNG, log, HP and movement");
-    check(unit(*session, 3).reaction && !unit(*session, 4).reaction && !unit(*session, 2).reaction,
+    auto e = duel();
+    e.participants.push_back({3, "bandit", "Other guard", 1, {3, 1}});
+    auto session = hero_first(*module, e);
+    check(session->submit(command(*session, "dash")), "Dash for repeated departures");
+    check(session->submit(command(*session, "move", {1, 3})) &&
+          session->snapshot().reaction_pending,
+          "Leaving both guards' reach offers reactions");
+    const auto attacker = session->snapshot().actor;
+    check(session->submit(command(*session, "opportunity")) &&
+          session->snapshot().reaction_pending,
+          "Second guard's reaction waits in initiative order");
+    const auto decliner = session->snapshot().actor;
+    check(session->submit(command(*session, "decline")) && !session->snapshot().reaction_pending,
+          "Second guard declines");
+    check(!unit(*session, attacker).reaction && unit(*session, decliner).reaction,
           "Declining keeps a reaction; attacking spends exactly one");
-    session->submit(command(*session, "move", {2, 2}));
-    session->submit(command(*session, "move", {1, 2}));
-    check(session->snapshot().actor == 3 && session->snapshot().reaction_pending,
-          "Only the previously declining enemy can react to a second departure");
-    session->submit(command(*session, "decline"));
-    check(!session->snapshot().reaction_pending, "Spent reactions cannot be reused");
-    for (const auto &bytes :
-            {
-                facing, movement
-            })
-    {
-        for (const auto version :
-                {"0.6.3", "0.7.0"
-                })
-        {
-            auto wrong = bytes;
-            wrong.replace(wrong.find("0.6.4"), 5, version);
-            rejects(
-                [&]
-            {
-                (void)module->restore(wrong);
-            },
-            "Only the explicitly supported old module may migrate combat");
-        }
-        auto wrong = bytes;
-        wrong.replace(wrong.find("15052881321234871607"), 20, "00000000000000000000");
-        rejects(
-            [&]
-        {
-            (void)module->restore(wrong);
-        },
-        "Combat migration rejects unrelated content");
-    }
-    for (const auto state :
-            {"3", "0"
-            })
-    {
-        auto malformed = lines(facing);
-        malformed.back() = state;
-        rejects(
-            [&]
-        {
-            (void)module->restore(encode(malformed));
-        },
-        "Malformed legacy facing state must not be silently discarded");
-    }
-    auto malformed = lines(facing);
-    malformed[11] = "1 4";
-    rejects(
-        [&]
-    {
-        (void)module->restore(encode(malformed));
-    },
-    "Invalid legacy reactor is validated before queue cancellation");
-    // The application wrapper must replace only a fully validated candidate.
-    CombatDemo demo(srd5::load(pack()));
-    demo.training();
-    demo.restore_combat(facing);
-    const auto valid = demo.save_combat();
-    rejects(
-        [&]
-    {
-        demo.restore_combat(encode(malformed));
-    },
-    "Invalid training restore rejects");
-    check(demo.save_combat() == valid, "Failed migrated restore preserves the live combat");
+    check(session->submit(command(*session, "move", {2, 2})), "Return into both guards' reach");
+    check(session->submit(command(*session, "move", {1, 3})) &&
+          session->snapshot().reaction_pending && session->snapshot().actor == decliner,
+          "Only the previously declining guard can react to a second departure");
+    check(session->submit(command(*session, "decline")) && !session->snapshot().reaction_pending,
+          "Spent reactions cannot be reused");
 }
 
 void checkpoint_validation_tests()
@@ -1327,17 +1203,6 @@ void checkpoint_validation_tests()
         "Truncated checkpoint section accepted");
     }
 
-    auto previous = lines;
-    previous.pop_back();
-    previous.pop_back();
-    previous[0].replace(9, 2, "6");
-    previous[0].replace(previous[0].find(module->identity().version),
-                        module->identity().version.size(), "0.6.5");
-    for (std::size_t actor = 4; actor < path_header; ++actor)
-        for (unsigned field = 0; field < 9; ++field)
-            previous[actor].resize(previous[actor].find_last_of(' '));
-    check(module->restore(encode(previous))->save() == checkpoint,
-          "Pre-transit 0.6.5 movement checkpoint upgrades without changing its continuation");
     auto invalid_overlap = lines[4];
     auto no_clocks = invalid_overlap;
     for (unsigned n = 0; n < 6; ++n)
@@ -1345,41 +1210,6 @@ void checkpoint_validation_tests()
     const auto grip_separator = no_clocks.rfind(' ', no_clocks.find_last_of(' ') - 1);
     invalid_overlap[grip_separator - 1] = '1';
     reject_changes({{4, invalid_overlap}});
-
-    previous = lines;
-    previous.pop_back();
-    previous.pop_back();
-    previous[0].replace(9, 2, "4");
-    for (std::size_t actor = 4; actor < path_header; ++actor)
-        for (unsigned field = 0; field < 9; ++field)
-            previous[actor].resize(
-                previous[actor].find_last_of(' ')); // No Temporary HP, recovery clocks, Hit Dice,
-    // grip or overlap marker before v7.
-    for (std::size_t actor = 4; actor < path_header; ++actor)
-        previous[actor].resize(previous[actor].find_last_of(' ')); // Version 4 has no facing field.
-    check(module->restore(encode(previous))->save() == checkpoint,
-          "Version 4 checkpoint migrates to facing right");
-
-    // Earlier formats omitted the empty character profile (v1), and the
-    // second-level slot/feat flags (v1/v2). Their defaults must still round trip.
-    for (const unsigned version :
-            {
-                1u, 2u
-            })
-    {
-        auto legacy = lines;
-        legacy[0].replace(9, 2, std::to_string(version));
-        legacy.resize(legacy.size() -
-                      5); // v4 scope/clock, two effect collections and later pending choices.
-        for (std::size_t actor = 4; actor < path_header; ++actor)
-        {
-            const auto profile = legacy[actor].find("\"\"");
-            check(profile != std::string::npos, "Expected fixture with no character profile");
-            legacy[actor].resize(profile + (version == 2 ? 2 : 0));
-        }
-        check(module->restore(encode(legacy))->save() == checkpoint,
-              "Legacy checkpoint defaults changed");
-    }
 
     // A route pauses after spending 10 feet while leaving an enemy's reach.
     // Only its remaining movement may be charged when validating a restore.
@@ -1406,6 +1236,34 @@ void checkpoint_validation_tests()
           "Restored suffix preserves deterministic continuation");
     check(unit(*session, 1).cell == Cell{4, 1} && unit(*session, 1).movement_feet == 10,
           "Only the remaining route suffix spends movement after restore");
+}
+
+// Before 1.0 there is no save compatibility: a checkpoint from an older format or
+// rules version is refused with the one player-facing message.
+void checkpoint_cutoff_tests()
+{
+    auto module = srd5::load(pack());
+    const auto checkpoint = hero_first(*module)->save();
+    const auto refused_as_older = [&](const std::string & bytes)
+    {
+        try
+        {
+            (void)module->restore(bytes);
+        }
+        catch (const std::exception &e)
+        {
+            return std::string_view(e.what()) == older_save_message;
+        }
+        return false;
+    };
+    check(checkpoint.starts_with("OGCOMBAT 27 "), "Checkpoints use format 27");
+    auto older_format = checkpoint;
+    older_format.replace(9, 2, "26");
+    check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");
+    const auto version = module->identity().version;
+    auto older_rules = checkpoint;
+    older_rules.replace(older_rules.find(version), version.size(), "0.6.61");
+    check(refused_as_older(older_rules), "Older rules version is refused as older");
 }
 
 void installed()
@@ -1450,24 +1308,19 @@ void installed()
 #include "unconscious_transit_checks.h"
 } // namespace
 
-int main(int argc, char **argv)
+int main()
 {
     try
     {
-        if (argc == 2 && std::string_view(argv[1]) == "--freeze-unconscious-transit")
-        {
-            unconscious_transit::freeze();
-            return 0;
-        }
-        unconscious_transit::prior_writer();
         unconscious_transit::run();
         turn_budget_tests();
         boundary_tests();
         mechanics_tests();
         death_save_turn_entry_tests();
-        opportunity_migration_tests();
+        opportunity_reuse_tests();
         allied_transit_tests();
         checkpoint_validation_tests();
+        checkpoint_cutoff_tests();
         installed();
         std::cout << "Rules tests passed.\n";
     }

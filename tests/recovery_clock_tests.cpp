@@ -1,9 +1,7 @@
-#include "campaign_fixture.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "life_cycle.h"
 #include <algorithm>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -134,20 +132,13 @@ void golden_transitions()
           "Damage left over equal to maximum HP kills immediately");
 }
 
-void legacy_and_validation()
+void validation()
 {
-    life::LifeState state{0, 2, 1, false, false, {}};
-    life::initialize_legacy_recovery(state);
-    check(state.recovery == life::RecoveryClock{6000, 0},
-          "Legacy unstable state starts with a full campaign turn and no invented elapsed time");
-    state = {0, 0, 0, true, false, {}};
-    life::initialize_legacy_recovery(state);
+    life::LifeState state{0, 0, 0, true, false, {}};
     auto rng = std::uint64_t{42};
-    check(state.recovery == life::RecoveryClock{},
-          "Legacy Stable state defers its duration roll until time starts");
     life::start_stable_recovery(state, rng);
     check(state.recovery.stable_recovery_in_ms == 7200000 && rng == 11400714819323198527ULL,
-          "Deferred legacy recovery rolls once when initialized");
+          "Starting Stable recovery rolls its duration once");
     for (const auto invalid : std::vector<life::LifeState> {{1, 0, 0, false, false, {1, 0}},
     {0, 0, 0, false, true, {1, 0}},
     {0, 0, 0, false, false, {6001, 0}},
@@ -160,13 +151,6 @@ void legacy_and_validation()
     {
         life::validate_recovery(invalid);
     });
-}
-
-std::string fixture(const char *name)
-{
-    std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
-    check(bool(in), "Frozen fixture exists");
-    return {std::istreambuf_iterator<char>(in), {}};
 }
 
 std::vector<std::string> rows(std::string_view bytes)
@@ -186,61 +170,17 @@ std::string join(const std::vector<std::string> &lines)
     return result;
 }
 
-std::string upgraded(std::string_view bytes)
+// Replaces one whitespace-separated (possibly quoted) field of a checkpoint row.
+std::string with_field(const std::string &row, unsigned index, std::string_view value)
 {
-    auto lines = rows(bytes);
-    check(lines[0].starts_with("OGCOMBAT 9 "), "Frozen writer is combat nine");
-    lines[0].replace(9, 1, "13");
-    lines[0].replace(lines[0].find("0.6.10"), 6, module()->identity().version);
-    const std::string old_content = "srd-5.2.1-demo.1/15052881321234871607";
-    lines[0].replace(lines[0].find(old_content), old_content.size(), module()->identity().content);
-    for (unsigned i = 4; i < 8; ++i)
-    {
-        lines[i] += lines[i].starts_with("2 ") ? " 4500 0" : " 0 0";
-        lines[i] += " 0 \"\" 0 0";
-    }
-    lines.push_back("0");
-    lines.push_back("0");
-    return join(lines);
-}
-
-void frozen_saves()
-{
-    auto rules = module();
-    const auto before = fixture("combat-v9-recovery.save");
-    auto combat = rules->restore(before);
-    check(
-        combat->save() == upgraded(before),
-        "Old combat retains all state and RNG while adding known next-turn timing and deferred Stable recovery");
-    const auto current = combat->save();
-    check(rules->restore(current)->save() == current,
-          "Current restore adds no roll, time or duplicate recovery");
-    const auto commands = combat->legal_commands();
-    const auto decline = std::find_if(commands.begin(), commands.end(),
-                                      [](const auto & c)
-    {
-        return c.verb == "decline";
-    });
-    check(decline != commands.end() && combat->submit(*decline) &&
-          combat->save() == upgraded(fixture("combat-v9-recovery-continued.save")),
-          "Pending opportunity decisions preserve the previous writer's exact continuation");
-    const auto old = fixture("campaign-v10-recovery.ogs");
-    auto disk = decode_campaign(old, *srd5::character_rules(), *rules, "recovery-fixture", nullptr);
-    CampaignParty party(module());
-    party.restore(disk.party);
-    const auto saved = encode_campaign(party, nullptr, "recovery-fixture");
-    auto body = old.substr(old.find('\n', old.find('\n') + 1) + 1);
-    body.replace(body.find("0.6.10"), 6, rules->identity().version);
-    const std::string old_content = "srd-5.2.1-demo.1/15052881321234871607";
-    body.replace(body.find(old_content), old_content.size(), rules->identity().content);
-    check(
-        saved.substr(saved.find('\n', saved.find('\n') + 1) + 1) ==
-        test::with_action_surge_grants(test::with_initial_wizard_spell_grants(body),
-    {true, true, true, true}),
-    "Campaign migration adds sourced spell grants and updates module identity; unknown elapsed recovery is never invented");
-    check(party.member(1).vitals.hit_points == 0 && party.member(3).vitals.dead &&
-          party.member(5).vitals.hit_points == 0,
-          "Stable, dead and reserve fixtures retain vitality");
+    std::istringstream fields(row);
+    std::string field;
+    for (unsigned n = 0; n < index; ++n)
+        fields >> std::quoted(field);
+    fields >> std::ws;
+    const auto begin = static_cast<std::size_t>(fields.tellg());
+    fields >> field;
+    return row.substr(0, begin) + std::string(value) + row.substr(begin + field.size());
 }
 
 CombatantView actor(const CombatSession &combat, EntityId id)
@@ -257,13 +197,16 @@ void combat_and_campaign()
     auto rules = module();
     const auto character = hero();
     const auto profile = rules->character_profile(character.sheet(), {});
-    const VitalState stable{0, false, "SRD5 1 0 0 0 0 1 1 0 1000 FX1 1 0"};
+    const VitalState stable{0, false, "SRD9 1 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 FX7 1 0 0 0"};
+    // Awake again: the spent Hit Die and Second Wind use remain, the clocks are gone.
+    const std::string recovered = "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX7 1 0 0 1";
     Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
         {   {1, "campaign-character", "Patient", 0, {0, 0}, profile.data, stable},
             {2, "vanguard", "Companion", 0, {2, 0}},
             {99, "vanguard", "Enemy", 1, {7, 7}}
         }};
-    encounter.participants[0].state->resources = "SRD5 1 0 0 0 0 1 1 0 10000 FX1 1 0";
+    encounter.participants[0].state->resources =
+        "SRD9 1 0 0 0 0 1 1 0 10000 0 \"\" 0 1 0 FX7 1 0 0 0";
     auto combat = rules->create(encounter, 42);
     auto copy = rules->restore(combat->save());
     for (unsigned n = 0; n < 12 && actor(*combat, 1).hit_points == 0; ++n)
@@ -279,14 +222,14 @@ void combat_and_campaign()
               "Countdown continues identically after a combat checkpoint");
     }
     check(actor(*combat, 1).hit_points == 1 &&
-          actor(*combat, 1).persistent.resources == "SRD4 1 0 0 0 0 0 1 FX4 1 0 0 1",
+          actor(*combat, 1).persistent.resources == recovered,
           "Natural recovery preserves the spent Hit Die and Second Wind use");
     auto state = stable;
     rules->set_hit_points(state, character.sheet(), 4);
-    check(state.hit_points == 4 && state.resources == "SRD4 1 0 0 0 0 0 1 FX4 1 0 0 1",
+    check(state.hit_points == 4 && state.resources == recovered,
           "Script healing clears mortality clocks without restoring resources");
     rules->set_hit_points(state, character.sheet(), 0);
-    check(state.resources == "SRD5 1 0 0 0 0 0 1 6000 0 FX4 1 0 0 1",
+    check(state.resources == "SRD9 1 0 0 0 0 0 1 6000 0 0 \"\" 0 1 0 FX7 1 0 0 1",
           "Script loss to zero HP begins a fresh cadence");
     const auto fallen = state;
     rules->set_hit_points(state, character.sheet(), 0);
@@ -302,28 +245,22 @@ void combat_and_campaign()
     restored.restore(disk.party);
     check(encode_campaign(restored, nullptr, "clock") == saved,
           "Campaign persists rolled timers exactly without a load-time RNG draw");
-    party.complete_training(id, *srd5::character_rules(),
-    {
-        {"origin:languages", {"elvish", "orc"}},
-        {"class:fighter:fighting_style", {"archery"}},
-        {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-        {"class:fighter", {"athletics", "history"}},
-        {"background:soldier:gaming_set", {"dice"}}
-    });
-    check(party.member(id).vitals == stable, "Review Training preserves the recovery continuation");
     party.award_experience(900, "recovery-xp");
     party.advance(id, party.default_advancement(id));
-    check(party.member(id).vitals.resources == "SRD5 1 0 0 0 0 1 2 0 1000 FX1 1 0",
+    check(party.member(id).vitals.resources ==
+          "SRD9 1 0 0 0 0 1 2 0 1000 0 \"\" 0 1 0 FX7 1 0 0 0",
           "Advancement adds only its new Hit Die and retains the exact Stable deadline");
     auto healed = stable;
     auto rng = std::uint64_t{42};
     rules->temple_heal(healed, character.sheet(), rng);
-    check(healed.hit_points > 0 && healed.resources == "SRD4 1 0 0 0 0 0 1 FX4 1 0 0 1",
+    check(healed.hit_points > 0 && healed.resources == recovered,
           "Temple healing cancels the recovery clock without replenishing pools");
     for (const auto invalid :
-            {"SRD5 1 0 0 0 0 1 1 1 1000 FX1 1 0", "SRD5 1 0 0 0 0 1 1 0 14400001 FX1 1 0",
-             "SRD5 1 0 0 0 0 0 1 6001 0 FX1 1 0", "SRD5 1 0 0 0 0 0 1 0 1 FX1 1 0",
-             "SRD5 1 0 0 0 0 0 1 -1 0 FX1 1 0"
+            {"SRD9 1 0 0 0 0 1 1 1 1000 0 \"\" 0 1 0 FX7 1 0 0 0",
+             "SRD9 1 0 0 0 0 1 1 0 14400001 0 \"\" 0 1 0 FX7 1 0 0 0",
+             "SRD9 1 0 0 0 0 0 1 6001 0 0 \"\" 0 1 0 FX7 1 0 0 0",
+             "SRD9 1 0 0 0 0 0 1 0 1 0 \"\" 0 1 0 FX7 1 0 0 0",
+             "SRD9 1 0 0 0 0 0 1 -1 0 0 \"\" 0 1 0 FX7 1 0 0 0"
             })
         rejects(
             [&]
@@ -335,10 +272,12 @@ void combat_and_campaign()
     {
         rules->validate_character_state(character.sheet(), {1, false, stable.resources});
     });
+    // Published actor field 28 is the death-save deadline; a conscious actor
+    // cannot carry one.
     auto bad = rows(combat->save());
     for (unsigned i = 4; i < 7; ++i)
         if (bad[i].starts_with("1 "))
-            bad[i].replace(bad[i].rfind(' ') + 1, std::string::npos, "1");
+            bad[i] = with_field(bad[i], 28, "1");
     rejects(
         [&]
     {
@@ -352,8 +291,7 @@ int main()
     try
     {
         golden_transitions();
-        legacy_and_validation();
-        frozen_saves();
+        validation();
         combat_and_campaign();
         std::cout << "Recovery clock tests passed\n";
         return 0;

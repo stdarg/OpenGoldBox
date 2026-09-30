@@ -20,25 +20,14 @@ Tools now have one explicit category (other, artisan, instrument or gaming), so
 Monk's and Bard's catalogs retain their boundaries. Proficiency does not award
 an inventory item or implement a Gaming Set Utilize action.
 
-Rules 0.6.34 / PC23 validates the new entitlement policy and rejects incompatible
-sources/versions. Campaign 11 and combat 13–15 have no schema changes. Old missing
-choices remain pending; core completion adds the new choice without replacing
-old selections or changing wounds, resources, advancement or feat grants. The
-separately pending Review Training UI remains #189.
+Profile recipes validate the new entitlement policy and reject incompatible
+sources.
 
-## Migration and verification
-
-The actual 0.6.33 libraries at `ba9673c` generated campaign/combat fixtures before
-production changes. All twelve classes have Soldier, complete prior training,
-Savage Attacker, wounds and recorded resource state. Fighter, Cleric and Wizard
-have level-four histories. Campaign PCs are in reserve to fit the six-active-PC
-limit; combat includes all twelve. The generator requires the prior version,
-and fixture bytes remain unedited.
+## Verification
 
 Tests cover all 48 class/variant combinations, exact catalogs/counts/provenance,
-bonuses, rejection atomicity, class/background changes, presets, current saves,
-exact old-save migration and safe completion. Existing old Bard/Monk/Druid tests
-also retain pending Soldier choices until explicitly completed. Godot exercises
+bonuses, rejection atomicity, class/background changes, presets and current
+saves. Godot exercises
 keyboard selection, limit, Back, class-change preservation and completed-sheet
 sources through ordinary creation.
 

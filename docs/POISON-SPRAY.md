@@ -27,8 +27,7 @@ Wizard creation has a Spell Choices step after Training and before Name.
 Labeled, keyboard-accessible Fire Bolt and Poison Spray checkboxes show the
 selection count and pending entitlement. Back retains selections. Newly created
 characters start with explicit choices; missing catalog choices stay pending.
-Preset Wizards receive both available cantrips. Historical saves retain only
-their recorded choices. Magic Missile remains the existing spellbook preset;
+Preset Wizards receive both available cantrips. Magic Missile remains the existing spellbook preset;
 full book/preparation editors and filling pending choices remain #37.
 
 The main combat row uses the approved [Spell dropdown and Cast button](CANTRIP-CONTROLS.md)
@@ -42,11 +41,8 @@ its existing controls; the shared creation step is available in both creators.
 
 ## Persistence and verification
 
-Campaign **11** stores an optional creation cantrip list. Absence means the
-historical Fire Bolt preset; an explicit empty list means no selections yet.
-Formats 1–10 remain readable. **PC11** recipes validate explicit cantrip grants
-against their casting mask; PC10 cannot acquire Poison Spray by relabeling a
-new recipe. Combat format **13** and resource formats SRD1–7 remain unchanged.
+Campaign saves store the creation cantrip choices. Profile recipes validate
+explicit cantrip grants against their listed spells.
 Loading never replenishes resources or automatically learns another cantrip.
 Player saving remains limited to camping or an inn.
 
@@ -60,8 +56,6 @@ Player saving remains limited to camping or an inn.
   enabled/disabled controls, keyboard action cycle and actual ally targeting.
 - [Localization UI tests](../tests/localization_tests.gd): Spanish creation
   choices and existing translated source/pending-count explanations.
-- Frozen 0.6.21 writer fixtures preserve earlier campaigns and an actual Fire
-  Bolt continuation; see [fixture provenance](../tests/fixtures/README.md).
 
 The delivery passed all 36 native/tool checks and all 13 Godot checks (plus
 four native fixture prerequisites). The art-dependent creator and Spanish
@@ -81,7 +75,7 @@ Magician access is part of #152. Higher-level scaling remains #176–178.
 Parents #202, #37 and #165 stay open until their remaining acceptance is met.
 
 Rules 0.6.39 also delivers the [level-one Warlock source](WARLOCK-POISON-SPRAY.md)
-with Charisma attacks, explicit selection and preserved old choices. Later
+with Charisma attacks and explicit selection. Later
 Warlock levels remain #160; parent #202 still tracks other grant integrations.
 
 Rules 0.6.40 adds the explicit [level-one Sorcerer source](SORCERER-CANTRIPS.md)

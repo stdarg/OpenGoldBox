@@ -13,16 +13,7 @@ fx::EffectState state(const CombatSession &c, EntityId id)
 
 void inject(Participant &p, const VitalState &vitals, const fx::EffectState &effects)
 {
-    p.state = vitals;
-    const auto at = p.state->resources.find("FX");
-    if (at == std::string::npos)
-    {
-        p.state = with_effects(vitals, effects);
-        return;
-    }
-    std::ostringstream out;
-    fx::write_effects(out, effects);
-    p.state->resources.replace(at, std::string::npos, out.str());
+    p.state = with_effects(vitals, effects);
 }
 
 Message result(const CombatSession &c)
@@ -114,11 +105,11 @@ void codec_and_lifecycle()
     target.prone = true;
     std::ostringstream out;
     fx::write_effects(out, target);
-    check(out.str().starts_with("FX6 "), "New effects use conditional FX6");
+    check(out.str().starts_with("FX7 "), "Effects use the only current tag FX7");
     std::istringstream in(out.str());
-    check(fx::read_effects(in) == target, "FX6 preserves posture and multiple sources");
+    check(fx::read_effects(in) == target, "FX7 preserves posture and multiple sources");
     auto old = out.str();
-    old.replace(0, 3, "FX5");
+    old.replace(0, 3, "FX6");
     rejects(
         [&]
     {
@@ -126,8 +117,8 @@ void codec_and_lifecycle()
         (void)fx::read_effects(bytes);
     });
     for (auto bad :
-            {"FX6 1 0 0 0", "FX6 2 1 1 5 7 2 \"Source\" 0 6001 0 0 0",
-             "FX6 2 1 1 6 7 2 \"Source\" 0 12001 0 0 0", "FX6 2 1 1 6 0 2 \"Source\" 0 9000 0 0 0"
+            {"FX7 2 1 1 5 7 2 \"Source\" 0 6001 0 0 0",
+             "FX7 2 1 1 6 7 2 \"Source\" 0 12001 0 0 0", "FX7 2 1 1 6 0 2 \"Source\" 0 9000 0 0 0"
             })
         rejects(
             [&]
@@ -438,19 +429,9 @@ void capacity_and_identity()
     {
         (void)r->restore(old);
     });
-    auto old_identity = r->identity();
-    old_identity.version = "0.6.55";
-    auto campaign_state = with_effects(unit(*base, 1).persistent, effect);
-    auto current = campaign_state;
-    const auto sheet = character("fighter", "No grant").sheet();
-    r->migrate_character_state(r->identity(), sheet, current);
-    check(current.resources == campaign_state.resources,
-          "Current campaign identity accepts valid mastery effects");
-    rejects(
-        [&]
-    {
-        r->migrate_character_state(old_identity, sheet, campaign_state);
-    });
+    // Campaign vitals may carry mastery effects between encounters.
+    const auto campaign_state = with_effects(unit(*base, 1).persistent, effect);
+    r->validate_character_state(character("fighter", "No grant").sheet(), campaign_state);
 }
 
 void ui_fixtures()

@@ -24,17 +24,13 @@ struct LifeState
     bool operator==(const LifeState &) const = default;
 };
 
-// Module 0.6.44 reserves the first value above the maximum 1d4-hour delay
-// for earned recovery waiting on healing prevention. Zero keeps its legacy
-// meaning: the duration has not been rolled. Existing clock bytes are unchanged.
+// The first value above the maximum 1d4-hour delay encodes earned recovery
+// waiting on healing prevention. Zero means the duration has not been rolled.
 [[nodiscard]] unsigned encode_stable_recovery(const RecoveryClock &clock);
 void decode_stable_recovery(RecoveryClock &clock);
 void validate_recovery(const LifeState &state);
 void validate_temporary_hp(const rules::TemporaryHitPoints &pool);
 void grant_temporary_hp(LifeState &, const rules::TemporaryHitPoints &, rules::TemporaryHpChoice);
-// Earlier saves have no timing history. Initialization never rolls or invents
-// elapsed time. A Stable delay of zero means its one recovery roll is pending.
-void initialize_legacy_recovery(LifeState &state);
 void stabilize(LifeState &state, std::uint64_t &rng);
 [[nodiscard]] int death_save(LifeState &state, std::uint64_t &rng, bool can_heal = true);
 void damage_life(LifeState &state, int amount, int maximum_hp, bool critical = false,

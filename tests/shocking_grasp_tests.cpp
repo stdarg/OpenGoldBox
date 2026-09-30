@@ -1,4 +1,3 @@
-#include "campaign_fixture.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
@@ -143,33 +142,6 @@ std::vector<std::string> gear = {})
     return c;
 }
 
-void freeze()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.37", "Freeze requires actual prior writer");
-    CampaignParty party(module());
-    party.add_pc(hero(3, "ray_of_frost"));
-    auto state = party.checkpoint();
-    state.roster[0].vitals.hit_points -= 2;
-    state.roster[0].wealth[3] = 37;
-    party.restore(state);
-    const auto base = root / "tests/fixtures";
-    std::ofstream(base / "campaign-v11-shocking-before.ogs", std::ios::binary)
-            << encode_campaign(party, nullptr, "shocking");
-    auto actors = party.participants();
-    actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {3, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
-    while (c->snapshot().actor != 1)
-        act(*c, "end");
-    act(*c, "ray_of_frost", 99);
-    act(*c, "adrenaline_rush");
-    std::ofstream(base / "combat-v15-shocking-before.save", std::ios::binary) << c->save();
-    act(*c, "end");
-    act(*c, "end");
-    std::ofstream(base / "combat-v15-shocking-continued.save", std::ios::binary) << c->save();
-}
-
 void access()
 {
     auto rules = module();
@@ -179,8 +151,9 @@ void access()
           access.cantrips[0].source_id == "class:wizard:spellcasting",
           "Real Wizard source");
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC32 1 0 1028 "), "Selected bit in versioned recipe");
-    profile.replace(0, 4, "PC25");
+    check(profile.starts_with("PC42 1 0 2 shocking_grasp magic_missile "),
+          "The recipe lists the selected cantrip");
+    profile.replace(0, 4, "PC32");
     rejects(
         [&]
     {
@@ -189,13 +162,6 @@ void access()
                 {2, "vanguard", "Enemy", 1, {2, 1}}
             }},
         13);
-    });
-    auto old_identity = rules->identity();
-    old_identity.version = "0.6.37";
-    rejects(
-        [&]
-    {
-        rules->validate_saved_grants(old_identity, h.sheet(), h.sheet().grants);
     });
     auto c = battle(*custom(), hero(1, "fire_bolt"));
     check(!has(*c, "shocking_grasp"), "Unknown spell unavailable");
@@ -417,7 +383,7 @@ void lifecycle()
     fx::apply_ray_of_frost(state, 6, 1, "Cold", 4000);
     std::ostringstream out;
     fx::write_effects(out, state);
-    check(out.str().starts_with("FX3 "), "New effect requires FX3");
+    check(out.str().starts_with("FX7 "), "Effects are written in the only effect format");
     std::istringstream input(out.str());
     check(fx::read_effects(input) == state, "Mixed sourced effects round trip");
     fx::EffectSubject subject{10, state, {}};
@@ -427,10 +393,13 @@ void lifecycle()
           "Independent suppression sources do not consume saves");
     fx::elapse_effects(std::span(&subject, 1), 4000, random);
     check(state.active.empty() && random == 17, "Last source expires without RNG");
+    std::istringstream valid("FX7 2 1 1 3 5 1 \"Caster\" 0 6000 0 0 0");
+    check(fx::opportunity_blocked(fx::read_effects(valid)),
+          "A well-formed Shocking Grasp record loads");
     for (const char *bad :
-            {"FX1 2 1 1 3 5 1 \"Caster\" 0 6000 0", "FX2 2 1 1 3 5 1 \"Caster\" 0 6000 0",
-             "FX3 2 1 1 3 5 1 \"Caster\" 1 6000 0", "FX3 2 1 1 3 5 1 \"Caster\" 0 6001 0",
-             "FX3 2 1 1 3 5 1 \"Caster\" 0 6000 1", "FX3 1 0"
+            {"FX3 2 1 1 3 5 1 \"Caster\" 0 6000 0", "FX7 2 1 1 3 5 1 \"Caster\" 1 6000 0 0 0",
+             "FX7 2 1 1 3 5 1 \"Caster\" 0 6001 0 0 0", "FX7 2 1 1 3 5 1 \"Caster\" 0 6000 1 0 0",
+             "FX7 1 0"
             })
         rejects(
             [&]
@@ -494,9 +463,9 @@ void persistence_guards()
         (void)rules->restore(old);
     });
     auto malformed = current;
-    const auto fx = malformed.find("FX3 ");
-    check(fx != malformed.npos, "Actual live effect encoded as FX3");
-    malformed.replace(fx, 3, "FX2");
+    const auto fx = malformed.find("FX7 ");
+    check(fx != malformed.npos, "Actual live effect encoded as FX7");
+    malformed.replace(fx, 3, "FX6");
     rejects(
         [&]
     {
@@ -580,39 +549,6 @@ void campaign()
         }
 }
 
-void legacy()
-{
-    auto rules = module();
-    auto base = root / "tests/fixtures";
-    auto prior = read(base / "campaign-v11-shocking-before.ogs");
-    CampaignParty party(module());
-    party.restore(
-        decode_campaign(prior, *srd5::character_rules(), *rules, "shocking", nullptr).party);
-    auto body = [](const std::string & s)
-    {
-        return s.substr(s.find('\n', s.find('\n') + 1) + 1);
-    };
-    auto expected = body(prior);
-    expected.replace(expected.find("0.6.37"), 6, rules->identity().version);
-    check(
-        body(encode_campaign(party, nullptr, "shocking")) ==
-        test::with_arcane_recovery_grants(expected),
-        "Real previous campaign changes only identity/checksum and the fixed Arcane Recovery grant");
-    auto upgraded = [&](const char *name)
-    {
-        auto s = read(base / name);
-        s.replace(s.find("0.6.37"), 6, rules->identity().version);
-        return s;
-    };
-    auto c = rules->restore(read(base / "combat-v15-shocking-before.save"));
-    check(c->save() == upgraded("combat-v15-shocking-before.save") && !has(*c, "shocking_grasp"),
-          "Prior choices, spent resources and FX2 retained exactly");
-    act(*c, "end");
-    act(*c, "end");
-    check(c->save() == upgraded("combat-v15-shocking-continued.save"),
-          "Actual prior effect continuation exact");
-}
-
 void fixtures()
 {
     auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "shocking-fixtures";
@@ -634,15 +570,10 @@ void fixtures()
 }
 } // namespace
 
-int main(int argc, char **)
+int main()
 {
     try
     {
-        if (argc == 2)
-        {
-            freeze();
-            return 0;
-        }
         access();
         damage();
         timing();
@@ -652,7 +583,6 @@ int main(int argc, char **)
         legality();
         persistence_guards();
         campaign();
-        legacy();
         fixtures();
         std::cout << "Shocking Grasp tests passed\n";
         return 0;

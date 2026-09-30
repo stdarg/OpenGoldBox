@@ -40,32 +40,25 @@ Existing level-two through level-four Wizards keep missing choices pending and
 complete them in the existing Review Training checkbox groups. Previously chosen
 training stays locked. Cancel discards edits; keyboard access and wounds/resources
 are preserved. The existing windows retain their dimensions. The user replied “1. Approved.” Implement within this recorded scope.
+Review Training was later removed with the [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy);
+Scholar is chosen only at Wizard level two.
 
-## Implementation and compatibility
+## Implementation
 
 Scholar eligibility, source validation and Expertise modifiers live in the static
 SRD library. Core replays generic advancement training choices transactionally;
 the UI renders rules-provided options. A Scholar grant uses
 `expertise:<skill>`, source `class:wizard:scholar`, acquired level 2. It is never
-recorded as starting training. Missing historical choices remain pending.
-
-Campaign format 15 is selected only when advancement training is recorded; older
-formats 1–14 remain readable. Module 0.6.50 / PC33 admits Scholar proficiency
-provenance; PC1–PC32 retain their old policies. Combat layout and resource formats
-are unchanged. Actual 0.6.49 campaigns at levels 2–4 and a combat continuation
-were captured with the old library before writer changes; the capture entry point
-is `opengold_arcane_recovery_tests --capture-scholar-writer` and refuses other
-module versions. Existing fixtures were not rewritten.
+recorded as starting training. Campaign saves record advancement training, and
+profiles admit Scholar proficiency provenance.
 
 Native conformance in `tests/scholar_checks.h` covers all six skills, proficiency
 eligibility, exact level/source, double proficiency once, rejected transactions,
-ordinary levels 2–4, current campaign round trips, actual Medicine/Stabilize rolls,
-old combat continuation, old-save completion and selection locks. Wounds, items,
-spells and spent Arcane Recovery remain unchanged by training completion.
+ordinary levels 2–4, current campaign round trips and actual Medicine/Stabilize
+rolls.
 
 `tests/scholar_view_tests.gd` exercises deliberate keyboard selection at level
-two, Cancel/Escape, old level-two/four Review Training, locked selections, saving,
-reloading and combat blocking. `--verify-scholar <output>` compares the complete
+two, Cancel, saving and reloading. `--verify-scholar <output>` compares the complete
 UI-produced campaign against the native expected transaction. It adds no player
 save control; the existing safe campaign save controls are used.
 

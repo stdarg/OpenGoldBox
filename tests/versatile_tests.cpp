@@ -68,13 +68,6 @@ Command command(const CombatSession &session, std::string_view verb)
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
-std::string fixture(const char *name)
-{
-    std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
-    check(bool(in), "Fixture exists");
-    return {std::istreambuf_iterator<char>(in), {}};
-}
-
 struct WeaponCase
 {
     const char *key;
@@ -278,7 +271,7 @@ void reaction_continuation()
           "Only the opportunity reaction is consumed");
 }
 
-void campaign_and_migration()
+void campaign()
 {
     auto rules = module();
     CampaignParty party(module());
@@ -289,7 +282,7 @@ void campaign_and_migration()
     const auto id = party.add_pc(std::move(character));
     party.equip(id, staff);
     auto wounded = party.checkpoint();
-    wounded.roster[0].vitals = {5, false, "SRD1 1 0 0 0 0"};
+    wounded.roster[0].vitals = {5, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
     party.restore(wounded);
     const auto vitals = party.member(id).vitals;
     party.set_grip(id, 2);
@@ -372,35 +365,42 @@ void campaign_and_migration()
     rejects(
         [&]
     {
-        (void)decode_campaign("OPENGOLD-CAMPAIGN 11\n" + std::to_string(checksum) + "\n" + body,
+        (void)decode_campaign("OPENGOLD-CAMPAIGN 19\n" + std::to_string(checksum) + "\n" + body,
         *srd5::character_rules(), *rules, "grip", nullptr);
     });
     check(encode_campaign(party, nullptr, "grip") == valid,
           "Malformed serialized grip cannot replace the current campaign");
+}
 
-    auto legacy = decode_campaign(fixture("campaign-v6-grips.ogs"), *srd5::character_rules(),
-                                  *rules, "grip-fixture", nullptr);
-    CampaignParty migrated(module());
-    migrated.restore(std::move(legacy.party));
-    for (unsigned i = 0; i < 7; ++i)
-        check(migrated.profile(i + 1).equipment.weapon_hands == (i < 4 ? 2u : 1u),
-              "Old campaign keeps the four forced two-hand grips and remaining one-hand grips");
-    check(migrated.member(1).vitals == vitals,
-          "Grip migration does not alter wounds or recovery resources");
-    const auto rewritten = encode_campaign(migrated, nullptr, "grip-fixture");
-    auto again =
-        decode_campaign(rewritten, *srd5::character_rules(), *rules, "grip-fixture", nullptr);
-    CampaignParty twice(module());
-    twice.restore(std::move(again.party));
-    check(encode_campaign(twice, nullptr, "grip-fixture") == rewritten,
-          "Migration happens only once");
-    auto old_combat = rules->restore(fixture("combat-v7-grips.save"));
-    for (unsigned i = 0; i < 7; ++i)
-        check(unit(*old_combat, i + 1).equipment.weapon_hands == (i < 4 ? 2u : 1u),
-              "Old combat retains each weapon's actual hand use");
-    const auto snapshot = old_combat->save();
-    check(rules->restore(snapshot)->save() == snapshot,
-          "Migrated combat can be saved and resumed again");
+// The Godot grip view check loads this checkpoint: a Fighter holding a
+// Battleaxe in two hands acts first with an unspent action, and the only enemy
+// is out of reach.
+void grip_fixture()
+{
+    auto rules = module();
+    const std::array<std::string, 1> gear{"battleaxe"};
+    const auto profile = rules->character_profile(hero().sheet(), gear, EquipmentState{2});
+    Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
+        {   {1, "campaign-character", "Grip tester", 0, {1, 1}, profile.data},
+            {2, "vanguard", "Target", 1, {6, 6}}
+        }};
+    std::unique_ptr<CombatSession> combat;
+    for (unsigned seed = 0; seed < 100; ++seed)
+    {
+        combat = rules->create(encounter, seed);
+        if (combat->snapshot().actor == 1)
+            break;
+    }
+    check(combat->snapshot().actor == 1, "The two-handed Fighter acts first");
+    const auto fighter = unit(*combat, 1);
+    check(fighter.equipment.weapon_hands == 2 && fighter.action && fighter.bonus_action,
+          "The Fighter holds the Battleaxe in two hands with both actions unspent");
+    (void)command(*combat, "dash");
+    const auto folder = std::filesystem::path(OPENGOLD_BINARY_DIR) / "grip-fixtures";
+    std::filesystem::create_directories(folder);
+    std::ofstream out(folder / "grips.save", std::ios::binary);
+    out << combat->save();
+    check(bool(out), "Write the grip view fixture");
 }
 } // namespace
 
@@ -410,9 +410,10 @@ int main()
     {
         damage_and_resources();
         reaction_continuation();
-        campaign_and_migration();
+        campaign();
+        grip_fixture();
         std::cout
-                << "Versatile tests passed: seven weapons, damage, shields, reactions, campaign and migration\n";
+                << "Versatile tests passed: seven weapons, damage, shields, reactions and campaign\n";
         return 0;
     }
     catch (const std::exception &e)

@@ -1,4 +1,4 @@
-// Alert acceptance and actual pre-Alert writer fixtures.
+// Alert acceptance.
 namespace alert_checks
 {
 CampaignParty party()
@@ -43,26 +43,6 @@ auto battle(CampaignParty &p, unsigned seed = 37)
     return p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, actors}, seed);
 }
 
-void write(const char *name, const std::string &bytes)
-{
-    std::ofstream out(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name,
-                      std::ios::binary);
-    out << bytes;
-    check(bool(out), "Write Alert prior writer fixture");
-}
-
-void freeze()
-{
-    auto p = party();
-    check(p.rule_module().identity().version == "0.6.60",
-          "Alert capture requires actual0.6.60 writer");
-    write("campaign-alert-0.6.60.ogs", encode_campaign(p, nullptr, "alert-before"));
-    auto c = battle(p);
-    write("combat-alert-0.6.60.save", c->save());
-    light_attack_checks::act(*c, "end");
-    write("combat-alert-0.6.60-continued.save", c->save());
-}
-
 Command command(const CombatSession &c, std::string_view verb, unsigned owner, unsigned ally = 0)
 {
     for (const auto &cmd : c.legal_commands())
@@ -94,37 +74,6 @@ CombatantView unit(const CombatSession &c, unsigned id)
 void exact(const CombatSession &c)
 {
     check(module()->restore(c.save())->save() == c.save(), "Alert exact pending continuation");
-}
-
-void baseline()
-{
-    auto rules = module();
-    const auto normalize = [&](std::string s)
-    {
-        replace(s, "0.6.60", rules->identity().version);
-        return s;
-    };
-    auto c = rules->restore(fixture("combat-alert-0.6.60.save"));
-    check(c->snapshot().initiative_choices.empty() &&
-          c->save() == normalize(fixture("combat-alert-0.6.60.save")),
-          "Old combat retains exact rolls and no reopened initiative choices");
-    light_attack_checks::act(*c, "end");
-    check(c->save() == normalize(fixture("combat-alert-0.6.60-continued.save")),
-          "Old combat retains exact deterministic continuation");
-    CampaignParty restored(module());
-    restored.restore(decode_campaign(fixture("campaign-alert-0.6.60.ogs"), *srd5::character_rules(),
-                                     *rules, "alert-before", nullptr)
-                     .party);
-    auto expected = party();
-    check(
-        encode_campaign(restored, nullptr, "alert-before") ==
-        encode_campaign(expected, nullptr, "alert-before"),
-        "Campaign migration adds only fixed Alert, preserving whole character/equipment/resource state");
-    const auto saved = encode_campaign(restored, nullptr, "alert-before");
-    restored.restore(
-        decode_campaign(saved, *srd5::character_rules(), *rules, "alert-before", nullptr).party);
-    check(encode_campaign(restored, nullptr, "alert-before") == saved,
-          "New campaign reload is canonical");
 }
 
 void grants()
@@ -209,23 +158,24 @@ void grants()
 
 void run()
 {
-    baseline();
     grants();
     auto p = party();
     auto c = battle(p);
     const auto before = c->snapshot();
-    auto old = module()->restore(fixture("combat-alert-0.6.60.save"));
-    for (unsigned id :
-            {
-                1, 2
-            })
-        check(unit(*c, id).initiative == unit(*old, id).initiative + 2,
-              "Actual proficiency adds once, including Champion Advantage");
+    // Independent Initiative oracle: the Champion rolls with Advantage, then the Rogue rolls.
+    std::uint64_t dice_state = 37;
+    const int champion_first = style_route_checks::die(dice_state, 20);
+    const int champion_roll = std::max(champion_first, style_route_checks::die(dice_state, 20));
+    const int rogue_roll = style_route_checks::die(dice_state, 20);
+    const int fighter_total = champion_roll + p.member(1).character.sheet().modifiers[1] + 2;
+    const int rogue_total = rogue_roll + p.member(2).character.sheet().modifiers[1] + 2;
+    check(unit(*c, 1).initiative == fighter_total && unit(*c, 2).initiative == rogue_total,
+          "Actual proficiency adds once, including Champion Advantage");
     check(before.initiative_choices.size() == 2 && before.elapsed_milliseconds == 0,
           "All Alert holders choose before time passes");
     exact(*c);
     for (const auto *tail :
-            {"2 1 1\n", "1 99\n", "0\n"
+            {"2 1 1\n", "1 99\n"
             })
     {
         auto bad = c->save();
@@ -247,8 +197,7 @@ void run()
     normal.verb = "end";
     check(!c->submit(normal) && c->save() == bytes, "Combat actions wait for initiative");
     decide(*c, 1, 2);
-    check(unit(*c, 1).initiative == unit(*old, 2).initiative + 2 &&
-          unit(*c, 2).initiative == unit(*old, 1).initiative + 2,
+    check(unit(*c, 1).initiative == rogue_total && unit(*c, 2).initiative == fighter_total,
           "Swap exchanges complete current totals without rerolling");
     check(c->snapshot().initiative_choices == std::vector<EntityId> {2},
           "Swap does not consume ally's own decision");
@@ -256,8 +205,7 @@ void run()
     bytes = c->save();
     check(!c->submit(stale) && c->save() == bytes, "Stale decision rejects atomically");
     decide(*c, 2, 1);
-    check(c->snapshot().initiative_choices.empty() &&
-          unit(*c, 1).initiative == unit(*old, 1).initiative + 2,
+    check(c->snapshot().initiative_choices.empty() && unit(*c, 1).initiative == fighter_total,
           "Later holder can exchange updated totals");
     exact(*c);
     for (unsigned id :
@@ -265,7 +213,7 @@ void run()
                 1, 2
             })
         check(unit(*c, id).action && unit(*c, id).bonus_action && unit(*c, id).reaction &&
-              unit(*c, id).hit_points == unit(*old, id).hit_points,
+              unit(*c, id).hit_points == p.member(id).vitals.hit_points,
               "Choice spends no action, reaction or HP");
     // Decisions can be resolved in either order, including choosing Keep first.
     c = battle(p);
@@ -312,7 +260,7 @@ void run()
     { {12, 8, std::vector<std::uint8_t>(96)}, actors
     }, 37);
     exact(*surprised);
-    std::uint64_t dice_state = 37;
+    dice_state = 37;
     const int roll = style_route_checks::die(dice_state, 20);
     check(unit(*surprised, 1).initiative == roll + p.member(1).character.sheet().modifiers[1] + 2,
           "Advantage and Disadvantage cancel before adding Alert once");

@@ -1,6 +1,5 @@
-#include "combat_fixture.h"
 #include "opengold/campaign_save.h"
-#include "campaign_fixture.h"
+#include <filesystem>
 #include "opengold/srd5.h"
 #include "armor.h"
 #include "status_effects.h"
@@ -365,7 +364,7 @@ void campaign()
         CampaignParty party(module());
         const auto id = party.add_pc(std::move(h));
         auto state = party.checkpoint();
-        state.roster[0].vitals = {5, false, "SRD1 1 0 0 0 0"};
+        state.roster[0].vitals = {5, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
         party.restore(state);
         party.equip(id, item);
         const auto before = encode_campaign(party, nullptr, "armor");
@@ -391,34 +390,6 @@ void campaign()
               "Unequipping removes penalties without restoring resources");
     }
 }
-
-void legacy()
-{
-    auto rules = module();
-    const auto old = read(fixtures / "campaign-v10-armor.ogs");
-    CampaignParty party(module());
-    party.restore(
-        decode_campaign(old, *srd5::character_rules(), *rules, "armor-fixture", nullptr).party);
-    auto expected = old.substr(old.find('\n', old.find('\n') + 1) + 1);
-    expected.replace(expected.find("0.6.17"), 6, rules->identity().version);
-    const auto bytes = encode_campaign(party, nullptr, "armor-fixture");
-    check(
-        bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1) ==
-        test::with_initial_wizard_spell_grants(expected),
-        "Prior campaign gains only explicit spell/Sage grants and module identity, preserving grants, original provenance, wounds, pools and time");
-    check(
-        party.ability_check(1, 1, "stealth").disadvantage && party.ability_check(2, 0).disadvantage,
-        "Existing Chain Mail gains its missing Stealth penalty; untrained Leather keeps Strength penalty");
-    const auto previous = read(fixtures / "combat-v12-armor.save");
-    auto c = rules->restore(previous);
-    auto same = previous;
-    same.replace(same.find("0.6.17"), 6, rules->identity().version);
-    check(c->save() == test::with_savage_choice(same),
-          "Prior combat migration preserves exact state");
-    check(c->submit(command(*c, "melee")), "Frozen attack accepted");
-    check(c->save() == rules->restore(read(fixtures / "combat-v12-armor-continued.save"))->save(),
-          "Frozen prior-writer attack continuation remains exact");
-}
 } // namespace
 
 int main()
@@ -429,7 +400,6 @@ int main()
         all_classes();
         boundaries();
         campaign();
-        legacy();
         std::cout << "Armor catalog tests passed\n";
         return 0;
     }

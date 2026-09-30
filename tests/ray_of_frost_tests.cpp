@@ -154,7 +154,8 @@ void access()
           access.cantrips[0].acquired_level == 1,
           "Ordinary starting choice has real source and acquisition level");
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC32 1 0 260 "), "New profile validates new spell bit");
+    check(profile.starts_with("PC42 1 ") && profile.find(" ray_of_frost ") != profile.npos,
+          "Profile lists the chosen spell by id");
     profile.replace(0, 4, "PC13");
     rejects(
         [&]
@@ -313,7 +314,7 @@ void effect_lifecycle()
     std::ostringstream out;
     fx::write_effects(out, state);
     std::istringstream in(out.str());
-    check(fx::read_effects(in) == state, "FX2 round trip retains every independent source");
+    check(fx::read_effects(in) == state, "Effect round trip retains every independent source");
     fx::EffectSubject subject{10, state, {}};
     std::uint64_t random = 17;
     fx::elapse_effects(std::span(&subject, 1), 2000, random);
@@ -322,8 +323,8 @@ void effect_lifecycle()
     fx::elapse_effects(std::span(&subject, 1), 4000, random);
     check(state.active.empty() && random == 17, "Last application expires without consuming RNG");
     for (const char *bad :
-            {"FX1 2 1 1 2 5 1 \"Caster\" 0 6000 0", "FX2 2 1 1 2 5 1 \"Caster\" 1 6000 0",
-             "FX2 2 1 1 2 5 1 \"Caster\" 0 6001 0", "FX2 2 1 1 2 5 1 \"Caster\" 0 6000 1"
+            {"FX1 2 1 1 2 5 1 \"Caster\" 0 6000 0", "FX7 2 1 1 2 5 1 \"Caster\" 1 6000 0 0 0",
+             "FX7 2 1 1 2 5 1 \"Caster\" 0 6001 0 0 0", "FX7 2 1 1 2 5 1 \"Caster\" 0 6000 1 0 0"
             })
         rejects(
             [&]
@@ -422,19 +423,6 @@ void campaign()
     check(encode_campaign(again, nullptr, "frost") == camp, "Post-camp save/reload is canonical");
 }
 
-void legacy()
-{
-    auto rules = module();
-    auto old = read(root / "tests/fixtures/combat-v13-ray-before.save");
-    auto c = rules->restore(old);
-    auto expected = old;
-    auto at = expected.find("0.6.24");
-    check(at != expected.npos, "Fixture came from actual prior writer");
-    expected.replace(at, 6, rules->identity().version);
-    check(c->save() == expected && !has(*c, "ray_of_frost"),
-          "Every old combat byte remains except module identity; no spell invented");
-}
-
 void fixtures()
 {
     auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "frost-fixtures";
@@ -468,7 +456,6 @@ int main()
         effect_lifecycle();
         legality();
         campaign();
-        legacy();
         fixtures();
         std::cout << "Ray of Frost tests passed\n";
         return 0;

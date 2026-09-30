@@ -10,18 +10,18 @@ architecture document or completion ledger. See [TECH](TECH.md) for boundaries.
 | Feature/feat provenance | `src/OpenGold.Rules.Srd5/src/feature_grants.cpp` | `opengold_feature_grant_tests` |
 | Skills, tools, languages, starting styles | `src/OpenGold.Rules.Srd5/src/training.cpp` | `opengold_training_tests`; [training](TRAINING.md) |
 | Cantrips, books, preparation, source validation | `src/OpenGold.Rules.Srd5/src/spell_access.cpp` | `opengold_spell_access_tests`; per-spell tests |
-| Combat, legal commands, profiles, progression, module migration | `src/OpenGold.Rules.Srd5/src/srd5.cpp`: `character_definition`, `legal_commands`, `character_profile`, `validate_saved_grants`, `Session::restore` | `opengold_rules_tests`; affected feature tests |
+| Combat, legal commands, profiles, progression, saved-state validation | `src/OpenGold.Rules.Srd5/src/srd5.cpp`: `character_definition`, `legal_commands`, `character_profile`, `validate_saved_grants`, `Session::restore` | `opengold_rules_tests`; affected feature tests |
 | Status lifecycles and codecs | `src/OpenGold.Rules.Srd5/src/status_effects.cpp` | `opengold_status_effect_tests` |
 | Movement/occupancy | `src/OpenGold.Rules.Srd5/src/combat_grid.cpp` | Locate grid/movement targets in root CMakeLists; [transit](UNCONSCIOUS-TRANSIT.md) |
 | Components and weapon/armor rules | `src/OpenGold.Rules.Srd5/src/spell_components.h`; adjacent catalog headers | `opengold_spell_component_tests`, `opengold_weapon_catalog_tests`, `opengold_armor_catalog_tests` |
-| Physical thrown inventory | SRD `Session::throw_weapon`, `ground_one`, combat 19; Core `CampaignParty::apply_physical_items` | `opengold_thrown_weapon_tests`, `opengold_godot_thrown`; [packet](THROWN-WEAPONS.md) |
+| Physical thrown inventory | SRD `Session::throw_weapon`, `ground_one`; Core `CampaignParty::apply_physical_items` | `opengold_thrown_weapon_tests`, `opengold_godot_thrown`; [packet](THROWN-WEAPONS.md) |
 | Campaign handoff, resources and saves | `src/OpenGold.Core/src/campaign_party.cpp`, `campaign_rest.cpp`, `campaign_save.cpp`, `combat_demo.cpp` | `opengold_campaign_rest_tests`, `opengold_rest_resource_tests`, `opengold_save_tests` |
 | Creator and training controls | `src/OpenGoldBox/character_creation_view.cpp`, `training_control.h`, `cantrip_control.h` | Asset-backed `tests/*cantrip_view_tests.gd`; [training](TRAINING.md) |
 | Combat UI and decisions | `src/OpenGoldBox/combat_view.cpp` | `tests/*view_tests.gd`; registered targets in `src/OpenGoldBox/CMakeLists.txt` |
 | Advancement and sheets | `src/OpenGoldBox/level_up_view.cpp`, `character_sheet_view.cpp` | Feature-specific player-path checks and advancement checks |
 | Demo equivalents | `demos/src/OpenGold.Godot/` | Build `opengold_godot` in `build/sprite-demo`; inspect reuse before duplicating edits |
 | Localization | `src/OpenGoldBox/godot/locale/dynamic_sources.json`, `en.po`, `es.po`; `tools/localization.py` | `python3 tools/localization.py --check` |
-| Test registration and historical saves | Root `CMakeLists.txt`, `src/OpenGoldBox/CMakeLists.txt`, `tests/fixtures/README.md` | Prior-writer provenance and exact continuation; never regenerate old fixtures with a new writer |
+| Test registration and save checks | Root `CMakeLists.txt`, `src/OpenGoldBox/CMakeLists.txt`, `tests/fixtures/README.md` | Current-writer round-trips, exact continuation and older-format rejection; see [saves](SAVES.md#pre-10-format-policy) |
 
 Core paths in the table are relative to `src/OpenGold.Core/src/` where shortened.
 Rules own SRD semantics; Core owns campaign orchestration; Godot presents queries

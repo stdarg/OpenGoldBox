@@ -115,7 +115,7 @@ void simultaneous()
                     false, true
                 })
         {
-            auto c = r->restore(mastery_choice_checks::fixture(weapon, "-before"));
+            auto c = r->restore(mastery_choice_checks::critical_before(weapon));
             act(*c, std::string_view(weapon) == "longbow" ? "ranged" : "melee", 99);
             act(*c, "savage_skip");
             check(c->snapshot().optional_effect_choice &&
@@ -146,26 +146,6 @@ void simultaneous()
                   "Both chosen effects finish independently");
             roundtrip(*r, *c);
         }
-}
-
-void historical_graze()
-{
-    auto r = module();
-    for (const auto name :
-            {"combat-v24-graze-pending-0.6.59.save", "combat-v24-zero-graze-0.6.59.save"
-            })
-    {
-        const auto bytes = nick_attack_checks::fixture(name);
-        auto c = r->restore(bytes);
-        auto current = bytes;
-        current.replace(current.find("0.6.59"), 6, r->identity().version);
-        check(c->save() == current && c->snapshot().optional_effect_choice,
-              "Previous writer pending Graze preserved, including historical zero choice");
-        auto copy = r->restore(c->save());
-        act(*c, "effect_use");
-        act(*copy, "effect_use");
-        check(c->save() == copy->save(), "Previous writer Graze continuation exact");
-    }
 }
 
 void reactions()
@@ -360,7 +340,7 @@ void ui_fixtures()
         }
         check(written, "Actual hit optional mastery UI fixture");
     }
-    auto c = r->restore(mastery_choice_checks::fixture("maul", "-before"));
+    auto c = r->restore(mastery_choice_checks::critical_before("maul"));
     act(*c, "melee", 99);
     act(*c, "savage_skip");
     write("ordered-pending", c->save());
@@ -673,7 +653,7 @@ void physical_and_damage()
 void malformed()
 {
     auto r = module();
-    auto c = r->restore(mastery_choice_checks::fixture("maul", "-before"));
+    auto c = r->restore(mastery_choice_checks::critical_before("maul"));
     act(*c, "melee", 99);
     act(*c, "savage_skip");
     const auto bytes = c->save();
@@ -724,7 +704,8 @@ void unconscious_cleave()
     auto r = rules();
     auto e = encounter(*r, hero("greataxe", "fighter", "soldier"), "greataxe");
     e.participants.push_back({98, "mastery_target", "Unconscious ally", 0, {2, 2}});
-    e.participants.back().state = VitalState{0, false, "SRD1 0 0 0 0 1"};
+    e.participants.back().state =
+        VitalState{0, false, "SRD9 0 0 0 0 0 1 0 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
     bool tested = false;
     for (unsigned seed = 1; seed < 32 && !tested; ++seed)
     {
@@ -770,7 +751,6 @@ void run()
     run(boundaries, "Rule boundaries");
     run(matrix, "Weapon matrix");
     run(simultaneous, "Simultaneous order");
-    run(historical_graze, "Historical Graze");
     run(reactions, "Opportunity reactions");
     run(cleave_criticals, "Cleave criticals");
 }

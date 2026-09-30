@@ -30,23 +30,13 @@ not transfer into Bard's instrument-only entitlement. Background changes retain
 valid tool selections. Rules own all catalogs; Core contains no class-specific
 transfer code.
 
-Rules 0.6.32 / PC21 validates the new policy. Earlier profiles retain their
-original policies. Campaign 11 and combat 13–15 require no schema changes.
-Missing historical choices stay pending, without invented proficiencies.
-The separate Review Training UI remains #189.
+Profile recipes validate the new policy.
 
-## Migration baseline and verification
-
-Actual 0.6.31 libraries at `1c5f9bf` wrote the campaign and combat fixtures before
-production changes. Four Monks cover all current backgrounds, with explicit
-Acrobatics/Insight, Elvish/Dwarvish, two missing HP and recorded resource state.
-The version-guarded generator in training_tests.cpp must not be rerun with a
-future writer. Fixture bytes remain unedited.
+## Verification
 
 Native checks cover every catalog option, sources, overlap, bonuses/Advantage,
 current saves, forged sources/versions, invalid choices, preset generation and
-class-change preservation. Prior-writer checks compare all saved data except
-module identity/checksum, then complete missing choices without changing vitals.
+class-change preservation.
 Godot checks cover keyboard selection, limits, Back and completed sheet sources.
 All 41 native/tool checks and 16 Godot runtime checks (plus seven native
 prerequisites) pass. Main/demo extensions build and 805 English/Spanish messages

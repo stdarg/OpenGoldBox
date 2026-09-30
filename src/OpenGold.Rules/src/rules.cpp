@@ -1,17 +1,9 @@
 #include "opengold/rules.h"
 #include "opengold/character_rules.h"
-#include <algorithm>
 #include <stdexcept>
 
 namespace opengold::rules
 {
-void RulesModule::validate_saved_grants(const Identity &, const CharacterSheet &sheet,
-                                        std::span<const FeatureGrant> grants) const
-{
-    if (!std::equal(grants.begin(), grants.end(), sheet.grants.begin(), sheet.grants.end()))
-        throw std::runtime_error("Saved grants disagree with creation or advancement choices");
-}
-
 CharacterProfile RulesModule::character_profile(const CharacterSheet &,
         std::span<const std::string>, EquipmentState) const
 {

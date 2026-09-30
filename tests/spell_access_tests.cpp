@@ -2,7 +2,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include <algorithm>
-#include <fstream>
+#include <cstdlib>
 #include <iostream>
 #include <set>
 #include <sstream>
@@ -30,13 +30,6 @@ template <class F> void rejects(F f)
         caught = true;
     }
     check(caught, "Invalid spell grant/preparation must reject");
-}
-
-std::string read(const std::filesystem::path &path)
-{
-    std::ifstream in(path);
-    check(bool(in), "Fixture exists");
-    return {std::istreambuf_iterator<char>(in), {}};
 }
 
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -144,7 +137,8 @@ void creation()
     check(
         has(*c, "fire_bolt") && !has(*c, "magic_missile"),
         "An empty preparation no longer silently re-prepares Magic Missile; known cantrip stays available");
-    c = battle(*rules, h.sheet(), {s.hit_points, false, "SRD7 0 0 0 0 0 0 1 0 0 0 \"\" 2 FX1 1 0"});
+    c = battle(*rules, h.sheet(),
+               {s.hit_points, false, "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 2 0 1 FX7 1 0 0 0"});
     check(has(*c, "fire_bolt") && !has(*c, "magic_missile"),
           "Book/prepared access never grants a free leveled cast when slots are empty");
     const auto before = unit(*c).persistent;
@@ -160,7 +154,8 @@ void progression()
     party.award_experience(2700, "spells-xp");
     const int deficit = party.member(id).character.sheet().hit_points - 5;
     auto state = party.checkpoint();
-    state.roster[0].vitals = {5, false, "SRD7 0 1 0 0 0 0 1 0 0 7 \"spell:fixture\" 1 FX1 1 0"};
+    state.roster[0].vitals = {
+        5, false, "SRD9 0 1 0 0 0 0 1 0 0 7 \"spell:fixture\" 1 0 1 FX7 1 0 0 0"};
     party.restore(state);
     for (unsigned level = 2; level <= 4; ++level)
     {
@@ -296,7 +291,9 @@ void invalid()
     s.grants.push_back(base.grants[index]);
     test(s);
     auto profile = rules->character_profile(base, {}).data;
-    check(profile.starts_with("PC32 1 0 5 "), "New combat recipe carries sourced access");
+    const std::string listed = "2 fire_bolt magic_missile";
+    check(profile.starts_with("PC42 1 0 " + listed + " "),
+          "New combat recipe carries sourced access");
     auto bad = profile;
     bad.replace(0, 4, "PC9");
     rejects(
@@ -309,7 +306,7 @@ void invalid()
         13);
     });
     bad = profile;
-    bad.replace(bad.find(" 0 5 ") + 3, 1, "4");
+    bad.replace(bad.find(listed), listed.size(), "1 magic_missile");
     rejects(
         [&]
     {
@@ -321,147 +318,16 @@ void invalid()
     });
 }
 
-void legacy()
-{
-    auto rules = module();
-    CampaignParty party(module());
-    party.restore(decode_campaign(read(root / "tests/fixtures/campaign-v10-spells.ogs"),
-                                  *srd5::character_rules(), *rules, "spells-fixture", nullptr)
-                  .party);
-    for (unsigned id = 1; id <= 3; ++id)
-    {
-        const auto &m = party.member(id);
-        const auto access = rules->spell_access(m.character.sheet());
-        check(m.character.sheet().level == (id == 1   ? 1
-                                            : id == 2 ? 3
-                                            : 4) &&
-              m.vitals.hit_points == m.character.sheet().hit_points - 2,
-              "Frozen legacy levels and wounds retained");
-        check(
-            ids(access.spellbook) ==
-            (id == 1 ? std::vector<std::string> {"magic_missile"}
-             : std::vector<std::string> {"magic_missile", "scorching_ray", "blindness"}),
-            "Only history-backed book entries are recovered, including no-longer-prepared spells");
-        check(access.prepared == (id == 1   ? std::vector<std::string> {"magic_missile"}
-                                  : id == 2 ? std::vector<std::string> {"scorching_ray", "blindness"}
-                                  : std::vector<std::string> {"blindness"}),
-              "Current prepared list is preserved independently");
-        if (id > 1)
-            check(access.spellbook[1].acquired_level == 3 &&
-                  access.spellbook[2].acquired_level == (id == 2 ? 3u : 4u),
-                  "Legacy learning levels follow saved history rather than the current level");
-        const std::string expected = "SRD7 0 1 " + std::to_string(id == 1 ? 0 : 1) + " 0 0 0 " +
-                                     std::to_string(m.character.sheet().level) +
-                                     " 0 0 7 \"spell:fixture\" " + std::to_string(id == 2 ? 1 : 0) +
-                                     " FX1 1 0";
-        check(m.vitals.resources == expected,
-              "Prior-writer slots, Hit Dice, Temporary HP and source uses are never reset");
-        check(m.character.inventory().find(1)->get().definition_id == "wand" &&
-              m.equipped == std::vector<std::uint64_t> {1},
-              "Equipment is retained");
-    }
-    check(party.state().time_minutes == 123 && party.state().subminute_milliseconds == 456,
-          "Legacy campaign time retained");
-    const auto bytes = encode_campaign(party, nullptr, "spells-fixture");
-    CampaignParty again(module());
-    again.restore(
-        decode_campaign(bytes, *srd5::character_rules(), *rules, "spells-fixture", nullptr).party);
-    check(encode_campaign(again, nullptr, "spells-fixture") == bytes,
-          "Migration is canonical and does not re-learn spells on reload");
-    const auto old = read(root / "tests/fixtures/combat-v12-spells.save");
-    auto c = rules->restore(old);
-    auto expected = old;
-    expected.replace(expected.find("0.6.18"), 6, rules->identity().version);
-    check(c->save() == test::with_savage_choice(expected),
-          "Old combat preserves its recipe without inventing absent book history");
-    check(c->submit(command(*c, "scorching_ray")), "Legacy prepared spell still casts");
-    check(
-        c->save() ==
-        rules->restore(read(root / "tests/fixtures/combat-v12-spells-continued.save"))->save(),
-        "Prior-writer spell damage, slots, action state, RNG and clock continue exactly");
-}
-
-void capture_wizard_choices()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.50", "Capture requires actual 0.6.50 writer");
-    const auto write = [](const std::string & name, const std::string & bytes)
-    {
-        std::ofstream out(root / "tests/fixtures" / name, std::ios::binary);
-        out << bytes;
-        check(bool(out), "Write previous-writer spell-choice fixture");
-    };
-    for (unsigned level = 1; level <= 4; ++level)
-    {
-        CampaignParty party(module());
-        auto draft = hero().creation_data();
-        draft.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost", "chill_touch"};
-        draft.training = {{"origin:languages", {"elvish", "dwarvish"}},
-            {"class:wizard", {"medicine", "nature"}}
-        };
-        const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {}));
-        party.award_experience(2700, "choice-baseline");
-        for (unsigned n = 2; n <= level; ++n)
-        {
-            auto choice = party.default_advancement(id);
-            if (n == 3)
-                choice.spells = {"scorching_ray", "blindness"};
-            if (n == 4)
-                choice.spells = {"magic_missile"};
-            party.advance(id, choice);
-        }
-        auto state = party.checkpoint();
-        state.roster[0].vitals.hit_points -= 2;
-        party.restore(std::move(state));
-        auto combat = battle(*rules, party.member(id).character.sheet(), party.member(id).vitals);
-        const auto spell = level == 3 ? "scorching_ray" : "magic_missile";
-        check(combat->submit(command(*combat, spell)), "Baseline casts a prepared leveled spell");
-        party.begin_combat();
-        party.apply_combat(combat->snapshot());
-        party.end_combat();
-        (void)party.rest(RestKind::short_rest);
-        (void)party.recover_rest_choice(party.state().short_rest->ticket, id,
-                                        level == 3 ? "arcane_recovery:0:1" : "arcane_recovery:1:0");
-        party.finish_short_rest(party.state().short_rest->ticket);
-        combat = battle(*rules, party.member(id).character.sheet(), party.member(id).vitals);
-        check(combat->submit(command(*combat, spell)),
-              "Baseline spends a slot after Arcane Recovery");
-        party.begin_combat();
-        party.apply_combat(combat->snapshot());
-        party.end_combat();
-        write("campaign-wizard-choices-level" + std::to_string(level) + ".ogs",
-              encode_campaign(party, nullptr, "wizard-choices-baseline"));
-        if (level == 4)
-        {
-            write("combat-wizard-choices-before.save", combat->save());
-            check(combat->submit(command(*combat, "end")), "Baseline ends turn");
-            write("combat-wizard-choices-continued.save", combat->save());
-        }
-    }
-}
-
 #include "wizard_choices_checks.h"
 } // namespace
 
-int main(int argc, char **argv)
+int main()
 {
     try
     {
-        if (argc == 3 && std::string_view(argv[1]) == "--verify-wizard-ui")
-        {
-            verify_wizard_ui(argv[2]);
-            return 0;
-        }
-        if (argc == 2 && std::string_view(argv[1]) == "--capture-wizard-choices")
-        {
-            capture_wizard_choices();
-            return 0;
-        }
-        check(argc == 1, "Unexpected argument");
         creation();
         progression();
         invalid();
-        legacy();
         wizard_choices_checks();
         write_wizard_ui_fixture();
         std::cout << "Spell access tests passed\n";

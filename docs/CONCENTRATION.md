@@ -36,8 +36,9 @@ bytes and identical save/RNG/expiry continuation after a round trip.
 This is not yet embedded in combat or campaign saves. The enclosing reader must
 validate the caster against the owner, the application against the area/effect
 registry, and duration against the named spell. It must reject trailing fields
-at its own record boundary. Existing save formats and migration claims remain
-unchanged; #208/#209 still require actual prior-writer fixtures.
+at its own record boundary. Existing save formats remain unchanged; embedding
+it changes the current formats in place without migration (see the
+[pre-1.0 format policy](SAVES.md#pre-10-format-policy)).
 
 ## Integration still required
 

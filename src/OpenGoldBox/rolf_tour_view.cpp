@@ -5,6 +5,7 @@
 #include "grip_control.h"
 #include "game_resources.h"
 #include "rolf_tour_view.h"
+#include "vital_fixtures.h"
 #include "opengold/srd5.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
@@ -1453,8 +1454,14 @@ void RolfTourView::start_recovery_check()
     auto state = campaign_->checkpoint();
     auto &member = state.roster.at(0);
     state.random_state = 17;
-    state.roster.at(1).vitals = {0, false, "SRD5 0 0 0 0 0 1 1 0 2000 FX1 1 0"};
-    state.roster.back().vitals = {0, false, "SRD5 0 0 0 2 1 0 1 6000 0 FX1 1 0"};
+    const auto stable = presentation::srd_vitals(
+                            state.roster.at(1).character.sheet(),
+    {.stable = true, .hit_dice = 1, .stable_recovery_ms = 2000});
+    const auto dying = presentation::srd_vitals(
+                           state.roster.back().character.sheet(),
+    {.successes = 2, .failures = 1, .hit_dice = 1, .death_save_ms = 6000});
+    state.roster.at(1).vitals = {0, false, stable};
+    state.roster.back().vitals = {0, false, dying};
     // One platinum covers the original inn payment.
     if (member.vitals.dead)
         throw std::runtime_error("Recovery check requires a living victory survivor");
@@ -1562,9 +1569,8 @@ void RolfTourView::check_recovery()
                 campaign_->state().roster.back().vitals.hit_points != 1 ||
                 campaign_->state().random_state != 11400714819323198502ULL ||
                 campaign_->state().roster.back().vitals.resources !=
-                (campaign_->state().roster.back().character.sheet().race == "Orc"
-                 ? "SRD7 0 0 0 0 0 0 1 0 0 0 \"\" 2 FX4 1 0 0 1"
-                 : "SRD4 0 0 0 0 0 0 1 FX4 1 0 0 1"))
+                presentation::srd_vitals(campaign_->state().roster.back().character.sheet(),
+    {.hit_dice = 1, .effects = "FX7 1 0 0 1"}))
             throw std::runtime_error(
                 "Camp time must advance companion Stable recovery and the reserve death save exactly once");
         if (save_check)

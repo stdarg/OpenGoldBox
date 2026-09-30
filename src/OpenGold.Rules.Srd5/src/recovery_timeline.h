@@ -11,7 +11,7 @@ struct RecoverySubject
     EffectSubject effects;
     std::reference_wrapper<LifeState> life;
 };
-// Positive elapsed time initializes unknown legacy Stable delays once. Events
+// Positive elapsed time rolls any Stable delay not yet rolled, once. Events
 // are ordered by deadline, entity ID, mortality, then effect application ID.
 // Combat continues to roll death saves at initiative entry instead.
 enum class RecoveryMode

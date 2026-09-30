@@ -43,7 +43,7 @@ endif()
 configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
-    portrait_picker.cpp party_preview.cpp training_review.cpp level_up_view.cpp campaign_save_view.cpp save_slots.cpp
+    portrait_picker.cpp party_preview.cpp equipment_choice.cpp level_up_view.cpp campaign_save_view.cpp save_slots.cpp
     character_pool_view.cpp character_sheet_view.cpp godot_sound_output.cpp register_types.cpp startup_view.cpp game_lifecycle.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengoldbox_game PRIVATE cxx_std_20)
@@ -122,7 +122,8 @@ if(OPENGOLD_BUILD_TESTS)
     endfunction()
     opengold_godot_test(rest rest_view_tests "Godot rest controls passed" "--rest-check")
     opengold_godot_test(combat_view combat_view_tests "Game combat view checks passed")
-    opengold_godot_test(grip grip_view_tests "Grip view checks passed")
+    opengold_godot_test(grip grip_view_tests "Grip view checks passed" "--grip-fixtures=${PROJECT_BINARY_DIR}/grip-fixtures")
+    set_tests_properties(opengold_godot_grip PROPERTIES FIXTURES_REQUIRED "godot_project;grip_fixtures")
     opengold_godot_test(adrenaline adrenaline_view_tests "Adrenaline view checks passed" "--adrenaline-fixtures=${PROJECT_BINARY_DIR}/adrenaline-fixtures")
     set_tests_properties(opengold_godot_adrenaline PROPERTIES FIXTURES_REQUIRED "godot_project;adrenaline_fixtures")
     opengold_godot_test(savage savage_view_tests "Savage view checks passed" "--savage-fixtures=${PROJECT_BINARY_DIR}/savage-fixtures")

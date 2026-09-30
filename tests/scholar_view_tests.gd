@@ -76,7 +76,7 @@ func run_checks() -> void:
         change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
         await press("Party"); await load_slot()
         var list: ItemList = current_scene.get_node("PartyPanel/Roster")
-        require(list.item_count == 3, "Fixture includes new and old Wizards")
+        require(list.item_count == 3, "Fixture includes three Wizards")
         await press("PartyPanel/Roster/Advance1")
         await choose_scholar()
         await press("LevelUp/Cancel")
@@ -88,29 +88,6 @@ func run_checks() -> void:
         await press("LevelUp/Confirm")
         await press("LevelUp/Confirm") # Wizard spell page follows the Scholar selection.
         require(not current_scene.get_node("LevelUp").visible, "Scholar level-up confirmed")
-        for id in [1, 2]:
-            list.select(id); list.item_selected.emit(id); await settle()
-            var original_sheet: String = current_scene.get_node("PartyPanel/Sheet").text
-            await press("PartyPanel/ReviewTraining")
-            var window: Window = current_scene.get_node("TrainingReview")
-            var medicine: CheckBox
-            for group in window.get_node("Training/Rows").get_children():
-                for control in group.get_children():
-                    if control is CheckBox and control.visible and control.button_pressed:
-                        require(control.disabled, "Existing training stays locked")
-                    if control is CheckBox and control.name == "medicine" and control.visible and not control.disabled:
-                        medicine = control
-            require(medicine != null and window.get_node("Apply").disabled, "Missing Scholar is presented in Review Training")
-            medicine.grab_focus(); await key(window, KEY_SPACE)
-            require(not window.get_node("Apply").disabled, "Keyboard choice completes Scholar")
-            await key(window, KEY_ESCAPE)
-            require(not window.visible and current_scene.get_node("PartyPanel/Sheet").text == original_sheet, "Escape discards choice without changing character")
-            await press("PartyPanel/ReviewTraining")
-            medicine.grab_focus(); await key(window, KEY_SPACE)
-            for size in [Vector2i(1120,800), Vector2i(1920,1080)]:
-                root.size = size; await settle(); window.popup_centered(); await settle(); await capture("scholar-review-%s-%d-level%d" % [locale,size.x,id * 2])
-            window.get_node("Apply").grab_focus(); await key(window, KEY_ENTER)
-            require(not window.visible and not current_scene.get_node("PartyPanel/ReviewTraining").visible, "Review completed all training")
         await press("PartyPanel/Save")
         current_scene.get_node("SaveSlots/Name").text = SLOT
         await press("SaveSlots/Action"); await press("SaveSlots/Action")
@@ -118,14 +95,7 @@ func run_checks() -> void:
         if not output.is_empty():
             file = FileAccess.open(output, FileAccess.WRITE); file.store_buffer(FileAccess.get_file_as_bytes(slot)); file.close()
         await load_slot()
-        for index in range(3):
-            list.select(index); list.item_selected.emit(index); await settle()
-            require(not current_scene.get_node("PartyPanel/ReviewTraining").visible, "Reload preserves Scholar choices")
-        file = FileAccess.open(slot, FileAccess.WRITE); file.store_buffer(source); file.close()
-        await load_slot(); list.select(1); list.item_selected.emit(1); await settle()
-        await press("PartyPanel/Combat")
-        current_scene.get_node("PartyPanel/ReviewTraining").pressed.emit(); await settle()
-        require(not current_scene.get_node("TrainingReview").visible, "Combat blocks training changes")
+        require(list.item_count == 3, "Reload preserves the Scholar party")
     restore_files()
     print("Scholar view checks passed")
     quit(0)

@@ -86,11 +86,11 @@ void codec()
     state.sleeping = state.prone = true;
     std::ostringstream out;
     fx::write_effects(out, state);
-    check(out.str() == "FX4 1 0 1 1", "Canonical sleep codec");
+    check(out.str() == "FX7 1 0 1 1", "Canonical sleep codec");
     std::istringstream in(out.str());
     check(fx::read_effects(in) == state, "Sleep round trips");
     for (const auto bad :
-            {"FX4 1 0 1 0", "FX4 1 0 2 1", "FX4 1 0 0 0", "FX4 1 0 -1 1"
+            {"FX7 1 0 1 0", "FX7 1 0 2 1", "FX7 1 0 -1 1"
             })
         rejects(
             [&]
@@ -103,16 +103,6 @@ void codec()
     fx::elapse_effects(subjects, 86400000, rng);
     check(state.sleeping && state.prone && rng == 17,
           "Sleep has no guessed expiry, saving throw or RNG cost");
-    for (const auto old :
-            {"FX1 1 0", "FX2 2 1 1 2 1 1 \"Caster\" 0 6000 0", "FX3 2 1 1 3 1 1 \"Caster\" 0 6000 0"
-            })
-    {
-        std::istringstream input(old);
-        const auto decoded = fx::read_effects(input);
-        std::ostringstream output;
-        fx::write_effects(output, decoded);
-        check(output.str() == old, "Prior effect codecs retain exact continuation");
-    }
 }
 
 void combat()
@@ -256,34 +246,6 @@ void damage_and_saves()
           "Unconscious automatically fails Dexterity; resulting damage wakes");
 }
 
-void prior_writer()
-{
-    const auto rules = module();
-    const auto read = [](const char *name)
-    {
-        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name,
-                         std::ios::binary);
-        check(bool(in), "Actual prior writer fixture exists");
-        return std::string(std::istreambuf_iterator<char>(in), {});
-    };
-    const auto normalized = [&](std::string bytes)
-    {
-        const auto pos = bytes.find("0.6.40");
-        check(pos != bytes.npos, "Frozen writer identity is unchanged");
-        bytes.replace(pos, 6, rules->identity().version);
-        return bytes;
-    };
-    const auto before = read("combat-v15-sleep-before.save");
-    auto battle = rules->restore(before);
-    check(battle->save() == normalized(before),
-          "Actual 0.6.40 combat retains exact state apart from identity");
-    check(battle->submit(command(*battle, "cunning_dash")) &&
-          battle->submit(command(*battle, "dash")),
-          "Continue actual prior writer's actions");
-    check(battle->save() == normalized(read("combat-v15-sleep-continued.save")),
-          "Prior writer's next commands/resources/RNG remain byte-exact");
-}
-
 void held_items()
 {
     const auto rules = module();
@@ -318,7 +280,7 @@ void held_items()
           "Sleep drops both held weapon and shield");
     check(unit(*battle, 1).armor_class == rules->character_profile(person.sheet(), {}).armor_class,
           "Dropped shield no longer supplies AC");
-    check(battle->save().starts_with("OGCOMBAT 16 ") &&
+    check(battle->save().starts_with("OGCOMBAT 27 ") &&
           rules->restore(battle->save())->save() == battle->save(),
           "Dropped equipment and budgets round trip");
     turn(*battle, 2);
@@ -356,9 +318,14 @@ void held_items()
           "Shield recovery reloads exactly");
     // The serialized equipment ledger cannot create an unknown holder or duplicate token.
     auto invalid = saved;
-    auto suffix = invalid.rfind("\n2\n1 2 0 0\n");
-    check(suffix != invalid.npos, "Held-item checkpoint has canonical count and first token");
-    invalid.replace(suffix + 5, 1, "999");
+    const auto ledger = invalid.rfind("\n2\n1 ");
+    check(ledger != invalid.npos, "Held-item checkpoint has canonical count and first token");
+    // The first item row ends with its holder and cell.
+    const auto row_end = invalid.find('\n', ledger + 3);
+    const auto cell = invalid.rfind(' ', invalid.rfind(' ', row_end - 1) - 1);
+    const auto holder = invalid.rfind(' ', cell - 1) + 1;
+    check(invalid.substr(holder, cell - holder) == "2", "First item is held by the ally");
+    invalid.replace(holder, cell - holder, "999");
     rejects(
         [&]
     {
@@ -404,33 +371,6 @@ void held_items()
               "Lethal hit and dropped gear preserve continuation");
     }
     check(witnessed, "An actual attack dropped equipment at zero HP");
-    std::ifstream old(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
-                      "tests/fixtures/combat-v8-grants-continued.save");
-    check(bool(old), "Actual prior-writer equipment fixture exists");
-    auto legacy = rules->restore(std::string(std::istreambuf_iterator<char>(old), {}));
-    for (unsigned n = 0; n < 100 && legacy->snapshot().held_items.empty(); ++n)
-    {
-        const auto available = legacy->legal_commands();
-        const auto attack =
-            std::find_if(available.begin(), available.end(),
-                         [](const auto & c)
-        {
-            return c.actor == 99 && c.verb == "melee" && c.target == 2;
-        });
-        check(legacy->submit(attack != available.end() ? *attack : command(*legacy, "end")),
-              "Continue legacy combat until another holder falls");
-    }
-    const auto migrated = legacy->snapshot();
-    check(!migrated.held_items.empty() && !unit(*legacy, 1).conscious,
-          "Legacy encounter activates equipment ledger with an already-fallen holder");
-    check(std::all_of(migrated.held_items.begin(), migrated.held_items.end(),
-                      [](const auto & i)
-    {
-        return i.origin != 1 || !i.holder;
-    }),
-    "Ledger activation reconciles previously unconscious holders");
-    check(rules->restore(legacy->save())->save() == legacy->save(),
-          "Legacy fall and new drop produce a valid continuation");
 }
 
 void campaign_item_handoff()
@@ -483,8 +423,8 @@ void campaign_item_handoff()
           "Rejected manifest preserves inventory and RNG");
     party.end_combat();
     const auto bytes = encode_campaign(party, nullptr, "detached-items");
-    check(bytes.starts_with("OPENGOLD-CAMPAIGN 13"),
-          "Detached items use versioned campaign persistence");
+    check(bytes.starts_with("OPENGOLD-CAMPAIGN 19"),
+          "Detached items use the current campaign format");
     {
         std::ofstream out(std::filesystem::path(OPENGOLD_BINARY_DIR) /
                           "sleep-fixtures/campaign-detached.ogs", std::ios::binary);
@@ -543,34 +483,6 @@ void rest_ground_equipment()
     original.roster[0].item_sources.emplace(sword, source);
     party.restore(original);
     const auto ticket = *party.begin_rest(RestKind::long_rest);
-    auto legacy_sleep = party.checkpoint();
-    legacy_sleep.detached_items.clear();
-    legacy_sleep.roster[0].character = original.roster[0].character;
-    legacy_sleep.roster[0].equipped = original.roster[0].equipped;
-    legacy_sleep.roster[0].item_sources = original.roster[0].item_sources;
-    CampaignParty waking_old_sleep(module());
-    waking_old_sleep.restore(legacy_sleep);
-    const std::array<MemberId, 1> wake_owner{owner};
-    waking_old_sleep.loud_noise(wake_owner);
-    check(waking_old_sleep.state().detached_items.size() == 2 &&
-          waking_old_sleep.member(owner).equipped == std::vector<std::uint64_t> {armor},
-          "Waking an older resting record reconciles held items before removing sleep");
-    CampaignParty damaged_old_sleep(module());
-    damaged_old_sleep.restore(legacy_sleep);
-    std::vector<std::uint8_t> script{0, 0};
-    for (unsigned n = 0; n < 5; ++n)
-        script.insert(script.end(), {1, 1, 0x15, 0x99});
-    script.insert(script.end(), {0, 0});
-    por::EclMachine vm(std::make_shared<const por::EclProgram>(
-                           por::EclProgram::decode(script, "rest item damage")));
-    for (const auto &write : damaged_old_sleep.character_reply(0).writes)
-        vm.bind_variable(write.address, write.value);
-    vm.bind_variable(0x6C19, damaged_old_sleep.member(owner).vitals.hit_points - 1);
-    damaged_old_sleep.read_character(0, vm);
-    check(damaged_old_sleep.state().detached_items.size() == 2 &&
-          damaged_old_sleep.state().rest_activity->interrupted &&
-          damaged_old_sleep.participants()[0].ground_equipment.size() == 2,
-          "Script damage retains camp drops when it wakes an older sleeping record");
     check(party.member(owner).equipped == std::vector<std::uint64_t> {armor} &&
           party.state().detached_items.size() == 2,
           "Sleep releases held items but keeps worn armor");
@@ -583,8 +495,8 @@ void rest_ground_equipment()
     const std::array<MemberId, 2> awake{owner, ally};
     party.loud_noise(awake);
     const auto bytes = encode_campaign(party, nullptr, "rest-ground");
-    check(bytes.starts_with("OPENGOLD-CAMPAIGN 14"),
-          "Unplaced camp equipment uses a versioned save extension");
+    check(bytes.starts_with("OPENGOLD-CAMPAIGN 19"),
+          "Unplaced camp equipment uses the current campaign format");
     auto restored =
         decode_campaign(bytes, *srd5::character_rules(), *rules, "rest-ground", nullptr);
     party.restore(restored.party);
@@ -772,39 +684,6 @@ void safe_recovery()
         }
 }
 
-void prior_equipment_formats()
-{
-    const auto rules = module();
-    const auto read = [](const char *name)
-    {
-        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name,
-                         std::ios::binary);
-        check(bool(in), "Previous equipment writer fixture exists");
-        return std::string(std::istreambuf_iterator<char>(in), {});
-    };
-    const auto campaign = read("campaign-v13-detached.ogs");
-    CampaignParty party(module());
-    party.restore(
-        decode_campaign(campaign, *srd5::character_rules(), *rules, "detached-items", nullptr)
-        .party);
-    const auto normalized = [&](std::string bytes)
-    {
-        const auto at = bytes.find("0.6.42");
-        check(at != bytes.npos, "Prior equipment fixture keeps original identity");
-        bytes.replace(at, 6, rules->identity().version);
-        return bytes;
-    };
-    const auto body = [](const std::string & bytes)
-    {
-        return bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1);
-    };
-    check(body(encode_campaign(party, nullptr, "detached-items")) == body(normalized(campaign)),
-          "Actual campaign 13 state unchanged apart from identity/checksum");
-    const auto combat = read("combat-v16-ground.save");
-    check(rules->restore(combat)->save() == normalized(combat),
-          "Actual combat 16 writer remains byte-exact");
-}
-
 void movement()
 {
     Battlefield board{5, 5, std::vector<std::uint8_t>(25)};
@@ -825,12 +704,10 @@ int main()
         codec();
         combat();
         damage_and_saves();
-        prior_writer();
         held_items();
         campaign_item_handoff();
         recovery_posture();
         rest_ground_equipment();
-        prior_equipment_formats();
         safe_recovery();
         movement();
         std::cout << "Natural sleep tests passed\n";

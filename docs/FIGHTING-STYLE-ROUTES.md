@@ -47,6 +47,8 @@
 5. Existing saves/history remain supported. Use actual prior-writer GWF fixtures
    and existing current module0.6.52 evidence; capture another writer only for a
    missing acceptance case. Version new grants/choices where validation requires.
+   (Superseded: saves now have one pre-1.0 format and no migrations, and Review
+   Training was removed; see [SAVES.md](SAVES.md#pre-10-format-policy).)
 6. Main EN/ES and demo EN controls/input/render at1120×800 and1920×1080;
    exact native comparison of saved choices. Relevant focused checks, final
    native regression for shared rules/history, affected Godot checks/builds.
@@ -111,10 +113,10 @@ Reproduce native checks with `cmake --build build/mac-check --target
 opengold_training_tests opengold_archery_tests -j6`, then CTest with
 `-R '^opengold_(training|archery)_tests$' --output-on-failure`. The integrated run
 uses `ctest --test-dir build/mac-check --output-on-failure`. Native training with
-`OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD` generates `style-CLASS-ui.ogs` and
-`training-review.ogs` under the build directory. Godot scripts take
-`--style-class=CLASS --style-fixture=PATH --style-output=PATH --style-captures=DIR`
-or the corresponding `--review-*` flags. Use `tests/run_godot_test.cmake` with
+`OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD` generates `style-CLASS-ui.ogs` under
+the build directory. Godot scripts take
+`--style-class=CLASS --style-fixture=PATH --style-output=PATH --style-captures=DIR`.
+Use `tests/run_godot_test.cmake` with
 Godot `/Applications/Godot_mono.app/Contents/MacOS/Godot`; main project
 `src/OpenGoldBox/godot`, demo `demos/godot`. Run Godot serially.
 

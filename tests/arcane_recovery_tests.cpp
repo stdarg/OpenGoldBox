@@ -34,13 +34,6 @@ auto module()
                "\ncreature recovery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
-void write(const std::string &name, const std::string &bytes)
-{
-    std::ofstream output(root / "tests/fixtures" / name, std::ios::binary);
-    output << bytes;
-    check(bool(output), "Write actual previous-writer fixture");
-}
-
 Character wizard()
 {
     CharacterDraft draft;
@@ -85,113 +78,53 @@ void spend_slots(CampaignParty &party, CombatSession &combat)
     party.apply_combat(combat.snapshot());
 }
 
-void capture()
+// A Wizard of the given level who spent slots in combat and then completed a
+// Short Rest, so the party holds an open Short Rest spending ticket.
+PartyState baseline(unsigned level)
 {
     auto rules = module();
-    check(rules->identity().version == "0.6.48", "Capture only with actual 0.6.48 writer");
+    CampaignParty party(module());
+    const auto id = party.add_pc(wizard());
+    party.award_experience(2700, "arcane-baseline");
+    for (unsigned n = 2; n <= level; ++n)
+        party.advance(id, party.default_advancement(id));
+
+    auto participants = party.participants();
+    participants.front().cell = {1, 1};
+    participants.push_back({99, "recovery_target", "Target", 1, {5, 1}});
+    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, participants}, 13);
+    party.begin_combat();
+    party.apply_combat(combat->snapshot());
+    spend_slots(party, *combat);
+    if (level >= 3)
+    {
+        next_player(*combat);
+        act(*combat, "magic_missile_2");
+        party.apply_combat(combat->snapshot());
+    }
+
+    if (level == 4)
+    {
+        next_player(*combat);
+        act(*combat, "magic_missile");
+        party.apply_combat(combat->snapshot());
+    }
+
+    party.end_combat();
+    (void)party.rest(RestKind::short_rest);
+    check(party.state().short_rest.has_value(), "Completed Short Rest retains spending ticket");
+    return party.checkpoint();
+}
+
+void baseline_spending()
+{
     for (unsigned level = 1; level <= 4; ++level)
     {
         CampaignParty party(module());
-        const auto id = party.add_pc(wizard());
-        party.award_experience(2700, "arcane-baseline");
-        for (unsigned n = 2; n <= level; ++n)
-            party.advance(id, party.default_advancement(id));
-        auto participants = party.participants();
-        participants.front().cell = {1, 1};
-        participants.push_back({99, "recovery_target", "Target", 1, {5, 1}});
-        auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, participants}, 13);
-        party.begin_combat();
-        party.apply_combat(combat->snapshot());
-        spend_slots(party, *combat);
-        if (level >= 3)
-        {
-            next_player(*combat);
-            act(*combat, "magic_missile_2");
-            party.apply_combat(combat->snapshot());
-        }
-        if (level == 4)
-        {
-            combat = rules->restore(combat->save());
-            write("combat-arcane-before.save", combat->save());
-            next_player(*combat);
-            act(*combat, "magic_missile");
-            write("combat-arcane-continued.save", combat->save());
-            party.apply_combat(combat->snapshot());
-        }
-        party.end_combat();
-        (void)party.rest(RestKind::short_rest);
-        check(party.state().short_rest.has_value(),
-              "Actual completed Short Rest retains spending ticket");
-        write("campaign-arcane-level" + std::to_string(level) + ".ogs",
-              encode_campaign(party, nullptr, "arcane-baseline"));
-    }
-}
-
-// Capture with the unmodified 0.6.49 library, before Scholar changes its writer.
-void capture_scholar()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.49", "Scholar baseline requires actual 0.6.49 writer");
-    for (unsigned level = 2; level <= 4; ++level)
-    {
-        CampaignParty party(module());
-        auto character = wizard();
-        auto draft = character.creation_data();
-        draft.training["class:wizard"] = {"medicine", "nature"};
-        const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {}));
-        party.award_experience(2700, "scholar-baseline");
-        for (unsigned n = 2; n <= level; ++n)
-            party.advance(id, party.default_advancement(id));
-        auto participants = party.participants();
-        participants.front().cell = {1, 1};
-        participants.push_back({99, "recovery_target", "Target", 1, {5, 1}});
-        auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, participants}, 13);
-        party.begin_combat();
-        party.apply_combat(combat->snapshot());
-        spend_slots(party, *combat);
-        party.end_combat();
-        (void)party.rest(RestKind::short_rest);
-        (void)party.recover_rest_choice(party.state().short_rest->ticket, id,
-                                        "arcane_recovery:1:0");
-        write("campaign-scholar-level" + std::to_string(level) + ".ogs",
-              encode_campaign(party, nullptr, "scholar-baseline"));
-        if (level == 4)
-        {
-            participants = party.participants();
-            participants.front().cell = {1, 1};
-            participants.push_back({99, "recovery_target", "Target", 1, {5, 1}});
-            combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, participants}, 13);
-            write("combat-scholar-before.save", combat->save());
-            while (combat->snapshot().actor != 1)
-                act(*combat, "end");
-            act(*combat, "magic_missile");
-            write("combat-scholar-continued.save", combat->save());
-        }
-    }
-}
-
-std::string identity(std::string bytes, const RulesModule &rules)
-{
-    const auto position = bytes.find("0.6.48");
-    check(position != bytes.npos, "Fixture contains actual old version");
-    bytes.replace(position, 6, rules.identity().version);
-    return bytes;
-}
-
-void previous_writer()
-{
-    auto rules = module();
-    for (unsigned level = 1; level <= 4; ++level)
-    {
-        CampaignParty party(module());
-        party.restore(
-            decode_campaign(read(root / "tests/fixtures" /
-                                 ("campaign-arcane-level" + std::to_string(level) + ".ogs")),
-                            *srd5::character_rules(), *rules, "arcane-baseline", nullptr)
-            .party);
+        party.restore(baseline(level));
         check(party.member(1).character.sheet().level == level && party.state().short_rest &&
               party.state().short_rest->members == std::vector<MemberId> {1},
-              "Prior attained Wizard level and pending Short Rest eligibility survive");
+              "Attained Wizard level and pending Short Rest eligibility survive");
         const auto resources = party.recovery_info(1).resources;
         for (const auto &pool : resources)
             if (pool.id == "spell_slot:1")
@@ -199,29 +132,12 @@ void previous_writer()
                                          : level == 2 ? 1u
                                          : level == 3 ? 2u
                                          : 1u),
-                      "Prior spent first-level slots remain spent");
+                      "Spent first-level slots remain spent");
         for (const auto &pool : resources)
             if (pool.id == "spell_slot:2")
                 check(pool.remaining == (level == 3 ? 1u : 2u),
-                      "Prior spent second-level slot remains spent");
+                      "Spent second-level slot remains spent");
     }
-    const auto before = read(root / "tests/fixtures/combat-arcane-before.save");
-    auto combat = rules->restore(before);
-    check(combat->save() == identity(before, *rules), "Prior combat round trip is exact");
-    next_player(*combat);
-    act(*combat, "magic_missile");
-    check(combat->save() ==
-          identity(read(root / "tests/fixtures/combat-arcane-continued.save"), *rules),
-          "Prior combat continuation preserves slots, turn budgets, time and RNG");
-}
-
-PartyState baseline(unsigned level)
-{
-    auto rules = module();
-    return decode_campaign(read(root / "tests/fixtures" /
-                                ("campaign-arcane-level" + std::to_string(level) + ".ogs")),
-                           *srd5::character_rules(), *rules, "arcane-baseline", nullptr)
-           .party;
 }
 
 unsigned remaining(const RecoveryInfo &info, std::string_view id)
@@ -413,28 +329,6 @@ void eligibility_and_effects()
     check(srd5::detail::read_effects(decoded).active.empty() && rng == 123 &&
           remaining(rules->recovery_info(sheet, elapsed), "arcane_recovery") == 0,
           "Campaign time expires effects without refreshing the spent feature or consuming RNG");
-    auto old = rules->identity();
-    old.version = "0.6.48";
-    caught = false;
-    try
-    {
-        rules->migrate_character_state(old, sheet, state);
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "An old module identity cannot forge new resource expenditure");
-    caught = false;
-    try
-    {
-        rules->validate_saved_grants(old, sheet, sheet.grants);
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "An old module identity cannot forge the new fixed grant");
     auto invalid = sheet;
     invalid.grants.push_back({"feature:arcane_recovery", "class:wizard", 1, {}});
     caught = false;
@@ -479,7 +373,7 @@ void combat_and_advancement()
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         const auto before = combat->save();
-        check(before.starts_with("OGCOMBAT 20 "),
+        check(before.starts_with("OGCOMBAT 27 "),
               "Spent recovery uses a versioned combat checkpoint");
         auto copy = rules->restore(before);
         check(copy->save() == before && copy->snapshot().physical_inventory == physical,
@@ -520,22 +414,14 @@ void combat_and_advancement()
 }
 } // namespace
 
-int main(int argc, char **argv)
+int main()
 {
     try
     {
-        if (argc == 2 && std::string_view(argv[1]) == "--capture-scholar-writer")
-            capture_scholar();
-        else if (argc == 2 && std::string_view(argv[1]) == "--capture-prior-writer")
-            capture();
-        else
-        {
-            check(argc == 1, "Unexpected argument");
-            previous_writer();
-            recovery_transactions();
-            eligibility_and_effects();
-            combat_and_advancement();
-        }
+        baseline_spending();
+        recovery_transactions();
+        eligibility_and_effects();
+        combat_and_advancement();
         std::cout << "Arcane Recovery checks passed\n";
         return 0;
     }

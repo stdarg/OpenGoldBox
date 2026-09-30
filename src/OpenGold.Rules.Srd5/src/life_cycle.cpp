@@ -58,13 +58,6 @@ void validate_recovery(const LifeState &state)
         throw std::runtime_error("Invalid recovery clock");
 }
 
-void initialize_legacy_recovery(LifeState &state)
-{
-    state.recovery = {};
-    if (state.hp == 0 && !state.dead && !state.stable)
-        state.recovery.death_save_in_ms = death_turn_ms;
-}
-
 void start_stable_recovery(LifeState &state, std::uint64_t &rng)
 {
     if (state.hp == 0 && !state.dead && state.stable && !state.recovery.stable_recovery_in_ms &&

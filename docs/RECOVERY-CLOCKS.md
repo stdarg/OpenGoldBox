@@ -44,8 +44,7 @@ combat, an unstable living member rolls every six seconds, beginning with its
 persisted remainder. Stable recovery heals exactly one HP at its saved deadline.
 Simultaneous events use entity ID, then mortality before effect application ID;
 death suppresses that creature's subsequent effect saving throws. Effect expiry
-still precedes an effect save at the same instant. Legacy Stable delays initialize
-once, in entity order, when positive elapsed time first begins.
+still precedes an effect save at the same instant.
 
 Successful exploration steps, waits, camp interruptions and rests advance active
 PCs, recruited NPCs and reserves through this one sequence. Large intervals and
@@ -60,33 +59,19 @@ and advancement retain their existing resource rules. Candidate state and RNG
 commit together, so malformed participants, clock overflow, rejected combat
 snapshots and failed original events cannot partially advance recovery.
 
-## Persistence and migration
+## Persistence
 
-Rules **0.6.14** writes **OGCOMBAT 11**. Each actor row adds the remaining death-save
-and Stable-recovery milliseconds after its Hit Dice count. **SRD5** vital
+In **OGCOMBAT 27**, each actor row stores the remaining death-save and
+Stable-recovery milliseconds after its Hit Dice count. **SRD9** vital
 continuation carries both clocks alongside existing pools, counters, Hit Dice
-and FX1 effects for living zero-HP characters. Healthy/dead actors retain the
-existing compact resource formats. Campaign format **10** is unchanged. PC8 adds the fixed Dwarf resistance grant;
+and FX7 effects. **PC42** includes the fixed Dwarf resistance grant;
 see [typed damage](DAMAGE.md).
 
 Clocks must agree with vitality: healthy/dead creatures have none, Stable
 creatures have no death-save timer, and unstable creatures have no Stable timer.
 Death-save intervals cannot exceed six seconds and a Stable countdown cannot
 exceed four hours. Malformed clocks reject before replacing live state.
-
-Earlier supported campaign formats and combat modules through **0.6.13** retain
-wounds, counters, spent resources, effects, equipment, RNG and pending movement.
-Module 0.6.11 clocks retain their exact timing. Formats predating clocks have
-unknown timer history, which is never backdated. Legacy unstable campaign
-state starts with a full six-second interval when the continuation is adopted;
-legacy combat state uses its next initiative slot. Legacy Stable state records a
-pending duration roll (zero remaining milliseconds) until elapsed-time processing
-first begins. Loading, viewing and saving alone never roll it or heal a character.
-New stabilization rolls immediately; it never uses the deferred legacy path.
-
-Frozen files from commit `1adfc63`, module 0.6.10, cover Stable status with a spent
-Hit Die, an unstable caster with Blinded/spent slots, a dead member, an unconscious
-reserve, and a pending opportunity decision. See [fixture provenance](../tests/fixtures/README.md).
+Loading, viewing and saving alone never roll a duration or heal a character.
 
 ## Verification
 
@@ -94,9 +79,7 @@ reserve, and a pending opportunity decision. See [fixture provenance](../tests/f
 third-success stabilization, one-time duration selection, exact recovery deadlines,
 healing/damage/death transitions, overflow and malformed timer rejection. Combat
 and campaign checkpoints retain timers and resource expenditure; training review,
-advancement and temple healing keep or cancel them as appropriate. Frozen old
-checkpoints preserve the previous writer's pending-reaction continuation, adding
-only the new known/deferred timing fields. Existing death-save turn-entry,
+advancement and temple healing keep or cancel them as appropriate. Existing death-save turn-entry,
 shared-space, grant, training, rest, party, save and effect tests remain required.
 
 F04a delivery checks passed: twelve targeted native suites (including fuzz smoke),
@@ -106,7 +89,7 @@ were rebuilt. Scope review confirms the existing C++20/RAII and Godot boundaries
 this increment makes no independent UI layout or control choices.
 
 `opengold_campaign_recovery_tests` adds independent fixed-roll event ordering,
-32 seeded partition/reordering cases, legacy initialization, large elapsed time,
+32 seeded partition/reordering cases, large elapsed time,
 PC/NPC/reserve saves, combat exclusion, rejected snapshot rollback, rest eligibility
 and original exploration/event rollback. The Godot recovery route begins with a
 Stable companion and unstable reserve; its original five-minute interruption must
@@ -119,9 +102,9 @@ expanded companion/reserve route, six Godot integration checks and localization
 validation (559 messages). The game route still reports an ObjectDB cleanup
 warning on exit; its acceptance assertions and the node-ownership check pass.
 Scope review confirms C++20/RAII, borrowed synchronous views and unchanged UI
-controls/layout. Rules module 0.6.11 compatibility is tested without changing
-save schemas or introducing load-time recovery.
+controls/layout. The increment changed no save schemas and introduced no
+load-time recovery.
 
-Combat 11 appends sourced Temporary HP after the recovery clocks; SRD6 carries
-both. Natural recovery and death-save healing retain the pool. See
+The combat checkpoint stores sourced Temporary HP after the recovery clocks; SRD9
+carries both. Natural recovery and death-save healing retain the pool. See
 [Temporary HP](TEMPORARY-HP.md).

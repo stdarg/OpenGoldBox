@@ -103,45 +103,39 @@ rest-completion precision. Effect processing orders simultaneous events by entit
 and application ID so different time-update sizes preserve RNG continuation.
 
 Rules 0.5.0 adds Blinded through the blindness option of Blindness/Deafness.
-Combat checkpoint version 13 stores all effect applications, timers, presentation
-facing, pending movement reactions, involuntary allied overlap, weapon grip, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP and pending Savage Attacker decisions. Rules 0.6.21
-migrates modules 0.6.4/0.6.5/0.6.6/0.6.7/0.6.8/0.6.9/0.6.10/0.6.11/0.6.12/0.6.13/0.6.14/0.6.15/0.6.16/0.6.17/0.6.18/0.6.19/0.6.20 format-5/6/7/8/9/10/11/12/13 checkpoints, validating then canceling
-obsolete facing-only queues without changing spent resources, HP or time.
-Genuine movement queues retain their saved progress; future weapon attacks use
+The combat checkpoint (`OGCOMBAT 27`) stores all effect applications, timers, presentation
+facing, pending movement reactions, involuntary allied overlap, weapon grip, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP and pending Savage Attacker decisions.
+Movement queues retain their saved progress; future weapon attacks use
 the corrected [Heavy requirements](HEAVY-WEAPONS.md). The
 [weapon catalog](WEAPON-CATALOG.md) contains all 38 SRD weapons while retaining
 original campaign conversions and prices. The [armor catalog](ARMOR.md)
 uses shared category definitions for equipment, AC and starting-class training;
 equipped ability checks combine these penalties with character skill/tool grants.
-Core only collects equipped IDs and delegates the query to the rules module. Campaign
-version 9 stores the clock, encounter scopes, rules-owned effect state, grip and
+Core only collects equipped IDs and delegates the query to the rules module. The campaign
+save (`OPENGOLD-CAMPAIGN 19`) stores the clock, encounter scopes, rules-owned effect state, grip and
 acquired feature/feat grants with source IDs, acquisition levels and choices.
-Version 9 also stores training selections and source grants. Existing campaign
-formats 1–8 migrate, preserving missing selections as pending. Campaign version
-10 adds completed Short Rest spending tickets and individual eligibility records;
-formats 1–9 migrate without inventing a spending session. Core owns campaign clock advancement
+It also stores training selections and source grants, completed Short Rest
+spending tickets, individual eligibility records and resumable rest activity.
+Older formats are rejected, not migrated; see the
+[format policy](SAVES.md#pre-10-format-policy). Core owns campaign clock advancement
 and transactional commits; the rules module owns rest qualification, timing,
-interruption/resumption decisions, completion benefits and resource arithmetic. Campaign
-format 12 adds resumable rest activity when present, retaining format 11 for
-ordinary saves; native activity drives the existing atomic camp/inn route, with
+interruption/resumption decisions, completion benefits and resource arithmetic.
+Native rest activity drives the existing atomic camp/inn route, with
 shared game/demo controls and ECL damage/encounter interruption adapters
 delivered; sleeping actor behavior and final rest scheduling remain pending. See [training](TRAINING.md),
 [rest resources](REST-RESOURCES.md), [recovery clocks](RECOVERY-CLOCKS.md) and [status effects](STATUS-EFFECTS.md) for
 mechanics, scope, persistence and tests.
 
-Wizard choice history conditionally uses campaign format 16. Core replays spell
+Campaign saves store Wizard choice history. Core replays spell
 edits at their attained level between advancement records; SRD validates learning,
 preparation and cantrip replacement. A completed Long Rest creates a once-only
-choice window for eligible members before campaign actions resume. PC34 adds
-replacement provenance while retaining earlier combat recipes. See
-[Wizard spell choices](WIZARD-SPELL-CHOICES.md) for the bounded catalog and
-compatibility evidence. Formats 1–15 remain supported.
+choice window for eligible members before campaign actions resume. Profiles
+record replacement provenance. See
+[Wizard spell choices](WIZARD-SPELL-CHOICES.md) for the bounded catalog.
 
 Rules 0.6.19 derives [Wizard spell access](SPELL-ACCESS.md) from sourced grants,
 separating known cantrips and retained book entries from current preparation.
-New PC10 recipes validate casting access against those grants. Campaign replay
-recovers only the preset and actual advancement selections; old combat recipes
-retain their recorded access. Full selection controls and source-specific free
+Profile recipes validate casting access against those grants. Full selection controls and source-specific free
 casts remain separate work.
 [The Savage Attacker decision](SAVAGE-ATTACKER.md) retains a value-based pending
 hit until a legal player choice resolves damage and any interrupted movement.
@@ -149,8 +143,7 @@ Snapshots expose display values; rules validate choices and Godot owns the dialo
 
 Rules 0.6.21 adds [Somatic hand eligibility](SPELL-COMPONENTS.md) to the existing
 spell command query. Component definitions remain in the SRD library; Core and
-Godot do not duplicate hand rules or spell requirements. Existing saved equipment
-and attack grips are retained. Speech-blocking sources remain separate work.
+Godot do not duplicate hand rules or spell requirements. Speech-blocking sources remain separate work.
 
 Rules 0.6.23 adds [Sacred Flame](SACRED-FLAME.md) through the shared spell-access,
 saving-throw and typed-damage services. The class-driven Godot cantrip control
@@ -161,7 +154,7 @@ Rules 0.6.24 keeps the ordinary and Action Surge allowances in a rules-owned
 `ActionBudget` value. Magic eligibility consumes only the ordinary action;
 other actions spend the restricted allowance first. Existing legal-command
 and recovery-pool queries expose the feature without SRD parsing in Core/UI.
-See [Action Surge](ACTION-SURGE.md) for persistence and migration boundaries.
+See [Action Surge](ACTION-SURGE.md) for persistence boundaries.
 
 ### Why This Stack
 
@@ -366,9 +359,8 @@ rather than treating a traversable door as automatically transparent.
 `RolfTourSession::observe_view` merges that mask into persistent knowledge when
 the game composes its exploration image. Encounter pictures do not discover a
 new sightline. An opening script must publish its starting pose before discovery
-can occur. The core owns all history without depending on Godot. Campaign save
-version 5 stores per-district seen masks; versions 1–4 migrate their visited
-history and discover the current sightline when it is next displayed. See
+can occur. The core owns all history without depending on Godot. Campaign saves
+store per-district seen masks. See
 [campaign saves](SAVES.md).
 
 ### Goliath Combat Sprites and Draw Order
@@ -795,8 +787,7 @@ This gives OpenGoldBox the best balance of faithfulness, maintainability, legal 
 The equipment demo uses a temporary `CampaignParty` with the same `equip`,
 `unequip`, rules metadata, profile validation and atomic replacement as the
 main game. SRD 0.6.0 supports every ordinary reviewer weapon through explicit
-original-to-SRD conversions (see `docs/PARTY.md`). Saved ordinary items that
-used the old unsupported key migrate only when original provenance matches.
+original-to-SRD conversions (see `docs/PARTY.md`).
 
 The equipment resolver retains the character's saved anatomy. Its shared
 `icon` method composes stable torso/clothing/legs with wielding arms and gear
@@ -804,6 +795,9 @@ from the reviewed equipment pose; head composition and palette selection follow.
 Runtime masks and restoration use locally decoded original records. The catalog
 continues to describe complete reference poses and is never rewritten by the
 demo or compositor. Missing/deleted mappings visibly fall back to unarmed.
+
+The release notes below record the format numbers each release introduced. Only
+the current formats load; see the [format policy](SAVES.md#pre-10-format-policy).
 
 Rules 0.6.15 also persists Orc Adrenaline Rush uses and pending Temporary HP
 replacement in combat format 12 and SRD7; see [Temporary HP](TEMPORARY-HP.md).
@@ -824,20 +818,16 @@ source identities for cleanup. Combat and campaign integration remain separate;
 see [concentration](CONCENTRATION.md). No new runtime or save format is introduced
 by the foundation.
 
-Rules 0.6.26 adds the Sage fixed training package. PC15 validates those grants;
-prior profiles use the previous training policy. Campaign reconstruction adds
-only owed fixed grants from the existing background. The shared Training display
+Rules 0.6.26 adds the Sage fixed training package. PC15 validates those grants.
+The shared Training display
 and modifier queries expose them; see [Sage training](SAGE-TRAINING.md).
 
 Rules 0.6.27 adds Acolyte and Soldier fixed proficiencies through the shared
-training service. PC16 uses a versioned training policy; PC15 retains Sage-only
-additions and older profiles retain their original catalog. Campaign replay adds
-only owed fixed grants. Existing translated Training and character-sheet controls
+training service. Existing translated Training and character-sheet controls
 consume the same rules data. See [background training](BACKGROUND-TRAINING.md).
 
 Rules 0.6.28 derives Archery's attack bonus from the validated feat grant and
-Ranged weapon category. PC17 carries its feature bit; old profiles and campaign
-identities reject future Archery grants. The existing advancement selector reads
+Ranged weapon category. PC17 carries its feature bit. The existing advancement selector reads
 the available option from the rules module. Core and Godot do not implement the
 bonus. See [Archery](ARCHERY.md) for available routes and remaining class work.
 
@@ -845,21 +835,18 @@ Rules 0.6.29 adds Fighter starting styles as a single-selection training group.
 Core replaces that group's selection atomically; Godot renders the approved
 standard dropdown using group metadata. Style feats remain subject to feature
 validation as well as training validation. PC18 accepts their distinct level-one
-source; old profile policies and identities reject it. Existing campaign choice
-maps need no schema change. Old choices remain pending. See
+source. Existing campaign choice maps need no schema change. See
 [Fighter starting styles](FIGHTER-STYLES.md) for evidence and remaining work.
 
 The internal damage roller owns no resources and accepts value-only dice and
 an explicit die-value rule. Combat selects normal or Great
 Weapon Fighting die treatment from the validated entitlement and current weapon/grip.
-It never rerolls or doubles flat modifiers on critical hits. Actual pre-extraction
-Savage Attacker checkpoints prove unchanged continuation. See
+It never rerolls or doubles flat modifiers on critical hits. See
 [Great Weapon Fighting](GREAT-WEAPON-FIGHTING.md).
 
 Rules 0.6.30 adds the eleven missing starting class skill catalogs to the shared
-training service, preserving Rogue's catalog. PC19 selects that policy; older
-profiles retain their original lists. The campaign choice map is unchanged and
-old missing selections remain pending. Reused checkbox callbacks are rebound to
+training service, preserving Rogue's catalog. PC19 selects that policy. The
+campaign choice map is unchanged. Reused checkbox callbacks are rebound to
 the current class entitlement without replacing the focused control. Presets
 use the existing rules-driven generator. See [class skills](CLASS-SKILLS.md).
 
@@ -869,8 +856,7 @@ options and counts against the new group. Rules remain responsible for lists,
 counts and provenance; Core contains no SRD class-specific transfer logic.
 
 Rules 0.6.31 / PC20 adds Bard instrument choices to the existing rules-owned
-training service. Older recipes retain their original entitlement policy; campaign
-choice maps need no schema change. The shared Training controls render the new
+training service. Campaign choice maps need no schema change. The shared Training controls render the new
 group and translated tool sources without SRD mechanics in Core or Godot. See
 [Bard instruments](BARD-INSTRUMENTS.md).
 
@@ -879,23 +865,20 @@ stays in SRD rules, with the existing generic Training controls and choice
 continuity metadata shared by Bard and Monk. No Core class-specific behavior or
 new persistence schema is introduced. See [Monk tools](MONK-TOOLS.md).
 
-Rules 0.6.33 / PC22 adds fixed Druid Herbalism Kit proficiency. Historical
-campaign ledgers validate against the pre-grant policy before reconstruction
-adds the fixed entitlement. Existing combat recipes retain their original
-policy and continuation. No new control or save schema is needed. See
+Rules 0.6.33 / PC22 adds fixed Druid Herbalism Kit proficiency. No new control
+or save schema is needed. See
 [Druid Herbalism Kit](DRUID-HERBALISM.md).
 
 Rules 0.6.34 / PC23 adds Soldier Gaming Set choices through the existing training
 service and checkbox presentation. Tools use an explicit category enum to keep
-artisan, instrument and gaming entitlements distinct. Source validation and
-legacy policy handling remain rules-owned; Core and save schemas are unchanged.
+artisan, instrument and gaming entitlements distinct. Source validation
+remains rules-owned; Core and save schemas are unchanged.
 See [Soldier Gaming Set](SOLDIER-GAMING.md).
 
 Rules 0.6.35 / PC24 adds bounded Rogue level-two advancement and Cunning Action
 Dash/Disengage. Rules-derived Bonus Action entitlements feed the approved combat
-row; Godot does not calculate eligibility or movement. Existing combat format 15
-stores Dash counts and existing action budgets; old profiles retain their original
-behavior. See [Cunning Action](CUNNING-ACTION.md).
+row; Godot does not calculate eligibility or movement. The combat checkpoint
+stores Dash counts and existing action budgets. See [Cunning Action](CUNNING-ACTION.md).
 
 Rules 0.6.36 corrects movement through Unconscious enemies. The shared value-owned
 occupancy grid distinguishes blocked enemies from passable incapacitated enemies,
@@ -906,24 +889,24 @@ is validated against module version. See [Unconscious transit](UNCONSCIOUS-TRANS
 Rules 0.6.37 adds [level-one Warlock Eldritch Blast](ELDRITCH-BLAST.md) through
 explicit Pact Magic cantrip grants and the approved shared selection/casting
 controls. PC25 validates access and uses Charisma; campaign/combat formats stay
-unchanged. Old missing choices remain pending. Object targets, later Warlock
+unchanged. Object targets, later Warlock
 levels, slots, invocations and general speech blockers remain separate work.
 
 Rules 0.6.38 adds [Wizard Shocking Grasp](SHOCKING-GRASP.md) at levels 1–4.
 The shared value-owned effect model records sourced Opportunity Attack
 suppression; combat uses it when forming and validating movement interruptions.
 Reaction budgets are unchanged. PC26 validates access, FX3 encodes the new effect,
-and existing campaign/combat schemas and old choices remain compatible.
+and campaign/combat schemas stay unchanged.
 
 Rules 0.6.39 adds [level-one Warlock Poison Spray access](WARLOCK-POISON-SPRAY.md).
 PC27 validates the distinct Pact Magic source and casting mask; existing Charisma
-casting, spell effects and shared Godot controls are reused. Old choices remain
-unchanged, while new presets fill both available starting cantrips.
+casting, spell effects and shared Godot controls are reused. New presets fill
+both available starting cantrips.
 
 Rules 0.6.40 adds [level-one Sorcerer cantrips](SORCERER-CANTRIPS.md): explicit
 source-owned Fire Bolt, Poison Spray, Ray of Frost and Shocking Grasp choices.
 PC28 validates access and Charisma attacks. Existing Spell Choices/Spell/Cast
-controls are reused under Q27; old choices and save schemas remain unchanged.
+controls are reused under Q27; save schemas stay unchanged.
 Full Sorcerer spellcasting and Innate Sorcery remain #132.
 
 
@@ -952,15 +935,14 @@ they are not rules calculations.
 
 
 Wizard Scholar uses generic advancement training groups with acquired-level
-metadata. Core stores those choices in advancement history (conditional campaign
-format 15) and replays isolated candidates for Review Training, preserving live
-vitals. The static SRD module owns eligibility, level-two source validation and
+metadata. Core stores those choices in advancement history and replays isolated
+candidates, preserving live vitals. The static SRD module owns eligibility, level-two source validation and
 Expertise arithmetic; PC33 validates combat provenance. Godot presents the
 approved dropdown/checkbox controls without SRD decisions. See [Scholar](SCHOLAR.md).
 
 Rules 0.6.53 adds [Fighting Style routes](FIGHTING-STYLE-ROUTES.md). The static
 SRD library owns class entitlements, Fighter replacement, feat nonrepeatability
 and damage eligibility. Core stores the optional class choice separately in
-conditional campaign17 and replays ordinary advancement; it contains no style
-rules. Main/demo controls present rules-provided options. PC36 validates new
-provenance while existing profiles and prior-writer combat fixtures remain valid.
+the campaign save and replays ordinary advancement; it contains no style
+rules. Main/demo controls present rules-provided options. PC36 validates its
+provenance.

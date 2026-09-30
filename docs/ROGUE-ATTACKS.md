@@ -37,6 +37,10 @@
 | Transactions | Invalid choices leave state/RNG unchanged. Wounds, equipment, training, resources, party/recruited ownership and rest/campaign handoff remain correct. |
 | UI | Approved controls only; standard visible buttons, keyboard/mouse, proper disabled state, game EN/ES and demo EN input/renders at 1120×800 and 1920×1080. |
 
+The prior-writer, released-history and migration persistence requirements are
+superseded: saves now have one pre-1.0 format and nothing is migrated; see
+[SAVES.md](SAVES.md#pre-10-format-policy).
+
 ## Approved controls
 
 ROGUE-1/2/3 approved 2026-09-25: user replied “1. Approved. 2. Approved.
@@ -108,7 +112,7 @@ Native `rogue_attack_checks.h` covers real criticals, opposed roll cancellation,
 incapacitated allies, throws, opportunity attacks/interrupted movement, separate
 Savage dice, resistance, rejected commands, pending-state RNG, campaign/rest and
 XP progression. Final extra tests add malformed fields and recruited ownership
-through all four levels. The old0.6.35 exact-continuation fixtures remain intact.
+through all four levels.
 
 Observed phases: preflight21:27:56; runtime implementation and focused combat UI
 were present by22:09; final advancement fit and integrated verification complete
@@ -119,9 +123,7 @@ non-party ally in party handoff) were corrected without production changes.
 Requested Astra/high retained; actual model/effort and token delta unavailable.
 
 Preflight baseline (historical; not final feature evidence):
-The existing 0.6.35 actual-writer campaign and pending-Savage fixtures are
-immutable and already cover pre-Sneak capabilities and exact RNG continuation;
-do not regenerate them. Current 0.6.51 baseline at `eef99a3` passes
+The 0.6.51 baseline at `eef99a3` passed
 `ctest --test-dir build/mac-check --output-on-failure -R '^opengold_(damage|training)_tests$'`
 (2/2, 0.70 seconds, 21:34 UTC). This is baseline evidence, not feature completion.
 

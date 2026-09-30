@@ -69,19 +69,14 @@ with a specific overriding lifetime must implement that lifetime when added.
 
 ## Persistence and architecture
 
-Rules **0.6.15** writes combat format **12**. In addition to the format-11 sourced
+In **OGCOMBAT 27**, in addition to the sourced
 pool, actor rows retain Adrenaline Rush uses and whether its movement allowance
 was used this turn. A final section stores the optional unresolved offer. Restore
 validates entitlement, amount/source, spent costs, movement capacity, conscious
 recipient and absence of a competing opportunity queue before committing.
-**PC9** requires the fixed sourced Orc grant; **PC1–PC8** remain readable.
-**SRD7** records uses with existing resources, pool, Hit Dice, mortality clocks
-and effects. Other species retain SRD1–SRD6. Campaign format **10** is unchanged.
-
-Prior combat modules through **0.6.14** migrate without new dice rolls, healing,
-elapsed time or refunds to existing resources. Legacy Orcs gain the new fixed
-trait and its previously unavailable use capacity; existing Dwarf resistance is
-validated and preserved. Current Orc use counts survive subsequent reloads.
+**PC42** requires the fixed sourced Orc grant.
+**SRD9** records uses with existing resources, pool, Hit Dice, mortality clocks
+and effects. Orc use counts survive reloads.
 Malformed counters, source IDs, pending offers and trailing fields reject before
 replacing live state.
 
@@ -89,7 +84,7 @@ The source and amount are available through `RecoveryInfo` and `CombatantView`.
 The shared life-cycle value type owns the pool; no ownership uses raw pointers,
 and Core/Godot do not decode the SRD resource string. Rules remain C++20 and
 independent of Godot. No new runtime or framework is introduced. Godot controls display rules-owned
-queries; Core and presentation never parse SRD7 themselves.
+queries; Core and presentation never parse SRD9 themselves.
 
 ## Verification and remaining delivery
 
@@ -100,16 +95,10 @@ combat tests apply Dwarf Poison resistance before consuming the buffer and
 continue identically after a checkpoint. Campaign tests cover PC/NPC/reserve
 state, training, advancement, Hit Dice and individual Long Rest expiry.
 
-Frozen files from the **0.6.13** writer at commit `eea7368` preserve wounds,
-resources, Dwarf grants, mortality timers, RNG and a pending opportunity decision.
-They were generated before changing the writer; see [fixture provenance](../tests/fixtures/README.md).
-
 `opengold_adrenaline_tests` covers ordinary creation in all twelve classes,
 shared Bonus Action costs, both Dash allowances, explicit lower/equal/higher
 replacement, stale commands, pending save/load, opportunity continuation,
-resource validation, training/advancement, campaign continuation and rests.
-Frozen **0.6.14** writer files at `efbe48d` independently retain Orc/Dwarf state,
-spent resources, Temporary HP, mortality clocks and pending movement. The Godot
+resource validation, training/advancement, campaign continuation and rests. The Godot
 check drives the feature buttons, keyboard replacement, and checkpoint handlers;
 `--party-check --adrenaline-check` exercises normal Orc creation, shops, campaign
 combat, advancement and recovery using the existing game route. English and

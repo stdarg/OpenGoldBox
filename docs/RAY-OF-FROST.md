@@ -20,24 +20,17 @@ starts or ends; ordinary Dash and Adrenaline Rush add the current reduced Speed.
 
 The approved Spell Choices step includes Ray of Frost alongside Fire Bolt and
 Poison Spray. Unfilled choices retain the existing pending flow. New preset
-Wizards receive all three supported choices; existing saves retain their recorded
-choices. The approved Spell dropdown and Cast button expose the learned spell,
+Wizards receive all three supported choices. The approved Spell dropdown and Cast button expose the learned spell,
 including legal ally/self targeting without changing party selection. Keyboard
 activation and translated labels use the established controls.
 
 ## Persistence
 
-PC14 permits the new cantrip bit. Combat 15 records Dash allowance counts when
-Ray of Frost access or an imported slow requires them; unaffected encounters
-retain combat 13/14. FX2 stores the independently sourced, nonsaving slow timers.
-The shared campaign recovery scheduler handles these deadlines without rolling
-repeat saves. Campaign format 11 remains; camping expires the short duration
-before the ordinary save. No player combat-saving controls were added.
-
-The frozen [prior-writer fixture](../tests/fixtures/combat-v13-ray-before.save)
-comes from rules 0.6.24. Migration preserves its bytes except module identity
-and does not invent a Ray of Frost grant. Older formats reject forged new grants
-or effects.
+Profile recipes permit the new cantrip. Combat checkpoints record Dash
+allowance counts. Effect state (FX7) stores the independently sourced, nonsaving
+slow timers. The shared campaign recovery scheduler handles these deadlines without
+rolling repeat saves. Camping expires the short duration before the ordinary save.
+No player combat-saving controls were added.
 
 ## Evidence and remaining scope
 
@@ -45,7 +38,7 @@ or effects.
   at levels 1–4, defenses, misses/criticals, two real casters, nonstacking and
   exact expiry, movement already spent, Dash, invalid targets, occupied hands,
   deterministic checkpoint continuation, campaign handoff, camp save/reload,
-  malformed effects and the actual prior-writer fixture.
+  and malformed effects.
 - [Combat view checks](../tests/frost_view_tests.gd): learned-only selection,
   keyboard Cast, actual ally click, localized slow display and hidden save controls.
 - [Creation checks](../tests/cantrip_view_tests.gd): keyboard choice, counts,

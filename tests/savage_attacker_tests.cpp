@@ -1,4 +1,3 @@
-#include "campaign_fixture.h"
 #include "opengold/campaign_save.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
@@ -333,7 +332,7 @@ void defenses()
                 1,
                 {2, 1},
                 "",
-                VitalState{1000, false, "SRD7 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 FX1 1 0"}
+                VitalState{1000, false, "SRD9 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 0 0 FX7 1 0 0 0"}
             }
         }},
     13);
@@ -438,64 +437,6 @@ void grants_and_campaign()
     }
 }
 
-std::string upgraded(std::string bytes)
-{
-    const auto at = bytes.find("0.6.19");
-    check(at != bytes.npos, "Actual prior writer identity");
-    bytes.replace(at, 6, module(false)->identity().version);
-    bytes.replace(9, 2, "13");
-    return bytes + "0\n";
-}
-
-void legacy()
-{
-    auto rules = module(false);
-    const auto base = root / "tests/fixtures";
-    const auto old = read(base / "campaign-v10-savage.ogs");
-    CampaignParty p(module(false));
-    p.restore(
-        decode_campaign(old, *srd5::character_rules(), *rules, "savage-fixture", nullptr).party);
-    auto expected = old.substr(old.find('\n', old.find('\n') + 1) + 1);
-    expected.replace(expected.find("0.6.19"), 6, rules->identity().version);
-    const auto bytes = encode_campaign(p, nullptr, "savage-fixture");
-    check(
-        bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1) ==
-        test::with_background_training_grants(test::with_action_surge_grants(
-                    test::with_legacy_cantrip_choices(expected), {false, true})),
-        "Only the justified Action Surge and background grants are added; existing equipment, wounds, pools and clocks unchanged");
-    for (const auto suffix :
-            {"", "-reaction"
-            })
-    {
-        auto c = rules->restore(read(base / (std::string("combat-v12-savage") + suffix + ".save")));
-        check(c->save() ==
-              upgraded(read(base / (std::string("combat-v12-savage") + suffix + ".save"))),
-              "Old checkpoint adds only empty decision and identities");
-        act(*c, *suffix ? "opportunity" : "melee");
-        act(*c, "savage_use");
-        act(*c,
-            offer(*c).first_damage >= *offer(*c).second_damage ? "savage_first" : "savage_second");
-        auto prior = rules->restore(
-                         read(base / (std::string("combat-v12-savage") + suffix + "-continued.save")));
-        check(rng(*c) == rng(*prior) &&
-              c->snapshot().elapsed_milliseconds == prior->snapshot().elapsed_milliseconds &&
-              c->snapshot().outcome == prior->snapshot().outcome,
-              "Explicit higher-result choice matches old automatic RNG/time/outcome");
-        for (auto id :
-                {
-                    1u, 99u
-                })
-        {
-            const auto a = unit(*c, id), b = unit(*prior, id);
-            check(a.hit_points == b.hit_points && a.persistent == b.persistent &&
-                  a.cell == b.cell && a.action == b.action &&
-                  a.bonus_action == b.bonus_action && a.reaction == b.reaction &&
-                  a.movement_feet == b.movement_feet,
-                  "Old writer's damage, resources and movement continue exactly");
-        }
-    }
-}
-
 void fixtures(const std::filesystem::path &path)
 {
     std::filesystem::create_directories(path);
@@ -525,7 +466,6 @@ int main(int argc, char **argv)
         defenses();
         invalid();
         grants_and_campaign();
-        legacy();
         if (argc == 2)
             fixtures(argv[1]);
         std::cout << "Savage Attacker tests passed\n";

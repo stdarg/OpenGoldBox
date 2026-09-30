@@ -1,5 +1,4 @@
 #include "combat_fixture.h"
-#include "campaign_fixture.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "damage.h"
@@ -10,7 +9,6 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -456,98 +454,19 @@ void weapons_and_spells()
           "Each Magic Missile dart rounds separately before summing HP loss");
 }
 
-std::string fixture(const char *name)
+void advancement_keeps_mortality()
 {
-    return read(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
-}
-
-std::string upgrade(std::string bytes, const Identity &identity)
-{
-    std::istringstream in(bytes);
-    std::vector<std::string> rows;
-    for (std::string row; std::getline(in, row);)
-        rows.push_back(row);
-    std::ostringstream header;
-    header << "OGCOMBAT 13 " << std::quoted(identity.module) << ' ' << std::quoted(identity.version)
-           << ' ' << std::quoted(identity.content);
-    rows[0] = header.str();
-    for (unsigned i = 4; i < 8; ++i)
-        rows[i] += " 0 \"\" 0 0";
-    std::string result;
-    for (const auto &row : rows)
-        result += row + '\n';
-    return result + "0\n0\n";
-}
-
-void migration()
-{
-    auto rules = module();
-    const auto old = fixture("campaign-v10-damage.ogs");
-    const auto disk =
-        decode_campaign(old, *srd5::character_rules(), *rules, "damage-fixture", nullptr);
     CampaignParty party(module());
-    party.restore(disk.party);
-    for (const auto &member : party.state().roster)
-    {
-        const bool dwarf = member.id % 2 == 1;
-        check(std::any_of(member.character.sheet().grants.begin(),
-                          member.character.sheet().grants.end(),
-                          [](const auto & g)
-        {
-            return g.id == "trait:dwarven_resilience";
-        }) == dwarf,
-        "Old campaign gains exactly the fixed resistance justified by its species");
-    }
-    check(party.member(1).vitals.resources == "SRD5 1 0 0 0 0 1 1 0 4321000 FX1 1 0" &&
-          party.member(1).vitals.hit_points == 0 && party.member(3).vitals.dead &&
-          party.state().random_state == 42 && party.state().time_minutes == 1234 &&
-          party.state().subminute_milliseconds == 5678,
-          "Migration preserves Stable timing, spent dice/Wind, death, RNG and clock");
-    const auto bytes = encode_campaign(party, nullptr, "damage-fixture");
-    CampaignParty copy(module());
-    copy.restore(
-        decode_campaign(bytes, *srd5::character_rules(), *rules, "damage-fixture", nullptr).party);
-    check(encode_campaign(copy, nullptr, "damage-fixture") == bytes,
-          "Sourced resistance migration is canonical and not reapplied on reload");
-    auto combat = rules->restore(fixture("combat-v10-damage.save"));
-    check(combat->save() == upgrade(fixture("combat-v10-damage.save"), rules->identity()),
-          "Old combat preserves all actor fields, profiles, RNG, timers and pending reactions");
-    const auto decline = command(*combat, "decline");
-    check(combat->submit(decline) &&
-          combat->save() ==
-          upgrade(fixture("combat-v10-damage-continued.save"), rules->identity()),
-          "Pre-change writer's pending movement continues byte-for-byte apart from identity");
-    CampaignParty pending(module());
-    const auto pending_id = pending.add_pc(hero("dwarf", "fighter", 2));
-    auto waiting = pending.checkpoint();
-    waiting.roster[0].vitals = party.member(1).vitals;
-    pending.restore(waiting);
-    pending.complete_training(
-        pending_id, *srd5::character_rules(),
-    {
-        {"origin:languages", {"elvish", "orc"}},
-        {"class:fighter:fighting_style", {"archery"}},
-        {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-        {"class:fighter", {"athletics", "history"}},
-        {"background:soldier:gaming_set", {"dice"}}
-    });
-    check(pending.member(pending_id).vitals == waiting.roster[0].vitals,
-          "Completing missing training preserves resistance and the full vital continuation");
-    const auto &dwarf = party.member(1);
-    const auto before = dwarf.vitals;
-    rejects(
-        [&]
-    {
-        party.complete_training(1, *srd5::character_rules(),
-        {{"origin:languages", {"elvish", "orc"}}});
-    });
-    check(party.member(1).vitals == before,
-          "Repeated completed training cannot change a resistant character");
+    const auto id = party.add_pc(hero());
+    auto state = party.checkpoint();
+    state.roster[0].vitals = {0, false, "SRD9 1 0 0 0 0 1 1 0 4321000 0 \"\" 0 0 0 FX7 1 0 0 0"};
+    party.restore(state);
     party.award_experience(900, "damage-test");
-    party.advance(1, party.default_advancement(1));
-    check(party.member(1).vitals.hit_points == 0 &&
-          party.member(1).vitals.resources == "SRD5 1 0 0 0 0 1 2 0 4321000 FX1 1 0",
-          "Advancement preserves resistance and mortality while adding only the earned Hit Die");
+    party.advance(id, party.default_advancement(id));
+    check(party.member(id).vitals.hit_points == 0 &&
+          party.member(id).vitals.resources ==
+          "SRD9 1 0 0 0 0 1 2 0 4321000 0 \"\" 0 1 0 FX7 1 0 0 0",
+          "Advancement preserves mortality, adding only the earned Hit Die and Action Surge");
 }
 
 void malformed()
@@ -624,128 +543,18 @@ void damage_rolls()
           "Fixed damage gets neither extra damage nor random draws");
 }
 
-void gwf_prior_continuation()
-{
-    auto rules = module();
-    const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
-    auto current = [&](std::string bytes)
-    {
-        const auto at = bytes.find("0.6.29");
-        check(at != bytes.npos, "Prior writer identity exists");
-        bytes.replace(at, 6, rules->identity().version);
-        return bytes;
-    };
-    const auto campaign = read(root / "campaign-v11-gwf-before.ogs");
-    CampaignParty party(module());
-    party.restore(
-        decode_campaign(campaign, *srd5::character_rules(), *rules, "gwf-fixture", nullptr).party);
-    auto body = [](const auto & s)
-    {
-        return s.substr(s.find('\n', s.find('\n') + 1) + 1);
-    };
-    check(body(encode_campaign(party, nullptr, "gwf-fixture")) ==
-          test::with_tactical_mind_grants(body(current(campaign))),
-          "Prior campaign changes only module identity and fixed Tactical Mind grant");
-    auto combat = rules->restore(read(root / "combat-v14-gwf-first.save"));
-    check(combat->save() == current(read(root / "combat-v14-gwf-first.save")),
-          "Actual critical first-roll choice restores exactly");
-    auto act = [&](std::string_view verb)
-    {
-        for (const auto &c : combat->legal_commands())
-            if (c.verb == verb)
-            {
-                check(combat->submit(c), "Prior continuation command accepted");
-                return;
-            }
-        throw std::runtime_error("Missing continuation command");
-    };
-    act("savage_use");
-    check(combat->save() == current(read(root / "combat-v14-gwf-second.save")),
-          "Second critical damage roll matches the pre-extraction writer's RNG and result");
-    combat = rules->restore(combat->save());
-    act("savage_second");
-    check(combat->save() == current(read(root / "combat-v14-gwf-resolved.save")),
-          "Applying the saved roll matches prior HP, action and Savage expenditure");
-}
-
-void freeze_gwf()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.29",
-          "Requires the actual pre-Great Weapon Fighting writer");
-    auto draft = hero("human").creation_data();
-    draft.training = {{"origin:languages", {"elvish", "dwarvish"}},
-        {"class:fighter:fighting_style", {"defense"}}
-    };
-    CampaignParty party(module());
-    const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {}));
-    party.award_experience(2700, "gwf-fixture");
-    for (int i = 0; i < 2; ++i)
-        party.advance(id, party.default_advancement(id));
-    auto choice = party.default_advancement(id);
-    choice.feat = "archery";
-    choice.abilities = {};
-    party.advance(id, choice);
-    auto state = party.checkpoint();
-    state.roster[0].vitals.hit_points -= 3;
-    state.roster[0].vitals.resources = "SRD1 1 0 0 0 0";
-    party.restore(state);
-    const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
-    auto write = [&](const char *name, const std::string & bytes)
-    {
-        std::ofstream out(root / name, std::ios::binary);
-        out << bytes;
-        check(bool(out), "Write actual prior GWF fixture");
-    };
-    write("campaign-v11-gwf-before.ogs", encode_campaign(party, nullptr, "gwf-fixture"));
-    auto members = party.participants();
-    members[0].cell = {1, 1};
-    members[0].character_profile = rules
-                                   ->character_profile(party.member(id).character.sheet(),
-                                       std::array<std::string, 1> {"greatsword"})
-                                   .data;
-    members.push_back({99, "vanguard", "Enemy", 1, {2, 1}});
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 0);
-    auto act = [&](std::string_view verb)
-    {
-        for (const auto &c : combat->legal_commands())
-            if (c.verb == verb)
-            {
-                check(combat->submit(c), "Prior writer command accepted");
-                return;
-            }
-        throw std::runtime_error("Missing prior writer command");
-    };
-    check(combat->snapshot().actor == id, "Prior writer initiative starts with Fighter");
-    act("melee");
-    check(combat->snapshot().savage_attack_choice &&
-          combat->snapshot().savage_attack_choice->critical,
-          "Prior writer critical hit awaits Savage choice");
-    write("combat-v14-gwf-first.save", combat->save());
-    act("savage_use");
-    write("combat-v14-gwf-second.save", combat->save());
-    act("savage_second");
-    write("combat-v14-gwf-resolved.save", combat->save());
-}
-
 } // namespace
 
-int main(int argc, char **argv)
+int main()
 {
     try
     {
-        if (argc == 2 && std::string_view(argv[1]) == "--freeze-gwf")
-        {
-            freeze_gwf();
-            return 0;
-        }
         sneak_attack_foundation();
         damage_rolls();
-        gwf_prior_continuation();
         arithmetic();
         species_combat();
         weapons_and_spells();
-        migration();
+        advancement_keeps_mortality();
         malformed();
         std::cout << "Typed damage tests passed\n";
         return 0;

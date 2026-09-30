@@ -101,154 +101,54 @@ namespace
 {
 constexpr std::string_view rush_source = "species:orc/trait:adrenaline_rush";
 
-// Compatibility is checked before this helper. Feature introduction boundaries
-// must stay fixed when the current module version advances.
-bool module_before(const Identity &identity, std::array<unsigned, 3> introduced)
-{
-    std::istringstream in(identity.version);
-    std::array<unsigned, 3> version{};
-    char first{}, second{};
-    in >> version[0] >> first >> version[1] >> second >> version[2];
-    if (!in || first != '.' || second != '.')
-        throw std::runtime_error("Invalid module version");
-    in >> std::ws;
-    if (!in.eof())
-        throw std::runtime_error("Invalid module version");
-    return version < introduced;
-}
+// The only character profile tag this module reads or writes. Profiles live
+// inside campaign saves and combat checkpoints, whose own format numbers reject
+// anything older; change this recipe in place until 1.0.
+constexpr std::string_view profile_magic = "PC42";
 
-// The character-profile tag is a monotonic capability marker: a profile written
-// as PC<n> contains every capability introduced at or before n. The enum value
-// *is* the introducing tag, so a new feature adds one row here instead of
-// another link in a boolean chain -- the old form required editing the
-// neighbouring line as well, which is what made it error-prone.
-enum class Cap : unsigned
-{
-    selected = 3,
-    training = 7,
-    spells = 10,
-    cantrips = 11,
-    cleric_cantrips = 12,
-    surge = 13,
-    frost = 14,
-    sage = 15,
-    backgrounds = 16,
-    archery = 17,
-    styles = 18,
-    class_skills = 19,
-    instruments = 20,
-    monk_tools = 21,
-    herbalism = 22,
-    gaming = 23,
-    cunning = 24,
-    warlock = 25,
-    shocking = 26,
-    warlock_poison = 27,
-    sorcerer = 28,
-    chill = 29,
-    mind = 30,
-    champion = 31,
-    arcane = 32,
-    scholar = 33,
-    choices = 34,
-    rogue = 35,
-    style_routes = 36,
-    hands = 37,
-    light = 38,
-    mastery = 39,
-    alert = 40,
-    // Skilled carries no combat effect, so it adds no feats bit; the capability
-    // exists to keep its proficiency grants out of older profiles.
-    skilled = 41,
-    // Spells are written as an explicit id list instead of the legacy bitmask.
-    // Only reached once a spell exists that no bit can encode, so profiles
-    // written today are unchanged. This must stay the highest capability: the
-    // reader decides the spell format from has(explicit_spells), so any tag
-    // above it would be misread as carrying an explicit list. A new capability
-    // is inserted below and this value moves up.
-    explicit_spells = 42
-};
+// The only combat checkpoint format this module reads or writes. Older
+// checkpoints are rejected rather than migrated; change it in place until 1.0.
+constexpr unsigned checkpoint_format = 27;
 
-// Which spells a class may legitimately have stored at a level, given the
-// capabilities its tag implies. This replaces a packed allow-mask, which could
-// not express a spell beyond the 31st bit. Capability gates are monotonic, so
-// one Cap per row is enough: a row requiring a later capability implicitly
-// requires every earlier one. Cap::selected imposes no gate beyond the profile
-// storing spell choices at all.
+// Which spells a class may legitimately have stored at a level. This replaces a
+// packed allow-mask, which could not express a spell beyond the 31st bit.
 struct SpellAccessRow
 {
     std::string_view klass, spell;
     unsigned min_level;
-    Cap required;
 };
 
 constexpr std::array class_spell_access
 {
-    SpellAccessRow{"Cleric", "cure_wounds", 1, Cap::selected},
-    SpellAccessRow{"Cleric", "healing_word", 1, Cap::selected},
-    SpellAccessRow{"Cleric", "blindness", 3, Cap::selected},
-    SpellAccessRow{"Cleric", "sacred_flame", 1, Cap::cleric_cantrips},
-    // A spell with no legacy bit can only appear in an explicit-list profile,
-    // which is what Cap::explicit_spells states. Every spell added from now on
-    // gates here, so no new capability is needed per spell.
-    SpellAccessRow{"Cleric", "inflict_wounds", 1, Cap::explicit_spells},
-    SpellAccessRow{"Wizard", "fire_bolt", 1, Cap::selected},
-    SpellAccessRow{"Wizard", "magic_missile", 1, Cap::selected},
-    SpellAccessRow{"Wizard", "scorching_ray", 3, Cap::selected},
-    SpellAccessRow{"Wizard", "blindness", 3, Cap::selected},
-    SpellAccessRow{"Wizard", "poison_spray", 1, Cap::cantrips},
-    SpellAccessRow{"Wizard", "ray_of_frost", 1, Cap::frost},
-    SpellAccessRow{"Wizard", "shocking_grasp", 1, Cap::shocking},
-    SpellAccessRow{"Wizard", "chill_touch", 1, Cap::chill},
-    SpellAccessRow{"Warlock", "eldritch_blast", 1, Cap::warlock},
-    SpellAccessRow{"Warlock", "poison_spray", 1, Cap::warlock_poison},
-    SpellAccessRow{"Warlock", "chill_touch", 1, Cap::chill},
-    SpellAccessRow{"Sorcerer", "fire_bolt", 1, Cap::sorcerer},
-    SpellAccessRow{"Sorcerer", "poison_spray", 1, Cap::sorcerer},
-    SpellAccessRow{"Sorcerer", "ray_of_frost", 1, Cap::sorcerer},
-    SpellAccessRow{"Sorcerer", "shocking_grasp", 1, Cap::sorcerer},
-    SpellAccessRow{"Sorcerer", "chill_touch", 1, Cap::chill}};
+    SpellAccessRow{"Cleric", "cure_wounds", 1},
+    SpellAccessRow{"Cleric", "healing_word", 1},
+    SpellAccessRow{"Cleric", "blindness", 3},
+    SpellAccessRow{"Cleric", "sacred_flame", 1},
+    SpellAccessRow{"Cleric", "inflict_wounds", 1},
+    SpellAccessRow{"Wizard", "fire_bolt", 1},
+    SpellAccessRow{"Wizard", "magic_missile", 1},
+    SpellAccessRow{"Wizard", "scorching_ray", 3},
+    SpellAccessRow{"Wizard", "blindness", 3},
+    SpellAccessRow{"Wizard", "poison_spray", 1},
+    SpellAccessRow{"Wizard", "ray_of_frost", 1},
+    SpellAccessRow{"Wizard", "shocking_grasp", 1},
+    SpellAccessRow{"Wizard", "chill_touch", 1},
+    SpellAccessRow{"Warlock", "eldritch_blast", 1},
+    SpellAccessRow{"Warlock", "poison_spray", 1},
+    SpellAccessRow{"Warlock", "chill_touch", 1},
+    SpellAccessRow{"Sorcerer", "fire_bolt", 1},
+    SpellAccessRow{"Sorcerer", "poison_spray", 1},
+    SpellAccessRow{"Sorcerer", "ray_of_frost", 1},
+    SpellAccessRow{"Sorcerer", "shocking_grasp", 1},
+    SpellAccessRow{"Sorcerer", "chill_touch", 1}};
 
-std::vector<std::string> allowed_spells(std::string_view klass, unsigned level, unsigned tag)
+std::vector<std::string> allowed_spells(std::string_view klass, unsigned level)
 {
     std::vector<std::string> result;
     for (const auto &row : class_spell_access)
-        if (row.klass == klass && level >= row.min_level &&
-                tag >= static_cast<unsigned>(row.required))
+        if (row.klass == klass && level >= row.min_level)
             result.emplace_back(row.spell);
     return result;
-}
-
-constexpr unsigned max_profile_tag = static_cast<unsigned>(Cap::explicit_spells);
-
-// Zero for anything that is not a known PC tag, so the profile validation below
-// rejects it exactly as the previous chain did. Untrusted input: an unknown
-// tag must never be treated as "has everything".
-unsigned profile_tag(std::string_view magic)
-{
-    if (!magic.starts_with("PC") || magic.size() < 3 || magic.size() > 4)
-        return 0;
-    unsigned value = 0;
-    for (const char c : magic.substr(2))
-    {
-        if (c < '0' || c > '9')
-            return 0;
-        value = value * 10 + unsigned(c - '0');
-    }
-    return value >= 1 && value <= max_profile_tag ? value : 0;
-}
-
-// Highest capability present decides the written tag. The source lists are in
-// descending tag order, so taking the maximum matches the if-else chains these
-// replaced.
-unsigned highest_present(unsigned floor_tag,
-                         std::initializer_list<std::pair<unsigned, bool>> present)
-{
-    unsigned tag = floor_tag;
-    for (const auto &[candidate, is_present] : present)
-        if (is_present)
-            tag = std::max(tag, candidate);
-    return tag;
 }
 
 using Dice = detail::DamageDice;
@@ -288,11 +188,6 @@ struct Definition
     std::vector<detail::DamageAffinity> affinities;
     std::vector<std::string> equipment_keys, masteries;
 };
-
-bool legacy_two_hands(std::string_view key)
-{
-    return key == "quarterstaff" || key == "spear" || key == "battleaxe" || key == "trident";
-}
 
 std::vector<GripOption> grip_options(const Definition &d)
 {
@@ -347,7 +242,6 @@ CombatDisplay combat_display(std::string_view definition)
 struct Content
 {
     Identity identity;
-    std::vector<Identity> previous_campaign_identities;
     std::map<std::string, Definition> definitions;
 };
 
@@ -537,7 +431,7 @@ int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers)
     return hp;
 }
 
-// Versioned, module-owned character recipe. Original item IDs never enter this layer.
+// Module-owned character recipe. Original item IDs never enter this layer.
 Definition
 character_definition(std::string_view bytes,
                      std::optional<std::span<const std::string>> equipment_override = std::nullopt)
@@ -547,102 +441,25 @@ character_definition(std::string_view bytes,
     std::istringstream in{std::string(bytes)};
     std::string magic, klass, race;
     std::array<int, 6> scores{};
-    unsigned count{};
-    unsigned level = 1, features = 0, selected_spells = 0;
-    in >> magic;
-    const unsigned tag = profile_tag(magic);
-    const auto has = [tag](Cap capability)
-    {
-        return tag >= static_cast<unsigned>(capability);
-    };
-    const bool with_alert = has(Cap::alert);
-    const bool with_skilled = has(Cap::skilled);
-    const bool with_mastery = has(Cap::mastery);
-    const bool with_light = has(Cap::light);
-    const bool with_hands = has(Cap::hands);
-    const bool with_style_routes = has(Cap::style_routes);
-    const bool with_choices = has(Cap::choices);
-    const bool with_scholar = has(Cap::scholar);
-    const bool with_arcane = has(Cap::arcane);
-    const bool with_champion = has(Cap::champion);
-    const bool with_mind = has(Cap::mind);
-    const bool with_chill = has(Cap::chill);
-    const bool with_sorcerer = has(Cap::sorcerer);
-    const bool with_warlock_poison = has(Cap::warlock_poison);
-    const bool with_shocking = has(Cap::shocking);
-    const bool with_warlock = has(Cap::warlock);
-    const bool with_cunning = has(Cap::cunning);
-    const bool with_gaming = has(Cap::gaming);
-    const bool with_herbalism = has(Cap::herbalism);
-    const bool with_monk_tools = has(Cap::monk_tools);
-    const bool with_instruments = has(Cap::instruments);
-    const bool with_class_skills = has(Cap::class_skills);
-    const bool with_styles = has(Cap::styles);
-    const bool with_archery = has(Cap::archery);
-    const bool with_backgrounds = has(Cap::backgrounds);
-    const bool with_sage = has(Cap::sage);
-    const bool with_frost = has(Cap::frost);
-    const bool with_surge = has(Cap::surge);
-    const bool with_cleric_cantrips = has(Cap::cleric_cantrips);
-    const bool with_cantrips = has(Cap::cantrips);
-    const bool with_spells = has(Cap::spells);
-    const bool with_training = has(Cap::training);
-    const bool selected = has(Cap::selected);
-    if (magic == "PC2" || selected)
-        in >> level;
+    unsigned count{}, level{}, features{}, listed{};
+    in >> magic >> level >> features >> listed;
+    // Untrusted input: bound the list and require every id to be a supported
+    // spell before anything else looks at it.
+    if (!in || magic != profile_magic || listed > detail::spell_table.size())
+        throw std::runtime_error("Invalid character profile");
     std::vector<std::string> stored_spells;
-    if (selected)
+    for (unsigned n = 0; n < listed; ++n)
     {
-        in >> features;
-        if (has(Cap::explicit_spells))
-        {
-            unsigned listed{};
-            in >> listed;
-            // Untrusted input: bound the list and require every id to be a
-            // supported spell before anything else looks at it.
-            if (!in || listed > detail::spell_table.size())
-                throw std::runtime_error("Invalid character profile");
-            for (unsigned n = 0; n < listed; ++n)
-            {
-                std::string id;
-                in >> id;
-                if (!in || !detail::find_spell(id) || detail::knows_spell(stored_spells, id))
-                    throw std::runtime_error("Invalid character profile");
-                stored_spells.push_back(std::move(id));
-            }
-        }
-        else
-        {
-            in >> selected_spells;
-            stored_spells = detail::spells_from_mask(selected_spells);
-            // Every bit must round-trip, so a bit that maps to no spell is
-            // rejected rather than silently dropped.
-            if (detail::mask_from_spells(stored_spells) != selected_spells)
-                throw std::runtime_error("Invalid character profile");
-        }
+        std::string id;
+        in >> id;
+        if (!in || !detail::find_spell(id) || detail::knows_spell(stored_spells, id))
+            throw std::runtime_error("Invalid character profile");
+        stored_spells.push_back(std::move(id));
     }
     in >> std::quoted(klass) >> std::quoted(race);
-    // Rogue attack progression is a class marker the writer encoded in the tag:
-    // it only ever emits PC35 for a Rogue. Now that a higher tag exists, the
-    // capability alone no longer implies the class, so take it from the class.
-    // The exact-PC35 rejection further down preserves the original contract.
-    const bool with_rogue = has(Cap::rogue) && klass == "Rogue";
     for (auto &score : scores)
         in >> score;
-    if (!in || (magic != "PC1" && magic != "PC2" && !selected) || level < 1 ||
-            level > (selected ? 4u : 2u) ||
-            features > (with_alert          ? 63u
-                        : with_light        ? 31u
-                        : with_style_routes ? 15u
-                        : with_archery      ? 7u
-                        : 3u) ||
-            selected_spells > (with_chill             ? 4095u
-                               : with_shocking        ? 2047u
-                               : with_warlock         ? 1023u
-                               : with_frost           ? 511u
-                               : with_cleric_cantrips ? 255u
-                               : with_cantrips        ? 127u
-                               : 63u) ||
+    if (!in || level < 1 || level > 4 || features > 63 ||
             std::any_of(scores.begin(), scores.end(),
                         [](int n)
 {
@@ -650,8 +467,7 @@ character_definition(std::string_view bytes,
 }))
     throw std::runtime_error("Invalid character profile");
     if (level > 1 && klass != "Fighter" && klass != "Cleric" && klass != "Wizard" &&
-            !(with_cunning && klass == "Rogue" && (level == 2 || with_rogue)) &&
-            !(with_style_routes && (klass == "Paladin" || klass == "Ranger")))
+            klass != "Rogue" && klass != "Paladin" && klass != "Ranger")
         throw std::runtime_error("Advancement is unsupported for this class");
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
@@ -663,12 +479,10 @@ character_definition(std::string_view bytes,
     const int str = ability_modifier(scores[0]), dex = ability_modifier(scores[1]),
               con = ability_modifier(scores[2]);
     std::vector<int> hp_modifiers(level, con);
-    if (magic == "PC4" || magic == "PC5" || magic == "PC6" || with_training)
-        for (auto &modifier : hp_modifiers)
-            in >> modifier;
+    for (auto &modifier : hp_modifiers)
+        in >> modifier;
     in >> count;
-    if (!in || count > 3 || hp_modifiers.back() != con ||
-            ((features & 1) && !with_styles && hp_modifiers.front() != con))
+    if (!in || count > 3 || hp_modifiers.back() != con)
         throw std::runtime_error("Invalid character HP history or equipment count");
     const auto classes = character_rules()->choices(CreationField::character_class);
     if (std::none_of(classes.begin(), classes.end(),
@@ -698,44 +512,32 @@ character_definition(std::string_view bytes,
     d.level = level;
     d.melee_bonus = 2 + str;
     d.melee = {0, 0, std::max(0, 1 + str)};
-    d.champion = with_champion && klass == "Fighter" && level >= 3;
-    d.arcane = with_arcane && klass == "Wizard" ? 1 : 0;
+    d.champion = klass == "Fighter" && level >= 3;
+    d.arcane = klass == "Wizard" ? 1 : 0;
     d.medicine = ability_modifier(scores[4]);
-    d.tactical_mind = with_mind && klass == "Fighter" && level >= 2;
-    d.cunning = with_cunning && klass == "Rogue" && level >= 2;
-    if (tag == static_cast<unsigned>(Cap::rogue) && klass != "Rogue")
-        throw std::runtime_error("Rogue profile requires Rogue class");
-    d.sneak_level = with_rogue && klass == "Rogue" ? level : 0;
+    d.tactical_mind = klass == "Fighter" && level >= 2;
+    d.cunning = klass == "Rogue" && level >= 2;
+    d.sneak_level = klass == "Rogue" ? level : 0;
     d.great_weapon_fighting = (features & 8) != 0;
     d.two_weapon_fighting = (features & 16) != 0;
-    d.surges = with_surge && klass == "Fighter" && level >= 2 ? 1 : 0;
+    d.surges = klass == "Fighter" && level >= 2 ? 1 : 0;
     d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
     d.slots = (klass == "Cleric" || klass == "Wizard") ? (level == 1 ? 2 : level == 2 ? 3 : 4) : 0;
     d.slots2 = (klass == "Cleric" || klass == "Wizard") && level >= 3 ? (level == 3 ? 2 : 3) : 0;
-    d.casting =
-        2 + ability_modifier(scores[klass == "Cleric" ? 4
-                                    : (klass == "Warlock" || (with_sorcerer && klass == "Sorcerer"))
-                                    ? 5
-                                    : 3]); // Pre-selection defaults for the oldest profiles,
-    // which stored no choices.
-    if (klass == "Cleric")
-        d.spells = {"cure_wounds"};
-    else if (klass == "Wizard")
-        d.spells = {"fire_bolt", "magic_missile"};
-    if (selected)
+    d.casting = 2 + ability_modifier(scores[klass == "Cleric" ? 4
+                                            : (klass == "Warlock" || klass == "Sorcerer") ? 5
+                                            : 3]);
+    const auto allowed = allowed_spells(klass, level);
+    const bool eligible = std::all_of(stored_spells.begin(), stored_spells.end(),
+                                      [&](const auto & id)
     {
-        const auto allowed = allowed_spells(klass, level, tag);
-        const bool eligible = std::all_of(stored_spells.begin(), stored_spells.end(),
-                                          [&](const auto & id)
-        {
-            return detail::knows_spell(allowed, id);
-        });
-        if (!eligible || (features & 1) && klass != "Fighter" &&
-                !(with_style_routes && (klass == "Paladin" || klass == "Ranger")))
-            throw std::runtime_error("Invalid prepared spells or feat prerequisites");
-        d.spells = stored_spells;
-        d.savage = (features & 2) != 0;
-    }
+        return detail::knows_spell(allowed, id);
+    });
+    if (!eligible || ((features & 1) && klass != "Fighter" && klass != "Paladin" &&
+                      klass != "Ranger"))
+        throw std::runtime_error("Invalid prepared spells or feat prerequisites");
+    d.spells = stored_spells;
+    d.savage = (features & 2) != 0;
     d.known_cantrips = detail::spells_of_level(d.spells, true);
 
     bool weapon = false, armor = false, shield = false;
@@ -754,7 +556,7 @@ character_definition(std::string_view bytes,
         {
             if (weapon)
             {
-                if (!with_hands || d.other_weapon)
+                if (d.other_weapon)
                     throw std::runtime_error("Only two weapons may be equipped");
                 d.other_weapon = true;
                 hands += item->hands;
@@ -764,10 +566,7 @@ character_definition(std::string_view bytes,
             d.weapon_label = item->label;
             d.finesse = item->finesse;
             d.ranged_weapon = item->ranged;
-            d.weapon_hands = magic != "PC5" && magic != "PC6" && magic != "PC7" && magic != "PC8" &&
-                             magic != "PC9" && !with_spells && legacy_two_hands(key)
-                             ? 2
-                             : item->hands;
+            d.weapon_hands = item->hands;
             d.versatile_sides = item->versatile_sides;
             hands += d.weapon_hands;
             const int modifier = item->finesse ? std::max(str, dex) : item->ranged ? dex : str;
@@ -821,132 +620,61 @@ character_definition(std::string_view bytes,
             throw std::runtime_error("Unsupported equipment conversion: " + key);
     }
     d.shield = shield;
-    if (magic == "PC5" || magic == "PC6" || with_training)
+    unsigned requested{};
+    in >> requested;
+    if (!in)
+        throw std::runtime_error("Invalid character grip");
+    if (equipment_override)
+        requested = 0;
+    if (requested)
     {
-        unsigned requested{};
-        in >> requested;
-        if (!in)
-            throw std::runtime_error("Invalid character grip");
-        if (equipment_override)
-            requested = 0;
-        if (requested)
-        {
-            validate_grip(d, requested);
-            hands = hands - d.weapon_hands + requested;
-            d.weapon_hands = requested;
-        }
+        validate_grip(d, requested);
+        hands = hands - d.weapon_hands + requested;
+        d.weapon_hands = requested;
     }
-    if (magic == "PC6" || with_training)
+    std::string background;
+    in >> std::quoted(background);
+    const auto grants = detail::read_grants(in);
+    const auto training = detail::training_profile(grants, detail::grant_source_id(klass),
+                          background, level, scores);
+    d.medicine = std::find_if(training.skills.begin(), training.skills.end(),
+                              [](const auto & skill)
     {
-        std::string background;
-        in >> std::quoted(background);
-        const auto grants = detail::read_grants(in);
-        if (with_training)
-        {
-            const auto training = detail::training_profile(
-                                      grants, detail::grant_source_id(klass), background, level, scores,
-                                      with_skilled        ? detail::TrainingPolicy::skilled
-                                      : with_mastery      ? detail::TrainingPolicy::weapon_mastery
-                                      : with_style_routes ? detail::TrainingPolicy::style_routes
-                                      : with_scholar      ? detail::TrainingPolicy::scholar
-                                      : with_gaming       ? detail::TrainingPolicy::soldier_gaming
-                                      : with_herbalism    ? detail::TrainingPolicy::druid_herbalism
-                                      : with_monk_tools   ? detail::TrainingPolicy::monk_tools
-                                      : with_instruments  ? detail::TrainingPolicy::bard_instruments
-                                      : with_class_skills ? detail::TrainingPolicy::class_skills
-                                      : with_styles       ? detail::TrainingPolicy::fighter_style
-                                      : with_backgrounds  ? detail::TrainingPolicy::all_backgrounds
-                                      : with_sage         ? detail::TrainingPolicy::sage
-                                      : detail::TrainingPolicy::legacy);
-            d.medicine = std::find_if(training.skills.begin(), training.skills.end(),
-                                      [](const auto & skill)
-            {
-                return skill.id == "medicine";
-            })
-            ->bonus;
-        }
-        if (with_mastery)
-            for (const auto &grant : grants)
-                if (detail::is_mastery_grant(grant))
-                    d.masteries.push_back(grant.id.substr(8));
-        if (with_spells)
-        {
-            std::vector<std::string> prepared;
-            if (klass == "Wizard")
-                prepared = detail::spells_of_level(stored_spells, false);
-            if (!with_choices && klass == "Wizard" &&
-                    (std::none_of(grants.begin(), grants.end(),
-                                  [](const auto & g)
-        {
-            return g.id == "spell:magic_missile" && g.level == 1;
-        }) ||
-        std::any_of(grants.begin(), grants.end(),
-                    [](const auto & g)
-        {
-            return detail::is_spell_grant(g) &&
-                       g.choices.contains("learned_at");
-            })))
-            throw std::runtime_error("Invalid legacy Wizard knowledge");
-            const auto access = detail::spell_access(grants, klass, level, prepared);
-            // Compare as sets: the grants and the stored list must describe the
-            // same spells, independent of the order either was written in.
-            const auto same_spells =
-                [](std::vector<std::string> left, std::vector<std::string> right)
-            {
-                std::sort(left.begin(), left.end());
-                std::sort(right.begin(), right.end());
-                return left == right;
-            };
-            const auto stored_cantrips = [&]
-            {
-                return detail::spells_of_level(stored_spells, true);
-            };
-            if (klass == "Sorcerer" &&
-                    ((!with_sorcerer && !access.cantrips.empty()) ||
-                     !same_spells(detail::known_cantrip_ids(access), stored_spells)))
-                throw std::runtime_error("Character cantrip access disagrees with Sorcerer grants");
-            if (klass == "Warlock" &&
-                    ((!with_warlock && !access.cantrips.empty()) ||
-                     !same_spells(detail::known_cantrip_ids(access), stored_spells)))
-                throw std::runtime_error("Character cantrip access disagrees with Warlock grants");
-            if (klass == "Cleric" &&
-                    ((!with_cleric_cantrips && !access.cantrips.empty()) ||
-                     !same_spells(detail::known_cantrip_ids(access), stored_cantrips())))
-                throw std::runtime_error("Character cantrip access disagrees with Cleric grants");
-            if (!with_cantrips && klass == "Wizard" &&
-                    (std::any_of(access.cantrips.begin(), access.cantrips.end(),
-                                 [](const auto & c)
-        {
-            return c.id != "fire_bolt";
-        }) ||
-        std::none_of(access.cantrips.begin(), access.cantrips.end(),
-                     [](const auto & c)
-        {
-            return c.id == "fire_bolt" && c.acquired_level == 1;
-        })))
-            throw std::runtime_error(
-                "Legacy character recipe cannot contain changed cantrip choices");
-            if (klass == "Wizard" &&
-                    !same_spells(detail::wizard_casting_ids(access), stored_spells))
-                throw std::runtime_error("Character casting access disagrees with spell grants");
-        }
-        else if (std::any_of(grants.begin(), grants.end(), detail::is_spell_grant))
-            throw std::runtime_error("Legacy character recipe cannot contain new spell grants");
-        const auto features_only =
-            detail::without_spell_grants(with_training ? detail::without_training(grants) : grants);
-        const auto effects = detail::validate_grants(
-                                 features_only, detail::grant_source_id(klass), detail::grant_source_id(race),
-                                 background, level, magic == "PC8" || magic == "PC9" || with_spells,
-                                 magic == "PC9" || with_spells, with_surge, with_archery, with_styles, with_mind,
-                                 with_champion, with_arcane, with_rogue, with_style_routes, with_light, with_alert,
-                                 with_skilled);
-        if (effects.feats != features)
-            throw std::runtime_error("Character effects disagree with acquired grants");
-        const int initial_con = ability_modifier(scores[2] - effects.abilities[2]);
-        for (unsigned i = 0; i < level; ++i)
-            if (hp_modifiers[i] != (i == 3 ? con : initial_con))
-                throw std::runtime_error("HP history disagrees with acquired ability choices");
-    }
+        return skill.id == "medicine";
+    })
+    ->bonus;
+    for (const auto &grant : grants)
+        if (detail::is_mastery_grant(grant))
+            d.masteries.push_back(grant.id.substr(8));
+    std::vector<std::string> prepared;
+    if (klass == "Wizard")
+        prepared = detail::spells_of_level(stored_spells, false);
+    const auto access = detail::spell_access(grants, klass, level, prepared);
+    // Compare as sets: the grants and the stored list must describe the same
+    // spells, independent of the order either was written in.
+    const auto same_spells = [](std::vector<std::string> left, std::vector<std::string> right)
+    {
+        std::sort(left.begin(), left.end());
+        std::sort(right.begin(), right.end());
+        return left == right;
+    };
+    if ((klass == "Sorcerer" || klass == "Warlock") &&
+            !same_spells(detail::known_cantrip_ids(access), stored_spells))
+        throw std::runtime_error("Character cantrip access disagrees with spell grants");
+    if (klass == "Cleric" && !same_spells(detail::known_cantrip_ids(access),
+                                          detail::spells_of_level(stored_spells, true)))
+        throw std::runtime_error("Character cantrip access disagrees with Cleric grants");
+    if (klass == "Wizard" && !same_spells(detail::wizard_casting_ids(access), stored_spells))
+        throw std::runtime_error("Character casting access disagrees with spell grants");
+    const auto features_only = detail::without_spell_grants(detail::without_training(grants));
+    const auto effects = detail::validate_grants(features_only, detail::grant_source_id(klass),
+                         detail::grant_source_id(race), background, level);
+    if (effects.feats != features)
+        throw std::runtime_error("Character effects disagree with acquired grants");
+    const int initial_con = ability_modifier(scores[2] - effects.abilities[2]);
+    for (unsigned i = 0; i < level; ++i)
+        if (hp_modifiers[i] != (i == 3 ? con : initial_con))
+            throw std::runtime_error("HP history disagrees with acquired ability choices");
     if (race == "Dwarf")
         d.affinities.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                                 "species:dwarf/trait:dwarven_resilience"});
@@ -967,46 +695,31 @@ character_definition(std::string_view bytes,
     return d;
 }
 
+// The only vital-state tag this module reads or writes; see profile_magic.
+constexpr std::string_view vitals_magic = "SRD9";
+
 void restore_vitals(Actor &a, const VitalState &state)
 {
     a.hp = state.hit_points;
     a.dead = state.dead;
-    // Prior vital formats predate spendable Hit Dice, so their dice are unspent.
+    // Empty resources describe a fresh character: every pool and Hit Die is
+    // full. Callers supply the full Second Wind and spell-slot values.
     a.hit_dice = a.definition.hit_die ? a.definition.level : 0;
     a.rushes = a.definition.rushes;
     a.surges = a.definition.surges;
     a.arcane = a.definition.arcane;
-    bool timed = false, temporary = false;
     if (!state.resources.empty())
     {
         std::istringstream in(state.resources);
         std::string magic;
-        in >> magic >> a.winds >> a.slots;
-        temporary = magic == "SRD6" || magic == "SRD7" || magic == "SRD8" || magic == "SRD9";
-        timed = magic == "SRD5" || temporary;
-        if (magic == "SRD2" || magic == "SRD3" || magic == "SRD4" || timed)
-            in >> a.slots2;
-        in >> a.successes >> a.failures >> a.stable;
-        if (magic == "SRD4" || timed)
-            in >> a.hit_dice;
-        if (timed)
-        {
-            in >> a.recovery.death_save_in_ms >> a.recovery.stable_recovery_in_ms;
-            detail::decode_stable_recovery(a.recovery);
-        }
-        if (temporary)
-            in >> a.temporary_hp.amount >> std::quoted(a.temporary_hp.source_id);
-        if (magic == "SRD7" || magic == "SRD8" || magic == "SRD9")
-            in >> a.rushes;
-        if (magic == "SRD8" || magic == "SRD9")
-            in >> a.surges;
-        if (magic == "SRD9")
-            in >> a.arcane;
-        if (!in ||
-                (magic != "SRD1" && magic != "SRD2" && magic != "SRD3" && magic != "SRD4" && !timed))
+        in >> magic >> a.winds >> a.slots >> a.slots2 >> a.successes >> a.failures >> a.stable >>
+           a.hit_dice >> a.recovery.death_save_in_ms >> a.recovery.stable_recovery_in_ms >>
+           a.temporary_hp.amount >> std::quoted(a.temporary_hp.source_id) >> a.rushes >>
+           a.surges >> a.arcane;
+        if (!in || magic != vitals_magic)
             throw std::runtime_error("Invalid character resource state");
-        if (magic == "SRD3" || magic == "SRD4" || timed)
-            a.effects = detail::read_effects(in);
+        detail::decode_stable_recovery(a.recovery);
+        a.effects = detail::read_effects(in);
         in >> std::ws;
         if (!in.eof())
             throw std::runtime_error("Trailing character resource state");
@@ -1020,11 +733,6 @@ void restore_vitals(Actor &a, const VitalState &state)
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
             a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4)
         throw std::runtime_error("Invalid character vitals");
-    // Earlier campaigns could retain completed counters after stabilization.
-    if (a.stable)
-        a.successes = a.failures = 0;
-    if (!timed)
-        detail::initialize_legacy_recovery(a);
     detail::validate_recovery(a);
     detail::validate_temporary_hp(a.temporary_hp);
     if (a.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
@@ -1033,46 +741,13 @@ void restore_vitals(Actor &a, const VitalState &state)
 
 VitalState vitals(const Actor &a)
 {
-    const bool arcane = a.arcane < a.definition.arcane,
-               surge = arcane || a.surges < a.definition.surges,
-               rush = surge || a.definition.rushes > 0,
-               temporary = rush || a.temporary_hp.amount > 0,
-               timed = temporary || (a.hp == 0 && !a.dead);
-    const bool effects = a.effects.next_id != 1 || a.effects.prone,
-               spent_dice = a.hit_dice < (a.definition.hit_die ? a.definition.level : 0);
-    // Preserve the compact previous format when every Hit Die is available.
     std::ostringstream out;
-    out << (arcane                ? "SRD9 "
-            : surge               ? "SRD8 "
-            : rush                ? "SRD7 "
-            : temporary           ? "SRD6 "
-            : timed               ? "SRD5 "
-            : spent_dice          ? "SRD4 "
-            : effects             ? "SRD3 "
-            : a.definition.slots2 ? "SRD2 "
-            : "SRD1 ")
-        << a.winds << ' ' << a.slots << ' ';
-    if (timed || spent_dice || effects || a.definition.slots2)
-        out << a.slots2 << ' ';
-    out << a.successes << ' ' << a.failures << ' ' << a.stable;
-    if (timed || spent_dice)
-        out << ' ' << a.hit_dice;
-    if (timed)
-        out << ' ' << a.recovery.death_save_in_ms << ' '
-            << detail::encode_stable_recovery(a.recovery);
-    if (temporary)
-        out << ' ' << a.temporary_hp.amount << ' ' << std::quoted(a.temporary_hp.source_id);
-    if (rush)
-        out << ' ' << a.rushes;
-    if (surge)
-        out << ' ' << a.surges;
-    if (arcane)
-        out << ' ' << a.arcane;
-    if (timed || spent_dice || effects)
-    {
-        out << ' ';
-        detail::write_effects(out, a.effects);
-    }
+    out << vitals_magic << ' ' << a.winds << ' ' << a.slots << ' ' << a.slots2 << ' '
+        << a.successes << ' ' << a.failures << ' ' << a.stable << ' ' << a.hit_dice << ' '
+        << a.recovery.death_save_in_ms << ' ' << detail::encode_stable_recovery(a.recovery) << ' '
+        << a.temporary_hp.amount << ' ' << std::quoted(a.temporary_hp.source_id) << ' '
+        << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ';
+    detail::write_effects(out, a.effects);
     std::string description;
     if (a.definition.slots)
         description = "Level-one spell slots: " + std::to_string(a.slots) + " / " +
@@ -1086,7 +761,7 @@ VitalState vitals(const Actor &a)
     if (a.definition.arcane)
         description += (description.empty() ? "" : "\n") + std::string("Arcane Recovery uses: ") +
                        std::to_string(a.arcane) + " / 1";
-    if (a.definition.surges && surge)
+    if (a.definition.surges && a.surges < a.definition.surges)
         description += (description.empty() ? "" : "\n") + std::string("Action Surge uses: ") +
                        std::to_string(a.surges) + " / " + std::to_string(a.definition.surges);
     if (a.hp == 0)
@@ -1515,9 +1190,8 @@ class Session final : public CombatSession
     void end_turn();
     void progress_movement();
     void restore_movement(std::istream &input);
-    void validate_restored_state(bool legacy_facing_reaction = false) const;
+    void validate_restored_state() const;
     void validate_pending_movement() const;
-    void validate_legacy_facing_reaction() const;
     void restore_log(std::istream &input);
 };
 
@@ -3810,54 +3484,8 @@ bool Session::submit(const Command &command)
 std::string Session::save() const
 {
     // The module owns the checkpoint format, including RNG and pending reactions.
-    // Combat checkpoint format, one row per feature that widened it. Thirteen is
-    // the floor; the highest present feature decides, matching the descending
-    // if-else chain this replaced.
-    const unsigned format = highest_present(
-    13, {{26, !initiative_choices_.empty()},
-        {
-            25, effect_waiting() || effect_reaction_origin_ ||
-            (champion_move_ && champion_move_->triggered) ||
-            (weapon_hit_ && (weapon_hit_->mastery_allowed || weapon_hit_->cleave)) ||
-            std::any_of(actors_.begin(), actors_.end(),
-                        [](const auto & a)
-            {
-                return a.cleave_used;
-            })
-        },
-        {24, bool(graze_)},
-        {23, nick_active_},
-        {22, light_active_},
-        {
-            21, std::any_of(actors_.begin(), actors_.end(),
-                            [](const auto & a)
-            {
-                return a.definition.sneak_level != 0 ||
-                a.definition.great_weapon_fighting;
-            })
-        },
-        {
-            20, std::any_of(actors_.begin(), actors_.end(),
-                            [](const auto & a)
-            {
-                return a.arcane < a.definition.arcane;
-            })
-        },
-        {19, physical_inventory_},
-        {18, bool(champion_move_)},
-        {17, bool(check_choice_)},
-        {16, items_active_},
-        {15, frost_movement_},
-        {
-            14, std::any_of(actors_.begin(), actors_.end(),
-                            [](const auto & a)
-            {
-                return a.definition.surges > 0;
-            })
-        }
-    });
     std::ostringstream out;
-    out << "OGCOMBAT " << format << ' ' << std::quoted(content_->identity.module) << ' '
+    out << "OGCOMBAT " << checkpoint_format << ' ' << std::quoted(content_->identity.module) << ' '
         << std::quoted(content_->identity.version) << ' ' << std::quoted(content_->identity.content)
         << '\n';
     out << board_.width << ' ' << board_.height << '\n';
@@ -3878,26 +3506,13 @@ std::string Session::save() const
             << ' ' << a.savage_used << ' ' << a.facing_left << ' ' << a.involuntary_overlap << ' '
             << a.weapon_hands << ' ' << a.hit_dice << ' ' << a.recovery.death_save_in_ms << ' '
             << detail::encode_stable_recovery(a.recovery) << ' ' << a.temporary_hp.amount << ' '
-            << std::quoted(a.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used;
-        if (format >= 14)
-            out << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge;
-        if (format >= 15)
-            out << ' ' << a.dashes;
-        if (format >= 20)
-            out << ' ' << a.arcane;
-        if (format >= 21)
-            out << ' ' << a.sneak_used << ' ' << a.aim_used << ' ' << a.aim_ready << ' ' << a.moved;
-        if (format >= 22)
-        {
-            out << ' ' << a.selected_weapon << ' ' << a.light_origins.size();
-            for (auto id : a.light_origins)
-                out << ' ' << id;
-        }
-        if (format >= 23)
-            out << ' ' << a.light_extra << ' ' << a.nick_origin;
-        if (format >= 25)
-            out << ' ' << a.cleave_used;
-        out << '\n';
+            << std::quoted(a.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
+            << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' ' << a.dashes
+            << ' ' << a.arcane << ' ' << a.sneak_used << ' ' << a.aim_used << ' ' << a.aim_ready
+            << ' ' << a.moved << ' ' << a.selected_weapon << ' ' << a.light_origins.size();
+        for (auto id : a.light_origins)
+            out << ' ' << id;
+        out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << '\n';
     }
     out << path_.size() << ' ' << path_index_ << '\n';
     for (auto p : path_)
@@ -3924,162 +3539,110 @@ std::string Session::save() const
     {
         const auto &h = *weapon_hit_;
         out << h.attacker << ' ' << h.target << ' ' << h.ranged << ' ' << h.natural << ' ' << h.mode
-            << ' ' << h.first << ' ' << h.second.value_or(-1);
-        if (format >= 19)
-            out << ' ' << h.thrown_item;
-        if (format >= 21)
-            out << ' ' << h.second.has_value() << ' ' << h.sneak_pending << ' ' << h.aimed << ' '
-                << h.sneak_extra;
-        if (format >= 22)
-            out << ' ' << h.light << ' ' << h.weapon_item;
-        if (format >= 25)
-            out << ' ' << h.mastery_allowed << ' ' << h.cleave;
-        out << '\n';
+            << ' ' << h.first << ' ' << h.second.value_or(-1) << ' ' << h.thrown_item << ' '
+            << h.second.has_value() << ' ' << h.sneak_pending << ' ' << h.aimed << ' '
+            << h.sneak_extra << ' ' << h.light << ' ' << h.weapon_item << ' ' << h.mastery_allowed
+            << ' ' << h.cleave << '\n';
     }
-    if (format >= 17)
-        out << frost_movement_ << ' ' << items_active_ << '\n';
-    if (format >= 20)
-        out << physical_inventory_ << '\n';
+    out << frost_movement_ << ' ' << items_active_ << '\n';
+    out << physical_inventory_ << '\n';
     if (items_active_)
     {
         out << items_.size() << '\n';
         for (const auto &item : items_)
-        {
-            out << item.id << ' ';
-            if (format >= 19)
-                out << item.origin << ' ' << item.equipment_index << ' ' << item.inventory_id << ' '
-                    << std::quoted(item.definition) << ' ' << item.quantity << ' ' << item.stowed
-                    << ' ';
-            out << item.holder << ' ' << item.cell.x << ' ' << item.cell.y << '\n';
-        }
+            out << item.id << ' ' << item.origin << ' ' << item.equipment_index << ' '
+                << item.inventory_id << ' ' << std::quoted(item.definition) << ' ' << item.quantity
+                << ' ' << item.stowed << ' ' << item.holder << ' ' << item.cell.x << ' '
+                << item.cell.y << '\n';
         for (const auto &a : actors_)
             out << a.object_interaction << ' ';
         out << '\n';
     }
-    if (format >= 19)
-        out << bool(check_choice_) << '\n';
-    if (format == 17 || (format >= 19 && check_choice_))
+    out << bool(check_choice_) << '\n';
+    if (check_choice_)
     {
         const auto &c = *check_choice_;
         out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.surge_spent << '\n';
     }
-    if (format >= 19)
-        out << bool(champion_move_) << '\n';
-    if (format == 18 || (format >= 19 && champion_move_))
+    out << bool(champion_move_) << '\n';
+    if (champion_move_)
     {
         const auto &c = *champion_move_;
         out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.remaining << ' '
             << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << '\n';
     }
-    if (format >= 25)
-        out << bool(graze_) << '\n';
-    if (format == 24 || (format >= 25 && graze_))
+    out << bool(graze_) << '\n';
+    if (graze_)
     {
         const auto &g = *graze_;
         out << g.actor << ' ' << g.target << ' ' << g.natural << ' ';
     }
-    if (format >= 24)
-        out << light_active_ << ' ' << nick_active_ << '\n';
-    if (format >= 25)
+    out << light_active_ << ' ' << nick_active_ << '\n';
+    out << bool(mastery_) << '\n';
+    if (mastery_)
     {
-        out << bool(mastery_) << '\n';
-        if (mastery_)
-        {
-            const auto &m = *mastery_;
-            out << m.actor << ' ' << m.target << ' ' << unsigned(m.kind) << ' ' << m.natural << ' '
-                << m.ranged << ' ' << m.targeting << ' ' << std::quoted(m.weapon) << ' '
-                << m.origin.x << ' ' << m.origin.y << ' ' << m.thrown_item << '\n';
-        }
-        const auto extra = [&](const ChampionMove & c)
-        {
-            out << c.triggered << ' ' << c.cleave << ' ' << c.helpless << ' ' << c.trigger_origin.x
-                << ' ' << c.trigger_origin.y << ' ' << c.target_origin.x << ' ' << c.target_origin.y
-                << '\n';
-        };
-        out << champion_offers_.size() << '\n';
-        for (const auto &c : champion_offers_)
-        {
-            out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.remaining << ' '
-                << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << ' ';
-            extra(c);
-        }
-        if (champion_move_)
-            extra(*champion_move_);
-        out << bool(effect_reaction_origin_) << ' ';
-        if (effect_reaction_origin_)
-            out << effect_reaction_origin_->actor << ' ' << effect_reaction_origin_->source.x << ' '
-                << effect_reaction_origin_->source.y << ' ' << effect_reaction_origin_->mover.x
-                << ' ' << effect_reaction_origin_->mover.y << ' '
-                << effect_reaction_origin_->movement << ' ' << effect_reaction_origin_->prone;
-        out << '\n';
+        const auto &m = *mastery_;
+        out << m.actor << ' ' << m.target << ' ' << unsigned(m.kind) << ' ' << m.natural << ' '
+            << m.ranged << ' ' << m.targeting << ' ' << std::quoted(m.weapon) << ' '
+            << m.origin.x << ' ' << m.origin.y << ' ' << m.thrown_item << '\n';
     }
-    if (format >= 26)
+    const auto extra = [&](const ChampionMove & c)
     {
-        out << initiative_choices_.size();
-        for (const auto id : initiative_choices_)
-            out << ' ' << id;
-        out << '\n';
+        out << c.triggered << ' ' << c.cleave << ' ' << c.helpless << ' ' << c.trigger_origin.x
+            << ' ' << c.trigger_origin.y << ' ' << c.target_origin.x << ' ' << c.target_origin.y
+            << '\n';
+    };
+    out << champion_offers_.size() << '\n';
+    for (const auto &c : champion_offers_)
+    {
+        out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.remaining << ' '
+            << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << ' ';
+        extra(c);
     }
+    if (champion_move_)
+        extra(*champion_move_);
+    out << bool(effect_reaction_origin_) << ' ';
+    if (effect_reaction_origin_)
+        out << effect_reaction_origin_->actor << ' ' << effect_reaction_origin_->source.x << ' '
+            << effect_reaction_origin_->source.y << ' ' << effect_reaction_origin_->mover.x
+            << ' ' << effect_reaction_origin_->mover.y << ' '
+            << effect_reaction_origin_->movement << ' ' << effect_reaction_origin_->prone;
+    out << '\n';
+    out << initiative_choices_.size();
+    for (const auto id : initiative_choices_)
+        out << ' ' << id;
+    out << '\n';
     return out.str();
 }
 
-// Parse one actor independently of session mutation. Old checkpoint versions
-// omit later fields; Actor's value initializers supply their original defaults.
-Actor read_checkpoint_actor(std::istream &input, unsigned version, const Content &content)
+// Parse one actor independently of session mutation.
+Actor read_checkpoint_actor(std::istream &input, const Content &content)
 {
     Actor actor;
     auto &source = actor.source;
+    unsigned light_count{};
     input >> source.id >> std::quoted(source.definition) >> std::quoted(source.name) >>
           source.side >> source.cell.x >> source.cell.y >> actor.hp >> actor.initiative >>
           actor.movement >> actor.winds >> actor.slots >> actor.successes >> actor.failures >>
           actor.actions.normal >> actor.bonus >> actor.reaction >> actor.dodge >> actor.disengaged >>
-          actor.stable >> actor.dead;
-    if (version >= 2)
-        input >> std::quoted(source.character_profile);
-    if (version >= 3)
-        input >> actor.slots2 >> actor.spent_slot >> actor.savage_used;
-    if (version >= 5)
-        input >> actor.facing_left;
-    if (version >= 7)
-        input >> actor.involuntary_overlap;
-    if (version >= 8)
-        input >> actor.weapon_hands;
-    if (version >= 9)
-        input >> actor.hit_dice;
-    if (version >= 10)
+          actor.stable >> actor.dead >> std::quoted(source.character_profile) >> actor.slots2 >>
+          actor.spent_slot >> actor.savage_used >> actor.facing_left >> actor.involuntary_overlap >>
+          actor.weapon_hands >> actor.hit_dice >> actor.recovery.death_save_in_ms >>
+          actor.recovery.stable_recovery_in_ms >> actor.temporary_hp.amount >>
+          std::quoted(actor.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
+          actor.surges >> actor.surge_used >> actor.actions.surge >> actor.dashes >> actor.arcane >>
+          actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
+          actor.selected_weapon >> light_count;
+    if (!input || light_count > 2)
+        throw std::runtime_error("Invalid Light attack count");
+    for (unsigned i = 0; i < light_count; ++i)
     {
-        input >> actor.recovery.death_save_in_ms >> actor.recovery.stable_recovery_in_ms;
-        detail::decode_stable_recovery(actor.recovery);
+        unsigned id{};
+        input >> id;
+        actor.light_origins.push_back(id);
     }
-    if (version >= 11)
-        input >> actor.temporary_hp.amount >> std::quoted(actor.temporary_hp.source_id);
-    if (version >= 12)
-        input >> actor.rushes >> actor.rush_used;
-    if (version >= 14)
-        input >> actor.surges >> actor.surge_used >> actor.actions.surge;
-    if (version >= 15)
-        input >> actor.dashes;
-    if (version >= 20)
-        input >> actor.arcane;
-    if (version >= 21)
-        input >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved;
-    if (version >= 22)
-    {
-        unsigned count{};
-        input >> actor.selected_weapon >> count;
-        if (!input || count > 2)
-            throw std::runtime_error("Invalid Light attack count");
-        for (unsigned i = 0; i < count; ++i)
-        {
-            unsigned id{};
-            input >> id;
-            actor.light_origins.push_back(id);
-        }
-    }
-    if (version >= 23)
-        input >> actor.light_extra >> actor.nick_origin;
-    if (version >= 25)
-        input >> actor.cleave_used;
+    input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used;
+    detail::decode_stable_recovery(actor.recovery);
     if (!input ||
             (source.character_profile.empty() && !content.definitions.contains(source.definition)))
         throw std::runtime_error("Invalid checkpoint actor");
@@ -4095,34 +3658,16 @@ Actor read_checkpoint_actor(std::istream &input, unsigned version, const Content
                weapon->mastery == detail::Mastery::cleave;
     }))
     throw std::runtime_error("Invalid Cleave expenditure source");
-    if (version < 20)
-        actor.arcane = definition.arcane;
-    if (version < 21 && (definition.sneak_level || definition.great_weapon_fighting))
-        throw std::runtime_error("Weapon damage features require version-21 checkpoint");
     if ((actor.sneak_used && !definition.sneak_level) ||
             (actor.aim_used && (definition.sneak_level < 3 || actor.bonus || actor.moved)) ||
             (actor.aim_ready && !actor.aim_used))
         throw std::runtime_error("Invalid Rogue attack expenditure");
-    if (version < 15 &&
-            (detail::knows_spell(definition.known_cantrips, "ray_of_frost") || definition.cunning))
-        throw std::runtime_error("Movement features require a version-15 checkpoint");
-    if (version >= 15 &&
-            (actor.dashes < 0 ||
-             actor.dashes > int(!actor.actions.normal) +
-             int(actor.rush_used || (definition.cunning && !actor.bonus)) +
-             int(actor.surge_used && !actor.actions.surge) ||
-             actor.movement > definition.speed * (1 + actor.dashes)))
+    if (actor.dashes < 0 ||
+            actor.dashes > int(!actor.actions.normal) +
+            int(actor.rush_used || (definition.cunning && !actor.bonus)) +
+            int(actor.surge_used && !actor.actions.surge) ||
+            actor.movement > definition.speed * (1 + actor.dashes))
         throw std::runtime_error("Invalid Dash allowance count");
-    if (version < 14 && definition.surges)
-        throw std::runtime_error("Action Surge requires a version-14 checkpoint");
-    if (version < 12)
-        actor.rushes = definition.rushes;
-    if (version < 9)
-        actor.hit_dice = definition.hit_die ? definition.level : 0;
-    if (version < 8)
-        actor.weapon_hands = definition.weapon_hands;
-    if (version < 16)
-        validate_grip(definition, actor.weapon_hands);
     if (actor.hp < 0 || actor.hp > definition.hp || (actor.dead && actor.hp > 0) ||
             // Dash spends the action before adding a second movement allowance.
             // Accepting both extra movement and an unused action lets a later Dash
@@ -4144,8 +3689,6 @@ Actor read_checkpoint_actor(std::istream &input, unsigned version, const Content
             actor.hit_dice < 0 || actor.hit_dice > (definition.hit_die ? definition.level : 0) ||
             actor.successes < 0 || actor.successes > 3 || actor.failures < 0 || actor.failures > 4)
         throw std::runtime_error("Invalid checkpoint actor state");
-    if (version < 10)
-        detail::initialize_legacy_recovery(actor);
     detail::validate_recovery(actor);
     detail::validate_temporary_hp(actor.temporary_hp);
     return actor;
@@ -4499,7 +4042,7 @@ void Session::validate_initiative() const
     }
 }
 
-void Session::validate_restored_state(bool legacy_facing_reaction) const
+void Session::validate_restored_state() const
 {
     validate_initiative();
     validate_weapon_hit();
@@ -4507,7 +4050,7 @@ void Session::validate_restored_state(bool legacy_facing_reaction) const
     validate_champion_move();
     validate_graze();
     validate_mastery_state();
-    if (pending() && !legacy_facing_reaction && path_index_ >= path_.size())
+    if (pending() && path_index_ >= path_.size())
         throw std::runtime_error("Reaction without movement");
     const auto &mover = actors_[turn_];
     if (temporary_offer_ && (outcome_ != Outcome::ongoing || pending() || !conscious(mover) ||
@@ -4539,7 +4082,7 @@ void Session::validate_restored_state(bool legacy_facing_reaction) const
                     actor.source.cell != other.source.cell)
                 continue;
             const bool in_transit =
-                pending() && !legacy_facing_reaction && path_index_ > 0 &&
+                pending() && path_index_ > 0 &&
                 path_[path_index_ - 1] == mover.source.cell &&
                 (actor.source.id == mover.source.id || other.source.id == mover.source.id);
             if ((in_transit && (actor.source.side == other.source.side || unconscious(actor) ||
@@ -4554,36 +4097,10 @@ void Session::validate_restored_state(bool legacy_facing_reaction) const
                                  mover.hp == 0 && !champion_move_ && !effect_waiting() &&
                                  !(weapon_hit_ && weapon_hit_->cleave && effect_reaction_origin_)))
         throw std::runtime_error("Invalid checkpoint outcome/turn");
-    if (!pending() && (!path_.empty() || !reactors_.empty() || legacy_facing_reaction))
+    if (!pending() && (!path_.empty() || !reactors_.empty()))
         throw std::runtime_error("Unpaused checkpoint movement");
-    if (legacy_facing_reaction)
-        validate_legacy_facing_reaction();
-    else if (pending())
+    if (pending())
         validate_pending_movement();
-}
-
-void Session::validate_legacy_facing_reaction() const
-{
-    const auto &attacker = actors_[turn_];
-    if (!pending() || !path_.empty() || path_index_ || !conscious(attacker) ||
-            attacker.actions.normal)
-        throw std::runtime_error("Invalid pending turn reaction");
-    for (auto i = reactor_index_; i < reactors_.size(); ++i)
-    {
-        const auto found = std::find_if(actors_.begin(), actors_.end(),
-                                        [&](const auto & a)
-        {
-            return a.source.id == reactors_[i];
-        });
-        const auto &reactor = *found;
-        if (detail::opportunity_blocked(reactor.effects) || reactor.hp <= 0 || !reactor.reaction ||
-                reactor.source.side == attacker.source.side ||
-                (attacker.facing_left ? reactor.source.cell.x <= attacker.source.cell.x
-                 : reactor.source.cell.x >= attacker.source.cell.x) ||
-                distance(reactor.source.cell, attacker.source.cell) > def(reactor).reach ||
-                !can_see(reactor, attacker))
-            throw std::runtime_error("Invalid pending turn opportunity attack");
-    }
 }
 
 void Session::validate_pending_movement() const
@@ -4689,72 +4206,10 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     Identity identity;
     input >> magic >> version >> std::quoted(identity.module) >> std::quoted(identity.version) >>
           std::quoted(identity.content);
-    auto compatible_identity = identity;
-    compatible_identity.version = content->identity.version;
-    const bool previous_module =
-        // Skilled adds no combat state, so 0.6.61 keeps checkpoint format 26.
-        (((version >= 13 && version <= 26) && identity.version == "0.6.61") ||
-         ((version >= 13 && version <= 25) && identity.version == "0.6.60") ||
-         ((version >= 13 && version <= 24) && identity.version == "0.6.59") ||
-         ((version >= 13 && version <= 23) && identity.version == "0.6.58") ||
-         ((version >= 13 && version <= 23) && identity.version == "0.6.57") ||
-         ((version >= 13 && version <= 22) && identity.version == "0.6.56") ||
-         ((version >= 13 && version <= 22) && identity.version == "0.6.55") ||
-         ((version >= 13 && version <= 21) && identity.version == "0.6.54") ||
-         ((version >= 13 && version <= 21) && identity.version == "0.6.53") ||
-         ((version >= 13 && version <= 21) && identity.version == "0.6.52") ||
-         ((version >= 13 && version <= 20) && identity.version == "0.6.51") ||
-         ((version >= 13 && version <= 20) && identity.version == "0.6.50") ||
-         ((version >= 13 && version <= 20) && identity.version == "0.6.49") ||
-         ((version >= 13 && version <= 19) && identity.version == "0.6.48") ||
-         ((version >= 13 && version <= 19) && identity.version == "0.6.47") ||
-         ((version >= 13 && version <= 18) && identity.version == "0.6.46") ||
-         ((version >= 13 && version <= 17) && identity.version == "0.6.45") ||
-         (version == 5 && identity.version == "0.6.4") ||
-         ((version >= 13 && version <= 16) &&
-          (identity.version == "0.6.42" || identity.version == "0.6.43" ||
-           identity.version == "0.6.44")) ||
-         (version == 6 && identity.version == "0.6.5") ||
-         (version == 7 && identity.version == "0.6.6") ||
-         (version == 8 && (identity.version == "0.6.7" || identity.version == "0.6.8" ||
-                           identity.version == "0.6.9")) ||
-         (version == 9 && identity.version == "0.6.10") ||
-         (version == 10 && (identity.version == "0.6.11" || identity.version == "0.6.12" ||
-                            identity.version == "0.6.13")) ||
-         (version == 11 && identity.version == "0.6.14") ||
-         (version == 12 && (identity.version == "0.6.15" || identity.version == "0.6.16" ||
-                            identity.version == "0.6.17" || identity.version == "0.6.18" ||
-                            identity.version == "0.6.19")) ||
-         (version == 13 && (identity.version == "0.6.20" || identity.version == "0.6.21" ||
-                            identity.version == "0.6.22" || identity.version == "0.6.23")) ||
-         ((version == 13 || version == 14) && identity.version == "0.6.24") ||
-         ((version >= 13 && version <= 15) &&
-          (identity.version == "0.6.25" || identity.version == "0.6.26" ||
-           identity.version == "0.6.27" || identity.version == "0.6.28" ||
-           identity.version == "0.6.29" || identity.version == "0.6.30" ||
-           identity.version == "0.6.31" || identity.version == "0.6.32" ||
-           identity.version == "0.6.33" || identity.version == "0.6.34" ||
-           identity.version == "0.6.35" || identity.version == "0.6.36" ||
-           identity.version == "0.6.37" || identity.version == "0.6.38" ||
-           identity.version == "0.6.39" || identity.version == "0.6.40" ||
-           identity.version == "0.6.41"))) &&
-        (compatible_identity == content->identity ||
-         (compatible_identity.module == content->identity.module &&
-          compatible_identity.content == "srd-5.2.1-demo.1/15052881321234871607" &&
-          content->previous_campaign_identities.end() !=
-          std::find(content->previous_campaign_identities.begin(),
-                    content->previous_campaign_identities.end(), compatible_identity)));
-    if (!input || magic != "OGCOMBAT" || version < 1 || version > 26 ||
-            (identity != content->identity && !previous_module))
+    if (!input || magic != "OGCOMBAT" || version > checkpoint_format)
         throw std::runtime_error("Combat checkpoint rules/content version mismatch");
-    if (version >= 26 && module_before(identity, {0, 6, 61}))
-        throw std::runtime_error("Legacy combat cannot contain Initiative choices");
-    if (version >= 25 && module_before(identity, {0, 6, 60}))
-        throw std::runtime_error("Legacy combat cannot contain optional mastery sequence");
-    if (version >= 24 && module_before(identity, {0, 6, 59}))
-        throw std::runtime_error("Legacy combat cannot contain Graze choice");
-    if (version >= 23 && module_before(identity, {0, 6, 57}))
-        throw std::runtime_error("Legacy combat cannot contain Nick budget");
+    if (version < checkpoint_format || identity != content->identity)
+        throw std::runtime_error(older_save_message);
     Encounter encounter;
     encounter.battlefield = read_checkpoint_board(input);
     std::uint64_t rng{}, revision{};
@@ -4766,298 +4221,99 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     std::vector<Actor> actors;
     for (unsigned i = 0; i < count; ++i)
     {
-        auto actor = read_checkpoint_actor(input, version, *content);
-        if (module_before(identity, {0, 6, 56}) &&
-                actor.source.character_profile.starts_with("PC39 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Weapon Mastery");
-        if (module_before(identity, {0, 6, 55}) &&
-                (version >= 22 || actor.source.character_profile.starts_with("PC38 ")))
-            throw std::runtime_error("Legacy checkpoint cannot contain Light attack state");
-        if (module_before(identity, {0, 6, 54}) &&
-                actor.source.character_profile.starts_with("PC37 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain two equipped weapons");
-        if (module_before(identity, {0, 6, 53}) &&
-                actor.source.character_profile.starts_with("PC36 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Fighting Style routes");
-        if (module_before(identity, {0, 6, 61}) &&
-                actor.source.character_profile.starts_with("PC40 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Alert profiles");
-        if (module_before(identity, {0, 6, 52}) &&
-                (version >= 21 || actor.source.character_profile.starts_with("PC35 ")))
-            throw std::runtime_error("Legacy checkpoint cannot contain Rogue attack profiles");
-        if (module_before(identity, {0, 6, 51}) &&
-                actor.source.character_profile.starts_with("PC34 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain spell-choice profiles");
-        if (module_before(identity, {0, 6, 50}) &&
-                actor.source.character_profile.starts_with("PC33 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Scholar profiles");
-        if (module_before(identity, {0, 6, 49}) &&
-                actor.source.character_profile.starts_with("PC32 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Arcane Recovery profiles");
-        if (module_before(identity, {0, 6, 26}) &&
-                (actor.source.character_profile.starts_with("PC15 ") ||
-                 actor.source.character_profile.starts_with("PC16 ") ||
-                 actor.source.character_profile.starts_with("PC17 ") ||
-                 (actor.source.character_profile.starts_with("PC18 ") ||
-                  (actor.source.character_profile.starts_with("PC19 ") ||
-                   (actor.source.character_profile.starts_with("PC20 ") ||
-                    (actor.source.character_profile.starts_with("PC21 ") ||
-                     (actor.source.character_profile.starts_with("PC22 ") ||
-                      (actor.source.character_profile.starts_with("PC23 ") ||
-                       actor.source.character_profile.starts_with("PC24 ")))))))))
-            throw std::runtime_error("Legacy checkpoint cannot contain a Sage-training profile");
-        if (module_before(identity, {0, 6, 27}) &&
-                (actor.source.character_profile.starts_with("PC16 ") ||
-                 actor.source.character_profile.starts_with("PC17 ") ||
-                 (actor.source.character_profile.starts_with("PC18 ") ||
-                  (actor.source.character_profile.starts_with("PC19 ") ||
-                   (actor.source.character_profile.starts_with("PC20 ") ||
-                    (actor.source.character_profile.starts_with("PC21 ") ||
-                     (actor.source.character_profile.starts_with("PC22 ") ||
-                      (actor.source.character_profile.starts_with("PC23 ") ||
-                       actor.source.character_profile.starts_with("PC24 ")))))))))
-            throw std::runtime_error(
-                "Legacy checkpoint cannot contain the completed fixed-background profile");
-        if (module_before(identity, {0, 6, 28}) &&
-                (actor.source.character_profile.starts_with("PC17 ") ||
-                 (actor.source.character_profile.starts_with("PC18 ") ||
-                  (actor.source.character_profile.starts_with("PC19 ") ||
-                   (actor.source.character_profile.starts_with("PC20 ") ||
-                    (actor.source.character_profile.starts_with("PC21 ") ||
-                     (actor.source.character_profile.starts_with("PC22 ") ||
-                      (actor.source.character_profile.starts_with("PC23 ") ||
-                       actor.source.character_profile.starts_with("PC24 ")))))))))
-            throw std::runtime_error("Legacy checkpoint cannot contain an Archery profile");
-        if (module_before(identity, {0, 6, 29}) &&
-                (actor.source.character_profile.starts_with("PC18 ") ||
-                 (actor.source.character_profile.starts_with("PC19 ") ||
-                  (actor.source.character_profile.starts_with("PC20 ") ||
-                   (actor.source.character_profile.starts_with("PC21 ") ||
-                    (actor.source.character_profile.starts_with("PC22 ") ||
-                     (actor.source.character_profile.starts_with("PC23 ") ||
-                      actor.source.character_profile.starts_with("PC24 "))))))))
-            throw std::runtime_error("Legacy checkpoint cannot contain a starting-style profile");
-        if (module_before(identity, {0, 6, 46}) &&
-                actor.source.character_profile.starts_with("PC31 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Champion profiles");
-        if (module_before(identity, {0, 6, 45}) &&
-                actor.source.character_profile.starts_with("PC30 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Tactical Mind profiles");
-        if (module_before(identity, {0, 6, 43}) &&
-                actor.source.character_profile.starts_with("PC29 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Chill Touch profiles");
-        if (module_before(identity, {0, 6, 40}) &&
-                actor.source.character_profile.starts_with("PC28 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Sorcerer cantrip profiles");
-        if (module_before(identity, {0, 6, 39}) &&
-                actor.source.character_profile.starts_with("PC27 "))
-            throw std::runtime_error(
-                "Legacy checkpoint cannot contain Warlock Poison Spray profiles");
-        if (module_before(identity, {0, 6, 38}) &&
-                actor.source.character_profile.starts_with("PC26 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Shocking Grasp profiles");
-        if (module_before(identity, {0, 6, 37}) &&
-                actor.source.character_profile.starts_with("PC25 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Warlock cantrip profiles");
-        if (module_before(identity, {0, 6, 35}) &&
-                actor.source.character_profile.starts_with("PC24 "))
-            throw std::runtime_error("Legacy checkpoint cannot contain Cunning Action profiles");
-        if (module_before(identity, {0, 6, 34}) &&
-                (actor.source.character_profile.starts_with("PC23 ") ||
-                 actor.source.character_profile.starts_with("PC24 ")))
-            throw std::runtime_error("Legacy combat cannot contain Gaming Set profiles");
-        if (module_before(identity, {0, 6, 33}) &&
-                (actor.source.character_profile.starts_with("PC22 ") ||
-                 (actor.source.character_profile.starts_with("PC23 ") ||
-                  actor.source.character_profile.starts_with("PC24 "))))
-            throw std::runtime_error("Legacy combat cannot contain Herbalism Kit profiles");
-        if (module_before(identity, {0, 6, 32}) &&
-                (actor.source.character_profile.starts_with("PC21 ") ||
-                 (actor.source.character_profile.starts_with("PC22 ") ||
-                  (actor.source.character_profile.starts_with("PC23 ") ||
-                   actor.source.character_profile.starts_with("PC24 ")))))
-            throw std::runtime_error("Legacy combat cannot contain Monk tool profiles");
-        if (module_before(identity, {0, 6, 31}) &&
-                (actor.source.character_profile.starts_with("PC20 ") ||
-                 (actor.source.character_profile.starts_with("PC21 ") ||
-                  (actor.source.character_profile.starts_with("PC22 ") ||
-                   (actor.source.character_profile.starts_with("PC23 ") ||
-                    actor.source.character_profile.starts_with("PC24 "))))))
-            throw std::runtime_error("Legacy combat cannot contain Bard instrument profiles");
-        if (module_before(identity, {0, 6, 30}) &&
-                (actor.source.character_profile.starts_with("PC19 ") ||
-                 (actor.source.character_profile.starts_with("PC20 ") ||
-                  (actor.source.character_profile.starts_with("PC21 ") ||
-                   (actor.source.character_profile.starts_with("PC22 ") ||
-                    (actor.source.character_profile.starts_with("PC23 ") ||
-                     actor.source.character_profile.starts_with("PC24 ")))))))
-            throw std::runtime_error("Legacy checkpoint cannot contain an all-class skill profile");
+        auto actor = read_checkpoint_actor(input, *content);
         encounter.participants.push_back(actor.source);
         actors.push_back(std::move(actor));
     }
-    if (module_before(identity, {0, 6, 36}))
-        for (const auto &a : actors)
-            for (const auto &b : actors)
-                if (a.source.id < b.source.id && !a.dead && !b.dead &&
-                        a.source.side != b.source.side && a.source.cell == b.source.cell)
-                    throw std::runtime_error("Legacy combat cannot contain enemy transit overlap");
     // Build and validate a separate owned candidate. Any failure destroys it;
     // callers never receive a partially restored session or lose a live one.
     // The constructor checks identities/geometry; saved order and RNG then
     // replace its fresh initiative state before relational checks run.
     auto session = std::make_unique<Session>(content, std::move(encounter), 0, true);
     session->actors_ = std::move(actors);
-    session->frost_movement_ = version >= 15;
     session->rng_ = rng;
     session->revision_ = revision;
     session->turn_ = turn;
     session->round_ = round;
     session->outcome_ = static_cast<Outcome>(outcome);
-    if (version < 10)
-        for (auto &a : session->actors_)
-            if (a.hp == 0 && !a.dead && !a.stable)
-                a.recovery.death_save_in_ms = session->next_turn_ms(a);
     session->restore_movement(input);
     session->restore_log(input);
-    if (version >= 4)
+    unsigned effects_count{};
+    input >> session->scope_ >> session->elapsed_ms_ >> effects_count;
+    if (!input || !session->scope_ || effects_count != session->actors_.size())
+        throw std::runtime_error("Invalid checkpoint effect header");
+    for (auto &a : session->actors_)
     {
-        unsigned effects_count{};
-        input >> session->scope_ >> session->elapsed_ms_ >> effects_count;
-        if (!input || !session->scope_ || effects_count != session->actors_.size())
-            throw std::runtime_error("Invalid checkpoint effect header");
-        for (auto &a : session->actors_)
-        {
-            a.effects = detail::read_effects(input);
-            if (module_before(identity, {0, 6, 58}) && detail::slowed(a.effects))
-                throw std::runtime_error("Legacy checkpoint cannot contain Slow");
-            if (module_before(identity, {0, 6, 56}) && detail::has_attack_mastery(a.effects))
-                throw std::runtime_error("Legacy checkpoint cannot contain mastery effects");
-            if (a.recovery.stable_recovery_due &&
-                    (module_before(identity, {0, 6, 44}) || !detail::healing_blocked(a.effects)))
-                throw std::runtime_error("Invalid earned recovery checkpoint");
-            if (module_before(identity, {0, 6, 43}) && detail::healing_blocked(a.effects))
-                throw std::runtime_error("Legacy combat cannot contain Chill Touch");
-            if (a.effects.sleeping && (a.dead || a.hp <= 0))
-                throw std::runtime_error("Invalid naturally sleeping vitality");
-            if (module_before(identity, {0, 6, 41}) && a.effects.prone)
-                throw std::runtime_error(
-                    "Legacy combat cannot contain natural sleep/posture state");
-            if (module_before(identity, {0, 6, 38}) && detail::opportunity_blocked(a.effects))
-                throw std::runtime_error("Legacy combat cannot contain Shocking Grasp");
-            if (version < 15 && detail::speed_penalty(a.effects))
-                throw std::runtime_error("Legacy combat cannot contain Ray of Frost");
-        }
+        a.effects = detail::read_effects(input);
+        if (a.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
+            throw std::runtime_error("Invalid earned recovery checkpoint");
+        if (a.effects.sleeping && (a.dead || a.hp <= 0))
+            throw std::runtime_error("Invalid naturally sleeping vitality");
     }
-    if (version >= 12)
+    bool pending_offer{};
+    input >> pending_offer;
+    if (pending_offer)
     {
-        bool pending_offer{};
-        input >> pending_offer;
-        if (pending_offer)
-        {
-            TemporaryHitPoints offer;
-            input >> offer.amount >> std::quoted(offer.source_id);
-            detail::validate_temporary_hp(offer);
-            session->temporary_offer_ = std::move(offer);
-        }
-        if (!input)
-            throw std::runtime_error("Invalid Temporary HP choice checkpoint");
+        TemporaryHitPoints offer;
+        input >> offer.amount >> std::quoted(offer.source_id);
+        detail::validate_temporary_hp(offer);
+        session->temporary_offer_ = std::move(offer);
     }
-    if (version >= 13)
+    if (!input)
+        throw std::runtime_error("Invalid Temporary HP choice checkpoint");
+    bool pending_hit{};
+    input >> pending_hit;
+    if (pending_hit)
     {
-        bool pending_hit{};
-        input >> pending_hit;
-        if (pending_hit)
-        {
-            PendingWeaponHit h;
-            int second{};
-            input >> h.attacker >> h.target >> h.ranged >> h.natural >> h.mode >> h.first >> second;
-            if (second >= 0)
-                h.second = second;
-            else if (second != -1 && version < 21)
-                throw std::runtime_error("Invalid legacy second damage");
-            if (version >= 19)
-                input >> h.thrown_item;
-            if (version >= 21)
-            {
-                bool rolled{};
-                input >> rolled >> h.sneak_pending >> h.aimed >> h.sneak_extra;
-                if (rolled)
-                    h.second = second;
-                else if (second != -1)
-                    throw std::runtime_error("Unexpected second damage");
-            }
-            if (version >= 22)
-                input >> h.light >> h.weapon_item;
-            if (version >= 25)
-                input >> h.mastery_allowed >> h.cleave;
-            session->weapon_hit_ = h;
-        }
-        if (!input)
-            throw std::runtime_error("Invalid Savage Attacker choice checkpoint");
+        PendingWeaponHit h;
+        int second{};
+        bool rolled{};
+        input >> h.attacker >> h.target >> h.ranged >> h.natural >> h.mode >> h.first >> second >>
+              h.thrown_item >> rolled >> h.sneak_pending >> h.aimed >> h.sneak_extra >> h.light >>
+              h.weapon_item >> h.mastery_allowed >> h.cleave;
+        if (rolled)
+            h.second = second;
+        else if (second != -1)
+            throw std::runtime_error("Unexpected second damage");
+        session->weapon_hit_ = h;
     }
-    bool has_items = version >= 16;
-    if (version >= 17)
-    {
-        if (module_before(identity, {0, 6, 45}))
-            throw std::runtime_error("Legacy checkpoint cannot contain ability-check choices");
-        input >> session->frost_movement_ >> has_items;
-        if (!input)
-            throw std::runtime_error("Invalid ability-check checkpoint flags");
-    }
-    if (version >= 20)
-    {
-        input >> session->physical_inventory_;
-        if (!input || module_before(identity, {0, 6, 49}) ||
-                (session->physical_inventory_ && !has_items))
-            throw std::runtime_error("Invalid recovery checkpoint flags");
-        session->items_active_ = has_items;
-    }
-    else if (version >= 19)
-    {
-        if (module_before(identity, {0, 6, 47}) || !has_items)
-            throw std::runtime_error("Invalid physical inventory checkpoint flags");
-        session->physical_inventory_ = true;
-        session->items_active_ = true;
-    }
+    if (!input)
+        throw std::runtime_error("Invalid Savage Attacker choice checkpoint");
+    bool has_items{};
+    input >> session->frost_movement_ >> has_items >> session->physical_inventory_;
+    if (!input || (session->physical_inventory_ && !has_items))
+        throw std::runtime_error("Invalid recovery checkpoint flags");
+    session->items_active_ = has_items;
     if (has_items)
     {
-        if (module_before(identity, {0, 6, 42}))
-            throw std::runtime_error("Legacy checkpoint cannot contain held items");
-        if (version < 19)
-            session->initialize_items();
         std::size_t count{};
         input >> count;
-        if (!input || count > 100000 || (version < 19 && count != session->items_.size()))
+        if (!input || count > 100000)
             throw std::runtime_error("Invalid held item count");
-        if (version >= 19)
-            session->items_.resize(count);
+        session->items_.resize(count);
         for (unsigned index = 0; index < count; ++index)
         {
             auto &item = session->items_[index];
             unsigned id{};
-            input >> id;
-            if (version >= 19)
+            item.id = index + 1;
+            input >> id >> item.origin >> item.equipment_index >> item.inventory_id >>
+                  std::quoted(item.definition) >> item.quantity >> item.stowed;
+            const auto source = std::find_if(session->actors_.begin(), session->actors_.end(),
+                                             [&](const auto & a)
             {
-                item.id = index + 1;
-                input >> item.origin >> item.equipment_index >> item.inventory_id >>
-                      std::quoted(item.definition) >> item.quantity >> item.stowed;
-                const auto source = std::find_if(session->actors_.begin(), session->actors_.end(),
-                                                 [&](const auto & a)
-                {
-                    return a.source.id == item.origin;
-                });
-                const auto *weapon = detail::weapon(item.definition);
-                if (!input || source == session->actors_.end() ||
-                        source->source.character_profile.empty() ||
-                        (!weapon && item.definition != "shield") || !item.quantity)
-                    throw std::runtime_error("Invalid physical inventory source");
-                const auto original = character_definition(source->source.character_profile);
-                if (!item.inventory_id &&
-                        (item.equipment_index >= original.equipment_keys.size() ||
-                         original.equipment_keys[item.equipment_index] != item.definition))
-                    throw std::runtime_error("Invalid physical equipment source");
-                item.label = {weapon ? std::string(weapon->label) : "Shield", {}};
-            }
+                return a.source.id == item.origin;
+            });
+            const auto *weapon = detail::weapon(item.definition);
+            if (!input || source == session->actors_.end() ||
+                    source->source.character_profile.empty() ||
+                    (!weapon && item.definition != "shield") || !item.quantity)
+                throw std::runtime_error("Invalid physical inventory source");
+            const auto original = character_definition(source->source.character_profile);
+            if (!item.inventory_id &&
+                    (item.equipment_index >= original.equipment_keys.size() ||
+                     original.equipment_keys[item.equipment_index] != item.definition))
+                throw std::runtime_error("Invalid physical equipment source");
+            item.label = {weapon ? std::string(weapon->label) : "Shield", {}};
             input >> item.holder >> item.cell.x >> item.cell.y;
             if (!input || id != item.id)
                 throw std::runtime_error("Invalid held item identity");
@@ -5085,16 +4341,13 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             a.object_interaction = available;
             if (!a.source.character_profile.empty())
                 a.definition = session->equipped_definition(a, session->items_);
-            validate_grip(a.definition, a.weapon_hands);
         }
     }
-    if (version >= 17 && !has_items)
-        for (const auto &a : session->actors_)
-            validate_grip(a.definition, a.weapon_hands);
-    bool pending_check = false, pending_champion = false;
-    if (version >= 19)
-        input >> pending_check;
-    if (version == 17 || pending_check)
+    for (const auto &a : session->actors_)
+        validate_grip(a.definition, a.weapon_hands);
+    bool pending_check{};
+    input >> pending_check;
+    if (pending_check)
     {
         PendingCheck c;
         input >> c.actor >> c.target >> c.natural >> c.surge_spent;
@@ -5102,12 +4355,10 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             throw std::runtime_error("Invalid ability-check checkpoint");
         session->check_choice_ = c;
     }
-    if (version >= 19)
-        input >> pending_champion;
-    if (version == 18 || pending_champion)
+    bool pending_champion{};
+    input >> pending_champion;
+    if (pending_champion)
     {
-        if (module_before(identity, {0, 6, 46}))
-            throw std::runtime_error("Legacy checkpoint cannot contain Champion movement");
         ChampionMove c;
         input >> c.actor >> c.target >> c.natural >> c.remaining >> c.spell >> c.origin.x >>
               c.origin.y;
@@ -5115,103 +4366,73 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             throw std::runtime_error("Invalid Champion movement checkpoint");
         session->champion_move_ = c;
     }
-    bool saved_light = version >= 22, saved_nick = version >= 23;
-    bool saved_graze = version == 24;
-    if (version >= 25)
-        input >> saved_graze;
+    bool saved_graze{}, saved_light{}, saved_nick{};
+    input >> saved_graze;
     if (saved_graze)
     {
         PendingGraze g;
         input >> g.actor >> g.target >> g.natural;
         session->graze_ = g;
     }
-    if (version >= 24)
-        input >> saved_light >> saved_nick;
-    if (version >= 25)
+    input >> saved_light >> saved_nick;
+    bool has_mastery{};
+    input >> has_mastery;
+    if (has_mastery)
     {
-        bool has_mastery{};
-        input >> has_mastery;
-        if (has_mastery)
-        {
-            PendingMastery m;
-            unsigned kind{};
-            input >> m.actor >> m.target >> kind >> m.natural >> m.ranged >> m.targeting >>
-                  std::quoted(m.weapon) >> m.origin.x >> m.origin.y >> m.thrown_item;
-            m.kind = static_cast<detail::Mastery>(kind);
-            session->mastery_ = std::move(m);
-        }
-        const auto extra = [&](ChampionMove & c)
-        {
-            input >> c.triggered >> c.cleave >> c.helpless >> c.trigger_origin.x >>
-                  c.trigger_origin.y >> c.target_origin.x >> c.target_origin.y;
-        };
-        unsigned count{};
-        input >> count;
-        if (!input || count > 2)
-            throw std::runtime_error("Invalid queued effect count");
-        for (unsigned i = 0; i < count; ++i)
-        {
-            ChampionMove c;
-            input >> c.actor >> c.target >> c.natural >> c.remaining >> c.spell >> c.origin.x >>
-                  c.origin.y;
-            extra(c);
-            session->champion_offers_.push_back(c);
-        }
-        if (session->champion_move_)
-            extra(*session->champion_move_);
-        bool origin{};
-        input >> origin;
-        if (origin)
-        {
-            EffectReaction r;
-            input >> r.actor >> r.source.x >> r.source.y >> r.mover.x >> r.mover.y >> r.movement >>
-                  r.prone;
-            session->effect_reaction_origin_ = r;
-        }
+        PendingMastery m;
+        unsigned kind{};
+        input >> m.actor >> m.target >> kind >> m.natural >> m.ranged >> m.targeting >>
+              std::quoted(m.weapon) >> m.origin.x >> m.origin.y >> m.thrown_item;
+        m.kind = static_cast<detail::Mastery>(kind);
+        session->mastery_ = std::move(m);
     }
-    if (version >= 26)
+    const auto extra = [&](ChampionMove & c)
     {
-        unsigned count{};
-        input >> count;
-        if (!input || !count || count > session->actors_.size())
-            throw std::runtime_error("Invalid Initiative choice count");
-        for (unsigned i = 0; i < count; ++i)
-        {
-            EntityId id{};
-            input >> id;
-            session->initiative_choices_.push_back(id);
-        }
+        input >> c.triggered >> c.cleave >> c.helpless >> c.trigger_origin.x >>
+              c.trigger_origin.y >> c.target_origin.x >> c.target_origin.y;
+    };
+    unsigned offers{};
+    input >> offers;
+    if (!input || offers > 2)
+        throw std::runtime_error("Invalid queued effect count");
+    for (unsigned i = 0; i < offers; ++i)
+    {
+        ChampionMove c;
+        input >> c.actor >> c.target >> c.natural >> c.remaining >> c.spell >> c.origin.x >>
+              c.origin.y;
+        extra(c);
+        session->champion_offers_.push_back(c);
+    }
+    if (session->champion_move_)
+        extra(*session->champion_move_);
+    bool origin{};
+    input >> origin;
+    if (origin)
+    {
+        EffectReaction r;
+        input >> r.actor >> r.source.x >> r.source.y >> r.mover.x >> r.mover.y >> r.movement >>
+              r.prone;
+        session->effect_reaction_origin_ = r;
+    }
+    unsigned choices{};
+    input >> choices;
+    if (!input || choices > session->actors_.size())
+        throw std::runtime_error("Invalid Initiative choice count");
+    for (unsigned i = 0; i < choices; ++i)
+    {
+        EntityId id{};
+        input >> id;
+        session->initiative_choices_.push_back(id);
     }
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
-    unsigned legacy_facing_reaction{};
-    if (version == 5)
-    {
-        input >> legacy_facing_reaction;
-        if (!input || legacy_facing_reaction > 2)
-            throw std::runtime_error("Invalid checkpoint turn reaction");
-    }
-    if (version < 7)
-        for (auto &a : session->actors_)
-            if (a.hp == 0 && !a.dead && session->shares_occupied_space(a))
-                a.involuntary_overlap = true;
-    // Validate the old queue before removing it. Migration must not conceal a
-    // malformed checkpoint or change damage, spent resources, time or dice.
     session->light_active_ = saved_light;
     session->nick_active_ = saved_nick;
     session->validate_light();
-    session->validate_restored_state(legacy_facing_reaction != 0);
+    session->validate_restored_state();
     input >> std::ws;
     if (!input.eof())
         throw std::runtime_error("Trailing checkpoint data");
-    if (legacy_facing_reaction)
-    {
-        session->reactors_.clear();
-        session->reactor_index_ = 0;
-        if (++session->revision_ == 0)
-            session->revision_ = 1;
-        session->validate_restored_state();
-    }
     return session;
 }
 
@@ -5225,40 +4446,6 @@ class Module final : public RulesModule
     Identity identity() const override
     {
         return content_->identity;
-    }
-
-    bool accepts_campaign_identity(const Identity &saved) const override
-    {
-        if (saved.version != content_->identity.version && saved.version != "0.6.61" &&
-                saved.version != "0.6.60" &&
-                saved.version != "0.6.59" && saved.version != "0.6.58" && saved.version != "0.6.57" &&
-                saved.version != "0.6.56" && saved.version != "0.6.55" && saved.version != "0.6.54" &&
-                saved.version != "0.6.53" && saved.version != "0.3.0" && saved.version != "0.4.0" &&
-                saved.version != "0.5.0" && saved.version != "0.6.0" && saved.version != "0.6.1" &&
-                saved.version != "0.6.2" && saved.version != "0.6.3" && saved.version != "0.6.4" &&
-                saved.version != "0.6.5" && saved.version != "0.6.6" && saved.version != "0.6.7" &&
-                saved.version != "0.6.8" && saved.version != "0.6.9" && saved.version != "0.6.10" &&
-                saved.version != "0.6.11" && saved.version != "0.6.12" && saved.version != "0.6.13" &&
-                saved.version != "0.6.14" && saved.version != "0.6.15" && saved.version != "0.6.16" &&
-                saved.version != "0.6.17" && saved.version != "0.6.18" && saved.version != "0.6.19" &&
-                saved.version != "0.6.20" && saved.version != "0.6.21" && saved.version != "0.6.22" &&
-                saved.version != "0.6.23" && saved.version != "0.6.24" && saved.version != "0.6.25" &&
-                saved.version != "0.6.26" && saved.version != "0.6.27" && saved.version != "0.6.28" &&
-                saved.version != "0.6.29" && saved.version != "0.6.30" && saved.version != "0.6.31" &&
-                saved.version != "0.6.32" && saved.version != "0.6.33" && saved.version != "0.6.34" &&
-                saved.version != "0.6.35" && saved.version != "0.6.36" && saved.version != "0.6.37" &&
-                saved.version != "0.6.38" && saved.version != "0.6.39" && saved.version != "0.6.40" &&
-                saved.version != "0.6.41" && saved.version != "0.6.42" && saved.version != "0.6.43" &&
-                saved.version != "0.6.45" && saved.version != "0.6.44" && saved.version != "0.6.46" &&
-                saved.version != "0.6.47" && saved.version != "0.6.48" && saved.version != "0.6.49" &&
-                saved.version != "0.6.50" && saved.version != "0.6.51" && saved.version != "0.6.52")
-            return false;
-        auto compatible = saved;
-        compatible.version = content_->identity.version;
-        return compatible == content_->identity ||
-               std::find(content_->previous_campaign_identities.begin(),
-                         content_->previous_campaign_identities.end(),
-                         compatible) != content_->previous_campaign_identities.end();
     }
 
     std::vector<std::string> supported_features() const override
@@ -5380,7 +4567,7 @@ class Module final : public RulesModule
         for (const auto &[source, values] : choices)
             selected.insert(selected.end(), values.begin(), values.end());
         if (selected.size() != group.count)
-            return {}; // Missing historical choices stay pending for Review Training.
+            return {}; // Nothing to replace until every mastery is chosen.
         group.id = "weapon_mastery";
         return TrainingReplacementOptions{std::move(group), std::move(selected),
                                           detail::mastery_replacements(klass)};
@@ -5797,8 +4984,8 @@ class Module final : public RulesModule
                                         SpellChoices{*choice.spell_learning, choice.spells, {}, {}},
                                         SpellChoiceContext::advancement);
         }
-        else
-            detail::learn_advancement_spells(next, choice.spells);
+        else if (sheet.character_class == "Wizard")
+            throw std::runtime_error("Independent spell learning choices are required");
         next.training = detail::training_profile(
                             next.grants, detail::grant_source_id(next.character_class),
                             detail::grant_source_id(next.background), next.level, next.scores);
@@ -5899,281 +5086,6 @@ class Module final : public RulesModule
         restore_vitals(actor, state);
     }
 
-    void validate_saved_grants(const Identity &saved, const CharacterSheet &sheet,
-                               std::span<const FeatureGrant> grants) const override
-    {
-        if (module_before(saved, {0, 6, 35}) && sheet.character_class == "Rogue" && sheet.level > 1)
-            throw std::runtime_error("Legacy campaign cannot contain advanced Rogues");
-        if (module_before(saved, {0, 6, 53}) &&
-                (sheet.character_class == "Paladin" || sheet.character_class == "Ranger") &&
-                sheet.level > 1)
-            throw std::runtime_error("Legacy campaign cannot contain advanced Paladins/Rangers");
-        if (module_before(saved, {0, 6, 52}) && sheet.character_class == "Rogue" && sheet.level > 2)
-            throw std::runtime_error("Legacy campaign cannot contain level-three Rogues");
-        if (!accepts_campaign_identity(saved))
-            throw std::runtime_error("Unsupported grant migration");
-        if (module_before(saved, {0, 6, 40}) &&
-                std::any_of(grants.begin(), grants.end(),
-                            [](const auto & g)
-    {
-        return detail::is_spell_grant(g) &&
-                   g.source_id == "class:sorcerer:spellcasting";
-        }))
-        throw std::runtime_error("Legacy campaign cannot grant Sorcerer cantrips");
-        if (module_before(saved, {0, 6, 39}) &&
-                std::any_of(grants.begin(), grants.end(),
-                            [](const auto & g)
-    {
-        return g.id == "spell:poison_spray" &&
-               g.source_id == "class:warlock:pact_magic";
-    }))
-        throw std::runtime_error("Legacy campaign cannot grant Warlock Poison Spray");
-        if (module_before(saved, {0, 6, 43}) && std::any_of(grants.begin(), grants.end(),
-                [](const auto & g)
-    {
-        return g.id == "spell:chill_touch";
-    }))
-        throw std::runtime_error("Legacy campaign cannot grant Chill Touch");
-        if (module_before(saved, {0, 6, 38}) && std::any_of(grants.begin(), grants.end(),
-                [](const auto & g)
-    {
-        return g.id ==
-               "spell:shocking_grasp";
-    }))
-        throw std::runtime_error("Legacy campaign cannot grant Shocking Grasp");
-        if (module_before(saved, {0, 6, 37}) && std::any_of(grants.begin(), grants.end(),
-                [](const auto & g)
-    {
-        return g.id ==
-               "spell:eldritch_blast";
-    }))
-        throw std::runtime_error("Legacy campaign cannot grant Eldritch Blast");
-        if (module_before(saved, {0, 6, 25}) && std::any_of(grants.begin(), grants.end(),
-                [](const auto & g)
-    {
-        return g.id == "spell:ray_of_frost";
-    }))
-        throw std::runtime_error("Legacy campaign cannot grant Ray of Frost");
-        if (module_before(saved, {0, 6, 29}) &&
-                std::any_of(grants.begin(), grants.end(),
-                            [](const auto & g)
-    {
-        return g.source_id == "class:fighter:fighting_style";
-    }))
-        throw std::runtime_error(
-            "Legacy campaign cannot contain starting Fighting Style grants");
-        if (module_before(saved, {0, 6, 34}) &&
-                std::any_of(grants.begin(), grants.end(),
-                            [](const auto & g)
-    {
-        return g.source_id == "background:soldier:gaming_set";
-    }))
-        throw std::runtime_error("Legacy campaign cannot contain Soldier Gaming Set choices");
-        if (module_before(saved, {0, 6, 33}) && detail::has_grant(grants, "tool:herbalism_kit"))
-            throw std::runtime_error("Legacy campaign cannot contain Herbalism Kit proficiency");
-        if (module_before(saved, {0, 6, 32}) && std::any_of(grants.begin(), grants.end(),
-                [](const auto & g)
-    {
-        return g.source_id ==
-               "class:monk:tools";
-    }))
-        throw std::runtime_error("Legacy campaign cannot contain Monk tool choices");
-        if (module_before(saved, {0, 6, 31}) && std::any_of(grants.begin(), grants.end(),
-                [](const auto & g)
-    {
-        return g.source_id ==
-               "class:bard:instruments";
-    }))
-        throw std::runtime_error("Legacy campaign cannot contain Bard instrument choices");
-        if (module_before(saved, {0, 6, 30}) &&
-                std::any_of(grants.begin(), grants.end(),
-                            [](const auto & g)
-    {
-        return g.id.starts_with("skill:") &&
-                   g.source_id.starts_with("class:") &&
-                   g.source_id != "class:rogue";
-        }))
-        throw std::runtime_error("Legacy campaign cannot contain new class skill choices");
-        if (module_before(saved, {0, 6, 49}) &&
-                detail::has_grant(grants, "feature:arcane_recovery"))
-            throw std::runtime_error("Legacy campaign cannot grant Arcane Recovery");
-        if (module_before(saved, {0, 6, 51}) &&
-                std::any_of(grants.begin(), grants.end(),
-                            [](const auto & g)
-    {
-        return detail::is_spell_grant(g) && g.choices.contains("learned_at");
-        }))
-        throw std::runtime_error("Legacy campaign cannot contain cantrip replacements");
-        if (module_before(saved, {0, 6, 50}) && std::any_of(grants.begin(), grants.end(),
-                [](const auto & g)
-    {
-        return g.source_id ==
-               "class:wizard:scholar";
-    }))
-        throw std::runtime_error("Legacy campaign cannot grant Scholar Expertise");
-        if (module_before(saved, {0, 6, 52}) &&
-                (detail::has_grant(grants, "feature:sneak_attack") ||
-                 detail::has_grant(grants, "feature:steady_aim")))
-            throw std::runtime_error("Legacy campaign cannot contain Rogue attack grants");
-        if (module_before(saved, {0, 6, 56}) &&
-                std::any_of(grants.begin(), grants.end(), detail::is_mastery_grant))
-            throw std::runtime_error("Legacy campaign cannot contain Weapon Mastery");
-        if (module_before(saved, {0, 6, 55}) &&
-                detail::has_grant(grants, "feat:two_weapon_fighting"))
-            throw std::runtime_error("Legacy campaign cannot contain Two-Weapon Fighting");
-        if (module_before(saved, {0, 6, 53}) &&
-                std::any_of(grants.begin(), grants.end(),
-                            [](const auto & g)
-    {
-        return g.id == "feat:great_weapon_fighting" ||
-               (g.source_id == "class:fighter:fighting_style" && g.level > 1);
-        }))
-        throw std::runtime_error("Legacy campaign cannot contain new style choices");
-        if (module_before(saved, {0, 6, 61}) && detail::has_grant(grants, "feat:alert"))
-            throw std::runtime_error("Legacy campaign cannot grant Alert");
-        auto expected =
-            saved.version == "0.6.8" ? detail::without_training(sheet.grants) : sheet.grants;
-        if (module_before(saved, {0, 6, 61}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "feat:alert";
-        });
-        if (module_before(saved, {0, 6, 52}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "feature:sneak_attack";
-        });
-        if (module_before(saved, {0, 6, 49}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "feature:arcane_recovery";
-        });
-        if (module_before(saved, {0, 6, 33}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "tool:herbalism_kit" && g.source_id == "class:druid";
-        });
-        if (module_before(saved, {0, 6, 28}) && detail::has_grant(grants, "feat:archery"))
-            throw std::runtime_error("Legacy campaign cannot contain Archery grants");
-        if (module_before(saved, {0, 6, 27}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return (g.source_id == "background:acolyte" &&
-                    (g.id == "skill:insight" || g.id == "skill:religion" ||
-                     g.id == "tool:calligraphers_supplies")) ||
-                   (g.source_id == "background:soldier" &&
-                    (g.id == "skill:athletics" || g.id == "skill:intimidation"));
-        });
-        if (module_before(saved, {0, 6, 26}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.source_id == "background:sage" &&
-                   (g.id == "skill:arcana" || g.id == "skill:history" ||
-                    g.id == "tool:calligraphers_supplies");
-        });
-        if (module_before(saved, {0, 6, 13}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "trait:dwarven_resilience";
-        });
-        if (module_before(saved, {0, 6, 15}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "trait:adrenaline_rush";
-        });
-        if (module_before(saved, {0, 6, 46}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "subclass:champion" ||
-                   g.source_id == "subclass:fighter:champion";
-        });
-        if (module_before(saved, {0, 6, 45}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "feature:tactical_mind";
-        });
-        if (module_before(saved, {0, 6, 24}))
-            std::erase_if(expected,
-                          [](const auto & g)
-        {
-            return g.id == "feature:action_surge";
-        });
-        if (module_before(saved, {0, 6, 19}))
-            expected = detail::without_spell_grants(expected);
-        if (!std::equal(grants.begin(), grants.end(), expected.begin(), expected.end()))
-            throw std::runtime_error("Saved grants disagree with creation or advancement choices");
-    }
-
-    void migrate_character_state(const Identity &saved, const CharacterSheet &sheet,
-                                 VitalState &state) const override
-    {
-        if (module_before(saved, {0, 6, 35}) && sheet.character_class == "Rogue" && sheet.level > 1)
-            throw std::runtime_error("Legacy campaign cannot contain advanced Rogues");
-        if (module_before(saved, {0, 6, 53}) &&
-                (sheet.character_class == "Paladin" || sheet.character_class == "Ranger") &&
-                sheet.level > 1)
-            throw std::runtime_error("Legacy campaign cannot contain advanced Paladins/Rangers");
-        if (module_before(saved, {0, 6, 52}) && sheet.character_class == "Rogue" && sheet.level > 2)
-            throw std::runtime_error("Legacy campaign cannot contain level-three Rogues");
-        if (!accepts_campaign_identity(saved))
-            throw std::runtime_error("Unsupported campaign migration");
-        auto definition = character_definition(character_profile(sheet, {}).data);
-        if (module_before(saved, {0, 6, 58}) && state.resources.find("FX7 ") != std::string::npos)
-            throw std::runtime_error("Legacy campaign cannot contain Slow");
-        if (module_before(saved, {0, 6, 56}) && state.resources.find("FX6 ") != std::string::npos)
-            throw std::runtime_error("Legacy campaign cannot contain mastery effects");
-        if (module_before(saved, {0, 6, 43}) && state.resources.find("FX5 ") != std::string::npos)
-            throw std::runtime_error("Legacy campaign cannot contain Chill Touch");
-        if (module_before(saved, {0, 6, 38}) && state.resources.find("FX3 ") != std::string::npos)
-            throw std::runtime_error("Legacy campaign cannot contain Shocking Grasp");
-        if (module_before(saved, {0, 6, 25}) && state.resources.find("FX2 ") != std::string::npos)
-            throw std::runtime_error("Legacy campaign cannot contain Ray of Frost");
-        if (module_before(saved, {0, 6, 49}) && state.resources.starts_with("SRD9 "))
-            throw std::runtime_error("Legacy campaign cannot contain Arcane Recovery expenditure");
-        if (module_before(saved, {0, 6, 24}) && state.resources.starts_with("SRD8 "))
-            throw std::runtime_error("Legacy campaign cannot contain Action Surge expenditure");
-        const bool old_hp = saved.version == "0.3.0" || saved.version == "0.4.0" ||
-                            saved.version == "0.5.0" || saved.version == "0.6.0" ||
-                            saved.version == "0.6.1" || saved.version == "0.6.2";
-        if (old_hp)
-        {
-            // Prior modules rebuilt every gain with the final modifier. Validate
-            // against that old maximum before restoring the missing HP to a
-            // conscious member; zero HP/death and all resources remain intact.
-            const int con = ability_modifier(sheet.scores[2]);
-            definition.hp = sheet.hit_die + con + (sheet.race == "Dwarf" ? sheet.level : 0) +
-                            (sheet.level - 1) * std::max(1, sheet.hit_die / 2 + 1 + con);
-        }
-        Actor actor;
-        actor.definition = definition;
-        actor.winds = definition.winds;
-        actor.slots = definition.slots;
-        actor.slots2 = definition.slots2;
-        restore_vitals(actor, state);
-        if (module_before(saved, {0, 6, 44}) && actor.recovery.stable_recovery_due)
-            throw std::runtime_error("Legacy campaign cannot contain earned recovery");
-        if (module_before(saved, {0, 6, 41}) && actor.effects.prone)
-            throw std::runtime_error("Legacy campaign cannot contain natural sleep/posture state");
-        // Only pre-Adrenaline saves introduce a new resource pool. Later version
-        // bumps preserve already-supported Orc state just like other species.
-        const bool introduce_rush = module_before(saved, {0, 6, 15});
-        auto next = definition.rushes && introduce_rush ? vitals(actor) : state;
-        if (next.hit_points > 0)
-            next.hit_points += sheet.hit_points - definition.hp;
-        validate_character_state(sheet, next);
-        state = std::move(next);
-    }
-
     RestPolicy long_rest_policy() const override
     {
         return rest::policy(RestKind::long_rest);
@@ -6254,14 +5166,9 @@ class Module final : public RulesModule
             next.push_back(vitals(a));
         for (std::size_t i = 0; i < participants.size(); ++i)
             if (participants[i].state &&
+                    // A fresh character's empty state stays empty unless dying.
                     ((participants[i].state->hit_points == 0 && !participants[i].state->dead) ||
-                     participants[i].state->resources.starts_with("SRD3 ") ||
-                     participants[i].state->resources.starts_with("SRD4 ") ||
-                     participants[i].state->resources.starts_with("SRD5 ") ||
-                     participants[i].state->resources.starts_with("SRD6 ") ||
-                     participants[i].state->resources.starts_with("SRD7 ") ||
-                     participants[i].state->resources.starts_with("SRD8 ") ||
-                     participants[i].state->resources.starts_with("SRD9 ")))
+                     !participants[i].state->resources.empty()))
                 participants[i].state = std::move(next[i]);
         random_state = rng;
     }
@@ -6653,14 +5560,6 @@ class Module final : public RulesModule
         return result;
     }
 
-    EquipmentState migrate_equipment(std::span<const std::string> gear) const override
-    {
-        for (const auto &key : gear)
-            if (legacy_two_hands(key))
-                return {2};
-        return {};
-    }
-
     CharacterProfile character_profile(const CharacterSheet &sheet,
                                        std::span<const std::string> gear,
                                        EquipmentState equipment = {}) const override
@@ -6707,12 +5606,10 @@ class Module final : public RulesModule
         };
         if (sheet.prepared_spells.empty() && sheet.character_class == "Cleric")
             record("cure_wounds");
-        // Preparable spells come from the eligibility table, at the newest
-        // capability because a fresh profile is being written. Cantrips are
-        // filtered out: they are known, never prepared. This replaces a chain of
-        // per-spell class and level comparisons.
-        const auto preparable = detail::spells_of_level(
-                                    allowed_spells(sheet.character_class, sheet.level, max_profile_tag), false);
+        // Preparable spells come from the eligibility table. Cantrips are
+        // filtered out: they are known, never prepared.
+        const auto preparable =
+            detail::spells_of_level(allowed_spells(sheet.character_class, sheet.level), false);
         for (const auto &spell : sheet.prepared_spells)
         {
             if (!selected.insert(spell).second)
@@ -6721,95 +5618,10 @@ class Module final : public RulesModule
                 throw std::runtime_error("Unsupported prepared spell");
             record(spell);
         }
-        // The legacy bitmask is still written whenever it can express the set,
-        // so existing profiles stay byte identical. A spell with no bit forces
-        // the explicit list instead.
-        const unsigned packed = detail::mask_from_spells(spells);
-        const bool list_spells = !spells.empty() && !packed;
-        // One row per capability that raises the written tag. PC28 is the floor
-        // because every capability below it is unconditionally written.
-        const unsigned tag = highest_present(
-                                 static_cast<unsigned>(Cap::sorcerer),
-        {
-            {static_cast<unsigned>(Cap::rogue), sheet.character_class == "Rogue"},
-            {
-                static_cast<unsigned>(Cap::choices),
-                sheet.character_class == "Wizard" &&
-                (std::none_of(sheet.grants.begin(), sheet.grants.end(),
-                              [](const auto & g)
-                {
-                    return g.id == "spell:magic_missile" && g.level == 1;
-                }) ||
-                std::any_of(sheet.grants.begin(), sheet.grants.end(),
-                            [](const auto & g)
-                {
-                    return detail::is_spell_grant(g) &&
-                    g.choices.contains("learned_at");
-                }))
-            },
-            {
-                static_cast<unsigned>(Cap::scholar),
-                std::any_of(sheet.grants.begin(), sheet.grants.end(),
-                            [](const auto & g)
-                {
-                    return g.source_id == "class:wizard:scholar";
-                })
-            },
-            {
-                static_cast<unsigned>(Cap::arcane),
-                detail::has_grant(sheet.grants, "feature:arcane_recovery")
-            },
-            {
-                static_cast<unsigned>(Cap::champion),
-                detail::has_grant(sheet.grants, "subclass:champion")
-            },
-            {
-                static_cast<unsigned>(Cap::mind),
-                detail::has_grant(sheet.grants, "feature:tactical_mind")
-            },
-            {static_cast<unsigned>(Cap::chill), detail::knows_spell(spells, "chill_touch")},
-            {
-                static_cast<unsigned>(Cap::style_routes),
-                (features & 8) != 0 ||
-                ((sheet.character_class == "Paladin" || sheet.character_class == "Ranger") &&
-                 sheet.level > 1) ||
-                std::any_of(sheet.grants.begin(), sheet.grants.end(),
-                            [](const auto & g)
-                {
-                    return g.source_id == "class:fighter:fighting_style" &&
-                    g.level > 1;
-                })
-            },
-            {
-                static_cast<unsigned>(Cap::hands), std::count_if(gear.begin(), gear.end(),
-                        [](const auto & key)
-                {
-                    return detail::weapon(key) !=
-                    nullptr;
-                }) > 1
-            },
-            {static_cast<unsigned>(Cap::light), (features & 16) != 0},
-            {
-                static_cast<unsigned>(Cap::mastery),
-                std::any_of(sheet.grants.begin(), sheet.grants.end(), detail::is_mastery_grant)
-            },
-            {static_cast<unsigned>(Cap::alert), (features & 32) != 0},
-            {static_cast<unsigned>(Cap::explicit_spells), list_spells},
-            {
-                static_cast<unsigned>(Cap::skilled),
-                detail::has_grant(sheet.grants, "feat:skilled")
-            }
-        });
         std::ostringstream out;
-        out << "PC" << tag << ' ' << sheet.level << ' ' << features << ' ';
-        if (list_spells)
-        {
-            out << spells.size();
-            for (const auto &id : spells)
-                out << ' ' << id;
-        }
-        else
-            out << packed;
+        out << profile_magic << ' ' << sheet.level << ' ' << features << ' ' << spells.size();
+        for (const auto &id : spells)
+            out << ' ' << id;
         out << ' ' << std::quoted(sheet.character_class) << ' ' << std::quoted(sheet.race);
         for (auto score : sheet.scores)
             out << ' ' << score;
@@ -7228,73 +6040,6 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     Content content;
     content.identity = {"opengold.srd5", "0.6.62", revision + "/" + std::to_string(hash)};
-    // Preserve campaign saves from the preceding pack and the frozen v1/v2 fixtures.
-    if (revision == "srd-5.2.1-demo.1")
-        for (const auto fingerprint :
-                {"15286736505479635800", "1436083463150607054", "4820123901484423331"
-                })
-            content.previous_campaign_identities.push_back(
-        {"opengold.srd5", content.identity.version, revision + "/" + fingerprint});
-    std::string before_damage;
-    {
-        std::istringstream previous(bytes);
-        std::string row;
-        while (std::getline(previous, row))
-            if (!row.starts_with("damage_types ") && !row.starts_with("affinity "))
-                before_damage += row + '\n';
-    }
-    std::uint64_t prior_hash = 14695981039346656037ULL;
-    for (unsigned char c : before_damage)
-    {
-        prior_hash ^= c;
-        prior_hash *= 1099511628211ULL;
-    }
-    if (revision == "srd-5.2.1-demo.1" && prior_hash == 15052881321234871607ULL)
-        content.previous_campaign_identities.push_back(
-    {
-        "opengold.srd5", content.identity.version,
-        revision + "/" + std::to_string(prior_hash)});
-    // These additive rows introduce saves and an isolated casting fixture. Old
-    // campaign sheets can migrate; combat checkpoints still require exact rules.
-    // Reconstruct both supported historical packs without guessing fingerprints.
-    for (bool remove_roaming :
-            {
-                false, true
-            })
-    {
-        std::istringstream previous_lines(before_damage);
-        std::string previous, line_before;
-        const std::array<std::string_view, 7> additions
-        {
-            "slums-kobold",        "slums-goblin",
-            "slums-kobold-leader", "slums-kobold-leader-sword",
-            "slums-goblin-leader", "slums-orc-leader",
-            "slums-bugbear"};
-        while (std::getline(previous_lines, line_before))
-        {
-            std::istringstream row(line_before);
-            std::string tag, key;
-            row >> tag >> key;
-            if (tag == "saves" || tag == "spellcasting" ||
-                    (tag == "creature" && key == "blindness-adept"))
-                continue;
-            if (remove_roaming && tag == "creature" &&
-                    std::find(additions.begin(), additions.end(), key) != additions.end())
-                continue;
-            previous += line_before + '\n';
-        }
-        std::uint64_t previous_hash = 14695981039346656037ULL;
-        for (unsigned char c : previous)
-        {
-            previous_hash ^= c;
-            previous_hash *= 1099511628211ULL;
-        }
-        if (previous_hash != hash)
-            content.previous_campaign_identities.push_back(
-        {
-            "opengold.srd5", content.identity.version,
-            revision + "/" + std::to_string(previous_hash)});
-    }
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows;
     while (std::getline(lines, line))
     {

@@ -1,8 +1,11 @@
 extends SceneTree
 
 var saved_files := {}
+var fixtures := ""
 
 func _initialize() -> void:
+    for arg in OS.get_cmdline_user_args():
+        if arg.begins_with("--grip-fixtures="): fixtures = arg.trim_prefix("--grip-fixtures=")
     call_deferred("run_checks")
 
 func restore_files() -> void:
@@ -45,11 +48,13 @@ func run_checks() -> void:
     var combat := current_scene
     combat.set_process(false)
     var file := FileAccess.open(path, FileAccess.WRITE)
-    file.store_buffer(FileAccess.get_file_as_bytes("res://../../../tests/fixtures/combat-v7-grips.save"))
+    var bytes := FileAccess.get_file_as_bytes(fixtures.path_join("grips.save"))
+    require(not bytes.is_empty(), "Native grip fixture exists")
+    file.store_buffer(bytes)
     file.close()
     combat.get_node("Load").pressed.emit()
     var grip: OptionButton = combat.get_node("Grip")
-    require(grip.visible and grip.item_count == 2 and grip.selected == 1, "Old battleaxe grip is shown as two hands")
+    require(grip.visible and grip.item_count == 2 and grip.selected == 1, "Two-handed battleaxe grip is shown as two hands")
     require(grip.get_item_text(0) == "One hand — 1d8" and grip.get_item_text(1) == "Two hands — 1d10", "Dropdown displays rules-owned damage dice")
     for size in [Vector2i(1120, 800), Vector2i(1920, 1080)]:
         root.size = size

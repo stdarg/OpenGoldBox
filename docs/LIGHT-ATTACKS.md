@@ -49,6 +49,8 @@
    pending-hit continuation and historical profiles remain supported. Capture
    genuine0.6.53 writer evidence before changing any affected writer. No combat
    save controls, fabricated old fixtures or reduction in supported history.
+   (Superseded: saves now have one pre-1.0 format and nothing is migrated; see
+   [SAVES.md](SAVES.md#pre-10-format-policy).)
 7. Main EN/ES and demo EN,1120×800/1920×1080: controls, keyboard/mouse targeting,
    disabled states, Cancel/Escape atomicity and native comparison of saved state.
    Focused checks, final integrated regression, coverage, commit/push then only
@@ -99,9 +101,8 @@ per-hit decision. Preserve existing source, replacement and separate-feat rules.
 
 ## Independent compatibility work while controls await approval
 
-Seven genuine0.6.53 campaign/combat captures and a verifier are now in
-[`light_attack_baseline.h`](../tests/light_attack_baseline.h). Capture provenance
-and SHA-256 hashes are recorded in [fixtures](../tests/fixtures/README.md#lighthand-state-baseline--actual-0653-writer).
+Seven genuine0.6.53 campaign/combat captures and a verifier were added (since
+deleted under the [pre-1.0 format policy](SAVES.md#pre-10-format-policy)).
 The full training test passes after rebuilding; no runtime source was changed.
 This proves prior-style/weapon/history continuation, not Light/TWF completion.
 No original issue is closed by this preparation.
@@ -162,9 +163,8 @@ rules-provided legal hand choices and atomic item splitting. Main/other labels
 appear in inventory and character sheets; artwork uses the first equipped weapon.
 The selected stack unit retains its original item provenance. Cancel/Escape
 make no changes. Two equipped weapons block a two-handed Versatile grip,
-shields and somatic casting without a free hand. Ordinary replacement and old
-save recipes retain their previous behavior; only dual-weapon profiles use PC37.
-Module0.6.54 accepts all previously supported module identities, including0.6.53.
+shields and somatic casting without a free hand. Ordinary replacement retains
+its previous behavior.
 
 Focused Party/Training checks pass. The game EN/ES and demo EN hand dialog
 checks pass at1120×800/1920×1080; captured game layouts were inspected. Their
@@ -205,8 +205,7 @@ OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD build/mac-check/opengold_training_tests 
 Full logs `/tmp/light-hands-integrated.log`, `/tmp/light-hands-game-ui.log`,
 `/tmp/light-hands-demo-ui.log`, `/tmp/light-hands-art-check.log`; captures in
 `/tmp/light-hands-game` and `/tmp/light-hands-demo`. Runtime revision above is
-the tested tree. No pending process or approval remains. Preserve genuine0.6.54
-dual-hand writer evidence before later changing these new recipes/continuations.
+the tested tree. No pending process or approval remains.
 Continue the same batch with focused checks; do the next broad regression on
 the integrated Light/TWF implementation, rather than every small edit.
 
@@ -247,8 +246,7 @@ normal Action, separate Action Surge action and Light Bonus Action are distinct.
 No level-five Extra Attack or ammunition bookkeeping is introduced.
 
 PC38 is conditional on the new feat. Combat22 records selected weapon, qualifying
-physical identities and pending Light damage context. Actual0.6.53/0.6.54 fixtures
-remain supported; old saved turns receive no invented qualifying attack history.
+physical identities and pending Light damage context.
 Core has no new SRD calculations. The approved earlier equipment transaction and
 safe recovery handle campaign ownership; the rules decide attack outcomes.
 
@@ -296,8 +294,8 @@ The first integrated run passed77/78. The unchanged party proficiency regression
 exposed live/restored divergence for Shortsword/Scimitar: their physical inventory
 was activated only at the first qualifying attack, after a checkpoint had omitted
 its source identities. New encounters now initialize physical inventory for all
-Light weapons, as already done for Thrown weapons. Historical readers remain
-unchanged. Rebuilt `opengold_party_tests` and the full training suite both pass;
+Light weapons, as already done for Thrown weapons. Rebuilt
+`opengold_party_tests` and the full training suite both pass;
 final linked-target refresh/regression is required after this production fix.
 
 ## Delivery and verification

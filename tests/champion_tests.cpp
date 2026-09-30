@@ -107,7 +107,7 @@ std::vector<std::string> gear = {"longsword"}, bool prone = false)
                 rules.character_profile(h.sheet(), gear).data,
                 prone ? std::optional<VitalState>{{
                         h.sheet().hit_points, false,
-                         "SRD3 2 0 0 0 0 0 FX4 1 0 0 1"
+                         "SRD9 2 0 0 0 0 0 3 0 0 0 \"\" 0 1 0 FX7 1 0 0 1"
                     }
                 }
 : std::nullopt
@@ -160,12 +160,8 @@ void grants_and_checks()
         check(has_grant("subclass:champion") == champion &&
               has_grant("feature:remarkable_athlete") == champion,
               "Subclass and both feature grants follow ordinary level three acquisition");
-        check(rules->character_profile(h.sheet(), {})
-              .data.starts_with(level == 4   ? "PC39 "
-                                : champion   ? "PC31 "
-                                : level == 2 ? "PC30 "
-                                : "PC28 "),
-              "Champion profile is conditional");
+        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC42 "),
+              "Every profile uses the current profile tag");
         const auto athletics = rules->ability_check(h.sheet(), {}, 0, "athletics", {}, {});
         check(athletics.advantage == champion,
               "Strength Athletics gains Advantage only for Champion");
@@ -441,7 +437,7 @@ void campaign_and_cancellation()
             if (copy.state().short_rest)
                 copy.finish_short_rest(copy.state().short_rest->ticket);
             check(bool(copy.rest(RestKind::long_rest)), "Champion uses ordinary Long Rest");
-            check(copy.profile(id).data.starts_with(level == 4 ? "PC39 " : "PC31 "),
+            check(copy.ability_check(id, 0, "athletics").advantage,
                   "Rests retain Champion entitlement");
             covered = true;
         }

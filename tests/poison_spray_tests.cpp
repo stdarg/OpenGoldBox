@@ -1,4 +1,3 @@
-#include "campaign_fixture.h"
 #include <sstream>
 #include "opengold/campaign_save.h"
 #include "opengold/character_pool.h"
@@ -53,46 +52,6 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
         if (a.verb == verb && (!target || a.target == target))
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
-}
-
-void freeze()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.21", "Freeze must use actual prior writer");
-    auto creation = srd5::character_rules();
-    Character h(*creation, draft(), {});
-    VitalState scratch;
-    for (unsigned n = 1; n < 3; ++n)
-        check(h.advance(*rules, scratch), "Prior advancement");
-    h.inventory().add("wand", "Wand");
-    CampaignParty p(module());
-    p.add_pc(std::move(h));
-    p.equip(1, 1);
-    auto state = p.checkpoint();
-    state.roster[0].vitals.hit_points -= 3;
-    state.time_minutes = 123;
-    state.subminute_milliseconds = 456;
-    state.random_state = 789;
-    state.roster[0].wealth[3] = 37;
-    p.restore(std::move(state));
-    auto actors = p.participants();
-    actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 2);
-    check(c->snapshot().actor == 1, "Prior caster begins");
-    check(c->submit(command(*c, "magic_missile", 99)), "Prior slot spent");
-    p.begin_combat();
-    p.apply_combat(c->snapshot());
-    p.end_combat();
-    const auto base = root / "tests/fixtures";
-    write(base / "campaign-v10-poison.ogs", encode_campaign(p, nullptr, "poison"));
-    while (c->snapshot().actor == 1)
-        check(c->submit(command(*c, "end")), "End caster turn");
-    while (c->snapshot().actor != 1)
-        check(c->submit(command(*c, "end")), "Reach next caster turn");
-    write(base / "combat-v13-poison.save", c->save());
-    check(c->submit(command(*c, "fire_bolt", 99)), "Prior Fire Bolt continuation");
-    write(base / "combat-v13-poison-continued.save", c->save());
 }
 
 std::string read(const std::filesystem::path &p)
@@ -284,7 +243,8 @@ void access()
               "Advancement retains chosen cantrips, source and correct entitlement");
     }
     auto profile = rules->character_profile(hero().sheet(), {}).data;
-    check(profile.starts_with("PC32 1 0 69 "), "Explicit cantrip mask belongs to new recipe");
+    check(profile.starts_with("PC42 1 ") && profile.find(" poison_spray ") != profile.npos,
+          "Explicit cantrip choice belongs to the profile recipe");
     profile.replace(0, 4, "PC10");
     rejects(
         [&]
@@ -532,9 +492,8 @@ void campaign()
             check(p.member(id).vitals == old && p.member(id).equipment.weapon_hands == 2,
                   "Cantrip handoff retains wounds, pools and chosen attack grip");
             const auto saved = encode_campaign(p, nullptr, "poison");
-            check(
-                saved.starts_with(level == 1 ? "OPENGOLD-CAMPAIGN 11\n" : "OPENGOLD-CAMPAIGN 16\n"),
-                "Cantrips retain their field; independent Wizard advancement uses format 16");
+            check(saved.starts_with("OPENGOLD-CAMPAIGN 19\n"),
+                  "Every campaign uses the current save format");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "poison", nullptr).party);
             check(encode_campaign(restored, nullptr, "poison") == saved &&
@@ -545,36 +504,6 @@ void campaign()
                   restored.profile(id).data == p.profile(id).data,
                   "Inventory, wealth, equipment and cast access retained");
         }
-}
-
-void legacy()
-{
-    auto rules = module();
-    auto creation = srd5::character_rules();
-    const auto base = root / "tests/fixtures";
-    const auto old = read(base / "campaign-v10-poison.ogs");
-    CampaignParty p(module());
-    p.restore(decode_campaign(old, *creation, *rules, "poison", nullptr).party);
-    auto expected = old.substr(old.find('\n', old.find('\n') + 1) + 1);
-    expected.replace(expected.find("0.6.21"), 6, rules->identity().version);
-    const auto saved = encode_campaign(p, nullptr, "poison");
-    check(
-        saved.substr(saved.find('\n', saved.find('\n') + 1) + 1) ==
-        test::with_arcane_recovery_grants(
-            test::with_background_training_grants(test::with_legacy_cantrip_choices(expected))),
-        "Actual old writer gains only an absent choices field, module identity and owed background/Arcane Recovery grants");
-    check(!p.member(1).character.creation_data().cantrips &&
-          rules->spell_access(p.member(1).character.sheet()).cantrips.size() == 1,
-          "Old Wizard retains Fire Bolt, never automatically learns Poison Spray");
-    const auto initial = read(base / "combat-v13-poison.save");
-    auto c = rules->restore(initial);
-    auto upgraded = initial;
-    upgraded.replace(upgraded.find("0.6.21"), 6, rules->identity().version);
-    check(c->save() == upgraded && !has(*c, "poison_spray"),
-          "Prior PC10 recipe/resources/RNG are retained byte for byte");
-    check(c->submit(command(*c, "fire_bolt", 99)), "Prior Fire Bolt casts");
-    check(c->save() == rules->restore(read(base / "combat-v13-poison-continued.save"))->save(),
-          "Actual previous writer continuation remains identical");
 }
 
 void ui_fixtures()
@@ -604,21 +533,15 @@ void ui_fixtures()
 
 } // namespace
 
-int main(int argc, char **)
+int main()
 {
     try
     {
-        if (argc == 2)
-        {
-            freeze();
-            return 0;
-        }
         access();
         rolls();
         eligibility();
         allies_and_unconscious();
         campaign();
-        legacy();
         ui_fixtures();
         std::cout << "Poison Spray tests passed\n";
         return 0;

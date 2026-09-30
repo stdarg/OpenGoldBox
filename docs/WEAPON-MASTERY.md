@@ -71,6 +71,11 @@ printed pp28–29,47–48,54,58–59,62 and90, checked2026-09-26.
     then final integrated regression on freshly built targets. Commit/push and
     update coverage before closing only fully proven original issues.
 
+Superseded: the old-save, released-format and Review Training parts of items 1,
+9 and 10 (and MASTERY-1 below) predate the pre-1.0 save policy. Saves now have
+one format with no migrations, and Review Training was removed; see
+[SAVES.md](SAVES.md#pre-10-format-policy).
+
 ## Approved controls
 
 **MASTERY-1.** Reuse scrollable Training checkbox groups for Weapon Mastery in
@@ -114,8 +119,8 @@ advancement, rest-spell and combat weapon controls provide reuse routes above.
 No production source or UI change is authorized by these proposals alone.
 
 Compatibility preparation verified04:05:58 UTC. Production remains69771eb /
-rules0.6.55. Five genuine fixtures and exact replay checks are recorded in
-[fixture provenance](../tests/fixtures/README.md#weapon-mastery-baseline--actual-0655-writer).
+rules0.6.55. Five genuine fixtures and exact replay checks were recorded (since
+deleted).
 `opengold_training_tests --mastery-baseline` and the full rebuilt training target
 pass; logs `/tmp/mastery-baseline-build.log` and `/tmp/mastery-baseline-tests.log`.
 Only tests/documents changed, so no game rebuild or repeated integrated run.
@@ -188,16 +193,14 @@ token/cost savings claimed; no new agents/tasks or changed model settings.
 Generic RulesModule replacement options/outcomes now drive per-member completed
 rest windows. SRD owns eligible kinds, capacity, source preservation and limits.
 Core records level/rest-session edits, replays them between advancement records,
-and blocks exploration until choices finish. Campaign18 is conditional on a
-pending training window or replacement history; older1–17 formats remain accepted.
-Review Training adds missing unrelated choices without reverting replacements.
+and blocks exploration until choices finish. Campaign saves record a pending
+training window and replacement history.
 Keeping current consumes the same one-use window and is recorded in history.
 
 Native `mastery_rest_checks.h` passes for all five class routes and PC/NPC owners:
 Short/interrupted/ineligible/dead/reserve exclusions, stale/duplicate/invalid
-commands, atomic previews, preservation, repeated rests, level1-to4 replay and
-Review Training after replacement. The actual prior acquisition writer fixture
-round-trips byte-for-byte; see fixture provenance. Final native regression awaits
+commands, atomic previews, preservation, repeated rests and level1-to4 replay.
+Final native regression awaits
 the50-target rebuild, `/tmp/mastery-rest-native-build.log`.
 
 The shared700×670 dialog and `mastery_rest_view_tests.gd` pass mainEN/ES and demoEN
@@ -247,9 +250,8 @@ consumes those effects before applying the new hit's mastery. Champion movement
 continues afterward. This checkpoint introduces no optional simultaneous-effect
 control and does not resolve pending MASTERY-5/6/7.
 
-Conditional FX6 records these two effects; older codecs remain canonical when
-neither is present. Legacy module identities reject FX6 in combat and campaign
-state. A regression test caught and fixed the combat identity check initially
+The effect state (now FX7) records these two effects. A regression test caught
+and fixed the combat identity check initially
 running before effects were read. Capacity checks reject before spending actions
 or RNG; same-source refresh and consumed Vex slots remain usable at the limit.
 
@@ -315,13 +317,8 @@ stay in `opengold_rules_srd5`; UI consumes supplied options and legal commands.
 Source checked: [Nick](https://www.dndbeyond.com/sources/dnd/br-2024/equipment#Nick)
 and [Attack action](https://www.dndbeyond.com/sources/dnd/br-2024/rules-glossary#AttackAction).
 
-Rules identity0.6.57 introduces conditional combat23 for Nick's explicit shared
-allowance and qualifying physical weapon. Formats1–22 remain accepted. Actual
-pre-Nick writer0.6.56 fixtures are documented in
-[fixture provenance](../tests/fixtures/README.md#nick-shared-budget-baseline--actual0656-writer).
-Old in-progress turns remain exact: their Bonus Action flag cannot distinguish
-Light from Second Wind. Nick activates at the first fresh turn boundary, after
-those historical budgets and pending damage choices have resolved normally.
+Rules identity0.6.57 introduced combat23 for Nick's explicit shared allowance
+and qualifying physical weapon.
 
 Approved MASTERY-4 controls use the existing unused ordinary-turn Decline slot
 (x208 in main; the corresponding slot in demo), a640×300 labeled selector,
@@ -348,7 +345,7 @@ arguments with the corresponding main/demo project and `OPENGOLD_GAME_DIR`.
 Localization validates988 messages; diff/scope/architecture review passes.
 
 [Native tests](../tests/nick_attack_checks.h) exercise768 weapon/style/ability/seed
-combinations plus all five PC/NPC class routes, actual historical continuation,
+combinations plus all five PC/NPC class routes,
 invalid/stale inputs, Surge timing, physical thrown items, Sneak/Savage choices,
 Vex consumption and Champion movement. Regression corrections retained malformed
 save rejection and exact historical-body comparisons while accounting for the new
@@ -373,8 +370,7 @@ Longbow/Maul Champion critical checkpoints now cover the attack, Savage decision
 free movement and settled state; all eight round trips and three-step replays
 match byte-for-byte. Rebuilt `opengold_status_effect_tests` passes; logs
 `/tmp/mastery-choice-baseline-{build,capture,test}.log`. This changes tests and
-provenance only, with no new playable property or issue closure. See
-[fixture provenance](../tests/fixtures/README.md#optional-mastery-choices-baseline--actual0657-writer).
+provenance only, with no new playable property or issue closure.
 
 MASTERY-5/6/7 were re-presented as visible questions1–3 with the Glass alert
 (exit0); no answer has arrived. Integration of simultaneous mastery/Champion
@@ -395,8 +391,6 @@ this does not complete Slow or increase the three-of-eight playable count.
 Source: [Slow](https://www.dndbeyond.com/sources/dnd/br-2024/equipment#Slow), checked
 2026-09-26. Existing source-turn timing supplies the future trigger's duration;
 this checkpoint proves the effect clock and consumers, not that trigger.
-Actual0.6.57 fixtures load and replay with only module identity changed. Older
-identities reject forged Slow state; all supported older formats remain accepted.
 
 [Focused tests](../tests/slow_mastery_checks.h) prove nonstacking, independent
 source expiry, refresh/storage bounds, malformed durations/codecs, exact replay,
@@ -466,11 +460,7 @@ No weapon/style/Savage/Sneak/critical dice are added. Rules supply the preview,
 commands, damage and continuation; Core follows generic optional-choice ordering,
 and the shared Godot dialog renders module messages.
 
-Rules0.6.59 uses conditional combat24 only while Graze is pending. It retains
-Light/Nick activation flags instead of activating those budgets merely because
-of the newer container. Old formats1–23 and module0.6.58 remain supported.
-A real0.6.58 writer fixture with Slow is captured and retained, in addition to the
-existing prior-writer mastery fixtures; see the fixture README.
+Rules0.6.59 used conditional combat24 only while Graze was pending.
 
 Verification on the commit containing this entry (basea0514a9):
 
@@ -478,8 +468,7 @@ Verification on the commit containing this entry (basea0514a9):
   combined Resistance/Vulnerability; negative/zero/positive modifiers and Great
   Weapon Fighting; physical PC weapons and Fighter/Paladin/Ranger levels1–4;
   Action Surge, missed reactions/interrupted movement, stale/malformed commands,
-  absent grants, no hit-only features, exact pending/settled persistence and
-  actual previous-writer continuation.
+  absent grants, no hit-only features and exact pending/settled persistence.
 - All50 native executable targets rebuilt. Final relink pass40.05s;
   `ctest --test-dir build/mac-check --output-on-failure -E '^opengold_godot_' -j6`
   **51/51 PASS**,18.21s. `/tmp/graze-native-regression.log`.
@@ -532,20 +521,17 @@ No combat save controls are introduced.
 
 The SRD session owns the choices, geometry, damage/save resolution and interrupted
 movement. Core consumes generic effect choices/targeting; shared Godot controls
-present them. Conditional combat25 retains pending hit permissions, mastery
-choices, separate Champion entitlements, Cleave expenditure and interrupted-route
-origins/budgets. Prior supported versions remain readable; actual0.6.57 pending
-hits retain their prior continuation, while subsequent fresh attacks can offer
-new properties. Actual0.6.59 positive/zero Graze fixtures remain valid. New
-zero-damage Graze prompts are suppressed without discarding historical choices.
+present them. The combat checkpoint (now combat27) retains pending hit
+permissions, mastery choices, separate Champion entitlements, Cleave expenditure
+and interrupted-route origins/budgets. Zero-damage Graze prompts are suppressed.
 
 Tests: [optional_mastery_checks.h](../tests/optional_mastery_checks.h) and
 [optional_mastery_view_tests.gd](../tests/optional_mastery_view_tests.gd), alongside
 existing grant/rest/mastery/Graze/Nick/lifecycle tests. The new cases cover every
 eligible weapon/range route, immunity, Push size/collision boundaries, deterministic
 Topple saves, thrown provenance, signed Cleave damage, allies, Savage rerolls,
-critical ordering, movement enabling effects, dead interrupted movers, retained
-formats and malformed/rejected choices. UI fixtures are real native outcomes;
+critical ordering, movement enabling effects, dead interrupted movers and
+malformed/rejected choices. UI fixtures are real native outcomes;
 keyboard/mouse/dialog/targeting outcomes are compared byte-for-byte against them.
 
 Final verification commands (logs below are local build artifacts):

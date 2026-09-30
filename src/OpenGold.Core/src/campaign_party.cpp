@@ -597,76 +597,41 @@ void CampaignParty::advance(MemberId id, const rules::AdvancementChoice &choice)
     state_ = std::move(next);
 }
 
-PartyMember CampaignParty::preview_training(MemberId id,
-        const rules::CharacterRules &creation_rules,
-        const rules::TrainingChoices &choices) const
-{
-    editable();
-    auto next = member(id);
-    next.character = next.character.preview_training(creation_rules, *rules_, choices);
-    rules_->validate_character_state(next.character.sheet(), next.vitals);
-    return next;
-}
-
-void CampaignParty::complete_training(MemberId id, const rules::CharacterRules &creation_rules,
-                                      const rules::TrainingChoices &choices)
-{
-    auto member = preview_training(id, creation_rules, choices);
-    auto next = state_;
-    *std::find_if(next.roster.begin(), next.roster.end(),
-                  [&](const auto & m)
-    {
-        return m.id == id;
-    }) = std::move(member);
-    state_ = std::move(next);
-}
-
-rules::SpellChoiceOptions CampaignParty::spell_choice_options(MemberId id, bool after_rest) const
+rules::SpellChoiceOptions CampaignParty::spell_choice_options(MemberId id) const
 {
     return rules_->spell_choice_options(member(id).character.sheet(),
-                                        after_rest ? rules::SpellChoiceContext::long_rest
-                                        : rules::SpellChoiceContext::pending);
+                                        rules::SpellChoiceContext::long_rest);
 }
 
-PartyMember CampaignParty::preview_spell_choices(MemberId id, const rules::SpellChoices &choices,
-        bool after_rest) const
+PartyMember CampaignParty::preview_spell_choices(MemberId id,
+        const rules::SpellChoices &choices) const
 {
     outside_combat();
     if (state_.rest_activity || state_.short_rest)
         throw std::runtime_error("Finish resting before spell choices");
-    std::uint64_t session = 0;
-    if (after_rest)
-    {
-        if (!state_.spell_rest || state_.spell_rest->completed_minutes != state_.time_minutes ||
-                state_.spell_rest->completed_subminute_milliseconds != state_.subminute_milliseconds ||
-                std::find(state_.spell_rest->members.begin(), state_.spell_rest->members.end(), id) ==
-                state_.spell_rest->members.end())
-            throw std::runtime_error("No completed Long Rest spell choices");
-        session = state_.spell_rest->ticket.session;
-    }
-    else if (state_.spell_rest || state_.training_rest)
-        throw std::runtime_error("Finish Long Rest choices first");
+    if (!state_.spell_rest || state_.spell_rest->completed_minutes != state_.time_minutes ||
+            state_.spell_rest->completed_subminute_milliseconds != state_.subminute_milliseconds ||
+            std::find(state_.spell_rest->members.begin(), state_.spell_rest->members.end(), id) ==
+            state_.spell_rest->members.end())
+        throw std::runtime_error("No completed Long Rest spell choices");
     auto candidate = member(id);
-    candidate.character.choose_spells(*rules_, choices, session);
+    candidate.character.choose_spells(*rules_, choices, state_.spell_rest->ticket.session);
     rules_->validate_character_state(candidate.character.sheet(), candidate.vitals);
     return candidate;
 }
 
-void CampaignParty::choose_spells(MemberId id, const rules::SpellChoices &choices, bool after_rest)
+void CampaignParty::choose_spells(MemberId id, const rules::SpellChoices &choices)
 {
-    auto candidate = preview_spell_choices(id, choices, after_rest);
+    auto candidate = preview_spell_choices(id, choices);
     auto next = state_;
     *std::find_if(next.roster.begin(), next.roster.end(),
                   [&](const auto & m)
     {
         return m.id == id;
     }) = std::move(candidate);
-    if (after_rest)
-    {
-        std::erase(next.spell_rest->members, id);
-        if (next.spell_rest->members.empty())
-            next.spell_rest.reset();
-    }
+    std::erase(next.spell_rest->members, id);
+    if (next.spell_rest->members.empty())
+        next.spell_rest.reset();
     state_ = std::move(next);
 }
 

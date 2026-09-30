@@ -53,6 +53,7 @@
   "Finish the dialogue or leave the shop first",
   "Select a save first.",
   "Enter a save name of at most 120 UTF-8 bytes.",
+  "This save was made by an older pre-release version of OpenGoldBox and can't be loaded.",
   "Party combat preview. HP and spent resources carry back to the party.",
   "Training encounter: one martial test profile and one SRD Bandit.",
   "Party training",

@@ -2,6 +2,7 @@
 #include "godot_nodes.h"
 #include "spell_choice_controls.h"
 #include "training_replacement_controls.h"
+#include "vital_fixtures.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
 #ifndef N_
@@ -406,7 +407,10 @@ void RolfTourView::check_rest_controls()
             state.roster.front().vitals.hit_points = 1;
             for (auto &m : state.roster)
                 if (m.id == companion)
-                    m.vitals = {0, true, "SRD1 0 0 0 3 0", "Dead"};
+                    m.vitals = {0, true,
+                                presentation::srd_vitals(m.character.sheet(),
+                    {.failures = 3, .hit_dice = 1}),
+                    "Dead"};
             campaign_->restore(state);
             std::vector<std::uint8_t> bytes{0, 0};
             for (int n = 0; n < 5; ++n)
@@ -590,7 +594,9 @@ void RolfTourView::check_rest_controls()
             auto state = campaign_->checkpoint();
             for (auto &member : state.roster)
                 if (member.id == rest_member_)
-                    member.vitals.resources = "SRD2 0 2 1 0 0 0";
+                    member.vitals.resources = presentation::srd_vitals(
+                                                  member.character.sheet(),
+                    {.slots = 2, .slots2 = 1, .hit_dice = 3});
             campaign_->restore(state);
             std::vector<std::uint8_t> bytes{0, 0};
             for (int n = 0; n < 5; ++n)
@@ -787,7 +793,7 @@ void RolfTourView::check_rest_controls()
         {
             auto *spell = get_node<Window>("RestSpells");
             const auto id = rest_spell_member_;
-            const auto expected = campaign_->preview_spell_choices(id, rest_spell_choice_, true);
+            const auto expected = campaign_->preview_spell_choices(id, rest_spell_choice_);
             spell->get_node<Button>("Apply")->grab_focus();
             for (bool down :
                     {
@@ -862,7 +868,7 @@ void RolfTourView::refresh_rest_spells()
     }
     const auto id = campaign_->state().spell_rest->members.front();
     const auto &sheet = campaign_->member(id).character.sheet();
-    const auto options = campaign_->spell_choice_options(id, true);
+    const auto options = campaign_->spell_choice_options(id);
     if (rest_spell_member_ != id)
     {
         rest_spell_member_ = id;
@@ -899,7 +905,7 @@ void RolfTourView::refresh_rest_spells()
     }
     try
     {
-        (void)campaign_->preview_spell_choices(id, rest_spell_choice_, true);
+        (void)campaign_->preview_spell_choices(id, rest_spell_choice_);
         w->get_node<Button>("Apply")->set_disabled(false);
         w->get_node<Label>("Error")->set_text({});
     }
@@ -937,7 +943,7 @@ void RolfTourView::rest_spell_apply()
 {
     try
     {
-        campaign_->choose_spells(rest_spell_member_, rest_spell_choice_, true);
+        campaign_->choose_spells(rest_spell_member_, rest_spell_choice_);
         rest_spell_member_ = 0;
         if (session_)
             session_->commit_rest_recovery();

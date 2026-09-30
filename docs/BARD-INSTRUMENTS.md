@@ -2,7 +2,8 @@
 
 Tracked in [#214](https://github.com/stdarg/OpenGold/issues/214), a child of
 [Bard starting choices #125](https://github.com/stdarg/OpenGold/issues/125).
-Rules 0.6.31 implements the starting proficiency choices; PC20 validates their grants.
+Rules 0.6.31 implements the starting proficiency choices; profile recipes validate
+their grants.
 
 SRD 5.2.1 Core Bard Traits (p. 31) grants three Musical Instrument
 proficiencies. The instrument variants (p. 94) are bagpipes, drum, dulcimer,
@@ -20,30 +21,12 @@ one instrument instead and remains outside this starting-character increment.
   on the sheet and presets receive selections through the existing generator.
 - Checks apply proficiency once to instrument checks and the existing tool/skill
   Advantage when both are proficient. This grants proficiency, not equipment.
-- PC20 selects the new entitlement policy and validates source/version boundaries.
-  Old selections remain missing, preserving recorded skills and languages.
 - Verification covers all 120 distinct triples, rejected choices, normal creation,
-  sourced sheet display, presets and historical completion. Runtime/render and
+  sourced sheet display and presets. Runtime/render and
   regression checks are recorded below.
 
-## Prior-writer baseline
-
-Before production changes, `freeze_bard_instruments()` in training_tests.cpp
-used the actual rules 0.6.30 writer from `80a7d1a`. Four level-one Bards cover
-all current backgrounds, with Performance/Persuasion/Perception, explicit
-Elvish/Dwarvish, two missing HP and recorded resource state. Their combat
-profiles are PC19. These fixtures must not be synthesized by downgrading a
-future writer's version strings.
-
-`bard_instrument_prior_writer()` compares the campaign body and complete combat
-checkpoint with only module identity migration permitted. It separately asserts
-recorded skill ordering, wounds, resource state and absent instrument choices.
-The test also asserts pending Training and completes the missing selections
-without changing historical HP or resources.
-
-Full Bard spellcasting, Inspiration, starting equipment, instrument Utilize
-actions and the Review Training UI remain separate issues. Baseline checks alone
-do not establish instrument proficiency support.
+Full Bard spellcasting, Inspiration, starting equipment and instrument Utilize
+actions remain separate issues.
 
 ## Verification
 

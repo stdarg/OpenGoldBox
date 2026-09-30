@@ -60,7 +60,7 @@ struct SpellDef
 {
     std::string_view id, label;
     unsigned level{}; // 0 = cantrip
-    unsigned mask{};  // legacy wire encoding only; 0 once the 31 bits run out
+    unsigned mask{};  // combat.rules creature wire encoding; 0 past 31 bits
     SpellPattern pattern{};
     SpellTarget target{};
     int range{}; // feet
@@ -256,12 +256,11 @@ inline const SpellDef *find_spell(std::string_view id)
     return nullptr;
 }
 
-// `mask` is a legacy wire encoding, not the identity of a spell. It exists only
-// so stored character profiles written before the explicit spell list, and
-// authored creature rows in combat.rules, can still be read. An int holds at
-// most 31 of them, which is why it stops being the internal representation: a
-// row added past that limit simply carries mask 0 and is only representable in
-// the explicit list. Nothing in the rules should branch on a mask.
+// `mask` is a wire encoding, not the identity of a spell. It exists only so
+// authored creature rows in combat.rules can still be read. An int holds at
+// most 31 of them, which is why it is not the internal representation: a row
+// added past that limit simply carries mask 0. Nothing in the rules should
+// branch on a mask.
 inline std::vector<std::string> spells_from_mask(unsigned mask)
 {
     std::vector<std::string> result;
@@ -271,8 +270,7 @@ inline std::vector<std::string> spells_from_mask(unsigned mask)
     return result;
 }
 
-// Zero for a set that cannot be expressed as a mask, which is how the writer
-// decides it needs the explicit list.
+// Zero for a set that cannot be expressed as a mask.
 inline unsigned mask_from_spells(const std::vector<std::string> &ids)
 {
     unsigned mask = 0;

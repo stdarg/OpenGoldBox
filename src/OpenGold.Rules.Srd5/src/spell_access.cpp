@@ -313,25 +313,6 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
     return result;
 }
 
-void learn_advancement_spells(CharacterSheet &sheet, std::span<const std::string> selected)
-{
-    if (sheet.character_class != "Wizard")
-        return;
-    auto next = sheet.grants;
-    for (const auto &id : selected)
-    {
-        require(find(id).level != 0);
-        if (std::none_of(next.begin(), next.end(),
-                         [&](const auto & g)
-    {
-        return g.id == "spell:" + id;
-    }))
-        next.push_back(grant(id, sheet.level));
-    }
-    (void)spell_access(next, sheet.character_class, sheet.level, selected);
-    sheet.grants = std::move(next);
-}
-
 SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoiceContext context)
 {
     SpellChoiceOptions result;
@@ -347,45 +328,45 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
             return g.id == "spell:" + std::string(id);
         });
     };
-    if (context != SpellChoiceContext::long_rest)
-        for (unsigned level = 1; level <= unsigned(sheet.level); ++level)
-        {
-            if (context == SpellChoiceContext::advancement && level != unsigned(sheet.level))
-                continue;
-            for (bool cantrip :
-                    {
-                        true, false
-                    })
-            {
-                const unsigned capacity = cantrip ? (level == 1   ? 3
-                                                     : level == 4 ? 1
-                                                     : 0)
-                                          : (level == 1 ? 6 : 2);
-                const unsigned used = std::count_if(
-                                          sheet.grants.begin(), sheet.grants.end(),
-                                          [&](const auto & g)
+    // Advancement (including creation at level one) learns the current level's
+    // spells; a Long Rest only prepares or replaces.
+    if (context == SpellChoiceContext::advancement)
+    {
+        const unsigned level = sheet.level;
+        for (bool cantrip :
                 {
-                    return is_spell_grant(g) && g.level == level &&
-                           (find(std::string_view(g.id).substr(6)).level == 0) == cantrip;
-                });
-                if (capacity == used)
-                    continue;
-                TrainingChoiceGroup group;
-                group.id =
-                    std::string(cantrip ? "cantrips:" : "spellbook:") + std::to_string(level);
-                group.label = cantrip ? "Wizard cantrips" : "Spellbook";
-                group.count = capacity - used;
-                group.acquired_level = level;
-                for (const auto &spell : spells)
-                    if ((spell.level == 0) == cantrip && spell.wizard &&
-                            spell.level <= (level >= 3 ? 2u : 1u) && !known(spell.id))
-                        group.options.push_back(
-                    {std::string(spell.id), std::string(spell.label), {}});
-                result.learning.push_back(std::move(group));
-            }
+                    true, false
+                })
+        {
+            const unsigned capacity = cantrip ? (level == 1   ? 3
+                                                 : level == 4 ? 1
+                                                 : 0)
+                                      : (level == 1 ? 6 : 2);
+            const unsigned used = std::count_if(
+                                      sheet.grants.begin(), sheet.grants.end(),
+                                      [&](const auto & g)
+            {
+                return is_spell_grant(g) && g.level == level &&
+                       (find(std::string_view(g.id).substr(6)).level == 0) == cantrip;
+            });
+            if (capacity == used)
+                continue;
+            TrainingChoiceGroup group;
+            group.id =
+                std::string(cantrip ? "cantrips:" : "spellbook:") + std::to_string(level);
+            group.label = cantrip ? "Wizard cantrips" : "Spellbook";
+            group.count = capacity - used;
+            group.acquired_level = level;
+            for (const auto &spell : spells)
+                if ((spell.level == 0) == cantrip && spell.wizard &&
+                        spell.level <= (level >= 3 ? 2u : 1u) && !known(spell.id))
+                    group.options.push_back(
+                {std::string(spell.id), std::string(spell.label), {}});
+            result.learning.push_back(std::move(group));
         }
+    }
     result.prepared_count = access.prepared_choices;
-    result.may_prepare = context != SpellChoiceContext::pending;
+    result.may_prepare = true;
     for (const auto &spell : access.spellbook)
         result.preparation.push_back({spell.id, spell.label, {}});
     if (context == SpellChoiceContext::advancement)
@@ -407,13 +388,6 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
 {
     require(sheet.character_class == "Wizard");
     auto candidate = sheet;
-    if (complete && context == SpellChoiceContext::pending &&
-            std::none_of(choices.learning.begin(), choices.learning.end(),
-                         [](const auto & entry)
-{
-    return !entry.second.empty();
-    }))
-    throw std::runtime_error("No supported missing spell choices.");
     const auto options = spell_choice_options(sheet, context);
     for (const auto &[id, values] : choices.learning)
     {

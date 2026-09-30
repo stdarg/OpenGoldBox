@@ -17,6 +17,13 @@ player outcomes and elapsed time at a 60-minute checkpoint (90-minute maximum).
 See [workflow](SRD-WORKFLOW.md) for the batch card and enforcement steps.
 Questions remain numbered, visible in conversation and preceded by sound.
 
+The [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy) supersedes every
+old-save clause below: older saves are rejected, not migrated. Old-save training
+choices (Q22 and the old-save entry), Q28's Review Training dialog, Q41's
+old-Fighter replay, SCHOLAR-1's Review Training completion and WIZCHOICE's
+Spellbook button/pending knowledge dialog no longer apply; the Workflow adoption
+row's save-compatibility limit is lifted. Their gameplay scope still stands.
+
 ## Model routing adoption
 
 The user explicitly requested a durable model routing policy for this goal.
@@ -101,6 +108,7 @@ User replied “1. Approved. 2. Approved. 3. Approved.” Creation/advancement s
 choice groups, Spellbook button/pending knowledge dialog, and completed Long Rest
 preparation/one-cantrip replacement are approved exactly as described in the
 [packet](WIZARD-SPELL-CHOICES.md#approved-layoutcontrol-behavior).
+The Spellbook button/pending knowledge dialog was removed by the 2026-09-30 save cutoff.
 
 
 ## Rogue attacks
@@ -154,7 +162,7 @@ TWF selectors/automatic benefit. Do not ask these again.
 | Q24 | Rogue level-two Cunning Action row below combat buttons: dropdown and Use Bonus Action; Dash/Disengage initially, keyboard, turn/budget restrictions | [Cunning Action](CUNNING-ACTION.md). Hide requires its actual rule/target behavior. |
 | Q26 | Warlock existing Spell Choices pattern and Spell/Cast; presets, retained old selections | [Eldritch Blast](ELDRITCH-BLAST.md), [Warlock Poison Spray](WARLOCK-POISON-SPRAY.md). |
 | Q32 | Repeated Long Rest interruptions grant Short Rest benefits only for a fresh uninterrupted segment of at least one hour; earlier credited time cannot qualify again. Each interruption adds one required hour. | Approved for #193; 70-minute/10-minute/60-minute example in user reply. |
-| Q28 | #29/#189 Review Training button beside Grip below inventory, visible for missing training; centered dialog reuses checkbox groups and Fighting Style dropdown, fixed grants, counts and keyboard; locks prior choices; Apply requires all supported choices; Cancel/Escape discards; combat blocks edits; preserve wounds/resources/equipment/advancement | Approved; supersedes pending Q11. |
+| Q28 | #29/#189 Review Training button beside Grip below inventory, visible for missing training; centered dialog reuses checkbox groups and Fighting Style dropdown, fixed grants, counts and keyboard; locks prior choices; Apply requires all supported choices; Cancel/Escape discards; combat blocks edits; preserve wounds/resources/equipment/advancement | Approved; supersedes pending Q11. The dialog was removed by the 2026-09-30 save cutoff. |
 | Q27 | Sorcerer existing Spell Choices and Spell/Cast with four supported cantrips, Charisma, presets, old selections pending | [Sorcerer cantrips](SORCERER-CANTRIPS.md). |
 | Workflow adoption | User authorized efficiency implementation after backlog review | Batch workflow adopted; later pause takes precedence. #192 is closed; #30/#193 remain open. No authorization to discard save compatibility, create a fresh task or spawn agents. |
 

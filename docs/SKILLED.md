@@ -107,16 +107,13 @@ both catalogs; the view derives its "Skill:"/"Tool:" label prefix from that id.
 
 ### Reproduction (Bash, from repository root)
 
-Native rules and migration:
+Native rules:
 
 ```bash
 sh ./build.sh                                   # 50/50, includes Skilled
 ./build/opengold_training_tests --skilled        # acceptance only
 python3 tools/localization.py --check            # 1026 messages
 ```
-
-The prior-writer fixtures are frozen and must not be regenerated with the current
-writer; `--freeze-skilled` asserts the writer is 0.6.61 and so refuses to run now.
 
 Rendered controls, per class and surface. The game must be built in its own
 directory (`OPENGOLD_BUILD_GAME=ON` only) because the game and demo each force a

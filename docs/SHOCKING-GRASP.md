@@ -24,13 +24,9 @@ Turn entry also clears an imported suppression on the acting target. Outside
 combat the existing six-second-round timeline expires the remaining duration;
 camping/inn rests expire it before normal saving.
 
-PC26 validates the new spell bit and grant. FX3 represents sourced suppression
-alongside existing blindness/Ray of Frost effects. Effects without suppression
-retain their original FX1/FX2 encoding. Campaign 11 and combat 13–15 stay unchanged;
-older module identities reject the new spell/effect. Genuine 0.6.37 fixtures at
-`310319e` preserve the old Wizard selection, wounds/wealth, spent Action and
-Adrenaline Rush, FX2 state and subsequent expiration exactly. No player combat
-saving controls were added.
+Profile recipes validate the new spell and grant. Effect state (FX7)
+represents sourced suppression alongside existing blindness/Ray of Frost effects.
+No player combat saving controls were added.
 
 Evidence: [native](../tests/shocking_grasp_tests.cpp),
 [creator](../tests/shocking_cantrip_view_tests.gd),

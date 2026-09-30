@@ -396,49 +396,18 @@ void run()
                     p.end_combat();
                 }
                 const auto saved = encode_campaign(p, nullptr, "style-routes");
-                check(saved.starts_with("OPENGOLD-CAMPAIGN 17\n"),
-                      "Actual style history selects version17");
+                check(saved.starts_with("OPENGOLD-CAMPAIGN 19\n"),
+                      "Style history is written in the current campaign format");
                 CampaignParty restored(rogue_attack_checks::rules_module());
                 restored.restore(
                     decode_campaign(saved, *creation, *rules, "style-routes", nullptr).party);
                 check(encode_campaign(restored, nullptr, "style-routes") == saved,
                       "All class/ownership histories replay exactly");
-                const auto legacy = corrupt(saved, rules->identity().version, "0.6.52");
-                rejects(
-                    [&]
-                {
-                    (void)decode_campaign(legacy, *creation, *rules, "style-routes", nullptr);
-                });
                 check(bool(restored.rest(RestKind::short_rest)), "Style character Short Rest");
                 restored.finish_short_rest(restored.state().short_rest->ticket);
                 check(bool(restored.rest(RestKind::long_rest)), "Style character Long Rest");
             }
 
-    {
-        auto d = draft("fighter", "soldier");
-        for (const auto &group : creation->training_options(d))
-            for (unsigned i = 0; i < group.count; ++i)
-                d.training[group.id].push_back(group.options.at(i).id);
-        const auto complete = d.training;
-        d.training.erase("origin:languages");
-        CampaignParty p(module());
-        auto id = p.add_pc(hero(d));
-        p.award_experience(300, "review-replacement");
-        auto choice = p.default_advancement(id);
-        choice.fighting_style = "great_weapon_fighting";
-        p.advance(id, choice);
-        const auto prior = p.member(id).vitals;
-        p.complete_training(id, *creation, complete);
-        check(p.member(id).vitals == prior,
-              "Review Training preserves spent resources after style replacement");
-        const auto &grants = p.member(id).character.sheet().grants;
-        check(std::any_of(grants.begin(), grants.end(),
-                          [](const auto & g)
-        {
-            return g.id == "feat:great_weapon_fighting" && g.level == 2;
-        }),
-        "Review Training replays replacement, not obsolete initial style");
-    }
     for (const auto *klass :
             {"paladin", "ranger"
             })

@@ -28,7 +28,7 @@ claimed as a range printed in the stabilization paragraph.
 | Turn budgets | Normal Action and eligible Action Surge work; Bonus Action is not consumed. Reaction/off-turn/disabled/pending-choice commands reject without state or RNG changes. |
 | Mortality | Success clears death-save counters, stops death saves and starts the existing Stable recovery clock. Damage resumes the existing dying rules; natural recovery keeps Prone. Failed/declined checks change no target state. |
 | Resource choices | Decline consumes no d10 or Second Wind. A still-failing boosted check retains Second Wind. Success consumes exactly one use. Short/Long Rest recharge uses the existing service. |
-| Continuation | Pending choice, original check, target, action expenditure, resources and RNG survive internal combat checkpoints. Campaign handoff/rest/save preserve final states. No combat-save UI. Capture actual prior-writer fixtures before changing codecs. |
+| Continuation | Pending choice, original check, target, action expenditure, resources and RNG survive internal combat checkpoints. Campaign handoff/rest/save preserve final states. No combat-save UI. |
 | Player controls | Q38/Q39, game and demo, keyboard/cancel, clear labels and unavailable states; inspect main-game English/Spanish and the demo’s existing English presentation at 1120×800 and 1920×1080. |
 | Completion | Inventory all existing ability-check execution paths; do not close #87 while another eligible path bypasses Tactical Mind. Full issue acceptance governs closure. |
 
@@ -87,15 +87,10 @@ Medicine will be the first rolled SRD skill-check action. Reuse
 success comparison; do not use attack natural-1/20 rules. Reuse
 `life_cycle.cpp::stabilize`: it clears death-save counters, stops their clock and
 rolls one d4 for natural Stable recovery without healing. No second stabilization
-roll or new recovery timeline is needed. Source/level validation must preserve
-old profile access and add only legitimately attained Tactical Mind grants.
+roll or new recovery timeline is needed. Source/level validation must add only
+legitimately attained Tactical Mind grants.
 
-Compatibility preparation is complete: the unchanged 0.6.42/PC28 gameplay
-libraries wrote a level-two Fighter campaign and two consecutive combat states.
-[Fixture provenance and hashes](../tests/fixtures/README.md#tactical-minds-actual-prior-writer)
-record the capture. The rebuilt Action Surge suite passes its new prior-writer
-continuation test (`/tmp/mind-baseline-tests.log`). No gameplay or UI behavior was
-changed. Q38/Q39 were approved on 2026-09-25 after the 14:46 UTC continuation. Implementation resumes within this fixed acceptance; prior preparation is not issue completion.
+Q38/Q39 were approved on 2026-09-25 after the 14:46 UTC continuation. Implementation resumes within this fixed acceptance; prior preparation is not issue completion.
 
 
 ## Implementation and verification
@@ -103,11 +98,9 @@ changed. Q38/Q39 were approved on 2026-09-25 after the 14:46 UTC continuation. I
 Q38/Q39 were approved on 2026-09-25. The rules module now resolves Medicine
 through the validated training profile, grants Tactical Mind through ordinary
 Fighter advancement and suspends an eligible failed check for the user's choice.
-PC30 identifies the new Fighter entitlement; module 0.6.45 validates earlier
-campaign grants before adding it through the existing replay path. Conditional
-combat17 preserves the original failed roll, target and spent Action type along
-with resource/RNG state; checkpoints without a pending check keep their earlier
-shape. Existing 0.6.42 and 0.6.43 writer fixtures are retained unchanged.
+PC42 recipes record the Fighter entitlement, added through the existing replay
+path. The combat checkpoint preserves the original failed roll, target and spent
+Action type along with resource/RNG state.
 
 The public snapshot exposes check-choice display data. Core's only new branch
 selects the first rule-offered choice for AI; it contains no SRD calculation,
@@ -120,8 +113,7 @@ boosts, conditional resource spending, Action Surge, malformed/stale commands,
 exact pending-check continuation and ordinary campaign handoff/rest/save at each
 eligible Fighter level. Game/demo runtime checks and main EN/ES renders at
 1120×800 and 1920×1080 pass. The first UI check found the newly visible aid row
-needed a full layout refresh; the correction passes. All 47 native/tool regressions subsequently pass. Historical fixture bytes are
-unchanged; expected migrated ledgers explicitly add the fixed Tactical Mind grant.
+needed a full layout refresh; the correction passes. All 47 native/tool regressions subsequently pass.
 The native run initially exposed five stale grant/profile assertions, corrected
 without weakening the old-save comparisons.
 

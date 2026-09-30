@@ -8,8 +8,8 @@ spellcasting. Authority: [SRD 5.2.1 pp. 77–78](https://media.dndbeyond.com/com
 ## Implemented scope
 
 Rules 0.6.22 adds explicit Fire Bolt/Poison Spray starting cantrip choices through
-the approved Spell Choices step. Preset Wizards receive both available cantrips;
-old saves retain historical selections. Missing catalog choices stay pending.
+the approved Spell Choices step. Preset Wizards receive both available cantrips.
+Missing catalog choices stay pending.
 Magic Missile remains a spellbook entry and prepared spell. See
 [Poison Spray](POISON-SPRAY.md) for this increment and its open integrations. Existing advancement
 selections can also learn Scorching Ray and Blindness from Wizard level 3.
@@ -42,25 +42,20 @@ and Spanish. It does not select missing spells on the player's behalf.
 
 Rules 0.6.23 adds a sourced starting Sacred Flame choice using the same control.
 Cleric grants use `class:cleric:spellcasting`; the base cantrip entitlement is
-3 through level 3 and 4 at level 4. Presets receive the supported choice, while
-old saves retain their recorded spells. Leveled preparation, Divine Order and
+3 through level 3 and 4 at level 4. Presets receive the supported choice.
+Leveled preparation, Divine Order and
 level-up replacement remain #91. See [Sacred Flame](SACRED-FLAME.md).
 
 ## Persistence
 
-Module **0.6.24** writes **PC13** combat recipes; the existing grant section
-contains the spell sources and the casting mask must agree with them. Campaign
-format **11** stores explicit starting cantrip choices. Combat format **13** and
-vital-state formats **SRD1–7** remain. PC10 reads retain their historical grants.
-Campaigns replay creation and recorded advancement to reconstruct knowledge,
-then validate their grant ledger. Old campaigns recover the established preset
-and spells actually selected in that history, including now-unprepared spells.
-Missing choices remain pending. Loading does not replenish resources or roll dice.
+**PC42** combat recipes store an explicit spell ID list; the existing grant
+section contains the spell sources and the spell list must agree with them.
+Campaign saves store explicit starting cantrip choices. Campaigns replay creation
+and recorded advancement to reconstruct knowledge, including now-unprepared
+spells, then validate their grant ledger. Missing choices remain pending.
+Loading does not replenish resources or roll dice. See [saves](SAVES.md#pre-10-format-policy).
 
-Older PC1–9 combat recipes lack book history, so internal checkpoint migration
-retains their recorded casting access. It neither invents knowledge nor accepts
-new spell grants disguised as an older recipe. Frozen **0.6.18** writer files
-verify exact old combat continuation. Campaign saves and reloads preserve wounds,
+Campaign saves and reloads preserve wounds,
 equipment, spent slots, Hit Dice, Adrenaline Rush, Temporary HP and clocks.
 Player saving remains restricted to camping or an inn.
 
@@ -86,13 +81,11 @@ entitlement.
 
 `spell_access_tests.cpp` covers the independent entitlement table, knowledge
 retention, actual casting, slot exhaustion, empty preparation, invalid grants,
-atomic advancement/preview, campaign replay and prior-writer continuation.
-Existing native save/resource/equipment regressions independently expect only
-the two old preset grants to be added to their frozen Wizard ledgers.
+atomic advancement/preview and campaign replay.
 `localization_tests.gd` creates a Wizard through existing controls and checks
 the translated knowledge, source level and pending counts in Modifiers.
 
 Rules 0.6.25 adds Ray of Frost as a third supported starting Wizard choice. New
-presets receive all three supported choices; existing explicit selections and
-legacy Fire Bolt-only access stay unchanged. PC14 validates its new spell mask.
+presets receive all three supported choices; existing explicit selections stay
+unchanged.
 See [Ray of Frost](RAY-OF-FROST.md) for effects and remaining source integrations.

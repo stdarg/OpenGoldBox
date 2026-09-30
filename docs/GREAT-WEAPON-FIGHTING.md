@@ -17,15 +17,11 @@ eligible attack when additional attack damage is implemented.
 
 [Damage tests](../tests/damage_tests.cpp) use independent face and seeded-sum
 expectations, including two successive critical damage rolls, negative modifiers
-and fixed damage. Actual rules 0.6.29 files from `88c2649` preserve a wounded
-Fighter with starting Defense, level-four Archery and Soldier Savage Attacker.
-The combat files record a critical Greatsword hit before the Savage decision,
-after the second roll and after accepting it. Current combat reproduces these
-files apart from module identity on later writers, including action expenditure, HP, grants and random state.
+and fixed damage.
 
 ## Playable routes
 
-Rules 0.6.53 adds selection through Fighter starting Training/Review Training,
+Rules 0.6.53 adds selection through Fighter starting Training,
 Paladin/Ranger level-two advancement, and the independent level-four feat choice.
 Fighters can replace their class-granted style when gaining levels 2–4. The
 class entitlement and feat entitlement stay distinct and cannot duplicate a feat.
@@ -36,11 +32,9 @@ and Savage Attacker rolls. One-handed, Ranged, thrown, spell and unarmed attacks
 do not benefit. The existing Savage dialog displays the resulting totals.
 There are no new combat saving controls.
 
-PC36 validates the new grants; internal combat21 retains signed pending damage
-and the exact RNG continuation. Campaign17 stores a class style choice separately
-from the level-four feat and from locked starting training. Older recipes and
-campaign formats retain their existing validation and support. The real 0.6.29
-fixtures above remain unchanged.
+PC42 validates the new grants; internal combat27 retains signed pending damage
+and the exact RNG continuation. Campaign19 stores a class style choice separately
+from the level-four feat and from locked starting training.
 
 The [delivery packet](FIGHTING-STYLE-ROUTES.md) records acceptance and verification;
 [coverage](SRD-COVERAGE.md) is the completion record. Full Paladin/Ranger features,

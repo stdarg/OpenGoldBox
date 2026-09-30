@@ -19,18 +19,14 @@ all Disadvantage sources. Existing Modifiers text names the weapon, required
 ability, current score and result in English and Spanish. No controls change.
 Equipping another weapon and ability increases recompute the requirement.
 
-Module **0.6.16** retains PC9, combat 12, campaign 10 and SRD1–7. The penalty is
-derived from the existing character recipe, so it adds no saved mutable state.
-Migration preserves equipment, HP, RNG, clocks, pending movement and resources,
-including existing Dwarf and Orc grants and spent Adrenaline Rush uses. A later
-attack that previously omitted Heavy now uses the corrected Disadvantage rule.
-Declining a reaction retains the previous writer's exact continuation.
-Player saves remain restricted to camp or inn; checkpoints are internal tests.
+The penalty is derived from the existing character recipe, so it adds no saved
+mutable state. Player saves remain restricted to camp or inn; checkpoints are
+internal tests.
 
 [heavy_weapon_tests.cpp](../tests/heavy_weapon_tests.cpp) covers all twelve
 classes and all nine Heavy weapons, scores 12/13, independent seeded
 normal/critical/miss damage, Small species, non-Heavy two-handed weapons,
 spell/unarmed exceptions, multiple Disadvantage sources, cancellation,
-opportunity attacks, stale commands, equipment rejection, level-four ASI,
-campaign reconstruction and frozen 0.6.15 writer fixtures. Below-threshold
+opportunity attacks, stale commands, equipment rejection, level-four ASI and
+campaign reconstruction. Below-threshold
 creation cases respect the project's existing class-entry house prerequisites.

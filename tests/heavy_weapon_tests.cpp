@@ -1,6 +1,4 @@
-#include "combat_fixture.h"
 #include "opengold/campaign_save.h"
-#include "campaign_fixture.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <array>
@@ -125,7 +123,8 @@ unsigned seed = 13, Cell target = {2, 1}, bool blind_target = false,
 bool blind_hero = false)
 {
     const auto profile = rules.character_profile(h.sheet(), gear);
-    const std::string effect = "SRD3 0 0 0 0 0 0 FX1 2 1 1 1 77 99 \"Source caster\" 38 60000 6000";
+    const std::string effect = "SRD9 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 "
+                               "FX7 2 1 1 1 77 99 \"Source caster\" 38 60000 6000 0 0";
     Encounter e{{40, 8, std::vector<std::uint8_t>(320)},
         {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
             {2, "target", "Target", 1, target}
@@ -328,7 +327,7 @@ void campaign()
     const auto id = party.add_pc(std::move(h));
     party.equip(id, sword);
     auto state = party.checkpoint();
-    state.roster[0].vitals = {5, false, "SRD1 1 0 0 0 0"};
+    state.roster[0].vitals = {5, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
     party.restore(state);
     const auto vitals = party.member(id).vitals;
     const auto saved = encode_campaign(party, nullptr, "heavy");
@@ -376,59 +375,29 @@ void campaign()
           "Next campaign encounter uses the advanced score");
 }
 
-void legacy()
+void opportunity_attack()
 {
-    auto rules = module();
-    const auto path = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
-    const auto old = read(path / "combat-v12-heavy.save");
-    auto c = rules->restore(old);
-    auto expected = old;
-    expected.replace(expected.find("0.6.15"), 6, rules->identity().version);
-    check(
-        c->save() == test::with_savage_choice(expected) && c->snapshot().reaction_pending,
-        "Migration changes only identity, preserving pending movement, RNG, HP, resource expenditure and recipes");
+    auto rules = module(true);
+    auto c = battle(*rules, hero("fighter", 12, 15), {"greatsword"});
+    act(*c, "end");
+    Command retreat;
+    for (const auto &v : c->legal_commands())
+        if (v.verb == "move" && v.destination == Cell{4, 1})
+            retreat = v;
+    check(c->submit(retreat) && c->snapshot().reaction_pending,
+          "Leaving reach offers the weak Heavy wielder an Opportunity Attack");
+    auto declined = rules->restore(c->save());
     auto restored = rules->restore(c->save());
     const auto reaction = command(*c, "opportunity");
     const auto before = unit(*c);
     check(c->submit(reaction) && restored->submit(reaction) && c->save() == restored->save(),
           "Heavy opportunity attack resumes identically");
-    check(
-        argument(attack(*c), "roll") == "11" &&
-        argument(attack(*c), "disadvantage") == " (disadvantage)" && !unit(*c).reaction &&
-        unit(*c).action == before.action,
-        "Old weak reactor now uses corrected Heavy rule; seed 1 chooses 11 over 16 and spends only Reaction");
-    c = rules->restore(old);
-    act(*c, "decline");
-    check(c->save() == rules->restore(read(path / "combat-v12-heavy-continued.save"))->save(),
-          "Declining exactly matches the frozen old writer continuation");
-    CampaignParty party(module());
-    const auto campaign = read(path / "campaign-v10-heavy.ogs");
-    party.restore(
-        decode_campaign(campaign, *srd5::character_rules(), *rules, "heavy-fixture", nullptr)
-        .party);
-    check(party.member(1).vitals.resources == "SRD1 1 0 0 0 0" &&
-          party.member(2).vitals.resources ==
-          "SRD7 0 1 0 0 0 0 1 0 0 7 \"spell:fixture\" 1 FX1 1 0",
-          "Existing Wind/slot/Rush expenditure and Temporary HP are never reset");
-    for (const auto id :
-            {
-                1u, 2u
-            })
-        check(party.profile(id).item_modifiers.find(
-                  "Attacks with this weapon have Disadvantage.") != std::string::npos,
-              "Both weapon categories derive their missing requirement on migration");
-    const auto bytes = encode_campaign(party, nullptr, "heavy-fixture");
-    auto body = campaign.substr(campaign.find('\n', campaign.find('\n') + 1) + 1);
-    body.replace(body.find("0.6.15"), 6, rules->identity().version);
-    check(
-        bytes.substr(bytes.find('\n', bytes.find('\n') + 1) + 1) ==
-        test::with_initial_wizard_spell_grants(body),
-        "Campaign migration adds explicit spell/Sage grants and preserves all Dwarf/Orc grants, state, equipment and clock");
-    CampaignParty again(module());
-    again.restore(
-        decode_campaign(bytes, *srd5::character_rules(), *rules, "heavy-fixture", nullptr).party);
-    check(encode_campaign(again, nullptr, "heavy-fixture") == bytes,
-          "Migration is canonical and never repeats grant introduction");
+    check(argument(attack(*c), "disadvantage") == " (disadvantage)" && !unit(*c).reaction &&
+          unit(*c).action == before.action,
+          "Heavy Disadvantage applies to Opportunity Attacks, which spend only the Reaction");
+    act(*declined, "decline");
+    check(!declined->snapshot().reaction_pending && unit(*declined).reaction,
+          "Declining keeps the Reaction");
 }
 } // namespace
 
@@ -439,7 +408,7 @@ int main()
         thresholds();
         contextual_modifiers();
         campaign();
-        legacy();
+        opportunity_attack();
         std::cout << "Heavy weapon tests passed\n";
         return 0;
     }

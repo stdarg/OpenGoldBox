@@ -8,10 +8,9 @@ Authority: [SRD 5.2.1, pp. 71 and 127](https://media.dndbeyond.com/compendium-im
 The approved Q26 Spell Choices step exposes Eldritch Blast to level-one Warlocks.
 The grant records `class:warlock:pact_magic`, level one and cantrip access. The
 rules validate class, source, acquisition level, uniqueness and selected casting
-mask. Rules 0.6.37 exposed one of two owed cantrips.
-[Warlock Poison Spray](WARLOCK-POISON-SPRAY.md) now makes both available; saved
-choices stay unchanged.
-Presets select the supported cantrip in advance. Missing old choices stay pending.
+spells. Rules 0.6.37 exposed one of two owed cantrips.
+[Warlock Poison Spray](WARLOCK-POISON-SPRAY.md) now makes both available.
+Presets select the supported cantrip in advance.
 This delivers only the cantrip portion of Pact Magic, not slots or preparation.
 
 The existing Spell dropdown and Cast button perform a Charisma-based ranged
@@ -21,11 +20,7 @@ typed defenses, line of effect, occupied Somatic hands and armor training apply.
 The Magic action is spent; movement, Bonus Action, Reaction and resources remain.
 V/S metadata is registered; general speech blocking remains #39.
 
-PC25 permits the sourced cantrip bit. Campaign 11 and combat formats 13–15 remain
-unchanged. Actual 0.6.36 writer fixtures captured at `15fcda5` retain previous
-choices, wounds, equipment, wealth, random state, spent Action/Bonus Action and
-exact subsequent turn entry. Module identity is the only combat-byte change.
-Older identities reject new grants/recipes. No player combat-save controls exist.
+Profile recipes permit the sourced cantrip. No player combat-save controls exist.
 
 Evidence: [native rules and persistence](../tests/eldritch_blast_tests.cpp),
 [creation controls](../tests/warlock_cantrip_view_tests.gd), and

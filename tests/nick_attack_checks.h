@@ -2,62 +2,6 @@ namespace nick_attack_checks
 {
 using namespace mastery_combat_checks;
 
-void capture()
-{
-    const auto output = std::getenv("OPENGOLD_NICK_BASELINE");
-    if (!output)
-        return;
-    auto r = module();
-    check(r->identity().version == "0.6.56", "Freeze only actual pre-Nick production writer");
-    CampaignParty p(module());
-    auto h = hero("handaxe", "fighter", "soldier");
-    h.inventory().add("dagger", "First dagger");
-    h.inventory().add("dagger", "Second dagger");
-    const auto id = p.add_pc(h);
-    p.equip(id, 1);
-    p.equip(id, 2, EquipmentOperation::equip_other);
-    p.award_experience(300, "nick-before");
-    p.advance(id, p.default_advancement(id));
-    auto saved = p.checkpoint();
-    saved.roster[0].vitals.hit_points -= 3;
-    p.restore(saved);
-    auto actors = p.participants();
-    actors.front().cell = {1, 1};
-    actors.push_back({99, "vanguard", "Target", 1, {2, 1}});
-    const auto path = std::filesystem::path(output);
-    std::filesystem::create_directories(path);
-    const auto write = [&](const char *name, const CombatSession & c)
-    {
-        std::ofstream out(path / name, std::ios::binary);
-        out << c.save();
-        check(bool(out), "Write actual pre-Nick checkpoint");
-    };
-    for (unsigned seed = 1; seed < 400; ++seed)
-    {
-        auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
-        turn(*c, id);
-        const auto before = c->save();
-        act(*c, "melee", 99);
-        settle(*c);
-        const auto qualified = c->save();
-        act(*c, "light_melee", 99);
-        if (!c->snapshot().savage_attack_choice)
-            continue;
-        write("combat-v22-nick-light-pending.save", *c);
-        act(*c, "savage_skip");
-        write("combat-v22-nick-light-spent.save", *c);
-        c = r->restore(before);
-        write("combat-v22-nick-before.save", *c);
-        act(*c, "second_wind");
-        act(*c, "melee", 99);
-        settle(*c);
-        write("combat-v22-nick-other-bonus-spent.save", *c);
-        std::cout << "Captured actual pre-Nick writer at seed " << seed << '\n';
-        return;
-    }
-    throw std::runtime_error("No pre-Nick pending Light fixture");
-}
-
 CampaignParty party(std::string weapon = "dagger", bool style = false, bool negative = false,
                     bool npc = false, std::string klass = "fighter")
 {
@@ -123,7 +67,7 @@ void grants_and_budgets()
                     auto p = party(weapon, style, negative, seed % 2);
                     auto c = battle(p, seed);
                     check(
-                        c->save().starts_with("OGCOMBAT 23 ") && unit(*c, 1).nick_mastery &&
+                        c->save().starts_with("OGCOMBAT 27 ") && unit(*c, 1).nick_mastery &&
                         !offers(*c, "nick_melee"),
                         "Chosen Nick creates explicit shared budget, not an attack before qualification");
                     act(*c, "melee", 99);
@@ -372,47 +316,8 @@ void throwing_and_provenance()
           "Nick metadata alone grants no permission");
 }
 
-std::string fixture(const char *name)
+void forged_budgets()
 {
-    std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
-    check(bool(in), "Open genuine pre-Nick writer");
-    return {std::istreambuf_iterator<char>(in), {}};
-}
-
-void historical()
-{
-    auto r = module();
-    for (const auto name :
-            {"combat-v22-nick-before.save", "combat-v22-nick-light-pending.save",
-             "combat-v22-nick-light-spent.save", "combat-v22-nick-other-bonus-spent.save"
-            })
-    {
-        auto bytes = fixture(name);
-        const auto at = bytes.find("0.6.56");
-        check(at != bytes.npos, "Actual prior identity");
-        auto c = r->restore(bytes);
-        bytes.replace(at, 6, r->identity().version);
-        check(
-            c->save() == bytes,
-            "Historical current-turn budgets, pending choices and RNG unchanged apart from identity");
-        check(!offers(*c, "nick_melee"),
-              "Ambiguous old current-turn Bonus Action is not reinterpreted");
-        if (c->snapshot().savage_attack_choice)
-        {
-            act(*c, "savage_skip");
-            auto settled = fixture("combat-v22-nick-light-spent.save");
-            settled.replace(settled.find("0.6.56"), 6, r->identity().version);
-            check(c->save() == settled,
-                  "Actual old pending Light resolves to actual old settled writer");
-        }
-        act(*c, "end");
-        act(*c, "end");
-        act(*c, "melee", 99);
-        settle(*c);
-        check(c->save().starts_with("OGCOMBAT 23 ") && offers(*c, "nick_melee"),
-              "Retained old encounter gains Nick at its first unambiguous fresh turn");
-        round_trip(*r, *c);
-    }
     auto p = party();
     auto c = battle(p);
     bool pending = false;
@@ -439,8 +344,9 @@ void historical()
         row = bytes.find('\n', row) + 1;
     while (!bytes.substr(row).starts_with("1 "))
         row = bytes.find('\n', row) + 1;
-    const auto end = bytes.find('\n', row), origin = bytes.rfind(' ', end),
-               budget = bytes.rfind(' ', origin - 1);
+    // The actor row ends with the Light budget, the Nick origin and the Cleave flag.
+    const auto end = bytes.find('\n', row), cleave = bytes.rfind(' ', end),
+               origin = bytes.rfind(' ', cleave - 1), budget = bytes.rfind(' ', origin - 1);
     for (const auto value :
             {"0", "3"
             })
@@ -454,7 +360,7 @@ void historical()
         });
     }
     bad = bytes;
-    bad.replace(origin + 1, end - origin - 1, "0");
+    bad.replace(origin + 1, cleave - origin - 1, "0");
     rejects(
         [&]
     {
@@ -476,9 +382,24 @@ void ui_fixtures()
         out << c.save();
         check(bool(out), "Write actual Nick UI fixture");
     };
-    auto c = r->restore(fixture("combat-v22-nick-before.save"));
-    act(*c, "end");
-    act(*c, "end");
+    CampaignParty p(module());
+    auto h = hero("handaxe", "fighter", "soldier");
+    h.inventory().add("dagger", "First dagger");
+    h.inventory().add("dagger", "Second dagger");
+    const auto id = p.add_pc(h);
+    p.equip(id, 1);
+    p.equip(id, 2, EquipmentOperation::equip_other);
+    p.award_experience(300, "nick-ui");
+    p.advance(id, p.default_advancement(id));
+    // Wounded, so the spent-bonus fixture can use Second Wind.
+    auto saved = p.checkpoint();
+    saved.roster[0].vitals.hit_points -= 3;
+    p.restore(saved);
+    auto actors = p.participants();
+    actors.front().cell = {1, 1};
+    actors.push_back({99, "vanguard", "Target", 1, {2, 1}});
+    auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, 1);
+    turn(*c, id);
     write("before", *c);
     const auto before = c->save();
     act(*c, "melee", 99);
@@ -518,7 +439,7 @@ void run()
     test("Nick grants/budgets", grants_and_budgets);
     test("Nick interactions", pending_interactions);
     test("Nick throwing/provenance", throwing_and_provenance);
-    test("Nick historical", historical);
+    test("Nick forged budgets", forged_budgets);
     ui_fixtures();
 }
 

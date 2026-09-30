@@ -325,23 +325,18 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
     }
 }
 
+// The only effect-state tag written or read. It lives inside campaign saves and
+// combat checkpoints, whose format numbers reject older data.
+constexpr std::string_view effects_magic = "FX7";
+
 void write_effects(std::ostream &out, const EffectState &effects)
 {
-    out << (slowed(effects)                     ? "FX7 "
-            : has_attack_mastery(effects)       ? "FX6 "
-            : healing_blocked(effects)          ? "FX5 "
-            : effects.sleeping || effects.prone ? "FX4 "
-            : opportunity_blocked(effects)      ? "FX3 "
-            : frosted(effects)                  ? "FX2 "
-            : "FX1 ")
-        << effects.next_id << ' ' << effects.active.size();
+    out << effects_magic << ' ' << effects.next_id << ' ' << effects.active.size();
     for (const auto &e : effects.active)
         out << ' ' << e.id << ' ' << unsigned(e.kind) << ' ' << e.source_scope << ' '
             << e.source_actor << ' ' << std::quoted(e.source_name) << ' ' << e.dc << ' '
             << e.remaining_ms << ' ' << e.save_in_ms;
-    if (has_attack_mastery(effects) || healing_blocked(effects) || effects.sleeping ||
-            effects.prone)
-        out << ' ' << effects.sleeping << ' ' << effects.prone;
+    out << ' ' << effects.sleeping << ' ' << effects.prone;
 }
 
 EffectState read_effects(std::istream &in)
@@ -352,10 +347,7 @@ EffectState read_effects(std::istream &in)
     in >> magic;
     unsigned_field(in, result.next_id);
     unsigned_field(in, count);
-    if (!in ||
-            (magic != "FX1" && magic != "FX2" && magic != "FX3" && magic != "FX4" && magic != "FX5" &&
-             magic != "FX6" && magic != "FX7") ||
-            !result.next_id || count > effect_limit)
+    if (!in || magic != effects_magic || !result.next_id || count > effect_limit)
         throw std::runtime_error("Invalid effect state");
     std::uint64_t previous{};
     for (std::size_t n = 0; n < count; ++n)
@@ -369,16 +361,11 @@ EffectState read_effects(std::istream &in)
         in >> std::quoted(e.source_name) >> e.dc;
         unsigned_field(in, e.remaining_ms);
         unsigned_field(in, e.save_in_ms);
-        const bool timed =
-            (magic != "FX1" && kind == unsigned(EffectKind::ray_of_frost)) ||
-            ((magic == "FX3" || magic == "FX4" || magic == "FX5" || magic == "FX6" ||
-              magic == "FX7") &&
-             kind == unsigned(EffectKind::shocking_grasp)) ||
-            ((magic == "FX5" || magic == "FX6" || magic == "FX7") &&
-             kind == unsigned(EffectKind::chill_touch)) ||
-            ((magic == "FX6" || magic == "FX7") &&
-             (kind == unsigned(EffectKind::sap) || kind == unsigned(EffectKind::vex))) ||
-            (magic == "FX7" && kind == unsigned(EffectKind::slow));
+        const bool timed = kind == unsigned(EffectKind::ray_of_frost) ||
+                           kind == unsigned(EffectKind::shocking_grasp) ||
+                           kind == unsigned(EffectKind::chill_touch) ||
+                           kind == unsigned(EffectKind::sap) || kind == unsigned(EffectKind::vex) ||
+                           kind == unsigned(EffectKind::slow);
         if (!in || (!timed && kind != unsigned(EffectKind::blindness)) || e.id <= previous ||
                 e.id >= result.next_id || !e.source_scope || !e.source_actor || e.source_name.empty() ||
                 e.source_name.size() > 160 ||
@@ -394,26 +381,13 @@ EffectState read_effects(std::istream &in)
         previous = e.id;
         result.active.push_back(std::move(e));
     }
-    if (magic == "FX3" && !opportunity_blocked(result))
-        throw std::runtime_error("Noncanonical effect state");
-    if (magic == "FX2" && !speed_penalty(result))
-        throw std::runtime_error("Noncanonical effect state");
-    if (magic == "FX5" && !healing_blocked(result))
-        throw std::runtime_error("Noncanonical effect state");
-    if (magic == "FX6" && !has_attack_mastery(result))
-        throw std::runtime_error("Noncanonical effect state");
-    if (magic == "FX7" && !slowed(result))
-        throw std::runtime_error("Noncanonical effect state");
-    if (magic == "FX4" || magic == "FX5" || magic == "FX6" || magic == "FX7")
-    {
-        unsigned sleeping{}, prone{};
-        unsigned_field(in, sleeping);
-        unsigned_field(in, prone);
-        if (sleeping > 1 || prone > 1 || (sleeping && !prone) || (magic == "FX4" && !prone))
-            throw std::runtime_error("Invalid natural sleep/posture state");
-        result.sleeping = sleeping;
-        result.prone = prone;
-    }
+    unsigned sleeping{}, prone{};
+    unsigned_field(in, sleeping);
+    unsigned_field(in, prone);
+    if (!in || sleeping > 1 || prone > 1 || (sleeping && !prone))
+        throw std::runtime_error("Invalid natural sleep/posture state");
+    result.sleeping = sleeping;
+    result.prone = prone;
     return result;
 }
 } // namespace opengold::srd5::detail

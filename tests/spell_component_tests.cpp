@@ -1,4 +1,3 @@
-#include "campaign_fixture.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "spell_components.h"
@@ -23,13 +22,6 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 auto module()
 {
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
-}
-
-std::string read(const std::filesystem::path &p)
-{
-    std::ifstream in(p);
-    check(bool(in), "Frozen fixture exists");
-    return {std::istreambuf_iterator<char>(in), {}};
 }
 
 void write(const std::filesystem::path &p, const std::string &bytes)
@@ -158,7 +150,7 @@ unsigned slots(const CombatantView &actor, unsigned level)
     std::string magic;
     unsigned winds{}, first{}, second{};
     in >> magic >> winds >> first >> second;
-    check(bool(in) && magic == "SRD2", "Level-three caster uses stored level-one/two slots");
+    check(bool(in) && magic == "SRD9", "Level-three caster uses stored level-one/two slots");
     return level == 1 ? first : second;
 }
 
@@ -340,41 +332,6 @@ void campaign()
     }
 }
 
-std::string upgrade(std::string bytes)
-{
-    const auto at = bytes.find("0.6.20");
-    check(at != bytes.npos, "Actual prior writer version");
-    bytes.replace(at, 6, module()->identity().version);
-    return bytes;
-}
-
-void legacy()
-{
-    auto rules = module();
-    const auto base = root / "tests/fixtures";
-    const auto bytes = read(base / "campaign-v10-components.ogs");
-    CampaignParty p(module());
-    p.restore(
-        decode_campaign(bytes, *srd5::character_rules(), *rules, "components", nullptr).party);
-    const auto saved = encode_campaign(p, nullptr, "components");
-    const auto body = [](const std::string & s)
-    {
-        return s.substr(s.find('\n', s.find('\n') + 1) + 1);
-    };
-    check(
-        body(saved) == test::with_background_training_grants(
-            test::with_legacy_cantrip_choices(upgrade(body(bytes)))),
-        "Campaign migration changes only module identity, absent cantrip choices and owed background grants");
-    auto c = rules->restore(read(base / "combat-v13-components.save"));
-    check(c->save() == upgrade(read(base / "combat-v13-components.save")),
-          "Prior checkpoint keeps every actor, recipe, resource, queue, RNG and clock");
-    check(!has(*c, "cure_wounds") && has(*c, "healing_word"),
-          "Old equipment acquires corrected spell eligibility on resume");
-    check(c->submit(command(*c, "healing_word")), "Prior legal verbal cast accepted");
-    check(c->save() == rules->restore(read(base / "combat-v13-components-continued.save"))->save(),
-          "Unrestricted spell exactly matches actual prior-writer continuation");
-}
-
 void ui_fixtures()
 {
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "component-fixtures";
@@ -396,35 +353,15 @@ void ui_fixtures()
                   battle(*rules, h, gear, shield ? 1 : 2)->save());
         }
 }
-
-void freeze()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.20", "Freeze must use actual prior writer");
-    auto p = party();
-    const auto base = root / "tests/fixtures";
-    write(base / "campaign-v10-components.ogs", encode_campaign(p, nullptr, "components"));
-    auto c = campaign_battle(*rules, p);
-    write(base / "combat-v13-components.save", c->save());
-    check(has(*c, "cure_wounds"), "Prior writer demonstrates missing restriction");
-    check(c->submit(command(*c, "healing_word")), "Prior writer continuation");
-    write(base / "combat-v13-components-continued.save", c->save());
-}
 } // namespace
 
-int main(int argc, char **)
+int main()
 {
     try
     {
-        if (argc == 2)
-        {
-            freeze();
-            return 0;
-        }
         definitions();
         expectations();
         campaign();
-        legacy();
         ui_fixtures();
         std::cout << "Spell component tests passed\n";
         return 0;

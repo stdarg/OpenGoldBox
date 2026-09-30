@@ -22,6 +22,10 @@ spell criticals distinct from the expanded weapon/Unarmed Strike threshold.
 | Persistence | Actual pre-change writer captures; legacy encounters retain exact behavior; current pending movement, targets, path and allowances survive internal checkpoints; campaign handoff/rest/save correct. |
 | Player path | Approved controls in game/demo; keyboard/mouse/cancel, disabled illegal commands, main EN/ES and demo EN renders at 1120×800/1920×1080. No combat saving controls. |
 
+Older-save and legacy-encounter requirements above are superseded: saves now
+have one pre-1.0 format and nothing is migrated; see
+[SAVES.md](SAVES.md#pre-10-format-policy).
+
 ## Approved decisions
 
 Q41 approves naming Champion and its fixed grants in the existing Fighter
@@ -65,9 +69,8 @@ required out-of-scope prerequisite and obtain approval before implementing it.
 
 Runtime `6324a51` (module 0.6.46) implements this packet. PC31 identifies the
 Champion entitlement; combat18 is written only during pending free movement.
-Existing PC30 and earlier combat continuations retain their previous initiative,
-critical thresholds, spent resources and RNG. Campaign replay grants the fixed
-subclass features at the character's attained level under Q41.
+Campaign replay grants the fixed subclass features at the character's attained
+level under Q41.
 
 Observed milestones on 2026-09-25: start/preflight 15:26 UTC; first focused rules,
 control and render checks passed by 15:50; full 48-test native pass by 16:04:31;
@@ -104,10 +107,7 @@ No live build/test handles remain.
 and critical damage, ordinary Fighter advancement at every supported level,
 exclusive free-movement budgets, Difficult Terrain, crawling, multiple criticals
 in one turn, Savage Attacker ordering, actual opportunity attacks and interrupted
-routes, campaign rest/handoff and canonical persistence. `tests/action_surge_tests.cpp`
-retains actual 0.6.45 campaign/attack continuations; old combat recipes keep their
-original behavior. Existing migration tests compare all campaign bytes against
-independently authored fixed-grant additions, preserving the frozen fixtures.
+routes, campaign rest/handoff and canonical persistence.
 
 `tests/champion_view_tests.gd` exercises the real level-three confirmation and
 keyboard Confirm, plus battlefield arrows/clicks, Escape, keyboard Finish,

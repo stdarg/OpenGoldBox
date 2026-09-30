@@ -41,7 +41,6 @@ struct TrainingChoiceGroup
 };
 enum class SpellChoiceContext
 {
-    pending,
     advancement,
     long_rest
 };
@@ -78,7 +77,7 @@ struct AdvancementChoice
     TrainingChoices training;
     std::optional<std::string>
     fighting_style; // Class-granted choice/replacement, separate from a level-four feat.
-    std::optional<TrainingChoices> spell_learning; // Absent only for historical advancement replay.
+    std::optional<TrainingChoices> spell_learning; // Required for Wizards; absent otherwise.
     bool operator==(const AdvancementChoice &) const = default;
 };
 
@@ -346,6 +345,11 @@ struct Identity
     std::string module, version, content;
     auto operator<=>(const Identity &) const = default;
 };
+
+// Pre-1.0 saves are not migrated: every save kind accepts only its current
+// format and the current rules identity. Hosts localize this message.
+inline constexpr char older_save_message[] =
+    "This save was made by an older pre-release version of OpenGoldBox and can't be loaded.";
 enum class Outcome
 {
     ongoing,
@@ -524,12 +528,6 @@ class RulesModule
   public:
     virtual ~RulesModule() = default;
     [[nodiscard]] virtual Identity identity() const = 0;
-
-    [[nodiscard]] virtual bool accepts_campaign_identity(const Identity &saved) const
-    {
-        return saved == identity();
-    }
-
     [[nodiscard]] virtual std::vector<std::string> supported_features() const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession> create(Encounter encounter,
             std::uint64_t seed) const = 0;
@@ -538,11 +536,6 @@ class RulesModule
     [[nodiscard]] virtual CharacterProfile character_profile(const CharacterSheet &,
             std::span<const std::string>,
             EquipmentState equipment = {}) const;
-
-    [[nodiscard]] virtual EquipmentState migrate_equipment(std::span<const std::string>) const
-    {
-        return {};
-    }
 
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const
     {
@@ -636,16 +629,6 @@ class RulesModule
     }
 
     virtual void validate_character_state(const CharacterSheet &, const VitalState &) const;
-    virtual void validate_saved_grants(const Identity &, const CharacterSheet &,
-                                       std::span<const FeatureGrant>) const;
-
-    // Called after replaying saved creation/advancement under the current rules.
-    // Edition-specific migration preserves wounds and opaque resource state.
-    virtual void migrate_character_state(const Identity &, const CharacterSheet &sheet,
-                                         VitalState &state) const
-    {
-        validate_character_state(sheet, state);
-    }
 
     [[nodiscard]] virtual RestProgress begin_rest(RestKind) const;
     [[nodiscard]] virtual RestTransition advance_rest(const RestProgress &, std::uint64_t,

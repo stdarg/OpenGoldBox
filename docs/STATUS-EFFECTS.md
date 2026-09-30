@@ -82,26 +82,23 @@ are prepared in an owned candidate before replacing live campaign state.
 
 ## Persistence and boundaries
 
-- Rules module **0.6.15** writes **OGCOMBAT 12** checkpoints containing source scope,
+- **OGCOMBAT 27** checkpoints contain source scope,
   elapsed time and each actor's effect collection. The checkpoint byte limit is
   4 MiB; each creature supports at most 128 simultaneous applications. A full
   collection offers no further Blindness command.
-- Rules-owned **SRD3** continuation embeds the structured **FX1** effect codec.
-  SRD1/SRD2 resource continuations remain readable. Unaffected actors continue
-  using those older encodings. Effect counters remain saved after expiration.
-- **OPENGOLD-CAMPAIGN 6** adds sub-minute time, precise rest-completion offsets and
-  the next encounter scope. Versions 1–5 migrate with zero sub-minute offsets
-  and no effects. Supported preceding content packs migrate; unrelated identities
-  still reject. The [combat migration](RULES.md#library-boundary) accepts module
-  0.6.4/0.6.5/0.6.6/0.6.7/0.6.8/0.6.9/0.6.10/0.6.11/0.6.12/0.6.13/0.6.14 with matching content or a [verified preceding pack](DAMAGE.md); other old combat identities require their original module.
-- Campaign format 7 adds weapon grip separately from the opaque effect/resource
-  continuation; combat format 8 retains grip changes during pending reactions.
-- Campaign format 8 and PC6 profiles add acquired feature/feat provenance and
+- Rules-owned **SRD9** continuation embeds the structured **FX7** effect codec.
+  Effect counters remain saved after expiration.
+- **OPENGOLD-CAMPAIGN 19** stores sub-minute time, precise rest-completion offsets
+  and the next encounter scope. Older formats and other rules identities reject;
+  see the [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
+- The campaign save stores weapon grip separately from the opaque effect/resource
+  continuation; the combat checkpoint retains grip changes during pending reactions.
+- Campaign saves and PC42 profiles store acquired feature/feat provenance and
   choices, separately from spent resources and timed effects.
-- Campaign format 9 and PC7 add training choices and sources while preserving
-  effects, wounds and resources; see [training support](TRAINING.md).
-- SRD4 combines spent Hit Dice with the existing resources and FX1 effect state.
-  Combat format 9 retains remaining dice through turns and campaign handoff.
+- They also store training choices and sources alongside effects, wounds and
+  resources; see [training support](TRAINING.md).
+- SRD9 combines spent Hit Dice with the existing resources and FX7 effect state.
+  The combat checkpoint retains remaining dice through turns and campaign handoff.
   See [rest resources](REST-RESOURCES.md).
 - PCs and recruited NPCs carry effects through campaign handoff, reserve status,
   healing, advancement, saves and subsequent encounters. Current encounter-only
@@ -121,7 +118,7 @@ state summary also reports blindness carried out of combat.
 modifier combinations, duration/recovery boundaries, overlapping applications,
 time chunking, reordered subjects, death, source provenance, codec validation,
 combat restrictions, spell costs and deterministic combat/campaign continuation.
-Existing save tests cover older campaign migrations. The checkpoint fuzzer and
+Existing save tests check that older campaign formats reject. The checkpoint fuzzer and
 normal mutation smoke tests include active and overlapping effect seeds.
 
 The graphical test selects Blindness through the actual button and target click,
@@ -143,13 +140,13 @@ Reference: [official SRD 5.2.1](https://media.dndbeyond.com/compendium-images/sr
 Blindness/Deafness p. 113, Blinded p. 177, combining spell effects p. 106.
 Existing content attribution in `data/rules/srd-5.2.1/NOTICE.md` applies.
 
-Recovery clocks in SRD5/combat 10 preserve death-save cadence and natural Stable
-recovery independently of FX1. The [campaign scheduler #195](https://github.com/stdarg/OpenGold/issues/195)
+Recovery clocks in SRD9 and the combat checkpoint preserve death-save cadence and
+natural Stable recovery independently of FX7. The [campaign scheduler #195](https://github.com/stdarg/OpenGold/issues/195)
 merges those deadlines chronologically; entity order and mortality-before-effect
 ordering make time partitions deterministic, including death suppressing saves. See [recovery clock support](RECOVERY-CLOCKS.md).
 
 Rules 0.6.15 also persists Orc Adrenaline Rush uses and pending Temporary HP
-replacement in combat format 12 and SRD7; see [Temporary HP](TEMPORARY-HP.md).
+replacement in the combat checkpoint and SRD9; see [Temporary HP](TEMPORARY-HP.md).
 
 Rules 0.6.25 adds sourced Ray of Frost applications in FX2. These have no repeat
 save timer; shared effect and campaign schedulers advance their expiry deadlines

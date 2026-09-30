@@ -27,7 +27,7 @@ Name. Sacred Flame has a labeled checkbox, keyboard access and selection counts.
 Back retains selections; changing class clears invalid choices and hides their
 checkboxes. The base entitlement is three cantrips, increasing to four at level
 4. Missing catalog choices remain pending. Preset Clerics receive the supported
-choice; old saved Clerics retain their recorded spells. Grants carry the source
+choice. Grants carry the source
 `class:cleric:spellcasting` and acquisition level 1.
 
 The main combat row lists Sacred Flame in the approved [Spell dropdown](CANTRIP-CONTROLS.md)
@@ -39,9 +39,7 @@ demo retains its existing layout; both creators share the spell-choice control.
 
 ## Persistence and verification
 
-New **PC12** recipes validate Cleric cantrip masks against their sourced grants.
-PC11 and earlier cannot acquire Sacred Flame by relabeling a new recipe.
-Campaign format **11**, combat **13** and resource formats **SRD1–7** remain.
+Profile recipes validate Cleric cantrips against their sourced grants.
 Loading never fills missing choices or replenishes resources. Player saving
 remains restricted to camping or an inn.
 
@@ -54,9 +52,6 @@ remains restricted to camping or an inn.
 - [Combat tests](../tests/sacred_view_tests.gd) check known/blocked/unknown
   controls, keyboard selection and an actual cast at an ally. English and Spanish
   rows are also rendered at 1120×800 and 1920×1080.
-- Actual **0.6.22** writer fixtures preserve a wounded Cleric's resources,
-  equipment, clock and RNG, including an exact Cure Wounds continuation.
-  See [provenance](../tests/fixtures/README.md).
 
 Validation passed all 37 native/tool checks and 14 Godot runtime checks, with
 five native fixture prerequisites. The art-dependent Cleric and Wizard creator

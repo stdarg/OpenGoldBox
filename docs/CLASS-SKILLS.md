@@ -41,18 +41,10 @@ translated class sources through the existing Training display.
 
 ## Persistence and verification
 
-Rules 0.6.30 / PC19 accept the new class sources. Campaign 11, FX2 and combat
-13–15 remain unchanged. Old profiles use their original training catalog. Old
-campaigns retain choices, grants, levels, wounds and spent resources; missing
-class skills remain pending. Rogue's recorded choices remain valid. New grants
-cannot be hidden under an older campaign identity. Review Training #189 still
-owns the player-facing completion flow for existing saves.
+Profiles accept the class sources. Campaign saves retain choices, grants,
+levels, wounds and spent resources. Rogue's recorded choices remain valid.
 
-Actual rules 0.6.29 campaign and combat fixtures from `8da4565` contain all twelve
-classes, recorded languages, Rogue choices and Fighter style, wounds, resource
-expenditure and supported level-four histories. Tests require identity-only
-migration and preserve vitals/history when the core completion API fills missing
-skills. Separate native checks cover every allowed skill for all twelve classes
+Native checks cover every allowed skill for all twelve classes
 across all four backgrounds, exact lists/counts, bonus/provenance correctness,
 invalid choices and canonical current saves. Existing creator/preset tests retain
 Back, pruning and deterministic generation checks.

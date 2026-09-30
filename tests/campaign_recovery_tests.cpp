@@ -1,7 +1,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include <algorithm>
-#include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -71,13 +71,13 @@ CampaignParty loaded(std::string_view bytes)
 
 VitalState unstable(unsigned delay = 6000)
 {
-    return {0, false, "SRD5 0 0 0 2 1 0 1 " + std::to_string(delay) + " 0 FX1 1 0",
+    return {0, false, "SRD9 0 0 0 2 1 0 1 " + std::to_string(delay) + " 0 0 \"\" 0 1 0 FX7 1 0 0 0",
             "Second Wind uses: 0 / 2\nUnconscious; death saves 2 successes, 1 failures"};
 }
 
 VitalState stable(unsigned delay)
 {
-    return {0, false, "SRD5 0 0 0 0 0 1 1 0 " + std::to_string(delay) + " FX1 1 0",
+    return {0, false, "SRD9 0 0 0 0 0 1 1 0 " + std::to_string(delay) + " 0 \"\" 0 1 0 FX7 1 0 0 0",
             "Second Wind uses: 0 / 2\nStable, unconscious"};
 }
 
@@ -101,18 +101,19 @@ void golden_events()
     check(people[0].state == unstable(1) && rng == 17, "No death save occurs before six seconds");
     rules->elapse(people, 1, rng);
     check(people[0].state->hit_points == 1 &&
-          people[0].state->resources == "SRD4 0 0 0 0 0 0 1 FX4 1 0 0 1" &&
+          people[0].state->resources == "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX7 1 0 0 1" &&
           rng == 11400714819323198502ULL,
           "Natural 20 at the exact campaign turn restores one HP without replenishing spent pools");
     // At a shared deadline, entity 1 stabilizes (10), rolls two hours (2),
     // succeeds on its Blinded save (18); entity 2 then wakes on natural 20.
     auto a = unstable();
-    a.resources = "SRD5 0 0 0 2 1 0 1 6000 0 FX1 2 1 1 1 77 99 \"Caster\" 13 60000 6000";
+    a.resources = "SRD9 0 0 0 2 1 0 1 6000 0 0 \"\" 0 1 0 "
+                  "FX7 2 1 1 1 77 99 \"Caster\" 13 60000 6000 0 0";
     people = {patient(2, unstable()), patient(1, a)};
     rng = 34;
     rules->elapse(people, 6000, rng);
     check(
-        people[1].state->resources == "SRD5 0 0 0 0 0 1 1 0 7200000 FX1 2 0" &&
+        people[1].state->resources == "SRD9 0 0 0 0 0 1 1 0 7200000 0 \"\" 0 1 0 FX7 2 0 0 0" &&
         people[0].state->hit_points == 1 && rng == 8709371129873690742ULL,
         "One chronological queue uses entity ID, mortality then effect order for simultaneous events");
     rules->elapse(people, 7199999, rng);
@@ -121,26 +122,19 @@ void golden_events()
     check(people[1].state->hit_points == 1 && rng == 8709371129873690742ULL,
           "Natural recovery adds no second duration roll");
     // Death suppresses an effect saving throw at the same instant; expiry does not roll.
-    a.resources = "SRD5 0 0 0 2 1 0 1 6000 0 FX1 2 1 1 1 77 99 \"Caster\" 38 60000 6000";
+    a.resources = "SRD9 0 0 0 2 1 0 1 6000 0 0 \"\" 0 1 0 "
+                  "FX7 2 1 1 1 77 99 \"Caster\" 38 60000 6000 0 0";
     people = {patient(1, a)};
     rng = 29;
     rules->elapse(people, 60000, rng);
-    check(people[0].state->dead && people[0].state->resources == "SRD4 0 0 0 2 3 0 1 FX1 2 0" &&
+    check(people[0].state->dead &&
+          people[0].state->resources == "SRD9 0 0 0 2 3 0 1 0 0 0 \"\" 0 1 0 FX7 2 0 0 0" &&
           rng == 11400714819323198514ULL,
           "A natural-one death ends mortality rolls and skips saves on lingering effects");
-    people = {patient(1, {0, false, "SRD1 0 0 3 2 1"})};
+    people = {patient(1, stable(7200000))};
     rng = 42;
-    const auto before = *people[0].state;
-    rules->elapse(people, 0, rng);
-    check(*people[0].state == before && rng == 42,
-          "Zero time neither initializes legacy Stable state nor rewrites it");
-    rules->elapse(people, 1, rng);
-    check(
-        people[0].state->resources == "SRD5 0 0 0 0 0 1 2 0 7199999 FX1 1 0" &&
-        rng == 11400714819323198527ULL,
-        "Legacy Stable delay initializes exactly once on positive time, retaining its unspent dice");
     rules->elapse(people, std::numeric_limits<std::uint64_t>::max(), rng);
-    check(people[0].state->hit_points == 1 && rng == 11400714819323198527ULL,
+    check(people[0].state->hit_points == 1 && rng == 42,
           "Very large elapsed time finishes without overflow or redundant rolls");
 }
 
@@ -150,7 +144,8 @@ void partitions_and_rejection()
     std::vector<Participant> initial{patient(7, stable(7001)), patient(2, unstable(0)),
                                      patient(4, unstable(2111)), patient(1, stable(0))};
     initial[2].state->resources =
-        "SRD5 0 0 0 2 1 0 1 2111 0 FX1 3 2 1 1 77 99 \"First\" 38 43123 1111 2 1 77 98 \"Second\" 18 57000 5111";
+        "SRD9 0 0 0 2 1 0 1 2111 0 0 \"\" 0 1 0 FX7 3 2 1 1 77 99 \"First\" 38 43123 1111 "
+        "2 1 77 98 \"Second\" 18 57000 5111 0 0";
     for (std::uint64_t seed = 0; seed < 32; ++seed)
     {
         auto whole = initial, split = initial;
@@ -226,7 +221,7 @@ void campaign_continuation()
     party.restore(state);
     state = party.checkpoint();
     state.roster[0].vitals.hit_points = 1;
-    state.roster[0].vitals.resources = "SRD4 0 0 0 0 0 0 1 FX1 1 0";
+    state.roster[0].vitals.resources = "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX7 1 0 0 0";
     state.roster[1].vitals = stable(1000);
     state.roster[2].vitals = stable(1000);
     party.restore(state);
@@ -241,7 +236,8 @@ void campaign_continuation()
             })
         check(!party.member(id).last_rest_minutes &&
               party.member(id).vitals.resources ==
-              (id == npc ? "SRD4 0 0 0 0 0 0 1 FX1 1 0" : "SRD4 0 0 0 0 0 0 1 FX4 1 0 0 1"),
+              (id == npc ? "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX7 1 0 0 0"
+                         : "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX7 1 0 0 1"),
               "Natural recovery grants neither recharge, Hit Dice nor a rest completion timestamp");
     state = party.checkpoint();
     state.time_minutes = std::numeric_limits<std::uint64_t>::max();
@@ -279,30 +275,11 @@ void combat_handoff()
     auto actors = party.participants();
     actors.push_back({999, "bandit", "Enemy", 1, {7, 7}});
     auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);
-    // Use an actual prior writer, rather than relabeling a current recipe.
-    const auto frozen = [](const char *name)
-    {
-        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
-        check(bool(in), "Frozen recovery fixture exists");
-        return std::string(std::istreambuf_iterator<char>(in), {});
-    };
-    auto migrated = rules->restore(frozen("combat-v9-recovery.save"));
-    check(rules->restore(migrated->save())->save() == migrated->save(),
-          "Migrated recovery checkpoint reload is exact");
-    bool declined = false;
-    for (const auto &command : migrated->legal_commands())
-        if (command.verb == "decline")
-        {
-            declined = migrated->submit(command);
-            break;
-        }
-    check(declined && migrated->save() ==
-          rules->restore(frozen("combat-v9-recovery-continued.save"))->save(),
-          "Prior writer recovery/reaction continuation stays exact");
-    auto old_identity = rules->identity();
-    old_identity.version = "0.6.11";
-    check(rules->accepts_campaign_identity(old_identity),
-          "Previous campaign module remains accepted");
+    auto reloaded = rules->restore(combat->save()), twin = rules->restore(combat->save());
+    check(reloaded->save() == combat->save(), "Recovery checkpoint reload is exact");
+    check(reloaded->submit(end(*reloaded)) && twin->submit(end(*twin)) &&
+          reloaded->save() == twin->save(),
+          "Reloaded recovery checkpoints continue identically");
     auto direct = loaded(saved(party));
     party.begin_combat();
     party.apply_combat(combat->snapshot());

@@ -98,9 +98,9 @@ the original event's persistent flag within this session. This scene is separate
 from Rolf's exploration scene; walking into combat from exploration is future work.
 
 Training **Save combat** / **Load combat** use `user-data/combat.save`, retaining
-the previous save as `.bak`. Saves include pending reactions and RNG state and
-accept supported preceding modules through the migrations below. Other module or
-content mismatches reject. Slums campaign saving remains
+the previous save as `.bak`. Saves include pending reactions and RNG state. Older
+formats and other module or content identities reject; see the
+[format policy](SAVES.md#pre-10-format-policy). Slums campaign saving remains
 disabled until ECL, party, and combat can be persisted together.
 
 ## Library boundary
@@ -132,43 +132,33 @@ Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plu
 the same accepted command sequence reproducible. Checkpoints include the RNG,
 turn budgets, HP, slots, death saves and unfinished opportunity reactions.
 
-Rules module **0.6.15** writes **OGCOMBAT 12**, including selected weapon grip, an
-involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP. Combat migration accepts **0.6.4**, format 5,
-**0.6.5**, format 6, **0.6.6**, format 7, **0.6.7/0.6.8/0.6.9**, format 8,
-**0.6.10**, format 9, **0.6.11/0.6.12/0.6.13**, format 10, and **0.6.14**, format 11,
-with matching module/content IDs or the verified preceding pack before damage metadata.
-A valid saved facing-only queue is canceled; the attacker resumes with the same
-HP, movement, spent resources, RNG and clock. The command revision changes to
-invalidate the canceled choices. A saved leave-reach queue retains its order,
-partially resolved position and deterministic continuation. Invalid old state is
-rejected before migration. Campaign saves continue to accept the documented
-older versions; they do not contain paused combat queues.
-PC5 character profiles add an equipment hand choice after the gear list. PC1–PC4
-remain readable with their previous hand requirements. Combat stores the current
+Rules module **0.6.62** writes **OGCOMBAT 27**, including selected weapon grip, an
+involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP.
+A saved leave-reach queue retains its order, partially resolved position and
+deterministic continuation. Older formats and other module or content identities
+are rejected; nothing is migrated. Campaign saves do not contain paused combat queues.
+Character profiles (PC42) store an equipment hand choice after the gear list.
+Combat stores the current
 grip separately from that initial recipe so later choices survive reload and
 campaign handoff. Rules own valid choices, labels and damage; Godot renders them.
 See [equipment](PARTY.md) for the seven supported Versatile weapons.
 
-PC6 adds the background ID and acquired feature/feat grants after grip. Each
+Profiles also store the background ID and acquired feature/feat grants after grip. Each
 records a stable rules ID, source ID, acquisition level and named choices.
 The rules validate entitlements, prerequisites, duplicates and ability choices
-before deriving combat effects. PC1–PC5 remain readable. Old combat recipes lack
-the original background and complete advancement history, so they retain their
-validated legacy effects without inventing source records. Campaign migration
-has that history and reconstructs exact grants. See [advancement](ADVANCEMENT.md).
+before deriving combat effects. See [advancement](ADVANCEMENT.md).
 
-PC7 extends the ledger with skill, tool, Expertise and language sources. Its
-training choices and entitlements are validated before combat; PC1–PC6 remain
-readable without manufacturing missing selections. Campaign format 9 persists
-the selected choice groups and preserves unresolved choices from older saves.
+The ledger also records skill, tool, Expertise and language sources. Its
+training choices and entitlements are validated before combat. Campaign saves persist
+the selected choice groups.
 See [training support](TRAINING.md) for the Rogue/Criminal package and limits.
 
-SRD4 vital continuations preserve spent Hit Dice and the existing resource/effect
+SRD9 vital continuations preserve spent Hit Dice and the existing resource/effect
 state; [rest resources](REST-RESOURCES.md) describes the rules APIs and campaign
-rest transactions. Campaign format 10 persists completed Short Rest spending
-sessions; PC7 is unchanged. Player-facing rest controls remain #192.
-SRD5 preserves death-save and Stable-recovery clocks at zero HP. See
-[recovery clocks](RECOVERY-CLOCKS.md) for combat support, migration initialization
+rest transactions. Campaign saves persist completed Short Rest spending
+sessions. Player-facing rest controls remain #192.
+Vital state also preserves death-save and Stable-recovery clocks at zero HP. See
+[recovery clocks](RECOVERY-CLOCKS.md) for combat support
 and the outstanding campaign scheduler.
 
 A reaction may pause an accepted route while the mover shares an allied space.
@@ -298,9 +288,11 @@ Reference content and attribution are recorded in
 [the versioned pack](../data/rules/srd-5.2.1/README.md). The baseline is the
 [official SRD 5.2.1](https://www.dndbeyond.com/srd).
 
+The release notes below record the format numbers each release introduced. Only
+the current formats load; see the [format policy](SAVES.md#pre-10-format-policy).
+
 Rules 0.6.13 introduces [typed damage](DAMAGE.md), creature damage/defense metadata
-and Dwarf Poison resistance. PC8 requires its fixed sourced grant; PC1–PC7 remain
-readable without inventing selections. Campaign and combat stay at format 10.
+and Dwarf Poison resistance. PC8 requires its fixed sourced grant. Campaign and combat stay at format 10.
 
 Rules 0.6.14 adds the [Temporary HP native foundation](TEMPORARY-HP.md), combat
 format 11 and SRD6. Rules 0.6.15 adds playable Orc Adrenaline Rush and the reviewed
@@ -326,22 +318,22 @@ campaign 11 remains. The dedicated button is pending question 17.
 Rules 0.6.37 adds [level-one Warlock Eldritch Blast](ELDRITCH-BLAST.md) through
 explicit Pact Magic cantrip grants and the approved shared selection/casting
 controls. PC25 validates access and uses Charisma; campaign/combat formats stay
-unchanged. Old missing choices remain pending. Object targets, later Warlock
+unchanged. Object targets, later Warlock
 levels, slots, invocations and general speech blockers remain separate work.
 
 Rules 0.6.38 adds [Wizard Shocking Grasp](SHOCKING-GRASP.md) at levels 1–4.
 The shared value-owned effect model records sourced Opportunity Attack
 suppression; combat uses it when forming and validating movement interruptions.
 Reaction budgets are unchanged. PC26 validates access, FX3 encodes the new effect,
-and existing campaign/combat schemas and old choices remain compatible.
+and campaign/combat schemas stay unchanged.
 
 Rules 0.6.39 adds [level-one Warlock Poison Spray access](WARLOCK-POISON-SPRAY.md).
 PC27 validates the distinct Pact Magic source and casting mask; existing Charisma
-casting, spell effects and shared Godot controls are reused. Old choices remain
-unchanged, while new presets fill both available starting cantrips.
+casting, spell effects and shared Godot controls are reused. New presets fill
+both available starting cantrips.
 
 Rules 0.6.40 adds [level-one Sorcerer cantrips](SORCERER-CANTRIPS.md): explicit
 source-owned Fire Bolt, Poison Spray, Ray of Frost and Shocking Grasp choices.
 PC28 validates access and Charisma attacks. Existing Spell Choices/Spell/Cast
-controls are reused under Q27; old choices and save schemas remain unchanged.
+controls are reused under Q27; save schemas stay unchanged.
 Full Sorcerer spellcasting and Innate Sorcery remain #132.

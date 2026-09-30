@@ -20,11 +20,9 @@ and shield behavior remain in effect.
 
 ## Existing saves and verification
 
-The prepared inventory work in `79558fd` (module 0.6.48) remains compatible:
-ordinary ammunition records can be read and retained, including original arrows
+Ordinary ammunition records remain inventory items, including original arrows
 and quarrels and their provenance. These records are not prerequisites for firing
-and are not depleted by ranged attacks. Keeping those records avoids deleting
-player inventory or rejecting saves. No expenditure/recovery implementation,
+and are not depleted by ranged attacks. No expenditure/recovery implementation,
 pending recovery state or new control was added.
 
 - `opengold_weapon_catalog_tests` exercises all 38 weapons, including all nine
@@ -33,8 +31,7 @@ pending recovery state or new control was added.
   and combat save continuation are covered.
 - `opengold_ammunition_tests` checks all five inert ammunition inventory types
   across all twelve classes, source-backed original conversions, rejected Equip
-  atomicity, and genuine 0.6.47 campaign/combat continuation. Frozen capture
-  provenance and hashes are in [fixtures](../tests/fixtures/README.md#ammunition-baseline-actual-0647-writer).
+  atomicity, and campaign/combat continuation.
 - `opengold_thrown_weapon_tests` verifies the distinct physical Thrown behavior.
 
 All 50 native/tool tests passed on runtime `79558fd`. The three focused tests

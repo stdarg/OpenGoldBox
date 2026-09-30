@@ -1,4 +1,3 @@
-#include "campaign_fixture.h"
 #include <sstream>
 #include <tuple>
 #include "opengold/campaign_save.h"
@@ -54,46 +53,6 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
         if (a.verb == verb && (!target || a.target == target))
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
-}
-
-void freeze()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.22", "Freeze must use actual prior writer");
-    auto creation = srd5::character_rules();
-    Character h(*creation, draft(), {});
-    VitalState scratch;
-    for (unsigned n = 1; n < 3; ++n)
-        check(h.advance(*rules, scratch), "Prior Cleric advancement");
-    h.inventory().add("mace", "Mace");
-    CampaignParty p(module());
-    p.add_pc(std::move(h));
-    p.equip(1, 1);
-    auto state = p.checkpoint();
-    state.roster[0].vitals.hit_points = 1;
-    state.time_minutes = 123;
-    state.subminute_milliseconds = 456;
-    state.random_state = 789;
-    state.roster[0].wealth[3] = 37;
-    p.restore(std::move(state));
-    auto actors = p.participants();
-    actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 2);
-    check(c->snapshot().actor == 1, "Prior caster begins");
-    check(c->submit(command(*c, "cure_wounds", 1)), "Prior slot spent");
-    p.begin_combat();
-    p.apply_combat(c->snapshot());
-    p.end_combat();
-    const auto base = root / "tests/fixtures";
-    write(base / "campaign-v11-sacred.ogs", encode_campaign(p, nullptr, "sacred"));
-    while (c->snapshot().actor == 1)
-        check(c->submit(command(*c, "end")), "End caster turn");
-    while (c->snapshot().actor != 1)
-        check(c->submit(command(*c, "end")), "Reach next caster turn");
-    write(base / "combat-v13-sacred.save", c->save());
-    check(c->submit(command(*c, "cure_wounds", 1)), "Prior Cure Wounds continuation");
-    write(base / "combat-v13-sacred-continued.save", c->save());
 }
 
 std::string read(const std::filesystem::path &p)
@@ -233,28 +192,23 @@ void access()
                 (void)creation->evaluate(d, true);
             });
         }
-    auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC28 1 0 130 "), "New recipe records sourced Cleric access");
-    profile.replace(0, 4, "PC11");
-    rejects(
-        [&]
+    const auto profile = rules->character_profile(h.sheet(), {}).data;
+    const std::string spells = "PC42 1 0 2 sacred_flame cure_wounds ";
+    check(profile.starts_with(spells), "The recipe lists the selected cantrip");
+    const auto rejects_recipe = [&](const std::string & recipe)
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {2, "vanguard", "Target", 1, {3, 1}}
-            }},
-        13);
-    });
-    profile.replace(profile.find("130"), 3, "2");
-    rejects(
-        [&]
-    {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {2, "vanguard", "Target", 1, {3, 1}}
-            }},
-        13);
-    });
+        rejects(
+            [&]
+        {
+            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+                {   {1, "campaign-character", "Forged", 0, {1, 1}, recipe},
+                    {2, "vanguard", "Target", 1, {3, 1}}
+                }},
+            13);
+        });
+    };
+    rejects_recipe("PC28" + profile.substr(4));
+    rejects_recipe("PC42 1 0 1 cure_wounds " + profile.substr(spells.size()));
     auto invalid = h.sheet();
     for (auto &g : invalid.grants)
         if (g.id == "spell:sacred_flame")
@@ -572,38 +526,6 @@ void campaign()
         }
 }
 
-void legacy()
-{
-    auto rules = module();
-    auto creation = srd5::character_rules();
-    const auto base = root / "tests/fixtures";
-    auto upgrade = [&](std::string s)
-    {
-        auto at = s.find("0.6.22");
-        check(at != s.npos, "Old identity exists");
-        s.replace(at, 6, rules->identity().version);
-        return s;
-    };
-    const auto old = read(base / "campaign-v11-sacred.ogs");
-    CampaignParty p(module());
-    p.restore(decode_campaign(old, *creation, *rules, "sacred", nullptr).party);
-    auto body = [](const auto & s)
-    {
-        return s.substr(s.find('\n', s.find('\n') + 1) + 1);
-    };
-    check(body(encode_campaign(p, nullptr, "sacred")) ==
-          test::with_background_training_grants(body(upgrade(old))),
-          "Prior campaign changes only module identity and owed background grants");
-    check(rules->spell_access(p.member(1).character.sheet()).cantrips.empty(),
-          "No Sacred Flame appears in historical Cleric saves");
-    auto c = rules->restore(read(base / "combat-v13-sacred.save"));
-    check(c->save() == upgrade(read(base / "combat-v13-sacred.save")),
-          "Old combat keeps every recipe, pool, wound, clock and RNG byte");
-    check(c->submit(command(*c, "cure_wounds", 1)), "Prior Cure Wounds continuation");
-    check(c->save() == rules->restore(read(base / "combat-v13-sacred-continued.save"))->save(),
-          "Actual prior writer healing continuation is identical");
-}
-
 void ui_fixtures()
 {
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "sacred-fixtures";
@@ -630,21 +552,15 @@ void ui_fixtures()
 }
 } // namespace
 
-int main(int argc, char **)
+int main()
 {
     try
     {
-        if (argc == 2)
-        {
-            freeze();
-            return 0;
-        }
         access();
         rolls();
         targets();
         modifiers();
         campaign();
-        legacy();
         ui_fixtures();
         std::cout << "Sacred Flame tests passed\n";
         return 0;

@@ -152,21 +152,15 @@ class CampaignParty
     [[nodiscard]] PartyMember preview_advancement(MemberId id,
             const rules::AdvancementChoice &choice) const;
     void advance(MemberId id, const rules::AdvancementChoice &choice);
-    [[nodiscard]] PartyMember preview_training(MemberId id,
-            const rules::CharacterRules &creation_rules,
-            const rules::TrainingChoices &choices) const;
-    [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id,
-            bool after_rest = false) const;
-    [[nodiscard]] PartyMember preview_spell_choices(MemberId id, const rules::SpellChoices &,
-            bool after_rest = false) const;
-    void choose_spells(MemberId id, const rules::SpellChoices &, bool after_rest = false);
+    // Long Rest spell choices for a member offered them by the completed rest.
+    [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id) const;
+    [[nodiscard]] PartyMember preview_spell_choices(MemberId id, const rules::SpellChoices &) const;
+    void choose_spells(MemberId id, const rules::SpellChoices &);
     void keep_rest_spells(MemberId id);
     [[nodiscard]] PartyMember preview_rest_training(RestTicket, MemberId,
             std::span<const std::string>) const;
     void replace_rest_training(RestTicket, MemberId, std::span<const std::string>);
     void keep_rest_training(RestTicket, MemberId);
-    void complete_training(MemberId id, const rules::CharacterRules &creation_rules,
-                           const rules::TrainingChoices &choices);
     // Atomic original loot delivery. A full set of purses leaves it unclaimed.
     bool award_loot(const std::array<unsigned, 7> &wealth, const std::vector<por::Equipment> &items,
                     std::string reward_id);

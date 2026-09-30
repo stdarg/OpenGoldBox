@@ -9,47 +9,11 @@ Encounter corridor()
     {
         board,
         {   {1, "vanguard", "Mover", 0, {0, 1}},
-            {2, "bandit", "Unconscious enemy", 1, {2, 1}, {}, VitalState{0, false, "SRD1 0 0 0 0 1"}},
+            {   2, "bandit", "Unconscious enemy", 1, {2, 1}, {},
+                VitalState{0, false, creature_resources(0, 0, 0, true)}
+            },
             {3, "bandit", "Guard", 1, {5, 1}}
         }};
-}
-
-void freeze()
-{
-    auto module = srd5::load(pack());
-    check(module->identity().version == "0.6.35", "Transit capture requires actual prior writer");
-    auto session = hero_first(*module, corridor());
-    const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
-    std::ofstream(root / "combat-v13-unconscious-transit-before.save", std::ios::binary)
-            << session->save();
-    check(session->submit(command(*session, "dash")), "Prior writer Dash");
-    std::ofstream(root / "combat-v13-unconscious-transit-dash.save", std::ios::binary)
-            << session->save();
-}
-
-void prior_writer()
-{
-    auto module = srd5::load(pack());
-    auto read = [](const char *name)
-    {
-        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
-        check(bool(in), "Transit fixture exists");
-        return std::string{std::istreambuf_iterator<char>(in), {}};
-    };
-    auto current = [&](std::string bytes)
-    {
-        auto at = bytes.find("0.6.35");
-        check(at != bytes.npos, "Actual prior module identity");
-        bytes.replace(at, 6, module->identity().version);
-        return bytes;
-    };
-    const auto prior = read("combat-v13-unconscious-transit-before.save");
-    auto session = module->restore(prior);
-    check(session->save() == current(prior),
-          "Migration preserves exact actor state, timers and RNG");
-    check(session->submit(command(*session, "dash")), "Prior saved actor retains unspent Action");
-    check(session->save() == current(read("combat-v13-unconscious-transit-dash.save")),
-          "Prior writer Dash continuation remains exact");
 }
 
 void run()
@@ -154,7 +118,7 @@ void run()
         check(unit(*session, 1).cell == Cell{4, 1} && unit(*session, 1).movement_feet == 5,
               "Resume charges only remaining suffix");
     }
-    e.participants[0].state = VitalState{1, false, "SRD1 1 0 0 0 0"};
+    e.participants[0].state = VitalState{1, false, creature_resources(1)};
     bool healed = false, died = false, natural_recovery = false;
     for (unsigned seed = 0; seed < 500 && !(healed && died && natural_recovery); ++seed)
     {
@@ -198,15 +162,6 @@ void run()
               "Healing preserves overlapping enemy position and RNG");
         check(unit(*session, 1).hit_points > 0 && unit(*session, 1).cell == unit(*session, 2).cell,
               "Recovery does not teleport the mover");
-        auto forged = session->save();
-        auto at = forged.find(module->identity().version);
-        forged.replace(at, module->identity().version.size(), "0.6.35");
-        rejects(
-            [&]
-        {
-            (void)module->restore(forged);
-        },
-        "Prior module cannot contain new enemy-overlap state");
         while (session->snapshot().actor != 1)
             check(session->submit(command(*session, "end")), "Return to mover turn");
         copy = module->restore(session->save());

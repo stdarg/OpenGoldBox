@@ -15,21 +15,12 @@ prerequisite proficiency. Presets use the existing deterministic training choice
 Existing Training and character-sheet controls show names, modifiers and sources
 in English and Spanish. No new layout or control behavior is introduced.
 
-Rules 0.6.27 writes PC16 profiles. Training validation distinguishes the original
-catalog, PC15's Sage package and PC16's additional background grants. Old profiles
-cannot claim future grants; current profiles reject missing or forged grants.
-Old combat recipes retain their recorded training. Campaign format 11 reconstructs
-owed fixed grants while preserving explicit choices, wounds, resources, equipment
-and advancement. Missing selections remain pending; migration grants no items or
-new spell choices. FX2 and combat formats 13–15 are unchanged.
+Profiles reject missing or forged background grants. Campaign saves reconstruct
+the fixed grants alongside explicit choices, wounds, resources, equipment and
+advancement.
 
-The actual [0.6.26 campaign](../tests/fixtures/campaign-v11-backgrounds-before.ogs)
-contains a wounded level-three Acolyte Cleric and Soldier Fighter with spent
-resources and explicit languages. Tests compare every migrated body byte against
-an independently authored addition of exactly five grants and the module identity.
-Historical campaign fixtures additionally cover existing equipment and other
-backgrounds. [Training tests](../tests/training_tests.cpp) cover all classes,
-Expertise, independent check totals, profile validation, migration and level-four
+[Training tests](../tests/training_tests.cpp) cover all classes,
+Expertise, independent check totals, profile validation and level-four
 ability improvements. [Godot checks](../tests/training_view_tests.gd) cover the
 actual choice groups, background switching, keyboard access and final party sheet.
 

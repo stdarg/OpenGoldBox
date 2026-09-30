@@ -55,7 +55,7 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
    checkboxes, counts and keyboard access.
    Back preserves selections; unfilled SRD choices remain explicitly pending.
    Class changes clear invalid choices and hide their controls. Presets receive
-   their supported class cantrips; old saves retain recorded choices. See
+   their supported class cantrips. See
    [Wizard spell choices](POISON-SPRAY.md) and [Cleric spell choices](SACRED-FLAME.md).
 7. Enter a name, up to 40 characters. There is no separate HP step.
    Choose a complete portrait with the dropdown or Previous/Next buttons.
@@ -161,7 +161,7 @@ archive IDs and indexed combat pixels. No extracted artwork is distributed.
   sibling PNGs. Build copies go to `demos/godot/bin/portraits/`. The Godot boundary
   parses the catalog and loads full-resolution images, displayed with nearest
   filtering in creation, pool and party previews.
-- Campaign format 4 saves the selected basename. Versions 1?3 remain readable;
+- Campaign saves store the selected basename;
   characters without a current catalog entry display a deterministic recommendation.
 - Legacy head/body decoding remains for compatibility and the existing pool's
   combat-color assignment. Those parts are no longer selectable portraits.

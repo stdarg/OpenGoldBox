@@ -23,7 +23,7 @@ void lifecycle()
           "Slow refreshes its source; repeated Slow/Frost do not stack, distinct effects combine");
     std::ostringstream out;
     fx::write_effects(out, e);
-    check(out.str().starts_with("FX7 "), "Slow uses conditional FX7");
+    check(out.str().starts_with("FX7 "), "Slow uses the current FX7 tag");
     std::istringstream in(out.str());
     check(fx::read_effects(in) == e, "All Slow sources and clocks round trip");
     auto forged = out.str();
@@ -73,7 +73,7 @@ void lifecycle()
         check(e == before, "Malformed Slow duration rejects atomically");
     }
     for (const auto bytes :
-            {"FX7 1 0 0 0", "FX7 2 1 1 7 777 99 \"Master\" 1 6000 0 0 0",
+            {"FX7 2 1 1 7 777 99 \"Master\" 1 6000 0 0 0",
              "FX7 2 1 1 7 777 99 \"Master\" 0 6001 0 0 0",
              "FX7 2 1 1 7 777 99 \"Master\" 0 6000 1 0 0"
             })
@@ -162,14 +162,6 @@ void consumers()
     copy.restore(decoded.party);
     check(encode_campaign(copy, nullptr, "slow-consumers") == encoded,
           "Campaign Slow continuation retains exact resources and clocks");
-    auto old = p.identity();
-    old.version = "0.6.57";
-    auto vitals = p.member(1).vitals;
-    rejects(
-        [&]
-    {
-        p.rule_module().migrate_character_state(old, p.member(1).character.sheet(), vitals);
-    });
     p.advance_time_milliseconds(6000);
     for (unsigned n = 0; n < 6; ++n)
         copy.advance_time_milliseconds(1000);

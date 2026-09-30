@@ -17,26 +17,14 @@ Missing, duplicate and forged grants are rejected.
 
 ## Persistence
 
-Rules 0.6.33 / PC22 introduces the fixed entitlement policy. Earlier combat
-recipes retain their original policies and exact continuation. Campaign replay
-adds the owed fixed grant after validating the historical ledger without it.
-Only the new grant and module identity/checksum change; recorded choices,
-including pending choices, wounds and resources remain intact. Repeated
-save/load does not duplicate proficiency. New grants reject under old identities.
-
-The actual 0.6.32 writer at `c0457f8` generated four Druid campaign/combat fixtures
-before production changes, covering all current backgrounds, Nature/Medicine,
-Elvish/Dwarvish, two missing HP and recorded resources. The frozen PC21 recipes
-remain unedited. The independently authored campaign oracle adds only the
-specified fixed grant; it does not call current grant generation or save decode.
+Rules 0.6.33 introduced the fixed entitlement policy. Repeated save/load does
+not duplicate proficiency.
 
 ## Verification
 
 Focused checks cover all twelve classes/four backgrounds, exact provenance,
-proficiency and Advantage, rejected grants/versions, current and historical
-combat, exact campaign migration, repeated loading and preset generation.
-The existing all-class fixture also verifies previously pending Druid skills
-remain pending after the fixed grant is added. Godot checks cover normal Druid
+proficiency and Advantage, rejected grants/versions, current combat, repeated
+loading and preset generation. Godot checks cover normal Druid
 creation, fixed Training text, completed sheet and translated source labels.
 All 41 native/tool checks and all 16 Godot runtime checks (plus seven native
 prerequisites) pass. Main/demo extensions build; 806 localized messages validate.

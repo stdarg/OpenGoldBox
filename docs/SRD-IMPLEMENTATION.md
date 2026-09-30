@@ -25,8 +25,7 @@ F02 is split into [rules and persistence (#187)](https://github.com/stdarg/OpenG
 [creation controls (#188)](https://github.com/stdarg/OpenGold/issues/188), and
 [missing-choice review (#189)](https://github.com/stdarg/OpenGold/issues/189).
 The rules/persistence and creation-control children are delivered. See [training
-support](TRAINING.md) for the first Rogue/Criminal package and boundaries;
-Review Training for existing saved characters remains open.
+support](TRAINING.md) for the first Rogue/Criminal package and boundaries.
 F03 is split into [resource rules and persistence (#190)](https://github.com/stdarg/OpenGold/issues/190),
 [campaign rest transactions (#191)](https://github.com/stdarg/OpenGold/issues/191),
 [rest controls (#192)](https://github.com/stdarg/OpenGold/issues/192), and
@@ -78,8 +77,9 @@ multiple increments; it is not a promise of completion in one execution.
 Before starting an increment, inspect the current branch and confirm its exact
 scope, prerequisites and independent expected results. Reconcile work already
 completed by other contributors. Bound oversized work with named acceptance substeps before coding; create a
-separate issue only for a genuine independent dependency/deliverable. Save
-migration belongs with the feature that changes saved state.
+separate issue only for a genuine independent dependency/deliverable. A feature
+that changes saved state changes the current format in place, with no migration;
+see [saves](SAVES.md#pre-10-format-policy).
 
 Each completed increment must:
 
@@ -261,7 +261,7 @@ Multiclassing follows as six increments, split further if necessary:
 
 | ID | Scope | Completion check |
 | --- | --- | --- |
-| M01 | Acquired class levels/history and entry prerequisites. | Total/class levels remain distinct; existing single-class saves migrate; illegal entry is rejected atomically. |
+| M01 | Acquired class levels/history and entry prerequisites. | Total/class levels remain distinct; single-class saves round-trip; illegal entry is rejected atomically. |
 | M02 | Entry proficiencies, mixed Hit Dice and source grants. | Starting-class benefits differ from later entry; duplicate grants and rest spending remain correct. |
 | M03 | Combined Spellcasting slots versus per-class access. | Slot level does not grant unauthorized known/prepared spells; multiple casting abilities remain correct. |
 | M04 | Pact Magic, free casts and later special spell resources. | Their independent recharge and casting interactions match explicit conformance cases. |
@@ -280,11 +280,9 @@ restrictions or material/focus mechanics (#40). See [spell components](SPELL-COM
 
 ## Recommended next execution
 
-I01–I08, F01, F02a and F02b are complete. Complete #189 before closing #29.
-The user has approved keeping old choices pending for completion through Review
-Training; its button/dialog placement awaits confirmation.
-The campaign preview/confirmation API for #189 is implemented and preserves
-existing choices and resources; its player-facing controls remain pending.
+I01–I08, F01, F02a and F02b are complete. #189's Review Training dialog, which
+only completed training missing from old saves, was removed at the
+[pre-1.0 save cutoff](SAVES.md#pre-10-format-policy).
 F03a–d are complete: #192's reviewed rest controls and #193's interruption/
 resumption, sleep/equipment handoff and Q37 safe recovery complete #30. See [rest resources](REST-RESOURCES.md)
 for the implemented boundary and verification.
@@ -302,6 +300,6 @@ This document records decisions and work boundaries. Implementation status and
 evidence are maintained in the coverage ledger and linked issues.
 
 Rules 0.6.22 adds [Poison Spray and explicit Wizard cantrip choices](POISON-SPRAY.md),
-with the approved creation and main combat controls. Campaign 11 stores choices;
-PC11 validates their grants. Combat 13 and existing resource formats remain.
+with the approved creation and main combat controls. Campaign saves store choices;
+the character profile validates their grants.
 Full spell selection, speech blocking and other granting sources remain open.

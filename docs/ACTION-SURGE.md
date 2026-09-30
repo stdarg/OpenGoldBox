@@ -31,18 +31,13 @@ an unspent action. The first use does not refresh any other resource.
 allowances. Core and Godot continue to consume legal commands, display snapshots
 and named recovery pools; no new runtime or ownership mechanism is introduced.
 
-PC13 validates the new class grant. Combat format 14 stores remaining uses,
-activation this turn and the unspent extra allowance when the encounter contains
-an eligible Fighter. Encounters without that feature retain format 13. Spent
-uses write SRD8 vital continuation, including existing slots, Second Wind, Hit
-Dice, mortality clocks, Temporary HP, Orc uses and effects. Fully available uses
-retain the previous compact vital formats.
+PC42 validates the class grant. OGCOMBAT 27 stores remaining uses, activation
+this turn and the unspent extra allowance. SRD9 vital continuation stores spent
+uses alongside existing slots, Second Wind, Hit Dice, mortality clocks,
+Temporary HP, Orc uses and effects.
 
-Campaign format 11 remains. Historical campaigns acquire the fixed feature only
-when their recorded Fighter advancement reaches level 2. Old in-flight combat
-recipes retain their recorded access until the next encounter; migration never
-invents an extra action or changes prior attack outcomes. Old resource formats
-mean the previously unsupported Surge has not been spent. Current expenditure
+A Fighter acquires the fixed feature when its recorded advancement reaches
+level 2. Expenditure
 survives training, advancement, healing, elapsed time and campaign handoff.
 Saving remains restricted to camping or an inn; internal combat checkpoints are
 for deterministic continuation and tests.
@@ -53,14 +48,10 @@ for deterministic continuation and tests.
 allowances, both action orders, Magic exclusion, exact extra-attack dice, three
 Dash sources, exhaustion, turn expiry, reactions, Savage Attacker, malformed
 state, real PC/NPC campaign handoff, advancement, training, rests and replay.
-Actual 0.6.23 writer fixtures retain spent Second Wind and exact Dash continuation;
-see [fixture provenance](../tests/fixtures/README.md).
 
 Validation passed 38 native/tool checks and 15 Godot runtime checks, including
 six native fixture prerequisites for the latter. Both native Godot extensions
 built successfully. Localization checks validate 739 English/Spanish messages.
-The historical campaign comparisons allow only the new fixed grant and module
-identity; all other saved bytes remain unchanged.
 
 The approved combat button appears beside Adrenaline Rush for eligible Fighters,
 shows remaining uses and stays visible but disabled while unavailable. Mouse,

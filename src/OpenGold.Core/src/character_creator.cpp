@@ -14,51 +14,14 @@ CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::u
     restart();
 }
 
-CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, CharacterDraft draft)
-    : rules_(std::move(rules)), random_(0), draft_(std::move(draft)), step_(CreationStep::training)
-{
-    if (!rules_)
-        throw std::runtime_error("Character creator requires a rules module");
-    (void)rules_->evaluate(draft_, false);
-    locked_training_ = draft_.training;
-}
-
-CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, Character character,
-                                   const RulesModule &module)
-    : CharacterCreator(std::move(rules), character.creation_data())
-{
-    // Retain ordinary creation-choice pruning when no advancement choices exist.
-    if (module.training_options(character.sheet()).empty())
-        return;
-    // The campaign owns the module and outlives this isolated review editor.
-    draft_.training = character.training_choices();
-    locked_training_ = draft_.training;
-    training_character_ = std::move(character);
-    training_module_ = std::cref(module);
-}
-
 std::vector<TrainingChoiceGroup> CharacterCreator::training_options() const
 {
-    auto draft = draft_;
-    // Choice queries can use retained later choices to exclude conflicting
-    // starting options. Actual reconstruction still separates acquired levels.
-    auto groups = rules_->training_options(draft);
-    if (training_character_)
-    {
-        const auto candidate = training_character_->preview_training(
-                                   *rules_, training_module_->get(), draft_.training, false);
-        const auto later = training_module_->get().training_options(candidate.sheet());
-        groups.insert(groups.end(), later.begin(), later.end());
-    }
-    return groups;
+    return rules_->training_options(draft_);
 }
 
 void CharacterCreator::restart()
 {
     draft_ = {};
-    locked_training_.clear();
-    training_character_.reset();
-    training_module_.reset();
     appearance_ = {};
     step_ = CreationStep::race;
     for (auto field :
@@ -344,27 +307,7 @@ void CharacterCreator::training_choice(std::string_view id, std::string_view opt
     }
     else if (!selected && found != values.end())
         values.erase(found);
-    if (training_character_)
-    {
-        if (values.empty())
-            candidate.training.erase(std::string(id));
-        (void)training_character_->preview_training(*rules_, training_module_->get(),
-                candidate.training, false);
-    }
-    else
-        prune_training(candidate);
-    for (const auto &[group, selected] : locked_training_)
-    {
-        const auto found = candidate.training.find(group);
-        if (found == candidate.training.end() ||
-                std::any_of(selected.begin(), selected.end(),
-                            [&](const auto & value)
-    {
-        return std::find(found->second.begin(), found->second.end(), value) ==
-                   found->second.end();
-        }))
-        throw std::runtime_error("Previously selected training cannot be replaced");
-    }
+    prune_training(candidate);
     draft_ = std::move(candidate);
 }
 
@@ -450,10 +393,6 @@ void CharacterCreator::appearance(por::CharacterAppearance value)
 
 CharacterSheet CharacterCreator::sheet() const
 {
-    if (training_character_)
-        return training_character_
-               ->preview_training(*rules_, training_module_->get(), draft_.training, false)
-               .sheet();
     return rules_->evaluate(draft_, step_ >= CreationStep::combat_icon);
 }
 

@@ -37,11 +37,8 @@ that the item should use the newly added SRD definition. New native Heavy
 Crossbows have their own `heavy_crossbow` key. Existing shop purchase/equip and
 saved original provenance are regression-tested to prevent accidental remapping.
 
-Module **0.6.17** retains PC9, combat 12, campaign 10 and SRD1–7. Existing grants,
-resources, wounds, clocks and RNG survive migration. Dwarf/Orc introduction
-boundaries are fixed at their original module versions, so later version bumps
-do not reintroduce grants or rewrite already-supported Orc state. Combat recipes
-lack original-item provenance and retain their saved weapon and exact outcome.
+Combat recipes lack original-item provenance and retain their saved weapon and
+exact outcome.
 Player saving remains restricted to camp/inn.
 
 [weapon_catalog_tests.cpp](../tests/weapon_catalog_tests.cpp) checks the complete
@@ -52,5 +49,4 @@ Long-range limits beyond the 64-cell battlefield are checked as source metadata;
 combat checks exercise reachable normal/long-range boundaries. Blowgun tests
 include low/high Dexterity, critical hits and Savage Attacker. All nine Heavy
 weapons also pass the [threshold suite](../tests/heavy_weapon_tests.cpp), and all
-38 use their source damage types in actual immunity tests. Frozen 0.6.16 writer
-fixtures verify unchanged original conversions and exact combat continuation.
+38 use their source damage types in actual immunity tests.

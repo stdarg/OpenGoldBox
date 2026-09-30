@@ -18,10 +18,10 @@ does not close [#165](https://github.com/stdarg/OpenGold/issues/165).
 Runtime `db864c8` (SRD module 0.6.51) completes
 [#37](https://github.com/stdarg/OpenGold/issues/37) for the implemented Wizard
 catalog through level four. WIZCHOICE-1/2/3 deliver independent creation choices,
-two-page advancement, pending old-save knowledge in Spellbook, and preparation
+two-page advancement and preparation
 plus one optional cantrip replacement after each completed Long Rest. Presets
 receive pre-generated selections. Existing knowledge/preparation, wounds, spent
-resources and equipment survive chronological replay and Review Training.
+resources and equipment survive chronological replay.
 
 The [delivery packet](WIZARD-SPELL-CHOICES.md) records SRD source, frozen scope,
 actual 0.6.50 writer fixtures, conditional campaign16/PC34 compatibility and
@@ -44,8 +44,7 @@ Runtime `4ce541a` (SRD module 0.6.50) completes
 [#100](https://github.com/stdarg/OpenGold/issues/100) through Wizard levels 2–4:
 choose exactly one proficient skill from the six SRD candidates, gain sourced
 Expertise, and retain it through advancement, combat and persistence. SCHOLAR-1's
-level-two dropdown and old-save Review Training path preserve prior selections,
-wounds and expenditure. Missing historical choices remain pending.
+level-two dropdown preserves prior selections, wounds and expenditure.
 
 The [delivery packet](SCHOLAR.md) records source/acceptance, actual 0.6.49 writer
 fixtures, conditional campaign15/PC33 compatibility, commands and limitations.
@@ -60,7 +59,7 @@ Ritual Adept, Evoker and broader Wizard integration remain separate requirements
 Runtime `642c7a1` (SRD module 0.6.49) completes
 [#99](https://github.com/stdarg/OpenGold/issues/99) through Wizard levels 1–4:
 legal expended-slot allocations after Short Rest, one use per Long Rest, exact
-transactional expenditure and current/historical save continuation. AR-1's
+transactional expenditure and save continuation. AR-1's
 shared Rest dropdown/button is keyboard accessible and preserves camp/inn saves.
 
 The [delivery packet](ARCANE-RECOVERY.md) contains the source, fixed acceptance,
@@ -94,8 +93,7 @@ The matrix covers 154 supported weapon/class/level routes, million-unit stacks,
 companion transfer, recovery, canceled/rejected operations and pending Savage/
 Champion continuation. Main EN/ES and demo EN controls render and pass keyboard/
 mouse checks at 1120×800 and 1920×1080; 896 localized messages validate.
-Actual 0.6.46 fixtures remain unchanged. New physical encounters use combat 19;
-older encounters retain their previous continuation, and campaign 11 is unchanged.
+Actual 0.6.46 fixtures remain unchanged.
 No other issue or excluded equipment property is claimed complete.
 
 ## Fighter Champion through level four
@@ -105,8 +103,7 @@ Ordinary Fighter level-three confirmation grants Champion; level four retains it
 Weapon and Unarmed Strike attacks critically hit on 19–20, Initiative and
 Strength/Athletics gain Advantage, and each critical permits immediate optional
 half-Speed movement without opportunity attacks or normal movement expenditure.
-The Q41/Q42 game/demo controls preserve spent actions and interrupted movement;
-existing level-three/four campaign saves gain the fixed grants during replay.
+The Q41/Q42 game/demo controls preserve spent actions and interrupted movement.
 [Champion packet](CHAMPION.md) records acceptance, compatibility, limitations,
 verification commands and timing. No future Athletics actions or spell-access
 sources were added to this batch.
@@ -229,8 +226,8 @@ profiles now reject rather than masquerading as guaranteed city-watch events.
 Independent regressions failed before the guard correction and pass afterward;
 [scope and evidence](REST-RESOURCES.md#rest-batch-b-verified-profile-boundary).
 Native resumable activity now records sleep/light/exertion, interruptions and Q32
-fresh segments, rejects stale requests, and persists through format 12 while
-retaining prior saves. Safe-camp/inn atomic callers consume the same engine.
+fresh segments, rejects stale requests, and persists in campaign saves.
+Safe-camp/inn atomic callers consume the same engine.
 [Mechanics, compatibility and tests](REST-RESOURCES.md#resumable-activity-persistence-and-evidence).
 The complete combat-victory regression additionally preserves XP/loot across the
 interrupted rest, save/load and completion; unrelated edits remain locked.
@@ -254,26 +251,30 @@ restart tests cover pending spending through the real save/load host.
 
 ## Delivered increments
 
+The Persistence column records save handling at delivery. Since the
+[pre-1.0 save cutoff](SAVES.md#pre-10-format-policy), older formats are rejected
+and no migration code remains.
+
 | Increment / feature | Authority and supported scope | Implementation and verification | Persistence |
 | --- | --- | --- | --- |
-| [#29 / #189](https://github.com/stdarg/OpenGold/issues/29): complete training grants and saved-choice review | All twelve starting class skill packages, supported background/tool/language grants, duplicate provenance and Expertise; Q28 Review Training completes missing saved choices. | [Training scope and reproducible checks](TRAINING.md#review-training-verification-29189). Shared game/demo dialog locks old choices, rejects advancement conflicts, supports keyboard/cancel and blocks combat. Native comparison proves only training changes. 44 native/tool tests, 20 registered Godot tests, game/demo review checks and all-class creator check pass; English/Spanish layouts inspected at both sizes. | Rules 0.6.40 / PC28, campaign 11 and combat 13–15 unchanged. Migrated prior-save wounds, resources, equipment, advancement and history retained. No new save controls or compatibility reduction. |
+| [#29 / #189](https://github.com/stdarg/OpenGold/issues/29): complete training grants and saved-choice review | All twelve starting class skill packages, supported background/tool/language grants, duplicate provenance and Expertise. Q28's Review Training dialog was later removed at the [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy). | [Training scope and reproducible checks](TRAINING.md#verification). Shared game/demo dialog locks old choices, rejects advancement conflicts, supports keyboard/cancel and blocks combat. Native comparison proves only training changes. 44 native/tool tests, 20 registered Godot tests, game/demo review checks and all-class creator check pass; English/Spanish layouts inspected at both sizes. | Rules 0.6.40 / PC28, campaign 11 and combat 13–15 unchanged. Migrated prior-save wounds, resources, equipment, advancement and history retained. No new save controls or compatibility reduction. |
 | [#228](https://github.com/stdarg/OpenGold/issues/228): Sorcerer starting cantrips | SRD pp.64–65,67; four explicit starting choices and Charisma casting through the implemented catalog. | [Scope/evidence](SORCERER-CANTRIPS.md); source/attack/effect/persistence cases and creator/combat checks. Complete catalog, leveled spells, Innate Sorcery and later levels remain #132. | Rules 0.6.40 / PC28; campaign 11, combat 13–15 and FX1–3 unchanged. Actual 0.6.39 prior writer retains exact continuation. |
 | [#227](https://github.com/stdarg/OpenGold/issues/227): Warlock Poison Spray | SRD pp.75,153; explicit level-one Pact Magic source and Charisma casting. New presets fill both supported cantrips; old choices remain. | [Scope/evidence](WARLOCK-POISON-SPRAY.md), native source/attack/persistence and actual creator/dropdown casting. Later levels #160 and other sources #202 remain. | Rules 0.6.39 / PC27; campaign 11, combat 13–15 and FX1–3 unchanged. Actual 0.6.38 prior-writer continuation retained. |
 | [#226](https://github.com/stdarg/OpenGold/issues/226): Wizard Shocking Grasp | SRD p.162; sourced Wizard levels 1–4, melee spell Lightning damage and target-turn Opportunity Attack suppression without spending/refunding Reactions. | [Scope and evidence](SHOCKING-GRASP.md); actual spell selection, combat controls, interrupted movement and campaign continuation. Parent #223 remains open for other sources. | Rules 0.6.38 / PC26 / FX3; campaign 11 and combat 13–15 unchanged; real 0.6.37 prior-writer fixtures. |
 | [#224](https://github.com/stdarg/OpenGold/issues/224): level-one Warlock cantrip path | SRD pp. 71, 127; explicit Pact Magic cantrip selection and Charisma-based Eldritch Blast against creatures. | [Scope and evidence](ELDRITCH-BLAST.md); native rules/persistence, creator and combat controls. Objects #225, later levels #160 and parent #204 remain open. | Rules 0.6.37 / PC25; campaign 11 and combat 13–15 unchanged. Real 0.6.36 fixtures preserve old missing choices and continuation. |
 | [I01 / E5](https://github.com/stdarg/OpenGold/issues/20): starting-class weapon proficiency | SRD 5.2.1 pp. 49, 61, 91. Rogue gains martial Finesse or Light; Monk gains martial Light. Applies to the implemented catalog, including Shortsword/Scimitar. Other starting-class grants remain intact. | [weapons.h](../src/OpenGold.Rules.Srd5/src/weapons.h) records Light; [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) uses the same training query for profiles, equipment notes and combat. [party_tests.cpp](../tests/party_tests.cpp), `class_weapon_proficiency`, verifies all twelve classes, actual +5 attacks for Dexterity-16 Rogue/Monk, equipment explanations and deterministic campaign/combat reload. The regression failed before the fix. | Module 0.6.1; campaign schema unchanged. Existing 0.6.0 and earlier supported campaigns reconstruct the corrected bonuses without losing equipment or wounds. [save_tests.cpp](../tests/save_tests.cpp) verifies 0.6.0 campaign upgrade. Standalone combat checkpoints require exact module identity. |
 | [I02 / E2–E3](https://github.com/stdarg/OpenGold/issues/21): death-save turn entry and stabilization | SRD 5.2.1 pp. 17–18. An unstable actor at 0 HP rolls once on turn entry, including the initial initiative slot. A natural 20 permits the recovered actor's turn. Stabilization clears both counters. | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) shares one turn-entry path. [rules_tests.cpp](../tests/rules_tests.cpp), `death_save_turn_entry_tests`, covers initial/later entry, all four outcomes, stable/dead skipping and deterministic checkpoint continuation. The regression failed before the fix. [party_tests.cpp](../tests/party_tests.cpp), `stabilization_handoff`, verifies campaign handoff and reload with spent resources preserved. | Module 0.6.2; campaign schema unchanged. Supports 0.6.1 and earlier supported campaigns. Legacy stable counters normalize when rules hydrate vitals. [save_tests.cpp](../tests/save_tests.cpp) verifies 0.6.0/0.6.1 campaign upgrades. Checkpoint restoration performs no turn-entry roll; standalone combat checkpoints still require exact module identity. |
-| [I03 / E1](https://github.com/stdarg/OpenGold/issues/22): Constitution and HP history | SRD 5.2.1 p. 23. Gain fixed HP with the previous modifier before applying the Constitution increase per attained level. Prior minimum-one gains persist; Dwarven Toughness remains additive. | [character_rules.cpp](../src/OpenGold.Rules.Srd5/src/character_rules.cpp) initializes modifier history; [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) replays and validates it for advancement and combat profiles. [advancement_tests.cpp](../tests/advancement_tests.cpp), `hp_history`, verifies the 9-HP Wizard, odd/even modifier boundaries, Dwarves, wounds, unconsciousness, resource expenditure and campaign/combat reconstruction. The regression failed before the fix. | Module 0.6.3 and PC4 combat profiles; campaign format remains 6. Existing saved choices reconstruct history. A rules-owned migration preserves living HP deficits and zero-HP/dead state. [save_tests.cpp](../tests/save_tests.cpp), `hp_migration`, uses a [frozen 0.6.2 save](../tests/fixtures/README.md) to verify correction and reload without double application. Prior-module standalone combat saves still reject. |
+| [I03 / E1](https://github.com/stdarg/OpenGold/issues/22): Constitution and HP history | SRD 5.2.1 p. 23. Gain fixed HP with the previous modifier before applying the Constitution increase per attained level. Prior minimum-one gains persist; Dwarven Toughness remains additive. | [character_rules.cpp](../src/OpenGold.Rules.Srd5/src/character_rules.cpp) initializes modifier history; [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) replays and validates it for advancement and combat profiles. [advancement_tests.cpp](../tests/advancement_tests.cpp), `hp_history`, verifies the 9-HP Wizard, odd/even modifier boundaries, Dwarves, wounds, unconsciousness, resource expenditure and campaign/combat reconstruction. The regression failed before the fix. | Module 0.6.3 and PC4 combat profiles; campaign format remains 6. Existing saved choices reconstruct history. A rules-owned migration preserves living HP deficits and zero-HP/dead state. [save_tests.cpp](../tests/save_tests.cpp), `hp_migration`, uses a frozen 0.6.2 save to verify correction and reload without double application. Prior-module standalone combat saves still reject. |
 | [I04 / E4](https://github.com/stdarg/OpenGold/issues/23): ability-bonus provenance | SRD 5.2.1 pp. 23, 83, 87. Background allocations and level-four Ability Score Improvement are distinct grants. | [character_rules.h](../src/OpenGold.Rules/include/opengold/character_rules.h) exposes source IDs, acquisition levels and individual amounts. Creation/advancement emit separate records; game and demo modifier dialogs render each contribution. [advancement_tests.cpp](../tests/advancement_tests.cpp), `ability_sources`, verifies Soldier +2 and feat +2, grants outside the background list, totals, preview/rejection and reload. Both Godot advancement checks verify actual dialog text and reconstruction; the new game regression failed before the fix. | Module 0.6.3, PC4 and campaign format 6 unchanged. Sources are derived by replaying existing saved choices, including the frozen prior-module fixture in [save_tests.cpp](../tests/save_tests.cpp). Numeric scores, vitals and combat continuation are unchanged. |
 | [I05 / G12](https://github.com/stdarg/OpenGold/issues/24): remaining turn resources | SRD 5.2.1 pp. 13–14. Existing melee/ranged attacks and damaging spells preserve unused movement and Bonus Actions. Explicit End Turn advances initiative; AI uses available recovery and then ends. | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) retains the turn after attacks/reaction resolution. [rules_tests.cpp](../tests/rules_tests.cpp), `turn_budget_tests`, covers all six offensive verbs, pre/post-attack movement, Second Wind, spell slots, spent-action rejection, ordered reactions and enemy completion. The regression failed before the fix. [party_tests.cpp](../tests/party_tests.cpp), `remaining_turn_handoff`, checks campaign time and spent recovery through completed combat and reload. [combat_view_tests.gd](../tests/combat_view_tests.gd) exercises actual ranged input, keyboard movement, End Turn and AI return. | Module 0.6.4; checkpoint 5 and campaign 6 unchanged. Post-attack/reaction checkpoints continue deterministically with no resource refund. Supported 0.6.3 and earlier campaigns migrate; prior-module combat checkpoints require the exact identity. |
-| [I06 / G12](https://github.com/stdarg/OpenGold/issues/25): opportunity triggers and presentation facing | [SRD 5.2.1 p. 15](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf). Turning toward a weapon/spell target creates no reaction. Leave-reach movement still pauses before the step, respecting sight, Disengage and the reaction budget. Incapacitating the mover stops movement and the queue. | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) removes runtime facing queues. [rules_tests.cpp](../tests/rules_tests.cpp) verifies left/right turns, party/enemy actors, every targeted offensive verb, ordered movement reactions, spent-reaction limits, interruption, atomic rejection and deterministic migration. The no-reaction regression failed before the fix. Existing status-effect tests verify Blinded visibility. [opportunity_view_tests.gd](../tests/opportunity_view_tests.gd) uses real Load/Save and keyboard controls to verify migrated facing, remaining movement and pending queues. | Module 0.6.5 / combat format 6. [Frozen 0.6.4 fixtures](../tests/fixtures/README.md) prove migration cancels only valid obsolete facing queues, invalidates their command tickets and preserves resources/time/RNG. Real movement retains partial queue position and matches the prior writer after resolution. Unrelated combat identities reject; supported campaigns through 0.6.4 upgrade with campaign format 6 unchanged. |
+| [I06 / G12](https://github.com/stdarg/OpenGold/issues/25): opportunity triggers and presentation facing | [SRD 5.2.1 p. 15](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf). Turning toward a weapon/spell target creates no reaction. Leave-reach movement still pauses before the step, respecting sight, Disengage and the reaction budget. Incapacitating the mover stops movement and the queue. | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) removes runtime facing queues. [rules_tests.cpp](../tests/rules_tests.cpp) verifies left/right turns, party/enemy actors, every targeted offensive verb, ordered movement reactions, spent-reaction limits, interruption, atomic rejection and deterministic migration. The no-reaction regression failed before the fix. Existing status-effect tests verify Blinded visibility. [opportunity_view_tests.gd](../tests/opportunity_view_tests.gd) uses real Load/Save and keyboard controls to verify migrated facing, remaining movement and pending queues. | Module 0.6.5 / combat format 6. Frozen 0.6.4 fixtures prove migration cancels only valid obsolete facing queues, invalidates their command tickets and preserves resources/time/RNG. Real movement retains partial queue position and matches the prior writer after resolution. Unrelated combat identities reject; supported campaigns through 0.6.4 upgrade with campaign format 6 unchanged. |
 | [I07 / G12](https://github.com/stdarg/OpenGold/issues/26): allied transit | [SRD 5.2.1 p. 14](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf). Allied spaces are transit cells at normal terrain cost; every selected endpoint must be free. Hostile, size-dependent and general Incapacitated transit remain F13. | Shared [combat_grid.cpp](../src/OpenGold.Rules.Srd5/src/combat_grid.cpp) governs planning, execution and restore. The corridor regression failed before the fix. [combat_grid_tests.cpp](../tests/combat_grid_tests.cpp) checks normal/difficult allied costs, budget boundaries, walls and 9,686 exhaustive layouts. [rules_tests.cpp](../tests/rules_tests.cpp) covers both sides, successive allies, atomic occupied-stop rejection, shared-cell reactions, malformed overlap, knockdown, healing, death and natural-20 recovery. [party_tests.cpp](../tests/party_tests.cpp) verifies a real campaign fight and save/reload; the rendered Godot demo clicks across two allies and rejects an occupied arrow destination. | Module 0.6.6 / combat format 7 retains an involuntary-overlap marker so interrupted movement and later recovery reload correctly. Accepted paused routes validate their remaining budget and free endpoint. Supported 0.6.4/0.6.5 combat and campaign saves upgrade without refilling resources. Prone and size-dependent co-occupancy effects remain explicitly tracked in #35/#44; the marker is persistence state, not a claim that Prone is implemented. |
-| [I08 / G9](https://github.com/stdarg/OpenGold/issues/27): Versatile grip | [SRD 5.2.1 pp. 90–91](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf). Quarterstaff/Spear use 1d6/1d8; Battleaxe/Longsword/Trident/Warhammer/War Pick use 1d8/1d10. Two hands affect melee only and require no shield. | Rules supply grip choices and validated commands; campaign inventory and Godot combat dropdowns persist selection. [versatile_tests.cpp](../tests/versatile_tests.cpp) checks all seven weapons, fixed normal/critical/miss dice, thrown attacks, atomic rejection, resource preservation, pending reactions and campaign handoff. [grip_view_tests.gd](../tests/grip_view_tests.gd) exercises layout, keyboard, dice and save/load; inventory integration checks cover shields and both grip choices. | Module 0.6.7 / PC5 / combat 8 / campaign 7 store selected hands separately from resources. [Frozen 0.6.6 files](../tests/fixtures/README.md) preserve the old four forced grips and other one-handed grips; migrated and new saves resume deterministically. Weapon/shield artwork remains the existing catalog; new poses and remaining equipment properties are outside I08. |
+| [I08 / G9](https://github.com/stdarg/OpenGold/issues/27): Versatile grip | [SRD 5.2.1 pp. 90–91](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf). Quarterstaff/Spear use 1d6/1d8; Battleaxe/Longsword/Trident/Warhammer/War Pick use 1d8/1d10. Two hands affect melee only and require no shield. | Rules supply grip choices and validated commands; campaign inventory and Godot combat dropdowns persist selection. [versatile_tests.cpp](../tests/versatile_tests.cpp) checks all seven weapons, fixed normal/critical/miss dice, thrown attacks, atomic rejection, resource preservation, pending reactions and campaign handoff. [grip_view_tests.gd](../tests/grip_view_tests.gd) exercises layout, keyboard, dice and save/load; inventory integration checks cover shields and both grip choices. | Module 0.6.7 / PC5 / combat 8 / campaign 7 store selected hands separately from resources. Frozen 0.6.6 files preserve the old four forced grips and other one-handed grips; migrated and new saves resume deterministically. Weapon/shield artwork remains the existing catalog; new poses and remaining equipment properties are outside I08. |
 | [F01](https://github.com/stdarg/OpenGold/issues/28): feature and feat provenance | [SRD 5.2.1 pp. 47, 83, 87–88](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf). Soldier's Origin feat and the implemented level-four choices have separate entitlements; prerequisites, repeatability and ability choices are validated. | [feature_grants.cpp](../src/OpenGold.Rules.Srd5/src/feature_grants.cpp) centralizes creation grants, advancement sources, choices and validation. [feature_grant_tests.cpp](../tests/feature_grant_tests.cpp) covers all twelve Soldier classes, distinct sources, malformed/duplicate/prerequisite rejection, totals and saved continuation. Existing advancement checks exercise both acquired feats in the normal game/demo sheet. | Module 0.6.8 / campaign 8 / PC6 persist grant records and choices. Formats 1–7 reconstruct grants from creation/history; frozen 0.6.7 files verify wounds/resources/totals and exact combat continuation against the previous writer. Older combat recipes retain validated effects without invented provenance. New feats and complete class features remain separate increments; the starting Fighting Style selector is recorded below. |
 
 | [F02a](https://github.com/stdarg/OpenGold/issues/187): training rules and persistence | [SRD 5.2.1 pp. 8–9, 20, 61–62, 83](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf). Rogue/Criminal skills, Thieves’ Tools, Expertise and languages; Common plus two standard languages for every class. Duplicate proficiency sources contribute one bonus; skill/tool proficiency reports Advantage. | [training.cpp](../src/OpenGold.Rules.Srd5/src/training.cpp) supplies choice validation, all eighteen skill modifiers and source records. [training_tests.cpp](../tests/training_tests.cpp) covers eligibility, overlap, proficiency boundaries, pending choices, malformed records and advancement totals. | Module 0.6.9 / campaign 9 / PC7. Frozen 0.6.8 saves verify pending choices, preserved wounds/resources and exact combat continuation. Creation controls #188 are delivered below; [saved-choice completion #189](https://github.com/stdarg/OpenGold/issues/189) remains open, so parent F02 is not complete. Other class/background packages and campaign skill uses remain separate. |
 
-| [F02b](https://github.com/stdarg/OpenGold/issues/188): training creation controls | Uses the F02a choices and grants with the approved Training step after Class. Presets come with complete training; older saves retain pending choices. | Shared [training_control.h](../src/OpenGoldBox/training_control.h) serves the game/demo, with fixed grants, counts, keyboard access and sourced sheets. [training_tests.cpp](../tests/training_tests.cpp) verifies creator validation/pruning and all 48 presets with campaign round trips; [training_view_tests.gd](../tests/training_view_tests.gd) exercises real controls, focus/scrolling, dependencies and party handoff. Existing creator, party and Spanish localization checks cover the new step. | No module or save-format change. #189 remains open for Review Training; other class/background packages remain separate. Completion describes only the supported choices. [Scope](TRAINING.md). |
+| [F02b](https://github.com/stdarg/OpenGold/issues/188): training creation controls | Uses the F02a choices and grants with the approved Training step after Class. Presets come with complete training. | Shared [training_control.h](../src/OpenGoldBox/training_control.h) serves the game/demo, with fixed grants, counts, keyboard access and sourced sheets. [training_tests.cpp](../tests/training_tests.cpp) verifies creator validation/pruning and all 48 presets with campaign round trips; [training_view_tests.gd](../tests/training_view_tests.gd) exercises real controls, focus/scrolling, dependencies and party handoff. Existing creator, party and Spanish localization checks cover the new step. | No module or save-format change. #189 remains open for Review Training; other class/background packages remain separate. Completion describes only the supported choices. [Scope](TRAINING.md). |
 
 | [F03a](https://github.com/stdarg/OpenGold/issues/190): Hit Dice and rest resource rules | [SRD 5.2.1 pp. 47–48, 185, 187](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf). Starting die sizes for all twelve classes; one die per attained level; Constitution healing with a minimum of 1 before the HP cap; one Second Wind use per Short Rest; full supported resource/Hit Dice Long Rest recovery. | The SRD module supplies typed queries and single-die commits. [rest_resource_tests.cpp](../tests/rest_resource_tests.cpp) covers golden rolls, Dwarven Toughness, negative Constitution, caps, rejection, advancement, training review, effects, healing and campaign/combat continuation. See [scope and caller obligations](REST-RESOURCES.md). | Module 0.6.10 / SRD4 / combat 9; campaign 9 and PC7 unchanged. Frozen 0.6.9 files preserve old state and the prior writer’s opportunity-attack result, adding unspent dice only. [Campaign flow #191](https://github.com/stdarg/OpenGold/issues/191) is delivered below; [controls #192](https://github.com/stdarg/OpenGold/issues/192) remain open, so F03 is not complete. |
 
@@ -311,7 +312,7 @@ restart tests cover pending spending through the real save/load host.
 | [Sage fixed training #211](https://github.com/stdarg/OpenGold/issues/211) | SRD 5.2.1 p. 83: Arcana, History and Calligrapher's Supplies with background provenance. | All 12 starting classes, Rogue Expertise, tool/skill checks, ASI and actual 0.6.25 migration; existing Training display. | Rules 0.6.26 / PC15. No new choices, items or feat grant. Sage #63 remains open. [Evidence and limits](SAGE-TRAINING.md). |
 | [Acolyte/Soldier fixed training #212](https://github.com/stdarg/OpenGold/issues/212) | SRD 5.2.1 p. 83: Acolyte Insight, Religion, Calligrapher's Supplies; Soldier Athletics, Intimidation. | All 12 starting classes, Rogue Expertise, ASI, actual 0.6.26 migration and existing translated Training display. | Rules 0.6.27 / PC16. #61/#64 remain open for remaining package choices. [Evidence and limits](BACKGROUND-TRAINING.md). |
 | [Archery #78](https://github.com/stdarg/OpenGold/issues/78) | SRD 5.2.1 p. 87: +2 with Ranged weapons; prerequisite and nonrepeatability. | Actual Fighter/Paladin/Ranger grants, ordinary levels1–4, attack/category oracles, campaign/recruited/reload and main/demo controls. | Rules0.6.53 completes supported source routes. [Style-route evidence](FIGHTING-STYLE-ROUTES.md). |
-| [Fighter styles #85](https://github.com/stdarg/OpenGold/issues/85) | Starting choice and replacement whenever gaining a Fighter level. | Training/Review Training and separate advancement control; initial and independently acquired feats retain distinct provenance. | All four SRD styles and mastery through4 delivered; see the Weapon Mastery integration completion record below. [Scope](FIGHTER-STYLES.md). |
+| [Fighter styles #85](https://github.com/stdarg/OpenGold/issues/85) | Starting choice and replacement whenever gaining a Fighter level. | Training and separate advancement control; initial and independently acquired feats retain distinct provenance. | All four SRD styles and mastery through4 delivered; see the Weapon Mastery integration completion record below. [Scope](FIGHTER-STYLES.md). |
 | [Starting class skills #213](https://github.com/stdarg/OpenGold/issues/213) | SRD 5.2.1 Core Traits tables for all twelve classes; exact skill lists and counts. | Shared Training controls, generated presets, sourced bonuses, all-class/background native oracles, actual prior-writer migration and keyboard checks. | Rules 0.6.30 / PC19. Missing old choices remain pending; full class packages remain in their trackers. [Evidence and limits](CLASS-SKILLS.md). |
 | [Bard instruments #214](https://github.com/stdarg/OpenGold/issues/214) | SRD 5.2.1 pp. 31, 94: three of ten instrument proficiencies. | Normal Training, generated presets, sourced sheet/check bonuses, all 120 triples, prior-writer campaign/combat and translated keyboard/render checks. | Rules 0.6.31 / PC20. Old choices stay pending; equipment, Utilize actions and remaining Bard features stay separate. [Evidence](BARD-INSTRUMENTS.md). |
 | [Monk tools #215](https://github.com/stdarg/OpenGold/issues/215) | SRD 5.2.1 pp. 49, 93–94: one artisan tool or instrument from all 27 options. | Training, generated presets, sourced checks, overlap and class-change preservation, prior-writer continuation. | Rules 0.6.32 / PC21; old choices pending. Equipment, Utilize and other Monk features remain separate. [Evidence](MONK-TOOLS.md). |
@@ -395,8 +396,7 @@ combat, reactions, rest and campaign reload through all four levels. The approve
 optional dialog works in main EN/ES and demo EN. Extra dice, criticals, ally and
 roll-mode eligibility, signed damage/resistance and separate Savage rolls remain
 SRD-owned. Recruited Rogues and malformed pending-hit fields have explicit cases.
-Old actual-writer fixtures and capabilities are preserved; new Rogues use
-conditional PC35/combat21. No campaign-format bump or combat-saving controls.
+No campaign-format bump or combat-saving controls.
 
 Verified integrated runtime: all78 checks (51native/tool,27Godot), main/demo
 asset-backed advancement and exact native-save comparison, both-size rendered
@@ -422,7 +422,7 @@ advancement/rest/reload through4 and recruited routes use the same tested rules.
 See [batch evidence](ROGUE-ATTACKS.md#approved-demo-completion--2026-09-26).
 Rules runtime7f3ab30; final demo completion runtime8ee62fe.
 #116 remains open for full Rogue completion; Thief, Hide and mastery are not
-claimed complete. Conditional PC35/combat21 preserve released histories.
+claimed complete.
 
 ### Unconscious enemy transit (#222, bounded child of #44)
 
@@ -439,8 +439,7 @@ Rules0.6.53 implements Archery, Defense and Great Weapon Fighting through actual
 Fighter starting/replacement and Paladin/Ranger level-two grants, plus independent
 level-four feats. Defense is armor-only; shields alone do not grant its bonus.
 Fighter replacement history remains separate from starting Training and feat
-choices. Campaign17/PC36 preserve source and acquisition level; no old fixture or
-supported history was removed. Rules stay in the static SRD library.
+choices. Saves preserve source and acquisition level. Rules stay in the static SRD library.
 
 [Packet and verification](FIGHTING-STYLE-ROUTES.md) records the final runtime
 revision and commands. Main EN/ES and demo EN advancement controls pass at both
@@ -455,7 +454,7 @@ Runtime/test commit `69771eb`, rules0.6.55, delivers the three original
 requirements on `codex/srd-light-attacks`. All three issues are closed after push.
 The [fixed packet](LIGHT-ATTACKS.md#integrated-implementation--rules0655) records
 mechanics, scope, commands, compatibility and timings. Actual two-hand equipment
-was delivered in`c539347`; genuine0.6.53/0.6.54 writer fixtures are retained.
+was delivered in`c539347`.
 
 An Attack action qualifies a later Bonus Action attack with a different physical
 Light weapon, including misses, thrown units and identical weapon types. Actual
@@ -464,8 +463,7 @@ available through Fighter starting/replacement choices, Paladin/Ranger level-two
 choices and independent level-four feats, with provenance and nonrepeatability.
 Its modifier applies once; negative modifiers, Savage, Sneak and critical damage
 remain correct. Loading respects separate Action/Surge/Bonus Action transactions.
-PC38/Combat22 retain selected identities and pending Light damage; supported
-historical saves retain their recorded state and continuation.
+Saves retain selected identities and pending Light damage.
 
 All78 integrated checks pass on fresh binaries (61.48s final run). Focused main
 EN/ES + demoEN combat/advancement tests pass at both supported sizes, with exact
@@ -519,9 +517,7 @@ Weapon Mastery Long Rest checkpoint (commit containing this entry): five-class
 PC/NPC replacement, one-use completed-rest windows, original source preservation,
 level/rest history replay and conditional campaign18 are implemented. Interrupted,
 ineligible and reserve members do not gain windows; applying or keeping a choice
-preserves vitals, inventory and advancement. Review Training cannot undo earlier
-replacements. Actual acquisition writer0.6.56/format15 remains byte-identical on
-reload;1–17 compatibility is retained.
+preserves vitals, inventory and advancement.
 
 Fresh native51/51 passes (4.03s). MainEN/ES and demoEN rest controls pass at both
 sizes, including keyboard/Cancel, sequential members, spell-before-training and
@@ -547,8 +543,7 @@ Weapon Mastery Nick checkpoint (commit containing this entry): chosen Nick kinds
 now offer the approved physical-weapon selector and targeted extra attack, sharing
 Light's once-per-turn allowance while preserving the Bonus Action. Current Attack
 action timing, Surge, Two-Weapon Fighting, thrown items, Sneak/Savage/Vex/Champion
-and conditional combat23 continuation have native evidence. Actual0.6.56 fixtures
-retain old current-turn behavior; Nick activates at the next fresh turn. **51/51
+and combat continuation have native evidence. **51/51
 native PASS**; mainEN/ES and demoEN Nick and neighboring Light UI/native checks
 pass at both sizes;988 messages validate. See
 [packet](WEAPON-MASTERY.md#nick-combat-checkpoint) and
@@ -558,8 +553,8 @@ Cleave/Graze/Push/Slow/Topple and MASTERY-5/6/7 remain. #60/#85 stay open.
 
 Slow lifecycle checkpoint (commit containing this entry) supplies bounded sourced
 Slow effects, stacking/expiry and shared movement/persistence consumers in SRD
-rules0.6.58. **51/51 native PASS**,989 messages validate; actual0.6.57 continuation
-is retained. [Evidence](WEAPON-MASTERY.md#slow-effect-lifecycle-checkpoint-combat-integration-incomplete).
+rules0.6.58. **51/51 native PASS**,989 messages validate.
+[Evidence](WEAPON-MASTERY.md#slow-effect-lifecycle-checkpoint-combat-integration-incomplete).
 This is partial rules support: the weapon-hit decision is not integrated and
 Slow is not counted as a fourth playable property. No issue closure or new UI
 verification is claimed. MASTERY-5/6/7 remain pending.
@@ -594,8 +589,7 @@ simultaneous Champion movement preserves separate entitlements and interrupted
 routes. All calculations and decisions stay in the static SRD library.
 [Mechanics, commands and evidence](WEAPON-MASTERY.md#optional-hit-mastery-integration).
 
-Rules0.6.60/combat25 preserves prior supported formats and actual0.6.57–0.6.59
-writer fixtures.51/51 native checks pass; mainEN/ES and demoEN rendered controls
+51/51 native checks pass; mainEN/ES and demoEN rendered controls
 pass at1120×800/1920×1080;1005 localized messages validate. This completes #60 and
 Fighter #85's level1–4 style/mastery scope, with all four SRD styles supplied by
 this and the preceding style/Light deliveries. #140/#147/#111/#103 retain their
@@ -611,8 +605,7 @@ characters from all12 creation/preset routes receive the fixed grant; existing
 six level4 feat routes offer Alert without duplicate acquisition. Initiative
 Proficiency and optional pre-turn swaps work through the approved main/demo
 dialog, including multiple holders, incapacitation and exact pending saves.
-Mechanics remain in the static SRD library. Rules0.6.61/PC40/combat26 retains all
-previous supported formats; historical combats keep their rolls and current turn.
+Mechanics remain in the static SRD library.
 
 51/51 native tests pass in9.06s after affected rebuilds. MainEN/ES and demoEN
 keyboard/mouse checks pass at1120×800/1920×1080; creation, Fighter advancement
@@ -638,13 +631,7 @@ why check effects need no new query: a pick supplies the proficiency bonus, a
 skill and tool pair reports `tool_advantage`, and proficiency cannot stack
 because the query tests presence. Expertise is unchanged.
 
-Rules 0.6.62/PC41/combat 26. `Cap::skilled` is 41 and `Cap::explicit_spells`
-moved to 42, which it must remain: the reader chooses the spell wire format from
-`has(explicit_spells)` and `has()` is monotonic, so a capability above it makes
-every profile claim an explicit spell list. No committed fixture is written above
-PC40, so no stored profile changes meaning. 0.6.61 campaigns load and combat
-checkpoint format 26 is retained, since Skilled adds no combat state and no feats
-bit. Repeatable: Skilled joins ASI as exempt from the non-repeatable feat set,
+Rules 0.6.62. Skilled adds no combat state. Repeatable: Skilled joins ASI as exempt from the non-repeatable feat set,
 with duplicate use of one entitlement still rejected. Only one level-four
 entitlement exists, so a second acquisition is unreachable and none was invented.
 

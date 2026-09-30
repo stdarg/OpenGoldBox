@@ -32,25 +32,8 @@ single zero floor and same-type resistance calculation.
 
 Eligibility, rolls, budgets, advancement and pending-hit validation live in the
 statically linked SRD module. Core transports generic commands/state; main and
-demo UI present the optional decision. Conditional PC35/combat21 preserve the
-new Rogue fields; older combat recipes retain their original capabilities/RNG.
-Campaign format is unchanged. Legacy campaigns gain only the justified fixed
-grant; unsupported future grants or level/profile combinations reject.
-
-Real rules 0.6.35 fixtures captured at `3846c21` before production Sneak changes:
-
-- `campaign-v11-sneak-before.ogs`: normally created Soldier Rogues at levels one
-  and two, complete training, two missing HP, wealth and ordinary XP advancement.
-- `combat-v15-sneak-before.save`: the level-two Rogue has spent Bonus Action Dash
-  and a weapon attack; damage awaits the existing Savage Attacker decision.
-- `combat-v15-sneak-second.save` and `combat-v15-sneak-resolved.save`: the real
-  writer's second roll and accepted result, including RNG and action budgets.
-
-The generator `opengold_training_tests --freeze-sneak` requires module 0.6.35.
-Do not regenerate these with a later writer. `sneak_baseline.h` verifies exact
-campaign/combat continuation, allowing only module identity/checksum changes.
-The independent migration oracle allows only the justified fixed Sneak grant;
-legacy combat recipes retain their original capabilities and random continuation.
+demo UI present the optional decision. PC42/combat27 preserve the new Rogue
+fields; unsupported grants or level/profile combinations reject.
 
 ## Verification
 
@@ -58,7 +41,7 @@ legacy combat recipes retain their original capabilities and random continuation
 critical/canceled rolls, sleeping allies, thrown weapons, actual opportunity
 attacks, separate Savage rolls, resistance, exact pending-state continuation,
 campaign/rest/reload and invalid-command atomicity. Existing independent catalog
-predicates remain in `damage_tests.cpp`; genuine legacy fixtures remain unchanged.
+predicates remain in `damage_tests.cpp`.
 
 `rogue_attack_view_tests.gd` exercises both-size main EN/ES and demo EN hit dialogs,
 keyboard decisions and exact native continuation. `rogue_advancement_view_tests.gd`

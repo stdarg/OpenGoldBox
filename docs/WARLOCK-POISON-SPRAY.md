@@ -7,9 +7,8 @@ Authority: [SRD 5.2.1 pp.75,153](https://media.dndbeyond.com/compendium-images/s
 
 The approved Q26 Warlock Spell Choices pattern now lists Eldritch Blast and Poison
 Spray. Players can fill both starting cantrip choices; new presets pre-generate
-both. Missing choices remain pending under the existing selection policy. Saved
-characters retain their recorded choices without automatically learning the newly
-available spell. No independent control layout or behavior was introduced.
+both. Missing choices remain pending under the existing selection policy.
+No independent control layout or behavior was introduced.
 
 Poison Spray records a level-one `class:warlock:pact_magic` cantrip grant. The
 existing spell rules use the Warlock's Charisma plus proficiency for a ranged
@@ -19,11 +18,7 @@ Somatic hands and armor restrictions use the existing implementation. Only the
 Magic action is spent. The approved Spell dropdown/Cast can choose either learned
 cantrip; ally targeting preserves party selection and keyboard access.
 
-PC27 admits the Warlock Poison Spray mask/source combination. Campaign 11,
-combat 13–15 and FX1–3 are unchanged. Earlier recipe policies and module identities
-reject this new source. Actual 0.6.38 writer fixtures at `3b7e943` preserve the
-old single-cantrip selection, wound/wealth/random state, spent Dash/Adrenaline
-Rush and subsequent Eldritch Blast attack exactly. No player combat saving was
+Profile recipes admit the Warlock Poison Spray spell/source combination. No player combat saving was
 introduced; normal rest/save behavior retains both newly chosen spells.
 
 Evidence: [native Warlock grant/attack/persistence checks](../tests/warlock_poison_checks.h)
@@ -32,7 +27,7 @@ run in the existing [cantrip harness](../tests/eldritch_blast_tests.cpp), alongs
 [combat](../tests/eldritch_view_tests.gd) checks. Native cases independently verify
 Charisma 18 rather than Intelligence 15, d12 12 versus the same seed's d10 8,
 critical/miss/typed defenses, rejection without mutation, explicit choices,
-PC/NPC campaign handoff, Short/Long Rest save-reload and actual prior continuation.
+PC/NPC campaign handoff and Short/Long Rest save-reload.
 
 This is the currently playable **Warlock level-one** source, not proof of Warlock
 levels two through four or full Pact Magic. Those remain #160. Parent #202 retains

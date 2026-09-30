@@ -50,9 +50,6 @@ that distinct flow is [#198](https://github.com/stdarg/OpenGold/issues/198), wit
 reviewed controls, interruptions and time/resource persistence required.
 No new controls or in-combat save access are introduced here.
 
-Module **0.6.18** keeps PC9, combat 12, campaign 10 and SRD1–7. Frozen **0.6.17**
-writer fixtures from commit `5dfabb7` verify that existing grants, armor and
-original provenance, wounds, resources, RNG and clocks survive unchanged.
 The previously missing Chain Mail Stealth penalty derives from the equipped
 item; no saved resources or choices are replaced.
 

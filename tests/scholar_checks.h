@@ -75,8 +75,8 @@ void choices_and_sources()
             }),
             "Scholar source remains level two");
             const auto bytes = encode_campaign(party, nullptr, "scholar");
-            check(bytes.starts_with("OPENGOLD-CAMPAIGN 16\n"),
-                  "Independent Wizard spell history selects campaign format 16");
+            check(bytes.starts_with("OPENGOLD-CAMPAIGN 19\n"),
+                  "Wizard spell history is written in the current campaign format");
             CampaignParty restored(module());
             restored.restore(
                 decode_campaign(bytes, *srd5::character_rules(), *rules, "scholar", nullptr).party);
@@ -131,102 +131,14 @@ auto prior_module()
                "\ncreature recovery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
-void previous_writer()
-{
-    auto rules = prior_module();
-    for (unsigned level = 2; level <= 4; ++level)
-    {
-        const auto file = "campaign-scholar-level" + std::to_string(level) + ".ogs";
-        CampaignParty party(prior_module());
-        party.restore(decode_campaign(fixture(file.c_str()), *srd5::character_rules(), *rules,
-                                      "scholar-baseline", nullptr)
-                      .party);
-        party.finish_short_rest(party.state().short_rest->ticket);
-        auto wounded = party.checkpoint();
-        wounded.roster[0].vitals.hit_points -= 3;
-        party.restore(std::move(wounded));
-        const auto before = party.checkpoint();
-        const auto &member = party.member(1);
-        check(member.character.sheet().level == int(level) &&
-              !member.character.sheet().training.complete &&
-              !skill(member.character.sheet(), "medicine").expertise,
-              "Actual old saves retain attained level and pending Scholar");
-        check(member.character.advancements()[0].training.empty(),
-              "Old choices are never invented");
-        auto editor =
-            CharacterCreator(srd5::character_rules(), member.character, party.rule_module());
-        editor.training_choice("origin:languages", "elvish", true);
-        editor.training_choice("origin:languages", "dwarvish", true);
-        editor.training_choice(source, "medicine", true);
-        check(editor.training_complete(), "Review Training includes missing advancement choices");
-        party.complete_training(1, editor.rules(), editor.draft().training);
-        const auto &after = party.member(1);
-        check(after.vitals == before.roster[0].vitals &&
-              after.equipped == before.roster[0].equipped &&
-              after.equipment == before.roster[0].equipment,
-              "Review preserves wounds, equipment and spent Arcane Recovery/slots");
-        check(after.character.sheet().training.complete &&
-              skill(after.character.sheet(), "medicine").expertise,
-              "Review grants selected Scholar Expertise");
-        check(after.character.creation_data().training.count(source) == 0 &&
-              after.character.advancements()[0].training.at(source) ==
-              std::vector<std::string> {"medicine"},
-              "Level-two choice is stored in advancement history, never creation");
-        auto changed = after.character.training_choices();
-        changed[source] = {"nature"};
-        rejects(
-            [&]
-        {
-            (void)after.character.preview_training(editor.rules(), *rules, changed, false);
-        });
-        CharacterCreator locked(srd5::character_rules(), after.character, party.rule_module());
-        rejects(
-            [&]
-        {
-            locked.training_choice(source, "medicine", false);
-        });
-        const auto bytes = encode_campaign(party, nullptr, "scholar-baseline");
-        CampaignParty restored(prior_module());
-        restored.restore(
-            decode_campaign(bytes, editor.rules(), *rules, "scholar-baseline", nullptr).party);
-        check(bytes == encode_campaign(restored, nullptr, "scholar-baseline"),
-              "Reviewed legacy character reloads exactly");
-    }
-    auto expected = [&](std::string bytes)
-    {
-        replace(bytes, "0.6.49", rules->identity().version);
-        return bytes;
-    };
-    auto combat = rules->restore(fixture("combat-scholar-before.save"));
-    check(combat->save() == expected(fixture("combat-scholar-before.save")),
-          "Actual old combat round trip is unchanged");
-    auto act = [&](std::string_view verb)
-    {
-        for (const auto &command : combat->legal_commands())
-            if (command.verb == verb)
-            {
-                check(combat->submit(command), "Accept continued command");
-                return;
-            }
-        throw std::runtime_error("Missing continued command");
-    };
-    while (combat->snapshot().actor != 1)
-        act("end");
-    act("magic_missile");
-    check(combat->save() == expected(fixture("combat-scholar-continued.save")),
-          "Actual old combat continues with identical resources and RNG");
-}
-
 void medicine_combat()
 {
     auto rules = prior_module();
     auto character = wizard("medicine");
     VitalState scratch;
     check(character.advance(*rules, scratch), "Scholar medic advances normally");
-    auto profile = rules->character_profile(character.sheet(), {}).data;
-    check(profile.starts_with("PC33 "), "Scholar combat uses explicit profile version");
-    auto forged = profile;
-    forged.replace(0, 4, "PC32");
+    const auto profile = rules->character_profile(character.sheet(), {}).data;
+    check(profile.starts_with("PC42 "), "Scholar combat uses the current profile version");
     auto encounter = [&](const std::string & data)
     {
         return Encounter{{8, 8, std::vector<std::uint8_t>(64)},
@@ -238,16 +150,11 @@ void medicine_combat()
                     0,
                     {2, 1},
                     {},
-                    VitalState{0, false, "SRD5 0 0 0 1 1 0 0 6000 0 FX1 1 0"}
+                    VitalState{0, false, "SRD9 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"}
                 },
                 {99, "vanguard", "Enemy", 1, {6, 6}}
             }};
     };
-    rejects(
-        [&]
-    {
-        (void)rules->create(encounter(forged), 1);
-    });
     bool success = false, failure = false;
     for (unsigned seed = 0; seed < 80 && !(success && failure); ++seed)
     {
@@ -309,26 +216,6 @@ void write_ui_fixture()
         return;
     CampaignParty party(module());
     party.add_pc(wizard("medicine"));
-    auto rules = prior_module();
-    for (unsigned level :
-            {
-                2u, 4u
-            })
-    {
-        const auto name = "campaign-scholar-level" + std::to_string(level) + ".ogs";
-        auto old = decode_campaign(fixture(name.c_str()), *srd5::character_rules(), *rules,
-                                   "scholar-baseline", nullptr)
-                   .party.roster[0];
-        auto choices = old.character.training_choices();
-        choices["origin:languages"] = {"elvish", "dwarvish"};
-        old.character =
-            old.character.preview_training(*srd5::character_rules(), *rules, choices, false);
-        const auto id = party.add_pc(old.character);
-        auto state = party.checkpoint();
-        state.roster.back().vitals = old.vitals;
-        state.roster.back().vitals.hit_points -= 3;
-        party.restore(std::move(state));
-    }
     party.award_experience(2700, "scholar-ui");
     write_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) / "scholar-ui.ogs",
                         encode_campaign(party, nullptr, campaign_asset_identity(directory)));
@@ -347,15 +234,6 @@ void verify_ui(const char *path)
                                      *creation, *rules, assets, nullptr)
                      .party);
     expected.advance(1, expected.default_advancement(1));
-    for (MemberId id :
-            {
-                2u, 3u
-            })
-    {
-        auto selected = expected.member(id).character.training_choices();
-        selected[source] = {"medicine"};
-        expected.complete_training(id, *creation, selected);
-    }
     auto saved = decode_campaign(read_campaign_file(path), *creation, *rules, assets, nullptr);
     auto state = expected.checkpoint();
     state.selected = saved.party.selected;
@@ -364,29 +242,13 @@ void verify_ui(const char *path)
     actual.restore(std::move(saved.party));
     check(
         encode_campaign(actual, nullptr, assets) == encode_campaign(expected, nullptr, assets),
-        "Actual UI result changes only Scholar choices and the requested level-up; preserves every other campaign field");
+        "Actual UI result changes only the requested level-up; preserves every other campaign field");
     std::cout << "Scholar UI persistence verified\n";
-}
-
-void unchanged_starting_review()
-{
-    auto rules = module();
-    auto character = hero(draft());
-    CharacterCreator editor(srd5::character_rules(), character, *rules);
-    editor.training_choice("class:rogue", "acrobatics", true);
-    editor.training_choice("class:rogue:expertise", "acrobatics", true);
-    editor.training_choice("class:rogue", "acrobatics", false);
-    check(!editor.draft().training.contains("class:rogue:expertise"),
-          "Starting-only Review Training retains dependent-choice pruning");
-    check(character.creation_data().training.empty(),
-          "Review editor never mutates the original character");
 }
 
 void run()
 {
-    unchanged_starting_review();
     choices_and_sources();
-    previous_writer();
     medicine_combat();
     write_ui_fixture();
 }

@@ -21,18 +21,14 @@ thrown melee weapons and spell attacks do not gain it. Range and other attack
 Disadvantage still apply. Action Surge permits another eligible attack normally;
 Savage Attacker's saved damage choice retains the Archery attack bonus.
 
-Rules 0.6.28 / PC17 adds the Archery feature bit. Older profiles reject that bit
-and Archery grants. Current profiles validate their mask against grant provenance,
-prerequisite and nonrepeatability. Older campaign identities cannot smuggle in
-Archery. Campaign format 11, FX2 and combat formats 13–15 remain unchanged.
-Migration preserves prior choices and never substitutes Archery for an old feat.
-Actual 0.6.27 campaign/combat fixtures verify identity-only migration; current
-Archery campaigns and combat continuations reload canonically.
+Profiles carry an Archery feature bit and validate their mask against grant
+provenance, prerequisite and nonrepeatability. Archery campaigns and combat
+continuations reload canonically.
 
 [Native checks](../tests/archery_tests.cpp) cover current entitlement selection,
 rejected-command atomicity, independent attack bonuses and natural-roll outcomes
 across all ten Ranged weapons, six thrown melee exclusions, long range, an exact
-hit threshold, Savage Attacker, Action Surge and prior/current saves.
+hit threshold, Savage Attacker, Action Surge and saves.
 The existing Godot advancement check additionally selects and confirms Archery
 for a Soldier Fighter and reloads the acquired grant alongside Savage Attacker.
 

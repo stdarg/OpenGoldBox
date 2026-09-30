@@ -44,18 +44,13 @@ controls or combat saving options are added.
 
 ## Persistence and verification
 
-Rules **0.6.21** retain campaign **10**, combat **13**, PC10 character recipes and
-existing resource formats. Campaign and combat state written by 0.6.20 migrates
-without changing equipment, wounds, choices, advancement, resources, queues or
-RNG. Subsequent spell eligibility uses the corrected hands rule. Frozen files
-from the actual 0.6.20 writer verify exact migration and its unchanged Healing
-Word continuation. Earlier supported migration paths remain available.
+The hands rule adds no save data; loaded campaign and combat state uses the
+corrected rule for subsequent spell eligibility.
 
 `opengold_spell_component_tests` independently checks component flags, all live
 spell commands and upcasts, weapon/wand/shield combinations, two-hand and
 Versatile grips, normal casting costs, rejected-command atomicity, equipped
-campaign members and unequipping, repeated saves, and frozen prior-writer
-continuation. The old writer fails the occupied-hands regression.
+campaign members and unequipping, and repeated saves.
 
 `tests/spell_component_view_tests.gd` uses normally created and advanced caster
 fixtures to check the game and demo's existing spell controls and hidden internal

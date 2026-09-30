@@ -17,27 +17,17 @@ can acquire both styles from distinct sources, but cannot take the same feat
 twice. Choosing a starting style does not prevent a later Constitution increase.
 The existing armor and ranged-attack rules apply the effects.
 
-Rules 0.6.29 / PC18 validate the new source. Campaign 11, FX2 and combat 13–15
-are unchanged. Prior profiles retain their original validation. Old campaign
-characters retain their choices and have a pending starting style; migration
-never assigns one or converts a level-four feat into a starting feat. Completion
-through the existing core training API preserves advancement, wounds and spent
-resources. The player-facing Review Training flow is delivered; see [training review](TRAINING.md).
+The character profile validates the new source.
 
-Tests use actual 0.6.28 campaign/combat files from `dda8d0c`, with four Fighters:
-level one, level-four Defense, level-four Archery and level-four Constitution
-increase. Migration preserves file bodies except module identity and checksum.
-Native checks also cover prerequisites across all twelve classes, duplicate and
+Native checks cover prerequisites across all twelve classes, duplicate and
 invalid choices, atomic replacement, independent AC/attack expectations,
-Constitution history, current save round trips and rejection of future grants
-under old version identities. Godot checks cover keyboard selection, Next,
+Constitution history, save round trips and rejection of older version
+identities. Godot checks cover keyboard selection, Next,
 Back, class changes and English/Spanish layouts at both supported test sizes.
 
 Rules 0.6.53 adds Great Weapon Fighting to these same controls and supports
 replacing the class style at gained Fighter levels 2–4. Keep current is the
-default. A missing historical starting selection remains pending in Review
-Training; replacement requires an existing class-granted style. Completing other
-training later replays advancement choices and preserves the replacement.
+default. Replacement requires an existing class-granted style.
 
 The [style-route packet](FIGHTING-STYLE-ROUTES.md) also covers actual Paladin and
 Ranger level-two entitlements and level-four feat selection. #85 is now completed by Two-Weapon Fighting and the

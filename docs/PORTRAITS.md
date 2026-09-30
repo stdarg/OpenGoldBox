@@ -120,8 +120,8 @@ Character creation no longer offers these parts. Characters use the complete
 parts into an 88x88 image. That image is only a fallback in the combat roster,
 used when a character has no loadable complete portrait.
 
-The fields remain in saves for compatibility. Remove them, with a save-format
-migration, once nothing reads them.
+The fields are still saved. Remove them from the current save format once
+nothing reads them.
 
 The small combat icons use their own parts: `CHEAD`/`CBODY`, 24 pixels wide,
 with the head drawn over the body. They are not portraits and are not being

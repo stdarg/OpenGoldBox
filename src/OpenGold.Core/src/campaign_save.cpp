@@ -10,6 +10,10 @@ namespace opengold
 namespace
 {
 constexpr std::size_t limit = 16 * 1024 * 1024;
+// The only campaign format this build reads or writes. Pre-1.0 formats are
+// rejected rather than migrated; change this format in place until 1.0.
+constexpr unsigned campaign_format = 19;
+constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
 {
@@ -33,11 +37,9 @@ std::uint64_t fingerprint(std::string_view data)
 struct SaveCodec
 {
     bool reading{};
-    unsigned version{11};
     std::stringstream stream;
     const rules::CharacterRules *creation{};
     const rules::RulesModule *module {};
-    rules::Identity saved_identity;
 
     explicit SaveCodec(std::string_view bytes) : reading(true), stream(std::string(bytes))
     {
@@ -181,25 +183,14 @@ struct SaveCodec
 
     void field(rules::AdvancementChoice &v)
     {
-        fields(v.feat, v.abilities, v.spells);
-        if (version >= 15)
-            field(v.training);
-        if (version >= 16)
-            field(v.spell_learning);
-        if (version >= 17)
-            field(v.fighting_style);
+        fields(v.feat, v.abilities, v.spells, v.training, v.spell_learning, v.fighting_style);
     }
 
     void field(rules::CharacterDraft &v)
     {
         fields(v.race, v.gender, v.character_class, v.alignment, v.background, v.name,
-               v.target_classes, v.rolls, v.assignment, v.adjustment, v.rolled);
-        if (version >= 9)
-            field(v.training);
-        if (version >= 11)
-            field(v.cantrips);
-        if (version >= 16)
-            field(v.spells);
+               v.target_classes, v.rolls, v.assignment, v.adjustment, v.rolled, v.training,
+               v.cantrips, v.spells);
     }
 
     void field(rules::SpellChoices &v)
@@ -219,9 +210,8 @@ struct SaveCodec
 
     void field(por::CharacterAppearance &v)
     {
-        fields(v.portrait_head, v.portrait_body, v.combat_head, v.combat_body, v.tall, v.colors);
-        if (version >= 4)
-            field(v.portrait);
+        fields(v.portrait_head, v.portrait_body, v.combat_head, v.combat_body, v.tall, v.colors,
+               v.portrait);
     }
 
     void field(InventoryItem &v)
@@ -301,23 +291,13 @@ struct SaveCodec
     void field(DetachedPartyItem &v)
     {
         fields(v.scope, v.token, v.original_owner, v.holder, v.cell.x, v.cell.y, v.item,
-               v.original);
-        if (version >= 14)
-            field(v.rest_session);
+               v.original, v.rest_session);
     }
 
     void rest(PartyState &v)
     {
-        if (version >= 10)
-            fields(v.next_rest_session, v.short_rest);
-        if (version >= 12)
-            field(v.rest_activity);
-        if (version >= 13)
-            field(v.detached_items);
-        if (version >= 16)
-            field(v.spell_rest);
-        if (version >= 18)
-            field(v.training_rest);
+        fields(v.next_rest_session, v.short_rest, v.rest_activity, v.detached_items, v.spell_rest,
+               v.training_rest);
     }
 
     void field(rules::VitalState &v)
@@ -328,44 +308,24 @@ struct SaveCodec
     void member(PartyMember &v)
     {
         fields(v.id, v.npc_source, v.vitals, v.wealth, v.equipped, v.morale, v.experience,
-               v.last_rest_minutes, v.item_sources, v.creation_source);
-        if (version >= 7)
-            field(v.equipment.weapon_hands);
-        if (version >= 8)
-        {
-            auto grants = v.character.sheet().grants;
-            field(grants);
-            if (reading)
-                module->validate_saved_grants(saved_identity, v.character.sheet(), grants);
-            else
-                require(grants == v.character.sheet().grants,
-                        "Saved grants disagree with creation or advancement choices");
-        }
-        // Older releases stored ordinary equipment as unsupported. Migrate only
-        // the exact old key backed by matching original item provenance.
-        if (reading)
-            for (auto &item : v.character.inventory().items_)
-            {
-                const auto source = v.item_sources.find(item.id);
-                if (source != v.item_sources.end() &&
-                        item.original_type == source->second.stored.type &&
-                        item.definition_id == "por:unsupported:" + std::to_string(item.original_type))
-                    item.definition_id = equipment_conversion(source->second);
-            }
+               v.last_rest_minutes, v.item_sources, v.creation_source, v.equipment.weapon_hands);
+        // Grants are derived by replaying creation and advancement. Storing them
+        // lets a load detect rules that would rebuild a different character.
+        auto grants = v.character.sheet().grants;
+        field(grants);
+        require(grants == v.character.sheet().grants,
+                "Saved grants disagree with creation or advancement choices");
     }
 
     void field(PartyState &v)
     {
         fields(v.slots, v.next_id, v.selected, v.time_minutes, v.random_state, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
-        if (version >= 6)
-        {
-            if (!reading)
-                for (const auto &member : v.roster)
-                    if (member.last_rest_subminute_milliseconds)
-                        rest_offsets.emplace(member.id, member.last_rest_subminute_milliseconds);
-            fields(v.subminute_milliseconds, v.next_combat_scope, rest_offsets);
-        }
+        if (!reading)
+            for (const auto &member : v.roster)
+                if (member.last_rest_subminute_milliseconds)
+                    rest_offsets.emplace(member.id, member.last_rest_subminute_milliseconds);
+        fields(v.subminute_milliseconds, v.next_combat_scope, rest_offsets);
         std::uint64_t count = v.roster.size();
         field(count);
         require(count <= 128, "Too many saved party members");
@@ -378,88 +338,56 @@ struct SaveCodec
                 por::CharacterAppearance appearance;
                 int level{};
                 fields(draft, appearance, level);
-                require(level >= 1 && level <= (version >= 3 ? 4 : 2),
-                        "Unsupported saved character level");
+                require(level >= 1 && level <= 4, "Unsupported saved character level");
                 Character character(*creation, std::move(draft), appearance);
                 rules::VitalState scratch;
-                if (version >= 3)
+                std::vector<rules::AdvancementChoice> history;
+                std::vector<SpellChoiceEdit> edits;
+                std::vector<TrainingChoiceEdit> training;
+                fields(history, edits, training);
+                require(history.size() == level - 1,
+                        "Saved advancement history disagrees with level");
+                unsigned prior_level = 1;
+                std::uint64_t prior_session = 0;
+                for (const auto &edit : training)
                 {
-                    std::vector<rules::AdvancementChoice> history;
-                    field(history);
-                    require(history.size() == level - 1,
-                            "Saved advancement history disagrees with level");
-                    std::vector<SpellChoiceEdit> edits;
-                    if (version >= 16)
-                        field(edits);
-                    std::vector<TrainingChoiceEdit> training;
-                    if (version >= 18)
-                        field(training);
-                    unsigned prior_level = 1;
-                    std::uint64_t prior_session = 0;
-                    for (const auto &edit : training)
-                    {
-                        require(edit.level >= prior_level && edit.level <= unsigned(level) &&
-                                edit.rest_session > prior_session,
-                                "Invalid training replacement history");
-                        prior_level = edit.level;
-                        prior_session = edit.rest_session;
-                    }
-                    unsigned previous = 1;
-                    std::uint64_t rest = 0;
-                    for (const auto &edit : edits)
-                    {
-                        require(edit.level >= previous && edit.level <= unsigned(level),
-                                "Invalid spell-choice history level");
-                        previous = edit.level;
-                        if (edit.rest_session)
-                        {
-                            require(edit.rest_session > rest, "Repeated spell-choice rest");
-                            rest = edit.rest_session;
-                        }
-                    }
-                    auto replay = [&]
-                    {
-for (const auto &edit : edits)
-                        if (edit.level == unsigned(character.sheet().level))
-                                character.choose_spells(*module, edit.choices, edit.rest_session,
-                                                        false);
-for (const auto &edit : training)
-                                if (edit.level == unsigned(character.sheet().level))
-                                        character.replace_rest_training(*module, edit.selections,
-                                                                        edit.rest_session);
-                                    };
-                    replay();
-                    for (const auto &choice : history)
-                    {
-                        require(character.advance(*module, scratch, choice),
-                                "Unsupported saved advancement choice");
-                        replay();
-                    }
+                    require(edit.level >= prior_level && edit.level <= unsigned(level) &&
+                            edit.rest_session > prior_session,
+                            "Invalid training replacement history");
+                    prior_level = edit.level;
+                    prior_session = edit.rest_session;
                 }
-                else
-                    while (character.sheet().level < level)
-                    {
-                        auto choice = module->default_advancement(character.sheet());
-                        choice.training.clear();
-                        choice.spell_learning.reset();
-                        require(character.advance(*module, scratch, choice),
-                                "Unsupported saved advancement");
-                    }
+                unsigned previous = 1;
+                std::uint64_t rest = 0;
+                for (const auto &edit : edits)
+                {
+                    require(edit.level >= previous && edit.level <= unsigned(level),
+                            "Invalid spell-choice history level");
+                    require(edit.rest_session > rest, "Repeated spell-choice rest");
+                    previous = edit.level;
+                    rest = edit.rest_session;
+                }
+                auto replay = [&]
+                {
+                    for (const auto &edit : edits)
+                        if (edit.level == unsigned(character.sheet().level))
+                            character.choose_spells(*module, edit.choices, edit.rest_session,
+                                                    false);
+                    for (const auto &edit : training)
+                        if (edit.level == unsigned(character.sheet().level))
+                            character.replace_rest_training(*module, edit.selections,
+                                                            edit.rest_session);
+                };
+                replay();
+                for (const auto &choice : history)
+                {
+                    require(character.advance(*module, scratch, choice),
+                            "Unsupported saved advancement choice");
+                    replay();
+                }
                 field(character.inventory());
                 PartyMember m{0, std::move(character)};
                 member(m);
-                if (version < 7)
-                {
-                    std::vector<std::string> gear;
-                    for (auto id : m.equipped)
-                    {
-                        const auto item = m.character.inventory().find(id);
-                        require(item.has_value(), "Equipped item is missing");
-                        gear.push_back(item->get().definition_id);
-                    }
-                    m.equipment = module->migrate_equipment(gear);
-                }
-                module->migrate_character_state(saved_identity, m.character.sheet(), m.vitals);
                 v.roster.push_back(std::move(m));
             }
         }
@@ -471,17 +399,9 @@ for (const auto &edit : training)
                 auto level = m.character.sheet().level;
                 fields(draft, appearance, level);
                 auto history = m.character.advancements();
-                field(history);
-                if (version >= 16)
-                {
-                    auto edits = m.character.spell_edits();
-                    field(edits);
-                }
-                if (version >= 18)
-                {
-                    auto edits = m.character.training_edits();
-                    field(edits);
-                }
+                auto edits = m.character.spell_edits();
+                auto training = m.character.training_edits();
+                fields(history, edits, training);
                 field(m.character.inventory());
                 member(m);
             }
@@ -539,79 +459,63 @@ for (const auto &edit : training)
                             !v.pending_movement_),
                 "Save only during idle town exploration");
         fields(v.current_script_, v.selected_character_, v.next_ticket_);
-        if (version >= 2)
+        unsigned area = v.current_area_;
+        field(area);
+        std::map<unsigned, std::string> explored;
+        if (!reading)
         {
-            unsigned area = v.current_area_;
-            field(area);
-            std::map<unsigned, std::string> explored;
-            if (!reading)
-            {
-                for (const auto &[id, cells] : v.visited_areas_)
-                    explored[id] = cells.to_string();
-                explored[v.current_area_] = v.snapshot_.visited.to_string();
-            }
-            field(explored);
-            if (reading)
-            {
-                require(v.town_ && (area == 0 || v.town_->districts.contains(area)),
-                        "Unsupported saved district");
-                require((v.current_script_ == 20) == (area == 20),
-                        "Saved district and script disagree");
-                v.current_area_ = 0;
-                v.snapshot_.area_id = 0;
-                if (v.town_->map)
-                {
-                    v.map_ = *v.town_->map;
-                    v.wall_art_ = v.town_->wall_art;
-                }
-                v.change_area(area);
-                v.visited_areas_.clear();
-                for (const auto &[id, cells] : explored)
-                {
-                    require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
-                            cells.find_first_not_of("01") == std::string::npos,
-                            "Invalid saved district exploration");
-                    v.visited_areas_[id] = std::bitset<256>(cells);
-                }
-            }
-            std::uint64_t pending = v.pending_loot_.size();
-            field(pending);
-            require(pending <= 1024, "Too many pending rewards");
-            if (reading)
-                v.pending_loot_.clear();
-            for (std::uint64_t index = 0; index < pending; ++index)
-            {
-                std::vector<unsigned> records;
-                std::string reward;
-                bool items = true;
-                if (!reading)
-                {
-                    const auto &loot = v.pending_loot_[index];
-                    records = loot.records;
-                    reward = loot.reward_id;
-                    items = loot.include_items;
-                }
-                fields(records, reward, items);
-                if (reading)
-                {
-                    require(v.town_->districts.contains(20),
-                            "Pending Slums loot requires original resources");
-                    v.pending_loot_.push_back(
-                        v.slums_loot(std::move(records), std::move(reward), items));
-                }
-            }
+            for (const auto &[id, cells] : v.visited_areas_)
+                explored[id] = cells.to_string();
+            explored[v.current_area_] = v.snapshot_.visited.to_string();
         }
-        else if (reading)
+        field(explored);
+        if (reading)
         {
-            require(v.current_script_ != 20, "Version-one saves cannot contain the Slums");
+            require(v.town_ && (area == 0 || v.town_->districts.contains(area)),
+                    "Unsupported saved district");
+            require((v.current_script_ == 20) == (area == 20),
+                    "Saved district and script disagree");
             v.current_area_ = 0;
             v.snapshot_.area_id = 0;
-            v.visited_areas_.clear();
-            v.pending_loot_.clear();
             if (v.town_->map)
             {
                 v.map_ = *v.town_->map;
                 v.wall_art_ = v.town_->wall_art;
+            }
+            v.change_area(area);
+            v.visited_areas_.clear();
+            for (const auto &[id, cells] : explored)
+            {
+                require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
+                        cells.find_first_not_of("01") == std::string::npos,
+                        "Invalid saved district exploration");
+                v.visited_areas_[id] = std::bitset<256>(cells);
+            }
+        }
+        std::uint64_t pending = v.pending_loot_.size();
+        field(pending);
+        require(pending <= 1024, "Too many pending rewards");
+        if (reading)
+            v.pending_loot_.clear();
+        for (std::uint64_t index = 0; index < pending; ++index)
+        {
+            std::vector<unsigned> records;
+            std::string reward;
+            bool items = true;
+            if (!reading)
+            {
+                const auto &loot = v.pending_loot_[index];
+                records = loot.records;
+                reward = loot.reward_id;
+                items = loot.include_items;
+            }
+            fields(records, reward, items);
+            if (reading)
+            {
+                require(v.town_->districts.contains(20),
+                        "Pending Slums loot requires original resources");
+                v.pending_loot_.push_back(
+                    v.slums_loot(std::move(records), std::move(reward), items));
             }
         }
         if (reading)
@@ -647,40 +551,30 @@ for (const auto &edit : training)
                     "Invalid visited map");
             s.visited = std::bitset<256>(visited);
         }
-        if (version >= 5)
+        std::map<unsigned, std::string> known;
+        if (!reading)
         {
-            std::map<unsigned, std::string> known;
-            if (!reading)
-            {
-                for (const auto &[id, cells] : v.seen_areas_)
-                    known[id] = cells.to_string();
-                known[v.current_area_] = s.seen.to_string();
-            }
-            field(known);
-            if (reading)
-            {
-                v.seen_areas_.clear();
-                for (const auto &[id, cells] : known)
-                {
-                    require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
-                            cells.find_first_not_of("01") == std::string::npos,
-                            "Invalid saved map knowledge");
-                    v.seen_areas_[id] = std::bitset<256>(cells);
-                }
-                require(v.seen_areas_.contains(v.current_area_), "Missing current map knowledge");
-                s.seen = v.seen_areas_.at(v.current_area_);
-                require((s.visited & ~s.seen).none(), "Visited cells must be known");
-                for (const auto &[id, cells] : v.visited_areas_)
-                    require(v.seen_areas_.contains(id) && (cells & ~v.seen_areas_.at(id)).none(),
-                            "Missing visited district knowledge");
-            }
+            for (const auto &[id, cells] : v.seen_areas_)
+                known[id] = cells.to_string();
+            known[v.current_area_] = s.seen.to_string();
         }
-        else if (reading)
+        field(known);
+        if (reading)
         {
-            // Older saves remember visits only. Keep them, then discover the
-            // current sightline when the restored 3D view is actually shown.
-            v.seen_areas_ = v.visited_areas_;
-            s.seen = s.visited;
+            v.seen_areas_.clear();
+            for (const auto &[id, cells] : known)
+            {
+                require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
+                        cells.find_first_not_of("01") == std::string::npos,
+                        "Invalid saved map knowledge");
+                v.seen_areas_[id] = std::bitset<256>(cells);
+            }
+            require(v.seen_areas_.contains(v.current_area_), "Missing current map knowledge");
+            s.seen = v.seen_areas_.at(v.current_area_);
+            require((s.visited & ~s.seen).none(), "Visited cells must be known");
+            for (const auto &[id, cells] : v.visited_areas_)
+                require(v.seen_areas_.contains(id) && (cells & ~v.seen_areas_.at(id)).none(),
+                        "Missing visited district knowledge");
         }
         if (reading)
         {
@@ -715,59 +609,6 @@ std::string encode_campaign(const CampaignParty &party, const por::RolfTourSessi
 {
     require(!party.in_combat(), "Cannot save during combat");
     SaveCodec out;
-    out.version =
-        party.state().training_rest ||
-        std::any_of(party.state().roster.begin(), party.state().roster.end(),
-                    [](const auto & member)
-    {
-        return !member.character.training_edits().empty();
-    })
-    ? 18
-    : std::any_of(party.state().roster.begin(), party.state().roster.end(),
-                  [](const auto & member)
-    {
-        return std::any_of(member.character.advancements().begin(),
-                           member.character.advancements().end(),
-                           [](const auto & choice)
-        {
-            return choice.fighting_style.has_value();
-        });
-    })
-    ? 17
-    : party.state().spell_rest ||
-           std::any_of(party.state().roster.begin(), party.state().roster.end(),
-                       [](const auto & member)
-    {
-        return member.character.creation_data().spells.has_value() ||
-               !member.character.spell_edits().empty() ||
-               std::any_of(member.character.advancements().begin(),
-                           member.character.advancements().end(),
-                           [](const auto & choice)
-        {
-            return choice.spell_learning.has_value();
-        });
-    })
-    ? 16
-    : std::any_of(party.state().roster.begin(), party.state().roster.end(),
-                  [](const auto & member)
-    {
-        return std::any_of(member.character.advancements().begin(),
-                           member.character.advancements().end(),
-                           [](const auto & choice)
-        {
-            return !choice.training.empty();
-        });
-    })
-    ? 15
-    : std::any_of(party.state().detached_items.begin(), party.state().detached_items.end(),
-                  [](const auto & item)
-    {
-        return item.rest_session != 0;
-    })
-    ? 14
-    : !party.state().detached_items.empty() ? 13
-            : party.state().rest_activity           ? 12
-            : 11;
     auto identity = party.identity();
     std::string asset(assets);
     auto state = party.checkpoint();
@@ -782,12 +623,21 @@ std::string encode_campaign(const CampaignParty &party, const por::RolfTourSessi
     out.rest(state);
     auto body = out.stream.str();
     require(body.size() <= limit, "Campaign save too large");
-    return "OPENGOLD-CAMPAIGN " + std::to_string(out.version) + "\n" +
+    return std::string(campaign_magic) + std::to_string(campaign_format) + "\n" +
            std::to_string(fingerprint(body)) + "\n" + body;
 }
 
 namespace
 {
+// Parses the header's format number without trusting its length or digits.
+unsigned saved_format(std::string_view digits)
+{
+    require(!digits.empty() && digits.size() <= 9 &&
+            digits.find_first_not_of("0123456789") == std::string_view::npos,
+            "Unsupported campaign save version");
+    return static_cast<unsigned>(std::stoul(std::string(digits)));
+}
+
 void validate_saved_member(const PartyMember &member, const rules::RulesModule &module)
 {
     module.validate_character_state(member.character.sheet(), member.vitals);
@@ -818,34 +668,29 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
                               const por::RolfTourSession *town_template)
 {
     require(bytes.size() <= limit, "Campaign save too large");
-    unsigned version{};
-    std::size_t header_size{};
-    for (unsigned v = 1; v <= 18; ++v)
-    {
-        const auto header = "OPENGOLD-CAMPAIGN " + std::to_string(v) + '\n';
-        if (bytes.starts_with(header))
-        {
-            version = v;
-            header_size = header.size();
-            break;
-        }
-    }
-    require(version != 0, "Unsupported campaign save version");
-    const auto end = bytes.find('\n', header_size);
+    const auto header_end = bytes.find('\n');
+    require(bytes.starts_with(campaign_magic) && header_end != bytes.npos,
+            "Unsupported campaign save version");
+    const auto version = saved_format(
+                             bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
+    if (version < campaign_format)
+        throw std::runtime_error(rules::older_save_message);
+    require(version == campaign_format, "Unsupported campaign save version");
+    const auto end = bytes.find('\n', header_end + 1);
     require(end != bytes.npos, "Truncated campaign save");
     const auto body = bytes.substr(end + 1);
-    require(bytes.substr(header_size, end - header_size) == std::to_string(fingerprint(body)),
+    require(bytes.substr(header_end + 1, end - header_end - 1) ==
+            std::to_string(fingerprint(body)),
             "Campaign save checksum mismatch");
     SaveCodec in(body);
-    in.version = version;
     in.creation = &creation;
     in.module = &module;
     rules::Identity identity;
     std::string asset;
     in.fields(identity, asset);
-    require(module.accepts_campaign_identity(identity), "Campaign rules/content version mismatch");
+    if (identity != module.identity())
+        throw std::runtime_error(rules::older_save_message);
     require(asset == assets, "Campaign original asset identity mismatch");
-    in.saved_identity = identity;
     SavedCampaign result;
     in.field(result.party);
     CampaignParty::validate(result.party);

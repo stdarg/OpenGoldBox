@@ -13,17 +13,13 @@ Expertise doubles it. When a tool and skill both apply to a check, the shared
 modifier query grants Advantage rather than adding proficiency twice. Determining
 which tools apply to a particular campaign action remains that action's job.
 
-Rules 0.6.26 writes PC15 profiles, requiring the fixed package. Prior profiles
-retain their original training validation policy and cannot claim newly supported
-Sage grants. Campaign 11 reconstructs the owed fixed grants from the saved Sage
-background while preserving selected choices, wounds, resource expenditure and
-advancement. Old incomplete selections remain pending. Existing combat formats
-13–15 remain; prior 0.6.25 encounters preserve their original embedded recipes.
+Profiles require the fixed package. Campaign saves reconstruct the fixed grants
+from the saved Sage background while preserving selected choices, wounds,
+resource expenditure and advancement.
 
-The actual [0.6.25 campaign fixture](../tests/fixtures/campaign-v11-sage-before.ogs)
-and [training tests](../tests/training_tests.cpp) exercise new grants, all-class
-creation, Rogue eligibility, modifier totals, invalid grants and profile versions,
-canonical current saves and migration without healing or replenishment.
+The [training tests](../tests/training_tests.cpp) exercise new grants, all-class
+creation, Rogue eligibility, modifier totals, invalid grants and canonical
+current saves.
 The [creation test](../tests/cantrip_view_tests.gd) checks the fixed Training display.
 
 The Sage parent #63 remains open for Magic Initiate (#75), starting equipment/

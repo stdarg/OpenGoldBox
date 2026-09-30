@@ -1,4 +1,3 @@
-#include "campaign_fixture.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "life_cycle.h"
@@ -7,7 +6,6 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
-#include <sstream>
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
@@ -52,7 +50,7 @@ auto module()
     return srd5::parse_content(content());
 }
 
-Character hero(std::string klass = "fighter", unsigned level = 2)
+Character hero(std::string klass = "fighter", unsigned level = 2, bool trained = false)
 {
     CharacterDraft d;
     d.race = "dwarf";
@@ -64,6 +62,13 @@ Character hero(std::string klass = "fighter", unsigned level = 2)
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
+    if (trained)
+        d.training = {{"origin:languages", {"elvish", "orc"}},
+            {"class:fighter:fighting_style", {"archery"}},
+            {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
+            {"class:fighter", {"athletics", "history"}},
+            {"background:soldier:gaming_set", {"dice"}}
+        };
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned i = 1; i < level; ++i)
@@ -140,11 +145,12 @@ void rule_operations()
 {
     auto rules = module();
     const auto c = hero();
-    VitalState state{4, false, "SRD4 1 0 0 0 0 0 1 FX1 1 0"};
+    VitalState state{4, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX7 1 0 0 0"};
     rules->grant_temporary_hit_points(state, c.sheet(), {8, "spell:false_life"},
                                       TemporaryHpChoice::use_new);
-    check(state.resources == "SRD6 1 0 0 0 0 0 1 0 0 8 \"spell:false_life\" FX1 1 0",
-          "SRD6 independently records dice, clocks and sourced buffer");
+    check(state.resources ==
+          "SRD9 1 0 0 0 0 0 1 0 0 8 \"spell:false_life\" 0 1 0 FX7 1 0 0 0",
+          "Vital state independently records dice, clocks and sourced buffer");
     auto rng = std::uint64_t{42};
     const auto die = rules->spend_hit_die(state, c.sheet(), rng);
     check(die.roll == 4 && die.healing == 6 && state.hit_points == 10 && pool(c, state).amount == 8,
@@ -174,14 +180,14 @@ void rule_operations()
     rules->recover(state, c.sheet());
     check(state.hit_points == c.sheet().hit_points && pool(c, state).amount == 0,
           "An eligible completed Long Rest clears the pool");
-    VitalState stable{0, false, "SRD5 1 0 0 0 0 1 1 0 1000 FX1 1 0"};
+    VitalState stable{0, false, "SRD9 1 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 FX7 1 0 0 0"};
     rules->grant_temporary_hit_points(stable, c.sheet(), {7, "feature:ward"},
                                       TemporaryHpChoice::use_new);
     participants[0].state = stable;
     const auto prior_rng = rng;
     rules->elapse(participants, 999, rng);
     check(participants[0].state->hit_points == 0 && pool(c, *participants[0].state).amount == 7,
-          "SRD6 preserves the countdown and buffer before natural recovery");
+          "Vital state preserves the countdown and buffer before natural recovery");
     rules->elapse(participants, 1, rng);
     check(participants[0].state->hit_points == 1 && pool(c, *participants[0].state).amount == 7 &&
           rng == prior_rng,
@@ -232,7 +238,7 @@ void rule_operations()
                                                     })
     {
         auto broken = state;
-        broken.resources = "SRD6 1 0 0 0 0 0 1 0 0 " + bad + " FX1 1 0";
+        broken.resources = "SRD9 1 0 0 0 0 0 1 0 0 " + bad + " 0 1 0 FX7 1 0 0 0";
         rejects(
             [&]
         {
@@ -304,7 +310,7 @@ void actual_combat()
           "Stale attack cannot consume a pool twice");
     // A forged actor row cannot introduce a negative pool.
     auto corrupt = saved;
-    const auto at = corrupt.find(" 0 \"\" 0 0", corrupt.find("PC30"));
+    const auto at = corrupt.find(" 0 \"\" 0 0", corrupt.find("PC42"));
     check(at != corrupt.npos, "Current actor has the empty pool suffix");
     corrupt.replace(at, 9, " -1 \"x\" 0 0");
     rejects(
@@ -332,7 +338,7 @@ void campaign()
 {
     auto rules = module();
     CampaignParty party(module());
-    const auto active = party.add_pc(hero()), reserve = party.add_pc(hero());
+    const auto active = party.add_pc(hero("fighter", 2, true)), reserve = party.add_pc(hero());
     party.remove(reserve);
     const auto npc = party.recruit("temp-hp-companion", hero());
     auto state = party.checkpoint();
@@ -347,16 +353,6 @@ void campaign()
     auto copy = loaded(bytes);
     check(saved(copy) == bytes,
           "Campaign canonically preserves sourced pools for active, reserve and NPC members");
-    party.complete_training(active, *srd5::character_rules(),
-    {
-        {"origin:languages", {"elvish", "orc"}},
-        {"class:fighter:fighting_style", {"archery"}},
-        {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-        {"class:fighter", {"athletics", "history"}},
-        {"background:soldier:gaming_set", {"dice"}}
-    });
-    check(pool(party.member(active).character, party.member(active).vitals).amount == 8,
-          "Training completion preserves Temporary HP");
     party.award_experience(900, "temporary-hp-xp");
     party.advance(active, party.default_advancement(active));
     check(pool(party.member(active).character, party.member(active).vitals).amount == 8,
@@ -400,52 +396,6 @@ void campaign()
     check(pool(copy.member(reserve).character, copy.member(reserve).vitals).amount == 8,
           "Encounter snapshots do not overwrite reserve pools");
 }
-
-std::string upgraded(std::string bytes)
-{
-    std::istringstream in(bytes);
-    std::vector<std::string> rows;
-    for (std::string row; std::getline(in, row);)
-        rows.push_back(row);
-    check(rows[0].starts_with("OGCOMBAT 10 "), "Fixture was generated by the old writer");
-    rows[0].replace(9, 2, "13");
-    rows[0].replace(rows[0].find("0.6.13"), 6, module()->identity().version);
-    for (unsigned i = 4; i < 8; ++i)
-        rows[i] += " 0 \"\" 0 0";
-    std::string result;
-    for (const auto &row : rows)
-        result += row + '\n';
-    return result + "0\n0\n";
-}
-
-void old_writer()
-{
-    const auto path = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
-    auto rules = module();
-    const auto bytes = read(path / "combat-v10-temporary-hp.save");
-    auto combat = rules->restore(bytes);
-    check(combat->save() == upgraded(bytes),
-          "Old combat gains only an empty pool and new format/module identity");
-    check(combat->submit(command(*combat, "decline")) &&
-          combat->save() == upgraded(read(path / "combat-v10-temporary-hp-continued.save")),
-          "Old writer's pending reaction retains exact continuation");
-    const auto campaign_bytes = read(path / "campaign-v10-temporary-hp.ogs");
-    CampaignParty party(module());
-    party.restore(decode_campaign(campaign_bytes, *srd5::character_rules(), *rules,
-                                  "temporary-hp-fixture", nullptr)
-                  .party);
-    for (const auto &member : party.state().roster)
-        check(pool(member.character, member.vitals).amount == 0,
-              "Legacy campaigns gain no invented buffer");
-    const auto next = encode_campaign(party, nullptr, "temporary-hp-fixture");
-    auto body = campaign_bytes.substr(campaign_bytes.find('\n', campaign_bytes.find('\n') + 1) + 1);
-    body.replace(body.find("0.6.13"), 6, rules->identity().version);
-    check(
-        next.substr(next.find('\n', next.find('\n') + 1) + 1) ==
-        test::with_action_surge_grants(test::with_initial_wizard_spell_grants(body),
-    {true, true, true, true}),
-    "Campaign migration adds sourced spell grants and preserves old fields including fixed Dwarf grants and clocks");
-}
 } // namespace
 
 int main()
@@ -456,7 +406,6 @@ int main()
         rule_operations();
         actual_combat();
         campaign();
-        old_writer();
         std::cout << "Temporary HP tests passed\n";
         return 0;
     }

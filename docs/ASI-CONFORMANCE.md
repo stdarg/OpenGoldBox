@@ -51,7 +51,7 @@ modifiers, saves, skill totals, combat AC/attacks/HP, Constitution's four-level 
 adjustment, wounds, equipment, provenance, previews, malformed allocations,
 duplicate/early grants, exact campaign/combat continuation and rests. Separate
 cases cover19/20 caps for every ability and early-grant rejection for all12 classes.
-Existing low-Constitution, unconscious, spent-resource and historical cases remain.
+Existing low-Constitution, unconscious and spent-resource cases remain.
 No production defect has been identified; no runtime or save recipe was changed.
 
 The old embedded `--advancement-check` assumes a single-page Wizard confirmation

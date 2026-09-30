@@ -4,7 +4,9 @@ F02 is split into the [rules/persistence layer (#187)](https://github.com/stdarg
 [creation controls (#188)](https://github.com/stdarg/OpenGold/issues/188), and
 [completion of missing saved choices (#189)](https://github.com/stdarg/OpenGold/issues/189).
 All three layers are now implemented, completing parent [#29](https://github.com/stdarg/OpenGold/issues/29).
-Review Training follows approved Q28 in the [decision register](SRD-DECISIONS.md).
+The #189 party panel Review Training dialog, which completed training missing
+from old saves, was later removed with the [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy).
+Training is selected at creation and level-up.
 
 ## First supported package
 
@@ -57,8 +59,8 @@ All 48 presets (four per class) now come with deterministic, complete choices
 for the supported training packages. Adding a preset keeps the existing direct
 Add to party action; it does not open a training dialog. This follows the user's
 approved Training layout and explicit requirement that preset choices be
-pre-generated. Existing saved characters remain pending until Review Training;
-opening or loading them does not apply preset generation.
+pre-generated. Opening or loading saved characters does not apply preset
+generation.
 
 ## Data and validation
 
@@ -72,54 +74,16 @@ when an ability modifier changes. `CharacterRules::ability_check` calculates a
 check from validated grants and scores rather than trusting cached display totals.
 
 Rules stay in the C++20 SRD library. Core serialization stores the records and
-asks the module to validate its older grant format; Core does not interpret SRD
+asks the module to validate them; Core does not interpret SRD
 skill names, proficiency math or grant prefixes. There is no new runtime or UI stack.
 
-## Persistence and pending choices
+## Persistence
 
-Rules **0.6.9** introduced **PC7** character recipes and campaign format **9** to
-carry training provenance. The campaign stores the original selections as well as the acquired
-grant records, which must agree on load. PC7 validates grant entitlements and
-choices before creating an actor. PC8 additionally validates the Dwarf resistance
-grant, with no training-choice changes. Current rules **0.6.15** use **OGCOMBAT 12**, SRD4 for spent Hit Dice and
-SRD5 for [mortality recovery clocks](RECOVERY-CLOCKS.md); [rest resources](REST-RESOURCES.md) describes
-that extension. Training completion preserves those resources too.
-
-Per the user's approved policy, older campaign saves keep missing choices pending.
-Only deterministic fixed grants are reconstructed; optional skills, Expertise and
-languages are not invented. Version 8's feature/feat ledger is validated against
-its original scope before adding training records. Formats 1–7 continue their
-existing reconstruction. Pending choices survive another save/load unchanged.
-The Review Training button appears beside Grip below party inventory when the
-selected member has missing training. Its centered dialog shares the creation
-checkbox groups and Fighting Style dropdown, with fixed grants, counts, scrolling
-and keyboard focus. Existing selections stay locked, including when another
-choice would indirectly prune them. Cancel, Escape and window close discard the
-isolated draft. Combat blocks opening, editing and applying.
-
-Apply is enabled only after supported choices are complete and the native preview
-can replay the character's existing advancement. A conflict displays an error;
-for example, a Fighter who already acquired Defense at level four must choose a
-different starting style. Successful application refreshes the sheet and hides
-the button. PC, recruited and reserve members use the same path. No automatic
-filling, respec, spell learning or new save controls are introduced.
-
-The campaign completion API is implemented for that flow. `preview_training`
-returns an owned candidate with all supported pending choices filled. It
-reconstructs creation and replays existing advancement choices, retaining the
-appearance and inventory. Previously selected entries cannot be replaced, and
-characters with completed training cannot use this operation to change it.
-`complete_training` applies only a valid candidate. Incomplete/invalid choices,
-unknown members and both operations during combat reject without changing the
-campaign. Discarding a preview requires no rollback because it never edits the
-live party. Confirmation preserves the original wounds, death state, effects,
-spent resources, gear, XP, clock, RNG and rest eligibility; reserve members can
-also complete pending selections. This API adds no save-format change.
-
-Module 0.6.8 combat checkpoints and PC6 recipes retain their original effects,
-resources, RNG and recipes. Older supported combat migrations also remain available.
-Combat restoration does not manufacture training choices. Wounds, spent resources,
-existing feats, equipment and turn state are unchanged by this increment.
+The campaign stores the original training selections as well as the acquired
+grant records, which must agree on load. Character profile recipes validate grant
+entitlements and choices before creating an actor. Loading never generates or
+fills training choices, and combat restoration does not manufacture them. See
+[saves](SAVES.md#pre-10-format-policy).
 
 ## Verification
 
@@ -127,13 +91,7 @@ existing feats, equipment and turn state are unchanged by this increment.
 bonuses, source overlap, Expertise eligibility, proficiency-table boundaries,
 tool/skill Advantage, language permissions, incomplete selections and invalid
 choices. Campaign tests check exact round trips and transactional rejection;
-combat tests retain source records and reject forged ones. Frozen 0.6.8 files
-verify pending choices, existing resources and exact unchanged combat state.
-Completion checks use those migrated characters at levels one and four, including
-an equipped Fighter with spent Second Wind and an active effect, a Wizard with
-spent spell slots, a reserve Rogue, and an unconscious character. They verify
-preview isolation, rejected-operation atomicity, preserved prior selections,
-advancement replay and campaign/next-combat persistence.
+combat tests retain source records and reject forged ones.
 Existing advancement, feature-grant, character, party, save and combat regressions
 remain required. Creator tests exercise transitions, invalid-choice atomicity,
 dependent pruning, restart, and manual/preset party save round trips. All 48
@@ -155,59 +113,20 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD OPENGOLD_LANG=en godot --headless \
 Use `--path demos/godot` for the same check against the demo. Omit `--headless`
 and append `-- --training-capture=/tmp/opengold-training` for rendered captures.
 
-SRD6 adds [sourced Temporary HP](TEMPORARY-HP.md); completing pending training
-preserves that pool and all prior vital continuation.
-
 Rules 0.6.15 also persists Orc Adrenaline Rush uses and pending Temporary HP
-replacement in combat format 12 and SRD7; see [Temporary HP](TEMPORARY-HP.md).
+replacement; see [Temporary HP](TEMPORARY-HP.md).
 
 Bard starting instrument proficiencies use a choose-three group from all ten SRD
-instruments. Presets generate selections; old saves retain pending choices. See
+instruments. Presets generate selections. See
 [Bard instruments](BARD-INSTRUMENTS.md) for sources, versioning and verification.
 
 Monks choose one artisan tool or instrument from all 27 SRD options. Shared
 continuity metadata preserves instruments across Bard/Monk changes; artisan
 tools remain Monk-only choices. See [Monk tools](MONK-TOOLS.md).
 
-Druids receive fixed Herbalism Kit proficiency from their class. Old campaigns
-gain this owed fixed grant without filling pending choices or changing vitals;
-older combat profiles retain their original policy. See [Druid Herbalism Kit](DRUID-HERBALISM.md).
+Druids receive fixed Herbalism Kit proficiency from their class. See [Druid Herbalism Kit](DRUID-HERBALISM.md).
 
 Soldiers choose one of four Gaming Set variants through Training, independently
 of class. Class changes retain the choice; leaving Soldier removes it. Presets
-generate choices and old saves keep missing choices pending. See
+generate choices. See
 [Soldier Gaming Set](SOLDIER-GAMING.md).
-
-## Review Training verification (#29/#189)
-
-`opengold_training_tests` covers direct and indirect replacement rejection in the
-isolated editor and complete campaign invariants, including all twelve starting
-class packages, duplicate sources, Expertise and previous-save migration.
-`tests/training_review_view_tests.gd` loads an actual version-eight save migrated
-by the native fixture builder, adds partial-choice cases, and exercises five
-characters through the real game controls. It checks locked checkboxes/dropdown,
-advancement conflicts, Apply/Cancel/Escape, keyboard focus, combat blocking and
-save/reload. A native comparison of its resulting save permits only completed
-training and roster selection to differ. Existing wounds, resources, equipment,
-advancement and campaign history must match exactly.
-
-Build the game test project and `opengold_training_tests` first. Run the asset-backed
-check with the existing test wrapper (Bash, macOS paths shown):
-
-```bash
-export OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD
-build/mac-check/opengold_training_tests
-cmake -DGODOT=/Applications/Godot_mono.app/Contents/MacOS/Godot \
-  -DPROJECT="$PWD/src/OpenGoldBox/godot" \
-  -DSCRIPT="$PWD/tests/training_review_view_tests.gd" \
-  '-DEXPECTED=Review Training view checks passed' -DTEST_TIMEOUT=120 \
-  "-DARGS=--review-fixture=$PWD/build/mac-check/training-review.ogs;--review-output=/tmp/review-training-result.ogs;--review-capture=/tmp/review-training-captures" \
-  -DGRAPHICAL=ON -P tests/run_godot_test.cmake
-build/mac-check/opengold_training_tests --verify-review /tmp/review-training-result.ogs
-```
-
-The game test covers English/Spanish at 1120×800 and 1920×1080. For the English
-research demo, build `opengold_godot`, use `-DPROJECT="$PWD/demos/godot"` and add
-`;--review-demo` to DARGS. Test-created named saves are restored on completion.
-No save format, rule identity or supported historical compatibility changed.
-Current identity remains rules 0.6.40 / PC28, campaign 11, combat 13–15 / FX1–3.

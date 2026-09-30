@@ -105,17 +105,6 @@ void run()
         {
             (void)rules->character_profile(bad, {});
         });
-        auto profile = rules->character_profile(h.sheet(), {}).data;
-        replace(profile, profile.substr(0, profile.find(' ')), "PC23");
-        rejects(
-            [&]
-        {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                    {99, "vanguard", "Enemy", 1, {5, 5}}
-                }},
-            2);
-        });
         for (bool bonus_first :
                 {
                     false, true
@@ -208,24 +197,6 @@ void run()
           "Pending damage attempt rejects atomically");
     act(*hit, "savage_skip");
     check(has(*hit, "cunning_dash"), "Completing damage restores access to unspent Bonus Action");
-    auto forged = hit->save();
-    replace(forged, module()->identity().version, "0.6.34");
-    rejects(
-        [&]
-    {
-        (void)rules->restore(forged);
-    });
-    forged = hit->save();
-    replace(forged,
-            forged.starts_with("OGCOMBAT 23 ")   ? "OGCOMBAT 23"
-            : forged.starts_with("OGCOMBAT 22 ") ? "OGCOMBAT 22"
-            : "OGCOMBAT 21",
-            "OGCOMBAT 14");
-    rejects(
-        [&]
-    {
-        (void)rules->restore(forged);
-    });
     for (const auto &resource : rules->recovery_info(soldier.sheet(), soldier_state).resources)
         check(resource.id != "cunning_action", "Cunning Action is not a rest-use pool");
     // A real Ray of Frost hit reduces every Dash allowance, including the new one.
@@ -292,9 +263,22 @@ void run()
               "Incapacitated attempt rejects atomically");
     }
     CampaignParty party(module());
-    party.restore(decode_campaign(fixture("campaign-v11-cunning-before.ogs"), *creation, *rules,
-                                  "cunning", nullptr)
-                  .party);
+    for (const auto *background :
+            {"sage", "criminal", "acolyte", "soldier"
+            })
+    {
+        auto rogue_draft = draft("rogue", background);
+        rogue_draft.race = "orc";
+        rogue_draft.training = choices();
+        rogue_draft.training["class:rogue:expertise"] = {"investigation", "perception"};
+        if (std::string_view(background) == "soldier")
+            rogue_draft.training["background:soldier:gaming_set"] = {"dice"};
+        party.add_pc(hero(rogue_draft));
+    }
+    auto wounded = party.checkpoint();
+    for (auto &member : wounded.roster)
+        member.vitals.hit_points -= 2;
+    party.restore(std::move(wounded));
     check(rules->experience_for_level(2) == 300, "Independent level-two XP threshold");
     rejects(
         [&]
@@ -308,18 +292,12 @@ void run()
         check(party.member(id).character.sheet().level == 2 &&
               party.member(id).vitals.hit_points ==
               party.member(id).character.sheet().hit_points - 2,
-              "Ordinary campaign advancement preserves old wounds");
+              "Ordinary campaign advancement preserves wounds");
     }
     const auto bytes = encode_campaign(party, nullptr, "cunning");
     CampaignParty copy(module());
     copy.restore(decode_campaign(bytes, *creation, *rules, "cunning", nullptr).party);
     check(encode_campaign(copy, nullptr, "cunning") == bytes, "Advanced campaign replay exact");
-    rejects(
-        [&]
-    {
-        (void)decode_campaign(corrupt(bytes, module()->identity().version, "0.6.34"), *creation,
-        *rules, "cunning", nullptr);
-    });
     check(bool(copy.rest(RestKind::short_rest)), "Rogue short rest valid");
     auto rest = copy.state().short_rest;
     check(bool(rest), "Rest ticket exists");

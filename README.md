@@ -5,8 +5,8 @@ An open-source role-playing game engine for Gold Box games.
 The project was previously named OpenGold. The display name and documentation
 now use OpenGoldBox. Existing `opengold` C++ namespaces, build targets,
 `OPENGOLD_GAME_DIR`, source-directory names, save-format identifiers, and the
-GitHub repository URL remain stable for compatibility. Existing campaign saves
-continue to use the original Godot user-data directory.
+GitHub repository URL keep their original names. Campaign saves continue to use
+the original Godot user-data directory.
 
 A modern Godot-based reimplementation of SSI's Gold Box engine that reads the
 original game data and assets while adding a cleaner UI, improved rendering,

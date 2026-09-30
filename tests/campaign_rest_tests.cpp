@@ -1,8 +1,8 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <limits>
 #include <stdexcept>
@@ -51,19 +51,24 @@ Character hero(std::string klass = "fighter", unsigned level = 4)
         r = {{6, 5, 4, 1}, 3};
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
-    // Keep this legacy-rest fixture's later training pending so it continues to
-    // exercise compact campaign formats 11/12, independently of newer choices.
     for (unsigned n = 2; n <= level; ++n)
-    {
-        auto choice = module()->default_advancement(result.sheet());
-        std::erase_if(choice.training,
-                      [](const auto & group)
-        {
-            return group.first.find(":weapon_mastery") != std::string::npos;
-        });
-        check(result.advance(*module(), scratch, choice), "Fixture level is supported");
-    }
+        check(result.advance(*module(), scratch), "Fixture level is supported");
     return result;
+}
+
+// A level-four human's vital record with every Second Wind and first-level
+// spell slot spent; Hit Dice, Action Surge and Arcane Recovery stay unspent.
+std::string spent_resources(std::string_view character_class)
+{
+    return character_class == "Wizard" ? "SRD9 0 0 3 0 0 0 4 0 0 0 \"\" 0 0 1 FX7 1 0 0 0"
+           : "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0";
+}
+
+// A level-four human Fighter at 0 HP, still rolling death saves.
+std::string dying_resources(int successes, int failures)
+{
+    return "SRD9 0 0 0 " + std::to_string(successes) + ' ' + std::to_string(failures) +
+           " 0 4 6000 0 0 \"\" 0 1 0 FX7 1 0 0 0";
 }
 
 std::string saved(const CampaignParty &p)
@@ -218,36 +223,6 @@ void alternate_rules_boundary()
           "Core applies module-defined completion benefits instead of branching on rest kind");
 }
 
-void freeze_activity_baseline()
-{
-    CampaignParty party(module());
-    auto id = party.add_pc(hero());
-    party.add_pc(hero("wizard"));
-    auto state = party.checkpoint();
-    state.time_minutes = 1000;
-    state.subminute_milliseconds = 4321;
-    state.random_state = 29;
-    for (auto &member : state.roster)
-        member.vitals = {1, false, "SRD1 0 0 0 0 0"};
-    party.restore(state);
-    (void)party.rest(RestKind::short_rest);
-    check(party.state().short_rest->ticket.session == 1 && party.state().next_rest_session == 2,
-          "Freeze requires pre-activity rest implementation");
-    const auto write = [&](const char *name)
-    {
-        const auto bytes = saved(party);
-        check(bytes.starts_with("OPENGOLD-CAMPAIGN 11\n") && party.identity().version == "0.6.40",
-              "Freeze requires actual pre-activity writer");
-        std::ofstream out(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name,
-                          std::ios::binary);
-        out << bytes;
-        check(bool(out), "Write prior rest fixture");
-    };
-    write("campaign-v11-rest-activity-before.ogs");
-    (void)party.spend_hit_die(party.state().short_rest->ticket, id);
-    write("campaign-v11-rest-activity-spent.ogs");
-}
-
 void individual_eligibility()
 {
     CampaignParty party(module());
@@ -261,11 +236,11 @@ void individual_eligibility()
     state.subminute_milliseconds = 3000;
     state.random_state = 29;
     for (auto &m : state.roster)
-        m.vitals = {1, false, "SRD1 0 0 0 0 0"};
+        m.vitals = {1, false, spent_resources(m.character.sheet().character_class)};
     state.roster[1].last_rest_minutes = 41;
     state.roster[1].last_rest_subminute_milliseconds = 4000;
-    state.roster[2].vitals = {0, false, "SRD1 0 0 1 2 0"};
-    state.roster[3].vitals = {0, true, "SRD1 0 0 0 3 0"};
+    state.roster[2].vitals = {0, false, dying_resources(1, 2)};
+    state.roster[3].vitals = {0, true, "SRD9 0 0 0 0 3 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0"};
     party.restore(state);
     const auto before = saved(party);
     const auto info = party.rest_info(RestKind::long_rest);
@@ -292,11 +267,18 @@ void individual_eligibility()
             {
                 w, dead, reserve
             })
-        check(party.member(id).vitals == state.roster[id - 1].vitals &&
+    {
+        // Elapsed time rewrites the description, never the resources.
+        const auto &vitals = party.member(id).vitals, &original = state.roster[id - 1].vitals;
+        check(vitals.hit_points == original.hit_points && vitals.dead == original.dead &&
+              vitals.resources == original.resources &&
               party.member(id).last_rest_minutes == state.roster[id - 1].last_rest_minutes,
               "Ineligible and reserve members gain no rest resources or cooldown reset");
+    }
+
     check(party.member(unconscious).vitals.dead &&
-          party.member(unconscious).vitals.resources == "SRD1 0 0 1 4 0" &&
+          party.member(unconscious).vitals.resources ==
+          "SRD9 0 0 0 1 4 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0" &&
           !party.member(unconscious).last_rest_minutes,
           "Ineligible mortality continues without replenishing resources or recording a rest");
     check(
@@ -339,7 +321,7 @@ void spending_and_continuation()
     auto state = party.checkpoint();
     state.subminute_milliseconds = 1234;
     for (auto &m : state.roster)
-        m.vitals = {1, false, "SRD1 0 0 0 0 0"};
+        m.vitals = {1, false, spent_resources(m.character.sheet().character_class)};
     party.restore(state);
     rejects(
         [&]
@@ -375,17 +357,11 @@ void spending_and_continuation()
     rejects(
         [&]
     {
-        party.complete_training(f, *srd5::character_rules(),
-        {{"origin:languages", {"elvish", "orc"}}});
-    });
-    rejects(
-        [&]
-    {
         (void)party.rest();
     });
     check(
         saved(party) == after_rest,
-        "Invalid targets, edits and repeated rests preserve the completed hour, resources and RNG");
+        "Invalid targets, removal and repeated rests preserve the completed hour, resources and RNG");
     const auto first = party.spend_hit_die(ticket, f);
     check(first.roll == 4 && first.modifier == 2 && first.healing == 6 && first.remaining == 3 &&
           party.member(f).vitals.hit_points == 7 &&
@@ -559,7 +535,7 @@ void expiry_and_atomicity()
     });
     check(saved(party) == exhausted, "Session counter exhaustion is atomic");
     state.next_rest_session = 1;
-    state.roster[0].vitals = {0, false, "SRD1 0 0 1 2 0"};
+    state.roster[0].vitals = {0, false, dying_resources(1, 2)};
     party.restore(state);
     const auto unconscious = saved(party);
     check(!party.rest(RestKind::short_rest) && !party.rest() && saved(party) == unconscious,
@@ -580,7 +556,11 @@ void effects_once()
     auto state = party.checkpoint();
     state.subminute_milliseconds = 4321;
     for (auto &m : state.roster)
-        m.vitals = {1, false, "SRD3 0 0 0 0 0 0 FX1 2 1 1 1 77 99 \"Source caster\" 13 43000 2000"};
+        m.vitals = {1,
+                    false,
+                    "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX7 2 1 1 1 77 99 \"Source caster\" 13 "
+                    "43000 2000 0 0"
+                   };
     for (const auto kind :
             {
                 RestKind::short_rest, RestKind::long_rest
@@ -597,7 +577,7 @@ void effects_once()
               party.state().random_state != state.random_state,
               "Rest performs exactly the same timed recovery rolls as one elapsed interval");
         for (const auto &m : party.state().roster)
-            check(m.vitals.resources.ends_with("FX1 2 0"),
+            check(m.vitals.resources.ends_with("FX7 2 0 0 0"),
                   "Timed effects expire and safe rest completion stands able sleepers");
         check(party.member(reserve).vitals == elapsed.member(reserve).vitals,
               "Reserve effects advance without receiving rest recharge");
@@ -646,7 +626,7 @@ void campaign_services()
     auto party = std::make_shared<CampaignParty>(module());
     const auto id = party->add_pc(hero());
     auto state = party->checkpoint();
-    state.roster[0].vitals = {1, false, "SRD1 0 0 0 0 0"};
+    state.roster[0].vitals = {1, false, spent_resources("Fighter")};
     party->restore(state);
     auto resources = std::make_shared<por::PhlanResources>();
     auto p = program({0});
@@ -752,7 +732,7 @@ void watch_equipment_and_rollback()
         const auto owner = party->add_pc(std::move(person));
         party->equip(owner, sword);
         auto initial = party->checkpoint();
-        initial.roster[0].vitals = {1, false, "SRD1 0 0 0 0 0"};
+        initial.roster[0].vitals = {1, false, spent_resources("Fighter")};
         party->restore(initial);
         Bytes bytes{0, 0};
         for (unsigned n = 0; n < 5; ++n)
@@ -805,7 +785,7 @@ std::string payload(std::string body)
         hash ^= c;
         hash *= 1099511628211ULL;
     }
-    return "OPENGOLD-CAMPAIGN 11\n" + std::to_string(hash) + '\n' + body;
+    return "OPENGOLD-CAMPAIGN 19\n" + std::to_string(hash) + '\n' + body;
 }
 
 void resumption_services()
@@ -858,9 +838,11 @@ void malformed_continuation()
     (void)party.rest(RestKind::short_rest);
     const auto good = saved(party);
     auto body = good.substr(good.find('\n', good.find('\n') + 1) + 1);
-    const std::string tail = "3 1 2 1 60 0 1 1 ";
-    check(body.ends_with(tail), "Independent fixture locates the version-ten continuation");
-    const auto prefix = body.substr(0, body.size() - tail.size());
+    // The Short Rest continuation is followed by an absent rest activity, no
+    // detached items and no spell or training rest records.
+    const std::string tail = "3 1 2 1 60 0 1 1 ", later = "0 0 0 0 ";
+    check(body.ends_with(tail + later), "Independent fixture locates the Short Rest continuation");
+    const auto prefix = body.substr(0, body.size() - tail.size() - later.size());
     for (const auto bad :
             {"0 0 ", "1 1 1 1 60 0 1 1 ", "2 1 0 1 60 0 1 1 ", "2 1 1 0 60 0 1 1 ",
              "2 1 1 1 59 0 1 1 ", "2 1 1 1 60 1 1 1 ", "2 1 1 1 60 0 0 ",
@@ -869,7 +851,7 @@ void malformed_continuation()
         rejects(
             [&]
     {
-        (void)loaded(payload(prefix + bad));
+        (void)loaded(payload(prefix + bad + later));
     });
     check(saved(party) == good,
           "Correct-checksum malformed continuations cannot replace the live campaign");
@@ -889,15 +871,10 @@ void malformed_continuation()
 #include "rest_activity_checks.h"
 } // namespace
 
-int main(int argc, char **argv)
+int main()
 {
     try
     {
-        if (argc == 2 && std::string_view(argv[1]) == "--freeze-rest-activity")
-        {
-            freeze_activity_baseline();
-            return 0;
-        }
         alternate_rules_boundary();
         rest_activity_checks::run();
         individual_eligibility();

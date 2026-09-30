@@ -24,7 +24,7 @@ At every batch start, after a context reset, and before any authorized delegatio
 | --- | --- | --- |
 | Bounded repetitive changes following an existing example: catalog entries, straightforward grants, documentation | `gpt-6-luna` | `low` |
 | Normal implementation batches using established rules interfaces and approved controls | `gpt-6-sol` | `medium` |
-| Complex rule interactions, save migrations, architecture, or difficult escalations | `gpt-6-astra` | `high` |
+| Complex rule interactions, save format changes, architecture, or difficult escalations | `gpt-6-astra` | `high` |
 
 These are starting assignments to evaluate against actual delivery, not a claim
 of guaranteed savings. Classify by the hardest required decision, not issue title
@@ -57,7 +57,7 @@ The coordinator retains responsibility for acceptance, integration and delivery.
 ## Escalation and review
 
 Escalate after two unsuccessful fixes of the same failure, or immediately when
-an unresolved architectural decision, rules interaction or migration exceeds the
+an unresolved architectural decision, rules interaction or save format change exceeds the
 assigned tier. Move Luna to Sol for ordinary implementation difficulty; use Astra
 for complex decisions or persistent failures. Preserve the patch, reproduction,
 failed attempts, logs and remaining acceptance. Do not restart investigation.
@@ -69,7 +69,7 @@ require explicit user approval before implementation. Do not reset the batch's
 60-minute checkpoint (90-minute maximum) on escalation.
 
 Use stronger-model review selectively for consequential rules interactions,
-migrations and architecture. Review the diff and evidence; do not repeat a full
+save format changes and architecture. Review the diff and evidence; do not repeat a full
 repository audit. Routine data changes need no automatic second-model review.
 
 ## Measurement and continuity

@@ -181,8 +181,8 @@ void access()
                 }
         check(checked, "Real attack bonus observed");
         auto profile = rules->character_profile(h.sheet(), {}).data;
-        check(profile.starts_with(std::string_view(klass) == "wizard" ? "PC32 " : "PC29 "),
-              "New knowledge requires new profile");
+        check(profile.starts_with("PC42 ") && profile.find(" chill_touch ") != profile.npos,
+              "Profile lists the learned cantrip");
         profile.replace(0, 4, "PC28");
         rejects(
             [&]
@@ -192,13 +192,6 @@ void access()
                     {2, "vanguard", "Enemy", 1, {2, 1}}
                 }},
             13);
-        });
-        auto old = rules->identity();
-        old.version = "0.6.42";
-        rejects(
-            [&]
-        {
-            rules->validate_saved_grants(old, h.sheet(), h.sheet().grants);
         });
         auto draft = h.creation_data();
         draft.cantrips = std::vector<std::string> {"chill_touch", "chill_touch"};
@@ -441,7 +434,7 @@ void lifecycle()
     state.sleeping = state.prone = true;
     std::ostringstream out;
     fx::write_effects(out, state);
-    check(out.str().starts_with("FX5 "), "FX5 preserves new effect and posture");
+    check(out.str().starts_with("FX7 "), "Effect state writes the current tag");
     std::istringstream input(out.str());
     check(fx::read_effects(input) == state, "Mixed source and sleep codec");
     fx::EffectSubject subject{10, state, {}};
@@ -454,9 +447,9 @@ void lifecycle()
     check(state.active.empty() && state.prone && random == 17,
           "Last source expires without waking or RNG");
     for (const char *bad :
-            {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX5 2 1 1 4 5 1 \"Caster\" 1 6000 0 0 0",
-             "FX5 2 1 1 4 5 1 \"Caster\" 0 12001 0 0 0", "FX5 2 1 1 4 5 1 \"Caster\" 0 6000 1 0 0",
-             "FX5 1 0 0 0", "FX5 2 1 1 4 5 1 \"Caster\" 0 6000 0 1 0"
+            {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX7 2 1 1 4 5 1 \"Caster\" 1 6000 0 0 0",
+             "FX7 2 1 1 4 5 1 \"Caster\" 0 12001 0 0 0", "FX7 2 1 1 4 5 1 \"Caster\" 0 6000 1 0 0",
+             "FX7 2 1 1 4 5 1 \"Caster\" 0 6000 0 1 0"
             })
         rejects(
             [&]
@@ -474,7 +467,7 @@ VitalState blocked_state(const RulesModule &rules, const Character &h, int hp)
     auto at = result.resources.find("FX");
     check(at != result.resources.npos, "Orc fixture carries effect record");
     result.resources.replace(at, result.resources.size() - at,
-                             "FX5 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0");
+                             "FX7 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0");
     return result;
 }
 
@@ -693,17 +686,6 @@ void death_save_boundary()
 void persistence()
 {
     auto rules = custom();
-    auto c = battle(*rules, hero());
-    act(*c, "chill_touch", 2);
-    auto saved = c->save();
-    auto forged = saved;
-    forged.replace(forged.find(module()->identity().version), 6, "0.6.42");
-    rejects(
-        [&]
-    {
-        (void)rules->restore(forged);
-    });
-    check(c->save() == saved, "Invalid restore preserves session");
     for (const auto *klass :
             {"wizard", "sorcerer", "warlock"
             })
@@ -819,8 +801,8 @@ void stable_timeline()
 VitalState stable_blocked(unsigned deadline = 1000)
 {
     return {0, false,
-            "SRD7 2 0 0 0 0 1 2 0 " + std::to_string(deadline) +
-            " 0 \"\" 2 FX5 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0"};
+            "SRD9 2 0 0 0 0 1 2 0 " + std::to_string(deadline) +
+            " 0 \"\" 2 1 0 FX7 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0"};
 }
 
 void stable_continuation()
@@ -845,16 +827,8 @@ void stable_continuation()
         decode_campaign(bytes, *srd5::character_rules(), *rules, "earned-recovery", nullptr).party);
     check(encode_campaign(loaded, nullptr, "earned-recovery") == bytes,
           "Pending earned recovery round trips exactly");
-    auto old = rules->identity();
-    old.version = "0.6.43";
-    auto forged = pending;
-    rejects(
-        [&]
-    {
-        rules->migrate_character_state(old, h.sheet(), forged);
-    });
     auto no_block = pending;
-    no_block.resources.replace(no_block.resources.find("FX5"), std::string::npos, "FX1 1 0");
+    no_block.resources.replace(no_block.resources.find("FX7"), std::string::npos, "FX7 1 0 0 0");
     rejects(
         [&]
     {
@@ -885,13 +859,6 @@ void stable_continuation()
     13);
     check(unit(*c).hit_points == 0, "Combat retains due recovery while blocked");
     auto copy = rules->restore(c->save());
-    auto checkpoint = c->save();
-    checkpoint.replace(checkpoint.find(module()->identity().version), 6, "0.6.43");
-    rejects(
-        [&]
-    {
-        (void)rules->restore(checkpoint);
-    });
     const auto random = rng(*c);
     for (unsigned turns = 0; turns < 8 && unit(*c).hit_points == 0; ++turns)
     {
@@ -923,7 +890,7 @@ void stable_actual_cast()
                 0,
                 {2, 1},
                 {},
-                VitalState{0, false, "SRD5 0 0 0 0 0 1 0 0 5000 FX1 1 0"}
+                VitalState{0, false, "SRD9 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 FX7 1 0 0 0"}
             },
             {99, "vanguard", "Enemy", 1, {6, 1}}
         }},
@@ -954,64 +921,6 @@ void stable_actual_cast()
           "Actual cast delays the existing deadline without another recovery roll");
 }
 
-void prior_chill_writer()
-{
-    auto rules = module();
-    auto normalize = [&](std::string bytes)
-    {
-        bytes.replace(bytes.find("0.6.43"), 6, rules->identity().version);
-        return bytes;
-    };
-    auto c = rules->restore(read(root / "tests/fixtures/combat-chill-0.6.43.save"));
-    check(c->save() == normalize(read(root / "tests/fixtures/combat-chill-0.6.43.save")),
-          "Actual prior Chill writer migration changes only identity");
-    act(*c, "end");
-    act(*c, "end");
-    check(c->save() == normalize(read(root / "tests/fixtures/combat-chill-0.6.43-continued.save")),
-          "Actual prior Chill continuation remains byte exact");
-    CampaignParty party(module());
-    party.restore(decode_campaign(read(root / "tests/fixtures/campaign-chill-0.6.43.ogs"),
-                                  *srd5::character_rules(), *rules, "chill-baseline", nullptr)
-                  .party);
-    const auto before = party.member(1).vitals;
-    check(fx::healing_blocked(effects(before)), "Prior campaign retains prevention");
-    party.advance_time_milliseconds(9000);
-    check(!fx::healing_blocked(effects(party.member(1).vitals)) &&
-          party.member(1).vitals.hit_points == before.hit_points,
-          "Prior campaign effect expires without invented healing");
-}
-
-void freeze_chill_baseline()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.43", "Freeze requires actual 0.6.43 writer");
-    CampaignParty party(module());
-    auto h = hero("wizard", 4);
-    auto id = party.add_pc(h);
-    auto actors = party.participants();
-    actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {6, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
-    while (c->snapshot().actor != id)
-        act(*c, "end");
-    act(*c, "chill_touch", id);
-    check(blocked(*c, id), "Freeze actual Chill hit");
-    auto write = [](const char *name, const std::string & bytes)
-    {
-        std::ofstream out(root / "tests/fixtures" / name, std::ios::binary);
-        out << bytes;
-        check(bool(out), "Write baseline");
-    };
-    write("combat-chill-0.6.43.save", c->save());
-    party.begin_combat();
-    party.apply_combat(c->snapshot());
-    party.end_combat();
-    write("campaign-chill-0.6.43.ogs", encode_campaign(party, nullptr, "chill-baseline"));
-    act(*c, "end");
-    act(*c, "end");
-    write("combat-chill-0.6.43-continued.save", c->save());
-}
-
 void fixtures()
 {
     auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "chill-fixtures";
@@ -1038,15 +947,10 @@ void fixtures()
 }
 } // namespace
 
-int main(int argc, char **argv)
+int main()
 {
     try
     {
-        if (argc == 2 && std::string_view(argv[1]) == "--freeze-chill-baseline")
-        {
-            freeze_chill_baseline();
-            return 0;
-        }
         access();
         damage();
         timing();
@@ -1063,7 +967,6 @@ int main(int argc, char **argv)
         stable_timeline();
         stable_continuation();
         stable_actual_cast();
-        prior_chill_writer();
         fixtures();
         std::cout << "Chill Touch tests passed\n";
         return 0;

@@ -61,15 +61,11 @@ attribution applies; original game resources are loaded locally.
 
 ## Saves and verification
 
-Campaign formats 3–10 record each confirmed choice and reconstruct the resulting
-sheet and Constitution history through the rules module. Formats 1 and 2 migrate
-their existing levels using the previous default choices. Rules module 0.6.15
-accepts the supported 0.3.0–0.6.14 campaign identities; unrelated content identities
-still reject. Loading an affected older campaign corrects maximum HP and preserves
-the living character's HP deficit. Unconscious/dead characters stay at zero, and
-spent resources and death-save counters persist. The correction applies once;
-campaign format 7 also retains grip. PC6 profiles carry HP history, grip and grants.
-Campaign format 8 explicitly stores acquired grants with stable feature/feat IDs,
+Campaign saves record each confirmed choice and reconstruct the resulting
+sheet and Constitution history through the rules module; see
+[saves](SAVES.md#pre-10-format-policy). Spent resources, death-save counters and
+grip persist. Profiles carry HP history, grip and grants.
+Campaign saves explicitly store acquired grants with stable feature/feat IDs,
 source IDs, acquisition levels and named choices. Soldier's Savage Attacker is a
 level-one `background:soldier` grant. A level-four selection records
 `class:<id>:ability_score_improvement`, even when the chosen feat is Defense or
@@ -81,29 +77,22 @@ repeatable under the SRD, but the current level cap provides only one entitlemen
 Advancement adds only the newly acquired Hit Die, preserving previous dice
 expenditure in the rules continuation; see [rest resources](REST-RESOURCES.md).
 
-Campaign format 9 and PC7 add skill, tool, Expertise and language grants.
-Advancement refreshes skill totals after ability changes; training choices and
-missing-choice migration are described in [training support](TRAINING.md).
+Campaign saves and profiles also store skill, tool, Expertise and language grants.
+Advancement refreshes skill totals after ability changes; training choices are
+described in [training support](TRAINING.md).
 
 Existing Second Wind, Spellcasting, Unarmored Defense, Dwarven Toughness and
 Goliath speed have source records. Fighting Style records the existing Defense
 prerequisite; its level-one selection/replacement flow remains FTR00/FTR01 work.
 This does not add unimplemented class features, Origin feats or Human choices.
-New grant records must agree with creation and leveling history on load. Formats
-1–7 reconstruct that provenance. A legacy standalone combat recipe lacks enough
-history to distinguish Soldier from a selected Savage Attacker, so it preserves
-its effects without fabricating that distinction.
+New grant records must agree with creation and leveling history on load.
 
 Ability-adjustment sources are also reconstructed from creation and advancement
-choices, including older saves. Each records its source ID, acquisition level
+choices. Each records its source ID, acquisition level
 and ability amounts. This presentation correction introduced no profile or campaign format change.
-Standalone combat checkpoints use version 11 to retain second-level slots,
+Standalone combat checkpoints retain second-level slots,
 per-turn spell/feat usage, timed effects, presentation facing, pending movement
 reactions, involuntary overlap during allied transit, weapon grip, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP.
-Modules 0.6.4/0.6.5/0.6.6/0.6.7/0.6.8/0.6.9/0.6.10/0.6.11/0.6.12/0.6.13/0.6.14 have specific [combat migrations](RULES.md#library-boundary)
-that retain movement queues and cancel obsolete facing reactions without
-refunding resources. Other old
-combat identities are not migrated.
 
 From PowerShell:
 
@@ -125,16 +114,11 @@ the existing modifier dialog and identical text after campaign reconstruction.
 Native advancement tests cover all three classes, transactional rejection,
 Constitution HP history (including low scores and odd/even modifier boundaries),
 Defense AC, Savage Attacker damage, spell action
-budgets, second-level resources and campaign/combat save reconstruction. Frozen
-authored format-1/2 fixtures and a format-6 fixture written by module 0.6.2 verify
-migration independently of the current writer. The latter includes wounded,
-unconscious, dead, Dwarf and unaffected normal-Constitution characters.
+budgets, second-level resources and campaign/combat save reconstruction.
 
 [Feature-grant regressions](../tests/feature_grant_tests.cpp) cover Soldier creation
 across all twelve classes, separate advancement entitlements and choices,
-prerequisites, duplicates, forged sources and malformed saved choices. Frozen
-0.6.7 campaign and combat files verify unchanged HP, armor and spent resources;
-combat continuation matches the previous writer's damage, usage and RNG exactly.
+prerequisites, duplicates, forged sources and malformed saved choices.
 
 Rules 0.6.15 also persists Orc Adrenaline Rush uses and pending Temporary HP
-replacement in combat format 12 and SRD7; see [Temporary HP](TEMPORARY-HP.md).
+replacement; see [Temporary HP](TEMPORARY-HP.md).

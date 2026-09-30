@@ -72,29 +72,21 @@ CombatantView unit(const CombatSession &s, EntityId id)
 
 fx::EffectState effects(const VitalState &state)
 {
-    const auto where = state.resources.find("FX1");
+    const auto where = state.resources.find("FX7");
     if (where == std::string::npos)
         return {};
     std::istringstream input(state.resources.substr(where));
     return fx::read_effects(input);
 }
 
+// Replaces the effect tail of a complete vital record taken from a live session.
 VitalState with_effects(VitalState state, const fx::EffectState &effects)
 {
-    std::istringstream input(state.resources);
-    std::string magic;
-    int winds{}, slots{}, slots2{}, successes{}, failures{};
-    bool stable{};
-    input >> magic >> winds >> slots;
-    if (magic == "SRD2" || magic == "SRD3")
-        input >> slots2;
-    input >> successes >> failures >> stable;
-    check(bool(input), "Fixture has complete resource state");
+    const auto at = state.resources.find("FX7");
+    check(at != std::string::npos, "Fixture has complete resource state");
     std::ostringstream out;
-    out << "SRD3 " << winds << ' ' << slots << ' ' << slots2 << ' ' << successes << ' ' << failures
-        << ' ' << stable << ' ';
     fx::write_effects(out, effects);
-    state.resources = out.str();
+    state.resources.replace(at, std::string::npos, out.str());
     return state;
 }
 
@@ -254,11 +246,13 @@ void codec()
     std::istringstream input(output.str());
     check(fx::read_effects(input) == original, "All effect fields round trip");
     for (const auto *bad :
-            {"FX2 2 0", "FX1 0 0", "FX1 -1 0", "FX1 2 129",
-             "FX1 2 1 1 99 77 99 \"Caster\" 13 60000 6000",
-             "FX1 2 1 1 1 0 99 \"Caster\" 13 60000 6000", "FX1 2 1 1 1 77 99 \"Caster\" 13 0 6000",
-             "FX1 2 1 1 1 77 99 \"Caster\" 13 60001 6000", "FX1 2 1 1 1 77 99 \"Caster\" 13 60000 0",
-             "FX1 2 1 2 1 77 99 \"Caster\" 13 60000 6000"
+            {"FX1 2 0", "FX7 0 0 0 0", "FX7 -1 0 0 0", "FX7 2 129 0 0",
+             "FX7 2 1 1 99 77 99 \"Caster\" 13 60000 6000 0 0",
+             "FX7 2 1 1 1 0 99 \"Caster\" 13 60000 6000 0 0",
+             "FX7 2 1 1 1 77 99 \"Caster\" 13 0 6000 0 0",
+             "FX7 2 1 1 1 77 99 \"Caster\" 13 60001 6000 0 0",
+             "FX7 2 1 1 1 77 99 \"Caster\" 13 60000 0 0 0",
+             "FX7 2 1 2 1 77 99 \"Caster\" 13 60000 6000 0 0"
             })
         rejects(
             [&]
@@ -299,14 +293,14 @@ void combat()
           effect.active[0].source_actor == 1 && effect.active[0].dc == 13,
           "Application retains scoped source and original DC");
     check(target.conditions.size() == 1 &&
-          unit(*s, 1).persistent.resources.starts_with("SRD2 0 2 1 "),
+          unit(*s, 1).persistent.resources.starts_with("SRD9 0 2 1 "),
           "Status appears and exactly one second-level slot is spent");
     check(!offers(*s, "blindness") && !offers(*s, "magic_missile"),
           "Action and one-slot-per-turn limits enforced");
     auto restored = rules->restore(s->save());
     check(restored->save() == s->save(), "Active effects survive checkpoint exactly");
     auto corrupt = s->save();
-    const auto fx_position = corrupt.find("FX1 2 1");
+    const auto fx_position = corrupt.find("FX7 2 1");
     check(fx_position != std::string::npos, "Active effect is encoded");
     corrupt.replace(fx_position, 3, "FX9");
     rejects(
@@ -362,7 +356,7 @@ void combat()
     s = rules->create(e, 42);
     s->submit(command(*s, "blindness"));
     check(unit(*s, 2).conditions.empty() &&
-          unit(*s, 1).persistent.resources.starts_with("SRD2 0 2 1 "),
+          unit(*s, 1).persistent.resources.starts_with("SRD9 0 2 1 "),
           "Initial successful save prevents condition but spends slot");
     // Non-divisor actor counts must still telescope to exactly six seconds.
     e = encounter();
@@ -538,11 +532,12 @@ void checkpoint_capacity()
     while (fx::can_apply(full))
         fx::apply_blindness(full, 77, 99, std::string(160, '"'), 13, 6000);
     check(full.active.size() == fx::effect_limit, "Application count is bounded");
+    const auto bandit = unit(*rules->create(encounter(), 3), 2).persistent;
     Encounter e{{12, 9, std::vector<std::uint8_t>(108)}, {}};
     for (unsigned n = 0; n < 64; ++n)
     {
         Participant p{n + 1, "bandit", "Crowded actor", n % 2, {int(n % 12), int(n / 12)}};
-        p.state = with_effects({11, false, "SRD1 0 0 0 0 0"}, full);
+        p.state = with_effects(bandit, full);
         e.participants.push_back(std::move(p));
     }
     auto session = rules->create(e, 3);
@@ -565,21 +560,10 @@ int main()
 {
     try
     {
-        if (std::getenv("OPENGOLD_MASTERY_CHOICE_BASELINE"))
-        {
-            mastery_choice_checks::capture();
-            return 0;
-        }
-        if (std::getenv("OPENGOLD_NICK_BASELINE"))
-        {
-            nick_attack_checks::capture();
-            return 0;
-        }
         optional_mastery_checks::run();
         graze_checks::run();
         mastery_combat_checks::run();
         nick_attack_checks::run();
-        mastery_choice_checks::historical();
         slow_mastery_checks::run();
         saving_throws();
         lifecycle();

@@ -81,12 +81,11 @@ do not close it merely because Weapon Mastery and Fighting Styles are complete.
 Those issues remain open. Alert is a bounded original feat requirement and a
 Criminal-background dependency; no new issue or silent prerequisite is added.
 
-## Implementation and compatibility
+## Implementation
 
-Rules0.6.61 introduces PC40 only for characters who have Alert. Existing profile
-versions remain unchanged. Combat26 is used while the opening choices are
-pending; it records the remaining holders and preserves RNG, totals and order.
-After the final choice, the ordinary current-turn format applies. Each command
+While the opening choices are pending, the combat checkpoint records the
+remaining holders and preserves RNG, totals and order. After the final choice,
+ordinary turn state applies. Each command
 carries the current revision, holder and selected ally; stale or illegal commands
 fail before mutation. The module computes the bonus, eligible allies, swaps and
 final order. Core consumes generic commands; the shared Godot dialog renders
@@ -94,9 +93,7 @@ those commands and totals.
 
 The first turn, blindness recovery scheduling and death saves wait until every
 party choice is resolved. Enemy holders keep their totals automatically. Campaign
-reconstruction adds Criminal's fixed grant; old combat reconstruction retains its
-historical profiles/totals and starts no new choice phase. Actual0.6.60 evidence
-and hashes are in [the fixture record](../tests/fixtures/README.md#alert-baseline--actual0660-writer).
+reconstruction adds Criminal's fixed grant.
 
 ## Verification
 
@@ -106,8 +103,8 @@ rebuilt, then51/51 non-Godot CTests passed in9.06s. Alert acceptance is part of
 creation routes, six current level4 entitlements, duplicate/provenance rejection,
 independent Initiative bonus/cancelled Advantage evidence, multiple holders,
 updated totals, enemy/self/incapacitated targets, sleeping holders, stale commands,
-malformed pending records,32 seeds including an incapacitated first slot, exact
-pending continuation and genuine prior-writer migration. Existing preset tests
+malformed pending records,32 seeds including an incapacitated first slot and exact
+pending continuation. Existing preset tests
 also check Criminal Alert grants.
 
 `alert_view_tests.gd` passes mainEN/ES and demoEN at1120×800/1920×1080. It uses

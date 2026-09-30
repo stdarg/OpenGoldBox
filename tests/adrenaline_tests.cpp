@@ -31,13 +31,6 @@ template <class F> void rejects(F f)
     check(caught, "Malformed state must reject");
 }
 
-std::string read(const std::filesystem::path &path)
-{
-    std::ifstream in(path);
-    check(bool(in), "Fixture exists");
-    return {std::istreambuf_iterator<char>(in), {}};
-}
-
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
@@ -258,14 +251,17 @@ void decisions()
     auto initial = battle(c);
     std::ofstream(directory / "adrenaline-initial.save", std::ios::binary) << initial->save();
     const auto data = unit(*combat).persistent;
-    check(data.resources.starts_with("SRD7 "), "Orc uses persist even with other-source HP");
+    check(data.resources.starts_with("SRD9 "), "Orc uses persist even with other-source HP");
     for (const auto remaining :
             {"-1", "3", "2147483648"
             })
     {
         auto bad = data;
-        auto at = bad.resources.find(" FX1");
+        // Adrenaline Rush uses precede Action Surge and Arcane Recovery uses.
+        auto at = bad.resources.find(" FX7");
         check(at != bad.resources.npos, "Effect boundary");
+        for (unsigned field = 0; field < 2; ++field)
+            at = bad.resources.rfind(' ', at - 1);
         auto start = bad.resources.rfind(' ', at - 1);
         bad.resources.replace(start + 1, at - start - 1, remaining);
         rejects(
@@ -316,8 +312,16 @@ void movement()
 void campaign()
 {
     auto rules = module();
+    auto draft = hero().creation_data();
+    draft.training = {{"origin:languages", {"elvish", "orc"}},
+        {"class:fighter:fighting_style", {"archery"}},
+        {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
+        {"class:fighter", {"athletics", "history"}},
+        {"background:soldier:gaming_set", {"dice"}}
+    };
     CampaignParty party(module());
-    const auto id = party.add_pc(hero()), reserve = party.add_pc(hero());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {})),
+               reserve = party.add_pc(hero());
     party.remove(reserve);
     auto combat = battle(party.member(id).character);
     act(*combat, "adrenaline_rush");
@@ -332,18 +336,10 @@ void campaign()
         decode_campaign(bytes, *srd5::character_rules(), *rules, "adrenaline", nullptr).party);
     check(encode_campaign(copy, nullptr, "adrenaline") == bytes,
           "Campaign save/load preserves pool and spent use");
-    copy.complete_training(id, *srd5::character_rules(),
-    {
-        {"origin:languages", {"elvish", "orc"}},
-        {"class:fighter:fighting_style", {"archery"}},
-        {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-        {"class:fighter", {"athletics", "history"}},
-        {"background:soldier:gaming_set", {"dice"}}
-    });
     copy.award_experience(900, "rush-xp");
     copy.advance(id, copy.default_advancement(id));
     check(pool(copy.member(id).character, copy.member(id).vitals).remaining == 1,
-          "Training and level growth do not refill spent uses");
+          "Level growth does not refill spent uses");
     auto actors = copy.participants();
     actors.push_back({99, "vanguard", "Opponent", 1, {18, 18}});
     auto second = rules->create({{20, 20, std::vector<std::uint8_t>(400)}, actors}, 42);
@@ -355,40 +351,6 @@ void campaign()
           "Campaign recharge uses the shared rest operation");
 }
 
-void legacy()
-{
-    auto rules = module();
-    const auto path = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
-    const auto before = read(path / "combat-v11-adrenaline.save");
-    auto combat = rules->restore(before);
-    check(combat->snapshot().reaction_pending, "Old writer's opportunity queue survives");
-    check(unit(*combat).temporary_hp == TemporaryHitPoints{7, "spell:fixture"},
-          "Orc migration preserves old Temporary HP");
-    check(unit(*combat).resources.at(0).remaining == 2,
-          "Old Orc starts only the newly introduced resource at capacity");
-    act(*combat, "decline");
-    auto expected = rules->restore(read(path / "combat-v11-adrenaline-continued.save"));
-    check(combat->save() == expected->save(),
-          "Frozen old writer has identical movement, RNG, clocks and resources after continuation");
-    CampaignParty party(module());
-    party.restore(decode_campaign(read(path / "campaign-v10-adrenaline.ogs"),
-                                  *srd5::character_rules(), *rules, "adrenaline-fixture", nullptr)
-                  .party);
-    const auto &c = party.member(1);
-    check(c.vitals.hit_points == 0 && !c.vitals.dead &&
-          rules->recovery_info(c.character.sheet(), c.vitals).temporary_hp.amount == 7 &&
-          pool(c.character, c.vitals).remaining == 2,
-          "Legacy campaign Orc retains mortality/resources/pool and gains the new use capacity");
-    check(c.vitals.resources == "SRD7 1 0 0 0 0 1 1 0 4321000 7 \"spell:fixture\" 2 FX1 1 0",
-          "Legacy migration preserves exact spent Wind, die and recovery deadline");
-    const auto bytes = encode_campaign(party, nullptr, "adrenaline-fixture");
-    CampaignParty again(module());
-    again.restore(
-        decode_campaign(bytes, *srd5::character_rules(), *rules, "adrenaline-fixture", nullptr)
-        .party);
-    check(encode_campaign(again, nullptr, "adrenaline-fixture") == bytes,
-          "Migration becomes canonical and never recharges a current save");
-}
 } // namespace
 
 int main()
@@ -399,7 +361,6 @@ int main()
         decisions();
         movement();
         campaign();
-        legacy();
         std::cout << "Adrenaline Rush tests passed\n";
         return 0;
     }

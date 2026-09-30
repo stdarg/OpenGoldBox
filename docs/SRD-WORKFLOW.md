@@ -27,9 +27,9 @@ level/multiclass milestones intact. Efficiency changes execution, not acceptance
    may be active with a return path. Do not ask again for routine choices or
    controls already covered by a recorded approval.
 4. Plan persistence across the batch. Distinguish schema changes, semantic
-   changes and data additions. Reuse valid records; version when rejection or
-   continuation requires it. Capture actual prior-writer evidence before changing
-   the writer. Preserve every supported released format and its required tests.
+   changes and data additions. Reuse valid records. Add no save migrations: until
+   1.0, change the current format in place; tests check round-trips and rejection
+   of older formats. See [saves](SAVES.md#pre-10-format-policy).
 5. Implement a real player path, including all named grants/routes. No speculative
    helper or abstraction without an immediate consumer. A separate state machine
    may warrant a reviewable substep, not automatically another GitHub issue.
@@ -137,7 +137,7 @@ Discover names with `ctest --test-dir build -N` when needed.
 | Documentation/configuration | Diff/links and configuration parsing; no game rebuild. |
 | Local rule or grant | Feature test plus affected grant/access/advancement tests. |
 | Combat budgets, effects or movement | Feature plus rules/grid/effects tests as affected; shared changes also get native regression suite. |
-| Serialization or campaign handoff | Feature, save and campaign continuation tests; real prior-writer fixtures and native regression suite. |
+| Serialization or campaign handoff | Feature, save and campaign continuation tests; older-format rejection and native regression suite. |
 | Controls or presentation | Affected Godot runtime tests and neighboring shared input/layout checks; rendered English/Spanish at 1120×800 and 1920×1080. |
 
 Example focused build and test (replace names for the selected issue):
@@ -174,13 +174,13 @@ when warranted by the change, not as a repeated gate for documentation or UI tex
 
 The [model routing policy](SRD-MODEL-ROUTING.md) governs assignment: Luna/low
 for bounded repetition, Sol/medium for normal batches, Astra/high for complex
-rules, migrations, architecture and escalations. Record actual execution settings;
+rules, save format changes, architecture and escalations. Record actual execution settings;
 repository prose cannot switch a running model. This policy takes precedence over
 using the project default below as the intended effort for every task.
 
 `.codex/config.toml` selects `low` for routine project work without changing the
 model or global preferences. Use `high` for rule interactions, state machines,
-save migrations and difficult debugging. Explicit task settings can override
+save format changes and difficult debugging. Explicit task settings can override
 the project default. Existing tasks may retain their selected setting; wording
 in a prompt does not dynamically switch reasoning effort.
 

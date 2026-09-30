@@ -10,9 +10,8 @@ complete sixteen-cantrip Sorcerer catalog.
 Q27 approved the existing Spell Choices step, keyboard checkbox selection, counts,
 Back preservation, pre-generated preset choices and shared Spell/Cast controls.
 Choices record `class:sorcerer:spellcasting` at acquisition level one. Duplicates,
-foreign spells/sources, wrong acquisition levels and mismatched masks reject.
-Missing saved choices remain pending; existing Sorcerers do not automatically
-learn spells. The character sheet lists learned cantrips and Charisma provenance.
+foreign spells/sources, wrong acquisition levels and mismatched spell lists reject.
+Missing choices remain pending. The character sheet lists learned cantrips and Charisma provenance.
 
 All four spells use Charisma plus proficiency for attacks. Shared rules retain
 typed damage, criticals, range/line of effect, Somatic hands, armor restrictions,
@@ -22,11 +21,7 @@ without spending the Reaction. Ray of Frost reduces Speed by 10 feet until the
 caster's next turn. Both effects apply on a hit even through damage immunity.
 Only the Magic action is spent. Other resource pools remain unchanged.
 
-Campaign 11, combat 13–15 and FX1–3 are unchanged. PC28 validates the new source
-and uses Charisma for Sorcerers; older recipe policies retain their behavior.
-Older module identities reject new Sorcerer grants/profiles. Actual 0.6.39 writer
-fixtures captured at `6988432` preserve old missing choices, wounds, wealth,
-equipment, random state, spent Dash/Adrenaline Rush and exact turn continuation.
+Profile recipes validate the new source and use Charisma for Sorcerers.
 No player combat saving controls were added; camp/inn saving remains the policy.
 
 Evidence: [native checks](../tests/sorcerer_cantrip_tests.cpp),
@@ -34,8 +29,8 @@ Evidence: [native checks](../tests/sorcerer_cantrip_tests.cpp),
 [combat checks](../tests/sorcerer_view_tests.gd). Native cases use independent
 fixed hit/miss/critical rolls and distinguish Charisma 18 from Intelligence 15,
 d8/d10/d12 damage, typed defenses, source validation, effect expiration, illegal
-command atomicity, PC/recruited-NPC handoff, rest/save reconstruction and genuine
-prior-writer continuation. Creator/combat checks cover keyboard selection,
+command atomicity, PC/recruited-NPC handoff and rest/save reconstruction.
+Creator/combat checks cover keyboard selection,
 Back, all four spells, ally targeting and English/Spanish layouts at 1120×800
 and 1920×1080.
 

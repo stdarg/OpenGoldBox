@@ -78,11 +78,7 @@ void reject_hit_field(const RulesModule &rules, const CombatSession &combat, uns
     int n;
     while (in >> n)
         fields.push_back(n);
-    check(fields.size() == ((bytes.starts_with("OGCOMBAT 22 ") || bytes.starts_with("OGCOMBAT 23 "))
-                            ? 14u
-                            : 12u) &&
-          field < fields.size(),
-          "Versioned pending hit field shape");
+    check(fields.size() == 16u && field < fields.size(), "Pending hit field shape");
     fields[field] = value;
     std::ostringstream out;
     for (unsigned i = 0; i < fields.size(); ++i)
@@ -289,14 +285,6 @@ void run()
         }
         check(checked, "Actual aimed miss exercised");
     }
-    auto old_identity = rules->identity();
-    old_identity.version = "0.6.51";
-    rejects(
-        [&]
-    {
-        auto state = wounds;
-        rules->migrate_character_state(old_identity, h.sheet(), state);
-    });
     check(!rules->advancement_options(h.sheet()).level, "This batch does not enable level five");
     for (const auto &weapon :
             {"dagger", "shortbow", "blowgun"
@@ -551,12 +539,6 @@ void run()
     check(bool(copy.rest(RestKind::short_rest)), "Rogue Short Rest completes");
     copy.finish_short_rest(copy.state().short_rest->ticket);
     check(bool(copy.rest(RestKind::long_rest)), "Rogue Long Rest completes");
-    rejects(
-        [&]
-    {
-        (void)decode_campaign(corrupt(bytes, module()->identity().version, "0.6.51"),
-        *srd5::character_rules(), *module(), "rogue-attacks", nullptr);
-    });
     if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
     {
         CampaignParty ui(module());

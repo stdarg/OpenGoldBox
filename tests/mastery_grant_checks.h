@@ -63,8 +63,8 @@ void run()
         check(h.sheet().training.masteries.size() == options.count,
               "Real character creation produces chosen mastery grants");
         auto rules = module();
-        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC39 "),
-              "Chosen masteries use versioned validated combat recipes");
+        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC42 "),
+              "Chosen masteries use validated combat recipes");
         for (unsigned n = 0; n < options.count; ++n)
         {
             auto bad = h.sheet();
@@ -156,14 +156,6 @@ void run()
             .party);
         check(saved(copy) == saved_bytes,
               "Mastery choices and advancement round-trip exactly through campaign saves");
-        auto identity = rules->identity();
-        identity.version = "0.6.55";
-        rejects(
-            [&]
-        {
-            rules->validate_saved_grants(identity, p.member(id).character.sheet(),
-            p.member(id).character.sheet().grants);
-        });
     }
     {
         CampaignParty p(module());
@@ -171,25 +163,8 @@ void run()
         p.award_experience(2700, "pending-mastery");
         for (unsigned n = 2; n <= 4; ++n)
             p.advance(id, p.default_advancement(id));
-        const auto before = p.member(id);
-        check(before.character.sheet().training.masteries.size() == 1,
+        check(p.member(id).character.sheet().training.masteries.size() == 1,
               "New fourth mastery can coexist with pending historical starting choices");
-        CharacterCreator editor(srd5::character_rules(), before.character, p.rule_module());
-        const auto groups = editor.training_options();
-        const auto starting = std::find_if(groups.begin(), groups.end(),
-                                           [](const auto & g)
-        {
-            return g.id == "class:fighter:weapon_mastery";
-        });
-        check(starting != groups.end() && starting->options.size() == 37,
-              "Review starting mastery excludes the locked fourth kind");
-        const auto locked = before.character.sheet().training.masteries.front().id;
-        check(std::none_of(starting->options.begin(), starting->options.end(),
-                           [&](const auto & o)
-        {
-            return o.id == locked;
-        }),
-        "Review never offers a duplicate across acquired-level groups");
     }
     // A fourth Fighter choice cannot repeat a first-level kind or be acquired early.
     auto h = chosen("fighter");

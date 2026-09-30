@@ -34,25 +34,15 @@ Other Bonus Actions compete for the same budget. There is no rest-use pool.
 
 ## Persistence and verification
 
-Rules 0.6.35 / PC24 validates level-two Rogue profiles and grants. PC1–PC23 keep
-their previous level restrictions. Older campaign identities reject advanced
-Rogues; current campaign reconstruction replays their ordinary advancement.
-Campaign format 11 is unchanged. Cunning encounters use existing combat format
-15 to preserve explicit Dash counts along with Action/Bonus Action budgets,
-movement, Disengage and pending reactions. Earlier combat profiles retain their
-previous capabilities and exact continuation.
-
-`campaign-v11-cunning-before.ogs` and `combat-v13-cunning-before.save` were
-captured by the actual 0.6.34 writer at `a2aed46` before production changes.
-They contain four Orc Rogues with all supported backgrounds, complete training,
-two missing HP, and an active actor who already spent Action Dash and Adrenaline
-Rush. Migration compares every serialized field except module identity/checksum.
-Do not regenerate these fixtures with the newer writer.
+The character profile validates level-two Rogue profiles and grants; campaign
+reconstruction replays their ordinary advancement. Cunning encounters use the
+internal combat checkpoint to preserve explicit Dash counts along with
+Action/Bonus Action budgets, movement, Disengage and pending reactions.
 
 Native checks are in `tests/cunning_checks.h`, executed by
 `opengold_training_tests`; normal creation, XP-gated campaign advancement,
 source validation, both Dash orders, shared Bonus Action use, Disengage expiry,
-reaction/Temporary HP decisions, rest and old/current continuation are covered.
+reaction/Temporary HP decisions, rest and continuation are covered.
 `tests/cunning_action_view_tests.gd` exercises the actual combat row in English
 and Spanish at 1120×800 and 1920×1080, including keyboard interaction.
 

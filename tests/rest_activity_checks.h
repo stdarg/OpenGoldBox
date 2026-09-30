@@ -15,7 +15,7 @@ CampaignParty wounded()
     CampaignParty party(module());
     party.add_pc(hero());
     auto state = party.checkpoint();
-    state.roster[0].vitals = {1, false, "SRD1 0 0 0 0 0"};
+    state.roster[0].vitals = {1, false, spent_resources("Fighter")};
     party.restore(state);
     return party;
 }
@@ -29,24 +29,6 @@ void finish_spending(CampaignParty &party)
 {
     check(party.state().short_rest.has_value(), "Earned spending exists");
     party.finish_short_rest(party.state().short_rest->ticket);
-}
-
-void prior_writer()
-{
-    const auto read = [](const char *file)
-    {
-        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / file,
-                         std::ios::binary);
-        check(bool(in), "Prior writer fixture exists");
-        return std::string(std::istreambuf_iterator<char>(in), {});
-    };
-    const auto before = read("campaign-v11-rest-activity-before.ogs");
-    auto party = loaded(before);
-    check(!party.state().rest_activity && saved(party) == saved(loaded(before)),
-          "Actual previous writer retains pending spending without inventing activity");
-    (void)party.spend_hit_die(party.state().short_rest->ticket, 1);
-    check(saved(party) == saved(loaded(read("campaign-v11-rest-activity-spent.ogs"))),
-          "Prior writer's next die/RNG/resource continuation remains exact");
 }
 
 void segments()
@@ -85,7 +67,6 @@ void segments()
     });
     check(saved(party) == before,
           "Invalid, stale and out-of-band requests leave active rest unchanged");
-    check(before.starts_with("OPENGOLD-CAMPAIGN 12\n"), "Active rest uses version twelve");
     party = loaded(before);
     check(saved(party) == before && party.remaining_rest_milliseconds() == 410 * minute,
           "Active progress round-trips exactly");
@@ -142,8 +123,6 @@ void segments()
     check(party.member(1).vitals.hit_points == party.member(1).character.sheet().hit_points &&
           party.member(1).last_rest_minutes == 660 && winds(party.member(1)) == 3,
           "Long Rest completion restores resources and records its actual completion time once");
-    check(saved(party).starts_with("OPENGOLD-CAMPAIGN 11\n"),
-          "No activity retains compact version eleven");
 }
 
 void boundaries()
@@ -302,22 +281,20 @@ void discard_and_bad_saves()
     (void)party.begin_rest(RestKind::long_rest);
     const auto original = saved(party);
     const auto body = original.substr(original.find('\n', original.find('\n') + 1) + 1);
-    const std::string suffix = "2 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 1 1 ";
-    check(body.ends_with(suffix),
-          "Independent version-twelve activity footer matches documented fields");
+    const std::string suffix = "2 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 ";
+    check(body.ends_with(suffix), "Independent activity footer matches documented fields");
     for (const auto field :
             {
                 5u, 7u, 13u, 15u
             })
     {
-        std::array<std::uint64_t, 19> values{2, 0, 1, 1, 1, 1, 0, 0, 0, 0,
-                                             0, 0, 0, 0, 0, 0, 0, 1, 1};
+        std::array<std::uint64_t, 22> values{2, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                                             0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0};
         values[field] = field == 7 ? 60000 : field == 13 ? 1 : 99;
         std::ostringstream footer;
         for (auto value : values)
             footer << value << ' ';
         auto bytes = payload(body.substr(0, body.size() - suffix.size()) + footer.str());
-        bytes.replace(0, bytes.find('\n') + 1, "OPENGOLD-CAMPAIGN 12\n");
         rejects(
             [&]
         {
@@ -437,7 +414,6 @@ void host_interruptions()
 void run()
 {
     host_interruptions();
-    prior_writer();
     segments();
     boundaries();
     combat_and_validation();

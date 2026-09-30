@@ -21,7 +21,7 @@ slots, failed-command atomicity and deterministic continuation.
 Apply sourced, nonstacking healing prevention with exact end-of-next-caster-turn
 expiry, including dead/skipped caster turns and campaign handoff. All actual HP
 recovery paths must respect the effect; Temporary HP is not HP recovery. Preserve
-wounds/resources and older saves. Test simultaneous effect/recovery boundaries,
+wounds/resources. Test simultaneous effect/recovery boundaries,
 multiple casters, immunity/zero resolved damage, natural death-save recovery,
 spell/Second Wind healing, campaign time, rest and script healing.
 
@@ -38,14 +38,12 @@ those routes. Do not silently declare the entire spell or #165 complete.
 ## Execution
 
 Routing: retained gpt-6-astra/high for healing/mortality/effect-timeline and
-save migration interactions. No delegation or model switch. Current prior-writer
-fixtures include actual 0.6.42/PC28 campaign/combat captures and held-item FX4
-fixtures. Capture any additional boundary needed before modifying the writer.
+save migration interactions. No delegation or model switch.
 
 Observed start 2026-09-25 04:56:05 UTC; checkpoint 05:56:05, maximum 06:26:05.
 The Medicine/Tactical Mind batch is deferred pending Q38/Q39; its original clock
 04:41:34 is retained, not reset. Resume it after its approval, preserving the
-completed audit and prior-writer fixtures. Initial implementation is preserved on the unfinished
+completed audit. Initial implementation is preserved on the unfinished
 `codex/srd-chill-touch` branch; focused native Chill Touch and Sorcerer tests passed. An old test
 that searched a hard-coded current module identity was updated for 0.6.43.
 
@@ -66,8 +64,7 @@ wire field reserves 14,400,001 (one above the maximum 1d4-hour duration) for thi
 state; zero retains its legacy meaning of an unrolled duration. Ordinary bytes
 are unchanged. Due state requires living, zero-HP, Stable vitality, no active
 recovery timer, and active healing prevention. Older module identities reject it.
-Actual 0.6.43 captures made before changing the writer prove previous Chill Touch
-continuation; all previously supported modules remain accepted. No Core schema,
+No Core schema,
 public rules interface, UI layout or player combat-saving change is introduced.
 
 
@@ -75,9 +72,8 @@ public rules interface, UI layout or player combat-saving change is introduced.
 
 Implementation stays in `opengold_rules_srd5` STATIC. Core and public RulesModule
 interfaces are unchanged. Main-game Godot adds only the spell ID/label and routes
-it through existing targeting/audio/selection code. Released choices are retained;
-new profiles use PC29 only for the new mask. FX5 stores prevention and existing
-posture flags; 0.6.42 and all older supported modules remain accepted.
+it through existing targeting/audio/selection code. Released choices are retained.
+FX7 stores prevention and existing posture flags.
 
 Focused tests cover all three sources and casting abilities, starting counts,
 levels 1–4 damage, critical hits, Necrotic affinities including immunity, Magic
@@ -111,9 +107,7 @@ handoff, campaign expiry and ordinary camping. The final Q40 cases extend these 
   without changing demo localization or UI. `/tmp/chill-demo-{build,creator}.log`,
   `/tmp/chill-demo-creator-captures`.
 - Localization: 876 main-game messages complete and valid. Diff check passes.
-- No shipped fixture bytes were rewritten. The previous Mind baseline writer
-  remains gated to its actual 0.6.42 binary, rather than capturing new bytes under
-  an old label. No user data changes are retained by combat fixture checks.
+- No user data changes are retained by combat fixture checks.
 
 This WIP branch is separate from main because Q40 prevents a complete verified
 spell delivery. No GitHub issue is closed, and no finished coverage row is added.
@@ -149,9 +143,8 @@ expiry, exact shared deadlines, combat/campaign partition invariance with concur
 Blindness saves, damage cancellation through Temporary HP, malformed state and
 legacy-identity rejection. An actual Chill Touch hit on a Stable immune creature
 preserves Stable, blocks its already-rolled deadline and heals at expiry. Actual
-campaign and combat saves retain due recovery with no load-time RNG draw; old
-0.6.43 fixtures continue exactly. `opengold_recovery_clock_tests` preserves all
-legacy timing and malformed-clock checks. Both focused checks pass.
+campaign and combat saves retain due recovery with no load-time RNG draw.
+`opengold_recovery_clock_tests` preserves timing and malformed-clock checks. Both focused checks pass.
 
 Final native/game integration verification is recorded in the [coverage ledger](SRD-COVERAGE.md#chill-touch-class-paths-and-healing-prevention). Initial presentation evidence above remains applicable: Q40 adds
 no control or layout changes. Routing remains the recorded Astra/high assignment;

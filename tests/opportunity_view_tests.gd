@@ -2,6 +2,35 @@ extends SceneTree
 
 var saved_files := {}
 
+# Checkpoint bodies in the current combat format for content creatures, which
+# carry no character profile. The header, with the current rules identity, is
+# taken from a checkpoint the game itself writes.
+const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+const CONTINUATION_TAIL := "0\n0\n0 0\n0\n0\n0\n0\n0 0\n0\n0\n0 \n0\n"
+
+# The mover left an attack and a Second Wind behind, then tried to step from
+# (2,2) to (1,2). The first guard declined; the second guard's reaction waits.
+const MOVEMENT_BODY := "8 6\n" \
+    + "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n" \
+    + "6018027440424182934 5 0 1 0 4\n" \
+    + "1 \"vanguard\" \"Mover\" 0 2 2 20 15 30 0 0 0 0 0 0 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
+    + "3 \"vanguard\" \"Guard\" 1 3 3 28 11 30 2 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
+    + "4 \"vanguard\" \"Second guard\" 1 3 1 28 9 30 2 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
+    + "2 \"vanguard\" \"Target\" 1 3 2 24 3 30 2 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
+    + "1 0\n1 2 \n3 1\n3 4 2 \n4\n" \
+    + "\"Combat begins. Each square is 5 feet.\"\n\"Round 1: Mover acts.\"\n" \
+    + "\"Mover recovers 10 HP.\"\n\"Mover -> Target: d20 16 + 5 vs AC 17 hits for 4 damage.\"\n" \
+    + "1 0 4\nFX7 1 0 0 0\nFX7 1 0 0 0\nFX7 1 0 0 0\nFX7 1 0 0 0\n" + CONTINUATION_TAIL
+
+# A mover in a walled corridor with a Stable, Unconscious enemy between it and a guard.
+const TRANSIT_BODY := "6 3\n1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1 1 \n" \
+    + "15755400384260043842 1 0 1 0 3\n" \
+    + "1 \"vanguard\" \"Mover\" 0 0 1 28 15 30 2 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
+    + "3 \"bandit\" \"Guard\" 1 5 1 11 11 30 0 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
+    + "2 \"bandit\" \"Unconscious enemy\" 1 2 1 0 3 30 0 0 0 0 1 1 1 0 0 1 0 \"\"" + ACTOR_TAIL + "\n" \
+    + "0 0\n\n0 0\n\n2\n\"Combat begins. Each square is 5 feet.\"\n\"Round 1: Mover acts.\"\n" \
+    + "1 0 3\nFX7 1 0 0 0\nFX7 1 0 0 0\nFX7 1 0 0 0\n" + CONTINUATION_TAIL
+
 func _initialize() -> void:
     call_deferred("run_checks")
 
@@ -30,6 +59,13 @@ func key(code: Key) -> void:
     event.pressed = true
     root.push_input(event)
 
+func load_checkpoint(combat: Node, path: String, header: String, body: String) -> void:
+    var file := FileAccess.open(path, FileAccess.WRITE)
+    require(file != null, "Prepare checkpoint for the real Load control")
+    file.store_string(header + "\n" + body)
+    file.close()
+    combat.get_node("Load").pressed.emit()
+
 func run_checks() -> void:
     var path := ProjectSettings.globalize_path("user://checks/combat.save")
     for suffix in ["", ".bak"]:
@@ -40,45 +76,27 @@ func run_checks() -> void:
         await process_frame
     var combat := current_scene
     combat.set_process(false)
-    for fixture in ["facing", "movement"]:
-        var bytes := FileAccess.get_file_as_bytes("res://../../../tests/fixtures/combat-v5-" + fixture + ".save")
-        require(not bytes.is_empty(), "Frozen previous-module fixture is readable")
-        var file := FileAccess.open(path, FileAccess.WRITE)
-        require(file != null, "Prepare checkpoint for the real Load control")
-        file.store_buffer(bytes)
-        file.close()
-        combat.get_node("Load").pressed.emit()
-        if fixture == "facing":
-            require(combat.sprite_facing_left(1), "Migrated sprite still faces its previous attack target")
-            require(combat.get_node("Turn").text.contains("Mover turn"), "Canceled facing queue resumes the attacker")
-            require(not combat.get_node("End").disabled and combat.get_node("React").disabled,
-                "No obsolete reaction blocks the resumed turn")
-            require(combat.get_node("Melee").disabled and combat.get_node("SecondWind").disabled,
-                "Migration preserves spent action and recovery")
-            key(KEY_DOWN)
-            require(combat.selected_character_cell() == Vector2i(2, 4), "Remaining movement works through real input after migration")
-            require(combat.sprite_facing_left(1), "Movement does not reset presentation facing")
-        else:
-            require(combat.get_node("Turn").text.contains("Second guard reaction"), "Actual movement queue retains its next reactor")
-            require(combat.selected_character_cell() == Vector2i(2, 2), "Mover still waits before leaving reach")
-            var before: String = combat.get_node("Turn").text
-            key(KEY_ENTER)
-            require(combat.get_node("Turn").text == before, "Keyboard cannot bypass the enemy's pending reaction")
-        var expected_turn: String = combat.get_node("Turn").text
-        var expected_roster: String = combat.get_node("Roster").text
-        combat.get_node("Save").pressed.emit()
-        require(combat.get_node("Prompt").text.contains("saved"), "Migrated checkpoint saves through existing controls")
-        require(FileAccess.get_file_as_string(path).begins_with("OGCOMBAT 13 "), "Game writes the new checkpoint format")
-        combat.get_node("Load").pressed.emit()
-        require(combat.get_node("Turn").text == expected_turn and combat.get_node("Roster").text == expected_roster,
-            "Subsequent reload preserves turn, resources and pending movement")
-    # The existing movement input now crosses an Unconscious enemy from a real
-    # prior-writer checkpoint. The occupied square itself remains forbidden.
-    var transit := FileAccess.get_file_as_bytes("res://../../../tests/fixtures/combat-v13-unconscious-transit-before.save")
-    require(not transit.is_empty(), "Unconscious-transit baseline exists")
-    var transit_file := FileAccess.open(path, FileAccess.WRITE)
-    transit_file.store_buffer(transit); transit_file.close()
+    combat.get_node("Save").pressed.emit()
+    var header := FileAccess.get_file_as_string(path).get_slice("\n", 0)
+    require(header.begins_with("OGCOMBAT "), "The game writes a combat checkpoint header")
+
+    load_checkpoint(combat, path, header, MOVEMENT_BODY)
+    require(combat.get_node("Turn").text.contains("Second guard reaction"), "Movement queue retains its next reactor")
+    require(combat.selected_character_cell() == Vector2i(2, 2), "Mover still waits before leaving reach")
+    var before: String = combat.get_node("Turn").text
+    key(KEY_ENTER)
+    require(combat.get_node("Turn").text == before, "Keyboard cannot bypass the enemy's pending reaction")
+    var expected_turn: String = combat.get_node("Turn").text
+    var expected_roster: String = combat.get_node("Roster").text
+    combat.get_node("Save").pressed.emit()
+    require(combat.get_node("Prompt").text.contains("saved"), "Pending movement saves through existing controls")
     combat.get_node("Load").pressed.emit()
+    require(combat.get_node("Turn").text == expected_turn and combat.get_node("Roster").text == expected_roster,
+        "Subsequent reload preserves turn, resources and pending movement")
+
+    # The existing movement input crosses an Unconscious enemy. The occupied
+    # square itself remains forbidden.
+    load_checkpoint(combat, path, header, TRANSIT_BODY)
     combat.get_node("Move").pressed.emit()
     root.size = Vector2i(1920, 1080)
     for frame in range(4): await process_frame
@@ -94,5 +112,5 @@ func run_checks() -> void:
         require(combat.selected_character_cell() == (Vector2i(0, 1) if cell.x == 2 else cell), "Actual mouse input rejects occupied destination and crosses to free destination")
     require(combat.get_node("Log").get_parsed_text().contains("Move 10 ft | Action ready"), "UI reports twenty feet spent and preserves the Action")
     restore_files()
-    print("Opportunity view checks passed: migrated facing, remaining movement, pending reaction, save/load")
+    print("Opportunity view checks passed: remaining movement, pending reaction, save/load, unconscious transit")
     quit(0)

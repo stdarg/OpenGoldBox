@@ -55,37 +55,6 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
-void freeze()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.36", "Freeze requires actual old writer");
-    auto d = draft();
-    d.background = "sage";
-    d.rolls[5] = {{6, 5, 4, 1}, 3};
-    Character h(*srd5::character_rules(), d, {});
-    h.inventory().add("quarterstaff", "Quarterstaff");
-    CampaignParty p(module());
-    p.add_pc(std::move(h));
-    p.equip(1, 1);
-    auto state = p.checkpoint();
-    state.roster[0].vitals.hit_points -= 2;
-    state.roster[0].wealth[3] = 37;
-    state.random_state = 789;
-    p.restore(state);
-    const auto base = root / "tests/fixtures";
-    write(base / "campaign-v11-eldritch-before.ogs", encode_campaign(p, nullptr, "eldritch"));
-    auto actors = p.participants();
-    actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 2);
-    check(c->snapshot().actor == 1, "Prior caster starts");
-    check(c->submit(command(*c, "dash")), "Spend prior Action");
-    check(c->submit(command(*c, "adrenaline_rush")), "Spend prior Bonus");
-    write(base / "combat-v13-eldritch-before.save", c->save());
-    check(c->submit(command(*c, "end")), "Prior continuation");
-    write(base / "combat-v13-eldritch-continued.save", c->save());
-}
-
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
@@ -222,22 +191,6 @@ void access()
                 (void)creation->evaluate(d, true);
             });
         }
-    auto saved_identity = rules->identity();
-    saved_identity.version = "0.6.36";
-    rejects(
-        [&]
-    {
-        rules->validate_saved_grants(saved_identity, hero().sheet(), hero().sheet().grants);
-    });
-    auto content = custom();
-    auto current = battle(*content, hero());
-    auto forged = current->save();
-    forged.replace(forged.find(module()->identity().version), 6, "0.6.36");
-    rejects(
-        [&]
-    {
-        (void)content->restore(forged);
-    });
     auto invalid = hero().sheet();
     for (auto &g : invalid.grants)
         if (g.id == "spell:eldritch_blast")
@@ -248,7 +201,8 @@ void access()
         (void)rules->character_profile(invalid, {});
     });
     auto profile = rules->character_profile(hero().sheet(), {}).data;
-    check(profile.starts_with("PC28 1 2 512 "), "Versioned selected mask");
+    check(profile.starts_with("PC42 1 ") && profile.find(" eldritch_blast ") != profile.npos,
+          "Profile lists the selected cantrip");
     profile.replace(0, 4, "PC24");
     rejects(
         [&]
@@ -511,8 +465,8 @@ void campaign()
             check(p.member(id).vitals == old && p.member(id).equipment.weapon_hands == 2,
                   "Cantrip handoff retains wounds, pools and chosen attack grip");
             const auto saved = encode_campaign(p, nullptr, "eldritch");
-            check(saved.starts_with("OPENGOLD-CAMPAIGN 11\n"),
-                  "Explicit choice has versioned campaign field");
+            check(saved.starts_with("OPENGOLD-CAMPAIGN 19\n"),
+                  "Every campaign uses the current save format");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "eldritch", nullptr).party);
             check(encode_campaign(restored, nullptr, "eldritch") == saved &&
@@ -550,38 +504,6 @@ void campaign()
         }
 }
 
-void legacy()
-{
-    auto rules = module();
-    auto creation = srd5::character_rules();
-    auto base = root / "tests/fixtures";
-    const auto old = read(base / "campaign-v11-eldritch-before.ogs");
-    CampaignParty p(module());
-    p.restore(decode_campaign(old, *creation, *rules, "eldritch", nullptr).party);
-    auto body = [](const std::string & text)
-    {
-        return text.substr(text.find('\n', text.find('\n') + 1) + 1);
-    };
-    auto expected = body(old);
-    expected.replace(expected.find("0.6.36"), 6, rules->identity().version);
-    check(body(encode_campaign(p, nullptr, "eldritch")) == expected,
-          "Prior campaign preserves choices, wounds, gear, RNG and wealth");
-    check(!p.member(1).character.creation_data().cantrips &&
-          rules->spell_access(p.member(1).character.sheet()).cantrips.empty(),
-          "No invented old Warlock selection");
-    auto upgraded = [&](const char *name)
-    {
-        auto bytes = read(base / name);
-        bytes.replace(bytes.find("0.6.36"), 6, rules->identity().version);
-        return bytes;
-    };
-    auto c = rules->restore(read(base / "combat-v13-eldritch-before.save"));
-    check(c->save() == upgraded("combat-v13-eldritch-before.save") && !has(*c, "eldritch_blast"),
-          "Prior PC24 budgets and access unchanged");
-    check(c->submit(command(*c, "end")), "Prior continuation");
-    check(c->save() == upgraded("combat-v13-eldritch-continued.save"), "Prior continuation exact");
-}
-
 void ui_fixtures()
 {
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "eldritch-fixtures";
@@ -610,26 +532,15 @@ void ui_fixtures()
 #include "warlock_poison_checks.h"
 } // namespace
 
-int main(int argc, char **)
+int main()
 {
     try
     {
-        if (argc == 3)
-        {
-            warlock_poison::freeze();
-            return 0;
-        }
-        if (argc == 2)
-        {
-            freeze();
-            return 0;
-        }
         access();
         rolls();
         eligibility();
         allies_and_unconscious();
         campaign();
-        legacy();
         ui_fixtures();
         warlock_poison::run();
         std::cout << "Eldritch Blast tests passed\n";

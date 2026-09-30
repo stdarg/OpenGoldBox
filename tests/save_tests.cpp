@@ -3,10 +3,8 @@
 #include "opengold/srd5.h"
 #include "opengold/combat_demo.h"
 #include <iostream>
-#include <iomanip>
 #include <chrono>
 #include <fstream>
-#include <sstream>
 using namespace opengold;
 
 namespace
@@ -46,6 +44,31 @@ template <class F> void rejects(F f)
         caught = true;
     }
     check(caught, "Invalid save must reject");
+}
+
+// The message f throws, or an empty string when f does not throw.
+template <class F> std::string rejection_message(F f)
+{
+    try
+    {
+        f();
+    }
+    catch (const std::exception &e)
+    {
+        return e.what();
+    }
+
+    return {};
+}
+
+// The only campaign format this build reads and writes.
+constexpr unsigned current_campaign_format = 19;
+
+// The checksum line covers only the body, so rewriting the header number
+// changes nothing but the claimed format.
+std::string with_campaign_format(const std::string &saved, unsigned format)
+{
+    return "OPENGOLD-CAMPAIGN " + std::to_string(format) + saved.substr(saved.find('\n'));
 }
 
 std::string changed_identity(const std::string &saved, const std::string &identity,
@@ -122,80 +145,6 @@ std::string campaign_payload(unsigned version, const std::string &body)
     }
     return "OPENGOLD-CAMPAIGN " + std::to_string(version) + '\n' + std::to_string(hash) + '\n' +
            body;
-}
-
-// These synthetic legacy cases have one member and no grip choice. Locate its
-// final field using the same party serialized without a town, then omit it.
-void remove_v7_grip(std::string &body, const std::string &party_save)
-{
-    auto prefix = party_save.substr(party_save.find('\n', party_save.find('\n') + 1) + 1);
-    check(prefix.ends_with("1 0 "), "Current fixture has no rest session");
-    prefix.resize(prefix.size() - 4);
-    // Omit the v8 grant extension before constructing older format fixtures.
-    const auto first_grant = prefix.find(" \"feat:savage_attacker\"");
-    check(first_grant != prefix.npos, "Soldier fixture includes its creation grant");
-    const auto grants_begin = prefix.rfind(' ', first_grant - 1);
-    const auto grants_size = prefix.size() - 3 - grants_begin;
-    body.erase(grants_begin, grants_size);
-    prefix.erase(grants_begin, grants_size);
-    check(prefix.ends_with("\" 0 0 ") && body.starts_with(prefix.substr(0, prefix.size() - 2)),
-          "Single-member fixture ends in creation source, grip, town flag");
-    body.erase(prefix.size() - 4, 2);
-    // The version-nine draft adds a training-choice map. This legacy fixture
-    // predates those choices and therefore has an empty map.
-    std::istringstream in(body);
-    std::string text;
-    std::uint64_t value{}, count{};
-    for (unsigned i = 0; i < 4; ++i)
-        in >> std::quoted(text); // identity and assets
-    for (unsigned i = 0; i < 12; ++i)
-        in >> value; // party slots and scalar state
-    in >> count;
-    for (unsigned i = 0; i < count; ++i)
-        in >> std::quoted(text); // rewards
-    in >> value >> value >> count;
-    for (unsigned i = 0; i < count; ++i)
-        in >> value >> value; // clock/rest
-    in >> value;              // roster size
-    for (unsigned i = 0; i < 6; ++i)
-        in >> std::quoted(text); // draft identities/name
-    in >> count;
-    for (unsigned i = 0; i < count; ++i)
-        in >> std::quoted(text); // class goals
-    for (unsigned i = 0; i < 38; ++i)
-        in >> value; // six rolls, assignments, adjustment, rolled
-    const auto begin = in.tellg();
-    in >> count;
-    unsigned cantrips{};
-    in >> cantrips;
-    const auto end = in.tellg();
-    check(bool(in) && count == 0 && cantrips == 0,
-          "Legacy draft has no chosen training or explicit cantrips");
-    body.erase(static_cast<std::size_t>(begin), static_cast<std::size_t>(end - begin));
-}
-
-// Versions 1-5 had no sub-minute clock or encounter-scope fields.
-void remove_v6_clock(std::string &body)
-{
-    std::istringstream in(body);
-    std::string text;
-    for (unsigned i = 0; i < 4; ++i)
-        in >> std::quoted(text); // rules identity and assets
-    std::uint64_t n{};
-    for (unsigned i = 0; i < 12; ++i)
-        in >> n; // slots, next ID, selected, minutes, RNG
-    in >> n;
-    for (std::uint64_t i = 0; i < n; ++i)
-        in >> std::quoted(text);
-    const auto begin = in.tellg();
-    in >> n >> n;
-    std::uint64_t count{};
-    in >> count;
-    for (std::uint64_t i = 0; i < count; ++i)
-        in >> n >> n;
-    const auto end = in.tellg();
-    check(bool(in), "Fixture clock fields exist");
-    body.erase(static_cast<std::size_t>(begin), static_cast<std::size_t>(end - begin));
 }
 
 void fog_saves(const std::filesystem::path &directory)
@@ -283,21 +232,22 @@ void fog_saves(const std::filesystem::path &directory)
     (void)single.observe_view();
     const auto current = encode_campaign(*party, &single, "fog-fixture");
     auto body = current.substr(current.find('\n', current.find('\n') + 1) + 1);
-    check(body.ends_with("1 0 "), "No pending rest in legacy town fixture");
-    body.resize(body.size() - 4);
-    const auto suffix = "1 0 \"" + single.snapshot().seen.to_string() + "\" ";
-    check(body.ends_with(suffix), "Knowledge is the version-five extension");
-    body.resize(body.size() - suffix.size());
-    remove_v7_grip(body, encode_campaign(*party, nullptr, "fog-fixture"));
-    remove_v6_clock(body);
-    auto old_base = prototype();
-    auto legacy = decode_campaign(campaign_payload(4, body), *srd5::character_rules(), *rules,
-                                  "fog-fixture", &old_base);
-    check(legacy.town->snapshot().seen == single.snapshot().visited,
-          "Version-four migration preserves visits without inventing prior sightlines");
-    (void)legacy.town->observe_view();
-    check(legacy.town->snapshot().seen == single.snapshot().seen,
-          "Displaying the restored view discovers its current sightline");
+    // Split the body around the active area's knowledge record so malformed
+    // records can be spliced in while every other field stays current.
+    const auto knowledge = "1 0 \"" + single.snapshot().seen.to_string() + "\" ";
+    const auto knowledge_at = body.rfind(knowledge);
+    check(knowledge_at != body.npos, "The town fixture records its sight knowledge");
+    const auto after_knowledge = body.substr(knowledge_at + knowledge.size());
+    body.resize(knowledge_at);
+    auto town_base = prototype();
+    const auto decode_with_knowledge = [&](const std::string & fields)
+    {
+        return decode_campaign(
+                   campaign_payload(current_campaign_format, body + fields + after_knowledge),
+                   *srd5::character_rules(), *rules, "fog-fixture", &town_base);
+    };
+    check(decode_with_knowledge(knowledge).town->snapshot().seen == single.snapshot().seen,
+          "The reassembled fixture loads its exact knowledge");
     for (const auto &invalid :
             {
                 std::string("0 "), "1 0 \"" + std::string(256, '0') + "\" ",
@@ -306,8 +256,7 @@ void fog_saves(const std::filesystem::path &directory)
         rejects(
             [&]
     {
-        (void)decode_campaign(campaign_payload(5, body + invalid), *srd5::character_rules(),
-        *rules, "fog-fixture", &old_base);
+        (void)decode_with_knowledge(invalid);
     });
     check(encode_campaign(*party, &single, "fog-fixture") == current,
           "Malformed fog saves leave the live campaign untouched");
@@ -380,53 +329,34 @@ const std::string first("first\0checkpoint", 16);
     });
 }
 
+// Before 1.0 there is no save migration: only the current campaign format with
+// the current rules identity loads, and older saves are refused with one message.
+void check_campaign_format_cutoff(const std::string &saved, const rules::RulesModule &rules,
+                                  const por::RolfTourSession &town_template)
+{
+    const auto decode_error = [&](const std::string & bytes)
+    {
+        return rejection_message(
+                   [&]
+        {
+            (void)decode_campaign(bytes, *srd5::character_rules(), rules, "fixture-v1",
+                                  &town_template);
+        });
+    };
+    check(saved.starts_with("OPENGOLD-CAMPAIGN 19\n"), "The writer emits campaign format 19");
+    check(decode_error(saved).empty(), "The current writer's campaign loads");
+    check(decode_error(with_campaign_format(saved, 18)) == rules::older_save_message,
+          "An older campaign format is refused as an older pre-release save");
+    check(decode_error(changed_identity(saved, rules.identity().version, "0.6.61")) ==
+          rules::older_save_message,
+          "A campaign from another rules version is refused as an older pre-release save");
+    check(decode_error(with_campaign_format(saved, 20)) == "Unsupported campaign save version",
+          "An unknown newer campaign format is unsupported");
+}
+
 void roundtrip(const std::filesystem::path &directory)
 {
     std::filesystem::create_directories(directory);
-    // A save from the preceding pack remains valid after additive encounters.
-    const auto old_pack = directory / "previous.rules";
-    {
-        std::ifstream input(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
-                            "data/rules/srd-5.2.1/combat.rules");
-        std::ofstream output(old_pack, std::ios::binary);
-        std::string line;
-        while (std::getline(input, line))
-        {
-            if (!line.empty() && line.back() == '\r')
-                line.pop_back();
-            if (line.starts_with("damage_types ") || line.starts_with("affinity ") ||
-                    line.starts_with("saves ") || line.starts_with("spellcasting ") ||
-                    line.starts_with("creature blindness-adept "))
-                continue;
-            if (line.starts_with("creature slums-") && !line.starts_with("creature slums-orc "))
-                continue;
-            output << line << '\n';
-        }
-    }
-    CampaignParty previous(srd5::load(old_pack));
-    previous.add_pc(character("fighter"));
-    auto old_save = encode_campaign(previous, nullptr, "fixture-v1");
-    // Version 3 encoded the same appearance fields without the new filename.
-    auto legacy_body = old_save.substr(old_save.find('\n', old_save.find('\n') + 1) + 1);
-    check(legacy_body.ends_with("1 0 "), "No pending rest in legacy party fixture");
-    legacy_body.resize(legacy_body.size() - 4);
-    const std::string portrait_field = "\"human-male-fighter-01.png\" ";
-    remove_v7_grip(legacy_body, old_save);
-    const auto portrait_position = legacy_body.find(portrait_field);
-    check(portrait_position != legacy_body.npos, "Portrait filename is serialized");
-    legacy_body.erase(portrait_position, portrait_field.size());
-    remove_v6_clock(legacy_body);
-    std::uint64_t legacy_hash = 14695981039346656037ULL;
-    for (unsigned char c : legacy_body)
-    {
-        legacy_hash ^= c;
-        legacy_hash *= 1099511628211ULL;
-    }
-    const auto legacy_v3 =
-        decode_campaign("OPENGOLD-CAMPAIGN 3\n" + std::to_string(legacy_hash) + "\n" + legacy_body,
-                        *srd5::character_rules(), *module(), "fixture-v1", nullptr);
-    check(legacy_v3.party.roster[0].character.appearance().portrait.empty(),
-          "Version 3 loads without inventing a saved portrait");
     for (const auto *filename :
             {"../portrait.png", "a/b.png", "a\\b.png", "portrait.jpg"
             })
@@ -437,25 +367,6 @@ void roundtrip(const std::filesystem::path &directory)
         a.portrait = filename;
         por::validate_character_appearance(a);
     });
-    const auto imported =
-        decode_campaign(old_save, *srd5::character_rules(), *module(), "fixture-v1", nullptr);
-    check(imported.party.roster.size() == 1 &&
-          imported.party.roster[0].character.sheet().level == 1,
-          "Preceding content pack remains compatible");
-    for (unsigned version :
-            {
-                1, 2
-            })
-    {
-        const auto fixture =
-            read_campaign_file(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
-                               ("tests/fixtures/campaign-v" + std::to_string(version) + ".ogs"));
-        const auto legacy =
-            decode_campaign(fixture, *srd5::character_rules(), *module(), "fixture-v1", nullptr);
-        check(legacy.party.roster.size() == 1 &&
-              legacy.party.roster[0].character.sheet().level == version,
-              "Frozen saves from the old binary migrate without losing levels");
-    }
     auto party = std::make_shared<CampaignParty>(module());
     auto fighter = party->add_pc(character("fighter"));
     auto mage = party->add_pc(character("wizard"));
@@ -475,7 +386,13 @@ void roundtrip(const std::filesystem::path &directory)
     party->keep_rest_spells(mage);
     auto state = party->checkpoint();
     state.roster[0].vitals.hit_points = 1;
-    state.roster[1].vitals.resources = "SRD1 0 1 0 0 0";
+    // A single level-one slot remains; every other pool is full.
+    const std::string spent_slot = "SRD9 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 1 FX7 1 0 0 0";
+    state.roster[1].vitals.resources = spent_slot;
+    // The module rewrites the description whenever it touches the vitals, so
+    // keep this hand-built state consistent with what it would write.
+    state.roster[1].vitals.description =
+        "Level-one spell slots: 1 / 3\nArcane Recovery uses: 1 / 1";
     party->restore(state);
     party->temple_heal(fighter);
     auto town = prototype();
@@ -495,20 +412,7 @@ void roundtrip(const std::filesystem::path &directory)
     loaded.town->attach_restored_party(replacement);
     check(encode_campaign(*replacement, &*loaded.town, "fixture-v1") == saved,
           "Complete serialized state round trips");
-    for (const std::string prior_version :
-            {"0.6.0", "0.6.1", "0.6.2", "0.6.3", "0.6.4", "0.6.5", "0.6.6"
-            })
-    {
-        // Current spell grants cannot masquerade as an older writer's records.
-        // Genuine frozen previous-writer fixtures above cover migration instead.
-        rejects(
-            [&]
-        {
-            (void)decode_campaign(
-            changed_identity(saved, rules->identity().version, prior_version),
-            *srd5::character_rules(), *rules, "fixture-v1", &base);
-        });
-    }
+    check_campaign_format_cutoff(saved, *rules, base);
     const auto encounter = [](const CampaignParty & p)
     {
         rules::Encounter e{{8, 8, std::vector<std::uint8_t>(64)}, p.participants()};
@@ -525,7 +429,7 @@ void roundtrip(const std::filesystem::path &directory)
               "Next combat continues deterministically after disk reload");
     }
     check(replacement->member(fighter).wealth[3] == 390, "Temple charge survives load");
-    check(replacement->member(mage).vitals.resources == "SRD1 0 1 0 0 0",
+    check(replacement->member(mage).vitals.resources == spent_slot,
           "Spent caster slots survive load");
     replacement->award_experience(300, "save:encounter");
     check(replacement->member(fighter).experience == 300, "No duplicate XP after reload");
@@ -610,7 +514,7 @@ void roundtrip(const std::filesystem::path &directory)
         (void)decode_campaign(version, *srd5::character_rules(), *rules, "fixture-v1", &base);
     });
     auto invalid = party->checkpoint();
-    invalid.roster[0].vitals.resources = "SRD1 999 0 0 0 0";
+    invalid.roster[0].vitals.resources = "SRD9 999 0 0 0 0 0 2 0 0 0 \"\" 0 1 0 FX7 1 0 0 0";
     party->restore(invalid);
     auto malformed = encode_campaign(*party, nullptr, "fixture-v1");
     rejects(
@@ -633,64 +537,6 @@ void roundtrip(const std::filesystem::path &directory)
         (void)encode_campaign(*party, &busy, "fixture-v1");
     });
 }
-
-void hp_migration()
-{
-    const auto fixture = read_campaign_file(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
-                                            "tests/fixtures/campaign-v6-low-con.ogs");
-    auto rules = module();
-    const auto creation = srd5::character_rules();
-    for (const std::string version :
-            {"0.4.0", "0.5.0", "0.6.0", "0.6.1", "0.6.2"
-            })
-    {
-        const auto bytes =
-            version == "0.6.2" ? fixture : changed_identity(fixture, "0.6.2", version);
-        auto loaded = decode_campaign(bytes, *creation, *rules, "hp-history-fixture", nullptr);
-        CampaignParty party(module());
-        party.restore(std::move(loaded.party));
-        const std::array<int, 6> maximum{9, 9, 9, 9, 13, 30}, current{9, 7, 0, 0, 11, 28};
-        check(party.state().roster.size() == maximum.size(), "All frozen fixture members migrate");
-        for (unsigned i = 0; i < maximum.size(); ++i)
-        {
-            const auto &member = party.member(i + 1);
-            const auto &sources = member.character.sheet().ability_adjustments;
-            check(sources.size() == 2 && sources[0].source_id == "background:sage" &&
-                  sources[0].level == 1 && sources[0].bonuses[2] == 0 &&
-                  sources[1].source_id == "feat:ability_score_improvement" &&
-                  sources[1].level == 4 && sources[1].bonuses[2] == 2,
-                  "Frozen prior-module saves reconstruct separate background and feat sources");
-            check(
-                member.character.sheet().hit_points == maximum[i] &&
-                party.profile(i + 1).hit_points == maximum[i],
-                "Legacy advancement reconstructs corrected HP, including Dwarf and normal Constitution");
-            check(member.vitals.hit_points == current[i] && member.vitals.dead == (i == 3),
-                  "Migration preserves health deficits, unconsciousness and death");
-            const std::string expected = i == 2   ? "SRD2 0 1 1 1 2 0"
-                                         : i == 3 ? "SRD2 0 1 1 1 3 0"
-                                         : "SRD2 0 1 1 0 0 0";
-            check(member.vitals.resources == expected,
-                  "Migration leaves spell expenditure and death-save counters intact");
-        }
-        const auto saved = encode_campaign(party, nullptr, "hp-history-fixture");
-        auto reloaded = decode_campaign(saved, *creation, *rules, "hp-history-fixture", nullptr);
-        CampaignParty restored(module());
-        restored.restore(std::move(reloaded.party));
-        check(encode_campaign(restored, nullptr, "hp-history-fixture") == saved,
-              "New-version reload does not apply the HP migration twice");
-        const auto original = party.member(1).vitals;
-        auto invalid = original; // 9 HP exceeds the legacy maximum of 6.
-        auto old_identity = rules->identity();
-        old_identity.version = version;
-        rejects(
-            [&]
-        {
-            rules->migrate_character_state(old_identity, party.member(1).character.sheet(),
-            invalid);
-        });
-        check(invalid == original, "Rejected legacy state migration is atomic");
-    }
-}
 } // namespace
 
 int main()
@@ -701,7 +547,6 @@ int main()
         roundtrip(directory.path);
         fog_saves(directory.path);
         file_safety(directory.path);
-        hp_migration();
         std::cout << "Campaign file save tests passed\n";
         return 0;
     }

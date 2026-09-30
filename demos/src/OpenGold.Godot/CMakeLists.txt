@@ -41,7 +41,7 @@ foreach(source IN LISTS complete_portraits)
 endforeach()
 add_custom_target(opengold_portrait_assets DEPENDS ${portrait_outputs})
 add_library(opengold_godot SHARED rolf_tour_view.cpp combat_view.cpp combat_sprite_demo.cpp equipment_sprite_demo.cpp character_creation_view.cpp
-    portrait_picker.cpp party_preview.cpp training_review.cpp level_up_view.cpp campaign_save_view.cpp save_slots.cpp character_pool_view.cpp character_sheet_view.cpp sound_board_view.cpp godot_sound_output.cpp register_types.cpp)
+    portrait_picker.cpp party_preview.cpp equipment_choice.cpp level_up_view.cpp campaign_save_view.cpp save_slots.cpp character_pool_view.cpp character_sheet_view.cpp sound_board_view.cpp godot_sound_output.cpp register_types.cpp)
 add_dependencies(opengold_godot opengold_portrait_assets)
 target_link_libraries(opengold_godot PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengold_godot PRIVATE cxx_std_20)

@@ -1,9 +1,6 @@
-#include "campaign_fixture.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
-#include "combat_fixture.h"
 #include <algorithm>
-#include <fstream>
 #include <iostream>
 #include <stdexcept>
 using namespace opengold;
@@ -58,13 +55,6 @@ Character hero(std::string klass = "fighter", unsigned level = 1, int constituti
     return result;
 }
 
-std::string fixture(const char *name)
-{
-    std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures" / name);
-    check(bool(in), "Frozen fixture exists");
-    return {std::istreambuf_iterator<char>(in), {}};
-}
-
 const ResourcePool &pool(const RecoveryInfo &info, std::string_view id)
 {
     const auto it = std::find_if(info.resources.begin(), info.resources.end(),
@@ -116,7 +106,7 @@ void class_dice_and_recharge()
               "Golden first rolls heal by the class die plus Constitution, capped at maximum HP");
         check(state.hit_points == 1 + spent.healing && rng == 11400714819323198485ULL,
               "One spend consumes exactly one known RNG draw");
-        check(state.resources.starts_with("SRD4 ") &&
+        check(state.resources.starts_with("SRD9 ") &&
               rules->recovery_info(sheet, state).hit_dice == 0,
               "Expenditure persists in the versioned continuation");
         const auto depleted = state;
@@ -138,7 +128,7 @@ void class_dice_and_recharge()
     }
     const auto fighter = hero("fighter", 4);
     const auto &sheet = fighter.sheet();
-    VitalState state{1, false, "SRD1 0 0 0 0 0"};
+    VitalState state{1, false, "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0"};
     auto info = rules->recovery_info(sheet, state);
     check(info.hit_dice == 4 && pool(info, "second_wind").capacity == 3 &&
           pool(info, "second_wind").short_rest_recovery == 1,
@@ -151,7 +141,7 @@ void class_dice_and_recharge()
         rules->recover_short_rest(state, sheet);
     check(pool(rules->recovery_info(sheet, state), "second_wind").remaining == 3,
           "Repeated completed rests never exceed capacity");
-    state = {1, false, "SRD1 0 0 0 0 0"};
+    state = {1, false, "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0"};
     std::uint64_t rng = 2;
     rules->spend_hit_die(state, sheet, rng);
     rules->spend_hit_die(state, sheet, rng);
@@ -164,7 +154,7 @@ void class_dice_and_recharge()
             })
     {
         const auto caster = hero(klass, 4);
-        VitalState slots{1, false, "SRD2 0 1 1 0 0 0"};
+        VitalState slots{1, false, "SRD9 0 1 1 0 0 0 4 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
         rules->recover_short_rest(slots, caster.sheet());
         info = rules->recovery_info(caster.sheet(), slots);
         check(pool(info, "spell_slot:1").remaining == 1 &&
@@ -210,7 +200,10 @@ void minimum_caps_and_rejection()
                 false, true
             })
     {
-        state = {0, dead, dead ? "SRD1 0 0 0 3 0" : "SRD1 0 0 1 2 0"};
+        state = {0, dead,
+                 dead ? "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"
+                 : "SRD9 0 0 0 1 2 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"
+                };
         const auto before = state;
         rng = 42;
         check(!rules->recovery_info(character.sheet(), state).can_rest,
@@ -234,8 +227,11 @@ void minimum_caps_and_rejection()
               "Rejected recovery never wakes, stabilizes or revives a character");
     }
     for (const auto malformed :
-            {"SRD4 0 0 0 0 0 0 -1 FX1 1 0", "SRD4 0 0 0 0 0 0 2 FX1 1 0", "SRD4 0 0 0 0 0 0 0",
-             "SRD4 0 0 0 0 0 0 0 FX1 1 0 junk", "SRD4 999 0 0 0 0 0 0 FX1 1 0"
+            {"SRD9 0 0 0 0 0 0 -1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0",
+             "SRD9 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 FX7 1 0 0 0",
+             "SRD9 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0",
+             "SRD9 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX7 1 0 0 0 junk",
+             "SRD9 999 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"
             })
     {
         state = {1, false, malformed};
@@ -273,10 +269,11 @@ void persistence_and_advancement()
     const auto id = party.add_pc(hero());
     auto state = party.checkpoint();
     state.roster[0].vitals = {1, false,
-                              "SRD3 1 0 0 0 0 0 FX1 2 1 1 1 77 99 \"Source caster\" 13 43000 2000"
+                              "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 "
+                              "FX7 2 1 1 1 77 99 \"Source caster\" 13 43000 2000 0 0"
                              };
     const auto effect =
-        state.roster[0].vitals.resources.substr(state.roster[0].vitals.resources.find("FX1"));
+        state.roster[0].vitals.resources.substr(state.roster[0].vitals.resources.find("FX7"));
     rules->spend_hit_die(state.roster[0].vitals, state.roster[0].character.sheet(),
                          state.random_state);
     party.restore(state);
@@ -289,37 +286,26 @@ void persistence_and_advancement()
     check(encode_campaign(restored, nullptr, "rest") == saved,
           "Campaign round trip retains the spent die and next RNG state exactly");
     auto bad_body = saved.substr(saved.find('\n', saved.find('\n') + 1) + 1);
-    const std::string from = "SRD4 1 0 0 0 0 0 0 ";
+    const std::string from = "SRD9 1 0 0 0 0 0 0 ";
     const auto where = bad_body.find(from);
     check(where != bad_body.npos, "Campaign fixture contains the spent die");
-    bad_body.replace(where, from.size(), "SRD4 1 0 0 0 0 0 2 ");
+    bad_body.replace(where, from.size(), "SRD9 1 0 0 0 0 0 2 ");
     std::uint64_t checksum = 14695981039346656037ULL;
     for (unsigned char c : bad_body)
     {
         checksum ^= c;
         checksum *= 1099511628211ULL;
     }
+    const auto header = saved.substr(0, saved.find('\n') + 1);
     rejects(
         [&]
     {
-        (void)decode_campaign("OPENGOLD-CAMPAIGN 11\n" + std::to_string(checksum) + '\n' +
-        bad_body,
+        (void)decode_campaign(header + std::to_string(checksum) + '\n' + bad_body,
         *srd5::character_rules(), *rules, "rest", nullptr);
     });
     check(
         encode_campaign(restored, nullptr, "rest") == saved,
         "An excessive die count rejects even with a correct checksum and cannot replace the campaign");
-    party.complete_training(id, *srd5::character_rules(),
-    {
-        {"origin:languages", {"elvish", "orc"}},
-        {"class:fighter:fighting_style", {"archery"}},
-        {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-        {"class:fighter", {"athletics", "history"}},
-        {"background:soldier:gaming_set", {"dice"}}
-    });
-    check(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
-          .hit_dice == 0,
-          "Training completion cannot replenish Hit Dice");
     party.award_experience(300, "rest-xp");
     party.advance(id, party.default_advancement(id));
     auto info = rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals);
@@ -341,7 +327,7 @@ void persistence_and_advancement()
     check(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
           .hit_dice == 1 &&
           party.member(id).vitals.resources.find("42000 1000") != std::string::npos,
-          "Effect elapsed time retains Hit Dice in SRD4");
+          "Effect elapsed time retains Hit Dice");
     auto healed = party.member(id).vitals;
     auto healing_rng = party.state().random_state;
     rules->temple_heal(healed, party.member(id).character.sheet(), healing_rng);
@@ -352,7 +338,7 @@ void persistence_and_advancement()
     members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
     auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
     const auto checkpoint = combat->save();
-    check(checkpoint.starts_with("OGCOMBAT 23 ") &&
+    check(checkpoint.starts_with("OGCOMBAT 27 ") &&
           rules->restore(checkpoint)->save() == checkpoint,
           "Combat checkpoint stores remaining dice exactly");
     auto copy = rules->restore(checkpoint);
@@ -397,44 +383,6 @@ void persistence_and_advancement()
     });
     check(copy->save() == combat->save(), "Malformed Hit Dice cannot mutate an existing combat");
 }
-
-void old_saves()
-{
-    auto rules = module();
-    const auto old = fixture("campaign-v9-rest.ogs");
-    auto loaded = decode_campaign(old, *srd5::character_rules(), *rules, "rest-fixture", nullptr);
-    CampaignParty party(module());
-    party.restore(std::move(loaded.party));
-    for (const auto &member : party.state().roster)
-    {
-        const auto info = rules->recovery_info(member.character.sheet(), member.vitals);
-        check(info.hit_dice == unsigned(member.character.sheet().level) &&
-              member.vitals.hit_points == member.character.sheet().hit_points - 5,
-              "Old characters start with unspent dice and retain their wounds");
-    }
-    auto expected = old.substr(old.find('\n', old.find('\n') + 1) + 1);
-    expected.replace(expected.find("0.6.9"), 5, rules->identity().version);
-    const std::string old_content = "srd-5.2.1-demo.1/15052881321234871607";
-    expected.replace(expected.find(old_content), old_content.size(), rules->identity().content);
-    const auto rewritten = encode_campaign(party, nullptr, "rest-fixture");
-    check(
-        rewritten.substr(rewritten.find('\n', rewritten.find('\n') + 1) + 1) ==
-        test::with_alert_grants(test::with_sneak_attack_grants(test::with_action_surge_grants(
-                    test::with_initial_wizard_spell_grants(expected), {true}))) +
-        "1 0 ",
-        "Campaign migration adds sourced spell/Alert grants, the empty rest window and module identity, preserving all original training, resources, effects, equipment and timers");
-    const std::map<unsigned, unsigned> counts{{1, 4}, {2, 4}, {3, 4}, {4, 1}, {99, 0}};
-    auto combat = rules->restore(fixture("combat-v8-rest.save"));
-    check(combat->save() ==
-          test::with_hit_dice(fixture("combat-v8-rest.save"), rules->identity(), counts),
-          "Pending combat migration adds only the unspent Hit Dice counts and format identity");
-    check(combat->snapshot().reaction_pending && combat->submit(command(*combat, "opportunity")),
-          "The old pending movement still resolves its reaction");
-    check(
-        combat->save() == test::with_hit_dice(fixture("combat-v8-rest-continued.save"),
-                rules->identity(), counts),
-        "Opportunity damage, movement, RNG, effects and spent resources match the prior writer's continuation");
-}
 } // namespace
 
 int main()
@@ -444,7 +392,6 @@ int main()
         class_dice_and_recharge();
         minimum_caps_and_rejection();
         persistence_and_advancement();
-        old_saves();
         std::cout << "Rest resource tests passed\n";
         return 0;
     }

@@ -1,8 +1,8 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "combat_fixture.h"
-#include "campaign_fixture.h"
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -303,121 +303,41 @@ void attacks()
           "Natural 17 plus Archery 6 hits AC23; baseline 4 misses");
 }
 
-void persistence()
+void forged_profiles()
 {
     auto rules = module();
-    auto upgrade = [&](std::string s)
-    {
-        replace(s, "0.6.27", rules->identity().version);
-        return s;
-    };
-    const auto old = read(root / "tests/fixtures/campaign-v11-archery-before.ogs");
-    CampaignParty p(module());
-    p.restore(decode_campaign(old, *srd5::character_rules(), *rules, "archery", nullptr).party);
-    const auto now = encode_campaign(p, nullptr, "archery");
-    auto body = [](const auto & s)
-    {
-        return s.substr(s.find('\n', s.find('\n') + 1) + 1);
-    };
-    check(
-        body(now) == test::with_tactical_mind_grants(body(upgrade(old))),
-        "Actual prior campaign changes only module identity and fixed Tactical Mind grant, preserving choice, wound and resources");
-    const auto old_combat = read(root / "tests/fixtures/combat-v13-archery-before.save");
-    check(rules->restore(old_combat)->save() == upgrade(old_combat),
-          "Actual PC16 combat retains exact recipe, state and RNG");
-    // Isolate the original Archery/profile boundary: mastery provenance must
-    // not be the reason a forged historical Archery recipe rejects.
-    auto legacy_sheet = leveled().sheet();
-    std::erase_if(legacy_sheet.grants,
-                  [](const auto & g)
-    {
-        return g.id.starts_with("mastery:");
-    });
     auto profile =
-        rules->character_profile(legacy_sheet, std::array<std::string, 1> {"shortbow"}).data;
+        rules->character_profile(leveled().sheet(), std::array<std::string, 1> {"shortbow"}).data;
     auto encounter = Encounter{{8, 8, std::vector<std::uint8_t>(64)},
         {   {1, "campaign-character", "Archer", 0, {1, 1}, profile},
             {99, "vanguard", "Target", 1, {5, 1}}
         }};
-    auto mislabeled = rules->create(encounter, 13)->save();
-    replace(mislabeled, rules->identity().version, "0.6.27");
-    rejects(
-        [&]
-    {
-        (void)rules->restore(mislabeled);
-    });
     auto wrong_mask = profile;
-    replace(wrong_mask, "PC31 4 4 ", "PC31 4 0 ");
+    replace(wrong_mask, "PC42 4 4 ", "PC42 4 0 ");
     encounter.participants[0].character_profile = wrong_mask;
     rejects(
         [&]
     {
         (void)rules->create(encounter, 13);
     });
-    replace(profile, "PC31", "PC16");
+    replace(profile, "PC42", "PC16");
+    encounter.participants[0].character_profile = profile;
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {99, "vanguard", "Target", 1, {5, 1}}
-            }},
-        13);
+        (void)rules->create(encounter, 13);
     });
-    auto saved_identity = rules->identity();
-    saved_identity.version = "0.6.27";
-    const auto sheet = leveled().sheet();
-    rejects(
-        [&]
-    {
-        rules->validate_saved_grants(saved_identity, sheet, sheet.grants);
-    });
-}
-
-void freeze()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.27", "Requires actual pre-Archery writer");
-    CampaignParty p(module());
-    auto id = p.add_pc(hero());
-    p.award_experience(2700, "archery");
-    grow(p, id, 3);
-    auto choice = p.default_advancement(id);
-    choice.feat = "defense";
-    choice.abilities = {};
-    p.advance(id, choice);
-    auto state = p.checkpoint();
-    state.roster[0].vitals.hit_points -= 3;
-    state.roster[0].vitals.resources = "SRD1 1 0 0 0 0";
-    p.restore(state);
-    std::ofstream(root / "tests/fixtures/campaign-v11-archery-before.ogs", std::ios::binary)
-            << encode_campaign(p, nullptr, "archery");
-    auto members = p.participants();
-    members[0].cell = {1, 1};
-    members[0].character_profile = rules
-                                   ->character_profile(p.member(id).character.sheet(),
-                                       std::array<std::string, 1> {"shortbow"})
-                                   .data;
-    members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 13);
-    std::ofstream(root / "tests/fixtures/combat-v13-archery-before.save", std::ios::binary)
-            << c->save();
 }
 } // namespace
 
-int main(int argc, char **)
+int main()
 {
     try
     {
-        if (argc > 1)
-            freeze();
-        else
-        {
-            selection();
-            attacks();
-            persistence();
-            std::cout << "Archery checks passed\n";
-        }
+        selection();
+        attacks();
+        forged_profiles();
+        std::cout << "Archery checks passed\n";
         return 0;
     }
     catch (const std::exception &e)

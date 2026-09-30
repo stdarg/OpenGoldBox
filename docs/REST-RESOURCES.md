@@ -114,34 +114,25 @@ Unknown probabilistic profiles never silently substitute an uninterrupted rest.
 
 ## Persistence
 
-Rules **0.6.10** adds **SRD4** vital continuation when Hit Dice are spent. It stores
-existing slots, Second Wind and death-save state, the remaining die count, and an
-FX1 effects record. With all dice available, the writer retains compact
-SRD1/SRD2/SRD3. Those formats mean unspent dice because earlier modules could not
-spend them.
+The **SRD9** vital continuation stores slots, Second Wind and death-save state,
+the remaining die count, and an **FX7** effects record.
 
-**OGCOMBAT 9** adds each actor's remaining dice. Previous supported modules through
-0.6.9 migrate; authored combat definitions without a character recipe receive
-zero, without inventing monster Hit Dice mechanics. PC7 is unchanged; recipes
-derive capacity from class and level.
+**OGCOMBAT 27** stores each actor's remaining dice; authored combat definitions
+without a character recipe receive zero, without inventing monster Hit Dice
+mechanics. **PC42** recipes derive capacity from class and level.
 
-Campaign format **10** appends the next rest-session ID and optional completed
-Short Rest continuation after the existing party/town payload. It stores the
-session/revision ticket, completion time and eligible member IDs. Formats 1–9
-load with no pending spending session: their elapsed time never invents a rest
-entitlement. Malformed, duplicate, inactive or ineligible members and mismatched
-completion times reject. The writer retains opaque spent-resource continuations;
+The campaign save stores the next rest-session ID and optional completed
+Short Rest continuation after the party/town payload. It stores the
+session/revision ticket, completion time and eligible member IDs. Malformed,
+duplicate, inactive or ineligible members and mismatched completion times reject. The writer retains opaque spent-resource continuations;
 loading a pending session repeats neither the hour nor feature recharge.
 
 Spent dice survive healing, effects, training completion, advancement, combat
-turns/checkpoints and campaign handoff. Migration preserves existing wounds,
-resources, training, initiative, RNG and time. Earlier facing/grip/overlap
-migrations retain their established behavior.
+turns/checkpoints and campaign handoff.
 
-Rules 0.6.11 subsequently adds SRD5 for living zero-HP characters and combat 10
-mortality clocks. They retain the same Hit Dice/pool fields; ordinary healing
-cancels mortality timing without restoring expenditure. Campaign format 10 is
-unchanged. [Recovery clocks](RECOVERY-CLOCKS.md) describes that later increment
+Mortality clocks for living zero-HP characters retain the same Hit Dice/pool
+fields; ordinary healing cancels mortality timing without restoring
+expenditure. [Recovery clocks](RECOVERY-CLOCKS.md) describes that later increment
 and the still-pending outside-combat scheduler.
 
 ## Verification
@@ -150,10 +141,7 @@ and the still-pending outside-combat scheduler.
 results, negative Constitution, HP caps, Dwarven Toughness, recharge limits,
 caster slots, invalid/dead/unconscious state and rejection atomicity. It checks
 campaign round trips, training review, advancement, healing, effects, combat
-handoff and malformed checkpoint counts. Frozen 0.6.9 files retain an active
-effect, spent slots/Second Wind, equipment and a pending opportunity attack. Its
-continuation matches the previous writer apart from format/identity and the new
-unspent dice field. See [fixture provenance](../tests/fixtures/README.md).
+handoff and malformed checkpoint counts.
 
 `opengold_campaign_rest_tests` covers mixed eligibility/cooldowns, active PC/NPC
 and reserve boundaries, exact clock thresholds, one-die decisions, zero spending,
@@ -161,7 +149,7 @@ duplicate/expired requests, save/load between rolls, next combat, overflow and
 malformed continuation rejection. It compares effect/RNG processing against one
 independent elapsed interval and tests the original safe/denied/interrupted/
 unsupported camp paths plus inn rollback. Existing save/party regressions retain
-old-format migrations and per-member cooldown behavior.
+per-member cooldown behavior.
 
 The reviewed game/demo rest controls and their campaign acceptance are delivered below.
 
@@ -184,9 +172,8 @@ at the start still prevents unearned recharge, Hit Dice or completion timestamps
 See [recovery scheduling](RECOVERY-CLOCKS.md#campaign-time).
 
 Rules 0.6.24 adds Fighter Action Surge at level 2: one use through level 4,
-fully recharged by either rest kind. Advancement preserves expenditure. SRD8
-stores the spent use alongside existing resources; compact earlier formats
-mean the new pool is available. See [Action Surge](ACTION-SURGE.md).
+fully recharged by either rest kind. Advancement preserves expenditure. SRD9
+stores the spent use alongside existing resources. See [Action Surge](ACTION-SURGE.md).
 
 ## Rest batch B: verified profile boundary
 
@@ -203,20 +190,16 @@ fresh qualifying segments. See the
 
 ## Resumable activity persistence and evidence
 
-Campaign format **12** appends an optional activity record after the existing
+The campaign save stores an optional activity record after the
 rest-spending continuation. It records the session/revision, kind, start clock,
 resting/fresh-segment/sleep/light/exertion/extension milliseconds, interruption
-state/cause, current work and eligible IDs. Only saves containing an activity use
-12; ordinary saves retain 11. Readers retain formats 1–11 and validate activity
+state/cause, current work and eligible IDs. Readers validate activity
 structure, elapsed-clock bounds and rules timing before replacing live state.
-Rules identity 0.6.40, PC28 and combat formats remain unchanged.
 
 `tests/rest_activity_checks.h`, run by `opengold_campaign_rest_tests`, verifies
 fresh-segment recovery, millisecond boundaries, light/sleep and exertion limits,
 stale/duplicate/overflow rejection, interrupted combat handoff, abandonment and
-correct-checksum malformed records. Frozen actual `aeeb3b7` writer fixtures prove
-byte-identical loading and the next Hit Die result/RNG for existing spending
-sessions. See `tests/fixtures/README.md` for provenance. These native checks do
+correct-checksum malformed records. These native checks do
 not constitute completion of the remaining player workflow.
 
 Final native-activity tree verification: all 44 native/tool checks and all 20
@@ -327,8 +310,7 @@ even when Temporary HP absorbs it. Explicit campaign loud noise affects only
 its listed recipients; initiative alone does not wake sleepers. An adjacent ally
 can spend an Action through the approved Wake ally control. Waking retains Prone.
 Stand up spends half Speed; crawling adds its movement cost to Difficult Terrain.
-Healing from zero HP also retains Prone, including prior saves without an explicit
-posture field. Old saved state is not rewritten merely because it is loaded.
+Healing from zero HP also retains Prone.
 
 Core applies generic rest-work hooks on the injected RulesModule; SRD mechanics
 remain in the static library. Game and demo use the same legal command interface.
@@ -337,8 +319,7 @@ translated labels and unavailable states. Internal continuation fixtures do not
 add player combat-save controls.
 
 Evidence: `natural_sleep_tests.cpp`, `natural_sleep_view_tests.gd`, recovery-clock
-and campaign-rest checks. Actual 0.6.40 before/after combat fixtures preserve
-previous command, resource and RNG continuation. English/Spanish rendering at
+and campaign-rest checks. English/Spanish rendering at
 1120×800 and 1920×1080 exercises the approved rows.
 
 This is partial delivery: held-item dropping/recovery and normal rest scheduling
@@ -378,18 +359,13 @@ Core maps the generic encounter item identity to actual inventory identities.
 Drops remove exactly one physical item; cross-character pickup preserves its
 name and original-item provenance. Repeated snapshots cannot duplicate transfers,
 and rejected manifests preserve campaign state and RNG. Uncollected equipment
-is persisted separately, including when carried by an opponent. Combat format 16
-stores holders, ground locations and interaction budgets; campaign format 13
-stores detached inventory. Earlier formats remain readable. Older checkpoints
-keep their initial recorded gear, but the first activation of the new ledger
-reconciles all unconscious holders so subsequent checkpoints remain valid.
+is persisted separately, including when carried by an opponent. The combat
+checkpoint stores holders, ground locations and interaction budgets; the campaign
+save stores detached inventory.
 
 Evidence: `natural_sleep_tests.cpp` covers sleep/drop, AC removal, actual lethal
 hits, pickup and budgets, stale commands, malformed checkpoints, ownership
-transfer, idempotence and campaign save/load. An actual v8 checkpoint exercises
-an already-unconscious holder when a second actor falls. The prior-writer feature
-grant oracle changes only the explicit new posture/item fields; its damage,
-resources and RNG sequence remain frozen. `natural_sleep_view_tests.gd` exercises
+transfer, idempotence and campaign save/load. `natural_sleep_view_tests.gd` exercises
 keyboard pickup, translated costs, disabled controls and both window sizes.
 
 All 45 native/tool checks and all 23 Godot checks passed before the final legacy
@@ -432,15 +408,14 @@ Unplaced ground equipment is scoped to its rest session. Loud noise or script
 damage waking a sleeper does not return it to inventory. The encounter adapter
 passes initial ground-equipment ordinals alongside the original equipment recipe;
 the SRD library places those items at the character's starting cell, removes
-their bonuses, and uses the existing combat 16 ledger and pickup commands.
+their bonuses, and uses the existing combat ledger and pickup commands.
 Applying the first snapshot replaces camp records with positioned encounter
 records exactly once. Camp records from an abandoned rest are retained without
 being teleported into an unrelated battle.
 
-Campaign 14 adds the rest-session location marker only when needed. The actual
-previous campaign 13 and combat 16 writer fixtures from `381b2f8` round-trip
-byte-for-byte. Focused checks also cover a stack losing only its held member,
-remaining stack provenance, worn armor, waking a saved older sleeping record,
+The campaign save stores the rest-session location marker. Focused checks
+cover a stack losing only its held member,
+remaining stack provenance, worn armor, waking a saved sleeping record,
 malformed rest IDs/ground ordinals, and ally pickup after camp interruption.
 The native regression passed 44 checks and found one outdated Warlock equipment
 assertion. That test now verifies physical-item conservation across held and ground
@@ -484,7 +459,7 @@ survivor if that owner died; they are stowed, not automatically equipped. Labels
 quantity and original item provenance are preserved; returned stacks receive
 new, unique inventory IDs. No
 healing, recharge, RNG draw or extra rest benefit is granted. Unreachable items
-remain saved at their encounter; older unlocated camp records are not teleported.
+remain saved at their encounter.
 
 Original ECL3.DAX/11 entry 3 explicitly rouses campers and offers GO/FIGHT. The
 verified guaranteed five-minute profile now begins/resumes an actual rest,
@@ -507,7 +482,7 @@ introduced. Verification completed 2026-09-25 04:38 UTC: all 45 native/tool test
 all 22 Godot runtime checks (34 entries including native prerequisites), rebuilt
 demo sleep/rest checks, and the nine-state original-data writer/restart route in
 both game and demo passed. All 871 English/Spanish messages validate. The native
-suite includes actual prior-writer fixtures and the alternate-rules boundary.
+suite includes the alternate-rules boundary.
 Logs: `/tmp/safe-recovery-native.log`, `/tmp/safe-recovery-godot.log`,
 `/tmp/safe-recovery-game-save-{write,read}.log`, and
 `/tmp/safe-recovery-demo-{sleep,rest,save-write,save-read}.log`.

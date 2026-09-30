@@ -264,8 +264,8 @@ void run()
                             continue;
                         }
                         const auto pending = c->save();
-                        check(pending.starts_with("OGCOMBAT 24 "),
-                              "Graze uses conditional format24");
+                        check(pending.starts_with("OGCOMBAT 27 "),
+                              "Graze uses the current checkpoint format");
                         check(r->restore(pending)->save() == pending,
                               "Pending Graze round trips exactly");
                         check(c->legal_commands().size() == 2 && c->movement_reach(1).empty(),
@@ -302,14 +302,5 @@ void run()
     reactions_and_limits();
     advancement_and_rejection();
     ui_fixtures();
-    auto r = module();
-    const auto old = nick_attack_checks::fixture("combat-v15-slow-0.6.58.save");
-    auto expected = old;
-    const auto at = expected.find("0.6.58");
-    check(at != expected.npos, "Actual previous writer identity retained");
-    expected.replace(at, 6, r->identity().version);
-    auto restored = r->restore(old);
-    check(restored->save() == expected && fx::slowed(state(*restored, 99)),
-          "Actual0.6.58 writer retains Slow and all continuation fields");
 }
 } // namespace graze_checks

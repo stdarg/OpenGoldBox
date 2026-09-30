@@ -119,8 +119,6 @@ void CharacterCreationView::setup_party()
     setup_saves();
     setup_defeat();
     setup_advancement();
-    setup_training_review();
-    setup_spellbook();
     party_check_ = OS::get_singleton()->get_cmdline_user_args().has("--party-check");
     party_layout();
     expedition_check_ = OS::get_singleton()->get_cmdline_user_args().has("--expedition-check");
@@ -148,8 +146,6 @@ void CharacterCreationView::party_layout()
     place("PartyPanel/ReadyLabel", Rect2(w - 284, 488, 120, 24));
     place("PartyPanel/ActionLabel", Rect2(w - 140, 488, 120, 24));
     place("PartyPanel/Inventory", Rect2(350, h - 280, w - 374, 96));
-    place("PartyPanel/ReviewTraining", Rect2(610, h - 176, w - 844, 36));
-    place("PartyPanel/Spellbook", Rect2(w - 224, h - 176, 200, 36));
     const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
             "Unequip", "Explore", "Combat", "Close"};
     const double bw = (w - 64) / 5;
@@ -159,9 +155,6 @@ void CharacterCreationView::party_layout()
     place("PartyPanel/Save", Rect2(w - 520, 24, 140, 36));
     place("PartyPanel/Load", Rect2(w - 370, 24, 140, 36));
     place("PartyPanel/Pool", Rect2(w - 220, 24, 196, 36));
-    if (auto *review = Object::cast_to<Window>(get_node_or_null("TrainingReview"));
-            review && review->is_visible())
-        review->popup_centered();
     pool_layout();
     place("PartyPanel/Status", Rect2(24, h - 39, w - 48, 32));
     place("PartyPanel/Modifiers", Rect2(24 + 4 * (bw + 4), h - 81, bw * 0.42f, 36));
@@ -235,18 +228,6 @@ void CharacterCreationView::refresh_party()
                 {"PartyPanel/Portrait", "PartyPanel/ReadySprite", "PartyPanel/ActionSprite"
                 })
             get_node<TextureRect>(name)->set_texture({});
-    auto *spellbook = get_node<Button>("PartyPanel/Spellbook");
-    spellbook->set_visible(!state.roster.empty() &&
-                           campaign_->rule_module()
-                           .spell_access(state.roster[roster_index_].character.sheet())
-                           .spellbook_choices > 0);
-    spellbook->set_disabled(campaign_->in_combat() || state.rest_activity.has_value() ||
-                            state.short_rest.has_value() || state.spell_rest.has_value() ||
-                            state.training_rest.has_value());
-    auto *review = get_node<Button>("PartyPanel/ReviewTraining");
-    review->set_visible(!state.roster.empty() &&
-                        !state.roster[roster_index_].character.sheet().training.complete);
-    review->set_disabled(campaign_->in_combat());
     get_node<RichTextLabel>("PartyPanel/Sheet")->set_text(gs(sheet));
     get_node<Label>("PartyPanel/Status")
     ->set_text(error_.is_empty()

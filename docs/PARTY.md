@@ -146,23 +146,16 @@ still require a supported conversion rather than silently receiving plain stats.
 Equipment metadata comes from the rules module, not from the original edition's
 `ITEMS` hand counts. Replacing a weapon retains a compatible shield. A rejected
 two-handed weapon/shield combination leaves the previous loadout untouched.
-Rules version 0.6.15 includes the Rogue/Monk weapon proficiency, death-save,
+The rules module includes the Rogue/Monk weapon proficiency, death-save,
 Constitution/HP-history, remaining-turn-resource and opportunity-trigger corrections,
-plus allied transit, Versatile grip and feature/training grant provenance. It accepts
-0.6.13 and earlier supported campaign saves. HP migration preserves living deficits
-and unconscious/dead state.
+plus allied transit, Versatile grip and feature/training grant provenance.
 It recomputes weapon bonuses from saved
 class/equipment choices and retains the conversion of previously unsupported
-ordinary weapons with verified original provenance. Campaign format 7 and combat
-format 8 retain grip independently of HP/resources. Campaign format 8 also
-persists feature/feat grant provenance and choices; format 9 adds training
-selections and preserves missing choices as pending. See [advancement](ADVANCEMENT.md)
-and [training support](TRAINING.md). Older saves keep the prior
-two-handed use of Battleaxe/Spear/Quarterstaff/Trident, now with corrected damage;
-other Versatile weapons remain one-handed until changed. Standalone combat
-checkpoints from modules 0.6.4/0.6.5/0.6.6/0.6.7/0.6.8/0.6.9/0.6.10/0.6.11/0.6.12/0.6.13/0.6.14 migrate with matching content or a [verified preceding pack](DAMAGE.md), canceling only obsolete
-facing reactions; see [combat persistence](RULES.md#library-boundary). Combat format 12 retains [Temporary HP](TEMPORARY-HP.md), Hit Dice and [recovery clocks](RECOVERY-CLOCKS.md); see also [rest resources](REST-RESOURCES.md). Other older
-combat versions require finishing the combat and saving the campaign before upgrading.
+ordinary weapons with verified original provenance. Campaign saves and combat
+checkpoints retain grip independently of HP/resources, along with feature/feat
+grant provenance, choices and training selections. See [advancement](ADVANCEMENT.md)
+and [training support](TRAINING.md). Combat checkpoints also retain [Temporary HP](TEMPORARY-HP.md), Hit Dice and [recovery clocks](RECOVERY-CLOCKS.md); see also [rest resources](REST-RESOURCES.md).
+Saves from older formats or rules versions are rejected; see [saves](SAVES.md#pre-10-format-policy).
 
 Untrained use is allowed under [SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf):
 - Weapons omit the +2 level-one proficiency bonus on attacks.
@@ -264,5 +257,5 @@ godot --headless --path demos/godot res://scenes/character_creation.tscn -- --pa
 For local screenshots, omit `--headless` and append `--capture`. Inspect at
 1280x900 and 1120x800. Existing character, town and combat checks remain available.
 
-Rules 0.6.15 also persists Orc Adrenaline Rush uses and pending Temporary HP
-replacement in combat format 12 and SRD7; see [Temporary HP](TEMPORARY-HP.md).
+Orc Adrenaline Rush uses and pending Temporary HP replacement also persist;
+see [Temporary HP](TEMPORARY-HP.md).

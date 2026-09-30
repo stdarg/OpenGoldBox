@@ -62,15 +62,6 @@ class CharacterCreationView : public godot::Control
     void target_toggled(bool selected, int index);
     void bonus_selected(std::int64_t index);
     void creation_spell_toggled(bool selected, godot::String group, godot::String option);
-    void setup_spellbook();
-    void open_spellbook();
-    void refresh_spellbook();
-    void close_spellbook();
-    void apply_spellbook();
-    void spellbook_toggled(bool selected, godot::String group, godot::String option);
-    void spellbook_input(const godot::Ref<godot::InputEvent> &event);
-    opengold::MemberId spellbook_member_{};
-    opengold::rules::SpellChoices spellbook_choice_;
     // The level-up window is a sequence of pages, not a single optional extra:
     // Skilled and a Wizard's spell choices can both follow the first page, so a
     // flag cannot say which one is showing.
@@ -137,17 +128,6 @@ class CharacterCreationView : public godot::Control
     opengold::MemberId equipment_member_{};
     std::uint64_t equipment_item_{};
     std::vector<opengold::rules::EquipmentChoice> equipment_choices_;
-    void setup_training_review();
-    void open_training_review();
-    void refresh_training_review();
-    void close_training_review();
-    void apply_training_review();
-    void review_training_toggled(bool selected, godot::String group, godot::String option);
-    void review_training_selected(std::int64_t index, godot::String group);
-    void training_review_input(const godot::Ref<godot::InputEvent> &event);
-    std::unique_ptr<opengold::CharacterCreator> training_review_;
-    opengold::rules::TrainingChoices locked_training_;
-    opengold::MemberId training_member_{};
     void setup_party();
     void setup_advancement();
     void refresh_advancement_arrows();

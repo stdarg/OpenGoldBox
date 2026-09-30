@@ -138,7 +138,7 @@ unsigned side = 0)
                 side,
                 target,
                 {},
-                VitalState{0, false, "SRD5 0 0 0 1 1 0 0 6000 0 FX1 1 0"}
+                VitalState{0, false, "SRD9 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"}
             },
             {99, "vanguard", "Enemy", 1, {6, 6}}
         }},
@@ -158,11 +158,7 @@ void grants()
         check(srd5::detail::has_grant(h.sheet().grants, "feature:tactical_mind") == mind,
               "Tactical Mind attained from level two");
         auto profile = rules->character_profile(h.sheet(), {}).data;
-        check(profile.starts_with(level == 4   ? "PC39 "
-                                  : level >= 3 ? "PC31 "
-                                  : mind       ? "PC30 "
-                                  : "PC28 "),
-                                                 "New feature profile is conditional");
+        check(profile.starts_with("PC42 "), "Every profile uses the current profile tag");
         if (mind)
         {
             profile.replace(0, 4, "PC29");
@@ -451,7 +447,7 @@ void fixtures()
                 0,
                 {2, 1},
                 {},
-                VitalState{0, false, "SRD5 2 0 0 0 0 0 0 6000 0 FX1 1 0"}
+                VitalState{0, false, "SRD9 2 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"}
             },
             {99, "vanguard", "Enemy", 1, {6, 6}}
         };
@@ -490,7 +486,7 @@ void fixtures()
                     0,
                     {2, 1},
                     {},
-                    VitalState{0, false, "SRD5 2 0 0 0 0 0 0 6000 0 FX1 1 0"}
+                    VitalState{0, false, "SRD9 2 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"}
                 },
                 {
                     3,
@@ -499,7 +495,7 @@ void fixtures()
                     0,
                     {1, 2},
                     {},
-                    VitalState{28, false, "SRD3 2 0 0 0 0 0 FX4 1 0 1 1"}
+                    VitalState{28, false, "SRD9 2 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX7 1 0 1 1"}
                 },
                 {99, "vanguard", "Enemy", 1, {6, 6}}
             }},

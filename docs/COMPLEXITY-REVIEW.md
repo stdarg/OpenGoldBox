@@ -97,7 +97,7 @@ they are not a formal proof of the entire game or every possible combat state.
 - Boundary cases cover bad geometry, out-of-bounds queries, negative/large
   budgets, stable ties, allied terrain costs, and ownership of snapshots.
 - [`rules_tests.cpp`](../tests/rules_tests.cpp) adds malformed checkpoint-section
-  rejection, format 1/2 compatibility, and a reaction paused after a spent path
+  rejection and a reaction paused after a spent path
   prefix while the mover shares an ally's square. Restored continuation must
   spend only the suffix's movement and match the uninterrupted session.
 - A local before/after experiment ran 32 seeds with 80 accepted-command states

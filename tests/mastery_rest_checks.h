@@ -149,8 +149,8 @@ void run()
                 party.replace_rest_training(ticket, id, selected);
             });
             party = roundtrip(party);
-            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 18\n"),
-                  "Actual training history uses campaign18");
+            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 19\n"),
+                  "Actual training history uses the current campaign format");
             party.advance_time(24 * 60);
             check(bool(party.rest(RestKind::long_rest)),
                   "Next qualified rest can offer a new choice");
@@ -173,23 +173,6 @@ void run()
           "Mastery replacement does not require unrelated training to be complete");
     p.replace_rest_training(p.state().training_rest->ticket, id,
                             std::vector<std::string> {"greatsword", "longsword", "shortbow"});
-    auto choices = p.member(id).character.training_choices();
-    CharacterDraft effective = draft;
-    effective.training = choices;
-    for (const auto &g : creation->training_options(effective))
-    {
-        auto &selected = choices[g.id];
-        for (const auto &o : g.options)
-            if (selected.size() < g.count &&
-                    std::find(selected.begin(), selected.end(), o.id) == selected.end())
-                selected.push_back(o.id);
-    }
-    const auto history = p.member(id).character.training_edits();
-    p.complete_training(id, *creation, choices);
-    check(p.member(id).character.training_edits() == history &&
-          p.member(id).character.training_choices().at("class:fighter:weapon_mastery") ==
-          std::vector<std::string>({"greatsword", "longsword", "shortbow"}),
-          "Review Training retains effective masteries and their original replacement history");
     p.award_experience(2700, "rest-mastery-levels");
     for (unsigned level = 2; level <= 4; ++level)
         p.advance(id, p.default_advancement(id));
@@ -212,31 +195,7 @@ void run()
     p = roundtrip(p);
     check(p.member(id).character.training_edits().back().level == 4,
           "Replacement history records actual attained level");
-    // Actual acquisition writer, captured before any replacement implementation.
-    const auto old = fixture("campaign-v15-mastery-acquired-before.ogs");
-    std::istringstream fields(old.substr(old.find('\n', old.find('\n') + 1) + 1));
-    std::string module_id, version, content_id, assets;
-    fields >> std::quoted(module_id) >> std::quoted(version) >> std::quoted(content_id) >>
-           std::quoted(assets);
-    check(version == "0.6.56", "Frozen acquisition fixture retains its real writer identity");
-    CampaignParty old_party(module());
-    old_party.restore(decode_campaign(old, *creation, *rules, assets, nullptr).party);
-    auto expected = old.substr(old.find('\n', old.find('\n') + 1) + 1);
-    expected.replace(expected.find("0.6.56"), 6, rules->identity().version);
-    const auto rewritten = encode_campaign(old_party, nullptr, assets);
-    check(
-        rewritten.substr(0, rewritten.find('\n')) == old.substr(0, old.find('\n')) &&
-        rewritten.substr(rewritten.find('\n', rewritten.find('\n') + 1) + 1) ==
-        test::with_alert_grants(expected),
-        "Actual acquired-masteries save adds fixed Alert and retains other grants, wounds, resources, inventories and history apart from module identity and checksum");
-    check(!old_party.state().training_rest &&
-          std::all_of(old_party.state().roster.begin(), old_party.state().roster.end(),
-                      [](const auto & m)
-    {
-        return m.character.training_edits().empty();
-    }),
-    "Loading an acquired-masteries save does not invent rest windows or history");
-    // Missing old-save mastery, reserve members and dead actors get no window.
+    // Missing mastery, reserve members and dead actors get no window.
     CampaignParty excluded(module());
     excluded.add_pc(hero("fighter"));
     auto reserve = excluded.add_pc(mastery_grant_checks::chosen("rogue"));
@@ -245,7 +204,7 @@ void run()
     auto state = excluded.checkpoint();
     for (auto &m : state.roster)
         if (m.id == dead)
-            m.vitals = {0, true, "SRD1 0 0 0 3 0", "Dead"};
+            m.vitals = {0, true, "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0", "Dead"};
     excluded.restore(state);
     check(bool(excluded.rest(RestKind::long_rest)) && !excluded.state().training_rest,
           "Unqualified/dead/reserve/pending-training members do not gain replacement windows");

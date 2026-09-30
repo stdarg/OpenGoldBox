@@ -12,7 +12,7 @@ namespace opengold
 struct SpellChoiceEdit
 {
     unsigned level{};
-    std::uint64_t rest_session{}; // Zero is a pending-knowledge completion.
+    std::uint64_t rest_session{};
     rules::SpellChoices choices;
     bool operator==(const SpellChoiceEdit &) const = default;
 };
@@ -62,7 +62,7 @@ class Character
     bool advance(const rules::RulesModule &rules, rules::VitalState &state,
                  const rules::AdvancementChoice &choice);
     void choose_spells(const rules::RulesModule &, const rules::SpellChoices &,
-                       std::uint64_t rest_session = 0, bool require_complete = true);
+                       std::uint64_t rest_session, bool require_complete = true);
     void replace_rest_training(const rules::RulesModule &, std::span<const std::string>,
                                std::uint64_t rest_session);
 
@@ -81,13 +81,6 @@ class Character
         return advancements_;
     }
 
-    // Reconstructs a candidate with missing training filled and the same history.
-    // Existing selections cannot be replaced; this does not mutate live vitals.
-    [[nodiscard]] Character preview_training(const rules::CharacterRules &creation_rules,
-            const rules::RulesModule &rules,
-            const rules::TrainingChoices &choices,
-            bool require_complete = true) const;
-    [[nodiscard]] rules::TrainingChoices training_choices() const;
 
   private:
     rules::CharacterDraft creation_;
@@ -97,8 +90,6 @@ class Character
     std::vector<rules::AdvancementChoice> advancements_;
     std::vector<SpellChoiceEdit> spell_edits_;
     std::vector<TrainingChoiceEdit> training_edits_;
-    rules::TrainingChoices
-    replaced_training_; // Derived by replay; not a second persisted authority.
 };
 } // namespace opengold
 #endif

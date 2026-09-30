@@ -220,23 +220,22 @@ bool source(std::span<const FeatureGrant> grants, std::string_view id)
     });
 }
 
-std::vector<FeatureGrant> fixed(std::string_view klass, std::string_view background,
-                                TrainingPolicy policy)
+std::vector<FeatureGrant> fixed(std::string_view klass, std::string_view background)
 {
     std::vector<FeatureGrant> result{{"language:common", std::string(origin), 1, {}}};
-    if (klass == "druid" && policy >= TrainingPolicy::druid_herbalism)
+    if (klass == "druid")
         result.push_back({"tool:herbalism_kit", "class:druid", 1, {}});
-    if (policy >= TrainingPolicy::sage && background == "sage")
+    if (background == "sage")
         for (const auto id :
                 {"skill:arcana", "skill:history", "tool:calligraphers_supplies"
                 })
             result.push_back({id, "background:sage", 1, {}});
-    if (policy >= TrainingPolicy::all_backgrounds && background == "acolyte")
+    if (background == "acolyte")
         for (const auto id :
                 {"skill:insight", "skill:religion", "tool:calligraphers_supplies"
                 })
             result.push_back({id, "background:acolyte", 1, {}});
-    if (policy >= TrainingPolicy::all_backgrounds && background == "soldier")
+    if (background == "soldier")
         for (const auto id :
                 {"skill:athletics", "skill:intimidation"
                 })
@@ -288,12 +287,12 @@ void add_choices(std::vector<FeatureGrant> &grants, const TrainingChoices &choic
 }
 
 std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_view background,
-        const TrainingChoices &choices, TrainingPolicy policy)
+        const TrainingChoices &choices)
 {
     std::vector<TrainingChoiceGroup> result
     {
         {std::string(origin), "Starting languages", 2, language_options(false)}};
-    if (klass == "fighter" && policy >= TrainingPolicy::fighter_style)
+    if (klass == "fighter")
         result.push_back({"class:fighter:fighting_style",
                           "Fighting Style",
                           1,
@@ -301,21 +300,21 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
         {"archery", "Archery", "+2 to attack rolls with Ranged weapons."}
     },
     TrainingChoiceControl::single_selection});
-    if (klass == "fighter" && policy >= TrainingPolicy::style_routes)
+    if (klass == "fighter")
         for (auto &group : result)
             if (group.id == "class:fighter:fighting_style")
                 group.options.push_back(
             {
                 "great_weapon_fighting", "Great Weapon Fighting",
                 "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands."});
-    if (klass == "fighter" && policy >= TrainingPolicy::style_routes)
+    if (klass == "fighter")
         for (auto &group : result)
             if (group.id == "class:fighter:fighting_style")
                 group.options.push_back(
             {
                 "two_weapon_fighting", "Two-Weapon Fighting",
                 "Add your ability modifier to the extra attack granted by the Light property."});
-    if (klass == "rogue" || (policy >= TrainingPolicy::class_skills && !klass.empty()))
+    if (!klass.empty())
     {
         const auto data = std::find_if(class_skills.begin(), class_skills.end(),
                                        [&](const auto & c)
@@ -335,7 +334,7 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
                 group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
         result.push_back(std::move(group));
     }
-    if (klass == "bard" && policy >= TrainingPolicy::bard_instruments)
+    if (klass == "bard")
     {
         TrainingChoiceGroup group{std::string(bard_instruments),     "Bard instruments", 3, {},
                                   TrainingChoiceControl::checkboxes, "class_tools"};
@@ -344,7 +343,7 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
                 group.options.push_back({std::string(tool.id), std::string(tool.label), {}});
         result.push_back(std::move(group));
     }
-    if (klass == "monk" && policy >= TrainingPolicy::monk_tools)
+    if (klass == "monk")
     {
         TrainingChoiceGroup group{std::string(monk_tools),           "Monk tools", 1, {},
                                   TrainingChoiceControl::checkboxes, "class_tools"};
@@ -356,7 +355,7 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
     if (klass == "rogue")
     {
         TrainingChoiceGroup group{std::string(expertise), "Rogue Expertise", 2, {}};
-        const auto known = fixed(klass, background, policy);
+        const auto known = fixed(klass, background);
         const auto &picked = selected(choices, rogue);
         for (const auto &s : skills)
             if (source(known, "skill:" + std::string(s.id)) ||
@@ -373,7 +372,7 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
         });
         result.push_back(std::move(group));
     }
-    if (background == "soldier" && policy >= TrainingPolicy::soldier_gaming)
+    if (background == "soldier")
     {
         TrainingChoiceGroup group{std::string(soldier_gaming), "Soldier Gaming Set", 1, {}};
         for (const auto &tool : tools)
@@ -381,7 +380,6 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
                 group.options.push_back({std::string(tool.id), std::string(tool.label), {}});
         result.push_back(std::move(group));
     }
-    if (policy >= TrainingPolicy::weapon_mastery)
     {
         auto group = mastery_options(klass, 1);
         const auto &later = selected(choices, mastery_options(klass, 4).id);
@@ -501,15 +499,14 @@ TrainingChoiceGroup skilled_options(std::span<const FeatureGrant> grants)
 
 std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft)
 {
-    return options(draft.character_class, draft.background, draft.training,
-                   TrainingPolicy::weapon_mastery);
+    return options(draft.character_class, draft.background, draft.training);
 }
 
 std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_view background,
-        const TrainingChoices &choices, TrainingPolicy policy)
+        const TrainingChoices &choices)
 {
-    auto result = fixed(klass, background, policy);
-    const auto groups = options(klass, background, choices, policy);
+    auto result = fixed(klass, background);
+    const auto groups = options(klass, background, choices);
     for (const auto &[id, values] : choices)
         require(std::any_of(groups.begin(), groups.end(),
                             [&](const auto & g)
@@ -531,13 +528,11 @@ std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_vi
 }
 
 TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::string_view klass,
-                                 std::string_view background, TrainingPolicy policy)
+                                 std::string_view background)
 {
-    auto required = fixed(klass, background, policy);
+    auto required = fixed(klass, background);
     TrainingChoices choices;
     std::vector<FeatureGrant> actual;
-    const auto mastery = mastery_choices(grants, klass, 4);
-    require(policy >= TrainingPolicy::weapon_mastery || mastery.empty());
     // Style selections emit feats; keep them in feature validation as well.
     for (const auto &grant : grants)
         if (is_training_grant(grant) || grant.source_id == "class:fighter:fighting_style")
@@ -551,7 +546,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             // prefixed id, so the skill/tool split survives the round trip.
             if (grant.source_id == skilled)
             {
-                require(policy >= TrainingPolicy::skilled && grant.level == 4 &&
+                require(grant.level == 4 &&
                         grant.choices.empty());
                 auto &selected = choices[grant.source_id];
                 require(selected.size() < 3 &&
@@ -568,7 +563,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             if (grant.source_id == "class:wizard:scholar")
             {
-                require(policy >= TrainingPolicy::scholar && klass == "wizard" &&
+                require(klass == "wizard" &&
                         grant.level == 2 && grant.choices.empty());
                 const auto group = scholar_options(grants);
                 require(std::any_of(group.options.begin(), group.options.end(),
@@ -581,7 +576,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                 selected.push_back(grant.id.substr(10));
                 continue;
             }
-            const bool replacement = policy >= TrainingPolicy::style_routes && klass == "fighter" &&
+            const bool replacement = klass == "fighter" &&
                                      grant.source_id == "class:fighter:fighting_style";
             require((grant.level == 1 || (replacement && grant.level <= 4)) &&
                     grant.choices.empty());
@@ -610,7 +605,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     starting.erase("class:wizard:scholar");
     starting.erase(std::string(skilled));
     starting.erase(mastery_options(klass, 4).id);
-    auto expected = training_grants(klass, background, starting, policy);
+    auto expected = training_grants(klass, background, starting);
     const auto order = [](const FeatureGrant & a, const FeatureGrant & b)
     {
         return std::tie(a.id, a.source_id, a.level) < std::tie(b.id, b.source_id, b.level);
@@ -623,16 +618,16 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
 
 TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::string_view klass,
                                  std::string_view background, unsigned level,
-                                 const std::array<int, 6> &scores, TrainingPolicy policy)
+                                 const std::array<int, 6> &scores)
 {
-    const auto choices = training_choices(grants, klass, background, policy);
-    const auto groups = options(klass, background, choices, policy);
+    const auto choices = training_choices(grants, klass, background);
+    const auto groups = options(klass, background, choices);
     TrainingProfile result;
     result.complete = true;
     for (const auto &group : groups)
         result.complete &= selected(choices, group.id).size() == group.count;
     const auto mastery = mastery_choices(grants, klass, level);
-    if (policy >= TrainingPolicy::weapon_mastery && level >= 4)
+    if (level >= 4)
     {
         const auto extra = mastery_options(klass, 4);
         if (extra.count)
@@ -646,12 +641,12 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
         }
     const auto &picked = selected(choices, skilled);
     const bool has_skilled = bool(source(grants, std::string(skilled)));
-    require((picked.empty() && !has_skilled) || (policy >= TrainingPolicy::skilled && level >= 4));
+    require((picked.empty() && !has_skilled) || level >= 4);
     if (has_skilled)
         result.complete &= picked.size() == 3;
     const auto &scholar = selected(choices, "class:wizard:scholar");
     require(scholar.empty() || level >= 2);
-    if (policy >= TrainingPolicy::scholar && klass == "wizard" && level >= 2)
+    if (klass == "wizard" && level >= 2)
         result.complete &= scholar.size() == 1;
     for (const auto &s : skills)
     {

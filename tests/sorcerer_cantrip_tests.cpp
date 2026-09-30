@@ -57,38 +57,6 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
-void freeze()
-{
-    auto rules = module();
-    check(rules->identity().version == "0.6.39", "Freeze requires actual old writer");
-    auto d = draft();
-    d.background = "sage";
-    d.rolls[5] = {{6, 5, 4, 1}, 3};
-    Character h(*srd5::character_rules(), d, {});
-    h.inventory().add("quarterstaff", "Quarterstaff");
-    CampaignParty p(module());
-    p.add_pc(std::move(h));
-    p.equip(1, 1);
-    auto state = p.checkpoint();
-    state.roster[0].vitals.hit_points -= 2;
-    state.roster[0].wealth[3] = 37;
-    state.random_state = 789;
-    p.restore(state);
-    const auto base = root / "tests/fixtures";
-    write(base / "campaign-v11-sorcerer-cantrip-before.ogs",
-          encode_campaign(p, nullptr, "sorcerer-cantrip"));
-    auto actors = p.participants();
-    actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 2);
-    check(c->snapshot().actor == 1, "Prior caster starts");
-    check(c->submit(command(*c, "dash")), "Spend prior Action");
-    check(c->submit(command(*c, "adrenaline_rush")), "Spend prior Bonus");
-    write(base / "combat-v13-sorcerer-cantrip-before.save", c->save());
-    check(c->submit(command(*c, "end")), "Prior continuation");
-    write(base / "combat-v13-sorcerer-cantrip-continued.save", c->save());
-}
-
 std::string read(const std::filesystem::path &p)
 {
     std::ifstream in(p);
@@ -205,7 +173,7 @@ void access()
     check(options.count == 4 && options.options.size() == 5,
           "Five supported Sorcerer options, four choices");
     check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
-          "Missing old selections stay pending");
+          "A draft without selections has no invented cantrips");
     const auto h = hero();
     auto access = rules->spell_access(h.sheet());
     check(access.cantrip_choices == 4 && access.cantrips.size() == 4,
@@ -249,16 +217,10 @@ void access()
             (void)rules->character_profile(bad, {});
         });
     }
-    auto prior = rules->identity();
-    prior.version = "0.6.39";
-    rejects(
-        [&]
-    {
-        rules->validate_saved_grants(prior, h.sheet(), h.sheet().grants);
-    });
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC28 1 2 1345 "), "Sorcerer versioned mask");
-    profile.replace(0, 4, "PC27");
+    check(profile.starts_with("PC42 1 2 4 fire_bolt poison_spray ray_of_frost shocking_grasp "),
+          "The recipe lists all four selected cantrips");
+    profile.replace(0, 4, "PC28");
     rejects(
         [&]
     {
@@ -482,40 +444,6 @@ void campaign()
         }
 }
 
-void legacy()
-{
-    auto rules = module();
-    auto base = root / "tests/fixtures";
-    const auto prior = read(base / "campaign-v11-sorcerer-cantrip-before.ogs");
-    CampaignParty party(module());
-    party.restore(
-        decode_campaign(prior, *srd5::character_rules(), *rules, "sorcerer-cantrip", nullptr)
-        .party);
-    auto body = [](const std::string & s)
-    {
-        return s.substr(s.find('\n', s.find('\n') + 1) + 1);
-    };
-    auto expected = body(prior);
-    expected.replace(expected.find("0.6.39"), 6, rules->identity().version);
-    check(body(encode_campaign(party, nullptr, "sorcerer-cantrip")) == expected,
-          "Actual old campaign preserves all fields except module identity/checksum");
-    check(rules->spell_access(party.member(1).character.sheet()).cantrips.empty(),
-          "Missing choices stay pending on old Sorcerers");
-    auto upgraded = [&](const char *name)
-    {
-        auto s = read(base / name);
-        s.replace(s.find("0.6.39"), 6, rules->identity().version);
-        return s;
-    };
-    auto c = rules->restore(read(base / "combat-v13-sorcerer-cantrip-before.save"));
-    check(c->save() == upgraded("combat-v13-sorcerer-cantrip-before.save") &&
-          !has(*c, "poison_spray"),
-          "Actual prior recipe and budgets retained");
-    check(c->submit(command(*c, "end")), "Prior spent turn continues");
-    check(c->save() == upgraded("combat-v13-sorcerer-cantrip-continued.save"),
-          "Prior turn/RNG continuation exact");
-}
-
 void fixtures()
 {
     auto rules = module();
@@ -540,21 +468,15 @@ void fixtures()
 }
 } // namespace
 
-int main(int argc, char **)
+int main()
 {
     try
     {
-        if (argc == 2)
-        {
-            freeze();
-            return 0;
-        }
         access();
         rolls();
         timing();
         eligibility();
         campaign();
-        legacy();
         fixtures();
         std::cout << "Sorcerer cantrip tests passed\n";
         return 0;
