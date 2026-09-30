@@ -135,16 +135,11 @@ void CombatView::_ready()
     ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("mind_use"));
     get_node<Button>("TacticalMind/Skip")
     ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("mind_skip"));
-    get_node<Button>("WakeAlly")
-    ->connect("pressed", callable_mp(this, &CombatView::select_mode).bind("wake_ally"));
     get_node<Button>("StandUp")->connect(
         "pressed", callable_mp(this, &CombatView::immediate).bind("stand_up"));
     get_node<OptionButton>("ThrownWeapon")
     ->connect("item_selected", callable_mp(this, &CombatView::thrown_selected));
     get_node<Button>("Throw")->connect("pressed", callable_mp(this, &CombatView::begin_throw));
-    get_node<OptionButton>("GroundItem")
-    ->connect("item_selected", callable_mp(this, &CombatView::ground_selected));
-    get_node<Button>("PickUp")->connect("pressed", callable_mp(this, &CombatView::pick_up));
     get_node<Button>("Replay")->connect("pressed", callable_mp(this, &CombatView::replay));
     get_node<Button>("Continue")->connect("pressed", callable_mp(this, &CombatView::next));
     get_node<Button>("Revisit")->connect("pressed", callable_mp(this, &CombatView::revisit));
@@ -204,10 +199,8 @@ void CombatView::layout()
                  left_width = width - sidebar - 72;
     const auto board = demo_ && demo_->has_combat() ? demo_->combat().snapshot().battlefield
                        : Battlefield{12, 9, {}};
-    const bool recovery = get_node<Button>("Stabilize")->is_visible() ||
-                          get_node<Button>("WakeAlly")->is_visible() ||
-                          get_node<Button>("StandUp")->is_visible() ||
-                          get_node<OptionButton>("GroundItem")->is_visible();
+    const bool recovery =
+        get_node<Button>("Stabilize")->is_visible() || get_node<Button>("StandUp")->is_visible();
     const double weapon_height = get_node<OptionButton>("Weapons")->is_visible() ? 44 : 0;
     const double bonus_height = get_node<OptionButton>("CunningAction")->is_visible() ? 44 : 0;
     const double tile = std::min(left_width / board.width,
@@ -258,12 +251,8 @@ void CombatView::layout()
     place("CunningAction", Rect2(214, bonus_top, 200, 36));
     place("UseCunningAction", Rect2(424, bonus_top, 240, 36));
     const double top = bonus_top + bonus_height;
-    place("WakeAlly", Rect2(24 + left_width - 340, top, 160, 36));
     place("Stabilize", Rect2(24 + left_width - 170, top, 170, 36));
     place("StandUp", Rect2(24, top + 44, 180, 36));
-    place("GroundItemLabel", Rect2(214, top + 44, 100, 36));
-    place("GroundItem", Rect2(324, top + 44, 176, 36));
-    place("PickUp", Rect2(510, top + 44, 204, 36));
     place("ThrownWeaponLabel", Rect2(24, top + 88, 190, 36));
     place("ThrownWeapon", Rect2(224, top + 88, 276, 36));
     place("Throw", Rect2(510, top + 88, 204, 36));
@@ -511,24 +500,6 @@ void CombatView::begin_throw()
     select_mode("throw");
 }
 
-void CombatView::ground_selected(std::int64_t index)
-{
-    ground_item_ = get_node<OptionButton>("GroundItem")->get_item_id(index);
-    refresh();
-}
-
-void CombatView::pick_up()
-{
-    if (!demo_ || !demo_->has_combat() || get_node<Button>("PickUp")->is_disabled())
-        return;
-    for (const auto &c : demo_->combat().legal_commands())
-        if (c.verb == "pick_up" && c.target == ground_item_)
-        {
-            act(c);
-            return;
-        }
-}
-
 void CombatView::bonus_selected(std::int64_t)
 {
     refresh();
@@ -773,19 +744,16 @@ void CombatView::_input(const Ref<InputEvent> &event)
             }
         }
     }
-    if (key.is_valid() && (get_node<OptionButton>("GroundItem")->has_focus() ||
-                           get_node<OptionButton>("GroundItem")->get_popup()->is_visible()))
-        return;
     if (key.is_valid() &&
             (get_node<Button>("Nick")->has_focus() ||
              get_node<Button>("UseCunningAction")->has_focus() ||
-             get_node<Button>("Throw")->has_focus() || get_node<Button>("PickUp")->has_focus() ||
-             get_node<Button>("Stabilize")->has_focus() || get_node<Button>("WakeAlly")->has_focus() ||
+             get_node<Button>("Throw")->has_focus() ||
+             get_node<Button>("Stabilize")->has_focus() ||
              get_node<Button>("StandUp")->has_focus()) &&
             (key->get_keycode() == Key::KEY_ENTER || key->get_keycode() == Key::KEY_SPACE))
         return;
     if (key.is_valid() && key->is_pressed() && key->get_keycode() == Key::KEY_ESCAPE &&
-            (mode_ == "wake_ally" || mode_ == "stabilize" || mode_ == "throw" ||
+            (mode_ == "stabilize" || mode_ == "throw" ||
              (mode_.starts_with("light_") || mode_.starts_with("nick_"))))
     {
         mode_ = "move";
@@ -963,15 +931,6 @@ void CombatView::refresh()
     get_node<Button>("Decline")->set_visible(!get_node<Button>("Nick")->is_visible());
     if (weapon_layout || bonus_layout)
         layout();
-    std::vector<std::pair<unsigned, EntityId>> holders;
-    for (const auto &item : s.held_items)
-        holders.emplace_back(item.id, item.holder);
-    if (holders != item_holders_)
-    {
-        item_holders_ = std::move(holders);
-        if (campaign_)
-            sync_art();
-    }
     auto *thrown = get_node<OptionButton>("ThrownWeapon");
     thrown->set_block_signals(true);
     thrown->set_fit_to_longest_item(false);
@@ -1019,49 +978,6 @@ void CombatView::refresh()
     });
     thrown->set_disabled(!enabled("throw"));
     get_node<Button>("Throw")->set_disabled(!can_throw);
-    auto *ground = get_node<OptionButton>("GroundItem");
-    ground->set_block_signals(true);
-    ground->clear();
-    for (const auto &item : s.held_items)
-        if (!item.holder)
-            ground->add_item(gs(item.label.source), item.id);
-    int ground_index = -1;
-    for (int i = 0; i < ground->get_item_count(); ++i)
-        if (ground->get_item_id(i) == int(ground_item_))
-            ground_index = i;
-    if (ground_index < 0 && ground->get_item_count())
-        ground_index = 0;
-    if (ground_index >= 0)
-    {
-        ground->select(ground_index);
-        ground_item_ = ground->get_item_id(ground_index);
-    }
-    else
-        ground_item_ = 0;
-    ground->set_block_signals(false);
-    const bool show_ground = s.outcome == Outcome::ongoing && ground->get_item_count() > 0;
-    const bool ground_layout_changed = ground->is_visible() != show_ground;
-    for (const char *name :
-            {"GroundItemLabel", "GroundItem", "PickUp"
-            })
-        get_node<Control>(name)->set_visible(show_ground);
-    ground->set_disabled(!player);
-    const auto pickup = std::find_if(offered.begin(), offered.end(),
-                                     [&](const auto & c)
-    {
-        return c.verb == "pick_up" && c.target == ground_item_;
-    });
-    get_node<Button>("PickUp")->set_disabled(!player || pickup == offered.end());
-    get_node<Button>("PickUp")->set_text(pickup == offered.end() ? String("Pick up")
-                                         : gs(pickup->label));
-    get_node<Button>("WakeAlly")
-    ->set_visible(s.outcome == Outcome::ongoing &&
-                  std::any_of(s.combatants.begin(), s.combatants.end(),
-                              [](const auto & a)
-    {
-        return a.side == 0 && a.naturally_sleeping;
-    }));
-    get_node<Button>("WakeAlly")->set_disabled(!enabled("wake_ally"));
     get_node<Button>("Stabilize")
     ->set_visible(s.outcome == Outcome::ongoing &&
                   std::any_of(s.combatants.begin(), s.combatants.end(),

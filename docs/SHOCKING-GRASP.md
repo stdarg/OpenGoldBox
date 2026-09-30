@@ -24,7 +24,7 @@ Turn entry also clears an imported suppression on the acting target. Outside
 combat the existing six-second-round timeline expires the remaining duration;
 camping/inn rests expire it before normal saving.
 
-Profile recipes validate the new spell and grant. Effect state (FX7)
+Profile recipes validate the new spell and grant. Effect state (FX8)
 represents sourced suppression alongside existing blindness/Ray of Frost effects.
 No player combat saving controls were added.
 

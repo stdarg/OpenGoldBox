@@ -258,7 +258,6 @@ void RolfTourSession::restart()
     diagnostics_.clear();
     current_script_ = selected_character_ = event_stage_ = 0;
     camp_kind_ = RestKind::long_rest;
-    resuming_camp_ = false;
     staged_enemies_.clear();
     staged_art_.clear();
     staged_records_.clear();
@@ -562,24 +561,9 @@ bool RolfTourSession::camp(RestKind kind)
         return false;
     if (!town_ || !campaign_ || snapshot_.phase != TourPhase::completed || campaign_->in_combat() ||
             campaign_->state().short_rest || campaign_->state().spell_rest ||
-            campaign_->state().training_rest || campaign_->state().rest_activity)
+            campaign_->state().training_rest)
         return false;
-    resuming_camp_ = false;
     camp_kind_ = kind;
-    begin_event(2);
-    advance(0);
-    return true;
-}
-
-bool RolfTourSession::resume_camp()
-{
-    if (!town_ || !campaign_ || !can_leave() || campaign_->in_combat() ||
-            campaign_->state().short_rest || campaign_->state().spell_rest ||
-            campaign_->state().training_rest || !campaign_->state().rest_activity ||
-            !campaign_->state().rest_activity->interrupted)
-        return false;
-    resuming_camp_ = true;
-    camp_kind_ = RestKind::long_rest;
     begin_event(2);
     advance(0);
     return true;
@@ -591,8 +575,7 @@ bool RolfTourSession::explore(ExplorationCommand command)
         return camp(RestKind::long_rest);
     if (snapshot_.phase != TourPhase::completed ||
             (campaign_ && (campaign_->in_combat() || campaign_->state().short_rest ||
-                           campaign_->state().spell_rest || campaign_->state().training_rest ||
-                           campaign_->state().rest_activity)))
+                           campaign_->state().spell_rest || campaign_->state().training_rest)))
         return false;
     if (town_)
     {

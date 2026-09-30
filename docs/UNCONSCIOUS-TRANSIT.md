@@ -58,3 +58,12 @@ Verification completed: all 41 native/tool tests and all 17 Godot runtime tests
 separately; final death/natural-recovery cases pass in the rebuilt rules target.
 Main/demo builds and 816-message localization validation pass. No controls,
 layout or user-facing text changed, so no new layout approval was needed.
+
+## Gear and posture (SIMPLIFY-1, 2026-09-30)
+
+Under [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)
+an Unconscious character keeps its held weapon and shield: nothing drops to the
+ground, its armor class is unchanged and there is no Pick up action. It still
+lies Prone and is Incapacitated for transit as above. Prone does not outlast
+combat: when a fight is won everyone stands. `downed_keeps_gear` in
+`opengold_posture_tests` covers an actual knockout.

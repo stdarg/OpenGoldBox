@@ -69,7 +69,7 @@ struct EffectState
 {
     std::uint64_t next_id{1};
     std::vector<Effect> active;
-    bool sleeping{}, prone{}; // Natural sleep persists until a host wake event.
+    bool prone{};
     bool operator==(const EffectState &) const = default;
 };
 

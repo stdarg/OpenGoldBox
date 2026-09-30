@@ -323,8 +323,8 @@ void effect_lifecycle()
     fx::elapse_effects(std::span(&subject, 1), 4000, random);
     check(state.active.empty() && random == 17, "Last application expires without consuming RNG");
     for (const char *bad :
-            {"FX1 2 1 1 2 5 1 \"Caster\" 0 6000 0", "FX7 2 1 1 2 5 1 \"Caster\" 1 6000 0 0 0",
-             "FX7 2 1 1 2 5 1 \"Caster\" 0 6001 0 0 0", "FX7 2 1 1 2 5 1 \"Caster\" 0 6000 1 0 0"
+            {"FX1 2 1 1 2 5 1 \"Caster\" 0 6000 0", "FX8 2 1 1 2 5 1 \"Caster\" 1 6000 0 0",
+             "FX8 2 1 1 2 5 1 \"Caster\" 0 6001 0 0", "FX8 2 1 1 2 5 1 \"Caster\" 0 6000 1 0"
             })
         rejects(
             [&]

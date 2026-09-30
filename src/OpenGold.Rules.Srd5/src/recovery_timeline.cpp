@@ -21,6 +21,15 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
     }
     if (!milliseconds)
         return;
+    // Outside combat a dying creature does not wait on a six-second cadence:
+    // its remaining death saves resolve at once, before any clock advances.
+    if (mode == RecoveryMode::campaign)
+        for (auto &subject : ordered)
+        {
+            auto &life = subject.life.get();
+            while (life.hp == 0 && !life.dead && !life.stable)
+                (void)death_save(life, rng, !healing_blocked(subject.effects.effects.get()));
+        }
     for (auto &subject : ordered)
         start_stable_recovery(subject.life, rng);
     while (milliseconds)
@@ -30,24 +39,16 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
         for (const auto &subject : ordered)
         {
             const auto &life = subject.life.get();
-            if (life.hp == 0 && !life.dead)
+            if (life.hp == 0 && !life.dead && life.stable)
             {
-                if (life.stable)
+                any = true;
+                if (life.recovery.stable_recovery_due)
                 {
-                    any = true;
-                    if (life.recovery.stable_recovery_due)
-                    {
-                        if (!healing_blocked(subject.effects.effects.get()))
-                            step = 0;
-                    }
-                    else
-                        step = std::min(step, std::uint64_t(life.recovery.stable_recovery_in_ms));
+                    if (!healing_blocked(subject.effects.effects.get()))
+                        step = 0;
                 }
-                else if (mode == RecoveryMode::campaign)
-                {
-                    any = true;
-                    step = std::min(step, std::uint64_t(life.recovery.death_save_in_ms));
-                }
+                else
+                    step = std::min(step, std::uint64_t(life.recovery.stable_recovery_in_ms));
             }
             for (const auto &effect : subject.effects.effects.get().active)
             {
@@ -67,14 +68,8 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
         for (auto &subject : ordered)
         {
             auto &life = subject.life.get();
-            const bool was_unconscious = life.hp == 0;
             (void)advance_recovery_clock(life, step,
                                          !healing_blocked(subject.effects.effects.get(), step));
-            if (mode == RecoveryMode::campaign && life.hp == 0 && !life.dead && !life.stable &&
-                    !life.recovery.death_save_in_ms)
-                (void)death_save(life, rng, !healing_blocked(subject.effects.effects.get(), step));
-            if (was_unconscious && life.hp > 0)
-                subject.effects.effects.get().prone = true;
             // The chosen step reaches at most the first effect boundary, so
             // this shares the existing save/expiry rules without hiding an
             // earlier RNG event. Death at the same deadline suppresses its save.

@@ -56,36 +56,6 @@ void RulesModule::recover(VitalState &, const CharacterSheet &) const
     throw std::runtime_error("This rules module does not support recovery");
 }
 
-RestProgress RulesModule::begin_rest(RestKind) const
-{
-    throw std::runtime_error("This rules module does not support rest activities");
-}
-
-RestTransition RulesModule::advance_rest(const RestProgress &, std::uint64_t, RestWork) const
-{
-    throw std::runtime_error("This rules module does not support rest activities");
-}
-
-RestTransition RulesModule::interrupt_rest(const RestProgress &, RestInterruption) const
-{
-    throw std::runtime_error("This rules module does not support rest activities");
-}
-
-RestProgress RulesModule::resume_rest(const RestProgress &) const
-{
-    throw std::runtime_error("This rules module does not support rest activities");
-}
-
-std::uint64_t RulesModule::remaining_rest(const RestProgress &) const
-{
-    throw std::runtime_error("This rules module does not support rest activities");
-}
-
-void RulesModule::validate_rest(const RestProgress &) const
-{
-    throw std::runtime_error("This rules module does not support rest activities");
-}
-
 RestPolicy RulesModule::long_rest_policy() const
 {
     throw std::runtime_error("This rules module does not support recovery");

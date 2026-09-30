@@ -184,55 +184,16 @@ enum class TemporaryHpChoice
     keep_current,
     use_new
 };
-// Engine-independent rest events and continuation. No campaign IDs or UI state.
 enum class RestKind
 {
     short_rest,
     long_rest
 };
-enum class RestWork
-{
-    sleep,
-    light_activity,
-    exertion
-};
-enum class RestInterruption
-{
-    initiative,
-    spell,
-    damage,
-    exertion
-};
 
-struct RestProgress
-{
-    RestKind kind{};
-    std::uint64_t elapsed_milliseconds{}, segment_milliseconds{}, sleep_milliseconds{},
-        light_milliseconds{};
-    std::uint64_t exertion_milliseconds{}, extension_milliseconds{};
-    bool interrupted{};
-    RestWork work{RestWork::sleep};
-    RestInterruption interruption{RestInterruption::initiative};
-};
-enum class RestBenefit
-{
-    none,
-    short_rest,
-    long_rest
-};
-
-struct RestTransition
-{
-    std::optional<RestProgress> progress;
-    RestBenefit benefit{RestBenefit::none};
-    std::uint64_t completed_duration_milliseconds{};
-};
-
+// A rest either completes or is interrupted; an interrupted rest grants nothing.
 struct RestPolicy
 {
     unsigned duration_minutes{}, wait_after_rest_minutes{};
-    unsigned minimum_sleep_minutes{}, maximum_light_minutes{}, interruption_extension_minutes{},
-             exertion_limit_minutes{};
 };
 
 struct ResourcePool
@@ -282,15 +243,15 @@ struct Battlefield
 };
 
 // Stable encounter item identity references the original participant and equipment
-// ordinal. Campaign adapters map these to inventory identities, never rule code.
+// ordinal. Items never leave their holder: downed characters keep their gear and
+// a thrown weapon stays in inventory, like ammunition.
 struct HeldItemView
 {
     unsigned id{};
-    EntityId origin{}, holder{}; // Holder zero means on the ground.
+    EntityId origin{}, holder{};
     unsigned equipment_index{};
     std::string definition;
     Message label;
-    Cell cell;
     std::uint64_t inventory_id{}; // Original source identity; zero for legacy/profile equipment.
     unsigned quantity{1};         // A held stack means one held unit and the remainder carried.
     bool stowed{};
@@ -314,9 +275,9 @@ struct Participant
     std::optional<VitalState> state;
     bool surprised{}; // The rules module determines the mechanical effect.
     bool facing_left{};
-    // Initial equipment ordinals already on the ground at this participant's
-    // encounter position. Combat checkpoints persist their resulting item state.
-    std::vector<unsigned> ground_equipment;
+    // The encounter interrupted this participant's rest; the rules module
+    // decides how it starts (SRD: awake and Prone).
+    bool resting{};
     std::vector<CarriedEquipment> inventory;
 };
 
@@ -379,7 +340,7 @@ struct CombatantView
     std::vector<std::string>
     bonus_actions; // Entitlements remain visible after spending the Bonus Action.
     std::vector<std::string> known_cantrips; // Knowledge persists while casting is unavailable.
-    bool naturally_sleeping{}, prone{};
+    bool prone{};
     std::vector<ThrownWeaponOption> thrown_weapons;
     std::vector<ThrownWeaponOption> weapons;
     unsigned selected_weapon{};
@@ -463,13 +424,6 @@ struct Command
     unsigned item{};
 };
 
-// A terminal encounter query; application applies recovery once when leaving combat.
-struct SafeRecovery
-{
-    std::vector<EntityId> members;
-    std::vector<unsigned> items;
-};
-
 class CombatSession
 {
   public:
@@ -479,11 +433,6 @@ class CombatSession
     // Preview the remaining movement range of a combatant, including one
     // selected outside its turn. Only legal_commands() can authorize a move.
     [[nodiscard]] virtual std::vector<Cell> movement_reach(EntityId actor) const = 0;
-
-    [[nodiscard]] virtual SafeRecovery safe_recovery() const
-    {
-        return {};
-    }
 
     virtual bool submit(const Command &command) = 0;
     [[nodiscard]] virtual std::string save() const = 0;
@@ -592,36 +541,8 @@ class RulesModule
 
     virtual void validate_character_state(const CharacterSheet &, const VitalState &) const;
 
-    [[nodiscard]] virtual RestProgress begin_rest(RestKind) const;
-    [[nodiscard]] virtual RestTransition advance_rest(const RestProgress &, std::uint64_t,
-            RestWork) const;
-    [[nodiscard]] virtual RestTransition interrupt_rest(const RestProgress &,
-            RestInterruption) const;
-    [[nodiscard]] virtual RestProgress resume_rest(const RestProgress &) const;
-    [[nodiscard]] virtual std::uint64_t remaining_rest(const RestProgress &) const;
-    virtual void validate_rest(const RestProgress &) const;
     [[nodiscard]] virtual RestPolicy long_rest_policy() const;
     [[nodiscard]] virtual RestPolicy short_rest_policy() const;
-
-    // Rest hosts report an activity; the module owns sleep/condition effects.
-    // Stand when able without restoring HP/resources; report ability to collect.
-    virtual bool recover_at_safety(VitalState &, const CharacterSheet &,
-                                   std::span<const std::string>) const
-    {
-        return false;
-    }
-
-    virtual void set_rest_work(VitalState &, const CharacterSheet &, RestWork) const
-    {
-    }
-
-    // The module identifies equipment that the current condition releases.
-    [[nodiscard]] virtual std::vector<unsigned>
-    released_equipment(const CharacterSheet &, const VitalState &,
-                       std::span<const std::string>) const
-    {
-        return {};
-    }
 
     virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const;
     virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,

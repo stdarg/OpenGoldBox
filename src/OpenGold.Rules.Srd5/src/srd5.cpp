@@ -1,5 +1,4 @@
 #include "dice.h"
-#include "rest_activity.h"
 #include "damage_roll.h"
 #include "sneak_attack.h"
 #include "action_budget.h"
@@ -108,7 +107,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 27;
+constexpr unsigned checkpoint_format = 28;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -254,7 +253,6 @@ struct Actor : detail::LifeState
     bool involuntary_overlap{}; // Interrupted in an occupied space; retained through recovery until
     // separated.
     detail::EffectState effects;
-    bool object_interaction{true};
 };
 
 // Every class resource that presents as a pool. The member pointers say where
@@ -298,7 +296,7 @@ rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Ac
 
 bool unconscious(const Actor &a)
 {
-    return a.hp == 0 || a.effects.sleeping;
+    return a.hp == 0;
 }
 
 bool conscious(const Actor &a)
@@ -687,8 +685,6 @@ void restore_vitals(Actor &a, const VitalState &state)
             throw std::runtime_error("Trailing character resource state");
     }
     const auto &d = a.definition;
-    if (a.effects.sleeping && (a.dead || a.hp <= 0))
-        throw std::runtime_error("Invalid naturally sleeping vitality");
     if (a.hp < 0 || a.hp > d.hp || (a.dead && a.hp != 0) || a.winds < 0 || a.winds > d.winds ||
             a.slots < 0 || a.slots > d.slots || a.arcane < 0 || a.arcane > d.arcane || a.slots2 < 0 ||
             a.slots2 > d.slots2 || a.surges < 0 || a.surges > d.surges || a.rushes < 0 ||
@@ -744,8 +740,6 @@ VitalState vitals(const Actor &a)
         description += "\nSlow: Speed reduced by 10 feet.";
     if (detail::blinded(a.effects))
         description += "\nBlinded";
-    if (a.effects.sleeping)
-        description += "\nNaturally asleep";
     if (a.effects.prone)
         description += "\nProne";
     return {a.hp, a.dead, out.str(), description};
@@ -813,10 +807,9 @@ class Session final : public CombatSession
             a.facing_left = a.source.facing_left;
             if (a.source.state)
                 restore_vitals(a, *a.source.state);
-            a.initiative = detail::d20({d.champion, d.str_dex_disadvantage || a.source.surprised ||
-                                        a.effects.sleeping},
-                                       rng_) +
-                           d.initiative;
+            a.initiative =
+                detail::d20({d.champion, d.str_dex_disadvantage || a.source.surprised}, rng_) +
+                d.initiative;
             a.movement = d.speed;
             actors_.push_back(std::move(a));
         }
@@ -830,6 +823,8 @@ class Session final : public CombatSession
                    : a.source.id < b.source.id;
         });
         log("Combat begins. Each square is 5 feet.");
+        if (!restoring)
+            wake_resting_participants();
         update_outcome();
         frost_movement_ = std::any_of(
                               actors_.begin(), actors_.end(),
@@ -857,29 +852,6 @@ class Session final : public CombatSession
             if (physical_inventory_)
                 initialize_items();
         }
-        if (!restoring)
-            for (auto &a : actors_)
-            {
-                if (unconscious(a))
-                    drop_held(a);
-                if (a.source.ground_equipment.empty())
-                    continue;
-                initialize_items();
-                std::set<unsigned> seen;
-                for (const auto index : a.source.ground_equipment)
-                {
-                    const auto item = std::find_if(items_.begin(), items_.end(),
-                                                   [&](const auto & i)
-                    {
-                        return i.origin == a.source.id &&
-                               i.equipment_index == index;
-                    });
-                    if (!seen.insert(index).second || item == items_.end())
-                        throw std::runtime_error("Invalid initial ground equipment");
-                    ground_one(item->id, a.source.cell);
-                }
-                a.definition = equipped_definition(a, items_);
-            }
         if (!restoring && std::any_of(actors_.begin(), actors_.end(),
                                       [](const auto & a)
     {
@@ -898,7 +870,6 @@ class Session final : public CombatSession
     }
 
     Snapshot snapshot() const override;
-    SafeRecovery safe_recovery() const override;
     std::vector<Command> legal_commands() const override;
     std::vector<Cell> movement_reach(EntityId actor) const override;
     bool submit(const Command &command) override;
@@ -970,14 +941,10 @@ class Session final : public CombatSession
     bool has_weapon_reaction(const Actor &, Cell, Cell) const;
     void validate_light() const;
     Actor thrown_actor(const Actor &, std::string_view weapon) const;
-    unsigned ground_one(unsigned item, Cell cell);
-    Message throw_label(const Actor &, const HeldItemView &) const;
-    unsigned throw_weapon(Actor &, Actor &, unsigned item, bool light = false);
+    void throw_weapon(Actor &, Actor &, unsigned item, bool light = false);
     std::vector<HeldItemView> items_;
     void initialize_items();
-    void drop_held(Actor &a);
     Definition equipped_definition(const Actor &a, const std::vector<HeldItemView> &items) const;
-    bool can_pick_up(const Actor &a, const HeldItemView &item) const;
     std::vector<std::string> log_;
     std::vector<Message> log_messages_;
     std::vector<Cell> path_;
@@ -1110,6 +1077,8 @@ class Session final : public CombatSession
     void damage(Actor &target, int amount, bool critical = false);
     void heal(Actor &target, int amount);
     void update_outcome();
+    void wake_resting_participants();
+    void resolve_death_saves_after_victory();
     std::vector<EntityId> initiative_choices_;
 
     void start_encounter_turns()
@@ -1344,8 +1313,7 @@ void Session::initialize_items()
                 a->source.id,
                 i,
                 key,
-                {key == "shield" ? "Shield" : std::string(detail::weapon(key)->label), {}},
-                {}};
+                {key == "shield" ? "Shield" : std::string(detail::weapon(key)->label), {}}};
             if (physical_inventory_)
                 for (const auto &source : a->source.inventory)
                     if (source.equipment_index == static_cast<int>(i))
@@ -1366,18 +1334,11 @@ void Session::initialize_items()
                                       0,
                                       source.definition,
                 {std::string(detail::weapon(source.definition)->label), {}},
-        {},
         source.inventory_id,
         source.quantity,
         true});
     }
     items_active_ = true;
-    // Older checkpoints can contain already-unconscious equipment holders.
-    // Once a drop activates the ledger, reconcile every holder so that the
-    // resulting checkpoint obeys the same invariant as a fresh encounter.
-    for (auto &a : actors_)
-        if (unconscious(a))
-            drop_held(a);
 }
 
 Definition Session::equipped_definition(const Actor &a,
@@ -1400,26 +1361,6 @@ Definition Session::equipped_definition(const Actor &a,
     return character_definition(a.source.character_profile, std::span<const std::string>(keys));
 }
 
-void Session::drop_held(Actor &a)
-{
-    if (a.source.character_profile.empty())
-        return;
-    initialize_items();
-    bool changed = false;
-    const auto count = items_.size();
-    for (unsigned i = 0; i < count; ++i)
-        if (items_[i].holder == a.source.id && !items_[i].stowed)
-        {
-            ground_one(items_[i].id, a.source.cell);
-            changed = true;
-        }
-    if (changed)
-    {
-        a.selected_weapon = 0;
-        a.definition = equipped_definition(a, items_);
-    }
-}
-
 Actor Session::thrown_actor(const Actor &a, std::string_view weapon) const
 {
     auto result = a;
@@ -1433,135 +1374,16 @@ Actor Session::thrown_actor(const Actor &a, std::string_view weapon) const
     return result;
 }
 
-unsigned Session::ground_one(unsigned token, Cell cell)
+// Thrown weapons work like ammunition: the weapon stays where it was, held or
+// carried, so throwing never changes what the thrower holds.
+void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
 {
-    auto &item = items_.at(token - 1);
-    if (item.quantity > 1)
-    {
-        auto unit = item;
-        --item.quantity;
-        item.stowed = true;
-        item.cell = {};
-        unit.id = unsigned(items_.size() + 1);
-        unit.quantity = 1;
-        unit.holder = 0;
-        unit.stowed = false;
-        unit.cell = cell;
-        items_.push_back(std::move(unit));
-        return unsigned(items_.size());
-    }
-    item.holder = 0;
-    item.stowed = false;
-    item.cell = cell;
-    return token;
-}
-
-Message Session::throw_label(const Actor &a, const HeldItemView &item) const
-{
-    Message label{"{weapon} ×{count}",
-        {{"weapon", item.label.source, true}, {"count", std::to_string(item.quantity)}}};
-    const bool full = std::count_if(items_.begin(), items_.end(),
-                                    [&](const auto & i)
-    {
-        return i.holder == a.source.id && !i.stowed;
-    }) >= 2;
-    if (item.stowed && full)
-        for (const auto &held : items_)
-            if (held.id == held_weapon(a))
-            {
-                label.source = "{weapon} ×{count} (stow {held})";
-                label.arguments.push_back({"held", held.label.source, true});
-                break;
-            }
-    return label;
-}
-
-unsigned Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
-{
-    const auto selected = items_.at(token - 1);
-    const bool full = std::count_if(items_.begin(), items_.end(),
-                                    [&](const auto & i)
-    {
-        return i.holder == a.source.id && !i.stowed;
-    }) >= 2;
-    if (!light && selected.stowed && full)
-    {
-        const auto stow = held_weapon(a);
-        for (auto &held : items_)
-            if (held.id == stow)
-                held.stowed = true;
-        if (a.selected_weapon == stow)
-            a.selected_weapon = 0;
-    }
-    auto attacker = thrown_actor(a, selected.definition);
+    auto attacker = thrown_actor(a, items_.at(token - 1).definition);
     attacker.light_damage = light;
     attack(attacker, target, true, false);
     a.aim_ready = attacker.aim_ready;
-    const auto ground = ground_one(token, target.source.cell);
     if (mastery_)
-        mastery_->thrown_item = ground;
-    if (a.selected_weapon == token)
-        a.selected_weapon = 0;
-    a.definition = equipped_definition(a, items_);
-    return ground;
-}
-
-bool Session::can_pick_up(const Actor &a, const HeldItemView &item) const
-{
-    if (item.holder || a.source.character_profile.empty() ||
-            distance(a.source.cell, item.cell) > 5 || !line_of_sight(a.source.cell, item.cell))
-        return false;
-    // A Shield requires the Utilize action to don (SRD p.92); other objects
-    // use the turn's free interaction, then a Utilize action for another.
-    if ((item.definition == "shield" || !a.object_interaction) && !a.actions.available())
-        return false;
-    auto next = items_;
-    next[item.id - 1].holder = a.source.id;
-    try
-    {
-        (void)equipped_definition(a, next);
-        return true;
-    }
-    catch (const std::runtime_error &)
-    {
-        return false;
-    }
-}
-
-SafeRecovery Session::safe_recovery() const
-{
-    SafeRecovery result;
-    if (outcome_ != Outcome::victory)
-        return result;
-    std::set<unsigned> reachable_items;
-    for (const auto &a : actors_)
-        if (a.source.side == 0 && conscious(a))
-        {
-            result.members.push_back(a.source.id);
-            // Safe exploration has no turn budget; walls and occupied destinations
-            // still constrain reach. Zero Speed permits only nearby collection.
-            const int budget = a.definition.speed > detail::speed_penalty(a.effects)
-                               ? board_.width * board_.height * 15
-                               : 0;
-            const auto reachable = movement_grid(a).reachable(budget);
-            for (const auto &item : items_)
-                if (!item.holder && actor(item.origin).source.side == 0)
-                {
-                    bool near = distance(a.source.cell, item.cell) <= 5 &&
-                                line_of_sight(a.source.cell, item.cell);
-                    for (int y = item.cell.y - 1; !near && y <= item.cell.y + 1; ++y)
-                        for (int x = item.cell.x - 1; !near && x <= item.cell.x + 1; ++x)
-                        {
-                            const Cell cell{x, y};
-                            near = reachable.cost_to(cell).has_value() &&
-                                   distance(cell, item.cell) <= 5 && line_of_sight(cell, item.cell);
-                        }
-                    if (near)
-                        reachable_items.insert(item.id);
-                }
-        }
-    result.items.assign(reachable_items.begin(), reachable_items.end());
-    return result;
+        mastery_->thrown_item = token;
 }
 
 detail::MovementGrid Session::movement_grid(const Actor &mover) const
@@ -1662,7 +1484,6 @@ Snapshot Session::snapshot() const
     {
         std::string status = a.dead      ? "Dead"
                              : a.hp == 0 ? (a.stable ? "Stable, unconscious" : "Unconscious")
-                             : a.effects.sleeping ? "Naturally asleep"
                              : a.effects.prone    ? "Prone"
                              : a.dodge            ? "Dodging"
                              : "Ready";
@@ -1683,7 +1504,6 @@ Snapshot Session::snapshot() const
         const auto display = combat_display(a.source.definition);
         auto &view = s.combatants.back();
         view.temporary_hp = a.temporary_hp;
-        view.naturally_sleeping = a.effects.sleeping;
         view.prone = a.effects.prone;
         if (physical_inventory_)
             for (const auto &item : items_)
@@ -1691,7 +1511,7 @@ Snapshot Session::snapshot() const
                     if (const auto *w = detail::weapon(item.definition); w && w->thrown)
                     {
                         const auto offered = legal_commands();
-                        view.thrown_weapons.push_back({item.id, throw_label(a, item),
+                        view.thrown_weapons.push_back({item.id, item.label,
                                                        std::any_of(offered.begin(), offered.end(),
                                                                [&](const auto & c)
                         {
@@ -1779,8 +1599,6 @@ Snapshot Session::snapshot() const
                             option("light_throw", "Light throw — {weapon} ({hand})");
                     }
                 }
-        if (a.effects.sleeping)
-            view.conditions.push_back({"Naturally asleep", {}});
         if (a.effects.prone)
             view.conditions.push_back({"Prone", {}});
         if (def(a).cunning)
@@ -1822,7 +1640,6 @@ Snapshot Session::snapshot() const
         auto &messages = s.combatants.back().status_messages;
         messages.push_back({a.dead      ? "Dead"
                             : a.hp == 0 ? (a.stable ? "Stable, unconscious" : "Unconscious")
-                            : a.effects.sleeping ? "Naturally asleep"
                             : a.effects.prone    ? "Prone"
                             : a.dodge            ? "Dodging"
                             : "Ready",
@@ -2234,13 +2051,6 @@ std::vector<Command> Session::legal_commands() const
     const auto id = a.source.id;
     add(id, "end", "End turn");
     add_weapons(a, false);
-    for (const auto &item : items_)
-        if (can_pick_up(a, item))
-            add(id, "pick_up",
-                item.definition == "shield" ? "Pick up (Action)"
-                : a.object_interaction      ? "Pick up (interaction)"
-                : "Pick up (Action)",
-                item.id);
     const int speed = a.aim_used ? 0 : std::max(0, d.speed - detail::speed_penalty(a.effects));
     if (a.effects.prone && speed > 0 && movement_left(a) >= speed / 2)
         add(id, "stand_up", "Stand up");
@@ -2265,11 +2075,6 @@ std::vector<Command> Session::legal_commands() const
             if (item.holder == id && light_eligible(a, item.id))
             {
                 const auto *weapon = detail::weapon(item.definition);
-                const auto occupied = std::count_if(items_.begin(), items_.end(),
-                                                    [&](const auto & held)
-                {
-                    return held.holder == id && !held.stowed;
-                });
                 for (const auto &other : actors_)
                     if (other.source.side != a.source.side && !other.dead && other.hp > 0 &&
                             line_of_sight(a.source.cell, other.source.cell))
@@ -2293,8 +2098,7 @@ std::vector<Command> Session::legal_commands() const
                             offer("light_melee", "nick_melee");
                         if (!item.stowed && weapon->ranged && feet <= weapon->long_range)
                             offer("light_ranged", "nick_ranged");
-                        if (weapon->thrown && feet <= weapon->long_range &&
-                                (!item.stowed || occupied < 2))
+                        if (weapon->thrown && feet <= weapon->long_range)
                             offer("light_throw", "nick_throw");
                     }
             }
@@ -2310,8 +2114,6 @@ std::vector<Command> Session::legal_commands() const
             const int feet = distance(a.source.cell, other.source.cell);
             if (!a.source.character_profile.empty() && other.hp == 0 && !other.stable && feet <= 5)
                 add(id, "stabilize", "Stabilize", other.source.id);
-            if (other.source.side == a.source.side && other.effects.sleeping && feet <= 5)
-                add(id, "wake_ally", "Wake ally", other.source.id);
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, false);
             if (other.source.side != a.source.side && other.hp > 0)
             {
@@ -2398,13 +2200,9 @@ void Session::damage(Actor &target, int amount, bool critical)
 {
     if (!amount || target.dead)
         return;
-    target.effects.sleeping = false;
     detail::damage_life(target, amount, def(target).hp, critical, target.source.side == 1);
     if (target.hp == 0)
-    {
         target.effects.prone = true;
-        drop_held(target);
-    }
     if (target.hp == 0 && !target.dead && !target.stable)
         target.recovery.death_save_in_ms = next_turn_ms(target);
     if (target.hp == 0)
@@ -2751,7 +2549,53 @@ void Session::update_outcome()
         reactors_.clear();
         reactor_index_ = 0;
         log(outcome_ == Outcome::victory ? "Victory." : "The party is incapacitated. Defeat.");
+        if (outcome_ == Outcome::victory)
+            resolve_death_saves_after_victory();
     }
+}
+
+// SIMPLIFY-1: nobody sleeps through a fight. A character whose rest the
+// encounter interrupted starts awake but still lying down.
+void Session::wake_resting_participants()
+{
+    for (auto &a : actors_)
+        if (a.source.resting && conscious(a))
+        {
+            a.effects.prone = true;
+            log(a.source.name + " wakes up prone.",
+            {"{name} wakes up prone.", {{"name", a.source.name}}});
+        }
+}
+
+// Nothing is left to fight, so the remaining death saves are rolled at once
+// instead of on a six-second clock. Prone does not outlast combat: the party
+// is standing (or lying unconscious) when exploration resumes.
+void Session::resolve_death_saves_after_victory()
+{
+    for (auto &a : actors_)
+    {
+        if (a.hp != 0 || a.dead || a.stable)
+            continue;
+        do
+        {
+            const int roll = detail::death_save(a, rng_, !detail::healing_blocked(a.effects));
+            log(a.source.name + " death save: " + std::to_string(roll),
+            {
+                "{name} death save: {roll}",
+                {{"name", a.source.name}, {"roll", std::to_string(roll)}}
+            });
+        }
+        while (a.hp == 0 && !a.dead && !a.stable);
+        if (a.dead)
+            log(a.source.name + " dies.", {"{name} dies.", {{"name", a.source.name}}});
+        else if (a.hp > 0)
+            log(a.source.name + " regains 1 HP.",
+            {"{name} regains 1 HP.", {{"name", a.source.name}}});
+        else
+            log(a.source.name + " is stable.", {"{name} is stable.", {{"name", a.source.name}}});
+    }
+    for (auto &a : actors_)
+        a.effects.prone = false;
 }
 
 bool Session::begin_turn()
@@ -2762,7 +2606,7 @@ bool Session::begin_turn()
     {
         return effect.kind == detail::EffectKind::shocking_grasp;
     });
-    if (a.dead || a.effects.sleeping)
+    if (a.dead)
         return false;
     if (a.hp == 0)
     {
@@ -2817,7 +2661,6 @@ bool Session::begin_turn()
     a.dashes = 0;
     a.spent_slot = false;
     a.rush_used = false;
-    a.object_interaction = true;
     log("Round " + std::to_string(round_) + ": " + a.source.name + " acts.",
     {
         "Round {round}: {name} acts.",
@@ -3138,33 +2981,10 @@ bool Session::submit(const Command &command)
             a.aim_ready = attacker.aim_ready;
         }
     }
-    else if (command.verb == "pick_up")
-    {
-        auto &item = items_.at(command.target - 1);
-        if (item.definition == "shield" || !a.object_interaction)
-        {
-            a.nick_origin = 0;
-            a.actions.spend();
-        }
-        else
-            a.object_interaction = false;
-        item.holder = a.source.id;
-        item.cell = {};
-        a.definition = equipped_definition(a, items_);
-    }
     else if (command.verb == "stand_up")
     {
         a.movement -= std::max(0, d.speed - detail::speed_penalty(a.effects)) / 2;
         a.effects.prone = false;
-    }
-    else if (command.verb == "wake_ally")
-    {
-        a.nick_origin = 0;
-        a.actions.spend();
-        auto &target = actor(command.target);
-        target.effects.sleeping = false;
-        if (shares_occupied_space(target))
-            target.involuntary_overlap = true;
     }
     else if (command.verb == "action_surge")
     {
@@ -3270,9 +3090,9 @@ bool Session::submit(const Command &command)
             const auto *w = detail::weapon(items_.at(command.item - 1).definition);
             if (w && w->light)
                 activate_light();
-            const auto used = throw_weapon(a, actor(command.target), command.item);
+            throw_weapon(a, actor(command.target), command.item);
             if (light_active_)
-                qualify_light(a, used);
+                qualify_light(a, command.item);
         }
         else
         {
@@ -3293,9 +3113,9 @@ bool Session::submit(const Command &command)
             if (physical_inventory_ && command.verb == "ranged" && weapon && weapon->thrown &&
                     token)
             {
-                const auto used = throw_weapon(a, actor(command.target), token);
+                throw_weapon(a, actor(command.target), token);
                 if (qualifies)
-                    qualify_light(a, used);
+                    qualify_light(a, token);
             }
             else
             {
@@ -3381,11 +3201,7 @@ std::string Session::save() const
         for (const auto &item : items_)
             out << item.id << ' ' << item.origin << ' ' << item.equipment_index << ' '
                 << item.inventory_id << ' ' << std::quoted(item.definition) << ' ' << item.quantity
-                << ' ' << item.stowed << ' ' << item.holder << ' ' << item.cell.x << ' '
-                << item.cell.y << '\n';
-        for (const auto &a : actors_)
-            out << a.object_interaction << ' ';
-        out << '\n';
+                << ' ' << item.stowed << ' ' << item.holder << '\n';
     }
     out << bool(check_choice_) << '\n';
     if (check_choice_)
@@ -3976,8 +3792,6 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         a.effects = detail::read_effects(input);
         if (a.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
             throw std::runtime_error("Invalid earned recovery checkpoint");
-        if (a.effects.sleeping && (a.dead || a.hp <= 0))
-            throw std::runtime_error("Invalid naturally sleeping vitality");
     }
     bool pending_offer{};
     input >> pending_offer;
@@ -4025,34 +3839,20 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                      original.equipment_keys[item.equipment_index] != item.definition))
                 throw std::runtime_error("Invalid physical equipment source");
             item.label = {weapon ? std::string(weapon->label) : "Shield", {}};
-            input >> item.holder >> item.cell.x >> item.cell.y;
+            input >> item.holder;
             if (!input || id != item.id)
                 throw std::runtime_error("Invalid held item identity");
-            if (item.holder)
+            const auto holder = std::find_if(session->actors_.begin(), session->actors_.end(),
+                                             [&](const auto & a)
             {
-                const auto holder = std::find_if(session->actors_.begin(), session->actors_.end(),
-                                                 [&](const auto & a)
-                {
-                    return a.source.id == item.holder;
-                });
-                if (holder == session->actors_.end() || holder->source.character_profile.empty() ||
-                        (!item.stowed && (unconscious(*holder) || holder->dead)) || item.cell != Cell{})
-                    throw std::runtime_error("Invalid held item holder");
-            }
-            else if (!session->board_.contains(item.cell) || session->board_.at(item.cell) == 1 ||
-                     item.stowed || item.quantity != 1)
-                throw std::runtime_error("Invalid dropped item position");
+                return a.source.id == item.holder;
+            });
+            if (holder == session->actors_.end() || holder->source.character_profile.empty())
+                throw std::runtime_error("Invalid held item holder");
         }
         for (auto &a : session->actors_)
-        {
-            unsigned available{};
-            input >> available;
-            if (!input || available > 1)
-                throw std::runtime_error("Invalid object interaction budget");
-            a.object_interaction = available;
             if (!a.source.character_profile.empty())
                 a.definition = session->equipped_definition(a, session->items_);
-        }
     }
     bool pending_check{};
     input >> pending_check;
@@ -4795,45 +4595,15 @@ class Module final : public RulesModule
         restore_vitals(actor, state);
     }
 
+    // SRD Long Rest: eight hours, then sixteen hours before the next one begins.
     RestPolicy long_rest_policy() const override
     {
-        return rest::policy(RestKind::long_rest);
+        return {480, 960};
     }
 
     RestPolicy short_rest_policy() const override
     {
-        return rest::policy(RestKind::short_rest);
-    }
-
-    RestProgress begin_rest(RestKind kind) const override
-    {
-        return rest::begin(kind);
-    }
-
-    RestTransition advance_rest(const RestProgress &p, std::uint64_t ms,
-                                RestWork work) const override
-    {
-        return rest::advance(p, ms, work);
-    }
-
-    RestTransition interrupt_rest(const RestProgress &p, RestInterruption cause) const override
-    {
-        return rest::interrupt(p, cause);
-    }
-
-    RestProgress resume_rest(const RestProgress &p) const override
-    {
-        return rest::resume(p);
-    }
-
-    std::uint64_t remaining_rest(const RestProgress &p) const override
-    {
-        return rest::remaining(p);
-    }
-
-    void validate_rest(const RestProgress &p) const override
-    {
-        rest::validate(p);
+        return {60, 0};
     }
 
     void elapse(std::span<Participant> participants, std::uint64_t milliseconds,
@@ -4893,7 +4663,6 @@ class Module final : public RulesModule
         restore_vitals(actor, state);
         if (actor.dead || actor.hp < 1)
             throw std::runtime_error("Long rest requires at least one HP at its start");
-        actor.effects.sleeping = false;
         (void)detail::heal_life(actor, d.hp, d.hp, !detail::healing_blocked(actor.effects));
         actor.winds = d.winds;
         actor.slots = d.slots;
@@ -5020,64 +4789,6 @@ class Module final : public RulesModule
         return result;
     }
 
-    bool recover_at_safety(VitalState &state, const CharacterSheet &sheet,
-                           std::span<const std::string> equipment) const override
-    {
-        Actor actor;
-        actor.definition = character_definition(character_profile(sheet, equipment).data);
-        actor.winds = actor.definition.winds;
-        actor.slots = actor.definition.slots;
-        actor.slots2 = actor.definition.slots2;
-        restore_vitals(actor, state);
-        if (!conscious(actor))
-            return false;
-        if (actor.effects.prone && actor.definition.speed > detail::speed_penalty(actor.effects))
-        {
-            actor.effects.prone = false;
-            state = vitals(actor);
-        }
-        return true;
-    }
-
-    void set_rest_work(VitalState &state, const CharacterSheet &sheet, RestWork work) const override
-    {
-        if (work != RestWork::sleep && work != RestWork::light_activity &&
-                work != RestWork::exertion)
-            throw std::runtime_error("Invalid rest work");
-        Actor actor;
-        actor.definition = character_definition(character_profile(sheet, {}).data);
-        actor.winds = actor.definition.winds;
-        actor.slots = actor.definition.slots;
-        actor.slots2 = actor.definition.slots2;
-        restore_vitals(actor, state);
-        if (work == RestWork::sleep)
-        {
-            if (actor.dead || actor.hp == 0)
-                throw std::runtime_error("Natural sleep requires a living conscious character");
-            actor.effects.sleeping = actor.effects.prone = true;
-        }
-        else
-            actor.effects.sleeping = false;
-        state = vitals(actor);
-    }
-
-    std::vector<unsigned> released_equipment(const CharacterSheet &sheet, const VitalState &state,
-            std::span<const std::string> equipment) const override
-    {
-        Actor actor;
-        actor.definition = character_definition(character_profile(sheet, equipment).data);
-        actor.winds = actor.definition.winds;
-        actor.slots = actor.definition.slots;
-        actor.slots2 = actor.definition.slots2;
-        restore_vitals(actor, state);
-        std::vector<unsigned> result;
-        if (unconscious(actor))
-            for (unsigned i = 0; i < equipment.size(); ++i)
-                if (equipment[i] == "shield" || detail::weapon(equipment[i]))
-                    result.push_back(i);
-        return result;
-    }
-
     void set_hit_points(VitalState &state, const CharacterSheet &sheet, int hp) const override
     {
         if (hp < 0 || hp > sheet.hit_points || (state.dead && hp))
@@ -5091,11 +4802,7 @@ class Module final : public RulesModule
         if (hp == state.hit_points ||
                 (hp > state.hit_points && detail::healing_blocked(actor.effects)))
             return;
-        if (hp < state.hit_points)
-            actor.effects.sleeping = false;
         detail::set_life_hit_points(actor, hp, actor.definition.hp);
-        if (hp == 0 || state.hit_points == 0)
-            actor.effects.prone = true;
         state = vitals(actor);
     }
 
@@ -5116,8 +4823,6 @@ class Module final : public RulesModule
         int amount = 3;
         for (int i = 0; i < 2; ++i)
             amount += roll_die(rng, 8);
-        if (actor.hp == 0)
-            actor.effects.prone = true;
         (void)detail::heal_life(actor, amount, d.hp, !detail::healing_blocked(actor.effects));
         auto next = vitals(actor);
         state = std::move(next);

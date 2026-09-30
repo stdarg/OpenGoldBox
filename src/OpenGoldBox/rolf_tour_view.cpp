@@ -646,9 +646,8 @@ String rest_notice(const std::string &resource, const std::string &text)
             N_("Rest is not allowed here."),
             N_("Short rest complete: one hour passed; eligible members can spend Hit Dice."),
             N_("Long rest complete: eight hours passed; eligible members recovered HP and supported resources."),
-            N_("Long rest complete: eligible members recovered HP and supported resources."),
             N_("Rest denied: no active member is eligible."),
-            N_("Rest interrupted after five minutes; no recovery granted.")
+            N_("The rest was interrupted. Rest again to recover.")
         })
         result = result.replace(String::utf8(source), i18n::text(source));
     return result;
@@ -1229,6 +1228,7 @@ void RolfTourView::check_town()
         draft.training.erase("class:fighter");
         draft.training.erase(
             "class:fighter:fighting_style"); // This untrained-shield fixture changes class.
+        draft.training.erase("class:fighter:weapon_mastery");
         member.character = opengold::Character(*opengold::srd5::character_rules(), draft,
                                                member.character.appearance());
         member.character.inventory() = std::move(inventory);
@@ -1531,7 +1531,7 @@ void RolfTourView::check_recovery()
                 campaign_->state().random_state != 11400714819323198502ULL ||
                 campaign_->state().roster.back().vitals.resources !=
                 presentation::srd_vitals(campaign_->state().roster.back().character.sheet(),
-    {.hit_dice = 1, .effects = "FX7 1 0 0 1"}))
+    {.hit_dice = 1}))
             throw std::runtime_error(
                 "Camp time must advance companion Stable recovery and the reserve death save exactly once");
         if (save_check)

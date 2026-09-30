@@ -27,7 +27,7 @@ activation and translated labels use the established controls.
 ## Persistence
 
 Profile recipes permit the new cantrip. Combat checkpoints record Dash
-allowance counts. Effect state (FX7) stores the independently sourced, nonsaving
+allowance counts. Effect state (FX8) stores the independently sourced, nonsaving
 slow timers. The shared campaign recovery scheduler handles these deadlines without
 rolling repeat saves. Camping expires the short duration before the ordinary save.
 No player combat-saving controls were added.

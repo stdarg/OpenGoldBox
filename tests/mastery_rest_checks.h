@@ -69,13 +69,7 @@ void run()
             check(bool(short_rest) && !party.state().training_rest,
                   "Short Rest never permits replacement");
             party.finish_short_rest(*short_rest->spending);
-            const auto start = party.begin_rest(RestKind::long_rest);
-            check(bool(start), "Real Long Rest starts");
-            party.interrupt_rest(*start, RestInterruption::damage);
-            check(!party.state().training_rest, "Interrupted Long Rest does not grant replacement");
-            party.resume_rest(party.state().rest_activity->ticket);
-            (void)party.advance_rest(party.state().rest_activity->ticket,
-                                     party.remaining_rest_milliseconds(), RestWork::sleep);
+            check(bool(party.rest(RestKind::long_rest)), "Real Long Rest completes");
             check(party.state().training_rest &&
                   party.state().training_rest->members == std::vector<MemberId> {id},
                   "Only qualified completed rest grants one per-member replacement");
@@ -149,7 +143,7 @@ void run()
                 party.replace_rest_training(ticket, id, selected);
             });
             party = roundtrip(party);
-            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 19\n"),
+            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 20\n"),
                   "Actual training history uses the current campaign format");
             party.advance_time(24 * 60);
             check(bool(party.rest(RestKind::long_rest)),
@@ -204,7 +198,7 @@ void run()
     auto state = excluded.checkpoint();
     for (auto &m : state.roster)
         if (m.id == dead)
-            m.vitals = {0, true, "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0", "Dead"};
+            m.vitals = {0, true, "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0", "Dead"};
     excluded.restore(state);
     check(bool(excluded.rest(RestKind::long_rest)) && !excluded.state().training_rest,
           "Unqualified/dead/reserve/pending-training members do not gain replacement windows");

@@ -295,9 +295,10 @@ void eligibility_and_effects()
     party.restore(baseline(3));
     const auto &sheet = party.member(1).character.sheet();
     auto state = party.member(1).vitals;
-    rules->set_rest_work(state, sheet, RestWork::sleep);
-    check(rules->recovery_info(sheet, state).choices.empty(), "A sleeping Wizard cannot study");
-    const auto sleeping = state.resources;
+    const auto conscious_state = state;
+    rules->set_hit_points(state, sheet, 0);
+    check(rules->recovery_info(sheet, state).choices.empty(), "An unconscious Wizard cannot study");
+    const auto unconscious = state.resources;
     bool caught = false;
     try
     {
@@ -307,8 +308,8 @@ void eligibility_and_effects()
     {
         caught = true;
     }
-    check(caught && state.resources == sleeping, "Sleeping recovery rejects atomically");
-    rules->set_rest_work(state, sheet, RestWork::light_activity);
+    check(caught && state.resources == unconscious, "Unconscious recovery rejects atomically");
+    state = conscious_state;
     (void)rules->recover_rest_choice(state, sheet, "arcane_recovery:1:0");
     check(state.resources.starts_with("SRD9 "), "Spent use has a versioned vital record");
     // A lasting effect must still expire when its host resource record is SRD9.
@@ -373,7 +374,7 @@ void combat_and_advancement()
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         const auto before = combat->save();
-        check(before.starts_with("OGCOMBAT 27 "),
+        check(before.starts_with("OGCOMBAT 28 "),
               "Spent recovery uses a versioned combat checkpoint");
         auto copy = rules->restore(before);
         check(copy->save() == before && copy->snapshot().physical_inventory == physical,
@@ -399,18 +400,6 @@ void combat_and_advancement()
     declined.finish_short_rest(declined.state().short_rest->ticket);
     check(remaining(declined.recovery_info(1), "arcane_recovery") == 1,
           "Finishing without use preserves availability");
-    (void)declined.begin_rest(RestKind::long_rest);
-    auto ticket = declined.state().rest_activity->ticket;
-    (void)declined.advance_rest(ticket, 60 * 60 * 1000, RestWork::light_activity);
-    declined.interrupt_rest(declined.state().rest_activity->ticket, RestInterruption::initiative);
-    check(declined.state().short_rest.has_value(),
-          "Qualifying interrupted Long Rest grants a real Short Rest opportunity");
-    (void)declined.recover_rest_choice(declined.state().short_rest->ticket, 1,
-                                       "arcane_recovery:1:0");
-    check(
-        remaining(declined.recovery_info(1), "arcane_recovery") == 0 &&
-        declined.state().rest_activity->interrupted,
-        "Recovery can use earned Short Rest benefits without completing the interrupted Long Rest");
 }
 } // namespace
 

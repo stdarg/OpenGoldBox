@@ -140,7 +140,7 @@ attempt the check and Escape to cancel. The current target has stronger board
 highlighting. The game displays the target/instructions in its existing footer;
 the demo uses its existing prompt. These complete Q38's keyboard path, including
 when a mouse is unavailable. The modal retains standard keyboard-focus controls.
-Combined Cunning Action/Wake ally/Stabilize rows fit in the supported minimum size.
+Combined Cunning Action/Wake ally/Stabilize rows fit in the supported minimum size (Wake ally was later removed by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)).
 
 Final verification commands and logs:
 

@@ -14,12 +14,8 @@ enum class RestDenial
     vitality,
     cooldown,
     combat,
-    spending,
-    activity
+    spending
 };
-using RestWork = rules::RestWork;
-// spell means a non-cantrip; a cantrip does not interrupt rest.
-using RestInterruption = rules::RestInterruption;
 
 struct MemberRestInfo
 {
@@ -41,14 +37,6 @@ struct ShortRestSession
     RestTicket ticket;
     std::uint64_t completed_minutes{};
     unsigned completed_subminute_milliseconds{};
-    std::vector<MemberId> members;
-};
-
-struct RestActivity : rules::RestProgress
-{
-    RestTicket ticket;
-    std::uint64_t started_minutes{};
-    unsigned started_subminute_milliseconds{};
     std::vector<MemberId> members;
 };
 
@@ -76,21 +64,6 @@ struct PartyMember
     std::string creation_source; // Stable pool candidate identity, empty for authored PCs.
 };
 
-// Items physically separated from party inventories retain provenance and their
-// encounter location. Cleanup policy is a separate operation, never implicit.
-struct DetachedPartyItem
-{
-    std::uint64_t scope{};
-    unsigned token{};
-    MemberId original_owner{}, holder{}; // Zero holder means on the ground.
-    rules::Cell cell;
-    InventoryItem item;
-    std::optional<por::Equipment> original;
-    // Before an interruption battle assigns cells, scope is zero and the item
-    // stays at this rest session's camp, anchored to original_owner's position.
-    std::uint64_t rest_session{};
-};
-
 struct PartyState
 {
     std::vector<PartyMember> roster;
@@ -106,8 +79,6 @@ struct PartyState
     std::optional<ShortRestSession> spell_rest; // Completed-rest choices, consumed once per member.
     std::optional<ShortRestSession>
     training_rest; // Rule-owned training replacements after spell choices.
-    std::optional<RestActivity> rest_activity;
-    std::vector<DetachedPartyItem> detached_items;
 };
 
 // One shared campaign value store. Sessions share this owner, never separate PCs.
@@ -165,15 +136,8 @@ class CampaignParty
     [[nodiscard]] bool rest();
     // The campaign service must first approve the location and interruption profile.
     [[nodiscard]] std::vector<MemberRestInfo> rest_info(RestKind kind) const;
+    // A rest completes in one step; an interrupted rest is never started here.
     [[nodiscard]] std::optional<RestResult> rest(RestKind kind);
-    [[nodiscard]] std::optional<RestTicket> begin_rest(RestKind kind);
-    // Advances a caller-approved activity interval; never skips host encounters.
-    [[nodiscard]] std::optional<RestResult> advance_rest(RestTicket ticket,
-            std::uint64_t milliseconds, RestWork work);
-    void interrupt_rest(RestTicket ticket, RestInterruption cause);
-    void resume_rest(RestTicket ticket);
-    void abandon_rest(RestTicket ticket);
-    [[nodiscard]] std::uint64_t remaining_rest_milliseconds() const;
     // Spends Hit Dice one at a time until the member is at full HP or out of dice.
     [[nodiscard]] std::vector<rules::HitDieResult> heal_with_hit_dice(RestTicket ticket,
             MemberId id);
@@ -206,15 +170,11 @@ class CampaignParty
 
     void restore(PartyState state);
     static void validate(const PartyState &state);
-    static void validate_rest_activity(const PartyState &state, const rules::RulesModule &rules);
+    static void validate_rest_choices(const PartyState &state, const rules::RulesModule &rules);
     [[nodiscard]] std::vector<rules::Participant> participants() const;
-    // Stage initiative interruption before building combat participants. Pending
-    // earned recovery must be resolved before the combat owner takes the lock.
-    [[nodiscard]] bool prepare_combat();
-    // Authored environmental event; the rules module decides waking effects.
-    void loud_noise(std::span<const MemberId> affected);
     void begin_combat();
-    void apply_combat(const rules::Snapshot &snapshot, const rules::SafeRecovery &recovery = {});
+    // Combat changes vitals only: characters keep their gear throughout.
+    void apply_combat(const rules::Snapshot &snapshot);
 
     void end_combat() noexcept
     {
@@ -242,40 +202,15 @@ class CampaignParty
     PartyState state_;
     bool combat_{};
     bool combat_registered_{};
-    std::uint64_t combat_elapsed_{}, combat_scope_{};
-
-    struct CombatInventoryItem
-    {
-        unsigned token{}, equipment_index{};
-        MemberId origin{}, holder{}, original_owner{};
-        std::uint64_t inventory_id{};
-        InventoryItem item;
-        std::optional<por::Equipment> original;
-        unsigned rest_token{};
-        std::uint64_t source_inventory{};
-        bool stowed{};
-    };
-
-    std::vector<CombatInventoryItem> combat_items_;
-    void apply_physical_items(PartyState &, std::vector<CombatInventoryItem> &,
-                              const rules::Snapshot &) const;
-    void apply_combat_items(PartyState &, std::vector<CombatInventoryItem> &,
-                            const rules::Snapshot &) const;
-    void release_rest_equipment(PartyState &, PartyMember &) const;
-    void recover_camp(PartyState &) const;
-    void collect_equipment(PartyState &, std::span<const MemberId>, std::uint64_t scope,
-                           std::uint64_t rest_session, std::span<const unsigned>) const;
+    std::uint64_t combat_elapsed_{};
     void elapse(PartyState &state, std::uint64_t milliseconds,
                 std::span<const MemberId> in_combat = {}) const;
     void editable() const;
-    void rewardable() const;
-    void commit_reward(PartyState next);
     void outside_combat() const;
     void require_rest_ticket(RestTicket ticket) const;
-    void require_activity_ticket(RestTicket ticket) const;
-    void apply_rest_work(PartyState &, std::span<const MemberId>, RestWork) const;
-    void interrupt_rest_state(PartyState &state, RestInterruption cause) const;
     void short_rest_benefits(PartyState &state, const std::vector<MemberId> &members) const;
+    void long_rest_benefits(PartyState &state, const std::vector<MemberId> &members,
+                            RestTicket ticket, RestResult &result) const;
     PartyMember &edit(MemberId id);
     void join(MemberId id, bool npc);
 };

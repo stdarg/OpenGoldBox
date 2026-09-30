@@ -4,8 +4,31 @@
 supported rest recharge in the rules layer. [F03b #191](https://github.com/stdarg/OpenGold/issues/191)
 adds individual campaign eligibility and a persistent spending session. The game and demo provide the [reviewed rest controls #192](https://github.com/stdarg/OpenGold/issues/192).
 The [#193 interruption/resumption](https://github.com/stdarg/OpenGold/issues/193)
-implementation includes natural sleep, combat equipment handoff and Q37 safe
-recovery; final integrated verification is recorded below.
+implementation included natural sleep, combat equipment handoff and Q37 safe
+recovery; [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation) removed all three. The current behavior is
+summarized first; the later sections are the delivery history.
+
+## Current behavior (SIMPLIFY-1, 2026-09-30)
+
+- A rest completes in one step: `CampaignParty::rest(kind)` captures the eligible
+  members, advances the rest's time once and grants its benefits. There is no
+  rest activity, sleep/light/exertion accounting, partial Short Rest credit,
+  extra hour per interruption or resumption.
+- An encounter or event that interrupts a rest simply interrupts it: nothing is
+  granted and the party rests again. New Phlan's city watch advances five
+  minutes and the exploration text says "The rest was interrupted. Rest again to
+  recover." Camp restrictions and the paid inn Long Rest are unchanged.
+- Resting never puts anyone to sleep and never unequips or drops gear. A
+  character resting when an encounter interrupts its rest starts that combat
+  awake and Prone (`Participant::resting`); see
+  [Recovery clocks](RECOVERY-CLOCKS.md) for death saves after combat.
+- The rest dialog has no Resume Long Rest or End Rest; it offers Start, then
+  Heal with Hit Dice and Finish after a Short Rest.
+- Campaign format 20 stores no rest activity and no detached (ground) items.
+- Evidence: `alternate_rules_boundary`, `campaign_services` and
+  `watch_interruption_and_rollback` in `opengold_campaign_rest_tests`, the
+  rest-never-unequips check in `opengold_champion_tests`, and the Long Rest step
+  of the Godot rest check.
 
 ## Rules and scope
 
@@ -33,9 +56,9 @@ pp. 47–48 (Second Wind), 185 (Long Rest) and 187 (Short Rest).
   level's die without replenishing earlier expenditure.
 
 Other class pools, multiclass die mixtures, exhaustion, maximum-HP reductions,
-species-specific rest features remain their named issues. Rest interruptions and
-Long Rest resumption use the explicit campaign boundaries below. Unverified
-original probabilistic encounter schedules remain unsupported.
+species-specific rest features remain their named issues. An interrupted rest
+grants nothing and cannot be resumed. Unverified original probabilistic
+encounter schedules remain unsupported.
 
 ## Architecture and API
 
@@ -51,7 +74,7 @@ independently authorize resting or spending at any time. `recover` remains the
 Long Rest resource operation.
 
 The statically linked SRD module owns arithmetic, capacities, validation and codecs,
-plus rest progress, interruption/resumption decisions and completion benefits.
+plus rest timing and completion benefits.
 Its rest transitions use engine-independent values; Core applies the outcomes
 and owns campaign membership, tickets, clocks and save transactions. Core and Godot
 consume typed queries and preserve the opaque continuation, without interpreting
@@ -101,33 +124,17 @@ completes the requested kind. Camp [C] offers the approved Short/Long Rest picke
 Rest. Failed inn continuations restore the entire event, including payment,
 resources, cooldowns, time and RNG. See [recovery mappings](RECOVERY.md).
 
-The native campaign activity now tracks resting, sleep, light activity and physical
-exertion separately. Existing safe-camp/inn calls consume this engine atomically.
-Revisioned requests support interruption, resumption and abandonment; rejected or
-stale requests preserve time, effects, resources and RNG. Long Rest requires six
-hours of sleep and no more than two light hours, with an extra resting hour per
-interruption. At least one fresh uninterrupted resting hour earns Short Rest
-benefits (Q32); previously credited segments cannot qualify again. Completing or
-abandoning a rest never reverses committed Hit Dice or elapsed time.
-
-Activity checkpoints retain eligible members and progress across save/load and
-explicitly interrupted combat handoff. Physical exertion consumes campaign time
-without increasing resting time; reaching one hour interrupts a Long Rest.
-Initiative, non-cantrip casting and damage have explicit interruption inputs.
-The ECL damage and encounter adapters invoke interruption automatically; hosts
-resolve earned Hit Dice choices before combat/time advancement, check camp
-permission before resuming and prevent unrelated exploration while a resume
-decision is pending. Natural sleep applies Unconscious, Prone and equipment
-dropping. The city-watch route now spends its five minutes in the same rest
-engine, explicitly wakes the party and ends camping when the party obeys.
+A rest has no persistent activity: the camp and inn services call the one-step
+`rest(kind)`, and an interruption advances only its own time and grants nothing
+([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)).
 Unknown probabilistic profiles never silently substitute an uninterrupted rest.
 
 ## Persistence
 
 The **SRD9** vital continuation stores slots, Second Wind and death-save state,
-the remaining die count, and an **FX7** effects record.
+the remaining die count, and an **FX8** effects record.
 
-**OGCOMBAT 27** stores each actor's remaining dice; authored combat definitions
+**OGCOMBAT 28** stores each actor's remaining dice; authored combat definitions
 without a character recipe receive zero, without inventing monster Hit Dice
 mechanics. **PC42** recipes derive capacity from class and level.
 
@@ -201,6 +208,8 @@ fresh qualifying segments. See the
 
 ## Resumable activity persistence and evidence
 
+*History: superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
+
 The campaign save stores an optional activity record after the
 rest-spending continuation. It records the session/revision, kind, start clock,
 resting/fresh-segment/sleep/light/exertion/extension milliseconds, interruption
@@ -220,6 +229,8 @@ checks. Scope review confirms C++20 Core/rules boundaries and value-owned state;
 no new UI, runtime, save location or combat-saving control was introduced.
 
 ### Interrupted encounter rewards
+
+*History: superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
 
 XP and original encounter loot may commit while a Long Rest is interrupted and
 its earned Hit Dice choices are resolved. The rest retains elapsed progress and
@@ -242,6 +253,8 @@ Godot checks, plus actual game/demo party/recovery routes. Existing formats and
 module identity are unchanged; this introduces no control or layout changes.
 
 ## Player rest controls (#192)
+
+*The resumption controls (Resume/End Rest) below are superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
 
 Approved Q29–31 are implemented once in `src/OpenGoldBox/rest_dialog_impl.h` and
 used by the game and demo. Camp opens a centered, keyboard-accessible Short/Long
@@ -275,6 +288,8 @@ the existing dialog, and spend the next die. English/Spanish catalogs are comple
 
 
 ## #193 event adapter increment
+
+*History: superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
 
 The original ECL combat request now prepares the rest interruption before combat
 participants are constructed. Short Rest ends without benefits. Long Rest retains
@@ -312,6 +327,8 @@ and owns rollback; the static SRD library continues to decide rest outcomes.
 
 
 ## Natural sleep and posture increment (#193, Q33–35)
+
+*History: superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
 
 The static SRD library records natural sleep and persistent Prone in FX4, under
 module 0.6.41. Sleep applies Unconscious without reducing HP: no actions,
@@ -357,6 +374,8 @@ savings are unmeasured; this record does not claim acceleration.
 
 
 ## Combat held-equipment increment (#193, Q35)
+
+*History: superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
 
 Module 0.6.42 drops character-profile weapons and shields on natural sleep or
 zero HP. The SRD static library owns the held-item ledger, resulting attack/AC
@@ -408,6 +427,8 @@ increment ran from 03:08 to approximately 03:50 UTC; original batch clock remain
 
 ## Natural-sleep ground equipment at camp (#193, Q35)
 
+*History: superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
+
 Natural sleep now releases held equipment immediately in the campaign. The
 module's generic `released_equipment` query decides which equipment leaves the
 character; Core transfers physical inventory and preserves stack quantities,
@@ -453,6 +474,8 @@ rest-import substep start and token/cost delta were not separately captured.
 
 
 ## Safe recovery and city-watch completion (#193, Q37)
+
+*History: superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
 
 Q37 authorizes safe standing and collection after victory or camping completion,
 cancellation and obeying the city watch. During combat, waking still leaves

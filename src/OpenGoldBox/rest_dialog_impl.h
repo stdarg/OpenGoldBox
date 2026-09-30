@@ -63,8 +63,6 @@ void RolfTourView::setup_rest()
            callable_mp(this, &RolfTourView::rest_start));
     button("Heal", N_("Heal with Hit Dice"), Rect2(24, 580, 220, 40),
            callable_mp(this, &RolfTourView::rest_heal));
-    button("Resume", N_("Resume Long Rest"), Rect2(24, 580, 220, 40),
-           callable_mp(this, &RolfTourView::rest_resume));
     button("Save", N_("Save game"), Rect2(258, 580, 210, 40),
            callable_mp(this, &RolfTourView::rest_save));
     button("Finish", N_("Cancel"), Rect2(482, 580, 214, 40),
@@ -109,20 +107,16 @@ void RolfTourView::refresh_rest()
         return;
     }
     auto *w = get_node<Window>("RestDialog");
-    if (!campaign_ || !session_ || campaign_->in_combat() ||
-            (!session_->can_leave() &&
-             !(session_->pending_encounter() && campaign_->state().short_rest)))
+    if (!campaign_ || !session_ || campaign_->in_combat() || !session_->can_leave())
     {
         w->hide();
         return;
     }
     const auto &state = campaign_->state();
-    const bool spending = state.short_rest.has_value(), retained = state.rest_activity.has_value();
+    const bool spending = state.short_rest.has_value();
     auto *kind = w->get_node<OptionButton>("Kind");
-    kind->set_disabled(spending || retained);
-    if (retained)
-        kind->select(1);
-    else if (spending)
+    kind->set_disabled(spending);
+    if (spending)
         kind->select(0);
     const auto selected_kind = kind->get_selected_id() == 0 ? opengold::RestKind::short_rest
                                : opengold::RestKind::long_rest;
@@ -166,9 +160,6 @@ void RolfTourView::refresh_rest()
             details +=
                 rest_text(earned ? N_("Short Rest completed. Heal with Hit Dice spends dice until full HP or none remain.")
                           : N_("This member did not complete the rest."));
-        else if (retained)
-            details += rest_text(N_(
-                                     "The Long Rest is interrupted. Resume after resolving the interruption, or end the rest."));
         else if (can_start)
             details += rest_text(N_("Eligible to rest."));
         else if (info.denial == opengold::RestDenial::cooldown)
@@ -205,17 +196,6 @@ void RolfTourView::refresh_rest()
                     recovery->select(index);
             }
     }
-    if (retained)
-    {
-        const auto &a = *state.rest_activity;
-        details = rest_text(N_("Rest progress (minutes):")) + " " +
-                  String::num_int64(a.elapsed_milliseconds / 60000) + "\n" +
-                  rest_text(N_("Additional required time (minutes):")) + " " +
-                  String::num_int64(a.extension_milliseconds / 60000) + "\n" +
-                  rest_text(N_("Remaining rest (minutes):")) + " " +
-                  String::num_int64((campaign_->remaining_rest_milliseconds() + 59999) / 60000) +
-                  "\n\n" + details;
-    }
     w->get_node<RichTextLabel>("Info")->set_text(details);
     w->get_node<Label>("Result")->set_text(rest_result_);
     w->get_node<RichTextLabel>("Info")->set_size(Vector2(672, recovery_visible ? 132 : 208));
@@ -224,18 +204,13 @@ void RolfTourView::refresh_rest()
     recovery->set_disabled(recovery->get_item_count() == 0);
     w->get_node<Button>("Recover")->set_visible(recovery_visible);
     w->get_node<Button>("Recover")->set_disabled(recovery->get_item_count() == 0);
-    w->get_node<Button>("Start")->set_visible(!spending && !retained);
+    w->get_node<Button>("Start")->set_visible(!spending);
     w->get_node<Button>("Start")->set_disabled(!eligible);
     w->get_node<Button>("Heal")->set_visible(spending);
     w->get_node<Button>("Heal")->set_disabled(!healable);
-    w->get_node<Button>("Resume")->set_visible(retained && !spending);
-    w->get_node<Button>("Resume")->set_disabled(!retained || !state.rest_activity->interrupted);
-    w->get_node<Button>("Save")->set_visible(embedded_party_ && session_->can_leave() &&
-            (spending || retained));
-    w->get_node<Button>("Finish")->set_text(rest_text(spending   ? N_("Finish")
-            : retained ? N_("End Rest")
-            : N_("Cancel")));
-    if ((spending || retained) && !w->is_visible() && !rest_save_open_ && is_visible_in_tree())
+    w->get_node<Button>("Save")->set_visible(embedded_party_ && session_->can_leave() && spending);
+    w->get_node<Button>("Finish")->set_text(rest_text(spending ? N_("Finish") : N_("Cancel")));
+    if (spending && !w->is_visible() && !rest_save_open_ && is_visible_in_tree())
     {
         w->popup_centered();
         list->grab_focus();
@@ -272,7 +247,6 @@ void RolfTourView::rest_heal()
             return;
         const auto rolls =
             campaign_->heal_with_hit_dice(campaign_->state().short_rest->ticket, rest_member_);
-        session_->commit_rest_recovery();
         // Every automatic roll is listed so the player sees how the HP came back.
         rest_result_ = String();
         for (const auto &roll : rolls)
@@ -304,7 +278,6 @@ void RolfTourView::rest_recover()
         const String id = choice->get_selected_metadata();
         const auto result = campaign_->recover_rest_choice(campaign_->state().short_rest->ticket,
             rest_member_, id.utf8().get_data());
-        session_->commit_rest_recovery();
         rest_result_ = rest_text(result.source);
         for (const auto &argument : result.arguments)
             rest_result_ =
@@ -324,36 +297,11 @@ void RolfTourView::rest_finish()
 {
     try
     {
-        if (campaign_)
-        {
-            if (campaign_->state().short_rest)
-                campaign_->finish_short_rest(campaign_->state().short_rest->ticket);
-            else if (campaign_->state().rest_activity)
-                campaign_->abandon_rest(campaign_->state().rest_activity->ticket);
-        }
-        if (session_)
-            session_->commit_rest_recovery();
+        if (campaign_ && campaign_->state().short_rest)
+            campaign_->finish_short_rest(campaign_->state().short_rest->ticket);
         get_node<Window>("RestDialog")->hide();
         rest_save_open_ = false;
         rest_result_ = String();
-        refresh();
-    }
-    catch (const std::exception &e)
-    {
-        rest_result_ = rest_text(e.what());
-        refresh_rest();
-    }
-}
-
-void RolfTourView::rest_resume()
-{
-    try
-    {
-        get_node<Window>("RestDialog")->hide();
-        rest_result_ =
-            rest_text(N_("Rest could not resume here. Resolve the interruption or end the rest."));
-        if (session_)
-            session_->resume_camp();
         refresh();
     }
     catch (const std::exception &e)
@@ -495,103 +443,23 @@ void RolfTourView::check_rest_controls()
             w->emit_signal("window_input", escape);
             check(!campaign_->state().short_rest && !w->is_visible(),
                   "Escape finishes committed spending and closes the window");
-            const auto begin = campaign_->begin_rest(opengold::RestKind::long_rest);
-            (void)campaign_->advance_rest(*begin, 70 * 60000, opengold::RestWork::sleep);
-            campaign_->interrupt_rest(campaign_->state().rest_activity->ticket,
-                                      opengold::RestInterruption::initiative);
-            campaign_->finish_short_rest(campaign_->state().short_rest->ticket);
-            refresh();
-            check(w->is_visible() && w->get_node<Button>("Resume")->is_visible(),
-                  "An interrupted Long Rest displays Resume and End Rest");
+            camp();
+            w->get_node<OptionButton>("Kind")->select(1);
+            w->get_node<OptionButton>("Kind")->emit_signal("item_selected", 1);
+            w->get_node<Button>("Start")->emit_signal("pressed");
+            check(campaign_->state().time_minutes == 540,
+                  "A Long Rest completes its eight hours in one step");
         }
         else if (rest_check_stage_ == 36)
         {
-            w->get_node<Button>("Resume")->emit_signal("pressed");
-            check(!campaign_->state().rest_activity && campaign_->state().time_minutes == 600,
-                  "Resume completes original permission check and remaining rest once");
             camp();
             w->get_node<OptionButton>("Kind")->select(1);
             w->get_node<OptionButton>("Kind")->emit_signal("item_selected", 1);
             check(w->get_node<Button>("Start")->is_disabled(), "Long Rest cooldown disables Start");
             w->get_node<Button>("Finish")->emit_signal("pressed");
         }
-        else if (rest_check_stage_ == 48)
-        {
-            // A delayed original event reaches the real combat handoff during rest.
-            const auto program = [](std::vector<std::uint8_t> body)
-            {
-                std::vector<std::uint8_t> bytes{0, 0};
-                for (int n = 0; n < 5; ++n)
-                    bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
-                bytes.push_back(0);
-                bytes.insert(bytes.end(), body.begin(), body.end());
-                return std::make_shared<const opengold::por::EclProgram>(
-                           opengold::por::EclProgram::decode(bytes, "rest UI event"));
-            };
-            auto gate = program({32, 0, 20, 0});
-            auto resources = std::make_shared<opengold::por::PhlanResources>();
-            resources->map = opengold::por::GeoMap{};
-            resources->programs[0] = gate;
-            resources->programs[20] =
-                program({58, 33, 0, 20, 0, 2, 0, 255, 11, 0, 4, 0, 1, 0, 4, 36, 0});
-            auto district = std::make_shared<opengold::por::PhlanResources>();
-            district->map = opengold::por::GeoMap{};
-            district->encounter_creatures[4].stored.name = "Test orc";
-            district->combat_archive = {9, 0, 4, 0, 0, 0, 0, 25, 0, 26, 0, 24};
-            district->combat_archive.resize(37, 0);
-            district->combat_archive[12] = 1;
-            district->combat_archive[14] = 2;
-            district->combat_archive[20] = 1;
-            resources->districts[20] = district;
-            const opengold::Image pixel{1, 1, 0, 0, {0, 0, 0, 255}};
-            session_.emplace(opengold::por::GeoMap{}, gate,
-                             std::array<opengold::Image, 3> {pixel, pixel, pixel}, 0x9914,
-                             opengold::por::WallArtSet{}, resources);
-            session_->campaign_party(campaign_);
-            session_->advance(1);
-            campaign_->advance_time(960);
-            check(session_->explore(opengold::por::ExplorationCommand::look),
-                  "Start delayed encounter");
-            const auto begin = campaign_->begin_rest(opengold::RestKind::long_rest);
-            check(begin.has_value(), "Rest eligible after cooldown");
-            (void)campaign_->advance_rest(*begin, 70 * 60000, opengold::RestWork::sleep);
-            for (unsigned n = 0;
-                    n < 100 && session_->snapshot().phase == opengold::por::TourPhase::running; ++n)
-                session_->advance(.5);
-            refresh();
-            check(session_->pending_encounter() && campaign_->state().short_rest && w->is_visible(),
-                  ("Pending encounter presents earned Hit Dice choices: " +
-                   session_->snapshot().dialogue + session_->snapshot().diagnostic)
-                  .c_str());
-            check(!w->get_node<Button>("Save")->is_visible(),
-                  "Encounter handoff never offers a combat save");
-        }
-        else if (rest_check_stage_ == 60)
-        {
-            auto wounded = campaign_->checkpoint();
-            for (auto &m : wounded.roster)
-                if (m.id == rest_member_)
-                    m.vitals.hit_points = 1;
-            campaign_->restore(wounded);
-            refresh_rest();
-            w->get_node<Button>("Heal")->emit_signal("pressed");
-            const auto spent = campaign_->member(rest_member_).vitals;
-            check(spent.hit_points > 1, "Heal with Hit Dice restores HP before the encounter");
-            const auto rng = campaign_->state().random_state;
-            w->get_node<Button>("Finish")->emit_signal("pressed");
-            check(session_->pending_encounter() && !campaign_->state().short_rest &&
-                  !w->is_visible(),
-                  "Finishing recovery releases encounter handoff");
-            check(session_->reject_combat("Fixture initialization rejected"),
-                  "Reject pending encounter after player choice");
-            check(campaign_->member(rest_member_).vitals == spent &&
-                  campaign_->state().random_state == rng,
-                  "Failed encounter does not undo player recovery");
-        }
         else if (rest_check_stage_ == 64)
         {
-            if (campaign_->state().rest_activity)
-                campaign_->abandon_rest(campaign_->state().rest_activity->ticket);
             opengold::rules::CharacterDraft draft;
             draft.race = "human";
             draft.gender = "female";
@@ -961,8 +829,6 @@ void RolfTourView::rest_spell_apply()
     {
         campaign_->choose_spells(rest_spell_member_, rest_spell_choice_);
         rest_spell_member_ = 0;
-        if (session_)
-            session_->commit_rest_recovery();
         refresh();
     }
     catch (const std::exception &e)
@@ -978,8 +844,6 @@ void RolfTourView::rest_spell_keep()
         if (rest_spell_member_)
             campaign_->keep_rest_spells(rest_spell_member_);
         rest_spell_member_ = 0;
-        if (session_)
-            session_->commit_rest_recovery();
         refresh();
     }
     catch (const std::exception &e)
@@ -1068,8 +932,6 @@ void RolfTourView::rest_training_apply()
         campaign_->replace_rest_training(rest_training_ticket_, rest_training_member_,
                                          rest_training_choice_);
         rest_training_member_ = 0;
-        if (session_)
-            session_->commit_rest_recovery();
         refresh();
     }
     catch (const std::exception &e)
@@ -1085,8 +947,6 @@ void RolfTourView::rest_training_keep()
         if (rest_training_member_)
             campaign_->keep_rest_training(rest_training_ticket_, rest_training_member_);
         rest_training_member_ = 0;
-        if (session_)
-            session_->commit_rest_recovery();
         refresh();
     }
     catch (const std::exception &e)

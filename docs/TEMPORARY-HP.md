@@ -69,7 +69,7 @@ with a specific overriding lifetime must implement that lifetime when added.
 
 ## Persistence and architecture
 
-In **OGCOMBAT 27**, in addition to the sourced
+In **OGCOMBAT 28**, in addition to the sourced
 pool, actor rows retain Adrenaline Rush uses and whether its movement allowance
 was used this turn. A final section stores the optional unresolved offer. Restore
 validates entitlement, amount/source, spent costs, movement capacity, conscious

@@ -327,7 +327,7 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
 
 // The only effect-state tag written or read. It lives inside campaign saves and
 // combat checkpoints, whose format numbers reject older data.
-constexpr std::string_view effects_magic = "FX7";
+constexpr std::string_view effects_magic = "FX8";
 
 void write_effects(std::ostream &out, const EffectState &effects)
 {
@@ -336,7 +336,7 @@ void write_effects(std::ostream &out, const EffectState &effects)
         out << ' ' << e.id << ' ' << unsigned(e.kind) << ' ' << e.source_scope << ' '
             << e.source_actor << ' ' << std::quoted(e.source_name) << ' ' << e.dc << ' '
             << e.remaining_ms << ' ' << e.save_in_ms;
-    out << ' ' << effects.sleeping << ' ' << effects.prone;
+    out << ' ' << effects.prone;
 }
 
 EffectState read_effects(std::istream &in)
@@ -381,12 +381,10 @@ EffectState read_effects(std::istream &in)
         previous = e.id;
         result.active.push_back(std::move(e));
     }
-    unsigned sleeping{}, prone{};
-    unsigned_field(in, sleeping);
+    unsigned prone{};
     unsigned_field(in, prone);
-    if (!in || sleeping > 1 || prone > 1 || (sleeping && !prone))
-        throw std::runtime_error("Invalid natural sleep/posture state");
-    result.sleeping = sleeping;
+    if (!in || prone > 1)
+        throw std::runtime_error("Invalid posture state");
     result.prone = prone;
     return result;
 }

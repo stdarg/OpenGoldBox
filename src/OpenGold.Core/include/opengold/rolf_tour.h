@@ -133,7 +133,6 @@ class RolfTourSession
     bool explore(ExplorationCommand command);
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
-    bool resume_camp();
 
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
     {
@@ -198,9 +197,6 @@ class RolfTourSession
 
     bool resolve_combat(const rules::Snapshot &outcome);
     // Reject a pending handoff before combat starts, using the event rollback path.
-    // Commit player recovery choices while an encounter is waiting to start.
-    // A later rendering/initialization failure must not refund spent dice.
-    void commit_rest_recovery();
     bool reject_combat(std::string diagnostic);
 
   private:
@@ -253,7 +249,6 @@ class RolfTourSession
     unsigned
     event_stage_{}; // 0 tour, 1 before step, 2 search, 3 area entry, 4 pre-camp, 5 interrupted.
     RestKind camp_kind_{RestKind::long_rest};
-    bool resuming_camp_{};
     bool transition_{}, message_only_{};
     std::uint64_t shop_request_{};
     void configure_town();

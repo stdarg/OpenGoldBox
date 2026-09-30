@@ -863,7 +863,7 @@ void stabilization_handoff()
     const auto hero = party.add_pc(character());
     party.add_pc(character("fighter", "Conscious ally"));
     auto state = party.checkpoint();
-    state.roster[0].vitals = {0, false, "SRD9 1 0 0 2 1 0 1 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+    state.roster[0].vitals = {0, false, "SRD9 1 0 0 2 1 0 1 6000 0 0 \"\" 0 0 0 FX8 1 0 0"};
     party.restore(std::move(state));
     auto participants = party.participants();
     participants[0].cell = {1, 1};
@@ -920,7 +920,7 @@ void remaining_turn_handoff()
     CampaignParty party(module());
     const auto hero = party.add_pc(character());
     auto state = party.checkpoint();
-    state.roster[0].vitals = {3, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+    state.roster[0].vitals = {3, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
     party.restore(std::move(state));
     auto participants = party.participants();
     participants[0].cell = {1, 1};
@@ -955,7 +955,7 @@ void remaining_turn_handoff()
     use("second_wind");
     check(party.member(hero).vitals.hit_points > 3 &&
           party.member(hero).vitals.resources ==
-          "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0",
+          "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0",
           "Post-attack Second Wind updates campaign HP and spends its last use");
     use("end");
     check(party.state().subminute_milliseconds == 3000,
@@ -1182,7 +1182,7 @@ void campaign_encounters()
     party->add_pc(character("fighter", "Companion"));
     auto checkpoint = party->checkpoint();
     checkpoint.roster[0].vitals = {
-        1, false, "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 FX7 1 0 0 0"};
+        1, false, "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 FX8 1 0 0"};
     party->restore(checkpoint);
     const auto wounded = party->member(pc).vitals;
     const auto still_wounded = [&](const VitalState & state)
@@ -1492,7 +1492,7 @@ void progression_and_services()
     });
     auto wounded = party.checkpoint();
     wounded.roster[0].vitals = {
-        0, false, "SRD9 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0", "Unconscious"};
+        0, false, "SRD9 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 FX8 1 0 0", "Unconscious"};
     party.restore(wounded);
     check(!party.rest() && party.time_hours() == 32,
           "Unconscious members cannot start a long rest");
@@ -1512,7 +1512,7 @@ void progression_and_services()
     party.temple_heal(pc);
     check(party.member(pc).vitals.hit_points > 0 && party.member(pc).wealth[3] == 0 &&
           party.member(pc).vitals.resources ==
-          "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 1",
+          "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0",
           "Healing charges once, clears death saves and preserves spent resources");
     const auto checkpoint = party.checkpoint();
     CampaignParty restored(module());
@@ -1523,7 +1523,7 @@ void progression_and_services()
     restored.award_experience(300, "quest:slums");
     check(restored.member(pc).experience == 300, "Checkpoint retains claimed rewards");
     auto dead = checkpoint;
-    dead.roster[0].vitals = {0, true, "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+    dead.roster[0].vitals = {0, true, "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
     party.restore(dead);
     rejects(
         [&]
@@ -1568,8 +1568,8 @@ void caster_advancement()
         auto spent = party.checkpoint();
         const bool wizard = std::string_view(klass) == "wizard";
         spent.roster[0].vitals = {c.sheet().hit_points - 2, false,
-                                  wizard ? "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 FX7 1 0 0 0"
-                                  : "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+                                  wizard ? "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 FX8 1 0 0"
+                                  : "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
         party.restore(spent);
         party.award_experience(299, "below");
         check(party.member(pc).character.sheet().level == 1, "Below threshold does not advance");
@@ -1581,13 +1581,13 @@ void caster_advancement()
               m.vitals.hit_points == m.character.sheet().hit_points - 2,
               "Dwarven growth preserves HP deficit");
         check(m.vitals.resources ==
-              (wizard ? "SRD9 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 1 FX7 1 0 0 0"
-               : "SRD9 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"),
+              (wizard ? "SRD9 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 1 FX8 1 0 0"
+               : "SRD9 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 0 FX8 1 0 0"),
               "Advancement grants new slot without refilling spent slots");
         check(party.rest() &&
               party.member(pc).vitals.resources ==
-              (wizard ? "SRD9 0 3 0 0 0 0 2 0 0 0 \"\" 0 0 1 FX7 1 0 0 0"
-               : "SRD9 0 3 0 0 0 0 2 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"),
+              (wizard ? "SRD9 0 3 0 0 0 0 2 0 0 0 \"\" 0 0 1 FX8 1 0 0"
+               : "SRD9 0 3 0 0 0 0 2 0 0 0 \"\" 0 0 0 FX8 1 0 0"),
               "Level-two long rest restores three slots and safely stands the rested character");
         auto participants = party.participants();
         participants.push_back({1000, "bandit", "Bandit", 1, {9, 4}});
@@ -1606,7 +1606,7 @@ void temple_pooling()
     party.set_wealth(payer, {0, 0, 0, 40, 0, 0, 0});
     party.set_wealth(target, {0, 0, 0, 50, 0, 0, 0});
     auto state = party.checkpoint();
-    state.roster[1].vitals = {0, false, "SRD9 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 1 FX7 1 0 0 0"};
+    state.roster[1].vitals = {0, false, "SRD9 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 1 FX8 1 0 0"};
     party.restore(state);
     rejects(
         [&]
@@ -1674,7 +1674,7 @@ void dynamic_checkpoint()
         (void)rules->create(e, 42);
     });
     e.participants[0].state =
-        VitalState{1, false, "SRD9 0 99 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+        VitalState{1, false, "SRD9 0 99 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
     rejects(
         [&]
     {
@@ -1951,47 +1951,6 @@ void rejected_combat_handoff()
         check(town.explore(por::ExplorationCommand::turn_right),
               "Exploration accepts commands after the failed encounter");
     }
-    // The same real ECL host boundary interrupts an in-progress Long Rest.
-    // Recovery choices are committed before the UI constructs the combat view.
-    for (bool spend :
-            {
-                false, true
-            })
-    {
-        auto party = std::make_shared<CampaignParty>(module());
-        const auto id = party->add_pc(character("fighter"));
-        por::RolfTourSession town({}, gate, {}, 0x9914, {}, resources);
-        town.campaign_party(party);
-        settle(town);
-        const auto before = party->checkpoint();
-        check(town.explore(por::ExplorationCommand::look),
-              "Start delayed original encounter event");
-        auto ticket = party->begin_rest(RestKind::long_rest);
-        check(ticket.has_value(), "Start interrupted ECL rest fixture");
-        (void)party->advance_rest(*ticket, 70 * 60000, RestWork::sleep);
-        settle(town);
-        check(town.pending_encounter() && party->state().rest_activity->interrupted &&
-              party->state().short_rest,
-              "Original script damage and encounter preparation retain one earned recovery window");
-        check(party->state().rest_activity->extension_milliseconds == 60000 * 60,
-              "Damage followed by initiative during the same interruption adds only one hour");
-        if (spend)
-        {
-            (void)party->heal_with_hit_dice(party->state().short_rest->ticket, id);
-            town.commit_rest_recovery();
-            party->finish_short_rest(party->state().short_rest->ticket);
-            town.commit_rest_recovery();
-        }
-        const auto committed = party->checkpoint();
-        check(town.reject_combat("Rest encounter initialization failed"),
-              "Reject staged encounter");
-        const auto &expected = spend ? committed : before;
-        check(
-            party->member(id).vitals == expected.roster[0].vitals &&
-            party->state().random_state == expected.random_state &&
-            party->state().time_minutes == expected.time_minutes,
-            "Failed event rolls back until a player commits recovery; committed spending is never refunded");
-    }
 }
 
 void recovery_hosts()
@@ -1999,7 +1958,7 @@ void recovery_hosts()
     auto party = std::make_shared<CampaignParty>(module());
     const auto pc = party->add_pc(character());
     auto state = party->checkpoint();
-    state.roster[0].vitals = {1, false, "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+    state.roster[0].vitals = {1, false, "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
     party->restore(state);
     auto resources = std::make_shared<por::PhlanResources>();
     auto p = program({0});
@@ -2125,139 +2084,6 @@ void reward_reentry()
               "Recreated combat scene cannot duplicate its reward");
         check(!fight.submit({}), "Finished combat rejects more commands");
     }
-}
-
-void interrupted_rest_victory()
-{
-    auto party = std::make_shared<CampaignParty>(module());
-    auto wizard = character("wizard");
-    const auto staff = wizard.inventory().add("quarterstaff", "Interrupted camp staff");
-    const auto pc = party->add_pc(std::move(wizard));
-    party->equip(pc, staff);
-    party->recruit("guard", character());
-    const auto started = party->begin_rest(RestKind::long_rest);
-    check(started.has_value(), "Start rest before encounter");
-    auto protected_state = encode_campaign(*party, nullptr, "rest-victory");
-    rejects(
-        [&]
-    {
-        party->award_experience(300, "unexpected");
-    });
-    rejects(
-        [&]
-    {
-        party->award_loot({0, 0, 0, 1, 0, 0, 0}, {}, "unexpected-loot");
-    });
-    check(encode_campaign(*party, nullptr, "rest-victory") == protected_state,
-          "Rewards cannot mutate a running rest");
-    (void)party->advance_rest(*started, 70 * 60000, RestWork::sleep);
-    party->interrupt_rest(party->state().rest_activity->ticket, RestInterruption::initiative);
-    protected_state = encode_campaign(*party, nullptr, "rest-victory");
-    rejects(
-        [&]
-    {
-        party->award_experience(300, "premature");
-    });
-    check(encode_campaign(*party, nullptr, "rest-victory") == protected_state,
-          "Rewards cannot bypass pending Hit Die choices");
-    party->finish_short_rest(party->state().short_rest->ticket);
-    const auto progress = party->state().rest_activity->elapsed_milliseconds;
-    CombatDemo fight(module());
-    fight.campaign_party(party);
-    fight.training();
-    finish(fight);
-    check(fight.combat().snapshot().outcome == Outcome::victory && !party->in_combat(),
-          "Interrupted rest encounter completes normally");
-    check(party->member(pc).experience == 300 && party->state().claimed_rewards.size() == 1,
-          "Interrupted rest victory awards XP once");
-    check(party->state().detached_items.empty() &&
-          std::any_of(party->member(pc).character.inventory().items().begin(),
-                      party->member(pc).character.inventory().items().end(),
-                      [](const auto & item)
-    {
-        return item.name == "Interrupted camp staff";
-    }),
-    "The real combat host collects reachable sleeping equipment at victory");
-    check(party->state().rest_activity && party->state().rest_activity->interrupted &&
-          party->state().rest_activity->elapsed_milliseconds == progress &&
-          party->state().rest_activity->extension_milliseconds == 60 * 60000,
-          "Victory retains rest progress and interruption extension");
-    check(!party->can_advance(pc), "Victory cannot enable leveling during unfinished rest");
-    rejects(
-        [&]
-    {
-        party->remove(pc);
-    });
-    const auto old_ticket = party->state().rest_activity->ticket;
-    check(party->award_loot({0, 0, 0, 17, 0, 0, 0}, {item(8)}, "rest-encounter:loot"),
-          "Original encounter loot can be retained during interrupted rest");
-    check(party->member(pc).wealth[3] == 17 &&
-          !party->member(pc).character.inventory().items().empty(),
-          "Interrupted encounter retains original money and equipment");
-    rejects(
-        [&]
-    {
-        party->resume_rest(old_ticket);
-    });
-    const auto before = encode_campaign(*party, nullptr, "rest-victory");
-    por::EclMachine vm(program({0}));
-    for (const auto &write : party->character_reply(0).writes)
-        vm.bind_variable(write.address, write.value);
-    party->read_character(0, vm);
-    check(encode_campaign(*party, nullptr, "rest-victory") == before,
-          "Post-combat ECL synchronization preserves the interrupted rest exactly");
-    vm.bind_variable(0x6c19, party->member(pc).character.sheet().hit_points + 1);
-    rejects(
-        [&]
-    {
-        party->read_character(0, vm);
-    });
-    check(encode_campaign(*party, nullptr, "rest-victory") == before,
-          "Invalid script healing cannot bypass the rest lock");
-    check(party->award_loot({0, 0, 0, 17, 0, 0, 0}, {item(8)}, "rest-encounter:loot"),
-          "Duplicate loot claim is idempotent");
-    rejects(
-        [&]
-    {
-        party->award_experience(std::numeric_limits<unsigned>::max(), "rest-overflow");
-    });
-    party->award_experience(300, party->state().claimed_rewards.front());
-    check(encode_campaign(*party, nullptr, "rest-victory") == before,
-          "Duplicate victory reward cannot alter pending rest or RNG");
-    const auto valid = party->checkpoint();
-    auto exhausted = valid;
-    exhausted.rest_activity->ticket.revision = std::numeric_limits<std::uint64_t>::max();
-    party->restore(exhausted);
-    const auto exhausted_save = encode_campaign(*party, nullptr, "rest-victory");
-    rejects(
-        [&]
-    {
-        party->award_experience(1, "revision-overflow");
-    });
-    rejects(
-        [&]
-    {
-        party->award_loot({0, 0, 0, 1, 0, 0, 0}, {item(8)}, "loot-revision-overflow");
-    });
-    check(encode_campaign(*party, nullptr, "rest-victory") == exhausted_save,
-          "Revision overflow cannot commit rewards partially");
-    party->restore(valid);
-    auto restored = std::make_shared<CampaignParty>(module());
-    restored->restore(
-        decode_campaign(before, *srd5::character_rules(), *module(), "rest-victory", nullptr)
-        .party);
-    check(encode_campaign(*restored, nullptr, "rest-victory") == before,
-          "Post-victory rest and XP round-trip exactly");
-    restored->resume_rest(restored->state().rest_activity->ticket);
-    const auto result =
-        restored->advance_rest(restored->state().rest_activity->ticket,
-                               restored->remaining_rest_milliseconds(), RestWork::sleep);
-    check(restored->state().spell_rest.has_value(),
-          "Completed Wizard rest presents spell choices before further advancement");
-    restored->keep_rest_spells(pc);
-    check(result && !restored->state().rest_activity && restored->member(pc).experience == 300 &&
-          restored->can_advance(pc),
-          "Rest resumes after victory and preserves earned XP through completion");
 }
 
 // WHO; write selected HP; store; FIND ITEM; shop; exit.
@@ -2429,7 +2255,6 @@ int main()
         monster_picture_before_combat();
         recovery_hosts();
         reward_reentry();
-        interrupted_rest_victory();
         std::cout << "Party integration tests passed\n";
         return 0;
     }

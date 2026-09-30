@@ -16,7 +16,7 @@ struct VitalFixture
     int winds{}, slots{}, slots2{}, successes{}, failures{};
     bool stable{};
     int hit_dice{}, death_save_ms{}, stable_recovery_ms{};
-    std::string_view effects = "FX7 1 0 0 0";
+    std::string_view effects = "FX8 1 0 0";
 };
 
 inline std::string srd_vitals(const opengold::rules::CharacterSheet &sheet,

@@ -386,7 +386,7 @@ void campaign()
         const auto id = party.add_pc(std::move(c));
         auto state = party.checkpoint();
         state.roster[0].vitals = {
-            5, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+            5, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
         party.restore(state);
         party.equip(id, item);
         const auto before = encode_campaign(party, nullptr, "catalog");

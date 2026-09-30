@@ -103,7 +103,7 @@ rest-completion precision. Effect processing orders simultaneous events by entit
 and application ID so different time-update sizes preserve RNG continuation.
 
 Rules 0.5.0 adds Blinded through the blindness option of Blindness/Deafness.
-The combat checkpoint (`OGCOMBAT 27`) stores all effect applications, timers, presentation
+The combat checkpoint (`OGCOMBAT 28`) stores all effect applications, timers, presentation
 facing, pending movement reactions, involuntary allied overlap, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP.
 Movement queues retain their saved progress; future weapon attacks use
 the corrected [Heavy requirements](HEAVY-WEAPONS.md). The
@@ -112,17 +112,17 @@ original campaign conversions and prices. The [armor catalog](ARMOR.md)
 uses shared category definitions for equipment, AC and starting-class training;
 equipped ability checks combine these penalties with character skill/tool grants.
 Core only collects equipped IDs and delegates the query to the rules module. The campaign
-save (`OPENGOLD-CAMPAIGN 19`) stores the clock, encounter scopes, rules-owned effect state and
+save (`OPENGOLD-CAMPAIGN 20`) stores the clock, encounter scopes, rules-owned effect state and
 acquired feature/feat grants with source IDs, acquisition levels and choices.
 It also stores training selections and source grants, completed Short Rest
-spending tickets, individual eligibility records and resumable rest activity.
+spending tickets and individual eligibility records.
 Older formats are rejected, not migrated; see the
 [format policy](SAVES.md#pre-10-format-policy). Core owns campaign clock advancement
 and transactional commits; the rules module owns rest qualification, timing,
-interruption/resumption decisions, completion benefits and resource arithmetic.
-Native rest activity drives the existing atomic camp/inn route, with
-shared game/demo controls and ECL damage/encounter interruption adapters
-delivered; sleeping actor behavior and final rest scheduling remain pending. See [training](TRAINING.md),
+completion benefits and resource arithmetic. A rest completes in one step or is
+interrupted and grants nothing
+([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)).
+See [training](TRAINING.md),
 [rest resources](REST-RESOURCES.md), [recovery clocks](RECOVERY-CLOCKS.md) and [status effects](STATUS-EFFECTS.md) for
 mechanics, scope, persistence and tests.
 

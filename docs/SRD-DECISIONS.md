@@ -36,7 +36,8 @@ rules; do not silently change model settings.
 ## Rest workflow approval
 
 Q29–31 are approved by the user's “Yes to all. Get to work.” This authorizes the
-rest picker, sequential Hit Die controls and resumption dialog. Current run status
+rest picker, sequential Hit Die controls and resumption dialog. The resumption
+dialog and Q31–Q35/Q37 below are superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation) as marked. Current run status
 is recorded in the handoff; these control approvals remain valid.
 Future questions must be written directly in the conversation, not only in a
 question widget, and preceded by the audible Glass alert.
@@ -45,19 +46,19 @@ question widget, and preceded by the audible Glass alert.
 | --- | --- | --- |
 | Q29 | #30/#192/#193 Rest picker | Camp [C] opens centered Short/Long dropdown, party eligibility/HP/dice/recharge list, Start/Cancel; preserve camping restrictions and paid inn Long Rest flow; keyboard. Approved; user confirmed all three controls. |
 | Q30 | #192 sequential spending | **Per-die spending superseded by [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging).** Character list, Spend 1 Hit Die, committed roll/healing result, Finish; camp/inn-only Save game through existing dialog; close finishes without undo. Approved; user confirmed all three controls. |
-| Q31 | #193 resumption | Same dialog after interruption resolves: retained progress, extra time, Resume/End; recheck permission; retain earned benefits/time/resources; camp/inn save preserves decision, no combat saving. Approved; user confirmed all three controls. |
-| Q33 | #193 natural sleep wake-up policy | Damage wakes recipient; adjacent ally may spend an Action to wake; explicit campaign loud-noise event wakes affected sleepers; initiative alone does not wake. Approved by the user's “33. Yes.” on 2026-09-25. |
-| Q34 | #193 Wake ally control | Standard button at right end of existing Cunning Action row; visible for natural sleepers, keyboard/action cycle, highlight adjacent sleeping allies, Action to wake, Escape cancels; disabled off-turn or without Action. Approved by the user's “34. Yes.” on 2026-09-25. |
-| Q35 | #193 missing Unconscious prerequisites | Approved by the user on 2026-09-25: persistent Prone and held-item dropping/recovery as one prerequisite; new row below Cunning Action/Wake ally with Stand up (half Speed), Ground item dropdown and Pick up (shown object-interaction/action cost), keyboard access and disabled illegal actions. Requires shared combat/save-state changes. Q33–34 remain approved. User reply: “35. Approved.” |
+| Q31 | #193 resumption | **Superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation).** Same dialog after interruption resolves: retained progress, extra time, Resume/End; recheck permission; retain earned benefits/time/resources; camp/inn save preserves decision, no combat saving. Approved; user confirmed all three controls. |
+| Q33 | #193 natural sleep wake-up policy | **Superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation).** Damage wakes recipient; adjacent ally may spend an Action to wake; explicit campaign loud-noise event wakes affected sleepers; initiative alone does not wake. Approved by the user's “33. Yes.” on 2026-09-25. |
+| Q34 | #193 Wake ally control | **Superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation).** Standard button at right end of existing Cunning Action row; visible for natural sleepers, keyboard/action cycle, highlight adjacent sleeping allies, Action to wake, Escape cancels; disabled off-turn or without Action. Approved by the user's “34. Yes.” on 2026-09-25. |
+| Q35 | #193 missing Unconscious prerequisites | **Held-item dropping/recovery, Ground item and Pick up superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation); Prone and Stand up stand.** Approved by the user on 2026-09-25: persistent Prone and held-item dropping/recovery as one prerequisite; new row below Cunning Action/Wake ally with Stand up (half Speed), Ground item dropdown and Pick up (shown object-interaction/action cost), keyboard access and disabled illegal actions. Requires shared combat/save-state changes. Q33–34 remain approved. User reply: “35. Approved.” |
 
 | Q36 | #193 safe cleanup | Superseded by Q37. |
-| Q37 | #193 safe recovery | Approved: after victory or safe camping completion, cancellation, or obeying the city watch, able characters stand and collect reachable dropped party equipment. Return items to original owner, or a surviving companion if dead. Waking during combat retains Prone and ground equipment; normal standing/pickup costs remain. |
+| Q37 | #193 safe recovery | **Superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation).** Approved: after victory or safe camping completion, cancellation, or obeying the city watch, able characters stand and collect reachable dropped party equipment. Return items to original owner, or a surviving companion if dead. Waking during combat retains Prone and ground equipment; normal standing/pickup costs remain. |
 
 ## Chill Touch recovery approval
 
 | ID | Issue / decision | Approved scope |
 | --- | --- | --- |
-| Q40 | #165 Chill Touch natural recovery | APPROVED by “40. Yes”: if the already-rolled Stable recovery deadline arrives during healing prevention, defer its 1 HP recovery until prevention expires without another d4-hour roll; damage still cancels Stable/recovery. |
+| Q40 | #165 Chill Touch natural recovery | **Exploration part moot under [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation): Chill Touch expires within seconds, long before a Stable deadline; the deferral remains for combat.** APPROVED by “40. Yes”: if the already-rolled Stable recovery deadline arrives during healing prevention, defer its 1 HP recovery until prevention expires without another d4-hour roll; damage still cancels Stable/recovery. |
 
 ## Medicine and Tactical Mind controls
 
@@ -84,6 +85,8 @@ and withdraws AMMO-1/AMMO-2. Preserve current ranged behavior and existing saved
 inventory records. This is an intentional SRD exception, not an unfinished
 ammunition simulation. Thrown weapons still use their actual weapon inventory;
 other weapon properties remain separate. See [ammunition](AMMUNITION.md).
+[SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation) later extends
+the same treatment to Thrown weapons: throwing no longer spends the weapon.
 
 **AR-1 — APPROVED, #99, 2026-09-25, visible question 1:** add Arcane Recovery
 dropdown and Recover slots in existing Rest dialog above Result, shortening the
@@ -145,8 +148,8 @@ TWF selectors/automatic benefit. Do not ask these again.
 | Q19 | #208 Silence geometry | Proposed flat grid, square center within 120 feet, circular 20-foot radius; whole occupied square determines full containment, walls block spread, preview distinguishes partial/full containment; no height model. Pending. |
 | Q20 | #208 Silence controls | Proposed prepared level-two Silence in Spell dropdown; area preview, arrows/Enter/click, free Escape cancel; new End concentration row with duration, free release for selected owner outside its turn. Pending. |
 | Q21 | #208/#209 Cleric preparation | Proposed current level 3–4 limits/confirmation, explicit Silence selection, existing saved preparations unchanged. Pending. |
-| Q43 | #58 Thrown controls | Proposed Thrown weapon dropdown/Throw row below Ground item/Pick up; held/carried quantities, legal target highlighting, keyboard/mouse, explicit necessary stowing before confirmation, free cancellation; proper SRD hand/action costs. APPROVED 2026-09-25 by “43. Approved.”. |
-| Q44 | #58 landing policy | Proposed target square on hit/miss, no embedding/breakage/scatter; ground item, ordinary pickup and approved Q37 safe recovery. SRD-unspecified policy. APPROVED 2026-09-25 by “44. Approved.”. |
+| Q43 | #58 Thrown controls | **Stowing and quantities superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation); the dropdown and Throw button stand.** Proposed Thrown weapon dropdown/Throw row below Ground item/Pick up; held/carried quantities, legal target highlighting, keyboard/mouse, explicit necessary stowing before confirmation, free cancellation; proper SRD hand/action costs. APPROVED 2026-09-25 by “43. Approved.”. |
+| Q44 | #58 landing policy | **Superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation).** Proposed target square on hit/miss, no embedding/breakage/scatter; ground item, ordinary pickup and approved Q37 safe recovery. SRD-unspecified policy. APPROVED 2026-09-25 by “44. Approved.”. |
 
 ## Approved patterns and policies
 
@@ -163,7 +166,7 @@ TWF selectors/automatic benefit. Do not ask these again.
 | Q22 | Fighter starting Fighting Style dropdown in Training, initially Archery/Defense; required selection, Back, keyboard, presets, old missing choice pending | [Fighter styles](FIGHTER-STYLES.md). Not blanket approval of future independent selectors. |
 | Q24 | Rogue level-two Cunning Action row below combat buttons: dropdown and Use Bonus Action; Dash/Disengage initially, keyboard, turn/budget restrictions | [Cunning Action](CUNNING-ACTION.md). Hide requires its actual rule/target behavior. |
 | Q26 | Warlock existing Spell Choices pattern and Spell/Cast; presets, retained old selections | [Eldritch Blast](ELDRITCH-BLAST.md), [Warlock Poison Spray](WARLOCK-POISON-SPRAY.md). |
-| Q32 | Repeated Long Rest interruptions grant Short Rest benefits only for a fresh uninterrupted segment of at least one hour; earlier credited time cannot qualify again. Each interruption adds one required hour. | Approved for #193; 70-minute/10-minute/60-minute example in user reply. |
+| Q32 | **Superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation).** Repeated Long Rest interruptions grant Short Rest benefits only for a fresh uninterrupted segment of at least one hour; earlier credited time cannot qualify again. Each interruption adds one required hour. | Approved for #193; 70-minute/10-minute/60-minute example in user reply. |
 | Q28 | #29/#189 Review Training button beside Grip below inventory, visible for missing training; centered dialog reuses checkbox groups and Fighting Style dropdown, fixed grants, counts and keyboard; locks prior choices; Apply requires all supported choices; Cancel/Escape discards; combat blocks edits; preserve wounds/resources/equipment/advancement | Approved; supersedes pending Q11. The dialog was removed by the 2026-09-30 save cutoff. |
 | Q27 | Sorcerer existing Spell Choices and Spell/Cast with four supported cantrips, Charisma, presets, old selections pending | [Sorcerer cantrips](SORCERER-CANTRIPS.md). |
 | Workflow adoption | User authorized efficiency implementation after backlog review | Batch workflow adopted; later pause takes precedence. #192 is closed; #30/#193 remain open. No authorization to discard save compatibility, create a fresh task or spawn agents. |
@@ -241,3 +244,38 @@ dialog, Q30's per-die Hit Die spending and Q1 / Grip.
   attacks, so it never blocks a Somatic component; a shield or second weapon
   still does. See [Party](PARTY.md#versatile-grip) and
   [Spell components](SPELL-COMPONENTS.md).
+
+## SIMPLIFY-1 (2026-09-30): tabletop time and body simulation
+
+The user approved on 2026-09-30 five simplifications of tabletop time and body
+bookkeeping that a computer game resolves better in the background. What
+happens automatically is shown in the combat log or the exploration text.
+This supersedes Q31, Q32, Q33, Q34, Q35's held-item part, Q37, the exploration
+part of Q40, and Q43's stowing and Q44's landing policy. Q35's Stand up and
+Prone, Q38/Q39 and the rest of Q43 stand.
+
+- **Sleep in combat:** there is no sleeping combatant and no Wake ally action.
+  A character resting when an encounter interrupts the rest starts the combat
+  awake and Prone, and the log says "{name} wakes up prone." Prone and Stand up
+  (half Speed) are unchanged. Prone does not outlast combat: everyone stands
+  when a fight is won. See [Status effects](STATUS-EFFECTS.md).
+- **Downed characters keep their gear:** falling to 0 HP drops nothing, and
+  there is no ground item, Ground item dropdown, Pick up control or post-combat
+  and camp recovery of dropped gear. Resting never unequips gear. See
+  [Unconscious transit](UNCONSCIOUS-TRANSIT.md).
+- **Rest interruption:** an interrupted rest simply ends. It grants nothing,
+  earns no partial Short Rest, adds no extra hour and leaves nothing to resume;
+  the party rests again. The city watch's interruption says "The rest was
+  interrupted. Rest again to recover." Camp and inn restrictions and the paid
+  inn Long Rest are unchanged. See [Rest resources](REST-RESOURCES.md).
+- **Death saves outside combat:** when a fight is won, each dying character's
+  remaining death saves are rolled at once until it is Stable or dead (a
+  natural 20 restores 1 HP), and the combat log lists every roll and the
+  outcome. Outside combat a dying character is resolved the same way the moment
+  campaign time passes. Stable still recovers 1 HP after 1d4 hours. Combat
+  death saves are unchanged. See [Recovery clocks](RECOVERY-CLOCKS.md).
+- **Thrown weapons work like ammunition:** throwing never removes or drops the
+  weapon, which stays held or carried. There is no landing square, ground item,
+  quantity spent, pickup or stowing. The Thrown weapon dropdown and Throw
+  button remain so a carried Thrown weapon can still be thrown. See
+  [Thrown weapons](THROWN-WEAPONS.md) and [Ammunition](AMMUNITION.md).

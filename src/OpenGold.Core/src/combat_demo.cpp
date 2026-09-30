@@ -92,7 +92,7 @@ void CombatDemo::synchronize_party()
     if (!campaign_combat_)
         return;
     const auto state = combat_->snapshot();
-    campaign_->apply_combat(state, combat_->safe_recovery());
+    campaign_->apply_combat(state);
     finish_campaign_combat(state.outcome);
 }
 
@@ -123,7 +123,7 @@ void CombatDemo::install_combat(std::unique_ptr<CombatSession> next, std::string
     // session intact. Only a successful handoff transfers the lock to this owner.
     CampaignCombat ownership(campaign_);
     const auto state = next->snapshot();
-    campaign_->apply_combat(state, next->safe_recovery());
+    campaign_->apply_combat(state);
     combat_ = std::move(next);
     campaign_combat_.emplace(std::move(ownership));
     reward_id_ = std::move(reward_id);
@@ -629,7 +629,7 @@ Command choose_demo_command(const CombatSession &session)
                 return command;
     }
     for (const auto &command : offered)
-        if (command.verb == "stand_up" || command.verb == "wake_ally" || command.verb == "pick_up")
+        if (command.verb == "stand_up")
             return command;
     // Rank offered destinations by a geometric route around obstacles. Straight
     // distance alone can strand both sides on opposite corners of a wall.

@@ -345,7 +345,7 @@ void Session::validate_mastery_state() const
             if (!m.ranged || m.thrown_item > items_.size())
                 throw std::runtime_error("Invalid mastery thrown item");
             const auto &item = items_[m.thrown_item - 1];
-            if (item.holder || item.definition != m.weapon || item.cell != t->source.cell ||
+            if (item.holder != m.actor || item.definition != m.weapon ||
                     !detail::weapon(m.weapon)->thrown)
                 throw std::runtime_error("Invalid mastery thrown provenance");
         }

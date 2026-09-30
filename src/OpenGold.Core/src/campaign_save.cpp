@@ -12,7 +12,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 19;
+constexpr unsigned campaign_format = 20;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -272,32 +272,9 @@ struct SaveCodec
         fields(v.ticket, v.completed_minutes, v.completed_subminute_milliseconds, v.members);
     }
 
-    void field(RestActivity &v)
-    {
-        unsigned kind = static_cast<unsigned>(v.kind), work = static_cast<unsigned>(v.work),
-                 interruption = static_cast<unsigned>(v.interruption);
-        fields(v.ticket, kind, v.started_minutes, v.started_subminute_milliseconds,
-               v.elapsed_milliseconds, v.segment_milliseconds, v.sleep_milliseconds,
-               v.light_milliseconds, v.exertion_milliseconds, v.extension_milliseconds,
-               v.interrupted, work, interruption, v.members);
-        if (reading)
-        {
-            v.kind = static_cast<RestKind>(kind);
-            v.work = static_cast<RestWork>(work);
-            v.interruption = static_cast<RestInterruption>(interruption);
-        }
-    }
-
-    void field(DetachedPartyItem &v)
-    {
-        fields(v.scope, v.token, v.original_owner, v.holder, v.cell.x, v.cell.y, v.item,
-               v.original, v.rest_session);
-    }
-
     void rest(PartyState &v)
     {
-        fields(v.next_rest_session, v.short_rest, v.rest_activity, v.detached_items, v.spell_rest,
-               v.training_rest);
+        fields(v.next_rest_session, v.short_rest, v.spell_rest, v.training_rest);
     }
 
     void field(rules::VitalState &v)
@@ -706,7 +683,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     }
     in.rest(result.party);
     CampaignParty::validate(result.party);
-    CampaignParty::validate_rest_activity(result.party, module);
+    CampaignParty::validate_rest_choices(result.party, module);
     in.stream >> std::ws;
     require(in.stream.eof(), "Trailing campaign save data");
     return result;

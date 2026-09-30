@@ -1,5 +1,23 @@
 # Thrown weapon inventory — batch #58
 
+## Current behavior (SIMPLIFY-1, 2026-09-30)
+
+[SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)
+treats Thrown weapons like [ammunition](AMMUNITION.md). A throw is an ordinary
+ranged attack with the weapon's Thrown range and damage; the weapon stays where
+it was, held or carried. Nothing lands on a square, becomes a ground item, is
+spent from a stack or needs picking up, and a throw never stows a held weapon,
+so hands are not checked for it. A Ranged attack with a held Thrown weapon
+throws it; the **Thrown weapon** dropdown and **Throw** button remain so a
+carried Thrown weapon can be thrown too, and list each weapon by name. Light,
+Nick, Savage Attacker, Champion and mastery behavior are unchanged.
+`opengold_thrown_weapon_tests` and `thrown_view_tests.gd` check that throws keep
+the weapon, including a million-unit stack.
+
+The sections below record the original #58 delivery. Its removal, landing,
+pickup, stowing and quantity rules, Q43's stowing and Q44's landing policy are
+superseded by SIMPLIFY-1.
+
 ## Frozen player outcome
 
 Complete actual removal, battlefield location and recovery of thrown weapons,

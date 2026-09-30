@@ -13,7 +13,7 @@ void wizard_choices_checks()
     const auto id = party.add_pc(Character(*creation_rules, draft, {}));
     party.award_experience(2700, "wizard-choice-xp");
     const auto original = saved(party);
-    check(original.starts_with("OPENGOLD-CAMPAIGN 19\n"),
+    check(original.starts_with("OPENGOLD-CAMPAIGN 20\n"),
           "Explicit independent creation uses the current campaign format");
     SpellChoices bad;
     bad.prepared = std::vector<std::string> {};
@@ -125,23 +125,15 @@ void wizard_choices_checks()
     party.finish_short_rest(party.state().short_rest->ticket);
     CampaignParty resting(module());
     const auto resting_id = resting.add_pc(hero());
-    const auto interrupted = resting.begin_rest(RestKind::long_rest);
-    check(interrupted.has_value(), "Wizard starts interruption fixture");
-    (void)resting.advance_rest(*interrupted, 70 * 60000, RestWork::sleep);
-    resting.interrupt_rest(resting.state().rest_activity->ticket, RestInterruption::initiative);
-    check(resting.state().short_rest && !resting.state().spell_rest,
-          "An interrupted Wizard Long Rest grants only earned Short Rest benefits");
-    resting.finish_short_rest(resting.state().short_rest->ticket);
-    resting.abandon_rest(resting.state().rest_activity->ticket);
     check(!resting.state().spell_rest,
-          "Canceled Wizard Long Rest grants no spell-choice entitlement");
+          "A Wizard without a completed Long Rest has no spell-choice entitlement");
     const auto canceled = saved(resting);
     rejects(
         [&]
     {
         resting.choose_spells(resting_id, rest);
     });
-    check(saved(resting) == canceled, "Canceled-rest replacement rejects atomically");
+    check(saved(resting) == canceled, "Replacement without a completed rest rejects atomically");
     auto forged = party.checkpoint();
     forged.next_rest_session = 1;
     rejects(

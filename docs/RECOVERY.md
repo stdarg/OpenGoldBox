@@ -12,9 +12,13 @@ complete original campaign service coverage.
   restoration adds no roll, and campaign handoff preserves stabilization and
   spent resources. Stable status now records its one rolled recovery delay;
   combat time counts it down and restores 1 HP. [Recovery clocks](RECOVERY-CLOCKS.md)
-  also survive healing, damage and save/load. Campaign time advances the same
-  mortality rules for active members and reserves, interleaved with lasting
-  effects; repeated combat snapshots cannot apply elapsed time twice.
+  also survive healing, damage and save/load. A won fight rolls every remaining
+  death save at once and logs each roll and outcome; outside combat a dying
+  member resolves the same way as soon as campaign time passes
+  ([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)).
+  Campaign time advances Stable recovery for active members and reserves,
+  interleaved with lasting effects; repeated combat snapshots cannot apply
+  elapsed time twice.
 - The authored party Bandit preview grants **300 XP per living active member**
   on its first victory. Its reward key is `preview:bandit:v1`; reopening the scene,
   restarting it or using a different seed cannot award it again. The original
@@ -34,18 +38,19 @@ complete original campaign service coverage.
   members gain no rest benefits. Time, effects and mortality advance once for
   the whole roster.
   If nobody is eligible, the request changes nothing. Removal/rejoin preserves
-  individual timers. Short Rest transactions now recharge one Second Wind and
-  permit one Hit Die decision at a time after the hour, with persistent tickets
-  and immediate resource/RNG commits. [Rest controls #192](https://github.com/stdarg/OpenGold/issues/192)
-  remain pending. See [rest support](REST-RESOURCES.md) for the APIs, persistence,
-  effect handling and unsupported interruption/resumption boundaries.
+  individual timers. Short Rest transactions recharge one Second Wind and
+  offer Heal with Hit Dice after the hour, with persistent tickets and
+  immediate resource/RNG commits. A rest completes in one step or is interrupted
+  and grants nothing; it never unequips gear. See [rest support](REST-RESOURCES.md)
+  for the APIs, persistence and effect handling.
 
 ## Original campaign mappings
 
 **Camp [C]** runs ECL entry 2 before any recovery. `6DD3=255` denies rest.
 An interruption-free profile permits the requested rest for eligible members.
 New Phlan's guaranteed city-watch interruption (`6DD2=1`, `6DD3=100/101`) advances five minutes, runs
-entry 3, and grants no rest benefits. Mortality and effect timers still advance.
+entry 3, grants no rest benefits and reports "The rest was interrupted. Rest again
+to recover." There is nothing to resume. Mortality and effect timers still advance.
 Choose **GO** to leave peacefully; combat with
 the watch remains unsupported and rolls the event back. Other nonzero
 probabilistic interruption profiles fail explicitly.
@@ -85,7 +90,7 @@ campaign scheduling, quest rewards and non-shop treasure conversion remain open.
 
 `PartyState` native checkpoints retain XP, claimed reward IDs, HP/resources,
 purses, recovery timers, clock and RNG for rollback. [Campaign file save/load](SAVES.md) now persists this supported state at the party/idle-town boundaries, with fresh-process restart verification.
-The combat checkpoint format is `OGCOMBAT 27` and the rules module identity is
+The combat checkpoint format is `OGCOMBAT 28` and the rules module identity is
 `opengold.srd5` **0.6.62**. Older formats and other identities reject; see the
 [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
 

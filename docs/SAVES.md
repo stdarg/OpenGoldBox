@@ -21,10 +21,10 @@ of a campaign save; add completed characters to the party first.
 Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 19`.
-- The internal training-combat checkpoint: `OGCOMBAT 27`.
+- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 20`.
+- The internal training-combat checkpoint: `OGCOMBAT 28`.
 - Records embedded by the SRD module: character profile recipe `PC42` (an
-  explicit spell ID list), vital state `SRD9`, effect state `FX7` and
+  explicit spell ID list), vital state `SRD9`, effect state `FX8` and
   concentration `CN1`.
 
 A save or checkpoint with an older format number, or one written under a
@@ -56,16 +56,19 @@ A campaign save stores:
   active/reserve membership, selected slot and character-pool candidate identities.
 - HP/death state, opaque rules-owned resources, XP, claimed reward IDs, recovery
   timers, campaign minutes/millisecond remainder and service RNG state.
-- Lasting effects in the rules-owned SRD9/FX7 state, including individual
+- Lasting effects in the rules-owned SRD9/FX8 state, including individual
   applications, source provenance, fixed DCs, remaining duration and recovery
   schedule. Encounter scope IDs distinguish reused monster IDs across fights.
 - A completed Short Rest's spending ticket, eligible members and completion time,
   plus its next session ID. Reload continues after the last committed die without
   replaying the hour or recharge. Malformed/stale/inactive continuations reject.
-- Resumable rest activity. The camp/inn Rest dialog opens the Save dialog during
-  pending Hit Die or resumption choices. Loading retains spent resources and rest
-  progress, clears stale displayed roll messages, and reopens choices on returning
-  to the town. See [rest controls](REST-RESOURCES.md#player-rest-controls-192).
+- No rest in progress: a rest completes in one step or is interrupted, so there
+  is no resumable rest activity or dropped gear to save
+  ([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)).
+  The camp/inn Rest dialog opens the Save dialog during pending Hit Die choices.
+  Loading retains spent resources, clears stale displayed roll messages, and
+  reopens choices on returning to the town. See
+  [rest controls](REST-RESOURCES.md#player-rest-controls-192).
 - Current New Phlan script/resource context, private mutable ECL image, bound
   variables/flags, instruction spans, comparison flags, request counter and ECL
   RNG. The completed event is not replayed. Dialogue and visited cells persist;

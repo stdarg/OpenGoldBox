@@ -51,7 +51,7 @@ func run_checks() -> void:
             root.size = size; await settle(); await load_fixture("available")
             require(button.visible and not button.disabled, "Stabilize visible for legal target")
             require(button.text == ("Stabilize" if locale == "en" else "Estabilizar"), "Translated action label")
-            require(button.get_rect().end.x <= root.size.x - 300 and current_scene.get_node("Log").size.y >= 48, "New control fits beside Wake without hiding the log")
+            require(button.get_rect().end.x <= root.size.x - 300 and current_scene.get_node("Log").size.y >= 48, "New control fits without hiding the log")
             await capture("row-" + locale + "-" + str(size.x), root)
             button.grab_focus(); await key(root, KEY_SPACE); await key(root, KEY_ESCAPE)
             require(not button.disabled, "Escape cancels targeting without spending Action")
@@ -91,8 +91,8 @@ func run_checks() -> void:
             require(mind.visible, "Entire stabilization action works without a mouse")
             mind.get_node("Skip").grab_focus(); await key(mind, KEY_ENTER)
             await load_fixture("combined")
-            require(button.visible and current_scene.get_node("WakeAlly").visible, "Both aid controls remain visible")
-            var names := ["WakeAlly", "Stabilize"] if demo else ["CunningActionLabel", "CunningAction", "UseCunningAction", "WakeAlly", "Stabilize"]
+            require(button.visible, "Stabilize remains visible beside Cunning Action")
+            var names := ["Stabilize"] if demo else ["CunningActionLabel", "CunningAction", "UseCunningAction", "Stabilize"]
             for index in range(1, names.size()):
                 var previous: Control = current_scene.get_node(names[index - 1])
                 var next: Control = current_scene.get_node(names[index])

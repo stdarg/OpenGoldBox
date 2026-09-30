@@ -62,7 +62,7 @@ template <class F> std::string rejection_message(F f)
 }
 
 // The only campaign format this build reads and writes.
-constexpr unsigned current_campaign_format = 19;
+constexpr unsigned current_campaign_format = 20;
 
 // The checksum line covers only the body, so rewriting the header number
 // changes nothing but the claimed format.
@@ -343,14 +343,14 @@ void check_campaign_format_cutoff(const std::string &saved, const rules::RulesMo
                                   &town_template);
         });
     };
-    check(saved.starts_with("OPENGOLD-CAMPAIGN 19\n"), "The writer emits campaign format 19");
+    check(saved.starts_with("OPENGOLD-CAMPAIGN 20\n"), "The writer emits campaign format 20");
     check(decode_error(saved).empty(), "The current writer's campaign loads");
-    check(decode_error(with_campaign_format(saved, 18)) == rules::older_save_message,
+    check(decode_error(with_campaign_format(saved, 19)) == rules::older_save_message,
           "An older campaign format is refused as an older pre-release save");
     check(decode_error(changed_identity(saved, rules.identity().version, "0.6.61")) ==
           rules::older_save_message,
           "A campaign from another rules version is refused as an older pre-release save");
-    check(decode_error(with_campaign_format(saved, 20)) == "Unsupported campaign save version",
+    check(decode_error(with_campaign_format(saved, 21)) == "Unsupported campaign save version",
           "An unknown newer campaign format is unsupported");
 }
 
@@ -387,7 +387,7 @@ void roundtrip(const std::filesystem::path &directory)
     auto state = party->checkpoint();
     state.roster[0].vitals.hit_points = 1;
     // A single level-one slot remains; every other pool is full.
-    const std::string spent_slot = "SRD9 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 1 FX7 1 0 0 0";
+    const std::string spent_slot = "SRD9 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 1 FX8 1 0 0";
     state.roster[1].vitals.resources = spent_slot;
     // The module rewrites the description whenever it touches the vitals, so
     // keep this hand-built state consistent with what it would write.
@@ -514,7 +514,7 @@ void roundtrip(const std::filesystem::path &directory)
         (void)decode_campaign(version, *srd5::character_rules(), *rules, "fixture-v1", &base);
     });
     auto invalid = party->checkpoint();
-    invalid.roster[0].vitals.resources = "SRD9 999 0 0 0 0 0 2 0 0 0 \"\" 0 1 0 FX7 1 0 0 0";
+    invalid.roster[0].vitals.resources = "SRD9 999 0 0 0 0 0 2 0 0 0 \"\" 0 1 0 FX8 1 0 0";
     party->restore(invalid);
     auto malformed = encode_campaign(*party, nullptr, "fixture-v1");
     rejects(

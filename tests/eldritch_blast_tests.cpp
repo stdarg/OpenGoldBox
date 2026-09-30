@@ -464,7 +464,7 @@ void campaign()
             check(p.member(id).vitals == old && p.profile(id).weapon_hands == 2,
                   "Cantrip handoff retains wounds, pools and the two-handed staff");
             const auto saved = encode_campaign(p, nullptr, "eldritch");
-            check(saved.starts_with("OPENGOLD-CAMPAIGN 19\n"),
+            check(saved.starts_with("OPENGOLD-CAMPAIGN 20\n"),
                   "Every campaign uses the current save format");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "eldritch", nullptr).party);
@@ -493,13 +493,10 @@ void campaign()
             for (const auto &item : restored.member(id).character.inventory().items())
                 if (item.definition_id == "quarterstaff")
                     quarterstaffs += item.quantity;
-            for (const auto &item : restored.state().detached_items)
-                if (item.original_owner == id && item.item.definition_id == "quarterstaff")
-                    quarterstaffs += item.item.quantity;
             check(
                 quarterstaffs == 1 && restored.member(id).wealth[3] == 37 &&
                 rules->spell_access(restored.member(id).character.sheet()).cantrips.size() == 1,
-                "Rest preserves physical equipment, wealth and cast access even when sleep drops the held quarterstaff");
+                "Rest preserves physical equipment, wealth and cast access");
         }
 }
 

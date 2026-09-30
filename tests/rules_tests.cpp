@@ -46,7 +46,7 @@ std::string creature_resources(int second_winds, int successes = 0, int failures
 {
     std::ostringstream out;
     out << "SRD9 " << second_winds << " 0 0 " << successes << ' ' << failures
-        << ' ' << stable << " 0 " << death_save_in_ms << " 0 0 \"\" 0 0 0 FX7 1 0 0 0";
+        << ' ' << stable << " 0 " << death_save_in_ms << " 0 0 \"\" 0 0 0 FX8 1 0 0";
     return out.str();
 }
 
@@ -187,7 +187,7 @@ void turn_budget_tests()
             const auto wizard = [](int slots, int slots2)
             {
                 return "SRD9 0 " + std::to_string(slots) + ' ' + std::to_string(slots2) +
-                       " 0 0 0 3 0 0 0 \"\" 0 0 1 FX7 1 0 0 0";
+                       " 0 0 0 3 0 0 0 \"\" 0 0 1 FX8 1 0 0";
             };
             const std::string resources =
                 weapon                                      ? creature_resources(2)
@@ -838,7 +838,7 @@ void death_save_turn_entry_tests()
                 check(
                     hero.hit_points == 1 && !hero.dead && hero.prone &&
                     hero.persistent.resources ==
-                    "SRD9 1 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX7 1 0 0 1",
+                    "SRD9 1 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX8 1 0 1",
                     "Natural 20 restores 1 HP and clears both counters without restoring spent resources");
                 check(combat->snapshot().actor == 1 && hero.action && hero.bonus_action &&
                       hero.reaction,
@@ -1256,7 +1256,7 @@ void checkpoint_cutoff_tests()
         }
         return false;
     };
-    check(checkpoint.starts_with("OGCOMBAT 27 "), "Checkpoints use format 27");
+    check(checkpoint.starts_with("OGCOMBAT 28 "), "Checkpoints use format 27");
     auto older_format = checkpoint;
     older_format.replace(9, 2, "26");
     check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");

@@ -80,9 +80,7 @@ class CombatView : public godot::Control
     void spell_slot();
     void bonus_selected(std::int64_t index);
     void use_bonus_action();
-    void ground_selected(std::int64_t index);
-    void pick_up();
-    unsigned ground_item_{}, thrown_item_{}, light_item_{};
+    unsigned thrown_item_{}, light_item_{};
     void weapon_selected(std::int64_t index);
     bool matches_item(const opengold::rules::Command &command) const;
     void thrown_selected(std::int64_t index);
@@ -95,7 +93,6 @@ class CombatView : public godot::Control
     void confirm_nick();
     void cancel_nick();
     void nick_input(const godot::Ref<godot::InputEvent> &event);
-    std::vector<std::pair<unsigned, opengold::rules::EntityId>> item_holders_;
     unsigned spell_slot_{1};
     void training();
     void slums();

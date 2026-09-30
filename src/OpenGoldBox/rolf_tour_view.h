@@ -156,7 +156,6 @@ class RolfTourView : public godot::Control
     opengold::RestTicket rest_training_ticket_{};
     std::vector<std::string> rest_training_choice_;
     void rest_finish();
-    void rest_resume();
     void rest_save();
     void rest_input(const godot::Ref<godot::InputEvent> &event);
     opengold::MemberId rest_member_{};

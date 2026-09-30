@@ -249,7 +249,7 @@ hit consumes the original effects before applying the new hit's mastery. Champio
 continues afterward. This checkpoint introduces no optional simultaneous-effect
 control and does not resolve pending MASTERY-5/6/7.
 
-The effect state (now FX7) records these two effects. A regression test caught
+The effect state (now FX8) records these two effects. A regression test caught
 and fixed the combat identity check initially
 running before effects were read. Capacity checks reject before spending actions
 or RNG; same-source refresh and consumed Vex slots remain usable at the limit.

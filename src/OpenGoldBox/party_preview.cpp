@@ -770,6 +770,10 @@ void CharacterCreationView::party_check()
             {
                 get_node<CheckBox>("Training/Rows/Group1/athletics")->set_pressed(true);
                 get_node<CheckBox>("Training/Rows/Group1/history")->set_pressed(true);
+                for (const char *mastery :
+                        {"longsword", "handaxe", "javelin"
+                        })
+                    get_node<CheckBox>(String("Training/Rows/Group2/") + mastery)->set_pressed(true);
                 get_node<OptionButton>("Training/Rows/Group0/Choice")->select(2);
                 get_node<OptionButton>("Training/Rows/Group0/Choice")
                 ->emit_signal("item_selected", 2);

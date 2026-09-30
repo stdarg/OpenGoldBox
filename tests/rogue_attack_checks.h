@@ -334,10 +334,9 @@ void run()
         critical_verified = true;
     }
     check(critical_verified, "Actual critical Sneak hit exercised");
-    // Naturally sleeping adjacent allies are living but Incapacitated.
+    // Unconscious adjacent allies are living but Incapacitated.
     {
-        VitalState sleep{h.sheet().hit_points};
-        rules->set_rest_work(sleep, h.sheet(), RestWork::sleep);
+        const VitalState unconscious{0, false, "SRD9 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 FX8 1 0 1"};
         bool checked = false;
         for (unsigned seed = 1; seed <= 64 && !checked; ++seed)
         {
@@ -355,11 +354,11 @@ void run()
                     {
                         2,
                         "campaign-character",
-                        "Sleeping ally",
+                        "Unconscious ally",
                         0,
                         {2, 2},
                         rules->character_profile(h.sheet(), {}).data,
-                        sleep
+                        unconscious
                     },
                     {99, "target", "Target", 1, {2, 1}}
                 }};
@@ -367,12 +366,12 @@ void run()
             while (c->snapshot().actor != 1)
                 act(*c, "end");
             act(*c, "melee");
-            check(!sneaked(*c), "Sleeping adjacent ally cannot enable Sneak Attack");
+            check(!sneaked(*c), "Unconscious adjacent ally cannot enable Sneak Attack");
             checked = !last_hit(*c).empty();
         }
         check(checked, "Hit with incapacitated ally exercised");
     }
-    // Real inventory throws retain the selected weapon while the held item lands.
+    // Real inventory throws keep the weapon, like ammunition.
     for (const auto *weapon :
             {"dagger", "dart", "handaxe"
             })

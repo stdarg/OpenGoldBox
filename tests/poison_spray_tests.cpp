@@ -491,7 +491,7 @@ void campaign()
             check(p.member(id).vitals == old && p.profile(id).weapon_hands == 2,
                   "Cantrip handoff retains wounds, pools and the two-handed staff");
             const auto saved = encode_campaign(p, nullptr, "poison");
-            check(saved.starts_with("OPENGOLD-CAMPAIGN 19\n"),
+            check(saved.starts_with("OPENGOLD-CAMPAIGN 20\n"),
                   "Every campaign uses the current save format");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "poison", nullptr).party);

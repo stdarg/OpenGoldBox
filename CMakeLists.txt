@@ -69,7 +69,6 @@ add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/status_effects.cpp
     src/OpenGold.Rules.Srd5/src/life_cycle.cpp
     src/OpenGold.Rules.Srd5/src/damage.cpp
-    src/OpenGold.Rules.Srd5/src/rest_activity.cpp
     src/OpenGold.Rules.Srd5/src/recovery_timeline.cpp
 )
 target_include_directories(opengold_rules_srd5 PUBLIC src/OpenGold.Rules.Srd5/include)
@@ -389,10 +388,10 @@ if(OPENGOLD_BUILD_GAME)
 endif()
 
 if(OPENGOLD_BUILD_TESTS)
-    add_executable(opengold_natural_sleep_tests tests/natural_sleep_tests.cpp)
-    target_link_libraries(opengold_natural_sleep_tests PRIVATE opengold_core opengold_rules_srd5)
-    target_include_directories(opengold_natural_sleep_tests PRIVATE src/OpenGold.Rules.Srd5/src)
-    target_compile_definitions(opengold_natural_sleep_tests PRIVATE OPENGOLD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${CMAKE_BINARY_DIR}")
-    add_test(NAME opengold_natural_sleep_tests COMMAND opengold_natural_sleep_tests)
-    set_tests_properties(opengold_natural_sleep_tests PROPERTIES FIXTURES_SETUP sleep_fixtures)
+    add_executable(opengold_posture_tests tests/posture_tests.cpp)
+    target_link_libraries(opengold_posture_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_include_directories(opengold_posture_tests PRIVATE src/OpenGold.Rules.Srd5/src)
+    target_compile_definitions(opengold_posture_tests PRIVATE OPENGOLD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${CMAKE_BINARY_DIR}")
+    add_test(NAME opengold_posture_tests COMMAND opengold_posture_tests)
+    set_tests_properties(opengold_posture_tests PROPERTIES FIXTURES_SETUP posture_fixtures)
 endif()

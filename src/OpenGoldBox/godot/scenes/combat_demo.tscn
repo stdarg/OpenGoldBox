@@ -256,10 +256,6 @@ visible = false
 visible = false
 text = "Use Bonus Action"
 
-[node name="WakeAlly" type="Button" parent="."]
-visible = false
-text = "Wake ally"
-
 [node name="StandUp" type="Button" parent="."]
 visible = false
 text = "Stand up"
@@ -274,17 +270,6 @@ visible = false
 [node name="Throw" type="Button" parent="."]
 visible = false
 text = "Throw"
-
-[node name="GroundItemLabel" type="Label" parent="."]
-visible = false
-text = "Ground item"
-
-[node name="GroundItem" type="OptionButton" parent="."]
-visible = false
-
-[node name="PickUp" type="Button" parent="."]
-visible = false
-text = "Pick up"
 
 [node name="TacticalMind" type="Window" parent="."]
 title = "Tactical Mind"

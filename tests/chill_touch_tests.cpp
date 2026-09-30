@@ -431,12 +431,12 @@ void lifecycle()
     fx::apply_chill_touch(state, 5, 1, "First", 2000);
     fx::apply_chill_touch(state, 5, 2, "Second", 9000);
     fx::apply_ray_of_frost(state, 6, 1, "Cold", 4000);
-    state.sleeping = state.prone = true;
+    state.prone = true;
     std::ostringstream out;
     fx::write_effects(out, state);
-    check(out.str().starts_with("FX7 "), "Effect state writes the current tag");
+    check(out.str().starts_with("FX8 "), "Effect state writes the current tag");
     std::istringstream input(out.str());
-    check(fx::read_effects(input) == state, "Mixed source and sleep codec");
+    check(fx::read_effects(input) == state, "Mixed source and posture codec");
     fx::EffectSubject subject{10, state, {}};
     std::uint64_t random = 17;
     fx::elapse_effects(std::span(&subject, 1), 2000, random);
@@ -445,11 +445,11 @@ void lifecycle()
     check(!fx::healing_blocked(state, 7000), "Healing allowed at exact expiry boundary");
     fx::elapse_effects(std::span(&subject, 1), 7000, random);
     check(state.active.empty() && state.prone && random == 17,
-          "Last source expires without waking or RNG");
+          "Last source expires without changing posture or RNG");
     for (const char *bad :
-            {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX7 2 1 1 4 5 1 \"Caster\" 1 6000 0 0 0",
-             "FX7 2 1 1 4 5 1 \"Caster\" 0 12001 0 0 0", "FX7 2 1 1 4 5 1 \"Caster\" 0 6000 1 0 0",
-             "FX7 2 1 1 4 5 1 \"Caster\" 0 6000 0 1 0"
+            {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX8 2 1 1 4 5 1 \"Caster\" 1 6000 0 0",
+             "FX8 2 1 1 4 5 1 \"Caster\" 0 12001 0 0", "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 1 0",
+             "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 0 2"
             })
         rejects(
             [&]
@@ -467,7 +467,7 @@ VitalState blocked_state(const RulesModule &rules, const Character &h, int hp)
     auto at = result.resources.find("FX");
     check(at != result.resources.npos, "Orc fixture carries effect record");
     result.resources.replace(at, result.resources.size() - at,
-                             "FX7 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0");
+                             "FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0");
     return result;
 }
 
@@ -626,61 +626,42 @@ void combat_death_save()
     check(covered, "Actual blocked combat natural 20 exercised");
 }
 
-void death_save_boundary()
+void death_saves_outside_combat()
 {
     const auto rules = module();
     const auto fixture_rules = custom();
     const auto h = hero("fighter", 2);
-    for (unsigned duration :
-            {
-                5999u, 6000u, 6001u
-            })
-    {
-        auto vitality = blocked_state(*fixture_rules, h, 1);
-        const auto timer = vitality.resources.find("0 9000 0");
-        check(timer != std::string::npos, "Known prevention timer");
-        vitality.resources.replace(timer, 8, "0 " + std::to_string(duration) + " 0");
-        rules->set_hit_points(vitality, h.sheet(),
-                              0); // Real damage path starts the 6000 ms death-save clock.
-        CampaignParty whole(module());
-        const auto id = whole.add_pc(h);
-        auto state = whole.checkpoint();
-        state.roster[0].vitals = vitality;
-        state.random_state = 17;
-        state.next_combat_scope = 6;
-        whole.restore(state);
-        CampaignParty pieces(module());
-        pieces.restore(state);
-        whole.advance_time_milliseconds(6000);
-        pieces.advance_time_milliseconds(1999);
-        pieces.advance_time_milliseconds(1000);
-        pieces.advance_time_milliseconds(3000);
-        check(pieces.member(id).vitals.hit_points == 0 && pieces.state().random_state == 17,
-              "No early death save or extra effect RNG");
-        const auto pending = encode_campaign(pieces, nullptr, "chill-death-boundary");
-        CampaignParty loaded(module());
-        loaded.restore(decode_campaign(pending, *srd5::character_rules(), *rules,
-                                       "chill-death-boundary", nullptr)
-                       .party);
-        loaded.advance_time_milliseconds(1);
-        check(
-            encode_campaign(loaded, nullptr, "chill-death-boundary") ==
-            encode_campaign(whole, nullptr, "chill-death-boundary"),
-            "Partitioning time and saving immediately before death save preserves exact continuation");
-        // Independent SplitMix64 calculation: seed 17's first d20 is 20, one draw.
-        check(whole.state().random_state == 17 + 0x9e3779b97f4a7c15ULL,
-              "Death save uses exactly one roll");
-        check(
-            whole.member(id).vitals.hit_points == (duration > 6000 ? 0 : 1),
-            "Natural 20 heals at/after prevention expiry, remains blocked one millisecond before expiry");
-        if (duration > 6000)
-        {
-            whole.advance_time_milliseconds(1);
-            check(!fx::healing_blocked(effects(whole.member(id).vitals)) &&
-                  whole.member(id).vitals.hit_points == 0,
-                  "Expired prevention does not replay a blocked death-save heal");
-        }
-    }
+    auto vitality = blocked_state(*fixture_rules, h, 1);
+    rules->set_hit_points(vitality, h.sheet(), 0); // Real damage path: dying, not Stable.
+    CampaignParty whole(module());
+    const auto id = whole.add_pc(h);
+    auto state = whole.checkpoint();
+    state.roster[0].vitals = vitality;
+    state.random_state = 17;
+    state.next_combat_scope = 6;
+    whole.restore(state);
+    CampaignParty pieces(module());
+    pieces.restore(state);
+    whole.advance_time_milliseconds(6000);
+    pieces.advance_time_milliseconds(1);
+    const auto settled = encode_campaign(pieces, nullptr, "chill-death-saves");
+    CampaignParty loaded(module());
+    loaded.restore(
+        decode_campaign(settled, *srd5::character_rules(), *rules, "chill-death-saves", nullptr)
+        .party);
+    loaded.advance_time_milliseconds(1999);
+    loaded.advance_time_milliseconds(4000);
+    check(encode_campaign(loaded, nullptr, "chill-death-saves") ==
+          encode_campaign(whole, nullptr, "chill-death-saves"),
+          "Death saves resolved in the first moment continue identically after save/load");
+    const auto &settled_vitals = whole.member(id).vitals;
+    // Independent SplitMix64 calculation: seed 17's first d20 is 20, so more
+    // than one draw proves the blocked natural 20 counted only as a success.
+    check(settled_vitals.hit_points == 0 &&
+          (settled_vitals.dead ||
+           settled_vitals.description.find("Stable") != std::string::npos) &&
+          whole.state().random_state != 17 + 0x9e3779b97f4a7c15ULL,
+          "While Chill Touch prevents healing, a natural 20 is a success, not 1 HP");
 }
 
 void persistence()
@@ -802,7 +783,7 @@ VitalState stable_blocked(unsigned deadline = 1000)
 {
     return {0, false,
             "SRD9 2 0 0 0 0 1 2 0 " + std::to_string(deadline) +
-            " 0 \"\" 2 1 0 FX7 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0"};
+            " 0 \"\" 2 1 0 FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0"};
 }
 
 void stable_continuation()
@@ -828,7 +809,7 @@ void stable_continuation()
     check(encode_campaign(loaded, nullptr, "earned-recovery") == bytes,
           "Pending earned recovery round trips exactly");
     auto no_block = pending;
-    no_block.resources.replace(no_block.resources.find("FX7"), std::string::npos, "FX7 1 0 0 0");
+    no_block.resources.replace(no_block.resources.find("FX8"), std::string::npos, "FX8 1 0 0");
     rejects(
         [&]
     {
@@ -890,7 +871,7 @@ void stable_actual_cast()
                 0,
                 {2, 1},
                 {},
-                VitalState{0, false, "SRD9 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 FX7 1 0 0 0"}
+                VitalState{0, false, "SRD9 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 FX8 1 0 0"}
             },
             {99, "vanguard", "Enemy", 1, {6, 1}}
         }},
@@ -961,7 +942,7 @@ int main()
         recovery();
         healing_spells();
         combat_death_save();
-        death_save_boundary();
+        death_saves_outside_combat();
         persistence();
         earned_lifecycle();
         stable_timeline();

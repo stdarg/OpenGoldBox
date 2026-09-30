@@ -413,7 +413,7 @@ void recovery()
     {
         auto bad = spent;
         // Action Surge uses precede Arcane Recovery uses and the effects.
-        const auto effects = bad.resources.find(" FX7");
+        const auto effects = bad.resources.find(" FX8");
         const auto arcane = bad.resources.rfind(' ', effects - 1);
         const auto begin = bad.resources.rfind(' ', arcane - 1) + 1;
         bad.resources.replace(begin, arcane - begin, value);

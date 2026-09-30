@@ -138,7 +138,7 @@ unsigned side = 0)
                 side,
                 target,
                 {},
-                VitalState{0, false, "SRD9 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"}
+                VitalState{0, false, "SRD9 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 FX8 1 0 0"}
             },
             {99, "vanguard", "Enemy", 1, {6, 6}}
         }},
@@ -447,7 +447,7 @@ void fixtures()
                 0,
                 {2, 1},
                 {},
-                VitalState{0, false, "SRD9 2 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"}
+                VitalState{0, false, "SRD9 2 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 FX8 1 0 0"}
             },
             {99, "vanguard", "Enemy", 1, {6, 6}}
         };
@@ -486,28 +486,19 @@ void fixtures()
                     0,
                     {2, 1},
                     {},
-                    VitalState{0, false, "SRD9 2 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"}
-                },
-                {
-                    3,
-                    "vanguard",
-                    "Sleeper",
-                    0,
-                    {1, 2},
-                    {},
-                    VitalState{28, false, "SRD9 2 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX7 1 0 1 1"}
+                    VitalState{0, false, "SRD9 2 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 FX8 1 0 0"}
                 },
                 {99, "vanguard", "Enemy", 1, {6, 6}}
             }},
         seed);
         while (c->snapshot().actor != 1)
             act(*c, "end");
-        if (!has(*c, "stabilize") || !has(*c, "wake_ally"))
+        if (!has(*c, "stabilize"))
             continue;
         std::ofstream(dir / "combined.save", std::ios::binary) << c->save();
         done = true;
     }
-    check(done, "Combined Cunning/Wake/Stabilize fixture available");
+    check(done, "Combined Cunning/Stabilize fixture available");
 }
 } // namespace
 

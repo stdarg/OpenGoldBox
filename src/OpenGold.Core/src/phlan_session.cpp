@@ -263,13 +263,6 @@ void RolfTourSession::claim_loot()
     }
 }
 
-void RolfTourSession::commit_rest_recovery()
-{
-    if (snapshot_.phase == TourPhase::combat && encounter_ && campaign_ &&
-            !campaign_->in_combat() && saved_campaign_)
-        saved_campaign_ = campaign_->checkpoint();
-}
-
 const std::vector<AnimationFrame> *RolfTourSession::monster_picture() const
 {
     if (!showing_monster_picture_)
@@ -439,45 +432,23 @@ void RolfTourSession::finish_event()
             // Only the verified guaranteed New Phlan profile is supported.
             if (watch && (interval != 1 || (chance != 100 && chance != 101)))
                 throw EclError("Unsupported probabilistic camp interruption");
-            if (resuming_camp_)
-                campaign_->resume_rest(campaign_->state().rest_activity->ticket);
-            else
-                (void)campaign_->begin_rest(camp_kind_);
-            bool completed = false;
-            if (campaign_->state().rest_activity)
+            // The watch interrupts every rest here five minutes in. An interrupted
+            // rest grants nothing and leaves nothing to resume; the party rests again.
+            if (watch)
             {
-                const auto duration = campaign_->remaining_rest_milliseconds();
-                completed = campaign_
-                            ->advance_rest(campaign_->state().rest_activity->ticket,
-                                           watch ? std::min<std::uint64_t>(duration, 5 * 60000)
-                                           : duration,
-                                           campaign_->state().rest_activity->work)
-                            .has_value();
-            }
-            else if (watch)
                 campaign_->advance_time(5);
-            if (watch && !completed)
-            {
-                std::vector<MemberId> affected;
-                for (auto id : campaign_->state().slots)
-                    if (id)
-                        affected.push_back(id);
-                campaign_->loud_noise(affected);
                 synchronize_clock();
                 event_stage_ = 5;
                 if (!machine_.start(3))
                     throw EclError("Cannot enter camp interruption script");
                 return;
             }
-            if (completed && resuming_camp_)
-                snapshot_.dialogue +=
-                    "\nLong rest complete: eligible members recovered HP and supported resources.";
-            if (completed && !resuming_camp_)
+            if (campaign_->rest(camp_kind_))
                 snapshot_.dialogue +=
                     camp_kind_ == RestKind::short_rest
                     ? "\nShort rest complete: one hour passed; eligible members can spend Hit Dice."
                     : "\nLong rest complete: eight hours passed; eligible members recovered HP and supported resources.";
-            else if (!completed)
+            else
                 snapshot_.dialogue += "\nRest denied: no active member is eligible.";
             for (const auto &w : character_reply(selected_character_).writes)
                 machine_.bind_variable(w.address, w.value);
@@ -485,11 +456,7 @@ void RolfTourSession::finish_event()
         }
     }
     if (event_stage_ == 5)
-    {
-        if (campaign_->state().rest_activity)
-            campaign_->abandon_rest(campaign_->state().rest_activity->ticket);
-        snapshot_.dialogue += "\nRest interrupted after five minutes; no recovery granted.";
-    }
+        snapshot_.dialogue += "\nThe rest was interrupted. Rest again to recover.";
     checkpoint_.reset();
     snapshot_.phase = TourPhase::completed;
     snapshot_.choices.clear();
@@ -942,7 +909,6 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 dungeon_battlefield(map_, p.x, p.y), staged_enemies_, staged_art_,
                 area_resources().terrain_art,        p.facing,        machine_.variable(0x6DCB)};
-            (void)campaign_->prepare_combat();
             combat_request_ = request.id;
             // The original shows the approached monster's close-up until a key press.
             showing_monster_picture_ = monster_picture_id_ &&

@@ -23,7 +23,7 @@ void lifecycle()
           "Slow refreshes its source; repeated Slow/Frost do not stack, distinct effects combine");
     std::ostringstream out;
     fx::write_effects(out, e);
-    check(out.str().starts_with("FX7 "), "Slow uses the current FX7 tag");
+    check(out.str().starts_with("FX8 "), "Slow uses the current FX8 tag");
     std::istringstream in(out.str());
     check(fx::read_effects(in) == e, "All Slow sources and clocks round trip");
     auto forged = out.str();
@@ -73,9 +73,9 @@ void lifecycle()
         check(e == before, "Malformed Slow duration rejects atomically");
     }
     for (const auto bytes :
-            {"FX7 2 1 1 7 777 99 \"Master\" 1 6000 0 0 0",
-             "FX7 2 1 1 7 777 99 \"Master\" 0 6001 0 0 0",
-             "FX7 2 1 1 7 777 99 \"Master\" 0 6000 1 0 0"
+            {"FX8 2 1 1 7 777 99 \"Master\" 1 6000 0 0",
+             "FX8 2 1 1 7 777 99 \"Master\" 0 6001 0 0",
+             "FX8 2 1 1 7 777 99 \"Master\" 0 6000 1 0"
             })
         rejects(
             [&]

@@ -75,11 +75,16 @@ The user explicitly declined ammunition tracking on 2026-09-25. [#57](https://gi
 is no longer planned: a ranged weapon has unlimited ammunition, with no inventory
 prerequisite, expenditure or recovery. This retains existing behavior, not newly
 implemented SRD expenditure/recovery. Existing saved ammunition items remain
-readable; physical Thrown weapons remain distinct. [Policy and evidence](AMMUNITION.md)
+readable. Since [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation) Thrown weapons work the same way. [Policy and evidence](AMMUNITION.md)
 record the decision, runtime `79558fd`, all-class weapon tests and compatibility.
 Do not reopen tracking as a missing SRD feature without explicit approval.
 
 ## Thrown weapon inventory
+
+**Current behavior ([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)):** throwing works like ammunition. The
+weapon stays held or carried; there is no landing square, ground item, spent
+quantity, pickup or stowing. The Thrown weapon dropdown and Throw button remain
+so carried Thrown weapons can be thrown. The history below records #58.
 
 Runtime `5d7813d` (module 0.6.47) completes [#58](https://github.com/stdarg/OpenGold/issues/58):
 all seven Thrown weapons can be drawn from real carried stacks, thrown once,
@@ -222,6 +227,15 @@ no compatibility reduction, no agents/new tasks/model changes; goal remains paus
 
 ## Delivered batch B — rest workflow
 
+**Current behavior ([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)):** a rest completes in one step or is
+interrupted and grants nothing; there is no resumable activity, partial credit,
+natural sleep, Wake ally, dropped gear, Ground item/Pick up or safe recovery.
+A character resting when an encounter interrupts starts awake and Prone, and a
+won fight rolls its dying characters' remaining death saves at once, logging
+each. [Rest resources](REST-RESOURCES.md#current-behavior-simplify-1-2026-09-30)
+and [Recovery clocks](RECOVERY-CLOCKS.md) describe it. The history below
+records the #30/#193 delivery.
+
 #30/#193 are delivered with the reviewed #192 player rest controls. The existing campaign adapter's unverified high-chance
 profiles now reject rather than masquerading as guaranteed city-watch events.
 Independent regressions failed before the guard correction and pass afterward;
@@ -245,7 +259,7 @@ Q29–35 and Q37 are approved; Q37 supersedes Q36. See the
 
 The shared game/demo Rest dialog now delivers Q29–31: Short/Long choice,
 per-member eligibility/resources, sequential committed dice, Finish/Escape,
-camp/inn saving, reload and retained-rest Resume/End. Original permissions and
+camp/inn saving, reload and retained-rest Resume/End (the last removed by SIMPLIFY-1). Original permissions and
 inn payment remain authoritative. [Controls and acceptance evidence](REST-RESOURCES.md#player-rest-controls-192).
 `opengold_godot_rest` exercises actual controls and keyboard actions; campaign
 restart tests cover pending spending through the real save/load host.
@@ -283,7 +297,7 @@ and no migration code remains.
 
 | [F04a](https://github.com/stdarg/OpenGold/issues/194): mortality recovery clocks | SRD 5.2.1 pp. 17–18. Shared death-save, stabilization, damage and healing transitions; one rolled 1d4-hour Stable delay, combat elapsed countdown and exact next-turn death-save timing. | [life_cycle.cpp](../src/OpenGold.Rules.Srd5/src/life_cycle.cpp) stores value-based recovery state. [recovery_clock_tests.cpp](../tests/recovery_clock_tests.cpp) verifies golden RNG/rolls, deadlines, damage/healing, migration, rejected timers, campaign/combat persistence, training/advancement and pending reactions. No new controls. | Module 0.6.11 / SRD5 / combat 10; campaign 10 and PC7 unchanged. Frozen 0.6.10 saves preserve spent dice/slots, Stable and unstable members, a dead member, a reserve and pending movement. Legacy delays initialize without inventing elapsed time or rolling on load. [Campaign scheduling #195](https://github.com/stdarg/OpenGold/issues/195) completes F04 separately. |
 
-| [F04c](https://github.com/stdarg/OpenGold/issues/195): campaign recovery | SRD 5.2.1 pp. 17–18. Six-second death-save turns and one rolled Stable deadline continue through exploration, waits, rests and encounter boundaries. | [recovery_timeline.cpp](../src/OpenGold.Rules.Srd5/src/recovery_timeline.cpp) combines mortality and effect deadlines. [campaign_recovery_tests.cpp](../tests/campaign_recovery_tests.cpp) verifies fixed rolls, time partitions, reserves, saves, encounters, rest eligibility and failed-event rollback; the Godot route exercises a zero-HP companion and reserve through original camp/temple/inn callbacks. | Module 0.6.12; existing campaign 10 / combat 10 / SRD5 / PC7 schemas. No load-time rolls, double combat processing, rest benefits from natural recovery or UI changes. Completes #31; Help/Medicine remains #32. |
+| [F04c](https://github.com/stdarg/OpenGold/issues/195): campaign recovery | SRD 5.2.1 pp. 17–18. One rolled Stable deadline continues through exploration, waits, rests and encounter boundaries. The six-second outside-combat death-save turns were replaced by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation): remaining death saves resolve at once after a won fight or when campaign time passes. | [recovery_timeline.cpp](../src/OpenGold.Rules.Srd5/src/recovery_timeline.cpp) combines mortality and effect deadlines. [campaign_recovery_tests.cpp](../tests/campaign_recovery_tests.cpp) verifies fixed rolls, time partitions, reserves, saves, encounters, rest eligibility and failed-event rollback; the Godot route exercises a zero-HP companion and reserve through original camp/temple/inn callbacks. | Module 0.6.12; existing campaign 10 / combat 10 / SRD5 / PC7 schemas. No load-time rolls, double combat processing, rest benefits from natural recovery or UI changes. Completes #31; Help/Medicine remains #32. |
 
 | [F05](https://github.com/stdarg/OpenGold/issues/33): typed damage and defenses | SRD 5.2.1 pp. 16–17, 84, 91, 146. Typed damage; nonstacking resistance/vulnerability/immunity; type-specific rounding; Dwarf Poison resistance. | [damage.cpp](../src/OpenGold.Rules.Srd5/src/damage.cpp) resolves mixed damage and sourced defenses. [damage_tests.cpp](../tests/damage_tests.cpp) runs Poison attacks against Dwarves in all twelve classes, every supported weapon, Fire Bolt/Scorching Ray/Magic Missile, migration and malformed data. Existing Godot Modifiers/log presentation is reused. | Module 0.6.13 / PC8; campaign/combat 10 and SRD1–5 retained. Frozen 0.6.12 writer fixtures preserve resources, RNG, clocks and pending reactions; newly supported fixed resistance is sourced to the saved species. Temporary HP #34, remaining Dwarf traits #66 and full spell conformance remain separate. |
 

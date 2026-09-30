@@ -72,7 +72,7 @@ void choices_and_sources()
             }),
             "Scholar source remains level two");
             const auto bytes = encode_campaign(party, nullptr, "scholar");
-            check(bytes.starts_with("OPENGOLD-CAMPAIGN 19\n"),
+            check(bytes.starts_with("OPENGOLD-CAMPAIGN 20\n"),
                   "Wizard spell history is written in the current campaign format");
             CampaignParty restored(module());
             restored.restore(
@@ -147,7 +147,7 @@ void medicine_combat()
                     0,
                     {2, 1},
                     {},
-                    VitalState{0, false, "SRD9 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 FX7 1 0 0 0"}
+                    VitalState{0, false, "SRD9 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 FX8 1 0 0"}
                 },
                 {99, "vanguard", "Enemy", 1, {6, 6}}
             }};

@@ -596,8 +596,8 @@ void physical_and_damage()
                 roundtrip(*r, *c);
                 choose(*c, "effect_use", 1);
                 roundtrip(*r, *c);
-                check(c->snapshot().held_items.front().holder == 0,
-                      "Mastery does not recover the thrown weapon");
+                check(c->snapshot().held_items.front().holder == 1,
+                      "The thrown weapon stays with its thrower through mastery");
                 tested = true;
             }
             check(tested, "Immediate and deferred thrown mastery provenance covered");
@@ -691,7 +691,7 @@ void unconscious_cleave()
     auto e = encounter(*r, hero("greataxe", "fighter", "soldier"), "greataxe");
     e.participants.push_back({98, "mastery_target", "Unconscious ally", 0, {2, 2}});
     e.participants.back().state =
-        VitalState{0, false, "SRD9 0 0 0 0 0 1 0 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+        VitalState{0, false, "SRD9 0 0 0 0 0 1 0 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
     bool tested = false;
     for (unsigned seed = 1; seed < 32 && !tested; ++seed)
     {

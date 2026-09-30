@@ -73,7 +73,7 @@ CombatantView unit(const CombatSession &s, EntityId id)
 
 fx::EffectState effects(const VitalState &state)
 {
-    const auto where = state.resources.find("FX7");
+    const auto where = state.resources.find("FX8");
     if (where == std::string::npos)
         return {};
     std::istringstream input(state.resources.substr(where));
@@ -83,7 +83,7 @@ fx::EffectState effects(const VitalState &state)
 // Replaces the effect tail of a complete vital record taken from a live session.
 VitalState with_effects(VitalState state, const fx::EffectState &effects)
 {
-    const auto at = state.resources.find("FX7");
+    const auto at = state.resources.find("FX8");
     check(at != std::string::npos, "Fixture has complete resource state");
     std::ostringstream out;
     fx::write_effects(out, effects);
@@ -247,13 +247,13 @@ void codec()
     std::istringstream input(output.str());
     check(fx::read_effects(input) == original, "All effect fields round trip");
     for (const auto *bad :
-            {"FX1 2 0", "FX7 0 0 0 0", "FX7 -1 0 0 0", "FX7 2 129 0 0",
-             "FX7 2 1 1 99 77 99 \"Caster\" 13 60000 6000 0 0",
-             "FX7 2 1 1 1 0 99 \"Caster\" 13 60000 6000 0 0",
-             "FX7 2 1 1 1 77 99 \"Caster\" 13 0 6000 0 0",
-             "FX7 2 1 1 1 77 99 \"Caster\" 13 60001 6000 0 0",
-             "FX7 2 1 1 1 77 99 \"Caster\" 13 60000 0 0 0",
-             "FX7 2 1 2 1 77 99 \"Caster\" 13 60000 6000 0 0"
+            {"FX1 2 0", "FX8 0 0 0", "FX8 -1 0 0", "FX8 2 129 0",
+             "FX8 2 1 1 99 77 99 \"Caster\" 13 60000 6000 0",
+             "FX8 2 1 1 1 0 99 \"Caster\" 13 60000 6000 0",
+             "FX8 2 1 1 1 77 99 \"Caster\" 13 0 6000 0",
+             "FX8 2 1 1 1 77 99 \"Caster\" 13 60001 6000 0",
+             "FX8 2 1 1 1 77 99 \"Caster\" 13 60000 0 0",
+             "FX8 2 1 2 1 77 99 \"Caster\" 13 60000 6000 0"
             })
         rejects(
             [&]
@@ -301,7 +301,7 @@ void combat()
     auto restored = rules->restore(s->save());
     check(restored->save() == s->save(), "Active effects survive checkpoint exactly");
     auto corrupt = s->save();
-    const auto fx_position = corrupt.find("FX7 2 1");
+    const auto fx_position = corrupt.find("FX8 2 1");
     check(fx_position != std::string::npos, "Active effect is encoded");
     corrupt.replace(fx_position, 3, "FX9");
     rejects(

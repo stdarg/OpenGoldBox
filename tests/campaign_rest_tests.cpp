@@ -60,15 +60,15 @@ Character hero(std::string klass = "fighter", unsigned level = 4)
 // spell slot spent; Hit Dice, Action Surge and Arcane Recovery stay unspent.
 std::string spent_resources(std::string_view character_class)
 {
-    return character_class == "Wizard" ? "SRD9 0 0 3 0 0 0 4 0 0 0 \"\" 0 0 1 FX7 1 0 0 0"
-           : "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0";
+    return character_class == "Wizard" ? "SRD9 0 0 3 0 0 0 4 0 0 0 \"\" 0 0 1 FX8 1 0 0"
+           : "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX8 1 0 0";
 }
 
 // A level-four human Fighter at 0 HP, still rolling death saves.
 std::string dying_resources(int successes, int failures)
 {
     return "SRD9 0 0 0 " + std::to_string(successes) + ' ' + std::to_string(failures) +
-           " 0 4 6000 0 0 \"\" 0 1 0 FX7 1 0 0 0";
+           " 0 4 6000 0 0 \"\" 0 1 0 FX8 1 0 0";
 }
 
 std::string saved(const CampaignParty &p)
@@ -147,52 +147,14 @@ class AlternateRestRules final : public RulesModule
         return {3, 0};
     }
 
-    RestProgress begin_rest(RestKind kind) const override
+    void recover_short_rest(VitalState &vitals, const CharacterSheet &) const override
     {
-        RestProgress p;
-        p.kind = kind;
-        p.work = RestWork::light_activity;
-        return p;
-    }
-
-    RestTransition interrupt_rest(const RestProgress &before, RestInterruption cause) const override
-    {
-        if (before.kind == RestKind::long_rest)
-            return {}; // Opposite of SRD: cancellation.
-        auto p = before;
-        p.interrupted = true;
-        p.interruption = cause;
-        return {p};
-    }
-
-    RestProgress resume_rest(const RestProgress &before) const override
-    {
-        auto p = before;
-        p.interrupted = false;
-        return p;
-    }
-
-    std::uint64_t remaining_rest(const RestProgress &) const override
-    {
-        return 120000;
-    }
-
-    RestTransition advance_rest(const RestProgress &, std::uint64_t, RestWork work) const override
-    {
-        check(work == RestWork::light_activity, "Core must use the module's default work");
-        return {std::nullopt, RestBenefit::long_rest, 120000};
+        vitals.hit_points = 5;
     }
 
     void recover(VitalState &vitals, const CharacterSheet &) const override
     {
         vitals.hit_points = 7;
-    }
-
-    std::vector<unsigned> released_equipment(const CharacterSheet &, const VitalState &,
-            std::span<const std::string> gear) const override
-    {
-        return gear.empty() ? std::vector<unsigned> {} :
-               std::vector<unsigned> {0};
     }
 };
 
@@ -203,23 +165,17 @@ void alternate_rules_boundary()
     const auto armor = person.inventory().add("chain_mail", "Alternate rest armor");
     const auto id = party.add_pc(std::move(person));
     party.equip(id, armor);
-    auto ticket = *party.begin_rest(RestKind::short_rest);
-    check(party.member(id).equipped.empty() && party.state().detached_items.size() == 1 &&
-          party.state().detached_items[0].item.definition_id == "chain_mail",
-          "Core obeys module equipment releases even for awake Short Rest armor");
-    party.interrupt_rest(ticket, RestInterruption::damage);
-    check(party.state().rest_activity && party.state().rest_activity->interrupted &&
-          !party.state().short_rest,
-          "Core permits module-defined Short Rest resumption without SRD benefits");
-    party.resume_rest(party.state().rest_activity->ticket);
-    party.abandon_rest(party.state().rest_activity->ticket);
-    ticket = *party.begin_rest(RestKind::long_rest);
-    party.interrupt_rest(ticket, RestInterruption::damage);
-    check(!party.state().rest_activity, "Core permits module-defined Long Rest cancellation");
-    const auto result = party.rest(RestKind::short_rest);
-    check(result && result->duration_minutes == 2 && party.member(id).vitals.hit_points == 7 &&
-          !party.state().short_rest && party.state().time_minutes == 2,
-          "Core applies module-defined completion benefits instead of branching on rest kind");
+    const auto short_rest = party.rest(RestKind::short_rest);
+    check(short_rest && short_rest->duration_minutes == 2 && short_rest->spending &&
+          party.member(id).vitals.hit_points == 5 && party.state().time_minutes == 2,
+          "Core applies the module's Short Rest duration and benefits");
+    party.finish_short_rest(*short_rest->spending);
+    const auto long_rest = party.rest(RestKind::long_rest);
+    check(long_rest && long_rest->duration_minutes == 3 &&
+          party.member(id).vitals.hit_points == 7 && party.state().time_minutes == 5,
+          "Core applies the module's Long Rest duration and benefits");
+    check(party.member(id).equipped == std::vector<std::uint64_t> {armor},
+          "Resting never unequips gear");
 }
 
 void individual_eligibility()
@@ -239,7 +195,7 @@ void individual_eligibility()
     state.roster[1].last_rest_minutes = 41;
     state.roster[1].last_rest_subminute_milliseconds = 4000;
     state.roster[2].vitals = {0, false, dying_resources(1, 2)};
-    state.roster[3].vitals = {0, true, "SRD9 0 0 0 0 3 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0"};
+    state.roster[3].vitals = {0, true, "SRD9 0 0 0 0 3 0 4 0 0 0 \"\" 0 1 0 FX8 1 0 0"};
     party.restore(state);
     const auto before = saved(party);
     const auto info = party.rest_info(RestKind::long_rest);
@@ -277,7 +233,7 @@ void individual_eligibility()
 
     check(party.member(unconscious).vitals.dead &&
           party.member(unconscious).vitals.resources ==
-          "SRD9 0 0 0 1 4 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0" &&
+          "SRD9 0 0 0 1 4 0 4 0 0 0 \"\" 0 1 0 FX8 1 0 0" &&
           !party.member(unconscious).last_rest_minutes,
           "Ineligible mortality continues without replenishing resources or recording a rest");
     check(
@@ -572,8 +528,8 @@ void effects_once()
     for (auto &m : state.roster)
         m.vitals = {1,
                     false,
-                    "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX7 2 1 1 1 77 99 \"Source caster\" 13 "
-                    "43000 2000 0 0"
+                    "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX8 2 1 1 1 77 99 \"Source caster\" 13 "
+                    "43000 2000 0"
                    };
     for (const auto kind :
             {
@@ -591,8 +547,8 @@ void effects_once()
               party.state().random_state != state.random_state,
               "Rest performs exactly the same timed recovery rolls as one elapsed interval");
         for (const auto &m : party.state().roster)
-            check(m.vitals.resources.ends_with("FX7 2 0 0 0"),
-                  "Timed effects expire and safe rest completion stands able sleepers");
+            check(m.vitals.resources.ends_with("FX8 2 0 0"),
+                  "Timed effects expire during the rest");
         check(party.member(reserve).vitals == elapsed.member(reserve).vitals,
               "Reserve effects advance without receiving rest recharge");
         if (party.state().short_rest)
@@ -671,22 +627,6 @@ void campaign_services()
     check(resumed->member(id).vitals.hit_points == healed_hp &&
           disk.town->script_variable(0x6c19) == healed_hp,
           "Next script cannot overwrite committed Hit Die healing with stale HP");
-    (void)resumed->begin_rest(RestKind::long_rest);
-    for (unsigned phase = 0; phase < 2; ++phase)
-    {
-        const auto before = encode_campaign(*resumed, &*disk.town, "campaign-rest");
-        check(!disk.town->explore(por::ExplorationCommand::turn_left) &&
-              !disk.town->explore(por::ExplorationCommand::forward) &&
-              !disk.town->explore(por::ExplorationCommand::look) &&
-              !disk.town->camp(RestKind::long_rest),
-              "Active or interrupted rest blocks unrelated campaign events");
-        check(encode_campaign(*resumed, &*disk.town, "campaign-rest") == before,
-              "Blocked exploration preserves party and town state");
-        if (!phase)
-            resumed->interrupt_rest(resumed->state().rest_activity->ticket,
-                                    RestInterruption::initiative);
-    }
-    resumed->abandon_rest(resumed->state().rest_activity->ticket);
     for (const auto kind :
             {
                 RestKind::short_rest, RestKind::long_rest
@@ -704,15 +644,10 @@ void campaign_services()
             settle(blocked);
             check(blocked.camp(kind), "Both kinds enter the original camp checks");
             settle(blocked);
-            auto expected = state.roster[0].vitals;
-            if (chance == 100 || chance == 101)
-            {
-                module()->set_rest_work(expected, state.roster[0].character.sheet(),
-                                        RestWork::light_activity);
-                (void)module()->recover_at_safety(expected, state.roster[0].character.sheet(), {});
-            }
             check(
-                !party->state().short_rest && party->member(id).vitals == expected &&
+                !party->state().short_rest &&
+                party->member(id).vitals.hit_points == state.roster[0].vitals.hit_points &&
+                party->member(id).vitals.resources == state.roster[0].vitals.resources &&
                 party->state().random_state == 42 &&
                 party->state().time_minutes == ((chance == 100 || chance == 101) ? 5 : 0),
                 "Forbidden, unsupported and five-minute interrupted camps grant neither resources nor spending rights");
@@ -735,7 +670,7 @@ void campaign_services()
           "A failed inn continuation rolls back the entire rest transaction");
 }
 
-void watch_equipment_and_rollback()
+void watch_interruption_and_rollback()
 {
     for (const bool failure :
             {
@@ -776,20 +711,18 @@ void watch_equipment_and_rollback()
         if (failure)
         {
             check(saved(*party) == before && !town.script_diagnostics().empty(),
-                  "Failed watch continuation rolls back sleep, equipment, time and RNG");
+                  "Failed watch continuation rolls back time and RNG");
             continue;
         }
-        check(party->state().time_minutes == 5 && !party->state().rest_activity &&
-              !party->state().short_rest && party->state().detached_items.empty(),
-              "Obeying watch safely ends the five-minute camp");
+        check(party->state().time_minutes == 5 && !party->state().short_rest &&
+              town.snapshot().dialogue.find("The rest was interrupted.") != std::string::npos,
+              "The watch interrupts the rest after five minutes and says so");
         const auto &member = party->member(owner);
-        const auto items = member.character.inventory().items();
-        check(member.equipped.empty() && items.size() == 1 &&
-              items.front().name == "Watch camp sword" && items.front().id != sword,
-              "Watch route really drops and recollects the same equipment into inventory");
+        check(member.equipped == std::vector<std::uint64_t> {sword},
+              "An interrupted rest leaves equipment untouched");
         check(member.vitals.hit_points == 1 && winds(member) == 0 &&
               party->state().random_state == 42,
-              "Watch wake and collection grant no recovery or RNG draws");
+              "An interrupted rest grants no recovery and draws no RNG");
     }
 }
 
@@ -801,50 +734,7 @@ std::string payload(std::string body)
         hash ^= c;
         hash *= 1099511628211ULL;
     }
-    return "OPENGOLD-CAMPAIGN 19\n" + std::to_string(hash) + '\n' + body;
-}
-
-void resumption_services()
-{
-    for (const auto chance :
-            {
-                0u, 255u, 50u, 100u
-            })
-    {
-        auto party = std::make_shared<CampaignParty>(module());
-        party->add_pc(hero());
-        auto script = program(
-        {9, 0, 1, 1, 0xd2, 0x6d, 9, 0, static_cast<std::uint8_t>(chance), 1, 0xd3, 0x6d, 0});
-        auto resources = std::make_shared<por::PhlanResources>();
-        resources->programs[0] = script;
-        por::RolfTourSession town({}, script, {}, 0x9914, {}, resources);
-        town.campaign_party(party);
-        settle(town);
-        const auto start = party->begin_rest(RestKind::long_rest);
-        (void)party->advance_rest(*start, 70 * 60000, RestWork::sleep);
-        party->interrupt_rest(party->state().rest_activity->ticket, RestInterruption::initiative);
-        check(!town.resume_camp(), "Pending dice prevent camp resumption");
-        party->finish_short_rest(party->state().short_rest->ticket);
-        const auto before = saved(*party);
-        check(town.resume_camp(), "Resumption enters original pre-camp checks");
-        settle(town);
-        if (chance == 0)
-        {
-            check(!party->state().rest_activity && party->state().time_minutes == 540 &&
-                  party->member(1).last_rest_minutes == 540,
-                  "Safe resumption completes retained progress plus one hour exactly");
-        }
-        else if (chance == 100)
-        {
-            check(
-                !party->state().rest_activity && party->state().time_minutes == 75 &&
-                !party->state().short_rest,
-                "City watch ends resumed camping after a fresh five minutes without granting recovery");
-        }
-        else
-            check(saved(*party) == before,
-                  "Forbidden and unsupported resumption preserve all rest state and RNG");
-    }
+    return "OPENGOLD-CAMPAIGN 20\n" + std::to_string(hash) + '\n' + body;
 }
 
 void malformed_continuation()
@@ -854,9 +744,8 @@ void malformed_continuation()
     (void)party.rest(RestKind::short_rest);
     const auto good = saved(party);
     auto body = good.substr(good.find('\n', good.find('\n') + 1) + 1);
-    // The Short Rest continuation is followed by an absent rest activity, no
-    // detached items and no spell or training rest records.
-    const std::string tail = "3 1 2 1 60 0 1 1 ", later = "0 0 0 0 ";
+    // The Short Rest continuation is followed by no spell or training rest records.
+    const std::string tail = "2 1 1 1 60 0 1 1 ", later = "0 0 ";
     check(body.ends_with(tail + later), "Independent fixture locates the Short Rest continuation");
     const auto prefix = body.substr(0, body.size() - tail.size() - later.size());
     for (const auto bad :
@@ -884,7 +773,6 @@ void malformed_continuation()
     party.finish_short_rest(party.state().short_rest->ticket);
 }
 
-#include "rest_activity_checks.h"
 } // namespace
 
 int main()
@@ -892,14 +780,12 @@ int main()
     try
     {
         alternate_rules_boundary();
-        rest_activity_checks::run();
         individual_eligibility();
         spending_and_continuation();
         expiry_and_atomicity();
         effects_once();
         campaign_services();
-        watch_equipment_and_rollback();
-        resumption_services();
+        watch_interruption_and_rollback();
         malformed_continuation();
         std::cout << "Campaign rest tests passed\n";
         return 0;

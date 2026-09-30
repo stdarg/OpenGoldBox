@@ -73,7 +73,7 @@ public rules interface, UI layout or player combat-saving change is introduced.
 Implementation stays in `opengold_rules_srd5` STATIC. Core and public RulesModule
 interfaces are unchanged. Main-game Godot adds only the spell ID/label and routes
 it through existing targeting/audio/selection code. Released choices are retained.
-FX7 stores prevention and existing posture flags.
+FX8 stores prevention and the Prone flag.
 
 Focused tests cover all three sources and casting abilities, starting counts,
 levels 1–4 damage, critical hits, Necrotic affinities including immunity, Magic
@@ -157,3 +157,17 @@ its two affected tests rerun successfully. Both applications rebuilt. Demo sleep
 controls and English creator checks pass; the creator rerun used the established
 original-assets environment and graphical runner after an invocation omitted
 that environment. No source fix was needed. No live build/test remains.
+
+## SIMPLIFY-1 (2026-09-30)
+
+Under [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)
+a dying character outside combat no longer rolls every six seconds: its
+remaining death saves resolve the moment campaign time passes, and after a won
+fight they resolve at once in the combat log. While Chill Touch prevents
+healing, a natural 20 counts only as a success. The 5999/6000/6001 ms campaign
+boundary above no longer applies; `death_saves_outside_combat` in
+`opengold_chill_touch_tests` covers the new behavior, including save/load and
+time partitions. In-combat healing prevention and turn-entry death saves are
+unchanged. Q40's deferral still governs a Stable deadline reached while
+prevention lasts; in exploration it is moot because Chill Touch expires within
+seconds, long before any 1d4-hour deadline.

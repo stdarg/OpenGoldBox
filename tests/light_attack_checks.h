@@ -228,8 +228,8 @@ void run()
                 if (!item.holder)
                     ++ground;
             }
-        check(total == 5 && ground == 2,
-              "Throwing two distinct Light units conserves physical quantities");
+        check(total == 5 && ground == 0,
+              "Throwing two distinct Light weapons keeps both, like ammunition");
         exact_restore(*c);
     }
     {
@@ -348,9 +348,9 @@ void run()
             else
                 act(*c, "end");
         }
-        check(c->snapshot().outcome == Outcome::victory, "Actual victory enables safe recovery");
+        check(c->snapshot().outcome == Outcome::victory, "Actual victory ends the Light battle");
         p.begin_combat();
-        p.apply_combat(c->snapshot(), c->safe_recovery());
+        p.apply_combat(c->snapshot());
         p.end_combat();
         const auto saved = encode_campaign(p, nullptr, "light-campaign");
         CampaignParty restored(rules());
@@ -363,7 +363,7 @@ void run()
         for (const auto &item : restored.member(1).character.inventory().items())
             if (item.definition_id == "dagger")
                 count += item.quantity;
-        check(count == 5, "Safe recovery conserves both held and thrown equipment");
+        check(count == 5, "Throwing never removes a weapon from inventory");
         check(bool(restored.rest(RestKind::short_rest)), "Light user can Short Rest");
         restored.finish_short_rest(restored.state().short_rest->ticket);
         check(bool(restored.rest(RestKind::long_rest)), "Light user can Long Rest");

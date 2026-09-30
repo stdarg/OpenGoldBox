@@ -67,7 +67,7 @@ void grants_and_budgets()
                     auto p = party(weapon, style, negative, seed % 2);
                     auto c = battle(p, seed);
                     check(
-                        c->save().starts_with("OGCOMBAT 27 ") && unit(*c, 1).nick_mastery &&
+                        c->save().starts_with("OGCOMBAT 28 ") && unit(*c, 1).nick_mastery &&
                         !offers(*c, "nick_melee"),
                         "Chosen Nick creates explicit shared budget, not an attack before qualification");
                     act(*c, "melee", 99);
@@ -267,15 +267,14 @@ void throwing_and_provenance()
         settle(*c);
         settle(*copy);
         check(c->save() == copy->save() && unit(*c, 1).bonus_action && !offers(*c, "nick_throw"),
-              "Thrown Nick keeps ground-item and shared budget continuation");
+              "Thrown Nick keeps the shared budget continuation");
         const auto items = c->snapshot().held_items;
         check(std::any_of(items.begin(), items.end(),
                           [&](const auto & item)
         {
-            return item.id == extra.item && !item.holder &&
-                   item.cell == Cell{2, 1};
+            return item.id == extra.item && item.holder == 1;
         }),
-        "Thrown Nick lands at target");
+        "Thrown Nick weapon stays with the thrower");
     }
     auto p = party();
     auto h = p.member(1).character;

@@ -128,7 +128,7 @@ void class_dice_and_recharge()
     }
     const auto fighter = hero("fighter", 4);
     const auto &sheet = fighter.sheet();
-    VitalState state{1, false, "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0"};
+    VitalState state{1, false, "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX8 1 0 0"};
     auto info = rules->recovery_info(sheet, state);
     check(info.hit_dice == 4 && pool(info, "second_wind").capacity == 3 &&
           pool(info, "second_wind").short_rest_recovery == 1,
@@ -141,7 +141,7 @@ void class_dice_and_recharge()
         rules->recover_short_rest(state, sheet);
     check(pool(rules->recovery_info(sheet, state), "second_wind").remaining == 3,
           "Repeated completed rests never exceed capacity");
-    state = {1, false, "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX7 1 0 0 0"};
+    state = {1, false, "SRD9 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 FX8 1 0 0"};
     std::uint64_t rng = 2;
     rules->spend_hit_die(state, sheet, rng);
     rules->spend_hit_die(state, sheet, rng);
@@ -154,7 +154,7 @@ void class_dice_and_recharge()
             })
     {
         const auto caster = hero(klass, 4);
-        VitalState slots{1, false, "SRD9 0 1 1 0 0 0 4 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"};
+        VitalState slots{1, false, "SRD9 0 1 1 0 0 0 4 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
         rules->recover_short_rest(slots, caster.sheet());
         info = rules->recovery_info(caster.sheet(), slots);
         check(pool(info, "spell_slot:1").remaining == 1 &&
@@ -201,8 +201,8 @@ void minimum_caps_and_rejection()
             })
     {
         state = {0, dead,
-                 dead ? "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"
-                 : "SRD9 0 0 0 1 2 0 1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"
+                 dead ? "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"
+                 : "SRD9 0 0 0 1 2 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"
                 };
         const auto before = state;
         rng = 42;
@@ -227,11 +227,11 @@ void minimum_caps_and_rejection()
               "Rejected recovery never wakes, stabilizes or revives a character");
     }
     for (const auto malformed :
-            {"SRD9 0 0 0 0 0 0 -1 0 0 0 \"\" 0 0 0 FX7 1 0 0 0",
-             "SRD9 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 FX7 1 0 0 0",
+            {"SRD9 0 0 0 0 0 0 -1 0 0 0 \"\" 0 0 0 FX8 1 0 0",
+             "SRD9 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 FX8 1 0 0",
              "SRD9 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0",
-             "SRD9 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX7 1 0 0 0 junk",
-             "SRD9 999 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX7 1 0 0 0"
+             "SRD9 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX8 1 0 0 junk",
+             "SRD9 999 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 FX8 1 0 0"
             })
     {
         state = {1, false, malformed};
@@ -270,10 +270,10 @@ void persistence_and_advancement()
     auto state = party.checkpoint();
     state.roster[0].vitals = {1, false,
                               "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 "
-                              "FX7 2 1 1 1 77 99 \"Source caster\" 13 43000 2000 0 0"
+                              "FX8 2 1 1 1 77 99 \"Source caster\" 13 43000 2000 0"
                              };
     const auto effect =
-        state.roster[0].vitals.resources.substr(state.roster[0].vitals.resources.find("FX7"));
+        state.roster[0].vitals.resources.substr(state.roster[0].vitals.resources.find("FX8"));
     rules->spend_hit_die(state.roster[0].vitals, state.roster[0].character.sheet(),
                          state.random_state);
     party.restore(state);
@@ -338,7 +338,7 @@ void persistence_and_advancement()
     members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
     auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
     const auto checkpoint = combat->save();
-    check(checkpoint.starts_with("OGCOMBAT 27 ") &&
+    check(checkpoint.starts_with("OGCOMBAT 28 ") &&
           rules->restore(checkpoint)->save() == checkpoint,
           "Combat checkpoint stores remaining dice exactly");
     auto copy = rules->restore(checkpoint);

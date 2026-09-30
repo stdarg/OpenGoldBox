@@ -13,7 +13,8 @@ struct RecoverySubject
 };
 // Positive elapsed time rolls any Stable delay not yet rolled, once. Events
 // are ordered by deadline, entity ID, mortality, then effect application ID.
-// Combat continues to roll death saves at initiative entry instead.
+// Campaign time resolves a dying creature's remaining death saves at once;
+// combat continues to roll death saves at initiative entry instead.
 enum class RecoveryMode
 {
     campaign,

@@ -101,9 +101,9 @@ void codec_and_lifecycle()
     target.prone = true;
     std::ostringstream out;
     fx::write_effects(out, target);
-    check(out.str().starts_with("FX7 "), "Effects use the only current tag FX7");
+    check(out.str().starts_with("FX8 "), "Effects use the only current tag FX8");
     std::istringstream in(out.str());
-    check(fx::read_effects(in) == target, "FX7 preserves posture and multiple sources");
+    check(fx::read_effects(in) == target, "FX8 preserves posture and multiple sources");
     auto old = out.str();
     old.replace(0, 3, "FX6");
     rejects(
@@ -113,8 +113,8 @@ void codec_and_lifecycle()
         (void)fx::read_effects(bytes);
     });
     for (auto bad :
-            {"FX7 2 1 1 5 7 2 \"Source\" 0 6001 0 0 0",
-             "FX7 2 1 1 6 7 2 \"Source\" 0 12001 0 0 0", "FX7 2 1 1 6 0 2 \"Source\" 0 9000 0 0 0"
+            {"FX8 2 1 1 5 7 2 \"Source\" 0 6001 0 0",
+             "FX8 2 1 1 6 7 2 \"Source\" 0 12001 0 0", "FX8 2 1 1 6 0 2 \"Source\" 0 9000 0 0"
             })
         rejects(
             [&]

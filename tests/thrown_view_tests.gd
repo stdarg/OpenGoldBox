@@ -51,9 +51,8 @@ func run_checks() -> void:
             var choices: OptionButton = current_scene.get_node("ThrownWeapon")
             var button: Button = current_scene.get_node("Throw")
             require(choices.visible and choices.item_count == 7 and not button.disabled, "All seven carried weapon types have legal controls")
-            require("×3" in choices.get_item_text(0) and ("stow" if locale == "en" else "guardar") in choices.get_item_text(0), "Quantity and required stowing are visible before commitment")
+            require(not ("×" in choices.get_item_text(0)) and not (("stow" if locale == "en" else "guardar") in choices.get_item_text(0)), "Thrown weapons list by name, like ammunition, with no count or stowing")
             require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No combat saving controls added")
-            require(button.position.y > current_scene.get_node("PickUp").position.y, "Thrown row is below pickup")
             require(button.get_global_rect().end.y <= root.size.y and choices.get_global_rect().end.x <= button.get_global_rect().position.x, "Controls fit without overlap")
             require(current_scene.get_node("Log").get_rect().end.y <= current_scene.get_node("Footer").position.y, "Combat log remains above footer")
             if not demo:
@@ -67,12 +66,8 @@ func run_checks() -> void:
             choices.get_popup().set_focused_item(0); await key(KEY_DOWN); await key(KEY_ENTER)
             require(choices.selected == 1, "Dropdown supports keyboard weapon selection")
             button.grab_focus(); await key(KEY_ENTER); await key(KEY_RIGHT); await key(KEY_LEFT); await key(KEY_SPACE)
-            require(button.disabled and "×2" in choices.get_item_text(choices.selected), "Keyboard confirmation throws exactly one unit and spends Action")
-            require(current_scene.get_node("GroundItem").item_count == 1, "Thrown weapon lands on battlefield")
-            require(not current_scene.get_node("PickUp").disabled, "Adjacent weapon can use remaining object interaction")
-            await capture("landed-" + locale + "-" + str(size.x))
-            current_scene.get_node("PickUp").pressed.emit(); await settle()
-            require(not current_scene.get_node("GroundItem").visible, "Existing pickup retrieves the landed weapon")
+            require(button.disabled and choices.item_count == 7, "Keyboard confirmation spends the Action and keeps the thrown weapon")
+            await capture("thrown-" + locale + "-" + str(size.x))
             await load_fixture()
             button.pressed.emit(); await settle()
             var point: Vector2
@@ -86,5 +81,5 @@ func run_checks() -> void:
                 var event := InputEventMouseButton.new(); event.button_index = MOUSE_BUTTON_LEFT
                 event.position = point; event.global_position = point; event.pressed = down; root.push_input(event, true)
             await settle()
-            require(button.disabled and current_scene.get_node("GroundItem").item_count == 1, "Click target throws selected physical unit")
+            require(button.disabled and choices.item_count == 7, "Click target throws the selected weapon and keeps it")
     cleanup(); print("Thrown weapon controls passed"); quit()

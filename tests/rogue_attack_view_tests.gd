@@ -65,7 +65,7 @@ func run_checks() -> void:
             require(choices.focus_mode == Control.FOCUS_ALL and use_bonus.focus_mode == Control.FOCUS_ALL, "Bonus controls support keyboard focus")
             if demo:
                 require(choices.position.x == 214 and choices.size.x == 200 and use_bonus.position.x == 424 and use_bonus.size.x == 240, "Approved demo Bonus Action widths/placement")
-                require(choices.position.y + 44 == current_scene.get_node("WakeAlly").position.y, "Bonus row precedes recovery row by 44 pixels")
+                require(choices.position.y + 44 == current_scene.get_node("Stabilize").position.y, "Bonus row precedes recovery row by 44 pixels")
                 require(use_bonus.get_rect().end.y <= current_scene.get_node("Log").position.y and current_scene.get_node("Log").get_rect().end.y <= current_scene.get_node("Footer").position.y, "Bonus row, log and footer do not overlap")
             for index in range(2):
                 await load_fixture("aim-available")

@@ -265,17 +265,6 @@ void run()
     check(unit(*surprised, 1).initiative == roll + p.member(1).character.sheet().modifiers[1] + 2,
           "Advantage and Disadvantage cancel before adding Alert once");
     decline(*surprised);
-    auto sleeping_actors = actors;
-    module()->set_rest_work(*sleeping_actors[1].state, p.member(2).character.sheet(),
-                            RestWork::sleep);
-    auto sleeping = module()->create(
-    { {12, 8, std::vector<std::uint8_t>(96)}, sleeping_actors
-    }, 37);
-    check(sleeping->snapshot().initiative_choices == std::vector<EntityId> {1} &&
-          sleeping->legal_commands().size() == 1,
-          "Naturally sleeping holders and allies cannot swap");
-    exact(*sleeping);
-    decline(*sleeping);
     bool down_first = false;
     actors = p.participants();
     actors[0].cell = {1, 1};

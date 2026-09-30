@@ -14,8 +14,10 @@ retains existing gameplay rather than introducing an ammunition system.
 This is a deliberate exception to SRD 5.2.1's expenditure/recovery rules, not a
 claim to implement them. [#57](https://github.com/stdarg/OpenGold/issues/57) is no
 longer planned under the changed requirement. Other weapon properties remain
-separate; [Thrown weapons](THROWN-WEAPONS.md) still consume/drop/recover the actual
-weapon. Existing action costs, attack rolls, damage, range, proficiency, grip
+separate. Since [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)
+(2026-09-30), [Thrown weapons](THROWN-WEAPONS.md) are treated the same way: a
+throw never removes, drops or spends the weapon, which stays held or carried.
+Existing action costs, attack rolls, damage, range, proficiency, grip
 and shield behavior remain in effect.
 
 ## Existing saves and verification
@@ -32,7 +34,7 @@ pending recovery state or new control was added.
 - `opengold_ammunition_tests` checks all five inert ammunition inventory types
   across all twelve classes, source-backed original conversions, rejected Equip
   atomicity, and campaign/combat continuation.
-- `opengold_thrown_weapon_tests` verifies the distinct physical Thrown behavior.
+- `opengold_thrown_weapon_tests` verifies that throwing keeps the weapon.
 
 All 50 native/tool tests passed on runtime `79558fd`. The three focused tests
 above passed again after the user selected the exception, with unchanged runtime
