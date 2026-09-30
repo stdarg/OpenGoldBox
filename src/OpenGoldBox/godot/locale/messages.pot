@@ -588,7 +588,7 @@ msgstr ""
 msgid "Browse..."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:700
+#: src/OpenGoldBox/rolf_tour_view.cpp:755
 msgid "Buy [Enter]"
 msgstr ""
 
@@ -756,7 +756,7 @@ msgstr ""
 msgid "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:701
+#: src/OpenGoldBox/rolf_tour_view.cpp:756
 msgid "Choose [Enter]"
 msgstr ""
 
@@ -981,7 +981,7 @@ msgstr ""
 msgid "Continue  [Enter]"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:703
+#: src/OpenGoldBox/rolf_tour_view.cpp:758
 msgid "Continue [Enter]"
 msgstr ""
 
@@ -1308,7 +1308,7 @@ msgstr ""
 msgid "Expertise"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:712
+#: src/OpenGoldBox/rolf_tour_view.cpp:767
 msgid "Explore  /  arrow keys"
 msgstr ""
 
@@ -1342,7 +1342,7 @@ msgstr ""
 msgid "Fighter"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:779
+#: src/OpenGoldBox/rolf_tour_view.cpp:834
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr ""
@@ -1441,11 +1441,11 @@ msgstr ""
 msgid "Flute"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:696
+#: src/OpenGoldBox/rolf_tour_view.cpp:751
 msgid "Following Rolf..."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:710
+#: src/OpenGoldBox/rolf_tour_view.cpp:765
 msgid "Following the guide"
 msgstr ""
 
@@ -1832,7 +1832,7 @@ msgstr ""
 msgid "Leave shop"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:705
+#: src/OpenGoldBox/rolf_tour_view.cpp:760
 msgid "Leave temple [Enter]"
 msgstr ""
 
@@ -1967,11 +1967,11 @@ msgstr ""
 msgid "Long Rest cooldown remaining (minutes):"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:616
+#: src/OpenGoldBox/rolf_tour_view.cpp:628
 msgid "Long rest complete: eight hours passed; eligible members recovered HP and supported resources."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:617
+#: src/OpenGoldBox/rolf_tour_view.cpp:629
 msgid "Long rest complete: eligible members recovered HP and supported resources."
 msgstr ""
 
@@ -2116,7 +2116,7 @@ msgstr ""
 msgid "Move up to {feet} feet without Opportunity Attacks or spending normal movement. Other pending effects wait."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:712
+#: src/OpenGoldBox/rolf_tour_view.cpp:767
 msgid "Movement paused"
 msgstr ""
 
@@ -2164,7 +2164,7 @@ msgstr ""
 msgid "New PCs receive 250 gp / Save game stores this campaign on disk."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:686
+#: src/OpenGoldBox/rolf_tour_view.cpp:741
 msgid "New Phlan"
 msgstr ""
 
@@ -2172,7 +2172,7 @@ msgstr ""
 msgid "New Phlan    N ↑"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:674
+#: src/OpenGoldBox/rolf_tour_view.cpp:729
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "New Phlan / {direction} view"
 msgstr ""
@@ -2377,7 +2377,7 @@ msgstr ""
 msgid "Part"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:677
+#: src/OpenGoldBox/rolf_tour_view.cpp:732
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Party ({x}, {y})   {direction}"
 msgstr ""
@@ -2513,7 +2513,7 @@ msgstr ""
 msgid "Previously selected training cannot be replaced"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:768
+#: src/OpenGoldBox/rolf_tour_view.cpp:823
 msgid "Prices are per listed item or bundle."
 msgstr ""
 
@@ -2699,15 +2699,15 @@ msgstr ""
 msgid "Rest could not resume here. Resolve the interruption or end the rest."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:618
+#: src/OpenGoldBox/rolf_tour_view.cpp:630
 msgid "Rest denied: no active member is eligible."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:619
+#: src/OpenGoldBox/rolf_tour_view.cpp:631
 msgid "Rest interrupted after five minutes; no recovery granted."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:614
+#: src/OpenGoldBox/rolf_tour_view.cpp:626
 msgid "Rest is not allowed here."
 msgstr ""
 
@@ -2731,7 +2731,7 @@ msgstr ""
 msgid "Restart test"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:694
+#: src/OpenGoldBox/rolf_tour_view.cpp:749
 msgid "Restart with --reset-game-path to choose your Pool of Radiance data folder."
 msgstr ""
 
@@ -2783,7 +2783,7 @@ msgstr ""
 msgid "Rogue skills"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:687
+#: src/OpenGoldBox/rolf_tour_view.cpp:742
 msgid "Rolf  /  Council guide"
 msgstr ""
 
@@ -2999,7 +2999,7 @@ msgstr ""
 msgid "Shocking Grasp: cannot make Opportunity Attacks."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:684
+#: src/OpenGoldBox/rolf_tour_view.cpp:739
 msgid "Shop / select an item"
 msgstr ""
 
@@ -3015,7 +3015,7 @@ msgstr ""
 msgid "Short bow"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:615
+#: src/OpenGoldBox/rolf_tour_view.cpp:627
 msgid "Short rest complete: one hour passed; eligible members can spend Hit Dice."
 msgstr ""
 
@@ -3344,7 +3344,7 @@ msgstr ""
 msgid "Stealth"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:708
+#: src/OpenGoldBox/rolf_tour_view.cpp:763
 msgid "Stopped"
 msgstr ""
 
@@ -3356,7 +3356,7 @@ msgstr ""
 msgid "Studded Leather Armor"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:702
+#: src/OpenGoldBox/rolf_tour_view.cpp:757
 msgid "Submit [Enter]"
 msgstr ""
 
@@ -3591,7 +3591,7 @@ msgstr ""
 msgid "Two-Weapon Fighting"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:683
+#: src/OpenGoldBox/rolf_tour_view.cpp:738
 msgid "Unable to continue"
 msgstr ""
 
@@ -3989,7 +3989,7 @@ msgstr ""
 msgid "{bonus} from {class} saving throw proficiency."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:785 src/OpenGoldBox/rolf_tour_view.cpp:799
+#: src/OpenGoldBox/rolf_tour_view.cpp:840 src/OpenGoldBox/rolf_tour_view.cpp:854
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} item"
 msgid_plural "{count} items"
@@ -4023,7 +4023,7 @@ msgstr ""
 msgid "{hit}\n{formula}\nFirst damage: {first}\nSecond damage: {second}\n\nKeep either roll. Defenses apply afterward.\nSavage Attacker is spent for this turn."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:728
+#: src/OpenGoldBox/rolf_tour_view.cpp:783
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp"
 msgstr ""
@@ -4033,12 +4033,12 @@ msgstr ""
 msgid "{item} x{quantity}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:813
+#: src/OpenGoldBox/rolf_tour_view.cpp:868
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}\n{class} / AC {ac} / HP {current}/{maximum}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:792
+#: src/OpenGoldBox/rolf_tour_view.cpp:847
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr ""

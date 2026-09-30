@@ -1845,6 +1845,56 @@ void settle(por::RolfTourSession &town)
     check(town.snapshot().phase != por::TourPhase::faulted, "Town script fault");
 }
 
+void monster_picture_before_combat()
+{
+    // SETUP MONSTER selects sprite 4 and picture 4; after COMBAT is requested the
+    // picture must hold combat back until the player dismisses it.
+    auto gate = program({32, 0, 20, 0});
+    auto encounter = program({58, 33, 0, 20, 0, 2, 0, 255, 12, 0, 4, 0, 0, 0, 4,
+                              11, 0, 4, 0, 1, 0, 4, 36, 0});
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->map = por::GeoMap{};
+    resources->programs[0] = gate;
+    resources->programs[20] = encounter;
+    auto district = std::make_shared<por::PhlanResources>();
+    district->map = por::GeoMap{};
+    district->encounter_creatures[4].stored.name = "Test orc";
+    district->combat_archive = {9, 0, 4, 0, 0, 0, 0, 25, 0, 26, 0, 24};
+    district->combat_archive.resize(37, 0);
+    district->combat_archive[12] = 1;
+    district->combat_archive[14] = 2;
+    district->combat_archive[20] = 1;
+    // One uncompressed DAX record holding three 8x1 approach-sprite frames.
+    district->sprite_archive = {9, 0, 4, 0, 0, 0, 0, 76, 0, 77, 0, 75, 3};
+    for (int frame = 0; frame < 3; ++frame)
+    {
+        Bytes header(21, 0);
+        header[4] = 1;
+        header[6] = 1;
+        district->sprite_archive.insert(district->sprite_archive.end(), header.begin(),
+                                        header.end());
+        district->sprite_archive.insert(district->sprite_archive.end(), 4, 0x11);
+    }
+    district->animations[4] = {{17, {}}, {15, {}}};
+    resources->districts[20] = district;
+    auto party = std::make_shared<CampaignParty>(module());
+    (void)party->add_pc(character("fighter"));
+    por::RolfTourSession town({}, gate, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle(town);
+    (void)town.observe_view();
+    check(town.explore(por::ExplorationCommand::look), "Synthetic gate starts the encounter");
+    settle(town);
+    check(town.snapshot().phase == por::TourPhase::combat && !town.pending_encounter(),
+          "Combat waits while the monster close-up shows");
+    check(town.monster_picture() && town.monster_picture()->size() == 2 &&
+          (*town.monster_picture())[0].delay == 17,
+          "The close-up is SETUP MONSTER's PIC record");
+    check(town.start_encounter() && town.pending_encounter() && !town.monster_picture(),
+          "A key press dismisses the close-up and releases combat");
+    check(!town.start_encounter(), "The close-up is dismissed only once");
+}
+
 void rejected_combat_handoff()
 {
     // Enter a synthetic Slums district, change HP, then request one actual orc.
@@ -2353,6 +2403,7 @@ int main()
         combat_demo_fixture();
         script_handoff();
         rejected_combat_handoff();
+        monster_picture_before_combat();
         recovery_hosts();
         reward_reentry();
         interrupted_rest_victory();

@@ -65,6 +65,27 @@ struct ImageDecodeResult
 // A decompressed 17-byte-header HEAD/BODY/PIC record, using normal EGA colors.
 [[nodiscard]] ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record);
 
+struct AnimationFrame
+{
+    std::uint32_t delay{}; // Original timer ticks this frame stays on screen.
+    Image image;
+};
+
+struct AnimationDecodeResult
+{
+    FormatResult status{FormatResult::invalid_data};
+    std::vector<AnimationFrame> frames;
+
+    [[nodiscard]] explicit operator bool() const noexcept
+    {
+        return status == FormatResult::ok;
+    }
+};
+
+// A decompressed PIC record: a frame count, then per frame a 32-bit delay and a
+// picture. Frames after the first store only the XOR difference from the first.
+[[nodiscard]] AnimationDecodeResult decode_ega_animation(std::span<const std::uint8_t> record);
+
 } // namespace opengold
 
 #endif

@@ -18,6 +18,21 @@ nibble first. For `SPRIT` resources palette index zero is transparent.
 Zero dimensions, truncated frames, and byte-widths whose pixel width would
 overflow the image's 16-bit width are rejected before allocating the output.
 
+## Close-up animations
+
+`PIC1.DAX` to `PIC8.DAX` hold the 88x88 close-ups that fill the 3D view. Every
+record is an animation: a frame-count byte, then per frame a 32-bit delay and a
+17-byte-header picture (see below). The first frame is complete; each later
+frame stores only the XOR difference from the **first** frame, not from the
+previous one. Delays count ticks of the PC's 18.2 Hz timer, and zero-tick
+frames are never held on screen. The Slums orc (PIC2 record 4) has delays
+15, 0, 7, 0, so it alternates a ready and a striking pose.
+
+`SETUP MONSTER sprite, distance, picture` selects both the approach sprite
+(SPRITn) and this close-up. After the approach, the game loops the close-up
+until a key press, then opens combat. Records 1 (treasure chest) and 29
+(campfire) appear in every PIC archive.
+
 ## Combat images
 
 The demo also reads `CPIC*.DAX`, `COMSPR.DAX`, `CHEAD.DAX`, and `CBODY.DAX`.

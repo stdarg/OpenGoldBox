@@ -588,6 +588,9 @@ void RolfTourView::_process(double delta)
 void RolfTourView::refresh()
 {
     layout();
+    // The reference demo does not draw monster close-ups; start combat at once.
+    if (session_ && session_->monster_picture())
+        session_->start_encounter();
     if (session_ && rendered_sprite_id_ != session_->snapshot().sprite_id)
     {
         for (unsigned n = 0; n < 3; ++n)

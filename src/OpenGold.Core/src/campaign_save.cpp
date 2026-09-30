@@ -634,6 +634,8 @@ for (const auto &edit : training)
             v.staged_enemies_.clear();
             v.staged_art_.clear();
             v.encounter_.reset();
+            v.monster_picture_id_.reset();
+            v.showing_monster_picture_ = false;
         }
         auto &s = v.snapshot_;
         fields(s.dialogue, s.prompts, s.redraws, s.footsteps, s.event_runs);

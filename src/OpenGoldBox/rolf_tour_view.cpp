@@ -524,6 +524,13 @@ void RolfTourView::_input(const Ref<InputEvent> &event)
     const Ref<InputEventKey> key = event;
     if (key.is_null() || !key->is_pressed() || key->is_echo())
         return;
+    if (shown_monster_picture_)
+    {
+        // As in the original, any key leaves the monster close-up for combat.
+        dismiss_monster_picture();
+        get_viewport()->set_input_as_handled();
+        return;
+    }
     if (get_node<Control>("InventoryPanel")->is_visible())
         return;
     if (get_node<LineEdit>("Answer")->has_focus() && key->get_keycode() != Key::KEY_ENTER)
@@ -586,6 +593,11 @@ void RolfTourView::_process(double delta)
         }
         if (session_->snapshot().revision != shown_revision_)
             refresh();
+        if (shown_monster_picture_)
+        {
+            monster_picture_seconds_ += delta;
+            queue_redraw();
+        }
     }
     if (OS::get_singleton()->get_cmdline_user_args().has("--mastery-rest-check"))
     {
@@ -623,9 +635,52 @@ String rest_notice(const std::string &resource, const std::string &text)
 }
 } // namespace
 
+void RolfTourView::sync_monster_picture()
+{
+    const auto *picture = session_ ? session_->monster_picture() : nullptr;
+    if (picture == shown_monster_picture_)
+        return;
+    shown_monster_picture_ = picture;
+    monster_frames_.clear();
+    monster_picture_seconds_ = 0;
+    monster_picture_check_frames_ = 0;
+    if (!picture)
+        return;
+    for (const auto &frame : *picture)
+        monster_frames_.push_back(presentation::image_texture(frame.image));
+}
+
+std::size_t RolfTourView::current_monster_frame() const
+{
+    // Frame delays count ticks of the PC's 18.2 Hz timer. Zero-tick frames are
+    // passed over, so records like the orc alternate between two held poses.
+    constexpr double tick_seconds = 1.0 / 18.2;
+    std::uint64_t total_ticks = 0;
+    for (const auto &frame : *shown_monster_picture_)
+        total_ticks += frame.delay;
+    if (!total_ticks)
+        return 0;
+    auto tick = static_cast<std::uint64_t>(monster_picture_seconds_ / tick_seconds) % total_ticks;
+    for (std::size_t n = 0; n < shown_monster_picture_->size(); ++n)
+    {
+        const auto delay = (*shown_monster_picture_)[n].delay;
+        if (tick < delay)
+            return n;
+        tick -= delay;
+    }
+    return 0;
+}
+
+void RolfTourView::dismiss_monster_picture()
+{
+    if (session_ && session_->start_encounter())
+        refresh();
+}
+
 void RolfTourView::refresh()
 {
     layout();
+    sync_monster_picture();
     if (session_ && rendered_sprite_id_ != session_->snapshot().sprite_id)
     {
         for (unsigned n = 0; n < 3; ++n)
@@ -857,6 +912,12 @@ void RolfTourView::draw_scene()
     const Vector2 pixel_scale(scale, scale * 1.2), size(88 * pixel_scale.x, 88 * pixel_scale.y);
     const Rect2 view(scene_rect_.position + (scene_rect_.size - size) * .5, size);
     draw_texture_rect(wall_view_, view, false);
+    if (shown_monster_picture_ && !monster_frames_.empty())
+    {
+        // The 88x88 close-up covers the whole 3D view, as in the original.
+        draw_texture_rect(monster_frames_[current_monster_frame()], view, false);
+        return;
+    }
     const auto &state = session_->snapshot();
     // Frame 0 is Rolf's nearest pose; once he has arrived and speaks, his
     // portrait replaces the small encounter sprite.
@@ -1272,6 +1333,17 @@ bool RolfTourView::check_expedition_step()
         throw std::runtime_error(session_->script_diagnostics().back());
     if (s.phase == TourPhase::faulted)
         throw std::runtime_error(s.diagnostic);
+    if (shown_monster_picture_)
+    {
+        // Let the close-up animate for about two seconds before pressing a key.
+        if (++monster_picture_check_frames_ < 120)
+            return false;
+        UtilityFunctions::print("Monster close-up shown with ", monster_frames_.size(),
+                                " frames before combat");
+        capture_frame("monster-close-up");
+        dismiss_monster_picture();
+        return false;
+    }
     if (s.phase == TourPhase::awaiting_continue)
     {
         const auto choice = s.choices.size() == 5 && s.choices[0] == "Fight" ? 1 : 0;

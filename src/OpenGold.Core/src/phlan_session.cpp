@@ -270,6 +270,22 @@ void RolfTourSession::commit_rest_recovery()
         saved_campaign_ = campaign_->checkpoint();
 }
 
+const std::vector<AnimationFrame> *RolfTourSession::monster_picture() const
+{
+    if (!showing_monster_picture_)
+        return nullptr;
+    return &area_resources().animations.at(*monster_picture_id_);
+}
+
+bool RolfTourSession::start_encounter()
+{
+    if (snapshot_.phase != TourPhase::combat || !showing_monster_picture_)
+        return false;
+    showing_monster_picture_ = false;
+    ++snapshot_.revision;
+    return true;
+}
+
 bool RolfTourSession::reject_combat(std::string diagnostic)
 {
     if (snapshot_.phase != TourPhase::combat || !encounter_ || !combat_request_ || !campaign_ ||
@@ -345,6 +361,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         throw EclError("Combat result rejected by original script");
     combat_request_ = 0;
     encounter_.reset();
+    monster_picture_id_.reset();
     staged_enemies_.clear();
     staged_art_.clear();
     staged_records_.clear();
@@ -773,6 +790,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         sprites_ = std::move(decoded);
         snapshot_.sprite_frame = arg(1);
         snapshot_.sprite_id = arg(0);
+        monster_picture_id_ = arg(2);
         picture_.reset();
         ++snapshot_.picture_revision;
         break;
@@ -926,6 +944,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 area_resources().terrain_art,        p.facing,        machine_.variable(0x6DCB)};
             (void)campaign_->prepare_combat();
             combat_request_ = request.id;
+            // The original shows the approached monster's close-up until a key press.
+            showing_monster_picture_ = monster_picture_id_ &&
+                                       area_resources().animations.contains(*monster_picture_id_);
             snapshot_.phase = TourPhase::combat;
             ++snapshot_.revision;
             return true;

@@ -92,6 +92,11 @@ class RolfTourView : public godot::Control
     std::array<godot::Ref<godot::ImageTexture>, 3> sprites_;
     godot::Ref<godot::ImageTexture> wall_view_;
     godot::Ref<godot::Texture2D> rolf_portrait_;
+    // Monster close-up looping before combat; the pointer identifies the frames shown.
+    const std::vector<opengold::AnimationFrame> *shown_monster_picture_{};
+    std::vector<godot::Ref<godot::ImageTexture>> monster_frames_;
+    double monster_picture_seconds_{};
+    unsigned monster_picture_check_frames_{};
     std::optional<opengold::por::PartyPose> rendered_pose_;
     godot::Ref<godot::AudioStreamWAV> footstep_;
     godot::Rect2 scene_rect_, map_rect_, dialogue_rect_;
@@ -112,6 +117,9 @@ class RolfTourView : public godot::Control
     std::optional<std::pair<unsigned, unsigned>> check_pending_edge_;
     void layout();
     void refresh();
+    void sync_monster_picture();
+    [[nodiscard]] std::size_t current_monster_frame() const;
+    void dismiss_monster_picture();
     void restart();
     void next();
     void left();

@@ -218,6 +218,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     pictures("HEAD2.DAX", district->heads);
     pictures("BODY2.DAX", district->bodies);
     pictures("PIC2.DAX", district->pictures);
+    for (const auto &record : archive("PIC2.DAX").records)
+        if (auto animation = decode_ega_animation(record.bytes))
+            district->animations.emplace(record.id, std::move(animation.frames));
     town->districts.emplace(20, std::move(district));
     return RolfTourSession(map->get(), program, std::move(sprites), 0xB071, std::move(*wall_art),
                            std::move(town));
@@ -261,6 +264,8 @@ void RolfTourSession::restart()
     staged_records_.clear();
     encounter_menu_.reset();
     encounter_.reset();
+    monster_picture_id_.reset();
+    showing_monster_picture_ = false;
     combat_request_ = 0;
     pending_loot_.clear();
     who_request_ = temple_request_ = 0;
@@ -330,6 +335,8 @@ void RolfTourSession::fail(std::string diagnostic)
         staged_records_.clear();
         encounter_menu_.reset();
         encounter_.reset();
+        monster_picture_id_.reset();
+        showing_monster_picture_ = false;
         combat_request_ = 0;
         snapshot_.sprite_frame = -1;
         picture_.reset();

@@ -33,6 +33,10 @@ identity. Existing campaign semantics award that amount to each living active
 member. Roaming encounters use a distinct persisted reward identity each time.
 Original groups can be large and dangerous to a new party; counts are preserved.
 
+When the script starts combat, the approached monster's animated close-up
+fills the 3D view until any key is pressed, then combat opens. See
+[close-up animations](graphics-format.md#close-up-animations).
+
 The pre-combat menu uses Fight, Wait, Flee, Advance and Parley with the script's
 response table. Pre-combat escape is separate from retreat during combat, which
 remains deferred. Supported modern profiles have no original party surprise

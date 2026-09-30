@@ -57,6 +57,8 @@ struct PhlanResources
     std::map<unsigned, std::vector<Equipment>> treasure;
     std::vector<std::uint8_t> sprite_archive;
     std::map<unsigned, Image> heads, bodies, pictures;
+    // PIC records: monster close-ups shown before combat, looping until a key press.
+    std::map<unsigned, std::vector<AnimationFrame>> animations;
     // Explicit converted NPC profiles scoped to this resource bank. No guessed ID conversion.
     std::map<unsigned, opengold::Character> npc_profiles;
     // Immutable district profiles. Root owns districts; children never own root.
@@ -177,8 +179,15 @@ class RolfTourSession
 
     [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
     {
-        return encounter_;
+        static const std::optional<opengold::CampaignEncounter> not_ready;
+        // Combat waits until the player dismisses the monster close-up.
+        return showing_monster_picture_ ? not_ready : encounter_;
     }
+
+    // The monster close-up that loops before combat, or null when none is showing.
+    [[nodiscard]] const std::vector<AnimationFrame> *monster_picture() const;
+    // The player pressed a key on the close-up; returns false when none is showing.
+    bool start_encounter();
 
     bool resolve_combat(const rules::Snapshot &outcome);
     // Reject a pending handoff before combat starts, using the event rollback path.
@@ -222,6 +231,8 @@ class RolfTourSession
     std::optional<EclRequest> encounter_menu_;
     unsigned encounter_distance_{};
     std::optional<opengold::CampaignEncounter> encounter_;
+    std::optional<unsigned> monster_picture_id_; // SETUP MONSTER's PIC record.
+    bool showing_monster_picture_{};
     std::uint64_t combat_request_{};
     std::vector<PendingLoot> pending_loot_;
     void claim_loot();

@@ -2,7 +2,10 @@
 #include "opengold/exploration_view.h"
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <queue>
 
 using namespace opengold::por;
@@ -32,6 +35,31 @@ void step_to_prompt(RolfTourSession &tour)
         tour.advance(0.3);
     check(tour.snapshot().phase != TourPhase::faulted, tour.snapshot().diagnostic.c_str());
     check(tour.snapshot().phase != TourPhase::running, "Host must yield a prompt or finish");
+}
+
+void animation_tests()
+{
+    // Two 8x1 frames: a full first frame, then a delta XORed with that first frame.
+    const Bytes record{2,
+                       17, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0x12, 0x34, 0x56, 0x78,
+                       15, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0x10, 0, 0, 0};
+    const auto animation = opengold::decode_ega_animation(record);
+    check(animation && animation.frames.size() == 2, "Decode both animation frames");
+    check(animation.frames[0].delay == 17 && animation.frames[1].delay == 15,
+          "Keep each frame's original delay");
+    check(animation.frames[0].image.rgba[2] == 170 && animation.frames[1].image.rgba[2] == 0,
+          "First pixel changes from blue to black in the delta frame");
+    check(animation.frames[1].image.rgba[5] == 170 &&
+          animation.frames[1].image.rgba[9] == animation.frames[0].image.rgba[9],
+          "Pixels outside the delta keep the first frame's colors");
+    auto truncated = record;
+    truncated.pop_back();
+    check(!opengold::decode_ega_animation(truncated), "Truncated animation rejected");
+    auto resized = record;
+    resized[32] = 2; // Second frame header claims a different width.
+    check(!opengold::decode_ega_animation(resized), "Frames of different sizes rejected");
 }
 
 void wall_art_tests()
@@ -513,8 +541,35 @@ void synthetic()
           "Unsupported services stop with diagnostics");
 }
 
+void installed_monster_picture(const char *directory)
+{
+    // The Slums orcs' close-up alternates a ready pose and a striking pose; the
+    // zero-tick frames between them are never held on screen.
+    std::ifstream file(std::filesystem::path(directory) / "PIC2.DAX", std::ios::binary);
+    const Bytes bytes{std::istreambuf_iterator<char>(file), {}};
+    const auto archive = opengold::decode_dax_archive(bytes);
+    check(archive.status == opengold::FormatResult::ok, "Decode PIC2.DAX");
+    const auto orc = std::find_if(archive.records.begin(), archive.records.end(),
+                                  [](const auto & record)
+    {
+        return record.id == 4;
+    });
+    check(orc != archive.records.end(), "PIC2.DAX holds the orc close-up");
+    const auto animation = opengold::decode_ega_animation(orc->bytes);
+    check(animation && animation.frames.size() == 4, "Orc close-up has four frames");
+    std::vector<std::uint32_t> delays;
+    for (const auto &frame : animation.frames)
+        delays.push_back(frame.delay);
+    check(delays == std::vector<std::uint32_t> {15, 0, 7, 0}, "Orc close-up keeps its timing");
+    check(animation.frames[0].image.width == 88 && animation.frames[0].image.height == 88,
+          "Orc close-up fills the 88x88 view");
+    check(animation.frames[0].image.rgba != animation.frames[2].image.rgba,
+          "Ready and striking poses differ");
+}
+
 void installed(const char *directory)
 {
+    installed_monster_picture(directory);
     auto tour = RolfTourSession::load(directory);
     check(tour.wall_art().appearances.size() == 15, "Load all fifteen Phlan appearances");
     check(tour.wall_art().appearances[5][6].rgba != tour.wall_art().appearances[7][6].rgba,
@@ -558,6 +613,7 @@ int main()
     try
     {
         wall_art_tests();
+        animation_tests();
         fog_visibility_tests();
         shopping_tests();
         synthetic();

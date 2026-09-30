@@ -258,4 +258,46 @@ ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record)
     }
     return {FormatResult::ok, std::move(image)};
 }
+
+AnimationDecodeResult decode_ega_animation(std::span<const std::uint8_t> record)
+{
+    if (record.empty() || !record[0])
+        return {};
+    const unsigned frame_count = record[0];
+    std::vector<std::uint8_t> first_frame;
+    std::vector<AnimationFrame> frames;
+    std::size_t offset = 1;
+    for (unsigned n = 0; n < frame_count; ++n)
+    {
+        if (record.size() - offset < 4 + 17)
+            return {};
+        const auto delay = read_u32(record, offset);
+        const auto header = record.subspan(offset + 4, 17);
+        if (header[8] != 1)
+            return {}; // Each frame holds exactly one picture.
+        const std::size_t frame_size =
+            17 + static_cast<std::size_t>(read_u16(header, 0)) * read_u16(header, 2) * 4;
+        if (record.size() - offset - 4 < frame_size)
+            return {};
+        std::vector<std::uint8_t> frame(record.begin() + offset + 4,
+                                        record.begin() + offset + 4 + frame_size);
+        if (n == 0)
+            first_frame = frame;
+        else if (frame.size() != first_frame.size() ||
+                 !std::equal(frame.begin(), frame.begin() + 4, first_frame.begin()))
+            return {}; // Deltas only make sense against a picture of the same size.
+        else
+            // XOR on packed bytes is XOR on each 4-bit color index they hold.
+            for (std::size_t i = 17; i < frame.size(); ++i)
+                frame[i] ^= first_frame[i];
+        auto image = decode_ega_picture(frame);
+        if (!image)
+            return {};
+        frames.push_back({delay, std::move(image.image)});
+        offset += 4 + frame_size;
+    }
+    if (offset != record.size())
+        return {};
+    return {FormatResult::ok, std::move(frames)};
+}
 } // namespace opengold
