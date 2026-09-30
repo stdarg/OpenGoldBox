@@ -264,11 +264,14 @@ void all_classes()
                         : 1) &&
                       argument(result, "bonus") == std::to_string(modifier + (trained ? 2 : 0)),
                       "Independent seed and all-class proficiency/ability expectations");
+                // With the other hand empty a Versatile melee weapon uses its larger die.
+                const auto dice = e.versatile && !e.ranged ? "1d" + std::to_string(e.versatile)
+                                  : e.damage;
                 const int damage =
                     seed == 40 ? 0
                     : e.damage == "1"
                     ? 1
-                    : (seed == 0 ? critical.at(e.damage) : normal.at(e.damage)) + modifier;
+                    : (seed == 0 ? critical.at(dice) : normal.at(dice)) + modifier;
                 check(
                     unit(*c, 2).hit_points == 1000 - damage,
                     "Normal, critical and miss damage match independent golden rolls, including fixed Blowgun damage");
@@ -424,7 +427,7 @@ void campaign()
         bought.member(buyer).item_sources.at(purchased.id).stored.type == 45,
         "Ordinary purchase retains original price, quantity, provenance and existing bow conversion");
     bought.equip(buyer, purchased.id);
-    check(bought.profile(buyer).equipment.weapon_hands == 2,
+    check(bought.profile(buyer).weapon_hands == 2,
           "Purchased Fine Composite Long Bow equips through normal campaign inventory");
     original.stored.magic_bonus = 1;
     check(equipment_conversion(original) == "por:unsupported:45",

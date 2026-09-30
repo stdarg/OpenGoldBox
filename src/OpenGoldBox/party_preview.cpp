@@ -3,7 +3,6 @@
 #include "godot_images.h"
 #include "godot_nodes.h"
 #include "localization.h"
-#include "grip_control.h"
 #include "game_resources.h"
 #include "character_creation_view.h"
 #include "combat_view.h"
@@ -96,8 +95,6 @@ void CharacterCreationView::setup_party()
     i18n::prepare_ui(*panel);
     presentation::attach_child(*this, std::move(panel));
     get_node<Control>("PartyPanel")->hide();
-    get_node<OptionButton>("PartyPanel/Grip")
-    ->connect("item_selected", callable_mp(this, &CharacterCreationView::party_grip_selected));
     get_node<Button>("Party")->connect(
         "pressed", callable_mp(this, &CharacterCreationView::party_action).bind(0));
     get_node<Button>("AddParty")
@@ -164,8 +161,6 @@ void CharacterCreationView::party_layout()
     place("PartyPanel/ReadyLabel", Rect2(w - 284, 488, 120, 24));
     place("PartyPanel/ActionLabel", Rect2(w - 140, 488, 120, 24));
     place("PartyPanel/Inventory", Rect2(350, h - 280, w - 374, 96));
-    place("PartyPanel/GripLabel", Rect2(350, h - 176, 64, 36));
-    place("PartyPanel/Grip", Rect2(420, h - 176, 180, 36));
     const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
             "Unequip", "Explore", "Combat", "Close"};
     const double bw = (w - 64) / 5;
@@ -199,27 +194,6 @@ void CharacterCreationView::party_selected(std::int64_t index)
     refresh_party();
 }
 
-void CharacterCreationView::party_grip_selected(std::int64_t index)
-{
-    const auto selection = get_node<ItemList>("PartyPanel/Inventory")->get_selected_items();
-    try
-    {
-        auto *grip = get_node<OptionButton>("PartyPanel/Grip");
-        if (index < 0 || index >= grip->get_item_count())
-            return;
-        campaign_->set_grip(campaign_->state().roster.at(roster_index_).id,
-                            grip->get_item_id(index));
-        error_ = String();
-    }
-    catch (const std::exception &e)
-    {
-        error_ = i18n::text(e.what());
-    }
-    refresh_party();
-    if (!selection.is_empty())
-        get_node<ItemList>("PartyPanel/Inventory")->select(selection[0]);
-}
-
 void CharacterCreationView::refresh_party()
 {
     auto *list = get_node<ItemList>("PartyPanel/Roster");
@@ -235,7 +209,6 @@ void CharacterCreationView::refresh_party()
     items->clear();
     std::string sheet = i18n::utf8(
                             "Create a character, finish its sheet, then Add to party.\n\nSix PC positions and two NPC positions. Removed members remain in the roster.");
-    presentation::refresh_grip(*get_node<OptionButton>("PartyPanel/Grip"), {}, {});
     if (!state.roster.empty())
     {
         roster_index_ = std::min(roster_index_, state.roster.size() - 1);
@@ -243,8 +216,6 @@ void CharacterCreationView::refresh_party()
         const auto &m = state.roster[roster_index_];
         sheet = sheet_text(m.character, &m).utf8().get_data();
         const auto profile = campaign_->profile(m.id);
-        presentation::refresh_grip(*get_node<OptionButton>("PartyPanel/Grip"), profile.equipment,
-                                   profile.grips);
         for (const auto &item : m.character.inventory().items())
         {
             const auto found = std::find(m.equipped.begin(), m.equipped.end(), item.id);
@@ -397,26 +368,12 @@ void CharacterCreationView::equipment_art_check()
             break;
         case 1:
         {
-            auto *grip = get_node<OptionButton>("PartyPanel/Grip");
             const auto id = campaign_->state().roster.at(member).id;
-            require(grip->get_item_count() == 2 && grip->get_selected_id() == 1,
-                    "Party inventory offers both longsword grips");
-            grip->emit_signal("item_selected", 1);
-            require(campaign_->profile(id).equipment.weapon_hands == 2 &&
-                    grip->get_selected_id() == 2,
-                    "Party dropdown applies two hands");
-            grip->emit_signal("item_selected", 0);
-            require(campaign_->profile(id).equipment.weapon_hands == 1,
-                    "Party dropdown applies one hand");
+            require(campaign_->profile(id).weapon_hands == 2,
+                    "A longsword with an empty other hand is wielded two-handed");
             gear(2, true);
-            require(grip->is_item_disabled(1),
-                    "Equipped shield disables two hands in party inventory");
-            const auto profile = campaign_->profile(id).data;
-            grip->emit_signal("item_selected", 1);
-            require(campaign_->profile(id).data == profile && grip->get_selected_id() == 1,
-                    "Rejected party grip restores displayed selection");
-            error_ = String();
-            refresh_party();
+            require(campaign_->profile(id).weapon_hands == 1,
+                    "Equipping a shield makes the longsword one-handed");
             break;
         }
         case 2:

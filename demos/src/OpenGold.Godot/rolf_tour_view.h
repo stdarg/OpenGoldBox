@@ -116,7 +116,7 @@ class RolfTourView : public godot::Control
     void refresh_rest();
     void rest_selected(std::int64_t index);
     void rest_start();
-    void rest_spend();
+    void rest_heal();
     void rest_recover();
     void refresh_rest_spells();
     void rest_spell_toggled(bool selected, godot::String group, godot::String option);

@@ -214,8 +214,6 @@ bool Session::use_effect(const Command &command)
         attacking.cleave_damage = true;
         attack(attacking, actor(command.target), false);
         source.facing_left = attacking.facing_left;
-        if (weapon_hit_)
-            weapon_hit_->cleave = true;
     }
     else if (command.verb == "effect_push")
     {
@@ -278,7 +276,7 @@ bool Session::use_effect(const Command &command)
     }
     if (mastery_ && !mastery_available(*mastery_) && champion_offers_.empty() && !champion_move_)
         mastery_.reset();
-    if (!effect_waiting() && !champion_move_ && !weapon_hit_)
+    if (!effect_waiting() && !champion_move_)
         finish_effects();
     return true;
 }
@@ -310,8 +308,7 @@ void Session::validate_mastery_state() const
                  m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push) ||
                 m.natural < 2 || m.natural > 20 || m.origin.x < 0 || m.origin.y < 0 ||
                 m.origin.x >= board_.width || m.origin.y >= board_.height || board_.at(m.origin) == 1 ||
-                (m.targeting && m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push) ||
-                weapon_hit_)
+                (m.targeting && m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push))
             throw std::runtime_error("Invalid pending mastery source");
         const auto attacking = mastery_actor(m);
         const auto &d = def(attacking);
@@ -394,7 +391,7 @@ void Session::validate_mastery_state() const
                 board_.at(r.mover) == 1 || r.movement < 0 || r.movement > actors_[turn_].movement ||
                 r.actor == actors_[turn_].source.id || (pending() && pending() != r.actor) ||
                 (!pending() && actors_[turn_].hp > 0) ||
-                (!effect_waiting() && !champion_move_ && !weapon_hit_))
+                (!effect_waiting() && !champion_move_))
             throw std::runtime_error("Invalid mastery reaction origin");
     }
 }

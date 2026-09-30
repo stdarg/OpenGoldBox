@@ -29,7 +29,7 @@ class entitlement and feat entitlement stay distinct and cannot duplicate a feat
 STYLE-1 approves automatically applying the beneficial replacement. Eligible
 Melee attacks held in two hands use it for each damage die, including critical
 and Savage Attacker rolls. One-handed, Ranged, thrown, spell and unarmed attacks
-do not benefit. The existing Savage dialog displays the resulting totals.
+do not benefit. The Savage Attacker log line shows the resulting totals.
 There are no new combat saving controls.
 
 PC42 validates the new grants; internal combat27 retains signed pending damage

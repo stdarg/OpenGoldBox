@@ -104,7 +104,7 @@ and application ID so different time-update sizes preserve RNG continuation.
 
 Rules 0.5.0 adds Blinded through the blindness option of Blindness/Deafness.
 The combat checkpoint (`OGCOMBAT 27`) stores all effect applications, timers, presentation
-facing, pending movement reactions, involuntary allied overlap, weapon grip, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP and pending Savage Attacker decisions.
+facing, pending movement reactions, involuntary allied overlap, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP.
 Movement queues retain their saved progress; future weapon attacks use
 the corrected [Heavy requirements](HEAVY-WEAPONS.md). The
 [weapon catalog](WEAPON-CATALOG.md) contains all 38 SRD weapons while retaining
@@ -112,7 +112,7 @@ original campaign conversions and prices. The [armor catalog](ARMOR.md)
 uses shared category definitions for equipment, AC and starting-class training;
 equipped ability checks combine these penalties with character skill/tool grants.
 Core only collects equipped IDs and delegates the query to the rules module. The campaign
-save (`OPENGOLD-CAMPAIGN 19`) stores the clock, encounter scopes, rules-owned effect state, grip and
+save (`OPENGOLD-CAMPAIGN 19`) stores the clock, encounter scopes, rules-owned effect state and
 acquired feature/feat grants with source IDs, acquisition levels and choices.
 It also stores training selections and source grants, completed Short Rest
 spending tickets, individual eligibility records and resumable rest activity.

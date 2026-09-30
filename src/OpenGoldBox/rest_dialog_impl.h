@@ -61,8 +61,8 @@ void RolfTourView::setup_rest()
     };
     button("Start", N_("Start"), Rect2(24, 580, 180, 40),
            callable_mp(this, &RolfTourView::rest_start));
-    button("Spend", N_("Spend 1 Hit Die"), Rect2(24, 580, 220, 40),
-           callable_mp(this, &RolfTourView::rest_spend));
+    button("Heal", N_("Heal with Hit Dice"), Rect2(24, 580, 220, 40),
+           callable_mp(this, &RolfTourView::rest_heal));
     button("Resume", N_("Resume Long Rest"), Rect2(24, 580, 220, 40),
            callable_mp(this, &RolfTourView::rest_resume));
     button("Save", N_("Save game"), Rect2(258, 580, 210, 40),
@@ -136,7 +136,7 @@ void RolfTourView::refresh_rest()
 }))
     rest_member_ = infos.empty() ? 0 : infos.front().id;
     String details;
-    bool eligible = false, spendable = false;
+    bool eligible = false, healable = false;
     auto *recovery = w->get_node<OptionButton>("RecoveryChoice");
     const String previous =
         recovery->get_selected() >= 0 ? String(recovery->get_selected_metadata()) : String();
@@ -164,7 +164,7 @@ void RolfTourView::refresh_rest()
         details = String::utf8(m.character.sheet().name.c_str()) + "\n";
         if (spending)
             details +=
-                rest_text(earned ? N_("Short Rest completed. Choose one die at a time, or finish.")
+                rest_text(earned ? N_("Short Rest completed. Heal with Hit Dice spends dice until full HP or none remain.")
                           : N_("This member did not complete the rest."));
         else if (retained)
             details += rest_text(N_(
@@ -187,7 +187,8 @@ void RolfTourView::refresh_rest()
                        "; " + rest_text(N_("Long Rest")) + " " + String::num_int64(pool.capacity) +
                        "\n";
         }
-        spendable = earned && r.can_rest && r.hit_dice > 0;
+        healable = earned && r.can_rest && r.hit_dice > 0 &&
+                   m.vitals.hit_points < m.character.sheet().hit_points;
         recovery_visible = earned && std::any_of(r.resources.begin(), r.resources.end(),
             [](const auto & pool)
         {
@@ -225,8 +226,8 @@ void RolfTourView::refresh_rest()
     w->get_node<Button>("Recover")->set_disabled(recovery->get_item_count() == 0);
     w->get_node<Button>("Start")->set_visible(!spending && !retained);
     w->get_node<Button>("Start")->set_disabled(!eligible);
-    w->get_node<Button>("Spend")->set_visible(spending);
-    w->get_node<Button>("Spend")->set_disabled(!spendable);
+    w->get_node<Button>("Heal")->set_visible(spending);
+    w->get_node<Button>("Heal")->set_disabled(!healable);
     w->get_node<Button>("Resume")->set_visible(retained && !spending);
     w->get_node<Button>("Resume")->set_disabled(!retained || !state.rest_activity->interrupted);
     w->get_node<Button>("Save")->set_visible(embedded_party_ && session_->can_leave() &&
@@ -263,20 +264,25 @@ void RolfTourView::rest_start()
     }
 }
 
-void RolfTourView::rest_spend()
+void RolfTourView::rest_heal()
 {
     try
     {
         if (!campaign_ || !campaign_->state().short_rest)
             return;
-        const auto result =
-            campaign_->spend_hit_die(campaign_->state().short_rest->ticket, rest_member_);
+        const auto rolls =
+            campaign_->heal_with_hit_dice(campaign_->state().short_rest->ticket, rest_member_);
         session_->commit_rest_recovery();
-        rest_result_ = rest_text(N_("Roll:")) + " " + String::num_int64(result.roll) + " + (" +
-                       String::num_int64(result.modifier) + ")   " + rest_text(N_("HP restored:")) +
-                       " " + String::num_int64(result.healing) + "   " +
-                       rest_text(N_("Hit Dice remaining:")) + " " +
-                       String::num_int64(result.remaining);
+        // Every automatic roll is listed so the player sees how the HP came back.
+        rest_result_ = String();
+        for (const auto &roll : rolls)
+            rest_result_ += rest_text(N_("Roll:")) + " d" + String::num_int64(roll.die) + " " +
+                            String::num_int64(roll.roll) + " + (" +
+                            String::num_int64(roll.modifier) + ")   " +
+                            rest_text(N_("HP restored:")) + " " +
+                            String::num_int64(roll.healing) + ";   ";
+        rest_result_ += rest_text(N_("Hit Dice remaining:")) + " " +
+                        String::num_int64(rolls.back().remaining);
         refresh_rest();
     }
     catch (const std::exception &e)
@@ -442,13 +448,13 @@ void RolfTourView::check_rest_controls()
             auto *members = w->get_node<ItemList>("Members");
             members->select(1);
             members->emit_signal("item_selected", 1);
-            check(w->get_node<Button>("Spend")->is_disabled(),
+            check(w->get_node<Button>("Heal")->is_disabled(),
                   "Ineligible member cannot spend Hit Dice");
             members->select(0);
             members->emit_signal("item_selected", 0);
-            check(!w->get_node<Button>("Spend")->is_disabled(),
-                  "Eligible character can spend a die");
-            w->get_node<Button>("Spend")->grab_focus();
+            check(!w->get_node<Button>("Heal")->is_disabled(),
+                  "Wounded eligible character can heal with Hit Dice");
+            w->get_node<Button>("Heal")->grab_focus();
             for (bool down :
                     {
                         true, false
@@ -460,9 +466,15 @@ void RolfTourView::check_rest_controls()
                 key->set_pressed(down);
                 w->push_input(key, true);
             }
-            check(!w->get_node<Label>("Result")->get_text().is_empty() &&
-                  campaign_->member(rest_member_).vitals.hit_points > 1,
-                  "Committed die shows its healing result");
+            const auto &healed = campaign_->member(rest_member_);
+            check(w->get_node<Label>("Result")->get_text().contains(rest_text(N_("HP restored:"))) &&
+                  healed.vitals.hit_points > 1,
+                  "One action shows each die's healing result");
+            check(healed.vitals.hit_points == healed.character.sheet().hit_points ||
+                  campaign_->recovery_info(rest_member_).hit_dice == 0,
+                  "Healing stops only at full HP or with no dice left");
+            check(w->get_node<Button>("Heal")->is_disabled(),
+                  "Nothing is left to heal after one action");
             auto rules = opengold::srd5::character_rules();
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "rest-ui");
             // Decode through the same campaign codec used by the save dialog.
@@ -472,10 +484,7 @@ void RolfTourView::check_rest_controls()
                 opengold::decode_campaign(saved, *rules, *module, "rest-ui", nullptr).party);
             refresh_rest();
             check(campaign_->state().short_rest.has_value(),
-                  "Reload retains pending Hit Die spending");
-            w->get_node<Button>("Spend")->emit_signal("pressed");
-            check(w->get_node<Button>("Spend")->is_disabled(),
-                  "After the second die no dice remain");
+                  "Reload retains the completed Short Rest");
         }
         else if (rest_check_stage_ == 24)
         {
@@ -559,8 +568,15 @@ void RolfTourView::check_rest_controls()
         }
         else if (rest_check_stage_ == 60)
         {
-            w->get_node<Button>("Spend")->emit_signal("pressed");
+            auto wounded = campaign_->checkpoint();
+            for (auto &m : wounded.roster)
+                if (m.id == rest_member_)
+                    m.vitals.hit_points = 1;
+            campaign_->restore(wounded);
+            refresh_rest();
+            w->get_node<Button>("Heal")->emit_signal("pressed");
             const auto spent = campaign_->member(rest_member_).vitals;
+            check(spent.hit_points > 1, "Heal with Hit Dice restores HP before the encounter");
             const auto rng = campaign_->state().random_state;
             w->get_node<Button>("Finish")->emit_signal("pressed");
             check(session_->pending_encounter() && !campaign_->state().short_rest &&

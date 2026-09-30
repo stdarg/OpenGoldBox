@@ -47,10 +47,6 @@ void turn(CombatSession &c, EntityId id)
 
 void settle(CombatSession &c)
 {
-    if (c.snapshot().sneak_attack_choice)
-        act(c, "sneak_skip");
-    if (c.snapshot().savage_attack_choice)
-        act(c, "savage_skip");
     if (c.snapshot().free_movement)
         act(c, "end");
 }
@@ -270,16 +266,7 @@ void timing_and_rolls()
             turn(*c, 1);
             act(*c, "melee");
             auto copy = r->restore(c->save());
-            check(c->save() == copy->save(), "Pending roll mode remains valid on reload");
-            if (c->snapshot().savage_attack_choice)
-            {
-                act(*c, "savage_use");
-                act(*copy, "savage_use");
-                check(c->save() == copy->save(), "Second damage roll replay");
-                copy = r->restore(c->save());
-                act(*c, "savage_first");
-                act(*copy, "savage_first");
-            }
+            check(c->save() == copy->save(), "Resolved roll mode remains valid on reload");
             check(c->save() == copy->save() && !fx::sapped(state(*c, 1)),
                   "Damage resolution consumes Sap on the live actor");
             check(arg(result(*c), "disadvantage") == (sap ? "" : " (advantage)"),
@@ -492,18 +479,11 @@ void pending_interactions()
         turn(*c, 1);
         act(*c, "melee");
         auto copy = r->restore(c->save());
-        if (std::string_view(klass) == "rogue")
-        {
-            check(bool(c->snapshot().sneak_attack_choice), "Vex qualifies Sneak Attack");
-            act(*c, "sneak_use");
-            act(*copy, "sneak_use");
-            copy = r->restore(c->save());
-        }
-        check(bool(c->snapshot().savage_attack_choice), "Savage follows Sneak when both apply");
-        act(*c, "savage_skip");
-        act(*copy, "savage_skip");
+        check(std::string_view(klass) != "rogue" || logged(*c, "adds Sneak Attack"),
+              "Vex qualifies Sneak Attack");
+        check(logged(*c, "(Savage Attacker)"), "Savage Attacker applies alongside Sneak Attack");
         check(c->save() == copy->save() && state(*c, 99).active.size() == 1,
-              "Pending damage choices consume then renew Vex once");
+              "Automatic damage bonuses consume then renew Vex once");
         if (std::string_view(klass) == "fighter")
         {
             check(bool(c->snapshot().free_movement), "Champion critical retains free movement");

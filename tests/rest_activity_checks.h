@@ -99,8 +99,8 @@ void segments()
     check(saved(party) == paused,
           "Duplicate interruption, premature resume and combat cannot lose pending choices");
     party = loaded(paused);
-    const auto die = party.spend_hit_die(party.state().short_rest->ticket, 1);
-    check(die.healing > 0, "Sequential die spend works after interruption");
+    const auto rolls = party.heal_with_hit_dice(party.state().short_rest->ticket, 1);
+    check(rolls.front().healing > 0, "Hit Dice healing works after interruption");
     finish_spending(party);
     party.resume_rest(ticket(party));
     advance(party, 10 * minute);
@@ -306,7 +306,7 @@ void discard_and_bad_saves()
     }
     advance(party, 70 * minute);
     party.interrupt_rest(ticket(party), RestInterruption::damage);
-    (void)party.spend_hit_die(party.state().short_rest->ticket, 1);
+    (void)party.heal_with_hit_dice(party.state().short_rest->ticket, 1);
     auto vitals = party.member(1).vitals;
     module()->set_rest_work(vitals, party.member(1).character.sheet(), RestWork::light_activity);
     (void)module()->recover_at_safety(vitals, party.member(1).character.sheet(), {});
@@ -354,7 +354,7 @@ void host_interruptions()
                 });
                 check(saved(party) == prepared, "Combat cannot skip pending Hit Dice");
                 party = loaded(prepared);
-                (void)party.spend_hit_die(party.state().short_rest->ticket, 1);
+                (void)party.heal_with_hit_dice(party.state().short_rest->ticket, 1);
                 finish_spending(party);
             }
             check(party.prepare_combat(), "Resolved interruption is ready for combat");

@@ -189,13 +189,8 @@ void run()
     check(soldier.advance(*rules, soldier_state), "Soldier Rogue advances normally");
     auto hit = battle(soldier);
     act(*hit, "melee");
-    check(bool(hit->snapshot().savage_attack_choice) && !has(*hit, "cunning_dash"),
-          "Pending damage decision blocks Cunning Action");
-    const auto pending = hit->save();
-    check(!hit->submit({hit->snapshot().revision, 1, 0, "cunning_dash"}) && pending == hit->save(),
-          "Pending damage attempt rejects atomically");
-    act(*hit, "savage_skip");
-    check(has(*hit, "cunning_dash"), "Completing damage restores access to unspent Bonus Action");
+    check(has(*hit, "cunning_dash"),
+          "Automatic Savage damage leaves the unspent Bonus Action for Cunning Action");
     for (const auto &resource : rules->recovery_info(soldier.sheet(), soldier_state).resources)
         check(resource.id != "cunning_action", "Cunning Action is not a rest-use pool");
     // A real Ray of Frost hit reduces every Dash allowance, including the new one.

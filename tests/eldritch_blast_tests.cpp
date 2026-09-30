@@ -446,7 +446,6 @@ void campaign()
             const auto id =
                 npc ? p.recruit("fixture:eldritch", std::move(h)) : p.add_pc(std::move(h));
             p.equip(id, 1);
-            p.set_grip(id, 2);
             auto state = p.checkpoint();
             state.roster[0].vitals.hit_points -= 3;
             state.random_state = 123;
@@ -462,8 +461,8 @@ void campaign()
             p.begin_combat();
             p.apply_combat(c->snapshot());
             p.end_combat();
-            check(p.member(id).vitals == old && p.member(id).equipment.weapon_hands == 2,
-                  "Cantrip handoff retains wounds, pools and chosen attack grip");
+            check(p.member(id).vitals == old && p.profile(id).weapon_hands == 2,
+                  "Cantrip handoff retains wounds, pools and the two-handed staff");
             const auto saved = encode_campaign(p, nullptr, "eldritch");
             check(saved.starts_with("OPENGOLD-CAMPAIGN 19\n"),
                   "Every campaign uses the current save format");

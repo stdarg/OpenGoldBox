@@ -35,10 +35,6 @@ func checkpoint() -> PackedByteArray:
     return FileAccess.get_file_as_bytes(path)
 func expect_native(name: String) -> void:
     require(checkpoint() == FileAccess.get_file_as_bytes(fixtures.path_join(name + ".save")), "UI/native state match: " + name)
-func resolve_damage() -> void:
-    for n in range(3):
-        if current_scene.get_node("SavageAttacker").visible:
-            current_scene.get_node("SavageAttacker/Skip").pressed.emit(); await settle()
 func click_target() -> void:
     var point: Vector2
     if demo:
@@ -73,7 +69,7 @@ func run_checks() -> void:
             require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No combat save controls")
             weapons.grab_focus(); await key(KEY_ENTER); require(weapons.get_popup().visible, "Keyboard opens Weapon")
             weapons.get_popup().set_focused_item(0); await key(KEY_DOWN); await key(KEY_ENTER); expect_native("selected")
-            weapons.release_focus(); current_scene.get_node("Melee").pressed.emit(); await settle(); await click_target(); await resolve_damage(); expect_native("qualified")
+            weapons.release_focus(); current_scene.get_node("Melee").pressed.emit(); await settle(); await click_target(); expect_native("qualified")
             require(bonus.visible and not use.disabled, "Qualifying Attack offers usable Bonus Action")
             require(bonus.position.y == weapons.position.y + 44, "Bonus Action row follows Weapon by44px")
             require(weapons.get_global_rect().end.y < bonus.get_global_rect().position.y and use.get_global_rect().end.y < root.size.y, "Rows fit without overlap")
@@ -82,8 +78,8 @@ func run_checks() -> void:
             await capture("light-" + locale + "-" + str(size.x))
             var before := checkpoint(); use.grab_focus(); await key(KEY_ENTER); await key(KEY_ESCAPE)
             require(checkpoint() == before, "Escape targeting preserves actions, weapon identities, RNG and HP")
-            use.grab_focus(); await key(KEY_ENTER); await key(KEY_RIGHT); await key(KEY_LEFT); await key(KEY_SPACE); await resolve_damage(); expect_native("after")
+            use.grab_focus(); await key(KEY_ENTER); await key(KEY_RIGHT); await key(KEY_LEFT); await key(KEY_SPACE); expect_native("after")
             require(use.disabled, "Bonus Action spent disables further Light attack")
-            await load_fixture("qualified"); use.pressed.emit(); await settle(); await click_target(); await resolve_damage(); expect_native("after")
+            await load_fixture("qualified"); use.pressed.emit(); await settle(); await click_target(); expect_native("after")
         current_scene.queue_free(); await settle()
     cleanup(); print("Light attack UI/native checks passed"); quit(0)

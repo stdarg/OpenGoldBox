@@ -1,4 +1,5 @@
 #include "opengold/campaign_save.h"
+#include "combat_fixture.h"
 #include "action_budget.h"
 #include <filesystem>
 #include "opengold/srd5.h"
@@ -306,7 +307,8 @@ void attacks_and_malformed()
 {
     auto rules = module();
     auto h = hero(2);
-    auto c = battle(h, {"longsword"});
+    // The shield keeps the Versatile longsword one-handed, so it deals a d8.
+    auto c = battle(h, {"longsword", "shield"});
     const auto random = rng(*c);
     act(*c, "melee", 2);
     check(unit(*c, 2).hit_points == 24,
@@ -370,17 +372,14 @@ void savage()
         auto c = battle(h, {"longsword"}, {}, trial);
         act(*c, "action_surge");
         act(*c, "melee", 2);
-        if (!c->snapshot().savage_attack_choice)
+        if (!test::logged(*c, "(Savage Attacker)"))
             continue;
-        check(unit(*c).action, "Surge attack leaves normal action during pending damage choice");
-        auto copy = rules->restore(c->save());
-        act(*c, "savage_skip");
-        act(*copy, "savage_skip");
-        check(c->save() == copy->save(),
-              "Pending Savage decision resumes with the unused ordinary action");
+        check(unit(*c).action, "Surge attack with automatic Savage damage keeps the normal action");
+        check(rules->restore(c->save())->save() == c->save(),
+              "Savage Attacker hit resumes with the unused ordinary action");
         exercised = true;
     }
-    check(exercised, "Actual extra attack exercises pending damage choice");
+    check(exercised, "Actual extra attack exercises automatic Savage Attacker");
 }
 
 void recovery()
@@ -478,23 +477,6 @@ void ui_fixtures()
     for (unsigned level = 3; level <= 4; ++level)
         std::ofstream(path / ("level" + std::to_string(level) + ".save"), std::ios::binary)
                 << battle(hero(level, "orc"), {"longsword"})->save();
-    auto h = hero(3);
-    auto state = VitalState{h.sheet().hit_points};
-    auto choice = module()->default_advancement(h.sheet());
-    choice.feat = "savage_attacker";
-    choice.abilities = {};
-    check(h.advance(*module(), state, choice), "UI feat fixture");
-    bool captured = false;
-    for (unsigned seed = 0; seed < 100 && !captured; ++seed)
-    {
-        auto pending = battle(h, {"longsword"}, {}, seed);
-        act(*pending, "melee", 2);
-        if (!pending->snapshot().savage_attack_choice)
-            continue;
-        std::ofstream(path / "decision.save", std::ios::binary) << pending->save();
-        captured = true;
-    }
-    check(captured, "UI pending damage choice");
     auto c = battle(hero(2), {"longsword"});
     std::ofstream(path / "available.save", std::ios::binary) << c->save();
     act(*c, "action_surge");

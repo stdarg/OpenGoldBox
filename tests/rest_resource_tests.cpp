@@ -362,10 +362,10 @@ void persistence_and_advancement()
     for (unsigned i = 4; i < 6; ++i)
         if (rows[i].starts_with("1 "))
         {
-            // Published actor field 27 is Hit Dice, before clocks and feature pools.
+            // Published actor field 26 is Hit Dice, before clocks and feature pools.
             std::istringstream fields(rows[i]);
             std::string field;
-            for (unsigned n = 0; n < 27; ++n)
+            for (unsigned n = 0; n < 26; ++n)
                 fields >> std::quoted(field);
             fields >> std::ws;
             const auto begin = static_cast<std::size_t>(fields.tellg());

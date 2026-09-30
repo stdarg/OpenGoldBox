@@ -2,6 +2,26 @@ namespace optional_mastery_checks
 {
 using namespace mastery_combat_checks;
 
+bool hit(const CombatSession &c)
+{
+    return !arg(result(c), "hit").empty();
+}
+
+bool critical(const CombatSession &c)
+{
+    return arg(result(c), "hit") == "CRITICAL";
+}
+
+// The damage roll itself is not reported, so bound it by the Greataxe's d12s.
+bool greataxe_damage_within(const CombatSession &c, int modifier)
+{
+    const auto attack = result(c);
+    const int count = arg(attack, "hit") == "CRITICAL" ? 2 : 1;
+    const int damage = std::stoi(arg(attack, "damage"));
+    return damage >= std::max(0, count + modifier) &&
+           damage <= std::max(0, count * 12 + modifier);
+}
+
 void choose(CombatSession &c, std::string_view verb, unsigned item)
 {
     for (const auto &command : c.legal_commands())
@@ -117,7 +137,6 @@ void simultaneous()
         {
             auto c = r->restore(mastery_choice_checks::critical_before(weapon));
             act(*c, std::string_view(weapon) == "longbow" ? "ranged" : "melee", 99);
-            act(*c, "savage_skip");
             check(c->snapshot().optional_effect_choice &&
                   c->snapshot().optional_effect_choice->options.size() == 2,
                   "Critical retains mastery and Champion as separate options");
@@ -184,11 +203,7 @@ void reactions()
                 check(!move.verb.empty() && c->submit(move) && c->snapshot().reaction_pending,
                       "Mastery source gets a real opportunity");
                 act(*c, "opportunity", 99);
-                if (!c->snapshot().savage_attack_choice ||
-                        !c->snapshot().savage_attack_choice->critical)
-                    continue;
-                act(*c, "savage_skip");
-                if (!c->snapshot().optional_effect_choice)
+                if (!critical(*c) || !c->snapshot().optional_effect_choice)
                     continue;
                 // On the enemy turn, mastery is offered before movement regardless of player
                 // preference.
@@ -201,8 +216,6 @@ void reactions()
                     roundtrip(*r, *c);
                     act(*c, std::string_view(key) == "halberd" ? "effect_attack" : "effect_push",
                         std::string_view(key) == "halberd" ? 98 : 99);
-                    if (c->snapshot().savage_attack_choice)
-                        act(*c, "savage_skip");
                 }
                 roundtrip(*r, *c);
                 while (c->snapshot().optional_effect_choice)
@@ -251,17 +264,15 @@ void cleave_criticals()
         auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
         turn(*c, 1);
         act(*c, "melee", 99);
-        if (!c->snapshot().savage_attack_choice || !c->snapshot().savage_attack_choice->critical)
+        if (!critical(*c))
             continue;
-        act(*c, "savage_skip");
         choose(*c, "effect_use", 1);
         act(*c, "effect_attack", 98);
-        if (!c->snapshot().savage_attack_choice || !c->snapshot().savage_attack_choice->critical)
+        if (!critical(*c))
             continue;
-        check(c->snapshot().savage_attack_choice->modifier == 0,
+        check(greataxe_damage_within(*c, 0),
               "Cleave omits positive ability modifier even on a critical");
         roundtrip(*r, *c);
-        act(*c, "savage_skip");
         check(c->snapshot().optional_effect_choice &&
               c->snapshot().optional_effect_choice->options.size() == 2,
               "Two critical hits retain two separate movement entitlements");
@@ -277,8 +288,6 @@ void cleave_criticals()
         roundtrip(*r, *c);
         act(*c, "action_surge");
         act(*c, "melee", 99);
-        if (c->snapshot().savage_attack_choice)
-            act(*c, "savage_skip");
         check(!c->snapshot().effect_targeting &&
               (!c->snapshot().optional_effect_choice ||
                c->snapshot().optional_effect_choice->title.source != "Cleave"),
@@ -342,7 +351,6 @@ void ui_fixtures()
     }
     auto c = r->restore(mastery_choice_checks::critical_before("maul"));
     act(*c, "melee", 99);
-    act(*c, "savage_skip");
     write("ordered-pending", c->save());
     choose(*c, "effect_use", 2);
     write("ordered-moving", c->save());
@@ -484,10 +492,8 @@ void movement_enables_mastery()
             auto c = r->create({board, roster, 777}, seed);
             turn(*c, 1);
             act(*c, "melee", 99);
-            if (!c->snapshot().savage_attack_choice ||
-                    !c->snapshot().savage_attack_choice->critical)
+            if (!critical(*c))
                 continue;
-            act(*c, "savage_skip");
             check(c->snapshot().optional_effect_choice &&
                   c->snapshot().optional_effect_choice->options.size() == 2 &&
                   !c->snapshot().optional_effect_choice->options[0].available,
@@ -512,8 +518,6 @@ void movement_enables_mastery()
                   "Moved source re-evaluates mastery geometry");
             choose(*c, "effect_use", 1);
             act(*c, cleave ? "effect_attack" : "effect_push", cleave ? 98 : 99);
-            if (c->snapshot().savage_attack_choice)
-                act(*c, "savage_skip");
             roundtrip(*r, *c);
             tested = true;
         }
@@ -548,19 +552,13 @@ void slain_reaction_mover()
                 break;
             }
         act(*c, "opportunity", 99);
-        if (!c->snapshot().savage_attack_choice)
+        if (!hit(*c))
             continue;
-        act(*c, "savage_skip");
         check(unit(*c, 99).hit_points == 0 && c->snapshot().optional_effect_choice,
               "Slain mover leaves Cleave available on another creature");
         roundtrip(*r, *c);
         choose(*c, "effect_use", 1);
         act(*c, "effect_attack", 98);
-        if (c->snapshot().savage_attack_choice)
-        {
-            roundtrip(*r, *c);
-            act(*c, "savage_skip");
-        }
         roundtrip(*r, *c);
         check(c->snapshot().actor != 99 && !c->snapshot().reaction_pending,
               "Dead mover cannot resume its route");
@@ -593,11 +591,6 @@ void physical_and_damage()
                 auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, seed);
                 turn(*c, 1);
                 act(*c, "throw", 99);
-                if (c->snapshot().savage_attack_choice)
-                {
-                    roundtrip(*r, *c);
-                    act(*c, "savage_skip");
-                }
                 if (!c->snapshot().optional_effect_choice)
                     continue;
                 roundtrip(*r, *c);
@@ -627,26 +620,20 @@ void physical_and_damage()
             auto c = r->create(e, seed);
             turn(*c, 1);
             act(*c, "melee", 99);
-            if (!c->snapshot().savage_attack_choice)
+            if (!hit(*c))
                 continue;
-            act(*c, "savage_skip");
             choose(*c, "effect_use", 1);
             check(choose_demo_command(*c).verb == "effect_skip",
                   "Automatic combat declines Cleave when only allies are available");
             act(*c, "effect_attack", 98);
-            if (!c->snapshot().savage_attack_choice)
+            if (!hit(*c))
                 continue;
-            check(c->snapshot().savage_attack_choice->modifier ==
-                  std::min(0, h.sheet().modifiers[0]),
+            check(greataxe_damage_within(*c, std::min(0, h.sheet().modifiers[0])),
                   "Cleave retains negative ability modifiers and omits positive ones");
-            roundtrip(*r, *c);
-            act(*c, "savage_use");
-            roundtrip(*r, *c);
-            act(*c, "savage_second");
             roundtrip(*r, *c);
             tested = true;
         }
-        check(tested, "Cleave ally and Savage reroll with positive/negative modifier covered");
+        check(tested, "Cleave ally with positive/negative modifier covered");
     }
 }
 
@@ -655,7 +642,6 @@ void malformed()
     auto r = module();
     auto c = r->restore(mastery_choice_checks::critical_before("maul"));
     act(*c, "melee", 99);
-    act(*c, "savage_skip");
     const auto bytes = c->save();
     const auto marker = "\n1 99 " + std::to_string(unsigned(fx::Mastery::topple)) + " ";
     const auto start = bytes.find(marker);
@@ -712,17 +698,13 @@ void unconscious_cleave()
         auto c = r->create(e, seed);
         turn(*c, 1);
         act(*c, "melee", 99);
-        if (!c->snapshot().savage_attack_choice)
+        if (!hit(*c))
             continue;
-        act(*c, "savage_skip");
         choose(*c, "effect_use", 1);
         act(*c, "effect_attack", 98);
-        if (!c->snapshot().savage_attack_choice)
+        if (!hit(*c))
             continue;
-        check(c->snapshot().savage_attack_choice->critical,
-              "Cleave against an adjacent unconscious creature is a critical hit");
-        roundtrip(*r, *c);
-        act(*c, "savage_skip");
+        check(critical(*c), "Cleave against an adjacent unconscious creature is a critical hit");
         roundtrip(*r, *c);
         tested = true;
     }

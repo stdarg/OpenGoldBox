@@ -24,10 +24,12 @@ Material components. Material/focus/cost/consumption mechanics remain #40.
 
 An equipped weapon or wand together with a shield occupies both hands, making
 Somatic spells unavailable. A shield alone, weapon alone or empty hands leaves
-at least one hand usable. Two-Handed weapons require both hands when attacking;
-Versatile damage likewise describes an attack grip. Casting can use one hand
-while the other holds the weapon. It preserves the selected attack grip and
-does not remove equipment, change shield AC or spend an extra action.
+at least one hand usable. Two-Handed weapons require both hands only when
+attacking. A Versatile weapon is wielded two-handed exactly when the other hand
+is empty ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)),
+so that hand is free between attacks and a two-handed Versatile grip never
+blocks a Somatic component; only a shield or second weapon does, as before.
+Casting does not remove equipment, change shield AC or spend an extra action.
 
 This uses equipment from actual character recipes for PCs and recruited NPCs.
 The abstract standalone training creature profiles have no equipped weapon or
@@ -49,14 +51,13 @@ corrected rule for subsequent spell eligibility.
 
 `opengold_spell_component_tests` independently checks component flags, all live
 spell commands and upcasts, weapon/wand/shield combinations, two-hand and
-Versatile grips, normal casting costs, rejected-command atomicity, equipped
+two-handed Versatile weapons, normal casting costs, rejected-command atomicity, equipped
 campaign members and unequipping, and repeated saves.
 
 `tests/spell_component_view_tests.gd` uses normally created and advanced caster
 fixtures to check the game and demo's existing spell controls and hidden internal
-checkpoint continuation. The game additionally checks Blindness, unchanged grip,
-the keyboard cycle and a Healing Word cast; the older demo lacks those grip and
-Blindness controls.
+checkpoint continuation. The game additionally checks Blindness, the keyboard
+cycle and a Healing Word cast; the older demo lacks the Blindness control.
 CTest registers the game check without original assets. The demo can run the
 same script with `--legacy` and the `--component-fixtures` directory written by
 the native suite.

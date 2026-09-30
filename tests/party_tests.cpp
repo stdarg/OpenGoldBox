@@ -213,28 +213,25 @@ class AlternateEquipmentRules final : public RulesModule
     }
 
     CharacterProfile character_profile(const CharacterSheet &sheet,
-                                       std::span<const std::string> gear,
-                                       EquipmentState state) const override
+                                       std::span<const std::string> gear) const override
     {
         CharacterProfile result;
         result.hit_points = sheet.hit_points;
         result.armor_class = 10 + int(gear.size());
-        result.equipment = state;
         return result;
     }
 
     EquipmentChange equipment_change(const CharacterSheet &, std::span<const std::string> gear,
-                                     EquipmentState, unsigned selected,
+                                     unsigned selected,
                                      EquipmentOperation operation) const override
     {
         if (gear[selected] == "bad_index")
-            return {{unsigned(gear.size())}, {7}};
+            return {{unsigned(gear.size())}};
         if (gear[selected] == "duplicate_index")
-            return {{selected, selected}, {7}};
+            return {{selected, selected}};
         if (gear[selected] == "rejected")
             throw std::runtime_error("Alternate rules reject this equipment");
         EquipmentChange result;
-        result.equipment = {operation == EquipmentOperation::equip ? 7u : 5u};
         for (unsigned n = gear.size(); n > 0; --n)
             if (operation != EquipmentOperation::unequip || n - 1 != selected)
                 result.indices.push_back(n - 1);
@@ -257,9 +254,8 @@ void equipment_rule_boundary()
     const auto vitals = party.member(id).vitals;
     party.equip(id, sword);
     party.equip(id, dagger);
-    check(party.member(id).equipped == std::vector<std::uint64_t> {dagger, sword} &&
-          party.member(id).equipment.weapon_hands == 7,
-          "Core applies the module's two-weapon order and non-SRD equipment state");
+    check(party.member(id).equipped == std::vector<std::uint64_t> {dagger, sword},
+          "Core applies the module's two-weapon order");
     check(party.profile(id).armor_class == 12,
           "Profile query receives the module-selected loadout");
     const auto before = party.member(id).equipped;
@@ -271,18 +267,17 @@ void equipment_rule_boundary()
             party.equip(id, item);
         });
         check(
-            party.member(id).equipped == before && party.member(id).equipment.weapon_hands == 7 &&
-            party.member(id).vitals == vitals &&
+            party.member(id).equipped == before && party.member(id).vitals == vitals &&
             party.member(id).character.inventory().items().size() == 5,
-            "Invalid rules results and rejections preserve owned items, loadout, equipment state and vitals");
+            "Invalid rules results and rejections preserve owned items, loadout and vitals");
     }
     party.unequip(id, sword);
-    check(party.member(id).equipped == std::vector<std::uint64_t> {dagger} &&
-          party.member(id).equipment.weapon_hands == 5,
+    check(party.member(id).equipped == std::vector<std::uint64_t> {dagger},
           "Unequip uses the module's equipment continuation");
     party.equip(id, dagger);
     party.unequip(id, sword);
-    check(party.member(id).equipment.weapon_hands == 5 && party.member(id).vitals == vitals,
+    check(party.member(id).equipped == std::vector<std::uint64_t> {dagger} &&
+          party.member(id).vitals == vitals,
           "Existing equip/unequip no-ops preserve state");
 }
 
@@ -307,7 +302,6 @@ void two_weapon_equipment()
         sourced.roster.front().item_sources.emplace(daggers, provenance);
         party.restore(std::move(sourced));
         party.equip(id, sword);
-        party.set_grip(id, 2);
         const auto unchanged = encode_campaign(party, nullptr, "hands");
         const auto choices = party.equipment_choices(id, daggers);
         check(choices.size() == 2 && choices[0].available && choices[1].available,
@@ -325,23 +319,17 @@ void two_weapon_equipment()
               party.member(id).item_sources.at(unit).stored.type == 8,
               "A split equipped unit retains the original item provenance");
         const auto profile = party.profile(id);
-        check(profile.data.starts_with("PC42 ") && profile.equipment.weapon_hands == 1 &&
-              !profile.grips[1].available &&
+        check(profile.data.starts_with("PC42 ") && profile.weapon_hands == 1 &&
               profile.equipment_positions[0].source == "Main hand" &&
               profile.equipment_positions[1].source == "Other hand",
               "Dual weapons use one hand each and report both positions");
         rejects(
             [&]
         {
-            party.set_grip(id, 2);
-        });
-        rejects(
-            [&]
-        {
             party.equip(id, shield);
         });
         check(party.member(id).equipped == held && party.member(id).vitals == vitals,
-              "Illegal shield/grip preserves loadout and resources");
+              "Illegal shield preserves loadout and resources");
         const auto saved = encode_campaign(party, nullptr, "hands");
         CampaignParty loaded(module());
         loaded.restore(
@@ -851,8 +839,6 @@ void class_weapon_proficiency()
             });
             check(attack != commands.end() && combat->submit(*attack) && restored->submit(*attack),
                   "Original and restored actors can attack");
-            test::choose_savage_damage(*combat);
-            test::choose_savage_damage(*restored);
             check(combat->save() == restored->save(),
                   "Proficient attacks resume deterministically from checkpoints");
             const auto snapshot = combat->snapshot();
@@ -1991,7 +1977,7 @@ void rejected_combat_handoff()
               "Damage followed by initiative during the same interruption adds only one hour");
         if (spend)
         {
-            (void)party->spend_hit_die(party->state().short_rest->ticket, id);
+            (void)party->heal_with_hit_dice(party->state().short_rest->ticket, id);
             town.commit_rest_recovery();
             party->finish_short_rest(party->state().short_rest->ticket);
             town.commit_rest_recovery();

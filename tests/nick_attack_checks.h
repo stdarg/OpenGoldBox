@@ -79,18 +79,23 @@ void grants_and_budgets()
                           "Qualifying Attack leaves Bonus Action");
                     auto copy = p.rule_module().restore(c->save());
                     check(c->submit(extra) && copy->submit(extra), "Nick submits once");
-                    if (c->snapshot().savage_attack_choice)
+                    const auto nick = result(*c);
+                    if (!arg(nick, "hit").empty())
                     {
-                        const auto hit = *c->snapshot().savage_attack_choice;
-                        check(hit.modifier == (negative ? -2
-                                               : style  ? 3
-                                               : 0),
+                        // The modifier is not reported, so bound the damage by the
+                        // weapon's dice with the expected shared Light modifier.
+                        const int modifier = negative ? -2 : style ? 3 : 0;
+                        const int sides = std::string_view(weapon) == "scimitar" ? 6 : 4;
+                        const int count = arg(nick, "hit") == "CRITICAL" ? 2 : 1;
+                        const int damage = std::stoi(arg(nick, "damage"));
+                        check(damage >= std::max(0, count + modifier) &&
+                              damage <= std::max(0, count * sides + modifier),
                               "Nick shares Light damage modifier and Two-Weapon Fighting");
                         ++hits;
-                        if (hit.critical)
+                        if (count == 2)
                             ++criticals;
                         check(p.rule_module().restore(c->save())->save() == c->save(),
-                              "Nick pending damage restores with unspent Bonus Action");
+                              "Nick hit restores with unspent Bonus Action");
                     }
                     settle(*c);
                     settle(*copy);
@@ -112,7 +117,7 @@ void grants_and_budgets()
                     check(offers(*c, "nick_melee"), "Fresh turn resets shared extra attack budget");
                 }
     check(hits > 0 && criticals > 0,
-          "Matrix actually exercises pending ordinary and critical damage");
+          "Matrix actually exercises ordinary and critical Nick damage");
     for (const auto klass :
             {"fighter", "rogue", "paladin", "ranger", "barbarian"
             })
@@ -204,35 +209,22 @@ void pending_interactions()
         settle(*c);
         if (!fx::vexed_by(state(*c, 99), 777, 1))
             continue;
+        check(logged(*c, "adds Sneak Attack"),
+              "The first eligible hit applies Sneak Attack automatically");
         act(*c, "nick_melee", 99);
-        if (!c->snapshot().sneak_attack_choice)
-            continue;
-        check(fx::vexed_by(state(*c, 99), 777, 1) && !unit(*c, 1).bonus_action,
-              "Nick retains Vex for pending-roll validation and leaves spent Steady Aim unchanged");
+        const auto log = c->snapshot().log;
+        check(std::count_if(log.begin(), log.end(), [](const auto & line)
+        {
+            return line.find("adds Sneak Attack") != std::string::npos;
+        }) == 1, "Sneak Attack applies only once per turn");
         auto copy = p.rule_module().restore(c->save());
-        check(copy->save() == c->save(), "Nick Sneak choice restores exactly");
-        act(*c, "sneak_use");
-        act(*copy, "sneak_use");
-        check(c->save() == copy->save(), "Nick Sneak damage continuation is deterministic");
-        const auto hit = *c->snapshot().savage_attack_choice;
-        check(hit.modifier == 0 && hit.extra_damage > 0,
-              "Nick omits positive weapon modifier while retaining Sneak dice");
-        copy = p.rule_module().restore(c->save());
-        act(*c, "savage_use");
-        act(*copy, "savage_use");
-        check(c->save() == copy->save() &&
-              c->snapshot().savage_attack_choice->extra_damage == hit.extra_damage,
-              "Savage rerolls only Nick weapon dice");
-        copy = p.rule_module().restore(c->save());
-        act(*c, "savage_second");
-        act(*copy, "savage_second");
-        check(
-            c->save() == copy->save() && !fx::vexed_by(state(*c, 99), 777, 1) &&
-            !offers(*c, "nick_melee") && !offers(*c, "light_melee"),
-            "Resolved Nick consumes Vex and all damage choices preserve the shared spent allowance");
+        check(copy->save() == c->save() && !fx::vexed_by(state(*c, 99), 777, 1) &&
+              !unit(*c, 1).bonus_action && !offers(*c, "nick_melee") &&
+              !offers(*c, "light_melee"),
+              "Nick consumes Vex and keeps the shared spent allowance and Steady Aim");
         checked = true;
     }
-    check(checked, "Actual Nick hit exercises Sneak and both Savage stages");
+    check(checked, "Actual Vex hit exercises automatic Sneak Attack before Nick");
     auto champion = party();
     champion.award_experience(600, "nick-champion");
     champion.advance(1, champion.default_advancement(1));
@@ -243,14 +235,10 @@ void pending_interactions()
         act(*c, "melee", 99);
         settle(*c);
         act(*c, "nick_melee", 99);
-        if (!c->snapshot().savage_attack_choice || !c->snapshot().savage_attack_choice->critical)
+        if (arg(result(*c), "hit") != "CRITICAL")
             continue;
+        check(c->snapshot().free_movement.has_value(), "Nick critical grants Champion movement");
         auto copy = champion.rule_module().restore(c->save());
-        act(*c, "savage_skip");
-        act(*copy, "savage_skip");
-        check(c->save() == copy->save() && c->snapshot().free_movement,
-              "Nick critical grants Champion movement after pending damage");
-        copy = champion.rule_module().restore(c->save());
         act(*c, "end");
         act(*copy, "end");
         check(c->save() == copy->save() && unit(*c, 1).bonus_action && !offers(*c, "nick_melee") &&
@@ -320,16 +308,16 @@ void forged_budgets()
 {
     auto p = party();
     auto c = battle(p);
-    bool pending = false;
-    for (unsigned seed = 1; seed <= 96 && !pending; ++seed)
+    bool hit = false;
+    for (unsigned seed = 1; seed <= 96 && !hit; ++seed)
     {
         c = battle(p, seed);
         act(*c, "melee", 99);
         settle(*c);
         act(*c, "nick_melee", 99);
-        pending = bool(c->snapshot().savage_attack_choice);
+        hit = !arg(result(*c), "hit").empty();
     }
-    check(pending, "Forged-budget test has actual pending Nick damage");
+    check(hit, "Forged-budget test has an actual Nick hit");
     auto bytes = c->save();
     auto bad = bytes;
     bad.replace(bad.find(p.rule_module().identity().version),
@@ -347,20 +335,15 @@ void forged_budgets()
     // The actor row ends with the Light budget, the Nick origin and the Cleave flag.
     const auto end = bytes.find('\n', row), cleave = bytes.rfind(' ', end),
                origin = bytes.rfind(' ', cleave - 1), budget = bytes.rfind(' ', origin - 1);
-    for (const auto value :
-            {"0", "3"
-            })
-    {
-        bad = bytes;
-        bad.replace(budget + 1, origin - budget - 1, value);
-        rejects(
-            [&]
-        {
-            (void)p.rule_module().restore(bad);
-        });
-    }
     bad = bytes;
-    bad.replace(origin + 1, cleave - origin - 1, "0");
+    bad.replace(budget + 1, origin - budget - 1, "3");
+    rejects(
+        [&]
+    {
+        (void)p.rule_module().restore(bad);
+    });
+    bad = bytes;
+    bad.replace(origin + 1, cleave - origin - 1, "9");
     rejects(
         [&]
     {

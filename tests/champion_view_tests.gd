@@ -66,8 +66,6 @@ func run_checks() -> void:
             root.size = size; await settle(); await load_fixture()
             require(finish.visible and not finish.disabled and finish.text == ("Finish free move" if locale == "en" else "Finalizar mov. gratis"), "Existing End control offers Finish free move")
             require(current_scene.get_node("Dash").disabled, "Other actions wait")
-            if not demo:
-                require(current_scene.get_node("Grip").disabled, "Grip remains disabled after shared control refresh")
             require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No combat saving controls")
             await capture("movement-" + locale + "-" + str(size.x), root)
             await key(root, KEY_LEFT)

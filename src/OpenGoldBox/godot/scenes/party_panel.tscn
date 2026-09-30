@@ -90,9 +90,3 @@ texture_filter = 1
 
 [node name="Pool" type="Button" parent="."]
 text = "Character Pool"
-
-[node name="GripLabel" type="Label" parent="."]
-text = "Grip"
-
-[node name="Grip" type="OptionButton" parent="."]
-focus_mode = 2

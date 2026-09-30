@@ -37,6 +37,11 @@
 | Transactions | Invalid choices leave state/RNG unchanged. Wounds, equipment, training, resources, party/recruited ownership and rest/campaign handoff remain correct. |
 | UI | Approved controls only; standard visible buttons, keyboard/mouse, proper disabled state, game EN/ES and demo EN input/renders at 1120×800 and 1920×1080. |
 
+The Sneak Attack decision (optional use, decline, dialog) is superseded by
+[AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging):
+Sneak Attack now applies automatically to the first eligible hit each turn and
+is logged. Steady Aim and the Bonus Action row are unchanged.
+
 The prior-writer, released-history and migration persistence requirements are
 superseded: saves now have one pre-1.0 format and nothing is migrated; see
 [SAVES.md](SAVES.md#pre-10-format-policy).
@@ -46,7 +51,8 @@ superseded: saves now have one pre-1.0 format and nothing is migrated; see
 ROGUE-1/2/3 approved 2026-09-25: user replied “1. Approved. 2. Approved.
 3. Approved.” Implementation follows these recorded layouts and behaviors.
 
-**ROGUE-1 (supersedes pending Q25):** Centered 700×380 Sneak Attack dialog after
+**ROGUE-1 (supersedes pending Q25; itself superseded by AUTO-1 on 2026-09-30,
+the dialog was removed):** Centered 700×380 Sneak Attack dialog after
 an eligible hit. Show target and extra dice; use two full-width, stacked buttons:
 Use Sneak Attack and Keep hit; save Sneak Attack. Use spends the turn's use and
 rolls the extra dice; decline/Escape preserves it. Savage Attacker follows if

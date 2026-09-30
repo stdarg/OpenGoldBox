@@ -213,7 +213,6 @@ void CampaignParty::release_rest_equipment(PartyState &state, PartyMember &membe
         if (!member.character.inventory().find(id))
             member.item_sources.erase(id);
     }
-    member.equipment = {};
 }
 
 void CampaignParty::collect_equipment(PartyState &state, std::span<const MemberId> collectors,
@@ -432,7 +431,7 @@ void CampaignParty::require_rest_ticket(RestTicket ticket) const
         throw std::runtime_error("Expired Short Rest spending request");
 }
 
-rules::HitDieResult CampaignParty::spend_hit_die(RestTicket ticket, MemberId id)
+std::vector<rules::HitDieResult> CampaignParty::heal_with_hit_dice(RestTicket ticket, MemberId id)
 {
     require_rest_ticket(ticket);
     const auto &session = *state_.short_rest;
@@ -446,7 +445,18 @@ rules::HitDieResult CampaignParty::spend_hit_die(RestTicket ticket, MemberId id)
     {
         return value.id == id;
     });
-    const auto result = rules_->spend_hit_die(m.vitals, m.character.sheet(), next.random_state);
+    // Spending until full or out of dice is the only sensible choice, so one
+    // request spends them all; a die is never spent at full HP.
+    std::vector<rules::HitDieResult> result;
+    while (m.vitals.hit_points < m.character.sheet().hit_points &&
+            rules_->recovery_info(m.character.sheet(), m.vitals).hit_dice > 0)
+    {
+        result.push_back(rules_->spend_hit_die(m.vitals, m.character.sheet(), next.random_state));
+        if (result.back().healing == 0)
+            break; // Healing is blocked; further dice would be wasted.
+    }
+    if (result.empty())
+        throw std::runtime_error("No Hit Dice can heal this character");
     ++next.short_rest->ticket.revision;
     if (next.rest_activity)
         advance_ticket(next.rest_activity->ticket);

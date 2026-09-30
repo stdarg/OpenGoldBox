@@ -3,6 +3,7 @@
 #include "opengold/rules.h"
 #include <algorithm>
 #include <stdexcept>
+#include <string_view>
 
 namespace opengold::test
 {
@@ -22,27 +23,14 @@ inline void keep_initiative(rules::CombatSession &session)
     }
 }
 
-// Explicitly choose the former automatic policy in unrelated feature tests.
-// Dedicated Savage Attacker tests independently cover both results and skipping.
-inline unsigned choose_savage_damage(rules::CombatSession &session)
+// Automatic combat results (Sneak Attack, Savage Attacker) are visible only in the log.
+inline bool logged(const rules::CombatSession &session, std::string_view text)
 {
-    unsigned choices{};
-    while (const auto hit = session.snapshot().savage_attack_choice)
+    const auto log = session.snapshot().log;
+    return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
-        const auto verb = !hit->second_damage                        ? "savage_use"
-                          : hit->first_damage >= *hit->second_damage ? "savage_first"
-                          : "savage_second";
-        bool accepted = false;
-        for (const auto &command : session.legal_commands())
-            if (command.verb == verb)
-            {
-                accepted = session.submit(command);
-                break;
-            }
-        if (!accepted || ++choices > 2)
-            throw std::runtime_error("Savage Attacker decision did not resolve");
-    }
-    return choices;
+        return line.find(text) != std::string::npos;
+    });
 }
 } // namespace opengold::test
 #endif

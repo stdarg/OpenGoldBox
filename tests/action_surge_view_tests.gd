@@ -51,18 +51,14 @@ func run_checks() -> void:
     await settle()
     current_scene.set_process(false)
     require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No player combat saving")
-    for name in ["level1", "cleric", "available", "level3", "level4", "pending", "decision"]:
+    for name in ["level1", "cleric", "available", "level3", "level4", "pending"]:
         await load_fixture(name)
         var surge: Button = current_scene.get_node("ActionSurge")
         var entitled: bool = name not in ["level1", "cleric"]
         require(surge.visible == entitled, "Button appears only for entitled Fighters")
         if entitled:
-            require(surge.disabled == (name in ["pending", "decision"]), "Spent uses and pending decisions disable activation")
+            require(surge.disabled == (name == "pending"), "Spent uses disable activation")
             require(surge.text == ("Action Surge (0/1)" if name == "pending" else "Action Surge (1/1)"), "Button displays remaining resource")
-        if name == "decision":
-            current_scene.get_node("SavageAttacker/Skip").pressed.emit()
-            await settle()
-            require(not surge.disabled, "Resolving damage choice permits Surge after the ordinary attack")
     for locale in ["en", "es"]:
         TranslationServer.set_locale(locale)
         change_scene_to_file("res://scenes/combat_demo.tscn")

@@ -17,9 +17,11 @@ pp. 47–48 (Second Wind), 185 (Long Rest) and 187 (Short Rest).
   classes. Supported progression remains levels 1–4 for Fighter, Cleric and
   Wizard, and level 1 for the others.
 - A single-die spend rolls that die and adds current Constitution, restoring at
-  least 1 HP before the maximum-HP cap. Each call commits one RNG draw so another
-  spending decision can follow its result. A voluntarily spent die is consumed
-  even at full HP. Dwarven Toughness does not add to the healing roll.
+  least 1 HP before the maximum-HP cap, with one RNG draw per die. Dwarven
+  Toughness does not add to the healing roll. The player does not choose per
+  die ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)):
+  one **Heal with Hit Dice** action spends dice until full HP or none remain,
+  and never spends a die at full HP.
 - A completed Short Rest restores one spent Second Wind use, up to capacity.
   It restores neither Hit Dice nor ordinary Cleric/Wizard slots. Spending zero
   dice still allows feature recharge.
@@ -43,8 +45,8 @@ remaining uses and Short Rest recharge amount. `can_rest` checks vitality only;
 activity and cooldown checks belong to the campaign.
 
 `recover_short_rest` applies recharge after the caller establishes completed-rest
-eligibility. `spend_hit_die` commits one die and returns its roll, Constitution
-modifier, actual healing and remaining dice. These resource operations do not
+eligibility. The rules module's `spend_hit_die` commits one die and returns its
+roll, Constitution modifier, actual healing and remaining dice. These resource operations do not
 independently authorize resting or spending at any time. `recover` remains the
 Long Rest resource operation.
 
@@ -70,11 +72,19 @@ means no elapsed time or other changes. The existing `rest()` wrapper selects
 Long Rest. Removal/rejoin and save/load preserve each member's cooldown.
 
 A successful Short Rest creates a `ShortRestSession` at the completed hour, with
-eligible member IDs and a session/revision ticket. `spend_hit_die(ticket, member)`
-commits one roll, healing and resource expenditure, then increments the revision.
-Repeated callbacks with the previous ticket reject. The player can decide again
-after every roll. `finish_short_rest(ticket)` closes the window, including with
-zero dice spent, without reverting healing, dice, recharge or time.
+eligible member IDs and a session/revision ticket.
+`CampaignParty::heal_with_hit_dice(ticket, member)` spends that member's dice
+one at a time until full HP or out of dice, commits every roll, healing and
+expenditure at once, returns each roll and increments the revision. It rejects,
+changing nothing, when no die can heal (full HP or none left); a die whose
+healing is blocked stops the loop. Repeated callbacks with the previous ticket
+reject. The window stays open for the other eligible members and for rest
+choices such as Arcane Recovery. `finish_short_rest(ticket)` closes the window,
+including with zero dice spent, without reverting healing, dice, recharge or time.
+
+The rest dialog offers **Heal with Hit Dice** for the selected member while
+healing is possible, and lists every die rolled with its healing and the dice
+remaining (Q30's **Spend 1 Hit Die** is superseded).
 
 Ordinary party mutations and town events are barred while spending is pending;
 selection and save/load are allowed. Positive elapsed time or a successful combat
@@ -144,8 +154,9 @@ campaign round trips, training review, advancement, healing, effects, combat
 handoff and malformed checkpoint counts.
 
 `opengold_campaign_rest_tests` covers mixed eligibility/cooldowns, active PC/NPC
-and reserve boundaries, exact clock thresholds, one-die decisions, zero spending,
-duplicate/expired requests, save/load between rolls, next combat, overflow and
+and reserve boundaries, exact clock thresholds, healing until full or out of
+dice with known rolls, no spending at full HP, zero spending,
+duplicate/expired requests, save/load of the spending window, next combat, overflow and
 malformed continuation rejection. It compares effect/RNG processing against one
 independent elapsed interval and tests the original safe/denied/interrupted/
 unsupported camp paths plus inn rollback. Existing save/party regressions retain

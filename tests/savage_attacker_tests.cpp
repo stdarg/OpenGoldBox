@@ -84,13 +84,6 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
     throw std::runtime_error("Missing actor");
 }
 
-SavageAttackChoice offer(const CombatSession &c)
-{
-    const auto s = c.snapshot();
-    check(s.savage_attack_choice.has_value(), "Expected damage choice");
-    return *s.savage_attack_choice;
-}
-
 std::uint64_t rng(const CombatSession &c)
 {
     std::istringstream in(c.save());
@@ -125,10 +118,24 @@ auto battle(const RulesModule &rules, const Character &h, std::string gear = "gr
 void roundtrip(const RulesModule &r, const CombatSession &c)
 {
     check(r.restore(c.save())->save() == c.save(),
-          "Pending choice, RNG and costs round trip exactly");
+          "Checkpoint, RNG and costs round trip exactly");
 }
 
-void choices()
+bool logged(const CombatSession &c, std::string_view text)
+{
+    const auto log = c.snapshot().log;
+    return std::any_of(log.begin(), log.end(), [&](const auto & line)
+    {
+        return line.find(text) != std::string::npos;
+    });
+}
+
+bool rerolled(const CombatSession &c)
+{
+    return logged(c, "rerolls weapon damage (Savage Attacker)");
+}
+
+void automatic_higher_roll()
 {
     auto rules = module();
     unsigned count = 0;
@@ -140,64 +147,32 @@ void choices()
               "Independent Soldier ability oracle");
         auto c = battle(*rules, h);
         const auto before = unit(*c);
-        const auto attack = command(*c, "melee");
-        check(c->submit(attack), "Ordinary weapon attack hits");
-        const auto first = offer(*c);
-        check(first.first_damage == 9 && !first.second_damage && first.dice_count == 2 &&
-              first.dice_sides == 6 && first.modifier == 3 && !first.critical &&
-              first.weapon == "Greatsword",
-              "Seed 13 rolls 2+4 weapon dice, plus 3 once");
-        check(unit(*c, 99).hit_points == 1000 && !unit(*c).action &&
+        const auto random = rng(*c);
+        act(*c, "melee");
+        check(logged(*c, "Hero rerolls weapon damage (Savage Attacker): 9 and 10, keeps 10."),
+              "Seed 13 rolls 2+4 then 3+4 weapon dice plus 3 once; the log shows both");
+        check(unit(*c, 99).hit_points == 990 && !unit(*c).action &&
               unit(*c).reaction == before.reaction &&
               unit(*c).bonus_action == before.bonus_action &&
-              unit(*c).movement_feet == before.movement_feet &&
-              unit(*c).persistent == before.persistent,
-              "First hit spends Action only and postpones all damage");
-        check(c->legal_commands().size() == 2 && c->movement_reach(1).empty(),
-              "Only the first-stage decision is legal");
+              unit(*c).movement_feet == before.movement_feet,
+              "The higher roll applies at once and the hit spends only the Action");
+        check(rng(*c) == random + 5 * 0x9e3779b97f4a7c15ULL &&
+              c->snapshot().elapsed_milliseconds == 0,
+              "Attack roll, both weapon dice sets and nothing else consume RNG");
+        const auto &message = c->snapshot().log_messages;
+        check(std::any_of(message.begin(), message.end(), [](const auto & m)
+        {
+            return m.source ==
+                   "{name} rerolls weapon damage (Savage Attacker): {first} and {second}, keeps {kept}.";
+        }), "The reroll is a localizable log message");
         roundtrip(*rules, *c);
-        const auto first_bytes = c->save();
-        const auto random = rng(*c);
-        check(!c->submit(attack) && c->save() == first_bytes,
-              "Stale hit cannot reroll or spend twice");
-        auto bad = command(*c, "savage_use");
-        bad.target = 1;
-        check(!c->submit(bad) && c->save() == first_bytes,
-              "Wrong-target decision rejects atomically");
-        auto skip = rules->restore(first_bytes);
-        act(*skip, "savage_skip");
-        check(!skip->snapshot().savage_attack_choice && unit(*skip, 99).hit_points == 991 &&
-              rng(*skip) == random,
-              "Declining applies first damage without consuming extra dice");
-        const auto use = command(*c, "savage_use");
-        check(c->submit(use), "Player elects to spend feat");
-        const auto second = offer(*c);
-        check(second.first_damage == 9 && second.second_damage == 10 &&
-              unit(*c, 99).hit_points == 1000 && rng(*c) == random + 2 * 0x9e3779b97f4a7c15ULL,
-              "Only the second set of weapon dice is rolled; damage still waits");
-        roundtrip(*rules, *c);
-        const auto second_bytes = c->save();
-        check(!c->submit(use) && c->save() == second_bytes, "Repeated use cannot reroll again");
-        auto lower = rules->restore(second_bytes);
-        act(*lower, "savage_first");
-        check(unit(*lower, 99).hit_points == 991 && !lower->snapshot().savage_attack_choice,
-              "Player can retain a lower first result");
-        act(*c, "savage_second");
-        check(unit(*c, 99).hit_points == 990 && !c->snapshot().savage_attack_choice,
-              "Player can use the second result");
-        check(rng(*lower) == rng(*c) && c->snapshot().elapsed_milliseconds == 0,
-              "Picking either result consumes no additional RNG or time");
         auto ranged = battle(*rules, h, "longbow", 0, true);
         act(*ranged, "ranged");
-        check(offer(*ranged).critical && offer(*ranged).dice_count == 2 &&
-              offer(*ranged).first_damage == 12,
-              "Critical weapon dice double, flat modifier does not");
-        act(*ranged, "savage_use");
-        check(offer(*ranged).second_damage == 8, "Critical reroll uses 3+2 plus 3 once");
-        act(*ranged, "savage_second");
-        check(unit(*ranged, 99).hit_points == 992, "Lower second critical roll is a real choice");
+        check(logged(*ranged, "Hero rerolls weapon damage (Savage Attacker): 12 and 8, keeps 12.") &&
+              unit(*ranged, 99).hit_points == 988,
+              "Critical dice double in both sets, modifier once; the lower reroll is ignored");
     }
-    check(count == 12, "All twelve classes receive the Soldier feat's real decisions");
+    check(count == 12, "All twelve classes receive the Soldier feat automatically");
 }
 
 void exceptions_and_turns()
@@ -215,52 +190,44 @@ void exceptions_and_turns()
             act(*c, "end");
             auto close = battle(*rules, h, gear);
             act(*close, "melee");
-            check(!close->snapshot().savage_attack_choice,
-                  "Unarmed Strike has no weapon dice to reroll");
+            check(!rerolled(*close), "Unarmed Strike has no weapon dice to reroll");
         }
         else
-            check(!c->snapshot().savage_attack_choice && unit(*c, 99).hit_points == 999,
+            check(!rerolled(*c) && unit(*c, 99).hit_points == 999,
                   "Fixed Blowgun damage has no damage dice");
     }
     auto c = battle(*rules, h, "greatsword", 40);
     const auto before = rng(*c);
     act(*c, "melee");
-    check(!c->snapshot().savage_attack_choice && unit(*c, 99).hit_points == 1000 &&
+    check(!rerolled(*c) && unit(*c, 99).hit_points == 1000 &&
           rng(*c) == before + 0x9e3779b97f4a7c15ULL,
-          "Miss uses only its attack roll and never offers feat");
+          "Miss uses only its attack roll and never uses the feat");
     c = battle(*rules, hero("wizard"), "greatsword", 13, true);
     act(*c, "fire_bolt");
-    check(!c->snapshot().savage_attack_choice,
-          "Spell damage is excluded even while holding a weapon");
+    check(!rerolled(*c), "Spell damage is excluded even while holding a weapon");
     c = battle(*rules, hero("fighter", "sage"));
     act(*c, "melee");
-    check(!c->snapshot().savage_attack_choice, "No entitlement means no choice");
+    check(!rerolled(*c), "No entitlement means no reroll");
     c = battle(*rules, h, "longsword");
-    act(*c, "grip_two");
     act(*c, "melee");
-    check(offer(*c).dice_sides == 10 && offer(*c).first_damage == 11,
-          "Versatile uses the chosen grip's weapon dice");
-    act(*c, "savage_use");
-    act(*c, "savage_first");
+    check(logged(*c, "(Savage Attacker): 11 and "),
+          "A Versatile weapon with an empty other hand rerolls its two-handed die");
+    const auto first_turn = c->snapshot().log.size();
     act(*c, "end");
     auto move = command(*c, "move");
     move.destination = {3, 1};
     check(c->submit(move) && c->snapshot().reaction_pending,
           "Enemy movement triggers next-turn reaction");
-    const auto movement = c->snapshot();
     act(*c, "opportunity");
-    check(c->snapshot().savage_attack_choice.has_value() && !unit(*c).reaction &&
-          !unit(*c).action &&
-          c->snapshot().elapsed_milliseconds == movement.elapsed_milliseconds,
-          "Feat refreshes each turn, including enemy turns, without refreshing Action");
+    const auto log = c->snapshot().log;
+    check(std::any_of(log.begin() + first_turn, log.end(), [](const auto & line)
+    {
+        return line.find("(Savage Attacker)") != std::string::npos;
+    }) && !unit(*c).reaction && !unit(*c).action,
+    "Feat refreshes each turn, including enemy turns, without refreshing Action");
     roundtrip(*rules, *c);
-    const auto cell = unit(*c, 99).cell;
-    check(cell == Cell{2, 1}, "Movement waits before leaving reach");
-    act(*c, "savage_use");
-    roundtrip(*rules, *c);
-    act(*c, "savage_first");
     check(!c->snapshot().reaction_pending && unit(*c, 99).cell == Cell{3, 1} && !unit(*c).reaction,
-          "Resolving damage resumes movement once, Reaction remains spent");
+          "Damage resolves at once and movement resumes, Reaction remains spent");
 }
 
 void lethal_and_queues()
@@ -293,26 +260,21 @@ void lethal_and_queues()
             }
         check(moved && c->snapshot().reaction_pending, "Multiple reactors are queued");
         act(*c, "opportunity");
-        check(c->snapshot().savage_attack_choice.has_value(), "First reactor makes feat decision");
+        check(rerolled(*c), "First reactor rerolls automatically");
         roundtrip(*rules, *c);
-        act(*c, "savage_skip");
         if (lethal)
         {
             check(c->snapshot().outcome == Outcome::victory && !c->snapshot().reaction_pending &&
                   unit(*c, 99).cell == Cell{2, 1},
-                  "Lethal chosen damage cancels movement and later reactions");
-            roundtrip(*rules, *c);
+                  "Lethal damage cancels movement and later reactions");
+            continue;
         }
-        else
-        {
-            check(c->snapshot().reaction_pending && c->snapshot().actor == 2,
-                  "Next reactor is offered only after first damage resolves");
-            act(*c, "opportunity");
-            roundtrip(*rules, *c);
-            act(*c, "savage_skip");
-            check(!c->snapshot().reaction_pending && unit(*c, 99).cell == Cell{3, 2},
-                  "All decisions finish before the movement step");
-        }
+        check(c->snapshot().reaction_pending && c->snapshot().actor == 2,
+              "Next reactor is offered once the first hit's damage resolves");
+        act(*c, "opportunity");
+        roundtrip(*rules, *c);
+        check(!c->snapshot().reaction_pending && unit(*c, 99).cell == Cell{3, 2},
+              "All reactions finish before the movement step");
     }
 }
 
@@ -337,48 +299,9 @@ void defenses()
         }},
     13);
     act(*c, "melee");
-    check(offer(*c).first_damage == 9 && unit(*c, 99).temporary_hp.amount == 3,
-          "Choice shows pre-defense damage without consuming the buffer");
-    act(*c, "savage_use");
-    roundtrip(*rules, *c);
-    act(*c, "savage_first");
-    check(unit(*c, 99).hit_points == 999 && unit(*c, 99).temporary_hp.amount == 0,
-          "Chosen 9 rounds to 4 after resistance, then absorbs 3 Temporary HP");
-}
-
-void invalid()
-{
-    auto rules = module();
-    auto c = battle(*rules, hero());
-    act(*c, "melee");
-    const auto saved = c->save();
-    const auto line = saved.rfind('\n', saved.size() - 2) + 1;
-    for (const auto &fields :
-            {"0 99 0 17 0 9 -1", "1 1 0 17 0 9 -1", "1 99 0 1 0 9 -1",
-             "1 99 0 17 1 9 -1", "1 99 0 17 0 2 -1", "1 99 0 17 0 99 -1",
-             "1 99 0 17 0 9 -2", "1 99 0 17 0 9 10", "1 99 1 17 0 9 -1"
-            })
-    {
-        const auto bad = saved.substr(0, line) + fields + '\n';
-        rejects(
-            [&]
-        {
-            (void)rules->restore(bad);
-        });
-        check(c->save() == saved, "Malformed pending state leaves live combat intact");
-    }
-    auto choice = command(*c, "savage_use");
-    choice.verb = "savage_second";
-    check(!c->submit(choice) && c->save() == saved, "Cannot choose nonexistent second roll");
-    act(*c, "savage_use");
-    const auto used = c->save();
-    auto bad = used;
-    bad.replace(bad.rfind(' ') + 1, std::string::npos, "999\n");
-    rejects(
-        [&]
-    {
-        (void)rules->restore(bad);
-    });
+    check(logged(*c, "9 and 10, keeps 10.") && unit(*c, 99).hit_points == 998 &&
+          unit(*c, 99).temporary_hp.amount == 0,
+          "Kept 10 halves to 5 after resistance, then 3 Temporary HP absorb part of it");
 }
 
 void grants_and_campaign()
@@ -430,44 +353,22 @@ void grants_and_campaign()
               "Campaign grants and all state persist");
         auto c = battle(*rules, copy.member(id).character);
         act(*c, "melee");
-        check(c->snapshot().savage_attack_choice.has_value(),
-              "Normal selected feat affects next encounter");
+        check(rerolled(*c), "Normal selected feat affects next encounter");
         auto repeated = party.default_advancement(id);
         check(!party.can_advance(id), "Existing level band cannot invent another entitlement");
     }
 }
-
-void fixtures(const std::filesystem::path &path)
-{
-    std::filesystem::create_directories(path);
-    auto rules = module(false);
-    const auto h = hero();
-    const auto profile =
-        rules->character_profile(h.sheet(), std::array<std::string, 1> {"greatsword"}).data;
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile},
-            {99, "vanguard", "Target", 1, {2, 1}}
-        }},
-    13);
-    act(*c, "melee");
-    std::ofstream(path / "savage-first.save", std::ios::binary) << c->save();
-    act(*c, "savage_use");
-    std::ofstream(path / "savage-second.save", std::ios::binary) << c->save();
-}
 } // namespace
 
-int main(int argc, char **argv)
+int main()
 {
     try
     {
-        choices();
+        automatic_higher_roll();
         exceptions_and_turns();
         lethal_and_queues();
         defenses();
-        invalid();
         grants_and_campaign();
-        if (argc == 2)
-            fixtures(argv[1]);
         std::cout << "Savage Attacker tests passed\n";
         return 0;
     }

@@ -44,7 +44,7 @@ question widget, and preceded by the audible Glass alert.
 | ID | Decision | Approved scope |
 | --- | --- | --- |
 | Q29 | #30/#192/#193 Rest picker | Camp [C] opens centered Short/Long dropdown, party eligibility/HP/dice/recharge list, Start/Cancel; preserve camping restrictions and paid inn Long Rest flow; keyboard. Approved; user confirmed all three controls. |
-| Q30 | #192 sequential spending | Character list, Spend 1 Hit Die, committed roll/healing result, Finish; camp/inn-only Save game through existing dialog; close finishes without undo. Approved; user confirmed all three controls. |
+| Q30 | #192 sequential spending | **Per-die spending superseded by [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging).** Character list, Spend 1 Hit Die, committed roll/healing result, Finish; camp/inn-only Save game through existing dialog; close finishes without undo. Approved; user confirmed all three controls. |
 | Q31 | #193 resumption | Same dialog after interruption resolves: retained progress, extra time, Resume/End; recheck permission; retain earned benefits/time/resources; camp/inn save preserves decision, no combat saving. Approved; user confirmed all three controls. |
 | Q33 | #193 natural sleep wake-up policy | Damage wakes recipient; adjacent ally may spend an Action to wake; explicit campaign loud-noise event wakes affected sleepers; initiative alone does not wake. Approved by the user's “33. Yes.” on 2026-09-25. |
 | Q34 | #193 Wake ally control | Standard button at right end of existing Cunning Action row; visible for natural sleepers, keyboard/action cycle, highlight adjacent sleeping allies, Action to wake, Escape cancels; disabled off-turn or without Action. Approved by the user's “34. Yes.” on 2026-09-25. |
@@ -119,6 +119,8 @@ Bonus Action row, and ordinary Rogue3/4 advancement using the existing dialog.
 [Exact controls and preserved exclusions](ROGUE-ATTACKS.md#approved-controls).
 User answered the new Rogue questions “1. Approved. 2. Approved. 3. Approved.”
 This supersedes Q25; earlier Wizard approvals remain independently recorded.
+The ROGUE-1 Sneak Attack dialog is itself superseded by
+[AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging); ROGUE-2/3 stand.
 
 **ROGUE-DEMO-1 — APPROVED 2026-09-26:** User answered “1. yes.” New demo Bonus Action row below battlefield and above
 Wake/Stabilize, as specified in [the packet](ROGUE-ATTACKS.md#demo-placement-discovery--rogue-demo-1-approved).
@@ -151,10 +153,10 @@ TWF selectors/automatic benefit. Do not ask these again.
 | Reference | Scope that may be reused | Limit / evidence |
 | --- | --- | --- |
 | Initial four decisions | Preserve remaining turn resources; SRD opportunity triggers without facing reactions; allied transit; Versatile grip/damage/shield behavior | [Implementation plan](SRD-IMPLEMENTATION.md); these do not settle unrelated campaign policies. |
-| Q1 / Grip | Labeled one/two-hand dropdown with actual dice, keyboard, immediate persistence; two hands unavailable with shield | [Implementation plan](SRD-IMPLEMENTATION.md). |
+| Q1 / Grip | **Superseded by [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging).** Labeled one/two-hand dropdown with actual dice, keyboard, immediate persistence; two hands unavailable with shield | [Implementation plan](SRD-IMPLEMENTATION.md). |
 | Old-save training / Q9–10 | Keep missing choices pending; approved Training step after Class and before Name; Back keeps valid choices, invalid choices pruned; presets pre-generate their training | [Training](TRAINING.md). Q11 superseded by approved Q28. |
 | Q5–7 / HP, Adrenaline and saving | HP colors/source tooltips and separate Temporary HP; Adrenaline Rush beside Dash; **player saves only at camp/inn** | [Temporary HP](TEMPORARY-HP.md). Internal combat checkpoint tests permitted; no player combat Save/Load controls. |
-| Q8 | Two-stage Savage Attacker hit/damage-choice dialog, keyboard, action/reaction retained as spent | [Savage Attacker](SAVAGE-ATTACKER.md). Does not approve Sneak Attack's new decision order. |
+| Q8 | **Superseded by [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging).** Two-stage Savage Attacker hit/damage-choice dialog, keyboard, action/reaction retained as spent | [Savage Attacker](SAVAGE-ATTACKER.md). Does not approve Sneak Attack's new decision order. |
 | Q12–16 | Wizard/Cleric Spell Choices; supported selections, counts, Back, pending catalog choices, preset choices; approved casting row | [Cantrip controls](CANTRIP-CONTROLS.md), [Sacred Flame](SACRED-FLAME.md). |
 | Q17 | Action Surge beside Adrenaline Rush, remaining uses, disabled when unavailable, keyboard | [Action Surge](ACTION-SURGE.md). |
 | Q18 | Shared labeled Spell dropdown and Cast in existing combat row; known cantrips, legal target preview, keyboard and A/Space cycle | [Cantrip controls](CANTRIP-CONTROLS.md). Replaces individual spell buttons; adding fixed data in this pattern needs no repeated layout question. |
@@ -214,3 +216,28 @@ which has no DM to adjudicate them. Skills and Expertise stay.
   Mask of Many Faces, Misty Visions, Pact of the Chain, Wild Companion, the Forest
   and Rock Gnome lineage spells, Tiefling Thaumaturgy and High Elf
   Prestidigitation. The High Elf takes a Wizard cantrip instead.
+
+## AUTO-1 (2026-09-30): automatic choices with logging
+
+The user approved on 2026-09-30 that four choices with only one sensible answer
+are made automatically, and that the result is shown to the player in the
+combat log or the rest dialog. This supersedes Q8, the ROGUE-1 Sneak Attack
+dialog, Q30's per-die Hit Die spending and Q1 / Grip.
+
+- **Savage Attacker:** on the once-per-turn eligible weapon hit, weapon damage
+  is rolled twice and the higher total is kept. The log shows both totals and
+  the kept one. See [Savage Attacker](SAVAGE-ATTACKER.md).
+- **Sneak Attack:** applied to the first eligible hit each turn, under the
+  unchanged eligibility rules. The log shows the extra dice and damage. Steady
+  Aim and Cunning Action are unchanged. See [Sneak Attack](SNEAK-ATTACK.md).
+- **Hit Dice:** after a Short Rest, one **Heal with Hit Dice** action per
+  character spends dice one at a time until the character is at full HP or out
+  of dice; no die is spent at full HP. The rest dialog lists every roll and its
+  healing. See [Rest resources](REST-RESOURCES.md).
+- **Versatile grip:** there is no grip control and no stored grip. A Versatile
+  melee weapon is wielded two-handed when the other hand is empty (no shield or
+  second weapon), otherwise one-handed. The damage line of a Versatile melee hit
+  names the grip used. A two-handed Versatile grip frees the other hand between
+  attacks, so it never blocks a Somatic component; a shield or second weapon
+  still does. See [Party](PARTY.md#versatile-grip) and
+  [Spell components](SPELL-COMPONENTS.md).

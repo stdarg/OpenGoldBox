@@ -82,16 +82,30 @@ void settle(CombatSession &c)
     for (unsigned n = 0; n < 8; ++n)
     {
         const auto s = c.snapshot();
-        if (s.sneak_attack_choice)
-            act(c, "sneak_skip");
-        else if (s.savage_attack_choice)
-            act(c, "savage_skip");
-        else if (s.free_movement)
+        if (s.free_movement)
             act(c, "end");
         else
             return;
     }
     throw std::runtime_error("Unfinished Light damage choice");
+}
+
+// The damage roll is not reported, so bound the latest hit by a dagger's d4s.
+bool dagger_damage_within(const CombatSession &c, int modifier)
+{
+    const auto hit = rogue_attack_checks::last_hit(c);
+    const int count = hit == "CRITICAL" ? 2 : 1;
+    const auto messages = c.snapshot().log_messages;
+    for (auto m = messages.rbegin(); m != messages.rend(); ++m)
+        if (m->source.starts_with("{actor} -> {target}: d20"))
+            for (const auto &a : m->arguments)
+                if (a.name == "damage")
+                {
+                    const int damage = std::stoi(a.value);
+                    return damage >= std::max(0, count + modifier) &&
+                           damage <= std::max(0, count * 4 + modifier);
+                }
+    return false;
 }
 
 void exact_restore(const CombatSession &c)
@@ -148,38 +162,29 @@ void run()
                 auto c = battle(p, seed);
                 check(!offered(*c, "light_melee"), "Light cannot precede an Attack action");
                 act(*c, "melee");
-                if (c->snapshot().savage_attack_choice)
-                    check(c->snapshot().savage_attack_choice->modifier == (negative ? -2 : 3),
+                if (!rogue_attack_checks::last_hit(*c).empty())
+                    check(dagger_damage_within(*c, negative ? -2 : 3),
                           "Style does not double normal attack modifiers");
                 settle(*c);
                 check(!unit(*c).action && unit(*c).bonus_action && offered(*c, "light_melee", 2) &&
                       !offered(*c, "light_melee", 1),
                       "Different identical weapon qualifies even after an initial miss");
                 exact_restore(*c);
+                const auto hp = unit(*c, 99).hit_points;
                 act(*c, "light_melee", 2);
                 check(!unit(*c).bonus_action && !unit(*c).action,
                       "Extra attack spends Bonus Action and preserves spent Action");
-                if (const auto choice = c->snapshot().savage_attack_choice)
+                if (const auto hit = rogue_attack_checks::last_hit(*c); !hit.empty())
                 {
                     ++hits;
-                    criticals += choice->critical;
-                    rogue_attack_checks::reject_hit_field(*rules(), *c, 12, 0);
-                    rogue_attack_checks::reject_hit_field(*rules(), *c, 13, 1);
-                    check(
-                        choice->modifier == (negative ? -2
-                                             : feat   ? 3
-                                             : 0),
-                        "Light removes only positive modifier; TWF retains normal modifier exactly once");
-                    const auto hp = unit(*c, 99).hit_points;
-                    const auto first = choice->first_damage;
+                    criticals += hit == "CRITICAL";
+                    check(dagger_damage_within(*c, negative ? -2
+                                               : feat   ? 3
+                                               : 0),
+                          "Light removes only positive modifier; TWF retains normal modifier exactly once");
+                    check(unit(*c, 99).hit_points < hp || negative,
+                          "Light damage applies once when the hit resolves");
                     exact_restore(*c);
-                    act(*c, "savage_use");
-                    const auto second = *c->snapshot().savage_attack_choice->second_damage;
-                    exact_restore(*c);
-                    act(*c, "savage_first");
-                    check(unit(*c, 99).hit_points == hp - std::max(0, first),
-                          "Savage keep-first applies Light damage once");
-                    check(second >= -2, "Signed weapon reroll remains bounded");
                 }
                 settle(*c);
                 check(!offered(*c, "light_melee"),
@@ -310,23 +315,17 @@ void run()
                 act(*c, "end");
             act(*c, "melee");
             settle(*c);
-            act(*c, "light_melee", 2);
-            if (!c->snapshot().sneak_attack_choice)
+            if (rogue_attack_checks::sneaked(*c))
                 continue;
-            exact_restore(*c);
-            act(*c, "sneak_use");
-            check(c->snapshot().savage_attack_choice &&
-                  c->snapshot().savage_attack_choice->modifier == 0 &&
-                  c->snapshot().savage_attack_choice->extra_damage > 0,
-                  "Light omits positive weapon modifier without changing Sneak dice");
-            exact_restore(*c);
-            act(*c, "savage_use");
-            exact_restore(*c);
-            act(*c, "savage_second");
+            act(*c, "light_melee", 2);
+            if (!rogue_attack_checks::sneaked(*c))
+                continue;
+            check(rogue_attack_checks::sneak_damage(*c) > 0,
+                  "A Light attack after a miss applies the unused Sneak Attack automatically");
             exact_restore(*c);
             checked = true;
         }
-        check(checked, "Actual Rogue Light attack can spend reserved Sneak Attack");
+        check(checked, "Actual Rogue Light attack applies Sneak Attack left unused by a miss");
     }
     for (bool npc :
             {

@@ -50,8 +50,6 @@ func run_checks() -> void:
     for caster in ["cleric", "wizard"]:
         for blocked in [true, false]:
             await load_fixture(caster + ("-blocked" if blocked else "-free"))
-            if not legacy:
-                require(combat.get_node("Grip").selected == (0 if blocked else 1), "Original attack grip is preserved")
             var somatic := [("FireBolt" if legacy else "CastCantrip"), "MagicMissile", "ScorchingRay"] if caster == "wizard" else ["CureWounds"]
             for button in somatic:
                 require(combat.get_node(button).disabled == blocked, "Somatic action must follow hands: " + button)
@@ -78,7 +76,6 @@ func run_checks() -> void:
         combat.get_node("HealingWord").pressed.emit()
         await key(KEY_SPACE)
         require(combat.get_node("HealingWord").disabled and not combat.get_node("Dash").disabled, "Keyboard casts Healing Word using Bonus Action and retains Action")
-        require(combat.get_node("Grip").selected == 0, "Casting does not unequip or change grip")
     restore_files()
-    print("Spell component view checks passed: legacy spell controls and internal continuation" if legacy else "Spell component view checks passed: hand eligibility, verbal spells, keyboard action cycle, grip and internal continuation")
+    print("Spell component view checks passed: legacy spell controls and internal continuation" if legacy else "Spell component view checks passed: hand eligibility, verbal spells, keyboard action cycle and internal continuation")
     quit(0)

@@ -118,17 +118,16 @@ class AlternateRestRules final : public RulesModule
     }
 
     CharacterProfile character_profile(const CharacterSheet &sheet,
-                                       std::span<const std::string> gear,
-                                       EquipmentState equipment) const override
+                                       std::span<const std::string> gear) const override
     {
-        return module()->character_profile(sheet, gear, equipment);
+        return module()->character_profile(sheet, gear);
     }
 
     EquipmentChange equipment_change(const CharacterSheet &sheet, std::span<const std::string> gear,
-                                     EquipmentState state, unsigned selected,
+                                     unsigned selected,
                                      EquipmentOperation operation) const override
     {
-        return module()->equipment_change(sheet, gear, state, selected, operation);
+        return module()->equipment_change(sheet, gear, selected, operation);
     }
 
     RecoveryInfo recovery_info(const CharacterSheet &, const VitalState &) const override
@@ -326,7 +325,7 @@ void spending_and_continuation()
     rejects(
         [&]
     {
-        (void)party.spend_hit_die({1, 1}, f);
+        (void)party.heal_with_hit_dice({1, 1}, f);
     });
     const auto result = party.rest(RestKind::short_rest);
     check(result && result->spending.has_value(), "Completed hour opens a spending session");
@@ -342,12 +341,12 @@ void spending_and_continuation()
     rejects(
         [&]
     {
-        (void)party.spend_hit_die(ticket, reserve);
+        (void)party.heal_with_hit_dice(ticket, reserve);
     });
     rejects(
         [&]
     {
-        (void)party.spend_hit_die(ticket, 999);
+        (void)party.heal_with_hit_dice(ticket, 999);
     });
     rejects(
         [&]
@@ -362,41 +361,45 @@ void spending_and_continuation()
     check(
         saved(party) == after_rest,
         "Invalid targets, removal and repeated rests preserve the completed hour, resources and RNG");
-    const auto first = party.spend_hit_die(ticket, f);
-    check(first.roll == 4 && first.modifier == 2 && first.healing == 6 && first.remaining == 3 &&
-          party.member(f).vitals.hit_points == 7 &&
-          party.state().random_state == 11400714819323198527ULL,
-          "First die commits its known roll, healing and one RNG draw");
-    const auto after_first = saved(party);
+    const auto rolls = party.heal_with_hit_dice(ticket, f);
+    const auto &healed = party.member(f);
+    int healing = 0;
+    for (const auto &roll : rolls)
+        healing += roll.healing;
+    check(rolls.size() >= 2 && rolls[0].roll == 4 && rolls[0].modifier == 2 &&
+          rolls[0].healing == 6 && rolls[0].remaining == 3 && rolls[1].roll == 2 &&
+          rolls[1].healing == 4 && rolls[1].remaining == 2,
+          "Dice are spent one at a time with their known rolls and healing");
+    check((rolls.back().remaining == 0 ||
+           healed.vitals.hit_points == healed.character.sheet().hit_points) &&
+          healed.vitals.hit_points == 1 + healing &&
+          party.state().random_state ==
+          11400714819323198527ULL + (rolls.size() - 1) * 0x9e3779b97f4a7c15ULL,
+          "One action heals until full HP or out of dice, with one RNG draw per die");
+    const auto after_heal = saved(party);
     rejects(
         [&]
     {
-        (void)party.spend_hit_die(ticket, f);
+        (void)party.heal_with_hit_dice(ticket, f);
     });
     rejects(
         [&]
     {
         party.finish_short_rest(ticket);
     });
-    check(saved(party) == after_first, "Duplicate roll and stale Finish callbacks are atomic");
-    auto copy = loaded(after_first);
-    check(saved(copy) == after_first,
+    check(saved(party) == after_heal, "Duplicate heal and stale Finish callbacks are atomic");
+    auto copy = loaded(after_heal);
+    check(saved(copy) == after_heal,
           "Save/load retains the exact spending window and expenditure");
     rejects(
         [&]
     {
-        (void)copy.spend_hit_die(ticket, f);
+        (void)copy.heal_with_hit_dice(copy.state().short_rest->ticket, f);
     });
-    const auto next = copy.state().short_rest->ticket;
-    const auto second = copy.spend_hit_die(next, f);
-    const auto same = party.spend_hit_die(next, f);
-    check(
-        second.roll == 2 && second.healing == 4 && second.remaining == 2 &&
-        same.roll == second.roll && saved(copy) == saved(party),
-        "A new decision after reload consumes the known next die without repeating recharge or elapsed time");
+    check(saved(copy) == after_heal, "Nothing left to heal spends no die or RNG");
     const auto finish = copy.state().short_rest->ticket;
     copy.finish_short_rest(finish);
-    check(!copy.state().short_rest && copy.member(f).vitals.hit_points == 11 &&
+    check(!copy.state().short_rest && copy.member(f).vitals.hit_points == 1 + healing &&
           copy.state().time_minutes == 60 && winds(copy.member(f)) == 1,
           "Finish keeps all spent dice and healing and never repeats the rest");
     const auto finished = saved(copy);
@@ -408,13 +411,13 @@ void spending_and_continuation()
     rejects(
         [&]
     {
-        (void)copy.spend_hit_die(finish, f);
+        (void)copy.heal_with_hit_dice(finish, f);
     });
     check(saved(copy) == finished, "Finished sessions cannot be reused");
     party.finish_short_rest(party.state().short_rest->ticket);
     const auto zero = copy.rest(RestKind::short_rest);
     copy.finish_short_rest(*zero->spending);
-    check(copy.member(f).vitals.hit_points == 11 && winds(copy.member(f)) == 2 &&
+    check(copy.member(f).vitals.hit_points == 1 + healing && winds(copy.member(f)) == 2 &&
           copy.state().random_state == party.state().random_state,
           "A separate completed hour can finish with zero dice and still recharge one Second Wind");
     // Compare the next encounter before and after a save, including spent dice.
@@ -445,13 +448,24 @@ void expiry_and_atomicity()
     CampaignParty one_die(module());
     const auto one = one_die.add_pc(hero("fighter", 1));
     const auto completed = one_die.rest(RestKind::short_rest);
-    const auto last = one_die.spend_hit_die(*completed->spending, one);
-    check(last.remaining == 0, "The only Hit Die can be spent at full HP");
+    const auto full = saved(one_die);
+    rejects(
+        [&]
+    {
+        (void)one_die.heal_with_hit_dice(*completed->spending, one);
+    });
+    check(saved(one_die) == full, "A character at full HP spends no Hit Die, HP or RNG");
+    auto wounded = one_die.checkpoint();
+    wounded.roster.front().vitals.hit_points = 1;
+    one_die.restore(wounded);
+    const auto last = one_die.heal_with_hit_dice(one_die.state().short_rest->ticket, one);
+    check(last.size() == 1 && last.back().remaining == 0,
+          "Healing stops when the only Hit Die is spent");
     const auto depleted = saved(one_die);
     rejects(
         [&]
     {
-        (void)one_die.spend_hit_die(one_die.state().short_rest->ticket, one);
+        (void)one_die.heal_with_hit_dice(one_die.state().short_rest->ticket, one);
     });
     check(saved(one_die) == depleted, "An exhausted pool preserves the fresh ticket, HP and RNG");
     one_die.finish_short_rest(one_die.state().short_rest->ticket);
@@ -468,7 +482,7 @@ void expiry_and_atomicity()
     rejects(
         [&]
     {
-        (void)party.spend_hit_die(ticket, id);
+        (void)party.heal_with_hit_dice(ticket, id);
     });
     check(saved(party) == expired, "Expired request preserves state and RNG");
     rest = party.rest(RestKind::short_rest);
@@ -497,7 +511,7 @@ void expiry_and_atomicity()
     rejects(
         [&]
     {
-        (void)party.spend_hit_die(*rest->spending, id);
+        (void)party.heal_with_hit_dice(*rest->spending, id);
     });
     rejects(
         [&]
@@ -641,8 +655,9 @@ void campaign_services()
           "Safe camp grants a completed hour and updates original clock registers");
     check(!town.explore(por::ExplorationCommand::forward) && !town.camp(RestKind::long_rest),
           "Campaign events cannot run over pending spending");
-    const auto die = party->spend_hit_die(party->state().short_rest->ticket, id);
-    check(die.healing == 6, "Campaign service permits one committed die");
+    const auto rolls = party->heal_with_hit_dice(party->state().short_rest->ticket, id);
+    const int healed_hp = party->member(id).vitals.hit_points;
+    check(rolls.front().healing == 6, "Campaign service permits committed Hit Dice healing");
     const auto bytes = encode_campaign(*party, &town, "campaign-rest");
     auto disk = decode_campaign(bytes, *srd5::character_rules(), *module(), "campaign-rest", &town);
     auto resumed = std::make_shared<CampaignParty>(module());
@@ -653,7 +668,8 @@ void campaign_services()
     resumed->finish_short_rest(resumed->state().short_rest->ticket);
     check(disk.town->explore(por::ExplorationCommand::look), "Finish permits exploration");
     settle(*disk.town);
-    check(resumed->member(id).vitals.hit_points == 7 && disk.town->script_variable(0x6c19) == 7,
+    check(resumed->member(id).vitals.hit_points == healed_hp &&
+          disk.town->script_variable(0x6c19) == healed_hp,
           "Next script cannot overwrite committed Hit Die healing with stale HP");
     (void)resumed->begin_rest(RestKind::long_rest);
     for (unsigned phase = 0; phase < 2; ++phase)
@@ -862,7 +878,7 @@ void malformed_continuation()
     rejects(
         [&]
     {
-        (void)party.spend_hit_die(party.state().short_rest->ticket, id);
+        (void)party.heal_with_hit_dice(party.state().short_rest->ticket, id);
     });
     check(saved(party) == exhausted, "Revision exhaustion cannot consume a die or RNG");
     party.finish_short_rest(party.state().short_rest->ticket);

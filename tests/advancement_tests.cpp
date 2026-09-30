@@ -815,7 +815,6 @@ void feats()
                 if (combat->snapshot().actor != id)
                     continue;
                 combat->submit(command(*combat, "melee"));
-                test::choose_savage_damage(*combat);
                 for (const auto &log : combat->snapshot().log)
                     hit |= log.find("Savage Attacker") != std::string::npos;
                 if (hit)

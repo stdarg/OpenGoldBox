@@ -63,8 +63,8 @@ attribution applies; original game resources are loaded locally.
 
 Campaign saves record each confirmed choice and reconstruct the resulting
 sheet and Constitution history through the rules module; see
-[saves](SAVES.md#pre-10-format-policy). Spent resources, death-save counters and
-grip persist. Profiles carry HP history, grip and grants.
+[saves](SAVES.md#pre-10-format-policy). Spent resources and death-save counters
+persist. Profiles carry HP history and grants.
 Campaign saves explicitly store acquired grants with stable feature/feat IDs,
 source IDs, acquisition levels and named choices. Soldier's Savage Attacker is a
 level-one `background:soldier` grant. A level-four selection records
@@ -92,7 +92,7 @@ choices. Each records its source ID, acquisition level
 and ability amounts. This presentation correction introduced no profile or campaign format change.
 Standalone combat checkpoints retain second-level slots,
 per-turn spell/feat usage, timed effects, presentation facing, pending movement
-reactions, involuntary overlap during allied transit, weapon grip, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP.
+reactions, involuntary overlap during allied transit, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP.
 
 From PowerShell:
 

@@ -11,7 +11,7 @@ below retain their fixed fixtures; the character scene injects the actual party.
 
 [Spell component eligibility](SPELL-COMPONENTS.md) blocks Somatic spells when an
 equipped weapon/wand and shield occupy both hands, while retaining Verbal-only
-spells and attack grips. Speech-blocking sources and material components remain
+spells. Speech-blocking sources and material components remain
 separate increments.
 
 ## Run from Windows CMD
@@ -132,18 +132,16 @@ Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plu
 the same accepted command sequence reproducible. Checkpoints include the RNG,
 turn budgets, HP, slots, death saves and unfinished opportunity reactions.
 
-Rules module **0.6.62** writes **OGCOMBAT 27**, including selected weapon grip, an
+Rules module **0.6.62** writes **OGCOMBAT 27**, including an
 involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP.
 A saved leave-reach queue retains its order, partially resolved position and
 deterministic continuation. Older formats and other module or content identities
 are rejected; nothing is migrated. Campaign saves do not contain paused combat queues.
-Character profiles (PC42) store an equipment hand choice after the gear list.
-Combat stores the current
-grip separately from that initial recipe so later choices survive reload and
-campaign handoff. Rules own valid choices, labels and damage; Godot renders them.
-See [equipment](PARTY.md) for the seven supported Versatile weapons.
+The Versatile grip is not stored: it follows the other hand at attack time
+([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)).
+See [equipment](PARTY.md#versatile-grip) for the seven supported Versatile weapons.
 
-Profiles also store the background ID and acquired feature/feat grants after grip. Each
+Profiles (PC42) store the background ID and acquired feature/feat grants after the gear list. Each
 records a stable rules ID, source ID, acquisition level and named choices.
 The rules validate entitlements, prerequisites, duplicates and ability choices
 before deriving combat effects. See [advancement](ADVANCEMENT.md).
@@ -185,8 +183,8 @@ co-occupancy remain in the condition/creature-state increments (#35/#44).
 - One melee or ranged attack per Attack action, ascending AC, natural 1/20,
   doubled damage dice on critical hits, Dodge and ranged disadvantage from long
   range or an adjacent visible enemy. No hidden dice in the UI or AI.
-- Versatile one-/two-handed melee damage, shield compatibility and free grip
-  selection during the active turn or the wielder's pending opportunity reaction.
+- Versatile one-/two-handed melee damage chosen automatically from the other
+  hand (two-handed when it is empty), named in the damage line.
   Thrown attacks retain their base damage die.
 - Dash; Second Wind; Fire Bolt; touch-range Cure Wounds; single-target Magic
   Missile. Two level-1 spell slots in the caster fixtures. Cure Wounds uses

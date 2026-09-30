@@ -169,7 +169,6 @@ class CharacterCreationView : public godot::Control
     void capture_save_ui();
     void party_action(int action);
     void party_selected(std::int64_t index);
-    void party_grip_selected(std::int64_t index);
     void refresh_party();
     void party_layout();
     void party_check();

@@ -32,9 +32,9 @@ Character leveled(const RulesModule &rules, std::string klass, std::string style
 }
 
 auto combat(const RulesModule &r, const Character &h, std::vector<std::string> gear,
-            unsigned hands = 0, unsigned seed = 13, bool ranged = false)
+            unsigned seed = 13, bool ranged = false)
 {
-    auto profile = r.character_profile(h.sheet(), gear, {hands});
+    auto profile = r.character_profile(h.sheet(), gear);
     auto c = r.create({{12, 8, std::vector<std::uint8_t>(96)},
         {   {1, "campaign-character", "Style tester", 0, {1, 1}, profile.data},
             {99, "target", "Target", 1, ranged ? Cell{5, 1} : Cell{2, 1}}
@@ -106,10 +106,8 @@ void run()
                       rules->character_profile(no_style, std::array<std::string, 1> {"shield"})
                       .armor_class,
                       "Shield alone never activates Defense");
-                auto c = combat(*rules, h, {"shortbow"}, 0, 13, true);
+                auto c = combat(*rules, h, {"shortbow"}, 13, true);
                 act(*c, "ranged");
-                if (c->snapshot().savage_attack_choice)
-                    act(*c, "savage_skip");
                 bool attack = false;
                 for (const auto &m : c->snapshot().log_messages)
                     if (m.source.starts_with("{actor} -> {target}: d20"))
@@ -148,18 +146,18 @@ void run()
     {
         const char *id;
         int count, sides;
-        unsigned hands;
+        bool shield; // A shield in the other hand keeps a Versatile weapon one-handed.
         bool eligible;
         bool ranged{};
     };
 
     const std::array weapons
     {
-        Weapon{"greatsword", 2, 6, 2, true}, Weapon{"greataxe", 1, 12, 2, true},
-        Weapon{"maul", 2, 6, 2, true},       Weapon{"longsword", 1, 10, 2, true},
-        Weapon{"longsword", 1, 8, 1, false}, Weapon{"spear", 1, 8, 2, true},
-        Weapon{"dagger", 1, 4, 1, false},    Weapon{"shortbow", 1, 6, 2, false, true},
-        Weapon{"dart", 1, 4, 1, false, true}};
+        Weapon{"greatsword", 2, 6, false, true},  Weapon{"greataxe", 1, 12, false, true},
+        Weapon{"maul", 2, 6, false, true},        Weapon{"longsword", 1, 10, false, true},
+        Weapon{"longsword", 1, 8, true, false},   Weapon{"spear", 1, 8, false, true},
+        Weapon{"dagger", 1, 4, false, false},     Weapon{"shortbow", 1, 6, false, false, true},
+        Weapon{"dart", 1, 4, false, false, true}};
     for (const auto *klass :
             {"fighter", "paladin", "ranger"
             })
@@ -171,7 +169,10 @@ void run()
                 bool critical_seen = false;
                 for (unsigned seed = 1; seed <= 128; ++seed)
                 {
-                    auto c = combat(*rules, h, {w.id}, w.hands, seed, w.ranged);
+                    std::vector<std::string> gear{w.id};
+                    if (w.shield)
+                        gear.emplace_back("shield");
+                    auto c = combat(*rules, h, gear, seed, w.ranged);
                     auto rng = random_state(*c);
                     const int natural = die(rng, 20);
                     const bool critical = natural == 20 || (std::string_view(klass) == "fighter" &&
@@ -179,7 +180,7 @@ void run()
                     act(*c, w.ranged ? "ranged" : "melee");
                     if (natural == 1)
                     {
-                        check(!c->snapshot().savage_attack_choice,
+                        check(!test::logged(*c, "(Savage Attacker)"),
                               "Natural-one miss never rolls damage");
                         continue;
                     }
@@ -187,38 +188,33 @@ void run()
                         (std::string_view(w.id) == "dagger" || std::string_view(w.id) == "dart")
                         ? std::max(h.sheet().modifiers[0], h.sheet().modifiers[1])
                         : h.sheet().modifiers[w.ranged ? 1 : 0];
-                    int expected = modifier;
-                    for (int i = 0; i < w.count * (critical ? 2 : 1); ++i)
+                    const auto roll = [&]
                     {
-                        const int face = die(rng, w.sides);
-                        expected += w.eligible ? std::max(3, face) : face;
-                    }
-                    const auto offered = c->snapshot().savage_attack_choice;
-                    if (!offered || offered->first_damage != expected ||
-                            offered->critical != critical)
+                        int total = modifier;
+                        for (int i = 0; i < w.count * (critical ? 2 : 1); ++i)
+                        {
+                            const int face = die(rng, w.sides);
+                            total += w.eligible ? std::max(3, face) : face;
+                        }
+                        return total;
+                    };
+                    const int first = roll(), second = roll();
+                    const auto savage = "(Savage Attacker): " + std::to_string(first) + " and " +
+                                        std::to_string(second) + ", keeps " +
+                                        std::to_string(std::max(first, second)) + ".";
+                    if (!test::logged(*c, savage) ||
+                            (rogue_attack_checks::last_hit(*c) == "CRITICAL") != critical)
                         std::cerr << klass << " level=" << level << " weapon=" << w.id
                                   << " seed=" << seed << " natural=" << natural
-                                  << " expected=" << expected
-                                  << " actual=" << (offered ? offered->first_damage : -999)
-                                  << " critical=" << (offered ? offered->critical : false) << "\n";
-                    check(offered && offered->first_damage == expected &&
-                          offered->critical == critical,
-                          "Actual GWF first roll matches independent dice without extra RNG");
-                    auto restored = rules->restore(c->save());
-                    act(*c, "savage_use");
-                    act(*restored, "savage_use");
-                    expected = modifier;
-                    for (int i = 0; i < w.count * (critical ? 2 : 1); ++i)
-                    {
-                        const int face = die(rng, w.sides);
-                        expected += w.eligible ? std::max(3, face) : face;
-                    }
-                    check(c->snapshot().savage_attack_choice->second_damage == expected &&
-                          c->save() == restored->save(),
-                          "Savage second GWF roll and save continuation preserve independent RNG");
-                    act(*c, "savage_second");
-                    check(unit(*c, 99).hit_points == 1000 - expected,
-                          "Chosen GWF damage applied once");
+                                  << " expected=" << savage << " log=" << c->snapshot().log.back()
+                                  << "\n";
+                    check(test::logged(*c, savage) &&
+                          (rogue_attack_checks::last_hit(*c) == "CRITICAL") == critical,
+                          "Both GWF rolls match independent dice without extra RNG");
+                    check(rules->restore(c->save())->save() == c->save(),
+                          "GWF hit continuation preserves independent RNG");
+                    check(unit(*c, 99).hit_points == 1000 - std::max(first, second),
+                          "Higher GWF damage applied once");
                     if (critical)
                     {
                         critical_seen = true;
@@ -239,7 +235,7 @@ void run()
         {
             if (!reacted)
             {
-                auto c = combat(*rules, h, {"greatsword"}, 2, seed);
+                auto c = combat(*rules, h, {"greatsword"}, seed);
                 while (c->snapshot().actor != 99)
                     act(*c, "end");
                 Command move;
@@ -256,15 +252,11 @@ void run()
                     int expected = h.sheet().modifiers[0];
                     for (int i = 0; i < (natural == 20 ? 4 : 2); ++i)
                         expected += std::max(3, die(rng, 6));
-                    check(c->snapshot().savage_attack_choice &&
-                          c->snapshot().savage_attack_choice->first_damage == expected,
+                    check(test::logged(*c, "(Savage Attacker): " + std::to_string(expected) + " and "),
                           "GWF applies once to actual opportunity damage");
-                    auto copy = rules->restore(c->save());
-                    act(*c, "savage_skip");
-                    act(*copy, "savage_skip");
-                    check(c->save() == copy->save() && !unit(*c).reaction && unit(*c).action &&
-                          unit(*c, 99).cell == Cell{3, 1},
-                          "Pending reaction restores exactly and spends only Reaction");
+                    check(rules->restore(c->save())->save() == c->save() && !unit(*c).reaction &&
+                          unit(*c).action && unit(*c, 99).cell == Cell{3, 1},
+                          "Reaction restores exactly and spends only Reaction");
                     reacted = true;
                 }
             }
@@ -275,7 +267,6 @@ void run()
                 thrower.inventory().add("spear", "Spear");
                 p.add_pc(std::move(thrower));
                 p.equip(1, 1);
-                p.set_grip(1, 2);
                 auto actors = p.participants();
                 actors.front().cell = {1, 1};
                 actors.push_back({99, "target", "Target", 1, {4, 1}});
@@ -290,12 +281,10 @@ void run()
                     int expected = h.sheet().modifiers[0];
                     for (int i = 0; i < (natural == 20 ? 2 : 1); ++i)
                         expected += die(rng, 6);
-                    check(
-                        c->snapshot().savage_attack_choice &&
-                        c->snapshot().savage_attack_choice->first_damage == expected,
-                        "Throwing two-handed spear uses normal d6 faces, no GWF or Versatile bonus");
+                    check(test::logged(*c, "(Savage Attacker): " + std::to_string(expected) + " and "),
+                          "Throwing two-handed spear uses normal d6 faces, no GWF or Versatile bonus");
                     check(rules->restore(c->save())->save() == c->save(),
-                          "Thrown pending GWF-owner checkpoint is valid");
+                          "Thrown GWF-owner checkpoint is valid");
                     threw = true;
                 }
             }
@@ -387,8 +376,6 @@ void run()
                     while (fight->snapshot().actor != id)
                         act(*fight, "end");
                     act(*fight, "melee");
-                    if (fight->snapshot().savage_attack_choice)
-                        act(*fight, "savage_skip");
                     if (fight->snapshot().free_movement)
                         act(*fight, "end");
                     p.begin_combat();

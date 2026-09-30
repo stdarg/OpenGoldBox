@@ -91,8 +91,6 @@ are prepared in an owned candidate before replacing live campaign state.
 - **OPENGOLD-CAMPAIGN 19** stores sub-minute time, precise rest-completion offsets
   and the next encounter scope. Older formats and other rules identities reject;
   see the [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
-- The campaign save stores weapon grip separately from the opaque effect/resource
-  continuation; the combat checkpoint retains grip changes during pending reactions.
 - Campaign saves and PC42 profiles store acquired feature/feat provenance and
   choices, separately from spent resources and timed effects.
 - They also store training choices and sources alongside effects, wounds and

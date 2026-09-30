@@ -52,7 +52,7 @@ A campaign save stores:
 - Finished character drafts, appearances, levels, advancement choices, training
   selections and acquired feature/feat/training grants,
   stable member and inventory IDs,
-  inventory and original item provenance, equipment and selected grip, purses, NPC identities/morale,
+  inventory and original item provenance, equipment, purses, NPC identities/morale,
   active/reserve membership, selected slot and character-pool candidate identities.
 - HP/death state, opaque rules-owned resources, XP, claimed reward IDs, recovery
   timers, campaign minutes/millisecond remainder and service RNG state.

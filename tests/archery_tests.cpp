@@ -269,10 +269,8 @@ void attacks()
     auto soldier = battle(*rules, leveled("archery", "soldier"), "shortbow");
     check(soldier->submit(command(*soldier, "ranged")), "Archery plus Soldier attack starts");
     auto pending = rules->restore(soldier->save());
-    test::choose_savage_damage(*soldier);
-    test::choose_savage_damage(*pending);
     check(soldier->save() == pending->save() && arg(result(*soldier), "bonus") == "7",
-          "Saved Savage Attacker choice retains Archery's attack bonus");
+          "Restored Savage Attacker hit retains Archery's attack bonus");
     if (soldier->snapshot().free_movement)
         check(soldier->submit(command(*soldier, "end")),
               "Decline optional Champion movement before Surge");

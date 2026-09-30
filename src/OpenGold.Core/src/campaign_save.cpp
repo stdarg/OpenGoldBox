@@ -308,7 +308,7 @@ struct SaveCodec
     void member(PartyMember &v)
     {
         fields(v.id, v.npc_source, v.vitals, v.wealth, v.equipped, v.morale, v.experience,
-               v.last_rest_minutes, v.item_sources, v.creation_source, v.equipment.weapon_hands);
+               v.last_rest_minutes, v.item_sources, v.creation_source);
         // Grants are derived by replaying creation and advancement. Storing them
         // lets a load detect rules that would rebuild a different character.
         auto grants = v.character.sheet().grants;
@@ -659,7 +659,7 @@ void validate_saved_member(const PartyMember &member, const rules::RulesModule &
     std::vector<std::string> gear;
     for (auto id : member.equipped)
         gear.push_back(member.character.inventory().find(id)->get().definition_id);
-    (void)module.character_profile(member.character.sheet(), gear, member.equipment);
+    (void)module.character_profile(member.character.sheet(), gear);
 }
 } // namespace
 

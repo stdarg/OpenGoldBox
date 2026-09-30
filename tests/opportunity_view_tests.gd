@@ -5,8 +5,8 @@ var saved_files := {}
 # Checkpoint bodies in the current combat format for content creatures, which
 # carry no character profile. The header, with the current rules identity, is
 # taken from a checkpoint the game itself writes.
-const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-const CONTINUATION_TAIL := "0\n0\n0 0\n0\n0\n0\n0\n0 0\n0\n0\n0 \n0\n"
+const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+const CONTINUATION_TAIL := "0\n0 0\n0\n0\n0\n0\n0 0\n0\n0\n0 \n0\n"
 
 # The mover left an attack and a Second Wind behind, then tried to step from
 # (2,2) to (1,2). The first guard declined; the second guard's reaction waits.

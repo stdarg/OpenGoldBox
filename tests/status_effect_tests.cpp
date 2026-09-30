@@ -1,6 +1,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
+#include "combat_fixture.h"
 #include "status_effects.h"
 #include "weapons.h"
 #include <fstream>
@@ -547,6 +548,8 @@ void checkpoint_capacity()
     check(rules->restore(saved)->save() == saved,
           "Maximum actors/effects and escaped source names remain loadable");
 }
+
+using opengold::test::logged;
 
 #include "mastery_combat_checks.h"
 #include "nick_attack_checks.h"

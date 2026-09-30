@@ -393,7 +393,6 @@ void weapons_and_spells()
         const auto verb = weapon.ranged ? "ranged" : "melee";
         check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
               "Weapon damage uses its SRD type before HP loss");
-        test::choose_savage_damage(*combat);
         check(unit(*combat, 2).hit_points == 1000, "Selected damage remains immune");
         const auto logs = combat->snapshot().log_messages;
         check(std::any_of(logs.begin(), logs.end(),
@@ -417,7 +416,6 @@ void weapons_and_spells()
         turn(*combat, 1);
         check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
               "Fire Bolt, Scorching Ray and Magic Missile respect typed immunity");
-        test::choose_savage_damage(*combat);
         check(unit(*combat, 2).hit_points == 1000, "Selected damage remains immune");
         const auto logs = combat->snapshot().log_messages;
         check(std::any_of(logs.begin(), logs.end(),

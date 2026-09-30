@@ -156,7 +156,6 @@ void campaign()
         const auto id = npc ? party.recruit("fixture:warlock-poison", std::move(h))
                         : party.add_pc(std::move(h));
         party.equip(id, 1);
-        party.set_grip(id, 2);
         auto state = party.checkpoint();
         state.roster[0].vitals.hit_points -= 2;
         state.roster[0].wealth[3] = 37;

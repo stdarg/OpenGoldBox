@@ -357,7 +357,7 @@ void campaign()
           "Advancement preserves the existing pool without scaling it");
     const auto short_rest = party.rest(RestKind::short_rest);
     check(bool(short_rest), "Short Rest completes");
-    (void)party.spend_hit_die(*short_rest->spending, active);
+    (void)party.heal_with_hit_dice(*short_rest->spending, active);
     party.finish_short_rest(party.state().short_rest->ticket);
     for (auto id :
             {

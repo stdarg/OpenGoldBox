@@ -244,9 +244,8 @@ Timers expire at the source's next start (Sap) or next end (Vex), even when
 applied during another creature's turn. Reapplication refreshes a source's effect;
 other sources retain independent provenance. No mechanic moved into Core/UI.
 
-A pending Savage/Sneak damage choice retains the original effects until its hit
-resolves, preserving independently validated roll mode on reload. Resolution
-consumes those effects before applying the new hit's mastery. Champion movement
+Savage Attacker and Sneak Attack resolve with the hit (no pending choice), so a
+hit consumes the original effects before applying the new hit's mastery. Champion movement
 continues afterward. This checkpoint introduces no optional simultaneous-effect
 control and does not resolve pending MASTERY-5/6/7.
 

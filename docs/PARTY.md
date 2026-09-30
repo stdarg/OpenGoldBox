@@ -119,17 +119,22 @@ Legacy names absent from SRD 5.2.1 use these explicit SRD equivalents:
 | 50 / 55 / 59 | leather / chain_mail / shield |
 
 Damage dice, finesse, thrown/ranged distances, reach and mandatory two-hand
-requirements follow the SRD weapon table. The Grip dropdown below each game
-inventory list and beside combat turn/reaction controls selects one or two hands.
-Quarterstaff (including Bo Stick and Jo Stick) and Spear use 1d6/1d8;
-Battleaxe, Longsword, Trident, Warhammer and War Pick use 1d8/1d10.
-The alternate die applies only to two-handed melee, including critical hits and
-opportunity attacks. Thrown attacks always use the base die. A shield disables
-two-handed use. Grip changes use no turn resource, roll or game time; changes
-in combat are available on the wielder's turn or during their pending reaction.
-Newly equipped weapons start with their minimum hand requirement. Replacing or
-removing the weapon clears its previous choice. Existing original artwork is
-selected by weapon/shield combination and does not add new grip-specific poses.
+requirements follow the SRD weapon table.
+
+### Versatile grip
+
+There is no grip control ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)).
+The grip follows the other hand at attack time: a Versatile melee weapon is
+wielded two-handed when the other hand is empty, and one-handed when a shield
+or a second weapon is held. Quarterstaff (including Bo Stick and Jo Stick) and
+Spear use 1d6/1d8; Battleaxe, Longsword, Trident, Warhammer and War Pick use
+1d8/1d10. The larger die applies only to two-handed melee, including critical
+hits and opportunity attacks; thrown attacks always use the base die. The damage
+line of a Versatile melee hit names the grip, for example `... hits for 9
+damage (two-handed).` Nothing about the grip is saved: it is derived from the
+equipped items. Existing original artwork is selected by weapon/shield
+combination and does not add new grip-specific poses.
+
 All starting classes are proficient with simple weapons;
 Barbarian, Fighter, Paladin and Ranger are proficient with all martial weapons.
 Rogue is proficient with martial weapons that have Finesse or Light; Monk is
@@ -148,12 +153,11 @@ Equipment metadata comes from the rules module, not from the original edition's
 two-handed weapon/shield combination leaves the previous loadout untouched.
 The rules module includes the Rogue/Monk weapon proficiency, death-save,
 Constitution/HP-history, remaining-turn-resource and opportunity-trigger corrections,
-plus allied transit, Versatile grip and feature/training grant provenance.
+plus allied transit, the automatic Versatile grip and feature/training grant provenance.
 It recomputes weapon bonuses from saved
 class/equipment choices and retains the conversion of previously unsupported
 ordinary weapons with verified original provenance. Campaign saves and combat
-checkpoints retain grip independently of HP/resources, along with feature/feat
-grant provenance, choices and training selections. See [advancement](ADVANCEMENT.md)
+checkpoints retain feature/feat grant provenance, choices and training selections. See [advancement](ADVANCEMENT.md)
 and [training support](TRAINING.md). Combat checkpoints also retain [Temporary HP](TEMPORARY-HP.md), Hit Dice and [recovery clocks](RECOVERY-CLOCKS.md); see also [rest resources](REST-RESOURCES.md).
 Saves from older formats or rules versions are rejected; see [saves](SAVES.md#pre-10-format-policy).
 

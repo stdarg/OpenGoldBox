@@ -200,9 +200,3 @@ size_flags_horizontal = 3
 alignment = 0
 clip_text = true
 theme_override_font_sizes/font_size = 16
-
-[node name="GripLabel" type="Label" parent="InventoryPanel"]
-text = "Grip"
-
-[node name="Grip" type="OptionButton" parent="InventoryPanel"]
-focus_mode = 2

@@ -5,20 +5,20 @@
 namespace opengold::rules
 {
 CharacterProfile RulesModule::character_profile(const CharacterSheet &,
-        std::span<const std::string>, EquipmentState) const
+        std::span<const std::string>) const
 {
     throw std::runtime_error("This rules module does not support campaign characters");
 }
 
 EquipmentChange RulesModule::equipment_change(const CharacterSheet &, std::span<const std::string>,
-        EquipmentState, unsigned, EquipmentOperation) const
+        unsigned, EquipmentOperation) const
 {
     throw std::runtime_error("This rules module does not support equipment changes");
 }
 
 AbilityCheckModifier RulesModule::ability_check(const CharacterSheet &,
         std::span<const std::string>, unsigned,
-        std::string_view, EquipmentState) const
+        std::string_view) const
 {
     throw std::runtime_error("This rules module does not support equipped ability checks");
 }

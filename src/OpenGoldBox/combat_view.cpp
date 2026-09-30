@@ -6,7 +6,6 @@
 #include "hp_presentation.h"
 #include "application_settings.h"
 #include "localization.h"
-#include "grip_control.h"
 #include <godot_cpp/classes/popup_menu.hpp>
 #include "game_resources.h"
 #include "combat_view.h"
@@ -277,27 +276,12 @@ void CombatView::_ready()
     ->connect("pressed", callable_mp(this, &CombatView::use_cunning_action));
     get_node<OptionButton>("CunningAction")
     ->connect("item_selected", callable_mp(this, &CombatView::cunning_selected));
-    get_node<Button>("SneakAttack/Use")
-    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("sneak_use"));
-    get_node<Button>("SneakAttack/Skip")
-    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("sneak_skip"));
-    get_node<Window>("SneakAttack")
-    ->connect("close_requested", callable_mp(this, &CombatView::immediate).bind("sneak_skip"));
     get_node<Button>("ActionSurge")
     ->connect("pressed",
               callable_mp(this, &CombatView::immediate).bind(String("action_surge")));
     get_node<Button>("AdrenalineRush")
     ->connect("pressed",
               callable_mp(this, &CombatView::immediate).bind(String("adrenaline_rush")));
-    for (const auto &[node, verb] :
-    std::array<std::pair<const char *, const char *>, 4> {{{"Use", "savage_use"},
-        {"Skip", "savage_skip"},
-        {"First", "savage_first"},
-        {"Second", "savage_second"}
-    }
-})
-    get_node<Button>(String("SavageAttacker/") + node)
-    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String(verb)));
     get_node<Button>("TemporaryHP/Keep")
     ->connect("pressed",
               callable_mp(this, &CombatView::immediate).bind(String("temp_hp_keep")));
@@ -308,8 +292,6 @@ void CombatView::_ready()
     get_node<Button>("SpellSlot")->connect("pressed", callable_mp(this, &CombatView::spell_slot));
     get_node<Button>("SecondWind")
     ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String("second_wind")));
-    get_node<OptionButton>("Grip")->connect("item_selected",
-                                            callable_mp(this, &CombatView::grip_selected));
     get_node<Button>("End")->connect("pressed",
                                      callable_mp(this, &CombatView::immediate).bind(String("end")));
     get_node<Button>("React")->connect(
@@ -546,10 +528,6 @@ void CombatView::layout_reaction_controls(bool show_controls)
     log->set_position(Vector2(24, top + inset));
     log->set_size(Vector2(board_rect_.size.x,
                           std::max(0.0, get_size().y - board_rect_.get_end().y - 64 - inset)));
-    get_node<Label>("GripLabel")->set_position(Vector2(392, top));
-    get_node<Label>("GripLabel")->set_size(Vector2(50, 36));
-    get_node<OptionButton>("Grip")->set_position(Vector2(448, top));
-    get_node<OptionButton>("Grip")->set_size(Vector2(244, 36));
     const double button_width = 174;
     get_node<Button>("React")->set_position(Vector2(24, top));
     get_node<Button>("React")->set_size(Vector2(button_width, 36));
@@ -872,17 +850,6 @@ void CombatView::select_mode(String verb)
     refresh();
 }
 
-void CombatView::grip_selected(std::int64_t index)
-{
-    auto *grip = get_node<OptionButton>("Grip");
-    if (index < 0 || index >= grip->get_item_count())
-        return;
-    const auto hands = grip->get_item_id(index);
-    if (hands == 1 || hands == 2)
-        immediate(hands == 1 ? "grip_one" : "grip_two");
-    refresh();
-}
-
 void CombatView::cantrip_selected(std::int64_t index)
 {
     auto *choices = get_node<OptionButton>("Cantrip");
@@ -1146,8 +1113,7 @@ void CombatView::act(const Command &command)
                 {
                     return actor.id == command.target;
                 });
-                sound = after.sneak_attack_choice || after.savage_attack_choice ||
-                        (previous != before.combatants.end() &&
+                sound = (previous != before.combatants.end() &&
                          current != after.combatants.end() &&
                          current->hit_points < previous->hit_points)
                         ? 7
@@ -1230,9 +1196,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
         return;
     if (get_node<Window>("NickAttack")->is_visible())
         return;
-    if (get_node<Window>("SneakAttack")->is_visible() ||
-            get_node<Window>("TemporaryHP")->is_visible() ||
-            get_node<Window>("SavageAttacker")->is_visible() ||
+    if (get_node<Window>("TemporaryHP")->is_visible() ||
             get_node<Window>("TacticalMind")->is_visible())
         return;
     if (!is_visible_in_tree() || !demo_ || Engine::get_singleton()->is_editor_hint())
@@ -1332,9 +1296,6 @@ void CombatView::_input(const Ref<InputEvent> &event)
                            get_node<OptionButton>("Cantrip")->has_focus() ||
                            get_node<OptionButton>("Cantrip")->get_popup()->is_visible()))
         return;
-    if (key.is_valid() && (get_node<OptionButton>("Grip")->has_focus() ||
-                           get_node<OptionButton>("Grip")->get_popup()->is_visible()))
-        return;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && !key->is_ctrl_pressed() &&
             demo_->has_combat())
     {
@@ -1358,7 +1319,6 @@ void CombatView::_input(const Ref<InputEvent> &event)
             std::vector<std::string> actions;
             for (const auto &command : demo_->combat().legal_commands())
                 if (command.verb != "end" && command.verb != "weapon_select" &&
-                        command.verb != "grip_one" && command.verb != "grip_two" &&
                         std::find(actions.begin(), actions.end(), command.verb) == actions.end())
                     actions.push_back(command.verb);
             if (!actions.empty())
@@ -1846,98 +1806,6 @@ void CombatView::refresh()
         mind->hide();
         get_node<Button>("End")->grab_focus();
     }
-    auto *sneak = get_node<Window>("SneakAttack");
-    if (player && s.sneak_attack_choice)
-    {
-        const auto &hit = *s.sneak_attack_choice;
-        const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                         [&](const auto & a)
-        {
-            return a.id == hit.target;
-        });
-        sneak->set_title(i18n::text(N_("Sneak Attack")));
-        get_node<Button>("SneakAttack/Use")->set_text(i18n::text(N_("Use Sneak Attack")));
-        get_node<Button>("SneakAttack/Skip")
-        ->set_text(i18n::text(N_("Keep hit; save Sneak Attack")));
-        get_node<Label>("SneakAttack/Text")
-        ->set_text(i18n::format(
-                       "Target: {target}\nExtra damage: {count}d{sides}\n\nUse Sneak Attack once this turn, or keep the hit and save it.\nSavage Attacker can reroll weapon dice afterward.\nThe attack's Action or Reaction is already spent.",
-        {
-            {"target", target == s.combatants.end() ? String() : gs(target->name)},
-            {"count", hit.dice_count},
-            {"sides", hit.dice_sides}
-        }));
-        if (!sneak->is_visible())
-        {
-            sneak->popup_centered();
-            get_node<Button>("SneakAttack/Use")->grab_focus();
-        }
-    }
-    else if (sneak->is_visible())
-    {
-        sneak->hide();
-        if (player)
-            get_node<Button>("End")->grab_focus();
-    }
-    auto *savage = get_node<Window>("SavageAttacker");
-    if (player && s.savage_attack_choice)
-    {
-        get_node<Button>("SavageAttacker/Use")->set_text(i18n::text(N_("Use Savage Attacker")));
-        get_node<Button>("SavageAttacker/Skip")->set_text(i18n::text(N_("Keep damage; save feat")));
-        const auto &hit = *s.savage_attack_choice;
-        const bool second = hit.second_damage.has_value();
-        const bool changed = !savage->is_visible() ||
-                             get_node<Button>("SavageAttacker/First")->is_visible() != second;
-        get_node<Button>("SavageAttacker/Use")->set_visible(!second);
-        get_node<Button>("SavageAttacker/Skip")->set_visible(!second);
-        get_node<Button>("SavageAttacker/First")->set_visible(second);
-        get_node<Button>("SavageAttacker/Second")->set_visible(second);
-        const auto critical =
-            hit.critical ? i18n::text(N_("Critical hit")) : i18n::text(N_("Weapon hit"));
-        const auto formula = i18n::format("{weapon}: {count}d{sides} + ({modifier})",
-        {
-            {"weapon", i18n::text(hit.weapon)},
-            {"count", hit.dice_count},
-            {"sides", hit.dice_sides},
-            {"modifier", hit.modifier}
-        });
-        get_node<Label>("SavageAttacker/Text")
-        ->set_text(
-            second
-            ? i18n::format(
-                "{hit}\n{formula}\nFirst damage: {first}\nSecond damage: {second}\n\nKeep either roll. Defenses apply afterward.\nSavage Attacker is spent for this turn.",
-        {
-            {"hit", critical},
-            {"formula", formula},
-            {"first", hit.first_damage},
-            {"second", *hit.second_damage}
-        })
-        : i18n::format(
-            "{hit}\n{formula}\nFirst damage: {first}\n\nUse Savage Attacker to roll again, or keep this damage and save the feat for another hit this turn.\nThe attack's Action or Reaction is already spent.",
-        {{"hit", critical}, {"formula", formula}, {"first", hit.first_damage}}));
-        if (hit.extra_damage)
-            get_node<Label>("SavageAttacker/Text")
-            ->set_text(get_node<Label>("SavageAttacker/Text")->get_text() +
-                       i18n::format("\nSneak Attack adds {damage} to either weapon result.",
-        {{"damage", hit.extra_damage}}));
-        if (second)
-        {
-            get_node<Button>("SavageAttacker/First")
-            ->set_text(i18n::format("First roll: {damage}", {{"damage", hit.first_damage}}));
-            get_node<Button>("SavageAttacker/Second")
-            ->set_text(i18n::format("Second roll: {damage}", {{"damage", *hit.second_damage}}));
-        }
-        if (!savage->is_visible())
-            savage->popup_centered();
-        if (changed)
-            get_node<Button>(second ? "SavageAttacker/First" : "SavageAttacker/Use")->grab_focus();
-    }
-    else if (savage->is_visible())
-    {
-        savage->hide();
-        if (player)
-            get_node<Button>("End")->grab_focus();
-    }
     get_node<Button>("Continue")
     ->set_visible(demo_ && (demo_->waiting() || (loaded && s.outcome != Outcome::ongoing)));
     get_node<Button>("End")->set_visible(!get_node<Button>("Continue")->is_visible());
@@ -2140,23 +2008,6 @@ void CombatView::refresh()
         get_node<Button>("React")->set_visible(reaction);
         get_node<Button>("Decline")->set_visible(reaction);
     }
-    const auto grip_actor = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                         [&](const auto & a)
-    {
-        return a.id == s.actor;
-    });
-    const bool show_grip = player && grip_actor != s.combatants.end() && !grip_actor->grips.empty();
-    get_node<Label>("GripLabel")->set_visible(show_grip);
-    get_node<OptionButton>("Grip")->set_visible(show_grip);
-    get_node<OptionButton>("Grip")->set_disabled(
-        s.free_movement.has_value() || s.ability_check_choice.has_value() ||
-        s.sneak_attack_choice.has_value() || s.savage_attack_choice.has_value() ||
-        s.temporary_hp_offer.has_value());
-    if (show_grip)
-        presentation::refresh_grip(
-            *get_node<OptionButton>("Grip"), grip_actor->equipment, grip_actor->grips,
-            !s.free_movement && !s.ability_check_choice && !s.sneak_attack_choice &&
-            !s.savage_attack_choice && !s.temporary_hp_offer);
     get_node<Button>("Continue")->set_disabled(!demo_ || !demo_->waiting());
     get_node<Button>("Save")->set_disabled(!loaded || demo_->is_slums());
     get_node<Button>("Load")->set_disabled(!loaded || demo_->is_slums());
@@ -2628,20 +2479,6 @@ void CombatView::_process(double delta)
                         ++check_steps_;
                         return;
                     }
-        }
-        if ((checking_ || party_check_) && active->side == 0 && s.sneak_attack_choice)
-        {
-            get_node<Button>("SneakAttack/Use")->emit_signal("pressed");
-            return;
-        }
-        if ((checking_ || party_check_) && active->side == 0 && s.savage_attack_choice)
-        {
-            const auto &hit = *s.savage_attack_choice;
-            get_node<Button>(!hit.second_damage                       ? "SavageAttacker/Use"
-                             : hit.first_damage >= *hit.second_damage ? "SavageAttacker/First"
-                             : "SavageAttacker/Second")
-            ->emit_signal("pressed");
-            return;
         }
         if (party_check_ && settings::flag("--adrenaline-check") && active->side == 0)
         {

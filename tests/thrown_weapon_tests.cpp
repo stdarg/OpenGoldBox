@@ -73,8 +73,6 @@ CampaignParty thrown_party()
 
 void settle(CombatSession &combat)
 {
-    if (combat.snapshot().savage_attack_choice)
-        act(combat, "savage_skip");
     if (combat.snapshot().free_movement)
         act(combat, "end");
 }
@@ -195,24 +193,14 @@ void critical_stack()
             act(*combat, "end");
         act(*combat, "ranged", 2);
         const auto state = combat->snapshot();
-        if (!state.savage_attack_choice || !state.savage_attack_choice->critical)
+        if (!state.free_movement)
             continue;
         party.apply_combat(state);
         check(party.member(1).character.inventory().find(3)->get().quantity == 2,
               "Existing ranged command also consumes held Thrown units");
         auto restored = rules->restore(combat->save());
         check(restored->save() == combat->save(),
-              "Critical thrown choice preserves damage context after weapon leaves hand");
-        for (auto *session :
-                {
-                    combat.get(), restored.get()
-                })
-        {
-            act(*session, "savage_use");
-            act(*session, "savage_second");
-        }
-        check(restored->save() == combat->save() && bool(combat->snapshot().free_movement),
-              "Savage reroll retains thrown weapon and Champion trigger");
+              "Critical thrown hit with automatic Savage damage retains the Champion trigger");
         check(rules->restore(combat->save())->save() == combat->save(),
               "Physical inventory and Champion phase coexist in save");
         act(*combat, "end");

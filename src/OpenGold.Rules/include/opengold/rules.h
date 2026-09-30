@@ -111,12 +111,6 @@ struct SpellAccess
     unsigned cantrip_choices{}, spellbook_choices{}, prepared_choices{};
 };
 
-// Zero selects the equipped weapon's minimum required hands.
-struct EquipmentState
-{
-    unsigned weapon_hands{};
-    bool operator==(const EquipmentState &) const = default;
-};
 enum class EquipmentOperation
 {
     equip,
@@ -137,15 +131,7 @@ struct EquipmentChoice
 struct EquipmentChange
 {
     std::vector<unsigned> indices;
-    EquipmentState equipment;
     bool separate_selected_unit{};
-};
-
-struct GripOption
-{
-    unsigned hands{};
-    Message label;
-    bool available{true};
 };
 
 struct CharacterProfile
@@ -158,8 +144,9 @@ struct CharacterProfile
     std::vector<Message> equipment_positions;
     bool strength_dexterity_disadvantage{};
     std::vector<Message> item_messages, spell_messages;
-    EquipmentState equipment;
-    std::vector<GripOption> grips;
+    // Hands the equipped weapon is wielded with when attacking. A Versatile
+    // weapon uses two exactly when no shield or second weapon is held.
+    unsigned weapon_hands{};
 };
 enum class EquipmentSlot
 {
@@ -386,8 +373,6 @@ struct CombatantView
     std::vector<Message> conditions; // Derived display state; mechanics stay in the module.
     std::string type_name, melee_weapon, ranged_weapon; // Rules-owned combat display data.
     bool ranged_attack_available{};
-    EquipmentState equipment;
-    std::vector<GripOption> grips;
     TemporaryHitPoints temporary_hp;
     std::vector<ResourcePool> resources;
     std::vector<Message> hp_messages;
@@ -407,23 +392,6 @@ struct TemporaryHpOffer
 {
     EntityId recipient{};
     TemporaryHitPoints current, offered;
-};
-
-struct SneakAttackChoice
-{
-    EntityId attacker{}, target{};
-    int dice_count{}, dice_sides{};
-    bool critical{};
-};
-
-struct SavageAttackChoice
-{
-    EntityId attacker{}, target{};
-    std::string weapon;
-    int dice_count{}, dice_sides{}, modifier{}, first_damage{};
-    std::optional<int> second_damage;
-    bool critical{};
-    int extra_damage{};
 };
 
 struct AbilityCheckChoice
@@ -474,8 +442,6 @@ struct Snapshot
     bool reaction_pending{};
     std::uint64_t elapsed_milliseconds{};
     std::optional<TemporaryHpOffer> temporary_hp_offer;
-    std::optional<SavageAttackChoice> savage_attack_choice;
-    std::optional<SneakAttackChoice> sneak_attack_choice;
     std::optional<AbilityCheckChoice> ability_check_choice;
     std::optional<FreeMovement> free_movement;
     std::optional<OptionalEffectChoice> optional_effect_choice;
@@ -534,8 +500,7 @@ class RulesModule
     [[nodiscard]] virtual std::unique_ptr<CombatSession>
     restore(std::string_view checkpoint) const = 0;
     [[nodiscard]] virtual CharacterProfile character_profile(const CharacterSheet &,
-            std::span<const std::string>,
-            EquipmentState equipment = {}) const;
+            std::span<const std::string>) const;
 
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const
     {
@@ -543,15 +508,13 @@ class RulesModule
     }
 
     [[nodiscard]] virtual std::vector<EquipmentChoice>
-    equipment_choices(const CharacterSheet &, std::span<const std::string>, EquipmentState,
-                      unsigned) const
+    equipment_choices(const CharacterSheet &, std::span<const std::string>, unsigned) const
     {
         return {};
     }
 
     [[nodiscard]] virtual EquipmentChange equipment_change(const CharacterSheet &,
-            std::span<const std::string> candidates,
-            EquipmentState, unsigned selected,
+            std::span<const std::string> candidates, unsigned selected,
             EquipmentOperation) const;
 
     [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const
@@ -569,7 +532,7 @@ class RulesModule
                                      bool require_complete = true) const;
     [[nodiscard]] virtual AbilityCheckModifier
     ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
-                  std::string_view skill = {}, EquipmentState equipment = {}) const;
+                  std::string_view skill = {}) const;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const;
     // False means this module's supported advancement ceiling was reached.
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state) const;

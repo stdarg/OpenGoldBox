@@ -40,10 +40,6 @@ func expect_native(name: String) -> void:
     if actual != expected:
         var output := FileAccess.open("/tmp/mastery-ui-actual.save", FileAccess.WRITE); output.store_buffer(actual); output.close()
     require(actual == expected, "UI/native state match: " + name)
-func resolve_damage() -> void:
-    for n in range(3):
-        if current_scene.get_node("SavageAttacker").visible:
-            current_scene.get_node("SavageAttacker/Skip").pressed.emit(); await settle()
 func click_target() -> void:
     var point: Vector2
     if demo:
@@ -87,7 +83,7 @@ func run_checks() -> void:
                     if current_scene.get_node("Prompt").text.contains(selected_name): break
                     await key(KEY_A)
                 require(current_scene.get_node("Prompt").text.contains(selected_name), "A selects qualifying Attack")
-            await click_target(); await resolve_damage(); expect_native("qualified")
+            await click_target(); expect_native("qualified")
             require(not nick.disabled, "Qualifying Attack enables Nick")
             var before := checkpoint(); nick.grab_focus(); await key(KEY_SPACE)
             require(dialog.visible and dialog.size == Vector2i(640,300), "Approved Nick selector opens by keyboard")
@@ -101,17 +97,17 @@ func run_checks() -> void:
             require(not dialog.visible, "Target closes selector")
             await key(KEY_ESCAPE); require(checkpoint() == before, "Escape cancels targeting without expenditure")
             nick.pressed.emit(); await settle(); target.pressed.emit(); await settle()
-            await key(KEY_RIGHT); await key(KEY_LEFT); await key(KEY_SPACE); await resolve_damage(); expect_native("after")
+            await key(KEY_RIGHT); await key(KEY_LEFT); await key(KEY_SPACE); expect_native("after")
             require(nick.visible and nick.disabled and current_scene.get_node("UseCunningAction").disabled, "Shared Nick/Light allowance is consumed")
             await load_fixture("qualified"); nick.pressed.emit(); await settle()
             for i in range(choices.item_count):
                 if str(choices.get_item_metadata(i)) == "nick_throw#2": choices.select(i); choices.item_selected.emit(i)
-            target.pressed.emit(); await settle(); await click_target(); await resolve_damage(); expect_native("thrown")
+            target.pressed.emit(); await settle(); await click_target(); expect_native("thrown")
             await load_fixture("spent-bonus"); require(not nick.disabled, "Nick remains available after unrelated Bonus Action")
             nick.pressed.emit(); await settle()
             for i in range(choices.item_count):
                 if str(choices.get_item_metadata(i)) == "nick_melee#2": choices.select(i); choices.item_selected.emit(i)
-            target.pressed.emit(); await settle(); await click_target(); await resolve_damage(); expect_native("spent-after")
+            target.pressed.emit(); await settle(); await click_target(); expect_native("spent-after")
             require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No combat save controls")
         current_scene.queue_free(); await settle()
     cleanup(); print("Nick UI/native checks passed"); quit(0)

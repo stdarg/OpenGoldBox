@@ -2,7 +2,6 @@
 #include "godot_nodes.h"
 #include "application_settings.h"
 #include "localization.h"
-#include "grip_control.h"
 #include "game_resources.h"
 #include "rolf_tour_view.h"
 #include "vital_fixtures.h"
@@ -93,8 +92,6 @@ void RolfTourView::_ready()
         arrow->connect("pressed", callable_mp(this, &RolfTourView::level_up_requested).bind(slot));
         presentation::attach_child(*member, std::move(arrow));
     }
-    get_node<OptionButton>("InventoryPanel/Grip")
-    ->connect("item_selected", callable_mp(this, &RolfTourView::grip_selected));
     get_node<ItemList>("InventoryPanel/Items")
     ->connect("item_selected", callable_mp(this, &RolfTourView::inventory_selected));
     get_node<Button>("InventoryPanel/Equip")
@@ -221,8 +218,6 @@ void RolfTourView::layout()
     const auto iw = inventory_panel->get_size().x, ih = inventory_panel->get_size().y;
     get_node<Control>("InventoryPanel/Header")->set_position(Vector2(20, 18));
     get_node<Control>("InventoryPanel/Header")->set_size(Vector2(iw - 40, 44));
-    place("InventoryPanel/GripLabel", Rect2(20, ih - 180, 64, 36));
-    place("InventoryPanel/Grip", Rect2(90, ih - 180, 280, 36));
     get_node<Control>("InventoryPanel/Status")->set_position(Vector2(20, ih - 132));
     get_node<Control>("InventoryPanel/Status")->set_size(Vector2(iw - 40, 68));
     get_node<Control>("InventoryPanel/Equip")->set_position(Vector2(220, ih - 54));
@@ -359,13 +354,9 @@ void RolfTourView::refresh_inventory()
 {
     auto *items = get_node<ItemList>("InventoryPanel/Items");
     items->clear();
-    presentation::refresh_grip(*get_node<OptionButton>("InventoryPanel/Grip"), {}, {});
     if (!campaign_ || !campaign_->selected())
         return;
     const auto &m = campaign_->member(campaign_->selected());
-    const auto profile = campaign_->profile(m.id);
-    presentation::refresh_grip(*get_node<OptionButton>("InventoryPanel/Grip"), profile.equipment,
-                               profile.grips);
     get_node<Label>("InventoryPanel/Header")
     ->set_text(i18n::format("{name} / {class} / {gold} gp",
     {
@@ -408,31 +399,6 @@ void RolfTourView::inventory_selected(std::int64_t index)
     {
         get_node<Label>("InventoryPanel/Status")->set_text(i18n::text(e.what()));
     }
-}
-
-void RolfTourView::grip_selected(std::int64_t index)
-{
-    const auto selection = get_node<ItemList>("InventoryPanel/Items")->get_selected_items();
-    String error;
-    try
-    {
-        auto *grip = get_node<OptionButton>("InventoryPanel/Grip");
-        if (index < 0 || index >= grip->get_item_count())
-            return;
-        campaign_->set_grip(campaign_->selected(), grip->get_item_id(index));
-    }
-    catch (const std::exception &e)
-    {
-        error = i18n::text(e.what());
-    }
-    refresh_inventory();
-    if (!selection.is_empty())
-    {
-        get_node<ItemList>("InventoryPanel/Items")->select(selection[0]);
-        inventory_selected(selection[0]);
-    }
-    if (!error.is_empty())
-        get_node<Label>("InventoryPanel/Status")->set_text(error);
 }
 
 void RolfTourView::equip_item(bool equip)
@@ -1276,23 +1242,18 @@ void RolfTourView::check_town()
                 ->get_text()
                 .contains("Untrained shield: no AC bonus"))
             throw std::runtime_error("Equip must display the untrained penalty");
-        auto grip_fixture = retained;
-        auto &wielder = grip_fixture.roster.at(0);
+        auto staff_fixture = retained;
+        auto &wielder = staff_fixture.roster.at(0);
         const auto staff = wielder.character.inventory().add("quarterstaff", "Quarterstaff", 1);
         wielder.equipped.push_back(staff);
-        campaign_->restore(grip_fixture);
+        campaign_->restore(staff_fixture);
         refresh_inventory();
-        auto *grip = get_node<OptionButton>("InventoryPanel/Grip");
-        if (grip->get_item_count() != 2 || !grip->is_item_disabled(1))
-            throw std::runtime_error("Town inventory must disable two hands with a shield");
+        if (campaign_->profile(id).weapon_hands != 1)
+            throw std::runtime_error("A shield must keep the quarterstaff one-handed");
         get_node<ItemList>("InventoryPanel/Items")->select(0);
         get_node<Button>("InventoryPanel/Unequip")->emit_signal("pressed");
-        grip->emit_signal("item_selected", 1);
-        if (campaign_->profile(id).equipment.weapon_hands != 2 || grip->get_selected_id() != 2)
-            throw std::runtime_error("Town inventory did not apply two hands");
-        grip->emit_signal("item_selected", 0);
-        if (campaign_->profile(id).equipment.weapon_hands != 1)
-            throw std::runtime_error("Town inventory did not apply one hand");
+        if (campaign_->profile(id).weapon_hands != 2)
+            throw std::runtime_error("Removing the shield must free the second hand");
         campaign_->restore(retained);
         refresh_inventory();
         capture_frame("phlan-inventory");

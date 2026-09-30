@@ -162,14 +162,14 @@ void grants_and_checks()
               "Subclass and both feature grants follow ordinary level three acquisition");
         check(rules->character_profile(h.sheet(), {}).data.starts_with("PC42 "),
               "Every profile uses the current profile tag");
-        const auto athletics = rules->ability_check(h.sheet(), {}, 0, "athletics", {});
+        const auto athletics = rules->ability_check(h.sheet(), {}, 0, "athletics");
         check(athletics.advantage == champion,
               "Strength Athletics gains Advantage only for Champion");
-        check(!rules->ability_check(h.sheet(), {}, 1, "athletics", {}).advantage &&
-              !rules->ability_check(h.sheet(), {}, 0, "acrobatics", {}).advantage,
+        check(!rules->ability_check(h.sheet(), {}, 1, "athletics").advantage &&
+              !rules->ability_check(h.sheet(), {}, 0, "acrobatics").advantage,
               "Other ability/skill combinations excluded");
         const auto armored = rules->ability_check(h.sheet(), std::vector<std::string> {"hide"}, 0,
-            "athletics", {});
+            "athletics");
         check(armored.advantage == champion && !armored.disadvantage,
               "Trained Fighter armor does not cancel Advantage");
         if (champion)
@@ -230,9 +230,10 @@ void critical_and_movement()
                     "Expanded critical automatically hits even AC 40; old levels require natural 20");
                 if (critical)
                 {
+                    // The longsword has an empty other hand, so it is wielded as a d10.
                     const int expected_damage = unarmed ? 1 + h.sheet().modifiers[0]
-                                                : srd5::roll_die(expected_rng, 8) +
-                                                srd5::roll_die(expected_rng, 8) +
+                                                : srd5::roll_die(expected_rng, 10) +
+                                                srd5::roll_die(expected_rng, 10) +
                                                 h.sheet().modifiers[0];
                     check(
                         unit(*c, 2).hit_points == 1000 - expected_damage &&
@@ -289,15 +290,15 @@ void savage_and_prone()
     {
         auto c = battle(*rules, hero(3, "fighter", true), seed, {"longsword"}, true);
         act(*c, "melee", 2);
-        if (!c->snapshot().savage_attack_choice)
+        if (!c->snapshot().free_movement)
             continue;
-        check(!c->snapshot().free_movement, "Free movement waits until Savage choice resolves");
-        act(*c, "savage_use");
-        auto copy = rules->restore(c->save());
-        act(*c, "savage_second");
-        act(*copy, "savage_second");
-        check(c->save() == copy->save() && c->snapshot().free_movement,
-              "Accepted critical damage opens free movement after Savage");
+        const auto log = c->snapshot().log;
+        check(std::any_of(log.begin(), log.end(), [](const auto & line)
+        {
+            return line.find("(Savage Attacker)") != std::string::npos;
+        }), "Critical damage with automatic Savage Attacker opens free movement");
+        check(rules->restore(c->save())->save() == c->save(),
+              "Free movement after Savage damage round trips");
         auto step = cmd(*c, "move");
         check(c->submit(step), "Prone Champion can crawl");
         check(c->snapshot().free_movement->remaining_feet == 5,

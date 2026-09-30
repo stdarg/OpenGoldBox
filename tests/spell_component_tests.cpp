@@ -88,10 +88,9 @@ Command command(const CombatSession &c, std::string_view verb)
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
-auto battle(const RulesModule &rules, const Character &h, const std::vector<std::string> &gear,
-            unsigned hands = 0)
+auto battle(const RulesModule &rules, const Character &h, const std::vector<std::string> &gear)
 {
-    const auto p = rules.character_profile(h.sheet(), gear, {hands});
+    const auto p = rules.character_profile(h.sheet(), gear);
     auto c = rules.create({{8, 8, std::vector<std::uint8_t>(64)},
         {   {
                 1,
@@ -207,9 +206,8 @@ void expectations()
                     check(cast->submit(command(*cast, verb)),
                           "Eligible Somatic spell resolves normally");
                     check(!unit(*cast).action && unit(*cast).bonus_action == before.bonus_action &&
-                          unit(*cast).equipment == before.equipment &&
                           unit(*cast).armor_class == before.armor_class,
-                          "Casting spends Action without changing grip or shield AC");
+                          "Casting spends Action without changing shield AC");
                     const unsigned spent = verb == "fire_bolt"                               ? 0
                                            : verb.ends_with("_2") || verb == "scorching_ray" ? 2
                                            : 1;
@@ -238,9 +236,8 @@ void expectations()
                           "Verbal-only Healing Word casts with occupied hands");
                     check(
                         unit(*cast).action && !unit(*cast).bonus_action &&
-                        unit(*cast).hit_points > before.hit_points &&
-                        unit(*cast).equipment == before.equipment,
-                        "Healing Word spends Bonus Action and heals while retaining the attack grip");
+                        unit(*cast).hit_points > before.hit_points,
+                        "Healing Word spends Bonus Action and heals with occupied hands");
                     const unsigned spent = std::string_view(verb).ends_with("_2") ? 2 : 1;
                     for (unsigned level :
                             {
@@ -254,16 +251,12 @@ void expectations()
             check(blind->submit(command(*blind, "blindness")) && !unit(*blind).action,
                   "Verbal-only level-two spell spends its Action");
         }
-        for (unsigned hands :
-                {
-                    1u, 2u
-                })
         {
-            auto c = battle(*rules, h, {"quarterstaff"}, hands);
-            check(has(*c, somatic.front()), "Versatile attack grip allows a hand for casting");
-            const auto before = unit(*c);
-            check(c->submit(command(*c, somatic.front())) && unit(*c).equipment == before.equipment,
-                  "Casting retains selected Versatile damage grip");
+            // A Versatile weapon wielded two-handed leaves the other hand empty
+            // between attacks, so it never blocks a Somatic component.
+            auto c = battle(*rules, h, {"quarterstaff"});
+            check(has(*c, somatic.front()) && c->submit(command(*c, somatic.front())),
+                  "A two-handed Versatile weapon allows a hand for casting");
         }
         auto armored = battle(*rules, h, {"plate"});
         check(!has(*armored, "blindness") && !has(*armored, somatic.front()) &&
@@ -350,7 +343,7 @@ void ui_fixtures()
             if (shield)
                 gear.push_back("shield");
             write(path / (std::string(klass) + (shield ? "-blocked.save" : "-free.save")),
-                  battle(*rules, h, gear, shield ? 1 : 2)->save());
+                  battle(*rules, h, gear)->save());
         }
 }
 } // namespace

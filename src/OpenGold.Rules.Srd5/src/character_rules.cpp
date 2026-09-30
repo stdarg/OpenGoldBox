@@ -404,10 +404,10 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
     if (d.character_class == "rogue")
     {
         s.class_modifiers +=
-            "\nSneak Attack: once per turn, extra weapon damage on an eligible hit. See the hit decision for current dice.";
+            "\nSneak Attack: once per turn, extra weapon damage is added automatically to the first eligible hit; the combat log shows the dice.";
         s.class_messages.push_back(
         {
-            "Sneak Attack: once per turn, extra weapon damage on an eligible hit. See the hit decision for current dice.",
+            "Sneak Attack: once per turn, extra weapon damage is added automatically to the first eligible hit; the combat log shows the dice.",
             {}});
     }
     if (racial_hp)

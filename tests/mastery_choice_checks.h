@@ -26,8 +26,7 @@ std::string critical_before(std::string_view weapon)
         turn(*c, 1);
         const auto before = c->save();
         act(*c, ranged ? "ranged" : "melee", 99);
-        const auto hit = c->snapshot().savage_attack_choice;
-        if (hit && hit->critical)
+        if (arg(result(*c), "hit") == "CRITICAL")
             return before;
     }
     throw std::runtime_error("No critical hit for an optional mastery weapon");

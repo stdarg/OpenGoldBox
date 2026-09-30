@@ -39,10 +39,6 @@ func expect_native(name: String) -> void:
     if actual != expected:
         var output := FileAccess.open("/tmp/mastery-ui-actual.save", FileAccess.WRITE); output.store_buffer(actual); output.close()
     require(actual == expected, "UI/native state match: " + name)
-func resolve_damage() -> void:
-    for n in range(3):
-        if current_scene.get_node("SavageAttacker").visible:
-            current_scene.get_node("SavageAttacker/Skip").pressed.emit(); await settle()
 func click_target() -> void:
     var point: Vector2
     if demo:

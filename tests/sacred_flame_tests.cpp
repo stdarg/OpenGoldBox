@@ -499,7 +499,6 @@ void campaign()
             const auto id =
                 npc ? p.recruit("fixture:sacred", std::move(h)) : p.add_pc(std::move(h));
             p.equip(id, 1);
-            p.set_grip(id, 2);
             auto state = p.checkpoint();
             state.roster[0].vitals.hit_points -= 3;
             state.roster[0].wealth[3] = 37;
@@ -515,8 +514,8 @@ void campaign()
             p.begin_combat();
             p.apply_combat(c->snapshot());
             p.end_combat();
-            check(p.member(id).vitals == old && p.member(id).equipment.weapon_hands == 2,
-                  "Handoff retains wounds, pools and grip");
+            check(p.member(id).vitals == old && p.profile(id).weapon_hands == 2,
+                  "Handoff retains wounds, pools and the two-handed staff");
             const auto saved = encode_campaign(p, nullptr, "sacred");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "sacred", nullptr).party);

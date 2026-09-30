@@ -291,7 +291,7 @@ rules::CharacterProfile CampaignParty::profile(MemberId id) const
             throw std::runtime_error("Equipped item is missing");
         keys.push_back(item->get().definition_id);
     }
-    return rules_->character_profile(m.character.sheet(), keys, m.equipment);
+    return rules_->character_profile(m.character.sheet(), keys);
 }
 
 rules::AbilityCheckModifier CampaignParty::ability_check(MemberId id, unsigned ability,
@@ -306,7 +306,7 @@ rules::AbilityCheckModifier CampaignParty::ability_check(MemberId id, unsigned a
             throw std::runtime_error("Equipped item is missing");
         keys.push_back(item->get().definition_id);
     }
-    return rules_->ability_check(m.character.sheet(), keys, ability, skill, m.equipment);
+    return rules_->ability_check(m.character.sheet(), keys, ability, skill);
 }
 
 std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id,
@@ -323,7 +323,7 @@ std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id
     for (auto key : m.equipped)
         keys.push_back(m.character.inventory().find(key)->get().definition_id);
     keys.push_back(selected->get().definition_id);
-    return rules_->equipment_choices(m.character.sheet(), keys, m.equipment, keys.size() - 1);
+    return rules_->equipment_choices(m.character.sheet(), keys, keys.size() - 1);
 }
 
 void CampaignParty::equip(MemberId id, std::uint64_t item, rules::EquipmentOperation operation)
@@ -362,8 +362,7 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
             throw std::runtime_error("Unknown item");
         keys.push_back(entry->get().definition_id);
     }
-    const auto plan = rules_->equipment_change(before.character.sheet(), keys, before.equipment,
-        selected, operation);
+    const auto plan = rules_->equipment_change(before.character.sheet(), keys, selected, operation);
     auto inventory = before.character.inventory();
     auto sources = before.item_sources;
     bool inventory_changed = false;
@@ -396,21 +395,6 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
         target.item_sources = std::move(sources);
     }
     target.equipped = std::move(next);
-    target.equipment = plan.equipment;
-}
-
-void CampaignParty::set_grip(MemberId id, unsigned hands)
-{
-    editable();
-    auto &m = edit(id);
-    const auto current = profile(id);
-    if (std::none_of(current.grips.begin(), current.grips.end(),
-                     [&](const auto & choice)
-{
-    return choice.hands == hands && choice.available;
-}))
-    throw std::runtime_error("This grip is incompatible with the equipped weapon or shield.");
-    m.equipment = {hands};
 }
 
 rules::EquipmentInfo CampaignParty::equipment_info(MemberId id, std::uint64_t item) const
@@ -734,7 +718,7 @@ void CampaignParty::elapse(PartyState &state, std::uint64_t milliseconds,
         for (auto id : member.equipped)
             gear.push_back(member.character.inventory().find(id)->get().definition_id);
         const auto profile =
-            rules_->character_profile(member.character.sheet(), gear, member.equipment);
+            rules_->character_profile(member.character.sheet(), gear);
         participants.push_back({member.id,
                                 "campaign-character",
                                 member.character.sheet().name,
@@ -1206,7 +1190,7 @@ void CampaignParty::restore(PartyState state)
         std::vector<std::string> gear;
         for (auto id : m.equipped)
             gear.push_back(m.character.inventory().find(id)->get().definition_id);
-        (void)rules_->character_profile(m.character.sheet(), gear, m.equipment);
+        (void)rules_->character_profile(m.character.sheet(), gear);
     }
     state_ = std::move(state);
 }
@@ -1232,7 +1216,7 @@ std::vector<rules::Participant> CampaignParty::participants() const
                     }
             if (m.vitals.dead && ground.empty())
                 continue;
-            const auto p = rules_->character_profile(m.character.sheet(), gear, m.equipment);
+            const auto p = rules_->character_profile(m.character.sheet(), gear);
             result.push_back({id,
                               "campaign-character",
                               m.character.sheet().name,
@@ -1681,9 +1665,8 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot,
             std::vector<std::string> gear;
             for (auto id : it->equipped)
                 gear.push_back(it->character.inventory().find(id)->get().definition_id);
-            (void)rules_->character_profile(it->character.sheet(), gear, actor.equipment);
+            (void)rules_->character_profile(it->character.sheet(), gear);
             it->vitals = actor.persistent;
-            it->equipment = actor.equipment;
         }
     if (!recovery.members.empty() || !recovery.items.empty())
     {

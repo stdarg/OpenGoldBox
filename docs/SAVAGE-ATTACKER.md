@@ -7,30 +7,23 @@ can use it once per turn, including another creature's turn. It affects weapon
 damage dice; spell damage, an ordinary Unarmed Strike, and fixed Blowgun damage
 do not acquire extra dice from the feat.
 
-## Player decisions
+## Automatic reroll
 
-The user approved the two-stage centered dialog on 2026-09-23:
+Since [AUTO-1](SRD-DECISIONS.md) (2026-09-30) the feat has no dialog: taking
+the higher roll is the only sensible choice. On the first eligible weapon hit
+each turn the weapon damage dice are rolled twice and the higher total is kept.
+The combat log records it, for example
+`Rolf rerolls weapon damage (Savage Attacker): 9 and 10, keeps 10.`, and the
+hit line that follows carries the `(Savage Attacker)` marker. This supersedes
+the two-stage dialog approved on 2026-09-23 (Q8).
 
-1. After an eligible hit, show its weapon dice, modifier and first damage result.
-   Choose **Use Savage Attacker** or **Keep damage; save feat**.
-2. Using the feat spends it for this turn and rolls the second set of weapon
-   damage dice. Choose either result, including the lower one. The buttons show
-   their damage amounts.
-
-An attack's Action or Reaction is spent before either decision. Other combat
-commands and movement wait. HP, Temporary HP and defenses are unchanged until
-the final choice. A skipped use rolls no additional dice. Critical hits double
-weapon dice in both sets, with the ability modifier added once to each total;
-Versatile uses the current grip. Defenses and Temporary HP apply to the chosen
-result once. Both dialogs use standard buttons and keyboard focus. The game
-provides English/Spanish text; the older native demo retains its English UI and
-offers the same decisions. Neither exposes player saving during combat.
-
-Opportunity-hit decisions retain the pending movement and its reactor position.
-The spent Reaction remains spent across both stages. After damage, continue to
-the next reactor or resume the movement once; incapacitating the mover stops it.
-Enemy AI chooses to use the feat and retains the higher result. Player choice
-is not replaced by that AI policy.
+Critical hits double the weapon dice in both sets, with the ability modifier
+added once to each total. A Versatile weapon rerolls the die of the grip it was
+used with. Sneak Attack dice are rolled once and added to the kept total;
+defenses and Temporary HP apply to the final damage once. The attack's Action
+or Reaction is spent as usual, and an opportunity hit resolves at once, so the
+interrupted movement continues or stops immediately. Enemies with the feat
+follow the same rule.
 
 ## Grants and integration boundaries
 
@@ -49,23 +42,16 @@ flag is already part of combat state; those features must respect it.
 
 ## Persistence
 
-The internal combat checkpoint records an optional pending weapon hit. It
-records the participants, attack roll/mode, weapon attack kind,
-first damage and optional second damage. Dice, modifiers and eligibility derive
-from the validated actor/equipment state. Restoring validates the hit, roll
-bounds, feat use, spent Action/Reaction and any movement queue before publishing
-the session. It never rerolls, refunds an action, or applies damage early.
-
-Campaign saves preserve all grants, equipment, wounds, pools and clocks.
-Player saving remains restricted to camping or an inn.
+Nothing is pending between the attack roll and damage, so the combat checkpoint
+records only the spent once-per-turn flag. Campaign saves preserve all grants,
+equipment, wounds, pools and clocks. Player saving remains restricted to
+camping or an inn.
 
 ## Verification
 
-`savage_attacker_tests.cpp` uses independent fixed-roll expectations across all
-twelve classes, both decision stages, lower/critical results, ranged/melee and
-Versatile weapons, misses and exclusions, defenses/Temporary HP, queued and
-lethal opportunity hits, malformed checkpoints and real advancement grants.
-`savage_view_tests.gd` exercises actual buttons, keyboard
-focus, both supported window sizes, deferred target HP and internal checkpoint
-continuation. The normal party and advancement walkthroughs exercise acquisition
-and use through the existing game flow.
+`savage_attacker_tests.cpp` checks, with fixed rolls across all twelve classes,
+that the higher roll applies at once with the expected RNG use and log line,
+critical and lower-reroll cases, Versatile dice, misses and exclusions,
+defenses/Temporary HP, opportunity hits (queued and lethal), the once-per-turn
+refresh and real advancement grants. The normal party and advancement
+walkthroughs exercise acquisition and use through the existing game flow.

@@ -74,7 +74,6 @@ struct PartyMember
     unsigned last_rest_subminute_milliseconds{};
     std::map<std::uint64_t, por::Equipment> item_sources;
     std::string creation_source; // Stable pool candidate identity, empty for authored PCs.
-    rules::EquipmentState equipment;
 };
 
 // Items physically separated from party inventories retain provenance and their
@@ -140,7 +139,6 @@ class CampaignParty
     void equip(MemberId id, std::uint64_t item,
                rules::EquipmentOperation operation = rules::EquipmentOperation::equip);
     void unequip(MemberId id, std::uint64_t item);
-    void set_grip(MemberId id, unsigned hands);
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
     void purchase(MemberId id, const por::Equipment &item);
     void set_wealth(MemberId id, std::array<std::uint16_t, 7> wealth);
@@ -176,7 +174,9 @@ class CampaignParty
     void resume_rest(RestTicket ticket);
     void abandon_rest(RestTicket ticket);
     [[nodiscard]] std::uint64_t remaining_rest_milliseconds() const;
-    [[nodiscard]] rules::HitDieResult spend_hit_die(RestTicket ticket, MemberId id);
+    // Spends Hit Dice one at a time until the member is at full HP or out of dice.
+    [[nodiscard]] std::vector<rules::HitDieResult> heal_with_hit_dice(RestTicket ticket,
+            MemberId id);
     [[nodiscard]] rules::Message recover_rest_choice(RestTicket ticket, MemberId id,
             std::string_view choice);
     void finish_short_rest(RestTicket ticket);

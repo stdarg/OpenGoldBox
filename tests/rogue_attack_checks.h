@@ -66,33 +66,54 @@ void move(CombatSession &c, Cell to)
     throw std::runtime_error("Rogue move unavailable");
 }
 
-void reject_hit_field(const RulesModule &rules, const CombatSession &combat, unsigned field,
-                      int value)
+// Sneak Attack applies automatically, so its log lines are the evidence.
+std::vector<std::string> sneak_lines(const CombatSession &c)
 {
-    auto bytes = combat.save();
-    const auto start = bytes.find("\n1 99 ");
-    check(start != std::string::npos, "Locate serialized pending hit");
-    const auto end = bytes.find('\n', start + 1);
-    std::istringstream in(bytes.substr(start + 1, end - start - 1));
-    std::vector<int> fields;
-    int n;
-    while (in >> n)
-        fields.push_back(n);
-    check(fields.size() == 16u && field < fields.size(), "Pending hit field shape");
-    fields[field] = value;
-    std::ostringstream out;
-    for (unsigned i = 0; i < fields.size(); ++i)
-    {
-        if (i)
-            out << ' ';
-        out << fields[i];
-    }
-    bytes.replace(start + 1, end - start - 1, out.str());
-    rejects(
-        [&]
-    {
-        (void)rules.restore(bytes);
-    });
+    std::vector<std::string> lines;
+    for (const auto &line : c.snapshot().log)
+        if (line.find(" adds Sneak Attack: ") != std::string::npos)
+            lines.push_back(line);
+    return lines;
+}
+
+bool sneaked(const CombatSession &c)
+{
+    return !sneak_lines(c).empty();
+}
+
+// "hits", "CRITICAL", or empty for a miss, from the latest attack roll.
+std::string last_hit(const CombatSession &c)
+{
+    const auto messages = c.snapshot().log_messages;
+    for (auto m = messages.rbegin(); m != messages.rend(); ++m)
+        if (m->source.starts_with("{actor} -> {target}: d20"))
+        {
+            for (const auto &a : m->arguments)
+                if (a.name == "hit")
+                    return a.value;
+            return {};
+        }
+    return {};
+}
+
+// Reads the number that follows `before` in the last log line containing `marker`.
+int logged_number(const CombatSession &c, std::string_view marker, std::string_view before)
+{
+    const auto log = c.snapshot().log;
+    for (auto line = log.rbegin(); line != log.rend(); ++line)
+        if (line->find(marker) != std::string::npos)
+            return std::stoi(line->substr(line->find(before) + before.size()));
+    throw std::runtime_error("Missing logged number: " + std::string(marker));
+}
+
+int sneak_damage(const CombatSession &c)
+{
+    return logged_number(c, " adds Sneak Attack: ", "d6 for ");
+}
+
+int kept_weapon_damage(const CombatSession &c)
+{
+    return logged_number(c, "(Savage Attacker):", ", keeps ");
 }
 
 void run()
@@ -119,39 +140,17 @@ void run()
               "Rogue advancement preserves wounds");
         auto c = battle(*rules, h);
         act(*c, "melee");
-        const auto offer = c->snapshot().sneak_attack_choice;
-        check(bool(offer), "Ally near target enables live Sneak hit");
-        check(offer->dice_sides == 6 &&
-              offer->dice_count == int(level < 3 ? 1 : 2) * (offer->critical ? 2 : 1),
-              "Independent attained-level/critical extra dice");
-        check(!unit(*c).action && unit(*c, 99).hit_points == 1000 &&
-              !c->snapshot().savage_attack_choice,
-              "Sneak decision precedes damage/Savage and preserves action cost");
-        roundtrip(*rules, *c);
-        reject_hit_field(*rules, *c, 11, 1);
-        reject_hit_field(*rules, *c, 10, 1);
-        reject_hit_field(*rules, *c, 8, 1);
-        const auto before = c->save();
-        check(!c->submit({c->snapshot().revision, 1, 0, "dash"}) && c->save() == before,
-              "Other actions reject atomically while hit waits");
-        auto skipped = rules->restore(before);
-        act(*skipped, "sneak_skip");
-        check(bool(skipped->snapshot().savage_attack_choice),
-              "Declining Sneak still offers Savage");
-        act(*skipped, "savage_skip");
-        act(*c, "sneak_use");
-        roundtrip(*rules, *c);
-        auto hit = *c->snapshot().savage_attack_choice;
-        reject_hit_field(*rules, *c, 11, 999);
-        check(hit.extra_damage >= offer->dice_count && hit.extra_damage <= offer->dice_count * 6,
-              "Extra dice have independent legal bounds");
-        act(*c, "savage_use");
-        roundtrip(*rules, *c);
-        check(c->snapshot().savage_attack_choice->extra_damage == hit.extra_damage,
-              "Savage rerolls weapon only");
-        act(*c, "savage_first");
-        check(unit(*skipped, 99).hit_points - unit(*c, 99).hit_points == hit.extra_damage,
-              "Same first weapon roll gains exactly Sneak component");
+        check(sneak_lines(*c).size() == 1, "Ally near target applies Sneak Attack automatically");
+        const int count = int(level < 3 ? 1 : 2) * (last_hit(*c) == "CRITICAL" ? 2 : 1);
+        check(sneak_lines(*c).front().find(": " + std::to_string(count) + "d6 for ") !=
+              std::string::npos,
+              "Independent attained-level/critical extra dice are logged");
+        const int extra = sneak_damage(*c);
+        check(extra >= count && extra <= count * 6, "Extra dice have independent legal bounds");
+        check(!unit(*c).action && unit(*c).bonus_action,
+              "Automatic Sneak Attack costs only the attack's Action");
+        check(1000 - unit(*c, 99).hit_points == std::max(0, kept_weapon_damage(*c) + extra),
+              "Savage rerolls weapon dice only; Sneak dice are added once");
         roundtrip(*rules, *c);
         auto bad = h.sheet();
         std::erase_if(bad.grants,
@@ -192,11 +191,7 @@ void run()
         c = battle(*rules, h, "shortbow", false, 13, true);
         act(*c, "steady_aim");
         act(*c, "ranged");
-        check(bool(c->snapshot().sneak_attack_choice),
-              "Aim alone enables a ranged Sneak hit without ally");
-        roundtrip(*rules, *c);
-        act(*c, "sneak_use");
-        act(*c, "savage_skip");
+        check(sneaked(*c), "Aim alone enables a ranged Sneak hit without ally");
         roundtrip(*rules, *c);
     }
     for (unsigned level = 1; level <= 4; ++level)
@@ -222,10 +217,7 @@ void run()
             act(*c, "end");
         const auto vitals = unit(*c, id).persistent;
         act(*c, "melee");
-        check(c->snapshot().sneak_attack_choice.has_value(),
-              "Recruited Rogue receives Sneak decision");
-        act(*c, "sneak_use");
-        act(*c, "savage_skip");
+        check(sneaked(*c), "Recruited Rogue applies Sneak Attack automatically");
         recruited.begin_combat();
         recruited.apply_combat(c->snapshot());
         recruited.end_combat();
@@ -247,7 +239,7 @@ void run()
         while (c->snapshot().actor != 1)
             act(*c, "end");
         act(*c, "ranged");
-        check(c->snapshot().savage_attack_choice.has_value() && !c->snapshot().sneak_attack_choice,
+        check(!last_hit(*c).empty() && !sneaked(*c),
               "Real later hit proves unused Aim expires at turn end");
         roundtrip(*rules, *c);
     }
@@ -261,8 +253,7 @@ void run()
             auto c = battle(*hard, h, "shortbow", false, seed, true, "hard_target");
             act(*c, "steady_aim");
             act(*c, "ranged");
-            if (unit(*c, 99).hit_points != 1000 || c->snapshot().sneak_attack_choice ||
-                    c->snapshot().savage_attack_choice)
+            if (unit(*c, 99).hit_points != 1000 || !last_hit(*c).empty())
                 continue;
             const auto saved = c->save();
             const auto start = saved.find("\n1 \"campaign-character\"");
@@ -270,7 +261,7 @@ void run()
             const auto end = saved.find('\n', start + 1);
             std::istringstream actor_fields(saved.substr(start + 1, end - start - 1));
             std::string field;
-            for (unsigned n = 0; n < 39; ++n)
+            for (unsigned n = 0; n < 38; ++n)
                 actor_fields >> std::quoted(field);
             bool sneak_used, aim_used, aim_ready, moved;
             actor_fields >> sneak_used >> aim_used >> aim_ready >> moved;
@@ -292,12 +283,7 @@ void run()
         const bool ranged = std::string_view(weapon) != "dagger";
         auto c = battle(*rules, h, weapon, true, 13, ranged);
         act(*c, ranged ? "ranged" : "melee");
-        check(bool(c->snapshot().sneak_attack_choice),
-              "Finesse and Ranged categories including fixed Blowgun qualify");
-        roundtrip(*rules, *c);
-        act(*c, "sneak_use");
-        if (c->snapshot().savage_attack_choice)
-            act(*c, "savage_skip");
+        check(sneaked(*c), "Finesse and Ranged categories including fixed Blowgun qualify");
         roundtrip(*rules, *c);
     }
     for (const auto &weapon :
@@ -306,7 +292,7 @@ void run()
     {
         auto c = battle(*rules, h, weapon);
         act(*c, "melee");
-        check(!c->snapshot().sneak_attack_choice, "Non-Finesse and unarmed attacks do not qualify");
+        check(!sneaked(*c), "Non-Finesse and unarmed attacks do not qualify");
     }
     // Live cancellation cases: close ranged attacks have Disadvantage; Aim cancels it.
     for (bool ally :
@@ -325,10 +311,10 @@ void run()
                 if (aim)
                     act(*c, "steady_aim");
                 act(*c, "ranged");
-                if (!c->snapshot().sneak_attack_choice && !c->snapshot().savage_attack_choice)
+                if (last_hit(*c).empty())
                     continue;
                 check(
-                    c->snapshot().sneak_attack_choice.has_value() == (ally && aim),
+                    sneaked(*c) == (ally && aim),
                     "Actual canceled Advantage permits ally clause; uncanceled Disadvantage never does");
                 roundtrip(*rules, *c);
                 checked = true;
@@ -340,13 +326,10 @@ void run()
     {
         auto c = battle(*rules, h, "dagger", true, seed);
         act(*c, "melee");
-        const auto offered = c->snapshot().sneak_attack_choice;
-        if (!offered || !offered->critical)
+        if (last_hit(*c) != "CRITICAL" || !sneaked(*c))
             continue;
-        check(offered->dice_count == 4, "Level-four critical rolls four extra d6");
-        roundtrip(*rules, *c);
-        act(*c, "sneak_use");
-        act(*c, "savage_use");
+        check(sneak_lines(*c).front().find(": 4d6 for ") != std::string::npos,
+              "Level-four critical rolls four extra d6");
         roundtrip(*rules, *c);
         critical_verified = true;
     }
@@ -384,9 +367,8 @@ void run()
             while (c->snapshot().actor != 1)
                 act(*c, "end");
             act(*c, "melee");
-            check(!c->snapshot().sneak_attack_choice,
-                  "Sleeping adjacent ally cannot enable Sneak Attack");
-            checked = c->snapshot().savage_attack_choice.has_value();
+            check(!sneaked(*c), "Sleeping adjacent ally cannot enable Sneak Attack");
+            checked = !last_hit(*c).empty();
         }
         check(checked, "Hit with incapacitated ally exercised");
     }
@@ -411,15 +393,10 @@ void run()
             while (c->snapshot().actor != id)
                 act(*c, "end");
             act(*c, "throw");
-            if (!c->snapshot().sneak_attack_choice && !c->snapshot().savage_attack_choice)
+            if (last_hit(*c).empty())
                 continue;
-            check(c->snapshot().sneak_attack_choice.has_value() ==
-                  (std::string_view(weapon) != "handaxe"),
+            check(sneaked(*c) == (std::string_view(weapon) != "handaxe"),
                   "Thrown Finesse/Ranged weapon qualifies; thrown Handaxe does not");
-            roundtrip(*rules, *c);
-            if (c->snapshot().sneak_attack_choice)
-                act(*c, "sneak_use");
-            act(*c, "savage_skip");
             roundtrip(*rules, *c);
             checked = true;
         }
@@ -431,10 +408,8 @@ void run()
     {
         auto c = battle(*rules, h, "dagger", true, seed);
         act(*c, "melee");
-        if (!c->snapshot().sneak_attack_choice)
+        if (!sneaked(*c))
             continue;
-        act(*c, "sneak_use");
-        act(*c, "savage_skip");
         act(*c, "end");
         while (c->snapshot().actor != 99)
             act(*c, "end");
@@ -443,23 +418,18 @@ void run()
             act(*c, "decline");
         check(c->snapshot().actor == 1 && c->snapshot().reaction_pending,
               "Enemy movement offers actual Rogue opportunity attack");
-        act(*c, "opportunity");
-        if (!c->snapshot().sneak_attack_choice)
-            continue;
-        check(!unit(*c).reaction && unit(*c, 99).cell == Cell{2, 1},
-              "Reaction is spent and enemy movement suspended for Sneak decision");
-        roundtrip(*rules, *c);
         auto restored = rules->restore(c->save());
+        act(*c, "opportunity");
+        act(*restored, "opportunity");
+        if (sneak_lines(*c).size() != 2)
+            continue;
+        check(!unit(*c).reaction, "Reaction is spent and Sneak Attack is fresh on the enemy turn");
         for (auto *session :
                 {
                     c.get(), restored.get()
                 })
-        {
-            act(*session, "sneak_use");
-            act(*session, "savage_skip");
             while (session->snapshot().reaction_pending)
                 act(*session, "decline");
-        }
         check(c->save() == restored->save() && unit(*c, 99).cell == Cell{4, 1},
               "Reaction Sneak damage and interrupted movement continue identically");
         reaction_verified = true;
@@ -476,16 +446,11 @@ void run()
     {
         auto c = battle(*resisted, weak_hero, "dagger", true, seed);
         act(*c, "melee");
-        if (!c->snapshot().sneak_attack_choice)
-            continue;
-        act(*c, "sneak_use");
-        const auto hit = *c->snapshot().savage_attack_choice;
-        if (hit.first_damage >= 0)
+        if (!sneaked(*c) || kept_weapon_damage(*c) >= 0)
             continue;
         roundtrip(*resisted, *c);
-        act(*c, "savage_skip");
         check(unit(*c, 99).hit_points ==
-              1000 - std::max(0, hit.first_damage + hit.extra_damage) / 2,
+              1000 - std::max(0, kept_weapon_damage(*c) + sneak_damage(*c)) / 2,
               "Signed weapon plus Sneak damage is resisted once");
         negative_verified = true;
     }
@@ -503,26 +468,6 @@ void run()
     }
     act(*aimed, "steady_aim");
     write("aim-spent", *aimed);
-    auto ui_hero = hero(d);
-    VitalState ui_vitals;
-    for (unsigned level = 1; level <= 4; ++level)
-    {
-        if (level > 1)
-            check(ui_hero.advance(*live, ui_vitals), "UI Rogue advances normally");
-        bool written = false;
-        for (unsigned seed = 1; seed <= 64 && !written; ++seed)
-        {
-            auto c = battle(*live, ui_hero, "dagger", true, seed, false, "vanguard");
-            act(*c, "melee");
-            if (!c->snapshot().sneak_attack_choice)
-                continue;
-            write("sneak-level" + std::to_string(level), *c);
-            act(*c, "sneak_use");
-            write("savage-extra-level" + std::to_string(level), *c);
-            written = true;
-        }
-        check(written, "Current shipped-content hit fixture captured");
-    }
     CampaignParty party(module());
     auto id = party.add_pc(hero(d));
     party.award_experience(2700, "rogue-batch");

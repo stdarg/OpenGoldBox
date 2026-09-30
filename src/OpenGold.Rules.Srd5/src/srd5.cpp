@@ -189,26 +189,6 @@ struct Definition
     std::vector<std::string> equipment_keys, masteries;
 };
 
-std::vector<GripOption> grip_options(const Definition &d)
-{
-    if (!d.versatile_sides)
-        return {};
-    return {{1, {"One hand — {dice}", {{"dice", "1d" + std::to_string(d.melee.sides)}}}, true},
-        {
-            2,
-            {"Two hands — {dice}", {{"dice", "1d" + std::to_string(d.versatile_sides)}}},
-            !d.shield && !d.other_weapon
-        }};
-}
-
-void validate_grip(const Definition &d, unsigned hands)
-{
-    if (d.versatile_sides
-            ? (hands != 1 && hands != 2) || (hands == 2 && (d.shield || d.other_weapon))
-            : hands != d.weapon_hands)
-        throw std::runtime_error("This grip is incompatible with the equipped weapon or shield.");
-}
-
 struct CombatDisplay
 {
     const char *type;
@@ -248,8 +228,9 @@ struct Content
 bool somatic_hand(const Definition &d)
 {
     // Two-Handed/Versatile specifies hands when attacking (SRD p.90). A
-    // weapon can be held in one hand while gesturing, retaining its attack
-    // grip. A separate shield occupies the remaining hand; a wand is held too.
+    // Versatile weapon is wielded two-handed only when the other hand is
+    // empty, so that hand is free again for a Somatic gesture between attacks.
+    // A separate shield occupies the remaining hand; a wand is held too.
     return (!d.shield && !d.other_weapon) || !d.weapon_hands;
 }
 
@@ -264,7 +245,7 @@ struct Actor : detail::LifeState
     bool bonus{true}, reaction{true}, dodge{}, disengaged{};
     bool spent_slot{}, savage_used{}, facing_left{};
     bool sneak_used{}, aim_used{}, aim_ready{}, moved{};
-    unsigned weapon_hands{}, selected_weapon{};
+    unsigned selected_weapon{};
     std::vector<unsigned> light_origins;
     unsigned nick_origin{}; // Light weapon used by the current Attack action.
     unsigned light_extra{}; // 0: unused, 1: Bonus Action, 2: Nick; shared once per turn.
@@ -394,20 +375,6 @@ struct PendingCheck
     EntityId actor{}, target{};
     int natural{};
     bool surge_spent{};
-};
-
-struct PendingWeaponHit
-{
-    EntityId attacker{}, target{};
-    bool ranged{};
-    int natural{}, mode{}, first{};
-    std::optional<int> second;
-    unsigned thrown_item{};
-    bool sneak_pending{}, aimed{};
-    int sneak_extra{};
-    bool light{};
-    unsigned weapon_item{};
-    bool mastery_allowed{}, cleave{};
 };
 
 int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers)
@@ -620,17 +587,12 @@ character_definition(std::string_view bytes,
             throw std::runtime_error("Unsupported equipment conversion: " + key);
     }
     d.shield = shield;
-    unsigned requested{};
-    in >> requested;
-    if (!in)
-        throw std::runtime_error("Invalid character grip");
-    if (equipment_override)
-        requested = 0;
-    if (requested)
+    // The grip follows the other hand at attack time: a Versatile weapon is
+    // wielded two-handed exactly when no shield or second weapon is held.
+    if (d.versatile_sides && !shield && !d.other_weapon)
     {
-        validate_grip(d, requested);
-        hands = hands - d.weapon_hands + requested;
-        d.weapon_hands = requested;
+        hands = hands - d.weapon_hands + 2;
+        d.weapon_hands = 2;
     }
     std::string background;
     in >> std::quoted(background);
@@ -839,7 +801,6 @@ class Session final : public CombatSession
                            : character_definition(p.character_profile);
             Actor a;
             a.definition = d;
-            a.weapon_hands = d.weapon_hands;
             a.source = std::move(p);
             a.hp = d.hp;
             a.winds = d.winds;
@@ -918,7 +879,6 @@ class Session final : public CombatSession
                     ground_one(item->id, a.source.cell);
                 }
                 a.definition = equipped_definition(a, items_);
-                a.weapon_hands = a.definition.weapon_hands;
             }
         if (!restoring && std::any_of(actors_.begin(), actors_.end(),
                                       [](const auto & a)
@@ -955,7 +915,6 @@ class Session final : public CombatSession
     unsigned turn_{}, round_{1};
     Outcome outcome_{Outcome::ongoing};
     std::optional<TemporaryHitPoints> temporary_offer_;
-    std::optional<PendingWeaponHit> weapon_hit_;
     std::optional<PendingCheck> check_choice_;
     std::optional<ChampionMove> champion_move_;
     std::optional<PendingGraze> graze_;
@@ -1011,7 +970,6 @@ class Session final : public CombatSession
     bool has_weapon_reaction(const Actor &, Cell, Cell) const;
     void validate_light() const;
     Actor thrown_actor(const Actor &, std::string_view weapon) const;
-    Actor hit_actor(const PendingWeaponHit &) const;
     unsigned ground_one(unsigned item, Cell cell);
     Message throw_label(const Actor &, const HeldItemView &) const;
     unsigned throw_weapon(Actor &, Actor &, unsigned item, bool light = false);
@@ -1144,10 +1102,10 @@ class Session final : public CombatSession
     void apply_hit(Actor &a, Actor &target, int natural, int bonus, int mode, int amount,
                    bool savage, detail::DamageType type, bool ranged, bool spell = false,
                    bool optional_mastery = true);
-    void resolve_weapon_hit(int amount);
     bool sneak_eligible(const Actor &a, const Actor &target, bool ranged, int mode) const;
+    [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural);
+    [[nodiscard]] int keep_higher_savage_roll(Actor &a, int first, int second);
     void finish_reaction();
-    void validate_weapon_hit() const;
     int resolved_damage(const Actor &target, detail::DamageType type, int amount);
     void damage(Actor &target, int amount, bool critical = false);
     void heal(Actor &target, int amount);
@@ -1239,7 +1197,6 @@ Actor Session::item_actor(const Actor &a, unsigned token) const
     auto result = a;
     result.selected_weapon = token;
     result.definition = equipped_definition(result, items_);
-    result.weapon_hands = result.definition.weapon_hands;
     return result;
 }
 
@@ -1460,7 +1417,6 @@ void Session::drop_held(Actor &a)
     {
         a.selected_weapon = 0;
         a.definition = equipped_definition(a, items_);
-        a.weapon_hands = a.definition.weapon_hands;
     }
 }
 
@@ -1474,30 +1430,6 @@ Actor Session::thrown_actor(const Actor &a, std::string_view weapon) const
     keys.emplace_back(weapon);
     result.definition =
         character_definition(a.source.character_profile, std::span<const std::string>(keys));
-    result.weapon_hands = 1;
-    return result;
-}
-
-Actor Session::hit_actor(const PendingWeaponHit &hit) const
-{
-    const auto &a = actor(hit.attacker);
-    if (!hit.thrown_item)
-    {
-        auto result = hit.weapon_item ? item_actor(a, hit.weapon_item) : a;
-        result.light_damage = hit.light;
-        result.cleave_damage = hit.cleave;
-        return result;
-    }
-    if (!physical_inventory_ || hit.thrown_item > items_.size() || !hit.ranged)
-        throw std::runtime_error("Invalid pending thrown item");
-    const auto &item = items_[hit.thrown_item - 1];
-    const auto *weapon = detail::weapon(item.definition);
-    if (item.holder || item.quantity != 1 || !weapon || !weapon->thrown ||
-            item.cell != actor(hit.target).source.cell)
-        throw std::runtime_error("Invalid pending thrown weapon position");
-    auto result = thrown_actor(a, item.definition);
-    result.light_damage = hit.light;
-    result.cleave_damage = hit.cleave;
     return result;
 }
 
@@ -1566,19 +1498,11 @@ unsigned Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool lig
     attack(attacker, target, true, false);
     a.aim_ready = attacker.aim_ready;
     const auto ground = ground_one(token, target.source.cell);
-    if (weapon_hit_)
-    {
-        weapon_hit_->thrown_item = ground;
-        weapon_hit_->light = light;
-    }
     if (mastery_)
         mastery_->thrown_item = ground;
     if (a.selected_weapon == token)
         a.selected_weapon = 0;
-    const auto previous = a.definition.weapon_label;
     a.definition = equipped_definition(a, items_);
-    if (previous != a.definition.weapon_label)
-        a.weapon_hands = a.definition.weapon_hands;
     return ground;
 }
 
@@ -1670,8 +1594,7 @@ Snapshot Session::snapshot() const
     s.elapsed_milliseconds = elapsed_ms_;
     s.held_items = items_;
     s.physical_inventory = physical_inventory_;
-    s.actor = weapon_hit_      ? weapon_hit_->attacker
-              : champion_move_ ? champion_move_->actor
+    s.actor = champion_move_ ? champion_move_->actor
               : pending()      ? pending()
               : actors_[turn_].source.id;
     s.reaction_pending = !champion_move_ && pending() != 0;
@@ -1680,29 +1603,6 @@ Snapshot Session::snapshot() const
     s.log_messages = log_messages_;
     if (!initiative_choices_.empty())
         s.actor = initiative_choices_.front();
-    if (weapon_hit_)
-    {
-        const auto &h = *weapon_hit_;
-        const auto a = hit_actor(h);
-        const auto dice = weapon_dice(a, h.ranged);
-        const bool critical = critical_hit(a, actor(h.target), h.natural);
-        if (h.sneak_pending)
-            s.sneak_attack_choice = SneakAttackChoice
-        {
-            h.attacker, h.target, int((def(a).sneak_level + 1) / 2) *(critical ? 2 : 1), 6,
-            critical};
-        else
-            s.savage_attack_choice = SavageAttackChoice{h.attacker,
-                                                        h.target,
-                                                        def(a).weapon_label,
-                                                        dice.count *(critical ? 2 : 1),
-                                                        dice.sides,
-                                                        dice.bonus,
-                                                        h.first,
-                                                        h.second,
-                                                        critical,
-                                                        h.sneak_extra};
-    }
     if (graze_)
     {
         const auto &g = *graze_;
@@ -1719,7 +1619,7 @@ Snapshot Session::snapshot() const
                 {{"target", t.source.name}, {"damage", std::to_string(amount)}}
             }};
     }
-    if (!weapon_hit_ && !champion_move_ && effect_waiting())
+    if (!champion_move_ && effect_waiting())
     {
         if (mastery_ && mastery_->targeting)
         {
@@ -1919,8 +1819,6 @@ Snapshot Session::snapshot() const
         if (display.ranged)
             view.ranged_weapon = display.ranged;
         view.ranged_attack_available = def(a).range > 0;
-        view.equipment = {a.weapon_hands};
-        view.grips = grip_options(def(a));
         auto &messages = s.combatants.back().status_messages;
         messages.push_back({a.dead      ? "Dead"
                             : a.hp == 0 ? (a.stable ? "Stable, unconscious" : "Unconscious")
@@ -2210,13 +2108,6 @@ std::vector<Command> Session::legal_commands() const
         }
         return commands;
     }
-    const auto add_grips = [&](const Actor & a)
-    {
-        for (const auto &option : grip_options(def(a)))
-            if (option.available && option.hands != a.weapon_hands)
-                add(a.source.id, option.hands == 1 ? "grip_one" : "grip_two",
-                    option.hands == 1 ? "One hand" : "Two hands");
-    };
     const auto add_weapons = [&](const Actor & a, bool reacting)
     {
         for (const auto &item : items_)
@@ -2264,7 +2155,7 @@ std::vector<Command> Session::legal_commands() const
         add(graze_->actor, "effect_skip", "Skip", graze_->target);
         return commands;
     }
-    if (!weapon_hit_ && !champion_move_ && effect_waiting())
+    if (!champion_move_ && effect_waiting())
     {
         if (mastery_ && mastery_->targeting)
         {
@@ -2317,26 +2208,6 @@ std::vector<Command> Session::legal_commands() const
         add(check_choice_->actor, "mind_skip", "Keep failed check", check_choice_->target);
         return filtered();
     }
-    if (weapon_hit_)
-    {
-        const auto &h = *weapon_hit_;
-        if (h.sneak_pending)
-        {
-            add(h.attacker, "sneak_use", "Use Sneak Attack", h.target);
-            add(h.attacker, "sneak_skip", "Keep hit; save Sneak Attack", h.target);
-        }
-        else if (!h.second)
-        {
-            add(h.attacker, "savage_use", "Use Savage Attacker", h.target);
-            add(h.attacker, "savage_skip", "Keep damage; save feat", h.target);
-        }
-        else
-        {
-            add(h.attacker, "savage_first", "Keep first roll", h.target);
-            add(h.attacker, "savage_second", "Keep second roll", h.target);
-        }
-        return filtered();
-    }
     if (temporary_offer_)
     {
         add(actors_[turn_].source.id, "temp_hp_keep", "Keep current");
@@ -2350,7 +2221,6 @@ std::vector<Command> Session::legal_commands() const
         {
             return a.source.id == pending();
         });
-        add_grips(*reactor);
         add_weapons(*reactor, true);
         if (weapon_reaction(*reactor, def(*reactor)))
             add(pending(), "opportunity", "Opportunity attack", actors_[turn_].source.id);
@@ -2363,7 +2233,6 @@ std::vector<Command> Session::legal_commands() const
     const auto &d = def(a);
     const auto id = a.source.id;
     add(id, "end", "End turn");
-    add_grips(a);
     add_weapons(a, false);
     for (const auto &item : items_)
         if (can_pick_up(a, item))
@@ -2483,7 +2352,7 @@ std::vector<Cell> Session::movement_reach(EntityId id) const
 {
     std::vector<Cell> cells;
     if (outcome_ != Outcome::ongoing || (!champion_move_ && pending()) || temporary_offer_ ||
-            weapon_hit_ || check_choice_ || graze_ || (!champion_move_ && effect_waiting()) ||
+            check_choice_ || graze_ || (!champion_move_ && effect_waiting()) ||
             (champion_move_ && id != champion_move_->actor))
         return cells;
     const auto actor = std::find_if(actors_.begin(), actors_.end(),
@@ -2631,8 +2500,7 @@ detail::DamageDieRule Session::weapon_die_rule(const Actor &a, bool ranged) cons
 {
     const auto &d = def(a);
     return d.great_weapon_fighting && !ranged && !d.ranged_weapon && !d.weapon_label.empty() &&
-           a.weapon_hands == 2 && (d.versatile_sides || d.weapon_hands == 2)
-           ? detail::DamageDieRule::great_weapon_fighting
+           d.weapon_hands == 2 ? detail::DamageDieRule::great_weapon_fighting
            : detail::DamageDieRule::normal;
 }
 
@@ -2640,7 +2508,7 @@ Dice Session::weapon_dice(const Actor &a, bool ranged) const
 {
     const auto &d = def(a);
     auto result = ranged ? d.ranged : d.melee;
-    if (!ranged && d.versatile_sides && a.weapon_hands == 2)
+    if (!ranged && d.versatile_sides && d.weapon_hands == 2)
         result.sides = d.versatile_sides;
     if (a.cleave_damage || (a.light_damage && !d.two_weapon_fighting))
         result.bonus = std::min(0, result.bonus);
@@ -2651,8 +2519,6 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
                         bool savage, detail::DamageType type, bool ranged, bool spell,
                         bool optional_mastery)
 {
-    // A pending weapon hit retains these applications until damage resolves so
-    // its original roll mode remains independently verifiable on save/load.
     detail::consume_attack_masteries(actor(a.source.id).effects, target.effects, scope_,
                                      a.source.id);
     const std::string modifier_label = mode < 0   ? " (disadvantage)"
@@ -2685,13 +2551,18 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
     if (savage)
         message += " (Savage Attacker)";
     amount = resolved_damage(target, type, amount);
+    // The Versatile grip is chosen automatically, so the damage line names it.
+    const std::string grip = spell || ranged || !def(a).versatile_sides ? ""
+                             : def(a).weapon_hands == 2                 ? " (two-handed)"
+                             : " (one-handed)";
     arguments.push_back({"savage", savage ? " (Savage Attacker)" : "", true});
     arguments.push_back({"hit", critical ? "CRITICAL" : "hits", true});
     arguments.push_back({"damage", std::to_string(amount)});
+    arguments.push_back({"grip", grip, true});
     log(message + (critical ? " CRITICAL" : " hits") + " for " + std::to_string(amount) +
-        " damage.",
+        " damage" + grip + ".",
     {
-        "{actor} -> {target}: d20 {roll} + {bonus} vs AC {ac}{disadvantage}{savage} {hit} for {damage} damage.",
+        "{actor} -> {target}: d20 {roll} + {bonus} vs AC {ac}{disadvantage}{savage} {hit} for {damage} damage{grip}.",
         arguments
     });
     damage(target, amount, critical);
@@ -2770,6 +2641,39 @@ bool Session::sneak_eligible(const Actor &a, const Actor &target, bool ranged, i
         d.ranged_weapon, mode, ally});
 }
 
+int Session::roll_sneak_attack(Actor &a, const Actor &target, int natural)
+{
+    a.sneak_used = actor(a.source.id).sneak_used = true;
+    const bool critical = critical_hit(a, target, natural);
+    const auto sneak_dice = detail::sneak_attack_dice(def(a).sneak_level);
+    const int extra = dice(sneak_dice, critical);
+    const auto count = std::to_string(sneak_dice.count * (critical ? 2 : 1));
+    log(a.source.name + " adds Sneak Attack: " + count + "d6 for " + std::to_string(extra) +
+        " extra damage.",
+    {
+        "{name} adds Sneak Attack: {count}d6 for {damage} extra damage.",
+        {{"name", a.source.name}, {"count", count}, {"damage", std::to_string(extra)}}
+    });
+    return extra;
+}
+
+int Session::keep_higher_savage_roll(Actor &a, int first, int second)
+{
+    a.savage_used = actor(a.source.id).savage_used = true;
+    const int kept = std::max(first, second);
+    log(a.source.name + " rerolls weapon damage (Savage Attacker): " + std::to_string(first) +
+        " and " + std::to_string(second) + ", keeps " + std::to_string(kept) + ".",
+    {
+        "{name} rerolls weapon damage (Savage Attacker): {first} and {second}, keeps {kept}.",
+        {   {"name", a.source.name},
+            {"first", std::to_string(first)},
+            {"second", std::to_string(second)},
+            {"kept", std::to_string(kept)}
+        }
+    });
+    return kept;
+}
+
 bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spell_dice,
                      detail::DamageType spell_type)
 {
@@ -2777,7 +2681,6 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         a.facing_left = target.source.cell.x < a.source.cell.x;
     const auto &d = def(a);
     const auto modifiers = attack_modifiers(a, target, ranged, spell);
-    const bool aimed = a.aim_ready;
     a.aim_ready = false;
     const int natural = detail::d20(modifiers, rng_), bonus = spell    ? d.casting
         : ranged ? d.ranged_bonus
@@ -2786,47 +2689,30 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     const bool hit =
         (!spell && d.champion && natural == 19) || attack_hits(natural, bonus, def(target).ac);
     const bool sneak = hit && !spell && sneak_eligible(a, target, ranged, modifiers.mode());
-    const int amount = hit ? (!spell && (d.sneak_level || d.great_weapon_fighting ||
-                                         a.light_damage || a.cleave_damage)
-                              ? detail::roll_damage_component(rng_, damage_dice,
-                                  critical_hit(a, target, natural),
-                                  weapon_die_rule(a, ranged))
-                              : dice(damage_dice, critical_hit(a, target, natural, spell)))
-                       : 0;
-    if (hit && !spell && (sneak || (damage_dice.count && d.savage && !a.savage_used)))
+    const auto roll_damage = [&]
     {
-        weapon_hit_ = PendingWeaponHit{a.source.id, target.source.id, ranged,
-                                       natural,     modifiers.mode(), amount};
-        weapon_hit_->sneak_pending = sneak;
-        weapon_hit_->aimed = aimed;
-        weapon_hit_->cleave = a.cleave_damage;
-        const auto property = weapon_mastery(a, ranged);
-        weapon_hit_->mastery_allowed =
-            property == detail::Mastery::slow || property == detail::Mastery::topple ||
-            property == detail::Mastery::cleave || property == detail::Mastery::push;
-        return hit;
-    }
-    apply_hit(a, target, natural, bonus, modifiers.mode(), std::max(0, amount), false,
+        return !spell && (d.sneak_level || d.great_weapon_fighting || a.light_damage ||
+                          a.cleave_damage)
+               ? detail::roll_damage_component(rng_, damage_dice,
+                                               critical_hit(a, target, natural),
+                                               weapon_die_rule(a, ranged))
+               : dice(damage_dice, critical_hit(a, target, natural, spell));
+    };
+    int weapon_damage = hit ? roll_damage() : 0;
+    // Sneak Attack and Savage Attacker have one right answer, so they apply
+    // automatically and the log records what they added.
+    const int sneak_damage = sneak ? roll_sneak_attack(a, target, natural) : 0;
+    const bool savage = hit && !spell && damage_dice.count && d.savage &&
+                        !actor(a.source.id).savage_used;
+    if (savage)
+        weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
+    apply_hit(a, target, natural, bonus, modifiers.mode(), std::max(0, weapon_damage + sneak_damage),
+              savage,
               spell    ? spell_type
               : ranged ? d.ranged_type
               : d.melee_type,
               ranged, spell);
     return hit;
-}
-
-void Session::resolve_weapon_hit(int amount)
-{
-    const auto h = *weapon_hit_;
-    auto a = hit_actor(h);
-    weapon_hit_.reset();
-    const auto &d = def(a);
-    apply_hit(a, actor(h.target), h.natural, h.ranged ? d.ranged_bonus : d.melee_bonus, h.mode,
-              std::max(0, amount + h.sneak_extra), h.second.has_value(),
-              h.ranged ? d.ranged_type : d.melee_type, h.ranged, false, h.mastery_allowed);
-    if (mastery_ && h.thrown_item)
-        mastery_->thrown_item = h.thrown_item;
-    if (!champion_move_ && !effect_waiting())
-        finish_effects();
 }
 
 void Session::finish_reaction()
@@ -3156,7 +3042,7 @@ bool Session::submit(const Command &command)
     {
         resolve_initiative(command);
     }
-    else if (!graze_ && !weapon_hit_ && !champion_move_ && effect_waiting())
+    else if (!graze_ && !champion_move_ && effect_waiting())
     {
         use_effect(command);
     }
@@ -3221,42 +3107,6 @@ bool Session::submit(const Command &command)
         else
             finish_check(check, 0);
     }
-    else if (command.verb == "sneak_use" || command.verb == "sneak_skip")
-    {
-        auto &h = *weapon_hit_;
-        h.sneak_pending = false;
-        if (command.verb == "sneak_use")
-        {
-            a.sneak_used = true;
-            h.sneak_extra = dice(detail::sneak_attack_dice(d.sneak_level),
-                                 critical_hit(a, actor(h.target), h.natural));
-            log(a.source.name + " uses Sneak Attack.",
-            {"{name} uses Sneak Attack.", {{"name", a.source.name}}});
-        }
-        const auto attacker = hit_actor(h);
-        if (!d.savage || a.savage_used || !weapon_dice(attacker, h.ranged).count)
-            resolve_weapon_hit(h.first);
-    }
-    else if (command.verb == "savage_use")
-    {
-        a.savage_used = true;
-        const auto attacker = hit_actor(*weapon_hit_);
-        weapon_hit_->second =
-            (def(attacker).sneak_level || def(attacker).great_weapon_fighting ||
-             attacker.light_damage || attacker.cleave_damage)
-            ? detail::roll_damage_component(
-                rng_, weapon_dice(attacker, weapon_hit_->ranged),
-                critical_hit(attacker, actor(weapon_hit_->target), weapon_hit_->natural),
-                weapon_die_rule(attacker, weapon_hit_->ranged))
-            : dice(weapon_dice(attacker, weapon_hit_->ranged),
-                   critical_hit(attacker, actor(weapon_hit_->target), weapon_hit_->natural));
-    }
-    else if (command.verb == "savage_skip" || command.verb == "savage_first" ||
-             command.verb == "savage_second")
-    {
-        resolve_weapon_hit(command.verb == "savage_second" ? *weapon_hit_->second
-                           : weapon_hit_->first);
-    }
     else if (command.verb == "temp_hp_keep" || command.verb == "temp_hp_use")
     {
         detail::grant_temporary_hp(a, *temporary_offer_,
@@ -3269,7 +3119,6 @@ bool Session::submit(const Command &command)
         activate_light();
         a.selected_weapon = command.item;
         a.definition = equipped_definition(a, items_);
-        a.weapon_hands = a.definition.weapon_hands;
     }
     else if (command.verb.starts_with("light_") || command.verb.starts_with("nick_"))
     {
@@ -3287,11 +3136,6 @@ bool Session::submit(const Command &command)
             attack(attacker, actor(command.target),
                    command.verb == "light_ranged" || command.verb == "nick_ranged");
             a.aim_ready = attacker.aim_ready;
-            if (weapon_hit_)
-            {
-                weapon_hit_->light = true;
-                weapon_hit_->weapon_item = command.item;
-            }
         }
     }
     else if (command.verb == "pick_up")
@@ -3307,7 +3151,6 @@ bool Session::submit(const Command &command)
         item.holder = a.source.id;
         item.cell = {};
         a.definition = equipped_definition(a, items_);
-        a.weapon_hands = a.definition.weapon_hands;
     }
     else if (command.verb == "stand_up")
     {
@@ -3368,10 +3211,6 @@ bool Session::submit(const Command &command)
         log(a.source.name + " uses Adrenaline Rush.",
         {"{name} uses Adrenaline Rush.", {{"name", a.source.name}}});
     }
-    else if (command.verb == "grip_one" || command.verb == "grip_two")
-    {
-        a.weapon_hands = command.verb == "grip_one" ? 1 : 2;
-    }
     else if (command.verb == "opportunity" || command.verb == "decline")
     {
         if (command.verb == "opportunity")
@@ -3379,7 +3218,7 @@ bool Session::submit(const Command &command)
             a.reaction = false;
             attack(a, actor(command.target), false);
         }
-        if (!weapon_hit_ && !champion_move_ && !graze_ && !effect_waiting())
+        if (!champion_move_ && !graze_ && !effect_waiting())
             finish_reaction();
     }
     else if (command.verb == "move")
@@ -3473,7 +3312,7 @@ bool Session::submit(const Command &command)
     if (++revision_ == 0)
         revision_ = 1;
     update_outcome();
-    if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() && !weapon_hit_ &&
+    if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
             !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
         end_turn();
     if (outcome_ != Outcome::ongoing)
@@ -3504,7 +3343,7 @@ std::string Session::save() const
             << a.disengaged << ' ' << a.stable << ' ' << a.dead << ' '
             << std::quoted(a.source.character_profile) << ' ' << a.slots2 << ' ' << a.spent_slot
             << ' ' << a.savage_used << ' ' << a.facing_left << ' ' << a.involuntary_overlap << ' '
-            << a.weapon_hands << ' ' << a.hit_dice << ' ' << a.recovery.death_save_in_ms << ' '
+            << a.hit_dice << ' ' << a.recovery.death_save_in_ms << ' '
             << detail::encode_stable_recovery(a.recovery) << ' ' << a.temporary_hp.amount << ' '
             << std::quoted(a.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
             << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' ' << a.dashes
@@ -3534,16 +3373,6 @@ std::string Session::save() const
     out << bool(temporary_offer_) << '\n';
     if (temporary_offer_)
         out << temporary_offer_->amount << ' ' << std::quoted(temporary_offer_->source_id) << '\n';
-    out << bool(weapon_hit_) << '\n';
-    if (weapon_hit_)
-    {
-        const auto &h = *weapon_hit_;
-        out << h.attacker << ' ' << h.target << ' ' << h.ranged << ' ' << h.natural << ' ' << h.mode
-            << ' ' << h.first << ' ' << h.second.value_or(-1) << ' ' << h.thrown_item << ' '
-            << h.second.has_value() << ' ' << h.sneak_pending << ' ' << h.aimed << ' '
-            << h.sneak_extra << ' ' << h.light << ' ' << h.weapon_item << ' ' << h.mastery_allowed
-            << ' ' << h.cleave << '\n';
-    }
     out << frost_movement_ << ' ' << items_active_ << '\n';
     out << physical_inventory_ << '\n';
     if (items_active_)
@@ -3627,7 +3456,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.actions.normal >> actor.bonus >> actor.reaction >> actor.dodge >> actor.disengaged >>
           actor.stable >> actor.dead >> std::quoted(source.character_profile) >> actor.slots2 >>
           actor.spent_slot >> actor.savage_used >> actor.facing_left >> actor.involuntary_overlap >>
-          actor.weapon_hands >> actor.hit_dice >> actor.recovery.death_save_in_ms >>
+          actor.hit_dice >> actor.recovery.death_save_in_ms >>
           actor.recovery.stable_recovery_in_ms >> actor.temporary_hp.amount >>
           std::quoted(actor.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
           actor.surges >> actor.surge_used >> actor.actions.surge >> actor.dashes >> actor.arcane >>
@@ -3746,103 +3575,6 @@ void Session::restore_movement(std::istream &input)
     }
 }
 
-void Session::validate_weapon_hit() const
-{
-    if (!weapon_hit_)
-        return;
-    const auto &h = *weapon_hit_;
-    const auto a = std::find_if(actors_.begin(), actors_.end(),
-                                [&](const auto & v)
-    {
-        return v.source.id == h.attacker;
-    });
-    const auto t = std::find_if(actors_.begin(), actors_.end(),
-                                [&](const auto & v)
-    {
-        return v.source.id == h.target;
-    });
-    if (a == actors_.end() || t == actors_.end())
-        throw std::runtime_error("Unknown pending attacker/target");
-    auto attacking = hit_actor(h);
-    attacking.aim_ready = h.aimed;
-    const auto d = weapon_dice(attacking, h.ranged);
-    const int count = d.count * (critical_hit(*a, *t, h.natural) ? 2 : 1);
-    if (temporary_offer_ || outcome_ != Outcome::ongoing || !conscious(*a) ||
-            (!h.cleave && t->hp <= 0) || t->dead || (!h.cleave && a->source.side == t->source.side) ||
-            h.natural < 2 || h.natural > 20 ||
-            (!(def(*a).champion && h.natural == 19) &&
-             !attack_hits(h.natural,
-                          h.ranged ? def(attacking).ranged_bonus : def(attacking).melee_bonus,
-                          def(*t).ac)) ||
-            h.mode != attack_modifiers(attacking, *t, h.ranged, false).mode() ||
-            !line_of_sight(a->source.cell, t->source.cell) ||
-            distance(a->source.cell, t->source.cell) >
-            (h.ranged ? def(attacking).long_range : def(attacking).reach) ||
-            (pending()
-             ? (pending() != h.attacker || (!h.cleave && h.target != actors_[turn_].source.id) ||
-                a->reaction || h.ranged)
-             : ((h.attacker != actors_[turn_].source.id &&
-                 !(h.cleave && effect_reaction_origin_ &&
-                   effect_reaction_origin_->actor == h.attacker && actors_[turn_].hp == 0)) ||
-                (h.attacker == actors_[turn_].source.id && a->actions.normal &&
-                 (!a->surge_used || a->actions.surge)))))
-        throw std::runtime_error("Invalid pending weapon hit");
-    const auto kind = weapon_mastery(attacking, h.ranged);
-    if (h.mastery_allowed && kind != detail::Mastery::slow && kind != detail::Mastery::topple &&
-            kind != detail::Mastery::cleave && kind != detail::Mastery::push)
-        throw std::runtime_error("Invalid pending mastery permission");
-    if (h.cleave && (!a->cleave_used || h.ranged || h.light || h.thrown_item || h.weapon_item ||
-                     weapon_mastery(attacking, false) != detail::Mastery::cleave))
-        throw std::runtime_error("Missing Cleave expenditure");
-    if ((!h.light && h.weapon_item) || (h.thrown_item && h.weapon_item))
-        throw std::runtime_error("Invalid pending weapon selection");
-    if (h.light)
-    {
-        const auto token = h.thrown_item ? h.thrown_item : h.weapon_item;
-        if (pending() || !light_eligible(*a, token) ||
-                (nick_active_ ? (!a->light_extra || (a->light_extra == 1 && a->bonus) ||
-                                 (a->light_extra == 2 && (!a->nick_origin || a->nick_origin == token ||
-                                         !nick_weapon(*a, token))))
-                 : a->bonus))
-            throw std::runtime_error("Invalid Light/Nick attack expenditure");
-    }
-    if (h.aimed && (!a->aim_used || a->aim_ready || def(*a).sneak_level < 3 ||
-                    h.attacker != actors_[turn_].source.id))
-        throw std::runtime_error("Invalid aimed weapon hit");
-    if (h.sneak_pending)
-    {
-        if (h.second || h.sneak_extra || !sneak_eligible(attacking, *t, h.ranged, h.mode))
-            throw std::runtime_error("Invalid pending Sneak Attack");
-    }
-    else if (!def(*a).savage || !count || a->savage_used != h.second.has_value())
-        throw std::runtime_error("Invalid pending Savage Attacker");
-    if (h.sneak_extra)
-    {
-        attacking.sneak_used = false;
-        const int extra_count =
-            int((def(*a).sneak_level + 1) / 2) * (critical_hit(*a, *t, h.natural) ? 2 : 1);
-        if (!a->sneak_used || !sneak_eligible(attacking, *t, h.ranged, h.mode) ||
-                h.sneak_extra < extra_count || h.sneak_extra > extra_count * 6)
-            throw std::runtime_error("Invalid Sneak Attack dice");
-    }
-    const auto bound = [&](int n)
-    {
-        return def(attacking).sneak_level || def(attacking).great_weapon_fighting || h.light ||
-               h.cleave
-               ? n
-               : std::max(0, n);
-    };
-    const int minimum_face =
-        weapon_die_rule(attacking, h.ranged) == detail::DamageDieRule::great_weapon_fighting ? 3
-        : 1;
-    const auto valid = [&](int n)
-    {
-        return n >= bound(count * minimum_face + d.bonus) && n <= bound(count * d.sides + d.bonus);
-    };
-    if (!valid(h.first) || (h.second && !valid(*h.second)))
-        throw std::runtime_error("Invalid pending weapon damage roll");
-}
-
 void Session::finish_check(const PendingCheck &check, int boost)
 {
     auto &a = actor(check.actor);
@@ -3931,7 +3663,7 @@ void Session::validate_champion_move() const
     if (who == actors_.end() || target == actors_.end() || c.actor == c.target ||
             !def(*who).champion || !conscious(*who) || c.natural < 2 || c.natural > 20 ||
             c.origin.x < 0 || c.origin.y < 0 || c.origin.x >= board_.width ||
-            c.origin.y >= board_.height || board_.at(c.origin) == 1 || check_choice_ || weapon_hit_ ||
+            c.origin.y >= board_.height || board_.at(c.origin) == 1 || check_choice_ ||
             temporary_offer_ || outcome_ != Outcome::ongoing)
         throw std::runtime_error("Invalid Champion movement source");
     if (c.triggered)
@@ -3978,7 +3710,7 @@ void Session::validate_check() const
             target == actors_.end() || target->hp != 0 || target->dead || target->stable ||
             distance(a.source.cell, target->source.cell) > 5 ||
             !line_of_sight(a.source.cell, target->source.cell) || pending() || temporary_offer_ ||
-            weapon_hit_ || outcome_ != Outcome::ongoing || a.actions.surge ||
+            outcome_ != Outcome::ongoing || a.actions.surge ||
             (c.surge_spent ? !a.surge_used : a.actions.normal))
         throw std::runtime_error("Invalid pending ability check");
 }
@@ -4005,7 +3737,7 @@ void Session::validate_graze() const
             attack_hits(g.natural, def(*a).melee_bonus, def(*t).ac) ||
             (def(*a).champion && g.natural == 19) ||
             distance(a->source.cell, t->source.cell) > def(*a).reach ||
-            !line_of_sight(a->source.cell, t->source.cell) || weapon_hit_ || check_choice_ ||
+            !line_of_sight(a->source.cell, t->source.cell) || check_choice_ ||
             temporary_offer_ || champion_move_ || outcome_ != Outcome::ongoing ||
             (pending() ? (pending() != g.actor || a->reaction || g.target != actors_[turn_].source.id)
              : (g.actor != actors_[turn_].source.id ||
@@ -4018,7 +3750,7 @@ void Session::validate_initiative() const
     if (initiative_choices_.empty())
         return;
     if (round_ != 1 || turn_ != 0 || elapsed_ms_ || outcome_ != Outcome::ongoing || pending() ||
-            !path_.empty() || temporary_offer_ || weapon_hit_ || check_choice_ || champion_move_ ||
+            !path_.empty() || temporary_offer_ || check_choice_ || champion_move_ ||
             graze_ || effect_waiting())
         throw std::runtime_error("Invalid pre-turn Initiative phase");
     std::set<EntityId> seen;
@@ -4045,7 +3777,6 @@ void Session::validate_initiative() const
 void Session::validate_restored_state() const
 {
     validate_initiative();
-    validate_weapon_hit();
     validate_check();
     validate_champion_move();
     validate_graze();
@@ -4094,8 +3825,7 @@ void Session::validate_restored_state() const
     }
     const auto expected = !party ? Outcome::defeat : !enemies ? Outcome::victory : Outcome::ongoing;
     if (outcome_ != expected || (initiative_choices_.empty() && expected == Outcome::ongoing &&
-                                 mover.hp == 0 && !champion_move_ && !effect_waiting() &&
-                                 !(weapon_hit_ && weapon_hit_->cleave && effect_reaction_origin_)))
+                                 mover.hp == 0 && !champion_move_ && !effect_waiting()))
         throw std::runtime_error("Invalid checkpoint outcome/turn");
     if (!pending() && (!path_.empty() || !reactors_.empty()))
         throw std::runtime_error("Unpaused checkpoint movement");
@@ -4166,8 +3896,7 @@ void Session::validate_pending_movement() const
             continue;
         }
         if (detail::opportunity_blocked(actor.effects) || actor.hp == 0 ||
-                (!actor.reaction && !((weapon_hit_ && weapon_hit_->attacker == actor.source.id ||
-                                       graze_ && graze_->actor == actor.source.id) &&
+                (!actor.reaction && !(graze_ && graze_->actor == actor.source.id &&
                                       i == reactor_index_)) ||
                 actor.source.side == mover.source.side ||
                 !has_weapon_reaction(actor, mover.source.cell, path_[path_index_]) ||
@@ -4261,24 +3990,6 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     }
     if (!input)
         throw std::runtime_error("Invalid Temporary HP choice checkpoint");
-    bool pending_hit{};
-    input >> pending_hit;
-    if (pending_hit)
-    {
-        PendingWeaponHit h;
-        int second{};
-        bool rolled{};
-        input >> h.attacker >> h.target >> h.ranged >> h.natural >> h.mode >> h.first >> second >>
-              h.thrown_item >> rolled >> h.sneak_pending >> h.aimed >> h.sneak_extra >> h.light >>
-              h.weapon_item >> h.mastery_allowed >> h.cleave;
-        if (rolled)
-            h.second = second;
-        else if (second != -1)
-            throw std::runtime_error("Unexpected second damage");
-        session->weapon_hit_ = h;
-    }
-    if (!input)
-        throw std::runtime_error("Invalid Savage Attacker choice checkpoint");
     bool has_items{};
     input >> session->frost_movement_ >> has_items >> session->physical_inventory_;
     if (!input || (session->physical_inventory_ && !has_items))
@@ -4343,8 +4054,6 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                 a.definition = session->equipped_definition(a, session->items_);
         }
     }
-    for (const auto &a : session->actors_)
-        validate_grip(a.definition, a.weapon_hands);
     bool pending_check{};
     input >> pending_check;
     if (pending_check)
@@ -5448,7 +5157,6 @@ class Module final : public RulesModule
 
     std::vector<EquipmentChoice> equipment_choices(const CharacterSheet &sheet,
             std::span<const std::string> candidates,
-            EquipmentState equipment,
             unsigned selected) const override
     {
         if (selected >= candidates.size())
@@ -5480,7 +5188,7 @@ class Module final : public RulesModule
             };
             try
             {
-                (void)equipment_change(sheet, candidates, equipment, selected, op);
+                (void)equipment_change(sheet, candidates, selected, op);
             }
             catch (const std::runtime_error &e)
             {
@@ -5494,7 +5202,7 @@ class Module final : public RulesModule
 
     EquipmentChange equipment_change(const CharacterSheet &sheet,
                                      std::span<const std::string> candidates,
-                                     EquipmentState equipment, unsigned selected,
+                                     unsigned selected,
                                      EquipmentOperation operation) const override
     {
         if (selected >= candidates.size())
@@ -5503,8 +5211,6 @@ class Module final : public RulesModule
         if (operation != EquipmentOperation::unequip && slot == EquipmentSlot::carried)
             throw std::runtime_error("This item is carried, not equipped");
         EquipmentChange result;
-        result.equipment = slot == EquipmentSlot::weapon ? EquipmentState{} :
-                           equipment;
         const bool hand = operation == EquipmentOperation::equip_main ||
                           operation == EquipmentOperation::equip_other;
         if (hand)
@@ -5544,16 +5250,15 @@ class Module final : public RulesModule
         std::vector<std::string> gear;
         for (auto i : result.indices)
             gear.push_back(candidates[i]);
-        (void)character_profile(sheet, gear, result.equipment);
+        (void)character_profile(sheet, gear);
         return result;
     }
 
     AbilityCheckModifier ability_check(const CharacterSheet &sheet,
                                        std::span<const std::string> gear, unsigned ability,
-                                       std::string_view skill,
-                                       EquipmentState equipment) const override
+                                       std::string_view skill) const override
     {
-        const auto d = character_definition(character_profile(sheet, gear, equipment).data);
+        const auto d = character_definition(character_profile(sheet, gear).data);
         auto result = character_rules()->ability_check(sheet, ability, skill);
         result.disadvantage = (ability < 2 && d.str_dex_disadvantage) ||
                               (ability == 1 && skill == "stealth" && d.stealth_disadvantage);
@@ -5561,8 +5266,7 @@ class Module final : public RulesModule
     }
 
     CharacterProfile character_profile(const CharacterSheet &sheet,
-                                       std::span<const std::string> gear,
-                                       EquipmentState equipment = {}) const override
+                                       std::span<const std::string> gear) const override
     {
         if (sheet.identity != character_rules()->identity() || sheet.level < 1 || sheet.level > 4)
             throw std::runtime_error("Unsupported character rules identity or level");
@@ -5630,8 +5334,7 @@ class Module final : public RulesModule
         out << ' ' << gear.size();
         for (const auto &item : gear)
             out << ' ' << std::quoted(item);
-        out << ' ' << equipment.weapon_hands << ' '
-            << std::quoted(detail::grant_source_id(sheet.background));
+        out << ' ' << std::quoted(detail::grant_source_id(sheet.background));
         detail::write_grants(out, sheet.grants);
         const auto data = out.str();
         const auto d = character_definition(data);
@@ -5646,8 +5349,7 @@ class Module final : public RulesModule
             d.speed,
             d.melee_bonus};
         result.strength_dexterity_disadvantage = d.str_dex_disadvantage;
-        result.equipment = {d.weapon_hands};
-        result.grips = grip_options(d);
+        result.weapon_hands = d.weapon_hands;
         unsigned hand_index = 0;
         for (const auto &key : gear)
             result.equipment_positions.push_back(
@@ -5722,7 +5424,7 @@ class Module final : public RulesModule
                 "Alert: add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn.\n";
         if (features & 2)
             result.item_modifiers +=
-                "Savage Attacker: once per turn on a weapon hit, choose whether to roll damage twice and keep either result.\n";
+                "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically.\n";
         if (gear.empty())
             result.item_modifiers =
                 "No equipment modifiers. Source: unarmed strike rules and Strength score " +
@@ -5881,7 +5583,7 @@ class Module final : public RulesModule
         if (features & 2)
             result.item_messages.push_back(
         {
-            "Savage Attacker: once per turn on a weapon hit, choose whether to roll damage twice and keep either result.",
+            "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically.",
             {}});
         if (gear.empty())
             result.item_messages.push_back(

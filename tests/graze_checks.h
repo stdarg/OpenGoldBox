@@ -287,8 +287,8 @@ void run()
                         act(*c, "effect_use");
                         check(unit(*c, 99).hit_points == hp - expected,
                               "Graze typed defense and vulnerability cap");
-                        check(!c->snapshot().savage_attack_choice &&
-                              !c->snapshot().sneak_attack_choice &&
+                        check(!logged(*c, "(Savage Attacker)") &&
+                              !logged(*c, "adds Sneak Attack") &&
                               !c->snapshot().free_movement,
                               "Miss damage never triggers hit/critical dice features");
                         check(!offers(*c, "melee") && r->restore(c->save())->save() == c->save(),
