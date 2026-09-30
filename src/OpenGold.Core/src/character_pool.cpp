@@ -1,7 +1,9 @@
 #include "opengold/character_pool.h"
 #include <algorithm>
+#include <map>
 #include <numeric>
 #include <stdexcept>
+#include <string_view>
 
 namespace opengold
 {
@@ -184,5 +186,73 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             result.emplace_back(rules, std::move(d), appearance);
         }
     return result;
+}
+
+namespace
+{
+// Original Pool of Radiance item types; equipment_conversion maps each to its
+// SRD item. Only these armor types convert, so medium-armor classes wear leather.
+namespace item_type
+{
+constexpr std::uint8_t none = 0, battleaxe = 1, quarterstaff = 6, dagger = 8, mace = 23,
+                       longsword = 36, shortsword = 37, longbow = 41, shortbow = 42,
+                       light_crossbow = 46, bolt = 28, arrow = 73, leather = 50,
+                       chain_mail = 55, shield = 59;
+}
+
+struct StartingKit
+{
+    std::uint8_t melee{}, armor{};
+    bool shield{};
+    std::uint8_t ranged{}, ammunition{};
+};
+
+// Barbarian keeps Unarmored Defense with a shield; Monk, Sorcerer and Wizard
+// have no armor training. Every item is one the class is trained with.
+StartingKit starting_kit(std::string_view character_class)
+{
+    using namespace item_type;
+    static const std::map<std::string_view, StartingKit> kits
+    {
+        {"barbarian", {battleaxe, none, true, longbow, arrow}},
+        {"bard", {dagger, leather, false, shortbow, arrow}},
+        {"cleric", {mace, leather, true, light_crossbow, bolt}},
+        {"druid", {quarterstaff, leather, true, shortbow, arrow}},
+        {"fighter", {longsword, chain_mail, true, longbow, arrow}},
+        {"monk", {shortsword, none, false, shortbow, arrow}},
+        {"paladin", {longsword, chain_mail, true, longbow, arrow}},
+        {"ranger", {shortsword, leather, true, longbow, arrow}},
+        {"rogue", {shortsword, leather, false, shortbow, arrow}},
+        {"sorcerer", {dagger, none, false, light_crossbow, bolt}},
+        {"warlock", {quarterstaff, leather, false, light_crossbow, bolt}},
+        {"wizard", {quarterstaff, none, false, light_crossbow, bolt}},
+    };
+    const auto kit = kits.find(character_class);
+    if (kit == kits.end())
+        throw std::runtime_error("No starting kit for class " + std::string(character_class));
+    return kit->second;
+}
+} // namespace
+
+void outfit_pool_member(CampaignParty &party, MemberId member)
+{
+    const auto kit =
+        starting_kit(party.member(member).character.creation_data().character_class);
+    const auto add = [&](std::uint8_t type, std::uint8_t quantity, bool equip)
+    {
+        if (type == item_type::none)
+            return;
+        por::Equipment item;
+        item.stored.type = type;
+        item.stored.stack_size = quantity;
+        party.purchase(member, item); // Zero value: the starting kit is free.
+        if (equip)
+            party.equip(member, party.member(member).character.inventory().items().back().id);
+    };
+    add(kit.armor, 1, true);
+    add(kit.melee, 1, true);
+    add(kit.shield ? item_type::shield : item_type::none, 1, true);
+    add(kit.ranged, 1, false);
+    add(kit.ammunition, 20, false);
 }
 } // namespace opengold

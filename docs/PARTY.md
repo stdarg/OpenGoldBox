@@ -29,6 +29,10 @@ travel, automatic combat, original tactical geometry and persistent rewards.
    portrait heads/bodies. The ready/action sprite palettes use colors sampled
    from their portraits and matched to the original 16-color sprite palette.
    Select a candidate to preview the sheet and art, then **Add to party**.
+   Added candidates receive a free class kit: a held melee weapon, the armor and
+   shield the class is trained with (none for Monk, Sorcerer and Wizard; shield
+   only for Barbarian), and a bow or crossbow with 20 arrows or bolts in the pack.
+   Equip the bow in town to switch to ranged; equipment is locked during combat.
    The same candidate cannot be added twice; use Rejoin for a reserved member.
 2. Select **Create character** to make additional PCs. Six PC positions and two
    separate NPC positions are available. Adding retains the finished character

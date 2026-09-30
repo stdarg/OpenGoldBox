@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 using namespace opengold;
@@ -1184,6 +1185,65 @@ void creation_controls()
     creator.restart();
     check(creator.draft().training.empty() && !creator.training_complete(),
           "Restart clears training selections");
+}
+
+void pool_starting_gear()
+{
+    por::CharacterArt art;
+    Image head;
+    head.width = 88;
+    head.height = 40;
+    head.rgba.assign(88 * 40 * 4, 128);
+    Image body;
+    body.width = 88;
+    body.height = 48;
+    body.rgba.assign(88 * 48 * 4, 128);
+    art.heads.emplace(1, por::PortraitPart{"fixture", head});
+    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    const std::set<std::string> ranged{"longbow", "shortbow", "light_crossbow"},
+          ammunition{"arrow", "bolt"}, body_armor{"leather", "chain_mail"},
+          unarmored{"barbarian", "monk", "sorcerer", "wizard"},
+          no_shield{"bard", "monk", "rogue", "sorcerer", "warlock", "wizard"};
+    for (const auto &preset : character_pool(*srd5::character_rules(), art))
+    {
+        const auto klass = preset.creation_data().character_class;
+        CampaignParty party(module());
+        const auto id = party.add_pc(preset);
+        party.set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
+        outfit_pool_member(party, id);
+        const auto &member = party.member(id);
+        check(member.wealth[3] == 250, "Starting gear is free");
+        std::vector<std::string> held, carried;
+        for (const auto &item : member.character.inventory().items())
+        {
+            if (!ammunition.contains(item.definition_id))
+                check(srd5::equipment_note(member.character.sheet(), item.definition_id)
+                      .starts_with("Class training"),
+                      "Every starting weapon and armor is one the class is trained with");
+            const bool equipped = std::count(member.equipped.begin(), member.equipped.end(), item.id);
+            (equipped ? held : carried).push_back(item.definition_id);
+            if (ammunition.contains(item.definition_id))
+                check(item.quantity == 20, "Twenty arrows or bolts");
+        }
+        const auto count_in = [](const std::vector<std::string> &items,
+                                 const std::set<std::string> &kinds)
+        {
+            return std::count_if(items.begin(), items.end(), [&](const auto & item)
+            {
+                return kinds.contains(item);
+            });
+        };
+        check(held.size() == 1 + count_in(held, body_armor) +
+              std::count(held.begin(), held.end(), "shield") && !count_in(held, ranged),
+              "Hold exactly one melee weapon");
+        check(count_in(held, body_armor) == (unarmored.contains(klass) ? 0 : 1),
+              "Wear body armor unless the class relies on no armor");
+        check(std::count(held.begin(), held.end(), "shield") == (no_shield.contains(klass) ? 0 : 1),
+              "Carry a shield only when the class is trained with one");
+        check(carried.size() == 2 && count_in(carried, ranged) == 1 &&
+              count_in(carried, ammunition) == 1,
+              "Pack a bow or crossbow with its ammunition");
+    }
 }
 
 void preset_training()
@@ -3003,6 +3063,7 @@ int main(int argc, char **argv)
         run(starting_styles, "starting_styles");
         run(creation_controls, "creation_controls");
         run(preset_training, "preset_training");
+        run(pool_starting_gear, "pool_starting_gear");
         run(grants_and_checks, "grants_and_checks");
         run(invalid_choices, "invalid_choices");
         run(persistence, "persistence");

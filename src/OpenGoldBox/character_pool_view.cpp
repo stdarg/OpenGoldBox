@@ -124,6 +124,7 @@ void CharacterCreationView::pool_add()
             return;
         const auto id = campaign_->add_pc(pool_.at(pool_index_));
         campaign_->set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
+        opengold::outfit_pool_member(*campaign_, id);
         auto state = campaign_->checkpoint();
         state.roster.back().creation_source = "pool:v1:" + std::to_string(pool_index_);
         campaign_->restore(std::move(state));
