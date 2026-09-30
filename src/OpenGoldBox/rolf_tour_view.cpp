@@ -991,17 +991,12 @@ void RolfTourView::draw_scene()
     }
     const auto &state = session_->snapshot();
     // Frame 0 is Rolf's nearest pose; once he has arrived and speaks, his
-    // portrait replaces the small encounter sprite.
+    // portrait replaces the small encounter sprite. The portrait is cut to the
+    // view's 5:6 on-screen shape (see docs/PORTRAITS.md), so it fills the view.
     const bool rolf_speaking =
         !state.tour_finished && state.sprite_frame == 0 && !state.dialogue.empty();
     if (rolf_speaking && rolf_portrait_.is_valid())
-    {
-        const double side = std::min(view.size.x, view.size.y);
-        draw_texture_rect(rolf_portrait_,
-                          Rect2(view.position + (view.size - Vector2(side, side)) * .5,
-                                Vector2(side, side)),
-                          false);
-    }
+        draw_texture_rect(rolf_portrait_, view, false);
     else if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
     {
         const auto &source = session_->sprites()[state.sprite_frame];
