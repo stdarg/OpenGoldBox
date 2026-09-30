@@ -28,6 +28,13 @@ on `PATH`. On Windows the `python` on `PATH` may be a Microsoft Store stub; inst
 a real interpreter with `winget install --id Python.Python.3.12 -e`, or pass
 `-DPython3_EXECUTABLE=C:/path/to/python.exe` when configuring.
 
+Optionally install [ccache](https://ccache.dev) (`winget install --id Ccache.Ccache -e`
+on Windows, `brew install ccache` on macOS). When CMake finds it, compiled objects
+are cached across build directories and worktrees, so a fresh checkout reuses
+what another one already compiled. Open a new terminal after installing so
+`ccache` is on `PATH`. Test sources that embed their checkout path
+(`OPENGOLD_SOURCE_DIR`) still recompile in each worktree.
+
 Original game files are never built or copied into the repository. Anything that
 reads them uses the `OPENGOLD_GAME_DIR` environment variable, pointed at the
 directory containing the DAX files:
@@ -54,13 +61,24 @@ macOS and Linux:
 ./build.sh
 ```
 
-Both scripts configure the `default` preset (Debug, Ninja), build, then run
-`ctest`, and stop at the first failure. The equivalent manual commands are:
+Both scripts configure the `default` preset (RelWithDebInfo, Ninja), build, then
+run the tests in parallel, and stop at the first failure. They always build the
+checkout they live in, whatever the current directory. The equivalent manual
+commands are:
 
 ```powershell
 cmake --preset default
 cmake --build --preset default
-ctest --test-dir build --output-on-failure
+ctest --preset default
+```
+
+The `debug` preset builds an unoptimized tree in `build/debug`. Its tests take
+15 to 20 minutes rather than under one, mostly because MSVC's debug library
+checks every container access, so use it for occasional deeper checks rather
+than every change:
+
+```powershell
+.\build.cmd debug
 ```
 
 When running these by hand, check the build output for errors before trusting
@@ -127,7 +145,7 @@ Windows:
 .\demos\build-rolf.cmd
 ```
 
-This configures `build/godot` (Debug, `OPENGOLD_BUILD_GODOT=ON`) on first use,
+This configures `build/godot` (RelWithDebInfo, `OPENGOLD_BUILD_GODOT=ON`) on first use,
 builds it, runs its tests, and writes the extension to `demos/godot/bin/`. Later
 runs reuse the existing configuration; pass CMake options (for example
 `-DPython3_EXECUTABLE=...`) to force a reconfigure. Close any running demo
@@ -136,9 +154,9 @@ before rebuilding, or Windows will not let the DLL be replaced.
 The equivalent commands in a developer environment are:
 
 ```powershell
-cmake -S . -B build/godot -G Ninja -DCMAKE_BUILD_TYPE=Debug -DOPENGOLD_BUILD_GODOT=ON
+cmake -S . -B build/godot -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON
 cmake --build build/godot
-ctest --test-dir build/godot --output-on-failure
+ctest --test-dir build/godot --output-on-failure -j 8
 ```
 
 macOS (see [SPRITE-DEMO.md](SPRITE-DEMO.md); only the sprite demo has been

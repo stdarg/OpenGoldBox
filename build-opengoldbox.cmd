@@ -20,7 +20,7 @@ if exist "%~dp0build\_deps\godot-cpp-src\CMakeLists.txt" (
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 "%CMAKE_EXE%" --build "%~dp0build/game" --parallel 6
 if not "%errorlevel%"=="0" exit /b %errorlevel%
-"%CMAKE_EXE%" -E chdir "%~dp0build/game" ctest --output-on-failure
+"%CMAKE_EXE%" -E chdir "%~dp0build/game" ctest --output-on-failure -j %NUMBER_OF_PROCESSORS%
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 echo Game package ready: "%~dp0win-package\opengoldbox.exe"
 exit /b 0

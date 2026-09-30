@@ -84,17 +84,20 @@ if(OPENGOLD_BUILD_TESTS)
             "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/combat_body_review_tests.gd"
             "-DEXPECTED=Combat body reviewer checks passed" -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
-        set_tests_properties(opengold_godot_body_review PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo)
+        # The demo checks share one Godot project; ctest -j must run them one at a time.
+        set_tests_properties(opengold_godot_body_review PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo
+            RESOURCE_LOCK demo_project)
         add_test(NAME opengold_godot_sprite_demo COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/combat_sprite_demo_tests.gd"
             "-DEXPECTED=Combat sprite demo checks passed" -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties(opengold_godot_sprite_demo PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo
-            ENVIRONMENT "OPENGOLD_GAME_DIR=;OPENGOLD_SCREENSHOT_DIR=${CMAKE_BINARY_DIR}/sprite-demo-screenshots")
+            RESOURCE_LOCK demo_project ENVIRONMENT "OPENGOLD_GAME_DIR=;OPENGOLD_SCREENSHOT_DIR=${CMAKE_BINARY_DIR}/sprite-demo-screenshots")
         add_test(NAME opengold_godot_equipment_demo COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/equipment_sprite_demo_tests.gd"
             "-DEXPECTED=Equipment sprite demo checks passed" -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
-        set_tests_properties(opengold_godot_equipment_demo PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo)
+        set_tests_properties(opengold_godot_equipment_demo PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo
+            RESOURCE_LOCK demo_project)
     endif()
 endif()

@@ -11,6 +11,8 @@ Install these tools and make sure each command is available in a new terminal:
 - Godot 4.5+ for the presentation project and native tour
 - Git and Python 3.8+ when building the optional Godot C++ extension
 - VS Code extensions recommended by `.vscode/extensions.json`
+- Optional: ccache (`winget install --id Ccache.Ccache -e`) to reuse compiled
+  objects across build directories and worktrees; see [BUILD.md](BUILD.md)
 
 The Visual Studio Developer PowerShell is the simplest environment for the
 Microsoft compiler. A MinGW or LLVM toolchain can also be used by selecting a
@@ -23,7 +25,7 @@ From the repository root:
 ```powershell
 cmake --preset default
 cmake --build --preset default
-ctest --test-dir build --output-on-failure
+ctest --preset default
 ```
 
 The build compiles the formats, core, rules interface and SRD module as C++20.

@@ -7,10 +7,18 @@ Run verification through the repository script, not hand-written `cmake` and
 
 ```
 build.cmd          # Windows: vcvars, configure, build, then ctest
+build.cmd debug    # the same with the unoptimized Debug preset
 ```
 
 It checks `errorlevel` between every step, so a compile failure stops it before
-any test runs.
+any test runs. The default preset is optimized (RelWithDebInfo), and tests run
+in parallel: the suite takes under a minute. The Debug preset takes 15 to 20
+minutes, almost all of it `opengold_status_effect_tests` under MSVC's checked
+iterators; run it occasionally, not for every change. No test relies on
+`assert()`, so the optimized build loses no checks.
+
+While iterating, build and run only the affected targets (below), then run the
+whole suite once before pushing.
 
 **Why this is mandatory rather than a convenience.** `ctest` executes whatever
 binary is already on disk. If a target fails to compile, the previous binary is
@@ -37,7 +45,7 @@ runtime check — the failure mode is silence, not an error.
 For the Godot checks, configure a second build directory with them enabled:
 
 ```
-cmake -S . -B build-godot -G Ninja -DCMAKE_BUILD_TYPE=Debug ^
+cmake -S . -B build-godot -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
       -DOPENGOLD_BUILD_TESTS=ON -DOPENGOLD_BUILD_GODOT=ON
 cmake --build build-godot -j6
 ctest --test-dir build-godot -R "^opengold_(demo_prepare|godot_)"
@@ -47,8 +55,9 @@ Godot is located by `find_program`, which searches `PATH` and the usual install
 locations on each platform. If it is not found, CMake prints a status line and
 the checks are simply **not registered** — confirm they exist with
 `ctest -N` rather than assuming a clean run covered them. Set
-`OPENGOLD_DEMO_GODOT` to override. Run Godot tests serially: they share a
-user-data path.
+`OPENGOLD_DEMO_GODOT` to override. Godot tests share a project and user-data
+path, so each holds a CTest `RESOURCE_LOCK`; `ctest -j` runs them one at a time
+while native tests run alongside.
 
 ### Known pre-existing Godot failures
 

@@ -56,9 +56,9 @@ the same installed Visual Studio Build Tools location as `build.cmd`. With a
 configured developer environment, the equivalent commands are:
 
 ```cmd
-cmake -S . -B build/godot -G Ninja -DCMAKE_BUILD_TYPE=Debug -DOPENGOLD_BUILD_GODOT=ON
+cmake -S . -B build/godot -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON
 cmake --build build/godot
-ctest --test-dir build/godot --output-on-failure
+ctest --test-dir build/godot --output-on-failure -j 8
 ```
 
 The first configure fetches official MIT-licensed

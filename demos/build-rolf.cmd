@@ -12,15 +12,16 @@ if not exist "%CMAKE_EXE%" (
 )
 call "%VSDEV_CMD%" -arch=x64
 if not "%errorlevel%"=="0" exit /b %errorlevel%
-if "%~1"=="" if exist "%~dp0..\build\godot\build.ninja" goto build
+rem Reuse the existing tree unless it predates the switch from Debug.
+if "%~1"=="" if exist "%~dp0..\build\godot\build.ninja" findstr /c:"CMAKE_BUILD_TYPE:STRING=RelWithDebInfo" "%~dp0..\build\godot\CMakeCache.txt" >nul && goto build
 if exist "%~dp0..\build\_deps\godot-cpp-src\CMakeLists.txt" (
-    "%CMAKE_EXE%" -S "%~dp0..\." -B "%~dp0..\build/godot" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DOPENGOLD_BUILD_GODOT=ON "-DFETCHCONTENT_SOURCE_DIR_GODOT_CPP=%~dp0..\build/_deps/godot-cpp-src" %*
+    "%CMAKE_EXE%" -S "%~dp0..\." -B "%~dp0..\build/godot" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON "-DFETCHCONTENT_SOURCE_DIR_GODOT_CPP=%~dp0..\build/_deps/godot-cpp-src" %*
 ) else (
-    "%CMAKE_EXE%" -S "%~dp0..\." -B "%~dp0..\build/godot" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DOPENGOLD_BUILD_GODOT=ON %*
+    "%CMAKE_EXE%" -S "%~dp0..\." -B "%~dp0..\build/godot" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON %*
 )
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 :build
 "%CMAKE_EXE%" --build "%~dp0..\build/godot" --parallel 6
 if not "%errorlevel%"=="0" exit /b %errorlevel%
-"%CMAKE_EXE%" -E chdir "%~dp0..\build/godot" ctest --output-on-failure
+"%CMAKE_EXE%" -E chdir "%~dp0..\build/godot" ctest --output-on-failure -j %NUMBER_OF_PROCESSORS%
 exit /b %errorlevel%

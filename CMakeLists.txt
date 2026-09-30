@@ -1,6 +1,22 @@
 cmake_minimum_required(VERSION 3.24)
 
+# Lets CMAKE_MSVC_DEBUG_INFORMATION_FORMAT choose /Z7 below; must precede project().
+if(POLICY CMP0141)
+    cmake_policy(SET CMP0141 NEW)
+endif()
+
 project(OpenGoldBox VERSION 0.1.0 LANGUAGES CXX)
+
+# A compiler cache lets a fresh worktree reuse objects another tree compiled.
+# base_dir makes paths relative so the cache key does not contain the checkout
+# location, and hash_dir=false keeps the build directory out of the key.
+find_program(OPENGOLD_CCACHE ccache)
+if(OPENGOLD_CCACHE)
+    set(CMAKE_CXX_COMPILER_LAUNCHER
+        "${OPENGOLD_CCACHE};base_dir=${PROJECT_SOURCE_DIR};hash_dir=false")
+    # ccache cannot cache MSVC's shared PDB (/Zi); embedded debug info (/Z7) is cacheable.
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+endif()
 
 include(CTest)
 

@@ -20,9 +20,12 @@ JOBS="${JOBS:-$( (command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu) \
               || (command -v nproc  >/dev/null 2>&1 && nproc) \
               || echo 4 )}"
 
-"$CMAKE" --preset default
-"$CMAKE" --build --preset default --parallel "$JOBS"
+# "./build.sh debug" runs the slower Debug preset; the default is optimized.
+PRESET="${1:-default}"
+
+"$CMAKE" --preset "$PRESET"
+"$CMAKE" --build --preset "$PRESET" --parallel "$JOBS"
 
 # Exclude the Godot runtime checks: they need a Godot install and share a
 # user-data path, so they are run serially and separately. See docs/TECH.md 14.1.
-"$CMAKE" -E chdir build ctest --output-on-failure --exclude-regex '^opengold_godot_'
+ctest --preset "$PRESET" -j "$JOBS" --exclude-regex '^opengold_godot_'
