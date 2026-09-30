@@ -49,6 +49,9 @@ travel, automatic combat, original tactical geometry and persistent rewards.
    identification or automatic conversion of an original NPC.
 6. **Explore New Phlan** runs Rolf's tour and the existing original town host.
    Visit the arms shop at (13,8), accept its offer, buy equipment and leave.
+   In a shop, click a member row, press Tab, or press a number key (1 for the
+   first row) to choose the buyer; the buyer's row turns gold and the shop header
+   shows their gold and item count. The shop script receives the final buyer.
    **Return to party** becomes available when the event finishes. The street or
    encounter view occupies only its required width at the left. Immediately to
    its right, scrollable member rows show name, class, AC and current/maximum HP.

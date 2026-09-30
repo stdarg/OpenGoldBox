@@ -2276,6 +2276,50 @@ void interrupted_rest_victory()
           "Rest resumes after victory and preserves earned XP through completion");
 }
 
+// WHO; write selected HP; store; FIND ITEM; shop; exit.
+std::shared_ptr<const por::EclProgram> shop_program()
+{
+    return program({57, 0,    0,    9,    0,    3,    1,    0x19, 0x6c, 10,   0,    129,  10,
+                    0,  0,    39,   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                    0,  0,    0,    0,    0,    54,   9,    0,    1,    1,    0x6c, 0x6e, 36,
+                    29, 1,    0x10, 0x98, 30,   1,    0x1b, 0x6c, 0,    0,    1,    0x11, 0x98,
+                    1,  0x12, 0x98, 1,    0x13, 0x98, 1,    0x14, 0x98, 54,   0,    7,    0,
+                    70, 50,   0,    59,   22,   9,    0,    1,    1,    0x15, 0x98, 0});
+}
+
+void shop_buyer_switch()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    auto first = party->add_pc(character("fighter", "First")),
+         second = party->add_pc(character("cleric", "Second"));
+    party->set_wealth(first, {0, 0, 0, 100, 0, 0, 0});
+    party->set_wealth(second, {0, 0, 0, 200, 0, 0, 0});
+    auto p = shop_program();
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->programs.emplace(0, p);
+    resources->treasure[54] = {item(59)};
+    resources->npc_profiles.emplace(7, character("fighter", "Script guard"));
+    por::RolfTourSession town({}, p, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle(town);
+    check(town.can_select_member(), "Members can be selected while exploring");
+    town.explore(por::ExplorationCommand::look);
+    settle(town);
+    check(!town.can_select_member(), "Selection is frozen during WHO and other prompts");
+    town.choose(town.snapshot().continue_ticket, 1);
+    settle(town);
+    check(town.snapshot().phase == por::TourPhase::shopping && town.can_select_member(),
+          "The buyer can change while shopping");
+    party->select(0);
+    check(town.buy(town.snapshot().continue_ticket, 0), "Buy for the newly chosen buyer");
+    check(party->member(first).wealth[3] == 90 && party->member(second).wealth[3] == 200,
+          "The purchase debits only the new buyer");
+    town.leave_shop(town.snapshot().continue_ticket);
+    settle(town);
+    check(town.script_variable(0x6BC1) == 90,
+          "Leaving the shop hands the final buyer to the original script");
+}
+
 void script_handoff()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -2283,13 +2327,7 @@ void script_handoff()
          second = party->add_pc(character("cleric", "Second"));
     party->set_wealth(first, {0, 0, 0, 100, 0, 0, 0});
     party->set_wealth(second, {0, 0, 0, 200, 0, 0, 0});
-    // WHO; write selected HP; store; FIND ITEM; shop; exit.
-    auto p = program({57, 0,    0,    9,    0,    3,    1,    0x19, 0x6c, 10,   0,    129,  10,
-                      0,  0,    39,   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-                      0,  0,    0,    0,    0,    54,   9,    0,    1,    1,    0x6c, 0x6e, 36,
-                      29, 1,    0x10, 0x98, 30,   1,    0x1b, 0x6c, 0,    0,    1,    0x11, 0x98,
-                      1,  0x12, 0x98, 1,    0x13, 0x98, 1,    0x14, 0x98, 54,   0,    7,    0,
-                      70, 50,   0,    59,   22,   9,    0,    1,    1,    0x15, 0x98, 0});
+    auto p = shop_program();
     auto resources = std::make_shared<por::PhlanResources>();
     resources->programs.emplace(0, p);
     resources->treasure[54] = {item(59)};
@@ -2402,6 +2440,7 @@ int main()
         dynamic_checkpoint();
         combat_demo_fixture();
         script_handoff();
+        shop_buyer_switch();
         rejected_combat_handoff();
         monster_picture_before_combat();
         recovery_hosts();

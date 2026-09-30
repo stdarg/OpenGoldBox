@@ -117,6 +117,13 @@ class RolfTourSession
         return snapshot_.phase == TourPhase::completed;
     }
 
+    // Outside events, and while shopping to choose the buyer. The shop script
+    // receives whoever is selected when the shop closes.
+    [[nodiscard]] bool can_select_member() const
+    {
+        return can_leave() || snapshot_.phase == TourPhase::shopping;
+    }
+
     void advance(double seconds);
     bool continue_dialogue(std::uint64_t ticket);
     bool choose(std::uint64_t ticket, std::size_t choice);

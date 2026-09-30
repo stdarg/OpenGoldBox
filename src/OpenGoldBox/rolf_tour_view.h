@@ -117,6 +117,9 @@ class RolfTourView : public godot::Control
     std::optional<std::pair<unsigned, unsigned>> check_pending_edge_;
     void layout();
     void refresh();
+    void select_buyer(unsigned slot);
+    [[nodiscard]] std::vector<unsigned> occupied_slots() const;
+    void buyer_key(godot::Key keycode);
     void sync_monster_picture();
     [[nodiscard]] std::size_t current_monster_frame() const;
     void dismiss_monster_picture();

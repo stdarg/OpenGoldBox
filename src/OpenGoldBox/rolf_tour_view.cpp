@@ -471,7 +471,13 @@ void RolfTourView::party_selected(std::int64_t index)
     if (index < 0 || index >= 8 || !session_ || !campaign_ || !campaign_->state().slots[index])
         return;
     const auto slot = static_cast<unsigned>(index);
-    if (session_->can_leave())
+    if (session_->snapshot().phase == TourPhase::shopping)
+    {
+        // In a shop, clicking a member chooses the buyer instead of opening a sheet.
+        select_buyer(slot);
+        return;
+    }
+    if (session_->can_select_member())
         campaign_->select(slot);
     if (embedded_party_)
         emit_signal("party_member_selected", slot);
@@ -494,6 +500,45 @@ void RolfTourView::party_selected(std::int64_t index)
         get_node<Window>("MemberSheet")->popup_centered();
     }
     refresh();
+}
+
+void RolfTourView::select_buyer(unsigned slot)
+{
+    if (!session_ || !campaign_ || !session_->can_select_member() || slot >= 8 ||
+            !campaign_->state().slots[slot])
+        return;
+    campaign_->select(slot);
+    refresh();
+}
+
+std::vector<unsigned> RolfTourView::occupied_slots() const
+{
+    std::vector<unsigned> slots;
+    for (unsigned slot = 0; slot < 8; ++slot)
+        if (campaign_->state().slots[slot])
+            slots.push_back(slot);
+    return slots;
+}
+
+void RolfTourView::buyer_key(Key keycode)
+{
+    const auto slots = occupied_slots();
+    if (slots.empty())
+        return;
+    if (keycode == Key::KEY_TAB)
+    {
+        // Cycle through the member rows in display order, wrapping at the end.
+        const auto current = std::find(slots.begin(), slots.end(), campaign_->state().selected);
+        const auto next = current == slots.end() || current + 1 == slots.end()
+                          ? slots.begin()
+                          : current + 1;
+        select_buyer(*next);
+        return;
+    }
+    // Number keys pick the nth visible member row.
+    const auto row = static_cast<std::size_t>(keycode) - static_cast<std::size_t>(Key::KEY_1);
+    if (row < slots.size())
+        select_buyer(slots[row]);
 }
 
 void RolfTourView::close_sheet()
@@ -535,6 +580,14 @@ void RolfTourView::_input(const Ref<InputEvent> &event)
         return;
     if (get_node<LineEdit>("Answer")->has_focus() && key->get_keycode() != Key::KEY_ENTER)
         return;
+    if (session_ && campaign_ && session_->snapshot().phase == TourPhase::shopping &&
+            (key->get_keycode() == Key::KEY_TAB ||
+             (key->get_keycode() >= Key::KEY_1 && key->get_keycode() <= Key::KEY_8)))
+    {
+        buyer_key(key->get_keycode());
+        get_viewport()->set_input_as_handled();
+        return;
+    }
     if (session_ &&
             (session_->snapshot().choices.size() > 1 ||
              session_->snapshot().phase == TourPhase::shopping) &&
@@ -740,6 +793,17 @@ void RolfTourView::refresh()
             : s.tour_finished
             ? N_("New Phlan")
             : N_("Rolf  /  Council guide")));
+    if (shopping && campaign_ && campaign_->selected())
+    {
+        const auto &buyer = campaign_->member(campaign_->selected());
+        get_node<Label>("Speaker")->set_text(
+            i18n::format("Shop / buying for {name}: {gold} gp, {count}/16 items",
+        {
+            {"name", String::utf8(buyer.character.sheet().name.c_str())},
+            {"gold", buyer.wealth[3]},
+            {"count", buyer.character.inventory().items().size()}
+        }));
+    }
     const auto resource =
         "por/area/" + std::to_string(s.area_id) + "/script/" + std::to_string(s.script_id);
     get_node<RichTextLabel>("Dialogue")
@@ -761,6 +825,7 @@ void RolfTourView::refresh()
     get_node<Button>("Continue")->set_visible(!completed);
     get_node<Label>("Progress")
     ->set_text(faulted           ? i18n::text("Stopped")
+               : shopping && campaign_ ? i18n::text(N_("Tab or number keys: choose the buyer"))
                : s.tour_finished || waiting ? String()
     : i18n::text("Following the guide"));
     get_node<Label>("Movement")
@@ -863,6 +928,12 @@ void RolfTourView::refresh()
         button->set_visible(id != 0);
         if (!id)
             continue;
+        // While shopping, the buyer's row is drawn in gold.
+        for (const char *color : {"font_color", "font_hover_color", "font_focus_color"})
+            if (shopping && campaign_->state().selected == slot)
+                button->add_theme_color_override(color, gold);
+            else
+                button->remove_theme_color_override(color);
         const auto &m = campaign_->member(id);
         const auto &cs = m.character.sheet();
         const auto text = i18n::format("{name}\n{class} / AC {ac} / HP {current}/{maximum}",
