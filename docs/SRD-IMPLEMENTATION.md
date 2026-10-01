@@ -139,19 +139,19 @@ every abstraction before delivering additional character behavior.
 | ID | Scope and first use | Acceptance boundary / split rule |
 | --- | --- | --- |
 | F01 | Persist acquired feature/feat IDs, source and choices; migrate the existing Soldier and advancement feats. | Creation grants no longer depend on the level-four feat count; duplicate/prerequisite rules are validated; totals and saves remain stable. Adding new feats is separate. |
-| F02 | Skills with source grants and choice validation (tools and languages removed by DM-1). | Exercise one real class/background package, a duplicate grant and Expertise. Campaign uses of individual skills are separate increments. |
+| F02 | Skills with source grants and choice validation (tools and languages removed by DM-1). | Exercise one real class/background package, a duplicate grant and Expertise. Campaign skill checks are not planned (SCOPE-2). |
 | F03 | Resource pools and Short Rests, using Fighter Second Wind and spendable Hit Dice. | Selected Hit Dice spending, partial recharge, Long Rest recovery and individual eligibility persist. Other class pools are added with their own feature. |
 | F04 | Death saves and stable natural recovery continue outside combat. | Time partitioning, reserves, save/reload and encounter transitions agree. Add stabilization/Medicine as its own small follow-up if its controls or check flow are not yet available. |
 | F05 | Typed damage and resistance/vulnerability/immunity, verified with an actual species resistance. | Mixed damage, rounding, overlapping grants and zero damage resolve correctly. Temporary HP and its replacement choice form F05b, a separate increment. |
 | F06 | Extend conditions and source-based modifiers only for the next concrete feature. | One condition or closely coupled condition family per increment, including duration, removal, stacking and saves. Repeat until the coverage ledger is complete. |
 | F07 | Persist spell grants, cantrips, books and prepared lists, starting with the existing Wizard spells. | [F07a #199](https://github.com/stdarg/OpenGold/issues/199) separates Wizard cantrips/book/preparation; [F07c #200](https://github.com/stdarg/OpenGold/issues/200) adds source-specific free casts with a real granting feature. Parent #36 remains open until both are complete. Wizard learning/preparation controls are #37; adapting Cleric and each other preparation policy is separate. |
-| F08 | Concentration, exercised by one representative low-level spell. | Replacement, damage saves, incapacitation, voluntary release and save/reload work; one spell is enough to prove the mechanism. |
+| F08 | Concentration, exercised by one representative, commonly cast low-level spell (not Silence; SCOPE-2). | Replacement, damage saves, incapacitation, voluntary release and save/reload work; one spell is enough to prove the mechanism. |
 | F09 | Spell components and casting eligibility. | Existing spells exercise V/S and hand availability; costly or consumed material components form a separate F09b increment using named spells. Non-costly materials, focus hands and speech-blocking sources are not pursued (SCOPE-1). |
 | F10 | Spell reaction windows, starting with Shield. | Trigger selection, decline, resource expenditure, one-slot-per-turn handling and checkpoint resumption are correct. Other reaction features are separate work. |
 | F11 | Multiple targets using Magic Missile and Scorching Ray. | Legal allocation, dead/invalid targets, resource use and deterministic damage work through the reviewed targeting controls. |
 | F12 | Area targeting and effect resolution using one simple spell. | Bounds, target eligibility, cover/line of effect, saves and persistence work. New shapes or ongoing areas are separate increments when they add distinct mechanics. |
-| F13 | Creature size and occupied-space rules beyond I07. | Implement remaining Tiny/incapacitated/size-difference transit cases; introduce large footprints with one actual creature fixture in a separate follow-up if needed. |
-| F14 | Senses, light and visibility for actual species/feature grants. | Split sight/light rules and nonvisual senses into separate increments; verify attacks, targeting and reactions against the same visibility queries. |
+| F13 | Multi-square creature footprints (#45): the campaign has trolls, giants, ettins and a small dragon. | Movement, reach, occupancy, targeting and saves use the whole footprint, proven with one actual large creature. Remaining Tiny/size-difference transit cases are not planned (SCOPE-2). |
+| F14 | Darkvision and light, only where the campaign marks dark areas. | Attacks, targeting, reactions and Hide (#219) use the same visibility queries. Nonvisual senses (#47) are not planned (SCOPE-2). |
 
 The coverage ledger records dependencies between instantiated increments. For
 example, Shield follows spell grants and reaction support; Rage follows typed
@@ -167,9 +167,9 @@ series of small increments, not one combined delivery.
 | Queue | Increment boundary | Completion gate |
 | --- | --- | --- |
 | Equipment | Armor catalog/training; missing weapon definitions; Heavy/Loading behavior; unlimited ranged ammunition (approved exception; see [policy](AMMUNITION.md)); thrown inventory; Light attacks; individual mastery properties. Split any new control flow from unrelated properties. | Every ordinary SRD equipment option required by class/background packages is usable, with correct prerequisites, hands, damage, resources and persistent inventory. |
-| Feats | One feat per increment, or a small group sharing already-proven mechanics. Start with Origin feats and Fighter level-one Fighting Styles, then General feats. | Actual entitlement, choice, prerequisites, repeatability and effects work; a label in the sheet is insufficient. Epic Boons (level 19+) are outside the level-15 cap. |
+| Feats | One feat per increment, or a small group sharing already-proven mechanics. Start with Origin feats and Fighter level-one Fighting Styles, then General feats (Grappler is not planned; SCOPE-2). | Actual entitlement, choice, prerequisites, repeatability and effects work; a label in the sheet is insufficient. Epic Boons (level 19+) are outside the level-15 cap. |
 | Backgrounds | One complete background package at a time, after its feat and proficiency dependencies. | All four packages grant their skills/feat and reviewed starting equipment/wealth policy; duplicate choices are handled. |
-| Species | One species' passive traits, then one active trait or lineage per increment. | All nine species and their SRD choices work through creation, derived statistics, actions, recovery and saves. Include Human's extra Origin feat and level-dependent traits in the ledger. |
+| Species | One species' passive traits, then one active trait or lineage per increment. | All nine species and their SRD choices work through creation, derived statistics, actions, recovery and saves. Include Human's extra Origin feat and level-dependent traits in the ledger. Not planned (SCOPE-2): Elf Trance, Goliath Powerful Build and Large Form, Dragonborn Draconic Flight, Dwarf Stonecunning and the emptied Gnome lineages. |
 | Starting class choices | One class's proficiency/equipment/spell-choice integration at a time. | A normally created character receives every level-one entitlement; fixed fixtures cannot substitute for the ordinary creation path. |
 
 Before equipment package integration, resolve how SRD starting entitlements
@@ -191,15 +191,15 @@ each class.
 | --- | --- |
 | Fighter | Level-one styles and mastery grants; Action Surge; Tactical Mind; Champion features; level-four choices/resource integration. |
 | Cleric | Preparation/cantrip rules and Divine Order choices; Channel Divinity/Divine Spark; Turn Undead; Life Domain healing features and domain spells; level-four integration. |
-| Wizard | Spellbook learning and preparation (no copying or book loss); Arcane Recovery; Scholar; Evoker features and spell grants; level-four integration. |
-| Barbarian | Rage activation/duration/recharge; Rage effects; Reckless Attack/Danger Sense; Primal Knowledge; Berserker features; level-four integration. |
-| Rogue | Expertise and starting choices; Sneak Attack and its timing; Cunning Action; Steady Aim; Thief features, separated where exploration/item actions need support; level-four integration. |
-| Monk | Martial Arts and eligible weapon/unarmed use; Focus and its individual action options; movement/recovery features; Deflect Attacks; Slow Fall; Open Hand techniques; level-four integration. |
-| Bard | Spell access/preparation policy; Bardic Inspiration; Expertise/Jack of All Trades; Lore features and Cutting Words; level-four integration. |
+| Wizard | Spellbook learning and preparation (no copying or book loss); Arcane Recovery; Scholar; Evoker Potent Cantrip and Sculpt Spells (no Evocation Savant); level-four integration. |
+| Barbarian | Rage activation/duration/recharge; Rage effects; Reckless Attack/Danger Sense; Primal Knowledge (extra skill only); Berserker features; level-four integration. |
+| Rogue | Starting choices (existing Expertise kept, no further Expertise work); Sneak Attack and its timing; Cunning Action and Hide; Steady Aim; Thief Fast Hands and Use Magic Device (no Second-Story Work); level-four integration. |
+| Monk | Martial Arts and eligible weapon/unarmed use; Focus and its individual action options; Unarmored Movement and recovery features (no wall or water running); Deflect Attacks; Open Hand techniques; level-four integration. Slow Fall is not planned. |
+| Bard | Spell access/preparation policy; Bardic Inspiration; Jack of All Trades (it adds to Initiative; Expertise not pursued); Lore features and Cutting Words; level-four integration. |
 | Sorcerer | Spell access and Innate Sorcery; Sorcery Points and slot conversion; individual Metamagic options; Draconic features/spells; level-four integration. |
 | Paladin | Level-one spellcasting; Lay On Hands; mastery/style choices; Smite trigger and casting; Channel Divinity/Devotion features and spells; level-four integration. |
-| Ranger | Level-one spellcasting; Hunter's Mark/free-cast grants; mastery/style choices; Deft Explorer; Hunter features; level-four integration. |
-| Druid | Spell access/Primal Order choices; Wild Shape form catalog; transformation and retained statistics; form actions/reversion; Land features/spells; level-four integration. |
+| Ranger | Level-one spellcasting; Hunter's Mark/free-cast grants; mastery/style choices; Hunter features; level-four integration. Deft Explorer keeps only Tireless (level 10). |
+| Druid | Spell access/Primal Order choices; Wild Shape uses as a resource (Land's Aid, Wild Resurgence) plus a small set of combat forms, no swim or fly forms; Land features/spells; level-four integration. |
 | Warlock | Pact Magic; individual invocations, including their prerequisites; Magical Cunning; Fiend features/spells; level-four integration. |
 
 Suggested order is Fighter, Cleric and Wizard to exercise existing paths, then
@@ -234,8 +234,10 @@ a new issue is needed only for a genuinely separate deliverable.
 - Include exploration uses, duration, concentration, upcasting, targeting,
   material costs and recovery as applicable. A combat button alone is not
   completion.
-- Divide campaign skills, companions, noncombat magic and later resurrection
-  into one capability per increment. Propose any authored adaptation before
+- Divide companions, the few kept noncombat spells (Light, Detect Magic,
+  Identify, Knock, Find Traps) and later resurrection into one capability per
+  increment. Summons cover only spells that create creatures. When the levels
+  5–15 spells are inventoried, leave out DM-adjudicated spells (DM-2). Propose any authored adaptation before
   implementation; expose its actual supported behavior in the ledger.
 
 **All-class level-four milestone:** each class passes ordinary creation,

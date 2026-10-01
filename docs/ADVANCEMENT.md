@@ -37,7 +37,7 @@ does not become conscious merely by leveling. No XP is deducted.
   available without spending a slot. At least one leveled spell must be selected.
 
 The spell list is a curated subset, not the complete class preparation or
-spellbook system. Unavailable examples (Bless, Shield, Grappler and Magic
+spellbook system. Unavailable examples (Bless, Shield and Magic
 Initiate) are disabled and explain their missing mechanics in a tooltip.
 
 Level-one slots are 2/3/4/4 at character levels 1/2/3/4. Level-two slots are 2 at

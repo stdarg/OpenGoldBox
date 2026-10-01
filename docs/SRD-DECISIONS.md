@@ -9,7 +9,7 @@ A reply resolves only its question and does not resume a paused goal.
 ## 2026-09-30 simplification
 
 On 2026-09-30 the user reviewed which SRD 5.2.1 mechanics are worth their cost
-in this scripted, DM-less computer RPG and approved four decisions. They
+in this scripted, DM-less computer RPG and approved six decisions. They
 supersede the older entries they name below.
 
 - [DM-1](#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells): tool
@@ -22,6 +22,11 @@ supersede the older entries they name below.
 - [SCOPE-1](#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations): level
   cap 15, multiclassing deferred, the pre-1.0 save cutoff, and rare-situation
   features not pursued.
+- [DM-2](#dm-2-2026-09-30-dm-adjudicated-spells-at-levels-38): DM-1 extends to
+  the spell levels a level-15 cap brings in.
+- [SCOPE-2](#scope-2-2026-09-30-exploration-halves-and-marginal-features):
+  grappling dropped, exploration-only feature halves cut, marginal issues
+  closed; Hide and multi-square creatures stay.
 
 ## Current execution agreement
 
@@ -314,3 +319,54 @@ The user approved on 2026-09-30 the following scope limits.
   Lance rules, armor don/doff timing (#198), non-costly material components and
   focus hands (#40; costly or consumed material components still count), and
   speech-blocking sources (#39).
+
+## DM-2 (2026-09-30): DM-adjudicated spells at levels 3–8
+
+The user approved on 2026-09-30 extending DM-1 to the spell levels reachable
+under the level-15 cap. When the levels 5–15 spell inventory is made, leave out
+spells whose effect needs a DM, including Tongues, Sending, Speak with Dead,
+Clairvoyance, Scrying, Legend Lore, Commune, Contact Other Plane, Divination,
+Find the Path, Major Image, Seeming, Dream, Geas, Modify Memory, Mirage Arcane,
+Programmed Illusion, Hallucinatory Terrain and Magnificent Mansion. Features
+that exist only to cast such spells (for example the Warlock's Contact Patron)
+go with them. #174 is narrowed to kept spells with a campaign use: Light,
+Detect Magic, Identify, Knock and Find Traps.
+
+## SCOPE-2 (2026-09-30): exploration halves and marginal features
+
+The user approved on 2026-09-30 the following, after reviewing the open SRD
+issues for features with little value in this computer RPG.
+
+- **Dropped:** grappling and the Grappler feat (#83; removed from the
+  level-four feat list), campaign skill checks (#172; at most, original script
+  ability checks may map to SRD checks), Silence as the representative
+  concentration/area spell (#208/#209; concentration #38 and areas #43 are
+  delivered through commonly cast spells, Silence later as an ordinary spell),
+  object targeting (#225), Monk Slow Fall (#122), nonvisual senses (#47) and the
+  remaining size-difference transit cases (#44).
+- **Kept, exploration half cut:**
+  - Rogue Thief (#115): Fast Hands and Use Magic Device stay; Second-Story Work
+    goes.
+  - Ranger Deft Explorer (#148): only Tireless stays; Expertise, languages and
+    climb/swim speeds go.
+  - Monk movement (#120): Unarmored Movement stays; wall and water running goes.
+  - Barbarian Primal Knowledge (#107): the extra skill stays; Strength-based
+    skill checks while raging go.
+  - Rogue and Bard Expertise (#111/#128), Reliable Talent: no further work;
+    already implemented Expertise stays. Jack of All Trades stays because it
+    adds to Initiative.
+  - Wizard Evoker (#101): Potent Cantrip and Sculpt Spells stay; Evocation
+    Savant goes.
+  - Druid Wild Shape (#153–#155): uses as a resource (Land's Aid, Wild
+    Resurgence) plus a small set of combat forms; no full beast catalog, no
+    swim or fly forms.
+  - Companions and summons (#173): only spells that actually create creatures.
+  - Species (#65–#73): combat traits stay; Elf Trance, Goliath Powerful Build
+    and Large Form, Dragonborn Draconic Flight, Dwarf Stonecunning and the
+    emptied Gnome lineages go.
+  - Light and sight (#46): Darkvision only matters where the campaign marks
+    dark areas.
+- **Kept:** Hide (#219), multi-square creature footprints (#45; the campaign
+  has trolls, giants, ettins and a small dragon), resurrection (#175), free
+  casts (#200), spell reactions (#41), split targets (#42), area targeting
+  (#43) and all class combat features.

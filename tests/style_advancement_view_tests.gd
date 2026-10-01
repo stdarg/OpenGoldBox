@@ -80,8 +80,8 @@ func run_checks() -> void:
                 style.select(selection); style.item_selected.emit(selection); await settle()
             if klass == "fighter" and attained == 4:
                 var feat: OptionButton = level.get_node("Feat")
-                require(not feat.is_item_disabled(5), "Replacing Archery frees independent Archery feat")
-                feat.select(5); feat.item_selected.emit(5); await settle()
+                require(not feat.is_item_disabled(4), "Replacing Archery frees independent Archery feat")
+                feat.select(4); feat.item_selected.emit(4); await settle()
             if klass != "fighter":
                 require("unavailable" in level.get_node("Note").text if locale == "en" else "Sin conjuros, trucos alternativos, maestría" in level.get_node("Note").text, "Remaining class scope explicit")
             require(level.get_node("Note").get_rect().end.y <= level.get_node("Error").position.y, "Class note fits above validation errors: level=" + str(attained) + " locale=" + locale + " note=" + str(level.get_node("Note").get_rect()) + " error=" + str(level.get_node("Error").position) + " lines=" + str(level.get_node("Note").get_line_count()))
@@ -98,7 +98,7 @@ func run_checks() -> void:
                 if klass == "fighter" and attained == 4: selection = 4 if light else 1
                 style.select(selection); style.item_selected.emit(selection); await settle()
             if klass == "fighter" and attained == 4:
-                level.get_node("Feat").select(5); level.get_node("Feat").item_selected.emit(5); await settle()
+                level.get_node("Feat").select(4); level.get_node("Feat").item_selected.emit(4); await settle()
             if klass == "fighter" and attained == 4:
                 level.get_node("AdvancementTraining").select(1); level.get_node("AdvancementTraining").item_selected.emit(1); await settle()
             level.get_node("Confirm").grab_focus(); await key(level, KEY_ENTER)

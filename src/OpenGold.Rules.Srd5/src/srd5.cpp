@@ -4162,10 +4162,9 @@ class Module final : public RulesModule
             },
             {
                 "savage_attacker", "Savage Attacker",
-                "Once per turn on a weapon hit, choose whether to roll weapon damage twice and keep either roll.",
+                "Once per turn on a weapon hit, roll weapon damage twice and keep the higher roll.",
                 !detail::has_grant(sheet.grants, "feat:savage_attacker")
             },
-            {"grappler", "Grappler", "Unavailable: grappling is not implemented.", false},
             {
                 "magic_initiate", "Magic Initiate",
                 "Unavailable: its complete spell-selection feature is not implemented.", false

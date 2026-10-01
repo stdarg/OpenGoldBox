@@ -384,14 +384,14 @@ commit-specific findings as historical evidence.
 | E5: Rogue/Monk weapon proficiency | Fixed for implemented weapons | [I01 #20](https://github.com/stdarg/OpenGold/issues/20) |
 | G1: complete class features/advancement | Open; all twelve required | [Level-four milestone #8](https://github.com/stdarg/OpenGold/issues/8) and its class issues |
 | G2: species/background grants | Open | [Species #51](https://github.com/stdarg/OpenGold/issues/51), [backgrounds #50](https://github.com/stdarg/OpenGold/issues/50) |
-| G3: feat entitlements/choices | Open | [Feats #49](https://github.com/stdarg/OpenGold/issues/49) |
+| G3: feat entitlements/choices | Open; Grappler removed by SCOPE-2 | [Feats #49](https://github.com/stdarg/OpenGold/issues/49) |
 | G4: spell access/learning/preparation | Partial: Wizard ordinary learning/preparation controls delivered; other source/class routes remain | [F07 #36](https://github.com/stdarg/OpenGold/issues/36) and class-specific integration |
 | G5: spells/shared casting mechanics | Open | [Spell inventory #165](https://github.com/stdarg/OpenGold/issues/165) and named spell/mechanic issues |
 | G6: full progression/multiclassing | Open through level 15 (the cap); multiclassing deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)) | [Higher levels #176](https://github.com/stdarg/OpenGold/issues/176); multiclassing [#179](https://github.com/stdarg/OpenGold/issues/179) deferred |
 | G7: rests/recharge | Open | [F03 #30](https://github.com/stdarg/OpenGold/issues/30) |
 | G8: death/recovery outside combat | Fixed, including Help/Medicine #32 | [F04 #31](https://github.com/stdarg/OpenGold/issues/31) |
 | G9: equipment/properties | Open; E5 and Versatile corrections delivered | [Equipment #48](https://github.com/stdarg/OpenGold/issues/48), [Versatile I08 #27](https://github.com/stdarg/OpenGold/issues/27) |
-| G10: conditions/effects/creature state | Open | [Conditions #35](https://github.com/stdarg/OpenGold/issues/35), [damage #33](https://github.com/stdarg/OpenGold/issues/33), [size #44](https://github.com/stdarg/OpenGold/issues/44) |
+| G10: conditions/effects/creature state | Open | [Conditions #35](https://github.com/stdarg/OpenGold/issues/35), [damage #33](https://github.com/stdarg/OpenGold/issues/33), [multi-square footprints #45](https://github.com/stdarg/OpenGold/issues/45); grappling and size-difference transit not planned ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)) |
 | G11: precise capability/documentation coverage | In progress: ledger and issue index established | Update with every increment; reconcile remaining support claims at [final closure #185](https://github.com/stdarg/OpenGold/issues/185) |
 | G12: turn/facing/transit policies | I05–I07 delivered; remaining creature-state rules are tracked separately | [I05 #24](https://github.com/stdarg/OpenGold/issues/24), [I06 #25](https://github.com/stdarg/OpenGold/issues/25), [I07 #26](https://github.com/stdarg/OpenGold/issues/26) |
 
