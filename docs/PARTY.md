@@ -226,10 +226,32 @@ addresses receive the last write. ADD NPC uses a monster ID and morale.
 These contracts are reference-derived and synthetic-tested, not new DOS traces.
 
 The SRD compatibility mapping is explicit: script movement is speed in five-foot
-squares; incapacitated members contribute zero movement. Party strength uses
-the documented per-member formula with descending AC represented by `20 - AC`
-and THAC0 by `20 - melee attack bonus`, retaining byte wrap. This is a conversion
-policy, not a claim of unchanged encounter balance. Dead members contribute zero.
+squares; incapacitated members contribute zero movement.
+
+Party strength (PARTY STRENGTH) uses the original per-member formula (coab
+`CMD_PartyStrength`): `(4 x Cleric level + current HP + 5 x max(0, -AC) +
+5 x max(0, 21 - THAC0) + 8 x magic-user level) / 10`, summed with byte wrap.
+It is fed what an equivalent AD&D character would have, not converted SRD bonuses:
+
+- **THAC0** from the Gold Box class table by level (coab `engine/ovr018.cs`
+  `thac0_table`), by nearest original class group: Fighter, Barbarian, Paladin
+  and Ranger use the fighter row (20 at levels 1-2, then 21 - level); Cleric,
+  Druid and Monk the cleric row (20, 18, 16, 14 by three levels); Wizard,
+  Sorcerer and Warlock the magic-user row (21 to level 5, 19 to 10, then 17);
+  Rogue and Bard the thief row (20 to level 4, 19 to 8, then 16). The table ends
+  at level 12; levels 13-15 keep the level-12 value. The best magic to-hit bonus
+  of an equipped original item lowers THAC0.
+- **AC**: 10, less the AD&D value of the armor worn (padded and leather 8,
+  studded leather and ring mail 7, scale mail 6, chain mail 5, splint 4, plate 3;
+  the SRD-only suits use the nearest: hide and chain shirt 6, breastplate 5,
+  half plate 4), 1 for a shield, and original magic bonuses on armor and shield.
+  Dexterity and Strength adjustments are not included.
+- **Cleric levels** count SRD Cleric levels only (the original counts its
+  Cleric class alone); **magic-user levels** count Wizard, Sorcerer and Warlock.
+
+Dead members contribute zero. Example: six level-two fighters in chain mail and
+shield at 20 HP give `6 x (20 + 5) / 10 = 12`; the conversion this replaced
+(`20 - SRD AC`, `20 - attack bonus`) gave 30 for the same party at +5 to hit.
 
 Thief-skill/effect CHECKPARTY variants still fault. `PhlanResources::npc_profiles`
 accepts explicit native character conversions for this bank; unregistered NPCs

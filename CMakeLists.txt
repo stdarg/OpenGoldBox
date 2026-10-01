@@ -109,6 +109,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/por_effects.cpp
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
+    src/OpenGold.Core/src/random_treasure.cpp
     src/OpenGold.Core/src/combat_demo.cpp
     src/OpenGold.Core/src/dungeon_battlefield.cpp
     src/OpenGold.Core/src/exploration_view.cpp

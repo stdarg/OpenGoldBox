@@ -78,9 +78,10 @@ A campaign save stores:
   a save preserves that history. Invalid masks, unknown districts, or missing
   knowledge for visited cells reject the load.
 - Deferred loot: each entry's reward ID and money, plus the creature records it
-  came from (script treasure has none). Encounter loot is rebuilt from those
-  records and must match the saved money. Doors forced open are not saved; a
-  loaded district starts with its original locks.
+  came from. Encounter loot is rebuilt from those records and must match the
+  saved money; script treasure has no records and saves its generated items.
+  Doors forced open are not saved; a loaded district starts with its original
+  locks.
 
 The `--no-fog` launch flag only changes overhead rendering. It does not fill
 either bitset, and saving while it is enabled does not reveal unexplored areas

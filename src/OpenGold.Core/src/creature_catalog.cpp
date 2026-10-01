@@ -47,6 +47,8 @@ Archive read_archive(const std::filesystem::path &path)
     return records;
 }
 
+} // namespace
+
 EquipmentBonuses equipment_bonuses(const ItemRecord &item, const ItemTemplate &base)
 {
     EquipmentBonuses b;
@@ -79,6 +81,8 @@ EquipmentBonuses equipment_bonuses(const ItemRecord &item, const ItemTemplate &b
     return b;
 }
 
+namespace
+{
 std::string_view item_type_name(std::uint8_t type)
 {
     if (type == 73)

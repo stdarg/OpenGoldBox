@@ -88,6 +88,9 @@ struct EquipmentBonuses
     int save_bonus{};
 };
 
+// An original item's per-item contributions, read from its record and template.
+[[nodiscard]] EquipmentBonuses equipment_bonuses(const ItemRecord &item, const ItemTemplate &base);
+
 struct Equipment
 {
     std::size_t index{}; // Position in this creature's MONnITM record.

@@ -489,12 +489,21 @@ struct SaveCodec
                 wealth = loot.wealth;
             }
             fields(records, reward, items, wealth);
-            if (reading && records.empty())
+            if (records.empty())
             {
-                // Script treasure: the money alone, with no creature records.
-                require(!reward.empty() && reward.size() <= 160 && !items,
-                        "Invalid pending script treasure");
-                v.pending_loot_.push_back({wealth, {}, std::move(reward), {}, false});
+                // Script treasure has no creature records; its generated items are saved.
+                std::vector<por::Equipment> generated;
+                if (!reading)
+                    generated = v.pending_loot_[index].items;
+                field(generated);
+                if (reading)
+                {
+                    require(!reward.empty() && reward.size() <= 160 && !items &&
+                            generated.size() <= 127,
+                            "Invalid pending script treasure");
+                    v.pending_loot_.push_back(
+                    {wealth, std::move(generated), std::move(reward), {}, false});
+                }
             }
             else if (reading)
             {
@@ -524,7 +533,8 @@ struct SaveCodec
         {
             v.combat_request_ = 0;
             v.staged_treasure_.reset();
-            v.door_menu_ = false;
+            v.door_menu_ = v.pick_tried_ = false;
+            v.door_choices_.clear();
             v.staged_enemies_.clear();
             v.staged_art_.clear();
             v.encounter_.reset();

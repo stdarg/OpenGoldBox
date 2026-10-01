@@ -2218,7 +2218,11 @@ void script_handoff()
     settle(town);
     check(town.script_variable(0x6BC1) == 190 && town.can_leave(),
           "Shop return synchronizes selected character");
-    check(town.script_variable(0x9810) > 0 && town.script_variable(0x9811) == 12 &&
+    // PARTY STRENGTH ran with the level-one fighter at full HP and the cleric at 3 HP:
+    // (HP + 5 for THAC0 20) / 10 and (4 + 3 + 5) / 10.
+    const auto first_hp = party->member(first).character.sheet().hit_points;
+    check(town.script_variable(0x9810) == (first_hp + 5) / 10 + 1 &&
+          town.script_variable(0x9811) == 12 &&
           town.script_variable(0x9812) == 12 && town.script_variable(0x9813) == 12 &&
           town.script_variable(0x9814) == 0,
           "ECL movement queries share encounter-menu conversion units");
@@ -2276,10 +2280,52 @@ void original_loot()
           "Failed collection changes neither reward history nor inventory");
 }
 
+// PARTY STRENGTH reads equivalent AD&D values (docs/PARTY.md): Gold Box THAC0 by
+// class group and level, AC of worn armor, current HP and spellcaster levels.
+void party_strength()
+{
+    CampaignParty party(module());
+    auto armored = character("fighter", "Armored");
+    const auto mail = armored.inventory().add("chain_mail", "Chain mail");
+    const auto shield = armored.inventory().add("shield", "Shield");
+    const auto fighter = party.add_pc(std::move(armored));
+    party.equip(fighter, mail);
+    party.equip(fighter, shield);
+    const auto cleric = party.add_pc(character("cleric", "Cleric"));
+    const auto wizard = party.add_pc(character("wizard", "Wizard"));
+    const auto rogue = party.add_pc(character("rogue", "Rogue"));
+    const auto set_hit_points = [&](std::map<MemberId, int> hit_points)
+    {
+        auto state = party.checkpoint();
+        for (auto &member : state.roster)
+            member.vitals.hit_points = hit_points.at(member.id);
+        party.restore(std::move(state));
+    };
+
+    // Fighter (5 + 5 for THAC0 20) / 10 = 1; Cleric (4 x level 1 + 5 + 5) / 10 = 1;
+    // Wizard (5 + 8 x level 1, THAC0 21) / 10 = 1; Rogue (4 + 5) / 10 = 0.
+    // Chain mail and shield are AD&D AC 4, which adds nothing above AC 0.
+    set_hit_points({{fighter, 5}, {cleric, 5}, {wizard, 5}, {rogue, 4}});
+    check(party.strength() == 3, "Level-one party strength uses AD&D-equivalent values");
+
+    party.award_experience(900, "strength-levels");
+    for (const auto id : {fighter, wizard})
+        for (unsigned level = 2; level <= 3; ++level)
+            party.advance(id, party.default_advancement(id));
+    // Fighter level 3 is THAC0 18: (5 + 15) / 10 = 2. Wizard level 3: (5 + 24) / 10 = 2.
+    set_hit_points({{fighter, 5}, {cleric, 5}, {wizard, 5}, {rogue, 4}});
+    check(party.strength() == 5, "Fighter THAC0 and magic-user levels follow the original");
+
+    // Fighter (20 + 15) / 10 = 3.
+    set_hit_points({{fighter, 20}, {cleric, 5}, {wizard, 5}, {rogue, 4}});
+    check(party.strength() == 6, "Current hit points add with the other terms");
+}
+
 int main()
 {
     try
     {
+        party_strength();
         two_weapon_equipment();
         equipment_rule_boundary();
         combat_body_assignments();

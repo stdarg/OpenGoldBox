@@ -3,6 +3,7 @@
 #include "opengold/character_creator.h"
 #include "opengold/coin_purse.h"
 #include "opengold/combat_demo.h"
+#include "opengold/random_treasure.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -44,12 +45,14 @@ std::unique_ptr<rules::RulesModule> module()
                       "data/rules/srd-5.2.1/combat.rules");
 }
 
-// A player's fighter: best rolls to Strength, Constitution, then Dexterity.
-Character character(std::string name, std::uint64_t seed = 42)
+// A player's character (a fighter unless asked): best rolls to Strength,
+// Constitution, then Dexterity.
+Character character(std::string name, std::uint64_t seed = 42,
+                    const std::string &character_class = "fighter")
 {
     CharacterCreator creator(srd5::character_rules(), seed);
     creator.select(rules::CreationField::race, "human");
-    creator.select(rules::CreationField::character_class, "fighter");
+    creator.select(rules::CreationField::character_class, character_class);
     creator.roll();
     creator.name(std::move(name));
     std::array<unsigned, 6> best{0, 1, 2, 3, 4, 5};
@@ -259,9 +262,27 @@ void script_treasure_tests()
           paid.roster[1].wealth == Purse{} && claims_starting(paid, synthetic_treasure) == 1 &&
           town.script_variable(0x4A04) == 255 && paid.roster[0].experience == 0,
           "The first living member receives 150 pp and the jewelry once, with no XP");
-    check(town.snapshot().dialogue.find("Not awarded: 1 random original treasure item") !=
-          std::string::npos,
-          "The unsupported random item is reported, not silently dropped");
+    const auto &arden = paid.roster[0];
+    check(arden.character.inventory().items().size() == 1 && arden.item_sources.size() == 1 &&
+          paid.roster[1].character.inventory().items().empty(),
+          "The one random item goes to the first living member");
+    const auto &item = arden.character.inventory().items().front();
+    const auto &source = arden.item_sources.at(item.id);
+    check(item.original_type == source.stored.type && source.stored.stored_name.empty() &&
+          item.definition_id == equipment_conversion(source),
+          "The generated item keeps its original record as provenance");
+
+    // The same script stream generates the same item.
+    auto twin = std::make_shared<CampaignParty>(module());
+    twin->add_pc(character("Arden"));
+    por::RolfTourSession again({}, treasure_program(true, false), {}, 0x9914, {}, resources);
+    again.campaign_party(twin);
+    settle_synthetic(again);
+    check(look(again), "The same treasure runs in a second campaign");
+    const auto &twin_member = twin->state().roster[0];
+    check(twin_member.item_sources.size() == 1 &&
+          twin_member.item_sources.begin()->second.stored.raw == source.stored.raw,
+          "Random treasure is deterministic from the saved script random state");
 
     check(look(town) && purses(party->checkpoint()) == purses(paid) &&
           party->state().claimed_rewards == paid.claimed_rewards,
@@ -279,6 +300,36 @@ void script_treasure_tests()
           other->state().claimed_rewards == once.claimed_rewards &&
           repeat.script_diagnostics().back().find("already awarded") != std::string::npos,
           "A repeated award is an explicit, rolled-back failure");
+}
+
+// The generator follows the original tables for scripted dice.
+void random_treasure_tables()
+{
+    const auto scripted = [](std::vector<unsigned> rolls)
+    {
+        return [rolls, next = std::size_t{0}](unsigned sides) mutable
+        {
+            check(next < rolls.size() && rolls[next] <= sides, "Scripted roll fits its die");
+            return rolls[next++];
+        };
+    };
+    // Weapon table: d100 10 then d100 36 is a long sword; d20 15 makes it +2.
+    const auto sword = por::random_treasure_items(1, scripted({10, 36, 15})).at(0);
+    check(sword.type == 36 && sword.magic_bonus == 2 && sword.name_components[1] == 0xA3 &&
+          sword.name_components[2] == 36 && sword.weight == 60 && sword.value == 4000 &&
+          sword.revealed_components == 6,
+          "A generated +2 long sword has the original name, weight and value");
+    // d100 95, d15 5 is a potion; d8 6 selects the first preset record.
+    const auto potion = por::random_treasure_items(1, scripted({95, 5, 6})).at(0);
+    check(potion.type == 71 && potion.magic_bonus == 1 && potion.value == 800 &&
+          potion.weight == 1 &&
+          potion.effect_codes == std::array<std::uint8_t, 3> {3, 0x63, 0},
+          "A generated potion uses its original preset record");
+    // d100 70 is a magic-user scroll of d3 = 2 spells: level 1 (d13 13) and level 5 (d4 4).
+    const auto scroll = por::random_treasure_items(1, scripted({70, 2, 1, 13, 5, 4})).at(0);
+    check(scroll.type == 61 && scroll.value == 1800 && scroll.name_components[1] == 0xD3 &&
+          scroll.effect_codes == std::array<std::uint8_t, 3> {21, 94, 0},
+          "A generated scroll records its original spell codes");
 }
 
 // Full purses defer the treasure without loss; a reload keeps it pending.
@@ -312,11 +363,19 @@ void deferred_treasure_tests()
     check(encode_campaign(*reloaded, &restored, "treasure") == bytes,
           "The pending treasure survives a reload");
 
+    check(party->member(arden).character.inventory().items().empty(),
+          "Deferred treasure holds back its item too");
     reloaded->set_wealth(arden, {0, 0, 0, 0, 100, 0, 0});
+    const auto items = [&]
+    {
+        return reloaded->member(arden).character.inventory().items().size();
+    };
     check(look(restored) && reloaded->member(arden).wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
+          items() == 1 && reloaded->member(arden).item_sources.size() == 1 &&
           claims_starting(reloaded->checkpoint(), synthetic_treasure) == 1,
-          "Once there is room the deferred treasure is collected exactly once");
-    check(look(restored) && reloaded->member(arden).wealth == Purse{0, 0, 0, 0, 250, 0, 1},
+          "Once there is room the deferred treasure and its item are collected exactly once");
+    check(look(restored) && reloaded->member(arden).wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
+          items() == 1,
           "Collected treasure is not collected again");
 }
 
@@ -333,16 +392,61 @@ por::GeoMap locked_door_map()
 
 // Steps east and answers the Locked menu. True when the party got through or the
 // destination's event failed (it is then rolled back).
-bool try_door(por::RolfTourSession &town, std::size_t choice)
+bool try_door(por::RolfTourSession &town, const std::string &choice,
+              const std::vector<std::string> &offered = {"Bash", "Exit"})
 {
     check(town.explore(por::ExplorationCommand::forward), "The step starts");
     settle_or_rollback(town, false);
     const auto &s = town.snapshot();
-    check(s.dialogue == "Locked." && s.choices == std::vector<std::string> {"Bash", "Exit"},
-          "A locked door offers the original Bash and Exit");
-    check(town.choose(s.continue_ticket, choice), "The door choice is accepted");
+    check(s.dialogue == "Locked." && s.choices == offered,
+          "A locked door offers the original choices the party can use");
+    const auto chosen = std::find(s.choices.begin(), s.choices.end(), choice);
+    check(town.choose(s.continue_ticket, std::size_t(chosen - s.choices.begin())),
+          "The door choice is accepted");
     const bool rolled_back = settle_or_rollback(town);
     return rolled_back || town.snapshot().pose.x == 1;
+}
+
+// A conscious Rogue adds Pick: Dexterity (Sleight of Hand), once per lock until
+// the party moves, as the original allowed one pick attempt per step.
+void pick_lock_tests()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(character("Arden"));
+    const auto rogue = party->add_pc(character("Sly", 7, "rogue"));
+    auto resources = std::make_shared<por::PhlanResources>();
+    const auto passable = program({0});
+    for (unsigned tries = 0;; ++tries)
+    {
+        check(tries < 40, "A Rogue eventually picks the lock");
+        por::RolfTourSession town(locked_door_map(), passable, {}, 0x9914, {}, resources);
+        town.campaign_party(party);
+        settle_synthetic(town);
+        town.explore(por::ExplorationCommand::turn_right);
+        const bool picked = try_door(town, "Pick", {"Bash", "Pick", "Exit"});
+        const auto &checks = town.snapshot().door_checks;
+        check(checks.size() == 1 && checks[0].member == "Sly" &&
+              checks[0].method == DoorMethod::pick && checks[0].difficulty == 15,
+              "Only the Rogue tries, with one Dexterity (Sleight of Hand) check");
+        if (picked)
+        {
+            check(town.snapshot().door_opened && town.map().at(0, 0).doors[1] == 1,
+                  "A picked lock opens the door");
+            break;
+        }
+        check(!try_door(town, "Exit"), "After a failed Pick the lock offers only Bash and Exit");
+    }
+
+    auto unconscious = party->checkpoint();
+    for (auto &member : unconscious.roster)
+        if (member.id == rogue)
+            member.vitals.hit_points = 0;
+    party->restore(unconscious);
+    por::RolfTourSession town(locked_door_map(), passable, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle_synthetic(town);
+    town.explore(por::ExplorationCommand::turn_right);
+    check(!try_door(town, "Exit"), "An unconscious Rogue cannot pick a lock");
 }
 
 void locked_door_tests()
@@ -359,16 +463,20 @@ void locked_door_tests()
     town.explore(por::ExplorationCommand::turn_right);
 
     const auto random = party->state().random_state;
-    check(!try_door(town, 1) && town.snapshot().pose.x == 0 &&
-          party->state().random_state == random && town.map().at(0, 0).doors[1] == 2,
+    check(!try_door(town, "Exit") && town.snapshot().pose.x == 0 &&
+          party->state().random_state == random && town.map().at(0, 0).doors[1] == 2 &&
+          town.snapshot().door_checks.empty(),
           "Exit leaves the door locked and rolls nothing");
 
     unsigned tries = 0;
-    while (!try_door(town, 0))
+    while (!try_door(town, "Bash"))
     {
-        check(town.snapshot().dialogue.find("The door holds.") != std::string::npos &&
-              town.map().at(0, 0).doors[1] == 2,
-              "A failed Bash reports the checks and leaves the door locked");
+        const auto &checks = town.snapshot().door_checks;
+        check(checks.size() == 2 && !town.snapshot().door_opened &&
+              checks[0].member == "Arden" && checks[1].member == "Bryn" &&
+              checks[0].method == DoorMethod::bash && checks[0].difficulty == 15 &&
+              checks[0].total < 15 && town.map().at(0, 0).doors[1] == 2,
+              "A failed Bash records every member's check and leaves the door locked");
         check(++tries < 40, "The party eventually forces the door");
     }
     check(town.snapshot().pose.x == 0 && town.map().at(0, 0).doors[1] == 2 &&
@@ -380,17 +488,17 @@ void locked_door_tests()
     open.campaign_party(party);
     settle_synthetic(open);
     open.explore(por::ExplorationCommand::turn_right);
-    for (tries = 0; !try_door(open, 0); ++tries)
+    for (tries = 0; !try_door(open, "Bash"); ++tries)
         check(tries < 40, "The party eventually forces the door");
-    check(open.snapshot().pose.x == 1 && open.map().at(0, 0).doors[1] == 1 &&
-          open.snapshot().dialogue.find("tries to force the door: Strength (Athletics)") !=
-          std::string::npos &&
-          open.snapshot().dialogue.find("The door bursts open.") != std::string::npos,
-          "A successful Bash reports each check, unlocks the door and moves the party");
+    const auto &opened = open.snapshot();
+    check(opened.pose.x == 1 && open.map().at(0, 0).doors[1] == 1 && opened.door_opened &&
+          !opened.door_checks.empty() && opened.door_checks.back().total >= 15,
+          "A successful Bash records its checks, unlocks the door and moves the party");
     open.explore(por::ExplorationCommand::turn_around);
     open.explore(por::ExplorationCommand::forward);
     settle_synthetic(open);
     check(open.snapshot().pose.x == 0, "The opened door stays open in both directions");
+    pick_lock_tests();
 }
 
 using Answer = std::function<std::size_t(const por::TourSnapshot &)>;
@@ -809,6 +917,15 @@ void ohlo_quest(Expedition &trip)
     check(after.roster[0].wealth[4] == before.roster[0].wealth[4] + 150 &&
           after.roster[0].wealth[6] == before.roster[0].wealth[6] + 1,
           "The first living member receives Ohlo's 150 pp and jewelry");
+    const auto original_items = [](const PartyState &state)
+    {
+        std::size_t count = 0;
+        for (const auto &member : state.roster)
+            count += member.item_sources.size();
+        return count;
+    };
+    check(original_items(after) == original_items(before) + 1,
+          "Ohlo's random item is awarded once with its original record");
     for (std::size_t n = 0; n < after.roster.size(); ++n)
     {
         check(after.roster[n].experience == before.roster[n].experience,
@@ -855,8 +972,8 @@ void revisit_ohlo(Expedition &trip)
           "Revisiting Ohlo and the booth keeps the quest complete without a second reward");
 }
 
-// Ohlo's route crosses much of the Slums, where unavoidable roaming fights are
-// currently lost by this automated party (docs/QUESTS.md). Run it on request.
+// Ohlo's route crosses the Rope Guild, where back-to-back roaming fights defeat
+// this automated party (docs/QUESTS.md#validation-and-limits). Run it on request.
 bool ohlo_route_requested()
 {
     const auto *flag = std::getenv("OPENGOLD_OHLO_ROUTE");
@@ -928,8 +1045,6 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::filesystem::remove_all(folder);
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
               "returned, paid the inn with change, rested, reloaded and revisited.\n";
-    if (ohlo_route_requested())
-        std::cout << "Installed Ohlo route: commission, booth, reward, reload and revisit.\n";
 }
 
 } // namespace
@@ -946,6 +1061,7 @@ int main(int argc, char **argv)
         }
         coin_purse_tests();
         script_payment_tests();
+        random_treasure_tables();
         script_treasure_tests();
         deferred_treasure_tests();
         locked_door_tests();

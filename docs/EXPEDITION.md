@@ -33,6 +33,14 @@ identity. Existing campaign semantics award that amount to each living active
 member. Roaming encounters use a distinct persisted reward identity each time.
 Original groups can be large and dangerous to a new party; counts are preserved.
 
+**Decision (2026-09-30, issue #14): AD&D-equivalent encounter sizing.** Roaming
+group sizes come from the original PARTY STRENGTH, which is fed what an
+equivalent AD&D character would have (class THAC0 by level, worn armor AC,
+current HP, spellcaster levels) instead of converted SRD bonuses; see
+[party strength](PARTY.md). Six level-two fighters in chain and shield now meet
+eight goblins and four leaders where the SRD-bonus conversion produced sixteen
+and four. Group counts still follow the original script exactly.
+
 When the script starts combat, the approached monster's animated close-up
 fills the 3D view until any key is pressed, then combat opens. See
 [close-up animations](graphics-format.md#close-up-animations).
@@ -61,9 +69,9 @@ Additional class abilities are available only for Fighter, Cleric, and Wizard.
 A rejected training fight keeps the party screen
 open so the party can be edited and retried.
 
-Locked doors offer the original Bash and Exit, and Ohlo's potion delivery is
+Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
 supported from commission to reward; see [QUESTS.md](QUESTS.md). Its long walk
-through the Slums is not yet survivable for the automated test party.
+through the Rope Guild is not yet survivable for the automated test party.
 
 Probabilistic Slums camping and other district transitions are outside this
 first expedition. The first-room victory and required route encounters are the

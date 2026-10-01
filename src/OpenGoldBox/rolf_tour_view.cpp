@@ -648,10 +648,23 @@ String rest_notice(const std::string &resource, const std::string &text)
             N_("Short rest complete: one hour passed; eligible members can spend Hit Dice."),
             N_("Long rest complete: eight hours passed; eligible members recovered HP and supported resources."),
             N_("Rest denied: no active member is eligible."),
-            N_("The rest was interrupted. Rest again to recover.")
+            N_("The rest was interrupted. Rest again to recover."),
+            N_("Locked.")
         })
         result = result.replace(String::utf8(source), i18n::text(source));
     return result;
+}
+
+// Choices the campaign host adds use the engine catalog; the rest are original.
+String choice_label(const std::string &resource, const std::string &choice)
+{
+    for (const auto *host :
+            {
+                N_("Bash"), N_("Pick"), N_("Exit")
+            })
+        if (choice == host)
+            return i18n::text(host);
+    return i18n::campaign(resource + "/choices", choice);
 }
 
 String coin_list(const opengold::Coins &coins)
@@ -684,12 +697,30 @@ String payment_notice(const CoinPayment &payment)
     });
 }
 
-// Script dialogue followed by the coins the party's purses exchanged for it.
+String door_check_notice(const DoorCheck &check)
+{
+    const auto name = String::utf8(check.member.c_str());
+    if (check.method == opengold::DoorMethod::pick)
+        return i18n::format(
+                   "{name} tries to pick the lock: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}.",
+    {{"name", name}, {"total", check.total}, {"die", check.die}, {"dc", check.difficulty}});
+    return i18n::format(
+               "{name} tries to force the door: Strength (Athletics) {total} (d20 {die}) against DC {dc}.",
+    {{"name", name}, {"total", check.total}, {"die", check.die}, {"dc", check.difficulty}});
+}
+
+// Script dialogue followed by the coins the party's purses exchanged for it
+// and any checks made against a locked door.
 String event_dialogue(const std::string &resource, const TourSnapshot &s)
 {
     auto result = rest_notice(resource, s.dialogue);
     for (const auto &payment : s.payments)
         result += "\n" + payment_notice(payment);
+    for (const auto &check : s.door_checks)
+        result += "\n" + door_check_notice(check);
+    if (!s.door_checks.empty())
+        result += "\n" + i18n::text(s.door_opened ? N_("The door opens.")
+                                    : N_("The door stays locked."));
     return result;
 }
 } // namespace
@@ -858,7 +889,7 @@ void RolfTourView::refresh()
             for (const auto &c : s.choices)
                 choices->add_item(s.dialogue == "Choose a party member."
                                   ? String::utf8(c.c_str())
-                                  : i18n::campaign(resource + "/choices", c));
+                                  : choice_label(resource, c));
         if (choices->get_item_count())
             choices->select(0);
         if (shopping || multiple)

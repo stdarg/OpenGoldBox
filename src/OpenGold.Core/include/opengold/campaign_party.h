@@ -49,7 +49,15 @@ struct RestResult
     std::optional<RestTicket> spending;
 };
 
-// One member's Strength (Athletics) check against a locked door.
+// How the party tries a locked door: Bash is Strength (Athletics) by anyone
+// conscious; Pick is Dexterity (Sleight of Hand) by a conscious Rogue.
+enum class DoorMethod
+{
+    bash,
+    pick
+};
+
+// One member's check against a locked door.
 struct DoorAttempt
 {
     MemberId member{};
@@ -153,9 +161,10 @@ class CampaignParty
             std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
-    // Conscious active members, in party order, try once each until one meets
+    // Eligible active members, in party order, try once each until one meets
     // the difficulty. Returns every attempt; the door opens if the last succeeded.
-    [[nodiscard]] std::vector<DoorAttempt> force_door(int difficulty);
+    [[nodiscard]] std::vector<DoorAttempt> try_door(DoorMethod method, int difficulty);
+    [[nodiscard]] bool can_try_door(DoorMethod method) const;
     void advance_time(unsigned minutes);
     void advance_time_milliseconds(std::uint64_t milliseconds);
 

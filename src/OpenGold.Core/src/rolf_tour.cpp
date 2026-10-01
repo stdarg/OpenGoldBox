@@ -150,6 +150,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             stock.push_back(std::move(equipment));
         }
     }
+    town->item_templates = *templates;
     town->sprite_archive = bytes;
     const auto pictures = [&](const char *name, auto & destination)
     {
@@ -269,7 +270,8 @@ void RolfTourSession::restart()
     pending_loot_.clear();
     saved_pending_loot_.clear();
     staged_treasure_.reset();
-    door_menu_ = false;
+    door_menu_ = pick_tried_ = false;
+    door_choices_.clear();
     who_request_ = temple_request_ = 0;
     who_slots_.clear();
     temple_targets_.clear();
@@ -318,6 +320,7 @@ void RolfTourSession::fail(std::string diagnostic)
         pending_loot_ = saved_pending_loot_;
         staged_treasure_.reset();
         door_menu_ = false;
+        door_choices_.clear();
         visited_areas_ = saved_visited_areas_;
         seen_areas_ = saved_seen_areas_;
         if (saved_snapshot_)

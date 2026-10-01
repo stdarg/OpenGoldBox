@@ -57,6 +57,8 @@ struct PhlanResources
 {
     std::map<unsigned, std::shared_ptr<const EclProgram>> programs;
     std::map<unsigned, std::vector<Equipment>> treasure;
+    // ITEMS templates, indexed by original item type, for generated treasure.
+    std::vector<ItemTemplate> item_templates;
     std::vector<std::uint8_t> sprite_archive;
     std::map<unsigned, Image> heads, bodies, pictures;
     // PIC records: monster close-ups shown before combat, looping until a key press.
@@ -79,6 +81,14 @@ struct CoinPayment
     opengold::CoinExchange coins;
 };
 
+// One check made against a locked door, for the player's log.
+struct DoorCheck
+{
+    std::string member;
+    opengold::DoorMethod method{};
+    int die{}, total{}, difficulty{};
+};
+
 struct TourSnapshot
 {
     PartyPose pose;
@@ -96,6 +106,9 @@ struct TourSnapshot
     std::bitset<256> visited;
     std::bitset<256> seen; // Persistent map knowledge: visited or visible in a shown 3D view.
     std::vector<CoinPayment> payments; // This event's payments; cleared when the next begins.
+    // This step's checks against a locked door and whether it opened.
+    std::vector<DoorCheck> door_checks;
+    bool door_opened{};
 };
 enum class ExplorationCommand
 {
@@ -253,13 +266,16 @@ class RolfTourSession
     // Doors forced open stay open until the district map is reloaded.
     GeoMap saved_map_;
     bool door_menu_{};
+    // As in the original, one Pick per lock until the party moves again.
+    bool pick_tried_{};
+    std::vector<opengold::DoorMethod> door_choices_;
     void claim_loot();
     void stage_treasure(const EclRequest &request);
     void award_staged_treasure();
     [[nodiscard]] std::string treasure_identity(std::uint16_t address) const;
     [[nodiscard]] bool locked_door_ahead() const;
     void show_locked_door();
-    void force_locked_door();
+    void try_locked_door(opengold::DoorMethod method);
     void search_destination();
     [[nodiscard]] PendingLoot slums_loot(std::vector<unsigned> records, std::string reward,
                                          bool items) const;

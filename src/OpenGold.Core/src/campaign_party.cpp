@@ -11,6 +11,90 @@ namespace
 {
 constexpr std::array<std::uint16_t, 7> money{0x6BBB, 0x6BBD, 0x6BBF, 0x6BC1,
     0x6BC3, 0x6BC5, 0x6BC7};
+
+// The original class groups whose THAC0 tables PARTY STRENGTH reads.
+enum class AdndGroup
+{
+    fighter,
+    cleric,
+    magic_user,
+    thief
+};
+
+AdndGroup adnd_group(std::string_view character_class)
+{
+    if (character_class == "Cleric" || character_class == "Druid" || character_class == "Monk")
+        return AdndGroup::cleric;
+    if (character_class == "Wizard" || character_class == "Sorcerer" ||
+            character_class == "Warlock")
+        return AdndGroup::magic_user;
+    if (character_class == "Rogue" || character_class == "Bard")
+        return AdndGroup::thief;
+    return AdndGroup::fighter;
+}
+
+// Gold Box THAC0 by level 1..12 (coab engine/ovr018.cs thac0_table, stored
+// there as 60 - THAC0). Higher levels keep the level-12 value: the original
+// table ends there and nothing is extrapolated.
+int adnd_thac0(AdndGroup group, unsigned level)
+{
+    static constexpr std::array<std::array<int, 12>, 4> table{{
+            {20, 20, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9},
+            {20, 20, 20, 18, 18, 18, 16, 16, 16, 14, 14, 14},
+            {21, 21, 21, 21, 21, 19, 19, 19, 19, 19, 17, 17},
+            {20, 20, 20, 20, 19, 19, 19, 19, 16, 16, 16, 16}
+        }
+    };
+    const auto row = static_cast<std::size_t>(group);
+    return table[row][std::clamp(level, 1u, 12u) - 1];
+}
+
+// AD&D descending AC of worn armor (nearest original suit for SRD-only suits),
+// or nullopt for items that are not armor. A shield improves AC by one.
+std::optional<int> adnd_armor(std::string_view definition)
+{
+    static const std::map<std::string_view, int> suits{
+        {"padded", 8},      {"leather", 8},     {"studded_leather", 7},
+        {"hide", 6},        {"chain_shirt", 6}, {"scale_mail", 6},
+        {"breastplate", 5}, {"half_plate", 4},  {"ring_mail", 7},
+        {"chain_mail", 5},  {"splint", 4},      {"plate", 3}};
+    const auto found = suits.find(definition);
+    if (found == suits.end())
+        return std::nullopt;
+    return found->second;
+}
+
+// PARTY STRENGTH reads an equivalent AD&D character: THAC0 by class and level,
+// AC from armor and shield worn, with original magic bonuses on equipped items.
+struct AdndCombatValues
+{
+    int thac0{20}, armor_class{10};
+};
+
+AdndCombatValues adnd_combat_values(const PartyMember &m)
+{
+    const auto &sheet = m.character.sheet();
+    AdndCombatValues values;
+    values.thac0 = adnd_thac0(adnd_group(sheet.character_class), sheet.level);
+    int weapon_bonus = 0;
+    for (const auto equipped : m.equipped)
+    {
+        const auto item = m.character.inventory().find(equipped);
+        if (!item)
+            throw std::runtime_error("Equipped item is missing");
+        const auto source = m.item_sources.find(equipped);
+        const int magic = source == m.item_sources.end() ? 0 : source->second.stored.magic_bonus;
+        const auto &definition = item->get().definition_id;
+        if (definition == "shield")
+            values.armor_class -= 1 + magic;
+        else if (const auto suit = adnd_armor(definition))
+            values.armor_class -= 10 - *suit + magic;
+        else
+            weapon_bonus = std::max(weapon_bonus, magic);
+    }
+    values.thac0 -= weapon_bonus;
+    return values;
+}
 }
 
 std::string equipment_conversion(const por::Equipment &item)
@@ -703,7 +787,25 @@ void CampaignParty::elapse(PartyState &state, std::uint64_t milliseconds,
     state.subminute_milliseconds = static_cast<unsigned>(remainder % 60000);
 }
 
-std::vector<DoorAttempt> CampaignParty::force_door(int difficulty)
+namespace
+{
+bool tries_door(const PartyMember &m, DoorMethod method)
+{
+    const bool conscious = !m.vitals.dead && m.vitals.hit_points > 0;
+    return conscious &&
+           (method == DoorMethod::bash || m.character.sheet().character_class == "Rogue");
+}
+} // namespace
+
+bool CampaignParty::can_try_door(DoorMethod method) const
+{
+    return std::any_of(state_.slots.begin(), state_.slots.end(), [&](MemberId id)
+    {
+        return id && tries_door(member(id), method);
+    });
+}
+
+std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficulty)
 {
     editable();
     std::vector<DoorAttempt> attempts;
@@ -713,7 +815,7 @@ std::vector<DoorAttempt> CampaignParty::force_door(int difficulty)
         if (!id)
             continue;
         const auto &m = member(id);
-        if (m.vitals.dead || m.vitals.hit_points == 0)
+        if (!tries_door(m, method))
             continue;
         std::vector<std::string> gear;
         for (auto equipped : m.equipped)
@@ -724,8 +826,11 @@ std::vector<DoorAttempt> CampaignParty::force_door(int difficulty)
             gear.push_back(item->get().definition_id);
         }
 
-        const auto roll = rules_->roll_ability_check(m.character.sheet(), gear, 0, "athletics",
-                          random_state);
+        const auto roll =
+            method == DoorMethod::bash
+            ? rules_->roll_ability_check(m.character.sheet(), gear, 0, "athletics", random_state)
+            : rules_->roll_ability_check(m.character.sheet(), gear, 1, "sleight_of_hand",
+                                         random_state);
         attempts.push_back({id, roll});
         if (roll.total >= difficulty)
             break;
@@ -786,14 +891,17 @@ unsigned CampaignParty::strength() const
             const auto &m = member(id);
             if (m.vitals.dead)
                 continue;
-            const auto p = profile(id);
-            const auto &klass = m.character.sheet().character_class;
-            // Explicit SRD-to-PoR adapter: descending AC=20-AC, THAC0=20-attack bonus.
-            result += (m.vitals.hit_points + 5 * std::max(0, p.armor_class - 20) +
-                       5 * std::max(0, p.melee_attack_bonus + 1) +
-                       (klass == "Cleric"   ? 4
-                        : klass == "Wizard" ? 8
-                        : 0)) /
+            // The original per-member term (coab CMD_PartyStrength): Cleric level x 4,
+            // magic-user level x 8, current HP, 5 per point of AC below 0 and
+            // 5 per point of THAC0 below 21.
+            const auto adnd = adnd_combat_values(m);
+            const auto &sheet = m.character.sheet();
+            const auto group = adnd_group(sheet.character_class);
+            const int cleric_levels = sheet.character_class == "Cleric" ? int(sheet.level) : 0;
+            const int magic_user_levels = group == AdndGroup::magic_user ? int(sheet.level) : 0;
+            result += unsigned(cleric_levels * 4 + m.vitals.hit_points +
+                               5 * std::max(0, -adnd.armor_class) +
+                               5 * std::max(0, 21 - adnd.thac0) + magic_user_levels * 8) /
                       10;
         }
     return result & 255;

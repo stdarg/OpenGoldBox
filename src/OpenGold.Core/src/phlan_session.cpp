@@ -1,4 +1,5 @@
 #include "opengold/rolf_tour.h"
+#include "opengold/random_treasure.h"
 #include <algorithm>
 #include <set>
 
@@ -218,6 +219,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         machine_.bind_variable(0x49F1, pose.y);
         pose.x = wrapped_x;
         pose.y = wrapped_y;
+        pick_tried_ = false;
         ++snapshot_.footsteps;
     }
     if (campaign_ && command == ExplorationCommand::forward)
@@ -232,6 +234,8 @@ void RolfTourSession::begin_event(unsigned slot)
     claim_loot();
     synchronize_clock();
     snapshot_.payments.clear();
+    snapshot_.door_checks.clear();
+    snapshot_.door_opened = false;
     if (campaign_)
     {
         selected_character_ = campaign_->state().selected;
@@ -531,32 +535,37 @@ bool RolfTourSession::locked_door_ahead() const
 
 void RolfTourSession::show_locked_door()
 {
-    // Pick needs thieves' tools and Knock a supported spell; neither is offered.
     door_menu_ = true;
+    door_choices_ = {DoorMethod::bash};
+    snapshot_.choices = {"Bash"};
+    if (!pick_tried_ && campaign_->can_try_door(DoorMethod::pick))
+    {
+        door_choices_.push_back(DoorMethod::pick);
+        snapshot_.choices.push_back("Pick");
+    }
+    // Knock belongs here, offered when a member can cast the Knock spell; the
+    // rules module does not have that spell yet.
+    snapshot_.choices.push_back("Exit");
     snapshot_.dialogue = "Locked.";
-    snapshot_.choices = {"Bash", "Exit"};
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.continue_ticket = ++next_ticket_;
     ++snapshot_.revision;
 }
 
-void RolfTourSession::force_locked_door()
+void RolfTourSession::try_locked_door(DoorMethod method)
 {
-    const auto attempts = campaign_->force_door(locked_door_difficulty);
+    if (method == DoorMethod::pick)
+        pick_tried_ = true;
+    const auto attempts = campaign_->try_door(method, locked_door_difficulty);
     for (const auto &attempt : attempts)
-    {
-        const auto &name = campaign_->member(attempt.member).character.sheet().name;
-        snapshot_.dialogue += "\n" + name + " tries to force the door: Strength (Athletics) " +
-                              std::to_string(attempt.roll.total) + " (d20 roll " +
-                              std::to_string(attempt.roll.die) + ") against DC " +
-                              std::to_string(locked_door_difficulty) + ".";
-    }
+        snapshot_.door_checks.push_back(
+        {
+            campaign_->member(attempt.member).character.sheet().name, method, attempt.roll.die,
+            attempt.roll.total, locked_door_difficulty
+        });
     if (attempts.empty() || attempts.back().roll.total < locked_door_difficulty)
-    {
-        snapshot_.dialogue += "\nThe door holds.";
         return;
-    }
-    snapshot_.dialogue += "\nThe door bursts open.";
+    snapshot_.door_opened = true;
     // The original unlocks both faces in its loaded map; reloading the district relocks them.
     const auto edge = edge_ahead(snapshot_.pose);
     const auto unlock = [](std::uint8_t &door)
@@ -595,11 +604,30 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
         loot.wealth[coin] = request.arguments.at(coin).value;
     loot.reward_id = treasure_identity(request.instruction->address);
     loot.include_items = false;
-    staged_treasure_ = std::move(loot);
     if (items != 255)
-        snapshot_.dialogue += "\nNot awarded: " + std::to_string(items - 128) +
-                              " random original treasure item(s). Random item generation is "
-                              "not supported yet.";
+    {
+        // Rolled on the script's own saved random stream, as the original did here.
+        const auto roll = [&](unsigned sides)
+        {
+            return machine_.host_random(request.id, sides) + 1;
+        };
+        for (auto &record : random_treasure_items(items - 128, roll))
+        {
+            Equipment item;
+            item.index = loot.items.size();
+            const auto &templates = town_->item_templates;
+            if (!templates.empty())
+            {
+                if (record.type >= templates.size())
+                    throw EclError("Missing item template for generated treasure");
+                item.base = templates[record.type];
+            }
+            item.bonuses = equipment_bonuses(record, item.base);
+            item.stored = std::move(record);
+            loot.items.push_back(std::move(item));
+        }
+    }
+    staged_treasure_ = std::move(loot);
 }
 
 void RolfTourSession::award_staged_treasure()
@@ -762,8 +790,8 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         door_menu_ = false;
         try
         {
-            if (choice == 0)
-                force_locked_door();
+            if (choice < door_choices_.size())
+                try_locked_door(door_choices_[choice]);
             search_destination();
         }
         catch (const std::exception &e)
