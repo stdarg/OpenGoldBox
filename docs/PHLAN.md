@@ -72,7 +72,8 @@ pending instruction. Each purchase charges the decoded item's gold value and
 adds its stored item/bundle to inventory. Stock may be purchased repeatedly.
 The demo has a 16-entry inventory limit and rejects invalid/stale requests,
 unaffordable purchases and purchases when full without charging gold.
-Selling, equipping, item activation and currency exchange are not implemented.
+Selling, equipping and item activation are not implemented. Scripts that ask
+for particular coins make change; see [coin payments](#coin-payments).
 
 HEAD3/BODY3 records provide 88 x 40 heads and 88 x 48 bodies, combined according
 to the script's portrait selection. PIC3 and SPRIT3 supply supported pictures
@@ -83,6 +84,41 @@ Mapped registers and shop/treasure dispatch were cross-checked with the
 [PC 1.3 technical analysis](https://gamefaqs.gamespot.com/c64/578753-pool-of-radiance/faqs/73869),
 then exercised against the installed ECL and item records. Dialogue, stock
 counts and item prices are taken from those records, not copied from the guide.
+
+## Coin payments
+
+Original New Phlan scripts test and take one denomination from the selected
+character. `ECL3.DAX` record 0, as listed by
+`opengold_scripts --inspect GAME_DIR ECL3.DAX 0`:
+
+- Inn: `'IT WILL COST YOU 1 PLATINUM PIECE TO REST HERE.'`, then
+  `COMPARE 1, [6BC3]` / `IF >` to `"YOU DON'T HAVE ENOUGH PLATINUM."`, otherwise
+  `SUBTRACT 1 FROM [6BC3]`, `LOAD CHARACTER 128 + [6DB4]` (store) and PROGRAM 9.
+- Harbor: `'ROUND TRIP PASSAGE IS 1 PLATINUM PIECE.'` (travel itself is unsupported).
+- Gambling: the wager is asked in platinum; the script copies `[6BC3]` to a
+  scratch cell and writes the result back to `[6BC3]`.
+
+A new party carries gold and silver, so taken literally these scripts could
+never be paid. Approved policy (issue #17), **make change automatically**:
+
+- The script sees, in each coin cell (`6BBB` cp, `6BBD` sp, `6BBF` ep, `6BC1` gp,
+  `6BC3` pp), what the character's whole coin purse can afford at SRD rates
+  (1 / 10 / 50 / 100 / 1,000 cp). 145 gp and 96 sp show as 15 pp, 154 gp, and so on.
+- When the script stores the character, the change from that view is applied to
+  the real purse exactly once. Coins the script adds are added as given. Coins it
+  takes come from that denomination first; the rest is paid from the largest
+  coins that do not overpay, then by breaking one larger coin, with change back
+  in gold, silver and copper. Afterwards the script is shown the settled purse.
+- Gems and jewelry (cells `6BC5`, `6BC7`) are not coins and are never converted.
+- Prices are unchanged and no money is granted. A script that takes more than
+  the purse is worth fails and the event rolls back.
+- The exchange is logged under the script's text, for example
+  "Arden pays 10 gp for 1 pp." (localized).
+
+Reads that change nothing leave the purse alone. Shops price in gold and still
+charge gold coins. Robbery and pickpocketing remain unsupported and roll back.
+Native coverage: `tests/expedition_tests.cpp` (exchange rules, one charge across
+repeated reads, and the installed inn route: decline, refusal, payment, rest).
 
 ## Validation and remaining work
 

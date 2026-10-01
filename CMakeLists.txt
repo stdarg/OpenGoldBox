@@ -97,6 +97,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/character_pool.cpp
     src/OpenGold.Core/src/character.cpp
     src/OpenGold.Core/src/campaign_party.cpp
+    src/OpenGold.Core/src/coin_purse.cpp
     src/OpenGold.Core/src/campaign_rest.cpp
     src/OpenGold.Core/src/campaign_save.cpp
     src/OpenGold.Core/src/save_file.cpp
@@ -359,6 +360,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_party_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_party_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_party_tests COMMAND opengold_party_tests)
+    add_executable(opengold_expedition_tests tests/expedition_tests.cpp)
+    target_link_libraries(opengold_expedition_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_expedition_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_expedition_tests COMMAND opengold_expedition_tests)
     add_executable(opengold_save_tests tests/save_tests.cpp)
     target_link_libraries(opengold_save_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_save_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

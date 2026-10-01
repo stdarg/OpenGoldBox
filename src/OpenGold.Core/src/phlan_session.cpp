@@ -141,7 +141,13 @@ void RolfTourSession::read_character()
 {
     if (campaign_)
     {
-        campaign_->read_character(selected_character_, machine_);
+        const auto exchange = campaign_->read_character(selected_character_, machine_);
+        if (exchange)
+        {
+            const auto payer = campaign_->state().slots[selected_character_];
+            const auto &name = campaign_->member(payer).character.sheet().name;
+            snapshot_.payments.push_back({name, *exchange});
+        }
         return;
     }
     if (selected_character_ != 0)
@@ -205,6 +211,7 @@ void RolfTourSession::begin_event(unsigned slot)
 {
     claim_loot();
     synchronize_clock();
+    snapshot_.payments.clear();
     if (campaign_)
     {
         selected_character_ = campaign_->state().selected;
@@ -315,7 +322,11 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                  campaign_->member(unit.id).vitals != unit.persistent)
             return false;
     }
-    if (party_ids != expected_party || enemies.size() != staged_records_.size() ||
+    // Members who were already dead never joined the fight.
+    for (auto id : expected_party)
+        if (!party_ids.contains(id) && !campaign_->member(id).vitals.dead)
+            return false;
+    if (enemies.size() != staged_records_.size() ||
             (result.outcome == rules::Outcome::victory && defeated != enemies.size()))
         return false;
     if (result.outcome == rules::Outcome::defeat)
@@ -393,6 +404,9 @@ PendingLoot RolfTourSession::slums_loot(std::vector<unsigned> records, std::stri
 void RolfTourSession::finish_event()
 {
     read_character();
+    // Another script may follow in this event; it must see the settled purse.
+    for (const auto &w : character_reply(selected_character_).writes)
+        machine_.bind_variable(w.address, w.value);
     publish_pose();
     if (transition_)
     {
@@ -707,6 +721,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             if ((arg(0) & 127) != selected_character_)
                 throw EclError("Selected character store mismatch");
             read_character();
+            reply = character_reply(selected_character_);
         }
         else
         {
@@ -864,12 +879,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         return true;
     case 29:
         read_character();
+        reply = character_reply(selected_character_);
         reply.writes.push_back({static_cast<std::uint16_t>(arg(0)),
                                 static_cast<std::uint16_t>(campaign_->strength())});
         break;
     case 30:
     {
         read_character();
+        reply = character_reply(selected_character_);
         const auto values = campaign_->query(arg(0), arg(1));
         std::map<std::uint16_t, std::uint16_t> outputs;
         for (unsigned n = 0; n < 4; ++n)
@@ -881,6 +898,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 54:
     {
         read_character();
+        reply = character_reply(selected_character_);
         const auto found = town_->npc_profiles.find(arg(0));
         if (found == town_->npc_profiles.end() || arg(0) == 24)
             throw EclError("NPC needs an explicit supported conversion/allegiance profile");

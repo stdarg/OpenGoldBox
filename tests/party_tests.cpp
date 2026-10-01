@@ -1953,6 +1953,59 @@ void rejected_combat_handoff()
     }
 }
 
+// A member who died in an earlier fight sits out the next one. Winning it must
+// still return the party to exploration with its rewards.
+void victory_beside_dead_member()
+{
+    auto gate = program({32, 0, 20, 0});
+    auto encounter = program({58, 33, 0, 20, 0, 2, 0, 255, 11, 0, 4, 0, 1, 0, 4, 36, 0});
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->map = por::GeoMap{};
+    resources->programs[0] = gate;
+    resources->programs[20] = encounter;
+    auto district = std::make_shared<por::PhlanResources>();
+    district->map = por::GeoMap{};
+    district->encounter_creatures[4].stored.name = "Test orc";
+    district->combat_archive = {9, 0, 4, 0, 0, 0, 0, 25, 0, 26, 0, 24};
+    district->combat_archive.resize(37, 0);
+    district->combat_archive[12] = 1;
+    district->combat_archive[14] = 2;
+    district->combat_archive[20] = 1;
+    resources->districts[20] = district;
+    auto party = std::make_shared<CampaignParty>(module());
+    (void)party->add_pc(character("fighter"));
+    const auto fallen = party->add_pc(character("fighter", "Bo"));
+    auto state = party->checkpoint();
+    state.roster[1].vitals.hit_points = 0;
+    state.roster[1].vitals.dead = true;
+    party->restore(state);
+    por::RolfTourSession town({}, gate, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle(town);
+    check(town.explore(por::ExplorationCommand::look), "Synthetic gate starts the encounter");
+    settle(town);
+    check(town.pending_encounter().has_value(), "The encounter reaches combat");
+    Snapshot result;
+    {
+        CombatDemo combat(module());
+        combat.campaign_party(party);
+        combat.encounter(*town.pending_encounter(), 42);
+        result = combat.combat().snapshot();
+    }
+    check(std::none_of(result.combatants.begin(), result.combatants.end(),
+                       [&](const auto & unit)
+    {
+        return unit.id == fallen;
+    }),
+    "The dead member does not fight");
+    result.outcome = Outcome::victory;
+    for (auto &unit : result.combatants)
+        if (unit.side == 1)
+            unit.hit_points = 0;
+    check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
+          "The victory resolves although a dead member sat it out");
+}
+
 void recovery_hosts()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -2252,6 +2305,7 @@ int main()
         script_handoff();
         shop_buyer_switch();
         rejected_combat_handoff();
+        victory_beside_dead_member();
         monster_picture_before_combat();
         recovery_hosts();
         reward_reentry();

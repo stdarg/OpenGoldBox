@@ -263,9 +263,9 @@ void CharacterCreationView::load_checkpoint_check()
                 throw std::runtime_error("Rest save did not use existing save dialog");
             get_node<SaveSlots>("SaveSlots")->get_node<Button>("Cancel")->emit_signal("pressed");
             town->get_node<Button>("Camp")->emit_signal("pressed");
-            rest->get_node<Button>("Spend")->emit_signal("pressed");
+            rest->get_node<Button>("Heal")->emit_signal("pressed");
             if (encode_campaign(*campaign_, town->saved_session(), assets) == before)
-                throw std::runtime_error("Reloaded rest could not spend its next die");
+                throw std::runtime_error("Reloaded rest could not heal with its Hit Dice");
             rest->get_node<Button>("Finish")->emit_signal("pressed");
             town->hide();
         }

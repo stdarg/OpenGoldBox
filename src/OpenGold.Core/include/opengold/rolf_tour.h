@@ -70,6 +70,13 @@ struct PhlanResources
     std::vector<Image> terrain_art;
 };
 
+// A script took coins the payer lacked and the purse made change.
+struct CoinPayment
+{
+    std::string payer;
+    opengold::CoinExchange coins;
+};
+
 struct TourSnapshot
 {
     PartyPose pose;
@@ -86,6 +93,7 @@ struct TourSnapshot
     std::uint64_t picture_revision{};
     std::bitset<256> visited;
     std::bitset<256> seen; // Persistent map knowledge: visited or visible in a shown 3D view.
+    std::vector<CoinPayment> payments; // This event's payments; cleared when the next begins.
 };
 enum class ExplorationCommand
 {
@@ -257,6 +265,8 @@ class RolfTourSession
     void begin_event(unsigned slot);
     void finish_event();
     bool handle_town_host(const EclRequest &request);
+    // Scripts change coins relative to the view they were given, so the script
+    // must receive a fresh character_reply after every read before it continues.
     void read_character();
     [[nodiscard]] EclHostReply character_reply(unsigned index) const;
     void bind_pose(PartyPose pose);

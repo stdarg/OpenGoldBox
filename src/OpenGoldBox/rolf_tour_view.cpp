@@ -27,6 +27,7 @@
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <filesystem>
 #include <vector>
@@ -652,6 +653,45 @@ String rest_notice(const std::string &resource, const std::string &text)
         result = result.replace(String::utf8(source), i18n::text(source));
     return result;
 }
+
+String coin_list(const opengold::Coins &coins)
+{
+    static constexpr std::array<const char *, 5> amounts{N_("{count} cp"), N_("{count} sp"),
+        N_("{count} ep"), N_("{count} gp"), N_("{count} pp")};
+    String result;
+    for (std::size_t coin = coins.size(); coin-- > 0;)
+    {
+        if (!coins[coin])
+            continue;
+        if (!result.is_empty())
+            result += ", ";
+        result += i18n::format(amounts[coin], {{"count", coins[coin]}});
+    }
+    return result;
+}
+
+String payment_notice(const CoinPayment &payment)
+{
+    const auto &coins = payment.coins;
+    const auto name = String::utf8(payment.payer.c_str());
+    if (coins.change == opengold::Coins{})
+        return i18n::format("{name} pays {paid} for {owed}.",
+    {{"name", name}, {"paid", coin_list(coins.paid)}, {"owed", coin_list(coins.owed)}});
+    return i18n::format("{name} pays {paid} for {owed} and receives {change} in change.",
+    {
+        {"name", name}, {"paid", coin_list(coins.paid)}, {"owed", coin_list(coins.owed)},
+        {"change", coin_list(coins.change)}
+    });
+}
+
+// Script dialogue followed by the coins the party's purses exchanged for it.
+String event_dialogue(const std::string &resource, const TourSnapshot &s)
+{
+    auto result = rest_notice(resource, s.dialogue);
+    for (const auto &payment : s.payments)
+        result += "\n" + payment_notice(payment);
+    return result;
+}
 } // namespace
 
 void RolfTourView::sync_monster_picture()
@@ -779,7 +819,7 @@ void RolfTourView::refresh()
         i18n::text(
             "Restart with --reset-game-path to choose your Pool of Radiance data folder.")
         : s.dialogue.empty() ? i18n::text("Following Rolf...")
-        : rest_notice(resource + "/dialogue", s.dialogue));
+        : event_dialogue(resource + "/dialogue", s));
     get_node<Button>("Continue")->set_disabled(!waiting && !shopping && !answer);
     get_node<Button>("Continue")
     ->set_text(i18n::text(shopping   ? N_("Buy [Enter]")
@@ -858,7 +898,7 @@ void RolfTourView::refresh()
     if (waiting && !s.diagnostic.empty())
         get_node<RichTextLabel>("Dialogue")
         ->set_text(i18n::text(s.diagnostic) + "\n" +
-                   rest_notice(resource + "/dialogue", s.dialogue));
+                   event_dialogue(resource + "/dialogue", s));
     if (loaded)
     {
         const auto &p = session_->party();
@@ -1423,12 +1463,11 @@ void RolfTourView::start_recovery_check()
     {.successes = 2, .failures = 1, .hit_dice = 1, .death_save_ms = 6000});
     state.roster.at(1).vitals = {0, false, stable};
     state.roster.back().vitals = {0, false, dying};
-    // One platinum covers the original inn payment.
+    // Gold alone pays the temple and, with change made, the inn's one platinum.
     if (member.vitals.dead)
         throw std::runtime_error("Recovery check requires a living victory survivor");
     member.vitals.hit_points = 1;
-    member.wealth[3] = 200;
-    member.wealth[4] = 1;
+    member.wealth = {0, 0, 0, 200, 0, 0, 0};
     campaign_->restore(state);
     recovery_before_ = std::move(state);
     recovery_stage_ = 1;
@@ -1555,8 +1594,20 @@ void RolfTourView::check_recovery()
     {
         if (*member.last_rest_minutes < recovery_before_->time_minutes + 480 ||
                 member.vitals.hit_points != member.character.sheet().hit_points ||
-                member.wealth[4] != 0)
+                member.wealth[3] != recovery_before_->roster.at(0).wealth[3] - 10)
             throw std::runtime_error("Original inn payment and full recovery must persist");
+        const auto &payments = s.payments;
+        const auto shown = get_node<RichTextLabel>("Dialogue")->get_text();
+        if (payments.size() != 1 || payments[0].coins.paid != opengold::Coins{0, 0, 0, 10, 0} ||
+                !shown.contains(payment_notice(payments[0])))
+            throw std::runtime_error("The inn's change-making payment must be shown");
+        // The Fighter's inn rest offers an optional mastery replacement; keep the
+        // current set so the rested party is saved at an editable boundary.
+        if (!campaign_->state().training_rest)
+            throw std::runtime_error("The inn rest must offer the Fighter's mastery choice");
+        get_node<Button>("RestTraining/Cancel")->emit_signal("pressed");
+        if (campaign_->state().training_rest)
+            throw std::runtime_error("Keeping the mastery set must finish the rest choices");
         if (save_check)
             save_check("inn-rest");
         if (save_check)
@@ -1577,12 +1628,6 @@ void RolfTourView::check_recovery()
         recovery_before_ = campaign_->checkpoint();
         recovery_stage_ = 6;
     }
-    if (recovery_stage_ == 6 && campaign_->state().training_rest)
-    {
-        // The Fighter's inn rest offers an optional mastery replacement; keep the current set.
-        get_node<Button>("RestTraining/Cancel")->emit_signal("pressed");
-        return;
-    }
     if (recovery_stage_ == 6)
     {
         get_node<Button>("Camp")->emit_signal("pressed");
@@ -1599,9 +1644,16 @@ void RolfTourView::check_recovery()
             save_check("denied-rest");
         if (save_check)
         {
+            // A wounded member gives the reloaded rest something to heal; the
+            // route then continues from the unwounded party.
+            const auto rested = campaign_->checkpoint();
+            auto wounded = rested;
+            wounded.roster.at(0).vitals.hit_points = 1;
+            campaign_->restore(std::move(wounded));
             (void)campaign_->rest(opengold::RestKind::short_rest);
             save_check("short-rest-spending");
             campaign_->finish_short_rest(campaign_->state().short_rest->ticket);
+            campaign_->restore(rested);
         }
         capture_frame("party-rest");
         recovery_stage_ = 8;

@@ -4,8 +4,10 @@ Audit date: 2026-09-19. Baseline: `0ab857d358680abec94d147cafe24ffe02d31a94`.
 
 A normally created six-person level-one party equipped itself, defeated the
 original four-orc paper encounter, earned level two, and returned to New Phlan.
-Recovery on this route is blocked: the party has gold and silver, but the inn
-requires platinum. Two saves survived a fresh process with byte-identical
+Recovery on this route was blocked: the party has gold and silver, but the inn
+requires platinum. (Resolved for #17: scripts now
+[make change](../PHLAN.md#coin-payments), so the same payer pays 10 gp.) Two saves
+survived a fresh process with byte-identical
 immediate re-saves. No gameplay changes were made for this audit.
 
 This completes the investigation in [#13](https://github.com/stdarg/OpenGold/issues/13),

@@ -69,9 +69,18 @@ acceptance target.
 
 The [normal level-one party audit](audits/issue13-first-adventure.md) records a
 successful four-orc outing, earned advancement, return travel and fresh-process
-reload at `0ab857d`. Inn recovery on that route is blocked by its platinum
-payment requirement despite the party's remaining gold and silver. The audit
-includes the party, tactics, resources and linked follow-up issues.
+reload at `0ab857d`. The inn's platinum price then blocked recovery; scripts
+now [make change](PHLAN.md#coin-payments) from the payer's gold and silver.
+The audit includes the party, tactics, resources and linked follow-up issues.
+
+With `OPENGOLD_GAME_DIR` set, `opengold_expedition_tests` plays the whole loop
+in one session: six created fighters buy and equip original arms, leave by the
+west gate, flee roaming groups, defeat the four orcs (300 XP each, 96 silver),
+return, decline the inn, are refused for a payer worth less than 1 pp, then pay
+10 gp for 1 pp and take a long rest. It saves (replacing an earlier save, which
+is kept as the backup), reloads in a fresh process, checks the rest timer, and
+revisits the orcs without a second fight or reward. The fresh process's result
+must equal the same continuation without a reload.
 
 From PowerShell, build with `.\demos\build-rolf.cmd`. Run
 `.\demos\review-character.cmd --expedition-check` for the visible automated trip and

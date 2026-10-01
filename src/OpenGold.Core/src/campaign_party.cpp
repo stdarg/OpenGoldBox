@@ -804,8 +804,9 @@ por::EclHostReply CampaignParty::character_reply(unsigned slot) const
         fields[0x18] = sheet.scores[2];
         fields[0x100] = m.vitals.dead ? 0 : 1;
         fields[0x119] = m.vitals.hit_points;
+        const auto coins = script_coins(m.wealth);
         for (unsigned n = 0; n < 7; ++n)
-            fields[money[n] - 0x6B00] = m.wealth[n];
+            fields[money[n] - 0x6B00] = coins[n];
     }
     for (unsigned n = 0; n < fields.size(); ++n)
         reply.writes.push_back({static_cast<std::uint16_t>(0x6B00 + n), fields[n]});
@@ -814,29 +815,32 @@ por::EclHostReply CampaignParty::character_reply(unsigned slot) const
     return reply;
 }
 
-void CampaignParty::read_character(unsigned slot, const por::EclMachine &vm)
+std::optional<CoinExchange> CampaignParty::read_character(unsigned slot,
+        const por::EclMachine &vm)
 {
     outside_combat();
     if (slot >= 8)
         throw std::runtime_error("Invalid ECL party position");
     if (!state_.slots[slot])
-        return;
+        return {};
     const auto &current = member(state_.slots[slot]);
     const auto hp = vm.variable(0x6C19);
     if (hp > current.character.sheet().hit_points || (current.vitals.dead && hp))
         throw std::runtime_error("Unsupported script HP change");
-    std::array<std::uint16_t, 7> wealth;
+    Purse after_script;
     for (unsigned n = 0; n < 7; ++n)
-        wealth[n] = vm.variable(money[n]);
+        after_script[n] = vm.variable(money[n]);
     // A script read changes only HP and coins, which pending Long Rest spell or
     // training choices do not depend on; the inn's script continues after its rest.
     if (state_.short_rest)
         throw std::runtime_error("Finish Short Rest spending before changing the party");
+    auto settled = settle_script_coins(current.wealth, after_script);
     auto &m = edit(state_.slots[slot]);
     auto vitals = m.vitals;
     rules_->set_hit_points(vitals, m.character.sheet(), hp);
-    m.wealth = wealth;
+    m.wealth = settled.purse;
     m.vitals = std::move(vitals);
+    return settled.exchange;
 }
 
 void CampaignParty::validate(const PartyState &state)

@@ -57,9 +57,10 @@ probabilistic interruption profiles fail explicitly.
 
 The original inn's **PROGRAM 9** request follows its own pre-camp subroutine and
 payment dialogue. A safe, eligible request completes a long rest. The script
-collects one platinum piece from the chosen payer; the host does not invent a
-currency exchange. Failed services restore the event checkpoint, including any
-payment. Original training requests (PROGRAM 0) and victory services (PROGRAM 8)
+collects one platinum piece from the chosen payer, who
+[makes change](PHLAN.md#coin-payments) from gold and silver when needed.
+Failed services restore the event checkpoint, including any payment. Original
+training requests (PROGRAM 0) and victory services (PROGRAM 8)
 remain unsupported. Manual SRD advancement does not imply payment of an
 original training fee or completion of a training-hall script.
 
@@ -104,7 +105,8 @@ godot --headless --path demos/godot res://scenes/character_creation.tscn -- --pa
 The deterministic route uses the actual creation/shop/combat callbacks, verifies
 the level-two sheet, then exercises the original city-watch interruption, temple
 payment and inn rest, rejects a repeated rest and fights again without duplicate
-XP. The service fixture supplies one wounded survivor, 200 gp and one platinum;
+XP. The service fixture supplies one wounded survivor and 200 gp; the inn's
+platinum is paid as 10 gp and the logged exchange is checked;
 a Stable companion and an unstable reserve also verify natural recovery and
 a death save during the interruption in the game route. These are test-only setup
 changes. Add `--capture` and omit `--headless` for local

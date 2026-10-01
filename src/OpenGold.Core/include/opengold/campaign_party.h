@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_CAMPAIGN_PARTY_H
 #define OPENGOLD_CAMPAIGN_PARTY_H
 #include "opengold/character.h"
+#include "opengold/coin_purse.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/ecl_machine.h"
 
@@ -161,7 +162,10 @@ class CampaignParty
     [[nodiscard]] unsigned strength() const;
     [[nodiscard]] std::array<unsigned, 4> query(unsigned address, unsigned effect) const;
     [[nodiscard]] por::EclHostReply character_reply(unsigned slot) const;
-    void read_character(unsigned slot, const por::EclMachine &vm);
+    // Applies the script's HP and coin changes. Coins are seen and settled as
+    // script_coins() describes; the result reports any change the purse made.
+    [[nodiscard]] std::optional<CoinExchange> read_character(unsigned slot,
+            const por::EclMachine &vm);
 
     [[nodiscard]] PartyState checkpoint() const
     {
