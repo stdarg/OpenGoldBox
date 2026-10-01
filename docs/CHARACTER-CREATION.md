@@ -249,7 +249,8 @@ explanation immediately below it. Warnings update with targets, assignments,
 swaps, rerolls, backgrounds and bonuses; Fighter's either/or condition clears
 both warnings when either primary qualifies. The character sheet retains these
 future goals separately from the starting class.
-SRD 5.2.1 multiclassing acquires another class when gaining a level. Later
+SRD 5.2.1 multiclassing acquires another class when gaining a level; OpenGoldBox
+defers multiclassing ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)). Later
 Ability Score Improvement features can raise scores and help meet prerequisites;
 future increases are not applied to level-one scores.
 

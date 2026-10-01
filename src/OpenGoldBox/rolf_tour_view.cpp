@@ -1577,6 +1577,12 @@ void RolfTourView::check_recovery()
         recovery_before_ = campaign_->checkpoint();
         recovery_stage_ = 6;
     }
+    if (recovery_stage_ == 6 && campaign_->state().training_rest)
+    {
+        // The Fighter's inn rest offers an optional mastery replacement; keep the current set.
+        get_node<Button>("RestTraining/Cancel")->emit_signal("pressed");
+        return;
+    }
     if (recovery_stage_ == 6)
     {
         get_node<Button>("Camp")->emit_signal("pressed");

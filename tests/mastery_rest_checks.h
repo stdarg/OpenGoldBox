@@ -33,6 +33,24 @@ void ui_fixture()
     write_campaign_file(output, bytes);
 }
 
+// The original inn script reads the character back after its Long Rest; a
+// pending mastery replacement must not fault that read.
+void script_reads_after_rest(CampaignParty &party, MemberId id)
+{
+    std::vector<std::uint8_t> record{0, 0};
+    for (int entry = 0; entry < 5; ++entry)
+        record.insert(record.end(), {1, 1, 0x14, 0x99});
+    record.push_back(0); // An EXIT body; the machine only supplies variables here.
+    por::EclMachine vm(std::make_shared<const por::EclProgram>(
+                           por::EclProgram::decode(record, "inn-read")));
+    vm.bind_variable(0x6C19, static_cast<std::uint16_t>(party.member(id).vitals.hit_points));
+    for (std::uint16_t coin = 0x6BBB; coin <= 0x6BC7; coin += 2)
+        vm.bind_variable(coin, coin == 0x6BC1 ? 7 : 0); // Seven gold coins.
+    party.read_character(0, vm);
+    check(party.member(id).wealth[3] == 7 && party.state().training_rest,
+          "Script read after a Long Rest keeps the pending mastery choice");
+}
+
 void run()
 {
     ui_fixture();
@@ -73,6 +91,8 @@ void run()
             check(party.state().training_rest &&
                   party.state().training_rest->members == std::vector<MemberId> {id},
                   "Only qualified completed rest grants one per-member replacement");
+            if (!npc)
+                script_reads_after_rest(party, id);
             party = roundtrip(party);
             const auto ticket = party.state().training_rest->ticket;
             const auto options = *rules->rest_training_options(party.member(id).character.sheet());

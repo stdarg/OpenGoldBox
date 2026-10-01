@@ -7,6 +7,14 @@ Date: 2026-09-23. Audited commit:
 confirmed this during the audit. The current Fighter/Cleric/Wizard advancement restriction
 is an implementation gap, not an acceptable definition of project scope.
 
+**Scope update, 2026-09-30 ([SCOPE-1](../SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)):** level 15 is both the
+rules-library target and the campaign's playable cap, so levels 16–20, Epic
+Boons and the level 17–20 capstones below are out of scope. Multiclassing (G6's
+multiclass part and Stage 6's first paragraph) is deferred. The
+[2026-09-30 simplification](../SRD-DECISIONS.md#2026-09-30-simplification) also
+removed tools, languages and DM-adjudicated spells, automated four choices, and
+dropped several rare-situation rules. The original findings are kept as audited.
+
 OpenGoldBox has a useful, deterministic rules foundation, but does not yet
 implement complete SRD characters. All twelve classes can be created and enter
 combat with basic attacks. Nine
@@ -716,6 +724,9 @@ parties so cross-character buffs, reactions and recovery are verified.
 
 **Closes the single-class portions of G5/G6 beyond the current ceiling.**
 
+Scope update 2026-09-30: the bands are now 5–10 and 11–15 (SCOPE-1); the
+17–20 band and the level 19/20 bullet below are out of scope.
+
 Deliver 5–10, then 11–16, then 17–20 across all twelve classes, each with the
 features and complete SRD spell access for that band. In particular:
 
@@ -735,6 +746,9 @@ complete. The campaign may impose a reviewed lower cap while the rules library
 continues to have a separately defined target.
 
 ### Stage 6 — Multiclassing and remaining campaign adaptations
+
+Scope update 2026-09-30: multiclassing is deferred (SCOPE-1); the campaign
+adaptations in the second paragraph remain.
 
 Complete G6's multiclass rules as a separate milestone: prerequisites across
 all acquired classes, level accounting, limited entry proficiencies, mixed Hit

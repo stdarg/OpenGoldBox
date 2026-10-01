@@ -72,6 +72,16 @@ func pick(group: int, option: String, selected := true) -> void:
 	check.set_pressed(selected)
 	await settle()
 
+# A Wizard must fill every cantrip slot and prepare a spellbook spell before Name.
+func complete_wizard_choices() -> void:
+	for cantrip in ["fire_bolt", "ray_of_frost"]:
+		current_scene.get_node("SpellChoices/Rows/" + cantrip).set_pressed(true)
+		await settle()
+	current_scene.get_node("SpellChoices/Rows/BookChoices/spellbook_1/magic_missile").set_pressed(true)
+	await settle()
+	current_scene.get_node("SpellChoices/Rows/BookChoices/prepared/magic_missile").set_pressed(true)
+	await settle()
+
 func keyboard(key: Key) -> void:
 	for down in [true, false]:
 		var event := InputEventKey.new()
@@ -123,7 +133,8 @@ func run_checks() -> void:
 	await keyboard(KEY_SPACE)
 	require(blast.button_pressed and blast.has_focus(), "Keyboard selection retains focus")
 	require(current_scene.get_node("SpellChoices/Rows/Count").text.ends_with("(1 / 3)"), "Three SRD choices")
-	require(current_scene.get_node("SpellChoices/Rows/Pending").visible, "Missing supported catalog stays pending")
+	require(current_scene.get_node("Next").disabled and current_scene.get_node("SpellChoices/Rows/Pending").visible, "Available Wizard choices must be completed")
+	await complete_wizard_choices()
 	await press("Next")
 	require(current_scene.get_node("PageTitle").text == "Name", "Name follows choices")
 	await press("Back")

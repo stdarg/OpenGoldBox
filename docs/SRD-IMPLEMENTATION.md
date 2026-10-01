@@ -30,9 +30,10 @@ F03 is split into [resource rules and persistence (#190)](https://github.com/std
 [campaign rest transactions (#191)](https://github.com/stdarg/OpenGold/issues/191),
 [rest controls (#192)](https://github.com/stdarg/OpenGold/issues/192), and
 [interruption/resumption (#193)](https://github.com/stdarg/OpenGold/issues/193).
-All four children are delivered, including reviewed controls and interruption/
-resumption with Q37 safe recovery. Hit Dice spending must allow a decision after each
-roll, rather than requiring every die to be committed beforehand. The first
+All four children are delivered. [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)
+later removed resumption and Q37 safe recovery (an interrupted rest just ends), and
+[AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging) replaced
+per-die Hit Dice decisions with one Heal with Hit Dice action. The first
 resource rules are independent of the remaining F02 saved-choice controls.
 
 F04 is split into [recovery clocks (#194)](https://github.com/stdarg/OpenGold/issues/194)
@@ -45,7 +46,11 @@ This breaks the [SRD audit](audits/srd-5.2.1-rules.md) into bounded changes.
 The target includes all twelve SRD classes, all nine species, backgrounds,
 feats, spells, progression and recovery. The first complete class milestone is
 levels 1–4 across all twelve classes. Later milestones cover single-class
-progression through 20 and multiclassing. This does not select a campaign cap.
+progression through level 15, which is both the rules-library target and the
+campaign's playable cap; multiclassing is deferred
+([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
+The [2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplification)
+removed or automated several SRD mechanics; this plan does not schedule them.
 
 The implementation follows [TECH](TECH.md): C++20 rules and campaign code,
 Godot 4.x/GDExtension presentation, existing build tools, value ownership and
@@ -134,14 +139,14 @@ every abstraction before delivering additional character behavior.
 | ID | Scope and first use | Acceptance boundary / split rule |
 | --- | --- | --- |
 | F01 | Persist acquired feature/feat IDs, source and choices; migrate the existing Soldier and advancement feats. | Creation grants no longer depend on the level-four feat count; duplicate/prerequisite rules are validated; totals and saves remain stable. Adding new feats is separate. |
-| F02 | Skills, tools and languages with source grants and choice validation. | Exercise one real class/background package, a duplicate grant and Expertise. Campaign uses of individual skills are separate increments. |
+| F02 | Skills with source grants and choice validation (tools and languages removed by DM-1). | Exercise one real class/background package, a duplicate grant and Expertise. Campaign uses of individual skills are separate increments. |
 | F03 | Resource pools and Short Rests, using Fighter Second Wind and spendable Hit Dice. | Selected Hit Dice spending, partial recharge, Long Rest recovery and individual eligibility persist. Other class pools are added with their own feature. |
 | F04 | Death saves and stable natural recovery continue outside combat. | Time partitioning, reserves, save/reload and encounter transitions agree. Add stabilization/Medicine as its own small follow-up if its controls or check flow are not yet available. |
 | F05 | Typed damage and resistance/vulnerability/immunity, verified with an actual species resistance. | Mixed damage, rounding, overlapping grants and zero damage resolve correctly. Temporary HP and its replacement choice form F05b, a separate increment. |
 | F06 | Extend conditions and source-based modifiers only for the next concrete feature. | One condition or closely coupled condition family per increment, including duration, removal, stacking and saves. Repeat until the coverage ledger is complete. |
 | F07 | Persist spell grants, cantrips, books and prepared lists, starting with the existing Wizard spells. | [F07a #199](https://github.com/stdarg/OpenGold/issues/199) separates Wizard cantrips/book/preparation; [F07c #200](https://github.com/stdarg/OpenGold/issues/200) adds source-specific free casts with a real granting feature. Parent #36 remains open until both are complete. Wizard learning/preparation controls are #37; adapting Cleric and each other preparation policy is separate. |
 | F08 | Concentration, exercised by one representative low-level spell. | Replacement, damage saves, incapacitation, voluntary release and save/reload work; one spell is enough to prove the mechanism. |
-| F09 | Spell components and casting eligibility. | Existing spells exercise V/S and hand availability; material/focus/cost/consumption cases form a separate F09b increment using named spells. |
+| F09 | Spell components and casting eligibility. | Existing spells exercise V/S and hand availability; costly or consumed material components form a separate F09b increment using named spells. Non-costly materials, focus hands and speech-blocking sources are not pursued (SCOPE-1). |
 | F10 | Spell reaction windows, starting with Shield. | Trigger selection, decline, resource expenditure, one-slot-per-turn handling and checkpoint resumption are correct. Other reaction features are separate work. |
 | F11 | Multiple targets using Magic Missile and Scorching Ray. | Legal allocation, dead/invalid targets, resource use and deterministic damage work through the reviewed targeting controls. |
 | F12 | Area targeting and effect resolution using one simple spell. | Bounds, target eligibility, cover/line of effect, saves and persistence work. New shapes or ongoing areas are separate increments when they add distinct mechanics. |
@@ -162,8 +167,8 @@ series of small increments, not one combined delivery.
 | Queue | Increment boundary | Completion gate |
 | --- | --- | --- |
 | Equipment | Armor catalog/training; missing weapon definitions; Heavy/Loading behavior; unlimited ranged ammunition (approved exception; see [policy](AMMUNITION.md)); thrown inventory; Light attacks; individual mastery properties. Split any new control flow from unrelated properties. | Every ordinary SRD equipment option required by class/background packages is usable, with correct prerequisites, hands, damage, resources and persistent inventory. |
-| Feats | One feat per increment, or a small group sharing already-proven mechanics. Start with Origin feats and Fighter level-one Fighting Styles, then General feats. | Actual entitlement, choice, prerequisites, repeatability and effects work; a label in the sheet is insufficient. Epic Boons follow their level milestone. |
-| Backgrounds | One complete background package at a time, after its feat and proficiency dependencies. | All four packages grant their skills/tools/feat and reviewed starting equipment/wealth policy; duplicate choices are handled. |
+| Feats | One feat per increment, or a small group sharing already-proven mechanics. Start with Origin feats and Fighter level-one Fighting Styles, then General feats. | Actual entitlement, choice, prerequisites, repeatability and effects work; a label in the sheet is insufficient. Epic Boons (level 19+) are outside the level-15 cap. |
+| Backgrounds | One complete background package at a time, after its feat and proficiency dependencies. | All four packages grant their skills/feat and reviewed starting equipment/wealth policy; duplicate choices are handled. |
 | Species | One species' passive traits, then one active trait or lineage per increment. | All nine species and their SRD choices work through creation, derived statistics, actions, recovery and saves. Include Human's extra Origin feat and level-dependent traits in the ledger. |
 | Starting class choices | One class's proficiency/equipment/spell-choice integration at a time. | A normally created character receives every level-one entitlement; fixed fixtures cannot substitute for the ordinary creation path. |
 
@@ -186,7 +191,7 @@ each class.
 | --- | --- |
 | Fighter | Level-one styles and mastery grants; Action Surge; Tactical Mind; Champion features; level-four choices/resource integration. |
 | Cleric | Preparation/cantrip rules and Divine Order choices; Channel Divinity/Divine Spark; Turn Undead; Life Domain healing features and domain spells; level-four integration. |
-| Wizard | Spellbook learning/copying and preparation; Ritual Adept; Arcane Recovery; Scholar; Evoker features and spell grants; level-four integration. |
+| Wizard | Spellbook learning and preparation (no copying or book loss); Arcane Recovery; Scholar; Evoker features and spell grants; level-four integration. |
 | Barbarian | Rage activation/duration/recharge; Rage effects; Reckless Attack/Danger Sense; Primal Knowledge; Berserker features; level-four integration. |
 | Rogue | Expertise and starting choices; Sneak Attack and its timing; Cunning Action; Steady Aim; Thief features, separated where exploration/item actions need support; level-four integration. |
 | Monk | Martial Arts and eligible weapon/unarmed use; Focus and its individual action options; movement/recovery features; Deflect Attacks; Slow Fall; Open Hand techniques; level-four integration. |
@@ -194,7 +199,7 @@ each class.
 | Sorcerer | Spell access and Innate Sorcery; Sorcery Points and slot conversion; individual Metamagic options; Draconic features/spells; level-four integration. |
 | Paladin | Level-one spellcasting; Lay On Hands; mastery/style choices; Smite trigger and casting; Channel Divinity/Devotion features and spells; level-four integration. |
 | Ranger | Level-one spellcasting; Hunter's Mark/free-cast grants; mastery/style choices; Deft Explorer; Hunter features; level-four integration. |
-| Druid | Spell access/Primal Order choices; Wild Shape form catalog; transformation and retained statistics; form actions/reversion; Wild Companion; Land features/spells; level-four integration. |
+| Druid | Spell access/Primal Order choices; Wild Shape form catalog; transformation and retained statistics; form actions/reversion; Land features/spells; level-four integration. |
 | Warlock | Pact Magic; individual invocations, including their prerequisites; Magical Cunning; Fiend features/spells; level-four integration. |
 
 Suggested order is Fighter, Cleric and Wizard to exercise existing paths, then
@@ -241,8 +246,11 @@ specifically reviewed adaptation. Run mixed parties to verify interactions.
 
 ## Higher levels and multiclassing
 
-Use levels 5–10, 11–16 and 17–20 as review milestones. Inside them, implement one
-level transition and its features in separate bounded increments:
+Progression stops at level 15, the rules-library target and the campaign's
+playable cap ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
+Levels 16–20, Epic Boons and level 17–20 capstones are not planned. Use levels
+5–10 and 11–15 as review milestones. Inside them, implement one level transition
+and its features in separate bounded increments:
 
 1. Add the shared progression change, such as proficiency or cantrip scaling,
    with independent boundary tests. Do not expose incomplete higher levels.
@@ -253,12 +261,14 @@ level transition and its features in separate bounded increments:
 4. Integrate and verify that class's level transition, then close the level
    across all twelve classes before declaring it complete.
 
-This keeps Extra Attack, additional feats, subclass schedules, Epic Boons and
-capstones tied to their actual grants. It does not apply one generic table to
-all classes. The rules-library target and campaign's playable cap remain
-distinct decisions.
+This keeps Extra Attack, additional feats and subclass schedules tied to their
+actual grants. It does not apply one generic table to all classes.
 
-Multiclassing follows as six increments, split further if necessary:
+### Deferred: multiclassing
+
+Multiclassing is deferred and is not part of the current plan
+([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
+If it is resumed, these six increments are the starting point:
 
 | ID | Scope | Completion check |
 | --- | --- | --- |
@@ -270,22 +280,23 @@ Multiclassing follows as six increments, split further if necessary:
 | M06 | Normal creation/advancement controls and combination acceptance. | Representative martial/caster/Pact combinations work through the full campaign lifecycle and saves; remaining interaction gaps stay explicit. |
 
 Final closure reconciles every audit finding and every class/species/feat/spell
-ledger entry. Passing a representative party test does not prove all spell or
-multiclass interactions; targeted checks remain attached to their rules.
+ledger entry within the level-15 scope. Passing a representative party test does
+not prove all spell interactions; targeted checks remain attached to their rules.
 
-F09 is split into [existing spell component definitions and Somatic hands
-(#201)](https://github.com/stdarg/OpenGold/issues/201), and the remaining live
-speech-blocking sources tracked by [#39](https://github.com/stdarg/OpenGold/issues/39).
-The equipment eligibility child is delivered; it does not close verbal casting
-restrictions or material/focus mechanics (#40). See [spell components](SPELL-COMPONENTS.md).
+F09's [spell component definitions and Somatic hands
+(#201)](https://github.com/stdarg/OpenGold/issues/201) are delivered. Costly or
+consumed material components remain [#40](https://github.com/stdarg/OpenGold/issues/40);
+non-costly materials, focus hands and speech-blocking sources (#39) are not pursued
+(SCOPE-1). See [spell components](SPELL-COMPONENTS.md).
 
 ## Recommended next execution
 
 I01–I08, F01, F02a and F02b are complete. #189's Review Training dialog, which
 only completed training missing from old saves, was removed at the
 [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy).
-F03a–d are complete: #192's reviewed rest controls and #193's interruption/
-resumption, sleep/equipment handoff and Q37 safe recovery complete #30. See [rest resources](REST-RESOURCES.md)
+F03a–d are complete: #192's rest controls and #193's interruption handling
+complete #30; SIMPLIFY-1 later removed resumption, natural sleep, dropped gear and
+Q37 safe recovery. See [rest resources](REST-RESOURCES.md)
 for the implemented boundary and verification.
 F04a and F04c complete #31. Help/Medicine controls and checks remain #32.
 F05 #33 supplies [typed damage and Dwarf Poison resistance](DAMAGE.md).
@@ -303,4 +314,4 @@ evidence are maintained in the coverage ledger and linked issues.
 Rules 0.6.22 adds [Poison Spray and explicit Wizard cantrip choices](POISON-SPRAY.md),
 with the approved creation and main combat controls. Campaign saves store choices;
 the character profile validates their grants.
-Full spell selection, speech blocking and other granting sources remain open.
+Full spell selection and other granting sources remain open; speech blocking is not pursued (SCOPE-1).

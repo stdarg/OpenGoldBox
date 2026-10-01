@@ -828,7 +828,10 @@ void CampaignParty::read_character(unsigned slot, const por::EclMachine &vm)
     std::array<std::uint16_t, 7> wealth;
     for (unsigned n = 0; n < 7; ++n)
         wealth[n] = vm.variable(money[n]);
-    editable();
+    // A script read changes only HP and coins, which pending Long Rest spell or
+    // training choices do not depend on; the inn's script continues after its rest.
+    if (state_.short_rest)
+        throw std::runtime_error("Finish Short Rest spending before changing the party");
     auto &m = edit(state_.slots[slot]);
     auto vitals = m.vitals;
     rules_->set_hit_points(vitals, m.character.sheet(), hp);

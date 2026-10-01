@@ -119,6 +119,14 @@ func run_checks() -> void:
 	require(current_scene.get_node("PageTitle").text == "Elegir conjuros", "Cantrip step is translated")
 	current_scene.get_node("SpellChoices/Rows/fire_bolt").set_pressed(true)
 	await capture("spanish-cantrips")
+	# A Wizard must fill every cantrip slot and prepare a spellbook spell before Name.
+	for cantrip in ["ray_of_frost", "poison_spray"]:
+		current_scene.get_node("SpellChoices/Rows/" + cantrip).set_pressed(true)
+		await settle()
+	current_scene.get_node("SpellChoices/Rows/BookChoices/spellbook_1/magic_missile").set_pressed(true)
+	await settle()
+	current_scene.get_node("SpellChoices/Rows/BookChoices/prepared/magic_missile").set_pressed(true)
+	await settle()
 	await press("Next")
 	var name: LineEdit = current_scene.get_node("Name")
 	name.text = "Fighter"
@@ -131,14 +139,13 @@ func run_checks() -> void:
 	var sheet: String = current_scene.get_node("Description").text
 	require(sheet.contains("Mira {level} [lb]b]"), "Name braces or BBCode were interpreted")
 	require(sheet.contains("Nivel 1") and sheet.contains("Dados de Golpe") and sheet.contains("Salvación"), "Character sheet not translated")
-	require(sheet.contains("Entrenamiento") and sheet.contains("Élfico") and sheet.contains("Acrobacias"), "Sheet training not translated")
+	require(sheet.contains("Entrenamiento") and sheet.contains("Acrobacias"), "Sheet training not translated")
 	await capture("spanish-sheet")
 	await press("Modifiers")
 	var modifiers: String = current_scene.get_node("ModifiersModal/Text").text
 	require(modifiers.contains("Ajustes de características") and modifiers.contains("Origen:"), "Rule explanations not translated")
 	require(modifiers.contains("Truco conocido: Descarga de fuego."), "Known cantrip missing from translated Modifiers")
 	require(modifiers.contains("Libro de conjuros: Proyectil mágico (aprendido en el nivel 1 de Mago)."), "Sourced book entry missing from translated Modifiers")
-	require(modifiers.contains("Elecciones de Mago pendientes: 2 trucos, 5 conjuros del libro, 3 conjuros preparados."), "Missing Wizard entitlements are not explicit")
 	await press("ModifiersModal/Close")
 	await press("SavingThrows")
 	require(current_scene.get_node("SavingThrowsModal/Text").text.contains("Salvación de Fuerza"), "Saving throws not translated")

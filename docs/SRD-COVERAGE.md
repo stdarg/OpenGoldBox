@@ -14,6 +14,13 @@ tables and descriptions. Twelve have partial playable paths and 94 are missing. 
 dependencies, current evidence and bounded child issues; inventory work alone
 does not close [#165](https://github.com/stdarg/OpenGold/issues/165).
 
+Scope since the [2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplification):
+progression targets level 15 and multiclassing is deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
+Tools, languages, DM-adjudicated spells and Ritual Adept are removed (DM-1);
+Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1);
+natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
+below that describe those features are delivery history, not current behavior.
+
 ## Wizard spell learning and preparation controls
 
 Runtime `db864c8` (SRD module 0.6.51) completes
@@ -33,11 +40,12 @@ demo EN at both supported sizes. 922 translated messages validate. Measured
 preflight-to-verified-runtime-commit: 50m16s including approval wait/builds.
 
 This delivers one original control-workflow requirement. No new issues or spell
-effects were added. [#97](https://github.com/stdarg/OpenGold/issues/97) remains
-open for physical books, copying costs/time and book replacement/loss;
+effects were added. Spellbook copying and book replacement/loss from
+[#97](https://github.com/stdarg/OpenGold/issues/97) are not pursued (SCOPE-1);
 [#165](https://github.com/stdarg/OpenGold/issues/165) retains missing spells.
 SRD counts remain intact with unsupported selections visibly pending. Other
-classes, Ritual Adept, Evoker and higher levels remain their existing issues.
+classes, Evoker and higher levels remain their existing issues; Ritual Adept was
+removed by DM-1.
 
 ## Wizard Scholar
 
@@ -53,7 +61,8 @@ fixtures, conditional campaign15/PC33 compatibility, commands and limitations.
 Review Training UI flows pass, as do complete UI-save comparisons. Main EN/ES and
 demo EN renders/input pass at both supported sizes; 907 translations validate.
 Measured freeze-to-verified-runtime-commit: 29m36s, including approval wait/builds.
-Ritual Adept, Evoker and broader Wizard integration remain separate requirements.
+Evoker and broader Wizard integration remain separate requirements (Ritual Adept
+was removed by DM-1).
 
 ## Wizard Arcane Recovery
 
@@ -311,13 +320,13 @@ and no migration code remains.
 
 | [EQ02](https://github.com/stdarg/OpenGold/issues/54): complete weapon catalog | SRD 5.2.1 pp. 16, 89–91. All 38 weapon definitions and source properties, including Blowgun's fixed damage. | [weapon_catalog_tests.cpp](../tests/weapon_catalog_tests.cpp) checks the independent full table and actual normal/critical/miss attacks for every weapon/class combination, range, hands, Heavy, purchase/equip, rejection and campaign continuation. English/Spanish names and explanations use existing UI. | Module 0.6.17; existing schemas retained. Frozen 0.6.16 fixtures prove preservation of original weapon conversions, existing grants/resources and exact combat continuation. Loading/ammunition/Light/mastery actions and mounted Lance use remain #56–60/#173. [Scope](WEAPON-CATALOG.md). |
 
-| [EQ01](https://github.com/stdarg/OpenGold/issues/53): armor catalog and training | SRD 5.2.1 p. 92 and all twelve core class tables. Twelve armor suits and Shield, AC/Dexterity rules, Strength/Stealth penalties and class training. | [armor_catalog_tests.cpp](../tests/armor_catalog_tests.cpp) checks the independent full table, all 156 class/equipment combat combinations, actual initiative/attack/spell restrictions, equipped ability checks, boundary values, shield/hands rejection and campaign/save continuation. Existing Modifiers text and names are localized. | Module 0.6.18; PC9/combat 12/campaign 10/SRD1–7 retained. Frozen 0.6.17 saves preserve existing state and prior-writer continuation. Don/doff and shield Utilize actions remain [#198](https://github.com/stdarg/OpenGold/issues/198); optional class grants, starting packages and unsupported original conversions remain open. [Scope](ARMOR.md). |
+| [EQ01](https://github.com/stdarg/OpenGold/issues/53): armor catalog and training | SRD 5.2.1 p. 92 and all twelve core class tables. Twelve armor suits and Shield, AC/Dexterity rules, Strength/Stealth penalties and class training. | [armor_catalog_tests.cpp](../tests/armor_catalog_tests.cpp) checks the independent full table, all 156 class/equipment combat combinations, actual initiative/attack/spell restrictions, equipped ability checks, boundary values, shield/hands rejection and campaign/save continuation. Existing Modifiers text and names are localized. | Module 0.6.18; PC9/combat 12/campaign 10/SRD1–7 retained. Frozen 0.6.17 saves preserve existing state and prior-writer continuation. Don/doff timing and shield Utilize actions ([#198](https://github.com/stdarg/OpenGold/issues/198)) are not pursued (SCOPE-1); optional class grants, starting packages and unsupported original conversions remain open. [Scope](ARMOR.md). |
 
 | [F07a](https://github.com/stdarg/OpenGold/issues/199): Wizard spell knowledge and preparation | SRD 5.2.1 pp. 77–78. Sourced cantrip/book entries, first acquisition levels, independent preparation and pending entitlements through level 4 for existing spells. | [spell_access_tests.cpp](../tests/spell_access_tests.cpp) verifies knowledge retention, actual casting/slot use, invalid grants, atomic advancement, campaign replay and frozen-writer continuation. Existing Modifiers text is checked through the Godot creation flow in Spanish. | Module 0.6.19 / PC10; campaign 10/combat 12/SRD1–7 retained. Old campaigns recover only preset/history-backed selections; old combat retains its recorded access. Controls #37 are delivered above; copying #97 and free casts #200 remain open; parent #36 stays open. [Scope](SPELL-ACCESS.md). |
 
 | [FT03](https://github.com/stdarg/OpenGold/issues/76): Savage Attacker | SRD 5.2.1 p. 87. Nonrepeatable sourced feat; once per turn weapon damage is rolled twice and the higher total kept automatically and logged ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)), including opportunity hits. | [savage_attacker_tests.cpp](../tests/savage_attacker_tests.cpp) checks independent all-class rolls, the log line and RNG use, acquisition, exclusions, critical/Versatile dice, defenses and movement continuation. | No pending decision is saved. Human/starting-package choices remain their own issues. [Details](SAVAGE-ATTACKER.md). |
 
-| [F09a](https://github.com/stdarg/OpenGold/issues/201): spell components and Somatic hands | SRD 5.2.1 pp. 90, 105 and the six existing spell descriptions. Explicit V/S requirements, weapon/wand plus shield blocking, verbal-only exceptions; a two-handed Versatile grip never blocks casting ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)). | [spell_component_tests.cpp](../tests/spell_component_tests.cpp) covers real spell commands, slots, rejected-command atomicity, inventory/equipment and frozen migration; [spell_component_view_tests.gd](../tests/spell_component_view_tests.gd) covers game/demo action controls and game keyboard casting. Existing Modifiers explanations are localized. | Module 0.6.21; campaign 10/combat 13/PC10/resource formats retained. Actual 0.6.20 fixtures preserve state and verbal-cast continuation. Parent #39 stays open for live speech-blocking sources; materials/foci remain #40. [Scope](SPELL-COMPONENTS.md). |
+| [F09a](https://github.com/stdarg/OpenGold/issues/201): spell components and Somatic hands | SRD 5.2.1 pp. 90, 105 and the six existing spell descriptions. Explicit V/S requirements, weapon/wand plus shield blocking, verbal-only exceptions; a two-handed Versatile grip never blocks casting ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)). | [spell_component_tests.cpp](../tests/spell_component_tests.cpp) covers real spell commands, slots, rejected-command atomicity, inventory/equipment and frozen migration; [spell_component_view_tests.gd](../tests/spell_component_view_tests.gd) covers game/demo action controls and game keyboard casting. Existing Modifiers explanations are localized. | Module 0.6.21; campaign 10/combat 13/PC10/resource formats retained. Actual 0.6.20 fixtures preserve state and verbal-cast continuation. Speech-blocking sources (#39), non-costly materials and focus hands are not pursued (SCOPE-1); costly or consumed materials remain #40. [Scope](SPELL-COMPONENTS.md). |
 | [S08a](https://github.com/stdarg/OpenGold/issues/206): Poison Spray and explicit Wizard cantrip choices | SRD 5.2.1 pp. 77–78, 153, 187, 191. Sourced cantrip choices, level-1–4 Poison ranged attack, valid living targets, defenses and zero-HP attack modifiers. | [Native](../tests/poison_spray_tests.cpp), [creator UI](../tests/cantrip_view_tests.gd), [combat UI](../tests/poison_view_tests.gd); prior-writer campaign and Fire Bolt continuation. | Rules 0.6.22 / campaign 11 / PC11; combat 13 and SRD1–7 retained. Approved questions 12–14 add playable Wizard controls. Other sources, live speech blocking and full spell selection remain #202/#39/#37. [Scope](POISON-SPRAY.md). |
 | [S09](https://github.com/stdarg/OpenGold/issues/203): Sacred Flame, partial Cleric path | SRD 5.2.1 pp. 36–37, 159, 191. Sourced cantrip choice, Dexterity save, Radiant damage, sight and zero-HP automatic physical-save failure. | [Native](../tests/sacred_flame_tests.cpp), [creator](../tests/cleric_cantrip_view_tests.gd), [combat UI](../tests/sacred_view_tests.gd), prior-writer campaign/Cure Wounds continuation. | Rules 0.6.23 / PC12; campaign 11/combat 13/SRD1–7 retained. Approved questions 15–16 add playable Cleric controls. Partial-cover exception, live speech blockers and other routes remain open; #203 and #91 are not complete. [Scope](SACRED-FLAME.md). |
 | [S11 control preparation](https://github.com/stdarg/OpenGold/issues/205): shared known-cantrip selector | User-approved question 18; presentation consumes existing knowledge and legal commands. | Poison/Sacred/component Godot checks cover choice filtering, keyboard dropdown, Cast, ally targeting, A/Space and disabled states; English/Spanish at both sizes. | Rules and save formats unchanged. Replaces individual main-game cantrip buttons; does not implement Ray of Frost or close #205. [Scope](CANTRIP-CONTROLS.md). |
@@ -336,8 +345,8 @@ and no migration code remains.
 | [Great Weapon Fighting #80](https://github.com/stdarg/OpenGold/issues/80) | SRD 5.2.1 p. 88: eligible two-hand Melee damage dice1/2 count as3. | Independent actual dice/RNG oracles, critical/Savage/reaction/grip/thrown/Ranged exclusions and sourced acquisition through Fighter/Paladin/Ranger. | Rules0.6.53, STYLE-1 automatic benefit approved; PC36/campaign17 and retained historical fixtures. [Evidence](GREAT-WEAPON-FIGHTING.md). |
 | [FTR02](https://github.com/stdarg/OpenGold/issues/86): Action Surge through level four | SRD 5.2.1 p. 48. Fixed Fighter level-two grant, one restricted extra action, one use per Short/Long Rest through level 4. | [Native](../tests/action_surge_tests.cpp), [combat controls](../tests/action_surge_view_tests.gd), actual 0.6.23 writer campaign/Dash fixtures. | Rules 0.6.24 / PC13 / combat 14 when a Surge-capable Fighter participates / spent resource SRD8; campaign 11 retained. Historical campaigns gain their justified fixed grant; old combat retains recorded access. Approved mouse/keyboard button, remaining uses and disabled states verified in English/Spanish; #86 complete. [Scope](ACTION-SURGE.md). |
 
-Light extra attacks, Monk Martial Arts, optional feature-granted proficiency,
-multiclass-entry proficiency remain their own issues. EQ02 adds the complete
+Light extra attacks, Monk Martial Arts and optional feature-granted proficiency
+remain their own issues; multiclass-entry proficiency is deferred (SCOPE-1). EQ02 adds the complete
 catalog and Rapier/Hand Crossbow proficiency examples; it does not establish
 complete Rogue or Monk support.
 
@@ -378,7 +387,7 @@ commit-specific findings as historical evidence.
 | G3: feat entitlements/choices | Open | [Feats #49](https://github.com/stdarg/OpenGold/issues/49) |
 | G4: spell access/learning/preparation | Partial: Wizard ordinary learning/preparation controls delivered; other source/class routes remain | [F07 #36](https://github.com/stdarg/OpenGold/issues/36) and class-specific integration |
 | G5: spells/shared casting mechanics | Open | [Spell inventory #165](https://github.com/stdarg/OpenGold/issues/165) and named spell/mechanic issues |
-| G6: full progression/multiclassing | Open | [Higher levels #176](https://github.com/stdarg/OpenGold/issues/176), [multiclassing #179](https://github.com/stdarg/OpenGold/issues/179) and successors |
+| G6: full progression/multiclassing | Open through level 15 (the cap); multiclassing deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)) | [Higher levels #176](https://github.com/stdarg/OpenGold/issues/176); multiclassing [#179](https://github.com/stdarg/OpenGold/issues/179) deferred |
 | G7: rests/recharge | Open | [F03 #30](https://github.com/stdarg/OpenGold/issues/30) |
 | G8: death/recovery outside combat | Fixed, including Help/Medicine #32 | [F04 #31](https://github.com/stdarg/OpenGold/issues/31) |
 | G9: equipment/properties | Open; E5 and Versatile corrections delivered | [Equipment #48](https://github.com/stdarg/OpenGold/issues/48), [Versatile I08 #27](https://github.com/stdarg/OpenGold/issues/27) |
@@ -609,8 +618,8 @@ routes. All calculations and decisions stay in the static SRD library.
 pass at1120×800/1920×1080;1005 localized messages validate. This completes #60 and
 Fighter #85's level1–4 style/mastery scope, with all four SRD styles supplied by
 this and the preceding style/Light deliveries. #140/#147/#111/#103 retain their
-other original requirements; Barbarian progression and all later-level/multiclass
-requirements remain. No issue or feature scope was added. Source: [SRD Fighting
+other original requirements; Barbarian progression and later-level requirements
+through level 15 remain (multiclassing is deferred). No issue or feature scope was added. Source: [SRD Fighting
 Style feats](https://www.dndbeyond.com/sources/dnd/br-2024/feats#FightingStyleFeats).
 
 ### Alert complete (#74)

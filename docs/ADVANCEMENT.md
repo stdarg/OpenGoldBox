@@ -52,8 +52,9 @@ ranged spell attacks for 2d6 each. Only one spell slot may be spent per turn.
 
 Damage spells currently direct all darts/rays at one target; split targeting is
 unavailable. Full class/subclass features, Action Surge, Channel Divinity,
-concentration, broader spells/feats and multiclass advancement remain outside
-this increment. The dialog states the class/subclass limitation.
+concentration and broader spells/feats remain outside this increment.
+Progression is planned through level 15, the campaign's cap, and multiclassing
+is deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)). The dialog states the class/subclass limitation.
 
 Rules use the [official SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf),
 including its current Healing Word and Savage Attacker mechanics. Existing pack

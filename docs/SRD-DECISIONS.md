@@ -6,6 +6,23 @@ not verbatim transcripts. Preserve question IDs. If exact missing wording matter
 retrieve it before coding; do not reconstruct an approval from a summary.
 A reply resolves only its question and does not resume a paused goal.
 
+## 2026-09-30 simplification
+
+On 2026-09-30 the user reviewed which SRD 5.2.1 mechanics are worth their cost
+in this scripted, DM-less computer RPG and approved four decisions. They
+supersede the older entries they name below.
+
+- [DM-1](#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells): tool
+  proficiencies, languages and spells that need a DM are removed.
+- [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging): Savage Attacker,
+  Sneak Attack, Hit Dice spending and Versatile grip are automatic and logged.
+- [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation): no
+  natural sleep in combat, no dropped gear, no rest resumption, death saves
+  outside combat resolved at once, and Thrown weapons that work like ammunition.
+- [SCOPE-1](#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations): level
+  cap 15, multiclassing deferred, the pre-1.0 save cutoff, and rare-situation
+  features not pursued.
+
 ## Current execution agreement
 
 The SRD goal resumed on 2026-09-25 for #193. Earlier workflow maintenance did
@@ -279,3 +296,21 @@ Prone, Q38/Q39 and the rest of Q43 stand.
   quantity spent, pickup or stowing. The Thrown weapon dropdown and Throw
   button remain so a carried Thrown weapon can still be thrown. See
   [Thrown weapons](THROWN-WEAPONS.md) and [Ammunition](AMMUNITION.md).
+
+## SCOPE-1 (2026-09-30): level cap, deferrals and rare situations
+
+The user approved on 2026-09-30 the following scope limits.
+
+- **Level cap 15:** level 15 is both the rules-library target and the campaign's
+  playable cap. Levels 16–20, Epic Boons and the level 17–20 capstones are not
+  planned. Progression currently stops at level 4; the next milestones are
+  levels 5–10 and 11–15. See [the plan](SRD-IMPLEMENTATION.md#higher-levels-and-multiclassing).
+- **Multiclassing deferred:** M01–M06 are not part of the current plan.
+- **Pre-1.0 save compatibility:** a hard cutoff. Each save kind has one current
+  format; older saves are rejected with a clear message and are not migrated.
+  See [Saves](SAVES.md#pre-10-format-policy).
+- **Rare-situation features not pursued:** Wizard spellbook copying and book
+  loss (the copying part of #97; learning and preparation stay), the mounted
+  Lance rules, armor don/doff timing (#198), non-costly material components and
+  focus hands (#40; costly or consumed material components still count), and
+  speech-blocking sources (#39).
