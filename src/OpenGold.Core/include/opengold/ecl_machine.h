@@ -131,6 +131,9 @@ class EclMachine
     bool resume_host(std::uint64_t request_id, const EclHostReply &reply);
     // Host dice share the checkpointed script RNG. Returns [0, count).
     unsigned host_random(std::uint64_t request_id, unsigned count);
+    // Engine dice rolled between scripts, such as camp interruption checks. They
+    // share the same saved RNG so a reload reproduces them. Returns [0, count).
+    unsigned engine_random(unsigned count);
 
     [[nodiscard]] EclState state() const noexcept
     {
@@ -172,6 +175,7 @@ class EclMachine
     void write(std::uint16_t address, std::uint16_t value);
     void write_string(std::uint16_t address, std::string_view value);
     void finish_request();
+    [[nodiscard]] unsigned draw(unsigned count);
     void request_host(const EclInstruction &instruction);
     void jump(std::uint32_t address);
     void execute(const EclInstruction &instruction);

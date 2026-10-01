@@ -725,14 +725,26 @@ unsigned EclMachine::host_random(std::uint64_t id, unsigned count)
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
             pending_->kind != EclRequestKind::host || !count || count > 65536)
         throw EclError("Invalid host random request");
+    return draw(count);
+}
+
+unsigned EclMachine::engine_random(unsigned count)
+{
+    if (state_ == EclState::waiting || !count || count > 65536)
+        throw EclError("Invalid engine random request");
+    return draw(count);
+}
+
+unsigned EclMachine::draw(unsigned count)
+{
     const std::uint32_t threshold = (0U - count) % count;
-    std::uint32_t draw;
+    std::uint32_t value;
     do
     {
-        draw = static_cast<std::uint32_t>(random_());
+        value = static_cast<std::uint32_t>(random_());
     }
-    while (draw < threshold);
-    return draw % count;
+    while (value < threshold);
+    return value % count;
 }
 
 bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)

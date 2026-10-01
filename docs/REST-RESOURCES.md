@@ -15,18 +15,24 @@ summarized first; the later sections are the delivery history.
   rest activity, sleep/light/exertion accounting, partial Short Rest credit,
   extra hour per interruption or resumption.
 - An encounter or event that interrupts a rest simply interrupts it: nothing is
-  granted and the party rests again. New Phlan's city watch advances five
-  minutes and the exploration text says "The rest was interrupted. Rest again to
-  recover." Camp restrictions and the paid inn Long Rest are unchanged.
+  granted and the party rests again. Time advances to the interruption: five
+  minutes for New Phlan's city watch, a two-hour check on a Slums street
+  ([camp profiles](RECOVERY.md#original-campaign-mappings)). The exploration text
+  says "The rest was interrupted. Rest again to recover." Camp restrictions and
+  the paid inn Long Rest are unchanged.
 - Resting never puts anyone to sleep and never unequips or drops gear. A
   character resting when an encounter interrupts its rest starts that combat
   awake and Prone (`Participant::resting`); see
   [Recovery clocks](RECOVERY-CLOCKS.md) for death saves after combat.
 - The rest dialog has no Resume Long Rest or End Rest; it offers Start, then
   Heal with Hit Dice and Finish after a Short Rest.
-- Campaign format 20 stores no rest activity and no detached (ground) items.
-- Evidence: `alternate_rules_boundary`, `campaign_services` and
-  `watch_interruption_and_rollback` in `opengold_campaign_rest_tests`, the
+- Campaign format 20 stores no rest activity and no detached (ground) items. It
+  stores the camp interruption step count.
+- Evidence: `alternate_rules_boundary`, `campaign_services`,
+  `watch_interruption_and_rollback`, `safe_camp_profile`, `slums_street_profile`,
+  `camp_interruptions_survive_reload` and `failed_interruption_rolls_back` in
+  `opengold_campaign_rest_tests`, the Slums camp ambush in
+  `opengold_expedition_tests`, the
   rest-never-unequips check in `opengold_champion_tests`, and the Long Rest step
   of the Godot rest check.
 
@@ -58,7 +64,7 @@ pp. 47–48 (Second Wind), 185 (Long Rest) and 187 (Short Rest).
 Other class pools, multiclass die mixtures, exhaustion, maximum-HP reductions,
 species-specific rest features remain their named issues. An interrupted rest
 grants nothing and cannot be resumed. Unverified original probabilistic
-encounter schedules remain unsupported.
+encounter profiles remain unsupported.
 
 ## Architecture and API
 
@@ -117,9 +123,10 @@ restoration remains available for load and campaign event rollback; the spending
 flow never uses it for cancellation.
 
 `RolfTourSession::camp(kind)` runs original ECL entry 2 for both kinds. Forbidden
-camping grants nothing. The supported guaranteed city-watch interruption advances
-five minutes and runs entry 3, granting no recovery or spending session. Other
-probabilistic profiles remain explicitly unsupported and roll back. Safe camp
+camping grants nothing. Supported interruption profiles (New Phlan's city watch
+and the Slums street) advance time to the interrupting step and run entry 3,
+granting no recovery or spending session. Other probabilistic profiles remain
+explicitly unsupported and roll back. Safe camp
 completes the requested kind. Camp [C] offers the approved Short/Long Rest picker; the original paid inn PROGRAM 9 still requests Long
 Rest. Failed inn continuations restore the entire event, including payment,
 resources, cooldowns, time and RNG. See [recovery mappings](RECOVERY.md).

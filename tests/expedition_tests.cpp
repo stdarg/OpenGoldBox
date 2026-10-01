@@ -528,6 +528,17 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     CombatDemo combat(module());
     combat.campaign_party(party);
     combat.encounter(*town.pending_encounter(), 42);
+    if (town.pending_encounter()->party_resting)
+    {
+        const auto log = combat.combat().snapshot().log;
+        for (const auto id : party->state().slots)
+            if (id && party->member(id).vitals.hit_points > 0)
+            {
+                const auto line = party->member(id).character.sheet().name + " wakes up prone.";
+                check(std::count(log.begin(), log.end(), line) == 1,
+                      "Each resting member wakes up Prone");
+            }
+    }
     for (unsigned n = 0; n < 4000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
             ++n)
         check(combat.submit(choose_demo_command(combat.combat())), "Combat accepts the command");
@@ -586,10 +597,56 @@ void step(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &part
     settle(town, party, answer, typed);
 }
 
+bool party_wounded(const CampaignParty &party)
+{
+    for (const auto id : party.state().slots)
+        if (id)
+        {
+            const auto &member = party.member(id);
+            if (!member.vitals.dead &&
+                    member.vitals.hit_points < member.character.sheet().hit_points)
+                return true;
+        }
+    return false;
+}
+
+// Camps where the party stands until nobody living is wounded: a Long Rest when
+// anyone is eligible, otherwise a Short Rest spending Hit Dice. Interruptions
+// are played like any encounter, and the party rests again.
+void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
+{
+    for (unsigned tries = 0; party_wounded(*party); ++tries)
+    {
+        check(tries < 40, "The party recovers by camping");
+        const auto info = party->rest_info(RestKind::long_rest);
+        const bool long_rest = std::any_of(info.begin(), info.end(), [](const auto & member)
+        {
+            return member.denial == RestDenial::none;
+        });
+        check(town.camp(long_rest ? RestKind::long_rest : RestKind::short_rest), "Camp starts");
+        settle(town, party);
+        if (!party->state().short_rest)
+            continue;
+        // Each spend renews the ticket, so it is read again every time.
+        const auto members = party->state().short_rest->members;
+        for (const auto id : members)
+        {
+            const auto &member = party->member(id);
+            const auto recovery =
+                party->rule_module().recovery_info(member.character.sheet(), member.vitals);
+            if (recovery.hit_dice && member.vitals.hit_points < member.character.sheet().hit_points)
+                (void)party->heal_with_hit_dice(party->state().short_rest->ticket, id);
+        }
+        party->finish_short_rest(party->state().short_rest->ticket);
+    }
+}
+
 // Breadth-first walk over open edges, through the original movement events.
 // With bash_doors, locked doors are part of the route and are retried until forced.
+// With camp_when_hurt, the party recovers by camping whenever a step leaves it wounded.
 void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned tx,
-             unsigned ty, const Answer &answer = peaceful, bool bash_doors = false)
+             unsigned ty, const Answer &answer = peaceful, bool bash_doors = false,
+             bool camp_when_hurt = false)
 {
     const auto locked = [&](unsigned wall, unsigned door)
     {
@@ -642,6 +699,8 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
                                 : next / 16 > int(p.y) ? 2
                                 : 0;
         step(town, party, facing, answer);
+        if (camp_when_hurt)
+            recover(town, party);
         const auto now = town.snapshot().pose;
         const int reached = int(now.y * 16 + now.x);
         const auto &edge = town.map().at(p.x, p.y);
@@ -901,7 +960,8 @@ void ohlo_quest(Expedition &trip)
           party->state().claimed_rewards == accepting.claimed_rewards,
           "Accepting the commission sets its flag and pays nothing");
 
-    walk_to(town, party, 14, 12, quest_answer, true);
+    // The fights on the way to the booth wear down a party that never rests.
+    walk_to(town, party, 14, 12, quest_answer, true, true);
     step(town, party, 1, quest_answer, "ohlo");
     check(town.script_variable(0x4A81) == 250 &&
           town.snapshot().dialogue.find("RETURNS WITH A PACKAGE") != std::string::npos,
@@ -972,6 +1032,74 @@ void revisit_ohlo(Expedition &trip)
           "Revisiting Ohlo and the booth keeps the quest complete without a second reward");
 }
 
+// Fights the monsters that interrupt a camp instead of fleeing them.
+std::size_t stand_and_fight(const por::TourSnapshot &s)
+{
+    return s.choices.size() == 5 && s.choices[0] == "Fight" ? 0 : peaceful(s);
+}
+
+// Camps on a Slums street, where the original script rolls for interruptions,
+// until monsters attack. The party fights, wakes Prone, wins and rests again.
+void slums_camp_ambush(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    if (town.snapshot().area_id == 0)
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+    }
+    walk_to(town, party, 14, 4);
+    check(town.script_variable(0x6E82) == 0 && town.script_variable(0x4ABB) < 254,
+          "The party stands on an uncleared Slums street without a special event");
+    bool attacked = false;
+    for (unsigned tries = 0; tries < 60; ++tries)
+    {
+        const auto before = party->state().time_minutes;
+        check(town.camp(RestKind::short_rest), "Camp starts");
+        while (town.snapshot().phase == por::TourPhase::running ||
+                town.snapshot().phase == por::TourPhase::awaiting_continue)
+        {
+            const auto &s = town.snapshot();
+            if (s.phase == por::TourPhase::running)
+                town.advance(.5);
+            else
+                check(town.choose(s.continue_ticket, stand_and_fight(s)), "Answer accepted");
+        }
+        check(town.script_variable(0x6DD2) == 24 && town.script_variable(0x6DD3) == 24,
+              "The original pre-camp script sets the street's 24/24 profile");
+        if (town.snapshot().phase == por::TourPhase::combat)
+        {
+            check(town.snapshot().dialogue.starts_with("Your camp is attacked!"),
+                  "The interruption is announced");
+            if (town.monster_picture())
+                check(town.start_encounter(), "The monster close-up is dismissed");
+            check(town.pending_encounter()->party_resting,
+                  "The camp's monsters find the party resting");
+            check(party->state().time_minutes == before + 60,
+                  "A Short Rest's check falls at its last five-minute step");
+            settle(town, party, stand_and_fight);
+            const auto &text = town.snapshot().dialogue;
+            check(text.ends_with("The rest was interrupted. Rest again to recover.") &&
+                  !party->state().short_rest,
+                  "Victory returns to exploration with no rest benefits");
+            attacked = true;
+            continue;
+        }
+        check(town.snapshot().phase == por::TourPhase::completed, "The camp finishes");
+        if (const auto &spending = party->state().short_rest)
+        {
+            party->finish_short_rest(spending->ticket);
+            if (attacked)
+                break;
+        }
+    }
+    check(attacked, "Camping on a Slums street is eventually interrupted");
+    const auto &text = town.snapshot().dialogue;
+    check(text.ends_with(
+              "Short rest complete: one hour passed; eligible members can spend Hit Dice."),
+          "After the fight the party rests again");
+}
+
 // Ohlo's route crosses the Rope Guild, where back-to-back roaming fights defeat
 // this automated party (docs/QUESTS.md#validation-and-limits). Run it on request.
 bool ohlo_route_requested()
@@ -985,7 +1113,8 @@ std::filesystem::path revisit_result(const std::filesystem::path &save)
     return std::filesystem::path(save).concat(".revisit");
 }
 
-// Runs in a fresh process: load the save, revisit the orcs and Ohlo, record the result.
+// Runs in a fresh process: load the save, revisit the orcs and Ohlo, camp in the
+// Slums and record the result.
 void reload_and_revisit(const std::filesystem::path &save, const std::filesystem::path &directory)
 {
     const auto assets = campaign_asset_identity(directory);
@@ -1003,6 +1132,7 @@ void reload_and_revisit(const std::filesystem::path &save, const std::filesystem
     revisit_orcs(trip);
     if (ohlo_route_requested())
         revisit_ohlo(trip);
+    slums_camp_ambush(trip);
     write_campaign_file(revisit_result(save), encode_campaign(*party, &trip.town, assets));
 }
 
@@ -1039,12 +1169,14 @@ void installed_first_expedition(const std::filesystem::path &executable,
     revisit_orcs(trip);
     if (ohlo_route_requested())
         revisit_ohlo(trip);
+    slums_camp_ambush(trip);
     check(read_campaign_file(revisit_result(save)) ==
           encode_campaign(*trip.party, &trip.town, assets),
-          "Continuing after a reload matches continuing without one");
+          "Continuing after a reload, camp interruptions included, matches continuing without one");
     std::filesystem::remove_all(folder);
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
-              "returned, paid the inn with change, rested, reloaded and revisited.\n";
+              "returned, paid the inn with change, rested, reloaded, revisited and "
+              "camped in the Slums.\n";
 }
 
 } // namespace

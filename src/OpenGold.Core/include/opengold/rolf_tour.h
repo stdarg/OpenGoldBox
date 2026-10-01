@@ -287,6 +287,11 @@ class RolfTourSession
     unsigned
     event_stage_{}; // 0 tour, 1 before step, 2 search, 3 area entry, 4 pre-camp, 5 interrupted.
     RestKind camp_kind_{RestKind::long_rest};
+    // Five-minute rest steps since the last interruption check. Like the
+    // original engine's counter, it carries over between rests; it is saved.
+    unsigned rest_checks_{}, saved_rest_checks_{};
+    [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
+    void announce_camp_attack();
     bool transition_{}, message_only_{};
     std::uint64_t shop_request_{};
     void configure_town();

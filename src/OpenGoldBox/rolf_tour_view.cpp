@@ -649,6 +649,7 @@ String rest_notice(const std::string &resource, const std::string &text)
             N_("Long rest complete: eight hours passed; eligible members recovered HP and supported resources."),
             N_("Rest denied: no active member is eligible."),
             N_("The rest was interrupted. Rest again to recover."),
+            N_("Your camp is attacked!"),
             N_("Locked.")
         })
         result = result.replace(String::utf8(source), i18n::text(source));
@@ -838,7 +839,7 @@ void RolfTourView::refresh()
         {
             {"name", String::utf8(buyer.character.sheet().name.c_str())},
             {"gold", buyer.wealth[3]},
-            {"count", buyer.character.inventory().items().size()}
+            {"count", static_cast<int64_t>(buyer.character.inventory().items().size())}
         }));
     }
     const auto resource =
@@ -1437,7 +1438,8 @@ bool RolfTourView::check_expedition_step()
         // Let the close-up animate for about two seconds before pressing a key.
         if (++monster_picture_check_frames_ < 120)
             return false;
-        UtilityFunctions::print("Monster close-up shown with ", monster_frames_.size(),
+        UtilityFunctions::print("Monster close-up shown with ",
+                                static_cast<int64_t>(monster_frames_.size()),
                                 " frames before combat");
         capture_frame("monster-close-up");
         dismiss_monster_picture();

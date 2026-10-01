@@ -1285,6 +1285,31 @@ void campaign_encounters()
           "Valid encounter can start after rejected attempts");
 }
 
+// A camp interruption hands the whole party over resting; each conscious
+// member wakes up Prone, and no enemy is affected.
+void camp_ambush_encounter()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(character("wizard", "Sleeping mage"));
+    party->add_pc(character("fighter", "Sleeping guard"));
+    auto observed = std::make_shared<EncounterObservation>();
+    CombatDemo fight(std::make_unique<ObservedModule>(observed));
+    fight.campaign_party(party);
+    auto ambush = encounter_fixture();
+    ambush.party_resting = true;
+    fight.encounter(ambush, 1234);
+    for (const auto &participant : observed->encounter.participants)
+        check(participant.resting == (participant.side == 0),
+              "Every party member, and no enemy, starts the camp ambush resting");
+    const auto log = fight.combat().snapshot().log;
+    for (const auto *line :
+            {
+                "Sleeping mage wakes up prone.", "Sleeping guard wakes up prone."
+            })
+        check(std::count(log.begin(), log.end(), line) == 1,
+              "Each interrupted sleeper wakes up Prone, once");
+}
+
 void allied_campaign_movement()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -2340,6 +2365,7 @@ int main()
         untrained_equipment();
         combat_handoff();
         campaign_encounters();
+        camp_ambush_encounter();
         allied_campaign_movement();
         standalone_checkpoints();
         combat_ownership();

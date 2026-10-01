@@ -46,14 +46,85 @@ complete original campaign service coverage.
 
 ## Original campaign mappings
 
-**Camp [C]** runs ECL entry 2 before any recovery. `6DD3=255` denies rest.
-An interruption-free profile permits the requested rest for eligible members.
-New Phlan's guaranteed city-watch interruption (`6DD2=1`, `6DD3=100/101`) advances five minutes, runs
-entry 3, grants no rest benefits and reports "The rest was interrupted. Rest again
-to recover." There is nothing to resume. Mortality and effect timers still advance.
-Choose **GO** to leave peacefully; combat with
-the watch remains unsupported and rolls the event back. Other nonzero
-probabilistic interruption profiles fail explicitly.
+**Camp [C]** runs ECL entry 2 before any recovery. It sets the area's camp
+profile: `6DD2` is the check interval and `6DD3` the chance. `6DD3=255` denies rest.
+Otherwise the rest is checked in five-minute steps, as the original engine does:
+each step counts toward the interval, and on reaching it the count restarts and
+d100 at or below the chance interrupts the rest. The count carries over between
+rests and is saved with the campaign. The d100 uses the campaign's saved script
+random state, so a reload repeats the same outcomes. A rest with no interruption
+completes as usual: a Short Rest takes one hour, a Long Rest eight hours, for
+eligible members.
+
+An interrupted rest advances time to the interrupting step, grants no rest
+benefits and runs entry 3. There is nothing to resume, and mortality and effect
+timers still advance. When the exploration event finishes, the text window says
+"The rest was interrupted. Rest again to recover."
+Supported profiles:
+
+- `0/0`, or a zero interval or chance: the rest is never interrupted.
+- New Phlan's city watch, `1/100` or `1/101`: the first step always interrupts,
+  five minutes in. Choose **GO** to leave peacefully; combat with the watch
+  remains unsupported and rolls the event back.
+- A Slums street, `24/24`: a 24% check every two hours. A Long Rest has four
+  checks and is interrupted about two times in three (1 − 0.76⁴); a Short Rest
+  (12 steps) reaches a check only every second rest. Entry 3 starts an original
+  roaming encounter. Its menu (Fight, Wait, Flee, Advance, Parley) and surprise
+  behave as for roaming encounters, and the text window adds "Your camp is
+  attacked!" Combat starts with every member resting, so each conscious member
+  wakes up Prone ([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)).
+  After a victory, the party returns to exploration and can rest again.
+
+Other nonzero profiles fail explicitly. A failure in the camp event rolls back
+the party, time, the step count and the script random state.
+
+### Camp interruption evidence
+
+The Slums pre-camp entry (`ECL2.DAX` record 20, entry 2 at `0x9a0e`, from
+`opengold_scripts --inspect`) chooses the profile:
+
+| Condition | Profile |
+| --- | --- |
+| `4A0B == 255` (`0x9a0e`) | `24/24` (`0x9a3c`) |
+| `4ABB >= 254` (`0x9a19`) | `0/0` (`0x9a2f`) |
+| `6E82 == 0` (`0x9a24`) | `24/24` |
+| otherwise | `0/0` |
+
+- `6E82` is the party cell's event number, `C04F & 127` (`0x996b`, `0x9987`).
+  The search entry dispatches on it (`ON GOTO` at `0x99c9`). Plain streets are
+  0, so camping on them is checked; special-event cells, such as event 21 around
+  `(8,5)` and the Old Rope Guild's 17 and 18, are safe.
+- `4A0B` is area-local, cleared on entering the Slums (`4A00..4A1F`). The
+  fortune teller sets it to 251 when visited (`0xa642`) and to 255 when murdered
+  (`0xa74f`, "THE GODS HAVE NOTED YOUR ACTIONS"). While it is 255, every Slums
+  camp is checked, even after the Slums are cleared.
+- `4ABB` counts completed Slums events. The subroutine at `0xb69c` adds one
+  per call and saturates at 254 from 25 (`0xb6b5`), the "Slums cleared" state.
+  It is called after fixed events finish, for example the four orcs' fight
+  (`0x9e73`) and Ohlo's reward (`0xa3b2`).
+
+The interruption entry (entry 3, `0x9a49`) saves 200 to `4A1F`, 0 to `6DCB` and
+the party strength to `9808`, then jumps to `0x9b68`. That is the roaming-encounter
+selection the search entry uses (`0x9b2a`–`0x9b67` roll for it first): it
+picks kobolds, goblins or orcs scaled by party strength (`0x9b8a`), rolls
+surprise (`0x9c01`) and offers the encounter menu or a surprised combat.
+
+The step loop follows the Gold Box engine's resting routine as reconstructed in
+Simeon Pilgrim's [coab](https://github.com/simeonpilgrim/coab) (`9dc46f1`,
+`engine/ovr021.cs` `resting()`, from line 516). Each five-minute step increments
+`gbl.rest_incounter_count`; on reaching `rest_incounter_period` it resets the count
+and interrupts when `roll_dice(100, 1) <= rest_incounter_percentage` ("Your repose
+is suddenly interrupted!"). The count is a global, not area memory, so it
+carries over between rests; coab resets it only when a game starts or loads
+(`engine/seg001.cs` lines 268 and 362). It also resets the profile when an area's
+script loads (`engine/ovr008.cs`). coab targets *Curse of the Azure Bonds*, so its
+field offsets (`Area2.cs`, `0x5a4`/`0x5a6`) are not PoR addresses. `6DD2` and
+`6DD3` are matched to the two fields by role: the pre-camp entry sets them, and
+New Phlan's `1/100` profile interrupts after exactly one step.
+
+OpenGoldBox differs from that routine in two deliberate ways. The count is
+saved rather than reset on load, so saving and reloading cannot reroll a camp.
+The d100 uses the saved script random state rather than the DOS generator.
 
 The original inn's **PROGRAM 9** request follows its own pre-camp subroutine and
 payment dialogue. A safe, eligible request completes a long rest. The script

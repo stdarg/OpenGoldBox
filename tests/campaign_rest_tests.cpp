@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <limits>
+#include <set>
 #include <stdexcept>
 using namespace opengold;
 using namespace opengold::rules;
@@ -726,6 +727,182 @@ void watch_interruption_and_rollback()
     }
 }
 
+// Every entry but the interruption (entry 3) sets the camp profile, as the
+// original pre-camp entry does; entry 3 runs the given interruption code.
+std::shared_ptr<const por::EclProgram> camp_script(std::uint8_t interval, std::uint8_t chance,
+        Bytes interruption = {0})
+{
+    const Bytes pre{9, 0, interval, 1, 0xd2, 0x6d, 9, 0, chance, 1, 0xd3, 0x6d, 0};
+    Bytes bytes{0, 0};
+    for (unsigned n = 0; n < 5; ++n)
+        bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    bytes.push_back(0);
+    const unsigned arrival = 0x9915 + pre.size();
+    bytes[16] = arrival & 255;
+    bytes[17] = arrival >> 8;
+    bytes.insert(bytes.end(), pre.begin(), pre.end());
+    bytes.insert(bytes.end(), interruption.begin(), interruption.end());
+    return std::make_shared<const por::EclProgram>(por::EclProgram::decode(bytes, "camp profile"));
+}
+
+struct CampFixture
+{
+    std::shared_ptr<CampaignParty> party = std::make_shared<CampaignParty>(module());
+    PartyState wounded;
+    MemberId id{};
+    std::unique_ptr<por::RolfTourSession> town;
+
+    explicit CampFixture(std::shared_ptr<const por::EclProgram> script)
+    {
+        id = party->add_pc(hero());
+        wounded = party->checkpoint();
+        wounded.roster[0].vitals = {1, false, spent_resources("Fighter")};
+        party->restore(wounded);
+        auto resources = std::make_shared<por::PhlanResources>();
+        resources->programs[0] = script;
+        town = std::make_unique<por::RolfTourSession>(por::GeoMap{}, script,
+                std::array<Image, 3> {}, 0x9914,
+                por::WallArtSet{}, resources);
+        town->campaign_party(party);
+        settle(*town);
+    }
+};
+
+struct CampOutcome
+{
+    std::uint64_t minutes{};
+    bool interrupted{};
+};
+
+// Camps once from the wounded state, so each rest is eligible and timed from zero.
+CampOutcome camp_from_wounded(CampFixture &f, RestKind kind)
+{
+    f.party->restore(f.wounded);
+    check(f.town->camp(kind), "Camp starts");
+    settle(*f.town);
+    check(f.town->can_leave(), "Camp finishes");
+    const auto &member = f.party->member(f.id);
+    // This fixture's script never clears the text window; read the latest line.
+    const bool interrupted =
+        f.town->snapshot().dialogue.ends_with("The rest was interrupted. Rest again to recover.");
+    if (interrupted)
+        check(!f.party->state().short_rest && member.vitals.hit_points == 1 && winds(member) == 0,
+              "An interrupted rest grants no benefits");
+    else if (kind == RestKind::short_rest)
+        check(f.party->state().short_rest.has_value(), "A completed Short Rest offers spending");
+    else
+        check(member.vitals.hit_points > 1, "A completed Long Rest recovers HP");
+    return {f.party->state().time_minutes, interrupted};
+}
+
+void safe_camp_profile()
+{
+    CampFixture f(camp_script(0, 0));
+    for (unsigned n = 0; n < 3; ++n)
+    {
+        const auto short_rest = camp_from_wounded(f, RestKind::short_rest);
+        check(!short_rest.interrupted && short_rest.minutes == 60,
+              "A 0/0 profile completes every Short Rest in one hour");
+        const auto long_rest = camp_from_wounded(f, RestKind::long_rest);
+        check(!long_rest.interrupted && long_rest.minutes == 480,
+              "A 0/0 profile completes every Long Rest in eight hours");
+    }
+}
+
+// The Slums street profile checks every 24 five-minute steps (two hours) with a
+// 24% chance, and the step count carries over between rests.
+void slums_street_profile()
+{
+    CampFixture shorts(camp_script(24, 24));
+    unsigned interrupted_shorts = 0;
+    for (unsigned n = 0; n < 60; ++n)
+    {
+        const auto outcome = camp_from_wounded(shorts, RestKind::short_rest);
+        check(outcome.minutes == 60, "A Short Rest's only check falls at its last step");
+        if (n % 2 == 0)
+            check(!outcome.interrupted, "A Short Rest from a fresh count reaches no check");
+        interrupted_shorts += outcome.interrupted;
+    }
+    check(interrupted_shorts > 0 && interrupted_shorts < 30,
+          "Every second Short Rest reaches a check and some are interrupted");
+    CampFixture longs(camp_script(24, 24));
+    std::set<std::uint64_t> interruption_times;
+    unsigned interrupted_longs = 0;
+    constexpr unsigned long_rests = 120;
+    for (unsigned n = 0; n < long_rests; ++n)
+    {
+        const auto outcome = camp_from_wounded(longs, RestKind::long_rest);
+        if (!outcome.interrupted)
+        {
+            check(outcome.minutes == 480, "An uninterrupted Long Rest lasts eight hours");
+            continue;
+        }
+        check(outcome.minutes % 120 == 0 && outcome.minutes >= 120 && outcome.minutes <= 480,
+              "Time advances to the two-hour check that interrupted the rest");
+        interruption_times.insert(outcome.minutes);
+        ++interrupted_longs;
+    }
+    // Four 24% checks interrupt about two Long Rests in three (1 - 0.76^4).
+    check(interrupted_longs > long_rests / 2 && interrupted_longs < long_rests * 4 / 5,
+          "Long Rests are interrupted at the original rate");
+    check(interruption_times.size() == 4, "Each of the four checks can interrupt");
+}
+
+void camp_interruptions_survive_reload()
+{
+    CampFixture original(camp_script(24, 24));
+    // Twelve steps into the count: the next Short Rest reaches a check.
+    (void)camp_from_wounded(original, RestKind::short_rest);
+    original.party->finish_short_rest(original.party->state().short_rest->ticket);
+    const auto bytes = encode_campaign(*original.party, original.town.get(), "campaign-rest");
+    // A fresh session stands in for a new process: the template carries no state.
+    CampFixture reloaded(camp_script(24, 24));
+    auto disk = decode_campaign(bytes, *srd5::character_rules(), *module(), "campaign-rest",
+                                reloaded.town.get());
+    reloaded.party->restore(disk.party);
+    reloaded.town = std::make_unique<por::RolfTourSession>(std::move(*disk.town));
+    reloaded.town->attach_restored_party(reloaded.party);
+    check(encode_campaign(*reloaded.party, reloaded.town.get(), "campaign-rest") == bytes,
+          "The step count and script RNG are saved");
+    for (unsigned n = 0; n < 12; ++n)
+    {
+        const auto kind = n % 3 ? RestKind::short_rest : RestKind::long_rest;
+        const auto expected = camp_from_wounded(original, kind);
+        const auto actual = camp_from_wounded(reloaded, kind);
+        check(actual.minutes == expected.minutes && actual.interrupted == expected.interrupted,
+              "A reloaded campaign repeats the same camp outcomes");
+    }
+}
+
+// Short Rests alternate between reaching no check and reaching one at their last
+// step. A failed interruption must restore both the step count and the script RNG,
+// or retrying would reach no check, or roll again, and complete instead.
+void failed_interruption_rolls_back()
+{
+    CampFixture f(camp_script(24, 24, {56, 0, 0, 0}));
+    for (unsigned n = 0; n < 40; ++n)
+    {
+        f.party->restore(f.wounded);
+        const auto before = saved(*f.party);
+        check(f.town->camp(RestKind::short_rest), "Camp starts");
+        settle(*f.town);
+        if (f.town->script_diagnostics().empty())
+            continue;
+        check(saved(*f.party) == before, "A failed interruption restores party, time and RNG");
+        for (unsigned retry = 2; retry <= 3; ++retry)
+        {
+            check(f.town->continue_dialogue(f.town->snapshot().continue_ticket),
+                  "The rollback notice is dismissed");
+            check(f.town->camp(RestKind::short_rest), "Camp starts again");
+            settle(*f.town);
+            check(f.town->script_diagnostics().size() == retry && saved(*f.party) == before,
+                  "The restored step count and random state repeat the same interruption");
+        }
+        return;
+    }
+    throw std::runtime_error("No Short Rest was interrupted");
+}
+
 std::string payload(std::string body)
 {
     std::uint64_t hash = 14695981039346656037ULL;
@@ -786,6 +963,10 @@ int main()
         effects_once();
         campaign_services();
         watch_interruption_and_rollback();
+        safe_camp_profile();
+        slums_street_profile();
+        camp_interruptions_survive_reload();
+        failed_interruption_rolls_back();
         malformed_continuation();
         std::cout << "Campaign rest tests passed\n";
         return 0;

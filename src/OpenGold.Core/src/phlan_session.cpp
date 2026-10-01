@@ -249,6 +249,7 @@ void RolfTourSession::begin_event(unsigned slot)
     saved_area_ = current_area_;
     saved_visited_areas_ = visited_areas_;
     saved_seen_areas_ = seen_areas_;
+    saved_rest_checks_ = rest_checks_;
     saved_map_ = map_;
     saved_pending_loot_ = pending_loot_;
     saved_snapshot_ = snapshot_;
@@ -472,15 +473,11 @@ void RolfTourSession::finish_event()
             snapshot_.dialogue += "\nRest is not allowed here.";
         else
         {
-            const bool watch = interval && chance;
-            // Only the verified guaranteed New Phlan profile is supported.
-            if (watch && (interval != 1 || (chance != 100 && chance != 101)))
-                throw EclError("Unsupported probabilistic camp interruption");
-            // The watch interrupts every rest here five minutes in. An interrupted
-            // rest grants nothing and leaves nothing to resume; the party rests again.
-            if (watch)
+            // An interrupted rest grants nothing and leaves nothing to resume;
+            // the party rests again.
+            if (const auto rested = rest_interruption(interval, chance))
             {
-                campaign_->advance_time(5);
+                campaign_->advance_time(*rested);
                 synchronize_clock();
                 event_stage_ = 5;
                 if (!machine_.start(3))
@@ -506,6 +503,33 @@ void RolfTourSession::finish_event()
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
     ++snapshot_.revision;
+}
+
+// The original engine rests in five-minute steps. Each step counts toward the
+// area's check interval (0x6DD2); on reaching it, the count restarts and d100 at
+// or below the chance (0x6DD3) interrupts. The count carries over between rests.
+// Returns the minutes rested before an interruption, or nothing when none occurs.
+std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance)
+{
+    const bool city_watch = interval == 1 && (chance == 100 || chance == 101);
+    const bool slums_street = interval == 24 && chance == 24;
+    if (interval && chance && !city_watch && !slums_street)
+        throw EclError("Unsupported probabilistic camp interruption");
+    if (!interval)
+        return std::nullopt;
+    const auto &rules = campaign_->rule_module();
+    const auto policy =
+        camp_kind_ == RestKind::short_rest ? rules.short_rest_policy() : rules.long_rest_policy();
+    constexpr unsigned step_minutes = 5;
+    for (unsigned rested = step_minutes; rested <= policy.duration_minutes; rested += step_minutes)
+    {
+        if (++rest_checks_ < interval)
+            continue;
+        rest_checks_ = 0;
+        if (machine_.engine_random(100) + 1 <= chance)
+            return rested;
+    }
+    return std::nullopt;
 }
 
 // As in the original, the party's cell is searched even when the step failed.
@@ -666,10 +690,19 @@ void RolfTourSession::show_encounter_menu()
     snapshot_.dialogue = args[9 + encounter_distance_].text;
     if (snapshot_.dialogue.empty())
         snapshot_.dialogue = args[9].text;
+    announce_camp_attack();
     snapshot_.choices = {"Fight", "Wait", "Flee", "Advance", "Parley"};
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.continue_ticket = ++next_ticket_;
     ++snapshot_.revision;
+}
+
+// Monsters that interrupt a camp are announced ahead of the script's own text.
+void RolfTourSession::announce_camp_attack()
+{
+    constexpr std::string_view attack = "Your camp is attacked!";
+    if (event_stage_ == 5 && !snapshot_.dialogue.starts_with(attack))
+        snapshot_.dialogue = std::string(attack) + "\n" + snapshot_.dialogue;
 }
 
 bool RolfTourSession::choose_encounter(std::size_t choice)
@@ -1124,6 +1157,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 dungeon_battlefield(map_, p.x, p.y), staged_enemies_, staged_art_,
                 area_resources().terrain_art,        p.facing,        machine_.variable(0x6DCB)};
+            encounter_->party_resting = event_stage_ == 5;
+            announce_camp_attack();
             combat_request_ = request.id;
             // The original shows the approached monster's close-up until a key press.
             showing_monster_picture_ = monster_picture_id_ &&

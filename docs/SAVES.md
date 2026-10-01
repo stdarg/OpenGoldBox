@@ -73,6 +73,9 @@ A campaign save stores:
   variables/flags, instruction spans, comparison flags, request counter and ECL
   RNG. The completed event is not replayed. Dialogue and visited cells persist;
   transient encounter pictures/sprites are cleared for the idle exploration view.
+- The camp interruption step count, which carries over between rests, so a
+  reload repeats the same [camp outcomes](RECOVERY.md#original-campaign-mappings).
+  A count of 24 or more rejects the load.
 - Separate visited and seen bitsets for each district. Looking ahead through the
   first-person view reveals visible cells permanently; changing maps or loading
   a save preserves that history. Invalid masks, unknown districts, or missing

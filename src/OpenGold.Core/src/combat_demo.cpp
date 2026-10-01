@@ -196,6 +196,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
             }
     }
     auto participants = campaign_->participants();
+    for (auto &participant : participants)
+        participant.resting = encounter.party_resting;
     if (cells.size() < participants.size() + encounter.enemies.size())
         throw std::runtime_error("Original battlefield cannot fit the complete encounter");
     if (!encounter.positions.empty())

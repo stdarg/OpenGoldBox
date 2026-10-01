@@ -73,9 +73,13 @@ Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's p
 supported from commission to reward; see [QUESTS.md](QUESTS.md). Its long walk
 through the Rope Guild is not yet survivable for the automated test party.
 
-Probabilistic Slums camping and other district transitions are outside this
-first expedition. The first-room victory and required route encounters are the
-acceptance target.
+Camping in the Slums follows the original script's interruption profile:
+plain streets are checked for wandering monsters, and special-event cells are
+safe; see [camp interruptions](RECOVERY.md#original-campaign-mappings). The
+installed test camps on a Slums street until monsters attack, wins the fight
+and rests again, in both the original process and a fresh process after a
+reload. Other district transitions are outside this first expedition. The
+first-room victory and required route encounters are the acceptance target.
 
 ## Review and validation
 

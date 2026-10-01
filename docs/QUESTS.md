@@ -132,20 +132,20 @@ deferred collection of money and item across a save and reload; and Bash, Pick
 With `OPENGOLD_GAME_DIR` and `OPENGOLD_OHLO_ROUTE=1`, `opengold_expedition_tests`
 also plays the route with the six created fighters after the inn rest, spending
 the orcs' XP on level two, and revisits Ohlo and the booth after a fresh-process
-reload. **This route still fails** with AD&D-equivalent party strength:
+reload. On the walk to the booth the party
+[camps](RECOVERY.md#original-campaign-mappings) whenever a step leaves it
+wounded: a Long Rest when anyone is eligible, otherwise a Short Rest spending
+Hit Dice. **This route still fails**, now on creature balance alone:
 
-1. Leaving the gate, the party (strength 12) is surprised at `(14,7)` by eight
-   goblins and four goblin leaders. It wins, with one fighter down and about 30
-   HP lost.
-2. The booth lies inside the Old Rope Guild (event 18), which rolls a roaming
+1. After the commission, the party (strength 12) is surprised at `(14,7)` by
+   eight goblins and four goblin leaders. It wins, but one fighter dies.
+2. The Long Rest is still 16 hours away, so the party takes a Short Rest. The
+   five survivors spend Hit Dice and are back to full HP.
+3. The booth lies inside the Old Rope Guild (event 18), which rolls a roaming
    encounter on about 2 in 11 steps (`0xade2`); the route crosses about 25 of
-   its cells. At `(6,14)` the wounded party meets nine goblins and four leaders
-   and is defeated.
+   its cells. At `(6,14)` the five fighters, at full HP, meet ten goblins and
+   four leaders and are defeated.
 
-With HP restored before each fight (a local diagnostic, not committed), both
-fights are won. The party has no legitimate way to recover between them: a
-Long Rest needs 16 hours after the last, steps advance only six seconds,
-Slums camping is unsupported, and the temple heals 2d8 + 3 for 100 gp. The
-converted goblins (SRD: 7 HP, AC 15, +4 for 1d6 + 2) also hit harder than
-AD&D goblins. The route therefore stays opt-in until recovery or creature
-balance changes.
+The converted goblins (SRD: 7 HP, AC 15, +4 for 1d6 + 2) hit harder than AD&D
+goblins. The route therefore stays opt-in until they are converted from their
+original AD&D stats.

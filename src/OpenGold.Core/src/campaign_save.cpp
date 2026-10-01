@@ -435,7 +435,7 @@ struct SaveCodec
         require(reading || (v.can_leave() && v.snapshot_.tour_finished && !v.checkpoint_ &&
                             !v.pending_movement_),
                 "Save only during idle town exploration");
-        fields(v.current_script_, v.selected_character_, v.next_ticket_);
+        fields(v.current_script_, v.selected_character_, v.next_ticket_, v.rest_checks_);
         unsigned area = v.current_area_;
         field(area);
         std::map<unsigned, std::string> explored;
@@ -518,7 +518,7 @@ struct SaveCodec
         if (reading)
         {
             require(v.town_ && v.town_->programs.contains(v.current_script_) &&
-                    v.selected_character_ < 8,
+                    v.selected_character_ < 8 && v.rest_checks_ < 24,
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
             for (const std::uint8_t op :

@@ -25,6 +25,8 @@ struct CampaignEncounter
     std::vector<Image> terrain_art;
     unsigned facing{};
     unsigned surprise{};
+    // The encounter interrupted the party's rest.
+    bool party_resting{};
     // Optional authored formation. Empty means the usual campaign placement.
     std::vector<rules::Cell> positions;
 };

@@ -241,6 +241,7 @@ void RolfTourSession::restart()
     current_area_ = 0;
     visited_areas_.clear();
     seen_areas_.clear();
+    rest_checks_ = 0;
     if (town_ && town_->map)
     {
         map_ = *town_->map;
@@ -323,6 +324,7 @@ void RolfTourSession::fail(std::string diagnostic)
         door_choices_.clear();
         visited_areas_ = saved_visited_areas_;
         seen_areas_ = saved_seen_areas_;
+        rest_checks_ = saved_rest_checks_;
         if (saved_snapshot_)
         {
             const auto revision = snapshot_.revision + 1;
