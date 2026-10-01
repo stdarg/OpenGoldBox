@@ -49,6 +49,13 @@ struct RestResult
     std::optional<RestTicket> spending;
 };
 
+// One member's Strength (Athletics) check against a locked door.
+struct DoorAttempt
+{
+    MemberId member{};
+    rules::AbilityCheckRoll roll;
+};
+
 struct PartyMember
 {
     MemberId id{};
@@ -146,6 +153,9 @@ class CampaignParty
             std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
+    // Conscious active members, in party order, try once each until one meets
+    // the difficulty. Returns every attempt; the door opens if the last succeeded.
+    [[nodiscard]] std::vector<DoorAttempt> force_door(int difficulty);
     void advance_time(unsigned minutes);
     void advance_time_milliseconds(std::uint64_t milliseconds);
 

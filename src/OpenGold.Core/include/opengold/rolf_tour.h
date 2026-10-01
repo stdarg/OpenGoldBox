@@ -42,6 +42,8 @@ struct TownParty
     std::vector<Equipment> inventory;
 };
 
+// Uncollected rewards. Encounter loot comes from defeated creature records;
+// script treasure (TREASURE) has no records and carries only its money.
 struct PendingLoot
 {
     std::array<unsigned, 7> wealth{};
@@ -245,8 +247,20 @@ class RolfTourSession
     std::optional<unsigned> monster_picture_id_; // SETUP MONSTER's PIC record.
     bool showing_monster_picture_{};
     std::uint64_t combat_request_{};
-    std::vector<PendingLoot> pending_loot_;
+    std::vector<PendingLoot> pending_loot_, saved_pending_loot_;
+    // Money from a non-shop TREASURE, awarded by the COMBAT that follows it.
+    std::optional<PendingLoot> staged_treasure_;
+    // Doors forced open stay open until the district map is reloaded.
+    GeoMap saved_map_;
+    bool door_menu_{};
     void claim_loot();
+    void stage_treasure(const EclRequest &request);
+    void award_staged_treasure();
+    [[nodiscard]] std::string treasure_identity(std::uint16_t address) const;
+    [[nodiscard]] bool locked_door_ahead() const;
+    void show_locked_door();
+    void force_locked_door();
+    void search_destination();
     [[nodiscard]] PendingLoot slums_loot(std::vector<unsigned> records, std::string reward,
                                          bool items) const;
     void show_encounter_menu();

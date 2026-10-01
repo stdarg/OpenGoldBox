@@ -479,20 +479,31 @@ struct SaveCodec
             std::vector<unsigned> records;
             std::string reward;
             bool items = true;
+            std::array<unsigned, 7> wealth{};
             if (!reading)
             {
                 const auto &loot = v.pending_loot_[index];
                 records = loot.records;
                 reward = loot.reward_id;
                 items = loot.include_items;
+                wealth = loot.wealth;
             }
-            fields(records, reward, items);
-            if (reading)
+            fields(records, reward, items, wealth);
+            if (reading && records.empty())
+            {
+                // Script treasure: the money alone, with no creature records.
+                require(!reward.empty() && reward.size() <= 160 && !items,
+                        "Invalid pending script treasure");
+                v.pending_loot_.push_back({wealth, {}, std::move(reward), {}, false});
+            }
+            else if (reading)
             {
                 require(v.town_->districts.contains(20),
                         "Pending Slums loot requires original resources");
                 v.pending_loot_.push_back(
                     v.slums_loot(std::move(records), std::move(reward), items));
+                require(v.pending_loot_.back().wealth == wealth,
+                        "Saved loot does not match its original creatures");
             }
         }
         if (reading)
@@ -512,6 +523,8 @@ struct SaveCodec
         if (reading)
         {
             v.combat_request_ = 0;
+            v.staged_treasure_.reset();
+            v.door_menu_ = false;
             v.staged_enemies_.clear();
             v.staged_art_.clear();
             v.encounter_.reset();

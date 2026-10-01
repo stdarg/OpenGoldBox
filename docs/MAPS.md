@@ -198,7 +198,8 @@ context of area-wide ECL logic rather than assumed to disable all scripting.
 The reference names nonzero directional door values as ordinary door (`1`),
 locked door (`2`), and wizard-locked door (`3`). Those labels do not establish the
 full interaction rules. Wall identifiers, door bits, and script state must be
-validated together.
+validated together. Exploration answers code 2 with the original "Locked."
+menu; see [QUESTS.md](QUESTS.md#locked-doors).
 
 ## Scripts and map events: findings
 

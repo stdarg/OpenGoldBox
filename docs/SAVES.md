@@ -77,6 +77,10 @@ A campaign save stores:
   first-person view reveals visible cells permanently; changing maps or loading
   a save preserves that history. Invalid masks, unknown districts, or missing
   knowledge for visited cells reject the load.
+- Deferred loot: each entry's reward ID and money, plus the creature records it
+  came from (script treasure has none). Encounter loot is rebuilt from those
+  records and must match the saved money. Doors forced open are not saved; a
+  loaded district starts with its original locks.
 
 The `--no-fog` launch flag only changes overhead rendering. It does not fill
 either bitset, and saving while it is enabled does not reveal unexplored areas

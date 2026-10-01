@@ -85,7 +85,7 @@ round advances six seconds. Milliseconds within a minute and precise rest
 completion offsets survive saves, so timing is retained across encounters.
 Turning, looking, blocked steps and menus consume no time. Lasting effects
 advance during movement, combat, waits and rests; see [status effects](STATUS-EFFECTS.md). General
-campaign scheduling, quest rewards and non-shop treasure conversion remain open.
+campaign scheduling remains open; script treasure money follows [QUESTS.md](QUESTS.md#reward).
 
 ## Persistence and verification
 

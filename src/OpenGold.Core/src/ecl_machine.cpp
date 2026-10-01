@@ -701,7 +701,13 @@ bool EclMachine::resume_input(std::uint64_t id, std::string_view input)
         }
         else if (pending_->kind == EclRequestKind::input_string)
         {
-            write_string(*destination_, input.empty() ? std::string_view(" ") : input);
+            // The original input routine returns the typed text in upper case,
+            // so answers such as OHLO match however they were typed.
+            std::string typed(input.empty() ? std::string_view(" ") : input);
+            for (auto &c : typed)
+                if (c >= 'a' && c <= 'z')
+                    c = static_cast<char>(c - 'a' + 'A');
+            write_string(*destination_, typed);
         }
         else
             return false;

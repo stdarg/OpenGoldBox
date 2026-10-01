@@ -52,6 +52,26 @@ namespace
 constexpr std::array<std::uint16_t, 7> money{0x6BBB, 0x6BBD, 0x6BBF, 0x6BC1,
     0x6BC3, 0x6BC5, 0x6BC7};
 constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+
+// GEO door code 2. The original engine answers it with "Locked." and Bash/Pick/
+// Knock/Exit; code 3 (wizard locked) needs magic or exceptional AD&D Strength.
+constexpr std::uint8_t locked_door = 2;
+// Authored SRD conversion of the original Strength-table bash: a Medium (DC 15)
+// Strength (Athletics) check.
+constexpr int locked_door_difficulty = 15;
+
+struct Edge
+{
+    unsigned x{}, y{}, side{}, next_x{}, next_y{}, other{};
+};
+
+Edge edge_ahead(PartyPose pose)
+{
+    const int x = static_cast<int>(pose.x) + dx[pose.facing],
+              y = static_cast<int>(pose.y) + dy[pose.facing];
+    return {pose.x, pose.y, pose.facing, static_cast<unsigned>((x + 16) % 16),
+            static_cast<unsigned>((y + 16) % 16), (pose.facing + 2) % 4};
+}
 } // namespace
 
 void RolfTourSession::configure_town()
@@ -225,6 +245,8 @@ void RolfTourSession::begin_event(unsigned slot)
     saved_area_ = current_area_;
     saved_visited_areas_ = visited_areas_;
     saved_seen_areas_ = seen_areas_;
+    saved_map_ = map_;
+    saved_pending_loot_ = pending_loot_;
     saved_snapshot_ = snapshot_;
     saved_selected_character_ = selected_character_;
     event_stage_ = slot == 0 ? 1 : slot == 2 ? 4 : 2;
@@ -419,11 +441,15 @@ void RolfTourSession::finish_event()
     if (event_stage_ == 1)
     {
         if (!move_party(*pending_movement_))
+        {
+            if (locked_door_ahead())
+            {
+                show_locked_door();
+                return;
+            }
             snapshot_.dialogue = "The way is blocked.";
-        pending_movement_.reset();
-        event_stage_ = 2;
-        if (!machine_.start(1))
-            throw EclError("Cannot search destination");
+        }
+        search_destination();
         return;
     }
     if (event_stage_ == 3)
@@ -476,6 +502,125 @@ void RolfTourSession::finish_event()
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
     ++snapshot_.revision;
+}
+
+// As in the original, the party's cell is searched even when the step failed.
+void RolfTourSession::search_destination()
+{
+    pending_movement_.reset();
+    event_stage_ = 2;
+    if (!machine_.start(1))
+        throw EclError("Cannot search destination");
+}
+
+bool RolfTourSession::locked_door_ahead() const
+{
+    if (!campaign_ || !pending_movement_ || machine_.variable(0x6DC9) == 255)
+        return false;
+    const auto edge = edge_ahead(snapshot_.pose);
+    const auto &from = map_.at(edge.x, edge.y);
+    const auto &to = map_.at(edge.next_x, edge.next_y);
+    const auto passable_or_locked = [](unsigned wall, unsigned door)
+    {
+        return !wall || door == 1 || door == locked_door;
+    };
+    return (from.doors[edge.side] == locked_door || to.doors[edge.other] == locked_door) &&
+           passable_or_locked(from.walls[edge.side], from.doors[edge.side]) &&
+           passable_or_locked(to.walls[edge.other], to.doors[edge.other]);
+}
+
+void RolfTourSession::show_locked_door()
+{
+    // Pick needs thieves' tools and Knock a supported spell; neither is offered.
+    door_menu_ = true;
+    snapshot_.dialogue = "Locked.";
+    snapshot_.choices = {"Bash", "Exit"};
+    snapshot_.phase = TourPhase::awaiting_continue;
+    snapshot_.continue_ticket = ++next_ticket_;
+    ++snapshot_.revision;
+}
+
+void RolfTourSession::force_locked_door()
+{
+    const auto attempts = campaign_->force_door(locked_door_difficulty);
+    for (const auto &attempt : attempts)
+    {
+        const auto &name = campaign_->member(attempt.member).character.sheet().name;
+        snapshot_.dialogue += "\n" + name + " tries to force the door: Strength (Athletics) " +
+                              std::to_string(attempt.roll.total) + " (d20 roll " +
+                              std::to_string(attempt.roll.die) + ") against DC " +
+                              std::to_string(locked_door_difficulty) + ".";
+    }
+    if (attempts.empty() || attempts.back().roll.total < locked_door_difficulty)
+    {
+        snapshot_.dialogue += "\nThe door holds.";
+        return;
+    }
+    snapshot_.dialogue += "\nThe door bursts open.";
+    // The original unlocks both faces in its loaded map; reloading the district relocks them.
+    const auto edge = edge_ahead(snapshot_.pose);
+    const auto unlock = [](std::uint8_t &door)
+    {
+        if (door == locked_door)
+            door = 1;
+    };
+    unlock(map_.cells[edge.y * 16 + edge.x].doors[edge.side]);
+    unlock(map_.cells[edge.next_y * 16 + edge.next_x].doors[edge.other]);
+    if (!move_party(*pending_movement_))
+        throw EclError("The opened door is still blocked");
+}
+
+std::string RolfTourSession::treasure_identity(std::uint16_t address) const
+{
+    // A TREASURE instruction is identified by its script and original address.
+    constexpr char digits[] = "0123456789abcdef";
+    std::string hex;
+    for (int shift = 12; shift >= 0; shift -= 4)
+        hex += digits[(address >> shift) & 15];
+    const std::string archive = current_script_ == 20 ? "ECL2" : "ECL3";
+    return "por:" + archive + ":" + std::to_string(current_script_) + ":treasure:" + hex + ":v1";
+}
+
+void RolfTourSession::stage_treasure(const EclRequest &request)
+{
+    // Operands: copper, silver, electrum, gold, platinum, gems, jewelry, then an
+    // item code: an ITEMn list below 128, 128 + n random items, or 255 for none.
+    const auto items = request.arguments.at(7).value;
+    if (items < 128)
+        throw EclError("Treasure item lists outside shops are not supported");
+    if (!campaign_)
+        throw EclError("Treasure awards require a campaign party");
+    PendingLoot loot;
+    for (unsigned coin = 0; coin < 7; ++coin)
+        loot.wealth[coin] = request.arguments.at(coin).value;
+    loot.reward_id = treasure_identity(request.instruction->address);
+    loot.include_items = false;
+    staged_treasure_ = std::move(loot);
+    if (items != 255)
+        snapshot_.dialogue += "\nNot awarded: " + std::to_string(items - 128) +
+                              " random original treasure item(s). Random item generation is "
+                              "not supported yet.";
+}
+
+void RolfTourSession::award_staged_treasure()
+{
+    auto loot = std::move(*staged_treasure_);
+    staged_treasure_.reset();
+    const auto &claimed = campaign_->state().claimed_rewards;
+    const bool repeated =
+        std::find(claimed.begin(), claimed.end(), loot.reward_id) != claimed.end() ||
+        std::any_of(pending_loot_.begin(), pending_loot_.end(),
+                    [&](const auto & pending)
+    {
+        return pending.reward_id == loot.reward_id;
+    });
+    if (repeated)
+        throw EclError("This script treasure was already awarded; repeatable treasure is not "
+                       "supported");
+    pending_loot_.push_back(std::move(loot));
+    claim_loot();
+    if (!pending_loot_.empty())
+        snapshot_.dialogue += "\nLoot is retained until your party has room in its purses.";
 }
 
 void RolfTourSession::show_encounter_menu()
@@ -610,6 +755,22 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         selected_character_ = slot;
         who_request_ = 0;
         who_slots_.clear();
+        snapshot_.phase = TourPhase::running;
+    }
+    else if (door_menu_)
+    {
+        door_menu_ = false;
+        try
+        {
+            if (choice == 0)
+                force_locked_door();
+            search_destination();
+        }
+        catch (const std::exception &e)
+        {
+            fail(e.what());
+            return true;
+        }
         snapshot_.phase = TourPhase::running;
     }
     else if (message_only_)
@@ -846,6 +1007,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 28:
         treasure_.clear();
+        staged_treasure_.reset();
         staged_enemies_.clear();
         staged_art_.clear();
         staged_records_.clear();
@@ -907,9 +1069,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 39:
     {
+        bool money = false;
         for (unsigned n = 0; n < 7; ++n)
-            if (arg(n))
-                throw EclError("Non-shop treasure awards are not implemented");
+            money = money || arg(n);
+        if (money)
+        {
+            stage_treasure(request);
+            break;
+        }
         if (arg(7) == 255)
             break;
         const auto found = town_->treasure.find(arg(7));
@@ -919,6 +1086,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 36:
+        if (staged_treasure_ && !staged_enemies_.empty())
+            throw EclError("Script treasure added to a fight is not supported");
         if (current_area_ == 20 && !staged_enemies_.empty())
         {
             read_character();
@@ -975,6 +1144,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             snapshot_.diagnostic.clear();
             ++snapshot_.revision;
             return true;
+        }
+        if (staged_treasure_)
+        {
+            // With no monsters loaded, the original COMBAT only hands out the treasure.
+            read_character();
+            award_staged_treasure();
+            reply = character_reply(selected_character_);
+            break;
         }
         throw EclError(machine_.variable(0x6DE2) == 1 ? "Temple healing service"
                        : "This town combat encounter");

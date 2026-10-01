@@ -703,6 +703,37 @@ void CampaignParty::elapse(PartyState &state, std::uint64_t milliseconds,
     state.subminute_milliseconds = static_cast<unsigned>(remainder % 60000);
 }
 
+std::vector<DoorAttempt> CampaignParty::force_door(int difficulty)
+{
+    editable();
+    std::vector<DoorAttempt> attempts;
+    auto random_state = state_.random_state;
+    for (auto id : state_.slots)
+    {
+        if (!id)
+            continue;
+        const auto &m = member(id);
+        if (m.vitals.dead || m.vitals.hit_points == 0)
+            continue;
+        std::vector<std::string> gear;
+        for (auto equipped : m.equipped)
+        {
+            const auto item = m.character.inventory().find(equipped);
+            if (!item)
+                throw std::runtime_error("Equipped item is missing");
+            gear.push_back(item->get().definition_id);
+        }
+
+        const auto roll = rules_->roll_ability_check(m.character.sheet(), gear, 0, "athletics",
+                          random_state);
+        attempts.push_back({id, roll});
+        if (roll.total >= difficulty)
+            break;
+    }
+    state_.random_state = random_state;
+    return attempts;
+}
+
 void CampaignParty::temple_heal(MemberId target)
 {
     editable();

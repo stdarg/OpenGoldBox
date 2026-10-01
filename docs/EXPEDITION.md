@@ -61,6 +61,10 @@ Additional class abilities are available only for Fighter, Cleric, and Wizard.
 A rejected training fight keeps the party screen
 open so the party can be edited and retried.
 
+Locked doors offer the original Bash and Exit, and Ohlo's potion delivery is
+supported from commission to reward; see [QUESTS.md](QUESTS.md). Its long walk
+through the Slums is not yet survivable for the automated test party.
+
 Probabilistic Slums camping and other district transitions are outside this
 first expedition. The first-room victory and required route encounters are the
 acceptance target.

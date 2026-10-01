@@ -267,6 +267,9 @@ void RolfTourSession::restart()
     showing_monster_picture_ = false;
     combat_request_ = 0;
     pending_loot_.clear();
+    saved_pending_loot_.clear();
+    staged_treasure_.reset();
+    door_menu_ = false;
     who_request_ = temple_request_ = 0;
     who_slots_.clear();
     temple_targets_.clear();
@@ -311,6 +314,10 @@ void RolfTourSession::fail(std::string diagnostic)
         party_ = saved_party_;
         current_script_ = saved_script_;
         change_area(saved_area_);
+        map_ = saved_map_;
+        pending_loot_ = saved_pending_loot_;
+        staged_treasure_.reset();
+        door_menu_ = false;
         visited_areas_ = saved_visited_areas_;
         seen_areas_ = saved_seen_areas_;
         if (saved_snapshot_)

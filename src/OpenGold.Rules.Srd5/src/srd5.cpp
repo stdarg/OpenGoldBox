@@ -4969,6 +4969,24 @@ class Module final : public RulesModule
         return result;
     }
 
+    AbilityCheckRoll roll_ability_check(const CharacterSheet &sheet,
+                                        std::span<const std::string> gear, unsigned ability,
+                                        std::string_view skill,
+                                        std::uint64_t &random_state) const override
+    {
+        const auto modifier = ability_check(sheet, gear, ability, skill);
+        auto rng = random_state;
+        int die = roll_die(rng, 20);
+        // Advantage and Disadvantage cancel; either alone rolls a second d20.
+        if (modifier.advantage != modifier.disadvantage)
+        {
+            const int second = roll_die(rng, 20);
+            die = modifier.advantage ? std::max(die, second) : std::min(die, second);
+        }
+        random_state = rng;
+        return {die, die + modifier.total};
+    }
+
     CharacterProfile character_profile(const CharacterSheet &sheet,
                                        std::span<const std::string> gear) const override
     {

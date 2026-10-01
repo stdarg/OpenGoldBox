@@ -23,6 +23,13 @@ AbilityCheckModifier RulesModule::ability_check(const CharacterSheet &,
     throw std::runtime_error("This rules module does not support equipped ability checks");
 }
 
+AbilityCheckRoll RulesModule::roll_ability_check(const CharacterSheet &,
+        std::span<const std::string>, unsigned, std::string_view,
+        std::uint64_t &) const
+{
+    throw std::runtime_error("This rules module does not support rolled ability checks");
+}
+
 unsigned RulesModule::experience_for_level(unsigned) const
 {
     throw std::runtime_error("This rules module does not support advancement");

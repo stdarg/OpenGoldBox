@@ -390,7 +390,8 @@ void memory_and_input()
           "String SAVE, C-string reference and mixed COMPARE");
     check(strings.resume(r.request->id) && strings.run().state == EclState::completed,
           "String continuation");
-    EclMachine input(program({15, 0, 1, 1, 0, 0x97, 16, 0, 1, 1, 1, 0x97, 0}));
+    EclMachine input(
+        program({15, 0, 1, 1, 0, 0x97, 16, 0, 1, 1, 1, 0x97, 16, 0, 1, 1, 1, 0x97, 0}));
     for (std::uint16_t addr = 0x9700; addr <= 0x9729; ++addr)
         input.bind_variable(addr, 0);
     check(input.start(0), "Input start");
@@ -408,8 +409,11 @@ void memory_and_input()
     check(!input.resume_input(r.request->id, std::string("A\0B", 3)) &&
           input.resume_input(r.request->id, ""),
           "NUL rejected, empty input becomes space");
-    check(input.run().state == EclState::completed && input.string(0x9701) == " ",
-          "Input string stored with terminator");
+    r = input.run();
+    check(r.request && input.string(0x9701) == " ", "Input string stored with terminator");
+    check(input.resume_input(r.request->id, "Ohlo") && input.run().state == EclState::completed &&
+          input.string(0x9701) == "OHLO",
+          "Typed text is upper case, as the original input routine returns it");
     auto partial = machine({9, 128, 3, 4, 32, 192, 1, 0, 0x97, 0});
     check(partial.run().state == EclState::faulted && partial.variable(0x9700) == 0,
           "String writes validate full destination first");

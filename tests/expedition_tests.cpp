@@ -175,6 +175,224 @@ void script_payment_tests()
           "Events that only read coins never change the purse");
 }
 
+// Runs a synthetic event until it waits or ends, acknowledging a rollback
+// notice. Returns true when the event failed and was rolled back.
+bool settle_or_rollback(por::RolfTourSession &town, bool until_idle = true)
+{
+    for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+        town.advance(.5);
+    const auto &s = town.snapshot();
+    const bool rolled_back = s.phase == por::TourPhase::awaiting_continue &&
+                             s.dialogue.starts_with("This event is not supported yet");
+    if (rolled_back)
+        check(town.choose(s.continue_ticket, 0), "The rollback notice is acknowledged");
+    if (until_idle)
+        check(town.snapshot().phase == por::TourPhase::completed, "Synthetic event ends");
+    return rolled_back;
+}
+
+// Runs one synthetic Look. False means the event failed and was rolled back.
+bool look(por::RolfTourSession &town)
+{
+    check(town.explore(por::ExplorationCommand::look), "The event starts");
+    return !settle_or_rollback(town);
+}
+
+std::vector<Purse> purses(const PartyState &state)
+{
+    std::vector<Purse> result;
+    for (const auto &member : state.roster)
+        result.push_back(member.wealth);
+    return result;
+}
+
+unsigned claims_starting(const PartyState &state, std::string_view prefix)
+{
+    return unsigned(std::count_if(state.claimed_rewards.begin(), state.claimed_rewards.end(),
+                                  [&](const auto & id)
+    {
+        return id.starts_with(prefix);
+    }));
+}
+
+constexpr std::string_view synthetic_treasure = "por:ECL3:0:treasure:";
+
+// The shape of Ohlo's hand-in: TREASURE 150 pp, 1 jewelry and one random item,
+// COMBAT with no monsters, then the completion flag 0x4A04. Optionally guarded
+// by that flag, and optionally failing afterwards while the second member is selected.
+std::shared_ptr<const por::EclProgram> treasure_program(bool guarded, bool failing)
+{
+    std::vector<std::uint8_t> body;
+    if (guarded)
+        body.insert(body.end(), {3, 1, 0x04, 0x4A, 0, 255, 22, 0});
+    body.insert(body.end(), {39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 150, 0, 0, 0, 1, 0, 129, 36});
+    body.insert(body.end(), {9, 0, 255, 1, 0x04, 0x4A});
+    if (failing)
+        body.insert(body.end(), {3, 1, 0xB4, 0x6D, 0, 1, 22, 40, 0, 0, 0, 0, 0, 0});
+    body.push_back(0);
+    return program(body);
+}
+
+void script_treasure_tests()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(character("Arden"));
+    party->add_pc(character("Bryn", 2));
+    auto resources = std::make_shared<por::PhlanResources>();
+    por::RolfTourSession town({}, treasure_program(true, true), {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle_synthetic(town);
+
+    party->select(1);
+    const auto before = party->checkpoint();
+    check(!look(town) && town.script_diagnostics().size() == 1,
+          "A failure after the award reports and rolls back the event");
+    check(purses(party->checkpoint()) == purses(before) &&
+          party->state().claimed_rewards == before.claimed_rewards &&
+          town.script_variable(0x4A04) == 0,
+          "The rollback restores purses, claims and the quest flag together");
+
+    party->select(0);
+    check(look(town), "The retried event completes");
+    const auto paid = party->checkpoint();
+    check(paid.roster[0].wealth == Purse{0, 0, 0, 0, 150, 0, 1} &&
+          paid.roster[1].wealth == Purse{} && claims_starting(paid, synthetic_treasure) == 1 &&
+          town.script_variable(0x4A04) == 255 && paid.roster[0].experience == 0,
+          "The first living member receives 150 pp and the jewelry once, with no XP");
+    check(town.snapshot().dialogue.find("Not awarded: 1 random original treasure item") !=
+          std::string::npos,
+          "The unsupported random item is reported, not silently dropped");
+
+    check(look(town) && purses(party->checkpoint()) == purses(paid) &&
+          party->state().claimed_rewards == paid.claimed_rewards,
+          "The completed flag keeps a revisit from paying again");
+
+    // Were a script to reach the same TREASURE again, it is refused, not paid twice.
+    por::RolfTourSession repeat({}, treasure_program(false, false), {}, 0x9914, {}, resources);
+    auto other = std::make_shared<CampaignParty>(module());
+    other->add_pc(character("Cora", 3));
+    repeat.campaign_party(other);
+    settle_synthetic(repeat);
+    check(look(repeat), "The unguarded treasure pays once");
+    const auto once = other->checkpoint();
+    check(!look(repeat) && purses(other->checkpoint()) == purses(once) &&
+          other->state().claimed_rewards == once.claimed_rewards &&
+          repeat.script_diagnostics().back().find("already awarded") != std::string::npos,
+          "A repeated award is an explicit, rolled-back failure");
+}
+
+// Full purses defer the treasure without loss; a reload keeps it pending.
+void deferred_treasure_tests()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    const auto arden = party->add_pc(character("Arden"));
+    party->set_wealth(arden, {0, 0, 0, 0, 65535 - 100, 0, 0});
+    const auto script = treasure_program(true, false);
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->programs.emplace(0, script);
+    por::RolfTourSession town({}, script, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle_synthetic(town);
+
+    check(look(town) && town.script_variable(0x4A04) == 255 &&
+          party->member(arden).wealth == Purse{0, 0, 0, 0, 65535 - 100, 0, 0} &&
+          claims_starting(party->checkpoint(), synthetic_treasure) == 0 &&
+          town.snapshot().dialogue.find("Loot is retained") != std::string::npos,
+          "A purse without room defers the whole award and the quest still completes");
+    check(look(town) && party->member(arden).wealth == Purse{0, 0, 0, 0, 65535 - 100, 0, 0},
+          "The award stays pending while there is no room");
+
+    const auto rules = module();
+    const auto bytes = encode_campaign(*party, &town, "treasure");
+    auto loaded = decode_campaign(bytes, *srd5::character_rules(), *rules, "treasure", &town);
+    auto reloaded = std::make_shared<CampaignParty>(module());
+    reloaded->restore(std::move(loaded.party));
+    auto restored = std::move(*loaded.town);
+    restored.attach_restored_party(reloaded);
+    check(encode_campaign(*reloaded, &restored, "treasure") == bytes,
+          "The pending treasure survives a reload");
+
+    reloaded->set_wealth(arden, {0, 0, 0, 0, 100, 0, 0});
+    check(look(restored) && reloaded->member(arden).wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
+          claims_starting(reloaded->checkpoint(), synthetic_treasure) == 1,
+          "Once there is room the deferred treasure is collected exactly once");
+    check(look(restored) && reloaded->member(arden).wealth == Purse{0, 0, 0, 0, 250, 0, 1},
+          "Collected treasure is not collected again");
+}
+
+// One synthetic door: (0,0) east is locked (code 2); (1,0) west is an ordinary door.
+por::GeoMap locked_door_map()
+{
+    por::GeoMap map;
+    map.cells[0].walls[1] = 1;
+    map.cells[0].doors[1] = 2;
+    map.cells[1].walls[3] = 1;
+    map.cells[1].doors[3] = 1;
+    return map;
+}
+
+// Steps east and answers the Locked menu. True when the party got through or the
+// destination's event failed (it is then rolled back).
+bool try_door(por::RolfTourSession &town, std::size_t choice)
+{
+    check(town.explore(por::ExplorationCommand::forward), "The step starts");
+    settle_or_rollback(town, false);
+    const auto &s = town.snapshot();
+    check(s.dialogue == "Locked." && s.choices == std::vector<std::string> {"Bash", "Exit"},
+          "A locked door offers the original Bash and Exit");
+    check(town.choose(s.continue_ticket, choice), "The door choice is accepted");
+    const bool rolled_back = settle_or_rollback(town);
+    return rolled_back || town.snapshot().pose.x == 1;
+}
+
+void locked_door_tests()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(character("Arden"));
+    party->add_pc(character("Bryn", 2));
+    auto resources = std::make_shared<por::PhlanResources>();
+    // The destination's search fails, so an opened door must be rolled back too.
+    const auto failing = program({3, 1, 0x4B, 0xC0, 0, 1, 22, 40, 0, 0, 0, 0, 0, 0, 0});
+    por::RolfTourSession town(locked_door_map(), failing, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle_synthetic(town);
+    town.explore(por::ExplorationCommand::turn_right);
+
+    const auto random = party->state().random_state;
+    check(!try_door(town, 1) && town.snapshot().pose.x == 0 &&
+          party->state().random_state == random && town.map().at(0, 0).doors[1] == 2,
+          "Exit leaves the door locked and rolls nothing");
+
+    unsigned tries = 0;
+    while (!try_door(town, 0))
+    {
+        check(town.snapshot().dialogue.find("The door holds.") != std::string::npos &&
+              town.map().at(0, 0).doors[1] == 2,
+              "A failed Bash reports the checks and leaves the door locked");
+        check(++tries < 40, "The party eventually forces the door");
+    }
+    check(town.snapshot().pose.x == 0 && town.map().at(0, 0).doors[1] == 2 &&
+          town.script_diagnostics().size() == 1,
+          "A failure beyond the door rolls back the move and relocks it");
+
+    const auto passable = program({0});
+    por::RolfTourSession open(locked_door_map(), passable, {}, 0x9914, {}, resources);
+    open.campaign_party(party);
+    settle_synthetic(open);
+    open.explore(por::ExplorationCommand::turn_right);
+    for (tries = 0; !try_door(open, 0); ++tries)
+        check(tries < 40, "The party eventually forces the door");
+    check(open.snapshot().pose.x == 1 && open.map().at(0, 0).doors[1] == 1 &&
+          open.snapshot().dialogue.find("tries to force the door: Strength (Athletics)") !=
+          std::string::npos &&
+          open.snapshot().dialogue.find("The door bursts open.") != std::string::npos,
+          "A successful Bash reports each check, unlocks the door and moves the party");
+    open.explore(por::ExplorationCommand::turn_around);
+    open.explore(por::ExplorationCommand::forward);
+    settle_synthetic(open);
+    check(open.snapshot().pose.x == 0, "The opened door stays open in both directions");
+}
+
 using Answer = std::function<std::size_t(const por::TourSnapshot &)>;
 
 // Original peaceful answers. Roaming groups are fled from, as in the audited
@@ -212,7 +430,7 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
 
 // Plays the current event until exploration resumes or a shop opens.
 void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
-            const Answer &answer = peaceful)
+            const Answer &answer = peaceful, std::string_view typed = "0")
 {
     for (unsigned n = 0; n < 5000; ++n)
     {
@@ -230,7 +448,7 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
             check(town.choose(s.continue_ticket, answer(s)), "The script accepts the answer");
             break;
         case por::TourPhase::awaiting_input:
-            check(town.input(s.continue_ticket, "0"), "The script accepts the input");
+            check(town.input(s.continue_ticket, typed), "The script accepts the input");
             break;
         case por::TourPhase::combat:
             fight(town, party);
@@ -252,13 +470,26 @@ void face(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &part
     }
 }
 
-// Breadth-first walk over open edges, through the original movement events.
-void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned tx,
-             unsigned ty)
+void step(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned facing,
+          const Answer &answer = peaceful, std::string_view typed = "0")
 {
+    face(town, party, facing);
+    town.explore(por::ExplorationCommand::forward);
+    settle(town, party, answer, typed);
+}
+
+// Breadth-first walk over open edges, through the original movement events.
+// With bash_doors, locked doors are part of the route and are retried until forced.
+void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned tx,
+             unsigned ty, const Answer &answer = peaceful, bool bash_doors = false)
+{
+    const auto locked = [&](unsigned wall, unsigned door)
+    {
+        return bash_doors && wall && door == 2;
+    };
     constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     std::set<std::pair<int, int>> refused;
-    for (unsigned step = 0; step < 400; ++step)
+    for (unsigned moves = 0; moves < 400; ++moves)
     {
         const auto p = town.snapshot().pose;
         if (p.x == tx && p.y == ty)
@@ -281,8 +512,11 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
                 const auto &a = town.map().at(cell % 16, cell / 16);
                 const auto &b = town.map().at(x, y);
                 const unsigned reverse = (d + 2) % 4;
-                if (a.doors[d] > 1 || b.doors[reverse] > 1 || (a.walls[d] && !a.doors[d]) ||
-                        (b.walls[reverse] && !b.doors[reverse]))
+                const auto blocked = [&](unsigned wall, unsigned door)
+                {
+                    return !locked(wall, door) && (door > 1 || (wall && !door));
+                };
+                if (blocked(a.walls[d], a.doors[d]) || blocked(b.walls[reverse], b.doors[reverse]))
                     continue;
                 const int next = y * 16 + x;
                 if (previous[next] >= 0 || refused.contains({cell, next}))
@@ -299,22 +533,20 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
                                 : 0;
-        face(town, party, facing);
-        town.explore(por::ExplorationCommand::forward);
-        settle(town, party);
+        step(town, party, facing, answer);
         const auto now = town.snapshot().pose;
-        if (int(now.y * 16 + now.x) != next)
+        const int reached = int(now.y * 16 + now.x);
+        const auto &edge = town.map().at(p.x, p.y);
+        const auto &far = town.map().at(next % 16, next / 16);
+        const bool door_held = locked(edge.walls[facing], edge.doors[facing]) ||
+                               locked(far.walls[(facing + 2) % 4], far.doors[(facing + 2) % 4]);
+        // A held door is bashed again. Fleeing a roaming group relocates the
+        // party; quest walks then replan rather than giving up on the edge.
+        const bool fled = bash_doors && reached != origin;
+        if (reached != next && !door_held && !fled)
             refused.insert({origin, next});
     }
     throw std::runtime_error("Walk did not arrive");
-}
-
-void step(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned facing,
-          const Answer &answer = peaceful)
-{
-    face(town, party, facing);
-    town.explore(por::ExplorationCommand::forward);
-    settle(town, party, answer);
 }
 
 struct Expedition
@@ -483,10 +715,11 @@ void rest_at_inn(Expedition &trip)
 void revisit_orcs(Expedition &trip)
 {
     auto &[party, town] = trip;
-    const auto before = party->checkpoint();
     walk_to(town, party, 0, 4);
     step(town, party, 3);
     walk_to(town, party, 12, 1);
+    // Roaming groups met on the way may be fought; the revisit itself pays nothing.
+    const auto before = party->checkpoint();
     town.explore(por::ExplorationCommand::look);
     settle(town, party);
     check(town.script_variable(0x4ACA) == 255 && orc_rewards(*party) == 2 &&
@@ -498,12 +731,144 @@ void revisit_orcs(Expedition &trip)
               "Revisiting keeps XP and purses");
 }
 
+constexpr std::string_view ohlo_reward = "por:ECL2:20:treasure:a390:v1";
+
+// Ohlo's commission: bash locked doors, TALK and parley NICE, accept, SPEAK at
+// the booth, GIVE the potion. Roaming groups are still fled from.
+std::size_t quest_answer(const por::TourSnapshot &s)
+{
+    for (const auto *wanted :
+            {"Bash", "TALK", "NICE", "ACCEPT THE COMMISSION", "SPEAK", "GIVE"
+            })
+        for (std::size_t n = 0; n < s.choices.size(); ++n)
+            if (s.choices[n] == wanted)
+                return n;
+    return peaceful(s);
+}
+
+// Steps west from (14,10) into Ohlo's room until the forced door lets the party
+// in. Returns the party as it was just before the step that reached Ohlo.
+PartyState enter_ohlo_room(Expedition &trip, std::uint16_t until_commission)
+{
+    auto &[party, town] = trip;
+    walk_to(town, party, 14, 10, quest_answer, true);
+    auto before = party->checkpoint();
+    for (unsigned tries = 0; town.script_variable(0x4A04) != until_commission; ++tries)
+    {
+        check(tries < 40, "The party forces Ohlo's door");
+        before = party->checkpoint();
+        step(town, party, 3, quest_answer);
+    }
+    const auto pose = town.snapshot().pose;
+    check(pose.x == 14 && pose.y == 10 && pose.facing == 1,
+          "Ohlo's script returns the party outside his door");
+    return before;
+}
+
+unsigned ohlo_rewards(const CampaignParty &party)
+{
+    const auto &claimed = party.state().claimed_rewards;
+    return unsigned(std::count(claimed.begin(), claimed.end(), ohlo_reward));
+}
+
+// From New Phlan: accept Ohlo's commission, fetch the potion from the Old Rope
+// Guild booth, hand it in for the reward, then return to New Phlan.
+void ohlo_quest(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    // As in the audit, the party first spends the four orcs' 300 XP on level two.
+    for (const auto id : party->state().slots)
+        if (id)
+        {
+            check(party->can_advance(id), "The orcs' experience earns level two");
+            party->advance(id, party->default_advancement(id));
+        }
+    walk_to(town, party, 0, 4);
+    step(town, party, 3);
+    check(town.snapshot().area_id == 20, "The west gate leads into the Slums");
+
+    const auto accepting = enter_ohlo_room(trip, 250);
+    check(town.script_variable(0x4A81) == 0 &&
+          purses(*party) == purses(accepting) &&
+          party->state().claimed_rewards == accepting.claimed_rewards,
+          "Accepting the commission sets its flag and pays nothing");
+
+    walk_to(town, party, 14, 12, quest_answer, true);
+    step(town, party, 1, quest_answer, "ohlo");
+    check(town.script_variable(0x4A81) == 250 &&
+          town.snapshot().dialogue.find("RETURNS WITH A PACKAGE") != std::string::npos,
+          "Speaking Ohlo's name at the booth obtains the potion");
+
+    const auto before = enter_ohlo_room(trip, 255);
+    check(town.script_variable(0x4A81) == 255 && ohlo_rewards(*party) == 1,
+          "Handing in the potion completes the quest and claims the reward once");
+    const auto after = party->checkpoint();
+    auto claims = before.claimed_rewards;
+    claims.emplace_back(ohlo_reward);
+    check(after.claimed_rewards == claims, "The hand-in claims only Ohlo's reward");
+    check(after.roster[0].wealth[4] == before.roster[0].wealth[4] + 150 &&
+          after.roster[0].wealth[6] == before.roster[0].wealth[6] + 1,
+          "The first living member receives Ohlo's 150 pp and jewelry");
+    for (std::size_t n = 0; n < after.roster.size(); ++n)
+    {
+        check(after.roster[n].experience == before.roster[n].experience,
+              "The original hand-in grants no experience");
+        if (n)
+            check(after.roster[n].wealth == before.roster[n].wealth,
+                  "Only the first living member is paid");
+    }
+    walk_to(town, party, 15, 4);
+    step(town, party, 1);
+    check(town.snapshot().area_id == 0, "The party returns to New Phlan");
+}
+
+// After completion, Ohlo's room and the booth are quiet and pay nothing again.
+void revisit_ohlo(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    if (town.snapshot().area_id == 0)
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+    }
+    // Each quiet visit is checked on its own, apart from roaming fights on the way.
+    const auto visit = [&](unsigned x, unsigned y, unsigned facing)
+    {
+        walk_to(town, party, x, y, quest_answer, true);
+        const auto before = party->checkpoint();
+        step(town, party, facing, quest_answer, "OHLO");
+        const bool arrived = town.snapshot().pose.x == x + (facing == 1 ? 1 : -1);
+        check(!arrived || (purses(*party) == purses(before) &&
+                           party->state().claimed_rewards == before.claimed_rewards),
+              "A completed quest location pays nothing again");
+    };
+    for (unsigned tries = 0; town.snapshot().pose.x != 13; ++tries)
+    {
+        check(tries < 40, "The party forces Ohlo's door again");
+        visit(14, 10, 3);
+    }
+    step(town, party, 1);
+    visit(14, 12, 1);
+    // 0x4A04 is area-local (cleared on entering the Slums); 0x4A81 records completion.
+    check(town.snapshot().pose.x == 15 && town.script_variable(0x4A81) == 255 &&
+          ohlo_rewards(*party) == 1,
+          "Revisiting Ohlo and the booth keeps the quest complete without a second reward");
+}
+
+// Ohlo's route crosses much of the Slums, where unavoidable roaming fights are
+// currently lost by this automated party (docs/QUESTS.md). Run it on request.
+bool ohlo_route_requested()
+{
+    const auto *flag = std::getenv("OPENGOLD_OHLO_ROUTE");
+    return flag && std::string_view(flag) == "1";
+}
+
 std::filesystem::path revisit_result(const std::filesystem::path &save)
 {
     return std::filesystem::path(save).concat(".revisit");
 }
 
-// Runs in a fresh process: load the save, revisit the orcs, record the result.
+// Runs in a fresh process: load the save, revisit the orcs and Ohlo, record the result.
 void reload_and_revisit(const std::filesystem::path &save, const std::filesystem::path &directory)
 {
     const auto assets = campaign_asset_identity(directory);
@@ -519,6 +884,8 @@ void reload_and_revisit(const std::filesystem::path &save, const std::filesystem
           "The reloaded campaign is the saved campaign");
     check(!party->rest(), "The inn's rest timer survives the reload");
     revisit_orcs(trip);
+    if (ohlo_route_requested())
+        revisit_ohlo(trip);
     write_campaign_file(revisit_result(save), encode_campaign(*party, &trip.town, assets));
 }
 
@@ -541,6 +908,11 @@ void installed_first_expedition(const std::filesystem::path &executable,
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
     check(read_campaign_file(std::filesystem::path(save).concat(".bak")) == after_return,
           "Replacing a save keeps the previous one as a backup");
+    if (ohlo_route_requested())
+    {
+        ohlo_quest(trip);
+        write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
+    }
 
     auto command = "\"" + executable.string() + "\" --revisit \"" + save.string() + "\"";
 #ifdef _WIN32
@@ -548,12 +920,16 @@ void installed_first_expedition(const std::filesystem::path &executable,
 #endif
     check(std::system(command.c_str()) == 0, "A fresh process reloads and revisits the event");
     revisit_orcs(trip);
+    if (ohlo_route_requested())
+        revisit_ohlo(trip);
     check(read_campaign_file(revisit_result(save)) ==
           encode_campaign(*trip.party, &trip.town, assets),
           "Continuing after a reload matches continuing without one");
     std::filesystem::remove_all(folder);
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
               "returned, paid the inn with change, rested, reloaded and revisited.\n";
+    if (ohlo_route_requested())
+        std::cout << "Installed Ohlo route: commission, booth, reward, reload and revisit.\n";
 }
 
 } // namespace
@@ -570,6 +946,9 @@ int main(int argc, char **argv)
         }
         coin_purse_tests();
         script_payment_tests();
+        script_treasure_tests();
+        deferred_treasure_tests();
+        locked_door_tests();
         if (directory && *directory)
             installed_first_expedition(std::filesystem::absolute(argv[0]), directory);
         std::cout << "Expedition tests passed.\n";

@@ -225,6 +225,12 @@ struct HitDieResult
     unsigned remaining{};
 };
 
+// One rolled d20 ability check: the kept die and the check total.
+struct AbilityCheckRoll
+{
+    int die{}, total{};
+};
+
 using EntityId = std::uint32_t;
 
 struct Cell
@@ -482,6 +488,10 @@ class RulesModule
     [[nodiscard]] virtual AbilityCheckModifier
     ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
                   std::string_view skill = {}) const;
+    // Rolls that check outside combat, advancing the campaign service random state.
+    [[nodiscard]] virtual AbilityCheckRoll
+    roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
+                       std::string_view skill, std::uint64_t &random_state) const;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const;
     // False means this module's supported advancement ceiling was reached.
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state) const;
