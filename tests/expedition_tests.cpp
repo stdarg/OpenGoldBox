@@ -944,12 +944,11 @@ unsigned ohlo_rewards(const CampaignParty &party)
     return unsigned(std::count(claimed.begin(), claimed.end(), ohlo_reward));
 }
 
-// From New Phlan: accept Ohlo's commission, fetch the potion from the Old Rope
-// Guild booth, hand it in for the reward, then return to New Phlan.
-void ohlo_quest(Expedition &trip)
+// From New Phlan: spend the four orcs' XP on level two, as in the audit, enter
+// the Slums and accept Ohlo's commission. The party waits outside his door.
+void accept_commission(Expedition &trip)
 {
     auto &[party, town] = trip;
-    // As in the audit, the party first spends the four orcs' 300 XP on level two.
     for (const auto id : party->state().slots)
         if (id)
         {
@@ -965,18 +964,41 @@ void ohlo_quest(Expedition &trip)
           purses(*party) == purses(accepting) &&
           party->state().claimed_rewards == accepting.claimed_rewards,
           "Accepting the commission sets its flag and pays nothing");
+}
 
+// Fetches the potion from the Old Rope Guild booth. Saving is refused while
+// the booth's dialogue waits for an answer.
+void fetch_potion(Expedition &trip, const std::string &assets)
+{
+    auto &[party, town] = trip;
     // The fights on the way to the booth wear down a party that never rests.
     walk_to(town, party, 14, 12, quest_answer, true, true);
-    step(town, party, 1, quest_answer, "ohlo");
+    face(town, party, 1);
+    town.explore(por::ExplorationCommand::forward);
+    while (town.snapshot().phase == por::TourPhase::running)
+        town.advance(.5);
+    check(town.snapshot().phase == por::TourPhase::awaiting_continue,
+          "The booth's dialogue waits for an answer");
+    check(rejects([&]
+    {
+        (void)encode_campaign(*party, &town, assets);
+    }),
+    "A save during the booth's dialogue is refused");
+    settle(town, party, quest_answer, "ohlo");
     check(town.script_variable(0x4A81) == 250 &&
           town.snapshot().dialogue.find("RETURNS WITH A PACKAGE") != std::string::npos,
           "Speaking Ohlo's name at the booth obtains the potion");
+}
 
-    const auto before = enter_ohlo_room(trip, 255);
-    check(town.script_variable(0x4A81) == 255 && ohlo_rewards(*party) == 1,
-          "Handing in the potion completes the quest and claims the reward once");
-    const auto after = party->checkpoint();
+// Walks from the booth back to Ohlo's door.
+void return_to_ohlo(Expedition &trip)
+{
+    walk_to(trip.town, trip.party, 14, 10, quest_answer, true);
+}
+
+// Ohlo's reward, from just before the hand-in to just after it.
+void check_ohlo_reward(const PartyState &before, const PartyState &after)
+{
     auto claims = before.claimed_rewards;
     claims.emplace_back(ohlo_reward);
     check(after.claimed_rewards == claims, "The hand-in claims only Ohlo's reward");
@@ -1000,6 +1022,16 @@ void ohlo_quest(Expedition &trip)
             check(after.roster[n].wealth == before.roster[n].wealth,
                   "Only the first living member is paid");
     }
+}
+
+// Hands the potion to Ohlo for his reward, then returns to New Phlan.
+void hand_in_potion(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    const auto before = enter_ohlo_room(trip, 255);
+    check(town.script_variable(0x4A81) == 255 && ohlo_rewards(*party) == 1,
+          "Handing in the potion completes the quest and claims the reward once");
+    check_ohlo_reward(before, party->checkpoint());
     walk_to(town, party, 15, 4);
     step(town, party, 1);
     check(town.snapshot().area_id == 0, "The party returns to New Phlan");
@@ -1111,9 +1143,8 @@ std::filesystem::path revisit_result(const std::filesystem::path &save)
     return std::filesystem::path(save).concat(".revisit");
 }
 
-// Runs in a fresh process: load the save, revisit the orcs and Ohlo, camp in the
-// Slums and record the result.
-void reload_and_revisit(const std::filesystem::path &save, const std::filesystem::path &directory)
+// Loads a saved campaign as the game does, which must re-encode to the same bytes.
+Expedition load_expedition(const std::filesystem::path &save, const std::filesystem::path &directory)
 {
     const auto assets = campaign_asset_identity(directory);
     const auto bytes = read_campaign_file(save);
@@ -1126,11 +1157,80 @@ void reload_and_revisit(const std::filesystem::path &save, const std::filesystem
     trip.town.attach_restored_party(party);
     check(encode_campaign(*party, &trip.town, assets) == bytes,
           "The reloaded campaign is the saved campaign");
+    return trip;
+}
+
+// Runs in a fresh process: load the save, revisit the orcs and Ohlo, camp in the
+// Slums and record the result.
+void reload_and_revisit(const std::filesystem::path &save, const std::filesystem::path &directory)
+{
+    const auto assets = campaign_asset_identity(directory);
+    auto trip = load_expedition(save, directory);
+    auto &party = trip.party;
     check(!party->rest(), "The inn's rest timer survives the reload");
     revisit_orcs(trip);
     revisit_ohlo(trip);
     slums_camp_ambush(trip);
     write_campaign_file(revisit_result(save), encode_campaign(*party, &trip.town, assets));
+}
+
+std::filesystem::path checkpoint_save(const std::filesystem::path &folder,
+                                      std::string_view checkpoint)
+{
+    return folder / (std::string(checkpoint) + ".ogs");
+}
+
+std::filesystem::path resume_result(const std::filesystem::path &save)
+{
+    return std::filesystem::path(save).concat(".resumed");
+}
+
+// Runs in a fresh process: load a save made in the Slums during Ohlo's quest and
+// play on to the next save point, recording the result. Loading relocks forced
+// doors, so the run that reaches Ohlo's door with the potion records the result
+// there and then forces his door again to finish the quest.
+void resume_quest(std::string_view checkpoint, const std::filesystem::path &save,
+                  const std::filesystem::path &directory)
+{
+    const auto assets = campaign_asset_identity(directory);
+    auto trip = load_expedition(save, directory);
+    const auto &town = trip.town;
+    check(town.snapshot().area_id == 20 && town.script_variable(0x4A04) == 250 &&
+          ohlo_rewards(*trip.party) == 0,
+          "The Slums save keeps the accepted commission and no reward");
+    if (checkpoint == "accepted")
+    {
+        check(town.script_variable(0x4A81) == 0, "The potion is not yet fetched");
+        fetch_potion(trip, assets);
+        write_campaign_file(resume_result(save), encode_campaign(*trip.party, &trip.town, assets));
+        return;
+    }
+    check(town.script_variable(0x4A81) == 250, "The fetched potion is kept for the hand-in");
+    return_to_ohlo(trip);
+    write_campaign_file(resume_result(save), encode_campaign(*trip.party, &trip.town, assets));
+    hand_in_potion(trip);
+}
+
+// Checks a save the game wrote after the player handed in the potion, starting
+// from the fixture saved at Ohlo's door (OPENGOLD_OHLO_FIXTURE).
+void verify_hand_in(const std::filesystem::path &at_door, const std::filesystem::path &handed_in,
+                    const std::filesystem::path &directory)
+{
+    const auto before = load_expedition(at_door, directory);
+    const auto after = load_expedition(handed_in, directory);
+    check(after.town.snapshot().area_id == 20 && after.town.script_variable(0x4A81) == 255 &&
+          ohlo_rewards(*after.party) == 1,
+          "The game's save holds the completed quest and one reward");
+    check_ohlo_reward(before.party->checkpoint(), after.party->checkpoint());
+}
+
+int run(const std::string &command)
+{
+#ifdef _WIN32
+    return std::system(("\"" + command + "\"").c_str()); // cmd.exe strips one outer pair of quotes.
+#else
+    return std::system(command.c_str());
+#endif
 }
 
 void installed_first_expedition(const std::filesystem::path &executable,
@@ -1152,14 +1252,35 @@ void installed_first_expedition(const std::filesystem::path &executable,
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
     check(read_campaign_file(std::filesystem::path(save).concat(".bak")) == after_return,
           "Replacing a save keeps the previous one as a backup");
-    ohlo_quest(trip);
+    accept_commission(trip);
+    const auto accepted = encode_campaign(*trip.party, &trip.town, assets);
+    write_campaign_file(checkpoint_save(folder, "accepted"), accepted);
+    fetch_potion(trip, assets);
+    const auto potion = encode_campaign(*trip.party, &trip.town, assets);
+    write_campaign_file(checkpoint_save(folder, "potion"), potion);
+    return_to_ohlo(trip);
+    const auto at_ohlo_door = encode_campaign(*trip.party, &trip.town, assets);
+    // The game's own save controls load this fixture in tests/ohlo_save_route_tests.gd.
+    if (const auto *fixture = std::getenv("OPENGOLD_OHLO_FIXTURE"))
+        write_campaign_file(fixture, at_ohlo_door);
+    hand_in_potion(trip);
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
 
-    auto command = "\"" + executable.string() + "\" --revisit \"" + save.string() + "\"";
-#ifdef _WIN32
-    command = "\"" + command + "\""; // cmd.exe strips one outer pair of quotes.
-#endif
-    check(std::system(command.c_str()) == 0, "A fresh process reloads and revisits the event");
+    const auto program = "\"" + executable.string() + "\"";
+    const auto resume = [&](std::string_view checkpoint)
+    {
+        const auto resumed = checkpoint_save(folder, checkpoint);
+        check(run(program + " --resume " + std::string(checkpoint) + " \"" + resumed.string() +
+                  "\"") == 0,
+              "A fresh process loads the Slums save and plays on");
+        return read_campaign_file(resume_result(resumed));
+    };
+    check(resume("accepted") == potion,
+          "Fetching the potion after a reload matches fetching it without one");
+    check(resume("potion") == at_ohlo_door,
+          "Returning to Ohlo after a reload matches returning without one");
+    check(run(program + " --revisit \"" + save.string() + "\"") == 0,
+          "A fresh process reloads and revisits the event");
     revisit_orcs(trip);
     revisit_ohlo(trip);
     slums_camp_ambush(trip);
@@ -1168,8 +1289,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
           "Continuing after a reload, camp interruptions included, matches continuing without one");
     std::filesystem::remove_all(folder);
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
-              "returned, paid the inn with change, rested, delivered Ohlo's potion, reloaded, "
-              "revisited and camped in the Slums.\n";
+              "returned, paid the inn with change, rested, delivered Ohlo's potion, finished "
+              "it again from each Slums save, reloaded, revisited and camped in the Slums.\n";
 }
 
 } // namespace
@@ -1182,6 +1303,17 @@ int main(int argc, char **argv)
         if (argc == 3 && std::string_view(argv[1]) == "--revisit")
         {
             reload_and_revisit(argv[2], directory);
+            return 0;
+        }
+        if (argc == 4 && std::string_view(argv[1]) == "--verify-hand-in")
+        {
+            verify_hand_in(argv[2], argv[3], directory);
+            std::cout << "Ohlo hand-in save verified.\n";
+            return 0;
+        }
+        if (argc == 4 && std::string_view(argv[1]) == "--resume")
+        {
+            resume_quest(argv[2], argv[3], directory);
             return 0;
         }
         coin_purse_tests();

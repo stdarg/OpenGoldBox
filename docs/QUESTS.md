@@ -140,3 +140,34 @@ monsters as SRD stat blocks and their encounters scaled back to the default
 ([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)).
 Before that change, the converted goblins defeated the party in the Old Rope
 Guild; the [balance audit](audits/slums-encounter-balance.md) records why.
+
+### Saving during the quest
+
+Issue [#15](https://github.com/stdarg/OpenGold/issues/15). The route saves at
+three idle points in the Slums: after accepting the commission (outside Ohlo's
+door), after fetching the potion (in the booth) and back at Ohlo's door with the
+potion. Each save loads in a fresh process and re-encodes to the same bytes.
+From the first, fetching the potion gives exactly the second save, fights and
+dice included; from the second, walking back gives exactly the third. Saving
+while the booth's dialogue waits for an answer is refused.
+
+Loading relocks doors forced open ([locked doors](#locked-doors)), so after a
+reload the party bashes Ohlo's door again before the hand-in. That costs
+another "Locked." prompt, so the hand-in itself is checked by outcome rather
+than byte for byte: flags 255, Ohlo's reward claimed once, 150 pp and jewelry
+to the first member, one original item, no XP.
+
+`opengold_godot_ohlo_save_route` (CTest, label `godot`, skipped without
+`OPENGOLD_GAME_DIR`) does the same through the game's controls. The expedition
+route writes the save at Ohlo's door (`OPENGOLD_OHLO_FIXTURE`); a fresh Godot
+process loads it with **Load game**, enters the Slums at `(14,10)`, bashes the
+door, chooses GIVE and saves with **Save game**; it then loads that save, finds
+Ohlo no longer asks for the potion and saves again.
+`opengold_expedition_tests --verify-hand-in` checks both saves the game wrote.
+Godot's user data is redirected to the build tree, so a player's saves and
+settings are untouched. Verified on macOS with Godot 4.7.2 and the Steam PC 1.3
+files ([MD5 manifest](../src/OpenGoldBox/godot/config/por-pc13-md5.json)):
+
+```bash
+OPENGOLD_GAME_DIR=/path/to/POOLRAD ctest --preset macos-universal -R 'expedition|ohlo'
+```

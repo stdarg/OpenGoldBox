@@ -39,7 +39,8 @@ change the current format in place.
 
 ## Supported boundaries and state
 
-Saving/loading is supported from the party roster and idle New Phlan exploration.
+Saving/loading is supported from the party roster and idle exploration in New Phlan
+or the Slums.
 Town controls are disabled while dialogue, input, shopping or services are pending.
 Combat must finish and return to the roster first. The core also rejects saving
 during combat or an unfinished town event. A completed Short Rest spending window
@@ -168,6 +169,10 @@ Run the visual command from a temporary PowerShell session so its profile overri
 does not affect later interactive launches. Captures go to `user-data`; repeat at
 1120x800. The tested Windows build uses Godot 4.7.2 and the repository's C++20
 MSVC/GDExtension configuration.
+
+Ohlo's quest is saved and reloaded at its Slums save points by
+`opengold_expedition_tests` and through the game's own save controls by
+`opengold_godot_ohlo_save_route`; see [saving during the quest](QUESTS.md#saving-during-the-quest).
 
 This completes the bounded existing-flow persistence milestone, not the complete
 expedition in issue #1. Issue #10 retains future class-feature/training coverage
