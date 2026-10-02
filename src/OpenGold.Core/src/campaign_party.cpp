@@ -188,8 +188,22 @@ std::string equipment_conversion(const por::Equipment &item)
         return "arrow";
     case 50:
         return "leather";
+    case 51:
+        return "padded";
+    case 52:
+        return "studded_leather";
+    case 53:
+        return "ring_mail";
+    case 54:
+        return "scale_mail";
     case 55:
         return "chain_mail";
+    // SRD 5.2.1 has no Banded Mail; Splint is its heavy armor with the same AD&D AC 4.
+    case 56:
+    case 57:
+        return "splint";
+    case 58:
+        return "plate";
     case 59:
         return "shield";
     default:

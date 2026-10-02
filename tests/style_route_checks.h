@@ -383,7 +383,7 @@ void run()
                     p.end_combat();
                 }
                 const auto saved = encode_campaign(p, nullptr, "style-routes");
-                check(saved.starts_with("OPENGOLD-CAMPAIGN 20\n"),
+                check(saved.starts_with("OPENGOLD-CAMPAIGN 21\n"),
                       "Style history is written in the current campaign format");
                 CampaignParty restored(rogue_attack_checks::rules_module());
                 restored.restore(

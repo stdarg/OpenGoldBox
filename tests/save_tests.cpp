@@ -62,7 +62,7 @@ template <class F> std::string rejection_message(F f)
 }
 
 // The only campaign format this build reads and writes.
-constexpr unsigned current_campaign_format = 20;
+constexpr unsigned current_campaign_format = 21;
 
 // The checksum line covers only the body, so rewriting the header number
 // changes nothing but the claimed format.
@@ -343,14 +343,17 @@ void check_campaign_format_cutoff(const std::string &saved, const rules::RulesMo
                                   &town_template);
         });
     };
-    check(saved.starts_with("OPENGOLD-CAMPAIGN 20\n"), "The writer emits campaign format 20");
+    check(saved.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(current_campaign_format) + "\n"),
+          "The writer emits the current campaign format");
     check(decode_error(saved).empty(), "The current writer's campaign loads");
-    check(decode_error(with_campaign_format(saved, 19)) == rules::older_save_message,
+    check(decode_error(with_campaign_format(saved, current_campaign_format - 1)) ==
+          rules::older_save_message,
           "An older campaign format is refused as an older pre-release save");
     check(decode_error(changed_identity(saved, rules.identity().version, "0.6.61")) ==
           rules::older_save_message,
           "A campaign from another rules version is refused as an older pre-release save");
-    check(decode_error(with_campaign_format(saved, 21)) == "Unsupported campaign save version",
+    check(decode_error(with_campaign_format(saved, current_campaign_format + 1)) ==
+          "Unsupported campaign save version",
           "An unknown newer campaign format is unsupported");
 }
 

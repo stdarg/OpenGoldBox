@@ -75,6 +75,24 @@ unaffordable purchases and purchases when full without charging gold.
 Selling, equipping and item activation are not implemented. Scripts that ask
 for particular coins make change; see [coin payments](#coin-payments).
 
+### Equipment conversion in the game
+
+In the game, a bought item converts to SRD equipment by its original type
+(`equipment_conversion`, `campaign_party.cpp`). Since [#18](https://github.com/stdarg/OpenGold/issues/18)
+([SHOP-1](SRD-DECISIONS.md#shop-1-2026-10-02-shop-armor-and-unusable-stock))
+every armor the arms shop sells converts by name: Padded, Studded Leather, Ring
+Mail, Scale Mail, Splint Mail and Plate Mail (Silver Plate Mail too). SRD 5.2.1
+has no Banded Mail, so it becomes Splint, the SRD heavy armor with the same
+AD&D AC 4. Magic or cursed items keep their unsupported original record.
+
+Stock with no conversion (jewelry, holy symbols, mirrors, oil, holy water) is
+still for sale, and its entry reads "{item} / {price} gp / cannot be equipped"
+before anything is spent. It keeps its original record, as treasure does.
+`opengold_expedition_tests` checks the conversions, a Cleric buying and wearing
+Scale Mail, and, with original files, that the whole arms shop converts.
+`opengold_godot_shop_disclosure` opens the jeweler in the game in English and
+Spanish and reads the marked list.
+
 HEAD3/BODY3 records provide 88 x 40 heads and 88 x 48 bodies, combined according
 to the script's portrait selection. PIC3 and SPRIT3 supply supported pictures
 and encounter sprites. All images and items load from the user's installation;

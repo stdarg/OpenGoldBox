@@ -112,7 +112,7 @@ original campaign conversions and prices. The [armor catalog](ARMOR.md)
 uses shared category definitions for equipment, AC and starting-class training;
 equipped ability checks combine these penalties with character skill/tool grants.
 Core only collects equipped IDs and delegates the query to the rules module. The campaign
-save (`OPENGOLD-CAMPAIGN 20`) stores the clock, encounter scopes, rules-owned effect state and
+save (`OPENGOLD-CAMPAIGN 21`) stores the clock, encounter scopes, rules-owned effect state and
 acquired feature/feat grants with source IDs, acquisition levels and choices.
 It also stores training selections and source grants, completed Short Rest
 spending tickets and individual eligibility records.

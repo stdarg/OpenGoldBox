@@ -431,3 +431,15 @@ Cleric cantrip; Sacred Flame is the only one, so there is nothing to replace it
 with. The Slums [balance audit](audits/slums-encounter-balance.md) was measured
 again with prepared Cleric healing; the `encounter_challenge` default is
 unchanged.
+
+## SHOP-1 (2026-10-02): shop armor and unusable stock
+
+For [#18](https://github.com/stdarg/OpenGold/issues/18) the user chose the
+recommended answers:
+
+1. Original armor converts to the SRD armor of the same name: Padded, Studded
+   Leather, Ring Mail, Scale Mail, Splint Mail and Plate Mail. Banded Mail, which
+   SRD 5.2.1 lacks, converts to Splint (same AD&D AC 4). Magic or cursed items
+   stay unsupported.
+2. Stock that still has no conversion stays for sale and is marked "cannot be
+   equipped" in the shop list. No new controls.

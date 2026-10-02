@@ -26,7 +26,7 @@ summarized first; the later sections are the delivery history.
   [Recovery clocks](RECOVERY-CLOCKS.md) for death saves after combat.
 - The rest dialog has no Resume Long Rest or End Rest; it offers Start, then
   Heal with Hit Dice and Finish after a Short Rest.
-- Campaign format 20 stores no rest activity and no detached (ground) items. It
+- Campaign format 21 stores no rest activity and no detached (ground) items. It
   stores the camp interruption step count.
 - Evidence: `alternate_rules_boundary`, `campaign_services`,
   `watch_interruption_and_rollback`, `safe_camp_profile`, `slums_street_profile`,

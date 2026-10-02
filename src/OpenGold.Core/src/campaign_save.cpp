@@ -12,7 +12,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 20;
+constexpr unsigned campaign_format = 21;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)

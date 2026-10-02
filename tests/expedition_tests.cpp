@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <queue>
 #include <set>
 #include <stdexcept>
@@ -65,6 +66,38 @@ Character character(std::string name, std::uint64_t seed = 42,
     for (unsigned i = 0; i < 6; ++i)
         creator.assign_roll(best[i], priority[i]);
     return Character(creator.rules(), creator.draft(), creator.appearance());
+}
+
+// Original armor records convert to the SRD armor of the same name; SRD 5.2.1
+// has no Banded Mail, which becomes Splint. Magic armor stays unsupported.
+void armor_conversion_tests()
+{
+    const std::map<unsigned, std::string> armor{{50, "leather"},  {51, "padded"},
+        {52, "studded_leather"}, {53, "ring_mail"}, {54, "scale_mail"}, {55, "chain_mail"},
+        {56, "splint"}, {57, "splint"}, {58, "plate"}, {59, "shield"}
+    };
+    for (const auto &[type, key] : armor)
+    {
+        por::Equipment item;
+        item.stored.type = std::uint8_t(type);
+        check(equipment_conversion(item) == key, "Original armor converts by name");
+        item.stored.magic_bonus = 1;
+        check(equipment_conversion(item) == "por:unsupported:" + std::to_string(type),
+              "Magic armor keeps its unsupported original record");
+    }
+
+    // The audited case: a new Cleric buys Scale Mail, pays once and equips it.
+    CampaignParty party(module());
+    const auto id = party.add_pc(character("Cleric", 1, "cleric"));
+    party.set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
+    por::Equipment scale;
+    scale.stored.type = 54;
+    scale.stored.value = 45;
+    party.purchase(id, scale);
+    const auto item = party.member(id).character.inventory().items().back().id;
+    party.equip(id, item);
+    check(party.member(id).wealth[3] == 205 && party.member(id).equipped.size() == 1,
+          "Scale Mail is bought for 45 gp and equipped");
 }
 
 void coin_purse_tests()
@@ -754,6 +787,11 @@ void buy_and_equip(Expedition &trip)
     });
     check(town.snapshot().phase == por::TourPhase::shopping, "The arms shop opens");
     const auto &stock = town.shop_stock();
+    check(std::none_of(stock.begin(), stock.end(), [](const auto & item)
+    {
+        return equipment_conversion(item).starts_with("por:unsupported:");
+    }),
+    "Every item the arms shop sells converts to SRD equipment");
     for (unsigned slot = 0; slot < 6; ++slot)
     {
         party->select(slot);
@@ -1243,6 +1281,14 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::filesystem::create_directories(folder);
     const auto save = folder / "expedition.ogs";
 
+    // The game's shop list is checked by tests/shop_disclosure_tests.gd from a
+    // separate party standing outside the jeweler at (8,10).
+    if (const auto *fixture = std::getenv("OPENGOLD_SHOP_FIXTURE"))
+    {
+        auto shopper = create_party(directory);
+        walk_to(shopper.town, shopper.party, 8, 10);
+        write_campaign_file(fixture, encode_campaign(*shopper.party, &shopper.town, assets));
+    }
     auto trip = create_party(directory);
     buy_and_equip(trip);
     defeat_four_orcs(trip);
@@ -1316,6 +1362,7 @@ int main(int argc, char **argv)
             resume_quest(argv[2], argv[3], directory);
             return 0;
         }
+        armor_conversion_tests();
         coin_purse_tests();
         script_payment_tests();
         random_treasure_tables();

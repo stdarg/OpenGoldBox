@@ -4,6 +4,7 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "rolf_tour_view.h"
+#include "opengold/campaign_party.h"
 #include "vital_fixtures.h"
 #include "opengold/srd5.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
@@ -891,10 +892,15 @@ void RolfTourView::refresh()
         choices->clear();
         if (shopping)
             for (const auto &item : session_->shop_stock())
-                choices->add_item(
-                i18n::format("{item} / {price} gp", {{"item", i18n::text(item.label())},
-                {"price", item.stored.value}
-            }));
+            {
+                // Stock without an equipment conversion stays for sale, disclosed.
+                const bool usable = !opengold::equipment_conversion(item).starts_with("por:unsupported:");
+                choices->add_item(i18n::format(
+                usable ? N_("{item} / {price} gp") : N_("{item} / {price} gp / cannot be equipped"),
+                {   {"item", i18n::text(item.label())},
+                    {"price", item.stored.value}
+                }));
+            }
         else
             for (const auto &c : s.choices)
                 choices->add_item(s.dialogue == "Choose a party member."
