@@ -111,12 +111,14 @@ class RolfTourView : public godot::Control
     unsigned shop_check_stage_{};
     unsigned recovery_stage_{};
     bool save_cancel_checked_{}, save_cancel_pending_{};
+    bool slums_labels_checked_{};
     std::uint64_t recovery_capture_ticket_{};
     std::optional<opengold::PartyState> recovery_before_;
     std::set<std::pair<unsigned, unsigned>> check_refused_edges_;
     std::optional<std::pair<unsigned, unsigned>> check_pending_edge_;
     void layout();
     void refresh();
+    void check_district_labels(const opengold::por::TourSnapshot &s);
     void select_buyer(unsigned slot);
     [[nodiscard]] std::vector<unsigned> occupied_slots() const;
     void buyer_key(godot::Key keycode);

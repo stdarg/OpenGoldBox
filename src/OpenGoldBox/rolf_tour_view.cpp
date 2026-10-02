@@ -46,6 +46,12 @@ const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0,
     Vector2(-1, 0)};
 const std::array<const char *, 4> direction_name{"North", "East", "South", "West"};
 
+// The session refuses to enter any area other than the town (0) and the Slums (20).
+[[nodiscard]] const char *district_name(unsigned area_id)
+{
+    return area_id == 20 ? N_("Slums") : N_("New Phlan");
+}
+
 } // namespace
 
 void RolfTourView::_bind_methods()
@@ -816,9 +822,11 @@ void RolfTourView::refresh()
     const bool shopping = loaded && s.phase == TourPhase::shopping;
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
+    const String district = i18n::text(district_name(s.area_id));
     get_node<Label>("Location")
-    ->set_text(i18n::format("New Phlan / {direction} view",
-    {{"direction", i18n::text(direction_name[s.pose.facing])}}));
+    ->set_text(i18n::format("{district} / {direction} view",
+    {{"district", district}, {"direction", i18n::text(direction_name[s.pose.facing])}}));
+    get_node<Label>("MapTitle")->set_text(i18n::format("{district}    N ↑", {{"district", district}}));
     get_node<Label>("Coordinates")
     ->set_text(i18n::format("Party ({x}, {y})   {direction}",
     {
@@ -829,7 +837,7 @@ void RolfTourView::refresh()
     get_node<Label>("Speaker")->set_text(i18n::text(faulted    ? N_("Unable to continue")
             : shopping ? N_("Shop / select an item")
             : s.tour_finished
-            ? N_("New Phlan")
+            ? district_name(s.area_id)
             : N_("Rolf  /  Council guide")));
     if (shopping && campaign_ && campaign_->selected())
     {
@@ -1424,6 +1432,25 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
     get_node<Button>(s.pose.facing == facing ? "Forward" : "Right")->emit_signal("pressed");
 }
 
+void RolfTourView::check_district_labels(const TourSnapshot &s)
+{
+    // Labels follow the session at the next refresh, not immediately.
+    if (shown_revision_ != s.revision)
+        return;
+    const String district = i18n::text(district_name(s.area_id));
+    const String location = get_node<Label>("Location")->get_text();
+    const String map_title = get_node<Label>("MapTitle")->get_text();
+    const String speaker = get_node<Label>("Speaker")->get_text();
+    const bool speaker_shows_district = s.tour_finished && s.phase != TourPhase::shopping;
+    if (!location.begins_with(district + String(" / ")) ||
+            map_title != i18n::format("{district}    N ↑", {{"district", district}}) ||
+            (speaker_shows_district && speaker != district))
+        throw std::runtime_error("District labels do not name area " + std::to_string(s.area_id) +
+                                 ": " + (location + String(" | ") + map_title + String(" | ") + speaker).utf8().get_data());
+    if (s.area_id == 20)
+        slums_labels_checked_ = true;
+}
+
 bool RolfTourView::check_expedition_step()
 {
     if (!session_)
@@ -1433,6 +1460,7 @@ bool RolfTourView::check_expedition_step()
         throw std::runtime_error(session_->script_diagnostics().back());
     if (s.phase == TourPhase::faulted)
         throw std::runtime_error(s.diagnostic);
+    check_district_labels(s);
     if (shown_monster_picture_)
     {
         // Let the close-up animate for about two seconds before pressing a key.
@@ -1457,7 +1485,11 @@ bool RolfTourView::check_expedition_step()
     if (s.area_id == 0)
     {
         if (session_->script_variable(0x4ACA) == 255)
+        {
+            if (!slums_labels_checked_)
+                throw std::runtime_error("Slums district labels were never checked");
             return true;
+        }
         if (s.pose.x != 0 || s.pose.y != 4)
             throw std::runtime_error("Unexpected tour destination");
         if (s.pose.facing != 3)
