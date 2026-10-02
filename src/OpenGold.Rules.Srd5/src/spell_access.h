@@ -21,6 +21,6 @@ void apply_spell_choices(rules::CharacterSheet &, const rules::SpellChoices &,
 // Known and prepared spells as ids. Ids rather than a packed mask because an
 // int caps the catalog at 31 spells.
 std::vector<std::string> known_cantrip_ids(const rules::SpellAccess &);
-std::vector<std::string> wizard_casting_ids(const rules::SpellAccess &);
+std::vector<std::string> casting_ids(const rules::SpellAccess &);
 } // namespace opengold::srd5::detail
 #endif

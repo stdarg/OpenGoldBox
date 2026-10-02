@@ -21,6 +21,17 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Cleric preparation and Divine Order
+
+Rules 0.6.63 delivers [#91](https://github.com/stdarg/OpenGold/issues/91) through
+level four ([CLERIC-1](SRD-DECISIONS.md#cleric-1-2026-10-02-cleric-preparation-and-divine-order)):
+prepared spells from the Cleric list at creation, level-up and after each Long
+Rest (4/5/6/7, implemented spells only, the rest pending); a required Divine
+Order (Protector training, Thaumaturge cantrip and Arcana/Religion bonus); and
+the level-four cantrip as a pending choice. Clerics no longer know Cure Wounds
+implicitly. Cantrip replacement on gaining a level waits for a second Cleric
+cantrip. Evidence and limits: [Cleric preparation](CLERIC-PREPARATION.md).
+
 ## Wizard spell learning and preparation controls
 
 Runtime `db864c8` (SRD module 0.6.51) completes

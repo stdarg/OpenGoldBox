@@ -114,6 +114,14 @@ class CreatorRules final : public CharacterRules
 
     SpellChoiceOptions spell_choice_options(const CharacterDraft &draft) const override
     {
+        if (draft.character_class == "cleric")
+        {
+            // Clerics prepare from the class list; the selection never changes it.
+            auto base = draft;
+            base.spells = SpellChoices{};
+            return detail::spell_choice_options(evaluate(base, false),
+                                                SpellChoiceContext::advancement);
+        }
         if (draft.character_class != "wizard")
             return {};
         auto base = draft;
@@ -133,7 +141,13 @@ class CreatorRules final : public CharacterRules
 
     TrainingChoiceGroup cantrip_options(const CharacterDraft &draft) const override
     {
-        return detail::starting_cantrip_options(draft.character_class);
+        auto group = detail::starting_cantrip_options(draft.character_class);
+        // The Thaumaturge Divine Order adds one Cleric cantrip.
+        const auto order = draft.training.find("class:cleric:divine_order");
+        if (draft.character_class == "cleric" && order != draft.training.end() &&
+                order->second == std::vector<std::string> {"thaumaturge"})
+            ++group.count;
+        return group;
     }
 
     AbilityCheckModifier ability_check(const CharacterSheet &sheet, unsigned ability,
@@ -461,10 +475,12 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
     s.grants.insert(s.grants.end(), spells.begin(), spells.end());
     if (d.character_class == "wizard")
         s.prepared_spells = {"magic_missile"};
-    if (d.spells)
+    if (d.spells && d.character_class == "cleric")
+        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement, false);
+    else if (d.spells)
     {
         if (d.character_class != "wizard")
-            throw std::runtime_error("Spellbook choices require a Wizard");
+            throw std::runtime_error("Spell choices require a Wizard or Cleric");
         std::erase_if(s.grants,
                       [](const auto & g)
         {

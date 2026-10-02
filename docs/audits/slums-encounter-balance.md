@@ -154,3 +154,21 @@ test.
 Limits as before: the demo policy on both sides, two battlefields, and party
 compositions that the game's missing leveled cleric spells make weaker than the
 SRD assumes. The default should be measured again when #91 lands.
+
+## Re-measured with prepared Cleric spells (2026-10-02)
+
+With [#91](https://github.com/stdarg/OpenGold/issues/91) the mixed party's two
+clerics prepare Cure Wounds, Healing Word and Inflict Wounds at creation, and
+Blindness as well at level three. The tool was run again with 40 seeds:
+
+| Challenge | Fighters: lowest win% / most deaths | Mixed: lowest win% / most deaths |
+| --- | --- | --- |
+| 33 (default) | 100 / 0.15 | 100 / 0.23 |
+| 50 | 98 / 0.17 | 98 / 0.23 |
+| 100 (Moderate) | 90 / 0.38 | 85 / 0.72 |
+
+Healing closes most of the gap the earlier run attributed to the missing
+spells. Against six orcs at challenge 100 the mixed party now wins 85–88%
+instead of 45%; at 50 the level-1 mixed party loses at most 0.23 characters
+per fight instead of 0.35–0.55. The default stays 33; raising it to 50 now
+keeps every cell at 98% or better for both parties.

@@ -43,8 +43,8 @@ and Spanish. It does not select missing spells on the player's behalf.
 Rules 0.6.23 adds a sourced starting Sacred Flame choice using the same control.
 Cleric grants use `class:cleric:spellcasting`; the base cantrip entitlement is
 3 through level 3 and 4 at level 4. Presets receive the supported choice.
-Leveled preparation, Divine Order and
-level-up replacement remain #91. See [Sacred Flame](SACRED-FLAME.md).
+Leveled preparation and Divine Order are in
+[Cleric preparation](CLERIC-PREPARATION.md). See [Sacred Flame](SACRED-FLAME.md).
 
 ## Persistence
 

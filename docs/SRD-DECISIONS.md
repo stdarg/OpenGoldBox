@@ -172,7 +172,7 @@ TWF selectors/automatic benefit. Do not ask these again.
 | --- | --- | --- |
 | Q19 | #208 Silence geometry | Proposed flat grid, square center within 120 feet, circular 20-foot radius; whole occupied square determines full containment, walls block spread, preview distinguishes partial/full containment; no height model. Pending. |
 | Q20 | #208 Silence controls | Proposed prepared level-two Silence in Spell dropdown; area preview, arrows/Enter/click, free Escape cancel; new End concentration row with duration, free release for selected owner outside its turn. Pending. |
-| Q21 | #208/#209 Cleric preparation | Proposed current level 3–4 limits/confirmation, explicit Silence selection, existing saved preparations unchanged. Pending. |
+| Q21 | #208/#209 Cleric preparation | **Superseded by [CLERIC-1](#cleric-1-2026-10-02-cleric-preparation-and-divine-order).** Proposed current level 3–4 limits/confirmation, explicit Silence selection, existing saved preparations unchanged. |
 | Q43 | #58 Thrown controls | **Stowing and quantities superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation); the dropdown and Throw button stand.** Proposed Thrown weapon dropdown/Throw row below Ground item/Pick up; held/carried quantities, legal target highlighting, keyboard/mouse, explicit necessary stowing before confirmation, free cancellation; proper SRD hand/action costs. APPROVED 2026-09-25 by “43. Approved.”. |
 | Q44 | #58 landing policy | **Superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation).** Proposed target square on hit/miss, no embedding/breakage/scatter; ground item, ordinary pickup and approved Q37 safe recovery. SRD-unspecified policy. APPROVED 2026-09-25 by “44. Approved.”. |
 
@@ -405,3 +405,29 @@ the earlier authored Slums conversions.
 - **Rewards:** experience and loot remain those of the original encounter,
   however many monsters fought. The user will later tie challenge to difficulty
   and to experience and treasure gain, and add a visible slider.
+
+## CLERIC-1 (2026-10-02): Cleric preparation and Divine Order
+
+The user answered four questions for [#91](https://github.com/stdarg/OpenGold/issues/91),
+each with the recommended option.
+
+1. **Divine Order** is chosen at creation in the Training step, with the same
+   single-selection dropdown as Fighting Style. It is a training grant
+   (`order:protector` or `order:thaumaturge`, source `class:cleric:divine_order`)
+   and cannot be changed later.
+2. **Preparation** reuses the Wizard controls: a counted "Prepared spells" group
+   in the Spell Choices step, the level-up spell page (earlier preparations
+   locked, the level-four cantrip as a learning group) instead of the old
+   four-checkbox block, and the shared Long Rest dialog titled "Prepared
+   spells", with no spellbook and no cantrip replacement at rest.
+3. **Spells not yet implemented** leave their places pending, as Cleric cantrips
+   already did. Nothing is invented; the missing spells come with
+   [#165](https://github.com/stdarg/OpenGold/issues/165).
+4. **Inflict Wounds**' SRD conformance and combat button are a separate issue,
+   [#230](https://github.com/stdarg/OpenGold/issues/230).
+
+Replacing a cantrip on gaining a Cleric level waits for a second implemented
+Cleric cantrip; Sacred Flame is the only one, so there is nothing to replace it
+with. The Slums [balance audit](audits/slums-encounter-balance.md) was measured
+again with prepared Cleric healing; the `encounter_challenge` default is
+unchanged.

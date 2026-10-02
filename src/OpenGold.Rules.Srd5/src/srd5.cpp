@@ -65,14 +65,18 @@ std::string attack_ability(std::string_view key)
            : "Strength";
 }
 
-bool trained(std::string_view klass, std::string_view key)
+bool trained(std::string_view klass, std::span<const FeatureGrant> grants, std::string_view key)
 {
-    // Starting-class grants, SRD 5.2.1 pp. 49 and 61. Multiclass entry and
+    // Starting-class grants, SRD 5.2.1 pp. 49 and 61, plus the Protector Divine
+    // Order's Martial weapon and Heavy armor training. Multiclass entry and other
     // optional feature grants are separate, not yet implemented capabilities.
+    const bool protector = detail::has_grant(grants, "order:protector");
     if (const auto *weapon = detail::weapon(key))
-        return detail::weapon_proficient(detail::grant_source_id(klass), *weapon);
+        return detail::weapon_proficient(detail::grant_source_id(klass), *weapon) ||
+               (protector && weapon->martial);
     if (const auto *armor = detail::armor(key))
-        return detail::armor_trained(klass, armor->category);
+        return detail::armor_trained(klass, armor->category) ||
+               (protector && armor->category == detail::ArmorCategory::heavy);
     throw std::runtime_error("Unsupported equipment conversion: " + std::string(key));
 }
 } // namespace
@@ -80,7 +84,7 @@ bool trained(std::string_view klass, std::string_view key)
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
     std::string text;
-    if (trained(sheet.character_class, item))
+    if (trained(sheet.character_class, sheet.grants, item))
         text = "Class training: no untrained-use penalty.";
     else if (item == "shield")
         text = "Untrained shield: no AC bonus.";
@@ -518,6 +522,10 @@ character_definition(std::string_view bytes,
     }
     if (equipment_override)
         d.equipment_keys.assign(equipment_override->begin(), equipment_override->end());
+    // Grants come before equipment because a Divine Order can add training.
+    std::string background;
+    in >> std::quoted(background);
+    const auto grants = detail::read_grants(in);
     for (const auto &key : d.equipment_keys)
     {
         if (const auto *item = detail::weapon(key))
@@ -538,7 +546,7 @@ character_definition(std::string_view bytes,
             d.versatile_sides = item->versatile_sides;
             hands += d.weapon_hands;
             const int modifier = item->finesse ? std::max(str, dex) : item->ranged ? dex : str;
-            const int bonus = (trained(klass, key) ? 2 : 0) + modifier;
+            const int bonus = (trained(klass, grants, key) ? 2 : 0) + modifier;
             if (item->dice && !item->ranged)
             {
                 d.melee_ability = modifier;
@@ -566,7 +574,7 @@ character_definition(std::string_view bytes,
         {
             if (armor)
                 throw std::runtime_error("Only one armor may be equipped");
-            if (!trained(klass, key))
+            if (!trained(klass, grants, key))
             {
                 d.str_dex_disadvantage = true;
                 d.spells.clear();
@@ -595,9 +603,6 @@ character_definition(std::string_view bytes,
         hands = hands - d.weapon_hands + 2;
         d.weapon_hands = 2;
     }
-    std::string background;
-    in >> std::quoted(background);
-    const auto grants = detail::read_grants(in);
     const auto training = detail::training_profile(grants, detail::grant_source_id(klass),
                           background, level, scores);
     d.medicine = std::find_if(training.skills.begin(), training.skills.end(),
@@ -610,7 +615,7 @@ character_definition(std::string_view bytes,
         if (detail::is_mastery_grant(grant))
             d.masteries.push_back(grant.id.substr(8));
     std::vector<std::string> prepared;
-    if (klass == "Wizard")
+    if (klass == "Wizard" || klass == "Cleric")
         prepared = detail::spells_of_level(stored_spells, false);
     const auto access = detail::spell_access(grants, klass, level, prepared);
     // Compare as sets: the grants and the stored list must describe the same
@@ -624,10 +629,8 @@ character_definition(std::string_view bytes,
     if ((klass == "Sorcerer" || klass == "Warlock") &&
             !same_spells(detail::known_cantrip_ids(access), stored_spells))
         throw std::runtime_error("Character cantrip access disagrees with spell grants");
-    if (klass == "Cleric" && !same_spells(detail::known_cantrip_ids(access),
-                                          detail::spells_of_level(stored_spells, true)))
-        throw std::runtime_error("Character cantrip access disagrees with Cleric grants");
-    if (klass == "Wizard" && !same_spells(detail::wizard_casting_ids(access), stored_spells))
+    if ((klass == "Wizard" || klass == "Cleric") &&
+            !same_spells(detail::casting_ids(access), stored_spells))
         throw std::runtime_error("Character casting access disagrees with spell grants");
     const auto features_only = detail::without_spell_grants(detail::without_training(grants));
     const auto effects = detail::validate_grants(features_only, detail::grant_source_id(klass),
@@ -648,7 +651,7 @@ character_definition(std::string_view bytes,
         d.ac = std::max(d.ac, 10 + dex + con);
     if (!armor && !shield && klass == "Monk")
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[4]));
-    if (shield && trained(klass, "shield"))
+    if (shield && trained(klass, grants, "shield"))
         d.ac += 2;
     if (armor && (features & 1))
         ++d.ac;
@@ -4337,14 +4340,9 @@ class Module final : public RulesModule
         for (const auto &group : options.training)
             if (!group.options.empty())
                 choice.training[group.id] = {group.options.front().id};
-        if (choice.spells.empty())
-        {
-            if (sheet.character_class == "Cleric")
-                choice.spells = {"cure_wounds"};
-            else if (sheet.character_class == "Wizard")
-                choice.spells = {"magic_missile"};
-        }
-        if (sheet.character_class == "Wizard")
+        if (choice.spells.empty() && sheet.character_class == "Wizard")
+            choice.spells = {"magic_missile"};
+        if (sheet.character_class == "Wizard" || sheet.character_class == "Cleric")
         {
             auto next = sheet;
             next.level = options.level;
@@ -4362,11 +4360,11 @@ class Module final : public RulesModule
             }
             detail::apply_spell_choices(next, SpellChoices{*choice.spell_learning, {}, {}, {}},
                                         SpellChoiceContext::advancement, false);
-            const auto access = detail::spell_access(next.grants, next.character_class, next.level,
-                next.prepared_spells);
+            const auto preparation =
+                detail::spell_choice_options(next, SpellChoiceContext::advancement);
             choice.spells = sheet.prepared_spells;
-            for (const auto &spell : access.spellbook)
-                if (choice.spells.size() < access.prepared_choices &&
+            for (const auto &spell : preparation.preparation)
+                if (choice.spells.size() < preparation.prepared_count &&
                         std::find(choice.spells.begin(), choice.spells.end(), spell.id) ==
                         choice.spells.end())
                     choice.spells.push_back(spell.id);
@@ -4553,7 +4551,7 @@ class Module final : public RulesModule
                                         SpellChoices{*choice.spell_learning, choice.spells, {}, {}},
                                         SpellChoiceContext::advancement);
         }
-        else if (sheet.character_class == "Wizard")
+        else if (sheet.character_class == "Wizard" || sheet.character_class == "Cleric")
             throw std::runtime_error("Independent spell learning choices are required");
         next.training = detail::training_profile(
                             next.grants, detail::grant_source_id(next.character_class),
@@ -5083,16 +5081,16 @@ class Module final : public RulesModule
             if (sheet.bonuses[i] != bonuses || sheet.scores[i] != sheet.base[i] + bonuses)
                 throw std::runtime_error("Ability totals disagree with acquired choices");
         }
-        auto spells = sheet.character_class == "Wizard" ? detail::wizard_casting_ids(access)
-                      : detail::known_cantrip_ids(access);
+        auto spells =
+            sheet.character_class == "Wizard" || sheet.character_class == "Cleric"
+            ? detail::casting_ids(access)
+            : detail::known_cantrip_ids(access);
         std::set<std::string> selected;
         const auto record = [&](std::string id)
         {
             if (!detail::knows_spell(spells, id))
                 spells.push_back(std::move(id));
         };
-        if (sheet.prepared_spells.empty() && sheet.character_class == "Cleric")
-            record("cure_wounds");
         // Preparable spells come from the eligibility table. Cantrips are
         // filtered out: they are known, never prepared.
         const auto preparable =
@@ -5153,7 +5151,7 @@ class Module final : public RulesModule
         for (const auto &key : gear)
         {
             if (key == "shield")
-                result.item_modifiers += trained(sheet.character_class, key)
+                result.item_modifiers += trained(sheet.character_class, sheet.grants, key)
                                          ? "Source: equipped Shield: +2 AC.\n"
                                          : "Source: equipped Shield: +0 AC (untrained).\n";
             else if (key == "leather")
@@ -5182,7 +5180,7 @@ class Module final : public RulesModule
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + ". Attack uses " +
                     attack_ability(key) + " modifier" +
-                    (trained(sheet.character_class, key) ? " +2 class proficiency"
+                    (trained(sheet.character_class, sheet.grants, key) ? " +2 class proficiency"
                      : " without proficiency") +
                                                        "; damage is fixed at " + std::to_string(item->fixed_damage) +
                                                        " without an ability modifier.\n";
@@ -5190,7 +5188,7 @@ class Module final : public RulesModule
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + " and " + sheet.character_class +
                     " weapon proficiency. Weapon attack uses " + attack_ability(key) + " modifier" +
-                    (trained(sheet.character_class, key) ? " +2 class proficiency"
+                    (trained(sheet.character_class, sheet.grants, key) ? " +2 class proficiency"
                      : " without proficiency") +
                                                        "; damage adds that ability modifier.\n";
         }
@@ -5233,7 +5231,7 @@ class Module final : public RulesModule
         for (const auto &key : gear)
         {
             if (key == "shield")
-                result.item_messages.push_back({trained(sheet.character_class, key)
+                result.item_messages.push_back({trained(sheet.character_class, sheet.grants, key)
                                                 ? "Source: equipped Shield: +2 AC."
                                                 : "Source: equipped Shield: +0 AC (untrained).",
                                                 {}});
@@ -5276,7 +5274,7 @@ class Module final : public RulesModule
                     {"ability", attack_ability(key), true},
                     {
                         "proficiency",
-                        trained(sheet.character_class, key) ? "+2 class proficiency"
+                        trained(sheet.character_class, sheet.grants, key) ? "+2 class proficiency"
                         : "without proficiency",
                         true
                     },
@@ -5291,7 +5289,7 @@ class Module final : public RulesModule
                     {"ability", attack_ability(key), true},
                     {
                         "proficiency",
-                        trained(sheet.character_class, key) ? "+2 class proficiency"
+                        trained(sheet.character_class, sheet.grants, key) ? "+2 class proficiency"
                         : "without proficiency",
                         true
                     }
@@ -5440,12 +5438,16 @@ class Module final : public RulesModule
         if (sheet.character_class == "Cleric")
         {
             result.spell_modifiers +=
-                "\nPending Cleric cantrip choices: " +
-                std::to_string(access.cantrip_choices - access.cantrips.size()) + ".";
+                "\nPending Cleric choices: " +
+                std::to_string(access.cantrip_choices - access.cantrips.size()) + " cantrips, " +
+                std::to_string(access.prepared_choices - access.prepared.size()) +
+                " prepared spells.";
             result.spell_messages.push_back(
             {
-                "Pending Cleric cantrip choices: {cantrips}.",
-                {{"cantrips", std::to_string(access.cantrip_choices - access.cantrips.size())}}});
+                "Pending Cleric choices: {cantrips} cantrips, {prepared} prepared spells.",
+                {   {"cantrips", std::to_string(access.cantrip_choices - access.cantrips.size())},
+                    {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
+                }});
         }
         if (sheet.character_class == "Wizard")
         {
@@ -5524,7 +5526,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.62", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.63", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows;
     while (std::getline(lines, line))
     {

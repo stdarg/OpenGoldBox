@@ -11,29 +11,32 @@ using namespace rules;
 namespace
 {
 constexpr std::string_view source = "class:wizard:spellcasting";
+constexpr std::string_view cleric_source = "class:cleric:spellcasting";
 
-// `wizard` marks a row the Wizard catalog may learn. It was an exclusion list
-// of non-Wizard spell ids repeated at each use; a per-row property means a new
-// spell describes itself in one place.
+// `wizard` and `cleric` mark the rows each class's catalog may learn or
+// prepare. A per-row property means a new spell describes itself in one place.
 struct Spell
 {
     std::string_view id, label;
     unsigned level, mask;
-    bool wizard{true};
+    bool wizard{true}, cleric{false};
 };
 
-// Existing spell implementations only. This is not the complete Wizard list.
+// Existing spell implementations only. This is not the complete Wizard or
+// Cleric list.
 constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"shocking_grasp", "Shocking Grasp", 0, 1024},
     Spell{"eldritch_blast", "Eldritch Blast", 0, 512, false},
     Spell{"ray_of_frost", "Ray of Frost", 0, 256},
-    Spell{"sacred_flame", "Sacred Flame", 0, 128, false},
+    Spell{"sacred_flame", "Sacred Flame", 0, 128, false, true},
     Spell{"fire_bolt", "Fire Bolt", 0, 1},
     Spell{"poison_spray", "Poison Spray", 0, 64},
     Spell{"magic_missile", "Magic Missile", 1, 4},
     Spell{"scorching_ray", "Scorching Ray", 2, 16},
-    Spell{"blindness", "Blindness", 2, 32},
-    Spell{"inflict_wounds", "Inflict Wounds", 1, 0, false}};
+    Spell{"blindness", "Blindness", 2, 32, true, true},
+    Spell{"inflict_wounds", "Inflict Wounds", 1, 0, false, true},
+    Spell{"cure_wounds", "Cure Wounds", 1, 0, false, true},
+    Spell{"healing_word", "Healing Word", 1, 0, false, true}};
 
 void require(bool ok)
 {
@@ -55,6 +58,104 @@ FeatureGrant grant(std::string_view id, unsigned level, std::string_view origin 
             std::string(origin),
             level,
     {{"access", find(id).level ? "spellbook" : "cantrip"}}};
+}
+
+std::string_view class_source(std::string_view klass)
+{
+    return klass == "Cleric" ? cleric_source : source;
+}
+
+// The Thaumaturge Divine Order adds one Cleric cantrip.
+bool thaumaturge(std::span<const FeatureGrant> grants)
+{
+    return std::find(grants.begin(), grants.end(),
+                     FeatureGrant{"order:thaumaturge", "class:cleric:divine_order", 1, {}}) !=
+           grants.end();
+}
+
+// Clerics prepare from the Cleric list, up to the highest level of slot they have.
+unsigned highest_slot_level(unsigned level)
+{
+    return level >= 3 ? 2 : 1;
+}
+
+SpellAccess cleric_access(std::span<const FeatureGrant> grants, unsigned level,
+                          std::span<const std::string> prepared)
+{
+    require(level >= 1 && level <= 4);
+    require(std::find(grants.begin(), grants.end(),
+                      FeatureGrant{"feature:spellcasting", "class:cleric", 1, {}}) != grants.end());
+    SpellAccess result;
+    const unsigned starting = 3 + (thaumaturge(grants) ? 1 : 0);
+    result.cantrip_choices = starting + (level == 4 ? 1 : 0);
+    result.prepared_choices = level + 3;
+    std::set<std::string> known;
+    std::array<unsigned, 5> learned{};
+    for (const auto &g : grants)
+        if (is_spell_grant(g))
+        {
+            const auto &spell = find(std::string_view(g.id).substr(6));
+            // Starting cantrips are level one; the level-four cantrip is level four.
+            require(spell.cleric && spell.level == 0 && (g.level == 1 || g.level == 4) &&
+                    g.level <= level && known.insert(g.id).second &&
+                    g == grant(spell.id, g.level, cleric_source));
+            result.cantrips.push_back(
+            {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
+            ++learned[g.level];
+        }
+    require(learned[1] <= starting && learned[4] <= 1);
+    std::set<std::string> selected;
+    for (const auto &id : prepared)
+    {
+        const auto &spell = find(id);
+        require(spell.cleric && spell.level >= 1 && spell.level <= highest_slot_level(level) &&
+                selected.insert(id).second);
+        result.prepared.push_back(id);
+    }
+    require(result.prepared.size() <= result.prepared_choices);
+    return result;
+}
+
+// Reaching level four learns a cantrip; a Long Rest changes any prepared
+// spells. Creation is level one. Replacing a cantrip on gaining a level waits
+// for a second implemented Cleric cantrip: Sacred Flame is the only one.
+SpellChoiceOptions cleric_choice_options(const CharacterSheet &sheet, SpellChoiceContext context)
+{
+    SpellChoiceOptions result;
+    const auto access = cleric_access(sheet.grants, sheet.level, sheet.prepared_spells);
+    const auto known = [&](std::string_view id)
+    {
+        return std::any_of(access.cantrips.begin(), access.cantrips.end(),
+                           [&](const auto & s)
+        {
+            return s.id == id;
+        });
+    };
+    if (context == SpellChoiceContext::advancement && sheet.level == 4)
+    {
+        const bool learned_fourth = std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                                                [](const auto & g)
+        {
+            return is_spell_grant(g) && g.level == 4;
+        });
+        if (!learned_fourth)
+        {
+            TrainingChoiceGroup group{"cantrips:4", "Cleric cantrips", 1, {}};
+            group.acquired_level = 4;
+            for (const auto &spell : spells)
+                if (spell.cleric && spell.level == 0 && !known(spell.id))
+                    group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
+            result.learning.push_back(std::move(group));
+        }
+    }
+    result.prepared_count = access.prepared_choices;
+    result.may_prepare = true;
+    for (const auto &spell : spells)
+        if (spell.cleric && spell.level >= 1 && spell.level <= highest_slot_level(sheet.level))
+            result.preparation.push_back({std::string(spell.id), std::string(spell.label), {}});
+    if (context == SpellChoiceContext::advancement)
+        result.locked_prepared = sheet.prepared_spells;
+    return result;
 }
 } // namespace
 
@@ -232,23 +333,7 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
         return result;
     }
     if (klass == "Cleric")
-    {
-        require(level >= 1 && level <= 4);
-        require(std::find(grants.begin(), grants.end(),
-                          FeatureGrant{"feature:spellcasting", "class:cleric", 1, {}}) !=
-                grants.end());
-        result.cantrip_choices = level == 4 ? 4 : 3;
-        std::set<std::string> known;
-        for (const auto &g : grants)
-            if (is_spell_grant(g))
-            {
-                require(g.id == "spell:sacred_flame" &&
-                        g == grant("sacred_flame", 1, "class:cleric:spellcasting") &&
-                        known.insert(g.id).second);
-                result.cantrips.push_back({"sacred_flame", "Sacred Flame", g.source_id, g.level});
-            }
-        return result; // Leveled preparation and Divine Order remain their existing increments.
-    }
+        return cleric_access(grants, level, prepared);
     if (klass != "Wizard")
     {
         require(std::none_of(grants.begin(), grants.end(), is_spell_grant));
@@ -316,6 +401,8 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
 SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoiceContext context)
 {
     SpellChoiceOptions result;
+    if (sheet.character_class == "Cleric")
+        return cleric_choice_options(sheet, context);
     if (sheet.character_class != "Wizard")
         return result;
     const auto access =
@@ -386,7 +473,8 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
 void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
                          SpellChoiceContext context, bool complete)
 {
-    require(sheet.character_class == "Wizard");
+    require(sheet.character_class == "Wizard" || sheet.character_class == "Cleric");
+    const auto origin = class_source(sheet.character_class);
     auto candidate = sheet;
     const auto options = spell_choice_options(sheet, context);
     for (const auto &[id, values] : choices.learning)
@@ -404,7 +492,7 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
             {
                 return o.id == value;
             }));
-            candidate.grants.push_back(grant(value, group->acquired_level));
+            candidate.grants.push_back(grant(value, group->acquired_level, origin));
         }
     }
     require(choices.replace_cantrip.empty() == choices.replacement.empty());
@@ -426,7 +514,7 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
         {
             return g.id == "spell:" + choices.replace_cantrip;
         });
-        *existing = grant(choices.replacement, existing->level);
+        *existing = grant(choices.replacement, existing->level, origin);
         existing->choices.emplace("learned_at", std::to_string(sheet.level));
     }
     if (choices.prepared)
@@ -441,12 +529,13 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
                                      candidate.prepared_spells);
     if (complete)
     {
-        for (const auto &group : spell_choice_options(candidate, context).learning)
+        const auto remaining = spell_choice_options(candidate, context);
+        for (const auto &group : remaining.learning)
             if (!group.options.empty() && group.count)
                 throw std::runtime_error("Complete the available spell choices.");
         if (options.may_prepare)
             require(candidate.prepared_spells.size() ==
-                    std::min<std::size_t>(access.prepared_choices, access.spellbook.size()));
+                    std::min<std::size_t>(access.prepared_choices, remaining.preparation.size()));
     }
     sheet = std::move(candidate);
 }
@@ -463,7 +552,7 @@ std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
     return result;
 }
 
-std::vector<std::string> wizard_casting_ids(const SpellAccess &access)
+std::vector<std::string> casting_ids(const SpellAccess &access)
 {
     auto result = known_cantrip_ids(access);
     for (const auto &id : access.prepared)

@@ -712,8 +712,37 @@ void RolfTourView::check_rest_controls()
             check(!spell->is_visible() && !campaign_->state().spell_rest &&
                   campaign_->member(id).character.sheet().grants == before,
                   "Escape keeps current spells and releases exploration after the last Wizard");
+        }
+        else if (rest_check_stage_ == 108)
+        {
+            auto draft = campaign_->member(rest_member_).character.creation_data();
+            draft.name = "Rest Cleric";
+            draft.character_class = "cleric";
+            draft.background = "sage";
+            draft.training = {{"class:cleric", {"medicine", "persuasion"}},
+                {"class:cleric:divine_order", {"protector"}}
+            };
+            draft.cantrips = std::vector<std::string> {"sacred_flame"};
+            draft.spells = opengold::rules::SpellChoices
+            {
+                {}, std::vector<std::string>{"cure_wounds", "healing_word", "inflict_wounds"}, {}, {}};
+            const auto id = campaign_->add_pc(
+                                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+            camp();
+            w->get_node<OptionButton>("Kind")->select(1);
+            w->get_node<OptionButton>("Kind")->emit_signal("item_selected", 1);
+            w->get_node<Button>("Start")->emit_signal("pressed");
+            auto *spell = get_node<Window>("RestSpells");
+            check(spell->is_visible() && rest_spell_member_ == id &&
+                  spell->get_title() == rest_text(N_("Prepared spells")) &&
+                  !spell->get_node<Control>("Replace")->is_visible() &&
+                  !spell->get_node<Button>("Apply")->is_disabled(),
+                  "A Cleric's Long Rest window prepares from the class list without replacement");
+            spell->get_node<Button>("Apply")->emit_signal("pressed");
+            check(!spell->is_visible() && !campaign_->state().spell_rest,
+                  "Applying the Cleric's preparation closes the window");
             UtilityFunctions::print(
-                "Godot rest controls passed: existing recovery, Arcane Recovery, Wizard preparation/replacement, sequential Wizards, keyboard, limits and save continuation.");
+                "Godot rest controls passed: existing recovery, Arcane Recovery, Wizard preparation/replacement, sequential Wizards, Cleric preparation, keyboard, limits and save continuation.");
             get_tree()->quit();
         }
         if (rest_check_stage_ == 10 || rest_check_stage_ == 22 || rest_check_stage_ == 34 ||
@@ -761,7 +790,13 @@ void RolfTourView::refresh_rest_spells()
     }
     w->get_node<Label>("Title")->set_text(presentation::training_string(sheet.name) + " / " +
                                           rest_text(N_("Long Rest")));
-    presentation::spell_known(*w, campaign_->rule_module().spell_access(sheet), rest_text);
+    presentation::spell_known(*w, campaign_->rule_module().spell_access(sheet), options.preparation,
+                              rest_text);
+    // Clerics replace cantrips on gaining a level, not at a Long Rest.
+    for (const char *name :
+            {"ReplaceLabel", "WithLabel", "Replace", "With"
+            })
+        w->get_node<Control>(name)->set_visible(!options.replaceable.empty());
     presentation::refresh_spell_groups(
         *w->get_node<VBoxContainer>("Choices/Rows"), options, rest_spell_choice_,
         callable_mp(this, &RolfTourView::rest_spell_toggled), rest_text);

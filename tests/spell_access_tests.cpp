@@ -319,6 +319,7 @@ void invalid()
 }
 
 #include "wizard_choices_checks.h"
+#include "cleric_choices_checks.h"
 } // namespace
 
 int main()
@@ -330,6 +331,8 @@ int main()
         invalid();
         wizard_choices_checks();
         write_wizard_ui_fixture();
+        cleric_choices_checks();
+        write_cleric_ui_fixture();
         std::cout << "Spell access tests passed\n";
         return 0;
     }

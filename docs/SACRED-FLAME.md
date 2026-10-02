@@ -69,8 +69,8 @@ total-cover rejection alone does not complete cover conformance.
 
 Live speech blockers remain [#39](https://github.com/stdarg/OpenGold/issues/39).
 Other grant routes remain Magic Initiate #75/#200, Pact of the Tome #161,
-Thaumaturge #91 and Blessed Warrior #140. Cleric preparation, Divine Order,
-level-up cantrip replacement and the fourth selection remain
-[#91](https://github.com/stdarg/OpenGold/issues/91). Higher-level damage scaling
+Thaumaturge and Blessed Warrior #140. Cleric preparation, Divine Order and the
+fourth selection are in [Cleric preparation](CLERIC-PREPARATION.md); level-up
+cantrip replacement waits for a second Cleric cantrip. Higher-level damage scaling
 remains #176–178. The zero-HP save rule does not complete all conditions in #35.
 The [spell inventory](SPELL-INVENTORY.md) therefore records this path as partial.

@@ -319,11 +319,28 @@ void creation_tests()
     "Required training blocks Name");
     creator.training_choice("class:cleric", "medicine", true);
     creator.training_choice("class:cleric", "persuasion", true);
+    rejects(
+        [&]
+    {
+        creator.next();
+    },
+    "A Cleric chooses a Divine Order");
+    creator.training_choice("class:cleric:divine_order", "protector", true);
     creator.next();
     check(creator.draft().character_class == "cleric" &&
           creator.step() == CreationStep::spell_choices,
           "Completed Cleric training advances to Spell Choices");
     creator.cantrip_choice("sacred_flame", true);
+    rejects(
+        [&]
+    {
+        creator.next();
+    },
+    "A Cleric prepares the available spells");
+    for (const auto *spell :
+            {"cure_wounds", "healing_word", "inflict_wounds"
+            })
+        creator.spell_choice("prepared", spell, true);
     creator.next();
     check(creator.step() == CreationStep::name, "Spell Choices advances to Name");
     rejects(

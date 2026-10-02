@@ -187,6 +187,8 @@ void all_class_skills()
             }
             if (klass.id == "fighter")
                 d.training["class:fighter:fighting_style"] = {"defense"};
+            if (klass.id == "cleric")
+                d.training["class:cleric:divine_order"] = {"protector"};
             const auto groups = creation->training_options(d);
             const auto found = std::find_if(groups.begin(), groups.end(),
                                             [&](const auto & g)

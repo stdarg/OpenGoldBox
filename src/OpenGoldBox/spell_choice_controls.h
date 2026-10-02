@@ -156,18 +156,27 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     return w;
 }
 
+// A Wizard prepares from a spellbook; a Cleric prepares from the whole class
+// list, so only a Wizard's window shows a spellbook.
 template <class Translate>
-void spell_known(godot::Window &w, const opengold::rules::SpellAccess &access, const Translate &tr)
+void spell_known(godot::Window &w, const opengold::rules::SpellAccess &access,
+                 const std::vector<opengold::rules::CreationChoice> &preparation,
+                 const Translate &tr)
 {
+    const bool spellbook = access.spellbook_choices > 0;
+    w.set_title(tr(spellbook ? N_("Spellbook") : N_("Prepared spells")));
     godot::String text = tr(N_("Known cantrips")) + ": ";
     for (const auto &s : access.cantrips)
         text += tr(s.label) + "; ";
-    text += "\n" + tr(N_("Spellbook")) + ": ";
-    for (const auto &s : access.spellbook)
-        text += tr(s.label) + "; ";
+    if (spellbook)
+    {
+        text += "\n" + tr(N_("Spellbook")) + ": ";
+        for (const auto &s : access.spellbook)
+            text += tr(s.label) + "; ";
+    }
     text += "\n" + tr(N_("Prepared spells")) + ": ";
     for (const auto &id : access.prepared)
-        for (const auto &s : access.spellbook)
+        for (const auto &s : preparation)
             if (s.id == id)
                 text += tr(s.label) + "; ";
     w.get_node<godot::RichTextLabel>("Known")->set_text(text);

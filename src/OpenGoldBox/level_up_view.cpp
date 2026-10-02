@@ -179,11 +179,12 @@ void CharacterCreationView::advancement_pages()
     if (!advancing_)
         return;
     auto *w = get_node<Window>("LevelUp");
-    const bool wizard = advancement_choice_.spell_learning.has_value();
+    // Wizards and Clerics choose spells on a second page.
+    const bool spell_page = advancement_choice_.spell_learning.has_value();
     const auto *skilled = advancement_skilled_group();
     const bool on_first = advancement_page_ == AdvancementPage::choices;
     w->get_node<Control>("SpellChoicesPage")
-    ->set_visible(wizard && advancement_page_ == AdvancementPage::spells);
+    ->set_visible(spell_page && advancement_page_ == AdvancementPage::spells);
     w->get_node<Control>("SkilledPage")
     ->set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
     w->get_node<Control>("SkilledCount")
@@ -216,7 +217,7 @@ void CharacterCreationView::advancement_pages()
     }
     if (advancement_page_ == AdvancementPage::skilled)
         refresh_advancement_skilled();
-    if (!wizard)
+    if (!spell_page)
     {
         w->get_node<Control>("SpellLabel")->set_visible(on_first);
         for (unsigned i = 0; i < 4; ++i)

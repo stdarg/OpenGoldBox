@@ -116,6 +116,7 @@ Character hero(unsigned level = 1, bool learned = true)
     auto d = draft();
     d.cantrips = learned ? std::vector<std::string> {"sacred_flame"} :
                  std::vector<std::string> {};
+    d.spells = SpellChoices{{}, std::vector<std::string> {"cure_wounds"}, {}, {}};
     Character h(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned n = 1; n < level; ++n)

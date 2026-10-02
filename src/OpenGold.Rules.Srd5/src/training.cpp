@@ -109,6 +109,7 @@ const std::array class_skills
         {"arcana", "history", "insight", "investigation", "medicine", "nature", "religion"}}};
 
 constexpr std::string_view skilled = "feat:skilled";
+constexpr std::string_view divine_order = "class:cleric:divine_order";
 constexpr std::string_view rogue = "class:rogue", expertise = "class:rogue:expertise";
 
 void require(bool ok)
@@ -213,6 +214,17 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
             {
                 "two_weapon_fighting", "Two-Weapon Fighting",
                 "Add your ability modifier to the extra attack granted by the Light property."});
+    if (klass == "cleric")
+        result.push_back({std::string(divine_order),
+                          "Divine Order",
+                          1,
+    {   {"protector", "Protector", "Training with Martial weapons and Heavy armor."},
+        {
+            "thaumaturge", "Thaumaturge",
+            "One extra Cleric cantrip; add your Wisdom modifier (minimum +1) to Intelligence (Arcana or Religion) checks."
+        }
+    },
+    TrainingChoiceControl::single_selection});
     if (!klass.empty())
     {
         const auto data = std::find_if(class_skills.begin(), class_skills.end(),
@@ -293,6 +305,13 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
     for (const auto &g : grants)
         if (!skill.empty() && (g.id == skill_id || g.id == expert_id))
             result.sources.push_back(g);
+    if (ability == 3 && (skill == "arcana" || skill == "religion"))
+        for (const auto &g : grants)
+            if (g.id == "order:thaumaturge" && g.source_id == divine_order)
+            {
+                result.total += std::max(1, modifier(scores[4]));
+                result.sources.push_back(g);
+            }
     return result;
 }
 } // namespace
@@ -300,7 +319,7 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
 bool is_training_grant(const FeatureGrant &grant)
 {
     return is_mastery_grant(grant) || grant.id.starts_with("skill:") ||
-           grant.id.starts_with("expertise:");
+           grant.id.starts_with("expertise:") || grant.id.starts_with("order:");
 }
 
 std::vector<FeatureGrant> without_training(std::span<const FeatureGrant> grants)
@@ -360,6 +379,7 @@ std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_vi
             result, choices, group,
             group.id.ends_with(":weapon_mastery")        ? "mastery:"
             : group.id == "class:fighter:fighting_style" ? "feat:"
+            : group.id == divine_order                   ? "order:"
             : group.id == "class:" + std::string(klass)  ? "skill:"
             : "expertise:");
     return result;
@@ -429,6 +449,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             const auto prefix = grant.source_id.ends_with(":weapon_mastery")        ? "mastery:"
                                 : grant.source_id == "class:fighter:fighting_style" ? "feat:"
+                                : grant.source_id == divine_order                   ? "order:"
                                 : grant.source_id == "class:" + std::string(klass)  ? "skill:"
                                 : "expertise:";
             require(grant.id.starts_with(prefix));

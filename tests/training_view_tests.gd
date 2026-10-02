@@ -100,7 +100,7 @@ func all_class_skill_controls() -> void:
 	for klass in ["Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"]:
 		await choose("Choices", klass)
 		await press("Next")
-		var group := 1 if klass == "Fighter" else 0
+		var group := 1 if klass in ["Fighter", "Cleric"] else 0
 		var count := 3 if klass in ["Bard", "Ranger"] else 2
 		var box: VBoxContainer = current_scene.get_node("Training/Rows/Group%d" % group)
 		var checks: Array[CheckBox] = []
@@ -118,6 +118,9 @@ func all_class_skill_controls() -> void:
 		await press("Next")
 		require(checks[0].button_pressed and checks[count - 1].button_pressed, "Back preserves class skills: " + klass)
 		if klass == "Fighter": await choose("Training/Rows/Group0/Choice", "Defense")
+		if klass == "Cleric":
+			require(current_scene.get_node("Next").disabled, "A Cleric must choose a Divine Order")
+			await choose("Training/Rows/Group0/Choice", "Protector")
 		await complete_mastery(klass)
 		require(not current_scene.get_node("Next").disabled, "Every class can finish all supported Training choices: " + klass)
 		await press("Next")

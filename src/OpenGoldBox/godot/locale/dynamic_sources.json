@@ -271,5 +271,10 @@
   "Vex",
   "Invalid Weapon Mastery choices or provenance",
   "Legacy campaign cannot contain Weapon Mastery",
-  "Legacy checkpoint cannot contain Weapon Mastery"
+  "Legacy checkpoint cannot contain Weapon Mastery",
+  "Divine Order",
+  "Protector",
+  "Training with Martial weapons and Heavy armor.",
+  "Thaumaturge",
+  "One extra Cleric cantrip; add your Wisdom modifier (minimum +1) to Intelligence (Arcana or Religion) checks."
 ]

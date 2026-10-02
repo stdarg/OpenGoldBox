@@ -38,6 +38,7 @@ struct Member
     std::array<unsigned, 6> priority;
     std::vector<const char *> gear;
     std::vector<const char *> cantrips{};
+    std::vector<const char *> prepared{};
 };
 
 // The expedition test's fighters, or a classic Pool of Radiance mix with healers.
@@ -54,9 +55,9 @@ const std::vector<Member> &composition(bool mixed)
         {"Arden", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
         {"Bryn", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
         {"Cora", "cleric", {4, 2, 0, 1, 5, 3}, {"mace", "scale_mail", "shield"},
-            {"sacred_flame"}},
+            {"sacred_flame"}, {"cure_wounds", "healing_word", "inflict_wounds"}},
         {"Darin", "cleric", {4, 2, 0, 1, 5, 3}, {"mace", "scale_mail", "shield"},
-            {"sacred_flame"}},
+            {"sacred_flame"}, {"cure_wounds", "healing_word", "inflict_wounds"}},
         {"Elin", "rogue", {1, 2, 4, 0, 5, 3}, {"shortsword", "leather"}},
         {"Fenn", "wizard", {3, 1, 2, 4, 5, 0}, {"quarterstaff"}}};
     return mixed ? party : fighters;
@@ -78,9 +79,10 @@ Character create(const Member &member, std::uint64_t seed)
     });
     for (unsigned i = 0; i < 6; ++i)
         creator.assign_roll(best[i], member.priority[i]);
-    // Campaign clerics have only their cantrip; leveled preparation is #91.
     for (const auto *spell : member.cantrips)
         creator.cantrip_choice(spell, true);
+    for (const auto *spell : member.prepared)
+        creator.spell_choice("prepared", spell, true);
     return Character(creator.rules(), creator.draft(), creator.appearance());
 }
 

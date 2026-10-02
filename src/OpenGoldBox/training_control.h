@@ -31,6 +31,8 @@ template <class Translate> godot::String training_source(std::string_view id, co
         return tr(N_("Bard class"));
     if (id == "class:cleric")
         return tr(N_("Cleric class"));
+    if (id == "class:cleric:divine_order")
+        return tr(N_("Cleric Divine Order"));
     if (id == "class:druid")
         return tr(N_("Druid class"));
     if (id.ends_with(":weapon_mastery:4"))
