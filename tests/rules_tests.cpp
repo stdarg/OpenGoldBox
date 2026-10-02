@@ -71,6 +71,19 @@ Command command(const CombatSession &session, std::string_view verb, Cell cell =
     return *it;
 }
 
+// A session in which the given combatant acts first.
+std::unique_ptr<CombatSession> first_turn(const RulesModule &module, const Encounter &encounter,
+        EntityId actor)
+{
+    for (unsigned seed = 0; seed < 500; ++seed)
+    {
+        auto session = module.create(encounter, seed);
+        if (session->snapshot().actor == actor)
+            return session;
+    }
+    throw std::runtime_error("No seed gives the requested first turn");
+}
+
 std::unique_ptr<CombatSession> hero_first(const RulesModule &module, Encounter encounter)
 {
     for (unsigned seed = 0; seed < 100; ++seed)
@@ -555,89 +568,29 @@ void boundary_tests()
 
 void mechanics_tests()
 {
-    auto kobolds = duel();
-    kobolds.participants[1].definition = "slums-kobold";
-    auto leader = kobolds;
-    leader.participants[1].definition = "slums-kobold-leader";
+    // Slums kobolds are the SRD Kobold Warrior: a Dagger in melee or thrown.
+    // Leaders wear their record's armor and shoot no bow their art lacks.
     auto kobold_rules = srd5::load(pack());
-    bool checked_kobold = false, checked_leader = false;
-    for (unsigned seed = 0; seed < 100 && (!checked_kobold || !checked_leader); ++seed)
+    for (const std::string_view key :
+            {
+                "slums-kobold", "slums-kobold-leader", "slums-kobold-leader-sword"
+            })
     {
-        if (!checked_kobold)
-        {
-            auto fight = kobold_rules->create(kobolds, seed);
-            if (fight->snapshot().actor == 2)
-            {
-                check(offers(*fight, "melee") && !offers(*fight, "ranged"),
-                      "Dagger Kobold has no ranged attack");
-                check(unit(*fight, 2).type_name == "Kobold" &&
-                      unit(*fight, 2).melee_weapon == "Dagger" &&
-                      !unit(*fight, 2).ranged_attack_available,
-                      "Kobold hover data follows its melee-only rules");
-                check(command(*fight, "melee").label == "Dagger attack",
-                      "Kobold attack names its visible weapon");
-                checked_kobold = true;
-            }
-        }
-        if (!checked_leader)
-        {
-            auto fight = kobold_rules->create(leader, seed);
-            if (fight->snapshot().actor == 2)
-            {
-                check(offers(*fight, "melee") && offers(*fight, "ranged"),
-                      "Kobold leader retains bow attack");
-                check(unit(*fight, 2).type_name == "Kobold Leader" &&
-                      unit(*fight, 2).ranged_weapon == "Short bow" &&
-                      unit(*fight, 2).ranged_attack_available,
-                      "Leader hover data follows its short bow rules");
-                check(command(*fight, "ranged").label == "Short bow attack",
-                      "Leader ranged attack names its bow");
-                checked_leader = true;
-            }
-        }
+        auto encounter = duel();
+        encounter.participants[1].definition = std::string(key);
+        auto fight = first_turn(*kobold_rules, encounter, 2);
+        const auto kobold = unit(*fight, 2);
+        check(offers(*fight, "melee") && offers(*fight, "ranged") &&
+              kobold.melee_weapon == "Dagger" && kobold.ranged_weapon == "Dagger" &&
+              command(*fight, "melee").label == "Dagger attack",
+              "Every Slums kobold attacks with a Dagger, in melee or thrown");
+        check(kobold.armor_class == (key == "slums-kobold-leader" ? 16 : 14),
+              "A kobold leader's readied studded leather and shield raise its AC");
+        encounter.participants[1].cell = {8, 2};
+        fight = first_turn(*kobold_rules, encounter, 2);
+        check(!offers(*fight, "melee") && fight->submit(command(*fight, "ranged")),
+              "A distant kobold throws its Dagger");
     }
-    check(checked_kobold && checked_leader, "Exercised both Kobold attack profiles");
-    auto sword_leader = leader;
-    sword_leader.participants[1].definition = "slums-kobold-leader-sword";
-    bool checked_sword_leader = false;
-    for (unsigned seed = 0; seed < 100 && !checked_sword_leader; ++seed)
-    {
-        auto fight = kobold_rules->create(sword_leader, seed);
-        if (fight->snapshot().actor != 2)
-            continue;
-        check(offers(*fight, "melee") && !offers(*fight, "ranged") &&
-              command(*fight, "melee").label == "Short sword attack",
-              "Original record 11 leader cannot fire a bow it does not carry");
-        checked_sword_leader = true;
-    }
-    check(checked_sword_leader, "Exercised sword-only Kobold leader");
-    kobolds.participants[1].cell = {8, 2};
-    leader.participants[1].cell = {8, 2};
-    checked_kobold = checked_leader = false;
-    for (unsigned seed = 0; seed < 100 && (!checked_kobold || !checked_leader); ++seed)
-    {
-        if (!checked_kobold)
-        {
-            auto fight = kobold_rules->create(kobolds, seed);
-            if (fight->snapshot().actor == 2)
-            {
-                check(!offers(*fight, "ranged"),
-                      "Distant ordinary Kobold cannot attack without a bow");
-                checked_kobold = true;
-            }
-        }
-        if (!checked_leader)
-        {
-            auto fight = kobold_rules->create(leader, seed);
-            if (fight->snapshot().actor == 2)
-            {
-                check(!offers(*fight, "melee") && fight->submit(command(*fight, "ranged")),
-                      "Distant leader can fire its short bow");
-                checked_leader = true;
-            }
-        }
-    }
-    check(checked_kobold && checked_leader, "Exercised distant Kobold attacks");
     CombatDemo training(srd5::load(pack()));
     training.training();
     for (unsigned i = 0; training.combat().snapshot().outcome == Outcome::ongoing; ++i)
@@ -1308,6 +1261,63 @@ void installed()
 #include "unconscious_transit_checks.h"
 } // namespace
 
+// Pack Tactics, the goblin's extra die on an Advantage hit, and Aggressive.
+void monster_trait_tests()
+{
+    auto rules = srd5::load(pack());
+    const auto logged = [](const CombatSession &session, std::string_view text)
+    {
+        const auto log = session.snapshot().log;
+        return std::any_of(log.begin(), log.end(), [&](const auto & line)
+        {
+            return line.find(text) != std::string::npos;
+        });
+    };
+
+    auto kobolds = duel();
+    kobolds.participants[1].definition = "slums-kobold";
+    auto alone = first_turn(*rules, kobolds, 2);
+    check(alone->submit(command(*alone, "melee")) && !logged(*alone, "(advantage)"),
+          "A lone kobold attacks without Advantage");
+    kobolds.participants.push_back({3, "slums-kobold", "Second kobold", 1, {2, 3}});
+    auto pair = first_turn(*rules, kobolds, 2);
+    check(pair->submit(command(*pair, "melee")) && logged(*pair, "(advantage)"),
+          "Pack Tactics: another kobold beside the target grants Advantage");
+
+    // A resting hero wakes Prone, so the adjacent goblin attacks with Advantage.
+    for (const bool prone : {false, true})
+    {
+        auto goblin = duel();
+        goblin.participants[0].resting = prone;
+        goblin.participants[1].definition = "slums-goblin";
+        bool hit = false;
+        for (unsigned seed = 0; seed < 500 && !hit; ++seed)
+        {
+            auto fight = rules->create(goblin, seed);
+            if (fight->snapshot().actor != 2)
+                continue;
+            check(fight->submit(command(*fight, "melee")), "Goblin attacks");
+            hit = !logged(*fight, " misses.");
+            if (hit)
+                check(logged(*fight, "extra damage (Advantage).") == prone,
+                      "A goblin adds 1d4 only when its attack roll had Advantage");
+        }
+        check(hit, "A goblin hit was exercised");
+    }
+
+    auto charge = duel();
+    charge.participants[1].definition = "slums-orc";
+    charge.participants[1].cell = {8, 2};
+    auto orc = first_turn(*rules, charge, 2);
+    const int speed = unit(*orc, 2).movement_feet;
+    check(orc->submit(command(*orc, "aggressive")) &&
+          unit(*orc, 2).movement_feet == speed + 30 && !offers(*orc, "aggressive") &&
+          logged(*orc, "moves aggressively."),
+          "Aggressive spends the bonus action on another 30 feet of movement");
+    check(rules->restore(orc->save())->save() == orc->save(),
+          "A checkpoint keeps Aggressive's extra movement");
+}
+
 int main()
 {
     try
@@ -1316,6 +1326,7 @@ int main()
         turn_budget_tests();
         boundary_tests();
         mechanics_tests();
+        monster_trait_tests();
         death_save_turn_entry_tests();
         opportunity_reuse_tests();
         allied_transit_tests();

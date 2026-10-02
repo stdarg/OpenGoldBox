@@ -1,4 +1,5 @@
 #include "application_settings.h"
+#include "opengold/encounter_budget.h"
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
@@ -36,6 +37,9 @@ bool save(const char *section, const char *key, const String &value)
     config->set_value(section, key, value);
     if (!config->has_section_key("combat", "combat_zoom"))
         config->set_value("combat", "combat_zoom", 100);
+    if (!config->has_section_key("combat", "encounter_challenge"))
+        config->set_value("combat", "encounter_challenge",
+                          static_cast<int>(opengold::default_encounter_challenge));
     const String temporary = settings::path() + ".tmp";
     if (config->save(temporary) != OK)
         return false;
@@ -89,6 +93,22 @@ int combat_zoom_percent()
         ProjectSettings::get_singleton()->get_setting("opengold/combat_zoom", 100);
     return fallback.get_type() == Variant::INT ? std::clamp(static_cast<int>(fallback), 10, 1000)
            : 100;
+}
+
+unsigned encounter_challenge()
+{
+    Ref<ConfigFile> config;
+    config.instantiate();
+    if (config->load(path()) == OK)
+    {
+        const Variant fallback = static_cast<int>(opengold::default_encounter_challenge);
+        const Variant value = config->get_value("combat", "encounter_challenge", fallback);
+        if (value.get_type() == Variant::INT)
+            return static_cast<unsigned>(std::clamp(
+                                             static_cast<int>(value), 0,
+                                             static_cast<int>(opengold::max_encounter_challenge)));
+    }
+    return opengold::default_encounter_challenge;
 }
 
 bool valid_language(const String &locale)

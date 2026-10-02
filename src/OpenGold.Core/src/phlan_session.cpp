@@ -362,11 +362,12 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         ++snapshot_.revision;
         return true;
     }
-    const bool first = staged_records_ == std::vector<unsigned> {13, 4, 4, 4};
+    const bool first = encounter_records_ == std::vector<unsigned> {13, 4, 4, 4};
     const auto reward = first ? std::string("por:ECL2:20:search1:orcs:v1")
                         : "por:ECL2:20:roaming:" + std::to_string(++next_ticket_);
+    // Experience and loot stay the original encounter's, however many fought.
     unsigned experience = 0;
-    for (auto record : staged_records_)
+    for (auto record : encounter_records_)
         experience += record == 63                                 ? 200
                       : record == 0                                ? 25
                       : record == 1 || record == 2 || record == 11 ? 50
@@ -375,7 +376,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                       : 150;
     campaign_->award_experience(experience, reward);
     pending_loot_.push_back(
-        slums_loot(staged_records_, reward + ":loot", machine_.variable(0x6DE3) != 1));
+        slums_loot(encounter_records_, reward + ":loot", machine_.variable(0x6DE3) != 1));
     claim_loot();
     auto reply = character_reply(selected_character_);
     for (auto write : std::array<EclMemoryWrite, 7> {{{0x6DC7, 0},
@@ -695,6 +696,67 @@ void RolfTourSession::show_encounter_menu()
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.continue_ticket = ++next_ticket_;
     ++snapshot_.revision;
+}
+
+namespace
+{
+// Stat block XP (SRD 5.2.1; the Orc from SRD 5.1). Leaders are worth their base.
+unsigned stat_block_xp(std::string_view definition)
+{
+    if (definition.starts_with("slums-kobold"))
+        return 25;
+    if (definition.starts_with("slums-goblin"))
+        return 50;
+    if (definition.starts_with("slums-orc"))
+        return 100;
+    if (definition == "slums-bugbear")
+        return 200;
+    throw EclError("Encounter creature has no XP value");
+}
+} // namespace
+
+// Shrinks the staged original encounter to the party's SRD XP budget at the
+// encounter challenge and to one creature per living character, the size the
+// party can face without being swarmed. Each LOAD MONSTER group keeps its first.
+void RolfTourSession::fit_staged_encounter()
+{
+    std::vector<unsigned> levels;
+    for (const auto id : campaign_->state().slots)
+        if (id && !campaign_->member(id).vitals.dead)
+            levels.push_back(campaign_->member(id).character.sheet().level);
+    std::vector<EncounterGroup> groups;
+    for (std::size_t n = 0; n < staged_records_.size(); ++n)
+    {
+        if (n == 0 || staged_records_[n] != staged_records_[n - 1])
+            groups.push_back({stat_block_xp(staged_enemies_[n].definition), 0});
+        ++groups.back().count;
+    }
+    const auto budget = encounter_xp_budget(levels, encounter_challenge_);
+    const auto counts = fit_encounter_to_budget(groups, budget, unsigned(levels.size()));
+    std::vector<rules::Participant> enemies;
+    std::vector<opengold::CombatArt> art;
+    std::vector<unsigned> records;
+    for (std::size_t n = 0, group = 0, kept = 0; n < staged_records_.size(); ++n)
+    {
+        if (n && staged_records_[n] != staged_records_[n - 1])
+        {
+            ++group;
+            kept = 0;
+        }
+        if (kept++ >= counts[group])
+            continue;
+        const auto id = static_cast<rules::EntityId>(1000 + enemies.size());
+        const auto &creature = area_resources().encounter_creatures.at(staged_records_[n]);
+        enemies.push_back(staged_enemies_[n]);
+        enemies.back().id = id;
+        enemies.back().name = creature.stored.name + " " + std::to_string(enemies.size());
+        art.push_back(staged_art_[n]);
+        art.back().entity = id;
+        records.push_back(staged_records_[n]);
+    }
+    staged_enemies_ = std::move(enemies);
+    staged_art_ = std::move(art);
+    staged_records_ = std::move(records);
 }
 
 // Monsters that interrupt a camp are announced ahead of the script's own text.
@@ -1043,6 +1105,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         auto icon = decode_ega_combat_icon(area_resources().combat_archive, arg(2), 0);
         if (!icon)
             throw EclError("Invalid original Slums combat icon");
+        // A leader shoots a bow only when its art shows one: of the Slums
+        // combat icons, only the orc leader's icon 5 does.
         const auto definition = record == 63                  ? "slums-bugbear"
                                 : record == 0                 ? "slums-kobold"
                                 : record == 1                 ? "slums-kobold-leader"
@@ -1050,6 +1114,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                                 : record == 2                 ? "slums-goblin"
                                 : record == 3 || record == 12 ? "slums-goblin-leader"
                                 : record == 4 || record == 13 ? "slums-orc"
+                                : arg(2) == 5                 ? "slums-orc-leader-archer"
                                 : "slums-orc-leader";
         for (unsigned i = 0; i < count; ++i)
         {
@@ -1152,6 +1217,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (current_area_ == 20 && !staged_enemies_.empty())
         {
             read_character();
+            encounter_records_ = staged_records_;
+            fit_staged_encounter();
             const auto p = snapshot_.pose;
             encounter_ = opengold::CampaignEncounter
             {

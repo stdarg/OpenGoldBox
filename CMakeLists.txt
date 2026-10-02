@@ -110,6 +110,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
     src/OpenGold.Core/src/random_treasure.cpp
+    src/OpenGold.Core/src/encounter_budget.cpp
     src/OpenGold.Core/src/combat_demo.cpp
     src/OpenGold.Core/src/dungeon_battlefield.cpp
     src/OpenGold.Core/src/exploration_view.cpp
@@ -369,6 +370,9 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_save_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_save_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_save_tests COMMAND opengold_save_tests)
+    add_executable(opengold_encounter_budget_tests tests/encounter_budget_tests.cpp)
+    target_link_libraries(opengold_encounter_budget_tests PRIVATE opengold_core)
+    add_test(NAME opengold_encounter_budget_tests COMMAND opengold_encounter_budget_tests)
     add_executable(opengold_sound_tests tests/sound_tests.cpp)
     target_link_libraries(opengold_sound_tests PRIVATE opengold_core)
     add_test(NAME opengold_sound_tests COMMAND opengold_sound_tests)

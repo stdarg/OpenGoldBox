@@ -8,6 +8,7 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/campaign_party.h"
 #include "opengold/combat_demo.h"
+#include "opengold/encounter_budget.h"
 #include <bitset>
 
 namespace opengold
@@ -156,6 +157,9 @@ class RolfTourSession
     bool explore(ExplorationCommand command);
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
+    // A percentage of the SRD's Moderate XP budget, 0-200. Original encounters
+    // above the party's budget, or with more creatures than characters, shrink.
+    void encounter_challenge(unsigned challenge);
 
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
     {
@@ -260,6 +264,9 @@ class RolfTourSession
     std::optional<unsigned> monster_picture_id_; // SETUP MONSTER's PIC record.
     bool showing_monster_picture_{};
     std::uint64_t combat_request_{};
+    unsigned encounter_challenge_{opengold::default_encounter_challenge};
+    // The original encounter before fitting: its experience and loot are awarded.
+    std::vector<unsigned> encounter_records_;
     std::vector<PendingLoot> pending_loot_, saved_pending_loot_;
     // Money from a non-shop TREASURE, awarded by the COMBAT that follows it.
     std::optional<PendingLoot> staged_treasure_;
@@ -280,6 +287,7 @@ class RolfTourSession
     [[nodiscard]] PendingLoot slums_loot(std::vector<unsigned> records, std::string reward,
                                          bool items) const;
     void show_encounter_menu();
+    void fit_staged_encounter();
     bool choose_encounter(std::size_t choice);
     [[nodiscard]] const PhlanResources &area_resources() const;
     void change_area(unsigned id);

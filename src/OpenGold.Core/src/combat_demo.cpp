@@ -687,6 +687,24 @@ Command choose_demo_command(const CombatSession &session)
             if (target.hit_points * 2 < target.max_hit_points)
                 return command;
         }
+    // A dying ally who is not healed is stabilized when no enemy is within reach.
+    const bool threatened =
+        std::any_of(state.combatants.begin(), state.combatants.end(), [&](const auto & a)
+    {
+        const int dx = std::abs(a.cell.x - active.cell.x), dy = std::abs(a.cell.y - active.cell.y);
+        return a.side != active.side && a.conscious && std::max(dx, dy) <= 1;
+    });
+    for (const auto &command : offered)
+        if (!threatened && command.verb == "stabilize")
+        {
+            const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
+                                               [&](const auto & a)
+            {
+                return a.id == command.target;
+            });
+            if (target.side == active.side)
+                return command;
+        }
     for (const auto &command : offered)
         if (command.verb == "blindness")
         {
@@ -699,7 +717,8 @@ Command choose_demo_command(const CombatSession &session)
                 return command;
         }
     for (const auto verb :
-            {"magic_missile", "magic_missile_2", "scorching_ray", "melee", "fire_bolt", "ranged"
+            {"magic_missile", "magic_missile_2", "scorching_ray", "melee", "fire_bolt",
+             "sacred_flame", "ranged"
             })
     {
         const Command *best = nullptr;
@@ -727,6 +746,10 @@ Command choose_demo_command(const CombatSession &session)
         for (const auto &command : offered)
             if (command.verb == "end")
                 return command;
+    // With nothing to attack yet, Aggressive covers more ground toward the enemy.
+    for (const auto &command : offered)
+        if (command.verb == "aggressive")
+            return command;
     const Command *move = nullptr;
     int closest = nearest(active.cell);
     for (const auto &command : offered)

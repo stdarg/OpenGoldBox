@@ -12,6 +12,8 @@ godot::String saved_language();
 godot::String game_path();
 godot::String language();
 int combat_zoom_percent();
+// [combat] encounter_challenge: a percentage of the SRD's Moderate XP budget, 0-200.
+unsigned encounter_challenge();
 bool valid_language(const godot::String &locale);
 bool save_game_path(const godot::String &directory);
 bool save_language(const godot::String &locale);

@@ -270,6 +270,7 @@ void RolfTourView::restart()
             const auto directory = settings::game_path();
             session_.emplace(
                 RolfTourSession::load(std::filesystem::u8path(directory.utf8().get_data())));
+            session_->encounter_challenge(settings::encounter_challenge());
             if (campaign_)
                 session_->campaign_party(campaign_);
             for (unsigned i = 0; i < sprites_.size(); ++i)

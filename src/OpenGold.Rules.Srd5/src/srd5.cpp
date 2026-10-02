@@ -186,6 +186,9 @@ struct Definition
            ranged_type{detail::DamageType::bludgeoning};
     std::vector<detail::DamageAffinity> affinities;
     std::vector<std::string> equipment_keys, masteries;
+    // Monster traits from supplemental content rows.
+    bool pack_tactics{}, aggressive{};
+    Dice advantage_damage; // Extra weapon damage when the attack roll had Advantage.
 };
 
 struct CombatDisplay
@@ -198,23 +201,23 @@ struct CombatDisplay
 CombatDisplay combat_display(std::string_view definition)
 {
     if (definition == "slums-kobold")
-        return {"Kobold", "Dagger", nullptr};
-    if (definition == "slums-kobold-leader")
-        return {"Kobold Leader", "Short sword", "Short bow"};
-    if (definition == "slums-kobold-leader-sword")
-        return {"Kobold Leader", "Short sword", nullptr};
+        return {"Kobold", "Dagger", "Dagger"};
+    if (definition == "slums-kobold-leader" || definition == "slums-kobold-leader-sword")
+        return {"Kobold Leader", "Dagger", "Dagger"};
     if (definition == "bandit")
         return {"Bandit", "Scimitar", "Light crossbow"};
     if (definition == "slums-goblin")
-        return {"Goblin Guard", "Short sword", nullptr};
+        return {"Goblin Guard", "Scimitar", "Shortbow"};
     if (definition == "slums-goblin-leader")
-        return {"Goblin Leader", "Short sword", nullptr};
+        return {"Goblin Leader", "Scimitar", "Shortbow"};
     if (definition == "slums-orc")
-        return {"Orc", nullptr, nullptr};
+        return {"Orc", "Greataxe", "Javelin"};
     if (definition == "slums-orc-leader")
-        return {"Orc Leader", nullptr, nullptr};
+        return {"Orc Leader", "Greataxe", "Javelin"};
+    if (definition == "slums-orc-leader-archer")
+        return {"Orc Leader", "Greataxe", "Longbow"};
     if (definition == "slums-bugbear")
-        return {"Bugbear", nullptr, nullptr};
+        return {"Bugbear", "Grab", "Light hammer"};
     return {nullptr, nullptr, nullptr};
 }
 
@@ -1009,6 +1012,14 @@ class Session final : public CombatSession
                line_of_sight(a.source.cell, b.source.cell);
     }
 
+    bool enemy_in_sight(const Actor &a) const
+    {
+        return std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+        {
+            return other.source.side != a.source.side && conscious(other) && can_see(a, other);
+        });
+    }
+
     unsigned turn_end_ms(std::size_t index) const
     {
         return unsigned((index + 1) * detail::round_ms / actors_.size());
@@ -1070,6 +1081,8 @@ class Session final : public CombatSession
                    bool savage, detail::DamageType type, bool ranged, bool spell = false,
                    bool optional_mastery = true);
     bool sneak_eligible(const Actor &a, const Actor &target, bool ranged, int mode) const;
+    bool ally_beside(const Actor &a, const Actor &target) const;
+    int roll_advantage_damage(const Actor &a, const Actor &target, int natural);
     [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural);
     [[nodiscard]] int keep_higher_savage_roll(Actor &a, int first, int second);
     void finish_reaction();
@@ -2065,6 +2078,8 @@ std::vector<Command> Session::legal_commands() const
     }
     if (a.bonus && a.rushes > 0)
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
+    if (a.bonus && d.aggressive && speed > 0 && enemy_in_sight(a))
+        add(id, "aggressive", "Aggressive");
     if (a.bonus && a.winds > 0 && a.hp < d.hp)
         add(id, "second_wind", "Second Wind", id);
     for (const auto &other : actors_)
@@ -2128,17 +2143,11 @@ std::vector<Command> Session::legal_commands() const
                             }
                 if (feet <= d.reach)
                     add(id, "melee",
-                        a.source.definition == "slums-kobold" ? "Dagger attack"
-                        : a.source.definition == "slums-kobold-leader" ||
-                        a.source.definition == "slums-kobold-leader-sword"
-                        ? "Short sword attack"
+                        a.source.definition.starts_with("slums-kobold") ? "Dagger attack"
                         : "Melee attack",
                         other.source.id);
                 if (d.range > 0 && feet <= d.long_range)
-                    add(id, "ranged",
-                        a.source.definition == "slums-kobold-leader" ? "Short bow attack"
-                        : "Ranged attack",
-                        other.source.id);
+                    add(id, "ranged", "Ranged attack", other.source.id);
                 offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
             }
             else
@@ -2280,7 +2289,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
                                  target.dodge, disadvantaged || a.effects.prone);
     // At zero HP the creature is Unconscious and Prone (SRD pp.187,191).
     // At longer range their opposing attack modifiers cancel, not stack.
-    if (unconscious(target) || a.aim_ready || detail::vexed_by(target.effects, scope_, a.source.id))
+    const bool pack_tactics = !spell && d.pack_tactics && ally_beside(a, target);
+    if (unconscious(target) || a.aim_ready || pack_tactics ||
+            detail::vexed_by(target.effects, scope_, a.source.id))
         result.advantage = true;
     if (detail::sapped(a.effects))
         result.disadvantage = true;
@@ -2439,6 +2450,36 @@ bool Session::sneak_eligible(const Actor &a, const Actor &target, bool ranged, i
         d.ranged_weapon, mode, ally});
 }
 
+// Pack Tactics: a conscious ally of the attacker stands within 5 feet of the target.
+bool Session::ally_beside(const Actor &a, const Actor &target) const
+{
+    return std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.source.id != a.source.id && other.source.side == a.source.side &&
+               conscious(other) && distance(other.source.cell, target.source.cell) <= 5;
+    });
+}
+
+int Session::roll_advantage_damage(const Actor &a, const Actor &target, int natural)
+{
+    const auto &extra_dice = def(a).advantage_damage;
+    const bool critical = critical_hit(a, target, natural);
+    const int extra = dice(extra_dice, critical);
+    const auto count = std::to_string(extra_dice.count * (critical ? 2 : 1));
+    const auto sides = std::to_string(extra_dice.sides);
+    log(a.source.name + " adds " + count + "d" + sides + " for " + std::to_string(extra) +
+        " extra damage (Advantage).",
+    {
+        "{name} adds {count}d{sides} for {damage} extra damage (Advantage).",
+        {   {"name", a.source.name},
+            {"count", count},
+            {"sides", sides},
+            {"damage", std::to_string(extra)}
+        }
+    });
+    return extra;
+}
+
 int Session::roll_sneak_attack(Actor &a, const Actor &target, int natural)
 {
     a.sneak_used = actor(a.source.id).sneak_used = true;
@@ -2500,11 +2541,16 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     // Sneak Attack and Savage Attacker have one right answer, so they apply
     // automatically and the log records what they added.
     const int sneak_damage = sneak ? roll_sneak_attack(a, target, natural) : 0;
+    const int advantage_damage = hit && !spell && d.advantage_damage.count &&
+                                 modifiers.mode() > 0
+                                 ? roll_advantage_damage(a, target, natural)
+                                 : 0;
     const bool savage = hit && !spell && damage_dice.count && d.savage &&
                         !actor(a.source.id).savage_used;
     if (savage)
         weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
-    apply_hit(a, target, natural, bonus, modifiers.mode(), std::max(0, weapon_damage + sneak_damage),
+    apply_hit(a, target, natural, bonus, modifiers.mode(),
+              std::max(0, weapon_damage + sneak_damage + advantage_damage),
               savage,
               spell    ? spell_type
               : ranged ? d.ranged_type
@@ -3016,6 +3062,16 @@ bool Session::submit(const Command &command)
             log(a.source.name + " disengages.", {"{name} disengages.", {{"name", a.source.name}}});
         }
     }
+    else if (command.verb == "aggressive")
+    {
+        // Only monsters have Aggressive and the policy spends it closing in, so
+        // "toward a hostile creature" is not enforced on the extra movement.
+        a.bonus = false;
+        a.movement += d.speed;
+        ++a.dashes;
+        log(a.source.name + " moves aggressively.",
+        {"{name} moves aggressively.", {{"name", a.source.name}}});
+    }
     else if (command.verb == "adrenaline_rush")
     {
         a.bonus = false;
@@ -3307,9 +3363,11 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             (actor.aim_used && (definition.sneak_level < 3 || actor.bonus || actor.moved)) ||
             (actor.aim_ready && !actor.aim_used))
         throw std::runtime_error("Invalid Rogue attack expenditure");
+    // Cunning Action and Aggressive both spend the bonus action on a Dash.
+    const bool bonus_dash = (definition.cunning || definition.aggressive) && !actor.bonus;
     if (actor.dashes < 0 ||
             actor.dashes > int(!actor.actions.normal) +
-            int(actor.rush_used || (definition.cunning && !actor.bonus)) +
+            int(actor.rush_used || bonus_dash) +
             int(actor.surge_used && !actor.actions.surge) ||
             actor.movement > definition.speed * (1 + actor.dashes))
         throw std::runtime_error("Invalid Dash allowance count");
@@ -3320,7 +3378,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.movement < 0 ||
             actor.movement >
             definition.speed * (1 + !actor.actions.normal +
-                                int(actor.rush_used || (definition.cunning && !actor.bonus)) +
+                                int(actor.rush_used || bonus_dash) +
                                 (actor.surge_used && !actor.actions.surge)) ||
             actor.arcane < 0 || actor.arcane > definition.arcane || actor.surges < 0 ||
             actor.surges > definition.surges ||
@@ -3989,6 +4047,9 @@ class Module final : public RulesModule
                 "action_surge",
                 "cunning_dash",
                 "cunning_disengage",
+                "pack_tactics",
+                "aggressive",
+                "advantage_damage",
                 "sneak_attack",
                 "steady_aim",
                 "great_weapon_fighting",
@@ -5464,7 +5525,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     Content content;
     content.identity = {"opengold.srd5", "0.6.62", revision + "/" + std::to_string(hash)};
-    std::set<std::string> save_rows, casting_rows, damage_rows, size_rows;
+    std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows;
     while (std::getline(lines, line))
     {
         if (line.empty() || line[0] == '#' || line == "\r")
@@ -5534,6 +5595,29 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             row >> std::ws;
             if (!row.eof())
                 throw std::runtime_error("Unknown creature size fields");
+            continue;
+        }
+        if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage")
+        {
+            const auto found = content.definitions.find(key);
+            if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
+                throw std::runtime_error("Invalid creature trait: " + key);
+            auto &definition = found->second;
+            if (tag == "pack_tactics")
+                definition.pack_tactics = true;
+            else if (tag == "aggressive")
+                definition.aggressive = true;
+            else
+            {
+                auto &extra = definition.advantage_damage;
+                row >> extra.count >> extra.sides;
+                if (!row || extra.count < 1 || extra.count > 10 || extra.sides < 2 ||
+                        extra.sides > 20)
+                    throw std::runtime_error("Invalid Advantage damage: " + key);
+            }
+            row >> std::ws;
+            if (!row.eof())
+                throw std::runtime_error("Unknown creature trait fields: " + key);
             continue;
         }
         if (tag == "saves" || tag == "spellcasting")

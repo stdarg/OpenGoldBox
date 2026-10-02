@@ -13,6 +13,7 @@ language="es"
 
 [combat]
 combat_zoom=100
+encounter_challenge=33
 ```
 
 Use the actual folder containing `START.EXE`, `ITEMS`, and the original `.DAX`
@@ -24,6 +25,15 @@ is a percentage, clamped to 10–1000. The default is 100, also recorded in the
 Godot project config. New settings files receive this value automatically.
 It controls the battlefield canvas, input coordinates, and centering; menus and
 text retain their normal size.
+
+`encounter_challenge` sizes original monster encounters. It is a percentage of
+the SRD 5.2.1 Moderate XP budget for the party, clamped to 0–200; the default is
+33. An encounter whose monsters are worth more XP than that budget, or that has
+more monsters than living characters, is scaled back proportionally, keeping at
+least one of each kind. Encounters are never enlarged, and experience and loot
+remain the original encounter's. The game reads the value when exploration
+starts or a save is loaded, and new settings files receive the default. See
+[MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks).
 
 ## Startup and reset controls
 

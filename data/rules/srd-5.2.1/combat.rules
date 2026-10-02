@@ -1,32 +1,37 @@
-OPENGOLD_SRD5 1 srd-5.2.1-demo.1
+OPENGOLD_SRD5 1 srd-5.2.1-demo.2
 # creature key AC HP initiative speed melee_bonus melee_count melee_sides melee_modifier ranged_bonus ranged_count ranged_sides ranged_modifier range long_range second_winds spell_slots casting_bonus level spell_mask
 # A zero ranged profile means the creature has no ranged weapon.
 # spell_mask: 1=Fire Bolt, 2=Cure Wounds, 4=Magic Missile.
 creature bandit 12 11 1 30 3 1 6 1 3 1 8 1 80 320 0 0 0 1 0
-creature slums-orc 13 12 1 30 4 1 8 2 3 1 6 1 80 320 0 0 0 1 0
-creature slums-kobold 12 5 2 30 4 1 4 2 0 0 0 0 0 0 0 0 0 1 0
-creature slums-goblin 14 7 2 30 4 1 6 2 4 1 6 2 80 320 0 0 0 1 0
-creature slums-kobold-leader 13 9 2 30 4 1 4 2 4 1 6 2 80 320 0 0 0 1 0
-creature slums-kobold-leader-sword 13 9 2 30 4 1 6 2 0 0 0 0 0 0 0 0 0 1 0
-creature slums-goblin-leader 15 14 2 30 4 1 6 2 4 1 6 2 80 320 0 0 0 1 0
-creature slums-orc-leader 14 18 1 30 5 1 8 3 3 1 6 1 80 320 0 0 0 1 0
-creature slums-bugbear 15 27 2 30 4 1 8 2 4 1 6 2 30 120 0 0 0 1 0
+# Slums monsters are SRD stat blocks: Kobold Warrior, Goblin Warrior and Bugbear
+# Warrior (SRD 5.2.1) and Orc (SRD 5.1). A leader is its base stat block wearing
+# the armor its original record readies; it shoots a bow only if its art shows one.
+creature slums-orc 13 15 1 30 5 1 12 3 5 1 6 3 30 120 0 0 0 1 0
+creature slums-kobold 14 7 2 30 4 1 4 2 4 1 4 2 20 60 0 0 0 1 0
+creature slums-goblin 15 10 2 30 4 1 6 2 4 1 6 2 80 320 0 0 0 1 0
+creature slums-kobold-leader 16 7 2 30 4 1 4 2 4 1 4 2 20 60 0 0 0 1 0
+creature slums-kobold-leader-sword 14 7 2 30 4 1 4 2 4 1 4 2 20 60 0 0 0 1 0
+creature slums-goblin-leader 16 10 2 30 4 1 6 2 4 1 6 2 80 320 0 0 0 1 0
+creature slums-orc-leader 16 15 1 30 5 1 12 3 5 1 6 3 30 120 0 0 0 1 0
+creature slums-orc-leader-archer 16 15 1 30 5 1 12 3 3 1 8 1 150 600 0 0 0 1 0
+creature slums-bugbear 14 33 2 30 4 2 6 2 4 3 4 2 20 60 0 0 0 1 0
 creature vanguard 17 28 1 30 5 1 8 3 3 1 6 1 80 320 2 0 0 3 0
 creature scout 14 22 3 30 5 1 6 3 5 1 8 3 150 600 0 0 0 3 0
 creature adept 12 18 2 30 2 1 6 0 4 1 8 2 80 320 0 2 5 3 5
 creature healer 16 24 0 30 4 1 8 2 2 1 8 0 80 320 0 2 5 3 2
 # Profiles are deliberately limited fixtures, not complete player class sheets.
 # Bandit weapon names/stats are the SRD Scimitar and Light Crossbow.
-# Slums orcs and party profiles are authored conversions; no original CHA stats are treated as 5e stats.
+# Party profiles are authored conversions; no original CHA stats are treated as 5e stats.
 creature blindness-adept 12 18 2 30 2 1 6 0 4 1 8 2 80 320 0 2 5 3 5
 saves bandit 0 1 1 0 0 0
-saves slums-orc 2 1 2 -2 0 0
+saves slums-orc 3 1 3 -2 0 0
 saves slums-kobold -2 2 -1 -1 -2 -1
 saves slums-goblin -1 2 0 0 -1 -1
-saves slums-kobold-leader -1 2 0 -1 -1 0
-saves slums-kobold-leader-sword -1 2 0 -1 -1 0
-saves slums-goblin-leader 0 2 1 0 0 0
-saves slums-orc-leader 3 1 3 -1 0 1
+saves slums-kobold-leader -2 2 -1 -1 -2 -1
+saves slums-kobold-leader-sword -2 2 -1 -1 -2 -1
+saves slums-goblin-leader -1 2 0 0 -1 -1
+saves slums-orc-leader 3 1 3 -2 0 0
+saves slums-orc-leader-archer 3 1 3 -2 0 0
 saves slums-bugbear 2 2 1 -1 0 -1
 saves vanguard 5 1 4 0 0 0
 saves scout 1 5 1 2 1 0
@@ -37,14 +42,28 @@ spellcasting blindness-adept 2 37
 damage_types bandit slashing piercing
 damage_types slums-orc slashing piercing
 damage_types slums-kobold piercing piercing
-damage_types slums-goblin piercing piercing
+damage_types slums-goblin slashing piercing
 damage_types slums-kobold-leader piercing piercing
 damage_types slums-kobold-leader-sword piercing piercing
-damage_types slums-goblin-leader piercing piercing
+damage_types slums-goblin-leader slashing piercing
 damage_types slums-orc-leader slashing piercing
-damage_types slums-bugbear piercing piercing
+damage_types slums-orc-leader-archer slashing piercing
+damage_types slums-bugbear bludgeoning bludgeoning
 damage_types vanguard slashing piercing
 damage_types scout piercing piercing
 damage_types adept bludgeoning piercing
 damage_types healer bludgeoning piercing
 damage_types blindness-adept bludgeoning piercing
+size slums-kobold small
+size slums-kobold-leader small
+size slums-kobold-leader-sword small
+size slums-goblin small
+size slums-goblin-leader small
+pack_tactics slums-kobold
+pack_tactics slums-kobold-leader
+pack_tactics slums-kobold-leader-sword
+advantage_damage slums-goblin 1 4
+advantage_damage slums-goblin-leader 1 4
+aggressive slums-orc
+aggressive slums-orc-leader
+aggressive slums-orc-leader-archer

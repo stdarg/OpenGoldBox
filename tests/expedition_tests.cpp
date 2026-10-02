@@ -691,6 +691,12 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
             }
         }
         int next = int(ty * 16 + tx);
+        // A refused step may only have met a random encounter; try those edges again.
+        if (previous[next] < 0 && !refused.empty())
+        {
+            refused.clear();
+            continue;
+        }
         check(previous[next] >= 0, "The destination is reachable");
         while (previous[next] != origin)
             next = previous[next];
@@ -1100,14 +1106,6 @@ void slums_camp_ambush(Expedition &trip)
           "After the fight the party rests again");
 }
 
-// Ohlo's route crosses the Rope Guild, where back-to-back roaming fights defeat
-// this automated party (docs/QUESTS.md#validation-and-limits). Run it on request.
-bool ohlo_route_requested()
-{
-    const auto *flag = std::getenv("OPENGOLD_OHLO_ROUTE");
-    return flag && std::string_view(flag) == "1";
-}
-
 std::filesystem::path revisit_result(const std::filesystem::path &save)
 {
     return std::filesystem::path(save).concat(".revisit");
@@ -1130,8 +1128,7 @@ void reload_and_revisit(const std::filesystem::path &save, const std::filesystem
           "The reloaded campaign is the saved campaign");
     check(!party->rest(), "The inn's rest timer survives the reload");
     revisit_orcs(trip);
-    if (ohlo_route_requested())
-        revisit_ohlo(trip);
+    revisit_ohlo(trip);
     slums_camp_ambush(trip);
     write_campaign_file(revisit_result(save), encode_campaign(*party, &trip.town, assets));
 }
@@ -1155,11 +1152,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
     check(read_campaign_file(std::filesystem::path(save).concat(".bak")) == after_return,
           "Replacing a save keeps the previous one as a backup");
-    if (ohlo_route_requested())
-    {
-        ohlo_quest(trip);
-        write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
-    }
+    ohlo_quest(trip);
+    write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
 
     auto command = "\"" + executable.string() + "\" --revisit \"" + save.string() + "\"";
 #ifdef _WIN32
@@ -1167,16 +1161,15 @@ void installed_first_expedition(const std::filesystem::path &executable,
 #endif
     check(std::system(command.c_str()) == 0, "A fresh process reloads and revisits the event");
     revisit_orcs(trip);
-    if (ohlo_route_requested())
-        revisit_ohlo(trip);
+    revisit_ohlo(trip);
     slums_camp_ambush(trip);
     check(read_campaign_file(revisit_result(save)) ==
           encode_campaign(*trip.party, &trip.town, assets),
           "Continuing after a reload, camp interruptions included, matches continuing without one");
     std::filesystem::remove_all(folder);
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
-              "returned, paid the inn with change, rested, reloaded, revisited and "
-              "camped in the Slums.\n";
+              "returned, paid the inn with change, rested, delivered Ohlo's potion, reloaded, "
+              "revisited and camped in the Slums.\n";
 }
 
 } // namespace

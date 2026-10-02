@@ -70,8 +70,8 @@ A rejected training fight keeps the party screen
 open so the party can be edited and retried.
 
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
-supported from commission to reward; see [QUESTS.md](QUESTS.md). Its long walk
-through the Rope Guild is not yet survivable for the automated test party.
+supported from commission to reward; see [QUESTS.md](QUESTS.md). The installed
+test plays it end to end.
 
 Camping in the Slums follows the original script's interruption profile:
 plain streets are checked for wandering monsters, and special-event cells are

@@ -112,3 +112,45 @@ back to the originals' proportions balances every type at the original scaling.
 Limits: one party composition (six fighters), two battlefields, and an
 automated policy on both sides. The ×1.5 HP ratio is measured from these
 fighters' HP; it is not a derived rule.
+
+## SRD stat blocks and encounter challenge (2026-10-02)
+
+Following this audit, the user chose SRD stat blocks over proportional
+conversions and asked that encounters be scaled back instead
+([MON-1](../SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)).
+The tool now takes `opengold_encounter_balance GAME_DIR [SEEDS [CONTENT_PACK]]`,
+fits each encounter exactly as the session does, and sweeps the encounter
+challenge instead of a strength factor. It runs two parties: the six fighters,
+and a mixed party of two fighters, two clerics (mace, scale mail, shield,
+Sacred Flame), a rogue (shortsword, leather) and a wizard (quarterstaff,
+Magic Missile). Campaign clerics cannot yet prepare leveled spells (#91), so the
+mixed party has no healing magic. The demo policy now also stabilizes a dying
+ally when no enemy is within reach, and uses Aggressive before moving.
+
+**The SRD XP budget alone does not trim mobs.** At Moderate, six level-2
+characters have 900 XP; three kobold leaders and twelve kobolds cost 375 and
+four goblin leaders and twelve goblins 800, so neither shrinks. The fighters
+won 28% and 0% of those Rope Guild fights, the mixed party none. With Pack
+Tactics and the SRD's own warning about more than two creatures per character
+(p. 203), a crowd limit is needed. Capping at two per character barely helped;
+one per character made every kobold and goblin fight winnable.
+
+**Orcs set the budget.** Even within one per character, six orcs (600 XP, the
+SRD's Low budget for this party) beat the mixed party half the time:
+
+| Level 2, Rope Guild | Challenge | Enemies | Fighters win | Mixed win | Mixed deaths |
+| --- | --- | --- | --- | --- | --- |
+| orcs | 100 (Moderate) | 6 orcs | 90% | 45% | 0.80 |
+| orcs | 50 | 4 orcs | 100% | 95% | 0.35 |
+| orcs | 33 | 2 orcs | 100% | 100% | 0.20 |
+
+At the chosen default of 33 every cell is won at least 98% of the time by both
+parties, levels 1 and 2, with at most 0.23 deaths per fight on average
+(level 1 Rope Guild kobolds: 98% and 0.20 for the mixed party). At 50 the
+level-1 mixed party loses 0.35–0.55 characters per fight against goblins and
+orcs. With this default the whole Ohlo route passes in the normal expedition
+test.
+
+Limits as before: the demo policy on both sides, two battlefields, and party
+compositions that the game's missing leveled cleric spells make weaker than the
+SRD assumes. The default should be measured again when #91 lands.

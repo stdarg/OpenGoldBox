@@ -21,9 +21,38 @@ this response require checking the action text: the structured primary type is
 null while the extra-damage-type field contains the type. The current module
 does not yet resolve typed damage.
 
+## Slums monsters
+
+The original Slums monsters are SRD stat blocks
+([MON-1](../../../docs/SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)).
+Each Open5E response was fetched on 2026-10-02 and is retained here:
+
+| Rows | Stat block | Source | Response | SHA-256 |
+| --- | --- | --- | --- | --- |
+| `slums-kobold*` | Kobold Warrior | SRD 5.2 (`srd-2024`) | `open5e-kobold-warrior.json` | `9929C60A397A73A5D61E75DC50FD9FECFF42EF6F299C6267B210F2B76D16B6B6` |
+| `slums-goblin*` | Goblin Warrior | SRD 5.2 (`srd-2024`) | `open5e-goblin-warrior.json` | `8FCFA3B9263B1CF4BC1CD6F7B36AC0892FAFCFFA8A4A2FB48EDC18DD2FC1E2D3` |
+| `slums-orc*` | Orc | SRD 5.1 (`srd-2014`) | `open5e-orc.json` | `8AD2F367656EBB0AC1DADE6C28D619FEB6FE16F844699D4208C78D3B3E3CEE54` |
+| `slums-bugbear` | Bugbear Warrior | SRD 5.2 (`srd-2024`) | `open5e-bugbear-warrior.json` | `4FEE28307486692A34C1583EC70757337D21BD929911950BC241592F4A10F994` |
+
+Queries: `https://api.open5e.com/v2/creatures/?document__key=<source>&name__iexact=<name>`.
+The 2024 SRD has no orc, so the Orc is the one exception to this pack's 5.2.1
+source. Rows keep each block's AC, HP, initiative, speed, attacks, saving
+throws, damage types and size. Supplemental rows add the supported traits:
+`pack_tactics` (Kobold Warrior), `advantage_damage` (Goblin Warrior's extra
+1d4) and `aggressive` (Orc). By decision, Sunlight Sensitivity and Nimble Escape
+are omitted, and the Bugbear's Grab is a 5-foot attack without a grapple, its
+Light Hammer a thrown attack without the grappled Advantage.
+
+A `-leader` row is its base stat block wearing the armor its original record
+readies (AC 16 for kobold, goblin and orc leaders; `slums-kobold-leader-sword`,
+record 11, readies only studded leather and keeps AC 14). Only
+`slums-orc-leader-archer`, for the orc leader whose combat icon shows a bow,
+replaces the Javelin with a Longbow (+3, 1d8+1, 150/600).
+
+## Fixtures
+
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not
-complete SRD class builds. `slums-orc` is an authored conversion selected for the
-original Slums ORC identities. None of these profiles claims to be an imported
+complete SRD class builds. None of these profiles claims to be an imported
 Open5E monster stat block. The party casters deliberately carry only two
 level-1 slots for this standalone example. Shared campaign characters instead
 use [manual level-1–4 advancement](../../../docs/ADVANCEMENT.md), including

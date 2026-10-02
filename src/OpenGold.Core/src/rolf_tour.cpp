@@ -567,6 +567,11 @@ bool RolfTourSession::continue_dialogue(std::uint64_t ticket)
     return choose(ticket, 0);
 }
 
+void RolfTourSession::encounter_challenge(unsigned challenge)
+{
+    encounter_challenge_ = std::min(challenge, max_encounter_challenge);
+}
+
 bool RolfTourSession::camp(RestKind kind)
 {
     if (kind != RestKind::short_rest && kind != RestKind::long_rest)

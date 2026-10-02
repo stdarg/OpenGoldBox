@@ -129,23 +129,14 @@ deferred collection of money and item across a save and reload; and Bash, Pick
 `tests/party_tests.cpp` checks exact party strength values and
 `tests/ecl_tests.cpp` upper-case string input.
 
-With `OPENGOLD_GAME_DIR` and `OPENGOLD_OHLO_ROUTE=1`, `opengold_expedition_tests`
-also plays the route with the six created fighters after the inn rest, spending
-the orcs' XP on level two, and revisits Ohlo and the booth after a fresh-process
-reload. On the walk to the booth the party
-[camps](RECOVERY.md#original-campaign-mappings) whenever a step leaves it
-wounded: a Long Rest when anyone is eligible, otherwise a Short Rest spending
-Hit Dice. **This route still fails**, now on creature balance alone:
-
-1. After the commission, the party (strength 12) is surprised at `(14,7)` by
-   eight goblins and four goblin leaders. It wins, but one fighter dies.
-2. The Long Rest is still 16 hours away, so the party takes a Short Rest. The
-   five survivors spend Hit Dice and are back to full HP.
-3. The booth lies inside the Old Rope Guild (event 18), which rolls a roaming
-   encounter on about 2 in 11 steps (`0xade2`); the route crosses about 25 of
-   its cells. At `(6,14)` the five fighters, at full HP, meet ten goblins and
-   four leaders and are defeated.
-
-The converted goblins (SRD: 7 HP, AC 15, +4 for 1d6 + 2) hit harder than AD&D
-goblins. The route therefore stays opt-in until they are converted from their
-original AD&D stats.
+With `OPENGOLD_GAME_DIR`, `opengold_expedition_tests` also plays the route
+with the six created fighters after the inn rest, spending the orcs' XP on
+level two, and revisits Ohlo and the booth after a fresh-process reload. On the
+walk to the booth the party [camps](RECOVERY.md#original-campaign-mappings)
+whenever a step leaves it wounded: a Long Rest when anyone is eligible,
+otherwise a Short Rest spending Hit Dice. The route passes with the Slums
+monsters as SRD stat blocks and their encounters scaled back to the default
+[encounter challenge](CONFIGURATION.md)
+([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)).
+Before that change, the converted goblins defeated the party in the Old Rope
+Guild; the [balance audit](audits/slums-encounter-balance.md) records why.

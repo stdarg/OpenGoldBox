@@ -28,6 +28,9 @@ supersede the older entries they name below.
   grappling dropped, exploration-only feature halves cut, marginal issues
   closed; Hide and multi-square creatures stay.
 
+On 2026-10-02 [MON-1](#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)
+made original monsters SRD stat blocks and sized their encounters by an XP budget.
+
 ## Current execution agreement
 
 The SRD goal resumed on 2026-09-25 for #193. Earlier workflow maintenance did
@@ -370,3 +373,35 @@ issues for features with little value in this computer RPG.
   has trolls, giants, ettins and a small dragon), resurrection (#175), free
   casts (#200), spell reactions (#41), split targets (#42), area targeting
   (#43) and all class combat features.
+
+## MON-1 (2026-10-02): original monsters as SRD stat blocks
+
+The user decided on 2026-10-01 and 2026-10-02 how original Pool of Radiance
+monsters become SRD creatures and how their encounters are sized. It replaces
+the earlier authored Slums conversions.
+
+- **Stat blocks:** monsters are SRD stat blocks, unchanged. In the Slums: Kobold
+  Warrior, Goblin Warrior and Bugbear Warrior (SRD 5.2.1). The 2024 SRD has no
+  orc, so orcs are the SRD 5.1 Orc (the user: orcs are tougher than goblins).
+- **Leaders** are their base stat block wearing the armor their original record
+  readies. A leader shoots a bow only when its combat art shows one; otherwise
+  its better gear is loot. Of the Slums icons only the orc leader's (CPIC2 5)
+  shows a bow.
+- **Simplifications:** kobolds have no Sunlight Sensitivity and goblins no
+  Nimble Escape. The Bugbear's Grab hits an adjacent character for its damage
+  with no grapple (consistent with [SCOPE-2](#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
+  Aggressive adds the orc's speed as a bonus action; only monsters have it, so
+  "toward a hostile creature" is left to the monster's policy.
+- **Encounter size:** when an original encounter is too strong, it is scaled
+  back. The `[combat] encounter_challenge` setting in `settings.cfg` (0–200,
+  default 33) is a percentage of the SRD 5.2.1 Moderate XP budget (p. 202). An
+  encounter over its budget, or with more creatures than living characters,
+  shrinks every group by one factor, keeping at least one of each. Encounters
+  never grow. The user left the rest to the implementation's discretion; the
+  default and the one-creature-per-character limit were then chosen by
+  measurement: the SRD budget alone left mobs untrimmed, and the party
+  currently has no leveled cleric healing (#91). See the
+  [balance audit](audits/slums-encounter-balance.md).
+- **Rewards:** experience and loot remain those of the original encounter,
+  however many monsters fought. The user will later tie challenge to difficulty
+  and to experience and treasure gain, and add a visible slider.
