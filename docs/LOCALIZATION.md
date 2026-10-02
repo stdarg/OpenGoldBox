@@ -33,8 +33,9 @@ environment overrides and MD5 compatibility warnings. `--lang` is removed.
 
 `--splash` remains independent: without it, selection proceeds directly to
 character creation; with it, both translated lettering overlays fade in using
-the existing key-to-advance flow. Use `start "" /wait` before these commands if
-you want interactive CMD to wait for the GUI executable to exit.
+the existing key-to-advance flow. From interactive CMD, run
+`win-package\opengoldbox.console.exe` with the same flags to wait for the game
+to exit.
 
 ## Files and workflow
 

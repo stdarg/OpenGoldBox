@@ -94,8 +94,9 @@ settings and game-specific checks.
 ### Windows
 
 Install the Windows x64 debug export template that matches your Godot editor at
-`build/export-templates/windows_debug_x86_64.exe`, or pass its location to the
-helper:
+`build/export-templates/windows_debug_x86_64.exe`, with
+`windows_debug_x86_64_console.exe` from the same archive beside it, or pass its
+location to the helper:
 
 ```powershell
 .\build-opengoldbox.cmd
@@ -104,12 +105,15 @@ helper:
 
 The helper configures `build/game` with `OPENGOLD_BUILD_GAME=ON` in
 `RelWithDebInfo`, builds, runs the native and headless Godot tests, and fills
-`win-package/` with the executable, PCK, GDExtension DLL, rules data and runtime
-DLLs. Keep that folder together. Run the game with:
+`win-package/` with the executable, CMD launcher, PCK, GDExtension DLL, rules
+data and runtime DLLs. Keep that folder together. Run the game with:
 
 ```powershell
 .\win-package\opengoldbox.exe
 ```
+
+From `cmd.exe`, use `win-package\opengoldbox.console.exe`, which waits for the
+game, returns its exit code and then restores the prompt.
 
 To rebuild only the game target after configuring:
 

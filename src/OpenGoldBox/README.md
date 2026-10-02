@@ -37,6 +37,8 @@ Use the existing Visual Studio/CMake/Godot prerequisites. Install a Windows x64
 debug export template matching the Godot editor. The default template location
 is `build/export-templates/windows_debug_x86_64.exe`; alternatively pass
 `-DOPENGOLDBOX_DEBUG_TEMPLATE=C:/path/to/windows_debug_x86_64.exe` to the build helper.
+Place `windows_debug_x86_64_console.exe` from the same archive beside it; Godot
+builds the CMD launcher `opengoldbox.console.exe` from it.
 Templates come from the official Godot release's export-template archive and
 are local build dependencies, not repository content.
 
@@ -46,6 +48,11 @@ From the repository root in PowerShell:
 .\build-opengoldbox.cmd
 .\win-package\opengoldbox.exe
 ```
+
+From `cmd.exe`, run `win-package\opengoldbox.console.exe` instead. It starts
+`opengoldbox.exe` with the same arguments, shows its output, waits for it to
+exit and returns its exit code, so the prompt comes back when the game closes.
+Explorer and PowerShell can keep launching `opengoldbox.exe` directly.
 
 The game requests a **1920 x 1080** window (16:9, excluding window borders).
 The minimum resizable game area remains 1120 x 800. To launch fullscreen at the
