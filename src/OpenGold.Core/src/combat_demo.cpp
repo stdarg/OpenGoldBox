@@ -717,8 +717,8 @@ Command choose_demo_command(const CombatSession &session)
                 return command;
         }
     for (const auto verb :
-            {"magic_missile", "magic_missile_2", "scorching_ray", "melee", "fire_bolt",
-             "sacred_flame", "ranged"
+            {"magic_missile", "magic_missile_2", "scorching_ray", "inflict_wounds", "melee",
+             "fire_bolt", "sacred_flame", "ranged"
             })
     {
         const Command *best = nullptr;

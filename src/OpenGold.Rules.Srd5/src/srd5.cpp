@@ -1828,10 +1828,14 @@ void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a
             "{name} casts {spell} at {target}.",
             {{"name", a.source.name}, {"spell", name, true}, {"target", target.source.name}}
         });
-        if (saving_throw_succeeds(target, spell.save, dc))
+        const bool saved = saving_throw_succeeds(target, spell.save, dc);
+        if (saved && !spell.half_on_success)
             return;
+        // Halving comes before resistance, which resolved_damage applies.
+        const int rolled_damage = dice(rolled);
         const auto type = std::string(detail::damage_name(spell.damage));
-        const int amount = resolved_damage(target, spell.damage, dice(rolled));
+        const int amount =
+            resolved_damage(target, spell.damage, saved ? rolled_damage / 2 : rolled_damage);
         log(target.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
         {
             "{name} takes {damage} {type} damage.",
@@ -4279,7 +4283,7 @@ class Module final : public RulesModule
             },
             {
                 "inflict_wounds", "Inflict Wounds",
-                "Action; melee spell attack; 3d10 Necrotic damage, +1d10 from a level 2 slot."
+                "Action; touch; Constitution save; 2d10 Necrotic damage, half on a success, +1d10 from a level 2 slot."
             },
             {"bless", "Bless", "Unavailable: concentration is not implemented.", false}
         };
@@ -5526,7 +5530,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.63", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.64", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows;
     while (std::getline(lines, line))
     {

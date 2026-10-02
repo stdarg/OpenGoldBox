@@ -80,5 +80,5 @@ are rejected by the rules identity, as the
 ## Not covered
 
 Channel Divinity, the level-three subclass and its always-prepared spells, and
-the missing Cleric spells and cantrips are separate issues. Inflict Wounds'
-conformance and combat button are [#230](https://github.com/stdarg/OpenGold/issues/230).
+the missing Cleric spells and cantrips are separate issues. Inflict Wounds is
+described in [its own page](INFLICT-WOUNDS.md).

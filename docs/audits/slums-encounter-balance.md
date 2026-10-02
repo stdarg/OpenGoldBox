@@ -172,3 +172,9 @@ spells. Against six orcs at challenge 100 the mixed party now wins 85–88%
 instead of 45%; at 50 the level-1 mixed party loses at most 0.23 characters
 per fight instead of 0.35–0.55. The default stays 33; raising it to 50 now
 keeps every cell at 98% or better for both parties.
+
+The tool's clerics carry a mace and a shield, so no hand is free for a Somatic
+component: of their spells they cast only Healing Word, which has none. Cure
+Wounds, Inflict Wounds and Sacred Flame stay prepared but unusable with that
+grip, which is why making Inflict Wounds castable ([#230](https://github.com/stdarg/OpenGold/issues/230))
+left these numbers unchanged.

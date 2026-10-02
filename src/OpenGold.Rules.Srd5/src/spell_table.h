@@ -21,7 +21,7 @@ namespace opengold::srd5::detail
 enum class SpellPattern : unsigned
 {
     spell_attack,   // one attack roll, damage on hit, optional rider
-    save_damage,    // save against 8 + casting; damage on failure
+    save_damage,    // save against 8 + casting; damage on failure, optionally half on success
     save_condition, // save against 8 + casting; rider on failure
     auto_damage,    // no roll; `instances` separately resolved damage instances
     repeat_attack,  // `instances` attack rolls against one target
@@ -70,6 +70,7 @@ struct SpellDef
     bool requires_sight{};           // gated on can_see()
     bool requires_effect_capacity{}; // gated on can_apply()
     Ability save{Ability::strength}; // save patterns only
+    bool half_on_success{};          // save_damage: a successful save halves the damage
     DamageType damage{DamageType::fire};
     DamageDice dice{};           // {count, sides, bonus}
     bool add_casting_modifier{}; // heal: bonus becomes casting - 2
@@ -216,19 +217,21 @@ inline constexpr std::array spell_table
         .dice = {2, 8, 0},
         .add_casting_modifier = true,
         .upcast = {.extra_dice = 2}},
-    // SRD 5.2.1 p.143. Mask 0 deliberately: bits exist only so profiles written
-    // before the explicit spell list can still be read, and a new spell has no
-    // such history. New spells never get a bit.
+    // SRD 5.2.1: a touched creature makes a Constitution save, taking 2d10
+    // Necrotic damage on a failure or half on a success. Mask 0 deliberately:
+    // bits exist only so profiles written before the explicit spell list can
+    // still be read, and a new spell has no such history. New spells never get a bit.
     SpellDef{
         .id = "inflict_wounds",
         .label = "Inflict Wounds",
         .level = 1,
-        .pattern = SpellPattern::spell_attack,
+        .pattern = SpellPattern::save_damage,
         .target = SpellTarget::enemy,
         .range = 5,
-        .melee = true,
+        .save = Ability::constitution,
+        .half_on_success = true,
         .damage = DamageType::necrotic,
-        .dice = {3, 10, 0},
+        .dice = {2, 10, 0},
         .upcast = {.extra_dice = 1}},
     SpellDef{
         .id = "healing_word",

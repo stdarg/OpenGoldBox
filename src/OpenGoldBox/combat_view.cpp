@@ -1092,7 +1092,8 @@ void CombatView::act(const Command &command)
                      command.verb == "fire_bolt" || command.verb == "poison_spray" ||
                      command.verb == "sacred_flame" || command.verb == "magic_missile" ||
                      command.verb == "magic_missile_2" || command.verb == "scorching_ray" ||
-                     command.verb == "blindness")
+                     command.verb == "blindness" || command.verb == "inflict_wounds" ||
+                     command.verb == "inflict_wounds_2")
                 sound = 2;
             if (sound)
             {
