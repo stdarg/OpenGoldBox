@@ -163,7 +163,8 @@ For an editor run, put custom arguments after Godot's separator:
 ```
 
 On Windows, run `.\win-package\opengoldbox.exe --no-fog`. Launch normally to
-restore fog. Existing saves remain readable; their visited history is retained.
+restore fog. Saves made with `--no-fog` load normally and keep only the cells
+actually visited or seen.
 
 Graphical integration checks can run the tour with `--tour-check --capture`,
 once normally and once with `--no-fog`. Each captured pause verifies all overhead
@@ -244,7 +245,10 @@ canvas, native node ownership, and keyboard/window/dialog shutdown checks in
 headless Godot. Screenshot tests also cover input, pause, request/report handling,
 unavailable rendering, unwritable output, and the external helper's request cleanup.
 The setup fixture builds and imports the extension automatically;
-these checks require neither export templates nor original game files.
+these checks require neither export templates nor original game files. Two
+registered checks use original files and report Skipped without
+`OPENGOLD_GAME_DIR`: `opengold_godot_ohlo_save_route` and
+`opengold_godot_shop_disclosure`.
 
 To run only these Godot checks from a macOS bash shell:
 
@@ -286,8 +290,8 @@ selection. See [translation setup and coverage](../../docs/LOCALIZATION.md).
 
 ## Saving throws and conditions
 
-Level 3–4 Clerics and Wizards can select **Blindness** during advancement. In
-combat, select its button and click a highlighted target. The spell uses a
+Level 3–4 Clerics prepare and Wizards learn **Blindness** during advancement. In
+combat, press A until it is the selected action, then click a highlighted target. The spell uses a
 level-two slot; the roster and log show its condition and saving throws. Effects
 persist through combat checkpoints and campaign handoff. See
 [status effects](../../docs/STATUS-EFFECTS.md) for scope and the `--conditions`

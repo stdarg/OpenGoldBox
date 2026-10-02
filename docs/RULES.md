@@ -95,13 +95,15 @@ follows the regular Kobold combat art.
 **Restart** resets the selected isolated encounter with seed 42. After Slums
 victory, **Continue** finishes any remaining dialogue, and **Revisit event** checks
 the original event's persistent flag within this session. This scene is separate
-from Rolf's exploration scene; walking into combat from exploration is future work.
+from Rolf's exploration scene. In the game, exploration starts combat itself; see
+[the expedition](EXPEDITION.md).
 
 Training **Save combat** / **Load combat** use `user-data/combat.save`, retaining
 the previous save as `.bak`. Saves include pending reactions and RNG state. Older
 formats and other module or content identities reject; see the
-[format policy](SAVES.md#pre-10-format-policy). Slums campaign saving remains
-disabled until ECL, party, and combat can be persisted together.
+[format policy](SAVES.md#pre-10-format-policy). This demo does not save its
+Slums event; the game saves the campaign, including the Slums, at idle
+exploration ([saves](SAVES.md)).
 
 ## Library boundary
 
@@ -210,12 +212,13 @@ subset. Standalone party profiles are authored combat fixtures, not finished
 character sheets. The orc conversion is authored for this demo; its AC/HP are
 not an automatic conversion of original AD&D values.
 
-Not yet implemented: full class features or equipment,
-weapon mastery, Extra Attack, additional saving-throw effects and conditions,
-partial cover, prone/grappling, damage
-types/resistance, multiple sizes, concentration, other spells, spell levels
-above two, split-target Magic Missile/Scorching Ray, retreat, morale, or complete
-campaign encounter coverage. The shared campaign now includes named saves,
+Not yet implemented (as of 2026-10-02): full class features or equipment,
+additional saving-throw effects and conditions, partial cover, multiple sizes,
+concentration spells (the [foundation](CONCENTRATION.md) exists), most other
+spells, split-target Magic Missile/Scorching Ray, retreat, morale, or complete
+campaign encounter coverage. Weapon mastery, typed damage and resistance, and
+Prone are implemented; grappling was dropped
+([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)). The shared campaign now includes named saves,
 surprise initiative disadvantage, original dungeon geometry and bounded original
 loot; see [the expedition adapter](EXPEDITION.md) and [campaign saves](SAVES.md).
 Unconscious enemies are currently treated as defeated, and attacks against

@@ -219,8 +219,9 @@ through **actual SRD 5.2.1 combat**, preserving its two monster/count/icon group
 returning the real victory/defeat and defeated count, and checking the original
 flags and revisit behavior. The native Godot combat scene exposes this isolated
 adapter with a fixed party and approved authored arena. See [RULES.md](RULES.md)
-for exact mapping and limitations; original arena loading, complete encounter
-presentation, loot and campaign persistence remain pending.
+for exact mapping and limitations. The game has since added original
+battlefield geometry, loot and campaign saves for the Slums encounters; see
+[the expedition](EXPEDITION.md) and [saves](SAVES.md).
 
 Static inspection still reports seven diagnostics in six programs. Each comes
 from a possible indexed-jump fallthrough into embedded table data; the audit
@@ -279,7 +280,8 @@ its mocked services with real implementations. Check creature IDs, counts, icons
 combat inputs, the actual result and loot, then verify `0x4ACA` and `0x4ABB` and
 the second visit. The mock-combat pass remains a bytecode-flow milestone. A
 separate real-combat pass now verifies result-dependent continuation and in-memory
-revisit state; loot, campaign persistence and original battlefield loading remain.
+revisit state. Loot, campaign persistence and original battlefield geometry are
+delivered in the game ([expedition](EXPEDITION.md)); this step's plan is kept as written.
 
 ### 4. Resolve uncertain command behavior with isolated experiments
 
@@ -427,8 +429,8 @@ reported rather than silently approximated.
 | Existing component | Reuse and limits |
 | --- | --- |
 | `decode_dax_archive` in `OpenGold.Formats` | Validates and decompresses DAX containers. Reuse for `ECL*.DAX`. |
-| [por_ecl_decoder.gd](../godot/scripts/por_ecl_decoder.gd) | Inspection decoder for typed operands, packed text, five entry jumps, and reachable control flow. Port its tested format knowledge; do not treat static analysis as execution. |
-| [por_ecl_tables.gd](../godot/scripts/por_ecl_tables.gd) | Bounded table analysis for asset research. It deliberately stops at uncertain writes/calls and is not a VM. |
+| [por_ecl_decoder.gd](../demos/godot/scripts/por_ecl_decoder.gd) | Inspection decoder for typed operands, packed text, five entry jumps, and reachable control flow. Port its tested format knowledge; do not treat static analysis as execution. |
+| [por_ecl_tables.gd](../demos/godot/scripts/por_ecl_tables.gd) | Bounded table analysis for asset research. It deliberately stops at uncertain writes/calls and is not a VM. |
 | [ECL tests](../tests/ecl_art_tests.gd) | Synthetic format fixtures and installed-data inspection checks. Useful for parity, not independent proof of runtime semantics. |
 | `MapCatalog` / `GeoMap` | Map identity, directional geometry, and raw cell event data. No event dispatcher or movement rules yet. |
 | `CreatureFactory` | Creates monster/NPC instances with HP and explicit turn budgets. Does not resolve combat, spell effects, or script resource-bank selection. |

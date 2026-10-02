@@ -743,6 +743,9 @@ Examples from the source chat:
 
 ## 16. Prototype Plan
 
+> **Historical plan.** This was the first technical milestone and has been
+> delivered; see the [README's current status](../README.md#current-status).
+
 The recommended first technical milestone is a rendering-first proof of concept:
 
 1. validate a user-supplied Pool of Radiance installation

@@ -1010,6 +1010,10 @@ value = decode_morale_modifier(data[offset + 17]);
 
 ## 25. Initial Development Strategy
 
+> **Historical plan.** Sections 25–26 record the plan the project started from.
+> They are not the current checklist; see the
+> [README's current status](../README.md#current-status) for what is playable now.
+
 Do **not** begin by implementing the entire game.
 
 The first phase should answer the question:

@@ -76,12 +76,12 @@ Party combat remains the explicitly launched training fight.
 ## Supported combat profiles
 
 The rules module evaluates the created scores and equipment; these characters
-do not select the old Vanguard/Adept/Healer fixture statistics. This first shared
-party increment supports **level 1-4 Fighter, Cleric and Wizard combat subsets**.
-All twelve classes can enter combat using their derived HP, AC, equipment,
-movement, and basic attacks. Fighter, Cleric, and Wizard have the documented
-additional combat abilities; the other classes' class-specific features remain
-unavailable. Only Fighter, Cleric, and Wizard can advance beyond level one.
+do not select the old Vanguard/Adept/Healer fixture statistics. All twelve
+classes can enter combat using their derived HP, AC, equipment, movement and
+basic attacks. The classes with further features and the levels they reach are
+summarized in the [README's current status](../README.md#current-status) (as of
+2026-10-02); the [SRD coverage ledger](SRD-COVERAGE.md) has the detail. The list
+below describes this party increment as first delivered, at levels 1–2.
 
 - Fighter: ordinary attacks and two Second Wind uses.
 - Cleric: ordinary attacks and Cure Wounds, with two level-one spell slots
@@ -116,7 +116,8 @@ Legacy names absent from SRD 5.2.1 use these explicit SRD equivalents:
 | 42, 44 | shortbow |
 | 46 / 47 | light_crossbow / sling |
 | 79 | wand (held focus; no charged spell is granted) |
-| 50 / 55 / 59 | leather / chain_mail / shield |
+| 50 / 51 / 52 / 53 / 54 | leather / padded / studded_leather / ring_mail / scale_mail |
+| 55 / 56, 57 / 58 / 59 | chain_mail / splint (Banded Mail has no SRD armor) / plate / shield |
 
 Damage dice, finesse, thrown/ranged distances, reach and mandatory two-hand
 requirements follow the SRD weapon table.

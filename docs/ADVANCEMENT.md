@@ -1,6 +1,6 @@
 # Manual advancement
 
-When a living Fighter, Cleric or Wizard has enough XP, a small **↑** button appears
+When a living Fighter, Cleric, Wizard, Rogue, Paladin or Ranger has enough XP, a small **↑** button appears
 beside the character's name in the party roster and idle exploration party list.
 XP alone never changes a level. Click the arrow to preview the next level's HP,
 select supported spells, and choose a feat or ability points at level 4.
@@ -31,8 +31,8 @@ does not become conscious merely by leveling. No XP is deducted.
   it from Soldier. Once per turn on a weapon hit, choose whether to roll damage
   twice, then keep either result. Soldier grants the same decisions, including
   opportunity attacks. See [Savage Attacker](SAVAGE-ATTACKER.md).
-- **Cleric:** Cure Wounds and Healing Word; Blindness from level 3. At least
-  one supported spell must be selected.
+- **Cleric:** prepared spells on a second page, earlier ones locked; Blindness
+  from level 3. See [Cleric preparation](CLERIC-PREPARATION.md).
 - **Wizard:** Magic Missile, plus Scorching Ray and Blindness from level 3. Fire Bolt remains
   available without spending a slot. At least one leveled spell must be selected.
 
@@ -51,8 +51,10 @@ implements only the blindness option of Blindness/Deafness; see
 ranged spell attacks for 2d6 each. Only one spell slot may be spent per turn.
 
 Damage spells currently direct all darts/rays at one target; split targeting is
-unavailable. Full class/subclass features, Action Surge, Channel Divinity,
-concentration and broader spells/feats remain outside this increment.
+unavailable. Channel Divinity, subclasses other than the Fighter's Champion,
+concentration spells and broader spells/feats remain outside this increment;
+the [README's current status](../README.md#current-status) lists what each class
+has today.
 Progression is planned through level 15, the campaign's cap, and multiclassing
 is deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)). The dialog states the class/subclass limitation.
 

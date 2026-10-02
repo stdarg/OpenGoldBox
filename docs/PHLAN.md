@@ -40,8 +40,10 @@ resolution. Turning and Look invoke slot 1. `NEW ECL` preserves campaign state,
 clears area-local flags through the VM and schedules slot 4 followed by slot 1.
 Camp exposes the pre-camp entry and the supported interruption/recovery paths.
 This is a bounded adapter policy, not a verified reproduction of every DOS
-main-loop detail. Recovery advances the campaign clock and ECL time fields;
-ordinary movement and combat do not yet advance time.
+main-loop detail. Recovery advances the campaign clock and ECL time fields. In
+the game, a forward step also advances six seconds and combat advances the
+clock by its elapsed time ([status effects](STATUS-EFFECTS.md)); this standalone
+tour advances time only for recovery.
 
 Logical campaign/local/register/scratch ranges are initialized explicitly.
 LOAD CHARACTER and WHO expose the single fighter and empty remaining party
