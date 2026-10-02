@@ -133,7 +133,9 @@ open mac-package/OpenGoldBox.app
 ```
 
 This builds a universal (`arm64` and `x86_64`) app bundle, ad hoc signed for
-local testing.
+local testing. The preset uses Ninja, which compiles on every core; a tree
+configured earlier with Unix Makefiles must be deleted once
+(`rm -rf build/macos-universal`) before it configures again.
 
 ## The demos
 

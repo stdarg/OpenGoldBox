@@ -28,7 +28,7 @@
         {
             "name": "macos-universal",
             "displayName": "macOS Universal 2 game",
-            "generator": "Unix Makefiles",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/macos-universal",
             "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" },
             "cacheVariables": {
