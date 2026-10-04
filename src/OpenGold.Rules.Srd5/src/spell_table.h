@@ -25,7 +25,8 @@ enum class SpellPattern : unsigned
     save_condition, // save against 8 + casting; rider on failure
     auto_damage,    // no roll; `instances` separately resolved damage instances
     repeat_attack,  // `instances` attack rolls against one target
-    heal            // restore HP from dice plus the caster's spellcasting modifier
+    heal,           // restore HP from dice plus the caster's spellcasting modifier
+    smite           // Bonus Action right after the caster's own melee hit; extra damage to that target
 };
 
 // Which creatures the spell may be offered against. These reproduce the
@@ -232,6 +233,35 @@ inline constexpr std::array spell_table
         .half_on_success = true,
         .damage = DamageType::necrotic,
         .dice = {2, 10, 0},
+        .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 pp. 125 and 160: cast as a Bonus Action immediately after
+    // hitting with a Melee weapon or an Unarmed Strike; the damage is part of
+    // that attack, so a critical hit doubles its dice. Offered by the smite
+    // window, never by the generic spell offers.
+    SpellDef{
+        .id = "divine_smite",
+        .label = "Divine Smite",
+        .level = 1,
+        .pattern = SpellPattern::smite,
+        .target = SpellTarget::enemy,
+        .range = 5,
+        .somatic = false,
+        .bonus_action = true,
+        .damage = DamageType::radiant,
+        .dice = {2, 8, 0},
+        .upcast = {.extra_dice = 1}},
+    SpellDef{
+        .id = "searing_smite",
+        .label = "Searing Smite",
+        .level = 1,
+        .pattern = SpellPattern::smite,
+        .target = SpellTarget::enemy,
+        .range = 5,
+        .somatic = false,
+        .bonus_action = true,
+        .save = Ability::constitution,
+        .damage = DamageType::fire,
+        .dice = {1, 6, 0},
         .upcast = {.extra_dice = 1}},
     SpellDef{
         .id = "healing_word",

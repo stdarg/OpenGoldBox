@@ -59,6 +59,12 @@ size slums-kobold-leader small
 size slums-kobold-leader-sword small
 size slums-goblin small
 size slums-goblin-leader small
+type slums-kobold dragon
+type slums-kobold-leader dragon
+type slums-kobold-leader-sword dragon
+type slums-goblin fey
+type slums-goblin-leader fey
+type slums-bugbear fey
 pack_tactics slums-kobold
 pack_tactics slums-kobold-leader
 pack_tactics slums-kobold-leader-sword

@@ -61,15 +61,15 @@ Character hero(std::string klass = "fighter", unsigned level = 4)
 // spell slot spent; Hit Dice, Action Surge and Arcane Recovery stay unspent.
 std::string spent_resources(std::string_view character_class)
 {
-    return character_class == "Wizard" ? "SRD10 0 0 3 0 0 0 4 0 0 0 \"\" 0 0 1 0 FX8 1 0 0"
-           : "SRD10 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 FX8 1 0 0";
+    return character_class == "Wizard" ? "SRD11 0 0 3 0 0 0 4 0 0 0 \"\" 0 0 1 0 0 0 FX8 1 0 0"
+           : "SRD11 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0";
 }
 
 // A level-four human Fighter at 0 HP, still rolling death saves.
 std::string dying_resources(int successes, int failures)
 {
-    return "SRD10 0 0 0 " + std::to_string(successes) + ' ' + std::to_string(failures) +
-           " 0 4 6000 0 0 \"\" 0 1 0 0 FX8 1 0 0";
+    return "SRD11 0 0 0 " + std::to_string(successes) + ' ' + std::to_string(failures) +
+           " 0 4 6000 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0";
 }
 
 std::string saved(const CampaignParty &p)
@@ -196,7 +196,7 @@ void individual_eligibility()
     state.roster[1].last_rest_minutes = 41;
     state.roster[1].last_rest_subminute_milliseconds = 4000;
     state.roster[2].vitals = {0, false, dying_resources(1, 2)};
-    state.roster[3].vitals = {0, true, "SRD10 0 0 0 0 3 0 4 0 0 0 \"\" 0 1 0 0 FX8 1 0 0"};
+    state.roster[3].vitals = {0, true, "SRD11 0 0 0 0 3 0 4 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0"};
     party.restore(state);
     const auto before = saved(party);
     const auto info = party.rest_info(RestKind::long_rest);
@@ -234,7 +234,7 @@ void individual_eligibility()
 
     check(party.member(unconscious).vitals.dead &&
           party.member(unconscious).vitals.resources ==
-          "SRD10 0 0 0 1 4 0 4 0 0 0 \"\" 0 1 0 0 FX8 1 0 0" &&
+          "SRD11 0 0 0 1 4 0 4 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0" &&
           !party.member(unconscious).last_rest_minutes,
           "Ineligible mortality continues without replenishing resources or recording a rest");
     check(
@@ -529,7 +529,7 @@ void effects_once()
     for (auto &m : state.roster)
         m.vitals = {1,
                     false,
-                    "SRD10 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 FX8 2 1 1 1 77 99 \"Source caster\" 13 "
+                    "SRD11 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 FX8 2 1 1 1 77 99 \"Source caster\" 13 "
                     "43000 2000 0"
                    };
     for (const auto kind :

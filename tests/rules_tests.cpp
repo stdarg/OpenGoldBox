@@ -45,8 +45,8 @@ std::string creature_resources(int second_winds, int successes = 0, int failures
                                bool stable = false, unsigned death_save_in_ms = 0)
 {
     std::ostringstream out;
-    out << "SRD10 " << second_winds << " 0 0 " << successes << ' ' << failures
-        << ' ' << stable << " 0 " << death_save_in_ms << " 0 0 \"\" 0 0 0 0 FX8 1 0 0";
+    out << "SRD11 " << second_winds << " 0 0 " << successes << ' ' << failures
+        << ' ' << stable << " 0 " << death_save_in_ms << " 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0";
     return out.str();
 }
 
@@ -199,8 +199,8 @@ void turn_budget_tests()
             // The level-3 Wizard keeps its 3 Hit Dice and 1 Arcane Recovery use.
             const auto wizard = [](int slots, int slots2)
             {
-                return "SRD10 0 " + std::to_string(slots) + ' ' + std::to_string(slots2) +
-                       " 0 0 0 3 0 0 0 \"\" 0 0 1 0 FX8 1 0 0";
+                return "SRD11 0 " + std::to_string(slots) + ' ' + std::to_string(slots2) +
+                       " 0 0 0 3 0 0 0 \"\" 0 0 1 0 0 0 FX8 1 0 0";
             };
             const std::string resources =
                 weapon                                      ? creature_resources(2)
@@ -791,7 +791,7 @@ void death_save_turn_entry_tests()
                 check(
                     hero.hit_points == 1 && !hero.dead && hero.prone &&
                     hero.persistent.resources ==
-                    "SRD10 1 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 FX8 1 0 1",
+                    "SRD11 1 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 1",
                     "Natural 20 restores 1 HP and clears both counters without restoring spent resources");
                 check(combat->snapshot().actor == 1 && hero.action && hero.bonus_action &&
                       hero.reaction,
@@ -804,7 +804,7 @@ void death_save_turn_entry_tests()
             {
                 success = true;
                 check(hero.hit_points == 0 && !hero.dead &&
-                      hero.persistent.resources.starts_with("SRD10 1 0 0 0 0 1 0 "),
+                      hero.persistent.resources.starts_with("SRD11 1 0 0 0 0 1 0 "),
                       "Third success stabilizes and resets successes and failures");
                 check(combat->snapshot().actor != 1, "Stable unconscious actors cannot act");
             }
@@ -817,7 +817,7 @@ void death_save_turn_entry_tests()
             else
             {
                 failure = true;
-                check(!hero.dead && hero.persistent.resources.starts_with("SRD10 1 0 0 2 2 0 0 "),
+                check(!hero.dead && hero.persistent.resources.starts_with("SRD11 1 0 0 2 2 0 0 "),
                       "Ordinary failure adds one and retains prior successes");
             }
             const auto saved = combat->save();
@@ -1209,7 +1209,7 @@ void checkpoint_cutoff_tests()
         }
         return false;
     };
-    check(checkpoint.starts_with("OGCOMBAT 29 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 30 "), "Checkpoints use the current format");
     auto older_format = checkpoint;
     older_format.replace(9, 2, "26");
     check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");

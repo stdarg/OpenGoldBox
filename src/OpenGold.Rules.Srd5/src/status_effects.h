@@ -24,7 +24,10 @@ enum class EffectKind : unsigned
     chill_touch = 4,
     sap = 5,
     vex = 6,
-    slow = 7
+    slow = 7,
+    // Searing Smite: Fire damage and a Constitution save at the start of each
+    // of the target's turns, for up to 1 minute.
+    searing_smite = 8
 };
 inline constexpr unsigned round_ms = 6000;
 inline constexpr std::size_t effect_limit = 128;
@@ -116,6 +119,8 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, std::u
 [[nodiscard]] bool can_apply(const EffectState &effects);
 void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                      std::string name, int dc, unsigned first_save_ms);
+void apply_searing_smite(EffectState &, std::uint64_t scope, rules::EntityId caster,
+                         std::string name, int dc);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);
 [[nodiscard]] RollModifiers attack_modifiers(bool attacker_blind, bool target_blind,
         bool target_dodging, bool other_disadvantage);

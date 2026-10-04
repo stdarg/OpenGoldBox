@@ -134,7 +134,7 @@ Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plu
 the same accepted command sequence reproducible. Checkpoints include the RNG,
 turn budgets, HP, slots, death saves and unfinished opportunity reactions.
 
-Rules module **0.6.66** writes **OGCOMBAT 29**, including an
+Rules module **0.6.67** writes **OGCOMBAT 30**, including an
 involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP.
 A saved leave-reach queue retains its order, partially resolved position and
 deterministic continuation. Older formats and other module or content identities
@@ -153,7 +153,7 @@ training choices and entitlements are validated before combat. Campaign saves pe
 the selected choice groups.
 See [training support](TRAINING.md) for the Rogue/Criminal package and limits.
 
-SRD10 vital continuations preserve spent Hit Dice and the existing resource/effect
+SRD11 vital continuations preserve spent Hit Dice and the existing resource/effect
 state; [rest resources](REST-RESOURCES.md) describes the rules APIs and campaign
 rest transactions. Campaign saves persist completed Short Rest spending
 sessions. Player-facing rest controls remain #192.

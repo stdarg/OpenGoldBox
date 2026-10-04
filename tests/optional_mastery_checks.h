@@ -691,7 +691,7 @@ void unconscious_cleave()
     auto e = encounter(*r, hero("greataxe", "fighter", "soldier"), "greataxe");
     e.participants.push_back({98, "mastery_target", "Unconscious ally", 0, {2, 2}});
     e.participants.back().state =
-        VitalState{0, false, "SRD10 0 0 0 0 0 1 0 0 0 0 \"\" 0 0 0 0 FX8 1 0 0"};
+        VitalState{0, false, "SRD11 0 0 0 0 0 1 0 0 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"};
     bool tested = false;
     for (unsigned seed = 1; seed < 32 && !tested; ++seed)
     {

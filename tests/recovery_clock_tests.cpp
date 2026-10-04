@@ -197,18 +197,18 @@ void combat_and_campaign()
     auto rules = module();
     const auto character = hero();
     const auto profile = rules->character_profile(character.sheet(), {});
-    const VitalState stable{0, false, "SRD10 1 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 0 FX8 1 0 0"};
+    const VitalState stable{0, false, "SRD11 1 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0"};
     // Awake again: the spent Hit Die and Second Wind use remain, the clocks are gone.
     // Only combat leaves a recovered character Prone.
-    const std::string recovered = "SRD10 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 FX8 1 0 0";
-    const std::string recovered_prone = "SRD10 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 FX8 1 0 1";
+    const std::string recovered = "SRD11 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0";
+    const std::string recovered_prone = "SRD11 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 1";
     Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
         {   {1, "campaign-character", "Patient", 0, {0, 0}, profile.data, stable},
             {2, "vanguard", "Companion", 0, {2, 0}},
             {99, "vanguard", "Enemy", 1, {7, 7}}
         }};
     encounter.participants[0].state->resources =
-        "SRD10 1 0 0 0 0 1 1 0 10000 0 \"\" 0 1 0 0 FX8 1 0 0";
+        "SRD11 1 0 0 0 0 1 1 0 10000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0";
     auto combat = rules->create(encounter, 42);
     auto copy = rules->restore(combat->save());
     for (unsigned n = 0; n < 12 && actor(*combat, 1).hit_points == 0; ++n)
@@ -231,7 +231,7 @@ void combat_and_campaign()
     check(state.hit_points == 4 && state.resources == recovered,
           "Script healing clears mortality clocks without restoring resources");
     rules->set_hit_points(state, character.sheet(), 0);
-    check(state.resources == "SRD10 1 0 0 0 0 0 1 6000 0 0 \"\" 0 1 0 0 FX8 1 0 0",
+    check(state.resources == "SRD11 1 0 0 0 0 0 1 6000 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0",
           "Script loss to zero HP begins a fresh cadence");
     const auto fallen = state;
     rules->set_hit_points(state, character.sheet(), 0);
@@ -250,7 +250,7 @@ void combat_and_campaign()
     party.award_experience(900, "recovery-xp");
     party.advance(id, party.default_advancement(id));
     check(party.member(id).vitals.resources ==
-          "SRD10 1 0 0 0 0 1 2 0 1000 0 \"\" 0 1 0 0 FX8 1 0 0",
+          "SRD11 1 0 0 0 0 1 2 0 1000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0",
           "Advancement adds only its new Hit Die and retains the exact Stable deadline");
     auto healed = stable;
     auto rng = std::uint64_t{42};
@@ -258,11 +258,11 @@ void combat_and_campaign()
     check(healed.hit_points > 0 && healed.resources == recovered,
           "Temple healing cancels the recovery clock without replenishing pools");
     for (const auto invalid :
-            {"SRD10 1 0 0 0 0 1 1 1 1000 0 \"\" 0 1 0 0 FX8 1 0 0",
-             "SRD10 1 0 0 0 0 1 1 0 14400001 0 \"\" 0 1 0 0 FX8 1 0 0",
-             "SRD10 1 0 0 0 0 0 1 6001 0 0 \"\" 0 1 0 0 FX8 1 0 0",
-             "SRD10 1 0 0 0 0 0 1 0 1 0 \"\" 0 1 0 0 FX8 1 0 0",
-             "SRD10 1 0 0 0 0 0 1 -1 0 0 \"\" 0 1 0 0 FX8 1 0 0"
+            {"SRD11 1 0 0 0 0 1 1 1 1000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0",
+             "SRD11 1 0 0 0 0 1 1 0 14400001 0 \"\" 0 1 0 0 0 0 FX8 1 0 0",
+             "SRD11 1 0 0 0 0 0 1 6001 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0",
+             "SRD11 1 0 0 0 0 0 1 0 1 0 \"\" 0 1 0 0 0 0 FX8 1 0 0",
+             "SRD11 1 0 0 0 0 0 1 -1 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0"
             })
         rejects(
             [&]

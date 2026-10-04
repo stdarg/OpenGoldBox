@@ -390,7 +390,7 @@ void roundtrip(const std::filesystem::path &directory)
     auto state = party->checkpoint();
     state.roster[0].vitals.hit_points = 1;
     // A single level-one slot remains; every other pool is full.
-    const std::string spent_slot = "SRD10 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 1 0 FX8 1 0 0";
+    const std::string spent_slot = "SRD11 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 1 0 0 0 FX8 1 0 0";
     state.roster[1].vitals.resources = spent_slot;
     // The module rewrites the description whenever it touches the vitals, so
     // keep this hand-built state consistent with what it would write.
@@ -517,7 +517,7 @@ void roundtrip(const std::filesystem::path &directory)
         (void)decode_campaign(version, *srd5::character_rules(), *rules, "fixture-v1", &base);
     });
     auto invalid = party->checkpoint();
-    invalid.roster[0].vitals.resources = "SRD10 999 0 0 0 0 0 2 0 0 0 \"\" 0 1 0 0 FX8 1 0 0";
+    invalid.roster[0].vitals.resources = "SRD11 999 0 0 0 0 0 2 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0";
     party->restore(invalid);
     auto malformed = encode_campaign(*party, nullptr, "fixture-v1");
     rejects(

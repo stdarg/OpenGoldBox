@@ -671,6 +671,11 @@ Command choose_demo_command(const CombatSession &session)
     {
         return routes[index(p)];
     };
+    // Paladin's Smite costs no slot, so a Paladin uses it on the first hit it can;
+    // slots stay for healing.
+    for (const auto &command : offered)
+        if (command.verb == "divine_smite_free")
+            return command;
     for (const auto &command : offered)
         if (command.verb == "opportunity" ||
                 (command.verb == "second_wind" && active.hit_points * 2 <= active.max_hit_points))

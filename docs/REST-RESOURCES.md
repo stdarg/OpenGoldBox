@@ -138,10 +138,10 @@ Unknown probabilistic profiles never silently substitute an uninterrupted rest.
 
 ## Persistence
 
-The **SRD10** vital continuation stores slots, Second Wind and death-save state,
+The **SRD11** vital continuation stores slots, Second Wind and death-save state,
 the remaining die count, and an **FX8** effects record.
 
-**OGCOMBAT 29** stores each actor's remaining dice; authored combat definitions
+**OGCOMBAT 30** stores each actor's remaining dice; authored combat definitions
 without a character recipe receive zero, without inventing monster Hit Dice
 mechanics. **PC42** recipes derive capacity from class and level.
 
@@ -197,7 +197,7 @@ at the start still prevents unearned recharge, Hit Dice or completion timestamps
 See [recovery scheduling](RECOVERY-CLOCKS.md#campaign-time).
 
 Rules 0.6.24 adds Fighter Action Surge at level 2: one use through level 4,
-fully recharged by either rest kind. Advancement preserves expenditure. SRD10
+fully recharged by either rest kind. Advancement preserves expenditure. SRD11
 stores the spent use alongside existing resources. See [Action Surge](ACTION-SURGE.md).
 
 ## Rest batch B: verified profile boundary

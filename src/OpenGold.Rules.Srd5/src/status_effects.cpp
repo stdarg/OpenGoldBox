@@ -250,6 +250,16 @@ void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId 
                               EffectKind::blindness, dc, 60000, first_save_ms});
 }
 
+void apply_searing_smite(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                         std::string name, int dc)
+{
+    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
+            dc > 38)
+        throw std::runtime_error("Invalid Searing Smite application");
+    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+                              EffectKind::searing_smite, dc, 60000, 0});
+}
+
 RollModifiers saving_modifiers(Ability ability, bool armor, bool dodge)
 {
     return {dodge && ability == Ability::dexterity,
@@ -366,11 +376,14 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::chill_touch) ||
                            kind == unsigned(EffectKind::sap) || kind == unsigned(EffectKind::vex) ||
                            kind == unsigned(EffectKind::slow);
-        if (!in || (!timed && kind != unsigned(EffectKind::blindness)) || e.id <= previous ||
-                e.id >= result.next_id || !e.source_scope || !e.source_actor || e.source_name.empty() ||
-                e.source_name.size() > 160 ||
+        // Searing Smite saves at the start of the target's turn, not on a timer.
+        const bool turn_save = kind == unsigned(EffectKind::searing_smite);
+        if (!in || (!timed && !turn_save && kind != unsigned(EffectKind::blindness)) ||
+                e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
+                e.source_name.empty() || e.source_name.size() > 160 ||
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
-                            !e.save_in_ms || e.save_in_ms > round_ms)) ||
+                            (turn_save ? e.save_in_ms != 0
+                             : (!e.save_in_ms || e.save_in_ms > round_ms)))) ||
                 (timed && (e.dc != 0 || e.save_in_ms != 0 || !e.remaining_ms ||
                            e.remaining_ms > ((kind == unsigned(EffectKind::chill_touch) ||
                                               kind == unsigned(EffectKind::vex))

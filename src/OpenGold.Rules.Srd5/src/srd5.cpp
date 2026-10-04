@@ -81,6 +81,13 @@ bool trained(std::string_view klass, std::span<const FeatureGrant> grants, std::
 }
 } // namespace
 
+// A smite follows the caster's own melee hit; divine_smite_free is Paladin's
+// Smite's slotless cast.
+bool is_smite(std::string_view verb)
+{
+    return verb == "divine_smite" || verb == "divine_smite_free" || verb == "searing_smite";
+}
+
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
     std::string text;
@@ -111,7 +118,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 29;
+constexpr unsigned checkpoint_format = 30;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -129,6 +136,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "sacred_flame", 1},
     SpellAccessRow{"Cleric", "inflict_wounds", 1},
     SpellAccessRow{"Paladin", "cure_wounds", 1},
+    SpellAccessRow{"Paladin", "divine_smite", 1},
+    SpellAccessRow{"Paladin", "searing_smite", 1},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -162,6 +171,7 @@ struct Definition
     int ac{}, hp{}, initiative{}, speed{}, melee_bonus{};
     bool alert{};
     int melee_ability{}, ranged_ability{}, size{2};
+    std::string creature_type{"humanoid"}; // SRD creature type; player characters are Humanoid
     Dice melee;
     int ranged_bonus{};
     int reach{5};
@@ -183,6 +193,8 @@ struct Definition
     bool shield{}, other_weapon{};
     int hit_die{}, constitution{}, rushes{}, surges{}, arcane{};
     int lay_on_hands{}; // Paladin healing pool: five times Paladin level
+    int free_smite{};   // Paladin's Smite: one Divine Smite without a slot per Long Rest
+    int channel_divinity{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -247,7 +259,12 @@ struct Actor : detail::LifeState
     Participant source;
     Definition definition;
     int initiative{}, movement{}, winds{}, slots{}, slots2{};
-    int hit_dice{}, rushes{}, surges{}, dashes{}, arcane{}, lay_on_hands{};
+    int hit_dice{}, rushes{}, surges{}, dashes{}, arcane{}, lay_on_hands{}, free_smite{},
+        channel_divinity{};
+    // The creature this actor just hit with a melee weapon on its own turn, which
+    // a smite may follow; cleared by any other command or a new turn.
+    EntityId smite_target{};
+    bool smite_critical{};
     bool rush_used{}, surge_used{};
     detail::ActionBudget actions;
     bool bonus{true}, reaction{true}, dodge{}, disengaged{};
@@ -292,7 +309,11 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"arcane_recovery", "Arcane Recovery", &Actor::arcane, &Definition::arcane, 0,
         false},
     ResourceDescriptor{"lay_on_hands", "Lay On Hands", &Actor::lay_on_hands,
-        &Definition::lay_on_hands, 0, true}};
+        &Definition::lay_on_hands, 0, true},
+    ResourceDescriptor{"paladins_smite", "Paladin's Smite", &Actor::free_smite,
+        &Definition::free_smite, 0, true},
+    ResourceDescriptor{"channel_divinity", "Channel Divinity", &Actor::channel_divinity,
+        &Definition::channel_divinity, 1, true}};
 
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
                                   const Definition &d)
@@ -491,6 +512,7 @@ character_definition(std::string_view bytes,
     d.champion = klass == "Fighter" && level >= 3;
     d.arcane = klass == "Wizard" ? 1 : 0;
     d.lay_on_hands = klass == "Paladin" ? 5 * level : 0;
+    d.free_smite = klass == "Paladin" && level >= 2 ? 1 : 0;
     d.medicine = ability_modifier(scores[4]);
     d.tactical_mind = klass == "Fighter" && level >= 2;
     d.cunning = klass == "Rogue" && level >= 2;
@@ -624,7 +646,12 @@ character_definition(std::string_view bytes,
             d.masteries.push_back(grant.id.substr(8));
     std::vector<std::string> prepared;
     if (detail::prepares_spells(klass))
+    {
+        // Always-prepared spells are stored with the others but never prepared.
         prepared = detail::spells_of_level(stored_spells, false);
+        for (const auto &id : detail::always_prepared_spells(klass, level))
+            std::erase(prepared, id);
+    }
     const auto access = detail::spell_access(grants, klass, level, prepared);
     // Compare as sets: the grants and the stored list must describe the same
     // spells, independent of the order either was written in.
@@ -670,7 +697,7 @@ character_definition(std::string_view bytes,
 }
 
 // The only vital-state tag this module reads or writes; see profile_magic.
-constexpr std::string_view vitals_magic = "SRD10";
+constexpr std::string_view vitals_magic = "SRD11";
 
 void restore_vitals(Actor &a, const VitalState &state)
 {
@@ -683,6 +710,8 @@ void restore_vitals(Actor &a, const VitalState &state)
     a.surges = a.definition.surges;
     a.arcane = a.definition.arcane;
     a.lay_on_hands = a.definition.lay_on_hands;
+    a.free_smite = a.definition.free_smite;
+    a.channel_divinity = a.definition.channel_divinity;
     if (!state.resources.empty())
     {
         std::istringstream in(state.resources);
@@ -690,7 +719,7 @@ void restore_vitals(Actor &a, const VitalState &state)
         in >> magic >> a.winds >> a.slots >> a.slots2 >> a.successes >> a.failures >> a.stable >>
            a.hit_dice >> a.recovery.death_save_in_ms >> a.recovery.stable_recovery_in_ms >>
            a.temporary_hp.amount >> std::quoted(a.temporary_hp.source_id) >> a.rushes >>
-           a.surges >> a.arcane >> a.lay_on_hands;
+           a.surges >> a.arcane >> a.lay_on_hands >> a.free_smite >> a.channel_divinity;
         if (!in || magic != vitals_magic)
             throw std::runtime_error("Invalid character resource state");
         detail::decode_stable_recovery(a.recovery);
@@ -705,7 +734,9 @@ void restore_vitals(Actor &a, const VitalState &state)
             a.slots2 > d.slots2 || a.surges < 0 || a.surges > d.surges || a.rushes < 0 ||
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
             a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4 ||
-            a.lay_on_hands < 0 || a.lay_on_hands > d.lay_on_hands)
+            a.lay_on_hands < 0 || a.lay_on_hands > d.lay_on_hands || a.free_smite < 0 ||
+            a.free_smite > d.free_smite || a.channel_divinity < 0 ||
+            a.channel_divinity > d.channel_divinity)
         throw std::runtime_error("Invalid character vitals");
     detail::validate_recovery(a);
     detail::validate_temporary_hp(a.temporary_hp);
@@ -720,7 +751,8 @@ VitalState vitals(const Actor &a)
         << a.successes << ' ' << a.failures << ' ' << a.stable << ' ' << a.hit_dice << ' '
         << a.recovery.death_save_in_ms << ' ' << detail::encode_stable_recovery(a.recovery) << ' '
         << a.temporary_hp.amount << ' ' << std::quoted(a.temporary_hp.source_id) << ' '
-        << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ';
+        << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' '
+        << a.free_smite << ' ' << a.channel_divinity << ' ';
     detail::write_effects(out, a.effects);
     std::string description;
     if (a.definition.slots)
@@ -821,6 +853,8 @@ class Session final : public CombatSession
             a.surges = d.surges;
             a.arcane = d.arcane;
             a.lay_on_hands = d.lay_on_hands;
+            a.free_smite = d.free_smite;
+            a.channel_divinity = d.channel_divinity;
             a.facing_left = a.source.facing_left;
             if (a.source.state)
                 restore_vitals(a, *a.source.state);
@@ -1103,6 +1137,8 @@ class Session final : public CombatSession
     int resolved_damage(const Actor &target, detail::DamageType type, int amount);
     void damage(Actor &target, int amount, bool critical = false);
     int heal(Actor &target, int amount); // Returns the Hit Points restored.
+    void resolve_smite(Actor &a, std::string_view verb);
+    void burn_searing_smites(Actor &a);
     void update_outcome();
     void wake_resting_participants();
     void resolve_death_saves_after_victory();
@@ -1634,6 +1670,13 @@ Snapshot Session::snapshot() const
             view.bonus_actions.push_back("steady_aim");
         if (def(a).lay_on_hands)
             view.bonus_actions.push_back("lay_on_hands");
+        if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
+            view.bonus_actions.push_back("divine_smite_free");
+        for (const auto *smite :
+                {"divine_smite", "searing_smite"
+                })
+            if (detail::knows_spell(def(a).spells, smite))
+                view.bonus_actions.push_back(smite);
         for (const auto &descriptor : resource_descriptors)
             if (descriptor.combat_view && def(a).*descriptor.capacity)
                 view.resources.push_back(resource_pool(descriptor, a, def(a)));
@@ -1791,6 +1834,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a
     const auto name = std::string(spell.label);
     switch (spell.pattern)
     {
+    case detail::SpellPattern::smite:
+        return; // Smites resolve through resolve_smite, after the caster's own hit.
     case detail::SpellPattern::heal:
         heal(actor(target_id), dice(rolled));
         return;
@@ -1880,7 +1925,9 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
     const auto &d = def(a);
     for (const auto &spell : detail::spell_table)
     {
-        if (spell.target != scope || spell.bonus_action != bonus_pass)
+        // Smites follow the caster's own melee hit; the smite window offers them.
+        if (spell.pattern == detail::SpellPattern::smite || spell.target != scope ||
+                spell.bonus_action != bonus_pass)
             continue;
         if (!detail::knows_spell(d.spells, spell.id))
             continue;
@@ -2110,6 +2157,17 @@ std::vector<Command> Session::legal_commands() const
                     other.hp < def(other).hp && !detail::healing_blocked(other.effects) &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
+    // Smites, right after this actor's own melee hit on a creature still standing.
+    if (a.bonus && a.smite_target && actor(a.smite_target).hp > 0 && !d.spells.empty())
+    {
+        const bool slot = a.slots > 0 && !a.spent_slot;
+        if (detail::knows_spell(d.spells, "divine_smite") && a.free_smite > 0)
+            add(id, "divine_smite_free", "Divine Smite (Paladin's Smite)", a.smite_target);
+        if (detail::knows_spell(d.spells, "divine_smite") && slot)
+            add(id, "divine_smite", "Divine Smite", a.smite_target);
+        if (detail::knows_spell(d.spells, "searing_smite") && slot)
+            add(id, "searing_smite", "Searing Smite", a.smite_target);
+    }
     for (const auto &other : actors_)
         offer_spells(commands, a, other, distance(a.source.cell, other.source.cell),
                      detail::SpellTarget::wounded_ally, true);
@@ -2273,6 +2331,71 @@ int Session::heal(Actor &target, int amount)
     return restored;
 }
 
+void Session::resolve_smite(Actor &a, std::string_view verb)
+{
+    const bool searing = verb == "searing_smite";
+    const auto &spell = *detail::find_spell(searing ? "searing_smite" : "divine_smite");
+    auto &target = actor(a.smite_target);
+    a.smite_target = 0;
+    a.bonus = false;
+    if (verb == "divine_smite_free")
+        --a.free_smite;
+    else
+    {
+        --a.slots;
+        a.spent_slot = true;
+    }
+    auto rolled = spell.dice;
+    // Divine Smite deals 1d8 more to a Fiend or an Undead.
+    const auto &type = def(target).creature_type;
+    if (!searing && (type == "fiend" || type == "undead"))
+        ++rolled.count;
+    // The damage is part of the attack, so a critical hit doubles its dice.
+    if (a.smite_critical)
+        rolled.count *= 2;
+    const auto damage_type = std::string(detail::damage_name(spell.damage));
+    const int amount = resolved_damage(target, spell.damage, dice(rolled));
+    log(a.source.name + " casts " + std::string(spell.label) + ": " + target.source.name +
+        " takes " + std::to_string(amount) + " " + damage_type + " damage.",
+    {
+        "{name} casts {spell}: {target} takes {damage} {type} damage.",
+        {   {"name", a.source.name},
+            {"spell", std::string(spell.label), true},
+            {"target", target.source.name},
+            {"damage", std::to_string(amount)},
+            {"type", damage_type, true}
+        }
+    });
+    damage(target, amount, false);
+    if (searing && target.hp > 0 && detail::can_apply(target.effects))
+        detail::apply_searing_smite(target.effects, scope_, a.source.id, a.source.name,
+                                    8 + def(a).casting);
+}
+
+void Session::burn_searing_smites(Actor &a)
+{
+    // At the start of each of its turns the target burns, then saves to end it.
+    for (std::size_t n = 0; n < a.effects.active.size() && a.hp > 0; ++n)
+    {
+        if (a.effects.active[n].kind != detail::EffectKind::searing_smite)
+            continue;
+        const int dc = a.effects.active[n].dc;
+        const int amount = resolved_damage(a, detail::DamageType::fire, roll(6));
+        log(a.source.name + " burns for " + std::to_string(amount) + " Fire damage.",
+        {
+            "{name} burns for {damage} Fire damage.",
+            {{"name", a.source.name}, {"damage", std::to_string(amount)}}
+        });
+        damage(a, amount, false);
+        if (a.hp > 0 && saving_throw_succeeds(a, detail::Ability::constitution, dc))
+            a.effects.active[n].remaining_ms = 0;
+    }
+    std::erase_if(a.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::searing_smite && !e.remaining_ms;
+    });
+}
+
 detail::Mastery Session::weapon_mastery(const Actor &a, bool ranged) const
 {
     const auto &d = def(a);
@@ -2403,7 +2526,15 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
         "{actor} -> {target}: d20 {roll} + {bonus} vs AC {ac}{disadvantage}{savage} {hit} for {damage} damage{grip}.",
         arguments
     });
-    damage(target, amount, critical);
+damage(target, amount, critical);
+    // A smite may follow a hit with a Melee weapon or an Unarmed Strike on the
+    // attacker's own turn.
+    if (!ranged && !spell && actors_[turn_].source.id == a.source.id)
+    {
+        auto &attacker = actor(a.source.id);
+        attacker.smite_target = target.source.id;
+        attacker.smite_critical = critical;
+    }
     if (!spell)
     {
         const auto property = weapon_mastery(a, ranged);
@@ -2683,6 +2814,9 @@ bool Session::begin_turn()
     });
     if (a.dead)
         return false;
+    burn_searing_smites(a);
+    if (a.dead)
+        return false;
     if (a.hp == 0)
     {
         if (!a.stable)
@@ -2715,6 +2849,8 @@ bool Session::begin_turn()
         actor.light_origins.clear();
         actor.light_extra = 0;
         actor.nick_origin = 0;
+        actor.smite_target = 0;
+        actor.smite_critical = false;
     }
     // Historical checkpoints do not distinguish a spent Light attack from any
     // other Bonus Action. Keep their current turn exact; enable Nick at the first
@@ -2942,6 +3078,10 @@ bool Session::submit(const Command &command)
     return false;
     auto &a = actor(command.actor);
     const auto &d = def(a);
+    // A smite must follow the hit at once. Resolving that hit's own weapon
+    // mastery choice keeps the chance open; any other command ends it.
+    if (!is_smite(command.verb) && !command.verb.starts_with("effect_"))
+        a.smite_target = 0;
     if (turns_to_attack(command.verb) && command.target)
     {
         const auto &target = actor(command.target);
@@ -3153,6 +3293,8 @@ bool Session::submit(const Command &command)
         });
         a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, def(target).hp - target.hp));
     }
+    else if (is_smite(command.verb))
+        resolve_smite(a, command.verb);
     else if (const auto *bonus_spell = detail::find_spell(command.verb);
              bonus_spell && bonus_spell->bonus_action)
     {
@@ -3265,7 +3407,9 @@ std::string Session::save() const
             << detail::encode_stable_recovery(a.recovery) << ' ' << a.temporary_hp.amount << ' '
             << std::quoted(a.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
             << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' ' << a.dashes
-            << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.sneak_used << ' ' << a.aim_used
+            << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.free_smite << ' '
+            << a.channel_divinity << ' ' << a.smite_target << ' ' << a.smite_critical << ' '
+            << a.sneak_used << ' ' << a.aim_used
             << ' ' << a.aim_ready
             << ' ' << a.moved << ' ' << a.selected_weapon << ' ' << a.light_origins.size();
         for (auto id : a.light_origins)
@@ -3375,7 +3519,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.recovery.stable_recovery_in_ms >> actor.temporary_hp.amount >>
           std::quoted(actor.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
           actor.surges >> actor.surge_used >> actor.actions.surge >> actor.dashes >> actor.arcane >>
-          actor.lay_on_hands >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
+          actor.lay_on_hands >> actor.free_smite >> actor.channel_divinity >> actor.smite_target >>
+          actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
           actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
         throw std::runtime_error("Invalid Light attack count");
@@ -3434,7 +3579,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.slots > definition.slots || actor.slots2 < 0 || actor.slots2 > definition.slots2 ||
             actor.hit_dice < 0 || actor.hit_dice > (definition.hit_die ? definition.level : 0) ||
             actor.successes < 0 || actor.successes > 3 || actor.failures < 0 || actor.failures > 4 ||
-            actor.lay_on_hands < 0 || actor.lay_on_hands > definition.lay_on_hands)
+            actor.lay_on_hands < 0 || actor.lay_on_hands > definition.lay_on_hands ||
+            actor.free_smite < 0 || actor.free_smite > definition.free_smite ||
+            actor.channel_divinity < 0 || actor.channel_divinity > definition.channel_divinity)
         throw std::runtime_error("Invalid checkpoint actor state");
     detail::validate_recovery(actor);
     detail::validate_temporary_hp(actor.temporary_hp);
@@ -4251,7 +4398,7 @@ class Module final : public RulesModule
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief features, Hide and weapon mastery remain unavailable.";
         if (sheet.character_class == "Paladin")
             result.description =
-                "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nPaladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable.";
+                "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style and Paladin's Smite at level two. Level four grants an available feat or ability points.\nChannel Divinity and the Oath of Devotion remain unavailable.";
         if (sheet.character_class == "Ranger")
             result.description =
                 "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
@@ -4309,7 +4456,18 @@ class Module final : public RulesModule
             }
         };
         if (sheet.character_class == "Paladin")
-            result.spells = {{"cure_wounds", "Cure Wounds", "Action; touch; heals 2d8 + Charisma modifier."}};
+            result.spells =
+        {
+            {"cure_wounds", "Cure Wounds", "Action; touch; heals 2d8 + Charisma modifier."},
+            {
+                "divine_smite", "Divine Smite",
+                "Bonus Action right after a melee hit: 2d8 Radiant damage, 3d8 against a Fiend or an Undead."
+            },
+            {
+                "searing_smite", "Searing Smite",
+                "Bonus Action right after a melee hit: 1d6 Fire damage, then 1d6 at the start of each of the target's turns until it succeeds on a Constitution save."
+            }
+        };
         if (sheet.character_class == "Cleric")
             result.spells =
         {
@@ -4651,7 +4809,7 @@ class Module final : public RulesModule
         {
             const std::string note =
                 next.character_class == "Paladin"
-                ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nPaladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable."
+                ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style and Paladin's Smite at level two. Level four grants an available feat or ability points.\nChannel Divinity and the Oath of Devotion remain unavailable."
                 : "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
             next.class_modifiers += "\n" + note;
             next.class_messages.push_back({note, {}});
@@ -4684,6 +4842,8 @@ class Module final : public RulesModule
         actor.rushes += actor.definition.rushes - old.rushes;
         actor.surges += actor.definition.surges - old.surges;
         actor.lay_on_hands += actor.definition.lay_on_hands - old.lay_on_hands;
+        actor.free_smite += actor.definition.free_smite - old.free_smite;
+        actor.channel_divinity += actor.definition.channel_divinity - old.channel_divinity;
         actor.hit_dice += actor.definition.level - old.level;
         auto continuation = vitals(actor);
         sheet = std::move(next);
@@ -4783,6 +4943,8 @@ class Module final : public RulesModule
         actor.surges = d.surges;
         actor.arcane = d.arcane;
         actor.lay_on_hands = d.lay_on_hands;
+        actor.free_smite = d.free_smite;
+        actor.channel_divinity = d.channel_divinity;
         state = vitals(actor);
     }
 
@@ -4840,6 +5002,7 @@ class Module final : public RulesModule
         actor.winds = std::min(d.winds, actor.winds + 1);
         actor.rushes = d.rushes;
         actor.surges = d.surges;
+        actor.channel_divinity = std::min(d.channel_divinity, actor.channel_divinity + 1);
         state = vitals(actor);
     }
 
@@ -5589,8 +5752,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.66", revision + "/" + std::to_string(hash)};
-    std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows;
+    content.identity = {"opengold.srd5", "0.6.67", revision + "/" + std::to_string(hash)};
+    std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {
         if (line.empty() || line[0] == '#' || line == "\r")
@@ -5660,6 +5823,24 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             row >> std::ws;
             if (!row.eof())
                 throw std::runtime_error("Unknown creature size fields");
+            continue;
+        }
+        if (tag == "type")
+        {
+            // SRD 5.2.1 creature types; a definition without a row is Humanoid.
+            std::string type;
+            row >> type;
+            const std::array<std::string_view, 14> types{
+                "aberration", "beast", "celestial", "construct", "dragon", "elemental", "fey",
+                "fiend", "giant", "humanoid", "monstrosity", "ooze", "plant", "undead"};
+            if (!row || !content.definitions.contains(key) ||
+                    std::find(types.begin(), types.end(), type) == types.end() ||
+                    !type_rows.insert(key).second)
+                throw std::runtime_error("Invalid creature type");
+            content.definitions.at(key).creature_type = type;
+            row >> std::ws;
+            if (!row.eof())
+                throw std::runtime_error("Unknown creature type fields");
             continue;
         }
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage")

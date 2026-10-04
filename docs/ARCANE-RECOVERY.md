@@ -38,7 +38,7 @@ committed expenditure. There are no combat saving controls.
 
 ## Persistence and acceptance evidence
 
-The PC42 profile carries the fixed grant; SRD10 records spent Arcane Recovery.
+The PC42 profile carries the fixed grant; SRD11 records spent Arcane Recovery.
 The combat checkpoint retains the use alongside ordinary or physical inventory
 mode. See [saves](SAVES.md#pre-10-format-policy).
 
@@ -48,7 +48,7 @@ mode. See [saves](SAVES.md#pre-10-format-policy).
 | Exact choices/costs/recharge | `arcane_recovery_tests.cpp`: each supported allocation at every level, over-budget/full-pool rejection, whole-use cost, Short/Long Rest differences. |
 | Transaction safety | Stale tickets, nonmembers, invalid IDs, repeated use and sleeping eligibility reject without changing campaign bytes; HP, gear, Hit Dice, time and RNG remain unchanged. |
 | Campaign/combat persistence | Canonical save/reload, ordinary level-four advancement, both combat inventory modes and exact next-cast continuation preserve expenditure. |
-| Other rest/effect interactions | Qualified interrupted Long Rest benefits work; Ray of Frost still expires in SRD10 without refreshing the feature or consuming RNG. |
+| Other rest/effect interactions | Qualified interrupted Long Rest benefits work; Ray of Frost still expires in SRD11 without refreshing the feature or consuming RNG. |
 | Player path | Shared runtime check creates/advances a Wizard, completes rest, saves/reloads before and after recovery, uses keyboard dropdown/button, declines with Escape, rejects repeat use, and verifies non-Wizard visibility. |
 | Layout/localization | Game English/Spanish and the existing English demo rendered at 1120×800 and 1920×1080; choices and result states inspected. Demo localization remains its existing English-only presentation. |
 

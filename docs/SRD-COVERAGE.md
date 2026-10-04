@@ -22,6 +22,15 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Paladin's Smite, Divine Smite and Searing Smite
+
+Rules 0.6.67 adds [#141](https://github.com/stdarg/OpenGold/issues/141) and the
+Divine Smite and Searing Smite spells: Bonus Action casts right after the
+Paladin's own melee hit, Paladin's Smite's always-prepared Divine Smite with one
+free cast per Long Rest, Searing Smite's start-of-turn burn and save, and SRD
+creature types in the rules content. Vital state becomes `SRD11` and combat
+checkpoints `OGCOMBAT 30`. See [Paladin](PALADIN.md#smites).
+
 ## Paladin Lay On Hands
 
 Rules 0.6.66 adds Lay On Hands in combat for [#139](https://github.com/stdarg/OpenGold/issues/139):

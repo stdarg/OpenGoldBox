@@ -202,8 +202,10 @@ void table()
         check(components && components->verbal == spell.verbal &&
               components->somatic == spell.somatic,
               "Row components match the component catalog");
+        // Searing Smite's ongoing burn ends with a Constitution save.
         const bool saves = spell.pattern == SpellPattern::save_damage ||
-                           spell.pattern == SpellPattern::save_condition;
+                           spell.pattern == SpellPattern::save_condition ||
+                           spell.pattern == SpellPattern::smite;
         check(saves || spell.save == Ability::strength, "Only save patterns carry a save ability");
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
               spell.pattern == SpellPattern::repeat_attack,
@@ -391,6 +393,10 @@ void behaviour()
         sheets.push_back(widest(*rules, probe));
     for (const auto &row : spell_table)
     {
+        // Smites are offered by the caster's own melee hit, not by range;
+        // opengold_smite_tests covers them.
+        if (row.pattern == SpellPattern::smite)
+            continue;
         bool covered = false;
         for (const auto &sheet : sheets)
             row_behaviour(*rules, row, sheet, covered);

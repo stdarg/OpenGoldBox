@@ -294,7 +294,7 @@ void defenses()
                 1,
                 {2, 1},
                 "",
-                VitalState{1000, false, "SRD10 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 0 0 0 FX8 1 0 0"}
+                VitalState{1000, false, "SRD11 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 0 0 0 0 0 FX8 1 0 0"}
             }
         }},
     13);

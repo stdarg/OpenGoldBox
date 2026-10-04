@@ -41,7 +41,9 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"blindness", "Blindness", 2, 32, wizard_list | cleric_list},
     Spell{"inflict_wounds", "Inflict Wounds", 1, 0, cleric_list},
     Spell{"cure_wounds", "Cure Wounds", 1, 0, cleric_list | paladin_list},
-    Spell{"healing_word", "Healing Word", 1, 0, cleric_list}};
+    Spell{"healing_word", "Healing Word", 1, 0, cleric_list},
+    Spell{"divine_smite", "Divine Smite", 1, 0, paladin_list},
+    Spell{"searing_smite", "Searing Smite", 1, 0, paladin_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
@@ -61,6 +63,16 @@ constexpr std::array prepared_casters{
     PreparedCaster{
         "Paladin", "class:paladin:spellcasting", "Paladin cantrips", paladin_list,
         {0, 0, 0, 0}, {2, 3, 4, 5}, {1, 1, 1, 1}, true}};
+
+// Spells a class always has prepared from a class level on.
+struct AlwaysPrepared
+{
+    std::string_view klass, spell;
+    unsigned level;
+};
+
+// Paladin's Smite, SRD 5.2.1 p. 54.
+constexpr std::array always_prepared_table{AlwaysPrepared{"Paladin", "divine_smite", 2}};
 
 const PreparedCaster *prepared_caster(std::string_view klass)
 {
@@ -123,6 +135,7 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
     const unsigned starting = starting_cantrips(caster, grants);
     result.cantrip_choices = starting + caster.cantrips[level - 1] - caster.cantrips[0];
     result.prepared_choices = caster.prepared[level - 1];
+    result.always_prepared = always_prepared_spells(caster.klass, level);
     std::set<std::string> known;
     std::array<unsigned, 5> learned{};
     for (const auto &g : grants)
@@ -196,7 +209,9 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
     result.may_prepare = true;
     for (const auto &spell : spells)
         if ((spell.lists & caster.list) && spell.level >= 1 &&
-                spell.level <= caster.highest_slot[level - 1])
+                spell.level <= caster.highest_slot[level - 1] &&
+                std::find(access.always_prepared.begin(), access.always_prepared.end(),
+                          spell.id) == access.always_prepared.end())
             result.preparation.push_back({std::string(spell.id), std::string(spell.label), {}});
     if (context == SpellChoiceContext::advancement)
         result.locked_prepared = sheet.prepared_spells;
@@ -593,6 +608,15 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     sheet = std::move(candidate);
 }
 
+std::vector<std::string> always_prepared_spells(std::string_view klass, unsigned level)
+{
+    std::vector<std::string> result;
+    for (const auto &entry : always_prepared_table)
+        if (entry.klass == klass && level >= entry.level)
+            result.emplace_back(entry.spell);
+    return result;
+}
+
 bool prepares_spells(std::string_view klass)
 {
     return klass == "Wizard" || prepared_caster(klass);
@@ -618,6 +642,10 @@ std::vector<std::string> casting_ids(const SpellAccess &access)
         (void)find(id);
         result.push_back(id);
     }
+    // A spell prepared before a feature made it always prepared appears once.
+    for (const auto &id : access.always_prepared)
+        if (std::find(result.begin(), result.end(), id) == result.end())
+            result.push_back(id);
     return result;
 }
 } // namespace opengold::srd5::detail

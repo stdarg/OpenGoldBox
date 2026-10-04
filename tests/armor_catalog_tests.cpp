@@ -364,7 +364,7 @@ void campaign()
         CampaignParty party(module());
         const auto id = party.add_pc(std::move(h));
         auto state = party.checkpoint();
-        state.roster[0].vitals = {5, false, "SRD10 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 FX8 1 0 0"};
+        state.roster[0].vitals = {5, false, "SRD11 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"};
         party.restore(state);
         party.equip(id, item);
         const auto before = encode_campaign(party, nullptr, "armor");

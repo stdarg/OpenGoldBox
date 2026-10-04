@@ -389,7 +389,7 @@ void recovery()
     auto c = battle(h);
     act(*c, "action_surge");
     auto spent = unit(*c).persistent;
-    check(spent.resources.starts_with("SRD10 "), "Spent pool has explicit versioned continuation");
+    check(spent.resources.starts_with("SRD11 "), "Spent pool has explicit versioned continuation");
     for (bool long_rest :
             {
                 false, true

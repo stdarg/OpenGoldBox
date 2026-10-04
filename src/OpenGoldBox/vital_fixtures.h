@@ -27,11 +27,12 @@ inline std::string srd_vitals(const opengold::rules::CharacterSheet &sheet,
     const int arcane = sheet.character_class == "Wizard" ? 1 : 0;
     const int lay_on_hands = sheet.character_class == "Paladin" ? 5 * sheet.level : 0;
     std::ostringstream out;
-    out << "SRD10 " << fixture.winds << ' ' << fixture.slots << ' ' << fixture.slots2 << ' '
+    const int free_smite = sheet.character_class == "Paladin" && sheet.level >= 2 ? 1 : 0;
+    out << "SRD11 " << fixture.winds << ' ' << fixture.slots << ' ' << fixture.slots2 << ' '
         << fixture.successes << ' ' << fixture.failures << ' ' << fixture.stable << ' '
         << fixture.hit_dice << ' ' << fixture.death_save_ms << ' ' << fixture.stable_recovery_ms
         << " 0 \"\" " << rushes << ' ' << surges << ' ' << arcane << ' ' << lay_on_hands << ' '
-        << fixture.effects;
+        << free_smite << " 0 " << fixture.effects;
     return out.str();
 }
 } // namespace presentation

@@ -30,13 +30,15 @@ void paladin_choices_checks()
           "A level-one Paladin prepares two spells and knows no cantrips");
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 2 &&
-          option_ids(options.preparation) == std::vector<std::string> {"cure_wounds"},
-          "Creation prepares from the implemented Paladin list");
+          option_ids(options.preparation) ==
+          std::vector<std::string> {"cure_wounds", "divine_smite", "searing_smite"},
+    "Creation prepares from the implemented Paladin list");
     check(rules->character_profile(paladin.sheet(), {}).data.starts_with("PC42 1 0 1 cure_wounds "),
           "The profile records the prepared spell");
     for (const auto &bad : std::vector<std::vector<std::string>>
 {
-    {"healing_word"}, {"magic_missile"}, {"cure_wounds", "cure_wounds"}
+    {"healing_word"}, {"magic_missile"}, {"cure_wounds", "cure_wounds"},
+        {"cure_wounds", "divine_smite", "searing_smite"}
     })
     rejects(
         [&]
@@ -66,14 +68,20 @@ void paladin_choices_checks()
     for (unsigned level = 2; level <= 4; ++level)
     {
         auto choice = party.default_advancement(id);
-        check(choice.spell_learning.has_value() &&
-              choice.spells == std::vector<std::string> {"cure_wounds"},
-              "Paladin level-up keeps its preparation");
+        check(choice.spell_learning.has_value() && choice.spells.front() == "cure_wounds",
+              "Paladin level-up keeps its earlier preparation");
         party.advance(id, choice);
         const auto &sheet = party.member(id).character.sheet();
+        const auto access = rules->spell_access(sheet);
         check(slot_capacity(*rules, party.member(id)) == slots[level - 1] &&
-              rules->spell_access(sheet).prepared_choices == level + 1,
+              access.prepared_choices == level + 1,
               "Paladin slots and prepared spells follow the class table");
+        // Paladin's Smite: Divine Smite is always prepared and not counted.
+        check(access.always_prepared == std::vector<std::string> {"divine_smite"} &&
+              std::find(access.prepared.begin(), access.prepared.end(), "divine_smite") ==
+              access.prepared.end() &&
+              rules->character_profile(sheet, {}).data.find(" divine_smite ") != std::string::npos,
+              "Divine Smite is always prepared from level two");
     }
     const auto bytes = saved(party);
     CampaignParty restored(module());
