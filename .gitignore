@@ -39,3 +39,6 @@ demos/godot/bin/
 !/art/OpenGoldBoxGameLettering.es.png
 
 !/demos/godot/shaders/hqx/hq4x.png
+
+# Claude Code agent worktrees
+/.claude/worktrees/
