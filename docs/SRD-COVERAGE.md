@@ -7,10 +7,11 @@ planned increment and recurring work queue. All use `SRD_improvements`.
 The all-twelve-class level-four milestone is
 [#8](https://github.com/stdarg/OpenGold/issues/8).
 
-The [level-four spell inventory](SPELL-INVENTORY.md) records **106 required
-spells** (139 before [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)
+The [level-four spell inventory](SPELL-INVENTORY.md) records **89 required
+spells** (106 before [DM-3](SRD-DECISIONS.md#dm-3-2026-10-04-spells-a-crpg-cannot-use)
+removed 17, and 139 before [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)
 removed 33 DM-adjudicated spells), including source discrepancies between class
-tables and descriptions. Twelve have partial playable paths and 94 are missing. It links grant routes,
+tables and descriptions. Twelve have partial playable paths, one is implemented and 76 are missing. It links grant routes,
 dependencies, current evidence and bounded child issues; inventory work alone
 does not close [#165](https://github.com/stdarg/OpenGold/issues/165).
 

@@ -443,3 +443,31 @@ recommended answers:
    stay unsupported.
 2. Stock that still has no conversion stays for sale and is marked "cannot be
    equipped" in the shop list. No new controls.
+
+## DM-3 (2026-10-04): spells a CRPG cannot use
+
+The user set the spell policy for finishing levels 1–4 for every class
+([#8](https://github.com/stdarg/OpenGold/issues/8)): every spell relevant to a
+computer role-playing game like Pool of Radiance is in the game, and anything
+that needs a DM is not. Applying it, the user removed 17 spells and asked that
+they not be supported: Suggestion, Phantasmal Force, Enthrall, Feather Fall,
+Jump, Spider Climb, Pass without Trace, Levitate, Floating Disk, Light, Dancing
+Lights, Continual Flame, Darkvision, Animal Friendship, Calm Emotions, Find
+Traps and Alter Self. The Otherworldly Leap invocation, which only casts Jump,
+goes with them. They are not learnable, preparable or granted by any route; see
+the [spell inventory](SPELL-INVENTORY.md#removed-nothing-to-act-on-in-this-game).
+
+## CLASS-1 (2026-10-04): finishing levels 1–4 for all classes
+
+For [#8](https://github.com/stdarg/OpenGold/issues/8) the user approved:
+
+1. **One control pattern** instead of a question per feature. In combat, each
+   class action joins the A cycle and a class-action dropdown with a Use button,
+   like Cunning Action; reactions use the existing React/Decline prompt; targets
+   are clicked as now. Creation and level-up choices use the existing Training
+   dropdowns and checkboxes and the Spell Choices groups. A question is still
+   asked when a feature does not fit, such as Wild Shape's form picker.
+2. **Class by class**, each finished to level 4 before the next: Paladin,
+   Ranger, then the Cleric, Wizard and Rogue subclasses, Barbarian, Monk, Bard,
+   Sorcerer, Warlock and Druid. Spells come with the class that first needs them.
+3. **Sequential work**, committed and pushed per class when its tests pass.

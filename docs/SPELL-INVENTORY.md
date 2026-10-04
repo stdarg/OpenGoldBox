@@ -16,11 +16,15 @@ bringing the count to twelve partial spells and 127 missing. On 2026-09-30,
 decision [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)
 removed 33 spells that need a DM to adjudicate (see
 [Removed: needs a DM](#removed-needs-a-dm)), leaving twelve partial and 94 missing.
+Rules 0.6.64 implemented Inflict Wounds. On 2026-10-04, decision
+[DM-3](SRD-DECISIONS.md#dm-3-2026-10-04-spells-a-crpg-cannot-use) removed 17 more
+spells that need a DM or have nothing to act on in this game, leaving **89 spells:
+twelve partial, one implemented and 76 missing**.
 
 ## Scope and counting
 
-The milestone requires **106 distinct spells: 18 cantrips, 45 level-one spells
-and 43 level-two spells** (139 before DM-1 removed 33). It covers all twelve SRD classes, their twelve SRD
+The milestone requires **89 distinct spells: 16 cantrips, 41 level-one spells
+and 32 level-two spells** (106 before DM-3 removed 17, 139 before DM-1 removed 33). It covers all twelve SRD classes, their twelve SRD
 subclasses, all nine species and their lineages, the four SRD backgrounds, and
 eligible SRD feats through character level 4. The baseline has **six partial
 playable paths and 133 missing spells**. With 0.6.22 this becomes **seven partial
@@ -62,22 +66,23 @@ recharge must remain source-specific.
 ### Normal class-list cross-check
 
 Counts below reproduce the printed class tables within the level-four limit,
-less the spells DM-1 removed; they are not a character's selection allowance.
+less the spells DM-1 and DM-3 removed; they are not a character's selection allowance.
 Description-only additions marked † in the inventory add Phantasmal Force to
 Bard, Sorcerer and Wizard, and Mind Spike to Sorcerer. Thus the complete
-inventories are 38 Bard, 53 Sorcerer and 59 Wizard entries; the other counts are
+inventories are 30 Bard, 43 Sorcerer and 47 Wizard entries after DM-3 (which also
+removes Phantasmal Force); the other counts are
 unchanged. See the source cautions below.
 
 | Class | Cantrips | Level 1 | Level 2 | SRD list pages | Access integration |
 | --- | ---: | ---: | ---: | --- | --- |
-| Bard (B) | 5 | 17 | 15 | 33–34 | [#126](https://github.com/stdarg/OpenGold/issues/126) |
-| Cleric (C) | 4 | 11 | 12 | 38–39 | [#91](https://github.com/stdarg/OpenGold/issues/91) |
-| Druid (D) | 6 | 14 | 16 | 44 | [#152](https://github.com/stdarg/OpenGold/issues/152) |
+| Bard (B) | 3 | 15 | 12 | 33–34 | [#126](https://github.com/stdarg/OpenGold/issues/126) |
+| Cleric (C) | 3 | 11 | 9 | 38–39 | [#91](https://github.com/stdarg/OpenGold/issues/91) |
+| Druid (D) | 6 | 12 | 12 | 44 | [#152](https://github.com/stdarg/OpenGold/issues/152) |
 | Paladin (P) | 0 | 10 | 0 | 55–56 | [#138](https://github.com/stdarg/OpenGold/issues/138) |
-| Ranger (R) | 0 | 10 | 0 | 60 | [#145](https://github.com/stdarg/OpenGold/issues/145) |
-| Sorcerer (S) | 10 | 18 | 23 | 67–68 | [#132](https://github.com/stdarg/OpenGold/issues/132) |
-| Warlock (K) | 4 | 8 | 10 | 75 | [#160](https://github.com/stdarg/OpenGold/issues/160) |
-| Wizard (W) | 9 | 23 | 26 | 79–80 | [#97](https://github.com/stdarg/OpenGold/issues/97), [#37](https://github.com/stdarg/OpenGold/issues/37) |
+| Ranger (R) | 0 | 8 | 0 | 60 | [#145](https://github.com/stdarg/OpenGold/issues/145) |
+| Sorcerer (S) | 8 | 16 | 18 | 67–68 | [#132](https://github.com/stdarg/OpenGold/issues/132) |
+| Warlock (K) | 4 | 8 | 7 | 75 | [#160](https://github.com/stdarg/OpenGold/issues/160) |
+| Wizard (W) | 7 | 20 | 20 | 79–80 | [#97](https://github.com/stdarg/OpenGold/issues/97), [#37](https://github.com/stdarg/OpenGold/issues/37) |
 | Barbarian, Fighter, Monk, Rogue | 0 | 0 | 0 | 28–30, 47–53, 61–64 | Species/feat sources below |
 
 ## Additional grant routes
@@ -102,12 +107,11 @@ list column intentionally does not absorb subclass or species additions.
 | Temperate | Land Druid level 3: Misty Step, Shocking Grasp, Sleep | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
 | Tropical | Land Druid level 3: Acid Splash, Ray of Sickness, Web | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
 | Devotion | Paladin level 3: Protection from Evil and Good, Shield of Faith | 56 | [#142](https://github.com/stdarg/OpenGold/issues/142) |
-| Draconic | Sorcerer level 3: Alter Self, Chromatic Orb, Command, Dragon's Breath | 70 | [#135](https://github.com/stdarg/OpenGold/issues/135) |
-| Fiend | Warlock level 3: Burning Hands, Command, Scorching Ray, Suggestion | 76 | [#163](https://github.com/stdarg/OpenGold/issues/163) |
+| Draconic | Sorcerer level 3: Chromatic Orb, Command, Dragon's Breath (Alter Self removed by DM-3) | 70 | [#135](https://github.com/stdarg/OpenGold/issues/135) |
+| Fiend | Warlock level 3: Burning Hands, Command, Scorching Ray (Suggestion removed by DM-3) | 76 | [#163](https://github.com/stdarg/OpenGold/issues/163) |
 | Evoker | Level-3 Evocation Savant adds Wizard Evocation spellbook choices no higher than level 2; acquisition must follow the feature rather than automatic preparation | 82 | [#101](https://github.com/stdarg/OpenGold/issues/101) |
 | Shadows | Armor of Shadows: Mage Armor on self without a slot | 72 | [#161](https://github.com/stdarg/OpenGold/issues/161) |
 | Vigor | Fiendish Vigor at Warlock level 2: False Life on self without a slot, maximizing its die | 73 | [#161](https://github.com/stdarg/OpenGold/issues/161) |
-| Leap | Otherworldly Leap at Warlock level 2: Jump on self without a slot | 74 | [#161](https://github.com/stdarg/OpenGold/issues/161) |
 | Drow | Dancing Lights at character level 1; Faerie Fire at 3 | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
 | High | High Elf's Prestidigitation is removed by DM-1; it starts with a Wizard cantrip instead, replaceable at a Long Rest | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
 | HighFixed | High Elf gains Detect Magic at character level 3 | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
@@ -182,10 +186,8 @@ are evidence of partial behavior, not certification of the full spell.
 | --- | --- | --- | --- | --- |
 | [Acid Splash](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | S, W | MI, Tome, High, Tropical | [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Chill Touch](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | S, K, W | MI, Tome, High, Chthonic | [#35](https://github.com/stdarg/OpenGold/issues/35) | Partial: Wizard 1–4, Sorcerer/Warlock 1; creature casting, healing prevention and Q40 earned recovery verified in [Chill Touch](CHILL-TOUCH.md). MI/Tome/species, objects and higher class progression remain open under [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Dancing Lights](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=121) (p. 121) | B, S, W | MI, Tome, High, Drow | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Eldritch Blast](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=127) (p. 127) | K | Tome | Objects [#225](https://github.com/stdarg/OpenGold/issues/225) | Partial level-one Warlock creatures; [#204](https://github.com/stdarg/OpenGold/issues/204) |
 | [Fire Bolt](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | S, W | MI, Tome, High, Arid, Infernal | — | Partial; [#166](https://github.com/stdarg/OpenGold/issues/166) |
-| [Light](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=144) (p. 144) | B, C, S, W | MI, Tome, High, Thaum, Blessed | [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Poison Spray](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=153) (p. 153) | D, S, K, W | MI, Tome, High, Magician, DruidicWarrior, Abyssal | — | Partial Wizard levels 1–4 and Warlock level 1; [#202](https://github.com/stdarg/OpenGold/issues/202) |
 | [Produce Flame](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=156) (p. 156) | D | MI, Tome, Magician, DruidicWarrior | [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Ray of Frost](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | S, W | MI, Tome, High, Polar | [#35](https://github.com/stdarg/OpenGold/issues/35) | Partial: [Wizard selection, Cold attack and timed slow](RAY-OF-FROST.md); other sources and verbal blockers remain. [#205](https://github.com/stdarg/OpenGold/issues/205) |
@@ -203,7 +205,6 @@ are evidence of partial behavior, not certification of the full spell.
 
 | Spell / SRD page | Normal lists | Additional routes | Further dependencies | Status / work |
 | --- | --- | --- | --- | --- |
-| [Animal Friendship](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | B, D, R | MI | [#35](https://github.com/stdarg/OpenGold/issues/35) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Bane](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=112) (p. 112) | B, C, K | MI | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Bless](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | C, P | MI, Life | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Burning Hands](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | S, W | MI, Evoker, Arid, Fiend | [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
@@ -221,8 +222,6 @@ are evidence of partial behavior, not certification of the full spell.
 | [Expeditious Retreat](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | S, K, W | MI | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Faerie Fire](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | B, D | MI, Drow | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [False Life](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | S, W | MI, Vigor, Chthonic | [#34](https://github.com/stdarg/OpenGold/issues/34) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Feather Fall](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=130) (p. 130) | B, S, W | MI | [#41](https://github.com/stdarg/OpenGold/issues/41) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Floating Disk](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=133) (p. 133) | W | MI, Tome | [#173](https://github.com/stdarg/OpenGold/issues/173), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Fog Cloud](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=133) (p. 133) | D, R, S, W | MI, Polar | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43), [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Goodberry](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=137) (p. 137) | D, R | MI | [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Grease](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=137) (p. 137) | S, W | MI | [#35](https://github.com/stdarg/OpenGold/issues/35) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
@@ -236,7 +235,6 @@ are evidence of partial behavior, not certification of the full spell.
 | [Ice Knife](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | D, S, W | MI | [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Identify](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=142) (p. 142) | B, W | MI, Tome | [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Inflict Wounds](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | C | MI | — | Implemented; [Inflict Wounds](INFLICT-WOUNDS.md) |
-| [Jump](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | D, R, S, W | MI, Leap | [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Longstrider](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=145) (p. 145) | B, D, R, W | MI, Wood | [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Mage Armor](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=145) (p. 145) | S, W | MI, Shadows | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Magic Missile](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=146) (p. 146) | S, W | MI, Evoker | [#42](https://github.com/stdarg/OpenGold/issues/42) | Partial; [#168](https://github.com/stdarg/OpenGold/issues/168) |
@@ -255,18 +253,12 @@ are evidence of partial behavior, not certification of the full spell.
 | --- | --- | --- | --- | --- |
 | [Acid Arrow](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | W | Evoker | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Aid](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | B, C, D | Life | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Alter Self](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | S, W | Draconic | [#38](https://github.com/stdarg/OpenGold/issues/38), [#44](https://github.com/stdarg/OpenGold/issues/44) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Barkskin](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=112) (p. 112) | D | — | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Blindness/Deafness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | B, C, S, W | — | [#35](https://github.com/stdarg/OpenGold/issues/35) | Partial; [#171](https://github.com/stdarg/OpenGold/issues/171) |
 | [Blur](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | S, W | Arid | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Calm Emotions](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | B, C | — | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Continual Flame](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=119) (p. 119) | C, D, W | Evoker | [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Darkness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=122) (p. 122) | S, K, W | Evoker | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43), [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Darkvision](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=122) (p. 122) | D, S, W | — | [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Dragon’s Breath](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=126) (p. 126) | S, W | Draconic | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Enlarge/Reduce](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=127) (p. 127) | B, D, S, W | — | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38), [#44](https://github.com/stdarg/OpenGold/issues/44) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Enthrall](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=128) (p. 128) | B, K | — | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Find Traps](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=131) (p. 131) | C, D | — | [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Flame Blade](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | D, S | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Flaming Sphere](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | D, S, W | Evoker | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Gust of Wind](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=138) (p. 138) | D, S, W | Evoker | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
@@ -275,14 +267,11 @@ are evidence of partial behavior, not certification of the full spell.
 | [Invisibility](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | B, S, K, W | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Knock](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | B, S, W | — | [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Lesser Restoration](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=144) (p. 144) | B, C, D | Life | [#35](https://github.com/stdarg/OpenGold/issues/35) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Levitate](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=144) (p. 144) | S, W | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Magic Weapon](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=146) (p. 146) | S, W | — | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Mind Spike](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=149) (p. 149) | S†, K, W | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Mirror Image](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | B, S, K, W | — | [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Misty Step](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | S, K, W | Temperate | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Moonbeam](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | D | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Pass without Trace](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=151) (p. 151) | D | — | [#29](https://github.com/stdarg/OpenGold/issues/29), [#38](https://github.com/stdarg/OpenGold/issues/38), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Phantasmal Force](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=151) (p. 151) | B†, S†, W† | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Prayer of Healing](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=154) (p. 154) | C | — | [#30](https://github.com/stdarg/OpenGold/issues/30), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Protection from Poison](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | C, D | — | [#35](https://github.com/stdarg/OpenGold/issues/35) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Ray of Enfeeblement](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | K, W | — | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
@@ -290,10 +279,8 @@ are evidence of partial behavior, not certification of the full spell.
 | [See Invisibility](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=160) (p. 160) | B, S, W | — | [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Shatter](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=161) (p. 161) | B, S, W | Evoker | [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Silence](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162) (p. 162) | B, C | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Spider Climb](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=164) (p. 164) | S, K, W | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Spike Growth](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=164) (p. 164) | D | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Spiritual Weapon](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=165) (p. 165) | C | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Suggestion](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=166) (p. 166) | B, S, K, W | Fiend | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Warding Bond](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=173) (p. 173) | C | — | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Web](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=174) (p. 174) | S, W | Tropical | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 
@@ -316,7 +303,7 @@ source-backed decision before school-dependent eligibility is coded.
 Inventory verification compared all eight eligible printed class lists with
 all level-zero, one and two spell-description headers. That independent pass
 found the two class-membership omissions above. All 141 low-level spell
-descriptions are accounted for: 106 in this milestone, 33 removed by DM-1 and
+descriptions are accounted for: 106 in this milestone (89 after DM-3), 33 removed by DM-1 and
 Find Steed/Shining Smite deferred until Paladin level 5. Every named additional grant was checked
 against the inventory; none adds another name. Every spell has a description
 page and every partial spell has code/test evidence. Existing live component definitions independently
@@ -347,6 +334,21 @@ effect stay.
 - Level two (12): Animal Messenger, Arcane Lock, Arcanist’s Magic Aura, Augury,
   Detect Thoughts, Enhance Ability, Gentle Repose, Locate Animals or Plants,
   Locate Object, Magic Mouth, Rope Trick, Zone of Truth.
+
+## Removed: nothing to act on in this game
+
+Decision [DM-3](SRD-DECISIONS.md#dm-3-2026-10-04-spells-a-crpg-cannot-use)
+(2026-10-04) removed 17 more spells: they need a DM, or depend on falling,
+climbing, jumping, stealth, weight, light and darkness, traps or open-ended social
+effects, none of which this game models. The Otherworldly Leap invocation, which
+only casts Jump, is removed with them. Darkness and Fog Cloud stay because they
+obscure areas in combat.
+
+- Cantrips (2): Dancing Lights, Light.
+- Level one (4): Animal Friendship, Feather Fall, Floating Disk, Jump.
+- Level two (11): Alter Self, Calm Emotions, Continual Flame, Darkvision,
+  Enthrall, Find Traps, Levitate, Pass without Trace, Phantasmal Force, Spider
+  Climb, Suggestion.
 
 ## Attribution
 
