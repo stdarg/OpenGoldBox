@@ -211,7 +211,8 @@ void table()
               spell.pattern == SpellPattern::repeat_attack,
               "Only multi-instance patterns repeat");
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
-                            spell.pattern == SpellPattern::save_condition;
+                            spell.pattern == SpellPattern::save_condition ||
+                            spell.pattern == SpellPattern::buff;
         check(spell.rider == Rider::none || riders,
               "Riders belong to attack and save-condition patterns");
         check(spell.pattern != SpellPattern::save_condition || spell.rider != Rider::none,
@@ -253,7 +254,7 @@ struct Probe
 };
 
 constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
-    {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}
+    {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}
 };
 
 // The widest legitimate caster for a class and level: every cantrip its own
@@ -329,7 +330,10 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const CharacterS
 void row_behaviour(const RulesModule &rules, const SpellDef &row, const CharacterSheet &sheet,
                    bool &covered)
 {
-    const EntityId target = row.target == SpellTarget::wounded_ally ? 2 : 3;
+    const EntityId target =
+        row.target == SpellTarget::self ? 1
+        : (row.target == SpellTarget::wounded_ally || row.target == SpellTarget::ally) ? 2
+        : 3;
     auto at_range = battle(rules, sheet, row.range);
     const auto offer = find(*at_range, row.id, target);
     if (!offer)
@@ -337,13 +341,17 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     covered = true;
 
     // Range is inclusive at `range` and excludes the next square. An
-    // out-of-range submission must change nothing at all.
-    auto beyond = battle(rules, sheet, row.range + 5);
-    check(!find(*beyond, row.id, target), "A spell is not offered past its range");
-    const auto untouched = beyond->save();
-    check(!beyond->submit({beyond->snapshot().revision, 1, target, std::string(row.id)}) &&
-          beyond->save() == untouched,
-          "Out-of-range casting is rejected atomically");
+    // out-of-range submission must change nothing at all. A spell on the
+    // caster alone has no distance to exceed.
+    if (row.target != SpellTarget::self)
+    {
+        auto beyond = battle(rules, sheet, row.range + 5);
+        check(!find(*beyond, row.id, target), "A spell is not offered past its range");
+        const auto untouched = beyond->save();
+        check(!beyond->submit({beyond->snapshot().revision, 1, target, std::string(row.id)}) &&
+              beyond->save() == untouched,
+              "Out-of-range casting is rejected atomically");
+    }
 
     // Somatic spells need a free hand; a weapon plus shield occupies both.
     if (row.somatic)

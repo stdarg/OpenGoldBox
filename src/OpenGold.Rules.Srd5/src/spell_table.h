@@ -26,7 +26,8 @@ enum class SpellPattern : unsigned
     auto_damage,    // no roll; `instances` separately resolved damage instances
     repeat_attack,  // `instances` attack rolls against one target
     heal,           // restore HP from dice plus the caster's spellcasting modifier
-    smite           // Bonus Action right after the caster's own melee hit; extra damage to that target
+    smite,          // Bonus Action right after the caster's own melee hit; extra damage to that target
+    buff            // a lasting benefit on the target, no roll; `rider` names it
 };
 
 // Which creatures the spell may be offered against. These reproduce the
@@ -38,7 +39,9 @@ enum class SpellTarget : unsigned
 {
     enemy,        // opposing side with hit points remaining
     any_creature, // any living actor in line of sight, either side
-    wounded_ally  // same side, below maximum hit points
+    wounded_ally, // same side, below maximum hit points
+    ally,         // same side, including the caster
+    self          // the caster only
 };
 
 // A lasting effect applied by the spell; each maps to one apply_* function.
@@ -48,7 +51,10 @@ enum class Rider : unsigned
     chill_touch,
     shocking_grasp,
     ray_of_frost,
-    blindness
+    blindness,
+    shield_of_faith,
+    heroism,
+    divine_favor
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -78,6 +84,7 @@ struct SpellDef
     unsigned instances{1};       // darts / rays
     Upcast upcast{};
     Rider rider{Rider::none};
+    bool concentration{}; // a caster keeps one Concentration spell at a time
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -263,6 +270,35 @@ inline constexpr std::array spell_table
         .damage = DamageType::fire,
         .dice = {1, 6, 0},
         .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 pp. 162, 140 and 125. Benefits that need no roll.
+    SpellDef{
+        .id = "shield_of_faith",
+        .label = "Shield of Faith",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 60,
+        .bonus_action = true,
+        .rider = Rider::shield_of_faith,
+        .concentration = true},
+    SpellDef{
+        .id = "heroism",
+        .label = "Heroism",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::heroism,
+        .concentration = true},
+    SpellDef{
+        .id = "divine_favor",
+        .label = "Divine Favor",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::divine_favor},
     SpellDef{
         .id = "healing_word",
         .label = "Healing Word",

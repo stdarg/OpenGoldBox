@@ -22,6 +22,13 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Concentration, Shield of Faith, Heroism and Divine Favor
+
+Rules 0.6.68 makes Concentration playable in combat and adds Shield of Faith
+(Cleric and Paladin), Heroism and Divine Favor (Paladin). Combat checkpoints
+become `OGCOMBAT 31`. A click on an ally now targets it whenever the selected
+action can. See [Paladin](PALADIN.md#buffs-and-concentration).
+
 ## Paladin's Smite, Divine Smite and Searing Smite
 
 Rules 0.6.67 adds [#141](https://github.com/stdarg/OpenGold/issues/141) and the

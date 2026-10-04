@@ -471,3 +471,14 @@ For [#8](https://github.com/stdarg/OpenGold/issues/8) the user approved:
    Ranger, then the Cleric, Wizard and Rogue subclasses, Barbarian, Monk, Bard,
    Sorcerer, Warlock and Druid. Spells come with the class that first needs them.
 3. **Sequential work**, committed and pushed per class when its tests pass.
+
+## CLASS-2 (2026-10-04): choosing several targets
+
+For spells that affect several creatures, such as Bless, the user chose
+click-to-select: after choosing the spell, each click on a legal creature adds
+or removes it, and the spell is cast when the maximum is reached or earlier with
+the existing Use button or Space; Escape cancels without spending anything.
+
+Concentration is tracked in combat only and ends when the combat ends, an
+implementation adaptation recorded with the first Concentration spells (Shield
+of Faith, Heroism).

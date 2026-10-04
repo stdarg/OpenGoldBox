@@ -9,6 +9,7 @@
 #include "spell_components.h"
 #include "combat_grid.h"
 #include "status_effects.h"
+#include "concentration.h"
 #include "life_cycle.h"
 #include "recovery_timeline.h"
 #include "weapons.h"
@@ -81,6 +82,20 @@ bool trained(std::string_view klass, std::span<const FeatureGrant> grants, std::
 }
 } // namespace
 
+// The lasting benefit a buff spell's rider applies.
+detail::EffectKind rider_effect(detail::Rider rider)
+{
+    return rider == detail::Rider::shield_of_faith ? detail::EffectKind::shield_of_faith
+           : rider == detail::Rider::heroism       ? detail::EffectKind::heroism
+           : detail::EffectKind::divine_favor;
+}
+
+// Effects that end with their caster's Concentration.
+bool concentration_effect(detail::EffectKind kind)
+{
+    return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism;
+}
+
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
 // Smite's slotless cast.
 bool is_smite(std::string_view verb)
@@ -118,7 +133,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 30;
+constexpr unsigned checkpoint_format = 31;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -138,6 +153,10 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Paladin", "cure_wounds", 1},
     SpellAccessRow{"Paladin", "divine_smite", 1},
     SpellAccessRow{"Paladin", "searing_smite", 1},
+    SpellAccessRow{"Paladin", "shield_of_faith", 1},
+    SpellAccessRow{"Paladin", "heroism", 1},
+    SpellAccessRow{"Paladin", "divine_favor", 1},
+    SpellAccessRow{"Cleric", "shield_of_faith", 1},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -275,6 +294,7 @@ struct Actor : detail::LifeState
     unsigned nick_origin{}; // Light weapon used by the current Attack action.
     unsigned light_extra{}; // 0: unused, 1: Bonus Action, 2: Nick; shared once per turn.
     bool cleave_used{}, cleave_damage{};
+    detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     bool light_damage{};        // Transient attack copy only; pending hits carry their own flag.
     bool involuntary_overlap{}; // Interrupted in an occupied space; retained through recovery until
     // separated.
@@ -1138,6 +1158,10 @@ class Session final : public CombatSession
     void damage(Actor &target, int amount, bool critical = false);
     int heal(Actor &target, int amount); // Returns the Hit Points restored.
     void resolve_smite(Actor &a, std::string_view verb);
+    int armor_class(const Actor &target) const;
+    void begin_concentration(Actor &caster, const detail::SpellDef &spell);
+    void end_concentration(Actor &caster);
+    void drop_concentration_effects(const Actor &caster);
     void burn_searing_smites(Actor &a);
     void update_outcome();
     void wake_resting_participants();
@@ -1559,7 +1583,7 @@ Snapshot Session::snapshot() const
         s.combatants.push_back(
         {
             a.source.id, a.source.name, a.source.definition, a.source.side, a.source.cell, a.hp,
-            def(a).hp, def(a).ac, a.initiative,
+            def(a).hp, armor_class(a), a.initiative,
             champion_move_ && champion_move_->actor == a.source.id ? champion_move_->remaining
             : movement_left(a),
             a.actions.available() && conscious(a), a.bonus && conscious(a),
@@ -1802,6 +1826,19 @@ void Session::apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target
         log(target.source.name + " is slowed by Ray of Frost.",
         {"{name} is slowed by Ray of Frost.", {{"name", target.source.name}}});
         return;
+    case detail::Rider::shield_of_faith:
+    case detail::Rider::heroism:
+    case detail::Rider::divine_favor:
+    {
+        // Heroism's Temporary HP equal the caster's spellcasting modifier.
+        const int value =
+            spell.rider == detail::Rider::heroism ? std::max(0, def(a).casting - 2) : 0;
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    rider_effect(spell.rider), value);
+        log(target.source.name + " gains " + std::string(spell.label) + ".",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
+        return;
+    }
     case detail::Rider::blindness:
         detail::apply_blindness(target.effects, scope_, a.source.id, a.source.name, dc,
                                 next_save_ms(target.source.id));
@@ -1836,6 +1873,11 @@ void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a
     {
     case detail::SpellPattern::smite:
         return; // Smites resolve through resolve_smite, after the caster's own hit.
+    case detail::SpellPattern::buff:
+        if (spell.concentration)
+            begin_concentration(a, spell);
+        apply_rider(spell, a, actor(target_id), dc);
+        return;
     case detail::SpellPattern::heal:
         heal(actor(target_id), dice(rolled));
         return;
@@ -1942,6 +1984,14 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 continue;
             break;
         case detail::SpellTarget::any_creature:
+            break;
+        case detail::SpellTarget::ally:
+            if (other.source.side != a.source.side)
+                continue;
+            break;
+        case detail::SpellTarget::self:
+            if (other.source.id != a.source.id)
+                continue;
             break;
         }
         if (feet > spell.range)
@@ -2169,8 +2219,13 @@ std::vector<Command> Session::legal_commands() const
             add(id, "searing_smite", "Searing Smite", a.smite_target);
     }
     for (const auto &other : actors_)
-        offer_spells(commands, a, other, distance(a.source.cell, other.source.cell),
-                     detail::SpellTarget::wounded_ally, true);
+        for (const auto scope :
+                {
+                    detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
+                    detail::SpellTarget::self
+                })
+            offer_spells(commands, a, other, distance(a.source.cell, other.source.cell), scope,
+                         true);
     if (!a.light_extra && !a.light_origins.empty())
         for (const auto &item : items_)
             if (item.holder == id && light_eligible(a, item.id))
@@ -2237,7 +2292,12 @@ std::vector<Command> Session::legal_commands() const
                 offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
             }
             else
-                offer_spells(commands, a, other, feet, detail::SpellTarget::wounded_ally, false);
+                for (const auto scope :
+                        {
+                            detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
+                            detail::SpellTarget::self
+                        })
+                    offer_spells(commands, a, other, feet, scope, false);
         }
     }
     for (const auto cell : movement_reach(id))
@@ -2296,6 +2356,19 @@ void Session::damage(Actor &target, int amount, bool critical)
     if (!amount || target.dead)
         return;
     detail::damage_life(target, amount, def(target).hp, critical, target.source.side == 1);
+    // Damage tests Concentration; dropping to 0 Hit Points ends it.
+    if (target.concentration.active())
+    {
+        const auto result = target.concentration.damage(
+                                amount, def(target).saves[2],
+                                detail::saving_modifiers(detail::Ability::constitution,
+                                        def(target).str_dex_disadvantage, target.dodge),
+                                target.hp == 0 || target.dead, rng_);
+        if (result.save)
+            log_save(target, *result.save);
+        if (result.ended)
+            drop_concentration_effects(target);
+    }
     if (target.hp == 0)
         target.effects.prone = true;
     if (target.hp == 0 && !target.dead && !target.stable)
@@ -2370,6 +2443,39 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     if (searing && target.hp > 0 && detail::can_apply(target.effects))
         detail::apply_searing_smite(target.effects, scope_, a.source.id, a.source.name,
                                     8 + def(a).casting);
+}
+
+int Session::armor_class(const Actor &target) const
+{
+    // Shield of Faith: +2 AC.
+    return def(target).ac +
+           (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0);
+}
+
+void Session::begin_concentration(Actor &caster, const detail::SpellDef &spell)
+{
+    // A new Concentration spell ends the old one first, removing its effects.
+    end_concentration(caster);
+    caster.concentration.begin(
+    {{scope_, 1, caster.source.id}, detail::benefit_duration_ms(rider_effect(spell.rider))});
+}
+
+void Session::end_concentration(Actor &caster)
+{
+    if (caster.concentration.end())
+        drop_concentration_effects(caster);
+}
+
+void Session::drop_concentration_effects(const Actor &caster)
+{
+    for (auto &other : actors_)
+        std::erase_if(other.effects.active, [&](const auto & e)
+    {
+        return concentration_effect(e.kind) && e.source_actor == caster.source.id &&
+               e.source_scope == scope_;
+    });
+    log(caster.source.name + " loses Concentration.",
+    {"{name} loses Concentration.", {{"name", caster.source.name}}});
 }
 
 void Session::burn_searing_smites(Actor &a)
@@ -2487,15 +2593,15 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
                                        : "";
     std::string message = a.source.name + " -> " + target.source.name + ": d20 " +
                           std::to_string(natural) + " + " + std::to_string(bonus) + " vs AC " +
-                          std::to_string(def(target).ac) + modifier_label;
+                          std::to_string(armor_class(target)) + modifier_label;
     std::vector<MessageArgument> arguments{{"actor", a.source.name},
         {"target", target.source.name},
         {"roll", std::to_string(natural)},
         {"bonus", std::to_string(bonus)},
-        {"ac", std::to_string(def(target).ac)},
+        {"ac", std::to_string(armor_class(target))},
         {"disadvantage", modifier_label, true}};
     if (!(!spell && def(a).champion && natural == 19) &&
-            !attack_hits(natural, bonus, def(target).ac))
+            !attack_hits(natural, bonus, armor_class(target)))
     {
         log(message + " misses.",
         {
@@ -2686,7 +2792,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         : d.melee_bonus;
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
     const bool hit =
-        (!spell && d.champion && natural == 19) || attack_hits(natural, bonus, def(target).ac);
+        (!spell && d.champion && natural == 19) || attack_hits(natural, bonus, armor_class(target));
     const bool sneak = hit && !spell && sneak_eligible(a, target, ranged, modifiers.mode());
     const auto roll_damage = [&]
     {
@@ -2716,6 +2822,20 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
               : ranged ? d.ranged_type
               : d.melee_type,
               ranged, spell);
+    // Divine Favor: a weapon hit deals an extra 1d4 Radiant damage.
+    if (hit && !spell && detail::has_effect(a.effects, detail::EffectKind::divine_favor) &&
+            !target.dead)
+    {
+        const int extra = resolved_damage(target, detail::DamageType::radiant,
+                                          dice({1, 4, 0}, critical_hit(a, target, natural)));
+        log(target.source.name + " takes " + std::to_string(extra) +
+            " Radiant damage from Divine Favor.",
+        {
+            "{name} takes {damage} Radiant damage from Divine Favor.",
+            {{"name", target.source.name}, {"damage", std::to_string(extra)}}
+        });
+        damage(target, extra, false);
+    }
     return hit;
 }
 
@@ -2746,6 +2866,9 @@ void Session::update_outcome()
     if (!party || !enemies)
     {
         outcome_ = !party ? Outcome::defeat : Outcome::victory;
+        // Concentration is tracked in combat only; it ends with the combat.
+        for (auto &a : actors_)
+            end_concentration(a);
         champion_move_.reset();
         mastery_.reset();
         champion_offers_.clear();
@@ -2817,6 +2940,13 @@ bool Session::begin_turn()
     burn_searing_smites(a);
     if (a.dead)
         return false;
+    // Heroism: Temporary HP at the start of each of the target's turns, kept
+    // only when higher than what the target already has.
+    for (const auto &effect : a.effects.active)
+        if (effect.kind == detail::EffectKind::heroism && a.hp > 0 &&
+                effect.dc > a.temporary_hp.amount)
+            detail::grant_temporary_hp(a, {effect.dc, "spell:heroism"},
+                                       TemporaryHpChoice::use_new);
     if (a.hp == 0)
     {
         if (!a.stable)
@@ -3004,6 +3134,9 @@ void Session::advance_turn_time()
             log(target.source.name + " recovers from a blindness effect.",
         {"{name} recovers from a blindness effect.", {{"name", target.source.name}}});
     });
+    for (auto &a : actors_)
+        if (a.concentration.elapse(delta))
+            drop_concentration_effects(a);
     for (auto &a : actors_)
         if (a.hp > 0 &&
                 std::find(unconscious.begin(), unconscious.end(), a.source.id) != unconscious.end())
@@ -3414,7 +3547,9 @@ std::string Session::save() const
             << ' ' << a.moved << ' ' << a.selected_weapon << ' ' << a.light_origins.size();
         for (auto id : a.light_origins)
             out << ' ' << id;
-        out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << '\n';
+        out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' ';
+        detail::write_concentration(out, a.concentration);
+        out << '\n';
     }
     out << path_.size() << ' ' << path_index_ << '\n';
     for (auto p : path_)
@@ -3531,6 +3666,10 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.light_origins.push_back(id);
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used;
+    actor.concentration = detail::read_concentration(input);
+    if (const auto &held = actor.concentration.active();
+            held && (held->source.caster != source.id || held->remaining_ms > 600000))
+        throw std::runtime_error("Invalid checkpoint concentration");
     detail::decode_stable_recovery(actor.recovery);
     if (!input ||
             (source.character_profile.empty() && !content.definitions.contains(source.definition)))
@@ -3799,7 +3938,7 @@ void Session::validate_graze() const
     });
     if (a == actors_.end() || t == actors_.end() || a == t || !conscious(*a) || t->dead ||
             weapon_mastery(*a, false) != detail::Mastery::graze || g.natural < 1 || g.natural > 20 ||
-            attack_hits(g.natural, def(*a).melee_bonus, def(*t).ac) ||
+            attack_hits(g.natural, def(*a).melee_bonus, armor_class(*t)) ||
             (def(*a).champion && g.natural == 19) ||
             distance(a->source.cell, t->source.cell) > def(*a).reach ||
             !line_of_sight(a->source.cell, t->source.cell) || check_choice_ ||
@@ -4637,15 +4776,18 @@ class Module final : public RulesModule
         }
         else if (!choice.feat.empty() || points)
             throw std::runtime_error("Feats and ability points are available at level 4");
+        // Classes that prepare spells validate their choices through
+        // apply_spell_choices below, against the whole class list.
         std::set<std::string> selected;
         for (const auto &spell : choice.spells)
         {
             if (!selected.insert(spell).second ||
-                    std::none_of(options.spells.begin(), options.spells.end(),
-                                 [&](const auto & s)
+                    (!detail::prepares_spells(sheet.character_class) &&
+                     std::none_of(options.spells.begin(), options.spells.end(),
+                                  [&](const auto & s)
         {
             return s.id == spell && s.available;
-        }))
+        })))
             throw std::runtime_error("Choose only available, distinct spells");
         }
         if (!options.spells.empty() && choice.spells.empty())
@@ -5752,7 +5894,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.67", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.68", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

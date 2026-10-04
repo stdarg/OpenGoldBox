@@ -1424,8 +1424,22 @@ void CombatView::_input(const Ref<InputEvent> &event)
     const auto relative = canvas / (combat_zoom_ * base_tile_);
     const Cell cell{static_cast<int>(std::floor(relative.x)),
                     static_cast<int>(std::floor(relative.y))};
-    // These modes target allies, so a click on one targets it instead of selecting it.
-    if (!s.free_movement && !s.effect_targeting && mode_ != "stabilize" &&
+    // A click on an ally that the selected action can target casts on it
+    // instead of selecting it; these modes always target.
+    const auto offered_here = demo_->combat().legal_commands();
+    const bool targets_clicked = std::any_of(offered_here.begin(), offered_here.end(),
+                                 [&](const auto & c)
+    {
+        if (c.verb != mode_ || !c.target)
+            return false;
+        const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
+                                         [&](const auto & a)
+        {
+            return a.id == c.target;
+        });
+        return target != s.combatants.end() && target->cell == cell;
+    });
+    if (!s.free_movement && !s.effect_targeting && !targets_clicked && mode_ != "stabilize" &&
             mode_ != "lay_on_hands" && mode_ != "chill_touch" &&
             mode_ != "poison_spray" && mode_ != "sacred_flame" &&
             mode_ != "shocking_grasp" && mode_ != "eldritch_blast" && mode_ != "ray_of_frost")

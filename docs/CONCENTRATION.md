@@ -40,6 +40,14 @@ at its own record boundary. Existing save formats remain unchanged; embedding
 it changes the current formats in place without migration (see the
 [pre-1.0 format policy](SAVES.md#pre-10-format-policy)).
 
+## Combat integration
+
+Rules 0.6.68 uses this state in combat for Shield of Faith and Heroism: one
+Concentration spell per caster, the damage save, ending at 0 Hit Points, expiry
+with combat time, and `CN1` embedded in each actor of combat checkpoints
+(`OGCOMBAT 31`). Concentration ends when the combat ends; it is not yet kept in
+campaign saves. See [Paladin](PALADIN.md#buffs-and-concentration).
+
 ## Integration still required
 
 - [#208](https://github.com/stdarg/OpenGold/issues/208): actual Silence access,

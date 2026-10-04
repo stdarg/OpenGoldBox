@@ -285,5 +285,8 @@
   "Paladin's Smite",
   "Channel Divinity",
   "Bonus Action right after a melee hit: 2d8 Radiant damage, 3d8 against a Fiend or an Undead.",
-  "Bonus Action right after a melee hit: 1d6 Fire damage, then 1d6 at the start of each of the target's turns until it succeeds on a Constitution save."
+  "Bonus Action right after a melee hit: 1d6 Fire damage, then 1d6 at the start of each of the target's turns until it succeeds on a Constitution save.",
+  "Shield of Faith",
+  "Heroism",
+  "Divine Favor"
 ]

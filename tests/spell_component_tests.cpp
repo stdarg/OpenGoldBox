@@ -51,7 +51,9 @@ Character hero(std::string klass)
         auto choice = rules->default_advancement(c.sheet());
         // A Cleric prepares every available spell up to its count.
         choice.spells = klass == "cleric"
-                        ? std::vector<std::string> {"cure_wounds", "healing_word", "inflict_wounds"}
+                        ? std::vector<std::string> {"cure_wounds", "healing_word", "inflict_wounds",
+                                                    "shield_of_faith"
+                                                   }
                         : std::vector<std::string> {"magic_missile"};
         if (level == 3)
         {

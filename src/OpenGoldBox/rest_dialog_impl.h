@@ -725,7 +725,9 @@ void RolfTourView::check_rest_controls()
             draft.cantrips = std::vector<std::string> {"sacred_flame"};
             draft.spells = opengold::rules::SpellChoices
             {
-                {}, std::vector<std::string>{"cure_wounds", "healing_word", "inflict_wounds"}, {}, {}};
+                {}, std::vector<std::string>{"cure_wounds", "healing_word", "inflict_wounds",
+                                             "shield_of_faith"
+                                            }, {}, {}};
             const auto id = campaign_->add_pc(
                                 opengold::Character(*opengold::srd5::character_rules(), draft, {}));
             camp();

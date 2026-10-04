@@ -68,10 +68,10 @@ func run_checks() -> void:
         await press("LevelUp/Confirm")
         require(level.get_node("SpellChoicesPage").visible and level.get_node("Back").visible, "Cleric second page presents prepared spells")
         var rows = level.get_node("SpellChoicesPage/Rows")
-        for spell in ["cure_wounds", "healing_word", "inflict_wounds"]:
+        for spell in ["cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"]:
             var box: CheckBox = rows.get_node("prepared/" + spell)
             require(box.button_pressed and box.disabled, "Earlier preparation is locked at level-up: " + spell)
-        require(rows.get_node("prepared/Count").text == heading + " (3 / 5)" and rows.get_node("prepared/Pending").visible, "Level two prepares five, two pending")
+        require(rows.get_node("prepared/Count").text == heading + " (4 / 5)" and rows.get_node("prepared/Pending").visible, "Level two prepares five, one pending")
         await press("LevelUp/Confirm")
         require(not level.visible, "Cleric level two completes")
         await press("PartyPanel/Roster/Advance1"); await press("LevelUp/Confirm")

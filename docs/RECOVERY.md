@@ -162,8 +162,8 @@ campaign scheduling remains open; script treasure money follows [QUESTS.md](QUES
 
 `PartyState` native checkpoints retain XP, claimed reward IDs, HP/resources,
 purses, recovery timers, clock and RNG for rollback. [Campaign file save/load](SAVES.md) now persists this supported state at the party/idle-town boundaries, with fresh-process restart verification.
-The combat checkpoint format is `OGCOMBAT 30` and the rules module identity is
-`opengold.srd5` **0.6.67**. Older formats and other identities reject; see the
+The combat checkpoint format is `OGCOMBAT 31` and the rules module identity is
+`opengold.srd5` **0.6.68**. Older formats and other identities reject; see the
 [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
 
 From PowerShell:

@@ -31,7 +31,7 @@ an unspent action. The first use does not refresh any other resource.
 allowances. Core and Godot continue to consume legal commands, display snapshots
 and named recovery pools; no new runtime or ownership mechanism is introduced.
 
-PC42 validates the class grant. OGCOMBAT 30 stores remaining uses, activation
+PC42 validates the class grant. OGCOMBAT 31 stores remaining uses, activation
 this turn and the unspent extra allowance. SRD11 vital continuation stores spent
 uses alongside existing slots, Second Wind, Hit Dice, mortality clocks,
 Temporary HP, Orc uses and effects.

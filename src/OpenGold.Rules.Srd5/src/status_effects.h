@@ -27,8 +27,18 @@ enum class EffectKind : unsigned
     slow = 7,
     // Searing Smite: Fire damage and a Constitution save at the start of each
     // of the target's turns, for up to 1 minute.
-    searing_smite = 8
+    searing_smite = 8,
+    // Spell benefits with no save, SRD 5.2.1. Shield of Faith: +2 AC.
+    shield_of_faith = 9,
+    // Heroism: Temporary HP equal to `dc` (the caster's spellcasting modifier)
+    // at the start of each of the target's turns.
+    heroism = 10,
+    // Divine Favor: +1d4 Radiant damage on weapon hits.
+    divine_favor = 11
 };
+
+// The longest a spell benefit lasts, in milliseconds.
+unsigned benefit_duration_ms(EffectKind kind);
 inline constexpr unsigned round_ms = 6000;
 inline constexpr std::size_t effect_limit = 128;
 
@@ -121,6 +131,10 @@ void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId 
                      std::string name, int dc, unsigned first_save_ms);
 void apply_searing_smite(EffectState &, std::uint64_t scope, rules::EntityId caster,
                          std::string name, int dc);
+// Applies a spell benefit that has no save. `value` is kind-specific.
+void apply_spell_benefit(EffectState &, std::uint64_t scope, rules::EntityId caster,
+                         std::string name, EffectKind kind, int value);
+bool has_effect(const EffectState &, EffectKind);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);
 [[nodiscard]] RollModifiers attack_modifiers(bool attacker_blind, bool target_blind,
         bool target_dodging, bool other_disadvantage);

@@ -10,7 +10,7 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 1 | Weapon Mastery | Delivered earlier ([Weapon Mastery](WEAPON-MASTERY.md)) |
 | 1 | Lay On Hands | Delivered in combat (rules 0.6.66); outside combat and curing Poisoned not yet |
 | 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Blessed Warrior not yet |
-| 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.67) |
+| 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.68) |
 | 3 | Channel Divinity, Oath of Devotion | Not yet |
 | 4 | Ability Score Improvement | Delivered earlier |
 
@@ -23,9 +23,10 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
   at each level-up, with earlier choices locked.
 - After a Long Rest a Paladin may replace **one** prepared spell (a Cleric may
   replace any). The shared rest window enforces this.
-- The Paladin list in the game holds Cure Wounds, Divine Smite and Searing
-  Smite; Bless, Command, Divine Favor, Heroism, Protection from Evil and Good and
-  Shield of Faith arrive in later increments, and the other places stay pending.
+- The Paladin list in the game holds Cure Wounds, Divine Favor, Divine Smite,
+  Heroism, Searing Smite and Shield of Faith. Bless and Command come next;
+  Protection from Evil and Good waits for a decision on its consumed holy water,
+  and Detect Magic for spellcasting outside combat.
 - Spells a feature keeps prepared (Divine Smite from level 2) are listed apart
   and not counted against the prepared spells.
   Detect Magic waits for spellcasting outside combat.
@@ -46,7 +47,7 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
   together with Detect Magic), and spending 5 points to remove Poisoned, because
   the game has no Poisoned condition yet.
 - The pool is saved in the character's vital state (`SRD11`) and in combat
-  checkpoints (`OGCOMBAT 30`).
+  checkpoints (`OGCOMBAT 31`).
 
 Verification: `opengold_lay_on_hands_tests` (offers, healing amount, spending,
 dying ally, checkpoint, rest and level growth, campaign round trip) and
@@ -75,7 +76,7 @@ ally, in English and Spanish).
   the Slums kobolds are Dragons, goblins and bugbears Fey, and the rest
   Humanoid. Characters are Humanoid.
 - The free use and Channel Divinity (not yet used) are saved in the vital state
-  (`SRD11`); the open smite chance is saved in combat checkpoints (`OGCOMBAT 30`).
+  (`SRD11`); the open smite chance is saved in combat checkpoints (`OGCOMBAT 31`).
 
 Verification: `opengold_smite_tests` (the window after own-turn melee hits only,
 closing on other commands, free and slot casts, the extra die against a Fiend,
@@ -83,6 +84,28 @@ Searing Smite's burn and save with failing and succeeding saves, checkpoints,
 Long Rest recovery) and `opengold_godot_smite` (the Bonus Action list after a
 hit and Use, in English and Spanish). Critical doubling is applied but not yet
 forced in a test.
+
+## Buffs and Concentration
+
+- **Shield of Faith** (Bonus Action, 60 feet, Concentration up to 10 minutes):
+  +2 AC. **Heroism** (Action, touch, Concentration up to 1 minute): Temporary
+  HP equal to the caster's spellcasting modifier at the start of each of the
+  target's turns, kept only when higher than what it has (Frightened is not yet
+  modeled). **Divine Favor** (Bonus Action, self, 1 minute): weapon hits deal an
+  extra 1d4 Radiant damage, doubled on a critical hit.
+- Concentration: a caster holds one Concentration spell; casting another ends
+  the first and removes its effects. Damage calls for a Constitution save
+  against half the damage (10–30); dropping to 0 Hit Points ends it.
+  Concentration is tracked in combat only and ends when the combat ends (an
+  adaptation; outside combat no spell needs it yet). It is saved in combat
+  checkpoints (`OGCOMBAT 31`).
+- In the game: A cycles to the spell, then click the ally (a click on an ally
+  now targets it whenever the selected action can) or press Space.
+
+Verification: `opengold_paladin_spell_tests` (AC, a second Concentration spell
+ending the first, Temporary HP at the target's turn, Divine Favor's damage, the
+Concentration save after damage, ending with the combat) and the shared
+spell-table checks, which now also probe Paladins.
 
 Cleric and Paladin share one table of class-list casters in
 `spell_access.cpp` (`PreparedCaster`): cantrip and prepared counts, highest

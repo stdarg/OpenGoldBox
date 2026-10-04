@@ -31,14 +31,16 @@ void paladin_choices_checks()
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 2 &&
           option_ids(options.preparation) ==
-          std::vector<std::string> {"cure_wounds", "divine_smite", "searing_smite"},
+          std::vector<std::string> {"cure_wounds", "divine_favor", "divine_smite", "heroism",
+                                    "searing_smite", "shield_of_faith"
+                                   },
     "Creation prepares from the implemented Paladin list");
     check(rules->character_profile(paladin.sheet(), {}).data.starts_with("PC42 1 0 1 cure_wounds "),
           "The profile records the prepared spell");
     for (const auto &bad : std::vector<std::vector<std::string>>
 {
     {"healing_word"}, {"magic_missile"}, {"cure_wounds", "cure_wounds"},
-        {"cure_wounds", "divine_smite", "searing_smite"}
+        {"cure_wounds", "divine_smite", "searing_smite"}, {"healing_word", "cure_wounds"}
     })
     rejects(
         [&]
@@ -87,4 +89,25 @@ void paladin_choices_checks()
     CampaignParty restored(module());
     restored.restore(decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
     check(saved(restored) == bytes, "A level-four Paladin round-trips");
+
+    // After a Long Rest a Paladin replaces one prepared spell, not more.
+    CampaignParty resting(module());
+    const auto rester =
+        resting.add_pc(Character(*creation_rules, paladin_draft({"cure_wounds", "searing_smite"}), {}));
+    (void)resting.rest(RestKind::long_rest);
+    check(resting.state().spell_rest.has_value(), "The Paladin's Long Rest opens the spell window");
+    const auto before_rest = saved(resting);
+    SpellChoices two;
+    two.prepared = std::vector<std::string> {"heroism", "divine_favor"};
+    rejects(
+        [&]
+    {
+        resting.choose_spells(rester, two);
+    });
+    check(saved(resting) == before_rest, "Replacing two prepared spells is refused");
+    SpellChoices one;
+    one.prepared = std::vector<std::string> {"cure_wounds", "heroism"};
+    resting.choose_spells(rester, one);
+    check(resting.member(rester).character.sheet().prepared_spells == *one.prepared,
+          "Replacing one prepared spell is allowed");
 }

@@ -43,7 +43,10 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"cure_wounds", "Cure Wounds", 1, 0, cleric_list | paladin_list},
     Spell{"healing_word", "Healing Word", 1, 0, cleric_list},
     Spell{"divine_smite", "Divine Smite", 1, 0, paladin_list},
-    Spell{"searing_smite", "Searing Smite", 1, 0, paladin_list}};
+    Spell{"searing_smite", "Searing Smite", 1, 0, paladin_list},
+    Spell{"shield_of_faith", "Shield of Faith", 1, 0, cleric_list | paladin_list},
+    Spell{"heroism", "Heroism", 1, 0, paladin_list},
+    Spell{"divine_favor", "Divine Favor", 1, 0, paladin_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).

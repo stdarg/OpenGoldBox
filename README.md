@@ -69,10 +69,10 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 | Class | Levels | Class features in play |
 | --- | --- | --- |
 | Fighter | 1–4 | Fighting Style, Second Wind, Weapon Mastery, Action Surge, Tactical Mind, Champion, Ability Score Improvement or feat |
-| Cleric | 1–4 | Sacred Flame; prepared Cure Wounds, Healing Word, Inflict Wounds and Blindness; Divine Order; Ability Score Improvement or feat. No Channel Divinity or subclass |
+| Cleric | 1–4 | Sacred Flame; prepared Cure Wounds, Healing Word, Inflict Wounds, Shield of Faith and Blindness; Divine Order; Ability Score Improvement or feat. No Channel Divinity or subclass |
 | Wizard | 1–4 | Five cantrips; spellbook and preparation (Magic Missile, Scorching Ray, Blindness); Arcane Recovery; Scholar; Ability Score Improvement or feat. No subclass |
 | Rogue | 1–4 | Expertise, Sneak Attack, Weapon Mastery, Cunning Action (Dash, Disengage), Steady Aim, Ability Score Improvement or feat. No Hide or subclass |
-| Paladin | 1–4 | Spellcasting (Charisma; Cure Wounds, Divine Smite, Searing Smite so far), Lay On Hands in combat, Paladin's Smite, Weapon Mastery, Fighting Style, Ability Score Improvement or feat. Other features in progress; see [Paladin](docs/PALADIN.md) |
+| Paladin | 1–4 | Spellcasting (Charisma; Cure Wounds, Divine Favor, Divine Smite, Heroism, Searing Smite, Shield of Faith so far), Lay On Hands in combat, Paladin's Smite, Weapon Mastery, Fighting Style, Ability Score Improvement or feat. Other features in progress; see [Paladin](docs/PALADIN.md) |
 | Ranger | 1–4 | Weapon Mastery, Fighting Style, Ability Score Improvement or feat. No spells or other class features |
 | Sorcerer, Warlock | 1 | Starting cantrips |
 | Barbarian, Bard, Druid, Monk | 1 | Weapon attacks; Unarmored Defense (Barbarian, Monk); Weapon Mastery (Barbarian) |

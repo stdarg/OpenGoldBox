@@ -260,6 +260,40 @@ void apply_searing_smite(EffectState &effects, std::uint64_t scope, rules::Entit
                               EffectKind::searing_smite, dc, 60000, 0});
 }
 
+unsigned benefit_duration_ms(EffectKind kind)
+{
+    switch (kind)
+    {
+    case EffectKind::shield_of_faith:
+        return 600000; // Concentration, up to 10 minutes
+    case EffectKind::heroism:
+    case EffectKind::divine_favor:
+        return 60000; // 1 minute
+    default:
+        return 0;
+    }
+}
+
+void apply_spell_benefit(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                         std::string name, EffectKind kind, int value)
+{
+    const auto duration = benefit_duration_ms(kind);
+    if (!duration || !can_apply(effects) || !scope || !caster || name.empty() ||
+            name.size() > 160 || value < 0 || value > 10)
+        throw std::runtime_error("Invalid spell benefit");
+    effects.active.push_back(
+    {effects.next_id++, scope, caster, std::move(name), kind, value, duration, 0});
+}
+
+bool has_effect(const EffectState &effects, EffectKind kind)
+{
+    return std::any_of(effects.active.begin(), effects.active.end(),
+                       [&](const auto & e)
+    {
+        return e.kind == kind;
+    });
+}
+
 RollModifiers saving_modifiers(Ability ability, bool armor, bool dodge)
 {
     return {dodge && ability == Ability::dexterity,
@@ -378,6 +412,20 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::slow);
         // Searing Smite saves at the start of the target's turn, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite);
+        // A spell benefit has no save; `dc` carries its value.
+        const auto benefit = benefit_duration_ms(static_cast<EffectKind>(kind));
+        if (benefit && in)
+        {
+            if (e.id <= previous || e.id >= result.next_id || !e.source_scope ||
+                    !e.source_actor || e.source_name.empty() || e.source_name.size() > 160 ||
+                    e.dc < 0 || e.dc > 10 || !e.remaining_ms || e.remaining_ms > benefit ||
+                    e.save_in_ms)
+                throw std::runtime_error("Invalid active effect");
+            e.kind = static_cast<EffectKind>(kind);
+            previous = e.id;
+            result.active.push_back(std::move(e));
+            continue;
+        }
         if (!in || (!timed && !turn_save && kind != unsigned(EffectKind::blindness)) ||
                 e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 ||

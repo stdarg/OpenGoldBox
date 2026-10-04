@@ -67,7 +67,7 @@ void grants_and_budgets()
                     auto p = party(weapon, style, negative, seed % 2);
                     auto c = battle(p, seed);
                     check(
-                        c->save().starts_with("OGCOMBAT 30 ") && unit(*c, 1).nick_mastery &&
+                        c->save().starts_with("OGCOMBAT 31 ") && unit(*c, 1).nick_mastery &&
                         !offers(*c, "nick_melee"),
                         "Chosen Nick creates explicit shared budget, not an attack before qualification");
                     act(*c, "melee", 99);

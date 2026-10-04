@@ -338,7 +338,7 @@ void creation_tests()
     },
     "A Cleric prepares the available spells");
     for (const auto *spell :
-            {"cure_wounds", "healing_word", "inflict_wounds"
+            {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"
             })
         creator.spell_choice("prepared", spell, true);
     creator.next();
