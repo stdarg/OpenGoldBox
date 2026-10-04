@@ -671,6 +671,12 @@ Command choose_demo_command(const CombatSession &session)
     {
         return routes[index(p)];
     };
+    // A choice of creatures left open casts on those already chosen.
+    if (state.spell_targeting)
+        for (const auto &command : offered)
+            if (command.verb == (state.spell_targeting->chosen.empty() ? "spell_cancel"
+                                 : "spell_cast"))
+                return command;
     // Paladin's Smite costs no slot, so a Paladin uses it on the first hit it can;
     // slots stay for healing.
     for (const auto &command : offered)

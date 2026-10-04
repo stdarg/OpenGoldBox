@@ -34,7 +34,9 @@ enum class EffectKind : unsigned
     // at the start of each of the target's turns.
     heroism = 10,
     // Divine Favor: +1d4 Radiant damage on weapon hits.
-    divine_favor = 11
+    divine_favor = 11,
+    // Bless: +1d4 to attack rolls and saving throws.
+    bless = 12
 };
 
 // The longest a spell benefit lasts, in milliseconds.

@@ -391,6 +391,17 @@ struct EffectTargeting
     bool destination{};
 };
 
+// Choosing the creatures of a spell that affects several, such as Bless.
+// Choosing `verb` on a creature adds or removes it; spell_cast casts on the
+// chosen creatures and spell_cancel spends nothing.
+struct SpellTargeting
+{
+    EntityId actor{};
+    std::string verb;
+    std::vector<EntityId> chosen;
+    unsigned maximum{};
+};
+
 struct FreeMovement
 {
     EntityId actor{};
@@ -415,6 +426,7 @@ struct Snapshot
     std::optional<FreeMovement> free_movement;
     std::optional<OptionalEffectChoice> optional_effect_choice;
     std::optional<EffectTargeting> effect_targeting;
+    std::optional<SpellTargeting> spell_targeting;
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;

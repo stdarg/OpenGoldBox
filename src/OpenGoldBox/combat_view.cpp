@@ -1042,6 +1042,9 @@ void CombatView::immediate(String verb)
     const auto state = demo_->combat().snapshot();
     if (state.effect_targeting && wanted == "end")
         wanted = "effect_skip";
+    // While choosing a spell's creatures, End casts on those chosen.
+    if (state.spell_targeting && wanted == "end")
+        wanted = "spell_cast";
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
                      [&](const auto & a)
 {
@@ -1268,6 +1271,14 @@ void CombatView::_input(const Ref<InputEvent> &event)
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && !key->is_ctrl_pressed() &&
             demo_->has_combat())
     {
+        // While choosing a spell's creatures, Space casts and Escape cancels.
+        if (demo_->combat().snapshot().spell_targeting &&
+                (key->get_keycode() == Key::KEY_SPACE || key->get_keycode() == Key::KEY_ESCAPE))
+        {
+            immediate(key->get_keycode() == Key::KEY_SPACE ? "spell_cast" : "spell_cancel");
+            get_viewport()->set_input_as_handled();
+            return;
+        }
         if (key->get_keycode() == Key::KEY_ESCAPE &&
                 (mode_ == "stabilize" || mode_ == "throw" ||
                  (mode_.starts_with("light_") || mode_.starts_with("nick_"))))
@@ -1795,12 +1806,15 @@ void CombatView::refresh()
     ->set_visible(demo_ && (demo_->waiting() || (loaded && s.outcome != Outcome::ongoing)));
     get_node<Button>("End")->set_visible(!get_node<Button>("Continue")->is_visible());
     get_node<Button>("End")->set_text(i18n::text(s.effect_targeting ? N_("Skip effect")
+            : s.spell_targeting ? N_("Cast spell")
             : s.free_movement  ? "Finish free move"
             : "End turn"));
     if (s.free_movement)
         mode_ = "move";
     if (s.effect_targeting)
         mode_ = s.effect_targeting->verb;
+    if (s.spell_targeting)
+        mode_ = s.spell_targeting->verb;
     const auto offered = loaded ? demo_->combat().legal_commands() : std::vector<Command> {};
     const auto enabled = [&](std::string_view verb)
     {
@@ -1809,7 +1823,8 @@ void CombatView::refresh()
         {
             return c.verb == verb ||
                    (verb == "end" && s.effect_targeting &&
-                    c.verb == "effect_skip");
+                    c.verb == "effect_skip") ||
+                   (verb == "end" && s.spell_targeting && c.verb == "spell_cast");
         });
     };
     auto *thrown = get_node<OptionButton>("ThrownWeapon");
@@ -2032,6 +2047,21 @@ void CombatView::refresh()
         get_node<Label>("Prompt")->set_text(
             i18n::render(s.effect_targeting->prompt) + "\n" +
             i18n::text("Arrows: choose | Space: use | Escape: skip"));
+    if (player && s.spell_targeting)
+    {
+        String chosen;
+        for (const auto id : s.spell_targeting->chosen)
+            for (const auto &a : s.combatants)
+                if (a.id == id)
+                    chosen += (chosen.is_empty() ? "" : ", ") + gs(a.name);
+        get_node<Label>("Prompt")->set_text(
+            i18n::format("Choose up to {maximum} creatures. Chosen: {chosen}",
+        {
+            {"maximum", static_cast<int64_t>(s.spell_targeting->maximum)},
+            {"chosen", chosen}
+        }) +
+        "\n" + i18n::text("Click: choose or remove | Space or Cast spell: cast | Escape: cancel"));
+    }
     String log = turn + "\n" + get_node<Label>("Prompt")->get_text() + "\n" +
                  i18n::text("A: next action | Space: use | Z: spell slot | Enter: end turn") +
                  "\n\n";

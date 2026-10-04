@@ -10,7 +10,7 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 1 | Weapon Mastery | Delivered earlier ([Weapon Mastery](WEAPON-MASTERY.md)) |
 | 1 | Lay On Hands | Delivered in combat (rules 0.6.66); outside combat and curing Poisoned not yet |
 | 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Blessed Warrior not yet |
-| 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.68) |
+| 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.69) |
 | 3 | Channel Divinity, Oath of Devotion | Not yet |
 | 4 | Ability Score Improvement | Delivered earlier |
 
@@ -23,8 +23,8 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
   at each level-up, with earlier choices locked.
 - After a Long Rest a Paladin may replace **one** prepared spell (a Cleric may
   replace any). The shared rest window enforces this.
-- The Paladin list in the game holds Cure Wounds, Divine Favor, Divine Smite,
-  Heroism, Searing Smite and Shield of Faith. Bless and Command come next;
+- The Paladin list in the game holds Bless, Cure Wounds, Divine Favor, Divine
+  Smite, Heroism, Searing Smite and Shield of Faith. Command comes next;
   Protection from Evil and Good waits for a decision on its consumed holy water,
   and Detect Magic for spellcasting outside combat.
 - Spells a feature keeps prepared (Divine Smite from level 2) are listed apart
@@ -47,7 +47,7 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
   together with Detect Magic), and spending 5 points to remove Poisoned, because
   the game has no Poisoned condition yet.
 - The pool is saved in the character's vital state (`SRD11`) and in combat
-  checkpoints (`OGCOMBAT 31`).
+  checkpoints (`OGCOMBAT 32`).
 
 Verification: `opengold_lay_on_hands_tests` (offers, healing amount, spending,
 dying ally, checkpoint, rest and level growth, campaign round trip) and
@@ -76,7 +76,7 @@ ally, in English and Spanish).
   the Slums kobolds are Dragons, goblins and bugbears Fey, and the rest
   Humanoid. Characters are Humanoid.
 - The free use and Channel Divinity (not yet used) are saved in the vital state
-  (`SRD11`); the open smite chance is saved in combat checkpoints (`OGCOMBAT 31`).
+  (`SRD11`); the open smite chance is saved in combat checkpoints (`OGCOMBAT 32`).
 
 Verification: `opengold_smite_tests` (the window after own-turn melee hits only,
 closing on other commands, free and slot casts, the extra die against a Fiend,
@@ -98,11 +98,21 @@ forced in a test.
   against half the damage (10–30); dropping to 0 Hit Points ends it.
   Concentration is tracked in combat only and ends when the combat ends (an
   adaptation; outside combat no spell needs it yet). It is saved in combat
-  checkpoints (`OGCOMBAT 31`).
+  checkpoints (`OGCOMBAT 32`).
+- **Bless** (Action, 30 feet, Concentration up to 1 minute; Cleric and
+  Paladin): up to three creatures, four from a level-two slot, add 1d4 to their
+  attack rolls and saving throws, Concentration saves and repeated saves
+  included. Choosing creatures follows CLASS-2: the first choice starts it and
+  spends nothing; each click on a creature adds or removes it; the spell is cast
+  when the third is chosen, or earlier with **Cast spell** (the End button) or
+  Space; Escape cancels. An open choice is saved in combat checkpoints
+  (`OGCOMBAT 32`).
 - In the game: A cycles to the spell, then click the ally (a click on an ally
   now targets it whenever the selected action can) or press Space.
 
-Verification: `opengold_paladin_spell_tests` (AC, a second Concentration spell
+Verification: `opengold_godot_bless` chooses, cancels and casts Bless through
+the game controls in English and Spanish. `opengold_paladin_spell_tests` (Bless's
+choice, cancel, early and automatic casts, and its attack bonus; AC, a second Concentration spell
 ending the first, Temporary HP at the target's turn, Divine Favor's damage, the
 Concentration save after damage, ending with the combat) and the shared
 spell-table checks, which now also probe Paladins.

@@ -288,5 +288,8 @@
   "Bonus Action right after a melee hit: 1d6 Fire damage, then 1d6 at the start of each of the target's turns until it succeeds on a Constitution save.",
   "Shield of Faith",
   "Heroism",
-  "Divine Favor"
+  "Divine Favor",
+  "Bless",
+  "Cast spell",
+  "Action; 30 feet; up to three creatures add 1d4 to attack rolls and saving throws. Concentration, up to 1 minute."
 ]

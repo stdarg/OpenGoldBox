@@ -87,13 +87,15 @@ detail::EffectKind rider_effect(detail::Rider rider)
 {
     return rider == detail::Rider::shield_of_faith ? detail::EffectKind::shield_of_faith
            : rider == detail::Rider::heroism       ? detail::EffectKind::heroism
+           : rider == detail::Rider::bless         ? detail::EffectKind::bless
            : detail::EffectKind::divine_favor;
 }
 
 // Effects that end with their caster's Concentration.
 bool concentration_effect(detail::EffectKind kind)
 {
-    return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism;
+    return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism ||
+           kind == detail::EffectKind::bless;
 }
 
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
@@ -133,7 +135,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 31;
+constexpr unsigned checkpoint_format = 32;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -157,6 +159,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Paladin", "heroism", 1},
     SpellAccessRow{"Paladin", "divine_favor", 1},
     SpellAccessRow{"Cleric", "shield_of_faith", 1},
+    SpellAccessRow{"Cleric", "bless", 1},
+    SpellAccessRow{"Paladin", "bless", 1},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -961,6 +965,14 @@ class Session final : public CombatSession
     std::optional<ChampionMove> champion_move_;
     std::optional<PendingGraze> graze_;
     std::optional<PendingMastery> mastery_;
+    // Creatures chosen so far for a spell that affects several (CLASS-2).
+    struct PendingSelection
+    {
+        EntityId caster{};
+        std::string verb;
+        std::vector<EntityId> chosen;
+    };
+    std::optional<PendingSelection> selection_;
     std::vector<ChampionMove> champion_offers_;
     std::optional<EffectReaction> effect_reaction_origin_;
 
@@ -1162,6 +1174,10 @@ class Session final : public CombatSession
     void begin_concentration(Actor &caster, const detail::SpellDef &spell);
     void end_concentration(Actor &caster);
     void drop_concentration_effects(const Actor &caster);
+    unsigned selection_maximum(const PendingSelection &) const;
+    void choose_target(const Command &command);
+    void cast_on_selection();
+    int bless_die(const Actor &a);
     void burn_searing_smites(Actor &a);
     void update_outcome();
     void wake_resting_participants();
@@ -1528,6 +1544,12 @@ Snapshot Session::snapshot() const
                 {{"target", t.source.name}, {"damage", std::to_string(amount)}}
             }};
     }
+    if (selection_)
+    {
+        s.actor = selection_->caster;
+        s.spell_targeting = SpellTargeting{selection_->caster, selection_->verb,
+                                           selection_->chosen, selection_maximum(*selection_)};
+    }
     if (!champion_move_ && effect_waiting())
     {
         if (mastery_ && mastery_->targeting)
@@ -1829,6 +1851,7 @@ void Session::apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target
     case detail::Rider::shield_of_faith:
     case detail::Rider::heroism:
     case detail::Rider::divine_favor:
+    case detail::Rider::bless:
     {
         // Heroism's Temporary HP equal the caster's spellcasting modifier.
         const int value =
@@ -2043,6 +2066,20 @@ std::vector<Command> Session::legal_commands() const
         commands.push_back(
         {revision_, who, target, std::move(verb), std::move(label), destination});
     };
+    // While choosing a spell's creatures, only the choice itself is open:
+    // any living creature in range toggles, then cast or cancel.
+    if (selection_)
+    {
+        const auto &caster = actor(selection_->caster);
+        const auto &spell = *detail::find_spell(selection_->verb);
+        for (const auto &other : actors_)
+            if (!other.dead && distance(caster.source.cell, other.source.cell) <= spell.range)
+                add(caster.source.id, selection_->verb, std::string(spell.label), other.source.id);
+        if (!selection_->chosen.empty())
+            add(caster.source.id, "spell_cast", "Cast spell");
+        add(caster.source.id, "spell_cancel", "Cancel");
+        return commands;
+    }
     if (!initiative_choices_.empty())
     {
         for (const auto id : initiative_choices_)
@@ -2359,8 +2396,9 @@ void Session::damage(Actor &target, int amount, bool critical)
     // Damage tests Concentration; dropping to 0 Hit Points ends it.
     if (target.concentration.active())
     {
+        const bool rolls = target.hp > 0 && !target.dead;
         const auto result = target.concentration.damage(
-                                amount, def(target).saves[2],
+                                amount, def(target).saves[2] + (rolls ? bless_die(target) : 0),
                                 detail::saving_modifiers(detail::Ability::constitution,
                                         def(target).str_dex_disadvantage, target.dodge),
                                 target.hp == 0 || target.dead, rng_);
@@ -2443,6 +2481,61 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     if (searing && target.hp > 0 && detail::can_apply(target.effects))
         detail::apply_searing_smite(target.effects, scope_, a.source.id, a.source.name,
                                     8 + def(a).casting);
+}
+
+int Session::bless_die(const Actor &a)
+{
+    // Bless adds 1d4 to the creature's attack rolls and saving throws.
+    return detail::has_effect(a.effects, detail::EffectKind::bless) ? roll(4) : 0;
+}
+
+unsigned Session::selection_maximum(const PendingSelection &selection) const
+{
+    const auto &spell = *detail::find_spell(selection.verb);
+    return spell.instances + (selection.verb.ends_with("_2") ? spell.upcast.extra_instances : 0u);
+}
+
+void Session::choose_target(const Command &command)
+{
+    if (command.verb == "spell_cancel")
+    {
+        selection_.reset();
+        return;
+    }
+    if (command.verb == "spell_cast")
+    {
+        cast_on_selection();
+        return;
+    }
+    auto &chosen = selection_->chosen;
+    if (const auto found = std::find(chosen.begin(), chosen.end(), command.target);
+            found != chosen.end())
+        chosen.erase(found);
+    else
+        chosen.push_back(command.target);
+    if (chosen.size() == selection_maximum(*selection_))
+        cast_on_selection();
+}
+
+void Session::cast_on_selection()
+{
+    const auto selection = *selection_;
+    selection_.reset();
+    auto &a = actor(selection.caster);
+    const auto &spell = *detail::find_spell(selection.verb);
+    a.nick_origin = 0;
+    (void)a.actions.spend(true);
+    if (selection.verb.ends_with("_2") || spell.level >= 2)
+        --a.slots2;
+    else
+        --a.slots;
+    a.spent_slot = true;
+    log(a.source.name + " casts " + std::string(spell.label) + ".",
+    {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
+    if (spell.concentration)
+        begin_concentration(a, spell);
+    for (const auto id : selection.chosen)
+        apply_rider(spell, a, actor(id), 8 + def(a).casting);
 }
 
 int Session::armor_class(const Actor &target) const
@@ -2787,9 +2880,9 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     const auto &d = def(a);
     const auto modifiers = attack_modifiers(a, target, ranged, spell);
     a.aim_ready = false;
-    const int natural = detail::d20(modifiers, rng_), bonus = spell    ? d.casting
+    const int natural = detail::d20(modifiers, rng_), bonus = (spell    ? d.casting
         : ranged ? d.ranged_bonus
-        : d.melee_bonus;
+        : d.melee_bonus) + bless_die(a);
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
     const bool hit =
         (!spell && d.champion && natural == 19) || attack_hits(natural, bonus, armor_class(target));
@@ -3071,8 +3164,11 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         return false;
     }
+    // Bless adds 1d4 to saving throws.
+    const int bless =
+        detail::has_effect(target.effects, detail::EffectKind::bless) ? roll(4) : 0;
     const auto result = detail::saving_throw(
-                            ability, def(target).saves[static_cast<unsigned>(ability)], dc,
+                            ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
                             detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge), rng_);
     log_save(target, result);
     return result.success;
@@ -3233,6 +3329,8 @@ bool Session::submit(const Command &command)
     {
         resolve_initiative(command);
     }
+    else if (selection_)
+        choose_target(command);
     else if (!graze_ && !champion_move_ && effect_waiting())
     {
         use_effect(command);
@@ -3425,6 +3523,14 @@ bool Session::submit(const Command &command)
             {{"name", a.source.name}, {"target", target.source.name}}
         });
         a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, def(target).hp - target.hp));
+    }
+    else if (const auto *multi = detail::find_spell(command.verb);
+             multi && multi->pattern == detail::SpellPattern::buff && multi->instances > 1)
+    {
+        // The first creature starts the choice; nothing is spent until the cast.
+        selection_ = PendingSelection{a.source.id, command.verb, {command.target}};
+        if (selection_->chosen.size() == selection_maximum(*selection_))
+            cast_on_selection();
     }
     else if (is_smite(command.verb))
         resolve_smite(a, command.verb);
@@ -3634,6 +3740,15 @@ std::string Session::save() const
     out << initiative_choices_.size();
     for (const auto id : initiative_choices_)
         out << ' ' << id;
+    out << '\n';
+    out << bool(selection_);
+    if (selection_)
+    {
+        out << ' ' << selection_->caster << ' ' << selection_->verb << ' '
+            << selection_->chosen.size();
+        for (const auto id : selection_->chosen)
+            out << ' ' << id;
+    }
     out << '\n';
     return out.str();
 }
@@ -4321,6 +4436,37 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         input >> id;
         session->initiative_choices_.push_back(id);
     }
+    bool selecting{};
+    input >> selecting;
+    if (selecting)
+    {
+        PendingSelection selection;
+        std::size_t count{};
+        input >> selection.caster >> selection.verb >> count;
+        const auto *spell = detail::find_spell(selection.verb);
+        if (!input || !spell || spell->pattern != detail::SpellPattern::buff ||
+                spell->instances < 2 || !count || count > 8)
+            throw std::runtime_error("Invalid spell target choice");
+        for (std::size_t n = 0; n < count; ++n)
+        {
+            EntityId id{};
+            input >> id;
+            selection.chosen.push_back(id);
+        }
+        const auto known = [&](EntityId id)
+        {
+            return std::any_of(session->actors_.begin(), session->actors_.end(),
+                               [&](const auto & a)
+            {
+                return a.source.id == id;
+            });
+        };
+        if (!input || !known(selection.caster) ||
+                !std::all_of(selection.chosen.begin(), selection.chosen.end(), known) ||
+                count >= session->selection_maximum(selection))
+            throw std::runtime_error("Invalid spell target choice");
+        session->selection_ = std::move(selection);
+    }
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
     session->light_active_ = saved_light;
@@ -4624,7 +4770,7 @@ class Module final : public RulesModule
                 "inflict_wounds", "Inflict Wounds",
                 "Action; touch; Constitution save; 2d10 Necrotic damage, half on a success, +1d10 from a level 2 slot."
             },
-            {"bless", "Bless", "Unavailable: concentration is not implemented.", false}
+            {"bless", "Bless", "Action; 30 feet; up to three creatures add 1d4 to attack rolls and saving throws. Concentration, up to 1 minute."}
         };
         if (sheet.character_class == "Wizard")
             result.spells =
@@ -5894,7 +6040,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.68", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.69", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

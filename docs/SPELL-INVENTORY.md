@@ -206,7 +206,7 @@ are evidence of partial behavior, not certification of the full spell.
 | Spell / SRD page | Normal lists | Additional routes | Further dependencies | Status / work |
 | --- | --- | --- | --- | --- |
 | [Bane](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=112) (p. 112) | B, C, K | MI | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Bless](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | C, P | MI, Life | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
+| [Bless](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | C, P | MI, Life | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Clerics and Paladins; [Paladin](PALADIN.md#buffs-and-concentration) |
 | [Burning Hands](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | S, W | MI, Evoker, Arid, Fiend | [#43](https://github.com/stdarg/OpenGold/issues/43) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Charm Person](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | B, D, S, K, W | MI | [#35](https://github.com/stdarg/OpenGold/issues/35) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Chromatic Orb](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | S, W | MI, Evoker, Draconic | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |

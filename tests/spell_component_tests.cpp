@@ -52,7 +52,7 @@ Character hero(std::string klass)
         // A Cleric prepares every available spell up to its count.
         choice.spells = klass == "cleric"
                         ? std::vector<std::string> {"cure_wounds", "healing_word", "inflict_wounds",
-                                                    "shield_of_faith"
+                                                    "shield_of_faith", "bless"
                                                    }
                         : std::vector<std::string> {"magic_missile"};
         if (level == 3)

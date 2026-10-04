@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Bless and choosing several creatures
+
+Rules 0.6.69 adds Bless (Cleric and Paladin) and the CLASS-2 way of choosing
+several creatures, kept in combat checkpoints (`OGCOMBAT 32`). See
+[Paladin](PALADIN.md#buffs-and-concentration).
+
 ## Concentration, Shield of Faith, Heroism and Divine Favor
 
 Rules 0.6.68 makes Concentration playable in combat and adds Shield of Faith

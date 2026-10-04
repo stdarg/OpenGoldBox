@@ -160,6 +160,82 @@ void concentration_damage_checks()
           "A failed save ends Shield of Faith; a success keeps it");
 }
 
+// The attack bonus a log line shows: "... d20 N + B vs AC ...".
+int logged_bonus(const CombatSession &c)
+{
+    const auto log = c.snapshot().log;
+    for (auto line = log.rbegin(); line != log.rend(); ++line)
+        if (const auto at = line->find(" + "); at != std::string::npos && line->find(" vs AC ") != std::string::npos)
+            return std::stoi(line->substr(at + 3));
+    throw std::runtime_error("No attack in the log");
+}
+
+void bless_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, paladin({"bless", "cure_wounds"}));
+    const auto before = unit(*c, 1);
+    check(submit(*c, "bless", 2), "Bless begins with a first creature");
+    auto targeting = c->snapshot().spell_targeting;
+    check(targeting && targeting->chosen == std::vector<EntityId> {2} && targeting->maximum == 3 &&
+          unit(*c, 1).action,
+          "Choosing a creature starts the choice and spends nothing");
+    for (const auto &command : c->legal_commands())
+        check(command.verb == "bless" || command.verb == "spell_cast" ||
+              command.verb == "spell_cancel",
+              "Only the choice is open while choosing");
+    const auto choosing = c->save();
+    check(module->restore(choosing)->save() == choosing, "The open choice survives a checkpoint");
+    check(submit(*c, "bless", 2) && c->snapshot().spell_targeting->chosen.empty(),
+          "Choosing a chosen creature again removes it");
+    check(submit(*c, "spell_cancel") && !c->snapshot().spell_targeting &&
+          unit(*c, 1).action && unit(*c, 1).persistent.resources == before.persistent.resources,
+          "Cancel spends nothing");
+
+    check(submit(*c, "bless", 1) && submit(*c, "bless", 2) && submit(*c, "bless", 99),
+          "Three creatures are chosen");
+    check(!c->snapshot().spell_targeting && !unit(*c, 1).action &&
+          logged(*c, "Paladin casts Bless."),
+          "The third creature casts the spell");
+
+    auto early = battle(*module, paladin({"bless", "cure_wounds"}));
+    check(submit(*early, "bless", 1) && submit(*early, "spell_cast"),
+          "Bless can be cast on fewer creatures");
+    // A blessed attack adds 1d4 to the roll.
+    auto plain = battle(*module, paladin({"cure_wounds", "heroism"}));
+    check(submit(*plain, "melee", 99), "An unblessed attack");
+    const int base = logged_bonus(*plain);
+    check(submit(*early, "end"), "End the casting turn");
+    while (early->snapshot().actor != 1)
+        check(submit(*early, "end"), "Back to the Paladin");
+    check(submit(*early, "melee", 99), "A blessed attack");
+    const int blessed = logged_bonus(*early);
+    check(blessed >= base + 1 && blessed <= base + 4, "Bless adds 1d4 to attack rolls");
+}
+
+// A Paladin with Bless prepared beside an ally, for tests/bless_view_tests.gd.
+// The game loads it with the standard rules content.
+void write_ui_fixture()
+{
+    auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
+    const auto profile =
+        module->character_profile(paladin({"bless", "cure_wounds"}).sheet(), std::vector<std::string> {"longsword"}).data;
+    const auto ally = module->character_profile(paladin({}).sheet(), {}).data;
+    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
+        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
+            {2, "campaign-character", "Ally", 0, {2, 1}, ally},
+            {99, "vanguard", "Enemy", 1, {6, 1}}
+        }},
+    2);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Paladin's turn");
+    const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "bless-fixtures";
+    std::filesystem::create_directories(path);
+    std::ofstream out(path / "paladin.save", std::ios::binary);
+    out << c->save();
+    check(bool(out), "Write the UI fixture");
+}
+
 void combat_end_checks()
 {
     auto module = rules();
@@ -178,8 +254,10 @@ int main()
         shield_of_faith_checks();
         heroism_checks();
         divine_favor_checks();
+        bless_checks();
         concentration_damage_checks();
         combat_end_checks();
+        write_ui_fixture();
         std::cout << "Paladin spell tests passed\n";
     }
     catch (const std::exception &e)

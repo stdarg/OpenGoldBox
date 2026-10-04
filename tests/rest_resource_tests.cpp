@@ -339,7 +339,7 @@ void persistence_and_advancement()
     members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
     auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
     const auto checkpoint = combat->save();
-    check(checkpoint.starts_with("OGCOMBAT 31 ") &&
+    check(checkpoint.starts_with("OGCOMBAT 32 ") &&
           rules->restore(checkpoint)->save() == checkpoint,
           "Combat checkpoint stores remaining dice exactly");
     auto copy = rules->restore(checkpoint);

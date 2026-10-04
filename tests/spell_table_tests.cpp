@@ -208,8 +208,8 @@ void table()
                            spell.pattern == SpellPattern::smite;
         check(saves || spell.save == Ability::strength, "Only save patterns carry a save ability");
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
-              spell.pattern == SpellPattern::repeat_attack,
-              "Only multi-instance patterns repeat");
+              spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff,
+              "Only multi-instance patterns repeat or choose several creatures");
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
                             spell.pattern == SpellPattern::save_condition ||
                             spell.pattern == SpellPattern::buff;
@@ -401,9 +401,10 @@ void behaviour()
         sheets.push_back(widest(*rules, probe));
     for (const auto &row : spell_table)
     {
-        // Smites are offered by the caster's own melee hit, not by range;
-        // opengold_smite_tests covers them.
-        if (row.pattern == SpellPattern::smite)
+        // Smites are offered by the caster's own melee hit, not by range, and a
+        // spell on several creatures begins a choice; their own tests cover them.
+        if (row.pattern == SpellPattern::smite ||
+                (row.pattern == SpellPattern::buff && row.instances > 1))
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

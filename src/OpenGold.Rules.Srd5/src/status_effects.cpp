@@ -268,6 +268,7 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 600000; // Concentration, up to 10 minutes
     case EffectKind::heroism:
     case EffectKind::divine_favor:
+    case EffectKind::bless:
         return 60000; // 1 minute
     default:
         return 0;
@@ -347,7 +348,11 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                     e.save_in_ms = round_ms;
                     if (!subject.dead)
                     {
-                        event.save = saving_throw(Ability::constitution, subject.saves[2], e.dc,
+                        // Bless adds 1d4 to the repeated save.
+                        const int bless = has_effect(subject.effects.get(), EffectKind::bless)
+                                          ? roll_die(rng, 4)
+                                          : 0;
+                        event.save = saving_throw(Ability::constitution, subject.saves[2] + bless, e.dc,
                                                   saving_modifiers(Ability::constitution,
                                                       subject.str_dex_disadvantage,
                                                       subject.dodge),

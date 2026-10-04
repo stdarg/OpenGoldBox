@@ -54,7 +54,8 @@ enum class Rider : unsigned
     blindness,
     shield_of_faith,
     heroism,
-    divine_favor
+    divine_favor,
+    bless
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -81,7 +82,7 @@ struct SpellDef
     DamageType damage{DamageType::fire};
     DamageDice dice{};           // {count, sides, bonus}
     bool add_casting_modifier{}; // heal: bonus becomes casting - 2
-    unsigned instances{1};       // darts / rays
+    unsigned instances{1};       // darts / rays; for a buff, the creatures it may affect
     Upcast upcast{};
     Rider rider{Rider::none};
     bool concentration{}; // a caster keeps one Concentration spell at a time
@@ -289,6 +290,18 @@ inline constexpr std::array spell_table
         .target = SpellTarget::ally,
         .range = 5,
         .rider = Rider::heroism,
+        .concentration = true},
+    // SRD 5.2.1 p. 113: up to three creatures, one more per slot level above 1.
+    SpellDef{
+        .id = "bless",
+        .label = "Bless",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::any_creature,
+        .range = 30,
+        .instances = 3,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::bless,
         .concentration = true},
     SpellDef{
         .id = "divine_favor",
