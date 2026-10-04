@@ -22,14 +22,14 @@ Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
 - Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 21`.
-- The internal training-combat checkpoint: `OGCOMBAT 28`.
+- The internal training-combat checkpoint: `OGCOMBAT 29`.
 - Records embedded by the SRD module: character profile recipe `PC42` (an
-  explicit spell ID list), vital state `SRD9`, effect state `FX8` and
+  explicit spell ID list), vital state `SRD10`, effect state `FX8` and
   concentration `CN1`.
 
 A save or checkpoint with an older format number, or one written under a
 different rules identity (module, version or content hash; currently
-`opengold.srd5` 0.6.65), is rejected with the localized message "This save was
+`opengold.srd5` 0.6.66), is rejected with the localized message "This save was
 made by an older pre-release version of OpenGoldBox and can't be loaded." A newer
 or unknown campaign number reports "Unsupported campaign save version". Nothing
 is migrated.
@@ -57,7 +57,7 @@ A campaign save stores:
   active/reserve membership, selected slot and character-pool candidate identities.
 - HP/death state, opaque rules-owned resources, XP, claimed reward IDs, recovery
   timers, campaign minutes/millisecond remainder and service RNG state.
-- Lasting effects in the rules-owned SRD9/FX8 state, including individual
+- Lasting effects in the rules-owned SRD10/FX8 state, including individual
   applications, source provenance, fixed DCs, remaining duration and recovery
   schedule. Encounter scope IDs distinguish reused monster IDs across fights.
 - A completed Short Rest's spending ticket, eligible members and completion time,

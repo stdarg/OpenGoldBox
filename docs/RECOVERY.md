@@ -162,8 +162,8 @@ campaign scheduling remains open; script treasure money follows [QUESTS.md](QUES
 
 `PartyState` native checkpoints retain XP, claimed reward IDs, HP/resources,
 purses, recovery timers, clock and RNG for rollback. [Campaign file save/load](SAVES.md) now persists this supported state at the party/idle-town boundaries, with fresh-process restart verification.
-The combat checkpoint format is `OGCOMBAT 28` and the rules module identity is
-`opengold.srd5` **0.6.65**. Older formats and other identities reject; see the
+The combat checkpoint format is `OGCOMBAT 29` and the rules module identity is
+`opengold.srd5` **0.6.66**. Older formats and other identities reject; see the
 [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
 
 From PowerShell:
@@ -192,4 +192,4 @@ sections 8.5, 12.3 and 12.4.2. Original dialogue, scripts and assets are loaded
 from the user's installation and are not distributed.
 
 Rules 0.6.15 also persists Orc Adrenaline Rush uses and pending Temporary HP
-replacement in the combat checkpoint and SRD9; see [Temporary HP](TEMPORARY-HP.md).
+replacement in the combat checkpoint and SRD10; see [Temporary HP](TEMPORARY-HP.md).

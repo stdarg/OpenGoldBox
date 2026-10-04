@@ -107,7 +107,7 @@ std::vector<std::string> gear = {"longsword"}, bool prone = false)
                 rules.character_profile(h.sheet(), gear).data,
                 prone ? std::optional<VitalState>{{
                         h.sheet().hit_points, false,
-                         "SRD9 2 0 0 0 0 0 3 0 0 0 \"\" 0 1 0 FX8 1 0 1"
+                         "SRD10 2 0 0 0 0 0 3 0 0 0 \"\" 0 1 0 0 FX8 1 0 1"
                     }
                 }
 : std::nullopt

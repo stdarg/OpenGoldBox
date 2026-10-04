@@ -70,8 +70,8 @@ snapshots and failed original events cannot partially advance recovery.
 
 ## Persistence
 
-In **OGCOMBAT 28**, each actor row stores the remaining death-save and
-Stable-recovery milliseconds after its Hit Dice count. **SRD9** vital
+In **OGCOMBAT 29**, each actor row stores the remaining death-save and
+Stable-recovery milliseconds after its Hit Dice count. **SRD10** vital
 continuation carries both clocks alongside existing pools, counters, Hit Dice
 and FX8 effects. **PC42** includes the fixed Dwarf resistance grant;
 see [typed damage](DAMAGE.md).
@@ -114,7 +114,7 @@ Scope review confirms C++20/RAII, borrowed synchronous views and unchanged UI
 controls/layout. The increment changed no save schemas and introduced no
 load-time recovery.
 
-The combat checkpoint stores sourced Temporary HP after the recovery clocks; SRD9
+The combat checkpoint stores sourced Temporary HP after the recovery clocks; SRD10
 carries both. Natural recovery and death-save healing retain the pool. See
 [Temporary HP](TEMPORARY-HP.md).
 

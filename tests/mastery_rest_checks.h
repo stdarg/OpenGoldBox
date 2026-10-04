@@ -223,7 +223,7 @@ void run()
     auto state = excluded.checkpoint();
     for (auto &m : state.roster)
         if (m.id == dead)
-            m.vitals = {0, true, "SRD9 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0", "Dead"};
+            m.vitals = {0, true, "SRD10 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 FX8 1 0 0", "Dead"};
     excluded.restore(state);
     check(bool(excluded.rest(RestKind::long_rest)) && !excluded.state().training_rest,
           "Unqualified/dead/reserve/pending-training members do not gain replacement windows");

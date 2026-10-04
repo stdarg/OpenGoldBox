@@ -261,7 +261,8 @@ void run()
             const auto end = saved.find('\n', start + 1);
             std::istringstream actor_fields(saved.substr(start + 1, end - start - 1));
             std::string field;
-            for (unsigned n = 0; n < 38; ++n)
+            // Skip the fields before Sneak Attack, through Lay On Hands.
+            for (unsigned n = 0; n < 39; ++n)
                 actor_fields >> std::quoted(field);
             bool sneak_used, aim_used, aim_ready, moved;
             actor_fields >> sneak_used >> aim_used >> aim_ready >> moved;
@@ -336,7 +337,7 @@ void run()
     check(critical_verified, "Actual critical Sneak hit exercised");
     // Unconscious adjacent allies are living but Incapacitated.
     {
-        const VitalState unconscious{0, false, "SRD9 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 FX8 1 0 1"};
+        const VitalState unconscious{0, false, "SRD10 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 0 FX8 1 0 1"};
         bool checked = false;
         for (unsigned seed = 1; seed <= 64 && !checked; ++seed)
         {

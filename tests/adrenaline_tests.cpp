@@ -251,7 +251,7 @@ void decisions()
     auto initial = battle(c);
     std::ofstream(directory / "adrenaline-initial.save", std::ios::binary) << initial->save();
     const auto data = unit(*combat).persistent;
-    check(data.resources.starts_with("SRD9 "), "Orc uses persist even with other-source HP");
+    check(data.resources.starts_with("SRD10 "), "Orc uses persist even with other-source HP");
     for (const auto remaining :
             {"-1", "3", "2147483648"
             })

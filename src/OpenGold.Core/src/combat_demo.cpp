@@ -675,18 +675,31 @@ Command choose_demo_command(const CombatSession &session)
         if (command.verb == "opportunity" ||
                 (command.verb == "second_wind" && active.hit_points * 2 <= active.max_hit_points))
             return command;
-    for (const auto &command : offered)
-        if (command.verb == "cure_wounds" || command.verb == "cure_wounds_2" ||
-                command.verb == "healing_word" || command.verb == "healing_word_2")
-        {
-            const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
-                                               [&](const auto & a)
+    // An ally below half Hit Points is healed, by Lay On Hands first because it
+    // costs no spell slot. Borrowed view into local offered commands.
+    const auto heal_below_half =
+        [&](std::initializer_list<std::string_view> verbs) -> const Command *
+    {
+        for (const auto &command : offered)
+            if (std::find(verbs.begin(), verbs.end(), command.verb) != verbs.end())
             {
-                return a.id == command.target;
-            });
-            if (target.hit_points * 2 < target.max_hit_points)
-                return command;
-        }
+                const auto &target =
+                    *std::find_if(state.combatants.begin(), state.combatants.end(),
+                                  [&](const auto & a)
+                {
+                    return a.id == command.target;
+                });
+                if (target.hit_points * 2 < target.max_hit_points)
+                    return &command;
+            }
+        return nullptr;
+    };
+    if (const auto *command = heal_below_half({"lay_on_hands"}))
+        return *command;
+    if (const auto *command = heal_below_half({"cure_wounds", "cure_wounds_2", "healing_word",
+                                                "healing_word_2"
+                                               }))
+        return *command;
     // A dying ally who is not healed is stabilized when no enemy is within reach.
     const bool threatened =
         std::any_of(state.combatants.begin(), state.combatants.end(), [&](const auto & a)

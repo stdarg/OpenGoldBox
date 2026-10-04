@@ -782,8 +782,8 @@ void stable_timeline()
 VitalState stable_blocked(unsigned deadline = 1000)
 {
     return {0, false,
-            "SRD9 2 0 0 0 0 1 2 0 " + std::to_string(deadline) +
-            " 0 \"\" 2 1 0 FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0"};
+            "SRD10 2 0 0 0 0 1 2 0 " + std::to_string(deadline) +
+            " 0 \"\" 2 1 0 0 FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0"};
 }
 
 void stable_continuation()
@@ -871,7 +871,7 @@ void stable_actual_cast()
                 0,
                 {2, 1},
                 {},
-                VitalState{0, false, "SRD9 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 FX8 1 0 0"}
+                VitalState{0, false, "SRD10 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 FX8 1 0 0"}
             },
             {99, "vanguard", "Enemy", 1, {6, 1}}
         }},

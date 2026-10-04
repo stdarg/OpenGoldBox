@@ -22,6 +22,14 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Paladin Lay On Hands
+
+Rules 0.6.66 adds Lay On Hands in combat for [#139](https://github.com/stdarg/OpenGold/issues/139):
+a five-per-level pool refilled by a Long Rest, a Bonus Action touch healing what
+an ally within 5 feet is missing. Vital state becomes `SRD10` and combat
+checkpoints `OGCOMBAT 29`. Out-of-combat use and curing Poisoned are pending.
+See [Paladin](PALADIN.md#lay-on-hands).
+
 ## Paladin spellcasting
 
 Rules 0.6.65 adds Paladin spellcasting through level four for

@@ -246,7 +246,7 @@
   "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands.",
   "+1 AC while wearing armor. Requires the Fighting Style feature.",
   "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.",
-  "Prepared spells and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nLay On Hands, Paladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable.",
+  "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nPaladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable.",
   "Great Weapon Fighting: eligible Melee weapon damage dice showing 1 or 2 count as 3 while held in two hands.",
   "Great Weapon Fighting",
   "Main hand",
@@ -277,5 +277,6 @@
   "Protector",
   "Training with Martial weapons and Heavy armor.",
   "Thaumaturge",
-  "One extra Cleric cantrip; add your Wisdom modifier (minimum +1) to Intelligence (Arcana or Religion) checks."
+  "One extra Cleric cantrip; add your Wisdom modifier (minimum +1) to Intelligence (Arcana or Religion) checks.",
+  "Lay On Hands"
 ]

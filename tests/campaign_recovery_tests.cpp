@@ -71,13 +71,13 @@ CampaignParty loaded(std::string_view bytes)
 
 VitalState unstable(unsigned delay = 6000)
 {
-    return {0, false, "SRD9 0 0 0 2 1 0 1 " + std::to_string(delay) + " 0 0 \"\" 0 1 0 FX8 1 0 0",
+    return {0, false, "SRD10 0 0 0 2 1 0 1 " + std::to_string(delay) + " 0 0 \"\" 0 1 0 0 FX8 1 0 0",
             "Second Wind uses: 0 / 2\nUnconscious; death saves 2 successes, 1 failures"};
 }
 
 VitalState stable(unsigned delay)
 {
-    return {0, false, "SRD9 0 0 0 0 0 1 1 0 " + std::to_string(delay) + " 0 \"\" 0 1 0 FX8 1 0 0",
+    return {0, false, "SRD10 0 0 0 0 0 1 1 0 " + std::to_string(delay) + " 0 \"\" 0 1 0 0 FX8 1 0 0",
             "Second Wind uses: 0 / 2\nStable, unconscious"};
 }
 
@@ -101,7 +101,7 @@ void golden_events()
     check(people[0].state == unstable() && rng == 17, "Zero elapsed time rolls nothing");
     rules->elapse(people, 1, rng);
     check(people[0].state->hit_points == 1 &&
-          people[0].state->resources == "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX8 1 0 0" &&
+          people[0].state->resources == "SRD10 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 FX8 1 0 0" &&
           rng == 11400714819323198502ULL,
           "Outside combat the remaining death saves resolve at once; a natural 20 restores one HP "
           "without replenishing spent pools");
@@ -109,14 +109,14 @@ void golden_events()
     // rolls two hours (2); entity 2 succeeds (18) and rolls four hours (4).
     // Entity 1 then succeeds on its Blinded save (13) at the six-second deadline.
     auto a = unstable();
-    a.resources = "SRD9 0 0 0 2 1 0 1 6000 0 0 \"\" 0 1 0 "
+    a.resources = "SRD10 0 0 0 2 1 0 1 6000 0 0 \"\" 0 1 0 0 "
                   "FX8 2 1 1 1 77 99 \"Caster\" 13 60000 6000 0";
     people = {patient(2, unstable()), patient(1, a)};
     rng = 34;
     rules->elapse(people, 6000, rng);
     check(
-        people[1].state->resources == "SRD9 0 0 0 0 0 1 1 0 7194000 0 \"\" 0 1 0 FX8 2 0 0" &&
-        people[0].state->resources == "SRD9 0 0 0 0 0 1 1 0 14394000 0 \"\" 0 1 0 FX8 1 0 0" &&
+        people[1].state->resources == "SRD10 0 0 0 0 0 1 1 0 7194000 0 \"\" 0 1 0 0 FX8 2 0 0" &&
+        people[0].state->resources == "SRD10 0 0 0 0 0 1 1 0 14394000 0 \"\" 0 1 0 0 FX8 1 0 0" &&
         rng == 1663341875487337611ULL,
         "Death saves resolve in entity order before simultaneous effect saves");
     rules->elapse(people, 7193999, rng);
@@ -126,13 +126,13 @@ void golden_events()
           rng == 1663341875487337611ULL,
           "Natural recovery adds no second duration roll");
     // Death suppresses an effect saving throw at the same instant; expiry does not roll.
-    a.resources = "SRD9 0 0 0 2 1 0 1 6000 0 0 \"\" 0 1 0 "
+    a.resources = "SRD10 0 0 0 2 1 0 1 6000 0 0 \"\" 0 1 0 0 "
                   "FX8 2 1 1 1 77 99 \"Caster\" 38 60000 6000 0";
     people = {patient(1, a)};
     rng = 29;
     rules->elapse(people, 60000, rng);
     check(people[0].state->dead &&
-          people[0].state->resources == "SRD9 0 0 0 2 3 0 1 0 0 0 \"\" 0 1 0 FX8 2 0 0" &&
+          people[0].state->resources == "SRD10 0 0 0 2 3 0 1 0 0 0 \"\" 0 1 0 0 FX8 2 0 0" &&
           rng == 11400714819323198514ULL,
           "A natural-one death ends mortality rolls and skips saves on lingering effects");
     people = {patient(1, stable(7200000))};
@@ -148,7 +148,7 @@ void partitions_and_rejection()
     std::vector<Participant> initial{patient(7, stable(7001)), patient(2, unstable(0)),
                                      patient(4, unstable(2111)), patient(1, stable(0))};
     initial[2].state->resources =
-        "SRD9 0 0 0 2 1 0 1 2111 0 0 \"\" 0 1 0 FX8 3 2 1 1 77 99 \"First\" 38 43123 1111 "
+        "SRD10 0 0 0 2 1 0 1 2111 0 0 \"\" 0 1 0 0 FX8 3 2 1 1 77 99 \"First\" 38 43123 1111 "
         "2 1 77 98 \"Second\" 18 57000 5111 0";
     for (std::uint64_t seed = 0; seed < 32; ++seed)
     {
@@ -225,7 +225,7 @@ void campaign_continuation()
     party.restore(state);
     state = party.checkpoint();
     state.roster[0].vitals.hit_points = 1;
-    state.roster[0].vitals.resources = "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX8 1 0 0";
+    state.roster[0].vitals.resources = "SRD10 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 FX8 1 0 0";
     state.roster[1].vitals = stable(1000);
     state.roster[2].vitals = stable(1000);
     party.restore(state);
@@ -240,7 +240,7 @@ void campaign_continuation()
             })
         check(!party.member(id).last_rest_minutes &&
               party.member(id).vitals.resources ==
-              "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 FX8 1 0 0",
+              "SRD10 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 FX8 1 0 0",
               "Natural recovery grants neither recharge, Hit Dice nor a rest completion timestamp");
     state = party.checkpoint();
     state.time_minutes = std::numeric_limits<std::uint64_t>::max();

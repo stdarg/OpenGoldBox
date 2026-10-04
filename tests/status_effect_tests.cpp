@@ -294,7 +294,7 @@ void combat()
           effect.active[0].source_actor == 1 && effect.active[0].dc == 13,
           "Application retains scoped source and original DC");
     check(target.conditions.size() == 1 &&
-          unit(*s, 1).persistent.resources.starts_with("SRD9 0 2 1 "),
+          unit(*s, 1).persistent.resources.starts_with("SRD10 0 2 1 "),
           "Status appears and exactly one second-level slot is spent");
     check(!offers(*s, "blindness") && !offers(*s, "magic_missile"),
           "Action and one-slot-per-turn limits enforced");
@@ -357,7 +357,7 @@ void combat()
     s = rules->create(e, 42);
     s->submit(command(*s, "blindness"));
     check(unit(*s, 2).conditions.empty() &&
-          unit(*s, 1).persistent.resources.starts_with("SRD9 0 2 1 "),
+          unit(*s, 1).persistent.resources.starts_with("SRD10 0 2 1 "),
           "Initial successful save prevents condition but spends slot");
     // Non-divisor actor counts must still telescope to exactly six seconds.
     e = encounter();

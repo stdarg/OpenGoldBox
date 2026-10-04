@@ -123,7 +123,7 @@ unsigned seed = 13, Cell target = {2, 1}, bool blind_target = false,
 bool blind_hero = false)
 {
     const auto profile = rules.character_profile(h.sheet(), gear);
-    const std::string effect = "SRD9 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 "
+    const std::string effect = "SRD10 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 "
                                "FX8 2 1 1 1 77 99 \"Source caster\" 38 60000 6000 0";
     Encounter e{{40, 8, std::vector<std::uint8_t>(320)},
         {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
@@ -327,7 +327,7 @@ void campaign()
     const auto id = party.add_pc(std::move(h));
     party.equip(id, sword);
     auto state = party.checkpoint();
-    state.roster[0].vitals = {5, false, "SRD9 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 FX8 1 0 0"};
+    state.roster[0].vitals = {5, false, "SRD10 1 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 FX8 1 0 0"};
     party.restore(state);
     const auto vitals = party.member(id).vitals;
     const auto saved = encode_campaign(party, nullptr, "heavy");

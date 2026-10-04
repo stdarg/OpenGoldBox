@@ -139,7 +139,7 @@ void creation()
         has(*c, "fire_bolt") && !has(*c, "magic_missile"),
         "An empty preparation no longer silently re-prepares Magic Missile; known cantrip stays available");
     c = battle(*rules, h.sheet(),
-               {s.hit_points, false, "SRD9 0 0 0 0 0 0 1 0 0 0 \"\" 2 0 1 FX8 1 0 0"});
+               {s.hit_points, false, "SRD10 0 0 0 0 0 0 1 0 0 0 \"\" 2 0 1 0 FX8 1 0 0"});
     check(has(*c, "fire_bolt") && !has(*c, "magic_missile"),
           "Book/prepared access never grants a free leveled cast when slots are empty");
     const auto before = unit(*c).persistent;
@@ -156,7 +156,7 @@ void progression()
     const int deficit = party.member(id).character.sheet().hit_points - 5;
     auto state = party.checkpoint();
     state.roster[0].vitals = {
-        5, false, "SRD9 0 1 0 0 0 0 1 0 0 7 \"spell:fixture\" 1 0 1 FX8 1 0 0"};
+        5, false, "SRD10 0 1 0 0 0 0 1 0 0 7 \"spell:fixture\" 1 0 1 0 FX8 1 0 0"};
     party.restore(state);
     for (unsigned level = 2; level <= 4; ++level)
     {

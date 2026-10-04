@@ -64,6 +64,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         {
             verb == "cunning_dash"        ? "Dash"
             : verb == "cunning_disengage" ? "Disengage"
+            : verb == "lay_on_hands"      ? "Lay On Hands"
             : "Steady Aim",
             {}
         },

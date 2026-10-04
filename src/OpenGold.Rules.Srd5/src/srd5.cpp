@@ -111,7 +111,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 28;
+constexpr unsigned checkpoint_format = 29;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -182,6 +182,7 @@ struct Definition
     int versatile_sides{};
     bool shield{}, other_weapon{};
     int hit_die{}, constitution{}, rushes{}, surges{}, arcane{};
+    int lay_on_hands{}; // Paladin healing pool: five times Paladin level
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -246,7 +247,7 @@ struct Actor : detail::LifeState
     Participant source;
     Definition definition;
     int initiative{}, movement{}, winds{}, slots{}, slots2{};
-    int hit_dice{}, rushes{}, surges{}, dashes{}, arcane{};
+    int hit_dice{}, rushes{}, surges{}, dashes{}, arcane{}, lay_on_hands{};
     bool rush_used{}, surge_used{};
     detail::ActionBudget actions;
     bool bonus{true}, reaction{true}, dodge{}, disengaged{};
@@ -289,7 +290,9 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"spell_slot:2", "Level-two spell slots", &Actor::slots2, &Definition::slots2,
         0, false},
     ResourceDescriptor{"arcane_recovery", "Arcane Recovery", &Actor::arcane, &Definition::arcane, 0,
-        false}};
+        false},
+    ResourceDescriptor{"lay_on_hands", "Lay On Hands", &Actor::lay_on_hands,
+        &Definition::lay_on_hands, 0, true}};
 
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
                                   const Definition &d)
@@ -487,6 +490,7 @@ character_definition(std::string_view bytes,
     d.melee = {0, 0, std::max(0, 1 + str)};
     d.champion = klass == "Fighter" && level >= 3;
     d.arcane = klass == "Wizard" ? 1 : 0;
+    d.lay_on_hands = klass == "Paladin" ? 5 * level : 0;
     d.medicine = ability_modifier(scores[4]);
     d.tactical_mind = klass == "Fighter" && level >= 2;
     d.cunning = klass == "Rogue" && level >= 2;
@@ -666,7 +670,7 @@ character_definition(std::string_view bytes,
 }
 
 // The only vital-state tag this module reads or writes; see profile_magic.
-constexpr std::string_view vitals_magic = "SRD9";
+constexpr std::string_view vitals_magic = "SRD10";
 
 void restore_vitals(Actor &a, const VitalState &state)
 {
@@ -678,6 +682,7 @@ void restore_vitals(Actor &a, const VitalState &state)
     a.rushes = a.definition.rushes;
     a.surges = a.definition.surges;
     a.arcane = a.definition.arcane;
+    a.lay_on_hands = a.definition.lay_on_hands;
     if (!state.resources.empty())
     {
         std::istringstream in(state.resources);
@@ -685,7 +690,7 @@ void restore_vitals(Actor &a, const VitalState &state)
         in >> magic >> a.winds >> a.slots >> a.slots2 >> a.successes >> a.failures >> a.stable >>
            a.hit_dice >> a.recovery.death_save_in_ms >> a.recovery.stable_recovery_in_ms >>
            a.temporary_hp.amount >> std::quoted(a.temporary_hp.source_id) >> a.rushes >>
-           a.surges >> a.arcane;
+           a.surges >> a.arcane >> a.lay_on_hands;
         if (!in || magic != vitals_magic)
             throw std::runtime_error("Invalid character resource state");
         detail::decode_stable_recovery(a.recovery);
@@ -699,7 +704,8 @@ void restore_vitals(Actor &a, const VitalState &state)
             a.slots < 0 || a.slots > d.slots || a.arcane < 0 || a.arcane > d.arcane || a.slots2 < 0 ||
             a.slots2 > d.slots2 || a.surges < 0 || a.surges > d.surges || a.rushes < 0 ||
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
-            a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4)
+            a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4 ||
+            a.lay_on_hands < 0 || a.lay_on_hands > d.lay_on_hands)
         throw std::runtime_error("Invalid character vitals");
     detail::validate_recovery(a);
     detail::validate_temporary_hp(a.temporary_hp);
@@ -714,7 +720,7 @@ VitalState vitals(const Actor &a)
         << a.successes << ' ' << a.failures << ' ' << a.stable << ' ' << a.hit_dice << ' '
         << a.recovery.death_save_in_ms << ' ' << detail::encode_stable_recovery(a.recovery) << ' '
         << a.temporary_hp.amount << ' ' << std::quoted(a.temporary_hp.source_id) << ' '
-        << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ';
+        << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ';
     detail::write_effects(out, a.effects);
     std::string description;
     if (a.definition.slots)
@@ -814,6 +820,7 @@ class Session final : public CombatSession
             a.rushes = d.rushes;
             a.surges = d.surges;
             a.arcane = d.arcane;
+            a.lay_on_hands = d.lay_on_hands;
             a.facing_left = a.source.facing_left;
             if (a.source.state)
                 restore_vitals(a, *a.source.state);
@@ -1095,7 +1102,7 @@ class Session final : public CombatSession
     void finish_reaction();
     int resolved_damage(const Actor &target, detail::DamageType type, int amount);
     void damage(Actor &target, int amount, bool critical = false);
-    void heal(Actor &target, int amount);
+    int heal(Actor &target, int amount); // Returns the Hit Points restored.
     void update_outcome();
     void wake_resting_participants();
     void resolve_death_saves_after_victory();
@@ -1625,6 +1632,8 @@ Snapshot Session::snapshot() const
             view.bonus_actions = {"cunning_dash", "cunning_disengage"};
         if (def(a).sneak_level >= 3)
             view.bonus_actions.push_back("steady_aim");
+        if (def(a).lay_on_hands)
+            view.bonus_actions.push_back("lay_on_hands");
         for (const auto &descriptor : resource_descriptors)
             if (descriptor.combat_view && def(a).*descriptor.capacity)
                 view.resources.push_back(resource_pool(descriptor, a, def(a)));
@@ -2093,6 +2102,14 @@ std::vector<Command> Session::legal_commands() const
         add(id, "aggressive", "Aggressive");
     if (a.bonus && a.winds > 0 && a.hp < d.hp)
         add(id, "second_wind", "Second Wind", id);
+    // Lay On Hands: touch yourself or an adjacent wounded ally whose healing
+    // can take effect, including one at 0 Hit Points.
+    if (a.bonus && a.lay_on_hands > 0)
+        for (const auto &other : actors_)
+            if (other.source.side == a.source.side && !other.dead &&
+                    other.hp < def(other).hp && !detail::healing_blocked(other.effects) &&
+                    distance(a.source.cell, other.source.cell) <= 5)
+                add(id, "lay_on_hands", "Lay On Hands", other.source.id);
     for (const auto &other : actors_)
         offer_spells(commands, a, other, distance(a.source.cell, other.source.cell),
                      detail::SpellTarget::wounded_ally, true);
@@ -2239,7 +2256,7 @@ void Session::damage(Actor &target, int amount, bool critical)
     clear_departed_overlaps();
 }
 
-void Session::heal(Actor &target, int amount)
+int Session::heal(Actor &target, int amount)
 {
     if (target.hp == 0 && shares_occupied_space(target))
         target.involuntary_overlap = true;
@@ -2253,6 +2270,7 @@ void Session::heal(Actor &target, int amount)
         "{name} recovers {hp} HP.",
         {{"name", target.source.name}, {"hp", std::to_string(restored)}}
     });
+    return restored;
 }
 
 detail::Mastery Session::weapon_mastery(const Actor &a, bool ranged) const
@@ -3122,6 +3140,19 @@ bool Session::submit(const Command &command)
         --a.winds;
         heal(a, roll(10) + d.level);
     }
+    else if (command.verb == "lay_on_hands")
+    {
+        // Restores what the target is missing, up to the pool; only the
+        // Hit Points actually restored are spent.
+        auto &target = actor(command.target);
+        a.bonus = false;
+        log(a.source.name + " uses Lay On Hands on " + target.source.name + ".",
+        {
+            "{name} uses Lay On Hands on {target}.",
+            {{"name", a.source.name}, {"target", target.source.name}}
+        });
+        a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, def(target).hp - target.hp));
+    }
     else if (const auto *bonus_spell = detail::find_spell(command.verb);
              bonus_spell && bonus_spell->bonus_action)
     {
@@ -3234,7 +3265,8 @@ std::string Session::save() const
             << detail::encode_stable_recovery(a.recovery) << ' ' << a.temporary_hp.amount << ' '
             << std::quoted(a.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
             << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' ' << a.dashes
-            << ' ' << a.arcane << ' ' << a.sneak_used << ' ' << a.aim_used << ' ' << a.aim_ready
+            << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.sneak_used << ' ' << a.aim_used
+            << ' ' << a.aim_ready
             << ' ' << a.moved << ' ' << a.selected_weapon << ' ' << a.light_origins.size();
         for (auto id : a.light_origins)
             out << ' ' << id;
@@ -3343,7 +3375,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.recovery.stable_recovery_in_ms >> actor.temporary_hp.amount >>
           std::quoted(actor.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
           actor.surges >> actor.surge_used >> actor.actions.surge >> actor.dashes >> actor.arcane >>
-          actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
+          actor.lay_on_hands >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
           actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
         throw std::runtime_error("Invalid Light attack count");
@@ -3401,7 +3433,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.winds < 0 || actor.winds > definition.winds || actor.slots < 0 ||
             actor.slots > definition.slots || actor.slots2 < 0 || actor.slots2 > definition.slots2 ||
             actor.hit_dice < 0 || actor.hit_dice > (definition.hit_die ? definition.level : 0) ||
-            actor.successes < 0 || actor.successes > 3 || actor.failures < 0 || actor.failures > 4)
+            actor.successes < 0 || actor.successes > 3 || actor.failures < 0 || actor.failures > 4 ||
+            actor.lay_on_hands < 0 || actor.lay_on_hands > definition.lay_on_hands)
         throw std::runtime_error("Invalid checkpoint actor state");
     detail::validate_recovery(actor);
     detail::validate_temporary_hp(actor.temporary_hp);
@@ -4218,7 +4251,7 @@ class Module final : public RulesModule
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief features, Hide and weapon mastery remain unavailable.";
         if (sheet.character_class == "Paladin")
             result.description =
-                "Prepared spells and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nLay On Hands, Paladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable.";
+                "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nPaladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable.";
         if (sheet.character_class == "Ranger")
             result.description =
                 "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
@@ -4618,7 +4651,7 @@ class Module final : public RulesModule
         {
             const std::string note =
                 next.character_class == "Paladin"
-                ? "Prepared spells and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nLay On Hands, Paladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable."
+                ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nPaladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable."
                 : "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
             next.class_modifiers += "\n" + note;
             next.class_messages.push_back({note, {}});
@@ -4650,6 +4683,7 @@ class Module final : public RulesModule
         actor.winds += actor.definition.winds - old.winds;
         actor.rushes += actor.definition.rushes - old.rushes;
         actor.surges += actor.definition.surges - old.surges;
+        actor.lay_on_hands += actor.definition.lay_on_hands - old.lay_on_hands;
         actor.hit_dice += actor.definition.level - old.level;
         auto continuation = vitals(actor);
         sheet = std::move(next);
@@ -4748,6 +4782,7 @@ class Module final : public RulesModule
         actor.rushes = d.rushes;
         actor.surges = d.surges;
         actor.arcane = d.arcane;
+        actor.lay_on_hands = d.lay_on_hands;
         state = vitals(actor);
     }
 
@@ -5554,7 +5589,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.65", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.66", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows;
     while (std::getline(lines, line))
     {

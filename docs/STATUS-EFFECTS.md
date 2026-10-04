@@ -82,11 +82,11 @@ are prepared in an owned candidate before replacing live campaign state.
 
 ## Persistence and boundaries
 
-- **OGCOMBAT 28** checkpoints contain source scope,
+- **OGCOMBAT 29** checkpoints contain source scope,
   elapsed time and each actor's effect collection. The checkpoint byte limit is
   4 MiB; each creature supports at most 128 simultaneous applications. A full
   collection offers no further Blindness command.
-- Rules-owned **SRD9** continuation embeds the structured **FX8** effect codec.
+- Rules-owned **SRD10** continuation embeds the structured **FX8** effect codec.
   Effect counters remain saved after expiration.
 - FX8 ends with a single Prone flag. The natural-sleep flag and sleeping
   combatants were removed by
@@ -100,7 +100,7 @@ are prepared in an owned candidate before replacing live campaign state.
   choices, separately from spent resources and timed effects.
 - They also store training choices and sources alongside effects, wounds and
   resources; see [training support](TRAINING.md).
-- SRD9 combines spent Hit Dice with the existing resources and FX8 effect state.
+- SRD10 combines spent Hit Dice with the existing resources and FX8 effect state.
   The combat checkpoint retains remaining dice through turns and campaign handoff.
   See [rest resources](REST-RESOURCES.md).
 - PCs and recruited NPCs carry effects through campaign handoff, reserve status,
@@ -143,13 +143,13 @@ Reference: [official SRD 5.2.1](https://media.dndbeyond.com/compendium-images/sr
 Blindness/Deafness p. 113, Blinded p. 177, combining spell effects p. 106.
 Existing content attribution in `data/rules/srd-5.2.1/NOTICE.md` applies.
 
-Recovery clocks in SRD9 and the combat checkpoint preserve death-save cadence and
+Recovery clocks in SRD10 and the combat checkpoint preserve death-save cadence and
 natural Stable recovery independently of FX8. The [campaign scheduler #195](https://github.com/stdarg/OpenGold/issues/195)
 merges those deadlines chronologically; entity order and mortality-before-effect
 ordering make time partitions deterministic, including death suppressing saves. See [recovery clock support](RECOVERY-CLOCKS.md).
 
 Rules 0.6.15 also persists Orc Adrenaline Rush uses and pending Temporary HP
-replacement in the combat checkpoint and SRD9; see [Temporary HP](TEMPORARY-HP.md).
+replacement in the combat checkpoint and SRD10; see [Temporary HP](TEMPORARY-HP.md).
 
 Rules 0.6.25 adds sourced Ray of Frost applications in FX2. These have no repeat
 save timer; shared effect and campaign schedulers advance their expiry deadlines
