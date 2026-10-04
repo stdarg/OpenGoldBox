@@ -39,6 +39,8 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
             String::num_uint64(group.count) + ")");
     rows->get_node<Label>("Pending")->set_text(tr(N_(
                 "Unfilled cantrip choices remain pending. More choices will become available as spell support expands.")));
+    // A Paladin prepares spells without learning cantrips.
+    rows->get_node<Label>("Count")->set_visible(group.count > 0);
     rows->get_node<Label>("Pending")->set_visible(picked.size() < group.count);
     for (int i = 0; i < rows->get_child_count(); ++i)
         if (auto *check = Object::cast_to<CheckBox>(rows->get_child(i)))

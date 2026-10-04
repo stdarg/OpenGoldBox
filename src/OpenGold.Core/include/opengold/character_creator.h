@@ -50,6 +50,7 @@ class CharacterCreator
     void select_adjustment(unsigned index);
     void training_choice(std::string_view group, std::string_view option, bool selected);
     void spell_choice(std::string_view group, std::string_view option, bool selected);
+    [[nodiscard]] bool has_spell_choices() const;
     [[nodiscard]] bool spell_choices_complete() const;
     void cantrip_choice(std::string_view option, bool selected);
     [[nodiscard]] bool training_complete() const;

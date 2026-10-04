@@ -1,5 +1,6 @@
 #include "combat_fixture.h"
 #include "opengold/campaign_save.h"
+#include "opengold/character_creator.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <cstdlib>
@@ -320,6 +321,7 @@ void invalid()
 
 #include "wizard_choices_checks.h"
 #include "cleric_choices_checks.h"
+#include "paladin_choices_checks.h"
 } // namespace
 
 int main()
@@ -332,6 +334,7 @@ int main()
         wizard_choices_checks();
         write_wizard_ui_fixture();
         cleric_choices_checks();
+        paladin_choices_checks();
         write_cleric_ui_fixture();
         std::cout << "Spell access tests passed\n";
         return 0;

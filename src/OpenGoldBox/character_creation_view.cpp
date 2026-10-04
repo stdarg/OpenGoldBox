@@ -541,7 +541,7 @@ void CharacterCreationView::refresh()
     for (unsigned i = 0; i < steps.size(); ++i)
     {
         if (i == static_cast<unsigned>(CreationStep::spell_choices) &&
-                creator_->rules().cantrip_options(d).options.empty())
+                !creator_->has_spell_choices())
             continue;
         progress +=
             (i == static_cast<unsigned>(step) ? "> " : "  ") + std::to_string(++ordinal) + ". " +
@@ -741,7 +741,9 @@ void CharacterCreationView::refresh()
             return i18n::text(source);
         });
         instructions =
-            d.spells && d.character_class == "cleric"
+            d.spells && d.character_class == "paladin"
+            ? N_("Choose prepared spells. Unfilled choices remain pending; Back preserves your choices.")
+            : d.spells && d.character_class == "cleric"
             ? N_("Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices.")
             : d.spells
             ? N_("Choose cantrips, spellbook entries and prepared spells. Back preserves your choices.")

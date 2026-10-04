@@ -114,9 +114,9 @@ class CreatorRules final : public CharacterRules
 
     SpellChoiceOptions spell_choice_options(const CharacterDraft &draft) const override
     {
-        if (draft.character_class == "cleric")
+        if (draft.character_class == "cleric" || draft.character_class == "paladin")
         {
-            // Clerics prepare from the class list; the selection never changes it.
+            // These classes prepare from the class list; the selection never changes it.
             auto base = draft;
             base.spells = SpellChoices{};
             return detail::spell_choice_options(evaluate(base, false),
@@ -475,12 +475,12 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
     s.grants.insert(s.grants.end(), spells.begin(), spells.end());
     if (d.character_class == "wizard")
         s.prepared_spells = {"magic_missile"};
-    if (d.spells && d.character_class == "cleric")
+    if (d.spells && (d.character_class == "cleric" || d.character_class == "paladin"))
         detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement, false);
     else if (d.spells)
     {
         if (d.character_class != "wizard")
-            throw std::runtime_error("Spell choices require a Wizard or Cleric");
+            throw std::runtime_error("Spell choices require a spellcasting class");
         std::erase_if(s.grants,
                       [](const auto & g)
         {

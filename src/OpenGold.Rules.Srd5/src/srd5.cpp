@@ -128,6 +128,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "blindness", 3},
     SpellAccessRow{"Cleric", "sacred_flame", 1},
     SpellAccessRow{"Cleric", "inflict_wounds", 1},
+    SpellAccessRow{"Paladin", "cure_wounds", 1},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -494,10 +495,13 @@ character_definition(std::string_view bytes,
     d.two_weapon_fighting = (features & 16) != 0;
     d.surges = klass == "Fighter" && level >= 2 ? 1 : 0;
     d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
-    d.slots = (klass == "Cleric" || klass == "Wizard") ? (level == 1 ? 2 : level == 2 ? 3 : 4) : 0;
+    d.slots = (klass == "Cleric" || klass == "Wizard") ? (level == 1 ? 2 : level == 2 ? 3 : 4)
+              : klass == "Paladin"                    ? (level <= 2 ? 2 : 3)
+              : 0;
     d.slots2 = (klass == "Cleric" || klass == "Wizard") && level >= 3 ? (level == 3 ? 2 : 3) : 0;
     d.casting = 2 + ability_modifier(scores[klass == "Cleric" ? 4
-                                            : (klass == "Warlock" || klass == "Sorcerer") ? 5
+                                            : (klass == "Warlock" || klass == "Sorcerer" ||
+                                               klass == "Paladin") ? 5
                                             : 3]);
     const auto allowed = allowed_spells(klass, level);
     const bool eligible = std::all_of(stored_spells.begin(), stored_spells.end(),
@@ -615,7 +619,7 @@ character_definition(std::string_view bytes,
         if (detail::is_mastery_grant(grant))
             d.masteries.push_back(grant.id.substr(8));
     std::vector<std::string> prepared;
-    if (klass == "Wizard" || klass == "Cleric")
+    if (detail::prepares_spells(klass))
         prepared = detail::spells_of_level(stored_spells, false);
     const auto access = detail::spell_access(grants, klass, level, prepared);
     // Compare as sets: the grants and the stored list must describe the same
@@ -629,7 +633,7 @@ character_definition(std::string_view bytes,
     if ((klass == "Sorcerer" || klass == "Warlock") &&
             !same_spells(detail::known_cantrip_ids(access), stored_spells))
         throw std::runtime_error("Character cantrip access disagrees with spell grants");
-    if ((klass == "Wizard" || klass == "Cleric") &&
+    if (detail::prepares_spells(klass) &&
             !same_spells(detail::casting_ids(access), stored_spells))
         throw std::runtime_error("Character casting access disagrees with spell grants");
     const auto features_only = detail::without_spell_grants(detail::without_training(grants));
@@ -4212,9 +4216,12 @@ class Module final : public RulesModule
         if (sheet.character_class == "Rogue" && result.level >= 3)
             result.description =
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief features, Hide and weapon mastery remain unavailable.";
-        if (sheet.character_class == "Paladin" || sheet.character_class == "Ranger")
+        if (sheet.character_class == "Paladin")
             result.description =
-                "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives, mastery and other class/subclass features remain unavailable.";
+                "Prepared spells and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nLay On Hands, Paladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable.";
+        if (sheet.character_class == "Ranger")
+            result.description =
+                "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
         if (result.level == 4)
             result.feats =
         {
@@ -4268,6 +4275,8 @@ class Module final : public RulesModule
                 "Gain proficiency in any three skills of your choice."
             }
         };
+        if (sheet.character_class == "Paladin")
+            result.spells = {{"cure_wounds", "Cure Wounds", "Action; touch; heals 2d8 + Charisma modifier."}};
         if (sheet.character_class == "Cleric")
             result.spells =
         {
@@ -4346,7 +4355,7 @@ class Module final : public RulesModule
                 choice.training[group.id] = {group.options.front().id};
         if (choice.spells.empty() && sheet.character_class == "Wizard")
             choice.spells = {"magic_missile"};
-        if (sheet.character_class == "Wizard" || sheet.character_class == "Cleric")
+        if (detail::prepares_spells(sheet.character_class))
         {
             auto next = sheet;
             next.level = options.level;
@@ -4555,7 +4564,7 @@ class Module final : public RulesModule
                                         SpellChoices{*choice.spell_learning, choice.spells, {}, {}},
                                         SpellChoiceContext::advancement);
         }
-        else if (sheet.character_class == "Wizard" || sheet.character_class == "Cleric")
+        else if (detail::prepares_spells(sheet.character_class))
             throw std::runtime_error("Independent spell learning choices are required");
         next.training = detail::training_profile(
                             next.grants, detail::grant_source_id(next.character_class),
@@ -4608,7 +4617,9 @@ class Module final : public RulesModule
         if (next.character_class == "Paladin" || next.character_class == "Ranger")
         {
             const std::string note =
-                "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives, mastery and other class/subclass features remain unavailable.";
+                next.character_class == "Paladin"
+                ? "Prepared spells and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nLay On Hands, Paladin's Smite, Channel Divinity and the Oath of Devotion remain unavailable."
+                : "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
             next.class_modifiers += "\n" + note;
             next.class_messages.push_back({note, {}});
         }
@@ -5086,7 +5097,7 @@ class Module final : public RulesModule
                 throw std::runtime_error("Ability totals disagree with acquired choices");
         }
         auto spells =
-            sheet.character_class == "Wizard" || sheet.character_class == "Cleric"
+            detail::prepares_spells(sheet.character_class)
             ? detail::casting_ids(access)
             : detail::known_cantrip_ids(access);
         std::set<std::string> selected;
@@ -5453,6 +5464,19 @@ class Module final : public RulesModule
                     {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
                 }});
         }
+        if (sheet.character_class == "Paladin")
+        {
+            result.spell_modifiers +=
+                "\nPaladin spellcasting: Charisma score " + std::to_string(sheet.scores[5]) +
+                "; pending prepared spells: " +
+                std::to_string(access.prepared_choices - access.prepared.size()) + ".";
+            result.spell_messages.push_back(
+            {
+                "Paladin spellcasting: Charisma score {score}; pending prepared spells: {prepared}.",
+                {   {"score", std::to_string(sheet.scores[5])},
+                    {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
+                }});
+        }
         if (sheet.character_class == "Wizard")
         {
             for (const auto &spell : access.spellbook)
@@ -5530,7 +5554,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.64", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.65", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows;
     while (std::getline(lines, line))
     {

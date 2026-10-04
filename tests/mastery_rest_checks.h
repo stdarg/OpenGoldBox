@@ -88,6 +88,9 @@ void run()
                   "Short Rest never permits replacement");
             party.finish_short_rest(*short_rest->spending);
             check(bool(party.rest(RestKind::long_rest)), "Real Long Rest completes");
+            // A Paladin's prepared-spell choice comes first; keeping it leaves the mastery choice.
+            if (party.state().spell_rest)
+                party.keep_rest_spells(id);
             check(party.state().training_rest &&
                   party.state().training_rest->members == std::vector<MemberId> {id},
                   "Only qualified completed rest grants one per-member replacement");
@@ -168,6 +171,8 @@ void run()
             party.advance_time(24 * 60);
             check(bool(party.rest(RestKind::long_rest)),
                   "Next qualified rest can offer a new choice");
+            if (party.state().spell_rest)
+                party.keep_rest_spells(id);
             const auto keep_before = party.member(id).character.sheet().grants;
             party.keep_rest_training(party.state().training_rest->ticket, id);
             check(party.member(id).character.sheet().grants == keep_before &&

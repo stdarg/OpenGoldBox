@@ -124,7 +124,7 @@ func all_class_skill_controls() -> void:
 		await complete_mastery(klass)
 		require(not current_scene.get_node("Next").disabled, "Every class can finish all supported Training choices: " + klass)
 		await press("Next")
-		require(current_scene.get_node("PageTitle").text == ("Spell Choices" if klass in ["Cleric", "Sorcerer", "Warlock", "Wizard"] else "Name"), "Completed Training reaches the next creation step: " + klass)
+		require(current_scene.get_node("PageTitle").text == ("Spell Choices" if klass in ["Cleric", "Paladin", "Sorcerer", "Warlock", "Wizard"] else "Name"), "Completed Training reaches the next creation step: " + klass)
 		await press("Back")
 		if klass in ["Bard", "Monk", "Druid", "Wizard", "Barbarian", "Fighter", "Paladin", "Ranger", "Rogue"]:
 			for locale in locales:

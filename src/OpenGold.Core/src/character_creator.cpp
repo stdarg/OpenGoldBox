@@ -210,6 +210,13 @@ void CharacterCreator::spell_choice(std::string_view group, std::string_view opt
     draft_ = std::move(next);
 }
 
+// The Spell Choices step appears for cantrips or for spells to prepare.
+bool CharacterCreator::has_spell_choices() const
+{
+    return !rules_->cantrip_options(draft_).options.empty() ||
+           rules_->spell_choice_options(draft_).may_prepare;
+}
+
 bool CharacterCreator::spell_choices_complete() const
 {
     const auto options = rules_->spell_choice_options(draft_);
@@ -423,7 +430,7 @@ void CharacterCreator::next()
                                  rules_->class_requirements(draft_.character_class).description +
                                  ".");
     step_ = static_cast<CreationStep>(static_cast<unsigned>(step_) + 1);
-    if (step_ == CreationStep::spell_choices && rules_->cantrip_options(draft_).options.empty())
+    if (step_ == CreationStep::spell_choices && !has_spell_choices())
         step_ = CreationStep::name;
     if (step_ == CreationStep::spell_choices && !draft_.spells &&
             rules_->spell_choice_options(draft_).may_prepare)
@@ -434,7 +441,7 @@ void CharacterCreator::back()
 {
     if (step_ != CreationStep::race)
         step_ = static_cast<CreationStep>(static_cast<unsigned>(step_) - 1);
-    if (step_ == CreationStep::spell_choices && rules_->cantrip_options(draft_).options.empty())
+    if (step_ == CreationStep::spell_choices && !has_spell_choices())
         step_ = CreationStep::training;
 }
 } // namespace opengold

@@ -22,6 +22,14 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Paladin spellcasting
+
+Rules 0.6.65 adds Paladin spellcasting through level four for
+[#138](https://github.com/stdarg/OpenGold/issues/138): Charisma, slots 2/2/3/3,
+prepared spells 2/3/4/5 from the Paladin list, one replacement per Long Rest.
+Cleric and Paladin now share one class-list caster table. The Paladin list
+holds only implemented spells (Cure Wounds). See [Paladin](PALADIN.md).
+
 ## Cleric preparation and Divine Order
 
 Rules 0.6.63 delivers [#91](https://github.com/stdarg/OpenGold/issues/91) through

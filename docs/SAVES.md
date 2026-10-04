@@ -29,7 +29,7 @@ every field:
 
 A save or checkpoint with an older format number, or one written under a
 different rules identity (module, version or content hash; currently
-`opengold.srd5` 0.6.64), is rejected with the localized message "This save was
+`opengold.srd5` 0.6.65), is rejected with the localized message "This save was
 made by an older pre-release version of OpenGoldBox and can't be loaded." A newer
 or unknown campaign number reports "Unsupported campaign save version". Nothing
 is migrated.
