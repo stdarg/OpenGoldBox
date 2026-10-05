@@ -43,7 +43,7 @@ enum class SpellTarget : unsigned
     wounded_ally, // same side, below maximum hit points
     ally,         // same side, including the caster
     self,         // the caster only
-    area          // a square of `area` feet aimed within range (CLASS-5)
+    area          // an area aimed at a point within range (CLASS-5)
 };
 
 // A lasting effect applied by the spell; each maps to one apply_* function.
@@ -62,13 +62,15 @@ enum class Rider : unsigned
     command,
     hunters_mark,
     longstrider,
-    entangle
+    entangle,
+    fog_cloud
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
 struct Upcast
 {
     unsigned extra_dice{}, extra_instances{};
+    int extra_radius{}; // feet, for a sphere `area` spell
 };
 
 struct SpellDef
@@ -94,6 +96,7 @@ struct SpellDef
     Rider rider{Rider::none};
     bool concentration{}; // a caster keeps one Concentration spell at a time
     int area{};           // side of an `area` spell's square, feet
+    int radius{};         // or the radius of its sphere, feet
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -309,6 +312,19 @@ inline constexpr std::array spell_table
         .rider = Rider::entangle,
         .concentration = true,
         .area = 20},
+    // SRD 5.2.1 p. 133: a 20-foot-radius sphere, Heavily Obscured; 20 feet
+    // more radius per slot level above 1.
+    SpellDef{
+        .id = "fog_cloud",
+        .label = "Fog Cloud",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 120,
+        .upcast = {.extra_radius = 20},
+        .rider = Rider::fog_cloud,
+        .concentration = true,
+        .radius = 20},
     // SRD 5.2.1 pp. 162, 140 and 125. Benefits that need no roll.
     SpellDef{
         .id = "shield_of_faith",

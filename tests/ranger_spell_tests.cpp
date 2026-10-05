@@ -491,6 +491,30 @@ void entangle_checks()
           "Losing Concentration removes the plants");
 }
 
+void fog_cloud_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, ranger({"cure_wounds", "fog_cloud"}));
+    const auto clear = c->save();
+    check(submit(*c, "hunters_mark_free", 99), "In clear air the Ranger can mark the target");
+    c = module->restore(clear);
+    check(submit(*c, "fog_cloud") && submit_cell(*c, "area_move", Cell{6, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "Ranger casts Fog Cloud.") && slots(*c) == 1,
+          "Fog Cloud is aimed and cast");
+    const auto obscured = c->snapshot().obscured;
+    const auto inside = [&](Cell cell)
+    {
+        return std::find(obscured.begin(), obscured.end(), cell) != obscured.end();
+    };
+    check(inside(Cell{2, 2}) && inside(Cell{6, 2}) && !inside(Cell{1, 1}),
+          "A 20-foot-radius sphere of squares is Heavily Obscured");
+    check(!submit(*c, "hunters_mark_free", 99), "Spells that need sight cannot reach into the fog");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "The fog survives a checkpoint");
+    next_turn(*c);
+    check(submit(*c, "melee", 99) && !logged(*c, "(advantage)") && !logged(*c, "(disadvantage)"),
+          "Neither side sees the other: Advantage and Disadvantage cancel");
+}
 } // namespace
 
 int main()
@@ -509,6 +533,7 @@ int main()
         ranged_smite_window_checks();
         entangle_aiming_checks();
         entangle_checks();
+        fog_cloud_checks();
         write_ui_fixture();
         write_entangle_fixture();
         std::cout << "Ranger spell tests passed\n";

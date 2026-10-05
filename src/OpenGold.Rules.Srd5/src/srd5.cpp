@@ -166,7 +166,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 35;
+constexpr unsigned checkpoint_format = 36;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -201,6 +201,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Ranger", "goodberry", 1},
     SpellAccessRow{"Ranger", "ensnaring_strike", 1},
     SpellAccessRow{"Ranger", "entangle", 1},
+    SpellAccessRow{"Ranger", "fog_cloud", 1},
     // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
     SpellAccessRow{"Ranger", "poison_spray", 2},
     SpellAccessRow{"Paladin", "sacred_flame", 2},
@@ -1059,11 +1060,17 @@ class Session final : public CombatSession
         Cell center;
     };
     std::optional<PendingArea> area_;
-    // Entangle's Difficult Terrain, which lasts as long as its caster's
-    // Concentration.
+    // A spell's lasting area, which lasts as long as its caster's Concentration:
+    // Entangle's plants are Difficult Terrain, Fog Cloud is Heavily Obscured.
+    enum class ZoneKind : unsigned
+    {
+        plants,
+        fog
+    };
     struct Zone
     {
         EntityId caster{};
+        ZoneKind kind{};
         std::vector<Cell> cells;
     };
     std::vector<Zone> zones_;
@@ -1180,10 +1187,11 @@ class Session final : public CombatSession
         return detail::has_line_of_sight(board_, a, b);
     }
 
+    // Heavily Obscured squares block sight into and out of them.
     bool can_see(const Actor &a, const Actor &b) const
     {
-        return conscious(a) && !detail::blinded(a.effects) &&
-               line_of_sight(a.source.cell, b.source.cell);
+        return conscious(a) && !detail::blinded(a.effects) && !obscured(a.source.cell) &&
+               !obscured(b.source.cell) && line_of_sight(a.source.cell, b.source.cell);
     }
 
     bool enemy_in_sight(const Actor &a) const
@@ -1232,7 +1240,10 @@ class Session final : public CombatSession
     [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
     void reveal_lore(const Actor &caster, const Actor &target);
     void resolve_ensnaring_strike(Actor &a);
-    [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell, Cell center) const;
+    // `verb` names the spell's "_2" form, which a sphere grows with.
+    [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell,
+            std::string_view verb, Cell center) const;
+    [[nodiscard]] bool obscured(Cell cell) const;
     [[nodiscard]] Cell default_area_center(const Actor &caster, const detail::SpellDef &spell) const;
     void aim_area(const Command &command);
     void cast_area();
@@ -1612,10 +1623,20 @@ Battlefield Session::zoned_board() const
     // Entangle's plants make their open squares Difficult Terrain.
     auto board = board_;
     for (const auto &zone : zones_)
-        for (const auto cell : zone.cells)
-            if (board.at(cell) == 0)
-                board.terrain[std::size_t(cell.y * board.width + cell.x)] = 2;
+        if (zone.kind == ZoneKind::plants)
+            for (const auto cell : zone.cells)
+                if (board.at(cell) == 0)
+                    board.terrain[std::size_t(cell.y * board.width + cell.x)] = 2;
     return board;
+}
+
+bool Session::obscured(Cell cell) const
+{
+    return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::fog &&
+               std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
+    });
 }
 
 detail::MovementGrid Session::movement_grid(const Actor &mover) const
@@ -1653,6 +1674,9 @@ Snapshot Session::snapshot() const
               : actors_[turn_].source.id;
     s.reaction_pending = !champion_move_ && pending() != 0;
     s.battlefield = zoned_board();
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::fog)
+            s.obscured.insert(s.obscured.end(), zone.cells.begin(), zone.cells.end());
     s.log = log_;
     s.log_messages = log_messages_;
     if (!initiative_choices_.empty())
@@ -1683,7 +1707,8 @@ Snapshot Session::snapshot() const
     {
         s.actor = area_->caster;
         s.area_targeting = AreaTargeting{area_->caster, area_->verb, area_->center,
-                                         area_cells(*detail::find_spell(area_->verb), area_->center)};
+                                         area_cells(*detail::find_spell(area_->verb), area_->verb,
+                                                    area_->center)};
     }
     if (!champion_move_ && effect_waiting())
     {
@@ -1962,7 +1987,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     switch (spell.rider)
     {
     case detail::Rider::none:
-        return;
+    case detail::Rider::entangle:
+    case detail::Rider::fog_cloud:
+        return; // Area spells resolve through cast_area().
     case detail::Rider::chill_touch:
     {
         const unsigned slot = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
@@ -2783,11 +2810,22 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
                                     8 + def(a).casting);
 }
 
-std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, Cell center) const
+std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, std::string_view verb,
+                                     Cell center) const
 {
+    std::vector<Cell> cells;
+    // A sphere: every square within its radius of the aimed one.
+    if (spell.radius)
+    {
+        const int radius = spell.radius + (verb.ends_with("_2") ? spell.upcast.extra_radius : 0);
+        for (int y = 0; y < board_.height; ++y)
+            for (int x = 0; x < board_.width; ++x)
+                if (distance(center, Cell{x, y}) <= radius)
+                    cells.push_back({x, y});
+        return cells;
+    }
     // A square of `area` feet around the aimed cell, clipped to the board.
     const int side = spell.area / 5, first = (side - 1) / 2;
-    std::vector<Cell> cells;
     for (int y = center.y - first; y < center.y - first + side; ++y)
         for (int x = center.x - first; x < center.x - first + side; ++x)
             if (board_.contains(Cell{x, y}))
@@ -2837,10 +2875,13 @@ void Session::cast_area()
     a.spent_slot = true;
     log(a.source.name + " casts " + std::string(spell.label) + ".",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
-    const auto cells = area_cells(spell, aimed.center);
+    const auto cells = area_cells(spell, aimed.verb, aimed.center);
     if (spell.concentration)
         begin_concentration(a, spell);
-    zones_.push_back({a.source.id, cells});
+    const bool fog = spell.rider == detail::Rider::fog_cloud;
+    zones_.push_back({a.source.id, fog ? ZoneKind::fog : ZoneKind::plants, cells});
+    if (fog)
+        return;
     const int dc = 8 + def(a).casting;
     for (auto &other : actors_)
     {
@@ -3096,9 +3137,11 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
                     distance(a.source.cell, other.source.cell) <= 5 && can_see(other, a))
                 disadvantaged = true;
     }
-    auto result =
-        detail::attack_modifiers(detail::blinded(a.effects), detail::blinded(target.effects),
-                                 target.dodge, disadvantaged || a.effects.prone);
+    // Fog hides either creature from the other, as Blinded would.
+    const bool fogged = obscured(a.source.cell) || obscured(target.source.cell);
+    auto result = detail::attack_modifiers(detail::blinded(a.effects) || fogged,
+                                           detail::blinded(target.effects) || fogged,
+                                           target.dodge, disadvantaged || a.effects.prone);
     // At zero HP the creature is Unconscious and Prone (SRD pp.187,191).
     // At longer range their opposing attack modifiers cancel, not stack.
     const bool pack_tactics = !spell && d.pack_tactics && ally_beside(a, target);
@@ -4416,7 +4459,7 @@ std::string Session::save() const
     out << '\n' << zones_.size();
     for (const auto &zone : zones_)
     {
-        out << ' ' << zone.caster << ' ' << zone.cells.size();
+        out << ' ' << zone.caster << ' ' << unsigned(zone.kind) << ' ' << zone.cells.size();
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
     }
@@ -5177,9 +5220,12 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     {
         Zone zone;
         std::size_t cells{};
-        input >> zone.caster >> cells;
-        if (!input || !known_actor(zone.caster) || !cells || cells > 64)
+        unsigned kind{};
+        input >> zone.caster >> kind >> cells;
+        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::fog) || !cells ||
+                cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
+        zone.kind = static_cast<ZoneKind>(kind);
         for (std::size_t c = 0; c < cells; ++c)
         {
             Cell cell;
@@ -6925,7 +6971,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.80", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.81", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

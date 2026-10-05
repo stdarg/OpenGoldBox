@@ -22,9 +22,9 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   creation (Spell Choices step), added at each level-up with earlier choices
   locked, and after a Long Rest one prepared spell may be replaced, as for a
   Paladin.
-- The Ranger list in the game holds Cure Wounds, Ensnaring Strike, Entangle,
-  Goodberry, Hunter's Mark and Longstrider so far. Fog Cloud comes next; Detect
-  Magic waits for magic items.
+- The Ranger list in the game holds Cure Wounds, Ensnaring Strike, Entangle, Fog
+  Cloud, Goodberry, Hunter's Mark and Longstrider: every CRPG-relevant level-one
+  Ranger spell except Detect Magic, which waits for magic items.
 
 ## Favored Enemy and Hunter's Mark
 
@@ -71,7 +71,7 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   Immunities, Resistances and Vulnerabilities (or that it has none).
 - Not yet: replacing the Hunter's Prey option after a Short or Long Rest; the
   rest window replaces only Weapon Mastery so far.
-- Combat checkpoints become `OGCOMBAT 35` (each actor's once-per-turn Hunter's
+- Combat checkpoints became `OGCOMBAT 33` (each actor's once-per-turn Hunter's
   Prey state and Horde Breaker's first target).
 - Verification: `opengold_ranger_spell_tests` (the level-three choice and an
   unknown option refused, Colossus Slayer against unwounded and wounded
@@ -96,7 +96,7 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   Disadvantage.
 - The smite window now opens on any weapon hit on the caster's own turn and
   records whether it was a Melee hit; Divine and Searing Smite still need one.
-  Combat checkpoints become `OGCOMBAT 35`.
+  Combat checkpoints became `OGCOMBAT 34`.
 - A level-two slot's extra die waits for Rangers of level five.
 - Verification: `opengold_ranger_spell_tests` (offered only after a hit, slot
   and Bonus Action, Restrained, checkpoint, turn damage and Speed 0,
@@ -119,12 +119,25 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   Restrained creature may use **Escape the vines** (an Athletics check) to free
   itself; the spell goes on for the others. The plants vanish when the caster's
   Concentration ends.
-- Combat checkpoints become `OGCOMBAT 35` (the open aim and spell zones).
+- Combat checkpoints became `OGCOMBAT 35` (the open aim and spell zones).
 - Verification: `opengold_ranger_spell_tests` (one aimed offer, the preview,
   moving and cancelling, a checkpoint, casting, the caster spared, Difficult
   Terrain, Concentration ending the plants) and `opengold_godot_entangle`
   (Space, arrows and Escape; left click to aim and right click to cast; English
   and Spanish).
+
+## Fog Cloud
+
+- **Fog Cloud** (Action, 120 feet, Concentration up to 1 hour), aimed like
+  Entangle: a 20-foot-radius sphere of squares, 20 feet more from a level-two
+  slot, is Heavily Obscured and drawn grey on the map. Sight into and out of it
+  is blocked: spells that need sight (such as Hunter's Mark) and Opportunity
+  Attacks cannot cross it, and an attack into, out of or within the fog is made
+  as if neither creature could see the other, so Advantage and Disadvantage
+  cancel. The fog ends with the caster's Concentration. Combat checkpoints
+  become `OGCOMBAT 36`.
+- Verification: `opengold_ranger_spell_tests` (aiming and casting, the sphere,
+  sight blocked, cancelling modifiers, a checkpoint).
 
 ## Goodberry
 
