@@ -40,7 +40,8 @@ void blessed_warrior_checks()
     const auto options = rules->spell_choice_options(next, SpellChoiceContext::advancement);
     check(options.learning.size() == 1 && options.learning.front().id == "cantrips:2" &&
           options.learning.front().count == 2 &&
-          option_ids(options.learning.front().options) == std::vector<std::string> {"sacred_flame"},
+          option_ids(options.learning.front().options) ==
+          std::vector<std::string> {"sacred_flame", "spare_the_dying"},
           "Blessed Warrior learns two Cleric cantrips at level two");
     auto defense = choice;
     defense.fighting_style = "defense";
@@ -58,13 +59,13 @@ void blessed_warrior_checks()
     });
     check(saved(party) == before, "Blessed Warrior learns only Cleric cantrips");
 
-    (*choice.spell_learning)["cantrips:2"] = {"sacred_flame"};
+    (*choice.spell_learning)["cantrips:2"] = {"sacred_flame", "spare_the_dying"};
     party.advance(id, choice);
     const auto &warrior = party.member(id).character.sheet();
     const auto access = rules->spell_access(warrior);
-    check(access.cantrip_choices == 2 && access.cantrips.size() == 1 &&
+    check(access.cantrip_choices == 2 && access.cantrips.size() == 2 &&
           access.cantrips.front().id == "sacred_flame",
-          "The Paladin knows Sacred Flame, with one cantrip choice pending");
+          "The Paladin knows Sacred Flame and Spare the Dying");
     const auto profile = rules->character_profile(warrior, {}).data;
     auto fight = rules->create({{8, 4, std::vector<std::uint8_t>(32)},
         {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},

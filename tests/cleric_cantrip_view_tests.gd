@@ -105,7 +105,10 @@ func run_checks() -> void:
 	sacred.grab_focus()
 	await keyboard(KEY_SPACE)
 	require(sacred.button_pressed and sacred.has_focus(), "Keyboard chooses Sacred Flame and retains focus")
-	require(current_scene.get_node("SpellChoices/Rows/Count").text == "Cleric cantrips (1 / 3)", "Correct Cleric SRD entitlement and source label")
+	var spare: CheckBox = current_scene.get_node("SpellChoices/Rows/spare_the_dying")
+	spare.set_pressed(true)
+	await settle()
+	require(current_scene.get_node("SpellChoices/Rows/Count").text == "Cleric cantrips (2 / 3)", "Correct Cleric SRD entitlement and source label")
 	require(current_scene.get_node("SpellChoices/Rows/Pending").visible, "Unavailable cantrips stay pending")
 	var prepared := "SpellChoices/Rows/BookChoices/prepared/"
 	require(current_scene.get_node(prepared + "Count").text == "Prepared spells (0 / 4)", "Four prepared spells")
@@ -120,7 +123,7 @@ func run_checks() -> void:
 	await press("Back")
 	await press("Next")
 	require(sacred.text == "Llama sagrada" and sacred.button_pressed, "Translated choice preserves selection")
-	require(current_scene.get_node("SpellChoices/Rows/Count").text == "Trucos de Clérigo (1 / 3)", "Translated Cleric entitlement label")
+	require(current_scene.get_node("SpellChoices/Rows/Count").text == "Trucos de Clérigo (2 / 3)", "Translated Cleric entitlement label")
 	await capture("cleric-cantrip-choices-es-1120")
 	TranslationServer.set_locale("en")
 	await press("Back")
@@ -150,6 +153,8 @@ func run_checks() -> void:
 	require(sacred.visible and not sacred.button_pressed and not current_scene.get_node("SpellChoices/Rows/fire_bolt").visible, "Class changes clear invalid choices without silently restoring them")
 	sacred.set_pressed(true)
 	await settle()
+	spare.set_pressed(true)
+	await settle()
 	for spell in ["cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"]:
 		current_scene.get_node(prepared + spell).set_pressed(true)
 		await settle()
@@ -161,7 +166,7 @@ func run_checks() -> void:
 	await press("Next")
 	await press("Modifiers")
 	var sheet: String = current_scene.get_node("ModifiersModal/Text").text
-	require(sheet.contains("Sacred Flame") and sheet.contains("Pending Cleric choices: 3 cantrips, 0 prepared spells."), "Created character sheet shows choices and remaining entitlement")
+	require(sheet.contains("Sacred Flame") and sheet.contains("Pending Cleric choices: 2 cantrips, 0 prepared spells."), "Created character sheet shows choices and remaining entitlement")
 	require(current_scene.get_node("Description").get_parsed_text().contains("Cleric class"), "Created sheet shows the class skill source")
 	print("Cleric cantrip creator checks passed")
 	quit(0)

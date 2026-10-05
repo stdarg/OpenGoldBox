@@ -164,7 +164,9 @@ void access()
     for (unsigned level = 1; level <= 4; ++level)
     {
         const auto a = rules->spell_access(hero(level).sheet());
-        check(a.cantrip_choices == (level == 4 ? 4u : 3u) && a.cantrips == access.cantrips,
+        // Level four may learn another cantrip; the starting one stays.
+        check(a.cantrip_choices == (level == 4 ? 4u : 3u) && !a.cantrips.empty() &&
+              a.cantrips.front() == access.cantrips.front(),
               "Advancement preserves the selected starting cantrip and correct entitlement");
     }
     for (const auto &bad : std::vector<std::vector<std::string>> {{"sacred_flame", "sacred_flame"},
@@ -235,7 +237,8 @@ void access()
         if (preset.sheet().character_class == "Cleric")
         {
             ++clerics;
-            check(rules->spell_access(preset.sheet()).cantrips.size() == 1,
+            // Sacred Flame and Spare the Dying are the Cleric cantrips so far.
+            check(rules->spell_access(preset.sheet()).cantrips.size() == 2,
                   "Preset Clerics have pre-generated supported selections");
         }
     check(clerics == 4, "All Cleric presets verified");

@@ -78,6 +78,8 @@ func run_checks() -> void:
         require(level.get_node("SpellChoicesPage").visible and flame != null and flame.visible, "Blessed Warrior offers Cleric cantrips: " + locale)
         flame.grab_focus(); await key(level, KEY_SPACE)
         require(flame.button_pressed, "Keyboard learns Sacred Flame: " + locale)
+        var spare = rows.get_node("cantrips_2/spare_the_dying")
+        spare.grab_focus(); await key(level, KEY_SPACE)
         await capture("blessed-warrior-" + locale, level)
         await press("LevelUp/Back")
         await select_style(level, defense)
@@ -90,6 +92,8 @@ func run_checks() -> void:
         flame = rows.get_node("cantrips_2/sacred_flame")
         require(flame.visible and not flame.button_pressed, "Changing the style dropped the earlier pick: " + locale)
         flame.grab_focus(); await key(level, KEY_SPACE)
+        spare = rows.get_node("cantrips_2/spare_the_dying")
+        spare.grab_focus(); await key(level, KEY_SPACE)
         await press("LevelUp/Confirm")
         require(not level.visible, "Blessed Warrior level two completes: " + locale)
         await press("PartyPanel/Save"); current_scene.get_node("SaveSlots/Name").text = SLOT

@@ -73,3 +73,22 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   there).
 - Verification: `opengold_cleric_channel_tests` (two creatures raised by 5, a
   checkpoint, the campaign maximum and its end after 8 hours).
+
+## Guiding Bolt, Bane and Spare the Dying
+
+- **Guiding Bolt** (level 1, Action, 120 feet): a spell attack for 4d6 Radiant
+  (1d6 more from a level-two slot). On a hit, the next attack roll against the
+  target before the end of the Cleric's next turn has Advantage; the mark is
+  shown as a condition and spent by that roll. The AI casts it like its other
+  damage spells.
+- **Bane** (level 1, Action, 30 feet, Concentration up to 1 minute): up to three
+  enemies, chosen as for Bless, make a Charisma save; on a failure they subtract
+  1d4 from attack rolls and saving throws (shown as a condition). A level-two
+  slot adds a creature.
+- **Spare the Dying** (cantrip, Action, 15 feet): an ally at 0 Hit Points
+  becomes Stable. It is a Cleric and Druid cantrip, so Blessed Warrior and
+  Druidic Warrior may learn it too. The AI uses it on a dying ally.
+- Cleric cantrip choices now offer Sacred Flame and Spare the Dying.
+- Verification: `opengold_cleric_channel_tests` (Guiding Bolt's Advantage and
+  its end, Bane's -1d4 on an attack, Spare the Dying and no second offer), the
+  updated cantrip and preparation checks.

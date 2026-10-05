@@ -208,7 +208,8 @@ void table()
                            spell.pattern == SpellPattern::smite;
         check(saves || spell.save == Ability::strength, "Only save patterns carry a save ability");
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
-              spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff,
+              spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff ||
+              spell.pattern == SpellPattern::save_condition,
               "Only multi-instance patterns repeat or choose several creatures");
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
                             spell.pattern == SpellPattern::save_condition ||
@@ -404,10 +405,13 @@ void behaviour()
     {
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command is offered once
-        // per option, camp spells only outside combat, area spells are aimed and
-        // Lesser Restoration needs a Blinded creature; their own tests cover them.
+        // per option, camp spells only outside combat, area spells are aimed,
+        // Lesser Restoration needs a Blinded creature and Spare the Dying a dying
+        // one; their own tests cover them.
         if (row.pattern == SpellPattern::smite ||
-                (row.pattern == SpellPattern::buff && row.instances > 1) ||
+                ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
+                 row.instances > 1) ||
+                row.target == SpellTarget::dying_ally ||
                 row.rider == Rider::command || row.pattern == SpellPattern::camp ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration)
             continue;

@@ -102,7 +102,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::bless ||
            kind == detail::EffectKind::protection_from_evil_and_good ||
            kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike ||
-           kind == detail::EffectKind::entangle;
+           kind == detail::EffectKind::entangle || kind == detail::EffectKind::bane;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -125,7 +125,8 @@ std::string fighting_style_grant(std::string_view style)
 // affect more than one.
 bool selects_creatures(const detail::SpellDef &spell)
 {
-    return spell.pattern == detail::SpellPattern::buff || spell.rider == detail::Rider::command;
+    return spell.pattern == detail::SpellPattern::buff || spell.rider == detail::Rider::command ||
+           (spell.pattern == detail::SpellPattern::save_condition && spell.instances > 1);
 }
 
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
@@ -208,6 +209,11 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "command", 1},
     SpellAccessRow{"Cleric", "lesser_restoration", 3},
     SpellAccessRow{"Cleric", "aid", 3},
+    SpellAccessRow{"Cleric", "guiding_bolt", 1},
+    SpellAccessRow{"Cleric", "bane", 1},
+    SpellAccessRow{"Cleric", "spare_the_dying", 1},
+    SpellAccessRow{"Paladin", "spare_the_dying", 2},
+    SpellAccessRow{"Ranger", "spare_the_dying", 2},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -1324,7 +1330,8 @@ class Session final : public CombatSession
     unsigned selection_maximum(const PendingSelection &) const;
     void choose_target(const Command &command);
     void cast_on_selection();
-    int bless_die(const Actor &a);
+    // Bless adds 1d4 to attack rolls and saving throws; Bane subtracts 1d4.
+    int blessing_die(const Actor &a);
     void burn_searing_smites(Actor &a);
     void update_outcome();
     void wake_resting_participants();
@@ -1981,6 +1988,16 @@ Snapshot Session::snapshot() const
             messages.push_back({"Ray of Frost: Speed reduced by 10 feet.", {}});
             view.conditions.push_back({"Ray of Frost: Speed reduced by 10 feet.", {}});
         }
+        if (detail::has_effect(a.effects, detail::EffectKind::guiding_bolt))
+        {
+            messages.push_back({"Guiding Bolt: the next attack roll against it has Advantage.", {}});
+            view.conditions.push_back({"Guiding Bolt: the next attack roll against it has Advantage.", {}});
+        }
+        if (detail::has_effect(a.effects, detail::EffectKind::bane))
+        {
+            messages.push_back({"Bane: -1d4 to attack rolls and saving throws.", {}});
+            view.conditions.push_back({"Bane: -1d4 to attack rolls and saving throws.", {}});
+        }
         if (detail::restrained(a.effects))
         {
             messages.push_back({"Restrained", {}});
@@ -2008,6 +2025,23 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::entangle:
     case detail::Rider::fog_cloud:
         return; // Area spells resolve through cast_area().
+    case detail::Rider::guiding_bolt:
+    {
+        // Until the end of the caster's next turn.
+        const auto index = static_cast<std::size_t>(&a - actors_.data());
+        const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+        detail::apply_guiding_bolt(target.effects, scope_, a.source.id, a.source.name,
+                                   next_turn_ms(a) + slot);
+        log(target.source.name + " is lit by Guiding Bolt.",
+        {"{name} is lit by Guiding Bolt.", {{"name", target.source.name}}});
+        return;
+    }
+    case detail::Rider::bane:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::bane, 0);
+        log(target.source.name + " is weakened by Bane.",
+        {"{name} is weakened by Bane.", {{"name", target.source.name}}});
+        return;
     case detail::Rider::aid:
     {
         // Aid does not stack with itself; a creature already aided keeps its own.
@@ -2130,6 +2164,17 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         return; // Smites resolve through resolve_smite, after the caster's own hit.
     case detail::SpellPattern::camp:
         return; // Never offered in combat.
+    case detail::SpellPattern::stabilize:
+    {
+        auto &target = actor(target_id);
+        detail::stabilize(target, rng_);
+        log(a.source.name + " casts " + name + ": " + target.source.name + " is Stable.",
+        {
+            "{name} casts {spell}: {target} is Stable.",
+            {{"name", a.source.name}, {"spell", name, true}, {"target", target.source.name}}
+        });
+        return;
+    }
     case detail::SpellPattern::buff:
         if (spell.concentration)
             begin_concentration(a, spell);
@@ -2253,6 +2298,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             break;
         case detail::SpellTarget::area:
             break; // Aimed at a point after it is chosen.
+        case detail::SpellTarget::dying_ally:
+            if (other.source.side != a.source.side || other.hp != 0 || other.stable)
+                continue;
+            break;
         }
         if (feet > spell.range)
             continue;
@@ -2677,7 +2726,7 @@ std::vector<Command> Session::legal_commands() const
                 for (const auto scope :
                         {
                             detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
-                            detail::SpellTarget::self
+                            detail::SpellTarget::self, detail::SpellTarget::dying_ally
                         })
                     offer_spells(commands, a, other, feet, scope, false);
         }
@@ -2788,7 +2837,7 @@ void Session::damage(Actor &target, int amount, bool critical)
     {
         const bool rolls = target.hp > 0 && !target.dead;
         const auto result = target.concentration.damage(
-                                amount, def(target).saves[2] + (rolls ? bless_die(target) : 0),
+                                amount, def(target).saves[2] + (rolls ? blessing_die(target) : 0),
                                 detail::saving_modifiers(detail::Ability::constitution,
                                         def(target).str_dex_disadvantage, target.dodge),
                                 target.hp == 0 || target.dead, rng_);
@@ -3171,10 +3220,10 @@ void Session::escape_ensnaring(Actor &a)
     });
 }
 
-int Session::bless_die(const Actor &a)
+int Session::blessing_die(const Actor &a)
 {
-    // Bless adds 1d4 to the creature's attack rolls and saving throws.
-    return detail::has_effect(a.effects, detail::EffectKind::bless) ? roll(4) : 0;
+    return (detail::has_effect(a.effects, detail::EffectKind::bless) ? roll(4) : 0) -
+           (detail::has_effect(a.effects, detail::EffectKind::bane) ? roll(4) : 0);
 }
 
 unsigned Session::selection_maximum(const PendingSelection &selection) const
@@ -3347,6 +3396,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         result.advantage = true;
     if (detail::sapped(a.effects))
         result.disadvantage = true;
+    // Guiding Bolt: the next attack roll against the target has Advantage.
+    if (detail::has_effect(target.effects, detail::EffectKind::guiding_bolt))
+        result.advantage = true;
     // Restrained: attacks against it have Advantage, its own have Disadvantage.
     if (detail::restrained(target.effects))
         result.advantage = true;
@@ -3593,9 +3645,14 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     const auto &d = def(a);
     const auto modifiers = attack_modifiers(a, target, ranged, spell);
     a.aim_ready = false;
+    // Guiding Bolt's Advantage is spent on this attack roll.
+    std::erase_if(target.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::guiding_bolt;
+    });
     const int natural = detail::d20(modifiers, rng_), bonus = (spell    ? d.casting
         : ranged ? d.ranged_bonus
-        : d.melee_bonus) + bless_die(a) +
+        : d.melee_bonus) + blessing_die(a) +
         (spell || ranged ? 0 : sacred_weapon_bonus(a));
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
     const bool hit =
@@ -3997,9 +4054,7 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         return false;
     }
-    // Bless adds 1d4 to saving throws.
-    const int bless =
-        detail::has_effect(target.effects, detail::EffectKind::bless) ? roll(4) : 0;
+    const int bless = blessing_die(target);
     auto modifiers =
         detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
     modifiers.advantage |= advantage;
@@ -7232,7 +7287,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.84", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.85", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

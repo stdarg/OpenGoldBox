@@ -342,5 +342,13 @@
   "Preserve Life",
   "Lesser Restoration",
   "Life Domain: Disciple of Life adds 2 + the slot level to healing spells; Preserve Life (Channel Divinity) restores five times your level among Bloodied allies within 30 feet; Bless, Cure Wounds and Lesser Restoration are always prepared.",
-  "Aid"
+  "Aid",
+  "Guiding Bolt",
+  "Guiding Bolt (level 2 slot)",
+  "Bane",
+  "Bane (level 2 slot)",
+  "Spare the Dying",
+  "A creature at 0 Hit Points within 15 feet becomes Stable.",
+  "Guiding Bolt: the next attack roll against it has Advantage.",
+  "Bane: -1d4 to attack rolls and saving throws."
 ]

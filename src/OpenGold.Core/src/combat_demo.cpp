@@ -730,7 +730,7 @@ Command choose_demo_command(const CombatSession &session)
     // Restoration only on a Blinded one.
     for (const auto &command : offered)
         if (command.verb == "turn_undead" || command.verb == "preserve_life" ||
-                command.verb == "lesser_restoration")
+                command.verb == "lesser_restoration" || command.verb == "spare_the_dying")
             return command;
     if (const auto *command = heal_below_half({"cure_wounds", "cure_wounds_2", "healing_word",
                                                 "healing_word_2"
@@ -766,7 +766,7 @@ Command choose_demo_command(const CombatSession &session)
                 return command;
         }
     for (const auto verb :
-            {"magic_missile", "magic_missile_2", "scorching_ray", "inflict_wounds", "melee",
+            {"magic_missile", "magic_missile_2", "scorching_ray", "inflict_wounds", "guiding_bolt", "melee",
              "fire_bolt", "sacred_flame", "ranged"
             })
     {

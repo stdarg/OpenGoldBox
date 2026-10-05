@@ -42,8 +42,9 @@ std::unique_ptr<RulesModule> rules()
 }
 
 
-// A level-two Cleric, advanced through the campaign.
-Character cleric(unsigned level)
+// A Cleric of the given level, advanced through the campaign, with the named
+// level-one spells prepared.
+Character cleric(unsigned level, std::vector<std::string> prepared = {"cure_wounds"})
 {
     CharacterDraft d;
     d.race = "human";
@@ -55,8 +56,8 @@ Character cleric(unsigned level)
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.cantrips = std::vector<std::string> {"sacred_flame"};
-    d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds"}, {}, {}};
+    d.cantrips = std::vector<std::string> {"sacred_flame", "spare_the_dying"};
+    d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     d.training = {{"class:cleric", {"medicine", "persuasion"}},
         {"class:cleric:divine_order", {"protector"}}
     };
@@ -291,6 +292,73 @@ void aid_expiry_checks()
           party.member(id).vitals.hit_points == sheet_maximum,
           "When Aid ends after 8 hours the maximum and the extra Hit Points go");
 }
+// The attack bonus a log line shows: "... d20 N + B vs AC ...".
+int logged_bonus(const CombatSession &c)
+{
+    const auto log = c.snapshot().log;
+    for (auto line = log.rbegin(); line != log.rend(); ++line)
+        if (const auto at = line->find(" + "); at != std::string::npos &&
+                line->find(" vs AC ") != std::string::npos)
+            return std::stoi(line->substr(at + 3));
+    throw std::runtime_error("No attack in the log");
+}
+
+void guiding_bolt_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, cleric(1, {"guiding_bolt"}));
+    check(submit(*c, "guiding_bolt", 99) && logged(*c, "Enemy is lit by Guiding Bolt.") &&
+          unit(*c, 99).conditions.size() == 1,
+          "Guiding Bolt hits and marks the target");
+    check(submit(*c, "end"), "End the Cleric's turn");
+    // The enemy's own attack is not against itself; the mark waits.
+    while (c->snapshot().actor != 1)
+        check(submit(*c, "end"), "Back to the Cleric");
+    check(c->submit({c->snapshot().revision, 1, 0, "move", "Move", Cell{2, 1}}) &&
+          submit(*c, "melee", 99) && logged(*c, "(advantage)") &&
+          unit(*c, 99).conditions.empty(),
+          "The next attack roll against it has Advantage, and spends the mark");
+}
+
+void bane_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, cleric(1, {"bane"}), "target", seed);
+        check(submit(*c, "bane", 99) && c->snapshot().spell_targeting && submit(*c, "spell_cast"),
+              "Bane is cast on the chosen creature");
+        if (!logged(*c, "Enemy is weakened by Bane."))
+            continue;
+        check(submit(*c, "end"), "End the Cleric's turn");
+        while (c->snapshot().actor != 99)
+            check(submit(*c, "end"), "Reach the enemy");
+        check(c->submit({c->snapshot().revision, 99, 0, "move", "Move", Cell{2, 1}}) &&
+              submit(*c, "melee", 1) && logged_bonus(*c) < 20 && logged_bonus(*c) >= 16,
+              "Bane subtracts 1d4 from the creature's attack roll");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Charisma save");
+}
+
+void spare_the_dying_checks()
+{
+    auto module = rules();
+    auto hero = cleric(1);
+    const auto profile =
+        module->character_profile(hero.sheet(), std::vector<std::string> {"mace"}).data;
+    auto c = module->create({{12, 4, std::vector<std::uint8_t>(48)},
+        {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
+            {2, "target", "Ally", 0, {3, 1}, {}, VitalState{0, false, {}}},
+            {99, "target", "Enemy", 1, {9, 1}}
+        }},
+    5);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Cleric's turn");
+    check(submit(*c, "spare_the_dying", 2) && logged(*c, "Cleric casts Spare the Dying: Ally is Stable."),
+          "Spare the Dying stabilizes a dying ally within 15 feet");
+    check(!submit(*c, "spare_the_dying", 2), "A Stable creature is not offered again");
+}
 } // namespace
 
 int main()
@@ -303,6 +371,9 @@ int main()
         lesser_restoration_checks();
         aid_checks();
         aid_expiry_checks();
+        guiding_bolt_checks();
+        bane_checks();
+        spare_the_dying_checks();
         write_ui_fixture();
         std::cout << "Cleric Channel Divinity tests passed\n";
     }

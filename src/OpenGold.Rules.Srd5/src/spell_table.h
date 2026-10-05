@@ -28,7 +28,8 @@ enum class SpellPattern : unsigned
     heal,           // restore HP from dice plus the caster's spellcasting modifier
     smite,          // Bonus Action right after the caster's own melee hit; extra damage to that target
     buff,           // a lasting benefit on the target, no roll; `rider` names it
-    camp            // used only from the Camp dialog (CLASS-3), never offered in combat
+    camp,           // used only from the Camp dialog (CLASS-3), never offered in combat
+    stabilize       // a dying creature becomes Stable
 };
 
 // Which creatures the spell may be offered against. These reproduce the
@@ -42,6 +43,7 @@ enum class SpellTarget : unsigned
     any_creature, // any living actor in line of sight, either side
     wounded_ally, // same side, below maximum hit points
     ally,         // same side, including the caster
+    dying_ally,   // same side, at 0 Hit Points and neither Stable nor dead
     self,         // the caster only
     area          // an area aimed at a point within range (CLASS-5)
 };
@@ -65,7 +67,9 @@ enum class Rider : unsigned
     entangle,
     fog_cloud,
     lesser_restoration,
-    aid
+    aid,
+    guiding_bolt,
+    bane
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -327,6 +331,40 @@ inline constexpr std::array spell_table
         .rider = Rider::fog_cloud,
         .concentration = true,
         .radius = 20},
+    // SRD 5.2.1 p. 139: the next attack roll against the target has Advantage.
+    SpellDef{
+        .id = "guiding_bolt",
+        .label = "Guiding Bolt",
+        .level = 1,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 120,
+        .damage = DamageType::radiant,
+        .dice = {4, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::guiding_bolt},
+    // SRD 5.2.1 p. 111: up to three creatures make a Charisma save or subtract
+    // 1d4 from attack rolls and saves; one more per slot level above 1.
+    SpellDef{
+        .id = "bane",
+        .label = "Bane",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 30,
+        .save = Ability::charisma,
+        .instances = 3,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::bane,
+        .concentration = true},
+    // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
+    SpellDef{
+        .id = "spare_the_dying",
+        .label = "Spare the Dying",
+        .level = 0,
+        .pattern = SpellPattern::stabilize,
+        .target = SpellTarget::dying_ally,
+        .range = 15},
     // SRD 5.2.1 p. 108: up to three creatures' Hit Point maximum and current
     // Hit Points rise by 5 for 8 hours. Higher slots wait for level-three slots.
     SpellDef{

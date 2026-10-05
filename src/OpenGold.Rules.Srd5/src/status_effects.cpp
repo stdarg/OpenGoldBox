@@ -83,6 +83,16 @@ void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityI
                               EffectKind::chill_touch, 0, duration_ms, 0});
 }
 
+void apply_guiding_bolt(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                        std::string name, unsigned duration_ms)
+{
+    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
+            !duration_ms || duration_ms > 2 * round_ms)
+        throw std::runtime_error("Invalid Guiding Bolt application");
+    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+                              EffectKind::guiding_bolt, 0, duration_ms, 0});
+}
+
 bool opportunity_blocked(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
@@ -307,6 +317,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::divine_favor:
     case EffectKind::bless:
     case EffectKind::turned:
+    case EffectKind::bane:
         return 60000; // 1 minute
     default:
         return 0;
@@ -420,10 +431,12 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                     e.save_in_ms = round_ms;
                     if (!subject.dead)
                     {
-                        // Bless adds 1d4 to the repeated save.
-                        const int bless = has_effect(subject.effects.get(), EffectKind::bless)
-                                          ? roll_die(rng, 4)
-                                          : 0;
+                        // Bless adds 1d4 to the repeated save; Bane subtracts 1d4.
+                        int bless = has_effect(subject.effects.get(), EffectKind::bless)
+                                    ? roll_die(rng, 4)
+                                    : 0;
+                        if (has_effect(subject.effects.get(), EffectKind::bane))
+                            bless -= roll_die(rng, 4);
                         event.save = saving_throw(Ability::constitution, subject.saves[2] + bless, e.dc,
                                                   saving_modifiers(Ability::constitution,
                                                       subject.str_dex_disadvantage,
@@ -486,7 +499,8 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::shocking_grasp) ||
                            kind == unsigned(EffectKind::chill_touch) ||
                            kind == unsigned(EffectKind::sap) || kind == unsigned(EffectKind::vex) ||
-                           kind == unsigned(EffectKind::slow);
+                           kind == unsigned(EffectKind::slow) ||
+                           kind == unsigned(EffectKind::guiding_bolt);
         // Searing Smite, Ensnaring Strike and Entangle act at the start of the
         // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
@@ -526,7 +540,8 @@ EffectState read_effects(std::istream &in)
                              : (!e.save_in_ms || e.save_in_ms > round_ms)))) ||
                 (timed && (e.dc != 0 || e.save_in_ms != 0 || !e.remaining_ms ||
                            e.remaining_ms > ((kind == unsigned(EffectKind::chill_touch) ||
-                                              kind == unsigned(EffectKind::vex))
+                                              kind == unsigned(EffectKind::vex) ||
+                                              kind == unsigned(EffectKind::guiding_bolt))
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

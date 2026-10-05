@@ -60,7 +60,12 @@ enum class EffectKind : unsigned
     // takes damage or the minute ends.
     turned = 20,
     // Aid: the Hit Point maximum (and current Hit Points when cast) rise by `dc`.
-    aid = 21
+    aid = 21,
+    // Guiding Bolt: the next attack roll against the target has Advantage,
+    // until the end of the caster's next turn.
+    guiding_bolt = 22,
+    // Bane: the target subtracts 1d4 from attack rolls and saving throws.
+    bane = 23
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -133,6 +138,8 @@ using EffectObserver = std::function<void(const EffectEvent &)>;
 [[nodiscard]] bool healing_blocked(const EffectState &effects, std::uint64_t after_ms = 0);
 void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                        std::string name, unsigned duration_ms);
+void apply_guiding_bolt(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                        std::string name, unsigned duration_ms);
 [[nodiscard]] bool opportunity_blocked(const EffectState &effects);
 void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                           std::string name, unsigned duration_ms);

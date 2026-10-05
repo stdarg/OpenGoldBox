@@ -39,7 +39,7 @@ void cleric_creation_checks()
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 4 &&
           option_ids(options.preparation) == std::vector<std::string>
-    {"bless", "command", "cure_wounds", "healing_word", "inflict_wounds",
+    {"bane", "bless", "command", "cure_wounds", "guiding_bolt", "healing_word", "inflict_wounds",
         "protection_from_evil_and_good", "shield_of_faith"},
     "Creation prepares from the Cleric list up to level-one slots");
     const auto profile = rules->character_profile(sheet, {}).data;
@@ -144,10 +144,11 @@ void cleric_advancement_checks()
     party.advance(id, party.default_advancement(id));
     const auto &sheet = party.member(id).character.sheet();
     const auto access = rules->spell_access(sheet);
-    // Bless, Cure Wounds and Lesser Restoration are Life Domain spells from level
-    // three, so six other spells fill the seven places.
-    check(sheet.level == 4 && access.prepared_choices == 7 && access.prepared.size() == 6 &&
-          access.cantrip_choices == 4 && access.cantrips.size() == 1,
+    // Aid, Bless, Cure Wounds and Lesser Restoration are Life Domain spells from
+    // level three; seven others fill the places. Of four cantrips only Sacred
+    // Flame and Spare the Dying exist, so two stay pending.
+    check(sheet.level == 4 && access.prepared_choices == 7 && access.prepared.size() == 7 &&
+          access.cantrip_choices == 4 && access.cantrips.size() == 2,
           "Level four keeps unfilled Cleric choices pending");
     const auto pending = rules->spell_choice_options(sheet, SpellChoiceContext::advancement);
     check(!pending.may_replace && pending.replaceable.empty(),
@@ -183,10 +184,8 @@ void cleric_advancement_checks()
     restored.restore(round.party);
     check(saved(restored) == after_rest, "The Cleric's rest window roundtrips");
     SpellChoices reordered;
-    reordered.prepared = std::vector<std::string> {"blindness", "command", "shield_of_faith",
-                                                   "inflict_wounds", "healing_word",
-                                                   "protection_from_evil_and_good"
-                                                  };
+    const auto &kept = party.member(id).character.sheet().prepared_spells;
+    reordered.prepared = std::vector<std::string>(kept.rbegin(), kept.rend());
     party.choose_spells(id, reordered);
     restored.choose_spells(id, reordered);
     check(saved(restored) == saved(party) && !party.state().spell_rest,

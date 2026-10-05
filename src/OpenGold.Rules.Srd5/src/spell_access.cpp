@@ -38,6 +38,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"sacred_flame", "Sacred Flame", 0, 128, cleric_list},
     Spell{"fire_bolt", "Fire Bolt", 0, 1},
     Spell{"poison_spray", "Poison Spray", 0, 64, wizard_list | druid_list},
+    Spell{"spare_the_dying", "Spare the Dying", 0, 0, cleric_list | druid_list},
     Spell{"magic_missile", "Magic Missile", 1, 4},
     Spell{"scorching_ray", "Scorching Ray", 2, 16},
     Spell{"blindness", "Blindness", 2, 32, wizard_list | cleric_list},
@@ -65,7 +66,10 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
     Spell{"lesser_restoration", "Lesser Restoration", 2, 0, cleric_list},
     // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
-    Spell{"aid", "Aid", 2, 0, cleric_list}};
+    Spell{"aid", "Aid", 2, 0, cleric_list},
+    Spell{"guiding_bolt", "Guiding Bolt", 1, 0, cleric_list},
+    // Also on the Bard and Warlock lists; added with those classes.
+    Spell{"bane", "Bane", 1, 0, cleric_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
@@ -324,6 +328,10 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
     {   {
             "sacred_flame", "Sacred Flame",
             "Dexterity save: 1d8 Radiant damage, visible creature within 60 feet."
+        },
+        {
+            "spare_the_dying", "Spare the Dying",
+            "A creature at 0 Hit Points within 15 feet becomes Stable."
         }
     }};
     if (klass != "wizard" && klass != "sorcerer")
@@ -386,9 +394,13 @@ starting_spell_grants(std::string_view klass,
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
+        const auto offered = starting_cantrip_options("cleric").options;
         for (const auto &id : cantrips.value_or(std::vector<std::string> {}))
         {
-            require(id == "sacred_flame" && unique.insert(id).second);
+            require(std::any_of(offered.begin(), offered.end(), [&](const auto & option)
+            {
+                return option.id == id;
+            }) && unique.insert(id).second);
             result.push_back(grant(id, 1, "class:cleric:spellcasting"));
         }
         return result;

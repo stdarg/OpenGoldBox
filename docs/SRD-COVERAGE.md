@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Guiding Bolt, Bane and Spare the Dying
+
+Rules 0.6.85 adds Guiding Bolt, Bane and Spare the Dying for Clerics. See
+[Cleric](CLERIC.md#guiding-bolt-bane-and-spare-the-dying).
+
 ## Aid
 
 Rules 0.6.84 adds Aid, always prepared by Life Domain Clerics, and a rules call
