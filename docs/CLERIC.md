@@ -92,3 +92,17 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
 - Verification: `opengold_cleric_channel_tests` (Guiding Bolt's Advantage and
   its end, Bane's -1d4 on an attack, Spare the Dying and no second offer), the
   updated cantrip and preparation checks.
+
+## Hold Person and Paralyzed
+
+- **Hold Person** (level 2, Action, 60 feet, Concentration up to 1 minute): a
+  Humanoid the Cleric can see makes a Wisdom save or is **Paralyzed**,
+  repeating the save at the end of each of its turns. A higher slot's extra
+  target waits for level-three slots. The AI casts it on a creature with no
+  condition, as it does Blindness.
+- **Paralyzed** (shown as a condition): Incapacitated (it can only end its turn
+  and takes no Reactions) with Speed 0; it automatically fails Strength and
+  Dexterity saves, attacks against it have Advantage, and a hit from within 5
+  feet is a critical hit.
+- Verification: `opengold_cleric_channel_tests` (Humanoids only, Paralyzed, a
+  checkpoint, only ending its turn, the repeated save, a failed Dexterity save).

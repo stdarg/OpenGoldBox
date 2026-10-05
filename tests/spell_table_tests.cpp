@@ -406,12 +406,13 @@ void behaviour()
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command is offered once
         // per option, camp spells only outside combat, area spells are aimed,
-        // Lesser Restoration needs a Blinded creature and Spare the Dying a dying
-        // one; their own tests cover them.
+        // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one,
+        // and Hold Person fills a level-four Cleric's places last; their own tests
+        // cover them.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
                  row.instances > 1) ||
-                row.target == SpellTarget::dying_ally ||
+                row.target == SpellTarget::dying_ally || row.rider == Rider::hold_person ||
                 row.rider == Rider::command || row.pattern == SpellPattern::camp ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration)
             continue;

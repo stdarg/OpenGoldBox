@@ -359,6 +359,52 @@ void spare_the_dying_checks()
           "Spare the Dying stabilizes a dying ally within 15 feet");
     check(!submit(*c, "spare_the_dying", 2), "A Stable creature is not offered again");
 }
+// A level-three Cleric who prepared Hold Person at level three.
+Character holding_cleric()
+{
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(cleric(1));
+    party.award_experience(900, "hold-xp");
+    party.advance(id, party.default_advancement(id));
+    auto third = party.default_advancement(id);
+    third.spells.back() = "hold_person";
+    party.advance(id, third);
+    return party.member(id).character;
+}
+
+void hold_person_checks()
+{
+    auto module = rules();
+    const auto hero = holding_cleric();
+    auto undead = battle(*module, hero, "zombie");
+    check(!submit(*undead, "hold_person", 99), "Hold Person holds only a Humanoid");
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, hero, "target", seed);
+        check(submit(*c, "hold_person", 99), "Hold Person is cast");
+        if (!logged(*c, "Enemy is Paralyzed."))
+            continue;
+        const auto saved = c->save();
+        check(module->restore(saved)->save() == saved, "Paralyzed survives a checkpoint");
+        check(submit(*c, "end"), "End the Cleric's turn");
+        while (c->snapshot().actor != 99)
+            check(submit(*c, "end"), "Reach the held creature");
+        const auto offered = c->legal_commands();
+        check(offered.size() == 1 && offered.front().verb == "end",
+              "A Paralyzed creature can only end its turn");
+        check(submit(*c, "end") && logged(*c, "Enemy Wisdom save"),
+              "It repeats the Wisdom save at the end of its turn");
+        while (c->snapshot().actor != 1)
+            check(submit(*c, "end"), "Back to the Cleric");
+        if (logged(*c, "Enemy is no longer Paralyzed."))
+            continue;
+        check(submit(*c, "sacred_flame", 99) &&
+              logged(*c, "Enemy automatically fails the Dexterity save while Paralyzed."),
+              "A Paralyzed creature fails Dexterity saves");
+        return;
+    }
+    throw std::runtime_error("No seed keeps the creature Paralyzed");
+}
 } // namespace
 
 int main()
@@ -374,6 +420,7 @@ int main()
         guiding_bolt_checks();
         bane_checks();
         spare_the_dying_checks();
+        hold_person_checks();
         write_ui_fixture();
         std::cout << "Cleric Channel Divinity tests passed\n";
     }

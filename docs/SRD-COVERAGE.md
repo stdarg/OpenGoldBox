@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Hold Person and Paralyzed
+
+Rules 0.6.86 adds Hold Person for Clerics and the Paralyzed condition. See
+[Cleric](CLERIC.md#hold-person-and-paralyzed).
+
 ## Guiding Bolt, Bane and Spare the Dying
 
 Rules 0.6.85 adds Guiding Bolt, Bane and Spare the Dying for Clerics. See

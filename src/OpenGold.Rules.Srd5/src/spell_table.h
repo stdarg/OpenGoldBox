@@ -69,7 +69,8 @@ enum class Rider : unsigned
     lesser_restoration,
     aid,
     guiding_bolt,
-    bane
+    bane,
+    hold_person
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -103,6 +104,7 @@ struct SpellDef
     bool concentration{}; // a caster keeps one Concentration spell at a time
     int area{};           // side of an `area` spell's square, feet
     int radius{};         // or the radius of its sphere, feet
+    bool humanoid_only{}; // offered only against a Humanoid
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -357,6 +359,22 @@ inline constexpr std::array spell_table
         .upcast = {.extra_instances = 1},
         .rider = Rider::bane,
         .concentration = true},
+    // SRD 5.2.1 p. 140: a Humanoid makes a Wisdom save or is Paralyzed,
+    // repeating it at the end of each of its turns. A higher slot's extra
+    // target waits for level-three slots.
+    SpellDef{
+        .id = "hold_person",
+        .label = "Hold Person",
+        .level = 2,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::hold_person,
+        .concentration = true,
+        .humanoid_only = true},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

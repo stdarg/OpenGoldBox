@@ -65,7 +65,9 @@ enum class EffectKind : unsigned
     // until the end of the caster's next turn.
     guiding_bolt = 22,
     // Bane: the target subtracts 1d4 from attack rolls and saving throws.
-    bane = 23
+    bane = 23,
+    // Hold Person: Paralyzed, with a Wisdom save at the end of each of its turns.
+    hold_person = 24
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -171,6 +173,11 @@ void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, 
 // Restrained: Speed 0, attacks against it have Advantage, its attacks and
 // Dexterity saves have Disadvantage.
 [[nodiscard]] bool restrained(const EffectState &effects);
+// Paralyzed: Incapacitated and Speed 0; it fails Strength and Dexterity saves,
+// attacks against it have Advantage and hits within 5 feet are critical.
+[[nodiscard]] bool paralyzed(const EffectState &effects);
+void apply_hold_person(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                       std::string name, int dc, unsigned first_save_ms);
 void apply_searing_smite(EffectState &, std::uint64_t scope, rules::EntityId caster,
                          std::string name, int dc);
 // Applies a spell benefit that has no save. `value` is kind-specific.

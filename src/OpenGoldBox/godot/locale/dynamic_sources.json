@@ -350,5 +350,7 @@
   "Spare the Dying",
   "A creature at 0 Hit Points within 15 feet becomes Stable.",
   "Guiding Bolt: the next attack roll against it has Advantage.",
-  "Bane: -1d4 to attack rolls and saving throws."
+  "Bane: -1d4 to attack rolls and saving throws.",
+  "Hold Person",
+  "Paralyzed"
 ]

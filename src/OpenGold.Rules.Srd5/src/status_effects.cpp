@@ -116,7 +116,7 @@ int speed_penalty(const EffectState &effects)
 {
     // Repeated instances of either source do not stack, but these two distinct
     // features each reduce Speed by 10 feet.
-    if (restrained(effects))
+    if (restrained(effects) || paralyzed(effects))
         return 1000;
     return (frosted(effects) ? 10 : 0) + (slowed(effects) ? 10 : 0) -
            (has_effect(effects, EffectKind::longstrider) ? 10 : 0);
@@ -236,6 +236,21 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, std::u
         return e.kind == EffectKind::vex && e.source_scope == scope &&
                e.source_actor == source;
     });
+}
+
+bool paralyzed(const EffectState &effects)
+{
+    return has_effect(effects, EffectKind::hold_person);
+}
+
+void apply_hold_person(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                       std::string name, int dc, unsigned first_save_ms)
+{
+    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
+            dc > 38 || !first_save_ms || first_save_ms > round_ms)
+        throw std::runtime_error("Invalid Hold Person application");
+    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+                              EffectKind::hold_person, dc, 60000, first_save_ms});
 }
 
 bool restrained(const EffectState &effects)
@@ -426,8 +441,13 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                 EffectEvent event{subject.id, e};
                 if (!e.remaining_ms)
                     event.removed = true;
-                else if (e.kind == EffectKind::blindness && !e.save_in_ms)
+                else if ((e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person) &&
+                         !e.save_in_ms)
                 {
+                    // Blindness repeats a Constitution save, Hold Person a Wisdom one,
+                    // at the end of each of the target's turns.
+                    const auto ability = e.kind == EffectKind::blindness ? Ability::constitution
+                                         : Ability::wisdom;
                     e.save_in_ms = round_ms;
                     if (!subject.dead)
                     {
@@ -437,8 +457,10 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                                     : 0;
                         if (has_effect(subject.effects.get(), EffectKind::bane))
                             bless -= roll_die(rng, 4);
-                        event.save = saving_throw(Ability::constitution, subject.saves[2] + bless, e.dc,
-                                                  saving_modifiers(Ability::constitution,
+                        event.save = saving_throw(ability,
+                                                  subject.saves[static_cast<unsigned>(ability)] + bless,
+                                                  e.dc,
+                                                  saving_modifiers(ability,
                                                       subject.str_dex_disadvantage,
                                                       subject.dodge),
                                                   rng);
@@ -532,7 +554,8 @@ EffectState read_effects(std::istream &in)
             result.active.push_back(std::move(e));
             continue;
         }
-        if (!in || (!timed && !turn_save && kind != unsigned(EffectKind::blindness)) ||
+        if (!in || (!timed && !turn_save && kind != unsigned(EffectKind::blindness) &&
+                    kind != unsigned(EffectKind::hold_person)) ||
                 e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 ||
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||

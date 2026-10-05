@@ -102,7 +102,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::bless ||
            kind == detail::EffectKind::protection_from_evil_and_good ||
            kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike ||
-           kind == detail::EffectKind::entangle || kind == detail::EffectKind::bane;
+           kind == detail::EffectKind::entangle || kind == detail::EffectKind::bane ||
+           kind == detail::EffectKind::hold_person;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -212,6 +213,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "guiding_bolt", 1},
     SpellAccessRow{"Cleric", "bane", 1},
     SpellAccessRow{"Cleric", "spare_the_dying", 1},
+    SpellAccessRow{"Cleric", "hold_person", 3},
     SpellAccessRow{"Paladin", "spare_the_dying", 2},
     SpellAccessRow{"Ranger", "spare_the_dying", 2},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
@@ -1264,6 +1266,7 @@ class Session final : public CombatSession
     void preserve_life(Actor &cleric);
     void turn_undead(Actor &cleric);
     void flee_turning(std::vector<Command> &commands, const Actor &a) const;
+    void hold_still(std::vector<Command> &commands, const Actor &a) const;
     // `verb` names the spell's "_2" form, which a sphere grows with.
     [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell,
             std::string_view verb, Cell center) const;
@@ -1298,7 +1301,14 @@ class Session final : public CombatSession
     bool critical_hit(const Actor &a, const Actor &target, int natural, bool spell = false) const
     {
         return natural == 20 || (!spell && def(a).champion && natural == 19) ||
-               (unconscious(target) && distance(a.source.cell, target.source.cell) <= 5);
+               (helpless(target) && distance(a.source.cell, target.source.cell) <= 5);
+    }
+
+    // Unconscious or Paralyzed: attacked with Advantage, critically hit within
+    // 5 feet, failing Strength and Dexterity saves.
+    static bool helpless(const Actor &target)
+    {
+        return unconscious(target) || detail::paralyzed(target.effects);
     }
 
     bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
@@ -1998,6 +2008,12 @@ Snapshot Session::snapshot() const
             messages.push_back({"Bane: -1d4 to attack rolls and saving throws.", {}});
             view.conditions.push_back({"Bane: -1d4 to attack rolls and saving throws.", {}});
         }
+        if (detail::paralyzed(a.effects))
+        {
+            messages.push_back({"Paralyzed", {}});
+            s.combatants.back().status += " | Paralyzed";
+            s.combatants.back().conditions.push_back({"Paralyzed", {}});
+        }
         if (detail::restrained(a.effects))
         {
             messages.push_back({"Restrained", {}});
@@ -2025,6 +2041,12 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::entangle:
     case detail::Rider::fog_cloud:
         return; // Area spells resolve through cast_area().
+    case detail::Rider::hold_person:
+        detail::apply_hold_person(target.effects, scope_, a.source.id, a.source.name, dc,
+                                  next_save_ms(target.source.id));
+        log(target.source.name + " is Paralyzed.",
+        {"{name} is Paralyzed.", {{"name", target.source.name}}});
+        return;
     case detail::Rider::guiding_bolt:
     {
         // Until the end of the caster's next turn.
@@ -2311,6 +2333,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         // Lesser Restoration has a condition to end only on a Blinded creature.
         if (spell.rider == detail::Rider::lesser_restoration && !detail::blinded(other.effects))
+            continue;
+        if (spell.humanoid_only && def(other).creature_type != "humanoid")
             continue;
         const auto *components = detail::spell_components(spell.id);
         if (!components || (components->somatic && !somatic_hand(d)))
@@ -2736,6 +2760,7 @@ std::vector<Command> Session::legal_commands() const
     auto offered = filtered();
     obey_command(offered, a);
     flee_turning(offered, a);
+    hold_still(offered, a);
     return offered;
 }
 
@@ -3110,6 +3135,19 @@ void Session::turn_undead(Actor &cleric)
         }
 }
 
+void Session::hold_still(std::vector<Command> &commands, const Actor &a) const
+{
+    // Paralyzed: Incapacitated and Speed 0, it can only end its turn.
+    if (!detail::paralyzed(a.effects))
+        return;
+    const auto end = std::find_if(commands.begin(), commands.end(), [](const auto & offer)
+    {
+        return offer.verb == "end";
+    });
+    auto kept = *end;
+    commands = {std::move(kept)};
+}
+
 void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
 {
     // Turned: Incapacitated, it can only move as far from the Cleric as it can.
@@ -3391,7 +3429,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // At zero HP the creature is Unconscious and Prone (SRD pp.187,191).
     // At longer range their opposing attack modifiers cancel, not stack.
     const bool pack_tactics = !spell && d.pack_tactics && ally_beside(a, target);
-    if (unconscious(target) || a.aim_ready || pack_tactics ||
+    if (helpless(target) || a.aim_ready || pack_tactics ||
             detail::vexed_by(target.effects, scope_, a.source.id))
         result.advantage = true;
     if (detail::sapped(a.effects))
@@ -4043,6 +4081,17 @@ void Session::log_save(const Actor &target, const detail::SaveResult &result)
 bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
                                     bool advantage)
 {
+    if (detail::paralyzed(target.effects) && !unconscious(target) &&
+            (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
+    {
+        const std::string name = ability == detail::Ability::strength ? "Strength" : "Dexterity";
+        log(target.source.name + " automatically fails the " + name + " save while Paralyzed.",
+        {
+            "{name} automatically fails the {ability} save while Paralyzed.",
+            {{"name", target.source.name}, {"ability", name, true}}
+        });
+        return false;
+    }
     if (unconscious(target) &&
             (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
     {
@@ -4122,6 +4171,9 @@ void Session::advance_turn_time()
         if (event.removed && event.effect.kind == detail::EffectKind::blindness)
             log(target.source.name + " recovers from a blindness effect.",
         {"{name} recovers from a blindness effect.", {{"name", target.source.name}}});
+        if (event.removed && event.effect.kind == detail::EffectKind::hold_person)
+            log(target.source.name + " is no longer Paralyzed.",
+        {"{name} is no longer Paralyzed.", {{"name", target.source.name}}});
     });
     for (auto &a : actors_)
         if (a.concentration.elapse(delta))
@@ -4171,6 +4223,7 @@ void Session::progress_movement()
             for (const auto &other : actors_)
                 if (other.source.side != a.source.side && conscious(other) && other.reaction &&
                         !detail::has_effect(other.effects, detail::EffectKind::turned) &&
+                        !detail::paralyzed(other.effects) &&
                         !detail::opportunity_blocked(other.effects) &&
                         has_weapon_reaction(other, a.source.cell, destination) && can_see(other, a))
                     reactors_.push_back(other.source.id);
@@ -7287,7 +7340,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.85", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.86", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {
