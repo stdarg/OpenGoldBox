@@ -132,6 +132,9 @@ class CombatView : public godot::Control
     void act(const opengold::rules::Command &command);
     void select_mode(godot::String verb);
     void immediate(godot::String verb);
+    // Area spells (CLASS-5): whether `verb` starts aiming one, and moving the preview.
+    [[nodiscard]] bool aims_area(std::string_view verb) const;
+    void aim_area_at(opengold::rules::Cell cell);
     void select_party(opengold::rules::EntityId id);
     void move_selected(opengold::rules::Cell direction);
     void use_cunning_action();

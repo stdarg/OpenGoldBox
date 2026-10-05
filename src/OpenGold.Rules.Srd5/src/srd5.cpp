@@ -101,7 +101,8 @@ bool concentration_effect(detail::EffectKind kind)
     return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism ||
            kind == detail::EffectKind::bless ||
            kind == detail::EffectKind::protection_from_evil_and_good ||
-           kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike;
+           kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike ||
+           kind == detail::EffectKind::entangle;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -165,7 +166,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 34;
+constexpr unsigned checkpoint_format = 35;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -199,6 +200,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Ranger", "longstrider", 1},
     SpellAccessRow{"Ranger", "goodberry", 1},
     SpellAccessRow{"Ranger", "ensnaring_strike", 1},
+    SpellAccessRow{"Ranger", "entangle", 1},
     // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
     SpellAccessRow{"Ranger", "poison_spray", 2},
     SpellAccessRow{"Paladin", "sacred_flame", 2},
@@ -1049,6 +1051,22 @@ class Session final : public CombatSession
         std::vector<EntityId> chosen;
     };
     std::optional<PendingSelection> selection_;
+    // An area spell being aimed (CLASS-5); nothing is spent until it is cast.
+    struct PendingArea
+    {
+        EntityId caster{};
+        std::string verb;
+        Cell center;
+    };
+    std::optional<PendingArea> area_;
+    // Entangle's Difficult Terrain, which lasts as long as its caster's
+    // Concentration.
+    struct Zone
+    {
+        EntityId caster{};
+        std::vector<Cell> cells;
+    };
+    std::vector<Zone> zones_;
     std::vector<ChampionMove> champion_offers_;
     std::optional<EffectReaction> effect_reaction_origin_;
 
@@ -1214,6 +1232,10 @@ class Session final : public CombatSession
     [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
     void reveal_lore(const Actor &caster, const Actor &target);
     void resolve_ensnaring_strike(Actor &a);
+    [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell, Cell center) const;
+    [[nodiscard]] Cell default_area_center(const Actor &caster, const detail::SpellDef &spell) const;
+    void aim_area(const Command &command);
+    void cast_area();
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
     [[nodiscard]] bool mark_can_move(const Actor &caster) const;
@@ -1229,6 +1251,8 @@ class Session final : public CombatSession
     bool saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
                                bool advantage = false);
     detail::MovementGrid movement_grid(const Actor &mover) const;
+    // The board with spell zones applied, as movement and the view see it.
+    [[nodiscard]] Battlefield zoned_board() const;
     std::vector<Cell> path_to(const Actor &a, Cell destination) const;
 
     EntityId pending() const
@@ -1583,6 +1607,17 @@ void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
         mastery_->thrown_item = token;
 }
 
+Battlefield Session::zoned_board() const
+{
+    // Entangle's plants make their open squares Difficult Terrain.
+    auto board = board_;
+    for (const auto &zone : zones_)
+        for (const auto cell : zone.cells)
+            if (board.at(cell) == 0)
+                board.terrain[std::size_t(cell.y * board.width + cell.x)] = 2;
+    return board;
+}
+
 detail::MovementGrid Session::movement_grid(const Actor &mover) const
 {
     std::vector<detail::Occupant> occupants;
@@ -1594,7 +1629,7 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
             occupants.push_back(
         {other.source.cell, other.source.side != mover.source.side, unconscious(other)});
     }
-    return {board_, mover.source.cell, occupants, mover.effects.prone};
+    return {zoned_board(), mover.source.cell, occupants, mover.effects.prone};
 }
 
 std::vector<Cell> Session::path_to(const Actor &actor, Cell destination) const
@@ -1617,7 +1652,7 @@ Snapshot Session::snapshot() const
               : pending()      ? pending()
               : actors_[turn_].source.id;
     s.reaction_pending = !champion_move_ && pending() != 0;
-    s.battlefield = board_;
+    s.battlefield = zoned_board();
     s.log = log_;
     s.log_messages = log_messages_;
     if (!initiative_choices_.empty())
@@ -1643,6 +1678,12 @@ Snapshot Session::snapshot() const
         s.actor = selection_->caster;
         s.spell_targeting = SpellTargeting{selection_->caster, selection_->verb,
                                            selection_->chosen, selection_maximum(*selection_)};
+    }
+    if (area_)
+    {
+        s.actor = area_->caster;
+        s.area_targeting = AreaTargeting{area_->caster, area_->verb, area_->center,
+                                         area_cells(*detail::find_spell(area_->verb), area_->center)};
     }
     if (!champion_move_ && effect_waiting())
     {
@@ -2144,6 +2185,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             if (other.source.id != a.source.id)
                 continue;
             break;
+        case detail::SpellTarget::area:
+            break; // Aimed at a point after it is chosen.
         }
         if (feet > spell.range)
             continue;
@@ -2156,10 +2199,11 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         if (spell.bonus_action ? !a.bonus : !a.actions.available(true))
             continue;
+        const bool aimed = spell.target == detail::SpellTarget::area;
         const auto offer = [&](std::string verb, std::string label)
         {
-            commands.push_back({revision_, a.source.id, other.source.id, std::move(verb),
-                                std::move(label), Cell{}});
+            commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
+                                std::move(verb), std::move(label), Cell{}, 0, aimed});
         };
         if (!spell.level)
         {
@@ -2207,6 +2251,19 @@ std::vector<Command> Session::legal_commands() const
         commands.push_back(
         {revision_, who, target, std::move(verb), std::move(label), destination});
     };
+    // While aiming an area spell, only moving the preview, casting or cancelling.
+    if (area_)
+    {
+        const auto &caster = actor(area_->caster);
+        const auto &spell = *detail::find_spell(area_->verb);
+        for (int y = 0; y < board_.height; ++y)
+            for (int x = 0; x < board_.width; ++x)
+                if (distance(caster.source.cell, Cell{x, y}) <= spell.range)
+                    add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
+        add(caster.source.id, "area_cast", "Cast spell");
+        add(caster.source.id, "spell_cancel", "Cancel");
+        return commands;
+    }
     // While choosing a spell's creatures, only the choice itself is open:
     // any living creature in range toggles, then cast or cancel.
     if (selection_)
@@ -2373,9 +2430,9 @@ std::vector<Command> Session::legal_commands() const
     }
     if (a.bonus && a.rushes > 0)
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
-    // A creature caught by Ensnaring Strike may spend its Action to break free.
-    if (a.actions.available() &&
-            detail::has_effect(a.effects, detail::EffectKind::ensnaring_strike))
+    // A creature caught by Ensnaring Strike or Entangle may spend its Action to
+    // break free.
+    if (a.actions.available() && detail::restrained(a.effects))
         add(id, "escape", "Escape the vines", id);
     // Horde Breaker: once per turn, after a weapon attack, another creature
     // within 5 feet of the first target and within the weapon's reach or range.
@@ -2484,6 +2541,7 @@ std::vector<Command> Session::legal_commands() const
             }
     if (a.actions.available())
     {
+        offer_spells(commands, a, a, 0, detail::SpellTarget::area, false);
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
         add(id, "disengage", "Disengage");
@@ -2725,6 +2783,78 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
                                     8 + def(a).casting);
 }
 
+std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, Cell center) const
+{
+    // A square of `area` feet around the aimed cell, clipped to the board.
+    const int side = spell.area / 5, first = (side - 1) / 2;
+    std::vector<Cell> cells;
+    for (int y = center.y - first; y < center.y - first + side; ++y)
+        for (int x = center.x - first; x < center.x - first + side; ++x)
+            if (board_.contains(Cell{x, y}))
+                cells.push_back({x, y});
+    return cells;
+}
+
+Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &spell) const
+{
+    // The preview starts on the nearest living enemy in range, else the caster.
+    Cell best = caster.source.cell;
+    int best_feet = spell.range + 1;
+    for (const auto &other : actors_)
+    {
+        const int feet = distance(caster.source.cell, other.source.cell);
+        if (other.source.side != caster.source.side && other.hp > 0 && feet < best_feet)
+        {
+            best = other.source.cell;
+            best_feet = feet;
+        }
+    }
+    return best;
+}
+
+void Session::aim_area(const Command &command)
+{
+    if (command.verb == "spell_cancel")
+        area_.reset();
+    else if (command.verb == "area_cast")
+        cast_area();
+    else
+        area_->center = command.destination;
+}
+
+void Session::cast_area()
+{
+    const auto aimed = *area_;
+    area_.reset();
+    auto &a = actor(aimed.caster);
+    const auto &spell = *detail::find_spell(aimed.verb);
+    a.nick_origin = 0;
+    (void)a.actions.spend(true);
+    if (aimed.verb.ends_with("_2"))
+        --a.slots2;
+    else
+        --a.slots;
+    a.spent_slot = true;
+    log(a.source.name + " casts " + std::string(spell.label) + ".",
+    {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
+    const auto cells = area_cells(spell, aimed.center);
+    if (spell.concentration)
+        begin_concentration(a, spell);
+    zones_.push_back({a.source.id, cells});
+    const int dc = 8 + def(a).casting;
+    for (auto &other : actors_)
+    {
+        if (other.dead || other.source.id == a.source.id ||
+                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+                !detail::can_apply(other.effects) ||
+                saving_throw_succeeds(other, spell.save, dc))
+            continue;
+        detail::apply_entangle(other.effects, scope_, a.source.id, a.source.name, dc);
+        log(other.source.name + " is Restrained.",
+        {"{name} is Restrained.", {{"name", other.source.name}}});
+    }
+}
+
 void Session::resolve_ensnaring_strike(Actor &a)
 {
     // Vines grasp the creature just hit; a Large or larger one has Advantage.
@@ -2770,7 +2900,8 @@ void Session::escape_ensnaring(Actor &a)
     const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
                                     [](const auto & e)
     {
-        return e.kind == detail::EffectKind::ensnaring_strike;
+        return e.kind == detail::EffectKind::ensnaring_strike ||
+               e.kind == detail::EffectKind::entangle;
     });
     const auto vines = *found;
     const int bonus = a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics;
@@ -2790,10 +2921,12 @@ void Session::escape_ensnaring(Actor &a)
     });
     if (!escaped)
         return;
-    // The spell ends, and with it the caster's Concentration.
-    for (auto &caster : actors_)
-        if (vines.source_scope == scope_ && caster.source.id == vines.source_actor)
-            end_concentration(caster);
+    // Ensnaring Strike ends, and with it the caster's Concentration; Entangle
+    // only lets this creature go.
+    if (vines.kind == detail::EffectKind::ensnaring_strike)
+        for (auto &caster : actors_)
+            if (vines.source_scope == scope_ && caster.source.id == vines.source_actor)
+                end_concentration(caster);
     std::erase_if(a.effects.active, [&](const auto & e)
     {
         return e.id == vines.id;
@@ -2885,6 +3018,10 @@ void Session::end_concentration(Actor &caster)
 
 void Session::drop_concentration_effects(const Actor &caster)
 {
+    std::erase_if(zones_, [&](const auto & zone)
+    {
+        return zone.caster == caster.source.id;
+    });
     for (auto &other : actors_)
         std::erase_if(other.effects.active, [&](const auto & e)
     {
@@ -3789,6 +3926,8 @@ bool Session::submit(const Command &command)
     {
         resolve_initiative(command);
     }
+    else if (area_)
+        aim_area(command);
     else if (selection_)
         choose_target(command);
     else if (!graze_ && !champion_move_ && effect_waiting())
@@ -4036,6 +4175,9 @@ bool Session::submit(const Command &command)
         });
         a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, def(target).hp - target.hp));
     }
+    else if (const auto *aimed = detail::find_spell(command.verb);
+             aimed && aimed->target == detail::SpellTarget::area)
+        area_ = PendingArea{a.source.id, command.verb, default_area_center(a, *aimed)};
     else if (const auto *multi = detail::find_spell(command.verb);
              multi && selects_creatures(*multi) &&
              selection_maximum({a.source.id, command.verb, {}}) > 1)
@@ -4265,6 +4407,18 @@ std::string Session::save() const
             << selection_->chosen.size();
         for (const auto id : selection_->chosen)
             out << ' ' << id;
+    }
+    out << '\n';
+    out << bool(area_);
+    if (area_)
+        out << ' ' << area_->caster << ' ' << area_->verb << ' ' << area_->center.x << ' '
+            << area_->center.y;
+    out << '\n' << zones_.size();
+    for (const auto &zone : zones_)
+    {
+        out << ' ' << zone.caster << ' ' << zone.cells.size();
+        for (const auto cell : zone.cells)
+            out << ' ' << cell.x << ' ' << cell.y;
     }
     out << '\n';
     return out.str();
@@ -4993,6 +5147,48 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                 count >= session->selection_maximum(selection))
             throw std::runtime_error("Invalid spell target choice");
         session->selection_ = std::move(selection);
+    }
+    const auto known_actor = [&](EntityId id)
+    {
+        return std::any_of(session->actors_.begin(), session->actors_.end(),
+                           [&](const auto & a)
+        {
+            return a.source.id == id;
+        });
+    };
+    bool aiming{};
+    input >> aiming;
+    if (aiming)
+    {
+        PendingArea area;
+        input >> area.caster >> area.verb >> area.center.x >> area.center.y;
+        const auto *spell = detail::find_spell(area.verb);
+        if (!input || !spell || spell->target != detail::SpellTarget::area ||
+                !known_actor(area.caster) || !session->board_.contains(area.center) ||
+                session->selection_)
+            throw std::runtime_error("Invalid area aim");
+        session->area_ = std::move(area);
+    }
+    std::size_t zones{};
+    input >> zones;
+    if (!input || zones > session->actors_.size())
+        throw std::runtime_error("Invalid spell zones");
+    for (std::size_t n = 0; n < zones; ++n)
+    {
+        Zone zone;
+        std::size_t cells{};
+        input >> zone.caster >> cells;
+        if (!input || !known_actor(zone.caster) || !cells || cells > 64)
+            throw std::runtime_error("Invalid spell zone");
+        for (std::size_t c = 0; c < cells; ++c)
+        {
+            Cell cell;
+            input >> cell.x >> cell.y;
+            if (!input || !session->board_.contains(cell))
+                throw std::runtime_error("Invalid spell zone");
+            zone.cells.push_back(cell);
+        }
+        session->zones_.push_back(std::move(zone));
     }
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
@@ -6729,7 +6925,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.79", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.80", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

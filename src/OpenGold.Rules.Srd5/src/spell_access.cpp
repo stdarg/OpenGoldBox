@@ -55,10 +55,11 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
         cleric_list | paladin_list},
     Spell{"command", "Command", 1, 0, cleric_list | paladin_list},
     Spell{"hunters_mark", "Hunter's Mark", 1, 0, ranger_list},
+    // Also on the Bard, Druid and Wizard lists; added with those classes.
+    Spell{"longstrider", "Longstrider", 1, 0, ranger_list},
     Spell{"goodberry", "Goodberry", 1, 0, ranger_list | druid_list},
     Spell{"ensnaring_strike", "Ensnaring Strike", 1, 0, ranger_list},
-    // Also on the Bard, Druid and Wizard lists; added with those classes.
-    Spell{"longstrider", "Longstrider", 1, 0, ranger_list}};
+    Spell{"entangle", "Entangle", 1, 0, ranger_list | druid_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).

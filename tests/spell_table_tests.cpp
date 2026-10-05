@@ -404,10 +404,12 @@ void behaviour()
     {
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command is offered once
-        // per option and camp spells only outside combat; their own tests cover them.
+        // per option, camp spells only outside combat and area spells are aimed;
+        // their own tests cover them.
         if (row.pattern == SpellPattern::smite ||
                 (row.pattern == SpellPattern::buff && row.instances > 1) ||
-                row.rider == Rider::command || row.pattern == SpellPattern::camp)
+                row.rider == Rider::command || row.pattern == SpellPattern::camp ||
+                row.target == SpellTarget::area)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

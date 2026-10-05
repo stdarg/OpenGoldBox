@@ -22,10 +22,9 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   creation (Spell Choices step), added at each level-up with earlier choices
   locked, and after a Long Rest one prepared spell may be replaced, as for a
   Paladin.
-- The Ranger list in the game holds Cure Wounds, Ensnaring Strike, Goodberry,
-  Hunter's Mark and Longstrider so far. Entangle and Fog Cloud wait for area
-  aiming ([CLASS-5](SRD-DECISIONS.md#class-5-2026-10-05-aiming-area-spells));
-  Detect Magic waits for magic items.
+- The Ranger list in the game holds Cure Wounds, Ensnaring Strike, Entangle,
+  Goodberry, Hunter's Mark and Longstrider so far. Fog Cloud comes next; Detect
+  Magic waits for magic items.
 
 ## Favored Enemy and Hunter's Mark
 
@@ -72,7 +71,7 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   Immunities, Resistances and Vulnerabilities (or that it has none).
 - Not yet: replacing the Hunter's Prey option after a Short or Long Rest; the
   rest window replaces only Weapon Mastery so far.
-- Combat checkpoints become `OGCOMBAT 34` (each actor's once-per-turn Hunter's
+- Combat checkpoints become `OGCOMBAT 35` (each actor's once-per-turn Hunter's
   Prey state and Horde Breaker's first target).
 - Verification: `opengold_ranger_spell_tests` (the level-three choice and an
   unknown option refused, Colossus Slayer against unwounded and wounded
@@ -97,12 +96,35 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   Disadvantage.
 - The smite window now opens on any weapon hit on the caster's own turn and
   records whether it was a Melee hit; Divine and Searing Smite still need one.
-  Combat checkpoints become `OGCOMBAT 34`.
+  Combat checkpoints become `OGCOMBAT 35`.
 - A level-two slot's extra die waits for Rangers of level five.
 - Verification: `opengold_ranger_spell_tests` (offered only after a hit, slot
   and Bonus Action, Restrained, checkpoint, turn damage and Speed 0,
   Disadvantage and Advantage, escaping, a longbow hit opening the window) and
   `opengold_godot_ensnaring` (Bonus Action list and Use, English and Spanish).
+
+## Entangle and aiming area spells
+
+- Area spells are aimed as recorded in
+  [CLASS-5](SRD-DECISIONS.md#class-5-2026-10-05-aiming-area-spells): choose the
+  spell in the A cycle, then a left click on a square (or Space or Enter) starts
+  aiming; a left click or the arrow keys move the highlighted area, a right
+  click, Space, Enter or **Cast spell** casts it there, and Escape cancels
+  without spending anything. The preview starts on the nearest enemy in range.
+  An open aim is kept in combat checkpoints.
+- **Entangle** (Action, 90 feet, Concentration up to 1 minute): a 20-foot square
+  (4 by 4 squares, clipped to the battlefield) becomes Difficult Terrain, drawn
+  as such on the map. Each creature in it when it is cast, other than the
+  caster, makes a Strength save or is Restrained until the spell ends. A
+  Restrained creature may use **Escape the vines** (an Athletics check) to free
+  itself; the spell goes on for the others. The plants vanish when the caster's
+  Concentration ends.
+- Combat checkpoints become `OGCOMBAT 35` (the open aim and spell zones).
+- Verification: `opengold_ranger_spell_tests` (one aimed offer, the preview,
+  moving and cancelling, a checkpoint, casting, the caster spared, Difficult
+  Terrain, Concentration ending the plants) and `opengold_godot_entangle`
+  (Space, arrows and Escape; left click to aim and right click to cast; English
+  and Spanish).
 
 ## Goodberry
 

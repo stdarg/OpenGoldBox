@@ -42,7 +42,8 @@ enum class SpellTarget : unsigned
     any_creature, // any living actor in line of sight, either side
     wounded_ally, // same side, below maximum hit points
     ally,         // same side, including the caster
-    self          // the caster only
+    self,         // the caster only
+    area          // a square of `area` feet aimed within range (CLASS-5)
 };
 
 // A lasting effect applied by the spell; each maps to one apply_* function.
@@ -60,7 +61,8 @@ enum class Rider : unsigned
     protection_from_evil_and_good,
     command,
     hunters_mark,
-    longstrider
+    longstrider,
+    entangle
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -91,6 +93,7 @@ struct SpellDef
     Upcast upcast{};
     Rider rider{Rider::none};
     bool concentration{}; // a caster keeps one Concentration spell at a time
+    int area{};           // side of an `area` spell's square, feet
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -292,6 +295,20 @@ inline constexpr std::array spell_table
         .damage = DamageType::piercing,
         .dice = {1, 6, 0},
         .concentration = true},
+    // SRD 5.2.1 p. 128: a 20-foot square of Difficult Terrain; each creature
+    // in it when cast makes a Strength save or is Restrained.
+    SpellDef{
+        .id = "entangle",
+        .label = "Entangle",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 90,
+        .somatic = true,
+        .save = Ability::strength,
+        .rider = Rider::entangle,
+        .concentration = true,
+        .area = 20},
     // SRD 5.2.1 pp. 162, 140 and 125. Benefits that need no roll.
     SpellDef{
         .id = "shield_of_faith",

@@ -230,7 +230,18 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, std::u
 
 bool restrained(const EffectState &effects)
 {
-    return has_effect(effects, EffectKind::ensnaring_strike);
+    return has_effect(effects, EffectKind::ensnaring_strike) ||
+           has_effect(effects, EffectKind::entangle);
+}
+
+void apply_entangle(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                    std::string name, int dc)
+{
+    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
+            dc > 38)
+        throw std::runtime_error("Invalid Entangle application");
+    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+                              EffectKind::entangle, dc, 60000, 0});
 }
 
 void apply_ensnaring_strike(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
@@ -464,9 +475,11 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::chill_touch) ||
                            kind == unsigned(EffectKind::sap) || kind == unsigned(EffectKind::vex) ||
                            kind == unsigned(EffectKind::slow);
-        // Searing and Ensnaring Strike act at the start of the target's turn, not on a timer.
+        // Searing Smite, Ensnaring Strike and Entangle act at the start of the
+        // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
-                               kind == unsigned(EffectKind::ensnaring_strike);
+                               kind == unsigned(EffectKind::ensnaring_strike) ||
+                               kind == unsigned(EffectKind::entangle);
         // A spell benefit has no save; `dc` carries its value.
         const auto benefit = benefit_duration_ms(static_cast<EffectKind>(kind));
         if (kind == unsigned(EffectKind::command) && in)

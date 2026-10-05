@@ -1034,6 +1034,27 @@ void CombatView::move_selected(Cell direction)
         explain("That square is out of movement range. End the turn or use Dash if available.");
 }
 
+bool CombatView::aims_area(std::string_view verb) const
+{
+    if (!demo_ || !demo_->has_combat())
+        return false;
+    const auto offered = demo_->combat().legal_commands();
+    return std::any_of(offered.begin(), offered.end(), [&](const auto & c)
+    {
+        return c.verb == verb && c.aims_area;
+    });
+}
+
+void CombatView::aim_area_at(Cell cell)
+{
+    for (const auto &c : demo_->combat().legal_commands())
+        if (c.verb == "area_move" && c.destination == cell)
+        {
+            act(c);
+            return;
+        }
+}
+
 void CombatView::immediate(String verb)
 {
     if (!demo_ || !demo_->has_combat())
@@ -1045,6 +1066,8 @@ void CombatView::immediate(String verb)
     // While choosing a spell's creatures, End casts on those chosen.
     if (state.spell_targeting && wanted == "end")
         wanted = "spell_cast";
+    if (state.area_targeting && wanted == "end")
+        wanted = "area_cast";
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
                      [&](const auto & a)
 {
@@ -1271,6 +1294,32 @@ void CombatView::_input(const Ref<InputEvent> &event)
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && !key->is_ctrl_pressed() &&
             demo_->has_combat())
     {
+        // Aiming an area spell (CLASS-5): arrows move the preview, Space or Enter
+        // casts and Escape cancels. With an area spell selected, Space or Enter
+        // starts aiming.
+        if (demo_->combat().snapshot().area_targeting)
+        {
+            const auto code = key->get_keycode();
+            if (code == Key::KEY_SPACE || code == Key::KEY_ENTER || code == Key::KEY_KP_ENTER)
+                immediate("area_cast");
+            else if (code == Key::KEY_ESCAPE)
+                immediate("spell_cancel");
+            else if (const auto step = movement_direction(code, key->is_shift_pressed()))
+            {
+                const auto center = demo_->combat().snapshot().area_targeting->center;
+                aim_area_at({center.x + step->x, center.y + step->y});
+            }
+            get_viewport()->set_input_as_handled();
+            return;
+        }
+        if (aims_area(mode_) && (key->get_keycode() == Key::KEY_SPACE ||
+                                 key->get_keycode() == Key::KEY_ENTER ||
+                                 key->get_keycode() == Key::KEY_KP_ENTER))
+        {
+            immediate(gs(mode_));
+            get_viewport()->set_input_as_handled();
+            return;
+        }
         // While choosing a spell's creatures, Space casts and Escape cancels.
         if (demo_->combat().snapshot().spell_targeting &&
                 (key->get_keycode() == Key::KEY_SPACE || key->get_keycode() == Key::KEY_ESCAPE))
@@ -1424,10 +1473,8 @@ void CombatView::_input(const Ref<InputEvent> &event)
         get_viewport()->set_input_as_handled();
         return;
     }
-    if (defeated() || !mouse->is_pressed() ||
-            mouse->get_button_index() != MouseButton::MOUSE_BUTTON_LEFT)
+    if (defeated() || !mouse->is_pressed())
         return;
-    const auto s = demo_->combat().snapshot();
     const auto canvas = get_node<Control>("BattlefieldScroll/Canvas")
                         ->get_global_transform_with_canvas()
                         .affine_inverse()
@@ -1435,6 +1482,26 @@ void CombatView::_input(const Ref<InputEvent> &event)
     const auto relative = canvas / (combat_zoom_ * base_tile_);
     const Cell cell{static_cast<int>(std::floor(relative.x)),
                     static_cast<int>(std::floor(relative.y))};
+    // Area spells (CLASS-5): a left click aims (starting the aim when the spell
+    // is selected), a right click casts at the preview.
+    const bool aiming = demo_->combat().snapshot().area_targeting.has_value();
+    if (aiming && mouse->get_button_index() == MouseButton::MOUSE_BUTTON_RIGHT)
+    {
+        immediate("area_cast");
+        get_viewport()->set_input_as_handled();
+        return;
+    }
+    if (mouse->get_button_index() != MouseButton::MOUSE_BUTTON_LEFT)
+        return;
+    if (aiming || aims_area(mode_))
+    {
+        if (!aiming)
+            immediate(gs(mode_));
+        aim_area_at(cell);
+        get_viewport()->set_input_as_handled();
+        return;
+    }
+    const auto s = demo_->combat().snapshot();
     // A click on an ally that the selected action can target casts on it
     // instead of selecting it; these modes always target.
     const auto offered_here = demo_->combat().legal_commands();
@@ -1806,7 +1873,7 @@ void CombatView::refresh()
     ->set_visible(demo_ && (demo_->waiting() || (loaded && s.outcome != Outcome::ongoing)));
     get_node<Button>("End")->set_visible(!get_node<Button>("Continue")->is_visible());
     get_node<Button>("End")->set_text(i18n::text(s.effect_targeting ? N_("Skip effect")
-            : s.spell_targeting ? N_("Cast spell")
+            : s.spell_targeting || s.area_targeting ? N_("Cast spell")
             : s.free_movement  ? "Finish free move"
             : "End turn"));
     if (s.free_movement)
@@ -1815,6 +1882,8 @@ void CombatView::refresh()
         mode_ = s.effect_targeting->verb;
     if (s.spell_targeting)
         mode_ = s.spell_targeting->verb;
+    if (s.area_targeting)
+        mode_ = s.area_targeting->verb;
     const auto offered = loaded ? demo_->combat().legal_commands() : std::vector<Command> {};
     const auto enabled = [&](std::string_view verb)
     {
@@ -1824,7 +1893,8 @@ void CombatView::refresh()
             return c.verb == verb ||
                    (verb == "end" && s.effect_targeting &&
                     c.verb == "effect_skip") ||
-                   (verb == "end" && s.spell_targeting && c.verb == "spell_cast");
+                   (verb == "end" && s.spell_targeting && c.verb == "spell_cast") ||
+                   (verb == "end" && s.area_targeting && c.verb == "area_cast");
         });
     };
     auto *thrown = get_node<OptionButton>("ThrownWeapon");
@@ -2047,6 +2117,10 @@ void CombatView::refresh()
         get_node<Label>("Prompt")->set_text(
             i18n::render(s.effect_targeting->prompt) + "\n" +
             i18n::text("Arrows: choose | Space: use | Escape: skip"));
+    if (player && s.area_targeting)
+        get_node<Label>("Prompt")->set_text(
+            i18n::text("Aim the spell.") + "\n" +
+            i18n::text("Left click or arrows: move | Right click, Space or Enter: cast | Escape: cancel"));
     if (player && s.spell_targeting)
     {
         String chosen;
@@ -2229,6 +2303,11 @@ void CombatView::draw_battlefield()
                               ? .6
                               : .23));
             }
+    if (s.area_targeting)
+        for (const auto cell : s.area_targeting->cells)
+            canvas->draw_rect(Rect2(Vector2(cell.x * tile + 1, cell.y * tile + 1),
+                                    Vector2(tile - 2, tile - 2)),
+                              Color(.55, .8, .35, .38));
     if (s.effect_targeting && active != s.combatants.end() && active->side == 0)
     {
         unsigned index = 0;

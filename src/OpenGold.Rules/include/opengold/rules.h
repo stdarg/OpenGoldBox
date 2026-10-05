@@ -411,6 +411,16 @@ struct SpellTargeting
     unsigned maximum{};
 };
 
+// An area spell being aimed (CLASS-5): `center` is the previewed point and
+// `cells` the squares the spell would affect there.
+struct AreaTargeting
+{
+    EntityId actor{};
+    std::string verb;
+    Cell center;
+    std::vector<Cell> cells;
+};
+
 struct FreeMovement
 {
     EntityId actor{};
@@ -436,6 +446,7 @@ struct Snapshot
     std::optional<OptionalEffectChoice> optional_effect_choice;
     std::optional<EffectTargeting> effect_targeting;
     std::optional<SpellTargeting> spell_targeting;
+    std::optional<AreaTargeting> area_targeting;
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;
@@ -451,6 +462,7 @@ struct Command
     std::string verb, label;
     Cell destination;
     unsigned item{};
+    bool aims_area{}; // Starts aiming an area spell (CLASS-5).
 };
 
 class CombatSession

@@ -199,13 +199,18 @@ void advancement_and_rejection()
                 {
                     (void)r->restore(bad);
                 });
-                const auto tail = pending.rfind('\n', pending.size() - 2) + 1;
+                // The spell-selection line comes before the area-aim and zone lines.
+                auto selection_line = pending.size() - 1;
+                for (int line = 0; line < 3; ++line)
+                    selection_line = pending.rfind('\n', selection_line - 1);
+                ++selection_line;
+                const auto selection_end = pending.find('\n', selection_line) + 1;
                 for (const char *invalid :
                         {"99999 99 1 1 1\n", "1 1 1 1 1\n", "1 99 20 1 1\n"
                         })
                 {
                     bad = pending;
-                    bad.replace(tail, std::string::npos, invalid);
+                    bad.replace(selection_line, selection_end - selection_line, invalid);
                     rejects(
                         [&]
                     {
@@ -264,7 +269,7 @@ void run()
                             continue;
                         }
                         const auto pending = c->save();
-                        check(pending.starts_with("OGCOMBAT 34 "),
+                        check(pending.starts_with("OGCOMBAT 35 "),
                               "Graze uses the current checkpoint format");
                         check(r->restore(pending)->save() == pending,
                               "Pending Graze round trips exactly");

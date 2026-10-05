@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Entangle and area aiming
+
+Rules 0.6.80 adds aimed area spells (CLASS-5) with Entangle for Rangers.
+Combat checkpoints become `OGCOMBAT 35`. See
+[Ranger](RANGER.md#entangle-and-aiming-area-spells).
+
 ## Ensnaring Strike and Restrained
 
 Rules 0.6.79 adds Ensnaring Strike for Rangers and the Restrained condition.

@@ -259,6 +259,27 @@ void write_ui_fixture()
     }
     throw std::runtime_error("No seed hits the vanguard");
 }
+
+// A Ranger with Entangle prepared and two vanguards 25 feet away, for
+// tests/entangle_view_tests.gd.
+void write_entangle_fixture()
+{
+    auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
+    const auto profile = module->character_profile(ranger({"cure_wounds", "entangle"}).sheet(),
+                         std::vector<std::string> {"longsword"}).data;
+    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
+        {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
+            {98, "vanguard", "First", 1, {6, 1}},
+            {99, "vanguard", "Second", 1, {6, 2}}
+        }},
+    2);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*c, "end"), "Reach the Ranger's turn");
+    const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "ranger-fixtures";
+    std::ofstream out(path / "entangle.save", std::ios::binary);
+    out << c->save();
+    check(bool(out), "Write the Entangle UI fixture");
+}
 void hunters_prey_option_checks()
 {
     auto module = rules();
@@ -401,6 +422,75 @@ void ranged_smite_window_checks()
     }
     throw std::runtime_error("No seed hits with the longbow");
 }
+bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == verb && command.destination == cell)
+            return c.submit(command);
+    return false;
+}
+
+void entangle_aiming_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, ranger({"cure_wounds", "entangle"}));
+    const auto offers = c->legal_commands();
+    const auto start = std::find_if(offers.begin(), offers.end(), [](const auto & command)
+    {
+        return command.verb == "entangle";
+    });
+    check(start != offers.end() && start->aims_area && !start->target,
+          "Entangle is offered once, to be aimed");
+    check(c->submit(*start), "Choosing Entangle starts aiming");
+    auto aim = c->snapshot().area_targeting;
+    check(aim && aim->verb == "entangle" && aim->center == Cell{2, 1} && aim->cells.size() == 16 &&
+          unit(*c, 1).action && slots(*c) == 2,
+          "The preview starts on the nearest enemy, a 20-foot square, nothing spent");
+    const auto aiming = c->save();
+    check(module->restore(aiming)->save() == aiming, "Aiming survives a checkpoint");
+    check(submit_cell(*c, "area_move", Cell{5, 2}) && c->snapshot().area_targeting->center == Cell{5, 2},
+          "Moving the preview recentres the square");
+    check(submit(*c, "spell_cancel") && !c->snapshot().area_targeting && unit(*c, 1).action &&
+          slots(*c) == 2,
+          "Cancelling spends nothing");
+}
+
+// A battle in which Entangle, aimed at the two enemies, Restrained at least
+// one of them: the first seed where a Strength save fails.
+std::unique_ptr<CombatSession> entangled(const RulesModule &module, std::size_t &reach_before)
+{
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(module, ranger({"cure_wounds", "entangle"}), "target", seed);
+        reach_before = c->movement_reach(1).size();
+        check(submit(*c, "entangle") && submit_cell(*c, "area_move", Cell{2, 1}) &&
+              submit(*c, "area_cast"),
+              "Aim and cast Entangle");
+        if (restrained(*c, 98) || restrained(*c, 99))
+            return c;
+    }
+    throw std::runtime_error("No seed fails a Strength save");
+}
+
+void entangle_checks()
+{
+    auto module = rules();
+    std::size_t reach_before{};
+    auto c = entangled(*module, reach_before);
+    check(logged(*c, "Ranger casts Entangle.") && !unit(*c, 1).action && slots(*c) == 1 &&
+          !restrained(*c, 1),
+          "Entangle spends the Action and a slot and spares its caster");
+    check(c->movement_reach(1).size() < reach_before &&
+          c->snapshot().battlefield.at(Cell{2, 1}) == 2,
+          "The square is Difficult Terrain, shown on the battlefield");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "The plants survive a checkpoint");
+    // A new Concentration spell ends Entangle: the plants and the Restraint go.
+    check(submit(*c, "hunters_mark_free", 99) && !restrained(*c, 98) && !restrained(*c, 99) &&
+          c->movement_reach(1).size() == reach_before,
+          "Losing Concentration removes the plants");
+}
+
 } // namespace
 
 int main()
@@ -417,7 +507,10 @@ int main()
         hunters_lore_checks();
         ensnaring_strike_checks();
         ranged_smite_window_checks();
+        entangle_aiming_checks();
+        entangle_checks();
         write_ui_fixture();
+        write_entangle_fixture();
         std::cout << "Ranger spell tests passed\n";
     }
     catch (const std::exception &e)

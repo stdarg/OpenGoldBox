@@ -52,7 +52,10 @@ enum class EffectKind : unsigned
     longstrider = 17,
     // Ensnaring Strike: Restrained, 1d6 Piercing damage at the start of each of
     // the target's turns; `dc` is the Strength (Athletics) check that escapes it.
-    ensnaring_strike = 18
+    ensnaring_strike = 18,
+    // Entangle: Restrained by the plants; `dc` is the Strength (Athletics)
+    // check that frees the creature without ending the spell.
+    entangle = 19
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -151,6 +154,8 @@ void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId 
                      std::string name, int dc, unsigned first_save_ms);
 void apply_ensnaring_strike(EffectState &, std::uint64_t scope, rules::EntityId caster,
                             std::string name, int dc);
+void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, std::string name,
+                    int dc);
 // Restrained: Speed 0, attacks against it have Advantage, its attacks and
 // Dexterity saves have Disadvantage.
 [[nodiscard]] bool restrained(const EffectState &effects);
