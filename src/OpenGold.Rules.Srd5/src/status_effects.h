@@ -86,7 +86,17 @@ enum class EffectKind : unsigned
     // Mage Armor: an unarmored creature's base AC becomes 13 + Dexterity.
     mage_armor = 31,
     // Poisoned (Ray of Sickness): Disadvantage on attack rolls and ability checks.
-    poisoned = 32
+    poisoned = 32,
+    // Sleep, first stage: Incapacitated; a failed Wisdom save at the end of its
+    // next turn turns it into `asleep`.
+    drowsy = 33,
+    // Sleep, second stage: Unconscious (Incapacitated, Prone, helpless).
+    asleep = 34,
+    // Hideous Laughter: Prone and Incapacitated, a Wisdom save at the end of
+    // each of its turns and, with Advantage, whenever it takes damage.
+    laughing = 35,
+    // Color Spray: Blinded until the end of the caster's next turn.
+    dazzled = 36
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -161,8 +171,10 @@ void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityI
                        std::string name, unsigned duration_ms);
 void apply_guiding_bolt(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                         std::string name, unsigned duration_ms);
+// Poisoned or Color Spray's Blinded, lasting `duration_ms` (to the end of the
+// caster's next turn).
 void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
-                    std::string name, unsigned duration_ms);
+                    std::string name, unsigned duration_ms, EffectKind kind = EffectKind::poisoned);
 [[nodiscard]] bool opportunity_blocked(const EffectState &effects);
 void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                           std::string name, unsigned duration_ms);
@@ -197,6 +209,13 @@ void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, 
 // Paralyzed: Incapacitated and Speed 0; it fails Strength and Dexterity saves,
 // attacks against it have Advantage and hits within 5 feet are critical.
 [[nodiscard]] bool paralyzed(const EffectState &effects);
+// Incapacitated by a spell: Paralyzed, Sleep or Hideous Laughter.
+[[nodiscard]] bool incapacitated(const EffectState &effects);
+// A spell's repeated save condition with its first save `first_save_ms` away:
+// Sleep's drowsiness or Hideous Laughter.
+void apply_repeating_condition(EffectState &effects, EffectKind kind, std::uint64_t scope,
+                               rules::EntityId caster, std::string name, int dc,
+                               unsigned first_save_ms);
 void apply_hold_person(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                        std::string name, int dc, unsigned first_save_ms);
 void apply_sanctuary(EffectState &effects, std::uint64_t scope, rules::EntityId caster,

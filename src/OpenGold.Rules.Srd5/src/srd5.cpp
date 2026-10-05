@@ -104,7 +104,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike ||
            kind == detail::EffectKind::entangle || kind == detail::EffectKind::bane ||
            kind == detail::EffectKind::hold_person || kind == detail::EffectKind::resistance ||
-           kind == detail::EffectKind::expeditious_retreat;
+           kind == detail::EffectKind::expeditious_retreat || kind == detail::EffectKind::drowsy ||
+           kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -243,6 +244,9 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "ice_knife", 1},
     SpellAccessRow{"Wizard", "chromatic_orb", 1},
     SpellAccessRow{"Wizard", "acid_splash", 1},
+    SpellAccessRow{"Wizard", "sleep", 1},
+    SpellAccessRow{"Wizard", "hideous_laughter", 1},
+    SpellAccessRow{"Wizard", "color_spray", 1},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -304,6 +308,7 @@ struct Definition
     bool life_domain{};   // Cleric level 3: Disciple of Life and Preserve Life
     bool evoker{};        // Wizard level 3: Potent Cantrip and Sculpt Spells
     int mage_armor_ac{};  // the AC Mage Armor gives; 0 while wearing armor
+    bool sleepless{};     // an Elf: Sleep has no effect
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -632,6 +637,8 @@ character_definition(std::string_view bytes,
     d.hit_die = die;
     d.constitution = con;
     d.dwarf = race == "Dwarf";
+    // Elves do not sleep, so Sleep cannot touch them.
+    d.sleepless = race == "Elf";
     d.rushes = race == "Orc" ? 2 + (level - 1) / 4 : 0;
     const auto trained_saves = detail::class_save_proficiencies(klass);
     for (unsigned i = 0; i < 6; ++i)
@@ -1316,6 +1323,8 @@ class Session final : public CombatSession
                      const std::vector<Cell> &cells);
     void push_away(const Actor &from, Actor &target, int squares);
     void ice_burst(Actor &caster, const Actor &target, bool upcast);
+    void condition_area(Actor &caster, const detail::SpellDef &spell,
+                        const std::vector<Cell> &cells);
     void potent_cantrip(Actor &target, const detail::SpellDef &spell, detail::DamageDice rolled);
     [[nodiscard]] std::vector<EntityId> sculpted(const Actor &caster, const detail::SpellDef &spell,
             unsigned slot_level, const std::vector<Cell> &cells) const;
@@ -1350,11 +1359,12 @@ class Session final : public CombatSession
                (helpless(target) && distance(a.source.cell, target.source.cell) <= 5);
     }
 
-    // Unconscious or Paralyzed: attacked with Advantage, critically hit within
+    // Unconscious (or asleep) or Paralyzed: attacked with Advantage, critically hit within
     // 5 feet, failing Strength and Dexterity saves.
     static bool helpless(const Actor &target)
     {
-        return unconscious(target) || detail::paralyzed(target.effects);
+        return unconscious(target) || detail::paralyzed(target.effects) ||
+               detail::has_effect(target.effects, detail::EffectKind::asleep);
     }
 
     bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
@@ -2106,6 +2116,18 @@ Snapshot Session::snapshot() const
             messages.push_back({"Bane: -1d4 to attack rolls and saving throws.", {}});
             view.conditions.push_back({"Bane: -1d4 to attack rolls and saving throws.", {}});
         }
+        for (const auto &[kind, label] :
+                {
+                    std::pair{detail::EffectKind::drowsy, "Incapacitated (Sleep)"},
+                    std::pair{detail::EffectKind::asleep, "Unconscious (Sleep)"},
+                    std::pair{detail::EffectKind::laughing, "Prone and Incapacitated (laughing)"}
+                })
+            if (detail::has_effect(a.effects, kind))
+            {
+                messages.push_back({label, {}});
+                s.combatants.back().status += std::string(" | ") + label;
+                s.combatants.back().conditions.push_back({label, {}});
+            }
         if (detail::has_effect(a.effects, detail::EffectKind::poisoned))
         {
             messages.push_back({"Poisoned", {}});
@@ -2239,6 +2261,17 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         target.movement += def(target).speed;
         ++target.dashes;
         return;
+    case detail::Rider::hideous_laughter:
+        detail::apply_repeating_condition(target.effects, detail::EffectKind::laughing, scope_,
+                                          a.source.id, a.source.name, dc,
+                                          next_save_ms(target.source.id));
+        target.effects.prone = true;
+        log(target.source.name + " falls Prone, laughing.",
+        {"{name} falls Prone, laughing.", {{"name", target.source.name}}});
+        return;
+    case detail::Rider::sleep:
+    case detail::Rider::color_spray:
+        return; // Aimed areas, resolved by cast_area().
     case detail::Rider::hold_person:
         detail::apply_hold_person(target.effects, scope_, a.source.id, a.source.name, dc,
                                   next_save_ms(target.source.id));
@@ -2859,6 +2892,14 @@ std::vector<Command> Session::legal_commands() const
     // break free.
     if (a.actions.available() && detail::restrained(a.effects))
         add(id, "escape", "Escape the vines", id);
+    // Sleep ends when someone within 5 feet spends an Action to shake the sleeper.
+    if (a.actions.available())
+        for (const auto &other : actors_)
+            if (other.source.side == a.source.side && other.source.id != a.source.id &&
+                    distance(a.source.cell, other.source.cell) <= 5 &&
+                    (detail::has_effect(other.effects, detail::EffectKind::drowsy) ||
+                     detail::has_effect(other.effects, detail::EffectKind::asleep)))
+                add(id, "shake_awake", "Shake awake", other.source.id);
     // Expeditious Retreat: Dash as a Bonus Action while it lasts.
     if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::expeditious_retreat))
         add(id, "retreat_dash", "Expeditious Retreat: Dash");
@@ -3177,11 +3218,23 @@ void Session::damage(Actor &target, int amount, bool critical)
     }
     if (target.hp == 0)
         target.effects.prone = true;
-    // Damage ends Turn Undead on the creature.
+    // Damage ends Turn Undead and Sleep on the creature.
     std::erase_if(target.effects.active, [](const auto & e)
     {
-        return e.kind == detail::EffectKind::turned;
+        return e.kind == detail::EffectKind::turned || e.kind == detail::EffectKind::drowsy ||
+               e.kind == detail::EffectKind::asleep;
     });
+    // Hideous Laughter: damage calls for a new Wisdom save, with Advantage.
+    for (std::size_t n = 0; n < target.effects.active.size() && target.hp > 0; ++n)
+        if (target.effects.active[n].kind == detail::EffectKind::laughing &&
+                saving_throw_succeeds(target, detail::Ability::wisdom, target.effects.active[n].dc,
+                                      true))
+        {
+            target.effects.active.erase(target.effects.active.begin() + std::ptrdiff_t(n));
+            log(target.source.name + " stops laughing.",
+            {"{name} stops laughing.", {{"name", target.source.name}}});
+            break;
+        }
     // Sacred Weapon ends when its wielder is Incapacitated.
     if (target.hp == 0)
         std::erase_if(target.effects.active, [](const auto & e)
@@ -3426,6 +3479,48 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     }
 }
 
+void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
+                             const std::vector<Cell> &cells)
+{
+    // Sleep chooses the enemies in its sphere; Color Spray's cone takes every
+    // creature in it.
+    const bool sleep = spell.rider == detail::Rider::sleep;
+    const int dc = 8 + def(caster).casting;
+    const auto index = static_cast<std::size_t>(&caster - actors_.data());
+    const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+    for (auto &other : actors_)
+    {
+        if (other.dead || other.hp == 0 || other.source.id == caster.source.id ||
+                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+                (sleep && other.source.side == caster.source.side) || !detail::can_apply(other.effects))
+            continue;
+        if (sleep && (def(other).sleepless || def(other).creature_type == "undead" ||
+                      def(other).creature_type == "construct"))
+        {
+            log(other.source.name + " does not sleep.",
+            {"{name} does not sleep.", {{"name", other.source.name}}});
+            continue;
+        }
+        if (saving_throw_succeeds(other, spell.save, dc))
+            continue;
+        if (sleep)
+        {
+            detail::apply_repeating_condition(other.effects, detail::EffectKind::drowsy, scope_,
+                                              caster.source.id, caster.source.name, dc,
+                                              next_save_ms(other.source.id));
+            log(other.source.name + " grows drowsy.",
+            {"{name} grows drowsy.", {{"name", other.source.name}}});
+        }
+        else
+        {
+            detail::apply_poisoned(other.effects, scope_, caster.source.id, caster.source.name,
+                                   next_turn_ms(caster) + slot, detail::EffectKind::dazzled);
+            log(other.source.name + " is Blinded.",
+            {"{name} is Blinded.", {{"name", other.source.name}}});
+        }
+    }
+}
+
 void Session::ice_burst(Actor &caster, const Actor &target, bool upcast)
 {
     // The target and each creature within 5 feet of it save against 2d6 Cold
@@ -3497,6 +3592,13 @@ void Session::cast_area()
     if (spell.pattern == detail::SpellPattern::save_damage)
     {
         damage_area(a, spell, aimed.verb, cells);
+        return;
+    }
+    if (spell.rider == detail::Rider::sleep || spell.rider == detail::Rider::color_spray)
+    {
+        if (spell.concentration)
+            begin_concentration(a, spell);
+        condition_area(a, spell, cells);
         return;
     }
     if (spell.concentration)
@@ -3609,8 +3711,9 @@ void Session::turn_undead(Actor &cleric)
 
 void Session::hold_still(std::vector<Command> &commands, const Actor &a) const
 {
-    // Paralyzed: Incapacitated and Speed 0, it can only end its turn.
-    if (!detail::paralyzed(a.effects))
+    // Incapacitated (Paralyzed, Sleep, Hideous Laughter): it can only end its
+    // turn. Adaptation: a Prone, laughing creature could otherwise crawl.
+    if (!detail::incapacitated(a.effects))
         return;
     const auto end = std::find_if(commands.begin(), commands.end(), [](const auto & offer)
     {
@@ -4636,6 +4739,17 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         return false;
     }
+    if (detail::has_effect(target.effects, detail::EffectKind::asleep) &&
+            (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
+    {
+        const std::string name = ability == detail::Ability::strength ? "Strength" : "Dexterity";
+        log(target.source.name + " automatically fails the " + name + " save while asleep.",
+        {
+            "{name} automatically fails the {ability} save while asleep.",
+            {{"name", target.source.name}, {"ability", name, true}}
+        });
+        return false;
+    }
     if (unconscious(target) &&
             (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
     {
@@ -4769,7 +4883,7 @@ void Session::progress_movement()
             for (const auto &other : actors_)
                 if (other.source.side != a.source.side && conscious(other) && other.reaction &&
                         !detail::has_effect(other.effects, detail::EffectKind::turned) &&
-                        !detail::paralyzed(other.effects) &&
+                        !detail::incapacitated(other.effects) &&
                         !detail::opportunity_blocked(other.effects) &&
                         has_weapon_reaction(other, a.source.cell, destination) && can_see(other, a))
                     reactors_.push_back(other.source.id);
@@ -4995,6 +5109,21 @@ bool Session::submit(const Command &command)
         a.nick_origin = 0;
         (void)a.actions.spend(false);
         escape_ensnaring(a);
+    }
+    else if (command.verb == "shake_awake")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(false);
+        auto &sleeper = actor(command.target);
+        std::erase_if(sleeper.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::drowsy || e.kind == detail::EffectKind::asleep;
+        });
+        log(a.source.name + " shakes " + sleeper.source.name + " awake.",
+        {
+            "{name} shakes {target} awake.",
+            {{"name", a.source.name}, {"target", sleeper.source.name}}
+        });
     }
     else if (command.verb == "retreat_dash")
     {
@@ -7992,7 +8121,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.95", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.96", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

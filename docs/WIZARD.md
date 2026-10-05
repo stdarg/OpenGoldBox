@@ -104,3 +104,25 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   the burst on two creatures, six orb entries and a level-one slot, Acid
   Splash's sphere without a slot, Shatter's level-two slot), the Sorcerer's six
   cantrip options.
+
+## Sleep, Hideous Laughter and Color Spray
+
+- **Sleep** (level 1, 60 feet, Concentration up to 1 minute): aimed like other
+  areas, a 5-foot-radius sphere. Each enemy in it (allies are never chosen)
+  makes a Wisdom save or is **Incapacitated** while drowsy; at the end of its
+  next turn it saves again and on a failure falls **Unconscious** (Prone, Str
+  and Dex saves fail, attacks against it have Advantage). Damage, the end of
+  Concentration or a companion's **Shake awake** Action (within 5 feet) ends
+  it. Elves, Undead and Constructs are unaffected.
+- **Hideous Laughter** (level 1, 30 feet, Concentration up to 1 minute): an
+  enemy makes a Wisdom save or falls **Prone and Incapacitated**, repeating the
+  save at the end of each of its turns and, with Advantage, whenever it takes
+  damage. The extra target from a higher slot is not modeled.
+- **Color Spray** (level 1, 15-foot cone): each creature in the cone makes a
+  Constitution save or is **Blinded** until the end of the Wizard's next turn.
+- An Incapacitated creature can only end its turn and takes no Reactions. The
+  computer wakes its sleeping companions and casts Hideous Laughter at an
+  enemy without conditions.
+- Verification: `opengold_wizard_spell_tests` (Sleep passes over allies and
+  is shaken off, a laughing creature can only end its turn, the cone's Blinded
+  creature, checkpoints of both effects).

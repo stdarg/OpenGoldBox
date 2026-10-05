@@ -757,7 +757,11 @@ Command choose_demo_command(const CombatSession &session)
                 return command;
         }
     for (const auto &command : offered)
-        if (command.verb == "blindness" || command.verb == "hold_person")
+        if (command.verb == "shake_awake")
+            return command;
+    for (const auto &command : offered)
+        if (command.verb == "blindness" || command.verb == "hold_person" ||
+                command.verb == "hideous_laughter")
         {
             const auto target = std::find_if(state.combatants.begin(), state.combatants.end(),
                                              [&](const auto & a)

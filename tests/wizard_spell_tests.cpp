@@ -313,6 +313,89 @@ void acid_splash_checks()
           "Acid Splash's sphere catches both creatures and spends no slot");
 }
 
+bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
+{
+    const auto conditions = unit(c, id).conditions;
+    return std::any_of(conditions.begin(), conditions.end(), [&](const auto & condition)
+    {
+        return condition.source == label;
+    });
+}
+
+// Ends turns until the given creature acts.
+void reach(CombatSession &c, EntityId id)
+{
+    for (unsigned turns = 0; c.snapshot().actor != id && turns < 6; ++turns)
+        check(submit(c, "end"), "End a turn");
+    check(c.snapshot().actor == id, "Reach the creature's turn");
+}
+
+void sleep_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "sleep"}), {2, 1}, {3, 1}, seed);
+        check(submit(*c, "sleep") && aim(*c, Cell{1, 0}) && submit(*c, "area_cast"),
+              "Cast Sleep on the adjacent enemy");
+        check(!logged(*c, "Second Wisdom save"), "The sphere stops short of the second enemy");
+        check(!logged(*c, "Ally grows drowsy") && !logged(*c, "Ally Wisdom save"),
+              "Sleep passes over the Wizard's allies");
+        if (!logged(*c, "First grows drowsy."))
+            continue;
+        check(has_condition(*c, 98, "Incapacitated (Sleep)"), "A failed save leaves it Incapacitated");
+        const auto saved = c->save();
+        check(module->restore(saved)->save() == saved, "Drowsiness survives a checkpoint");
+        reach(*c, 99);
+        check(submit(*c, "shake_awake", 98) && !has_condition(*c, 98, "Incapacitated (Sleep)") &&
+              !has_condition(*c, 98, "Unconscious (Sleep)"),
+              "A companion beside the sleeper shakes it awake");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Wisdom save");
+}
+
+void hideous_laughter_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "hideous_laughter"}), {4, 1}, {11, 5},
+                        seed);
+        check(submit(*c, "hideous_laughter", 98), "Cast Hideous Laughter");
+        if (!logged(*c, "First falls Prone, laughing."))
+            continue;
+        check(has_condition(*c, 98, "Prone and Incapacitated (laughing)"),
+              "The target is Prone and Incapacitated");
+        const auto saved = c->save();
+        check(module->restore(saved)->save() == saved, "The laughter survives a checkpoint");
+        reach(*c, 98);
+        for (const auto &command : c->legal_commands())
+            check(command.verb == "end", "A laughing creature can only end its turn");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Wisdom save");
+}
+
+void color_spray_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "color_spray"}), {3, 1}, {11, 5}, seed);
+        check(submit(*c, "color_spray") && aim(*c, Cell{3, 1}) &&
+              c->snapshot().area_targeting->cells.size() == 7 && submit(*c, "area_cast"),
+              "Color Spray fills a 15-foot cone");
+        check(!logged(*c, "Ally Constitution save") && !logged(*c, "Second Constitution save"),
+              "Only creatures in the cone are touched");
+        if (!logged(*c, "First is Blinded."))
+            continue;
+        check(!unit(*c, 98).conditions.empty(), "A failed save Blinds the target");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Constitution save");
+}
+
 } // namespace
 
 int main()
@@ -331,6 +414,9 @@ int main()
         ice_knife_checks();
         chromatic_orb_checks();
         acid_splash_checks();
+        sleep_checks();
+        hideous_laughter_checks();
+        color_spray_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

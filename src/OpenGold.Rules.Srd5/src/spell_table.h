@@ -83,7 +83,10 @@ enum class Rider : unsigned
     false_life,
     expeditious_retreat,
     ray_of_sickness,
-    ice_knife
+    ice_knife,
+    sleep,
+    hideous_laughter,
+    color_spray
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -598,6 +601,45 @@ inline constexpr std::array spell_table
         .damage = DamageType::acid,
         .dice = {1, 6, 0},
         .radius = 5},
+    // SRD 5.2.1 p. 162: enemies in a 5-foot-radius sphere save or grow drowsy,
+    // then fall asleep on a second failure. Elves and creatures that do not
+    // sleep are unaffected.
+    SpellDef{
+        .id = "sleep",
+        .label = "Sleep",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::wisdom,
+        .rider = Rider::sleep,
+        .concentration = true,
+        .radius = 5},
+    // SRD 5.2.1 p. 168 (Tasha's Hideous Laughter): Prone and Incapacitated.
+    SpellDef{
+        .id = "hideous_laughter",
+        .label = "Hideous Laughter",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 30,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::hideous_laughter,
+        .concentration = true},
+    // SRD 5.2.1 p. 116: a 15-foot cone; Blinded until the end of the caster's
+    // next turn.
+    SpellDef{
+        .id = "color_spray",
+        .label = "Color Spray",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 15,
+        .save = Ability::constitution,
+        .rider = Rider::color_spray,
+        .cone = 15},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

@@ -94,7 +94,11 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"ray_of_sickness", "Ray of Sickness", 1, 0, wizard_list},
     Spell{"ice_knife", "Ice Knife", 1, 0, wizard_list | druid_list},
     Spell{"chromatic_orb", "Chromatic Orb", 1, 0, wizard_list},
-    Spell{"acid_splash", "Acid Splash", 0, 0, wizard_list}};
+    Spell{"acid_splash", "Acid Splash", 0, 0, wizard_list},
+    // Also on the Bard and Sorcerer lists; added with those classes.
+    Spell{"sleep", "Sleep", 1, 0, wizard_list},
+    Spell{"hideous_laughter", "Hideous Laughter", 1, 0, wizard_list},
+    Spell{"color_spray", "Color Spray", 1, 0, wizard_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
