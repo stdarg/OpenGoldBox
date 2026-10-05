@@ -322,6 +322,7 @@ void invalid()
 #include "wizard_choices_checks.h"
 #include "cleric_choices_checks.h"
 #include "paladin_choices_checks.h"
+#include "ranger_choices_checks.h"
 } // namespace
 
 int main()
@@ -335,6 +336,7 @@ int main()
         write_wizard_ui_fixture();
         cleric_choices_checks();
         paladin_choices_checks();
+        ranger_choices_checks();
         write_cleric_ui_fixture();
         write_blessed_warrior_ui_fixture();
         std::cout << "Spell access tests passed\n";

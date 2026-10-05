@@ -47,7 +47,7 @@ std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::st
     }
     if (klass == "barbarian" || klass == "monk")
         result.push_back({"feature:unarmored_defense", "class:" + std::string(klass), 1, {}});
-    if (klass == "cleric" || klass == "wizard" || klass == "paladin")
+    if (klass == "cleric" || klass == "wizard" || klass == "paladin" || klass == "ranger")
         result.push_back({"feature:spellcasting", "class:" + std::string(klass), 1, {}});
     if (klass == "rogue")
         result.push_back({"feature:sneak_attack", "class:rogue", 1, {}});

@@ -18,7 +18,8 @@ enum SpellList : unsigned
 {
     wizard_list = 1,
     cleric_list = 2,
-    paladin_list = 4
+    paladin_list = 4,
+    ranger_list = 8
 };
 
 struct Spell
@@ -40,7 +41,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"scorching_ray", "Scorching Ray", 2, 16},
     Spell{"blindness", "Blindness", 2, 32, wizard_list | cleric_list},
     Spell{"inflict_wounds", "Inflict Wounds", 1, 0, cleric_list},
-    Spell{"cure_wounds", "Cure Wounds", 1, 0, cleric_list | paladin_list},
+    Spell{"cure_wounds", "Cure Wounds", 1, 0, cleric_list | paladin_list | ranger_list},
     Spell{"healing_word", "Healing Word", 1, 0, cleric_list},
     Spell{"divine_smite", "Divine Smite", 1, 0, paladin_list},
     Spell{"searing_smite", "Searing Smite", 1, 0, paladin_list},
@@ -51,7 +52,10 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     // Also on other class lists; added with those classes' increments.
     Spell{"protection_from_evil_and_good", "Protection from Evil and Good", 1, 0,
         cleric_list | paladin_list},
-    Spell{"command", "Command", 1, 0, cleric_list | paladin_list}};
+    Spell{"command", "Command", 1, 0, cleric_list | paladin_list},
+    Spell{"hunters_mark", "Hunter's Mark", 1, 0, ranger_list},
+    // Also on the Bard, Druid and Wizard lists; added with those classes.
+    Spell{"longstrider", "Longstrider", 1, 0, ranger_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
@@ -60,7 +64,7 @@ struct PreparedCaster
     std::string_view klass, source, cantrip_label;
     unsigned list, cantrip_list;
     std::array<unsigned, 4> cantrips, prepared, highest_slot;
-    // A Paladin replaces one prepared spell after a Long Rest; a Cleric any.
+    // A Paladin or Ranger replaces one prepared spell after a Long Rest; a Cleric any.
     bool rest_replaces_one;
 };
 
@@ -71,7 +75,12 @@ constexpr std::array prepared_casters{
     PreparedCaster{
         // Paladin cantrips come only from Blessed Warrior, from the Cleric list.
         "Paladin", "class:paladin:spellcasting", "Blessed Warrior cantrips", paladin_list,
-        cleric_list, {0, 0, 0, 0}, {2, 3, 4, 5}, {1, 1, 1, 1}, true}};
+        cleric_list, {0, 0, 0, 0},
+        {2, 3, 4, 5}, {1, 1, 1, 1}, true},
+    // Druidic Warrior's cantrips are a later increment.
+    PreparedCaster{
+        "Ranger", "class:ranger:spellcasting", "Druidic Warrior cantrips", ranger_list, 0,
+        {0, 0, 0, 0}, {2, 3, 4, 4}, {1, 1, 1, 1}, true}};
 
 // Spells a class always has prepared from a class level on.
 struct AlwaysPrepared
@@ -80,11 +89,14 @@ struct AlwaysPrepared
     unsigned level;
 };
 
-// Paladin's Smite, SRD 5.2.1 p. 54, and the Oath of Devotion spells, p. 56.
+// Paladin's Smite, SRD 5.2.1 p. 54, the Oath of Devotion spells, p. 56, and
+// the Ranger's Favored Enemy.
 constexpr std::array always_prepared_table{
     AlwaysPrepared{"Paladin", "divine_smite", 2},
     AlwaysPrepared{"Paladin", "protection_from_evil_and_good", 3},
-    AlwaysPrepared{"Paladin", "shield_of_faith", 3}};
+    AlwaysPrepared{"Paladin", "shield_of_faith", 3},
+    // Favored Enemy, SRD 5.2.1 p. 57.
+    AlwaysPrepared{"Ranger", "hunters_mark", 1}};
 
 const PreparedCaster *prepared_caster(std::string_view klass)
 {

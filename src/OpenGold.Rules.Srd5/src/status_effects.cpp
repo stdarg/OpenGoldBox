@@ -106,7 +106,8 @@ int speed_penalty(const EffectState &effects)
 {
     // Repeated instances of either source do not stack, but these two distinct
     // features each reduce Speed by 10 feet.
-    return (frosted(effects) ? 10 : 0) + (slowed(effects) ? 10 : 0);
+    return (frosted(effects) ? 10 : 0) + (slowed(effects) ? 10 : 0) -
+           (has_effect(effects, EffectKind::longstrider) ? 10 : 0);
 }
 
 bool slowed(const EffectState &effects)
@@ -269,6 +270,9 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 600000; // Concentration, up to 10 minutes
     case EffectKind::sacred_weapon:
         return 600000; // 10 minutes
+    case EffectKind::hunters_mark:
+    case EffectKind::longstrider:
+        return 3600000; // 1 hour
     case EffectKind::heroism:
     case EffectKind::divine_favor:
     case EffectKind::bless:

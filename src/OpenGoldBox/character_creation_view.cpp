@@ -741,7 +741,7 @@ void CharacterCreationView::refresh()
             return i18n::text(source);
         });
         instructions =
-            d.spells && d.character_class == "paladin"
+            d.spells && (d.character_class == "paladin" || d.character_class == "ranger")
             ? N_("Choose prepared spells. Unfilled choices remain pending; Back preserves your choices.")
             : d.spells && d.character_class == "cleric"
             ? N_("Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices.")

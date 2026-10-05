@@ -45,7 +45,11 @@ enum class EffectKind : unsigned
     command = 14,
     // Sacred Weapon: `dc` (the Charisma modifier, at least 1) is added to
     // attack rolls with Melee weapons; they may deal Radiant damage.
-    sacred_weapon = 15
+    sacred_weapon = 15,
+    // Hunter's Mark: the caster's attack-roll hits deal an extra 1d6 Force damage.
+    hunters_mark = 16,
+    // Longstrider: Speed increases by 10 feet.
+    longstrider = 17
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -121,6 +125,7 @@ void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityI
 [[nodiscard]] bool opportunity_blocked(const EffectState &effects);
 void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                           std::string name, unsigned duration_ms);
+// The net Speed reduction from effects; negative when Longstrider raises Speed.
 [[nodiscard]] int speed_penalty(const EffectState &effects);
 [[nodiscard]] bool slowed(const EffectState &effects);
 [[nodiscard]] bool frosted(const EffectState &effects);

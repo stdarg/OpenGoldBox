@@ -57,7 +57,9 @@ enum class Rider : unsigned
     divine_favor,
     bless,
     protection_from_evil_and_good,
-    command
+    command,
+    hunters_mark,
+    longstrider
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -330,6 +332,30 @@ inline constexpr std::array spell_table
         .save = Ability::wisdom,
         .upcast = {.extra_instances = 1},
         .rider = Rider::command},
+    // SRD 5.2.1 p. 141. The mark's 1d6 Force damage follows the caster's
+    // attack-roll hits; moving it after the target drops is a separate Bonus Action.
+    SpellDef{
+        .id = "hunters_mark",
+        .label = "Hunter's Mark",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::enemy,
+        .range = 90,
+        .somatic = false,
+        .bonus_action = true,
+        .requires_sight = true,
+        .rider = Rider::hunters_mark,
+        .concentration = true},
+    // SRD 5.2.1 p. 145: one more creature per slot level above 1.
+    SpellDef{
+        .id = "longstrider",
+        .label = "Longstrider",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::longstrider},
     SpellDef{
         .id = "divine_favor",
         .label = "Divine Favor",

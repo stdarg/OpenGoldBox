@@ -682,6 +682,11 @@ Command choose_demo_command(const CombatSession &session)
     for (const auto &command : offered)
         if (command.verb == "divine_smite_free")
             return command;
+    // Favored Enemy's Hunter's Mark and moving it cost no slot, so they come first.
+    for (const auto verb : {"hunters_mark_move", "hunters_mark_free"})
+        for (const auto &command : offered)
+            if (command.verb == verb)
+                return command;
     // Sacred Weapon lasts the fight, so it is taken before the first melee attack.
     const bool can_strike = std::any_of(offered.begin(), offered.end(), [](const auto & command)
     {

@@ -90,6 +90,8 @@ detail::EffectKind rider_effect(detail::Rider rider)
            : rider == detail::Rider::bless         ? detail::EffectKind::bless
            : rider == detail::Rider::protection_from_evil_and_good
            ? detail::EffectKind::protection_from_evil_and_good
+           : rider == detail::Rider::hunters_mark ? detail::EffectKind::hunters_mark
+           : rider == detail::Rider::longstrider  ? detail::EffectKind::longstrider
            : detail::EffectKind::divine_favor;
 }
 
@@ -98,7 +100,8 @@ bool concentration_effect(detail::EffectKind kind)
 {
     return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism ||
            kind == detail::EffectKind::bless ||
-           kind == detail::EffectKind::protection_from_evil_and_good;
+           kind == detail::EffectKind::protection_from_evil_and_good ||
+           kind == detail::EffectKind::hunters_mark;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -188,6 +191,9 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Paladin", "protection_from_evil_and_good", 1},
     SpellAccessRow{"Cleric", "protection_from_evil_and_good", 1},
     SpellAccessRow{"Paladin", "command", 1},
+    SpellAccessRow{"Ranger", "cure_wounds", 1},
+    SpellAccessRow{"Ranger", "hunters_mark", 1},
+    SpellAccessRow{"Ranger", "longstrider", 1},
     // Blessed Warrior's Cleric cantrips; spell access checks the feature itself.
     SpellAccessRow{"Paladin", "sacred_flame", 2},
     SpellAccessRow{"Cleric", "command", 1},
@@ -247,6 +253,7 @@ struct Definition
     int hit_die{}, constitution{}, rushes{}, surges{}, arcane{};
     int lay_on_hands{}; // Paladin healing pool: five times Paladin level
     int free_smite{};   // Paladin's Smite: one Divine Smite without a slot per Long Rest
+    int favored_enemy{}; // Favored Enemy: two Hunter's Marks without a slot per Long Rest
     int channel_divinity{};
     bool sacred_weapon{}; // Oath of Devotion, Paladin level 3
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -313,7 +320,10 @@ struct Actor : detail::LifeState
     Participant source;
     Definition definition;
     int initiative{}, movement{}, winds{}, slots{}, slots2{};
-    int hit_dice{}, rushes{}, surges{}, dashes{}, arcane{}, lay_on_hands{}, free_smite{},
+    int hit_dice{}, rushes{}, surges{}, dashes{}, arcane{}, lay_on_hands{},
+        // Remaining free casts of Paladin's Smite or Favored Enemy: a character has at
+        // most one of them while multiclassing is deferred (SCOPE-1).
+        free_casts{},
         channel_divinity{};
     // The creature this actor just hit with a melee weapon on its own turn, which
     // a smite may follow; cleared by any other command or a new turn.
@@ -365,10 +375,17 @@ constexpr std::array resource_descriptors
         false},
     ResourceDescriptor{"lay_on_hands", "Lay On Hands", &Actor::lay_on_hands,
         &Definition::lay_on_hands, 0, true},
-    ResourceDescriptor{"paladins_smite", "Paladin's Smite", &Actor::free_smite,
+    ResourceDescriptor{"paladins_smite", "Paladin's Smite", &Actor::free_casts,
         &Definition::free_smite, 0, true},
+    ResourceDescriptor{"favored_enemy", "Favored Enemy", &Actor::free_casts,
+        &Definition::favored_enemy, 0, true},
     ResourceDescriptor{"channel_divinity", "Channel Divinity", &Actor::channel_divinity,
         &Definition::channel_divinity, 1, true}};
+
+int free_cast_capacity(const Definition &d)
+{
+    return d.free_smite + d.favored_enemy;
+}
 
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
                                   const Definition &d)
@@ -570,6 +587,7 @@ character_definition(std::string_view bytes,
     d.channel_divinity = klass == "Paladin" && level >= 3 ? 2 : 0;
     d.sacred_weapon = klass == "Paladin" && level >= 3;
     d.free_smite = klass == "Paladin" && level >= 2 ? 1 : 0;
+    d.favored_enemy = klass == "Ranger" ? 2 : 0;
     d.medicine = ability_modifier(scores[4]);
     d.tactical_mind = klass == "Fighter" && level >= 2;
     d.cunning = klass == "Rogue" && level >= 2;
@@ -579,10 +597,10 @@ character_definition(std::string_view bytes,
     d.surges = klass == "Fighter" && level >= 2 ? 1 : 0;
     d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
     d.slots = (klass == "Cleric" || klass == "Wizard") ? (level == 1 ? 2 : level == 2 ? 3 : 4)
-              : klass == "Paladin"                    ? (level <= 2 ? 2 : 3)
+              : (klass == "Paladin" || klass == "Ranger") ? (level <= 2 ? 2 : 3)
               : 0;
     d.slots2 = (klass == "Cleric" || klass == "Wizard") && level >= 3 ? (level == 3 ? 2 : 3) : 0;
-    d.casting = 2 + ability_modifier(scores[klass == "Cleric" ? 4
+    d.casting = 2 + ability_modifier(scores[(klass == "Cleric" || klass == "Ranger") ? 4
                                             : (klass == "Warlock" || klass == "Sorcerer" ||
                                                klass == "Paladin") ? 5
                                             : 3]);
@@ -767,7 +785,7 @@ void restore_vitals(Actor &a, const VitalState &state)
     a.surges = a.definition.surges;
     a.arcane = a.definition.arcane;
     a.lay_on_hands = a.definition.lay_on_hands;
-    a.free_smite = a.definition.free_smite;
+    a.free_casts = free_cast_capacity(a.definition);
     a.channel_divinity = a.definition.channel_divinity;
     if (!state.resources.empty())
     {
@@ -776,7 +794,7 @@ void restore_vitals(Actor &a, const VitalState &state)
         in >> magic >> a.winds >> a.slots >> a.slots2 >> a.successes >> a.failures >> a.stable >>
            a.hit_dice >> a.recovery.death_save_in_ms >> a.recovery.stable_recovery_in_ms >>
            a.temporary_hp.amount >> std::quoted(a.temporary_hp.source_id) >> a.rushes >>
-           a.surges >> a.arcane >> a.lay_on_hands >> a.free_smite >> a.channel_divinity;
+           a.surges >> a.arcane >> a.lay_on_hands >> a.free_casts >> a.channel_divinity;
         if (!in || magic != vitals_magic)
             throw std::runtime_error("Invalid character resource state");
         detail::decode_stable_recovery(a.recovery);
@@ -791,8 +809,8 @@ void restore_vitals(Actor &a, const VitalState &state)
             a.slots2 > d.slots2 || a.surges < 0 || a.surges > d.surges || a.rushes < 0 ||
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
             a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4 ||
-            a.lay_on_hands < 0 || a.lay_on_hands > d.lay_on_hands || a.free_smite < 0 ||
-            a.free_smite > d.free_smite || a.channel_divinity < 0 ||
+            a.lay_on_hands < 0 || a.lay_on_hands > d.lay_on_hands || a.free_casts < 0 ||
+            a.free_casts > free_cast_capacity(d) || a.channel_divinity < 0 ||
             a.channel_divinity > d.channel_divinity)
         throw std::runtime_error("Invalid character vitals");
     detail::validate_recovery(a);
@@ -809,7 +827,7 @@ VitalState vitals(const Actor &a)
         << a.recovery.death_save_in_ms << ' ' << detail::encode_stable_recovery(a.recovery) << ' '
         << a.temporary_hp.amount << ' ' << std::quoted(a.temporary_hp.source_id) << ' '
         << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' '
-        << a.free_smite << ' ' << a.channel_divinity << ' ';
+        << a.free_casts << ' ' << a.channel_divinity << ' ';
     detail::write_effects(out, a.effects);
     std::string description;
     if (a.definition.slots)
@@ -910,7 +928,7 @@ class Session final : public CombatSession
             a.surges = d.surges;
             a.arcane = d.arcane;
             a.lay_on_hands = d.lay_on_hands;
-            a.free_smite = d.free_smite;
+            a.free_casts = free_cast_capacity(d);
             a.channel_divinity = d.channel_divinity;
             a.facing_left = a.source.facing_left;
             if (a.source.state)
@@ -1168,6 +1186,8 @@ class Session final : public CombatSession
     // Command's Approach and Flee: the commanded creature only moves toward or
     // away from the caster, then ends its turn.
     void obey_command(std::vector<Command> &commands, const Actor &a) const;
+    [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
+    [[nodiscard]] bool mark_can_move(const Actor &caster) const;
     // Sacred Weapon's attack bonus, 0 without it.
     [[nodiscard]] int sacred_weapon_bonus(const Actor &a) const;
     [[nodiscard]] detail::DamageType sacred_damage_type(const Actor &a, const Actor &target) const;
@@ -1896,6 +1916,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::divine_favor:
     case detail::Rider::bless:
     case detail::Rider::protection_from_evil_and_good:
+    case detail::Rider::hunters_mark:
+    case detail::Rider::longstrider:
     {
         // Heroism's Temporary HP equal the caster's spellcasting modifier.
         const int value =
@@ -2308,6 +2330,26 @@ std::vector<Command> Session::legal_commands() const
     }
     if (a.bonus && a.rushes > 0)
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
+    // Favored Enemy casts Hunter's Mark without a slot, while no living quarry
+    // carries the mark already; a dropped quarry's mark moves for a Bonus Action.
+    const bool marking = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.hp > 0 && !other.dead && marked_by(other, a);
+    });
+    const bool free_mark = a.bonus && a.free_casts > 0 && d.favored_enemy && !marking &&
+                           detail::knows_spell(d.spells, "hunters_mark") && !d.str_dex_disadvantage;
+    const bool moving_mark = a.bonus && mark_can_move(a);
+    if (free_mark || moving_mark)
+        for (const auto &other : actors_)
+            if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+                    distance(a.source.cell, other.source.cell) <= 90 && can_see(a, other) &&
+                    !marked_by(other, a))
+            {
+                if (free_mark)
+                    add(id, "hunters_mark_free", "Hunter's Mark (Favored Enemy)", other.source.id);
+                if (moving_mark)
+                    add(id, "hunters_mark_move", "Move Hunter's Mark", other.source.id);
+            }
     // Sacred Weapon comes with the Attack action, so it is offered while the
     // Action is unspent and costs only a Channel Divinity use.
     if (d.sacred_weapon && a.channel_divinity > 0 && a.actions.available() && d.melee.count &&
@@ -2329,7 +2371,7 @@ std::vector<Command> Session::legal_commands() const
     if (a.bonus && a.smite_target && actor(a.smite_target).hp > 0 && !d.spells.empty())
     {
         const bool slot = a.slots > 0 && !a.spent_slot;
-        if (detail::knows_spell(d.spells, "divine_smite") && a.free_smite > 0)
+        if (detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
             add(id, "divine_smite_free", "Divine Smite (Paladin's Smite)", a.smite_target);
         if (detail::knows_spell(d.spells, "divine_smite") && slot)
             add(id, "divine_smite", "Divine Smite", a.smite_target);
@@ -2340,7 +2382,7 @@ std::vector<Command> Session::legal_commands() const
         for (const auto scope :
                 {
                     detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
-                    detail::SpellTarget::self
+                    detail::SpellTarget::self, detail::SpellTarget::enemy
                 })
             offer_spells(commands, a, other, distance(a.source.cell, other.source.cell), scope,
                          true);
@@ -2581,7 +2623,7 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     a.smite_target = 0;
     a.bonus = false;
     if (verb == "divine_smite_free")
-        --a.free_smite;
+        --a.free_casts;
     else
     {
         --a.slots;
@@ -3060,6 +3102,19 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
               : ranged ? d.ranged_type
               : sacred_damage_type(a, target),
               ranged, spell);
+    // Hunter's Mark: any attack-roll hit on the caster's quarry deals 1d6 Force.
+    if (hit && marked_by(target, a) && !target.dead)
+    {
+        const int extra = resolved_damage(target, detail::DamageType::force,
+                                          dice({1, 6, 0}, critical_hit(a, target, natural, spell)));
+        log(target.source.name + " takes " + std::to_string(extra) +
+            " Force damage from Hunter's Mark.",
+        {
+            "{name} takes {damage} Force damage from Hunter's Mark.",
+            {{"name", target.source.name}, {"damage", std::to_string(extra)}}
+        });
+        damage(target, extra, false);
+    }
     // Divine Favor: a weapon hit deals an extra 1d4 Radiant damage.
     if (hit && !spell && detail::has_effect(a.effects, detail::EffectKind::divine_favor) &&
             !target.dead)
@@ -3075,6 +3130,31 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         damage(target, extra, false);
     }
     return hit;
+}
+
+bool Session::marked_by(const Actor &target, const Actor &caster) const
+{
+    return std::any_of(target.effects.active.begin(), target.effects.active.end(),
+                       [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::hunters_mark && e.source_scope == scope_ &&
+               e.source_actor == caster.source.id;
+    });
+}
+
+bool Session::mark_can_move(const Actor &caster) const
+{
+    // The mark moves once its creature drops to 0 Hit Points, while the
+    // caster still concentrates on it.
+    bool marked = false;
+    for (const auto &other : actors_)
+        if (marked_by(other, caster))
+        {
+            if (other.hp > 0 && !other.dead)
+                return false;
+            marked = true;
+        }
+    return marked;
 }
 
 int Session::sacred_weapon_bonus(const Actor &a) const
@@ -3655,6 +3735,34 @@ bool Session::submit(const Command &command)
         log(a.source.name + " moves aggressively.",
         {"{name} moves aggressively.", {{"name", a.source.name}}});
     }
+    else if (command.verb == "hunters_mark_free")
+    {
+        const auto &spell = *detail::find_spell("hunters_mark");
+        a.bonus = false;
+        --a.free_casts;
+        log(a.source.name + " casts Hunter's Mark (Favored Enemy).",
+        {"{name} casts Hunter's Mark (Favored Enemy).", {{"name", a.source.name}}});
+        begin_concentration(a, spell);
+        apply_rider(spell, command.verb, a, actor(command.target), 8 + d.casting);
+    }
+    else if (command.verb == "hunters_mark_move")
+    {
+        a.bonus = false;
+        for (auto &other : actors_)
+            std::erase_if(other.effects.active, [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::hunters_mark && e.source_scope == scope_ &&
+                   e.source_actor == a.source.id;
+        });
+        auto &quarry = actor(command.target);
+        detail::apply_spell_benefit(quarry.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::hunters_mark, 0);
+        log(a.source.name + " moves Hunter's Mark to " + quarry.source.name + ".",
+        {
+            "{name} moves Hunter's Mark to {target}.",
+            {{"name", a.source.name}, {"target", quarry.source.name}}
+        });
+    }
     else if (command.verb == "sacred_weapon")
     {
         --a.channel_divinity;
@@ -3839,7 +3947,7 @@ std::string Session::save() const
             << detail::encode_stable_recovery(a.recovery) << ' ' << a.temporary_hp.amount << ' '
             << std::quoted(a.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
             << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' ' << a.dashes
-            << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.free_smite << ' '
+            << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.free_casts << ' '
             << a.channel_divinity << ' ' << a.smite_target << ' ' << a.smite_critical << ' '
             << a.sneak_used << ' ' << a.aim_used
             << ' ' << a.aim_ready
@@ -3962,7 +4070,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.recovery.stable_recovery_in_ms >> actor.temporary_hp.amount >>
           std::quoted(actor.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
           actor.surges >> actor.surge_used >> actor.actions.surge >> actor.dashes >> actor.arcane >>
-          actor.lay_on_hands >> actor.free_smite >> actor.channel_divinity >> actor.smite_target >>
+          actor.lay_on_hands >> actor.free_casts >> actor.channel_divinity >> actor.smite_target >>
           actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
           actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
@@ -3975,8 +4083,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used;
     actor.concentration = detail::read_concentration(input);
+    // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
-            held && (held->source.caster != source.id || held->remaining_ms > 600000))
+            held && (held->source.caster != source.id || held->remaining_ms > 3600000))
         throw std::runtime_error("Invalid checkpoint concentration");
     detail::decode_stable_recovery(actor.recovery);
     if (!input ||
@@ -4027,7 +4136,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.hit_dice < 0 || actor.hit_dice > (definition.hit_die ? definition.level : 0) ||
             actor.successes < 0 || actor.successes > 3 || actor.failures < 0 || actor.failures > 4 ||
             actor.lay_on_hands < 0 || actor.lay_on_hands > definition.lay_on_hands ||
-            actor.free_smite < 0 || actor.free_smite > definition.free_smite ||
+            actor.free_casts < 0 || actor.free_casts > free_cast_capacity(definition) ||
             actor.channel_divinity < 0 || actor.channel_divinity > definition.channel_divinity)
         throw std::runtime_error("Invalid checkpoint actor state");
     detail::validate_recovery(actor);
@@ -4885,7 +4994,7 @@ class Module final : public RulesModule
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Ranger")
             result.description =
-                "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
+                "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nDruidic Warrior and the Hunter subclass remain unavailable.";
         if (result.level == 4)
             result.feats =
         {
@@ -5317,7 +5426,7 @@ class Module final : public RulesModule
             const std::string note =
                 next.character_class == "Paladin"
                 ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
-                : "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
+                : "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nDruidic Warrior and the Hunter subclass remain unavailable.";
             next.class_modifiers += "\n" + note;
             next.class_messages.push_back({note, {}});
         }
@@ -5349,7 +5458,7 @@ class Module final : public RulesModule
         actor.rushes += actor.definition.rushes - old.rushes;
         actor.surges += actor.definition.surges - old.surges;
         actor.lay_on_hands += actor.definition.lay_on_hands - old.lay_on_hands;
-        actor.free_smite += actor.definition.free_smite - old.free_smite;
+        actor.free_casts += free_cast_capacity(actor.definition) - free_cast_capacity(old);
         actor.channel_divinity += actor.definition.channel_divinity - old.channel_divinity;
         actor.hit_dice += actor.definition.level - old.level;
         auto continuation = vitals(actor);
@@ -5450,7 +5559,7 @@ class Module final : public RulesModule
         actor.surges = d.surges;
         actor.arcane = d.arcane;
         actor.lay_on_hands = d.lay_on_hands;
-        actor.free_smite = d.free_smite;
+        actor.free_casts = free_cast_capacity(d);
         actor.channel_divinity = d.channel_divinity;
         state = vitals(actor);
     }
@@ -6254,6 +6363,19 @@ class Module final : public RulesModule
                     {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
                 }});
         }
+        if (sheet.character_class == "Ranger")
+        {
+            result.spell_modifiers +=
+                "\nRanger spellcasting: Wisdom score " + std::to_string(sheet.scores[4]) +
+                "; pending prepared spells: " +
+                std::to_string(access.prepared_choices - access.prepared.size()) + ".";
+            result.spell_messages.push_back(
+            {
+                "Ranger spellcasting: Wisdom score {score}; pending prepared spells: {prepared}.",
+                {   {"score", std::to_string(sheet.scores[4])},
+                    {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
+                }});
+        }
         if (sheet.character_class == "Paladin")
         {
             result.spell_modifiers +=
@@ -6344,7 +6466,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.74", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.75", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

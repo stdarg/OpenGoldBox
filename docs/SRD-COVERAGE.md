@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Ranger spellcasting and Favored Enemy
+
+Rules 0.6.75 gives Rangers Wisdom spellcasting with prepared spells, Favored
+Enemy's free Hunter's Marks, Hunter's Mark and Longstrider. See
+[Ranger](RANGER.md).
+
 ## Healing in camp
 
 Rules 0.6.74 adds the Camp dialog's Cast / Use row: Lay On Hands and the
