@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Ray of Sickness, Ice Knife, Chromatic Orb and Acid Splash
+
+Rules 0.6.95 adds four Wizard attack spells and the Poisoned condition, and
+level-two area spells now spend a level-two slot. See
+[Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash).
+
 ## Mage Armor, False Life and Expeditious Retreat
 
 Rules 0.6.94 adds three Wizard self-buffs. See

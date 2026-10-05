@@ -133,8 +133,17 @@ func run_checks() -> void:
 	require(frost.button_pressed and current_scene.get_node("Next").disabled, "Book and preparation are independent remaining choices")
 	var book: CheckBox = current_scene.get_node("SpellChoices/Rows/BookChoices/spellbook_1/magic_missile")
 	book.set_pressed(true); await settle()
+	# The book takes six level-one spells and four of them are prepared.
+	var learned := 1
+	for entry in current_scene.get_node("SpellChoices/Rows/BookChoices/spellbook_1").get_children():
+		if entry is CheckBox and entry.visible and not entry.button_pressed and learned < 6:
+			entry.set_pressed(true); await settle(); learned += 1
 	var prepared: CheckBox = current_scene.get_node("SpellChoices/Rows/BookChoices/prepared/magic_missile")
 	prepared.grab_focus(); await keyboard(KEY_SPACE)
+	var ready := 1
+	for entry in current_scene.get_node("SpellChoices/Rows/BookChoices/prepared").get_children():
+		if entry is CheckBox and entry.visible and not entry.disabled and not entry.button_pressed and ready < 4:
+			entry.set_pressed(true); await settle(); ready += 1
 	require(not current_scene.get_node("Next").disabled, "Keyboard completes supported independent preparation")
 	book.set_pressed(false); await settle()
 	require(current_scene.get_node("Next").disabled and not prepared.visible, "Removing a book entry clears dependent preparation")

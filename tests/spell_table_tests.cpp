@@ -389,8 +389,10 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
               "An attack never restores hit points");
 
     // A rider is observable whenever the spell actually landed. Spiritual
-    // Weapon's rider is its force on the battlefield, not a condition.
+    // Weapon's rider is its force on the battlefield and Ice Knife's a burst,
+    // not conditions.
     if (row.rider != Rider::none && row.rider != Rider::spiritual_weapon &&
+            row.rider != Rider::ice_knife &&
             after_target.hit_points < before_target.hit_points)
         check(!after_target.conditions.empty() || row.rider == Rider::chill_touch,
               "A landed rider is visible on the target");
@@ -436,8 +438,8 @@ void behaviour()
     for (const auto &row : spell_table)
     {
         // Smites are offered by the caster's own melee hit, not by range, a
-        // spell on several creatures begins a choice, Command and Resistance are
-        // offered once per option, camp spells only outside combat, area spells are aimed,
+        // spell on several creatures begins a choice, Command, Resistance and
+        // Chromatic Orb are offered once per option, camp spells only outside combat, area spells are aimed,
         // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one
         // and Mage Armor an unarmored character; their own tests cover them.
         if (row.pattern == SpellPattern::smite ||
@@ -445,6 +447,7 @@ void behaviour()
                  row.instances > 1) ||
                 row.target == SpellTarget::dying_ally ||
                 row.rider == Rider::command || row.rider == Rider::resistance ||
+                row.id == std::string_view("chromatic_orb") ||
                 row.pattern == SpellPattern::camp ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor)

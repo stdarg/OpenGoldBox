@@ -84,7 +84,9 @@ enum class EffectKind : unsigned
     // Expeditious Retreat: Dash as a Bonus Action each turn.
     expeditious_retreat = 30,
     // Mage Armor: an unarmored creature's base AC becomes 13 + Dexterity.
-    mage_armor = 31
+    mage_armor = 31,
+    // Poisoned (Ray of Sickness): Disadvantage on attack rolls and ability checks.
+    poisoned = 32
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -159,6 +161,8 @@ void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityI
                        std::string name, unsigned duration_ms);
 void apply_guiding_bolt(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                         std::string name, unsigned duration_ms);
+void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                    std::string name, unsigned duration_ms);
 [[nodiscard]] bool opportunity_blocked(const EffectState &effects);
 void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                           std::string name, unsigned duration_ms);

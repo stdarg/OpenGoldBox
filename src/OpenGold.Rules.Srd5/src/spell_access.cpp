@@ -89,7 +89,12 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     // Also on the Sorcerer list (and Expeditious Retreat on the Warlock's).
     Spell{"mage_armor", "Mage Armor", 1, 0, wizard_list},
     Spell{"false_life", "False Life", 1, 0, wizard_list},
-    Spell{"expeditious_retreat", "Expeditious Retreat", 1, 0, wizard_list}};
+    Spell{"expeditious_retreat", "Expeditious Retreat", 1, 0, wizard_list},
+    // Also on the Sorcerer list (Ice Knife on the Druid's); added with those classes.
+    Spell{"ray_of_sickness", "Ray of Sickness", 1, 0, wizard_list},
+    Spell{"ice_knife", "Ice Knife", 1, 0, wizard_list | druid_list},
+    Spell{"chromatic_orb", "Chromatic Orb", 1, 0, wizard_list},
+    Spell{"acid_splash", "Acid Splash", 0, 0, wizard_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
@@ -378,6 +383,10 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
             {
                 "chill_touch", "Chill Touch",
                 "Melee spell attack: 1d10 Necrotic damage, Touch; prevents healing until the end of your next turn."
+            },
+            {
+                "acid_splash", "Acid Splash",
+                "Dexterity save: 1d6 Acid damage to each creature in a 5-foot-radius sphere within 60 feet."
             }
         }};
 }
@@ -395,7 +404,7 @@ starting_spell_grants(std::string_view klass,
         for (const auto &id : chosen)
         {
             require((id == "fire_bolt" || id == "poison_spray" || id == "ray_of_frost" ||
-                     id == "shocking_grasp" || id == "chill_touch") &&
+                     id == "shocking_grasp" || id == "chill_touch" || id == "acid_splash") &&
                     unique.insert(id).second);
             result.push_back(grant(id, 1, "class:sorcerer:spellcasting"));
         }
@@ -441,7 +450,7 @@ starting_spell_grants(std::string_view klass,
     for (const auto &id : chosen)
     {
         require((id == "fire_bolt" || id == "poison_spray" || id == "ray_of_frost" ||
-                 id == "shocking_grasp" || id == "chill_touch") &&
+                 id == "shocking_grasp" || id == "chill_touch" || id == "acid_splash") &&
                 unique.insert(id).second);
         result.push_back(grant(id, 1));
     }
@@ -464,7 +473,7 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
             {
                 require(g.id == "spell:fire_bolt" || g.id == "spell:poison_spray" ||
                         g.id == "spell:ray_of_frost" || g.id == "spell:shocking_grasp" ||
-                        g.id == "spell:chill_touch");
+                        g.id == "spell:chill_touch" || g.id == "spell:acid_splash");
                 const auto &spell = find(std::string_view(g.id).substr(6));
                 require(g == grant(spell.id, 1, "class:sorcerer:spellcasting") &&
                         known.insert(g.id).second);

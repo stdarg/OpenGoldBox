@@ -82,3 +82,25 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (AC 13 + Dexterity and no second
   cast, 6–12 Temporary Hit Points, the first and a later Dash, a checkpoint).
   The generic spell table probes now also swap a Wizard's book entry.
+
+## Ray of Sickness, Ice Knife, Chromatic Orb and Acid Splash
+
+- **Ray of Sickness** (level 1, 60 feet): a spell attack for 2d8 Poison; a hit
+  leaves the target **Poisoned** (Disadvantage on attack rolls, shown as a
+  condition) until the end of the Wizard's next turn. Protection from Poison
+  ends it. Disadvantage on ability checks is not modeled yet.
+- **Ice Knife** (level 1, 60 feet): a spell attack for 1d10 Piercing; hit or
+  miss, the target and every creature within 5 feet make a Dexterity save or
+  take 2d6 Cold (3d6 from a level-two slot).
+- **Chromatic Orb** (level 1, 90 feet): a spell attack for 3d8 of the chosen
+  type, offered once per type ("Chromatic Orb: Fire" and so on). The leap to
+  another creature on matching dice is not modeled.
+- **Acid Splash** (cantrip, Wizard and Sorcerer): a 5-foot-radius sphere aimed
+  within 60 feet; each creature makes a Dexterity save or takes 1d6 Acid (an
+  Evoker's Potent Cantrip deals half on a success). Area cantrips spend no slot.
+- Area spells of level two now spend a level-two slot (Shatter and Silence spent
+  a level-one slot before).
+- Verification: `opengold_wizard_spell_tests` (Poisoned and its Disadvantage,
+  the burst on two creatures, six orb entries and a level-one slot, Acid
+  Splash's sphere without a slot, Shatter's level-two slot), the Sorcerer's six
+  cantrip options.

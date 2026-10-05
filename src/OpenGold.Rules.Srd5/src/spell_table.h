@@ -81,7 +81,9 @@ enum class Rider : unsigned
     thunderwave,
     mage_armor,
     false_life,
-    expeditious_retreat
+    expeditious_retreat,
+    ray_of_sickness,
+    ice_knife
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -548,6 +550,54 @@ inline constexpr std::array spell_table
         .bonus_action = true,
         .rider = Rider::expeditious_retreat,
         .concentration = true},
+    // SRD 5.2.1 p. 158: on a hit, Poisoned until the end of the caster's next turn.
+    SpellDef{
+        .id = "ray_of_sickness",
+        .label = "Ray of Sickness",
+        .level = 1,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .damage = DamageType::poison,
+        .dice = {2, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::ray_of_sickness},
+    // SRD 5.2.1 p. 141: 1d10 Piercing on a hit, then, hit or miss, the target
+    // and every creature within 5 feet save against 2d6 Cold.
+    SpellDef{
+        .id = "ice_knife",
+        .label = "Ice Knife",
+        .level = 1,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .damage = DamageType::piercing,
+        .dice = {1, 10, 0},
+        .rider = Rider::ice_knife},
+    // SRD 5.2.1 p. 115: 3d8 of the chosen type, offered once per type. The
+    // leap on matching dice is not modeled.
+    SpellDef{
+        .id = "chromatic_orb",
+        .label = "Chromatic Orb",
+        .level = 1,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 90,
+        .dice = {3, 8, 0},
+        .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 p. 107: a 5-foot-radius sphere within 60 feet, Dexterity save
+    // or 1d6 Acid.
+    SpellDef{
+        .id = "acid_splash",
+        .label = "Acid Splash",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .damage = DamageType::acid,
+        .dice = {1, 6, 0},
+        .radius = 5},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",
@@ -716,6 +766,23 @@ inline int command_option(std::string_view verb)
     return found == command_options.end() ? 0 : int(found - command_options.begin()) + 1;
 }
 
+// Chromatic Orb's damage types, each offered as "chromatic_orb_<type>".
+inline constexpr std::array<std::string_view, 6> chromatic_types{"acid", "cold", "fire",
+    "lightning", "poison", "thunder"};
+
+// The damage type a Chromatic Orb verb names, if it is one.
+inline std::optional<DamageType> chromatic_type(std::string_view verb)
+{
+    if (verb.ends_with("_2"))
+        verb.remove_suffix(2);
+    if (!verb.starts_with("chromatic_orb_"))
+        return std::nullopt;
+    verb.remove_prefix(14);
+    if (std::find(chromatic_types.begin(), chromatic_types.end(), verb) == chromatic_types.end())
+        return std::nullopt;
+    return damage_type(verb);
+}
+
 // Resistance's damage types (CLASS-7), each offered as "resistance_<type>".
 inline constexpr std::array<std::string_view, 11> resistance_types{"acid", "bludgeoning", "cold",
     "fire", "lightning", "necrotic", "piercing", "poison", "radiant", "slashing", "thunder"};
@@ -740,6 +807,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "command";
     if (resistance_type(id))
         id = "resistance";
+    if (chromatic_type(id))
+        id = "chromatic_orb";
     for (const auto &spell : spell_table)
         if (spell.id == id)
             return &spell;

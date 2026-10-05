@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -44,7 +45,8 @@ std::unique_ptr<RulesModule> rules()
 
 // A Wizard of the given level whose book holds the named level-one spells (and
 // level-two ones from level three), all prepared.
-Character wizard(unsigned level, std::vector<std::string> spells, std::vector<std::string> second = {})
+Character wizard(unsigned level, std::vector<std::string> spells, std::vector<std::string> second = {},
+                 std::vector<std::string> cantrips = {"fire_bolt", "ray_of_frost", "chill_touch"})
 {
     CharacterDraft d;
     d.race = "human";
@@ -56,7 +58,7 @@ Character wizard(unsigned level, std::vector<std::string> spells, std::vector<st
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost", "chill_touch"};
+    d.cantrips = std::move(cantrips);
     d.spells = SpellChoices{{{"spellbook:1", spells}}, spells, {}, {}};
     d.training = {{"class:wizard", {"medicine", "nature"}}};
     CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
@@ -107,6 +109,16 @@ bool logged(const CombatSession &c, std::string_view text)
     {
         return line.find(text) != std::string::npos;
     });
+}
+
+// Level-one and level-two slots, read from "SRD11 winds slots slots2 ...".
+std::pair<int, int> slots(const CombatSession &c)
+{
+    std::istringstream in(unit(c, 1).persistent.resources);
+    std::string magic;
+    int winds{}, first{}, second{};
+    in >> magic >> winds >> first >> second;
+    return {first, second};
 }
 
 bool has(const std::vector<Cell> &cells, Cell cell)
@@ -173,8 +185,11 @@ void shatter_checks()
     auto c = battle(*module, wizard(3, {"magic_missile"}, {"shatter", "blindness"}), {6, 2}, {11, 5});
     check(submit(*c, "shatter") && aim(*c, Cell{6, 2}), "Aim Shatter");
     check(c->snapshot().area_targeting->cells.size() == 25, "A 10-foot-radius sphere");
+    const auto before = slots(*c);
     check(submit(*c, "area_cast") && logged(*c, "First takes") && !logged(*c, "Second takes"),
           "Only the creature in the sphere takes Thunder damage");
+    check(slots(*c).second == before.second - 1 && slots(*c).first == before.first,
+          "Shatter spends a level-two slot");
 }
 void potent_cantrip_checks()
 {
@@ -247,6 +262,57 @@ void expeditious_retreat_checks()
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "The extra Dash survives a checkpoint");
 }
+void ray_of_sickness_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(1, {"magic_missile", "ray_of_sickness"}), {2, 1}, {11, 5});
+    check(submit(*c, "ray_of_sickness", 98) && logged(*c, "First is Poisoned.") &&
+          unit(*c, 98).conditions.size() == 1,
+          "A hit Poisons the target");
+    check(submit(*c, "end"), "End the Wizard's turn");
+    while (c->snapshot().actor != 98)
+        check(submit(*c, "end"), "Reach the Poisoned creature");
+    check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
+          "A Poisoned creature attacks with Disadvantage");
+}
+
+void ice_knife_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(1, {"magic_missile", "ice_knife"}), {3, 1}, {4, 1});
+    check(submit(*c, "ice_knife", 98) && logged(*c, "First Dexterity save") &&
+          logged(*c, "Second Dexterity save") && !logged(*c, "Ally Dexterity save"),
+          "The shard bursts on the target and the creatures beside it");
+}
+
+void chromatic_orb_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(1, {"magic_missile", "chromatic_orb"}), {3, 1}, {11, 5});
+    std::vector<std::string> labels;
+    for (const auto &command : c->legal_commands())
+        if (command.verb.starts_with("chromatic_orb_") && command.target == 98)
+            labels.push_back(command.label);
+    check(labels.size() == 6 && labels.front() == "Chromatic Orb: Acid",
+          "Chromatic Orb is offered once per damage type");
+    const auto before = slots(*c);
+    check(submit(*c, "chromatic_orb_fire", 98) && logged(*c, "Wizard -> First") &&
+          slots(*c).first == before.first - 1,
+          "The orb is a spell attack from a level-one slot");
+}
+
+void acid_splash_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(1, {"magic_missile"}, {}, {"acid_splash", "fire_bolt", "ray_of_frost"}),
+                    {3, 1}, {4, 1});
+    const auto before = slots(*c);
+    check(submit(*c, "acid_splash") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast") &&
+          logged(*c, "First Dexterity save") && logged(*c, "Second Dexterity save") &&
+          slots(*c) == before,
+          "Acid Splash's sphere catches both creatures and spends no slot");
+}
+
 } // namespace
 
 int main()
@@ -261,6 +327,10 @@ int main()
         mage_armor_checks();
         false_life_checks();
         expeditious_retreat_checks();
+        ray_of_sickness_checks();
+        ice_knife_checks();
+        chromatic_orb_checks();
+        acid_splash_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

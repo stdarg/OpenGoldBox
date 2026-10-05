@@ -239,6 +239,10 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "mage_armor", 1},
     SpellAccessRow{"Wizard", "false_life", 1},
     SpellAccessRow{"Wizard", "expeditious_retreat", 1},
+    SpellAccessRow{"Wizard", "ray_of_sickness", 1},
+    SpellAccessRow{"Wizard", "ice_knife", 1},
+    SpellAccessRow{"Wizard", "chromatic_orb", 1},
+    SpellAccessRow{"Wizard", "acid_splash", 1},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -251,7 +255,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Sorcerer", "poison_spray", 1},
     SpellAccessRow{"Sorcerer", "ray_of_frost", 1},
     SpellAccessRow{"Sorcerer", "shocking_grasp", 1},
-    SpellAccessRow{"Sorcerer", "chill_touch", 1}};
+    SpellAccessRow{"Sorcerer", "chill_touch", 1},
+    SpellAccessRow{"Sorcerer", "acid_splash", 1}};
 
 std::vector<std::string> allowed_spells(std::string_view klass, unsigned level)
 {
@@ -1310,6 +1315,7 @@ class Session final : public CombatSession
     void damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
                      const std::vector<Cell> &cells);
     void push_away(const Actor &from, Actor &target, int squares);
+    void ice_burst(Actor &caster, const Actor &target, bool upcast);
     void potent_cantrip(Actor &target, const detail::SpellDef &spell, detail::DamageDice rolled);
     [[nodiscard]] std::vector<EntityId> sculpted(const Actor &caster, const detail::SpellDef &spell,
             unsigned slot_level, const std::vector<Cell> &cells) const;
@@ -2100,6 +2106,12 @@ Snapshot Session::snapshot() const
             messages.push_back({"Bane: -1d4 to attack rolls and saving throws.", {}});
             view.conditions.push_back({"Bane: -1d4 to attack rolls and saving throws.", {}});
         }
+        if (detail::has_effect(a.effects, detail::EffectKind::poisoned))
+        {
+            messages.push_back({"Poisoned", {}});
+            s.combatants.back().status += " | Poisoned";
+            s.combatants.back().conditions.push_back({"Poisoned", {}});
+        }
         if (detail::paralyzed(a.effects))
         {
             messages.push_back({"Paralyzed", {}});
@@ -2136,7 +2148,19 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::thunderwave:
         return; // Area spells resolve through cast_area().
     case detail::Rider::spiritual_weapon:
-        return; // Its force is placed with the attack.
+    case detail::Rider::ice_knife:
+        return; // Its force is placed, or its shard bursts, with the attack.
+    case detail::Rider::ray_of_sickness:
+    {
+        // Poisoned until the end of the caster's next turn.
+        const auto index = static_cast<std::size_t>(&a - actors_.data());
+        const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+        detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
+                               next_turn_ms(a) + slot);
+        log(target.source.name + " is Poisoned.",
+        {"{name} is Poisoned.", {{"name", target.source.name}}});
+        return;
+    }
     case detail::Rider::resistance:
     {
         const auto type = *detail::resistance_type(verb);
@@ -2172,6 +2196,10 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     }
     case detail::Rider::protection_from_poison:
+        std::erase_if(target.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::poisoned;
+        });
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::protection_from_poison, 0);
         log(target.source.name + " gains Protection from Poison.",
@@ -2387,10 +2415,14 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
             zones_.push_back({a.source.id, ZoneKind::spiritual_weapon,
                               {spectral_cell(target, a.source.cell)}});
         }
-        if (attack(a, target, !spell.melee, true, rolled, spell.damage))
+        const auto type = detail::chromatic_type(verb).value_or(spell.damage);
+        if (attack(a, target, !spell.melee, true, rolled, type))
             apply_rider(spell, verb, a, target, dc);
         else if (d.evoker && !spell.level && target.hp > 0)
             potent_cantrip(target, spell, rolled);
+        // Ice Knife's shard explodes, hit or miss.
+        if (spell.rider == detail::Rider::ice_knife)
+            ice_burst(a, target, upcast);
         return;
     }
     case detail::SpellPattern::repeat_attack:
@@ -2544,6 +2576,22 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
                                 std::move(verb), std::move(label), Cell{}, 0, aimed});
         };
+        if (spell.id == "chromatic_orb")
+        {
+            if (a.spent_slot)
+                continue;
+            for (const auto type : detail::chromatic_types)
+            {
+                const auto verb = "chromatic_orb_" + std::string(type);
+                const auto label = "Chromatic Orb: " +
+                                   std::string(detail::damage_name(detail::damage_type(type)));
+                if (a.slots > 0)
+                    offer(verb, label);
+                if (a.slots2 > 0)
+                    offer(verb + "_2", label + " (level 2 slot)");
+            }
+            continue;
+        }
         if (spell.rider == detail::Rider::resistance)
         {
             for (const auto type : detail::resistance_types)
@@ -3362,8 +3410,11 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
                 std::find(spared.begin(), spared.end(), other.source.id) != spared.end())
             continue;
         const bool saved = saving_throw_succeeds(other, spell.save, dc);
-        const int amount =
-            resolved_damage(other, spell.damage, saved && spell.half_on_success ? total / 2 : total);
+        // Potent Cantrip: an Evoker's saved-against cantrip still deals half.
+        const bool halved = spell.half_on_success || (def(caster).evoker && !spell.level);
+        if (saved && !halved)
+            continue;
+        const int amount = resolved_damage(other, spell.damage, saved ? total / 2 : total);
         log(other.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
         {
             "{name} takes {damage} {type} damage.",
@@ -3372,6 +3423,29 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         damage(other, amount);
         if (!saved && spell.rider == detail::Rider::thunderwave && !other.dead)
             push_away(caster, other, 2);
+    }
+}
+
+void Session::ice_burst(Actor &caster, const Actor &target, bool upcast)
+{
+    // The target and each creature within 5 feet of it save against 2d6 Cold
+    // (3d6 from a level-two slot).
+    const int total = dice({upcast ? 3 : 2, 6, 0});
+    const int dc = 8 + def(caster).casting;
+    const auto centre = target.source.cell;
+    for (auto &other : actors_)
+    {
+        if (other.dead || distance(centre, other.source.cell) > 5)
+            continue;
+        if (saving_throw_succeeds(other, detail::Ability::dexterity, dc))
+            continue;
+        const int amount = resolved_damage(other, detail::DamageType::cold, total);
+        log(other.source.name + " takes " + std::to_string(amount) + " Cold damage.",
+        {
+            "{name} takes {damage} {type} damage.",
+            {{"name", other.source.name}, {"damage", std::to_string(amount)}, {"type", "Cold", true}}
+        });
+        damage(other, amount);
     }
 }
 
@@ -3409,11 +3483,14 @@ void Session::cast_area()
     const auto &spell = *detail::find_spell(aimed.verb);
     a.nick_origin = 0;
     (void)a.actions.spend(true);
-    if (aimed.verb.ends_with("_2"))
-        --a.slots2;
-    else
-        --a.slots;
-    a.spent_slot = true;
+    if (spell.level)
+    {
+        if (aimed.verb.ends_with("_2") || spell.level >= 2)
+            --a.slots2;
+        else
+            --a.slots;
+        a.spent_slot = true;
+    }
     log(a.source.name + " casts " + std::string(spell.label) + ".",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
     const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
@@ -3886,7 +3963,8 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     if (helpless(target) || a.aim_ready || pack_tactics ||
             detail::vexed_by(target.effects, scope_, a.source.id))
         result.advantage = true;
-    if (detail::sapped(a.effects))
+    if (detail::sapped(a.effects) ||
+            detail::has_effect(a.effects, detail::EffectKind::poisoned))
         result.disadvantage = true;
     // Guiding Bolt: the next attack roll against the target has Advantage.
     if (detail::has_effect(target.effects, detail::EffectKind::guiding_bolt))
@@ -7914,7 +7992,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.94", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.95", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {
