@@ -122,6 +122,12 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         required.push_back({"feature:disciple_of_life", "subclass:cleric:life", 3, {}});
         required.push_back({"feature:preserve_life", "subclass:cleric:life", 3, {}});
     }
+    if (klass == "wizard" && level >= 3)
+    {
+        required.push_back({"subclass:evoker", "class:wizard", 3, {}});
+        required.push_back({"feature:potent_cantrip", "subclass:wizard:evoker", 3, {}});
+        required.push_back({"feature:sculpt_spells", "subclass:wizard:evoker", 3, {}});
+    }
     if (klass == "ranger" && level >= 3)
     {
         required.push_back({"subclass:hunter", "class:ranger", 3, {}});

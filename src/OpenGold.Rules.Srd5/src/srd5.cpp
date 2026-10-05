@@ -293,6 +293,7 @@ struct Definition
     bool sacred_weapon{}; // Oath of Devotion, Paladin level 3
     bool divine_spark{};  // Cleric Channel Divinity: Divine Spark and Turn Undead
     bool life_domain{};   // Cleric level 3: Disciple of Life and Preserve Life
+    bool evoker{};        // Wizard level 3: Potent Cantrip and Sculpt Spells
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -641,6 +642,7 @@ character_definition(std::string_view bytes,
     d.sacred_weapon = klass == "Paladin" && level >= 3;
     d.divine_spark = klass == "Cleric" && level >= 2;
     d.life_domain = klass == "Cleric" && level >= 3;
+    d.evoker = klass == "Wizard" && level >= 3;
     d.free_smite = klass == "Paladin" && level >= 2 ? 1 : 0;
     d.favored_enemy = klass == "Ranger" ? 2 : 0;
     d.medicine = ability_modifier(scores[4]);
@@ -1300,6 +1302,9 @@ class Session final : public CombatSession
     void damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
                      const std::vector<Cell> &cells);
     void push_away(const Actor &from, Actor &target, int squares);
+    void potent_cantrip(Actor &target, const detail::SpellDef &spell, detail::DamageDice rolled);
+    [[nodiscard]] std::vector<EntityId> sculpted(const Actor &caster, const detail::SpellDef &spell,
+            unsigned slot_level, const std::vector<Cell> &cells) const;
     void cast_area();
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
@@ -2345,6 +2350,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         }
         if (attack(a, target, !spell.melee, true, rolled, spell.damage))
             apply_rider(spell, verb, a, target, dc);
+        else if (d.evoker && !spell.level && target.hp > 0)
+            potent_cantrip(target, spell, rolled);
         return;
     }
     case detail::SpellPattern::repeat_attack:
@@ -2392,7 +2399,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
             {{"name", a.source.name}, {"spell", name, true}, {"target", target.source.name}}
         });
         const bool saved = saving_throw_succeeds(target, spell.save, dc);
-        if (saved && !spell.half_on_success)
+        // Potent Cantrip: a saved-against cantrip still deals half damage.
+        if (saved && !spell.half_on_success && !(d.evoker && !spell.level))
             return;
         // Halving comes before resistance, which resolved_damage applies.
         const int rolled_damage = dice(rolled);
@@ -3255,10 +3263,43 @@ void Session::aim_area(const Command &command)
         area_->center = command.destination;
 }
 
+void Session::potent_cantrip(Actor &target, const detail::SpellDef &spell,
+                             detail::DamageDice rolled)
+{
+    // A missed cantrip still deals half its damage, without its other effects.
+    const int amount = resolved_damage(target, spell.damage, dice(rolled) / 2);
+    log("Potent Cantrip: " + target.source.name + " takes " + std::to_string(amount) + " damage.",
+    {
+        "Potent Cantrip: {name} takes {damage} damage.",
+        {{"name", target.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(target, amount, false);
+}
+
+std::vector<EntityId> Session::sculpted(const Actor &caster, const detail::SpellDef &spell,
+                                        unsigned slot_level, const std::vector<Cell> &cells) const
+{
+    // Sculpt Spells: up to 1 + the spell's level allies the Evoker can see in
+    // an Evocation area are spared, chosen automatically.
+    std::vector<EntityId> spared;
+    if (!def(caster).evoker || !spell.evocation)
+        return spared;
+    for (const auto &other : actors_)
+        if (spared.size() < 1 + slot_level && other.source.side == caster.source.side &&
+                other.source.id != caster.source.id && !other.dead && can_see(caster, other) &&
+                std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            spared.push_back(other.source.id);
+    return spared;
+}
+
 void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
                           const std::vector<Cell> &cells)
 {
     // Each creature in the area, the caster aside, saves for half.
+    const auto spared = sculpted(caster, spell, verb.ends_with("_2") ? 2 : spell.level, cells);
+    for (const auto id : spared)
+        log(actor(id).source.name + " is spared by Sculpt Spells.",
+        {"{name} is spared by Sculpt Spells.", {{"name", actor(id).source.name}}});
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(verb.ends_with("_2") ? spell.upcast.extra_dice : 0u);
     const int dc = 8 + def(caster).casting;
@@ -3267,7 +3308,8 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     for (auto &other : actors_)
     {
         if (other.dead || other.source.id == caster.source.id ||
-                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end())
+                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+                std::find(spared.begin(), spared.end(), other.source.id) != spared.end())
             continue;
         const bool saved = saving_throw_succeeds(other, spell.save, dc);
         const int amount =
@@ -6198,6 +6240,9 @@ class Module final : public RulesModule
         if (sheet.character_class == "Cleric" && result.level == 2)
             result.description =
                 "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead.";
+        if (sheet.character_class == "Wizard" && result.level == 3)
+            result.description =
+                "Evoker: Potent Cantrip deals half damage when a cantrip misses or is saved against; Sculpt Spells spares up to 1 + the spell's level allies in your Evocation areas.";
         if (sheet.character_class == "Cleric" && result.level == 3)
             result.description =
                 "Life Domain: Disciple of Life adds 2 + the slot level to healing spells; Preserve Life (Channel Divinity) restores five times your level among Bloodied allies within 30 feet; Bless, Cure Wounds and Lesser Restoration are always prepared.";
@@ -6549,6 +6594,13 @@ class Module final : public RulesModule
             next.grants.push_back({"subclass:life", "class:cleric", 3, {}});
             next.grants.push_back({"feature:disciple_of_life", "subclass:cleric:life", 3, {}});
             next.grants.push_back({"feature:preserve_life", "subclass:cleric:life", 3, {}});
+        }
+        // The Evoker is the SRD's only Wizard subclass.
+        if (next.character_class == "Wizard" && next.level == 3)
+        {
+            next.grants.push_back({"subclass:evoker", "class:wizard", 3, {}});
+            next.grants.push_back({"feature:potent_cantrip", "subclass:wizard:evoker", 3, {}});
+            next.grants.push_back({"feature:sculpt_spells", "subclass:wizard:evoker", 3, {}});
         }
         if (next.character_class == "Ranger" && next.level == 3)
         {
@@ -7799,7 +7851,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.92", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.93", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

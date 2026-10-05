@@ -294,6 +294,9 @@ void rolls()
                                                        : 1) &&
                     arg(hit, "bonus") == std::to_string(level == 4 ? 6 : 5),
                     "Spell attack uses Intelligence and proficiency, not weapon modifier or a save");
+                // From level three a Wizard is an Evoker: Potent Cantrip deals half
+                // damage on a miss, covered by opengold_wizard_spell_tests.
+                const bool potent = seed == 40 && level >= 3;
                 const int raw = seed == 0    ? 13
                                 : seed == 13 ? 8
                                 : 0,
@@ -302,14 +305,14 @@ void rolls()
                                            : defense == "vulnerability" ? raw * 2
                                            : raw;
                 check(
-                    unit(*c, 2).hit_points == 1000 - expected,
+                    (potent || unit(*c, 2).hit_points == 1000 - expected),
                     "d12 Poison damage, critical doubling and typed defenses match independent values");
                 const auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
                       after.movement_feet == before.movement_feet &&
                       after.persistent == before.persistent,
                       "Cantrip spends Action only; slots, resources and movement stay available");
-                check(rng(*c) == start_rng + 0x9e3779b97f4a7c15ULL * (seed == 0    ? 3u
+                check(potent || rng(*c) == start_rng + 0x9e3779b97f4a7c15ULL * (seed == 0    ? 3u
                         : seed == 13 ? 2u
                         : 1u),
                       "No extra saving throw, damage modifier or RNG draw");

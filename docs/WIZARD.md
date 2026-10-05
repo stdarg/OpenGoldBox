@@ -9,7 +9,7 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | --- | --- | --- |
 | 1 | Spellcasting, Ritual Adept, Arcane Recovery | Delivered earlier (Ritual Adept removed by DM-1) |
 | 2 | Scholar | Delivered earlier ([Scholar](SCHOLAR.md)) |
-| 3 | Wizard Subclass (Evoker) | Not yet |
+| 3 | Wizard Subclass (Evoker) | Delivered (rules 0.6.93); Evocation Savant removed by the 2026-09-30 simplification |
 | 4 | Ability Score Improvement | Delivered earlier |
 
 ## Spells
@@ -41,8 +41,8 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 - **Shatter** (level 2, Action, 60 feet): a 10-foot-radius sphere; Constitution
   save, 3d8 Thunder damage, half on a success. Its Disadvantage for creatures of
   inorganic material is not modeled.
-- The caster is never caught in its own area; allies are, until the Evoker's
-  Sculpt Spells.
+- The caster is never caught in its own area; allies are, unless an Evoker
+  sculpts the spell.
 - Verification: `opengold_wizard_spell_tests` (the cone's seven squares and who
   is hit, the cube and a 10-foot push, the sphere and who is hit).
 
@@ -51,3 +51,18 @@ Verification: the Wizard spellbook, preparation and advancement checks in
 `opengold_rules_tests`, `opengold_spell_component_tests`,
 `opengold_poison_spray_tests` and `opengold_spell_table_tests` (offer
 baseline), and `tests/wizard_choices_view_tests.gd`.
+
+## Evoker (level 3)
+
+- The Evoker is the SRD's only Wizard subclass, taken automatically at level
+  three.
+- **Potent Cantrip**: when a damaging cantrip misses, or its target succeeds on
+  the save, the target still takes half the damage, without the cantrip's other
+  effects.
+- **Sculpt Spells**: in an Evocation area spell (Burning Hands, Thunderwave,
+  Shatter) up to 1 + the spell's level allies the Evoker can see are spared:
+  they take no damage and no other effect. Adaptation: the allies are chosen
+  automatically.
+- Verification: `opengold_wizard_spell_tests` (a missed Fire Bolt at levels one
+  and three, an ally in Burning Hands at levels one and three). The cantrip
+  tests' exact-damage checks no longer pin a level-three miss.

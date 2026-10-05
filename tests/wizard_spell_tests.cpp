@@ -37,7 +37,8 @@ std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "creature armored 40 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 
@@ -115,13 +116,14 @@ bool has(const std::vector<Cell> &cells, Cell cell)
 
 // The Wizard (1) at (1,1), an ally (2) below it and enemies (98, 99) east of it.
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
-                                      Cell first, Cell second, std::uint64_t seed = 5)
+                                      Cell first, Cell second, std::uint64_t seed = 5,
+                                      Cell ally = {1, 2}, std::string enemy = "target")
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
     auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, {1, 2}},
-            {98, "target", "First", 1, first},
+            {2, "target", "Ally", 0, ally},
+            {98, enemy, "First", 1, first},
             {99, "target", "Second", 1, second}
         }},
     seed);
@@ -174,6 +176,33 @@ void shatter_checks()
     check(submit(*c, "area_cast") && logged(*c, "First takes") && !logged(*c, "Second takes"),
           "Only the creature in the sphere takes Thunder damage");
 }
+void potent_cantrip_checks()
+{
+    auto module = rules();
+    for (const unsigned level : {1u, 3u})
+    {
+        auto c = battle(*module, wizard(level, {"magic_missile"}), {4, 1}, {11, 5}, 5, {1, 2},
+                        "armored");
+        check(submit(*c, "fire_bolt", 98) && logged(*c, "misses"), "Fire Bolt misses AC 40");
+        check(logged(*c, "Potent Cantrip: First takes") == (level == 3),
+              "From level three a missed cantrip still deals half damage");
+    }
+}
+
+void sculpt_spells_checks()
+{
+    auto module = rules();
+    for (const unsigned level : {1u, 3u})
+    {
+        auto c = battle(*module, wizard(level, {"magic_missile", "burning_hands"}), {3, 1}, {11, 5},
+                        5, {2, 1});
+        check(submit(*c, "burning_hands") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast"),
+              "Burning Hands with an ally in the cone");
+        check(logged(*c, "Ally is spared by Sculpt Spells.") == (level == 3) &&
+              logged(*c, "Ally takes") == (level == 1) && logged(*c, "First takes"),
+              "From level three the Evoker spares its ally");
+    }
+}
 } // namespace
 
 int main()
@@ -183,6 +212,8 @@ int main()
         burning_hands_checks();
         thunderwave_checks();
         shatter_checks();
+        potent_cantrip_checks();
+        sculpt_spells_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)
