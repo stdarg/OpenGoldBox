@@ -232,6 +232,9 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "longstrider", 1},
     SpellAccessRow{"Wizard", "fog_cloud", 1},
     SpellAccessRow{"Wizard", "hold_person", 3},
+    SpellAccessRow{"Wizard", "burning_hands", 1},
+    SpellAccessRow{"Wizard", "thunderwave", 1},
+    SpellAccessRow{"Wizard", "shatter", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1284,8 +1287,9 @@ class Session final : public CombatSession
     void flee_turning(std::vector<Command> &commands, const Actor &a) const;
     void hold_still(std::vector<Command> &commands, const Actor &a) const;
     // `verb` names the spell's "_2" form, which a sphere grows with.
+    // `origin` is the caster's square, from which cones and cubes extend.
     [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell,
-            std::string_view verb, Cell center) const;
+            std::string_view verb, Cell origin, Cell center) const;
     [[nodiscard]] bool obscured(Cell cell) const;
     // Inside Silence: no Verbal spells, no Thunder damage.
     [[nodiscard]] bool silenced(Cell cell) const;
@@ -1293,6 +1297,9 @@ class Session final : public CombatSession
     [[nodiscard]] const Zone *spiritual_weapon(const Actor &caster) const;
     [[nodiscard]] Cell default_area_center(const Actor &caster, const detail::SpellDef &spell) const;
     void aim_area(const Command &command);
+    void damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
+                     const std::vector<Cell> &cells);
+    void push_away(const Actor &from, Actor &target, int squares);
     void cast_area();
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
@@ -1815,7 +1822,7 @@ Snapshot Session::snapshot() const
         s.actor = area_->caster;
         s.area_targeting = AreaTargeting{area_->caster, area_->verb, area_->center,
                                          area_cells(*detail::find_spell(area_->verb), area_->verb,
-                                                    area_->center)};
+                                                    actor(area_->caster).source.cell, area_->center)};
     }
     if (!champion_move_ && effect_waiting())
     {
@@ -2113,6 +2120,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::entangle:
     case detail::Rider::fog_cloud:
     case detail::Rider::silence:
+    case detail::Rider::thunderwave:
         return; // Area spells resolve through cast_area().
     case detail::Rider::spiritual_weapon:
         return; // Its force is placed with the attack.
@@ -3160,9 +3168,47 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
 }
 
 std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, std::string_view verb,
-                                     Cell center) const
+                                     Cell origin, Cell center) const
 {
     std::vector<Cell> cells;
+    // The aimed direction from the caster; aiming at the caster faces east.
+    const int dx = center.x - origin.x, dy = center.y - origin.y;
+    const double ax = dx || dy ? dx : 1, ay = dy;
+    // A cone: squares within its length and about 30 degrees of the aim.
+    if (spell.cone)
+    {
+        for (int y = 0; y < board_.height; ++y)
+            for (int x = 0; x < board_.width; ++x)
+            {
+                const double vx = x - origin.x, vy = y - origin.y;
+                if ((!vx && !vy) || distance(origin, Cell{x, y}) > spell.cone)
+                    continue;
+                const double cosine = (vx * ax + vy * ay) /
+                                      (std::sqrt(vx * vx + vy * vy) * std::sqrt(ax * ax + ay * ay));
+                if (cosine >= 0.866)
+                    cells.push_back({x, y});
+            }
+        return cells;
+    }
+    // A cube with a face against the caster, on the aimed side.
+    if (spell.cube)
+    {
+        const int side = spell.cube / 5;
+        const auto step = [&](double along, double across)
+        {
+            return std::abs(along) * 2 < std::abs(across) ? 0 : along > 0 ? 1 : along < 0 ? -1 : 0;
+        };
+        const int sx = step(ax, ay), sy = step(ay, ax);
+        const auto first = [&](int start, int sign)
+        {
+            return sign > 0 ? start + 1 : sign < 0 ? start - side : start - (side - 1) / 2;
+        };
+        for (int y = first(origin.y, sy); y < first(origin.y, sy) + side; ++y)
+            for (int x = first(origin.x, sx); x < first(origin.x, sx) + side; ++x)
+                if (board_.contains(Cell{x, y}))
+                    cells.push_back({x, y});
+        return cells;
+    }
     // A sphere: every square within its radius of the aimed one.
     if (spell.radius)
     {
@@ -3209,6 +3255,59 @@ void Session::aim_area(const Command &command)
         area_->center = command.destination;
 }
 
+void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
+                          const std::vector<Cell> &cells)
+{
+    // Each creature in the area, the caster aside, saves for half.
+    auto rolled = spell.dice;
+    rolled.count += static_cast<int>(verb.ends_with("_2") ? spell.upcast.extra_dice : 0u);
+    const int dc = 8 + def(caster).casting;
+    const int total = dice(rolled);
+    const auto type = std::string(detail::damage_name(spell.damage));
+    for (auto &other : actors_)
+    {
+        if (other.dead || other.source.id == caster.source.id ||
+                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end())
+            continue;
+        const bool saved = saving_throw_succeeds(other, spell.save, dc);
+        const int amount =
+            resolved_damage(other, spell.damage, saved && spell.half_on_success ? total / 2 : total);
+        log(other.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
+        {
+            "{name} takes {damage} {type} damage.",
+            {{"name", other.source.name}, {"damage", std::to_string(amount)}, {"type", type, true}}
+        });
+        damage(other, amount);
+        if (!saved && spell.rider == detail::Rider::thunderwave && !other.dead)
+            push_away(caster, other, 2);
+    }
+}
+
+void Session::push_away(const Actor &from, Actor &target, int squares)
+{
+    // Straight away from `from`, square by square, while the way is open.
+    const int sx = (target.source.cell.x > from.source.cell.x) - (target.source.cell.x < from.source.cell.x);
+    const int sy = (target.source.cell.y > from.source.cell.y) - (target.source.cell.y < from.source.cell.y);
+    int moved = 0;
+    for (; moved < squares && (sx || sy); ++moved)
+    {
+        const Cell next{target.source.cell.x + sx, target.source.cell.y + sy};
+        if (!board_.contains(next) || board_.at(next) == 1 ||
+                std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+        {
+            return !other.dead && other.source.cell == next;
+        }))
+        break;
+        target.source.cell = next;
+    }
+    if (moved)
+        log(target.source.name + " is pushed " + std::to_string(5 * moved) + " feet.",
+        {
+            "{name} is pushed {feet} feet.",
+            {{"name", target.source.name}, {"feet", std::to_string(5 * moved)}}
+        });
+}
+
 void Session::cast_area()
 {
     const auto aimed = *area_;
@@ -3225,7 +3324,12 @@ void Session::cast_area()
     a.spent_slot = true;
     log(a.source.name + " casts " + std::string(spell.label) + ".",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
-    const auto cells = area_cells(spell, aimed.verb, aimed.center);
+    const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+    if (spell.pattern == detail::SpellPattern::save_damage)
+    {
+        damage_area(a, spell, aimed.verb, cells);
+        return;
+    }
     if (spell.concentration)
         begin_concentration(a, spell);
     const auto kind = spell.rider == detail::Rider::fog_cloud ? ZoneKind::fog
@@ -7695,7 +7799,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.91", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.92", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

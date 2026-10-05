@@ -24,6 +24,28 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
   default Wizard now learns more than Magic Missile.
 - The other CRPG-relevant Wizard spells come in later increments.
 
+## Burning Hands, Thunderwave and Shatter
+
+- Area spells are aimed as recorded in
+  [CLASS-5](SRD-DECISIONS.md#class-5-2026-10-05-aiming-area-spells). Cones and
+  cubes extend from the caster toward the aimed square.
+- **Burning Hands** (level 1, Action): a 15-foot cone (seven squares, those
+  within 15 feet and about 30 degrees of the aim); each creature in it makes a
+  Dexterity save, 3d6 Fire damage, half on a success (+1d6 from a level-two
+  slot).
+- **Thunderwave** (level 1, Action): a 15-foot cube with a face against the
+  Wizard, on the aimed side (diagonals take the corner); Constitution save, 2d8
+  Thunder damage, half on a success, and a failed save also pushes the creature
+  10 feet straight away while the way is open (+1d8 from a level-two slot). Its
+  sound is not modeled.
+- **Shatter** (level 2, Action, 60 feet): a 10-foot-radius sphere; Constitution
+  save, 3d8 Thunder damage, half on a success. Its Disadvantage for creatures of
+  inorganic material is not modeled.
+- The caster is never caught in its own area; allies are, until the Evoker's
+  Sculpt Spells.
+- Verification: `opengold_wizard_spell_tests` (the cone's seven squares and who
+  is hit, the cube and a 10-foot push, the sphere and who is hit).
+
 Verification: the Wizard spellbook, preparation and advancement checks in
 `opengold_spell_access_tests`, `opengold_advancement_tests`,
 `opengold_rules_tests`, `opengold_spell_component_tests`,

@@ -77,7 +77,8 @@ enum class Rider : unsigned
     protection_from_poison,
     resistance,
     silence,
-    spiritual_weapon
+    spiritual_weapon,
+    thunderwave
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -111,6 +112,8 @@ struct SpellDef
     bool concentration{}; // a caster keeps one Concentration spell at a time
     int area{};           // side of an `area` spell's square, feet
     int radius{};         // or the radius of its sphere, feet
+    int cone{};           // or the length of a cone from the caster toward the aim, feet
+    int cube{};           // or the side of a cube beside the caster toward the aim, feet
     bool humanoid_only{}; // offered only against a Humanoid
     bool not_self{};      // offered only on another creature
 };
@@ -466,6 +469,49 @@ inline constexpr std::array spell_table
         .dice = {2, 8, 0},
         .add_casting_modifier = true,
         .instances = 5},
+    // SRD 5.2.1 p. 114: a 15-foot cone, Dexterity save for half.
+    SpellDef{
+        .id = "burning_hands",
+        .label = "Burning Hands",
+        .level = 1,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 15,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {3, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .cone = 15},
+    // SRD 5.2.1 p. 169: a 15-foot cube from the caster, Constitution save for
+    // half; a failed save also pushes the creature 10 feet away.
+    SpellDef{
+        .id = "thunderwave",
+        .label = "Thunderwave",
+        .level = 1,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 15,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::thunder,
+        .dice = {2, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::thunderwave,
+        .cube = 15},
+    // SRD 5.2.1 p. 161: a 10-foot-radius sphere, Constitution save for half.
+    SpellDef{
+        .id = "shatter",
+        .label = "Shatter",
+        .level = 2,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::thunder,
+        .dice = {3, 8, 0},
+        .radius = 10},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

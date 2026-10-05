@@ -211,9 +211,12 @@ void table()
               spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff ||
               spell.pattern == SpellPattern::save_condition || spell.pattern == SpellPattern::camp,
               "Only multi-instance patterns repeat or choose several creatures");
+        // Thunderwave's push rides on a failed save against its damage.
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
                             spell.pattern == SpellPattern::save_condition ||
-                            spell.pattern == SpellPattern::buff;
+                            spell.pattern == SpellPattern::buff ||
+                            (spell.pattern == SpellPattern::save_damage &&
+                             spell.target == SpellTarget::area);
         check(spell.rider == Rider::none || riders,
               "Riders belong to attack and save-condition patterns");
         check(spell.pattern != SpellPattern::save_condition || spell.rider != Rider::none,
