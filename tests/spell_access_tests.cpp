@@ -182,17 +182,21 @@ void progression()
         check(access.prepared == choice.spells &&
               access.spellbook == rules->spell_access(preview.character.sheet()).spellbook,
               "Confirmed learning/preparation matches preview");
-        check(ids(access.spellbook) ==
-              (level == 2
-               ? std::vector<std::string> {"magic_missile"}
-               : std::vector<std::string> {"magic_missile", "scorching_ray", "blindness"}),
+        // The default learns the first available entries: level-one spells at
+        // level two, then the two level-two spells.
+        const auto book = ids(access.spellbook);
+        const auto learned = [&](std::string_view id)
+        {
+            return std::find(book.begin(), book.end(), id) != book.end();
+        };
+        check(learned("magic_missile") && book.size() == (level == 2 ? 3u : level == 3 ? 5u : 7u) &&
+              (level == 2 || (learned("scorching_ray") && learned("blindness"))),
               "Previously learned spells remain even when all are unprepared at different levels");
         if (level >= 3)
-        {
-            check(access.spellbook[1].acquired_level == 3 &&
-                  access.spellbook[2].acquired_level == 3,
-                  "New entries retain first learning level rather than latest preparation level");
-        }
+            for (const auto &entry : access.spellbook)
+                if (entry.id == "scorching_ray" || entry.id == "blindness")
+                    check(entry.acquired_level == 3,
+                          "New entries retain first learning level rather than latest preparation level");
         check(member.vitals.hit_points == member.character.sheet().hit_points - deficit,
               "Advancement preserves wounds");
         const auto info = rules->recovery_info(member.character.sheet(), member.vitals);

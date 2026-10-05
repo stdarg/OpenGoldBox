@@ -161,7 +161,10 @@ void turn_budget_tests()
     {
         auto choice = module->default_advancement(sheet);
         if (level == 3)
-            choice.spells = {"magic_missile", "scorching_ray", "blindness"};
+            // Earlier preparations stay; the level-two spells join them.
+            for (const auto *spell : {"scorching_ray", "blindness"})
+                if (std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+                    choice.spells.push_back(spell);
         check(module->advance_character(sheet, unused, choice),
               "Create a caster with level-two spells");
     }

@@ -49,17 +49,20 @@ Character hero(std::string klass)
     for (unsigned level = 2; level <= 3; ++level)
     {
         auto choice = rules->default_advancement(c.sheet());
-        // A Cleric prepares every available spell up to its count.
-        choice.spells = klass == "cleric"
-                        ? std::vector<std::string> {"cure_wounds", "healing_word", "inflict_wounds",
-                                                    "shield_of_faith", "bless"
-                                                   }
-                        : std::vector<std::string> {"magic_missile"};
+        // A Cleric prepares every available spell up to its count; a Wizard
+        // keeps the default preparation of its book.
+        if (klass == "cleric")
+            choice.spells = {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith",
+                             "bless"
+                            };
         if (level == 3)
         {
-            choice.spells.push_back("blindness");
-            if (klass == "wizard")
-                choice.spells.push_back("scorching_ray");
+            for (const auto *spell : {"blindness", "scorching_ray"})
+                if (klass == "wizard" &&
+                        std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+                    choice.spells.push_back(spell);
+            if (klass == "cleric")
+                choice.spells.push_back("blindness");
             // The Life Domain keeps Bless and Cure Wounds prepared from level three.
             if (klass == "cleric")
                 choice.spells = {"healing_word", "inflict_wounds", "shield_of_faith", "blindness",

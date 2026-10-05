@@ -182,11 +182,10 @@ void access()
                                                         }} &&
                   rules->spell_access(preset.sheet()).cantrips.size() == 3,
                   "Preset Wizards arrive with pre-generated available cantrips");
-            check(preset.creation_data().spells &&
-                  preset.creation_data().spells->learning.at("spellbook:1") ==
-                  std::vector<std::string> {"magic_missile"} &&
-                  preset.creation_data().spells->prepared ==
-                  std::optional{std::vector<std::string>{"magic_missile"}},
+            const auto &book = preset.creation_data().spells->learning.at("spellbook:1");
+            const auto &prepared = *preset.creation_data().spells->prepared;
+            check(preset.creation_data().spells && !book.empty() && book.front() == "magic_missile" &&
+                  !prepared.empty() && prepared.front() == "magic_missile",
                   "Preset Wizards pre-generate independent book and preparation selections");
         }
     check(wizards > 0, "Preset Wizard path exercised");

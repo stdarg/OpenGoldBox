@@ -228,6 +228,10 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
+    SpellAccessRow{"Wizard", "protection_from_evil_and_good", 1},
+    SpellAccessRow{"Wizard", "longstrider", 1},
+    SpellAccessRow{"Wizard", "fog_cloud", 1},
+    SpellAccessRow{"Wizard", "hold_person", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -7691,7 +7695,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.90", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.91", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

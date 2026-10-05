@@ -51,18 +51,18 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"heroism", "Heroism", 1, 0, paladin_list},
     Spell{"divine_favor", "Divine Favor", 1, 0, paladin_list},
     Spell{"bless", "Bless", 1, 0, cleric_list | paladin_list},
-    // Also on other class lists; added with those classes' increments.
+    // Also on the Druid and Warlock lists; added with those classes.
     Spell{"protection_from_evil_and_good", "Protection from Evil and Good", 1, 0,
-        cleric_list | paladin_list},
+        cleric_list | paladin_list | wizard_list},
     Spell{"command", "Command", 1, 0, cleric_list | paladin_list},
     Spell{"hunters_mark", "Hunter's Mark", 1, 0, ranger_list},
-    // Also on the Bard, Druid and Wizard lists; added with those classes.
-    Spell{"longstrider", "Longstrider", 1, 0, ranger_list},
+    // Also on the Bard list; added with that class.
+    Spell{"longstrider", "Longstrider", 1, 0, ranger_list | druid_list | wizard_list},
     Spell{"goodberry", "Goodberry", 1, 0, ranger_list | druid_list},
     Spell{"ensnaring_strike", "Ensnaring Strike", 1, 0, ranger_list},
     Spell{"entangle", "Entangle", 1, 0, ranger_list | druid_list},
-    // Also on the Sorcerer and Wizard lists; added with those classes.
-    Spell{"fog_cloud", "Fog Cloud", 1, 0, ranger_list | druid_list},
+    // Also on the Sorcerer list; added with that class.
+    Spell{"fog_cloud", "Fog Cloud", 1, 0, ranger_list | druid_list | wizard_list},
     // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
     Spell{"lesser_restoration", "Lesser Restoration", 2, 0, cleric_list},
     // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
@@ -70,8 +70,8 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"guiding_bolt", "Guiding Bolt", 1, 0, cleric_list},
     // Also on the Bard and Warlock lists; added with those classes.
     Spell{"bane", "Bane", 1, 0, cleric_list},
-    // Also on the Bard, Druid, Sorcerer, Warlock and Wizard lists.
-    Spell{"hold_person", "Hold Person", 2, 0, cleric_list},
+    // Also on the Bard, Druid, Sorcerer and Warlock lists.
+    Spell{"hold_person", "Hold Person", 2, 0, cleric_list | druid_list | wizard_list},
     Spell{"sanctuary", "Sanctuary", 1, 0, cleric_list},
     Spell{"warding_bond", "Warding Bond", 2, 0, cleric_list},
     Spell{"protection_from_poison", "Protection from Poison", 2, 0,

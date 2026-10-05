@@ -841,7 +841,10 @@ void spells()
             // A Cleric's default prepares every available spell up to its count.
             auto choice = party.default_advancement(id);
             if (std::string_view(klass) == "wizard" && level >= 3)
-                choice.spells = {"magic_missile", "scorching_ray", "blindness"};
+                // Earlier preparations stay; the level-two spells join them.
+                for (const auto *spell : {"scorching_ray", "blindness"})
+                    if (std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+                        choice.spells.push_back(spell);
             party.advance(id, choice);
         }
         auto state = party.checkpoint();

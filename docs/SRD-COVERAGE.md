@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Wizard shared spells
+
+Rules 0.6.91 puts Fog Cloud, Hold Person, Longstrider and Protection from Evil
+and Good on the Wizard list. See [Wizard](WIZARD.md).
+
 ## Prayer of Healing
 
 Rules 0.6.90 adds Prayer of Healing as a whole-party camp spell. See

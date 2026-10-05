@@ -45,7 +45,8 @@ void wizard_choices_checks()
     });
     check(saved(party) == after_rest, "Rest choices block time/combat without spending them");
     SpellChoices rest;
-    rest.prepared = std::vector<std::string> {"magic_missile"};
+    // Every available book spell stays prepared; only the cantrip changes.
+    rest.prepared = party.member(id).character.sheet().prepared_spells;
     rest.replace_cantrip = "fire_bolt";
     rest.replacement = "poison_spray";
     const auto preview = party.preview_spell_choices(id, rest);
@@ -110,8 +111,9 @@ void wizard_choices_checks()
     party.advance(id, third);
     party.advance(id, party.default_advancement(id));
     const auto fourth = rules->spell_access(party.member(id).character.sheet());
-    check(fourth.cantrips.size() == 4 && fourth.spellbook.size() == 3 &&
-          fourth.prepared.size() == 3,
+    // Two book spells per level: Magic Missile plus six more, all prepared.
+    check(fourth.cantrips.size() == 4 && fourth.spellbook.size() == 7 &&
+          fourth.prepared.size() == 7,
           "Level four adds one cantrip and retains known/prepared book spells");
     check(fourth.cantrip_choices == 4 && fourth.spellbook_choices == 12 &&
           fourth.prepared_choices == 7,
