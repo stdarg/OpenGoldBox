@@ -114,6 +114,11 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         required.push_back({"feature:fighting_style", "class:" + std::string(klass), 2, {}});
     if (klass == "rogue" && level >= 3)
         required.push_back({"feature:steady_aim", "class:rogue", 3, {}});
+    if (klass == "ranger" && level >= 3)
+    {
+        required.push_back({"subclass:hunter", "class:ranger", 3, {}});
+        required.push_back({"feature:hunters_lore", "subclass:ranger:hunter", 3, {}});
+    }
     if (klass == "paladin" && level >= 3)
     {
         required.push_back({"feature:channel_divinity", "class:paladin", 3, {}});
@@ -148,6 +153,13 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         const auto fixed = std::find(required.begin(), required.end(), grant);
         if (fixed != required.end())
             required.erase(fixed);
+        else if (grant.source_id == "subclass:ranger:hunter")
+        {
+            // Hunter's Prey: one of its two options, chosen at level three.
+            require(klass == "ranger" && grant.level == 3 && grant.choices.empty() &&
+                    (grant.id == "prey:colossus_slayer" || grant.id == "prey:horde_breaker"));
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == "class:" + std::string(klass) + ":fighting_style")
         {
             require(
@@ -211,6 +223,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     }
     if ((klass == "paladin" || klass == "ranger") && level >= 2)
         require(entitlements.contains({"class:" + std::string(klass) + ":fighting_style", 0}));
+    if (klass == "ranger" && level >= 3)
+        require(entitlements.contains({"subclass:ranger:hunter", 0}));
     require(required.empty() && advancement_count == (level == 4 ? 1u : 0u));
     return effects;
 }

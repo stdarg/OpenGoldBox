@@ -164,7 +164,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 32;
+constexpr unsigned checkpoint_format = 33;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -259,6 +259,8 @@ struct Definition
     int favored_enemy{}; // Favored Enemy: two Hunter's Marks without a slot per Long Rest
     int channel_divinity{};
     bool sacred_weapon{}; // Oath of Devotion, Paladin level 3
+    // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
+    bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -342,6 +344,10 @@ struct Actor : detail::LifeState
     unsigned nick_origin{}; // Light weapon used by the current Attack action.
     unsigned light_extra{}; // 0: unused, 1: Bonus Action, 2: Nick; shared once per turn.
     bool cleave_used{}, cleave_damage{};
+    // Hunter's Prey, once per turn. horde_origin is the first creature this
+    // actor attacked with a weapon this turn, which Horde Breaker attacks beside.
+    bool colossus_used{}, horde_used{};
+    EntityId horde_origin{};
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     bool light_damage{};        // Transient attack copy only; pending hits carry their own flag.
     bool involuntary_overlap{}; // Interrupted in an occupied space; retained through recovery until
@@ -720,8 +726,13 @@ character_definition(std::string_view bytes,
     })
     ->bonus;
     for (const auto &grant : grants)
+    {
         if (detail::is_mastery_grant(grant))
             d.masteries.push_back(grant.id.substr(8));
+        d.hunters_lore |= grant.id == "feature:hunters_lore";
+        d.colossus_slayer |= grant.id == "prey:colossus_slayer";
+        d.horde_breaker |= grant.id == "prey:horde_breaker";
+    }
     std::vector<std::string> prepared;
     if (detail::prepares_spells(klass))
     {
@@ -1190,6 +1201,7 @@ class Session final : public CombatSession
     // away from the caster, then ends its turn.
     void obey_command(std::vector<Command> &commands, const Actor &a) const;
     [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
+    void reveal_lore(const Actor &caster, const Actor &target);
     [[nodiscard]] bool mark_can_move(const Actor &caster) const;
     // Sacred Weapon's attack bonus, 0 without it.
     [[nodiscard]] int sacred_weapon_bonus(const Actor &a) const;
@@ -1929,6 +1941,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                                     rider_effect(spell.rider), value);
         log(target.source.name + " gains " + std::string(spell.label) + ".",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
+        if (spell.rider == detail::Rider::hunters_mark)
+            reveal_lore(a, target);
         return;
     }
     case detail::Rider::command:
@@ -2333,6 +2347,20 @@ std::vector<Command> Session::legal_commands() const
     }
     if (a.bonus && a.rushes > 0)
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
+    // Horde Breaker: once per turn, after a weapon attack, another creature
+    // within 5 feet of the first target and within the weapon's reach or range.
+    if (d.horde_breaker && a.horde_origin && !a.horde_used)
+    {
+        const auto &origin = actor(a.horde_origin);
+        for (const auto &other : actors_)
+        {
+            const int feet = distance(a.source.cell, other.source.cell);
+            if (other.source.id != origin.source.id && other.source.side != a.source.side &&
+                    other.hp > 0 && distance(origin.source.cell, other.source.cell) <= 5 &&
+                    (feet <= d.reach || (d.range > 0 && feet <= d.long_range)))
+                add(id, "horde_breaker", "Horde Breaker", other.source.id);
+        }
+    }
     // Favored Enemy casts Hunter's Mark without a slot, while no living quarry
     // carries the mark already; a dropped quarry's mark moves for a Bonus Action.
     const bool marking = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
@@ -3098,6 +3126,15 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
                         !actor(a.source.id).savage_used;
     if (savage)
         weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
+    // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
+    if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.hp < def(target).hp)
+    {
+        a.colossus_used = true;
+        const int extra = dice({1, 8, 0}, critical_hit(a, target, natural));
+        weapon_damage += extra;
+        log("Colossus Slayer adds " + std::to_string(extra) + " damage.",
+        {"Colossus Slayer adds {damage} damage.", {{"damage", std::to_string(extra)}}});
+    }
     apply_hit(a, target, natural, bonus, modifiers.mode(),
               std::max(0, weapon_damage + sneak_damage + advantage_damage),
               savage,
@@ -3133,6 +3170,35 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         damage(target, extra, false);
     }
     return hit;
+}
+
+void Session::reveal_lore(const Actor &caster, const Actor &target)
+{
+    // Hunter's Lore: the marked creature's damage Immunities, Resistances and
+    // Vulnerabilities become known.
+    if (!def(caster).hunters_lore)
+        return;
+    const auto &affinities = def(target).affinities;
+    if (affinities.empty())
+        log("Hunter's Lore: " + target.source.name +
+            " has no damage Immunities, Resistances or Vulnerabilities.",
+    {
+        "Hunter's Lore: {name} has no damage Immunities, Resistances or Vulnerabilities.",
+        {{"name", target.source.name}}
+    });
+    for (const auto &affinity : affinities)
+    {
+        const std::string kind = affinity.kind == detail::AffinityKind::resistance ? "Resistance"
+                                 : affinity.kind == detail::AffinityKind::immunity ? "Immunity"
+                                 : "Vulnerability";
+        const std::string type =
+            affinity.type ? std::string(detail::damage_name(*affinity.type)) : "all damage";
+        log("Hunter's Lore: " + target.source.name + " has " + kind + " to " + type + ".",
+        {
+            "Hunter's Lore: {name} has {kind} to {type}.",
+            {{"name", target.source.name}, {"kind", kind, true}, {"type", type, true}}
+        });
+    }
 }
 
 bool Session::marked_by(const Actor &target, const Actor &caster) const
@@ -3316,6 +3382,8 @@ bool Session::begin_turn()
     for (auto &actor : actors_)
     {
         actor.cleave_used = false;
+        actor.colossus_used = actor.horde_used = false;
+        actor.horde_origin = 0;
         actor.savage_used = false;
         actor.sneak_used = false;
         actor.aim_used = actor.aim_ready = false;
@@ -3738,6 +3806,14 @@ bool Session::submit(const Command &command)
         log(a.source.name + " moves aggressively.",
         {"{name} moves aggressively.", {{"name", a.source.name}}});
     }
+    else if (command.verb == "horde_breaker")
+    {
+        a.horde_used = true;
+        auto &target = actor(command.target);
+        log(a.source.name + " uses Horde Breaker.",
+        {"{name} uses Horde Breaker.", {{"name", a.source.name}}});
+        attack(a, target, distance(a.source.cell, target.source.cell) > d.reach);
+    }
     else if (command.verb == "hunters_mark_free")
     {
         const auto &spell = *detail::find_spell("hunters_mark");
@@ -3765,6 +3841,7 @@ bool Session::submit(const Command &command)
             "{name} moves Hunter's Mark to {target}.",
             {{"name", a.source.name}, {"target", quarry.source.name}}
         });
+        reveal_lore(a, quarry);
     }
     else if (command.verb == "sacred_weapon")
     {
@@ -3904,6 +3981,8 @@ bool Session::submit(const Command &command)
             {
                 // Fire Bolt used to reach this fallthrough and borrow attack()'s
                 // default 1d10 fire arguments; it is now an explicit table row.
+                if (d.horde_breaker && !a.horde_origin)
+                    a.horde_origin = command.target;
                 attack(a, actor(command.target), command.verb != "melee");
                 if (qualifies)
                     qualify_light(a, token);
@@ -3957,7 +4036,8 @@ std::string Session::save() const
             << ' ' << a.moved << ' ' << a.selected_weapon << ' ' << a.light_origins.size();
         for (auto id : a.light_origins)
             out << ' ' << id;
-        out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' ';
+        out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
+            << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -4084,7 +4164,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         input >> id;
         actor.light_origins.push_back(id);
     }
-    input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used;
+    input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
+          actor.horde_used >> actor.horde_origin;
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -4106,6 +4187,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
                weapon->mastery == detail::Mastery::cleave;
     }))
     throw std::runtime_error("Invalid Cleave expenditure source");
+    if ((actor.colossus_used && !definition.colossus_slayer) ||
+            ((actor.horde_used || actor.horde_origin) && !definition.horde_breaker))
+        throw std::runtime_error("Invalid Hunter's Prey state");
     if ((actor.sneak_used && !definition.sneak_level) ||
             (actor.aim_used && (definition.sneak_level < 3 || actor.bonus || actor.moved)) ||
             (actor.aim_ready && !actor.aim_used))
@@ -4400,6 +4484,12 @@ void Session::validate_initiative() const
 
 void Session::validate_restored_state() const
 {
+    for (const auto &a : actors_)
+        if (a.horde_origin && std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.source.id == a.horde_origin;
+    }))
+        throw std::runtime_error("Invalid Horde Breaker target");
     validate_initiative();
     validate_check();
     validate_champion_move();
@@ -4991,6 +5081,22 @@ class Module final : public RulesModule
             result.training = {detail::scholar_options(sheet.grants)};
         if (sheet.character_class == "Fighter" && result.level == 4)
             result.training = {detail::mastery_options("fighter", 4, sheet.grants)};
+        // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
+        if (sheet.character_class == "Ranger" && result.level == 3)
+            result.training = {{
+                "subclass:ranger:hunter", "Hunter's Prey", 1,
+                {   {
+                        "colossus_slayer", "Colossus Slayer",
+                        "Once per turn, a weapon hit deals 1d8 extra damage to a creature missing any Hit Points."
+                    },
+                    {
+                        "horde_breaker", "Horde Breaker",
+                        "Once per turn, after a weapon attack, attack another creature within 5 feet of the first target."
+                    }
+                },
+                TrainingChoiceControl::single_selection
+            }
+        };
         result.description =
             "Fixed-average HP growth. Resources gain only their new capacity;\nexisting expenditure remains.";
         if (sheet.character_class == "Fighter" && result.level == 3)
@@ -5004,7 +5110,7 @@ class Module final : public RulesModule
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Ranger")
             result.description =
-                "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two. Level four grants an available feat or ability points.\nThe Hunter subclass remains unavailable.";
+                "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
         if (result.level == 4)
             result.feats =
         {
@@ -5318,6 +5424,7 @@ class Module final : public RulesModule
                 // Skilled spans both catalogs, so its options carry the prefixed id.
                 id == "feat:skilled"             ? value
                 : id == "class:wizard:scholar" ? "expertise:" + value
+                : id == "subclass:ranger:hunter" ? "prey:" + value
                 : "mastery:" + value,
                 id,
                 unsigned(next.level),
@@ -5331,6 +5438,11 @@ class Module final : public RulesModule
         {
             next.grants.push_back({"feature:action_surge", "class:fighter", 2, {}});
             next.grants.push_back({"feature:tactical_mind", "class:fighter", 2, {}});
+        }
+        if (next.character_class == "Ranger" && next.level == 3)
+        {
+            next.grants.push_back({"subclass:hunter", "class:ranger", 3, {}});
+            next.grants.push_back({"feature:hunters_lore", "subclass:ranger:hunter", 3, {}});
         }
         // The Oath of Devotion is the SRD's only Paladin subclass.
         if (next.character_class == "Paladin" && next.level == 3)
@@ -5436,7 +5548,7 @@ class Module final : public RulesModule
             const std::string note =
                 next.character_class == "Paladin"
                 ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
-                : "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two. Level four grants an available feat or ability points.\nThe Hunter subclass remains unavailable.";
+                : "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
             next.class_modifiers += "\n" + note;
             next.class_messages.push_back({note, {}});
         }
@@ -6476,7 +6588,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.76", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.77", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -245,7 +245,7 @@
   "Choose an eligible Fighting Style",
   "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands.",
   "+1 AC while wearing armor. Requires the Fighting Style feature.",
-  "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two. Level four grants an available feat or ability points.\nThe Hunter subclass remains unavailable.",
+  "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.",
   "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.",
   "Great Weapon Fighting: eligible Melee weapon damage dice showing 1 or 2 count as 3 while held in two hands.",
   "Great Weapon Fighting",
@@ -322,5 +322,12 @@
   "Longstrider (level 2 slot)",
   "Druidic Warrior cantrips",
   "Druidic Warrior",
-  "Learn two Druid cantrips; Wisdom is your spellcasting ability for them."
+  "Learn two Druid cantrips; Wisdom is your spellcasting ability for them.",
+  "Horde Breaker",
+  "Colossus Slayer",
+  "Hunter's Prey",
+  "Resistance",
+  "Immunity",
+  "Vulnerability",
+  "all damage"
 ]

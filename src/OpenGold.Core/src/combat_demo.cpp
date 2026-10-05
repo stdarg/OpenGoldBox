@@ -682,8 +682,9 @@ Command choose_demo_command(const CombatSession &session)
     for (const auto &command : offered)
         if (command.verb == "divine_smite_free")
             return command;
-    // Favored Enemy's Hunter's Mark and moving it cost no slot, so they come first.
-    for (const auto verb : {"hunters_mark_move", "hunters_mark_free"})
+    // Favored Enemy's Hunter's Mark and moving it cost no slot, and Horde
+    // Breaker's attack costs nothing, so they come first.
+    for (const auto verb : {"hunters_mark_move", "hunters_mark_free", "horde_breaker"})
         for (const auto &command : offered)
             if (command.verb == verb)
                 return command;

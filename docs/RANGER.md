@@ -11,7 +11,7 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 | 1 | Weapon Mastery | Delivered earlier ([Weapon Mastery](WEAPON-MASTERY.md)) |
 | 2 | Deft Explorer | Nothing to deliver in levels 1–4 ([2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplification)) |
 | 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Druidic Warrior delivered (rules 0.6.76) |
-| 3 | Ranger Subclass (Hunter) | Not yet |
+| 3 | Ranger Subclass (Hunter) | Delivered (rules 0.6.77); changing Hunter's Prey after a rest not yet |
 | 4 | Ability Score Improvement | Delivered earlier |
 
 ## Spellcasting
@@ -55,6 +55,29 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   whose Godot check covers both.
 - Verification: `opengold_spell_access_tests` (the offer, Druid cantrips only, a
   Cleric cantrip refused atomically, the profile, save round trip).
+
+## Hunter (level 3)
+
+- The Hunter is the SRD's only Ranger subclass, taken automatically at level
+  three. **Hunter's Prey** is chosen in the level-up Training dropdown:
+  - **Colossus Slayer**: once per turn, a weapon hit deals 1d8 more damage
+    (doubled on a critical hit) to a creature already missing Hit Points.
+  - **Horde Breaker**: once per turn, after a weapon attack, the A cycle offers
+    **Horde Breaker** against a different creature within 5 feet of the first
+    target and within the weapon's reach (or range). Adaptation: only the
+    turn's first weapon target is excluded, not every creature attacked. The
+    party AI uses it whenever it is offered.
+- **Hunter's Lore**: marking a creature with Hunter's Mark logs its damage
+  Immunities, Resistances and Vulnerabilities (or that it has none).
+- Not yet: replacing the Hunter's Prey option after a Short or Long Rest; the
+  rest window replaces only Weapon Mastery so far.
+- Combat checkpoints become `OGCOMBAT 33` (each actor's once-per-turn Hunter's
+  Prey state and Horde Breaker's first target).
+- Verification: `opengold_ranger_spell_tests` (the level-three choice and an
+  unknown option refused, Colossus Slayer against unwounded and wounded
+  creatures, Horde Breaker's target rules, once per turn and checkpoint,
+  Hunter's Lore with and without the subclass) and `opengold_godot_hunters_mark`
+  (attack, then Horde Breaker on the second enemy).
 
 ## Longstrider
 

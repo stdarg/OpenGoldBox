@@ -74,6 +74,14 @@ func run_checks() -> void:
         require(not await cycle_to(combat, label), "The spent Bonus Action ends further marking: " + locale)
         var strider := "Longstrider" if locale == "en" else "Zancada prodigiosa"
         require(await cycle_to(combat, strider), "The A cycle offers Longstrider: " + locale)
+        await load_fixture("hunter")
+        require(await cycle_to(combat, "Melee attack" if locale == "en" else "Ataque cuerpo a cuerpo"), "The Hunter attacks: " + locale)
+        await click_cell(Vector2(2, 1))
+        var horde := "Horde Breaker" if locale == "en" else "Rompehordas"
+        require(await cycle_to(combat, horde), "The A cycle offers Horde Breaker after the attack: " + locale)
+        await click_cell(Vector2(2, 2))
+        var broke := "Ranger uses Horde Breaker." if locale == "en" else "Ranger usa Rompehordas."
+        require(combat.get_node("Log").get_parsed_text().contains(broke), "Clicking the second enemy attacks it: " + locale)
     TranslationServer.set_locale("en")
     restore_files()
     print("Hunter's Mark view checks passed")

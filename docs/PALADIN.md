@@ -102,7 +102,7 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD cmake -DGODOT=godot -DPROJECT=$PWD/src/OpenGo
 - Not yet: spending 5 points to remove Poisoned, because the game has no
   Poisoned condition yet.
 - The pool is saved in the character's vital state (`SRD11`) and in combat
-  checkpoints (`OGCOMBAT 32`).
+  checkpoints (`OGCOMBAT 33`).
 
 Verification: `opengold_lay_on_hands_tests` (offers, healing amount, spending,
 dying ally, checkpoint, rest and level growth, campaign round trip) and
@@ -131,7 +131,7 @@ ally, in English and Spanish).
   the Slums kobolds are Dragons, goblins and bugbears Fey, and the rest
   Humanoid. Characters are Humanoid.
 - The free use and Channel Divinity (not yet used) are saved in the vital state
-  (`SRD11`); the open smite chance is saved in combat checkpoints (`OGCOMBAT 32`).
+  (`SRD11`); the open smite chance is saved in combat checkpoints (`OGCOMBAT 33`).
 
 Verification: `opengold_smite_tests` (the window after own-turn melee hits only,
 closing on other commands, free and slot casts, the extra die against a Fiend,
@@ -153,7 +153,7 @@ forced in a test.
   against half the damage (10–30); dropping to 0 Hit Points ends it.
   Concentration is tracked in combat only and ends when the combat ends (an
   adaptation; outside combat no spell needs it yet). It is saved in combat
-  checkpoints (`OGCOMBAT 32`).
+  checkpoints (`OGCOMBAT 33`).
 - **Bless** (Action, 30 feet, Concentration up to 1 minute; Cleric and
   Paladin): up to three creatures, four from a level-two slot, add 1d4 to their
   attack rolls and saving throws, Concentration saves and repeated saves
@@ -161,7 +161,7 @@ forced in a test.
   spends nothing; each click on a creature adds or removes it; the spell is cast
   when the third is chosen, or earlier with **Cast spell** (the End button) or
   Space; Escape cancels. An open choice is saved in combat checkpoints
-  (`OGCOMBAT 32`).
+  (`OGCOMBAT 33`).
 - **Protection from Evil and Good** (Action, touch, Concentration up to 10
   minutes; Cleric and Paladin): Aberrations, Celestials, Elementals, Fey, Fiends
   and Undead attack the warded creature with Disadvantage. The spell needs no

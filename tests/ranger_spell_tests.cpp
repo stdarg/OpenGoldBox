@@ -1,3 +1,4 @@
+#include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -36,7 +37,9 @@ std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "creature brute 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "affinity brute hide resistance slashing\n");
 }
 
 // A level-one Ranger who prepared the named spells; Hunter's Mark is always prepared.
@@ -101,14 +104,15 @@ unsigned remaining(const CombatSession &c, std::string_view pool)
 }
 
 // The Ranger (1) with a weakling (98) and a sturdy target (99) beside it.
-std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero)
+std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
+                                      std::string sturdy = "target")
 {
     const auto profile =
         module.character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data;
     auto c = module.create({{8, 4, std::vector<std::uint8_t>(32)},
         {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
             {98, "weakling", "Weakling", 1, {2, 1}},
-            {99, "target", "Target", 1, {2, 2}}
+            {99, std::move(sturdy), "Target", 1, {2, 2}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -176,6 +180,19 @@ void longstrider_checks()
     next_turn(*c);
     check(unit(*c, 1).movement_feet == before + 10, "Longstrider lasts into later turns");
 }
+// A level-three Hunter with the chosen Hunter's Prey option.
+Character hunter(std::string prey)
+{
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(ranger({"cure_wounds"}));
+    party.award_experience(900, "hunter-xp");
+    party.advance(id, party.default_advancement(id));
+    auto third = party.default_advancement(id);
+    third.training["subclass:ranger:hunter"] = {std::move(prey)};
+    party.advance(id, third);
+    return party.member(id).character;
+}
+
 // A Ranger with a vanguard 25 feet away on its turn, for
 // tests/hunters_mark_view_tests.gd. The game loads it with the standard rules content.
 void write_ui_fixture()
@@ -195,6 +212,83 @@ void write_ui_fixture()
     std::ofstream out(path / "ranger.save", std::ios::binary);
     out << c->save();
     check(bool(out), "Write the UI fixture");
+
+    // A Horde Breaker beside two adjacent vanguards.
+    const auto hunter_profile = module->character_profile(hunter("horde_breaker").sheet(),
+                                std::vector<std::string> {"longsword"}).data;
+    auto h = module->create({{12, 9, std::vector<std::uint8_t>(108)},
+        {   {1, "campaign-character", "Ranger", 0, {1, 1}, hunter_profile},
+            {98, "vanguard", "First", 1, {2, 1}},
+            {99, "vanguard", "Second", 1, {2, 2}}
+        }},
+    2);
+    for (unsigned turns = 0; h->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*h, "end"), "Reach the Hunter's turn");
+    std::ofstream hunter_out(path / "hunter.save", std::ios::binary);
+    hunter_out << h->save();
+    check(bool(hunter_out), "Write the Hunter UI fixture");
+}
+void hunters_prey_option_checks()
+{
+    auto module = rules();
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(ranger({"cure_wounds"}));
+    party.award_experience(900, "hunter-xp");
+    party.advance(id, party.default_advancement(id));
+    const auto options = module->advancement_options(party.member(id).character.sheet());
+    check(options.training.size() == 1 && options.training.front().id == "subclass:ranger:hunter" &&
+          options.training.front().options.size() == 2,
+          "Level three chooses Hunter's Prey");
+    auto bad = party.default_advancement(id);
+    bad.training["subclass:ranger:hunter"] = {"giant_killer"};
+    bool refused = false;
+    try
+    {
+        party.advance(id, bad);
+    }
+    catch (const std::exception &)
+    {
+        refused = true;
+    }
+    check(refused && party.member(id).character.sheet().level == 2, "An unknown option is refused");
+}
+
+void colossus_slayer_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, hunter("colossus_slayer"));
+    check(submit(*c, "melee", 99) && !logged(*c, "Colossus Slayer"),
+          "Colossus Slayer waits for a wounded creature");
+    next_turn(*c);
+    check(submit(*c, "melee", 99) && logged(*c, "Colossus Slayer adds"),
+          "Colossus Slayer adds 1d8 against a wounded creature");
+    check(!submit(*c, "horde_breaker", 98), "Colossus Slayer brings no Horde Breaker");
+}
+
+void horde_breaker_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, hunter("horde_breaker"));
+    check(!submit(*c, "horde_breaker", 98), "Horde Breaker follows a weapon attack");
+    check(submit(*c, "melee", 99), "Attack the sturdy target");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "Horde Breaker's turn state survives a checkpoint");
+    check(!submit(*c, "horde_breaker", 99), "Horde Breaker needs a different creature");
+    check(submit(*c, "horde_breaker", 98) && logged(*c, "Ranger uses Horde Breaker."),
+          "Horde Breaker attacks the creature beside the first target");
+    check(!submit(*c, "horde_breaker", 98), "Horde Breaker is once per turn");
+}
+
+void hunters_lore_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, hunter("colossus_slayer"), "brute");
+    check(submit(*c, "hunters_mark_free", 99) &&
+          logged(*c, "Hunter's Lore: Target has Resistance to Slashing."),
+          "Hunter's Lore reveals the quarry's Resistance");
+    auto plain = battle(*module, ranger({"cure_wounds"}), "brute");
+    check(submit(*plain, "hunters_mark_free", 99) && !logged(*plain, "Hunter's Lore"),
+          "Hunter's Lore needs the Hunter");
 }
 } // namespace
 
@@ -206,6 +300,10 @@ int main()
         move_mark_checks();
         slot_cast_checks();
         longstrider_checks();
+        hunters_prey_option_checks();
+        colossus_slayer_checks();
+        horde_breaker_checks();
+        hunters_lore_checks();
         write_ui_fixture();
         std::cout << "Ranger spell tests passed\n";
     }
