@@ -31,7 +31,7 @@ void paladin_choices_checks()
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 2 &&
           option_ids(options.preparation) ==
-          std::vector<std::string> {"bless", "cure_wounds", "divine_favor", "divine_smite", "heroism",
+          std::vector<std::string> {"bless", "command", "cure_wounds", "divine_favor", "divine_smite", "heroism",
                                     "protection_from_evil_and_good", "searing_smite", "shield_of_faith"
                                    },
     "Creation prepares from the implemented Paladin list");

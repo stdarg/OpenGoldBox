@@ -39,7 +39,10 @@ enum class EffectKind : unsigned
     bless = 12,
     // Protection from Evil and Good: Aberrations, Celestials, Elementals, Fey,
     // Fiends and Undead have Disadvantage on attack rolls against the target.
-    protection_from_evil_and_good = 13
+    protection_from_evil_and_good = 13,
+    // Command: the target obeys on its next turn; `dc` holds the option, an
+    // index into command_options plus one.
+    command = 14
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -139,6 +142,11 @@ void apply_searing_smite(EffectState &, std::uint64_t scope, rules::EntityId cas
 // Applies a spell benefit that has no save. `value` is kind-specific.
 void apply_spell_benefit(EffectState &, std::uint64_t scope, rules::EntityId caster,
                          std::string name, EffectKind kind, int value);
+// Lasts until the end of the target's next turn, `duration_ms` from now.
+void apply_command(EffectState &, std::uint64_t scope, rules::EntityId caster, std::string name,
+                   int option, unsigned duration_ms);
+// The Command the target must obey, if any.
+[[nodiscard]] const Effect *command_effect(const EffectState &);
 bool has_effect(const EffectState &, EffectKind);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);
 [[nodiscard]] RollModifiers attack_modifiers(bool attacker_blind, bool target_blind,

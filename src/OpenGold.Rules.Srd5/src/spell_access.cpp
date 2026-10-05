@@ -50,7 +50,8 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"bless", "Bless", 1, 0, cleric_list | paladin_list},
     // Also on other class lists; added with those classes' increments.
     Spell{"protection_from_evil_and_good", "Protection from Evil and Good", 1, 0,
-        cleric_list | paladin_list}};
+        cleric_list | paladin_list},
+    Spell{"command", "Command", 1, 0, cleric_list | paladin_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).

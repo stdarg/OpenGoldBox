@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Command
+
+Rules 0.6.71 adds Command (Cleric and Paladin) with Approach, Flee, Grovel and
+Halt; Drop is left out because the game has no dropped gear. See
+[Paladin](PALADIN.md#buffs-and-concentration).
+
 ## Protection from Evil and Good
 
 Rules 0.6.70 adds Protection from Evil and Good (Cleric and Paladin) without its

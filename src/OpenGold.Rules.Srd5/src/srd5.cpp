@@ -101,6 +101,21 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::protection_from_evil_and_good;
 }
 
+// Command's option as players read it, "Approach" for 1.
+std::string command_label(int option)
+{
+    auto label = std::string(detail::command_options.at(std::size_t(option - 1)));
+    label[0] = char(label[0] - 'a' + 'A');
+    return label;
+}
+
+// Spells whose creatures are chosen one click at a time (CLASS-2) when they may
+// affect more than one.
+bool selects_creatures(const detail::SpellDef &spell)
+{
+    return spell.pattern == detail::SpellPattern::buff || spell.rider == detail::Rider::command;
+}
+
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
 // Smite's slotless cast.
 bool is_smite(std::string_view verb)
@@ -166,6 +181,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Paladin", "bless", 1},
     SpellAccessRow{"Paladin", "protection_from_evil_and_good", 1},
     SpellAccessRow{"Cleric", "protection_from_evil_and_good", 1},
+    SpellAccessRow{"Paladin", "command", 1},
+    SpellAccessRow{"Cleric", "command", 1},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -1131,9 +1148,15 @@ class Session final : public CombatSession
     // per original offer position so the observable order is unchanged.
     void offer_spells(std::vector<Command> &commands, const Actor &a, const Actor &other, int feet,
                       detail::SpellTarget scope, bool bonus_pass) const;
-    // Resolves one table spell. `upcast` is the "_2" level-two slot form.
-    void resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a, EntityId target_id);
-    void apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target, int dc);
+    // Resolves one table spell. `verb` is the offered command: it names the
+    // "_2" level-two slot form and Command's option.
+    void resolve_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
+                       EntityId target_id);
+    void apply_rider(const detail::SpellDef &spell, std::string_view verb, Actor &a, Actor &target,
+                     int dc);
+    // Command's Approach and Flee: the commanded creature only moves toward or
+    // away from the caster, then ends its turn.
+    void obey_command(std::vector<Command> &commands, const Actor &a) const;
     unsigned next_save_ms(EntityId target) const;
     unsigned next_turn_ms(const Actor &target) const;
     void advance_turn_time();
@@ -1818,7 +1841,8 @@ Snapshot Session::snapshot() const
     return s;
 }
 
-void Session::apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target, int dc)
+void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, Actor &a,
+                          Actor &target, int dc)
 {
     // Each rider keeps its own duration rule and its own log line; the wording
     // is unchanged so the message catalogue does not move.
@@ -1868,6 +1892,24 @@ void Session::apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
         return;
     }
+    case detail::Rider::command:
+    {
+        const int option = detail::command_option(verb);
+        const auto index = static_cast<std::size_t>(&target - actors_.data());
+        const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+        detail::apply_command(target.effects, scope_, a.source.id, a.source.name, option,
+                              next_turn_ms(target) + slot);
+        log(target.source.name + " must obey " + a.source.name + "'s Command: " +
+            command_label(option) + ".",
+        {
+            "{name} must obey {caster}'s Command: {option}.",
+            {   {"name", target.source.name},
+                {"caster", a.source.name},
+                {"option", command_label(option), true}
+            }
+        });
+        return;
+    }
     case detail::Rider::blindness:
         detail::apply_blindness(target.effects, scope_, a.source.id, a.source.name, dc,
                                 next_save_ms(target.source.id));
@@ -1877,10 +1919,11 @@ void Session::apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target
     }
 }
 
-void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a,
+void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
                             EntityId target_id)
 {
     const auto &d = def(a);
+    const bool upcast = verb.ends_with("_2");
     // A level-two spell always draws a level-two slot; a level-one spell draws
     // one only in its upcast form.
     if (spell.level)
@@ -1905,7 +1948,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a
     case detail::SpellPattern::buff:
         if (spell.concentration)
             begin_concentration(a, spell);
-        apply_rider(spell, a, actor(target_id), dc);
+        apply_rider(spell, verb, a, actor(target_id), dc);
         return;
     case detail::SpellPattern::heal:
         heal(actor(target_id), dice(rolled));
@@ -1914,7 +1957,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a
     {
         auto &target = actor(target_id);
         if (attack(a, target, !spell.melee, true, rolled, spell.damage))
-            apply_rider(spell, a, target, dc);
+            apply_rider(spell, verb, a, target, dc);
         return;
     }
     case detail::SpellPattern::repeat_attack:
@@ -1980,7 +2023,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, bool upcast, Actor &a
     {
         auto &target = actor(target_id);
         if (!saving_throw_succeeds(target, spell.save, dc))
-            apply_rider(spell, a, target, dc);
+            apply_rider(spell, verb, a, target, dc);
         return;
     }
     }
@@ -2052,6 +2095,19 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         {
             if (a.slots2 > 0)
                 offer(std::string(spell.id), std::string(spell.label));
+            continue;
+        }
+        if (spell.rider == detail::Rider::command)
+        {
+            for (const auto option : detail::command_options)
+            {
+                const auto verb = "command_" + std::string(option);
+                const auto label = "Command: " + command_label(detail::command_option(verb));
+                if (a.slots > 0)
+                    offer(verb, label);
+                if (a.slots2 > 0)
+                    offer(verb + "_2", label + " (level 2 slot)");
+            }
             continue;
         }
         if (a.slots > 0)
@@ -2345,7 +2401,51 @@ std::vector<Command> Session::legal_commands() const
     }
     for (const auto cell : movement_reach(id))
         add(id, "move", "Move", 0, cell);
-    return filtered();
+    auto offered = filtered();
+    obey_command(offered, a);
+    return offered;
+}
+
+void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
+{
+    const auto *command = detail::command_effect(a.effects);
+    if (!command)
+        return;
+    const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return command->source_scope == scope_ && other.source.id == command->source_actor;
+    });
+    // With no caster left there is nothing to approach or flee.
+    if (caster == actors_.end() || caster->dead)
+        return;
+    const bool approach = command->dc == int(detail::CommandOption::approach);
+    const int start = distance(a.source.cell, caster->source.cell);
+    // Approach ends the turn within 5 feet of the caster.
+    const Command *best = nullptr;
+    int best_feet = start;
+    if (!approach || start > 5)
+        for (const auto &offer : commands)
+            if (offer.verb == "move")
+            {
+                const int feet = distance(offer.destination, caster->source.cell);
+                if (approach ? feet < best_feet : feet > best_feet)
+                {
+                    best = &offer;
+                    best_feet = feet;
+                }
+            }
+    const auto offered = [&](std::string_view verb)
+    {
+        return std::find_if(commands.begin(), commands.end(), [&](const auto & offer)
+        {
+            return offer.verb == verb;
+        });
+    };
+    // Flee uses the fastest means, so it Dashes once its movement runs out.
+    auto kept = best                                                      ? *best
+                : !approach && offered("dash") != commands.end() ? *offered("dash")
+                : *offered("end");
+    commands = {std::move(kept)};
 }
 
 std::vector<Cell> Session::movement_reach(EntityId id) const
@@ -2540,8 +2640,15 @@ void Session::cast_on_selection()
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
     if (spell.concentration)
         begin_concentration(a, spell);
+    const int dc = 8 + def(a).casting;
     for (const auto id : selection.chosen)
-        apply_rider(spell, a, actor(id), 8 + def(a).casting);
+    {
+        auto &target = actor(id);
+        if (spell.pattern == detail::SpellPattern::save_condition &&
+                saving_throw_succeeds(target, spell.save, dc))
+            continue;
+        apply_rider(spell, selection.verb, a, target, dc);
+    }
 }
 
 int Session::armor_class(const Actor &target) const
@@ -3107,6 +3214,22 @@ bool Session::begin_turn()
     a.dashes = 0;
     a.spent_slot = false;
     a.rush_used = false;
+    // Command's Grovel and Halt take the whole turn; Approach and Flee limit
+    // the turn's commands instead (obey_command).
+    if (const auto *command = detail::command_effect(a.effects))
+    {
+        if (command->dc == int(detail::CommandOption::grovel))
+        {
+            a.effects.prone = true;
+            log(a.source.name + " grovels.", {"{name} grovels.", {{"name", a.source.name}}});
+            return false;
+        }
+        if (command->dc == int(detail::CommandOption::halt))
+        {
+            log(a.source.name + " halts.", {"{name} halts.", {{"name", a.source.name}}});
+            return false;
+        }
+    }
     log("Round " + std::to_string(round_) + ": " + a.source.name + " acts.",
     {
         "Round {round}: {name} acts.",
@@ -3336,7 +3459,6 @@ bool Session::submit(const Command &command)
             }
         }
     }
-    const bool second = command.verb.ends_with("_2");
     if (!initiative_choices_.empty())
     {
         resolve_initiative(command);
@@ -3537,7 +3659,8 @@ bool Session::submit(const Command &command)
         a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, def(target).hp - target.hp));
     }
     else if (const auto *multi = detail::find_spell(command.verb);
-             multi && multi->pattern == detail::SpellPattern::buff && multi->instances > 1)
+             multi && selects_creatures(*multi) &&
+             selection_maximum({a.source.id, command.verb, {}}) > 1)
     {
         // The first creature starts the choice; nothing is spent until the cast.
         selection_ = PendingSelection{a.source.id, command.verb, {command.target}};
@@ -3552,7 +3675,7 @@ bool Session::submit(const Command &command)
         // A Bonus Action spell spends no Action, so it resolves outside the
         // Action block below.
         a.bonus = false;
-        resolve_spell(*bonus_spell, second, a, command.target);
+        resolve_spell(*bonus_spell, command.verb, a, command.target);
     }
     else
     {
@@ -3575,7 +3698,7 @@ bool Session::submit(const Command &command)
             log(a.source.name + " disengages.", {"{name} disengages.", {{"name", a.source.name}}});
         }
         else if (const auto *spell = detail::find_spell(command.verb))
-            resolve_spell(*spell, second, a, command.target);
+            resolve_spell(*spell, command.verb, a, command.target);
         else if (command.verb == "throw")
         {
             const auto *w = detail::weapon(items_.at(command.item - 1).definition);
@@ -4456,8 +4579,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         std::size_t count{};
         input >> selection.caster >> selection.verb >> count;
         const auto *spell = detail::find_spell(selection.verb);
-        if (!input || !spell || spell->pattern != detail::SpellPattern::buff ||
-                spell->instances < 2 || !count || count > 8)
+        if (!input || !spell || !selects_creatures(*spell) || !count || count > 8)
             throw std::runtime_error("Invalid spell target choice");
         for (std::size_t n = 0; n < count; ++n)
         {
@@ -6056,7 +6178,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.70", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.71", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

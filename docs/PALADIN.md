@@ -23,9 +23,9 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
   at each level-up, with earlier choices locked.
 - After a Long Rest a Paladin may replace **one** prepared spell (a Cleric may
   replace any). The shared rest window enforces this.
-- The Paladin list in the game holds Bless, Cure Wounds, Divine Favor, Divine
-  Smite, Heroism, Protection from Evil and Good, Searing Smite and Shield of
-  Faith. Command comes next; Detect Magic waits for spellcasting outside combat
+- The Paladin list in the game holds Bless, Command, Cure Wounds, Divine Favor,
+  Divine Smite, Heroism, Protection from Evil and Good, Searing Smite and Shield
+  of Faith. Detect Magic waits for spellcasting outside combat
   ([CLASS-3](SRD-DECISIONS.md#class-3-2026-10-05-holy-water-and-casting-outside-combat)).
 - Spells a feature keeps prepared (Divine Smite from level 2) are listed apart
   and not counted against the prepared spells.
@@ -113,6 +113,15 @@ forced in a test.
   holy water (CLASS-3). Its protection against being Charmed, Frightened or
   possessed waits until a creature can cause those. In the current content the
   Slums goblins and bugbears (Fey) are affected.
+- **Command** (Action, 60 feet, Verbal only; Cleric and Paladin): a creature
+  the caster can see makes a Wisdom save or obeys on its next turn. Each option
+  is its own entry in the A cycle (Command: Approach, Flee, Grovel, Halt).
+  Approach moves it to the reachable cell nearest the caster and ends its turn
+  within 5 feet; Flee moves it to the reachable cell farthest away, Dashes and
+  moves on; Grovel makes it Prone and ends its turn; Halt ends its turn without
+  moving or acting (it keeps its Reaction). Drop is left out: the game has no
+  dropped gear. A level-two slot commands two creatures, chosen as for Bless
+  (CLASS-2), each saving separately. A newer Command replaces an older one.
 - In the game: A cycles to the spell, then click the ally (a click on an ally
   now targets it whenever the selected action can) or press Space.
 
@@ -121,7 +130,10 @@ the game controls in English and Spanish. `opengold_paladin_spell_tests` (Bless'
 choice, cancel, early and automatic casts, and its attack bonus; AC, a second Concentration spell
 ending the first, Temporary HP at the target's turn, Divine Favor's damage, the
 Concentration save after damage, ending with the combat, and Protection from
-Evil and Good's Disadvantage against a Fiend but not a Humanoid) and the shared
+Evil and Good's Disadvantage against a Fiend but not a Humanoid, and each
+Command option, its checkpoint, and a level-two Command on two creatures).
+`opengold_godot_command` casts Command: Grovel from the A cycle in English and
+Spanish and the shared
 spell-table checks, which now also probe Paladins.
 
 Cleric and Paladin share one table of class-list casters in

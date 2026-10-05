@@ -56,7 +56,8 @@ enum class Rider : unsigned
     heroism,
     divine_favor,
     bless,
-    protection_from_evil_and_good
+    protection_from_evil_and_good,
+    command
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -314,6 +315,21 @@ inline constexpr std::array spell_table
         .range = 5,
         .rider = Rider::protection_from_evil_and_good,
         .concentration = true},
+    // SRD 5.2.1 p. 116: a Wisdom save or the target obeys on its next turn; one
+    // more creature per slot level above 1. Each option is its own verb,
+    // "command_<option>"; Drop is left out because the game has no dropped gear.
+    SpellDef{
+        .id = "command",
+        .label = "Command",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::any_creature,
+        .range = 60,
+        .somatic = false,
+        .requires_sight = true,
+        .save = Ability::wisdom,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::command},
     SpellDef{
         .id = "divine_favor",
         .label = "Divine Favor",
@@ -339,10 +355,35 @@ inline constexpr std::array spell_table
         .upcast = {.extra_dice = 2}}};
 
 // Accepts the "_2" upcast verb form, so callers can pass a command verb directly.
+// Command's options, in the order the effect stores them (1-based).
+inline constexpr std::array<std::string_view, 4> command_options{"approach", "flee", "grovel",
+    "halt"};
+enum class CommandOption : int
+{
+    approach = 1,
+    flee,
+    grovel,
+    halt
+};
+
+// The option a Command verb names, 1-based; 0 when the verb is not one.
+inline int command_option(std::string_view verb)
+{
+    if (verb.ends_with("_2"))
+        verb.remove_suffix(2);
+    if (!verb.starts_with("command_"))
+        return 0;
+    verb.remove_prefix(8);
+    const auto found = std::find(command_options.begin(), command_options.end(), verb);
+    return found == command_options.end() ? 0 : int(found - command_options.begin()) + 1;
+}
+
 inline const SpellDef *find_spell(std::string_view id)
 {
     if (id.ends_with("_2"))
         id.remove_suffix(2);
+    if (command_option(id))
+        id = "command";
     for (const auto &spell : spell_table)
         if (spell.id == id)
             return &spell;

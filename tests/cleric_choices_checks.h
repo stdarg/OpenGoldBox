@@ -39,8 +39,8 @@ void cleric_creation_checks()
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 4 &&
           option_ids(options.preparation) == std::vector<std::string>
-    {"bless", "cure_wounds", "healing_word", "inflict_wounds", "protection_from_evil_and_good",
-        "shield_of_faith"},
+    {"bless", "command", "cure_wounds", "healing_word", "inflict_wounds",
+        "protection_from_evil_and_good", "shield_of_faith"},
     "Creation prepares from the Cleric list up to level-one slots");
     const auto profile = rules->character_profile(sheet, {}).data;
     check(profile.starts_with(

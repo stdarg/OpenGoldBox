@@ -401,10 +401,12 @@ void behaviour()
         sheets.push_back(widest(*rules, probe));
     for (const auto &row : spell_table)
     {
-        // Smites are offered by the caster's own melee hit, not by range, and a
-        // spell on several creatures begins a choice; their own tests cover them.
+        // Smites are offered by the caster's own melee hit, not by range, a
+        // spell on several creatures begins a choice, and Command is offered
+        // once per option; their own tests cover them.
         if (row.pattern == SpellPattern::smite ||
-                (row.pattern == SpellPattern::buff && row.instances > 1))
+                (row.pattern == SpellPattern::buff && row.instances > 1) ||
+                row.rider == Rider::command)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

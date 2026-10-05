@@ -1,3 +1,4 @@
+#include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -258,6 +259,8 @@ void write_ui_fixture()
     check(bool(out), "Write the UI fixture");
 }
 
+#include "command_checks.h"
+
 void combat_end_checks()
 {
     auto module = rules();
@@ -278,6 +281,7 @@ int main()
         divine_favor_checks();
         bless_checks();
         protection_from_evil_and_good_checks();
+        command_checks();
         concentration_damage_checks();
         combat_end_checks();
         write_ui_fixture();

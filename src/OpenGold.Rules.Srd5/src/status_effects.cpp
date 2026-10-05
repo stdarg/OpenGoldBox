@@ -287,6 +287,31 @@ void apply_spell_benefit(EffectState &effects, std::uint64_t scope, rules::Entit
     {effects.next_id++, scope, caster, std::move(name), kind, value, duration, 0});
 }
 
+void apply_command(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                   std::string name, int option, unsigned duration_ms)
+{
+    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
+            option < 1 || option > 4 || !duration_ms || duration_ms > 2 * round_ms)
+        throw std::runtime_error("Invalid Command application");
+    // A newer Command replaces an earlier one.
+    std::erase_if(effects.active, [](const auto & e)
+    {
+        return e.kind == EffectKind::command;
+    });
+    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+                              EffectKind::command, option, duration_ms, 0});
+}
+
+const Effect *command_effect(const EffectState &effects)
+{
+    const auto found = std::find_if(effects.active.begin(), effects.active.end(),
+                                    [](const auto & e)
+    {
+        return e.kind == EffectKind::command;
+    });
+    return found == effects.active.end() ? nullptr : &*found;
+}
+
 bool has_effect(const EffectState &effects, EffectKind kind)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
@@ -420,6 +445,18 @@ EffectState read_effects(std::istream &in)
         const bool turn_save = kind == unsigned(EffectKind::searing_smite);
         // A spell benefit has no save; `dc` carries its value.
         const auto benefit = benefit_duration_ms(static_cast<EffectKind>(kind));
+        if (kind == unsigned(EffectKind::command) && in)
+        {
+            if (e.id <= previous || e.id >= result.next_id || !e.source_scope ||
+                    !e.source_actor || e.source_name.empty() || e.source_name.size() > 160 ||
+                    e.dc < 1 || e.dc > 4 || !e.remaining_ms || e.remaining_ms > 2 * round_ms ||
+                    e.save_in_ms)
+                throw std::runtime_error("Invalid active effect");
+            e.kind = EffectKind::command;
+            previous = e.id;
+            result.active.push_back(std::move(e));
+            continue;
+        }
         if (benefit && in)
         {
             if (e.id <= previous || e.id >= result.next_id || !e.source_scope ||

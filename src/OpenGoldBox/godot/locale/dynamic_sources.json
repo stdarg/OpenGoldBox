@@ -293,5 +293,18 @@
   "Cast spell",
   "Action; 30 feet; up to three creatures add 1d4 to attack rolls and saving throws. Concentration, up to 1 minute.",
   "Protection from Evil and Good",
-  "Action; touch; Aberrations, Celestials, Elementals, Fey, Fiends and Undead attack the creature with Disadvantage. Concentration, up to 10 minutes."
+  "Action; touch; Aberrations, Celestials, Elementals, Fey, Fiends and Undead attack the creature with Disadvantage. Concentration, up to 10 minutes.",
+  "Command",
+  "Approach",
+  "Flee",
+  "Grovel",
+  "Halt",
+  "Command: Approach",
+  "Command: Flee",
+  "Command: Grovel",
+  "Command: Halt",
+  "Command: Approach (level 2 slot)",
+  "Command: Flee (level 2 slot)",
+  "Command: Grovel (level 2 slot)",
+  "Command: Halt (level 2 slot)"
 ]
