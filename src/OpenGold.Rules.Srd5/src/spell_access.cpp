@@ -63,7 +63,9 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     // Also on the Sorcerer and Wizard lists; added with those classes.
     Spell{"fog_cloud", "Fog Cloud", 1, 0, ranger_list | druid_list},
     // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
-    Spell{"lesser_restoration", "Lesser Restoration", 2, 0, cleric_list}};
+    Spell{"lesser_restoration", "Lesser Restoration", 2, 0, cleric_list},
+    // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
+    Spell{"aid", "Aid", 2, 0, cleric_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
@@ -106,7 +108,8 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{"Paladin", "shield_of_faith", 3},
     // Favored Enemy, SRD 5.2.1 p. 57.
     AlwaysPrepared{"Ranger", "hunters_mark", 1},
-    // Life Domain spells, p. 37; Aid joins them with its own increment.
+    // Life Domain spells, p. 37.
+    AlwaysPrepared{"Cleric", "aid", 3},
     AlwaysPrepared{"Cleric", "bless", 3},
     AlwaysPrepared{"Cleric", "cure_wounds", 3},
     AlwaysPrepared{"Cleric", "lesser_restoration", 3}};

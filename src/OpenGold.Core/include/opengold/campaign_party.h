@@ -161,6 +161,8 @@ class CampaignParty
             std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
+    // The member's current Hit Point maximum, raised by Aid.
+    [[nodiscard]] int hit_point_maximum(MemberId id) const;
     // Spells and features an active member can use outside combat (CLASS-3).
     [[nodiscard]] std::vector<rules::CampAction> camp_actions(MemberId id) const;
     // Atomic: on failure nothing changes.

@@ -599,6 +599,9 @@ class RulesModule
     virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const;
     virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,
                              std::uint64_t &random_state) const;
+    // The current Hit Point maximum, which a lasting effect such as Aid raises
+    // above the sheet's.
+    [[nodiscard]] virtual int hit_point_maximum(const CharacterSheet &, const VitalState &) const;
     [[nodiscard]] virtual std::vector<CampAction> camp_actions(const CharacterSheet &,
             const VitalState &) const
     {

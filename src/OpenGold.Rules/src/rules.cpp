@@ -118,6 +118,11 @@ void RulesModule::temple_heal(VitalState &, const CharacterSheet &, std::uint64_
     throw std::runtime_error("This rules module does not support temple healing");
 }
 
+int RulesModule::hit_point_maximum(const CharacterSheet &sheet, const VitalState &) const
+{
+    return sheet.hit_points;
+}
+
 void RulesModule::use_camp_action(const CharacterSheet &, VitalState &, const CharacterSheet &,
                                   VitalState &, std::string_view, std::uint64_t &) const
 {

@@ -64,7 +64,8 @@ enum class Rider : unsigned
     longstrider,
     entangle,
     fog_cloud,
-    lesser_restoration
+    lesser_restoration,
+    aid
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -326,6 +327,17 @@ inline constexpr std::array spell_table
         .rider = Rider::fog_cloud,
         .concentration = true,
         .radius = 20},
+    // SRD 5.2.1 p. 108: up to three creatures' Hit Point maximum and current
+    // Hit Points rise by 5 for 8 hours. Higher slots wait for level-three slots.
+    SpellDef{
+        .id = "aid",
+        .label = "Aid",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::any_creature,
+        .range = 30,
+        .instances = 3,
+        .rider = Rider::aid},
     // SRD 5.2.1 p. 144: ends one condition on a touched creature; Blinded is
     // the only one of its four the game has so far.
     SpellDef{

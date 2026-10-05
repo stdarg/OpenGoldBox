@@ -966,7 +966,7 @@ void RolfTourView::refresh()
         {
             {"name", String::utf8(m.character.sheet().name.c_str())},
             {"current", m.vitals.hit_points},
-            {"maximum", m.character.sheet().hit_points},
+            {"maximum", campaign_->hit_point_maximum(campaign_->selected())},
             {"gold", m.wealth[3]},
             {
                 "items", i18n::plural("{count} item", "{count} items",

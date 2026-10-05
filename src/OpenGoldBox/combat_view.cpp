@@ -2209,7 +2209,7 @@ void CombatView::_draw()
         });
         const int hp =
             found == snapshot.combatants.end() ? member.vitals.hit_points : found->hit_points;
-        const int maximum = found == snapshot.combatants.end() ? member.character.sheet().hit_points
+        const int maximum = found == snapshot.combatants.end() ? campaign_->hit_point_maximum(id)
                             : found->max_hit_points;
         const double size = std::min(64.0, row_height - 18), portrait_y = top + 4;
         const Rect2 image_rect(right + 5, portrait_y, size, size);

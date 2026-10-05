@@ -301,6 +301,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::hunters_mark:
     case EffectKind::longstrider:
         return 3600000; // 1 hour
+    case EffectKind::aid:
+        return 28800000; // 8 hours
     case EffectKind::heroism:
     case EffectKind::divine_favor:
     case EffectKind::bless:
@@ -345,6 +347,15 @@ const Effect *command_effect(const EffectState &effects)
         return e.kind == EffectKind::command;
     });
     return found == effects.active.end() ? nullptr : &*found;
+}
+
+int hit_point_bonus(const EffectState &effects)
+{
+    int bonus = 0;
+    for (const auto &e : effects.active)
+        if (e.kind == EffectKind::aid)
+            bonus = std::max(bonus, e.dc);
+    return bonus;
 }
 
 bool has_effect(const EffectState &effects, EffectKind kind)

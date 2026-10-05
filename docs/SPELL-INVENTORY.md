@@ -101,7 +101,7 @@ list column intentionally does not absorb subclass or species additions.
 | DruidicWarrior | Ranger's Druidic Warrior option: two Druid cantrips at level 2 (delivered; Poison Spray so far) | 59 | [#147](https://github.com/stdarg/OpenGold/issues/147) |
 | Smite | Paladin level 2 always prepares Divine Smite and gains its own free cast | 54 | [#141](https://github.com/stdarg/OpenGold/issues/141), [#200](https://github.com/stdarg/OpenGold/issues/200) |
 | Favored | Ranger level 1 always prepares Hunter's Mark and gains limited free casts (delivered) | 57–58 | [#146](https://github.com/stdarg/OpenGold/issues/146), [#200](https://github.com/stdarg/OpenGold/issues/200) |
-| Life | Cleric level 3: Aid, Bless, Cure Wounds, Lesser Restoration (delivered except Aid) | 40 | [#94](https://github.com/stdarg/OpenGold/issues/94) |
+| Life | Cleric level 3: Aid, Bless, Cure Wounds, Lesser Restoration (delivered) | 40 | [#94](https://github.com/stdarg/OpenGold/issues/94) |
 | Arid | Land Druid level 3: Blur, Burning Hands, Fire Bolt | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
 | Polar | Land Druid level 3: Fog Cloud, Hold Person, Ray of Frost | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
 | Temperate | Land Druid level 3: Misty Step, Shocking Grasp, Sleep | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
@@ -252,7 +252,7 @@ are evidence of partial behavior, not certification of the full spell.
 | Spell / SRD page | Normal lists | Additional routes | Further dependencies | Status / work |
 | --- | --- | --- | --- | --- |
 | [Acid Arrow](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | W | Evoker | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Aid](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | B, C, D | Life | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
+| [Aid](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | B, C, D | Life | — | Implemented for Clerics; [Cleric](CLERIC.md#aid) |
 | [Barkskin](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=112) (p. 112) | D | — | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Blindness/Deafness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | B, C, S, W | — | [#35](https://github.com/stdarg/OpenGold/issues/35) | Partial; [#171](https://github.com/stdarg/OpenGold/issues/171) |
 | [Blur](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | S, W | Arid | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |

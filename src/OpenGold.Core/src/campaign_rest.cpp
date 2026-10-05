@@ -182,7 +182,7 @@ std::vector<rules::HitDieResult> CampaignParty::heal_with_hit_dice(RestTicket ti
     // Spending until full or out of dice is the only sensible choice, so one
     // request spends them all; a die is never spent at full HP.
     std::vector<rules::HitDieResult> result;
-    while (m.vitals.hit_points < m.character.sheet().hit_points &&
+    while (m.vitals.hit_points < rules_->hit_point_maximum(m.character.sheet(), m.vitals) &&
             rules_->recovery_info(m.character.sheet(), m.vitals).hit_dice > 0)
     {
         result.push_back(rules_->spend_hit_die(m.vitals, m.character.sheet(), next.random_state));

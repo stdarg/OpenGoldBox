@@ -180,6 +180,9 @@ cleric-1 @ 125ft
     sacred_flame|1
 cleric-4 @ 5ft
     adrenaline_rush|1
+    aid|1
+    aid|2
+    aid|3
     bless_2|1
     bless_2|2
     bless_2|3
@@ -204,6 +207,9 @@ cleric-4 @ 5ft
     sacred_flame|3
 cleric-4 @ 30ft
     adrenaline_rush|1
+    aid|1
+    aid|2
+    aid|3
     bless_2|1
     bless_2|2
     bless_2|3
@@ -225,6 +231,7 @@ cleric-4 @ 30ft
     sacred_flame|3
 cleric-4 @ 60ft
     adrenaline_rush|1
+    aid|1
     bless_2|1
     bless|1
     blindness|3
@@ -239,6 +246,7 @@ cleric-4 @ 60ft
     sacred_flame|3
 cleric-4 @ 120ft
     adrenaline_rush|1
+    aid|1
     bless_2|1
     bless|1
     blindness|3
@@ -249,6 +257,7 @@ cleric-4 @ 120ft
     sacred_flame|1
 cleric-4 @ 125ft
     adrenaline_rush|1
+    aid|1
     bless_2|1
     bless|1
     dash|0

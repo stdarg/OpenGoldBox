@@ -1245,7 +1245,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 if (id)
                 {
                     const auto &m = campaign_->member(id);
-                    if (!m.vitals.dead && m.vitals.hit_points < m.character.sheet().hit_points)
+                    if (!m.vitals.dead && m.vitals.hit_points < campaign_->hit_point_maximum(id))
                     {
                         temple_targets_.push_back(id);
                         snapshot_.choices.push_back("Cure Wounds: " + m.character.sheet().name +

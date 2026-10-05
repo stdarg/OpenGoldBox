@@ -859,7 +859,7 @@ void CampaignParty::temple_heal(MemberId target)
     const auto &current = member(target);
     if (std::find(state_.slots.begin(), state_.slots.end(), target) == state_.slots.end())
         throw std::runtime_error("Temple target must be active");
-    if (current.vitals.dead || current.vitals.hit_points >= current.character.sheet().hit_points)
+    if (current.vitals.dead || current.vitals.hit_points >= hit_point_maximum(target))
         throw std::runtime_error("Cure Wounds requires a wounded living member");
     auto next = state_;
     auto &healed = *std::find_if(next.roster.begin(), next.roster.end(),
@@ -884,6 +884,12 @@ void CampaignParty::temple_heal(MemberId target)
         throw std::runtime_error("Party cannot afford temple service");
     rules_->temple_heal(healed.vitals, healed.character.sheet(), next.random_state);
     state_ = std::move(next);
+}
+
+int CampaignParty::hit_point_maximum(MemberId id) const
+{
+    const auto &m = member(id);
+    return rules_->hit_point_maximum(m.character.sheet(), m.vitals);
 }
 
 std::vector<rules::CampAction> CampaignParty::camp_actions(MemberId id) const
@@ -1007,7 +1013,7 @@ std::optional<CoinExchange> CampaignParty::read_character(unsigned slot,
         return {};
     const auto &current = member(state_.slots[slot]);
     const auto hp = vm.variable(0x6C19);
-    if (hp > current.character.sheet().hit_points || (current.vitals.dead && hp))
+    if (hp > hit_point_maximum(state_.slots[slot]) || (current.vitals.dead && hp))
         throw std::runtime_error("Unsupported script HP change");
     Purse after_script;
     for (unsigned n = 0; n < 7; ++n)
@@ -1045,7 +1051,6 @@ void CampaignParty::validate(const PartyState &state)
                    m.last_rest_subminute_milliseconds > state.subminute_milliseconds))) ||
                 m.last_rest_subminute_milliseconds >= 60000 ||
                 (!m.last_rest_minutes && m.last_rest_subminute_milliseconds) ||
-                m.vitals.hit_points > m.character.sheet().hit_points ||
                 (m.vitals.dead && m.vitals.hit_points) || m.morale > 255 ||
                 (!m.npc_source.empty() && !sources.insert(m.npc_source).second))
             throw std::runtime_error("Invalid roster checkpoint");
@@ -1158,6 +1163,10 @@ void CampaignParty::validate(const PartyState &state)
 void CampaignParty::validate_rest_choices(const PartyState &state, const rules::RulesModule &rules)
 {
     validate(state);
+    // The maximum is the rules': Aid raises it above the sheet's.
+    for (const auto &m : state.roster)
+        if (m.vitals.hit_points > rules.hit_point_maximum(m.character.sheet(), m.vitals))
+            throw std::runtime_error("Invalid party checkpoint");
     for (const auto &m : state.roster)
         for (const auto &e : m.character.spell_edits())
             if (e.rest_session >= state.next_rest_session)
@@ -1289,7 +1298,9 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
             {
                 return m.id == actor.id;
             });
-            if (it == next.roster.end() || actor.max_hit_points != it->character.sheet().hit_points)
+            if (it == next.roster.end() ||
+                    actor.max_hit_points != rules_->hit_point_maximum(it->character.sheet(),
+                            actor.persistent))
                 throw std::runtime_error("Combat party identity mismatch");
             std::vector<std::string> gear;
             for (auto id : it->equipped)

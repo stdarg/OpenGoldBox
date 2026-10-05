@@ -9,7 +9,7 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
 | --- | --- | --- |
 | 1 | Spellcasting, Divine Order | Delivered ([Cleric preparation](CLERIC-PREPARATION.md)) |
 | 2 | Channel Divinity | Delivered (rules 0.6.82) |
-| 3 | Cleric Subclass (Life Domain) | Delivered (rules 0.6.83) except Aid, which comes next |
+| 3 | Cleric Subclass (Life Domain) | Delivered (rules 0.6.83; Aid 0.6.84) |
 | 4 | Ability Score Improvement | Delivered earlier |
 
 ## Channel Divinity
@@ -46,9 +46,9 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   divided among Bloodied allies within 30 feet, none above half its Hit Point
   maximum. Adaptation: the division is automatic, the most hurt first. Undead
   and Constructs are not healed. The AI uses it whenever it is offered.
-- **Life Domain spells**: Bless, Cure Wounds and Lesser Restoration are always
-  prepared from level three and not counted; earlier preparations of them free
-  their places. Aid joins them with its own increment.
+- **Life Domain spells**: Aid, Bless, Cure Wounds and Lesser Restoration are
+  always prepared from level three and not counted; earlier preparations of
+  them free their places.
 - **Lesser Restoration** (level 2, Bonus Action, touch): ends Blinded on an
   ally, the only one of its conditions the game has so far, so it is offered
   only on a Blinded ally. The AI uses it whenever it is offered.
@@ -56,3 +56,20 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   Disciple of Life's +3 from a level-one slot on identical rolls, Preserve
   Life, Lesser Restoration ending Blinded) and the updated preparation checks in
   `opengold_spell_access_tests` and `opengold_spell_component_tests`.
+
+## Aid
+
+- **Aid** (level 2, Action, 30 feet, 8 hours, no Concentration): up to three
+  creatures, chosen as for Bless
+  ([CLASS-2](SRD-DECISIONS.md#class-2-2026-10-04-choosing-several-targets)),
+  raise their Hit Point maximum and current Hit Points by 5. A creature already
+  aided gains nothing more. The higher maximum is kept in the character's vital
+  state, so it lasts after the fight; when Aid ends, Hit Points above the sheet's
+  maximum go with it. Higher slots wait for level-three slots.
+- `RulesModule::hit_point_maximum` and `CampaignParty::hit_point_maximum` give
+  the raised maximum; the campaign's checks, healing, the temple, the rest
+  dialog, the party panel and the combat roster use it.
+- Not yet: casting Aid from the Camp dialog (it would need several targets
+  there).
+- Verification: `opengold_cleric_channel_tests` (two creatures raised by 5, a
+  checkpoint, the campaign maximum and its end after 8 hours).

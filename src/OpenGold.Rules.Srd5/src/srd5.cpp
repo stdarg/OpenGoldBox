@@ -207,6 +207,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Paladin", "sacred_flame", 2},
     SpellAccessRow{"Cleric", "command", 1},
     SpellAccessRow{"Cleric", "lesser_restoration", 3},
+    SpellAccessRow{"Cleric", "aid", 3},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -401,6 +402,12 @@ constexpr std::array resource_descriptors
         &Definition::favored_enemy, 0, true},
     ResourceDescriptor{"channel_divinity", "Channel Divinity", &Actor::channel_divinity,
         &Definition::channel_divinity, 1, true}};
+
+// The Hit Point maximum with Aid's increase.
+int max_hp(const Actor &a)
+{
+    return a.definition.hp + detail::hit_point_bonus(a.effects);
+}
 
 int free_cast_capacity(const Definition &d)
 {
@@ -838,7 +845,7 @@ void restore_vitals(Actor &a, const VitalState &state)
             throw std::runtime_error("Trailing character resource state");
     }
     const auto &d = a.definition;
-    if (a.hp < 0 || a.hp > d.hp || (a.dead && a.hp != 0) || a.winds < 0 || a.winds > d.winds ||
+    if (a.hp < 0 || a.hp > max_hp(a) || (a.dead && a.hp != 0) || a.winds < 0 || a.winds > d.winds ||
             a.slots < 0 || a.slots > d.slots || a.arcane < 0 || a.arcane > d.arcane || a.slots2 < 0 ||
             a.slots2 > d.slots2 || a.surges < 0 || a.surges > d.surges || a.rushes < 0 ||
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
@@ -1776,7 +1783,7 @@ Snapshot Session::snapshot() const
         s.combatants.push_back(
         {
             a.source.id, a.source.name, a.source.definition, a.source.side, a.source.cell, a.hp,
-            def(a).hp, armor_class(a), a.initiative,
+            max_hp(a), armor_class(a), a.initiative,
             champion_move_ && champion_move_->actor == a.source.id ? champion_move_->remaining
             : movement_left(a),
             a.actions.available() && conscious(a), a.bonus && conscious(a),
@@ -2001,6 +2008,19 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::entangle:
     case detail::Rider::fog_cloud:
         return; // Area spells resolve through cast_area().
+    case detail::Rider::aid:
+    {
+        // Aid does not stack with itself; a creature already aided keeps its own.
+        if (detail::hit_point_bonus(target.effects) >= 5 || target.dead ||
+                !detail::can_apply(target.effects))
+            return;
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::aid, 5);
+        log(target.source.name + " gains Aid.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Aid", true}}});
+        heal(target, 5);
+        return;
+    }
     case detail::Rider::lesser_restoration:
         std::erase_if(target.effects.active, [](const auto & e)
         {
@@ -2218,7 +2238,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 continue;
             break;
         case detail::SpellTarget::wounded_ally:
-            if (other.source.side != a.source.side || other.hp >= def(other).hp)
+            if (other.source.side != a.source.side || other.hp >= max_hp(other))
                 continue;
             break;
         case detail::SpellTarget::any_creature:
@@ -2493,7 +2513,7 @@ std::vector<Command> Session::legal_commands() const
                     def(other).creature_type == "undead")
                 undead = true;
             const bool wounded_ally = other.source.side == a.source.side &&
-                                      other.hp < def(other).hp &&
+                                      other.hp < max_hp(other) &&
                                       !detail::healing_blocked(other.effects);
             const bool enemy = other.source.side != a.source.side && other.hp > 0;
             if ((wounded_ally || enemy) && can_see(a, other))
@@ -2505,7 +2525,7 @@ std::vector<Command> Session::legal_commands() const
         if (d.life_domain && std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
         return other.source.side == a.source.side && !other.dead &&
-                   other.hp * 2 <= def(other).hp &&
+                   other.hp * 2 <= max_hp(other) &&
                    distance(a.source.cell, other.source.cell) <= 30;
         }))
         add(id, "preserve_life", "Preserve Life", id);
@@ -2555,14 +2575,14 @@ std::vector<Command> Session::legal_commands() const
         add(id, "sacred_weapon", "Sacred Weapon", id);
     if (a.bonus && d.aggressive && speed > 0 && enemy_in_sight(a))
         add(id, "aggressive", "Aggressive");
-    if (a.bonus && a.winds > 0 && a.hp < d.hp)
+    if (a.bonus && a.winds > 0 && a.hp < max_hp(a))
         add(id, "second_wind", "Second Wind", id);
     // Lay On Hands: touch yourself or an adjacent wounded ally whose healing
     // can take effect, including one at 0 Hit Points.
     if (a.bonus && a.lay_on_hands > 0)
         for (const auto &other : actors_)
             if (other.source.side == a.source.side && !other.dead &&
-                    other.hp < def(other).hp && !detail::healing_blocked(other.effects) &&
+                    other.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
     // Smites, right after this actor's own melee hit on a creature still standing.
@@ -2762,7 +2782,7 @@ void Session::damage(Actor &target, int amount, bool critical)
 {
     if (!amount || target.dead)
         return;
-    detail::damage_life(target, amount, def(target).hp, critical, target.source.side == 1);
+    detail::damage_life(target, amount, max_hp(target), critical, target.source.side == 1);
     // Damage tests Concentration; dropping to 0 Hit Points ends it.
     if (target.concentration.active())
     {
@@ -2812,7 +2832,7 @@ int Session::heal(Actor &target, int amount)
         target.involuntary_overlap = true;
     const bool was_unconscious = target.hp == 0;
     const int restored =
-        detail::heal_life(target, amount, def(target).hp, !detail::healing_blocked(target.effects));
+        detail::heal_life(target, amount, max_hp(target), !detail::healing_blocked(target.effects));
     if (was_unconscious && restored)
         target.effects.prone = true;
     log(target.source.name + " recovers " + std::to_string(restored) + " HP.",
@@ -2971,17 +2991,17 @@ void Session::preserve_life(Actor &cleric)
     std::vector<Actor *> bloodied;
     for (auto &other : actors_)
         if (other.source.side == cleric.source.side && !other.dead &&
-                other.hp * 2 <= def(other).hp &&
+                other.hp * 2 <= max_hp(other) &&
                 distance(cleric.source.cell, other.source.cell) <= 30 &&
                 def(other).creature_type != "undead" && def(other).creature_type != "construct")
             bloodied.push_back(&other);
     std::sort(bloodied.begin(), bloodied.end(), [&](const Actor * x, const Actor * y)
     {
-        return x->hp * def(*y).hp < y->hp * def(*x).hp;
+        return x->hp * max_hp(*y) < y->hp * max_hp(*x);
     });
     for (auto *other : bloodied)
     {
-        const int room = def(*other).hp / 2 - other->hp;
+        const int room = max_hp(*other) / 2 - other->hp;
         if (pool <= 0 || room <= 0)
             continue;
         pool -= heal(*other, std::min(pool, room));
@@ -3603,7 +3623,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     if (savage)
         weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
     // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
-    if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.hp < def(target).hp)
+    if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.hp < max_hp(target))
     {
         a.colossus_used = true;
         const int extra = dice({1, 8, 0}, critical_hit(a, target, natural));
@@ -4051,6 +4071,9 @@ void Session::advance_turn_time()
     for (auto &a : actors_)
         if (a.concentration.elapse(delta))
             drop_concentration_effects(a);
+    // An ended Aid lowers the maximum, and Hit Points above it with it.
+    for (auto &a : actors_)
+        a.hp = std::min(a.hp, max_hp(a));
     for (auto &a : actors_)
         if (a.hp > 0 &&
                 std::find(unconscious.begin(), unconscious.end(), a.source.id) != unconscious.end())
@@ -4415,7 +4438,7 @@ bool Session::submit(const Command &command)
             "{name} uses Lay On Hands on {target}.",
             {{"name", a.source.name}, {"target", target.source.name}}
         });
-        a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, def(target).hp - target.hp));
+        a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, max_hp(target) - target.hp));
     }
     else if (const auto *aimed = detail::find_spell(command.verb);
              aimed && aimed->target == detail::SpellTarget::area)
@@ -4731,7 +4754,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             int(actor.surge_used && !actor.actions.surge) ||
             actor.movement > definition.speed * (1 + actor.dashes))
         throw std::runtime_error("Invalid Dash allowance count");
-    if (actor.hp < 0 || actor.hp > definition.hp || (actor.dead && actor.hp > 0) ||
+    // The upper bound waits for the effects, read later: Aid raises it.
+    if (actor.hp < 0 || (actor.dead && actor.hp > 0) ||
             // Dash spends the action before adding a second movement allowance.
             // Accepting both extra movement and an unused action lets a later Dash
             // create a state outside the checkpoint's own movement bounds.
@@ -5013,6 +5037,9 @@ void Session::validate_initiative() const
 
 void Session::validate_restored_state() const
 {
+    for (const auto &a : actors_)
+        if (a.hp > max_hp(a))
+            throw std::runtime_error("Invalid checkpoint Hit Points");
     for (const auto &a : actors_)
         if (a.horde_origin && std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
@@ -6231,6 +6258,9 @@ class Module final : public RulesModule
             a});
         auto rng = random_state;
         detail::elapse_recovery(subjects, milliseconds, rng);
+        // An ended Aid lowers the maximum, and Hit Points above it with it.
+        for (auto &a : actors)
+            a.hp = std::min(a.hp, max_hp(a));
         if (!milliseconds)
             return;
         std::vector<VitalState> next;
@@ -6257,7 +6287,8 @@ class Module final : public RulesModule
         restore_vitals(actor, state);
         if (actor.dead || actor.hp < 1)
             throw std::runtime_error("Long rest requires at least one HP at its start");
-        (void)detail::heal_life(actor, d.hp, d.hp, !detail::healing_blocked(actor.effects));
+        (void)detail::heal_life(actor, max_hp(actor), max_hp(actor),
+                                !detail::healing_blocked(actor.effects));
         actor.winds = d.winds;
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
@@ -6376,7 +6407,7 @@ class Module final : public RulesModule
             throw std::runtime_error("No Hit Die can be spent by this character");
         auto rng = random_state;
         const int rolled = roll_die(rng, d.hit_die);
-        const int healing = detail::heal_life(actor, std::max(1, rolled + d.constitution), d.hp,
+        const int healing = detail::heal_life(actor, std::max(1, rolled + d.constitution), max_hp(actor),
                                               !detail::healing_blocked(actor.effects));
         --actor.hit_dice;
         HitDieResult result{unsigned(d.hit_die), rolled, d.constitution, healing,
@@ -6400,7 +6431,7 @@ class Module final : public RulesModule
         if (hp == state.hit_points ||
                 (hp > state.hit_points && detail::healing_blocked(actor.effects)))
             return;
-        detail::set_life_hit_points(actor, hp, actor.definition.hp);
+        detail::set_life_hit_points(actor, hp, max_hp(actor));
         state = vitals(actor);
     }
 
@@ -6426,17 +6457,31 @@ class Module final : public RulesModule
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
         restore_vitals(actor, state);
-        if (actor.dead || actor.hp >= d.hp)
+        if (actor.dead || actor.hp >= max_hp(actor))
             throw std::runtime_error("Cure Wounds requires a wounded living member");
         // Authored temple caster: Cure Wounds, Wisdom +3. Same SplitMix64 as combat.
         auto rng = random_state;
         int amount = 3;
         for (int i = 0; i < 2; ++i)
             amount += roll_die(rng, 8);
-        (void)detail::heal_life(actor, amount, d.hp, !detail::healing_blocked(actor.effects));
+        (void)detail::heal_life(actor, amount, max_hp(actor), !detail::healing_blocked(actor.effects));
         auto next = vitals(actor);
         state = std::move(next);
         random_state = rng;
+    }
+
+    int hit_point_maximum(const CharacterSheet &sheet, const VitalState &state) const override
+    {
+        // Unreadable vitals keep the sheet's maximum; validating them is left to
+        // the rules that use them, which reject them there.
+        try
+        {
+            return max_hp(camp_actor(sheet, state));
+        }
+        catch (const std::exception &)
+        {
+            return sheet.hit_points;
+        }
     }
 
     // Healing outside combat (CLASS-3): Lay On Hands and the healing spells.
@@ -6483,7 +6528,7 @@ class Module final : public RulesModule
         auto caster = camp_actor(user, user_state);
         auto healed = self ? caster : camp_actor(target, target_state);
         auto &patient = self ? caster : healed;
-        const int maximum = patient.definition.hp;
+        const int maximum = max_hp(patient);
         if (patient.dead || patient.hp >= maximum)
             throw std::runtime_error("Healing requires a wounded living member");
         const bool can_heal = !detail::healing_blocked(patient.effects);
@@ -7187,7 +7232,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.83", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.84", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

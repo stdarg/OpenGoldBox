@@ -154,7 +154,7 @@ void RolfTourView::refresh_rest()
         eligible |= can_start;
         auto row = String::utf8(m.character.sheet().name.c_str()) + "   " + rest_text(N_("HP")) +
                    " " + String::num_int64(m.vitals.hit_points) + "/" +
-                   String::num_int64(m.character.sheet().hit_points) + "   " +
+                   String::num_int64(campaign_->hit_point_maximum(info.id)) + "   " +
                    rest_text(N_("Hit Dice")) + " " + String::num_int64(r.hit_dice) + "/" +
                    String::num_int64(r.hit_dice_max) + "d" + String::num_int64(r.hit_die);
         const int index = list->add_item(row);
@@ -186,7 +186,7 @@ void RolfTourView::refresh_rest()
                        "\n";
         }
         healable = earned && r.can_rest && r.hit_dice > 0 &&
-                   m.vitals.hit_points < m.character.sheet().hit_points;
+                   m.vitals.hit_points < campaign_->hit_point_maximum(info.id);
         recovery_visible = earned && std::any_of(r.resources.begin(), r.resources.end(),
             [](const auto & pool)
         {

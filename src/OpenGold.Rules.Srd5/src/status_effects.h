@@ -58,7 +58,9 @@ enum class EffectKind : unsigned
     entangle = 19,
     // Turn Undead: Frightened and Incapacitated, fleeing the Cleric, until it
     // takes damage or the minute ends.
-    turned = 20
+    turned = 20,
+    // Aid: the Hit Point maximum (and current Hit Points when cast) rise by `dc`.
+    aid = 21
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -173,6 +175,8 @@ void apply_command(EffectState &, std::uint64_t scope, rules::EntityId caster, s
 // The Command the target must obey, if any.
 [[nodiscard]] const Effect *command_effect(const EffectState &);
 bool has_effect(const EffectState &, EffectKind);
+// Aid's increase to the Hit Point maximum; Aid does not stack with itself.
+[[nodiscard]] int hit_point_bonus(const EffectState &);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);
 [[nodiscard]] RollModifiers attack_modifiers(bool attacker_blind, bool target_blind,
         bool target_dodging, bool other_disadvantage);

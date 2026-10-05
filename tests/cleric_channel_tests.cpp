@@ -224,7 +224,7 @@ void life_domain_checks()
     const auto life = cleric(3);
     const auto access = module->spell_access(life.sheet());
     check(access.always_prepared ==
-          std::vector<std::string> {"bless", "cure_wounds", "lesser_restoration"},
+          std::vector<std::string> {"aid", "bless", "cure_wounds", "lesser_restoration"},
           "Life Domain spells are always prepared from level three");
 
     // The same rolls, with and without Disciple of Life.
@@ -257,6 +257,40 @@ void lesser_restoration_checks()
           unit(*c, 1).action,
           "Lesser Restoration ends Blinded as a Bonus Action");
 }
+void aid_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, cleric(3));
+    const auto ally_before = unit(*c, 2), cleric_before = unit(*c, 1);
+    check(submit(*c, "aid", 2) && c->snapshot().spell_targeting && submit(*c, "aid", 1) &&
+          submit(*c, "spell_cast"),
+          "Aid chooses up to three creatures, cast early on two");
+    check(unit(*c, 2).max_hit_points == ally_before.max_hit_points + 5 &&
+          unit(*c, 2).hit_points == ally_before.hit_points + 5 &&
+          unit(*c, 1).max_hit_points == cleric_before.max_hit_points + 5 &&
+          unit(*c, 1).hit_points == cleric_before.hit_points + 5,
+          "Aid raises the Hit Point maximum and current Hit Points by 5");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "Aid survives a checkpoint");
+}
+
+void aid_expiry_checks()
+{
+    // An aided member above its sheet's maximum, as after a fight.
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(cleric(1));
+    const int sheet_maximum = party.member(id).character.sheet().hit_points;
+    auto state = party.checkpoint();
+    state.roster.front().vitals = {sheet_maximum + 5, false,
+        "SRD11 0 2 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 FX8 2 1 1 21 77 99 \"Caster\" 5 28800000 0 0"
+    };
+    party.restore(state);
+    check(party.hit_point_maximum(id) == sheet_maximum + 5, "Aid raises the campaign maximum");
+    party.advance_time(481);
+    check(party.hit_point_maximum(id) == sheet_maximum &&
+          party.member(id).vitals.hit_points == sheet_maximum,
+          "When Aid ends after 8 hours the maximum and the extra Hit Points go");
+}
 } // namespace
 
 int main()
@@ -267,6 +301,8 @@ int main()
         turn_undead_checks();
         life_domain_checks();
         lesser_restoration_checks();
+        aid_checks();
+        aid_expiry_checks();
         write_ui_fixture();
         std::cout << "Cleric Channel Divinity tests passed\n";
     }
