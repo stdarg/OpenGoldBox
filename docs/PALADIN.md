@@ -24,9 +24,9 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 - After a Long Rest a Paladin may replace **one** prepared spell (a Cleric may
   replace any). The shared rest window enforces this.
 - The Paladin list in the game holds Bless, Cure Wounds, Divine Favor, Divine
-  Smite, Heroism, Searing Smite and Shield of Faith. Command comes next;
-  Protection from Evil and Good waits for a decision on its consumed holy water,
-  and Detect Magic for spellcasting outside combat.
+  Smite, Heroism, Protection from Evil and Good, Searing Smite and Shield of
+  Faith. Command comes next; Detect Magic waits for spellcasting outside combat
+  ([CLASS-3](SRD-DECISIONS.md#class-3-2026-10-05-holy-water-and-casting-outside-combat)).
 - Spells a feature keeps prepared (Divine Smite from level 2) are listed apart
   and not counted against the prepared spells.
   Detect Magic waits for spellcasting outside combat.
@@ -107,6 +107,12 @@ forced in a test.
   when the third is chosen, or earlier with **Cast spell** (the End button) or
   Space; Escape cancels. An open choice is saved in combat checkpoints
   (`OGCOMBAT 32`).
+- **Protection from Evil and Good** (Action, touch, Concentration up to 10
+  minutes; Cleric and Paladin): Aberrations, Celestials, Elementals, Fey, Fiends
+  and Undead attack the warded creature with Disadvantage. The spell needs no
+  holy water (CLASS-3). Its protection against being Charmed, Frightened or
+  possessed waits until a creature can cause those. In the current content the
+  Slums goblins and bugbears (Fey) are affected.
 - In the game: A cycles to the spell, then click the ally (a click on an ally
   now targets it whenever the selected action can) or press Space.
 
@@ -114,7 +120,8 @@ Verification: `opengold_godot_bless` chooses, cancels and casts Bless through
 the game controls in English and Spanish. `opengold_paladin_spell_tests` (Bless's
 choice, cancel, early and automatic casts, and its attack bonus; AC, a second Concentration spell
 ending the first, Temporary HP at the target's turn, Divine Favor's damage, the
-Concentration save after damage, ending with the combat) and the shared
+Concentration save after damage, ending with the combat, and Protection from
+Evil and Good's Disadvantage against a Fiend but not a Humanoid) and the shared
 spell-table checks, which now also probe Paladins.
 
 Cleric and Paladin share one table of class-list casters in

@@ -265,6 +265,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     switch (kind)
     {
     case EffectKind::shield_of_faith:
+    case EffectKind::protection_from_evil_and_good:
         return 600000; // Concentration, up to 10 minutes
     case EffectKind::heroism:
     case EffectKind::divine_favor:

@@ -482,3 +482,13 @@ the existing Use button or Space; Escape cancels without spending anything.
 Concentration is tracked in combat only and ends when the combat ends, an
 implementation adaptation recorded with the first Concentration spells (Shield
 of Faith, Heroism).
+
+## CLASS-3 (2026-10-05): holy water and casting outside combat
+
+Protection from Evil and Good needs no holy water: like arrows, the consumed
+component is not tracked, so the spell costs only its slot.
+
+Features and spells that matter outside combat (Lay On Hands, healing spells,
+later Detect Magic and Identify) will be used from the Camp/Rest dialog, in a
+"Cast / Use" section: choose a party member, then the spell or feature, then the
+member it affects.

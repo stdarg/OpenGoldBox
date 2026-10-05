@@ -88,6 +88,8 @@ detail::EffectKind rider_effect(detail::Rider rider)
     return rider == detail::Rider::shield_of_faith ? detail::EffectKind::shield_of_faith
            : rider == detail::Rider::heroism       ? detail::EffectKind::heroism
            : rider == detail::Rider::bless         ? detail::EffectKind::bless
+           : rider == detail::Rider::protection_from_evil_and_good
+           ? detail::EffectKind::protection_from_evil_and_good
            : detail::EffectKind::divine_favor;
 }
 
@@ -95,7 +97,8 @@ detail::EffectKind rider_effect(detail::Rider rider)
 bool concentration_effect(detail::EffectKind kind)
 {
     return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism ||
-           kind == detail::EffectKind::bless;
+           kind == detail::EffectKind::bless ||
+           kind == detail::EffectKind::protection_from_evil_and_good;
 }
 
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
@@ -161,6 +164,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "shield_of_faith", 1},
     SpellAccessRow{"Cleric", "bless", 1},
     SpellAccessRow{"Paladin", "bless", 1},
+    SpellAccessRow{"Paladin", "protection_from_evil_and_good", 1},
+    SpellAccessRow{"Cleric", "protection_from_evil_and_good", 1},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -1852,6 +1857,7 @@ void Session::apply_rider(const detail::SpellDef &spell, Actor &a, Actor &target
     case detail::Rider::heroism:
     case detail::Rider::divine_favor:
     case detail::Rider::bless:
+    case detail::Rider::protection_from_evil_and_good:
     {
         // Heroism's Temporary HP equal the caster's spellcasting modifier.
         const int value =
@@ -2645,6 +2651,12 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
             detail::vexed_by(target.effects, scope_, a.source.id))
         result.advantage = true;
     if (detail::sapped(a.effects))
+        result.disadvantage = true;
+    // Protection from Evil and Good guards against these creature types.
+    const auto &type = def(a).creature_type;
+    if (detail::has_effect(target.effects, detail::EffectKind::protection_from_evil_and_good) &&
+            (type == "aberration" || type == "celestial" || type == "elemental" ||
+             type == "fey" || type == "fiend" || type == "undead"))
         result.disadvantage = true;
     if (target.effects.prone || target.hp == 0)
     {
@@ -4770,7 +4782,11 @@ class Module final : public RulesModule
                 "inflict_wounds", "Inflict Wounds",
                 "Action; touch; Constitution save; 2d10 Necrotic damage, half on a success, +1d10 from a level 2 slot."
             },
-            {"bless", "Bless", "Action; 30 feet; up to three creatures add 1d4 to attack rolls and saving throws. Concentration, up to 1 minute."}
+            {"bless", "Bless", "Action; 30 feet; up to three creatures add 1d4 to attack rolls and saving throws. Concentration, up to 1 minute."},
+            {
+                "protection_from_evil_and_good", "Protection from Evil and Good",
+                "Action; touch; Aberrations, Celestials, Elementals, Fey, Fiends and Undead attack the creature with Disadvantage. Concentration, up to 10 minutes."
+            }
         };
         if (sheet.character_class == "Wizard")
             result.spells =
@@ -6040,7 +6056,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.69", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.70", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

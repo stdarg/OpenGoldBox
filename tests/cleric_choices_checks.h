@@ -39,7 +39,8 @@ void cleric_creation_checks()
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 4 &&
           option_ids(options.preparation) == std::vector<std::string>
-    {"bless", "cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"},
+    {"bless", "cure_wounds", "healing_word", "inflict_wounds", "protection_from_evil_and_good",
+        "shield_of_faith"},
     "Creation prepares from the Cleric list up to level-one slots");
     const auto profile = rules->character_profile(sheet, {}).data;
     check(profile.starts_with(
@@ -143,7 +144,7 @@ void cleric_advancement_checks()
     party.advance(id, party.default_advancement(id));
     const auto &sheet = party.member(id).character.sheet();
     const auto access = rules->spell_access(sheet);
-    check(sheet.level == 4 && access.prepared_choices == 7 && access.prepared.size() == 6 &&
+    check(sheet.level == 4 && access.prepared_choices == 7 && access.prepared.size() == 7 &&
           access.cantrip_choices == 4 && access.cantrips.size() == 1,
           "Level four keeps unfilled Cleric choices pending");
     const auto pending = rules->spell_choice_options(sheet, SpellChoiceContext::advancement);
@@ -181,7 +182,8 @@ void cleric_advancement_checks()
     check(saved(restored) == after_rest, "The Cleric's rest window roundtrips");
     SpellChoices reordered;
     reordered.prepared = std::vector<std::string> {"blindness", "bless", "shield_of_faith",
-                                                   "inflict_wounds", "healing_word", "cure_wounds"
+                                                   "inflict_wounds", "healing_word", "cure_wounds",
+                                                   "protection_from_evil_and_good"
                                                   };
     party.choose_spells(id, reordered);
     restored.choose_spells(id, reordered);

@@ -16,7 +16,8 @@ Rules module 0.6.63. SRD 5.2.1 Cleric, levels 1–4; counts as recorded in the
 
 - **Preparation** is from the whole Cleric list, any spell of a level for
   which the Cleric has slots. There is no spellbook. The implemented Cleric
-  spells are Bless, Cure Wounds, Healing Word, Inflict Wounds and Shield of Faith (level 1) and
+  spells are Bless, Cure Wounds, Healing Word, Inflict Wounds, Protection from
+  Evil and Good and Shield of Faith (level 1) and
   Blindness/Deafness's blindness option (level 2). Places beyond those stay
   pending, so a Cleric prepares every implemented spell it can.
 - **Changing preparation:** creation chooses the first list. Gaining a level

@@ -36,7 +36,10 @@ enum class EffectKind : unsigned
     // Divine Favor: +1d4 Radiant damage on weapon hits.
     divine_favor = 11,
     // Bless: +1d4 to attack rolls and saving throws.
-    bless = 12
+    bless = 12,
+    // Protection from Evil and Good: Aberrations, Celestials, Elementals, Fey,
+    // Fiends and Undead have Disadvantage on attack rolls against the target.
+    protection_from_evil_and_good = 13
 };
 
 // The longest a spell benefit lasts, in milliseconds.

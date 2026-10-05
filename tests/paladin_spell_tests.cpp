@@ -30,11 +30,13 @@ std::string read(const std::filesystem::path &p)
     return {std::istreambuf_iterator<char>(in), {}};
 }
 
-// A sturdy AC 1 target that hits back, and a one-Hit-Point weakling.
+// A sturdy AC 1 target that hits back, the same as a Fiend, and a one-Hit-Point weakling.
 std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "creature fiend 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "type fiend fiend\n" +
                                "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
@@ -160,6 +162,26 @@ void concentration_damage_checks()
           "A failed save ends Shield of Faith; a success keeps it");
 }
 
+// Whether the enemy's attack on a Paladin warded by Protection from Evil and Good
+// is rolled with Disadvantage.
+bool warded_attack_disadvantaged(std::string enemy)
+{
+    auto module = rules();
+    auto c = battle(*module, paladin({"protection_from_evil_and_good"}), std::move(enemy));
+    check(submit(*c, "protection_from_evil_and_good", 1), "Protection from Evil and Good on the Paladin");
+    check(!unit(*c, 1).action, "Protection from Evil and Good takes the Action");
+    while (c->snapshot().actor != 99)
+        check(submit(*c, "end"), "Reach the enemy");
+    check(submit(*c, "melee", 1), "The enemy attacks the Paladin");
+    return logged(*c, "(disadvantage)");
+}
+
+void protection_from_evil_and_good_checks()
+{
+    check(warded_attack_disadvantaged("fiend"), "A Fiend attacks the warded Paladin with Disadvantage");
+    check(!warded_attack_disadvantaged("target"), "A Humanoid attacks the warded Paladin normally");
+}
+
 // The attack bonus a log line shows: "... d20 N + B vs AC ...".
 int logged_bonus(const CombatSession &c)
 {
@@ -255,6 +277,7 @@ int main()
         heroism_checks();
         divine_favor_checks();
         bless_checks();
+        protection_from_evil_and_good_checks();
         concentration_damage_checks();
         combat_end_checks();
         write_ui_fixture();

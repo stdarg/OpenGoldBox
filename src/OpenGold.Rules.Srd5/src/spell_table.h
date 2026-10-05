@@ -55,7 +55,8 @@ enum class Rider : unsigned
     shield_of_faith,
     heroism,
     divine_favor,
-    bless
+    bless,
+    protection_from_evil_and_good
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -302,6 +303,16 @@ inline constexpr std::array spell_table
         .instances = 3,
         .upcast = {.extra_instances = 1},
         .rider = Rider::bless,
+        .concentration = true},
+    // SRD 5.2.1 p. 157. Its consumed holy water is not required (CLASS-3).
+    SpellDef{
+        .id = "protection_from_evil_and_good",
+        .label = "Protection from Evil and Good",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::protection_from_evil_and_good,
         .concentration = true},
     SpellDef{
         .id = "divine_favor",
