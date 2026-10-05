@@ -58,7 +58,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
 struct PreparedCaster
 {
     std::string_view klass, source, cantrip_label;
-    unsigned list;
+    unsigned list, cantrip_list;
     std::array<unsigned, 4> cantrips, prepared, highest_slot;
     // A Paladin replaces one prepared spell after a Long Rest; a Cleric any.
     bool rest_replaces_one;
@@ -66,11 +66,12 @@ struct PreparedCaster
 
 constexpr std::array prepared_casters{
     PreparedCaster{
-        "Cleric", "class:cleric:spellcasting", "Cleric cantrips", cleric_list,
+        "Cleric", "class:cleric:spellcasting", "Cleric cantrips", cleric_list, cleric_list,
         {3, 3, 3, 4}, {4, 5, 6, 7}, {1, 1, 2, 2}, false},
     PreparedCaster{
-        "Paladin", "class:paladin:spellcasting", "Paladin cantrips", paladin_list,
-        {0, 0, 0, 0}, {2, 3, 4, 5}, {1, 1, 1, 1}, true}};
+        // Paladin cantrips come only from Blessed Warrior, from the Cleric list.
+        "Paladin", "class:paladin:spellcasting", "Blessed Warrior cantrips", paladin_list,
+        cleric_list, {0, 0, 0, 0}, {2, 3, 4, 5}, {1, 1, 1, 1}, true}};
 
 // Spells a class always has prepared from a class level on.
 struct AlwaysPrepared
@@ -126,9 +127,21 @@ bool thaumaturge(std::span<const FeatureGrant> grants)
            grants.end();
 }
 
-unsigned starting_cantrips(const PreparedCaster &caster, std::span<const FeatureGrant> grants)
+// Paladin's Blessed Warrior Fighting Style adds two Cleric cantrips at level two.
+bool blessed_warrior(std::span<const FeatureGrant> grants)
 {
-    return caster.cantrips[0] + (caster.klass == "Cleric" && thaumaturge(grants) ? 1 : 0);
+    return std::find(grants.begin(), grants.end(),
+                     FeatureGrant{"feature:blessed_warrior", "class:paladin:fighting_style", 2,
+                                  {}}) != grants.end();
+}
+
+// The cantrips a caster knows at a class level, its features included.
+unsigned cantrips_at(const PreparedCaster &caster, std::span<const FeatureGrant> grants,
+                     unsigned level)
+{
+    return caster.cantrips[level - 1] +
+           (caster.klass == "Cleric" && thaumaturge(grants) ? 1 : 0) +
+           (caster.klass == "Paladin" && level >= 2 && blessed_warrior(grants) ? 2 : 0);
 }
 
 SpellAccess prepared_access(const PreparedCaster &caster, std::span<const FeatureGrant> grants,
@@ -140,8 +153,7 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
     require(std::find(grants.begin(), grants.end(),
                       FeatureGrant{"feature:spellcasting", feature_source, 1, {}}) != grants.end());
     SpellAccess result;
-    const unsigned starting = starting_cantrips(caster, grants);
-    result.cantrip_choices = starting + caster.cantrips[level - 1] - caster.cantrips[0];
+    result.cantrip_choices = cantrips_at(caster, grants, level);
     result.prepared_choices = caster.prepared[level - 1];
     result.always_prepared = always_prepared_spells(caster.klass, level);
     std::set<std::string> known;
@@ -153,17 +165,18 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
             // Cantrips are learned at level one or at a level whose count grows.
             const bool learning_level =
                 g.level == 1 || (g.level >= 2 && g.level <= 4 &&
-                                 caster.cantrips[g.level - 1] > caster.cantrips[g.level - 2]);
-            require((spell.lists & caster.list) && spell.level == 0 && learning_level &&
+                                 cantrips_at(caster, grants, g.level) >
+                                 cantrips_at(caster, grants, g.level - 1));
+            require((spell.lists & caster.cantrip_list) && spell.level == 0 && learning_level &&
                     g.level <= level && known.insert(g.id).second &&
                     g == grant(spell.id, g.level, caster.source));
             result.cantrips.push_back(
             {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
             ++learned[g.level];
         }
-    require(learned[1] <= starting);
+    require(learned[1] <= cantrips_at(caster, grants, 1));
     for (unsigned n = 2; n <= 4; ++n)
-        require(learned[n] <= caster.cantrips[n - 1] - caster.cantrips[n - 2]);
+        require(learned[n] <= cantrips_at(caster, grants, n) - cantrips_at(caster, grants, n - 1));
     std::set<std::string> selected;
     for (const auto &id : prepared)
     {
@@ -193,10 +206,11 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
         });
     };
     const unsigned level = sheet.level;
-    if (context == SpellChoiceContext::advancement && level > 1 &&
-            caster.cantrips[level - 1] > caster.cantrips[level - 2])
+    const unsigned capacity = level > 1 ? cantrips_at(caster, sheet.grants, level) -
+                              cantrips_at(caster, sheet.grants, level - 1)
+                              : 0;
+    if (context == SpellChoiceContext::advancement && capacity)
     {
-        const unsigned capacity = caster.cantrips[level - 1] - caster.cantrips[level - 2];
         const unsigned used = std::count_if(sheet.grants.begin(), sheet.grants.end(),
                                             [&](const auto & g)
         {
@@ -208,7 +222,7 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
                                       std::string(caster.cantrip_label), capacity - used, {}};
             group.acquired_level = level;
             for (const auto &spell : spells)
-                if ((spell.lists & caster.list) && spell.level == 0 && !known(spell.id))
+                if ((spell.lists & caster.cantrip_list) && spell.level == 0 && !known(spell.id))
                     group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
             result.learning.push_back(std::move(group));
         }

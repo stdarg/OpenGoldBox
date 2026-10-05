@@ -336,6 +336,7 @@ int main()
         cleric_choices_checks();
         paladin_choices_checks();
         write_cleric_ui_fixture();
+        write_blessed_warrior_ui_fixture();
         std::cout << "Spell access tests passed\n";
         return 0;
     }

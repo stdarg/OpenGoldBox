@@ -542,6 +542,11 @@ class RulesModule
         return {};
     }
 
+    // The sheet a level-up's spell choices are offered for: one level higher,
+    // with the choice's features that change them (such as a Fighting Style).
+    [[nodiscard]] virtual CharacterSheet spell_choice_sheet(const CharacterSheet &,
+            const AdvancementChoice &) const;
+
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state,
                                    const AdvancementChoice &) const;
     virtual void recover(VitalState &state, const CharacterSheet &sheet) const;

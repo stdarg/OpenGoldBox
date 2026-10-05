@@ -18,8 +18,80 @@ unsigned slot_capacity(const RulesModule &rules, const PartyMember &member)
     return 0;
 }
 
+// Blessed Warrior, the level-two alternative to a Fighting Style feat.
+void blessed_warrior_checks()
+{
+    auto rules = module();
+    auto creation_rules = srd5::character_rules();
+    CampaignParty party(module());
+    const auto id = party.add_pc(Character(*creation_rules, paladin_draft({"cure_wounds"}), {}));
+    party.award_experience(300, "blessed-warrior-xp");
+    const auto &sheet = party.member(id).character.sheet();
+    const auto styles = rules->advancement_options(sheet).fighting_styles;
+    check(std::any_of(styles.begin(), styles.end(), [](const auto & s)
+    {
+        return s.id == "blessed_warrior" && s.available;
+    }),
+    "A level-one Paladin may choose Blessed Warrior");
+
+    auto choice = party.default_advancement(id);
+    choice.fighting_style = "blessed_warrior";
+    const auto next = rules->spell_choice_sheet(sheet, choice);
+    const auto options = rules->spell_choice_options(next, SpellChoiceContext::advancement);
+    check(options.learning.size() == 1 && options.learning.front().id == "cantrips:2" &&
+          options.learning.front().count == 2 &&
+          option_ids(options.learning.front().options) == std::vector<std::string> {"sacred_flame"},
+          "Blessed Warrior learns two Cleric cantrips at level two");
+    auto defense = choice;
+    defense.fighting_style = "defense";
+    check(rules->spell_choice_options(rules->spell_choice_sheet(sheet, defense),
+                                      SpellChoiceContext::advancement).learning.empty(),
+          "A Fighting Style feat brings no cantrips");
+
+    auto wizard_cantrip = choice;
+    (*wizard_cantrip.spell_learning)["cantrips:2"] = {"fire_bolt"};
+    const auto before = saved(party);
+    rejects(
+        [&]
+    {
+        party.advance(id, wizard_cantrip);
+    });
+    check(saved(party) == before, "Blessed Warrior learns only Cleric cantrips");
+
+    (*choice.spell_learning)["cantrips:2"] = {"sacred_flame"};
+    party.advance(id, choice);
+    const auto &warrior = party.member(id).character.sheet();
+    const auto access = rules->spell_access(warrior);
+    check(access.cantrip_choices == 2 && access.cantrips.size() == 1 &&
+          access.cantrips.front().id == "sacred_flame",
+          "The Paladin knows Sacred Flame, with one cantrip choice pending");
+    const auto profile = rules->character_profile(warrior, {}).data;
+    auto fight = rules->create({{8, 4, std::vector<std::uint8_t>(32)},
+        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
+            {99, "bandit", "Enemy", 1, {4, 1}}
+        }},
+    5);
+    bool offered = false;
+    for (unsigned turns = 0; turns < 4 && !offered; ++turns)
+    {
+        const auto commands = fight->legal_commands();
+        offered = std::any_of(commands.begin(), commands.end(), [](const auto & c)
+        {
+            return c.actor == 1 && c.verb == "sacred_flame" && c.target == 99;
+        });
+        if (!offered)
+            fight->submit(commands.front());
+    }
+    check(offered, "The Blessed Warrior casts Sacred Flame in combat");
+    const auto bytes = saved(party);
+    CampaignParty restored(module());
+    restored.restore(decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
+    check(saved(restored) == bytes, "A Blessed Warrior round-trips");
+}
+
 void paladin_choices_checks()
 {
+    blessed_warrior_checks();
     auto rules = module();
     auto creation_rules = srd5::character_rules();
     const auto draft = paladin_draft({"cure_wounds"});
@@ -110,4 +182,19 @@ void paladin_choices_checks()
     resting.choose_spells(rester, one);
     check(resting.member(rester).character.sheet().prepared_spells == *one.prepared,
           "Replacing one prepared spell is allowed");
+}
+
+// Writes the campaign tests/blessed_warrior_view_tests.gd loads: a level-one
+// Paladin with enough experience for level two. Requires the original assets
+// for their identity.
+void write_blessed_warrior_ui_fixture()
+{
+    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
+    if (!directory || !*directory)
+        return;
+    CampaignParty party(module());
+    (void)party.add_pc(Character(*srd5::character_rules(), paladin_draft({"cure_wounds"}), {}));
+    party.award_experience(300, "blessed-warrior-ui");
+    write_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) / "blessed-warrior-ui.ogs",
+                        encode_campaign(party, nullptr, campaign_asset_identity(directory)));
 }

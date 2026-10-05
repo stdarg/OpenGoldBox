@@ -306,5 +306,8 @@
   "Command: Approach (level 2 slot)",
   "Command: Flee (level 2 slot)",
   "Command: Grovel (level 2 slot)",
-  "Command: Halt (level 2 slot)"
+  "Command: Halt (level 2 slot)",
+  "Blessed Warrior",
+  "Learn two Cleric cantrips; Charisma is your spellcasting ability for them.",
+  "Blessed Warrior cantrips"
 ]

@@ -35,6 +35,14 @@ unsigned RulesModule::experience_for_level(unsigned) const
     throw std::runtime_error("This rules module does not support advancement");
 }
 
+CharacterSheet RulesModule::spell_choice_sheet(const CharacterSheet &sheet,
+        const AdvancementChoice &) const
+{
+    auto next = sheet;
+    ++next.level;
+    return next;
+}
+
 void RulesModule::apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
                                       bool) const
 {

@@ -9,10 +9,37 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 1 | Spellcasting | Delivered (rules 0.6.65) |
 | 1 | Weapon Mastery | Delivered earlier ([Weapon Mastery](WEAPON-MASTERY.md)) |
 | 1 | Lay On Hands | Delivered in combat (rules 0.6.66); outside combat and curing Poisoned not yet |
-| 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Blessed Warrior not yet |
+| 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Blessed Warrior delivered (rules 0.6.72) |
 | 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.69) |
 | 3 | Channel Divinity, Oath of Devotion | Not yet |
 | 4 | Ability Score Improvement | Delivered earlier |
+
+## Blessed Warrior
+
+- At level two the Fighting Style dropdown also offers **Blessed Warrior**
+  instead of a Fighting Style feat. The Paladin learns two Cleric cantrips,
+  cast with Charisma, chosen on the level-up Spell Choices page ("Blessed
+  Warrior cantrips"). Sacred Flame is the only Cleric cantrip in the game so
+  far, so the second choice stays pending until another arrives; replacing one
+  on later Paladin levels waits for it too.
+- Changing the style on the first page drops the cantrip picks with it.
+- A new rules call, `spell_choice_sheet`, gives the level-up page the sheet
+  with the chosen style, so the page offers exactly what the level-up applies.
+
+Verification: `opengold_spell_access_tests` (the option, two Cleric cantrips
+only with Blessed Warrior, a non-Cleric cantrip refused atomically, Sacred
+Flame in the profile and offered in combat, save round trip). With
+`OPENGOLD_GAME_DIR` it writes `blessed-warrior-ui.ogs` for
+`tests/blessed_warrior_view_tests.gd` (English and Spanish: choose Blessed
+Warrior, learn Sacred Flame by keyboard, switch to Defense and back, confirm,
+save). Run it like the Cleric check:
+
+```bash
+OPENGOLD_GAME_DIR=/path/to/POOLRAD cmake -DGODOT=godot -DPROJECT=$PWD/src/OpenGoldBox/godot \
+    -DSCRIPT=$PWD/tests/blessed_warrior_view_tests.gd \
+    "-DEXPECTED=Blessed Warrior view checks passed" \
+    "-DARGS=--blessed-fixture=$PWD/build/blessed-warrior-ui.ogs" -P tests/run_godot_test.cmake
+```
 
 ## Spellcasting
 

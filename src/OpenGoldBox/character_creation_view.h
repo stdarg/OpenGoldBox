@@ -136,6 +136,7 @@ class CharacterCreationView : public godot::Control
     void refresh_advancement_arrows();
     void open_advancement(std::int64_t id);
     void advancement_changed(std::int64_t unused = 0);
+    void drop_unoffered_learning();
     void advancement_spell_changed(bool checked, int index);
     void close_advancement();
     void confirm_advancement();

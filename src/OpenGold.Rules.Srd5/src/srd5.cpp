@@ -109,6 +109,12 @@ std::string command_label(int option)
     return label;
 }
 
+// The grant a Fighting Style choice adds: a feat, or Paladin's Blessed Warrior.
+std::string fighting_style_grant(std::string_view style)
+{
+    return style == "blessed_warrior" ? "feature:blessed_warrior" : "feat:" + std::string(style);
+}
+
 // Spells whose creatures are chosen one click at a time (CLASS-2) when they may
 // affect more than one.
 bool selects_creatures(const detail::SpellDef &spell)
@@ -182,6 +188,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Paladin", "protection_from_evil_and_good", 1},
     SpellAccessRow{"Cleric", "protection_from_evil_and_good", 1},
     SpellAccessRow{"Paladin", "command", 1},
+    // Blessed Warrior's Cleric cantrips; spell access checks the feature itself.
+    SpellAccessRow{"Paladin", "sacred_flame", 2},
     SpellAccessRow{"Cleric", "command", 1},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
@@ -4802,6 +4810,13 @@ class Module final : public RulesModule
                 });
                 result.fighting_styles.push_back(std::move(style));
             }
+            // SRD 5.2.1 p. 54: the Paladin's alternative to a Fighting Style feat.
+            if (sheet.character_class == "Paladin")
+                result.fighting_styles.push_back(
+            {
+                "blessed_warrior", "Blessed Warrior",
+                "Learn two Cleric cantrips; Charisma is your spellcasting ability for them."
+            });
         }
         if (sheet.character_class == "Wizard" && result.level == 2)
             result.training = {detail::scholar_options(sheet.grants)};
@@ -5016,6 +5031,32 @@ class Module final : public RulesModule
         return choice;
     }
 
+    CharacterSheet spell_choice_sheet(const CharacterSheet &sheet,
+                                      const AdvancementChoice &choice) const override
+    {
+        auto next = sheet;
+        ++next.level;
+        if ((sheet.character_class == "Paladin" || sheet.character_class == "Ranger") &&
+                next.level == 2)
+            next.grants.push_back({"feature:fighting_style",
+                                   "class:" + detail::grant_source_id(sheet.character_class),
+                                   2,
+                                   {}});
+        if (choice.fighting_style)
+        {
+            const auto source =
+                "class:" + detail::grant_source_id(sheet.character_class) + ":fighting_style";
+            std::erase_if(next.grants,
+                          [&](const auto & g)
+            {
+                return g.source_id == source;
+            });
+            next.grants.push_back(
+            {fighting_style_grant(*choice.fighting_style), source, unsigned(next.level), {}});
+        }
+        return next;
+    }
+
     bool advance_character(CharacterSheet &sheet, VitalState &state,
                            const AdvancementChoice &choice) const override
     {
@@ -5082,25 +5123,7 @@ class Module final : public RulesModule
         actor.slots = old.slots;
         actor.slots2 = old.slots2;
         restore_vitals(actor, state);
-        auto next = sheet;
-        ++next.level;
-        if (half_style)
-            next.grants.push_back({"feature:fighting_style",
-                                   "class:" + detail::grant_source_id(sheet.character_class),
-                                   2,
-                                   {}});
-        if (choice.fighting_style)
-        {
-            const auto source =
-                "class:" + detail::grant_source_id(sheet.character_class) + ":fighting_style";
-            std::erase_if(next.grants,
-                          [&](const auto & g)
-            {
-                return g.source_id == source;
-            });
-            next.grants.push_back(
-            {"feat:" + *choice.fighting_style, source, unsigned(next.level), {}});
-        }
+        auto next = spell_choice_sheet(sheet, choice);
         for (const auto &[id, values] : choice.training)
         {
             const auto group = std::find_if(options.training.begin(), options.training.end(),
@@ -6178,7 +6201,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.71", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.72", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

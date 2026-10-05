@@ -230,8 +230,8 @@ void CharacterCreationView::advancement_pages()
         w->get_node<Control>(String("Spell") + String::num_uint64(i))->hide();
     if (advancement_page_ != AdvancementPage::spells)
         return;
-    auto sheet = campaign_->member(advancing_).character.sheet();
-    sheet.level = advancement_options_.level;
+    auto sheet = campaign_->rule_module().spell_choice_sheet(
+                     campaign_->member(advancing_).character.sheet(), advancement_choice_);
     auto options = campaign_->rule_module().spell_choice_options(
                        sheet, opengold::rules::SpellChoiceContext::advancement);
     opengold::rules::SpellChoices choices
@@ -520,6 +520,28 @@ void CharacterCreationView::advancement_spell_changed(bool, int)
     advancement_changed();
 }
 
+// Spells learned through a Fighting Style (Blessed Warrior's cantrips) leave
+// with it, so a changed style drops picks its learning group no longer offers.
+void CharacterCreationView::drop_unoffered_learning()
+{
+    if (!advancement_choice_.spell_learning)
+        return;
+    const auto &rules = campaign_->rule_module();
+    const auto offered =
+        rules.spell_choice_options(rules.spell_choice_sheet(
+                                       campaign_->member(advancing_).character.sheet(),
+                                       advancement_choice_),
+                                   opengold::rules::SpellChoiceContext::advancement)
+        .learning;
+    std::erase_if(*advancement_choice_.spell_learning, [&](const auto & entry)
+    {
+        return std::none_of(offered.begin(), offered.end(), [&](const auto & group)
+        {
+            return group.id == entry.first;
+        });
+    });
+}
+
 void CharacterCreationView::advancement_changed(std::int64_t)
 {
     if (advancement_refreshing_ || !advancing_)
@@ -537,6 +559,7 @@ void CharacterCreationView::advancement_changed(std::int64_t)
                 advancement_choice_.fighting_style = option.id;
         }
         advancement_options_ = campaign_->advancement_options(advancing_, advancement_choice_);
+        drop_unoffered_learning();
         auto *feats = window->get_node<OptionButton>("Feat");
         for (unsigned i = 0; i < advancement_options_.feats.size(); ++i)
         {
@@ -621,6 +644,21 @@ void CharacterCreationView::advancement_changed(std::int64_t)
         const auto defaults = campaign_->default_advancement(advancing_);
         preview_choice.spell_learning = defaults.spell_learning;
         preview_choice.spells = defaults.spells;
+        // The defaults follow the default Fighting Style; a chosen style's own
+        // learning (Blessed Warrior's cantrips) previews with its first options.
+        const auto &rules = campaign_->rule_module();
+        const auto offered = rules.spell_choice_options(
+                                 rules.spell_choice_sheet(campaign_->member(advancing_).character.sheet(),
+                                         preview_choice),
+                                 opengold::rules::SpellChoiceContext::advancement);
+        for (const auto &group : offered.learning)
+        {
+            auto &fill = (*preview_choice.spell_learning)[group.id];
+            for (const auto &option : group.options)
+                if (fill.size() < group.count &&
+                        std::find(fill.begin(), fill.end(), option.id) == fill.end())
+                    fill.push_back(option.id);
+        }
     }
     try
     {

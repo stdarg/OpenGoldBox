@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Blessed Warrior
+
+Rules 0.6.72 adds the Paladin's Blessed Warrior: two Cleric cantrips at level
+two instead of a Fighting Style feat. See [Paladin](PALADIN.md#blessed-warrior).
+
 ## Command
 
 Rules 0.6.71 adds Command (Cleric and Paladin) with Approach, Flee, Grovel and
