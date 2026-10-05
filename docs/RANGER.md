@@ -22,8 +22,8 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   creation (Spell Choices step), added at each level-up with earlier choices
   locked, and after a Long Rest one prepared spell may be replaced, as for a
   Paladin.
-- The Ranger list in the game holds Cure Wounds, Hunter's Mark and Longstrider
-  so far. Ensnaring Strike, Entangle, Fog Cloud and Goodberry come next; Detect
+- The Ranger list in the game holds Cure Wounds, Goodberry, Hunter's Mark and
+  Longstrider so far. Ensnaring Strike, Entangle and Fog Cloud come next; Detect
   Magic waits for magic items.
 
 ## Favored Enemy and Hunter's Mark
@@ -78,6 +78,14 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   creatures, Horde Breaker's target rules, once per turn and checkpoint,
   Hunter's Lore with and without the subclass) and `opengold_godot_hunters_mark`
   (attack, then Horde Breaker on the second enemy).
+
+## Goodberry
+
+- Cast from the Camp dialog's Cast / Use row only, never in combat
+  ([CLASS-6](SRD-DECISIONS.md#class-6-2026-10-05-goodberry)): the ten berries are
+  eaten at once and the chosen member regains up to 10 Hit Points. It spends a
+  level-one slot; a higher slot adds nothing. Verified by
+  `opengold_camp_action_tests`.
 
 ## Longstrider
 

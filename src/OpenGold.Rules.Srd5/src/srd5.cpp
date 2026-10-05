@@ -196,6 +196,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Ranger", "cure_wounds", 1},
     SpellAccessRow{"Ranger", "hunters_mark", 1},
     SpellAccessRow{"Ranger", "longstrider", 1},
+    SpellAccessRow{"Ranger", "goodberry", 1},
     // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
     SpellAccessRow{"Ranger", "poison_spray", 2},
     SpellAccessRow{"Paladin", "sacred_flame", 2},
@@ -1998,6 +1999,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     {
     case detail::SpellPattern::smite:
         return; // Smites resolve through resolve_smite, after the caster's own hit.
+    case detail::SpellPattern::camp:
+        return; // Never offered in combat.
     case detail::SpellPattern::buff:
         if (spell.concentration)
             begin_concentration(a, spell);
@@ -2093,7 +2096,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
     for (const auto &spell : detail::spell_table)
     {
         // Smites follow the caster's own melee hit; the smite window offers them.
-        if (spell.pattern == detail::SpellPattern::smite || spell.target != scope ||
+        if (spell.pattern == detail::SpellPattern::smite ||
+                spell.pattern == detail::SpellPattern::camp || spell.target != scope ||
                 spell.bonus_action != bonus_pass)
             continue;
         if (!detail::knows_spell(d.spells, spell.id))
@@ -5866,12 +5870,15 @@ class Module final : public RulesModule
             return actions;
         for (const auto &spell : detail::spell_table)
         {
-            if (spell.pattern != detail::SpellPattern::heal || !detail::knows_spell(d.spells, spell.id))
+            if ((spell.pattern != detail::SpellPattern::heal &&
+                    spell.pattern != detail::SpellPattern::camp) ||
+                    !detail::knows_spell(d.spells, spell.id))
                 continue;
             const std::string label(spell.label);
             if (actor.slots > 0)
                 actions.push_back({std::string(spell.id), {label, {}}});
-            if (actor.slots2 > 0)
+            // Goodberry gains nothing from a higher slot.
+            if (actor.slots2 > 0 && spell.pattern == detail::SpellPattern::heal)
                 actions.push_back({std::string(spell.id) + "_2", {label + " (level 2 slot)", {}}});
         }
         return actions;
@@ -5902,6 +5909,11 @@ class Module final : public RulesModule
             caster.lay_on_hands -= detail::heal_life(
                                        patient, std::min(caster.lay_on_hands, maximum - patient.hp),
                                        maximum, can_heal);
+        }
+        else if (action == "goodberry")
+        {
+            --caster.slots;
+            (void)detail::heal_life(patient, std::min(10, maximum - patient.hp), maximum, can_heal);
         }
         else
         {
@@ -6588,7 +6600,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.77", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.78", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -498,3 +498,16 @@ member it affects.
 The Paladin's Divine Sense is left out, as DM-3 left out spells: in combat every
 creature is already visible, so it has no effect in this game. Channel Divinity's
 uses go to Sacred Weapon.
+
+## CLASS-5 (2026-10-05): aiming area spells
+
+Area spells (Entangle, Fog Cloud, later Burning Hands, Thunderwave and others)
+are aimed on the battlefield after choosing the spell: a left click on a cell,
+or the arrow keys, moves a preview of the affected squares; a right click, Space
+or Enter casts at the previewed spot; Escape cancels without spending anything.
+
+## CLASS-6 (2026-10-05): Goodberry
+
+Goodberry is a camp heal: cast from the Camp dialog's Cast / Use row, the chosen
+member eats the ten berries at once and regains up to 10 Hit Points. No berries
+are carried, so none reach combat.

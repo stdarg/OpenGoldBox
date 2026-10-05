@@ -15,7 +15,8 @@ healing outside combat happens in the Camp dialog (C), before a rest starts.
 
 - Select the member who acts in the list; the **Cast / Use** row then offers its
   Lay On Hands (while its pool lasts) and its prepared healing spells (Cure
-  Wounds, Healing Word, and their level-two forms while slots last). Choose the
+  Wounds, Healing Word, and their level-two forms while slots last; Goodberry,
+  up to 10 HP). Choose the
   member to heal in the second list and press **Use**. The result line shows
   the Hit Points restored. Members with nothing to use show no row.
 - A wounded living member must be chosen, including one at 0 Hit Points. Lay On

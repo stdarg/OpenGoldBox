@@ -59,6 +59,8 @@ Character created(std::string klass, std::string name, std::vector<std::string> 
         d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     if (klass == "paladin")
         d.training = {{"class:paladin", {"athletics", "insight"}}};
+    if (klass == "ranger")
+        d.training = {{"class:ranger", {"athletics", "nature", "perception"}}};
     if (klass == "cleric")
     {
         d.cantrips = std::vector<std::string> {"sacred_flame"};
@@ -179,6 +181,22 @@ void spell_checks()
                                      nullptr).party);
     check(saved(restored) == bytes, "A camp heal round-trips through a save");
 }
+void goodberry_checks()
+{
+    CampaignParty party(module());
+    const auto ranger = party.add_pc(created("ranger", "Ranger", {"goodberry", "longstrider"}));
+    const auto fighter = party.add_pc(created("fighter", "Fighter", {}));
+    check(action_ids(party, ranger) == std::vector<std::string> {"goodberry"},
+          "A Ranger offers Goodberry in camp, not Longstrider");
+    const int full = party.member(fighter).character.sheet().hit_points;
+    wound(party, fighter, 1);
+    party.use_camp_action(ranger, fighter, "goodberry");
+    check(hp(party, fighter) == std::min(full, 11), "Goodberry restores up to 10 HP");
+    wound(party, fighter, full - 2);
+    party.use_camp_action(ranger, fighter, "goodberry");
+    check(hp(party, fighter) == full && action_ids(party, ranger).empty(),
+          "Goodberry heals only what is missing and spends a slot each time");
+}
 } // namespace
 
 int main()
@@ -187,6 +205,7 @@ int main()
     {
         lay_on_hands_checks();
         spell_checks();
+        goodberry_checks();
         std::cout << "Camp action tests passed\n";
     }
     catch (const std::exception &e)

@@ -27,7 +27,8 @@ enum class SpellPattern : unsigned
     repeat_attack,  // `instances` attack rolls against one target
     heal,           // restore HP from dice plus the caster's spellcasting modifier
     smite,          // Bonus Action right after the caster's own melee hit; extra damage to that target
-    buff            // a lasting benefit on the target, no roll; `rider` names it
+    buff,           // a lasting benefit on the target, no roll; `rider` names it
+    camp            // used only from the Camp dialog (CLASS-3), never offered in combat
 };
 
 // Which creatures the spell may be offered against. These reproduce the
@@ -356,6 +357,15 @@ inline constexpr std::array spell_table
         .range = 5,
         .upcast = {.extra_instances = 1},
         .rider = Rider::longstrider},
+    // SRD 5.2.1 p. 137. Its ten berries are eaten at once in camp (CLASS-6):
+    // the chosen member regains up to 10 Hit Points.
+    SpellDef{
+        .id = "goodberry",
+        .label = "Goodberry",
+        .level = 1,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::ally,
+        .range = 5},
     SpellDef{
         .id = "divine_favor",
         .label = "Divine Favor",
