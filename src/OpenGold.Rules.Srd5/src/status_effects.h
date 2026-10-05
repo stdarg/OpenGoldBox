@@ -96,7 +96,9 @@ enum class EffectKind : unsigned
     // each of its turns and, with Advantage, whenever it takes damage.
     laughing = 35,
     // Color Spray: Blinded until the end of the caster's next turn.
-    dazzled = 36
+    dazzled = 36,
+    // Web: Restrained until an Athletics check breaks free, like Entangle.
+    webbed = 37
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -202,7 +204,7 @@ void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId 
 void apply_ensnaring_strike(EffectState &, std::uint64_t scope, rules::EntityId caster,
                             std::string name, int dc);
 void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, std::string name,
-                    int dc);
+                    int dc, EffectKind kind = EffectKind::entangle);
 // Restrained: Speed 0, attacks against it have Advantage, its attacks and
 // Dexterity saves have Disadvantage.
 [[nodiscard]] bool restrained(const EffectState &effects);

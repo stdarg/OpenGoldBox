@@ -300,17 +300,16 @@ void apply_sanctuary(EffectState &effects, std::uint64_t scope, rules::EntityId 
 bool restrained(const EffectState &effects)
 {
     return has_effect(effects, EffectKind::ensnaring_strike) ||
-           has_effect(effects, EffectKind::entangle);
+           has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed);
 }
 
 void apply_entangle(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
-                    std::string name, int dc)
+                    std::string name, int dc, EffectKind kind)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
-            dc > 38)
+    if ((kind != EffectKind::entangle && kind != EffectKind::webbed) || !can_apply(effects) ||
+            !scope || !caster || name.empty() || name.size() > 160 || dc < -2 || dc > 38)
         throw std::runtime_error("Invalid Entangle application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
-                              EffectKind::entangle, dc, 60000, 0});
+    effects.active.push_back({effects.next_id++, scope, caster, std::move(name), kind, dc, 60000, 0});
 }
 
 void apply_ensnaring_strike(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
@@ -596,6 +595,7 @@ EffectState read_effects(std::istream &in)
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
                                kind == unsigned(EffectKind::ensnaring_strike) ||
                                kind == unsigned(EffectKind::entangle) ||
+                               kind == unsigned(EffectKind::webbed) ||
                                kind == unsigned(EffectKind::sanctuary) ||
                                kind == unsigned(EffectKind::asleep);
         // A spell benefit has no save; `dc` carries its value.

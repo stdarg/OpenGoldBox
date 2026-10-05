@@ -126,3 +126,22 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (Sleep passes over allies and
   is shaken off, a laughing creature can only end its turn, the cone's Blinded
   creature, checkpoints of both effects).
+
+## Grease and Web
+
+- **Grease** (level 1, 60 feet, 1 minute, no Concentration): a 10-foot square
+  of Difficult Terrain. Each creature in it when it appears, entering it or
+  ending its turn in it makes a Dexterity save or falls **Prone**. The grease
+  stays when the Wizard's Concentration on another spell ends and vanishes
+  after a minute of combat time.
+- **Web** (level 2, from Wizard level 3, 60 feet, Concentration): a 20-foot
+  cube on the ground of Difficult Terrain. Each creature in it when it appears,
+  entering it or starting its turn in it makes a Dexterity save or is
+  **Restrained**; **Escape the webs** spends the Action on an Athletics check
+  against the spell DC. A creature caught while moving stops where it entered.
+  The webs' Light Obscurement, anchoring and burning are not modeled.
+- Checkpoints become `OGCOMBAT 38`: each zone records when it ends (0 while
+  Concentration holds it).
+- Verification: `opengold_wizard_spell_tests` (Grease's square, Prone, a
+  checkpoint and its expiry; Web's level-two slot and cube, the save on entry,
+  the stop and Escape the webs).

@@ -86,7 +86,9 @@ enum class Rider : unsigned
     ice_knife,
     sleep,
     hideous_laughter,
-    color_spray
+    color_spray,
+    grease,
+    web
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -640,6 +642,31 @@ inline constexpr std::array spell_table
         .save = Ability::constitution,
         .rider = Rider::color_spray,
         .cone = 15},
+    // SRD 5.2.1 p. 141: a 10-foot square of Difficult Terrain for 1 minute;
+    // creatures in it, entering it or ending a turn in it save or fall Prone.
+    SpellDef{
+        .id = "grease",
+        .label = "Grease",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .rider = Rider::grease,
+        .area = 10},
+    // SRD 5.2.1 p. 179: a 20-foot cube of Difficult Terrain; creatures
+    // entering it or starting a turn in it save or are Restrained.
+    SpellDef{
+        .id = "web",
+        .label = "Web",
+        .level = 2,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .rider = Rider::web,
+        .concentration = true,
+        .area = 20},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

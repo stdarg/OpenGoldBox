@@ -105,7 +105,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::entangle || kind == detail::EffectKind::bane ||
            kind == detail::EffectKind::hold_person || kind == detail::EffectKind::resistance ||
            kind == detail::EffectKind::expeditious_retreat || kind == detail::EffectKind::drowsy ||
-           kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing;
+           kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing ||
+           kind == detail::EffectKind::webbed;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -170,7 +171,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 37;
+constexpr unsigned checkpoint_format = 38;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -247,6 +248,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "sleep", 1},
     SpellAccessRow{"Wizard", "hideous_laughter", 1},
     SpellAccessRow{"Wizard", "color_spray", 1},
+    SpellAccessRow{"Wizard", "grease", 1},
+    SpellAccessRow{"Wizard", "web", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1120,20 +1123,24 @@ class Session final : public CombatSession
         Cell center;
     };
     std::optional<PendingArea> area_;
-    // A spell's lasting area, which lasts as long as its caster's Concentration:
-    // Entangle's plants are Difficult Terrain, Fog Cloud is Heavily Obscured.
+    // A spell's lasting area, which lasts as long as its caster's Concentration
+    // or, for Grease, a minute: Entangle's plants, Grease and Web are Difficult
+    // Terrain, Fog Cloud is Heavily Obscured.
     enum class ZoneKind : unsigned
     {
         plants,
         fog,
         silence,
-        spiritual_weapon // one square: where the spectral force floats
+        spiritual_weapon, // one square: where the spectral force floats
+        grease,
+        web
     };
     struct Zone
     {
         EntityId caster{};
         ZoneKind kind{};
         std::vector<Cell> cells;
+        std::uint64_t ends_ms{}; // combat time it vanishes; 0 while held by Concentration
     };
     std::vector<Zone> zones_;
     std::vector<ChampionMove> champion_offers_;
@@ -1325,6 +1332,10 @@ class Session final : public CombatSession
     void ice_burst(Actor &caster, const Actor &target, bool upcast);
     void condition_area(Actor &caster, const detail::SpellDef &spell,
                         const std::vector<Cell> &cells);
+    [[nodiscard]] static bool in_zone(const Zone &zone, Cell cell);
+    // Makes a creature in a Grease or Web zone save; true when it is caught.
+    bool spring_zone(const Zone &zone, Actor &creature);
+    void spring_zones(Actor &creature, ZoneKind kind);
     void potent_cantrip(Actor &target, const detail::SpellDef &spell, detail::DamageDice rolled);
     [[nodiscard]] std::vector<EntityId> sculpted(const Actor &caster, const detail::SpellDef &spell,
             unsigned slot_level, const std::vector<Cell> &cells) const;
@@ -1721,10 +1732,11 @@ void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
 
 Battlefield Session::zoned_board() const
 {
-    // Entangle's plants make their open squares Difficult Terrain.
+    // Entangle's plants, Grease and Web make their open squares Difficult Terrain.
     auto board = board_;
     for (const auto &zone : zones_)
-        if (zone.kind == ZoneKind::plants)
+        if (zone.kind == ZoneKind::plants || zone.kind == ZoneKind::grease ||
+                zone.kind == ZoneKind::web)
             for (const auto cell : zone.cells)
                 if (board.at(cell) == 0)
                     board.terrain[std::size_t(cell.y * board.width + cell.x)] = 2;
@@ -2271,6 +2283,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     case detail::Rider::sleep:
     case detail::Rider::color_spray:
+    case detail::Rider::grease:
+    case detail::Rider::web:
         return; // Aimed areas, resolved by cast_area().
     case detail::Rider::hold_person:
         detail::apply_hold_person(target.effects, scope_, a.source.id, a.source.name, dc,
@@ -2891,7 +2905,10 @@ std::vector<Command> Session::legal_commands() const
     // A creature caught by Ensnaring Strike or Entangle may spend its Action to
     // break free.
     if (a.actions.available() && detail::restrained(a.effects))
-        add(id, "escape", "Escape the vines", id);
+        add(id, "escape",
+            detail::has_effect(a.effects, detail::EffectKind::webbed) ? "Escape the webs"
+            : "Escape the vines",
+            id);
     // Sleep ends when someone within 5 feet spends an Action to shake the sleeper.
     if (a.actions.available())
         for (const auto &other : actors_)
@@ -3521,6 +3538,48 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     }
 }
 
+bool Session::in_zone(const Zone &zone, Cell cell)
+{
+    return std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
+}
+
+bool Session::spring_zone(const Zone &zone, Actor &creature)
+{
+    // Grease knocks a creature Prone and Web Restrains it, each on a failed
+    // Dexterity save against the caster's spell DC.
+    const bool grease = zone.kind == ZoneKind::grease;
+    if (creature.dead || creature.hp == 0 ||
+            (grease ? creature.effects.prone
+             : detail::has_effect(creature.effects, detail::EffectKind::webbed) ||
+             !detail::can_apply(creature.effects)))
+        return false;
+    const auto &caster = actor(zone.caster);
+    const int dc = 8 + def(caster).casting;
+    if (saving_throw_succeeds(creature, detail::Ability::dexterity, dc))
+        return false;
+    if (grease)
+    {
+        creature.effects.prone = true;
+        log(creature.source.name + " slips and falls Prone.",
+        {"{name} slips and falls Prone.", {{"name", creature.source.name}}});
+        return true;
+    }
+    detail::apply_entangle(creature.effects, scope_, caster.source.id, caster.source.name, dc,
+                           detail::EffectKind::webbed);
+    log(creature.source.name + " is Restrained by the webs.",
+    {"{name} is Restrained by the webs.", {{"name", creature.source.name}}});
+    return true;
+}
+
+void Session::spring_zones(Actor &creature, ZoneKind kind)
+{
+    // Copies: a save can end a caster's Concentration and with it the zone.
+    const auto zones = zones_;
+    for (const auto &zone : zones)
+        if (zone.kind == kind && in_zone(zone, creature.source.cell))
+            (void)spring_zone(zone, creature);
+}
+
 void Session::ice_burst(Actor &caster, const Actor &target, bool upcast)
 {
     // The target and each creature within 5 feet of it save against 2d6 Cold
@@ -3605,8 +3664,18 @@ void Session::cast_area()
         begin_concentration(a, spell);
     const auto kind = spell.rider == detail::Rider::fog_cloud ? ZoneKind::fog
                       : spell.rider == detail::Rider::silence ? ZoneKind::silence
+                      : spell.rider == detail::Rider::grease  ? ZoneKind::grease
+                      : spell.rider == detail::Rider::web     ? ZoneKind::web
                       : ZoneKind::plants;
-    zones_.push_back({a.source.id, kind, cells});
+    zones_.push_back({a.source.id, kind, cells, kind == ZoneKind::grease ? elapsed_ms_ + 60000 : 0});
+    if (kind == ZoneKind::grease || kind == ZoneKind::web)
+    {
+        const auto zone = zones_.back();
+        for (auto &other : actors_)
+            if (other.source.id != a.source.id && in_zone(zone, other.source.cell))
+                (void)spring_zone(zone, other);
+        return;
+    }
     if (kind != ZoneKind::plants)
         return;
     const int dc = 8 + def(a).casting;
@@ -3801,7 +3870,7 @@ void Session::escape_ensnaring(Actor &a)
                                     [](const auto & e)
     {
         return e.kind == detail::EffectKind::ensnaring_strike ||
-               e.kind == detail::EffectKind::entangle;
+               e.kind == detail::EffectKind::entangle || e.kind == detail::EffectKind::webbed;
     });
     const auto vines = *found;
     const int bonus = a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics;
@@ -3979,7 +4048,7 @@ void Session::drop_concentration_effects(const Actor &caster)
 {
     std::erase_if(zones_, [&](const auto & zone)
     {
-        return zone.caster == caster.source.id;
+        return zone.caster == caster.source.id && !zone.ends_ms;
     });
     for (auto &other : actors_)
         std::erase_if(other.effects.active, [&](const auto & e)
@@ -4589,6 +4658,7 @@ bool Session::begin_turn()
     squeeze_ensnared(a);
     if (a.dead)
         return false;
+    spring_zones(a, ZoneKind::web);
     // Heroism: Temporary HP at the start of each of the target's turns, kept
     // only when higher than what the target already has.
     for (const auto &effect : a.effects.active)
@@ -4853,11 +4923,16 @@ void Session::advance_turn_time()
         }
     elapsed_ms_ +=
         std::min<std::uint64_t>(delta, std::numeric_limits<std::uint64_t>::max() - elapsed_ms_);
+    std::erase_if(zones_, [&](const auto & zone)
+    {
+        return zone.ends_ms && zone.ends_ms <= elapsed_ms_;
+    });
 }
 
 void Session::end_turn()
 {
     actors_[turn_].actions.surge = false;
+    spring_zones(actors_[turn_], ZoneKind::grease);
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -4893,12 +4968,22 @@ void Session::progress_movement()
         if (!cost || *cost > movement_left(a))
             throw std::logic_error("Invalid accepted movement path");
         a.movement -= *cost;
+        const auto departed = a.source.cell;
         a.source.cell = destination;
         a.moved = true;
         clear_departed_overlaps();
         ++path_index_;
         reactors_.clear();
         reactor_index_ = 0;
+        // Entering Grease or Web calls for a save; a creature caught stops.
+        const auto zones = zones_;
+        bool caught = false;
+        for (const auto &zone : zones)
+            if ((zone.kind == ZoneKind::grease || zone.kind == ZoneKind::web) &&
+                    in_zone(zone, destination) && !in_zone(zone, departed))
+                caught = spring_zone(zone, a) || caught;
+        if (caught)
+            break;
     }
     path_.clear();
     path_index_ = 0;
@@ -5485,7 +5570,8 @@ std::string Session::save() const
     out << '\n' << zones_.size();
     for (const auto &zone : zones_)
     {
-        out << ' ' << zone.caster << ' ' << unsigned(zone.kind) << ' ' << zone.cells.size();
+        out << ' ' << zone.caster << ' ' << unsigned(zone.kind) << ' ' << zone.ends_ms << ' '
+            << zone.cells.size();
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
     }
@@ -6254,8 +6340,10 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         Zone zone;
         std::size_t cells{};
         unsigned kind{};
-        input >> zone.caster >> kind >> cells;
-        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::spiritual_weapon) || !cells ||
+        input >> zone.caster >> kind >> zone.ends_ms >> cells;
+        // Only Grease keeps time; every other zone ends with Concentration.
+        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::web) ||
+                (kind == unsigned(ZoneKind::grease)) != (zone.ends_ms != 0) || !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
         zone.kind = static_cast<ZoneKind>(kind);
@@ -8121,7 +8209,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.96", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.97", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

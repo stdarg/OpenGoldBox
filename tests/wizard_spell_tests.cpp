@@ -396,6 +396,72 @@ void color_spray_checks()
     throw std::runtime_error("No seed fails the Constitution save");
 }
 
+bool difficult(const CombatSession &c, Cell cell)
+{
+    return c.snapshot().battlefield.at(cell) == 2;
+}
+
+void grease_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "grease"}), {4, 1}, {11, 5}, seed);
+        check(submit(*c, "grease") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast"),
+              "Cast Grease on the enemy");
+        check(difficult(*c, {4, 1}) && difficult(*c, {5, 2}) && !difficult(*c, {6, 1}),
+              "Grease makes a 10-foot square Difficult Terrain");
+        if (!logged(*c, "First slips and falls Prone."))
+            continue;
+        const auto saved = c->save();
+        check(module->restore(saved)->save() == saved, "The grease survives a checkpoint");
+        for (unsigned turns = 0; turns < 40; ++turns)
+            check(submit(*c, "end"), "Let the minute pass");
+        check(!difficult(*c, {4, 1}), "Grease vanishes after a minute");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Dexterity save");
+}
+
+bool move_to(CombatSession &c, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == "move" && command.destination == cell)
+            return c.submit(command);
+    return false;
+}
+
+void web_checks()
+{
+    auto module = rules();
+    bool caught_entering = false;
+    for (std::uint64_t seed = 1; seed < 64 && !caught_entering; ++seed)
+    {
+        auto c = battle(*module, wizard(3, {"magic_missile"}, {"web", "shatter"}), {6, 2}, {10, 2},
+                        seed);
+        const auto before = slots(*c);
+        check(submit(*c, "web") && aim(*c, Cell{6, 2}) && submit(*c, "area_cast") &&
+              slots(*c).second == before.second - 1,
+              "Web spends a level-two slot");
+        check(difficult(*c, {5, 1}) && difficult(*c, {8, 4}) && !difficult(*c, {9, 2}),
+              "Web fills a 20-foot cube");
+        reach(*c, 99);
+        check(move_to(*c, Cell{8, 2}) && logged(*c, "Second Dexterity save"),
+              "Entering the webs calls for a save");
+        caught_entering = logged(*c, "Second is Restrained by the webs.");
+        if (!caught_entering)
+            continue;
+        check(unit(*c, 99).cell == Cell{8, 2}, "A caught creature stops where it entered");
+        const auto offered = c->legal_commands();
+        check(std::any_of(offered.begin(), offered.end(), [](const auto & command)
+        {
+            return command.verb == "escape" && command.label == "Escape the webs";
+        }),
+        "The webbed creature may try to break free");
+    }
+    check(caught_entering, "Some seed catches the entering creature");
+}
+
 } // namespace
 
 int main()
@@ -417,6 +483,8 @@ int main()
         sleep_checks();
         hideous_laughter_checks();
         color_spray_checks();
+        grease_checks();
+        web_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)
