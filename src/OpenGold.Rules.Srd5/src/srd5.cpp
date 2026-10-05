@@ -5584,6 +5584,18 @@ class Module final : public RulesModule
         state = vitals(actor);
     }
 
+    // A character's actor outside combat, its resources read from `state`.
+    Actor camp_actor(const CharacterSheet &sheet, const VitalState &state) const
+    {
+        Actor actor;
+        actor.definition = character_definition(character_profile(sheet, {}).data);
+        actor.winds = actor.definition.winds;
+        actor.slots = actor.definition.slots;
+        actor.slots2 = actor.definition.slots2;
+        restore_vitals(actor, state);
+        return actor;
+    }
+
     void temple_heal(VitalState &state, const CharacterSheet &sheet,
                      std::uint64_t &random_state) const override
     {
@@ -5604,6 +5616,79 @@ class Module final : public RulesModule
         (void)detail::heal_life(actor, amount, d.hp, !detail::healing_blocked(actor.effects));
         auto next = vitals(actor);
         state = std::move(next);
+        random_state = rng;
+    }
+
+    // Healing outside combat (CLASS-3): Lay On Hands and the healing spells.
+    // A free hand is not required; there is time to stow a shield.
+    std::vector<CampAction> camp_actions(const CharacterSheet &sheet,
+                                         const VitalState &state) const override
+    {
+        const auto actor = camp_actor(sheet, state);
+        const auto &d = actor.definition;
+        std::vector<CampAction> actions;
+        if (actor.dead || actor.hp == 0)
+            return actions;
+        if (actor.lay_on_hands > 0)
+            actions.push_back({"lay_on_hands", {"Lay On Hands", {}}});
+        if (d.str_dex_disadvantage)
+            return actions;
+        for (const auto &spell : detail::spell_table)
+        {
+            if (spell.pattern != detail::SpellPattern::heal || !detail::knows_spell(d.spells, spell.id))
+                continue;
+            const std::string label(spell.label);
+            if (actor.slots > 0)
+                actions.push_back({std::string(spell.id), {label, {}}});
+            if (actor.slots2 > 0)
+                actions.push_back({std::string(spell.id) + "_2", {label + " (level 2 slot)", {}}});
+        }
+        return actions;
+    }
+
+    void use_camp_action(const CharacterSheet &user, VitalState &user_state,
+                         const CharacterSheet &target, VitalState &target_state,
+                         std::string_view action, std::uint64_t &random_state) const override
+    {
+        const auto offered = camp_actions(user, user_state);
+        if (std::none_of(offered.begin(), offered.end(), [&](const auto & a)
+    {
+        return a.id == action;
+    }))
+        throw std::runtime_error("That spell or feature cannot be used now");
+        const bool self = &user_state == &target_state;
+        auto caster = camp_actor(user, user_state);
+        auto healed = self ? caster : camp_actor(target, target_state);
+        auto &patient = self ? caster : healed;
+        const int maximum = patient.definition.hp;
+        if (patient.dead || patient.hp >= maximum)
+            throw std::runtime_error("Healing requires a wounded living member");
+        const bool can_heal = !detail::healing_blocked(patient.effects);
+        auto rng = random_state;
+        if (action == "lay_on_hands")
+        {
+            // Only the Hit Points actually restored are spent from the pool.
+            caster.lay_on_hands -= detail::heal_life(
+                                       patient, std::min(caster.lay_on_hands, maximum - patient.hp),
+                                       maximum, can_heal);
+        }
+        else
+        {
+            const auto &spell = *detail::find_spell(action);
+            const bool upcast = action.ends_with("_2");
+            if (upcast)
+                --caster.slots2;
+            else
+                --caster.slots;
+            int amount = caster.definition.casting - 2;
+            const int count = spell.dice.count + (upcast ? int(spell.upcast.extra_dice) : 0);
+            for (int n = 0; n < count; ++n)
+                amount += roll_die(rng, spell.dice.sides);
+            (void)detail::heal_life(patient, std::max(0, amount), maximum, can_heal);
+        }
+        user_state = vitals(caster);
+        if (!self)
+            target_state = vitals(healed);
         random_state = rng;
     }
 
@@ -6259,7 +6344,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.73", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.74", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -141,6 +141,8 @@ class RolfTourView : public godot::Control
     void rest_start();
     void rest_heal();
     void rest_recover();
+    void rest_use();
+    bool refresh_rest_use(const std::vector<opengold::MemberRestInfo> &infos, bool spending);
     void refresh_rest_spells();
     void rest_spell_toggled(bool selected, godot::String group, godot::String option);
     void rest_spell_replaced(std::int64_t index);

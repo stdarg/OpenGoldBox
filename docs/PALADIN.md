@@ -8,7 +8,7 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | --- | --- | --- |
 | 1 | Spellcasting | Delivered (rules 0.6.65) |
 | 1 | Weapon Mastery | Delivered earlier ([Weapon Mastery](WEAPON-MASTERY.md)) |
-| 1 | Lay On Hands | Delivered in combat (rules 0.6.66); outside combat and curing Poisoned not yet |
+| 1 | Lay On Hands | Delivered in combat (rules 0.6.66) and in camp (rules 0.6.74); curing Poisoned not yet |
 | 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Blessed Warrior delivered (rules 0.6.72) |
 | 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.69) |
 | 3 | Channel Divinity, Oath of Devotion | Delivered (rules 0.6.73): Sacred Weapon and the oath spells; Divine Sense left out (CLASS-4) |
@@ -97,9 +97,10 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD cmake -DGODOT=godot -DPROJECT=$PWD/src/OpenGo
 - In the game it is the **Lay On Hands** entry of the Bonus Action list: choose
   it, press **Use Bonus Action**, then click the ally. The automatic combat
   policy uses it, before any healing spell, on an ally below half Hit Points.
-- Not yet: using it outside combat (that needs a control outside combat, asked
-  together with Detect Magic), and spending 5 points to remove Poisoned, because
-  the game has no Poisoned condition yet.
+- Outside combat it is used from the Camp dialog's **Cast / Use** row, like the
+  healing spells ([Camp actions](REST-RESOURCES.md#cast--use-in-camp)).
+- Not yet: spending 5 points to remove Poisoned, because the game has no
+  Poisoned condition yet.
 - The pool is saved in the character's vital state (`SRD11`) and in combat
   checkpoints (`OGCOMBAT 32`).
 

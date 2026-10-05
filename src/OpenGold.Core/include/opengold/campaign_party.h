@@ -161,6 +161,10 @@ class CampaignParty
             std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
+    // Spells and features an active member can use outside combat (CLASS-3).
+    [[nodiscard]] std::vector<rules::CampAction> camp_actions(MemberId id) const;
+    // Atomic: on failure nothing changes.
+    void use_camp_action(MemberId user, MemberId target, std::string_view action);
     // Eligible active members, in party order, try once each until one meets
     // the difficulty. Returns every attempt; the door opens if the last succeeded.
     [[nodiscard]] std::vector<DoorAttempt> try_door(DoorMethod method, int difficulty);

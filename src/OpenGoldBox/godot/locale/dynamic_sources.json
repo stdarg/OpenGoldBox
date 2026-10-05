@@ -310,5 +310,8 @@
   "Blessed Warrior",
   "Learn two Cleric cantrips; Charisma is your spellcasting ability for them.",
   "Blessed Warrior cantrips",
-  "Sacred Weapon"
+  "Sacred Weapon",
+  "That spell or feature cannot be used now",
+  "Healing requires a wounded living member",
+  "Camp actions are for active members"
 ]

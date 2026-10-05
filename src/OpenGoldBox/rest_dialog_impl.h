@@ -73,6 +73,13 @@ void RolfTourView::setup_rest()
     presentation::add_control<OptionButton>(*w, "RecoveryChoice", Rect2(24, 446, 442, 36));
     button("Recover", N_("Recover slots"), Rect2(482, 446, 214, 36),
            callable_mp(this, &RolfTourView::rest_recover));
+    // Cast / Use (CLASS-3) shares the Arcane Recovery row: that row appears only
+    // during a Short Rest, this one only before resting. The selected member acts.
+    auto *use_label = presentation::add_control<Label>(*w, "UseLabel", Rect2(24, 412, 672, 28));
+    use_label->set_text(rest_text(N_("Cast / Use")));
+    presentation::add_control<OptionButton>(*w, "UseAction", Rect2(24, 446, 220, 36));
+    presentation::add_control<OptionButton>(*w, "UseTarget", Rect2(254, 446, 214, 36));
+    button("Use", N_("Use"), Rect2(482, 446, 214, 36), callable_mp(this, &RolfTourView::rest_use));
 }
 
 void RolfTourView::camp()
@@ -196,9 +203,11 @@ void RolfTourView::refresh_rest()
                     recovery->select(index);
             }
     }
+    const bool use_visible = refresh_rest_use(infos, spending);
     w->get_node<RichTextLabel>("Info")->set_text(details);
     w->get_node<Label>("Result")->set_text(rest_result_);
-    w->get_node<RichTextLabel>("Info")->set_size(Vector2(672, recovery_visible ? 132 : 208));
+    w->get_node<RichTextLabel>("Info")->set_size(
+        Vector2(672, recovery_visible || use_visible ? 132 : 208));
     w->get_node<Label>("RecoveryLabel")->set_visible(recovery_visible);
     recovery->set_visible(recovery_visible);
     recovery->set_disabled(recovery->get_item_count() == 0);
@@ -284,6 +293,76 @@ void RolfTourView::rest_recover()
                 rest_result_.replace(String::utf8(("{" + argument.name + "}").c_str()),
                                      argument.translate ? rest_text(argument.value)
                                      : String::utf8(argument.value.c_str()));
+        refresh_rest();
+    }
+    catch (const std::exception &e)
+    {
+        rest_result_ = rest_text(e.what());
+        refresh_rest();
+    }
+}
+
+// Fills the Cast / Use row for the selected member; false when it has nothing
+// to use. Selections survive a refresh when still offered.
+bool RolfTourView::refresh_rest_use(const std::vector<opengold::MemberRestInfo> &infos,
+                                    bool spending)
+{
+    auto *w = get_node<Window>("RestDialog");
+    auto *action = w->get_node<OptionButton>("UseAction");
+    auto *target = w->get_node<OptionButton>("UseTarget");
+    const auto keep = [](OptionButton & options)
+    {
+        return options.get_selected() >= 0 ? options.get_selected_metadata() : Variant();
+    };
+    const auto previous_action = keep(*action), previous_target = keep(*target);
+    action->clear();
+    target->clear();
+    const auto actions = spending || !rest_member_ ? std::vector<opengold::rules::CampAction> {}
+                         : campaign_->camp_actions(rest_member_);
+    for (const auto &offered : actions)
+    {
+        const int index = action->get_item_count();
+        action->add_item(rest_text(offered.label.source));
+        action->set_item_metadata(index, String::utf8(offered.id.c_str()));
+        if (action->get_item_metadata(index) == previous_action)
+            action->select(index);
+    }
+    for (const auto &info : infos)
+    {
+        const int index = target->get_item_count();
+        target->add_item(String::utf8(campaign_->member(info.id).character.sheet().name.c_str()));
+        target->set_item_metadata(index, static_cast<int64_t>(info.id));
+        if (target->get_item_metadata(index) == previous_target)
+            target->select(index);
+    }
+    const bool visible = !actions.empty();
+    w->get_node<Label>("UseLabel")->set_visible(visible);
+    action->set_visible(visible);
+    target->set_visible(visible);
+    w->get_node<Button>("Use")->set_visible(visible);
+    return visible;
+}
+
+void RolfTourView::rest_use()
+{
+    try
+    {
+        if (!campaign_ || campaign_->in_combat() || campaign_->state().short_rest)
+            return;
+        auto *w = get_node<Window>("RestDialog");
+        auto *action = w->get_node<OptionButton>("UseAction");
+        auto *target = w->get_node<OptionButton>("UseTarget");
+        if (action->get_selected() < 0 || target->get_selected() < 0)
+            return;
+        const String id = action->get_selected_metadata();
+        const auto patient =
+            static_cast<unsigned>(static_cast<int64_t>(target->get_selected_metadata()));
+        const int before = campaign_->member(patient).vitals.hit_points;
+        campaign_->use_camp_action(rest_member_, patient, id.utf8().get_data());
+        rest_result_ = action->get_item_text(action->get_selected()) + ": " +
+                       target->get_item_text(target->get_selected()) + "   " +
+                       rest_text(N_("HP restored:")) + " " +
+                       String::num_int64(campaign_->member(patient).vitals.hit_points - before);
         refresh_rest();
     }
     catch (const std::exception &e)
@@ -743,8 +822,39 @@ void RolfTourView::check_rest_controls()
             spell->get_node<Button>("Apply")->emit_signal("pressed");
             check(!spell->is_visible() && !campaign_->state().spell_rest,
                   "Applying the Cleric's preparation closes the window");
+
+            // Cast / Use: the Cleric heals a wounded member before resting.
+            auto state = campaign_->checkpoint();
+            const auto patient = state.slots.front();
+            for (auto &m : state.roster)
+                if (m.id == patient)
+                    m.vitals.hit_points = 1;
+            campaign_->restore(state);
+            rest_member_ = id;
+            camp();
+            auto *action = w->get_node<OptionButton>("UseAction");
+            auto *target = w->get_node<OptionButton>("UseTarget");
+            check(action->is_visible() && action->get_item_count() >= 2 &&
+                  action->get_item_text(0) == rest_text(N_("Cure Wounds")) &&
+                  target->get_item_count() == int(campaign_->rest_info(opengold::RestKind::long_rest).size()) &&
+                  !w->get_node<Control>("RecoveryLabel")->is_visible(),
+                  "The Cleric's Cast / Use row offers its healing spells");
+            for (int n = 0; n < target->get_item_count(); ++n)
+                if (static_cast<int64_t>(target->get_item_metadata(n)) == static_cast<int64_t>(patient))
+                    target->select(n);
+            w->get_node<Button>("Use")->emit_signal("pressed");
+            check(campaign_->member(patient).vitals.hit_points > 1 &&
+                  w->get_node<Label>("Result")->get_text().contains(rest_text(N_("HP restored:"))),
+                  "Use casts Cure Wounds on the chosen member");
+            rest_member_ = patient;
+            refresh_rest();
+            check(campaign_->member(patient).character.sheet().character_class == "Cleric" ||
+                  campaign_->member(patient).character.sheet().character_class == "Paladin" ||
+                  !w->get_node<Button>("Use")->is_visible(),
+                  "A member with nothing to use has no Cast / Use row");
+            w->hide();
             UtilityFunctions::print(
-                "Godot rest controls passed: existing recovery, Arcane Recovery, Wizard preparation/replacement, sequential Wizards, Cleric preparation, keyboard, limits and save continuation.");
+                "Godot rest controls passed: existing recovery, Arcane Recovery, Wizard preparation/replacement, sequential Wizards, Cleric preparation, Cast / Use, keyboard, limits and save continuation.");
             get_tree()->quit();
         }
         if (rest_check_stage_ == 10 || rest_check_stage_ == 22 || rest_check_stage_ == 34 ||

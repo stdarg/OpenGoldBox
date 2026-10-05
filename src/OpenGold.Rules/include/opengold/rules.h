@@ -211,6 +211,15 @@ struct RestRecoveryChoice
     Message label;
 };
 
+// A spell or feature a character can use outside combat, from the Camp dialog.
+// `id` is the rules module's key, such as a spell's upcast form.
+struct CampAction
+{
+    std::string id;
+    Message label;
+    bool operator==(const CampAction &) const = default;
+};
+
 struct RecoveryInfo
 {
     unsigned hit_die{}, hit_dice{}, hit_dice_max{};
@@ -576,6 +585,16 @@ class RulesModule
     virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const;
     virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,
                              std::uint64_t &random_state) const;
+    [[nodiscard]] virtual std::vector<CampAction> camp_actions(const CharacterSheet &,
+            const VitalState &) const
+    {
+        return {};
+    }
+    // Uses one of camp_actions() on the target. A character acting on itself
+    // passes the same VitalState as both user and target.
+    virtual void use_camp_action(const CharacterSheet &user, VitalState &user_state,
+                                 const CharacterSheet &target, VitalState &target_state,
+                                 std::string_view action, std::uint64_t &random_state) const;
 };
 } // namespace opengold::rules
 #endif

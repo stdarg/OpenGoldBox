@@ -886,6 +886,35 @@ void CampaignParty::temple_heal(MemberId target)
     state_ = std::move(next);
 }
 
+std::vector<rules::CampAction> CampaignParty::camp_actions(MemberId id) const
+{
+    const auto &m = member(id);
+    if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+        return {};
+    return rules_->camp_actions(m.character.sheet(), m.vitals);
+}
+
+void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_view action)
+{
+    editable();
+    for (const auto id : {user, target})
+        if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+            throw std::runtime_error("Camp actions are for active members");
+    auto next = state_;
+    const auto find = [&](MemberId id) -> PartyMember &
+    {
+        return *std::find_if(next.roster.begin(), next.roster.end(), [&](const auto & m)
+        {
+            return m.id == id;
+        });
+    };
+    auto &caster = find(user);
+    auto &patient = find(target);
+    rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),
+                            patient.vitals, action, next.random_state);
+    state_ = std::move(next);
+}
+
 bool CampaignParty::has_item(unsigned type) const
 {
     for (auto id : state_.slots)

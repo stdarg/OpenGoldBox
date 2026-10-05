@@ -8,6 +8,27 @@ implementation included natural sleep, combat equipment handoff and Q37 safe
 recovery; [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation) removed all three. The current behavior is
 summarized first; the later sections are the delivery history.
 
+## Cast / Use in camp
+
+[CLASS-3](SRD-DECISIONS.md#class-3-2026-10-05-holy-water-and-casting-outside-combat):
+healing outside combat happens in the Camp dialog (C), before a rest starts.
+
+- Select the member who acts in the list; the **Cast / Use** row then offers its
+  Lay On Hands (while its pool lasts) and its prepared healing spells (Cure
+  Wounds, Healing Word, and their level-two forms while slots last). Choose the
+  member to heal in the second list and press **Use**. The result line shows
+  the Hit Points restored. Members with nothing to use show no row.
+- A wounded living member must be chosen, including one at 0 Hit Points. Lay On
+  Hands restores what is missing, up to the pool, and spends only that; a spell
+  spends its slot and heals its dice plus the spellcasting modifier. A free hand
+  is not required outside combat. A character in untrained armor cannot cast.
+- The row shares its place with Arcane Recovery, which appears only during a
+  Short Rest; Cast / Use appears only before one. Detect Magic and other
+  outside-combat spells will join this row.
+- Rules: `RulesModule::camp_actions` and `use_camp_action`; Core:
+  `CampaignParty::camp_actions` and the atomic `use_camp_action`. Verified by
+  `opengold_camp_action_tests` and the Cast / Use stage of `opengold_godot_rest`.
+
 ## Current behavior (SIMPLIFY-1, 2026-09-30)
 
 - A rest completes in one step: `CampaignParty::rest(kind)` captures the eligible

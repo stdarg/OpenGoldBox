@@ -118,6 +118,12 @@ void RulesModule::temple_heal(VitalState &, const CharacterSheet &, std::uint64_
     throw std::runtime_error("This rules module does not support temple healing");
 }
 
+void RulesModule::use_camp_action(const CharacterSheet &, VitalState &, const CharacterSheet &,
+                                  VitalState &, std::string_view, std::uint64_t &) const
+{
+    throw std::runtime_error("This rules module has no camp actions");
+}
+
 bool Battlefield::contains(Cell p) const noexcept
 {
     return p.x >= 0 && p.y >= 0 && p.x < width && p.y < height;
