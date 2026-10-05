@@ -157,7 +157,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
                 (grant.id == "feat:defense" || grant.id == "feat:archery" ||
                  grant.id == "feat:great_weapon_fighting" ||
                  grant.id == "feat:two_weapon_fighting" ||
-                 (klass == "paladin" && grant.id == "feature:blessed_warrior")) &&
+                 (klass == "paladin" && grant.id == "feature:blessed_warrior") ||
+                 (klass == "ranger" && grant.id == "feature:druidic_warrior")) &&
                 has_grant(grants, "feature:fighting_style"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }

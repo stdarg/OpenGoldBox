@@ -73,7 +73,7 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 | Wizard | 1–4 | Five cantrips; spellbook and preparation (Magic Missile, Scorching Ray, Blindness); Arcane Recovery; Scholar; Ability Score Improvement or feat. No subclass |
 | Rogue | 1–4 | Expertise, Sneak Attack, Weapon Mastery, Cunning Action (Dash, Disengage), Steady Aim, Ability Score Improvement or feat. No Hide or subclass |
 | Paladin | 1–4 | Spellcasting (Charisma; Bless, Command, Cure Wounds, Divine Favor, Divine Smite, Heroism, Protection from Evil and Good, Searing Smite, Shield of Faith so far), Lay On Hands (in combat and camp), Paladin's Smite, Weapon Mastery, Fighting Style or Blessed Warrior, Channel Divinity with Sacred Weapon (Oath of Devotion), Ability Score Improvement or feat. Other features in progress; see [Paladin](docs/PALADIN.md) |
-| Ranger | 1–4 | Spellcasting (Wisdom; Cure Wounds, Hunter's Mark, Longstrider so far), Favored Enemy, Weapon Mastery, Fighting Style, Ability Score Improvement or feat. Other features in progress; see [Ranger](docs/RANGER.md) |
+| Ranger | 1–4 | Spellcasting (Wisdom; Cure Wounds, Hunter's Mark, Longstrider so far), Favored Enemy, Weapon Mastery, Fighting Style or Druidic Warrior, Ability Score Improvement or feat. Other features in progress; see [Ranger](docs/RANGER.md) |
 | Sorcerer, Warlock | 1 | Starting cantrips |
 | Barbarian, Bard, Druid, Monk | 1 | Weapon attacks; Unarmored Defense (Barbarian, Monk); Weapon Mastery (Barbarian) |
 

@@ -10,7 +10,7 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 | 1 | Favored Enemy | Delivered (rules 0.6.75) |
 | 1 | Weapon Mastery | Delivered earlier ([Weapon Mastery](WEAPON-MASTERY.md)) |
 | 2 | Deft Explorer | Nothing to deliver in levels 1–4 ([2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplification)) |
-| 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Druidic Warrior not yet |
+| 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Druidic Warrior delivered (rules 0.6.76) |
 | 3 | Ranger Subclass (Hunter) | Not yet |
 | 4 | Ability Score Improvement | Delivered earlier |
 
@@ -43,6 +43,18 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 - Adaptation: the free cast is not offered while a living creature still carries
   the Ranger's mark. The party AI marks the first enemy it can, and moves the
   mark when its quarry drops.
+
+## Druidic Warrior
+
+- At level two the Fighting Style dropdown also offers **Druidic Warrior**
+  instead of a Fighting Style feat: two Druid cantrips, cast with Wisdom, chosen
+  on the level-up Spell Choices page ("Druidic Warrior cantrips"). Poison Spray
+  is the only Druid cantrip in the game so far, so the second choice stays
+  pending. It works like the Paladin's
+  [Blessed Warrior](PALADIN.md#blessed-warrior), through the same level-up page,
+  whose Godot check covers both.
+- Verification: `opengold_spell_access_tests` (the offer, Druid cantrips only, a
+  Cleric cantrip refused atomically, the profile, save round trip).
 
 ## Longstrider
 

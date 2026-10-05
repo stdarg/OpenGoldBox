@@ -19,7 +19,8 @@ enum SpellList : unsigned
     wizard_list = 1,
     cleric_list = 2,
     paladin_list = 4,
-    ranger_list = 8
+    ranger_list = 8,
+    druid_list = 16
 };
 
 struct Spell
@@ -36,7 +37,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"ray_of_frost", "Ray of Frost", 0, 256},
     Spell{"sacred_flame", "Sacred Flame", 0, 128, cleric_list},
     Spell{"fire_bolt", "Fire Bolt", 0, 1},
-    Spell{"poison_spray", "Poison Spray", 0, 64},
+    Spell{"poison_spray", "Poison Spray", 0, 64, wizard_list | druid_list},
     Spell{"magic_missile", "Magic Missile", 1, 4},
     Spell{"scorching_ray", "Scorching Ray", 2, 16},
     Spell{"blindness", "Blindness", 2, 32, wizard_list | cleric_list},
@@ -77,9 +78,10 @@ constexpr std::array prepared_casters{
         "Paladin", "class:paladin:spellcasting", "Blessed Warrior cantrips", paladin_list,
         cleric_list, {0, 0, 0, 0},
         {2, 3, 4, 5}, {1, 1, 1, 1}, true},
-    // Druidic Warrior's cantrips are a later increment.
+    // Ranger cantrips come only from Druidic Warrior, from the Druid list.
     PreparedCaster{
-        "Ranger", "class:ranger:spellcasting", "Druidic Warrior cantrips", ranger_list, 0,
+        "Ranger", "class:ranger:spellcasting", "Druidic Warrior cantrips", ranger_list,
+        druid_list,
         {0, 0, 0, 0}, {2, 3, 4, 4}, {1, 1, 1, 1}, true}};
 
 // Spells a class always has prepared from a class level on.
@@ -150,13 +152,22 @@ bool blessed_warrior(std::span<const FeatureGrant> grants)
                                   {}}) != grants.end();
 }
 
+// The Ranger's Druidic Warrior Fighting Style adds two Druid cantrips at level two.
+bool druidic_warrior(std::span<const FeatureGrant> grants)
+{
+    return std::find(grants.begin(), grants.end(),
+                     FeatureGrant{"feature:druidic_warrior", "class:ranger:fighting_style", 2,
+                                  {}}) != grants.end();
+}
+
 // The cantrips a caster knows at a class level, its features included.
 unsigned cantrips_at(const PreparedCaster &caster, std::span<const FeatureGrant> grants,
                      unsigned level)
 {
     return caster.cantrips[level - 1] +
            (caster.klass == "Cleric" && thaumaturge(grants) ? 1 : 0) +
-           (caster.klass == "Paladin" && level >= 2 && blessed_warrior(grants) ? 2 : 0);
+           (caster.klass == "Paladin" && level >= 2 && blessed_warrior(grants) ? 2 : 0) +
+           (caster.klass == "Ranger" && level >= 2 && druidic_warrior(grants) ? 2 : 0);
 }
 
 SpellAccess prepared_access(const PreparedCaster &caster, std::span<const FeatureGrant> grants,

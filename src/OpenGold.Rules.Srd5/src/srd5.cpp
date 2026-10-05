@@ -112,10 +112,12 @@ std::string command_label(int option)
     return label;
 }
 
-// The grant a Fighting Style choice adds: a feat, or Paladin's Blessed Warrior.
+// The grant a Fighting Style choice adds: a feat, or the Paladin's Blessed
+// Warrior or the Ranger's Druidic Warrior.
 std::string fighting_style_grant(std::string_view style)
 {
-    return style == "blessed_warrior" ? "feature:blessed_warrior" : "feat:" + std::string(style);
+    return style == "blessed_warrior" || style == "druidic_warrior" ? "feature:" + std::string(style)
+           : "feat:" + std::string(style);
 }
 
 // Spells whose creatures are chosen one click at a time (CLASS-2) when they may
@@ -194,7 +196,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Ranger", "cure_wounds", 1},
     SpellAccessRow{"Ranger", "hunters_mark", 1},
     SpellAccessRow{"Ranger", "longstrider", 1},
-    // Blessed Warrior's Cleric cantrips; spell access checks the feature itself.
+    // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
+    SpellAccessRow{"Ranger", "poison_spray", 2},
     SpellAccessRow{"Paladin", "sacred_flame", 2},
     SpellAccessRow{"Cleric", "command", 1},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
@@ -4976,6 +4979,13 @@ class Module final : public RulesModule
                 "blessed_warrior", "Blessed Warrior",
                 "Learn two Cleric cantrips; Charisma is your spellcasting ability for them."
             });
+            // SRD 5.2.1 p. 59: the Ranger's alternative.
+            if (sheet.character_class == "Ranger")
+                result.fighting_styles.push_back(
+            {
+                "druidic_warrior", "Druidic Warrior",
+                "Learn two Druid cantrips; Wisdom is your spellcasting ability for them."
+            });
         }
         if (sheet.character_class == "Wizard" && result.level == 2)
             result.training = {detail::scholar_options(sheet.grants)};
@@ -4994,7 +5004,7 @@ class Module final : public RulesModule
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Ranger")
             result.description =
-                "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nDruidic Warrior and the Hunter subclass remain unavailable.";
+                "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two. Level four grants an available feat or ability points.\nThe Hunter subclass remains unavailable.";
         if (result.level == 4)
             result.feats =
         {
@@ -5426,7 +5436,7 @@ class Module final : public RulesModule
             const std::string note =
                 next.character_class == "Paladin"
                 ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
-                : "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style at level two. Level four grants an available feat or ability points.\nDruidic Warrior and the Hunter subclass remain unavailable.";
+                : "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two. Level four grants an available feat or ability points.\nThe Hunter subclass remains unavailable.";
             next.class_modifiers += "\n" + note;
             next.class_messages.push_back({note, {}});
         }
@@ -6466,7 +6476,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.75", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.76", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

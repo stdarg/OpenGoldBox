@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Druidic Warrior
+
+Rules 0.6.76 adds the Ranger's Druidic Warrior: two Druid cantrips at level two
+instead of a Fighting Style feat. See [Ranger](RANGER.md#druidic-warrior).
+
 ## Ranger spellcasting and Favored Enemy
 
 Rules 0.6.75 gives Rangers Wisdom spellcasting with prepared spells, Favored

@@ -98,7 +98,7 @@ list column intentionally does not absorb subclass or species additions.
 | Thaum | Cleric's Thaumaturge Divine Order: one extra Cleric cantrip at level 1 | 37 | [#91](https://github.com/stdarg/OpenGold/issues/91) |
 | Magician | Druid's Magician Primal Order: one extra Druid cantrip at level 1 | 42 | [#152](https://github.com/stdarg/OpenGold/issues/152) |
 | Blessed | Paladin's Blessed Warrior option: two Cleric cantrips at level 2 (delivered; Sacred Flame so far) | 54 | [#140](https://github.com/stdarg/OpenGold/issues/140) |
-| DruidicWarrior | Ranger's Druidic Warrior option: two Druid cantrips at level 2 | 59 | [#147](https://github.com/stdarg/OpenGold/issues/147) |
+| DruidicWarrior | Ranger's Druidic Warrior option: two Druid cantrips at level 2 (delivered; Poison Spray so far) | 59 | [#147](https://github.com/stdarg/OpenGold/issues/147) |
 | Smite | Paladin level 2 always prepares Divine Smite and gains its own free cast | 54 | [#141](https://github.com/stdarg/OpenGold/issues/141), [#200](https://github.com/stdarg/OpenGold/issues/200) |
 | Favored | Ranger level 1 always prepares Hunter's Mark and gains limited free casts (delivered) | 57–58 | [#146](https://github.com/stdarg/OpenGold/issues/146), [#200](https://github.com/stdarg/OpenGold/issues/200) |
 | Life | Cleric level 3: Aid, Bless, Cure Wounds, Lesser Restoration | 40 | [#94](https://github.com/stdarg/OpenGold/issues/94) |
