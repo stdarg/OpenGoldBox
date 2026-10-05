@@ -511,3 +511,21 @@ or Enter casts at the previewed spot; Escape cancels without spending anything.
 Goodberry is a camp heal: cast from the Camp dialog's Cast / Use row, the chosen
 member eats the ten berries at once and regains up to 10 Hit Points. No berries
 are carried, so none reach combat.
+
+## CLASS-7 (2026-10-05): choosing Resistance's damage type
+
+The Resistance cantrip is offered once per damage type in the A cycle
+("Resistance: Fire", "Resistance: Slashing", ...), like Command's options; the
+player then clicks the creature.
+
+## CLASS-8 (2026-10-05): costly components that are not consumed
+
+A spell's costly component that the spell does not consume, such as Warding
+Bond's two 50 gp rings or Identify's 100 gp pearl, is not required: like
+CLASS-3's holy water, the spell costs only its slot.
+
+## CLASS-9 (2026-10-05): Sanctuary
+
+A creature that targets a creature warded by Sanctuary with an attack or a
+harmful spell and fails its Wisdom save loses that attack or spell; it does not
+choose another target.

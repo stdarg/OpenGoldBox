@@ -395,6 +395,28 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     check(!at_range->submit(*offer) && at_range->save() == settled, "A spent ticket is inert");
 }
 
+// The probe sheet with `row` prepared in place of its last prepared spell, so
+// every row is reached however many rows the class list grows by. Unchanged
+// when the class cannot prepare it.
+CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, const SpellDef &row)
+{
+    auto &prepared = sheet.prepared_spells;
+    if (!row.level || prepared.empty() ||
+            std::find(prepared.begin(), prepared.end(), row.id) != prepared.end())
+        return sheet;
+    auto trial = sheet;
+    trial.prepared_spells.back() = std::string(row.id);
+    try
+    {
+        (void)rules.character_profile(trial, {});
+        return trial;
+    }
+    catch (const std::exception &)
+    {
+        return sheet;
+    }
+}
+
 void behaviour()
 {
     auto rules = custom();
@@ -406,19 +428,18 @@ void behaviour()
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command is offered once
         // per option, camp spells only outside combat, area spells are aimed,
-        // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one,
-        // and Hold Person fills a level-four Cleric's places last; their own tests
-        // cover them.
+        // Lesser Restoration needs a Blinded creature and Spare the Dying a dying
+        // one; their own tests cover them.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
                  row.instances > 1) ||
-                row.target == SpellTarget::dying_ally || row.rider == Rider::hold_person ||
+                row.target == SpellTarget::dying_ally ||
                 row.rider == Rider::command || row.pattern == SpellPattern::camp ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)
-            row_behaviour(*rules, row, sheet, covered);
+            row_behaviour(*rules, row, with_prepared(*rules, sheet, row), covered);
         // The payoff: a row no class can actually cast fails here instead of
         // shipping as dead data.
         check(covered, ("No probed class can cast " + std::string(row.id)).c_str());

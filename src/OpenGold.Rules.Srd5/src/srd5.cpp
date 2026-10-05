@@ -214,6 +214,9 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "bane", 1},
     SpellAccessRow{"Cleric", "spare_the_dying", 1},
     SpellAccessRow{"Cleric", "hold_person", 3},
+    SpellAccessRow{"Cleric", "sanctuary", 1},
+    SpellAccessRow{"Cleric", "warding_bond", 3},
+    SpellAccessRow{"Cleric", "protection_from_poison", 3},
     SpellAccessRow{"Paladin", "spare_the_dying", 2},
     SpellAccessRow{"Ranger", "spare_the_dying", 2},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
@@ -1120,7 +1123,7 @@ class Session final : public CombatSession
     {
         const int cap = std::max(0, def(a).melee_ability);
         const std::array parts{detail::DamagePart{def(a).melee_type, cap}};
-        auto defenses = def(target).affinities;
+        auto defenses = affinities(target);
         // The approved Graze policy permits reductions, never vulnerability increases.
         std::erase_if(defenses,
                       [](const auto & affinity)
@@ -1330,6 +1333,16 @@ class Session final : public CombatSession
     [[nodiscard]] int keep_higher_savage_roll(Actor &a, int first, int second);
     void finish_reaction();
     int resolved_damage(const Actor &target, detail::DamageType type, int amount);
+    // The creature's damage affinities with those its effects grant: Warding
+    // Bond resists all damage, Protection from Poison resists Poison.
+    [[nodiscard]] std::vector<detail::DamageAffinity> affinities(const Actor &target) const;
+    // Sanctuary: whether the warded target stops this attack or harmful spell,
+    // after the attacker's Wisdom save. Attacking or casting ends the
+    // attacker's own Sanctuary.
+    bool sanctuary_stops(Actor &attacker, const Actor &target);
+    void end_sanctuary(Actor &a);
+    // The living casters bonded to `target` by Warding Bond within 60 feet.
+    [[nodiscard]] std::vector<EntityId> bonds_on(const Actor &target) const;
     void damage(Actor &target, int amount, bool critical = false);
     int heal(Actor &target, int amount); // Returns the Hit Points restored.
     void resolve_smite(Actor &a, std::string_view verb);
@@ -2041,6 +2054,36 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::entangle:
     case detail::Rider::fog_cloud:
         return; // Area spells resolve through cast_area().
+    case detail::Rider::sanctuary:
+        detail::apply_sanctuary(target.effects, scope_, a.source.id, a.source.name, dc);
+        log(target.source.name + " gains Sanctuary.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Sanctuary", true}}});
+        return;
+    case detail::Rider::warding_bond:
+    {
+        // A new bond ends any other on either creature.
+        for (auto &other : actors_)
+            std::erase_if(other.effects.active, [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::warding_bond &&
+                   ((e.source_scope == scope_ && e.source_actor == a.source.id) ||
+                    other.source.id == target.source.id);
+        });
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::warding_bond, 0);
+        log(target.source.name + " gains Warding Bond.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Warding Bond", true}}});
+        return;
+    }
+    case detail::Rider::protection_from_poison:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::protection_from_poison, 0);
+        log(target.source.name + " gains Protection from Poison.",
+        {
+            "{name} gains {spell}.",
+            {{"name", target.source.name}, {"spell", "Protection from Poison", true}}
+        });
+        return;
     case detail::Rider::hold_person:
         detail::apply_hold_person(target.effects, scope_, a.source.id, a.source.name, dc,
                                   next_save_ms(target.source.id));
@@ -2163,6 +2206,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
 {
     const auto &d = def(a);
     const bool upcast = verb.ends_with("_2");
+    end_sanctuary(a);
     // A level-two spell always draws a level-two slot; a level-one spell draws
     // one only in its upcast form.
     if (spell.level)
@@ -2220,6 +2264,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     case detail::SpellPattern::auto_damage:
     {
         auto &target = actor(target_id);
+        if (sanctuary_stops(a, target))
+            return;
         int total = 0;
         // Instances resolve separately so resistance applies per instance.
         for (unsigned n = 0; n < instances; ++n)
@@ -2247,6 +2293,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     case detail::SpellPattern::save_damage:
     {
         auto &target = actor(target_id);
+        if (sanctuary_stops(a, target))
+            return;
         log(a.source.name + " casts " + name + " at " + target.source.name + ".",
         {
             "{name} casts {spell} at {target}.",
@@ -2335,6 +2383,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.rider == detail::Rider::lesser_restoration && !detail::blinded(other.effects))
             continue;
         if (spell.humanoid_only && def(other).creature_type != "humanoid")
+            continue;
+        if (spell.not_self && other.source.id == a.source.id)
             continue;
         const auto *components = detail::spell_components(spell.id);
         if (!components || (components->somatic && !somatic_hand(d)))
@@ -2834,7 +2884,7 @@ std::vector<Cell> Session::movement_reach(EntityId id) const
 int Session::resolved_damage(const Actor &target, detail::DamageType type, int amount)
 {
     const std::array parts{detail::DamagePart{type, amount}};
-    const auto result = detail::resolve_damage(parts, def(target).affinities);
+    const auto result = detail::resolve_damage(parts, affinities(target));
     if (result.total != amount)
     {
         const auto name = std::string(detail::damage_name(type));
@@ -2857,6 +2907,26 @@ void Session::damage(Actor &target, int amount, bool critical)
     if (!amount || target.dead)
         return;
     detail::damage_life(target, amount, max_hp(target), critical, target.source.side == 1);
+    // Warding Bond: the caster takes the same damage; the bond ends when the
+    // caster drops to 0 Hit Points or is more than 60 feet away.
+    for (const auto bond : bonds_on(target))
+    {
+        auto &caster = actor(bond);
+        log(caster.source.name + " shares " + std::to_string(amount) +
+            " damage through Warding Bond.",
+        {
+            "{name} shares {damage} damage through Warding Bond.",
+            {{"name", caster.source.name}, {"damage", std::to_string(amount)}}
+        });
+        damage(caster, amount, false);
+    }
+    if (target.hp == 0)
+        for (auto &other : actors_)
+            std::erase_if(other.effects.active, [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::warding_bond && e.source_scope == scope_ &&
+                   e.source_actor == target.source.id;
+        });
     // Damage tests Concentration; dropping to 0 Hit Points ends it.
     if (target.concentration.active())
     {
@@ -2925,6 +2995,12 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
         return;
     }
     const bool searing = verb == "searing_smite";
+    if (sanctuary_stops(a, actor(a.smite_target)))
+    {
+        a.smite_target = 0;
+        a.bonus = false;
+        return;
+    }
     const auto &spell = *detail::find_spell(searing ? "searing_smite" : "divine_smite");
     auto &target = actor(a.smite_target);
     a.smite_target = 0;
@@ -3018,6 +3094,7 @@ void Session::cast_area()
     const auto aimed = *area_;
     area_.reset();
     auto &a = actor(aimed.caster);
+    end_sanctuary(a);
     const auto &spell = *detail::find_spell(aimed.verb);
     a.nick_origin = 0;
     (void)a.actions.spend(true);
@@ -3100,7 +3177,7 @@ void Session::divine_spark(Actor &cleric, Actor &target)
     const auto taken = [&](detail::DamageType type)
     {
         const std::array parts{detail::DamagePart{type, 100}};
-        return detail::resolve_damage(parts, def(target).affinities).total;
+        return detail::resolve_damage(parts, affinities(target)).total;
     };
     const auto type = taken(detail::DamageType::necrotic) > taken(detail::DamageType::radiant)
                       ? detail::DamageType::necrotic
@@ -3297,6 +3374,7 @@ void Session::cast_on_selection()
     const auto selection = *selection_;
     selection_.reset();
     auto &a = actor(selection.caster);
+    end_sanctuary(a);
     const auto &spell = *detail::find_spell(selection.verb);
     a.nick_origin = 0;
     (void)a.actions.spend(true);
@@ -3322,9 +3400,61 @@ void Session::cast_on_selection()
 
 int Session::armor_class(const Actor &target) const
 {
-    // Shield of Faith: +2 AC.
+    // Shield of Faith: +2 AC. Warding Bond: +1.
     return def(target).ac +
-           (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0);
+           (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0) +
+           (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0);
+}
+
+std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) const
+{
+    auto result = def(target).affinities;
+    if (detail::has_effect(target.effects, detail::EffectKind::warding_bond))
+        result.push_back({detail::AffinityKind::resistance, std::nullopt, "spell:warding_bond"});
+    if (detail::has_effect(target.effects, detail::EffectKind::protection_from_poison))
+        result.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
+                          "spell:protection_from_poison"});
+    return result;
+}
+
+std::vector<EntityId> Session::bonds_on(const Actor &target) const
+{
+    std::vector<EntityId> casters;
+    for (const auto &e : target.effects.active)
+        if (e.kind == detail::EffectKind::warding_bond && e.source_scope == scope_)
+            for (const auto &caster : actors_)
+                if (caster.source.id == e.source_actor && caster.hp > 0 && !caster.dead &&
+                        caster.source.id != target.source.id &&
+                        distance(caster.source.cell, target.source.cell) <= 60)
+                    casters.push_back(caster.source.id);
+    return casters;
+}
+
+void Session::end_sanctuary(Actor &a)
+{
+    std::erase_if(a.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::sanctuary;
+    });
+}
+
+bool Session::sanctuary_stops(Actor &attacker, const Actor &target)
+{
+    end_sanctuary(attacker);
+    const auto ward = std::find_if(target.effects.active.begin(), target.effects.active.end(),
+                                   [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::sanctuary;
+    });
+    if (ward == target.effects.active.end() || attacker.source.side == target.source.side ||
+            saving_throw_succeeds(attacker, detail::Ability::wisdom, ward->dc))
+        return false;
+    log(attacker.source.name + "'s attack on " + target.source.name + " is lost to Sanctuary.",
+    {
+        "{name}'s attack on {target} is lost to Sanctuary.",
+        {{"name", attacker.source.name}, {"target", target.source.name}}
+    });
+    return true;
 }
 
 void Session::begin_concentration(Actor &caster, const detail::SpellDef &spell)
@@ -3680,6 +3810,8 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
 {
     if (target.source.cell.x != a.source.cell.x)
         a.facing_left = target.source.cell.x < a.source.cell.x;
+    if (sanctuary_stops(a, target))
+        return false;
     const auto &d = def(a);
     const auto modifiers = attack_modifiers(a, target, ranged, spell);
     a.aim_ready = false;
@@ -3835,7 +3967,7 @@ detail::DamageType Session::sacred_damage_type(const Actor &a, const Actor &targ
     const auto taken = [&](detail::DamageType type)
     {
         const std::array parts{detail::DamagePart{type, 100}};
-        return detail::resolve_damage(parts, def(target).affinities).total;
+        return detail::resolve_damage(parts, affinities(target)).total;
     };
     return taken(detail::DamageType::radiant) > taken(usual) ? detail::DamageType::radiant : usual;
 }
@@ -3938,6 +4070,16 @@ bool Session::begin_turn()
     });
     if (a.dead)
         return false;
+    // Warding Bond ends once its caster is down or more than 60 feet away.
+    for (auto &other : actors_)
+    {
+        const auto kept = bonds_on(other);
+        std::erase_if(other.effects.active, [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::warding_bond &&
+                   std::find(kept.begin(), kept.end(), e.source_actor) == kept.end();
+        });
+    }
     burn_searing_smites(a);
     squeeze_ensnared(a);
     if (a.dead)
@@ -4103,7 +4245,9 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         return false;
     }
-    const int bless = blessing_die(target);
+    // Warding Bond: +1 to saving throws.
+    const int bless = blessing_die(target) +
+                      (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0);
     auto modifiers =
         detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
     modifiers.advantage |= advantage;
@@ -7340,7 +7484,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.86", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.87", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

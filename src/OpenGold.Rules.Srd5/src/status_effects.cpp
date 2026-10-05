@@ -253,6 +253,20 @@ void apply_hold_person(EffectState &effects, std::uint64_t scope, rules::EntityI
                               EffectKind::hold_person, dc, 60000, first_save_ms});
 }
 
+void apply_sanctuary(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                     std::string name, int dc)
+{
+    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
+            dc > 38)
+        throw std::runtime_error("Invalid Sanctuary application");
+    std::erase_if(effects.active, [](const auto & e)
+    {
+        return e.kind == EffectKind::sanctuary;
+    });
+    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+                              EffectKind::sanctuary, dc, 60000, 0});
+}
+
 bool restrained(const EffectState &effects)
 {
     return has_effect(effects, EffectKind::ensnaring_strike) ||
@@ -325,6 +339,8 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 600000; // 10 minutes
     case EffectKind::hunters_mark:
     case EffectKind::longstrider:
+    case EffectKind::warding_bond:
+    case EffectKind::protection_from_poison:
         return 3600000; // 1 hour
     case EffectKind::aid:
         return 28800000; // 8 hours
@@ -527,7 +543,8 @@ EffectState read_effects(std::istream &in)
         // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
                                kind == unsigned(EffectKind::ensnaring_strike) ||
-                               kind == unsigned(EffectKind::entangle);
+                               kind == unsigned(EffectKind::entangle) ||
+                               kind == unsigned(EffectKind::sanctuary);
         // A spell benefit has no save; `dc` carries its value.
         const auto benefit = benefit_duration_ms(static_cast<EffectKind>(kind));
         if (kind == unsigned(EffectKind::command) && in)

@@ -67,7 +67,15 @@ enum class EffectKind : unsigned
     // Bane: the target subtracts 1d4 from attack rolls and saving throws.
     bane = 23,
     // Hold Person: Paralyzed, with a Wisdom save at the end of each of its turns.
-    hold_person = 24
+    hold_person = 24,
+    // Sanctuary: a creature that attacks the target or harms it with a spell
+    // makes a Wisdom save against `dc` or loses the attack (CLASS-9).
+    sanctuary = 25,
+    // Warding Bond: +1 AC and saves, Resistance to all damage; the caster takes
+    // the same damage.
+    warding_bond = 26,
+    // Protection from Poison: Resistance to Poison damage.
+    protection_from_poison = 27
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -178,6 +186,8 @@ void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, 
 [[nodiscard]] bool paralyzed(const EffectState &effects);
 void apply_hold_person(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                        std::string name, int dc, unsigned first_save_ms);
+void apply_sanctuary(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                     std::string name, int dc);
 void apply_searing_smite(EffectState &, std::uint64_t scope, rules::EntityId caster,
                          std::string name, int dc);
 // Applies a spell benefit that has no save. `value` is kind-specific.

@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Sanctuary, Warding Bond and Protection from Poison
+
+Rules 0.6.87 adds Sanctuary, Warding Bond and Protection from Poison for
+Clerics, and records CLASS-7 to CLASS-9. See
+[Cleric](CLERIC.md#sanctuary-warding-bond-and-protection-from-poison).
+
 ## Hold Person and Paralyzed
 
 Rules 0.6.86 adds Hold Person for Clerics and the Paralyzed condition. See

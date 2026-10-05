@@ -70,7 +70,10 @@ enum class Rider : unsigned
     aid,
     guiding_bolt,
     bane,
-    hold_person
+    hold_person,
+    sanctuary,
+    warding_bond,
+    protection_from_poison
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -105,6 +108,7 @@ struct SpellDef
     int area{};           // side of an `area` spell's square, feet
     int radius{};         // or the radius of its sphere, feet
     bool humanoid_only{}; // offered only against a Humanoid
+    bool not_self{};      // offered only on another creature
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -375,6 +379,37 @@ inline constexpr std::array spell_table
         .rider = Rider::hold_person,
         .concentration = true,
         .humanoid_only = true},
+    // SRD 5.2.1 p. 160: attackers of the warded creature save or lose the
+    // attack (CLASS-9); it ends when the creature attacks, casts or harms.
+    SpellDef{
+        .id = "sanctuary",
+        .label = "Sanctuary",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 30,
+        .bonus_action = true,
+        .rider = Rider::sanctuary},
+    // SRD 5.2.1 p. 177: its rings are not required (CLASS-8).
+    SpellDef{
+        .id = "warding_bond",
+        .label = "Warding Bond",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::warding_bond,
+        .not_self = true},
+    // SRD 5.2.1 p. 157: Resistance to Poison damage; the game has no Poisoned
+    // condition yet.
+    SpellDef{
+        .id = "protection_from_poison",
+        .label = "Protection from Poison",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::protection_from_poison},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

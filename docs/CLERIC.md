@@ -106,3 +106,24 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   feet is a critical hit.
 - Verification: `opengold_cleric_channel_tests` (Humanoids only, Paralyzed, a
   checkpoint, only ending its turn, the repeated save, a failed Dexterity save).
+
+## Sanctuary, Warding Bond and Protection from Poison
+
+- **Sanctuary** (level 1, Bonus Action, 30 feet, 1 minute): an enemy that makes
+  an attack roll against the warded creature, or harms it with a spell, first
+  makes a Wisdom save; on a failure the attack or spell is lost
+  ([CLASS-9](SRD-DECISIONS.md#class-9-2026-10-05-sanctuary)). Areas are not
+  stopped. It ends when the warded creature attacks or casts a spell.
+- **Warding Bond** (level 2, Action, touch, 1 hour; another creature): +1 AC
+  and saves and Resistance to all damage; the Cleric takes the same damage the
+  creature takes. It ends when the Cleric drops to 0 Hit Points or is more than
+  60 feet away (checked at each turn), or when either is bonded again. Its rings
+  are not required ([CLASS-8](SRD-DECISIONS.md#class-8-2026-10-05-costly-components-that-are-not-consumed)).
+- **Protection from Poison** (level 2, Action, touch, 1 hour): Resistance to
+  Poison damage. The game has no Poisoned condition yet, so its other benefits
+  wait for it.
+- Effects that grant Resistance join the creature's own damage affinities.
+- Verification: `opengold_cleric_channel_tests` (a lost attack after a failed
+  Wisdom save, Warding Bond's AC, resisted and shared damage and no bond on the
+  caster itself, resisted Poison damage). The generic spell table checks now
+  prepare each row explicitly, so every castable row is probed.

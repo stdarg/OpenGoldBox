@@ -38,7 +38,9 @@ std::unique_ptr<RulesModule> rules()
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
                                "creature zombie 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "type zombie undead\n");
+                               "type zombie undead\n" +
+                               "creature viper 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "damage_types viper poison poison\n");
 }
 
 
@@ -405,6 +407,76 @@ void hold_person_checks()
     }
     throw std::runtime_error("No seed keeps the creature Paralyzed");
 }
+// A level-three Cleric who prepared the named level-two spell at level three.
+Character cleric_with(std::string spell)
+{
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(cleric(1, {"sanctuary"}));
+    party.award_experience(900, "ward-xp");
+    party.advance(id, party.default_advancement(id));
+    auto third = party.default_advancement(id);
+    third.spells.back() = std::move(spell);
+    party.advance(id, third);
+    return party.member(id).character;
+}
+
+// Moves the enemy (99) beside the ally (2) on its turn and attacks the ally.
+void enemy_attacks_ally(CombatSession &c)
+{
+    check(submit(c, "end"), "End the Cleric's turn");
+    while (c.snapshot().actor != 99)
+        check(submit(c, "end"), "Reach the enemy");
+    check(c.submit({c.snapshot().revision, 99, 0, "move", "Move", Cell{2, 2}}) &&
+          submit(c, "melee", 2),
+          "The enemy attacks the ally");
+}
+
+void sanctuary_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, cleric(1, {"sanctuary"}), "target", seed);
+        check(submit(*c, "sanctuary", 2) && !unit(*c, 1).bonus_action && unit(*c, 1).action,
+              "Sanctuary wards an ally as a Bonus Action");
+        const int hp = unit(*c, 2).hit_points;
+        enemy_attacks_ally(*c);
+        check(logged(*c, "Enemy Wisdom save"), "Attacking the warded ally calls for a Wisdom save");
+        if (!logged(*c, "Enemy's attack on Ally is lost to Sanctuary."))
+            continue;
+        check(unit(*c, 2).hit_points == hp, "A failed save loses the attack");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Wisdom save");
+}
+
+void warding_bond_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, cleric_with("warding_bond"));
+    const int ac = unit(*c, 2).armor_class;
+    check(!submit(*c, "warding_bond", 1), "Warding Bond binds another creature");
+    check(submit(*c, "warding_bond", 2) && unit(*c, 2).armor_class == ac + 1,
+          "Warding Bond adds 1 to the ally's AC");
+    const int cleric_hp = unit(*c, 1).hit_points;
+    enemy_attacks_ally(*c);
+    check(logged(*c, "Ally: Slashing damage") || logged(*c, "Ally: Bludgeoning damage") ||
+          logged(*c, "Ally: Piercing damage"),
+          "The bonded ally resists the damage");
+    check(logged(*c, "Cleric shares") && unit(*c, 1).hit_points < cleric_hp,
+          "The Cleric takes the same damage");
+}
+
+void protection_from_poison_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, cleric_with("protection_from_poison"), "viper");
+    check(submit(*c, "protection_from_poison", 2) &&
+          logged(*c, "Ally gains Protection from Poison."),
+          "Protection from Poison wards an ally");
+    enemy_attacks_ally(*c);
+    check(logged(*c, "Ally: Poison damage"), "The ally resists Poison damage");
+}
 } // namespace
 
 int main()
@@ -421,6 +493,9 @@ int main()
         bane_checks();
         spare_the_dying_checks();
         hold_person_checks();
+        sanctuary_checks();
+        warding_bond_checks();
+        protection_from_poison_checks();
         write_ui_fixture();
         std::cout << "Cleric Channel Divinity tests passed\n";
     }
