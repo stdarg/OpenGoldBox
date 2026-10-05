@@ -454,6 +454,18 @@ inline constexpr std::array spell_table
         .add_casting_modifier = true,
         .rider = Rider::spiritual_weapon,
         .concentration = true},
+    // SRD 5.2.1 p. 155: ten minutes of prayer; up to five creatures regain
+    // 2d8 + the spellcasting modifier, once each until a Long Rest. A camp spell.
+    SpellDef{
+        .id = "prayer_of_healing",
+        .label = "Prayer of Healing",
+        .level = 2,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::ally,
+        .range = 30,
+        .dice = {2, 8, 0},
+        .add_casting_modifier = true,
+        .instances = 5},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

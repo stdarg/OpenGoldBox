@@ -220,6 +220,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "resistance", 1},
     SpellAccessRow{"Cleric", "silence", 3},
     SpellAccessRow{"Cleric", "spiritual_weapon", 3},
+    SpellAccessRow{"Cleric", "prayer_of_healing", 3},
     SpellAccessRow{"Paladin", "resistance", 2},
     SpellAccessRow{"Ranger", "resistance", 2},
     SpellAccessRow{"Paladin", "spare_the_dying", 2},
@@ -6675,6 +6676,11 @@ class Module final : public RulesModule
             throw std::runtime_error("Long rest requires at least one HP at its start");
         (void)detail::heal_life(actor, max_hp(actor), max_hp(actor),
                                 !detail::healing_blocked(actor.effects));
+        // A Long Rest makes Prayer of Healing able to help the creature again.
+        std::erase_if(actor.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::prayer_of_healing;
+        });
         actor.winds = d.winds;
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
@@ -6891,8 +6897,15 @@ class Module final : public RulesModule
                     !detail::knows_spell(d.spells, spell.id))
                 continue;
             const std::string label(spell.label);
+            const bool party = spell.instances > 1;
+            if (spell.level >= 2)
+            {
+                if (actor.slots2 > 0)
+                    actions.push_back({std::string(spell.id), {label, {}}, party});
+                continue;
+            }
             if (actor.slots > 0)
-                actions.push_back({std::string(spell.id), {label, {}}});
+                actions.push_back({std::string(spell.id), {label, {}}, party});
             // Goodberry gains nothing from a higher slot.
             if (actor.slots2 > 0 && spell.pattern == detail::SpellPattern::heal)
                 actions.push_back({std::string(spell.id) + "_2", {label + " (level 2 slot)", {}}});
@@ -6907,7 +6920,7 @@ class Module final : public RulesModule
         const auto offered = camp_actions(user, user_state);
         if (std::none_of(offered.begin(), offered.end(), [&](const auto & a)
     {
-        return a.id == action;
+        return a.id == action && !a.whole_party;
     }))
         throw std::runtime_error("That spell or feature cannot be used now");
         const bool self = &user_state == &target_state;
@@ -6950,6 +6963,66 @@ class Module final : public RulesModule
         user_state = vitals(caster);
         if (!self)
             target_state = vitals(healed);
+        random_state = rng;
+    }
+
+    // Prayer of Healing: the five most hurt members it has not healed since
+    // their last Long Rest each regain 2d8 + the spellcasting modifier.
+    void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
+                               std::span<const CampTarget> party, std::string_view action,
+                               std::uint64_t &random_state) const override
+    {
+        const auto offered = camp_actions(user, user_state);
+        if (std::none_of(offered.begin(), offered.end(), [&](const auto & a)
+    {
+        return a.id == action && a.whole_party;
+    }))
+        throw std::runtime_error("That spell or feature cannot be used now");
+        auto caster = camp_actor(user, user_state);
+        std::vector<std::pair<Actor, VitalState *>> members;
+        for (const auto &member : party)
+            if (member.state != &user_state)
+                members.push_back({camp_actor(*member.sheet, *member.state), member.state});
+        std::vector<Actor *> chosen{&caster};
+        for (auto &[actor, state] : members)
+            chosen.push_back(&actor);
+        if (std::none_of(party.begin(), party.end(), [&](const auto & member)
+    {
+        return member.state == &user_state;
+    }))
+        chosen.erase(chosen.begin());
+        std::erase_if(chosen, [](const Actor * a)
+        {
+            return a->dead || a->hp >= max_hp(*a) ||
+                   detail::has_effect(a->effects, detail::EffectKind::prayer_of_healing);
+        });
+        if (chosen.empty())
+            throw std::runtime_error("No member can be healed by it now");
+        std::sort(chosen.begin(), chosen.end(), [](const Actor * x, const Actor * y)
+        {
+            return x->hp * max_hp(*y) < y->hp * max_hp(*x);
+        });
+        if (chosen.size() > 5)
+            chosen.resize(5);
+        const auto &spell = *detail::find_spell(action);
+        --caster.slots2;
+        auto rng = random_state;
+        for (auto *patient : chosen)
+        {
+            // Disciple of Life adds 2 + the slot's level.
+            int amount = caster.definition.casting - 2 +
+                         (caster.definition.life_domain ? 2 + int(spell.level) : 0);
+            for (int n = 0; n < spell.dice.count; ++n)
+                amount += roll_die(rng, spell.dice.sides);
+            (void)detail::heal_life(*patient, std::max(0, amount), max_hp(*patient),
+                                    !detail::healing_blocked(patient->effects));
+            // Camp effects carry scope 1: there is no encounter to source them.
+            detail::apply_spell_benefit(patient->effects, 1, 1, user.name,
+                                        detail::EffectKind::prayer_of_healing, 0);
+        }
+        user_state = vitals(caster);
+        for (auto &[actor, state] : members)
+            *state = vitals(actor);
         random_state = rng;
     }
 
@@ -7618,7 +7691,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.89", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.90", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

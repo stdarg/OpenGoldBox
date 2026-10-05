@@ -77,7 +77,8 @@ void RolfTourView::setup_rest()
     // during a Short Rest, this one only before resting. The selected member acts.
     auto *use_label = presentation::add_control<Label>(*w, "UseLabel", Rect2(24, 412, 672, 28));
     use_label->set_text(rest_text(N_("Cast / Use")));
-    presentation::add_control<OptionButton>(*w, "UseAction", Rect2(24, 446, 220, 36));
+    presentation::add_control<OptionButton>(*w, "UseAction", Rect2(24, 446, 220, 36))
+    ->connect("item_selected", callable_mp(this, &RolfTourView::rest_selected));
     presentation::add_control<OptionButton>(*w, "UseTarget", Rect2(254, 446, 214, 36));
     button("Use", N_("Use"), Rect2(482, 446, 214, 36), callable_mp(this, &RolfTourView::rest_use));
 }
@@ -336,9 +337,12 @@ bool RolfTourView::refresh_rest_use(const std::vector<opengold::MemberRestInfo> 
             target->select(index);
     }
     const bool visible = !actions.empty();
+    // A whole-party action chooses its own members.
+    const auto selected = action->get_selected();
+    const bool party = selected >= 0 && actions.at(std::size_t(selected)).whole_party;
     w->get_node<Label>("UseLabel")->set_visible(visible);
     action->set_visible(visible);
-    target->set_visible(visible);
+    target->set_visible(visible && !party);
     w->get_node<Button>("Use")->set_visible(visible);
     return visible;
 }
@@ -357,12 +361,22 @@ void RolfTourView::rest_use()
         const String id = action->get_selected_metadata();
         const auto patient =
             static_cast<unsigned>(static_cast<int64_t>(target->get_selected_metadata()));
-        const int before = campaign_->member(patient).vitals.hit_points;
+        // HP restored across the party, so a whole-party spell reports its total.
+        const auto party_hp = [&]
+        {
+            int total = 0;
+            for (const auto member : campaign_->state().slots)
+                if (member)
+                    total += campaign_->member(member).vitals.hit_points;
+            return total;
+        };
+        const int before = party_hp();
+        const bool party = !target->is_visible();
         campaign_->use_camp_action(rest_member_, patient, id.utf8().get_data());
-        rest_result_ = action->get_item_text(action->get_selected()) + ": " +
-                       target->get_item_text(target->get_selected()) + "   " +
-                       rest_text(N_("HP restored:")) + " " +
-                       String::num_int64(campaign_->member(patient).vitals.hit_points - before);
+        rest_result_ = action->get_item_text(action->get_selected()) +
+                       (party ? String() : ": " + target->get_item_text(target->get_selected())) +
+                       "   " + rest_text(N_("HP restored:")) + " " +
+                       String::num_int64(party_hp() - before);
         refresh_rest();
     }
     catch (const std::exception &e)

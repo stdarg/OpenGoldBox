@@ -352,6 +352,8 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 3600000; // 1 hour
     case EffectKind::aid:
         return 28800000; // 8 hours
+    case EffectKind::prayer_of_healing:
+        return 86400000; // until a Long Rest, at most a day
     case EffectKind::heroism:
     case EffectKind::divine_favor:
     case EffectKind::bless:

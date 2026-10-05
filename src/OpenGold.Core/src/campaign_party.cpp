@@ -915,9 +915,31 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         });
     };
     auto &caster = find(user);
-    auto &patient = find(target);
-    rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),
-                            patient.vitals, action, next.random_state);
+    const auto actions = camp_actions(user);
+    const auto chosen = std::find_if(actions.begin(), actions.end(), [&](const auto & a)
+    {
+        return a.id == action;
+    });
+    // A whole-party action such as Prayer of Healing picks its own members
+    // among the active ones; `target` is not used.
+    if (chosen != actions.end() && chosen->whole_party)
+    {
+        std::vector<rules::CampTarget> party;
+        for (const auto id : next.slots)
+            if (id)
+            {
+                auto &m = find(id);
+                party.push_back({&m.character.sheet(), &m.vitals});
+            }
+        rules_->use_party_camp_action(caster.character.sheet(), caster.vitals, party, action,
+                                      next.random_state);
+    }
+    else
+    {
+        auto &patient = find(target);
+        rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),
+                                patient.vitals, action, next.random_state);
+    }
     state_ = std::move(next);
 }
 

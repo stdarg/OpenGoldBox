@@ -217,7 +217,15 @@ struct CampAction
 {
     std::string id;
     Message label;
+    bool whole_party{}; // affects several members at once; no target is chosen
     bool operator==(const CampAction &) const = default;
+};
+
+// A party member a whole-party camp action may affect.
+struct CampTarget
+{
+    const CharacterSheet *sheet{};
+    VitalState *state{};
 };
 
 struct RecoveryInfo
@@ -616,6 +624,11 @@ class RulesModule
     virtual void use_camp_action(const CharacterSheet &user, VitalState &user_state,
                                  const CharacterSheet &target, VitalState &target_state,
                                  std::string_view action, std::uint64_t &random_state) const;
+    // Uses a whole_party camp action on the members it chooses among `party`,
+    // which may include the user's own state.
+    virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
+                                       std::span<const CampTarget> party, std::string_view action,
+                                       std::uint64_t &random_state) const;
 };
 } // namespace opengold::rules
 #endif

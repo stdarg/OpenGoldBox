@@ -102,6 +102,16 @@ void wound(CampaignParty &party, MemberId id, int hit_points)
     party.restore(state);
 }
 
+// Sets a member's Hit Points, keeping its resources and effects.
+void hurt(CampaignParty &party, MemberId id, int hit_points)
+{
+    auto state = party.checkpoint();
+    for (auto &m : state.roster)
+        if (m.id == id)
+            m.vitals.hit_points = hit_points;
+    party.restore(state);
+}
+
 int hp(const CampaignParty &party, MemberId id)
 {
     return party.member(id).vitals.hit_points;
@@ -197,6 +207,47 @@ void goodberry_checks()
     check(hp(party, fighter) == full && action_ids(party, ranger).empty(),
           "Goodberry heals only what is missing and spends a slot each time");
 }
+void prayer_of_healing_checks()
+{
+    CampaignParty party(module());
+    const auto cleric = party.add_pc(created("cleric", "Cleric", {"cure_wounds", "healing_word",
+                                     "bless", "shield_of_faith"
+                                                                 }));
+    party.award_experience(900, "prayer-xp");
+    party.advance(cleric, party.default_advancement(cleric));
+    auto third = party.default_advancement(cleric);
+    third.spells.back() = "prayer_of_healing";
+    party.advance(cleric, third);
+    std::vector<MemberId> fighters;
+    for (const auto *name : {"First", "Second", "Third"})
+        fighters.push_back(party.add_pc(created("fighter", name, {})));
+    const auto actions = party.camp_actions(cleric);
+    const auto prayer = std::find_if(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "prayer_of_healing";
+    });
+    check(prayer != actions.end() && prayer->whole_party,
+          "Prayer of Healing is a whole-party camp spell");
+    wound(party, fighters[0], 1);
+    wound(party, fighters[1], 2);
+    party.use_camp_action(cleric, cleric, "prayer_of_healing");
+    check(hp(party, fighters[0]) > 1 && hp(party, fighters[1]) > 2 &&
+          remaining(party, cleric, "spell_slot:2") == 1,
+          "Every wounded member regains Hit Points from one level-two slot");
+    hurt(party, fighters[0], 1);
+    const auto before = saved(party);
+    rejects([&]
+    {
+        party.use_camp_action(cleric, cleric, "prayer_of_healing");
+    }, "A member healed by Prayer of Healing waits for a Long Rest");
+    check(saved(party) == before, "The refused prayer changes nothing");
+    (void)party.rest(RestKind::long_rest);
+    if (party.state().spell_rest)
+        party.keep_rest_spells(cleric);
+    hurt(party, fighters[0], 1);
+    party.use_camp_action(cleric, cleric, "prayer_of_healing");
+    check(hp(party, fighters[0]) > 1, "After a Long Rest the prayer heals again");
+}
 } // namespace
 
 int main()
@@ -206,6 +257,7 @@ int main()
         lay_on_hands_checks();
         spell_checks();
         goodberry_checks();
+        prayer_of_healing_checks();
         std::cout << "Camp action tests passed\n";
     }
     catch (const std::exception &e)

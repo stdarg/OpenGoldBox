@@ -159,3 +159,18 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   The AI strikes whenever the attack is offered.
 - Verification: `opengold_cleric_channel_tests` (placement beside the target, a
   checkpoint, the later Bonus Action attack, Concentration ending it).
+
+## Prayer of Healing
+
+- **Prayer of Healing** (level 2, ten minutes): a camp spell, used from the Camp
+  dialog's Cast / Use row ([CLASS-3](SRD-DECISIONS.md#class-3-2026-10-05-holy-water-and-casting-outside-combat)).
+  The five most hurt active members it has not healed since their last Long Rest
+  each regain 2d8 + Wisdom modifier (Disciple of Life adds 4). No member is
+  chosen in the dialog: the target list is hidden for it, and the result line
+  shows the party's total. Adaptation: the members are chosen automatically.
+  A higher slot's extra die waits for level-three slots.
+- Rules: `RulesModule::use_party_camp_action` handles camp actions that affect
+  several members (`CampAction::whole_party`).
+- Verification: `opengold_camp_action_tests` (a whole-party action, several
+  members healed from one level-two slot, refused again before a Long Rest
+  without change, healing again after one).

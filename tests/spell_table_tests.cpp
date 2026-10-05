@@ -209,7 +209,7 @@ void table()
         check(saves || spell.save == Ability::strength, "Only save patterns carry a save ability");
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
               spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff ||
-              spell.pattern == SpellPattern::save_condition,
+              spell.pattern == SpellPattern::save_condition || spell.pattern == SpellPattern::camp,
               "Only multi-instance patterns repeat or choose several creatures");
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
                             spell.pattern == SpellPattern::save_condition ||

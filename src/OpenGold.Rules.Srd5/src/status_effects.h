@@ -77,7 +77,10 @@ enum class EffectKind : unsigned
     // Protection from Poison: Resistance to Poison damage.
     protection_from_poison = 27,
     // Resistance: 1d4 less damage of type `dc` (a DamageType), once per turn.
-    resistance = 28
+    resistance = 28,
+    // Prayer of Healing: the creature cannot be healed by it again until it
+    // finishes a Long Rest.
+    prayer_of_healing = 29
 };
 
 // The longest a spell benefit lasts, in milliseconds.

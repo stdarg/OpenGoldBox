@@ -129,6 +129,13 @@ void RulesModule::use_camp_action(const CharacterSheet &, VitalState &, const Ch
     throw std::runtime_error("This rules module has no camp actions");
 }
 
+void RulesModule::use_party_camp_action(const CharacterSheet &, VitalState &,
+                                        std::span<const CampTarget>, std::string_view,
+                                        std::uint64_t &) const
+{
+    throw std::runtime_error("This rules module has no camp actions");
+}
+
 bool Battlefield::contains(Cell p) const noexcept
 {
     return p.x >= 0 && p.y >= 0 && p.x < width && p.y < height;
