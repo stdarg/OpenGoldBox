@@ -696,6 +696,10 @@ Command choose_demo_command(const CombatSession &session)
     for (const auto &command : offered)
         if (can_strike && command.verb == "sacred_weapon")
             return command;
+    // A creature caught by vines spends its Action trying to break free.
+    for (const auto &command : offered)
+        if (command.verb == "escape")
+            return command;
     for (const auto &command : offered)
         if (command.verb == "opportunity" ||
                 (command.verb == "second_wind" && active.hit_points * 2 <= active.max_hit_points))

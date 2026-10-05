@@ -276,6 +276,22 @@ inline constexpr std::array spell_table
         .damage = DamageType::fire,
         .dice = {1, 6, 0},
         .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 p. 128: after a weapon hit, Melee or Ranged; a Strength save or
+    // Restrained, 1d6 Piercing at the start of each of its turns. A level-two
+    // slot's extra die waits for Rangers of level five.
+    SpellDef{
+        .id = "ensnaring_strike",
+        .label = "Ensnaring Strike",
+        .level = 1,
+        .pattern = SpellPattern::smite,
+        .target = SpellTarget::enemy,
+        .range = 5,
+        .somatic = false,
+        .bonus_action = true,
+        .save = Ability::strength,
+        .damage = DamageType::piercing,
+        .dice = {1, 6, 0},
+        .concentration = true},
     // SRD 5.2.1 pp. 162, 140 and 125. Benefits that need no roll.
     SpellDef{
         .id = "shield_of_faith",

@@ -68,6 +68,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "divine_smite_free" ? "Divine Smite (Paladin's Smite)"
             : verb == "divine_smite"      ? "Divine Smite"
             : verb == "searing_smite"     ? "Searing Smite"
+            : verb == "ensnaring_strike"  ? "Ensnaring Strike"
             : "Steady Aim",
             {}
         },

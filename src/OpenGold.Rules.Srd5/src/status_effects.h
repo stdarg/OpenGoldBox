@@ -49,7 +49,10 @@ enum class EffectKind : unsigned
     // Hunter's Mark: the caster's attack-roll hits deal an extra 1d6 Force damage.
     hunters_mark = 16,
     // Longstrider: Speed increases by 10 feet.
-    longstrider = 17
+    longstrider = 17,
+    // Ensnaring Strike: Restrained, 1d6 Piercing damage at the start of each of
+    // the target's turns; `dc` is the Strength (Athletics) check that escapes it.
+    ensnaring_strike = 18
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -125,7 +128,8 @@ void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityI
 [[nodiscard]] bool opportunity_blocked(const EffectState &effects);
 void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                           std::string name, unsigned duration_ms);
-// The net Speed reduction from effects; negative when Longstrider raises Speed.
+// The net Speed reduction from effects; negative when Longstrider raises Speed,
+// and enough to bring any Speed to 0 while Restrained.
 [[nodiscard]] int speed_penalty(const EffectState &effects);
 [[nodiscard]] bool slowed(const EffectState &effects);
 [[nodiscard]] bool frosted(const EffectState &effects);
@@ -145,6 +149,11 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, std::u
 [[nodiscard]] bool can_apply(const EffectState &effects);
 void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                      std::string name, int dc, unsigned first_save_ms);
+void apply_ensnaring_strike(EffectState &, std::uint64_t scope, rules::EntityId caster,
+                            std::string name, int dc);
+// Restrained: Speed 0, attacks against it have Advantage, its attacks and
+// Dexterity saves have Disadvantage.
+[[nodiscard]] bool restrained(const EffectState &effects);
 void apply_searing_smite(EffectState &, std::uint64_t scope, rules::EntityId caster,
                          std::string name, int dc);
 // Applies a spell benefit that has no save. `value` is kind-specific.

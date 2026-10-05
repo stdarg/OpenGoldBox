@@ -106,6 +106,8 @@ int speed_penalty(const EffectState &effects)
 {
     // Repeated instances of either source do not stack, but these two distinct
     // features each reduce Speed by 10 feet.
+    if (restrained(effects))
+        return 1000;
     return (frosted(effects) ? 10 : 0) + (slowed(effects) ? 10 : 0) -
            (has_effect(effects, EffectKind::longstrider) ? 10 : 0);
 }
@@ -224,6 +226,21 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, std::u
         return e.kind == EffectKind::vex && e.source_scope == scope &&
                e.source_actor == source;
     });
+}
+
+bool restrained(const EffectState &effects)
+{
+    return has_effect(effects, EffectKind::ensnaring_strike);
+}
+
+void apply_ensnaring_strike(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+                            std::string name, int dc)
+{
+    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
+            dc > 38)
+        throw std::runtime_error("Invalid Ensnaring Strike application");
+    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+                              EffectKind::ensnaring_strike, dc, 60000, 0});
 }
 
 bool blinded(const EffectState &effects)
@@ -447,8 +464,9 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::chill_touch) ||
                            kind == unsigned(EffectKind::sap) || kind == unsigned(EffectKind::vex) ||
                            kind == unsigned(EffectKind::slow);
-        // Searing Smite saves at the start of the target's turn, not on a timer.
-        const bool turn_save = kind == unsigned(EffectKind::searing_smite);
+        // Searing and Ensnaring Strike act at the start of the target's turn, not on a timer.
+        const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
+                               kind == unsigned(EffectKind::ensnaring_strike);
         // A spell benefit has no save; `dc` carries its value.
         const auto benefit = benefit_duration_ms(static_cast<EffectKind>(kind));
         if (kind == unsigned(EffectKind::command) && in)

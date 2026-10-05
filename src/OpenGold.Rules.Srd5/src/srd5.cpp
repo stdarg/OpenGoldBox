@@ -101,7 +101,7 @@ bool concentration_effect(detail::EffectKind kind)
     return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism ||
            kind == detail::EffectKind::bless ||
            kind == detail::EffectKind::protection_from_evil_and_good ||
-           kind == detail::EffectKind::hunters_mark;
+           kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -131,7 +131,8 @@ bool selects_creatures(const detail::SpellDef &spell)
 // Smite's slotless cast.
 bool is_smite(std::string_view verb)
 {
-    return verb == "divine_smite" || verb == "divine_smite_free" || verb == "searing_smite";
+    return verb == "divine_smite" || verb == "divine_smite_free" || verb == "searing_smite" ||
+           verb == "ensnaring_strike";
 }
 
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
@@ -164,7 +165,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 33;
+constexpr unsigned checkpoint_format = 34;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -197,6 +198,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Ranger", "hunters_mark", 1},
     SpellAccessRow{"Ranger", "longstrider", 1},
     SpellAccessRow{"Ranger", "goodberry", 1},
+    SpellAccessRow{"Ranger", "ensnaring_strike", 1},
     // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
     SpellAccessRow{"Ranger", "poison_spray", 2},
     SpellAccessRow{"Paladin", "sacred_flame", 2},
@@ -267,6 +269,7 @@ struct Definition
     unsigned sneak_level{};
     bool finesse{}, ranged_weapon{};
     int medicine{};
+    int athletics{}; // a character's Strength (Athletics) check bonus
     detail::DamageType melee_type{detail::DamageType::bludgeoning},
            ranged_type{detail::DamageType::bludgeoning};
     std::vector<detail::DamageAffinity> affinities;
@@ -335,6 +338,7 @@ struct Actor : detail::LifeState
     // a smite may follow; cleared by any other command or a new turn.
     EntityId smite_target{};
     bool smite_critical{};
+    bool smite_melee{}; // Divine and Searing Smite need a Melee hit; Ensnaring Strike any weapon hit
     bool rush_used{}, surge_used{};
     detail::ActionBudget actions;
     bool bonus{true}, reaction{true}, dodge{}, disengaged{};
@@ -724,6 +728,12 @@ character_definition(std::string_view bytes,
                               [](const auto & skill)
     {
         return skill.id == "medicine";
+    })
+    ->bonus;
+    d.athletics = std::find_if(training.skills.begin(), training.skills.end(),
+                               [](const auto & skill)
+    {
+        return skill.id == "athletics";
     })
     ->bonus;
     for (const auto &grant : grants)
@@ -1203,6 +1213,9 @@ class Session final : public CombatSession
     void obey_command(std::vector<Command> &commands, const Actor &a) const;
     [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
     void reveal_lore(const Actor &caster, const Actor &target);
+    void resolve_ensnaring_strike(Actor &a);
+    void squeeze_ensnared(Actor &a);
+    void escape_ensnaring(Actor &a);
     [[nodiscard]] bool mark_can_move(const Actor &caster) const;
     // Sacred Weapon's attack bonus, 0 without it.
     [[nodiscard]] int sacred_weapon_bonus(const Actor &a) const;
@@ -1211,7 +1224,10 @@ class Session final : public CombatSession
     unsigned next_turn_ms(const Actor &target) const;
     void advance_turn_time();
     void log_save(const Actor &target, const detail::SaveResult &result);
-    bool saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc);
+    // `advantage` is a feature's own Advantage, such as a Large creature against
+    // Ensnaring Strike; conditions and armor are applied here.
+    bool saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
+                               bool advantage = false);
     detail::MovementGrid movement_grid(const Actor &mover) const;
     std::vector<Cell> path_to(const Actor &a, Cell destination) const;
 
@@ -1797,7 +1813,7 @@ Snapshot Session::snapshot() const
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
             view.bonus_actions.push_back("divine_smite_free");
         for (const auto *smite :
-                {"divine_smite", "searing_smite"
+                {"divine_smite", "searing_smite", "ensnaring_strike"
                 })
             if (detail::knows_spell(def(a).spells, smite))
                 view.bonus_actions.push_back(smite);
@@ -1880,6 +1896,12 @@ Snapshot Session::snapshot() const
         {
             messages.push_back({"Ray of Frost: Speed reduced by 10 feet.", {}});
             view.conditions.push_back({"Ray of Frost: Speed reduced by 10 feet.", {}});
+        }
+        if (detail::restrained(a.effects))
+        {
+            messages.push_back({"Restrained", {}});
+            s.combatants.back().status += " | Restrained";
+            s.combatants.back().conditions.push_back({"Restrained", {}});
         }
         if (detail::blinded(a.effects))
         {
@@ -2351,6 +2373,10 @@ std::vector<Command> Session::legal_commands() const
     }
     if (a.bonus && a.rushes > 0)
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
+    // A creature caught by Ensnaring Strike may spend its Action to break free.
+    if (a.actions.available() &&
+            detail::has_effect(a.effects, detail::EffectKind::ensnaring_strike))
+        add(id, "escape", "Escape the vines", id);
     // Horde Breaker: once per turn, after a weapon attack, another creature
     // within 5 feet of the first target and within the weapon's reach or range.
     if (d.horde_breaker && a.horde_origin && !a.horde_used)
@@ -2406,12 +2432,15 @@ std::vector<Command> Session::legal_commands() const
     if (a.bonus && a.smite_target && actor(a.smite_target).hp > 0 && !d.spells.empty())
     {
         const bool slot = a.slots > 0 && !a.spent_slot;
-        if (detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
+        const bool melee = a.smite_melee;
+        if (melee && detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
             add(id, "divine_smite_free", "Divine Smite (Paladin's Smite)", a.smite_target);
-        if (detail::knows_spell(d.spells, "divine_smite") && slot)
+        if (melee && detail::knows_spell(d.spells, "divine_smite") && slot)
             add(id, "divine_smite", "Divine Smite", a.smite_target);
-        if (detail::knows_spell(d.spells, "searing_smite") && slot)
+        if (melee && detail::knows_spell(d.spells, "searing_smite") && slot)
             add(id, "searing_smite", "Searing Smite", a.smite_target);
+        if (detail::knows_spell(d.spells, "ensnaring_strike") && slot)
+            add(id, "ensnaring_strike", "Ensnaring Strike", a.smite_target);
     }
     for (const auto &other : actors_)
         for (const auto scope :
@@ -2652,6 +2681,11 @@ int Session::heal(Actor &target, int amount)
 
 void Session::resolve_smite(Actor &a, std::string_view verb)
 {
+    if (verb == "ensnaring_strike")
+    {
+        resolve_ensnaring_strike(a);
+        return;
+    }
     const bool searing = verb == "searing_smite";
     const auto &spell = *detail::find_spell(searing ? "searing_smite" : "divine_smite");
     auto &target = actor(a.smite_target);
@@ -2689,6 +2723,81 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     if (searing && target.hp > 0 && detail::can_apply(target.effects))
         detail::apply_searing_smite(target.effects, scope_, a.source.id, a.source.name,
                                     8 + def(a).casting);
+}
+
+void Session::resolve_ensnaring_strike(Actor &a)
+{
+    // Vines grasp the creature just hit; a Large or larger one has Advantage.
+    const auto &spell = *detail::find_spell("ensnaring_strike");
+    auto &target = actor(a.smite_target);
+    a.smite_target = 0;
+    a.bonus = false;
+    --a.slots;
+    a.spent_slot = true;
+    log(a.source.name + " casts Ensnaring Strike on " + target.source.name + ".",
+    {
+        "{name} casts Ensnaring Strike on {target}.",
+        {{"name", a.source.name}, {"target", target.source.name}}
+    });
+    const int dc = 8 + def(a).casting;
+    if (target.hp == 0 || !detail::can_apply(target.effects) ||
+            saving_throw_succeeds(target, detail::Ability::strength, dc, def(target).size >= 3))
+        return;
+    begin_concentration(a, spell);
+    detail::apply_ensnaring_strike(target.effects, scope_, a.source.id, a.source.name, dc);
+    log(target.source.name + " is Restrained.",
+    {"{name} is Restrained.", {{"name", target.source.name}}});
+}
+
+void Session::squeeze_ensnared(Actor &a)
+{
+    // Ensnaring Strike's vines deal 1d6 Piercing at the start of each turn.
+    if (!detail::has_effect(a.effects, detail::EffectKind::ensnaring_strike) || a.hp == 0)
+        return;
+    const int amount = resolved_damage(a, detail::DamageType::piercing, roll(6));
+    log(a.source.name + " takes " + std::to_string(amount) + " Piercing damage from the vines.",
+    {
+        "{name} takes {damage} Piercing damage from the vines.",
+        {{"name", a.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(a, amount, false);
+}
+
+void Session::escape_ensnaring(Actor &a)
+{
+    // A Strength (Athletics) check against the spell's DC ends Ensnaring
+    // Strike. A creature's Strength save bonus stands in for Athletics.
+    const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                    [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::ensnaring_strike;
+    });
+    const auto vines = *found;
+    const int bonus = a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics;
+    const int natural = roll(20);
+    const bool escaped = natural + bonus >= vines.dc;
+    log(a.source.name + " Athletics check: d20 " + std::to_string(natural) + " + " +
+        std::to_string(bonus) + " vs DC " + std::to_string(vines.dc) +
+        (escaped ? " (escapes)." : " (still Restrained)."),
+    {
+        escaped ? "{name} Athletics check: d20 {roll} + {bonus} vs DC {dc} (escapes)."
+        : "{name} Athletics check: d20 {roll} + {bonus} vs DC {dc} (still Restrained).",
+        {   {"name", a.source.name},
+            {"roll", std::to_string(natural)},
+            {"bonus", std::to_string(bonus)},
+            {"dc", std::to_string(vines.dc)}
+        }
+    });
+    if (!escaped)
+        return;
+    // The spell ends, and with it the caster's Concentration.
+    for (auto &caster : actors_)
+        if (vines.source_scope == scope_ && caster.source.id == vines.source_actor)
+            end_concentration(caster);
+    std::erase_if(a.effects.active, [&](const auto & e)
+    {
+        return e.id == vines.id;
+    });
 }
 
 int Session::bless_die(const Actor &a)
@@ -2861,6 +2970,11 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         result.advantage = true;
     if (detail::sapped(a.effects))
         result.disadvantage = true;
+    // Restrained: attacks against it have Advantage, its own have Disadvantage.
+    if (detail::restrained(target.effects))
+        result.advantage = true;
+    if (detail::restrained(a.effects))
+        result.disadvantage = true;
     // Protection from Evil and Good guards against these creature types.
     const auto &type = def(a).creature_type;
     if (detail::has_effect(target.effects, detail::EffectKind::protection_from_evil_and_good) &&
@@ -2947,13 +3061,14 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
         arguments
     });
 damage(target, amount, critical);
-    // A smite may follow a hit with a Melee weapon or an Unarmed Strike on the
-    // attacker's own turn.
-    if (!ranged && !spell && actors_[turn_].source.id == a.source.id)
+    // A smite may follow a weapon hit or an Unarmed Strike on the attacker's own
+    // turn; Divine and Searing Smite need it to be a Melee hit.
+    if (!spell && actors_[turn_].source.id == a.source.id)
     {
         auto &attacker = actor(a.source.id);
         attacker.smite_target = target.source.id;
         attacker.smite_critical = critical;
+        attacker.smite_melee = !ranged;
     }
     if (!spell)
     {
@@ -3352,6 +3467,7 @@ bool Session::begin_turn()
     if (a.dead)
         return false;
     burn_searing_smites(a);
+    squeeze_ensnared(a);
     if (a.dead)
         return false;
     // Heroism: Temporary HP at the start of each of the target's turns, kept
@@ -3396,7 +3512,7 @@ bool Session::begin_turn()
         actor.light_extra = 0;
         actor.nick_origin = 0;
         actor.smite_target = 0;
-        actor.smite_critical = false;
+        actor.smite_critical = actor.smite_melee = false;
     }
     // Historical checkpoints do not distinguish a spent Light attack from any
     // other Bonus Action. Keep their current turn exact; enable Nick at the first
@@ -3490,7 +3606,8 @@ void Session::log_save(const Actor &target, const detail::SaveResult &result)
     });
 }
 
-bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc)
+bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
+                                    bool advantage)
 {
     if (unconscious(target) &&
             (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
@@ -3506,9 +3623,14 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     // Bless adds 1d4 to saving throws.
     const int bless =
         detail::has_effect(target.effects, detail::EffectKind::bless) ? roll(4) : 0;
+    auto modifiers =
+        detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
+    modifiers.advantage |= advantage;
+    // Restrained: Disadvantage on Dexterity saves.
+    modifiers.disadvantage |= ability == detail::Ability::dexterity && detail::restrained(target.effects);
     const auto result = detail::saving_throw(
                             ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
-                            detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge), rng_);
+                            modifiers, rng_);
     log_save(target, result);
     return result.success;
 }
@@ -3810,6 +3932,12 @@ bool Session::submit(const Command &command)
         log(a.source.name + " moves aggressively.",
         {"{name} moves aggressively.", {{"name", a.source.name}}});
     }
+    else if (command.verb == "escape")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(false);
+        escape_ensnaring(a);
+    }
     else if (command.verb == "horde_breaker")
     {
         a.horde_used = true;
@@ -4041,7 +4169,8 @@ std::string Session::save() const
         for (auto id : a.light_origins)
             out << ' ' << id;
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
-            << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' ';
+            << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
+            << a.smite_melee << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -4169,7 +4298,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.light_origins.push_back(id);
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
-          actor.horde_used >> actor.horde_origin;
+          actor.horde_used >> actor.horde_origin >> actor.smite_melee;
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -6600,7 +6729,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.78", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.79", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -82,7 +82,7 @@ are prepared in an owned candidate before replacing live campaign state.
 
 ## Persistence and boundaries
 
-- **OGCOMBAT 33** checkpoints contain source scope,
+- **OGCOMBAT 34** checkpoints contain source scope,
   elapsed time and each actor's effect collection. The checkpoint byte limit is
   4 MiB; each creature supports at most 128 simultaneous applications. A full
   collection offers no further Blindness command.

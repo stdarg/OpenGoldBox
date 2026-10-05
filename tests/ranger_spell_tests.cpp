@@ -105,16 +105,17 @@ unsigned remaining(const CombatSession &c, std::string_view pool)
 
 // The Ranger (1) with a weakling (98) and a sturdy target (99) beside it.
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
-                                      std::string sturdy = "target")
+                                      std::string sturdy = "target", std::uint64_t seed = 5,
+                                      std::string weapon = "longsword")
 {
     const auto profile =
-        module.character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data;
+        module.character_profile(hero.sheet(), std::vector<std::string> {std::move(weapon)}).data;
     auto c = module.create({{8, 4, std::vector<std::uint8_t>(32)},
         {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
             {98, "weakling", "Weakling", 1, {2, 1}},
             {99, std::move(sturdy), "Target", 1, {2, 2}}
         }},
-    5);
+    seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Ranger's turn");
     check(c->snapshot().actor == 1, "The Ranger acts");
@@ -227,6 +228,36 @@ void write_ui_fixture()
     std::ofstream hunter_out(path / "hunter.save", std::ios::binary);
     hunter_out << h->save();
     check(bool(hunter_out), "Write the Hunter UI fixture");
+
+    // A Ranger with Ensnaring Strike prepared, just after a hit on a vanguard.
+    const auto ensnaring_profile =
+        module->character_profile(ranger({"cure_wounds", "ensnaring_strike"}).sheet(),
+                                  std::vector<std::string> {"longsword"}).data;
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto e = module->create({{12, 9, std::vector<std::uint8_t>(108)},
+            {   {1, "campaign-character", "Ranger", 0, {1, 1}, ensnaring_profile},
+                {99, "vanguard", "Target", 1, {2, 1}}
+            }},
+        seed);
+        for (unsigned turns = 0; e->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*e, "end"), "Reach the Ranger's turn");
+        const auto offered = [&]
+        {
+            const auto commands = e->legal_commands();
+            return std::any_of(commands.begin(), commands.end(), [](const auto & c)
+            {
+                return c.verb == "ensnaring_strike";
+            });
+        };
+        if (!submit(*e, "melee", 99) || !offered())
+            continue;
+        std::ofstream ensnare_out(path / "ensnare.save", std::ios::binary);
+        ensnare_out << e->save();
+        check(bool(ensnare_out), "Write the Ensnaring Strike UI fixture");
+        return;
+    }
+    throw std::runtime_error("No seed hits the vanguard");
 }
 void hunters_prey_option_checks()
 {
@@ -290,6 +321,86 @@ void hunters_lore_checks()
     check(submit(*plain, "hunters_mark_free", 99) && !logged(*plain, "Hunter's Lore"),
           "Hunter's Lore needs the Hunter");
 }
+// A battle in which the Ranger's Ensnaring Strike has Restrained the target
+// (99): the first seed whose Strength save fails.
+std::unique_ptr<CombatSession> ensnared(const RulesModule &module)
+{
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(module, ranger({"cure_wounds", "ensnaring_strike"}), "target", seed);
+        if (submit(*c, "melee", 99) && submit(*c, "ensnaring_strike", 99) &&
+                logged(*c, "Target is Restrained."))
+            return c;
+    }
+    throw std::runtime_error("No seed fails the Strength save");
+}
+
+bool restrained(const CombatSession &c, EntityId id)
+{
+    const auto conditions = unit(c, id).conditions;
+    return std::any_of(conditions.begin(), conditions.end(), [](const auto & m)
+    {
+        return m.source == "Restrained";
+    });
+}
+
+void ensnaring_strike_checks()
+{
+    auto module = rules();
+    auto plain = battle(*module, ranger({"cure_wounds", "ensnaring_strike"}));
+    check(!submit(*plain, "ensnaring_strike", 99), "Ensnaring Strike follows a weapon hit");
+    auto c = ensnared(*module);
+    check(restrained(*c, 99) && slots(*c) == 1 && !unit(*c, 1).bonus_action,
+          "Ensnaring Strike spends a slot and the Bonus Action and Restrains on a failed save");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "Restrained survives a checkpoint");
+    check(submit(*c, "end"), "End the Ranger's turn");
+    while (c->snapshot().actor != 99)
+        check(submit(*c, "end"), "Reach the Restrained creature");
+    check(logged(*c, "Target takes") && logged(*c, "Piercing damage from the vines") &&
+          unit(*c, 99).movement_feet == 0,
+          "The vines deal Piercing damage at the start of its turn and hold it in place");
+    check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
+          "A Restrained creature attacks with Disadvantage");
+    next_turn(*c);
+    if (restrained(*c, 99))
+        check(submit(*c, "melee", 99) && logged(*c, "(advantage)"),
+              "Attacks against a Restrained creature have Advantage");
+
+    auto breaking = ensnared(*module);
+    check(submit(*breaking, "end"), "End the Ranger's turn");
+    while (breaking->snapshot().actor != 99)
+        check(submit(*breaking, "end"), "Reach the Restrained creature");
+    for (unsigned round = 0; round < 20 && restrained(*breaking, 99); ++round)
+    {
+        check(submit(*breaking, "escape", 99) && logged(*breaking, "Athletics check"),
+              "The creature spends its Action on an Athletics check");
+        if (!restrained(*breaking, 99))
+            break;
+        check(submit(*breaking, "end"), "End the creature's turn");
+        while (breaking->snapshot().actor != 99)
+            check(submit(*breaking, "end"), "Back to the creature");
+    }
+    check(!restrained(*breaking, 99) && logged(*breaking, "(escapes)"),
+          "A successful check ends Ensnaring Strike");
+}
+
+void ranged_smite_window_checks()
+{
+    auto module = rules();
+    // A longbow hit opens Ensnaring Strike; the target stands 10 feet away.
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, ranger({"cure_wounds", "ensnaring_strike"}), "target", seed,
+                        "longbow");
+        check(submit(*c, "ranged", 99), "The Ranger shoots");
+        if (!logged(*c, "hits") && !logged(*c, "CRITICAL"))
+            continue;
+        check(submit(*c, "ensnaring_strike", 99), "Ensnaring Strike follows a Ranged weapon hit");
+        return;
+    }
+    throw std::runtime_error("No seed hits with the longbow");
+}
 } // namespace
 
 int main()
@@ -304,6 +415,8 @@ int main()
         colossus_slayer_checks();
         horde_breaker_checks();
         hunters_lore_checks();
+        ensnaring_strike_checks();
+        ranged_smite_window_checks();
         write_ui_fixture();
         std::cout << "Ranger spell tests passed\n";
     }

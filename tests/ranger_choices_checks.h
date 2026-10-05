@@ -25,7 +25,7 @@ void ranger_choices_checks()
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 2 &&
           option_ids(options.preparation) ==
-          std::vector<std::string> {"cure_wounds", "goodberry", "longstrider"},
+          std::vector<std::string> {"cure_wounds", "ensnaring_strike", "goodberry", "longstrider"},
           "Creation prepares from the implemented Ranger list, without Hunter's Mark");
     rejects(
         [&]

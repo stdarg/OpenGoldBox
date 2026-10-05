@@ -22,9 +22,10 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   creation (Spell Choices step), added at each level-up with earlier choices
   locked, and after a Long Rest one prepared spell may be replaced, as for a
   Paladin.
-- The Ranger list in the game holds Cure Wounds, Goodberry, Hunter's Mark and
-  Longstrider so far. Ensnaring Strike, Entangle and Fog Cloud come next; Detect
-  Magic waits for magic items.
+- The Ranger list in the game holds Cure Wounds, Ensnaring Strike, Goodberry,
+  Hunter's Mark and Longstrider so far. Entangle and Fog Cloud wait for area
+  aiming ([CLASS-5](SRD-DECISIONS.md#class-5-2026-10-05-aiming-area-spells));
+  Detect Magic waits for magic items.
 
 ## Favored Enemy and Hunter's Mark
 
@@ -71,13 +72,37 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   Immunities, Resistances and Vulnerabilities (or that it has none).
 - Not yet: replacing the Hunter's Prey option after a Short or Long Rest; the
   rest window replaces only Weapon Mastery so far.
-- Combat checkpoints become `OGCOMBAT 33` (each actor's once-per-turn Hunter's
+- Combat checkpoints become `OGCOMBAT 34` (each actor's once-per-turn Hunter's
   Prey state and Horde Breaker's first target).
 - Verification: `opengold_ranger_spell_tests` (the level-three choice and an
   unknown option refused, Colossus Slayer against unwounded and wounded
   creatures, Horde Breaker's target rules, once per turn and checkpoint,
   Hunter's Lore with and without the subclass) and `opengold_godot_hunters_mark`
   (attack, then Horde Breaker on the second enemy).
+
+## Ensnaring Strike and Restrained
+
+- **Ensnaring Strike** (Bonus Action right after a weapon hit, Melee or Ranged;
+  Concentration up to 1 minute): it appears in the Bonus Action list with the
+  smites. The creature hit makes a Strength save (Advantage if Large or larger)
+  or is **Restrained**; it takes 1d6 Piercing damage at the start of each of its
+  turns. A successful save ends the spell; the slot is spent either way.
+- **Escape the vines**: the Restrained creature may spend its Action on a
+  Strength (Athletics) check against the spell's DC (a monster uses its
+  Strength save bonus); success ends the spell and the caster's Concentration.
+  Adaptation: only the creature itself may try, not a creature beside it. The
+  AI tries to escape whenever it is caught.
+- **Restrained** (shown as a condition): Speed 0, attacks against it have
+  Advantage, its attacks have Disadvantage, and its Dexterity saves have
+  Disadvantage.
+- The smite window now opens on any weapon hit on the caster's own turn and
+  records whether it was a Melee hit; Divine and Searing Smite still need one.
+  Combat checkpoints become `OGCOMBAT 34`.
+- A level-two slot's extra die waits for Rangers of level five.
+- Verification: `opengold_ranger_spell_tests` (offered only after a hit, slot
+  and Bonus Action, Restrained, checkpoint, turn damage and Speed 0,
+  Disadvantage and Advantage, escaping, a longbow hit opening the window) and
+  `opengold_godot_ensnaring` (Bonus Action list and Use, English and Spanish).
 
 ## Goodberry
 

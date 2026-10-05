@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Ensnaring Strike and Restrained
+
+Rules 0.6.79 adds Ensnaring Strike for Rangers and the Restrained condition.
+Combat checkpoints become `OGCOMBAT 34`. See
+[Ranger](RANGER.md#ensnaring-strike-and-restrained).
+
 ## Goodberry
 
 Rules 0.6.78 adds Goodberry for Rangers as a camp heal of up to 10 HP

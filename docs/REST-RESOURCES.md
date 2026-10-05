@@ -163,7 +163,7 @@ Unknown probabilistic profiles never silently substitute an uninterrupted rest.
 The **SRD11** vital continuation stores slots, Second Wind and death-save state,
 the remaining die count, and an **FX8** effects record.
 
-**OGCOMBAT 33** stores each actor's remaining dice; authored combat definitions
+**OGCOMBAT 34** stores each actor's remaining dice; authored combat definitions
 without a character recipe receive zero, without inventing monster Hit Dice
 mechanics. **PC42** recipes derive capacity from class and level.
 
