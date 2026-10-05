@@ -103,7 +103,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::protection_from_evil_and_good ||
            kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike ||
            kind == detail::EffectKind::entangle || kind == detail::EffectKind::bane ||
-           kind == detail::EffectKind::hold_person || kind == detail::EffectKind::resistance;
+           kind == detail::EffectKind::hold_person || kind == detail::EffectKind::resistance ||
+           kind == detail::EffectKind::expeditious_retreat;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -235,6 +236,9 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "burning_hands", 1},
     SpellAccessRow{"Wizard", "thunderwave", 1},
     SpellAccessRow{"Wizard", "shatter", 3},
+    SpellAccessRow{"Wizard", "mage_armor", 1},
+    SpellAccessRow{"Wizard", "false_life", 1},
+    SpellAccessRow{"Wizard", "expeditious_retreat", 1},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -294,6 +298,7 @@ struct Definition
     bool divine_spark{};  // Cleric Channel Divinity: Divine Spark and Turn Undead
     bool life_domain{};   // Cleric level 3: Disciple of Life and Preserve Life
     bool evoker{};        // Wizard level 3: Potent Cantrip and Sculpt Spells
+    int mage_armor_ac{};  // the AC Mage Armor gives; 0 while wearing armor
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -831,6 +836,9 @@ character_definition(std::string_view bytes,
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[4]));
     if (shield && trained(klass, grants, "shield"))
         d.ac += 2;
+    // Mage Armor's AC for a creature wearing no armor.
+    if (!armor)
+        d.mage_armor_ac = 13 + dex + (shield && trained(klass, grants, "shield") ? 2 : 0);
     if (armor && (features & 1))
         ++d.ac;
     in >> std::ws;
@@ -2172,6 +2180,37 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             {{"name", target.source.name}, {"spell", "Protection from Poison", true}}
         });
         return;
+    case detail::Rider::mage_armor:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::mage_armor, 0);
+        log(target.source.name + " gains Mage Armor.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Mage Armor", true}}});
+        return;
+    case detail::Rider::false_life:
+    {
+        // 2d4 + 4, and 5 more from a level-two slot. Temporary Hit Points do
+        // not stack: the creature keeps the better or is asked, as for Adrenaline Rush.
+        TemporaryHitPoints offered{dice({2, 4, 4}) + (verb.ends_with("_2") ? 5 : 0),
+                                   "spell:false_life"};
+        log(target.source.name + " gains False Life.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "False Life", true}}});
+        if (target.temporary_hp.amount)
+            temporary_offer_ = std::move(offered);
+        else
+            detail::grant_temporary_hp(target, offered, TemporaryHpChoice::use_new);
+        return;
+    }
+    case detail::Rider::expeditious_retreat:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::expeditious_retreat, 0);
+        log(target.source.name + " gains Expeditious Retreat.",
+        {
+            "{name} gains {spell}.",
+            {{"name", target.source.name}, {"spell", "Expeditious Retreat", true}}
+        });
+        target.movement += def(target).speed;
+        ++target.dashes;
+        return;
     case detail::Rider::hold_person:
         detail::apply_hold_person(target.effects, scope_, a.source.id, a.source.name, dc,
                                   next_save_ms(target.source.id));
@@ -2485,6 +2524,14 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         if (spell.not_self && other.source.id == a.source.id)
             continue;
+        // Mage Armor needs a creature wearing no armor, and lasts only once.
+        if (spell.rider == detail::Rider::mage_armor &&
+                (!def(other).mage_armor_ac ||
+                 detail::has_effect(other.effects, detail::EffectKind::mage_armor)))
+            continue;
+        if (spell.rider == detail::Rider::expeditious_retreat &&
+                detail::has_effect(other.effects, detail::EffectKind::expeditious_retreat))
+            continue;
         const auto *components = detail::spell_components(spell.id);
         if (!components || (components->somatic && !somatic_hand(d)) ||
                 (components->verbal && silenced(a.source.cell)))
@@ -2764,6 +2811,9 @@ std::vector<Command> Session::legal_commands() const
     // break free.
     if (a.actions.available() && detail::restrained(a.effects))
         add(id, "escape", "Escape the vines", id);
+    // Expeditious Retreat: Dash as a Bonus Action while it lasts.
+    if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::expeditious_retreat))
+        add(id, "retreat_dash", "Expeditious Retreat: Dash");
     // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
     // feet and attacks a creature within 5 feet of it.
     if (const auto *force = spiritual_weapon(a); force && a.bonus && !silenced(a.source.cell))
@@ -3668,8 +3718,11 @@ void Session::cast_on_selection()
 
 int Session::armor_class(const Actor &target) const
 {
-    // Shield of Faith: +2 AC. Warding Bond: +1.
-    return def(target).ac +
+    // Mage Armor replaces an unarmored base AC. Shield of Faith: +2. Warding Bond: +1.
+    const int base = detail::has_effect(target.effects, detail::EffectKind::mage_armor)
+                     ? std::max(def(target).ac, def(target).mage_armor_ac)
+                     : def(target).ac;
+    return base +
            (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0) +
            (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0);
 }
@@ -4865,6 +4918,13 @@ bool Session::submit(const Command &command)
         (void)a.actions.spend(false);
         escape_ensnaring(a);
     }
+    else if (command.verb == "retreat_dash")
+    {
+        a.bonus = false;
+        a.movement += d.speed;
+        ++a.dashes;
+        log(a.source.name + " dashes.", {"{name} dashes.", {{"name", a.source.name}}});
+    }
     else if (command.verb == "spiritual_weapon_strike")
     {
         a.bonus = false;
@@ -5283,8 +5343,11 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             (actor.aim_used && (definition.sneak_level < 3 || actor.bonus || actor.moved)) ||
             (actor.aim_ready && !actor.aim_used))
         throw std::runtime_error("Invalid Rogue attack expenditure");
-    // Cunning Action and Aggressive both spend the bonus action on a Dash.
-    const bool bonus_dash = (definition.cunning || definition.aggressive) && !actor.bonus;
+    // Cunning Action, Aggressive and Expeditious Retreat spend the bonus action
+    // on a Dash. Effects are read later, so knowing the spell is enough here.
+    const bool bonus_dash = (definition.cunning || definition.aggressive ||
+                             detail::knows_spell(definition.spells, "expeditious_retreat")) &&
+                            !actor.bonus;
     if (actor.dashes < 0 ||
             actor.dashes > int(!actor.actions.normal) +
             int(actor.rush_used || bonus_dash) +
@@ -7851,7 +7914,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.93", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.94", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

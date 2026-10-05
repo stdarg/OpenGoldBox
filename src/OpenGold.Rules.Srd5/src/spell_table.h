@@ -78,7 +78,10 @@ enum class Rider : unsigned
     resistance,
     silence,
     spiritual_weapon,
-    thunderwave
+    thunderwave,
+    mage_armor,
+    false_life,
+    expeditious_retreat
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -516,6 +519,35 @@ inline constexpr std::array spell_table
         .dice = {3, 8, 0},
         .radius = 10,
         .evocation = true},
+    // SRD 5.2.1 p. 146: a willing unarmored creature's base AC is 13 + Dexterity.
+    SpellDef{
+        .id = "mage_armor",
+        .label = "Mage Armor",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::mage_armor},
+    // SRD 5.2.1 p. 130: 2d4 + 4 Temporary Hit Points, 5 more from a level-two slot.
+    SpellDef{
+        .id = "false_life",
+        .label = "False Life",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::false_life},
+    // SRD 5.2.1 p. 130: Dash now and as a Bonus Action while it lasts.
+    SpellDef{
+        .id = "expeditious_retreat",
+        .label = "Expeditious Retreat",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::expeditious_retreat,
+        .concentration = true},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

@@ -80,7 +80,11 @@ enum class EffectKind : unsigned
     resistance = 28,
     // Prayer of Healing: the creature cannot be healed by it again until it
     // finishes a Long Rest.
-    prayer_of_healing = 29
+    prayer_of_healing = 29,
+    // Expeditious Retreat: Dash as a Bonus Action each turn.
+    expeditious_retreat = 30,
+    // Mage Armor: an unarmored creature's base AC becomes 13 + Dexterity.
+    mage_armor = 31
 };
 
 // The longest a spell benefit lasts, in milliseconds.

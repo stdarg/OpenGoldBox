@@ -66,3 +66,19 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (a missed Fire Bolt at levels one
   and three, an ally in Burning Hands at levels one and three). The cantrip
   tests' exact-damage checks no longer pin a level-three miss.
+
+## Mage Armor, False Life and Expeditious Retreat
+
+- **Mage Armor** (level 1, Action, touch, 8 hours): a willing creature wearing
+  no armor has base AC 13 + Dexterity modifier (a shield still adds). It is
+  offered only on an unarmored character not already warded. Casting it from
+  the Camp dialog is not available yet.
+- **False Life** (level 1, Action, self): 2d4 + 4 Temporary Hit Points, 5 more
+  from a level-two slot; when the Wizard already has some, the usual
+  keep-or-replace choice appears.
+- **Expeditious Retreat** (level 1, Bonus Action, self, Concentration up to 10
+  minutes): the Wizard Dashes at once, and on later turns **Expeditious
+  Retreat: Dash** is a Bonus Action.
+- Verification: `opengold_wizard_spell_tests` (AC 13 + Dexterity and no second
+  cast, 6–12 Temporary Hit Points, the first and a later Dash, a checkpoint).
+  The generic spell table probes now also swap a Wizard's book entry.

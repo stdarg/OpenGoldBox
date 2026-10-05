@@ -342,6 +342,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     {
     case EffectKind::shield_of_faith:
     case EffectKind::protection_from_evil_and_good:
+    case EffectKind::expeditious_retreat:
         return 600000; // Concentration, up to 10 minutes
     case EffectKind::sacred_weapon:
         return 600000; // 10 minutes
@@ -351,6 +352,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::protection_from_poison:
         return 3600000; // 1 hour
     case EffectKind::aid:
+    case EffectKind::mage_armor:
         return 28800000; // 8 hours
     case EffectKind::prayer_of_healing:
         return 86400000; // until a Long Rest, at most a day

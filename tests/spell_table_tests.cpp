@@ -400,7 +400,8 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     check(!at_range->submit(*offer) && at_range->save() == settled, "A spent ticket is inert");
 }
 
-// The probe sheet with `row` prepared in place of its last prepared spell, so
+// The probe sheet with `row` prepared in place of its last prepared spell (and,
+// for a Wizard, in its book), so
 // every row is reached however many rows the class list grows by. Unchanged
 // when the class cannot prepare it.
 CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, const SpellDef &row)
@@ -410,6 +411,10 @@ CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, con
             std::find(prepared.begin(), prepared.end(), row.id) != prepared.end())
         return sheet;
     auto trial = sheet;
+    // A Wizard prepares from its book, so the book entry changes with it.
+    for (auto &grant : trial.grants)
+        if (grant.id == "spell:" + trial.prepared_spells.back())
+            grant.id = "spell:" + std::string(row.id);
     trial.prepared_spells.back() = std::string(row.id);
     try
     {
@@ -433,15 +438,16 @@ void behaviour()
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command and Resistance are
         // offered once per option, camp spells only outside combat, area spells are aimed,
-        // Lesser Restoration needs a Blinded creature and Spare the Dying a dying
-        // one; their own tests cover them.
+        // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one
+        // and Mage Armor an unarmored character; their own tests cover them.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
                  row.instances > 1) ||
                 row.target == SpellTarget::dying_ally ||
                 row.rider == Rider::command || row.rider == Rider::resistance ||
                 row.pattern == SpellPattern::camp ||
-                row.target == SpellTarget::area || row.rider == Rider::lesser_restoration)
+                row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
+                row.rider == Rider::mage_armor)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

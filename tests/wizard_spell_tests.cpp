@@ -203,6 +203,50 @@ void sculpt_spells_checks()
               "From level three the Evoker spares its ally");
     }
 }
+// Ends the Wizard's turn and returns to it.
+void next_turn(CombatSession &c)
+{
+    check(submit(c, "end"), "End the Wizard's turn");
+    for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(c, "end"), "Back to the Wizard");
+}
+
+void mage_armor_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(1, {"magic_missile", "mage_armor"}), {6, 1}, {11, 5});
+    const int ac = unit(*c, 1).armor_class;
+    check(submit(*c, "mage_armor", 1) && unit(*c, 1).armor_class == ac + 3,
+          "Mage Armor makes an unarmored base AC 13 + Dexterity");
+    next_turn(*c);
+    check(!submit(*c, "mage_armor", 1), "Mage Armor is not cast again on the warded Wizard");
+}
+
+void false_life_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(1, {"magic_missile", "false_life"}), {6, 1}, {11, 5});
+    check(submit(*c, "false_life", 1), "False Life is cast");
+    const int temporary = unit(*c, 1).temporary_hp.amount;
+    check(temporary >= 6 && temporary <= 12 && logged(*c, "Wizard gains False Life."),
+          "False Life grants 2d4 + 4 Temporary Hit Points");
+}
+
+void expeditious_retreat_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(1, {"magic_missile", "expeditious_retreat"}), {6, 1}, {11, 5});
+    const int feet = unit(*c, 1).movement_feet;
+    check(submit(*c, "expeditious_retreat", 1) && unit(*c, 1).movement_feet == feet + 30 &&
+          unit(*c, 1).action,
+          "Expeditious Retreat Dashes at once with the Bonus Action");
+    next_turn(*c);
+    check(submit(*c, "retreat_dash") && unit(*c, 1).movement_feet == feet + 30 &&
+          unit(*c, 1).action,
+          "Later turns Dash as a Bonus Action");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "The extra Dash survives a checkpoint");
+}
 } // namespace
 
 int main()
@@ -214,6 +258,9 @@ int main()
         shatter_checks();
         potent_cantrip_checks();
         sculpt_spells_checks();
+        mage_armor_checks();
+        false_life_checks();
+        expeditious_retreat_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

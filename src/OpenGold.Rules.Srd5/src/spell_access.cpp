@@ -85,7 +85,11 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     // Druid's); added with those classes.
     Spell{"burning_hands", "Burning Hands", 1, 0, wizard_list},
     Spell{"thunderwave", "Thunderwave", 1, 0, wizard_list | druid_list},
-    Spell{"shatter", "Shatter", 2, 0, wizard_list}};
+    Spell{"shatter", "Shatter", 2, 0, wizard_list},
+    // Also on the Sorcerer list (and Expeditious Retreat on the Warlock's).
+    Spell{"mage_armor", "Mage Armor", 1, 0, wizard_list},
+    Spell{"false_life", "False Life", 1, 0, wizard_list},
+    Spell{"expeditious_retreat", "Expeditious Retreat", 1, 0, wizard_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
