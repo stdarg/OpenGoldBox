@@ -116,6 +116,12 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         required.push_back({"feature:steady_aim", "class:rogue", 3, {}});
     if (klass == "cleric" && level >= 2)
         required.push_back({"feature:channel_divinity", "class:cleric", 2, {}});
+    if (klass == "cleric" && level >= 3)
+    {
+        required.push_back({"subclass:life", "class:cleric", 3, {}});
+        required.push_back({"feature:disciple_of_life", "subclass:cleric:life", 3, {}});
+        required.push_back({"feature:preserve_life", "subclass:cleric:life", 3, {}});
+    }
     if (klass == "ranger" && level >= 3)
     {
         required.push_back({"subclass:hunter", "class:ranger", 3, {}});

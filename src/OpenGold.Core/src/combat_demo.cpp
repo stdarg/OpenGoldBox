@@ -726,8 +726,11 @@ Command choose_demo_command(const CombatSession &session)
     // Lay On Hands and Divine Spark cost no spell slot.
     if (const auto *command = heal_below_half({"lay_on_hands", "divine_spark"}))
         return *command;
+    // Preserve Life is offered only beside a Bloodied ally, and Lesser
+    // Restoration only on a Blinded one.
     for (const auto &command : offered)
-        if (command.verb == "turn_undead")
+        if (command.verb == "turn_undead" || command.verb == "preserve_life" ||
+                command.verb == "lesser_restoration")
             return command;
     if (const auto *command = heal_below_half({"cure_wounds", "cure_wounds_2", "healing_word",
                                                 "healing_word_2"

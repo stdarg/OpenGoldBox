@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Life Domain
+
+Rules 0.6.83 adds the Cleric's Life Domain at level three (Disciple of Life,
+Preserve Life, its always prepared spells) and Lesser Restoration. See
+[Cleric](CLERIC.md#life-domain-level-3).
+
 ## Cleric Channel Divinity
 
 Rules 0.6.82 adds the Cleric's Channel Divinity at level two: Divine Spark and

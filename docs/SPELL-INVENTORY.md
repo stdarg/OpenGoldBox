@@ -101,7 +101,7 @@ list column intentionally does not absorb subclass or species additions.
 | DruidicWarrior | Ranger's Druidic Warrior option: two Druid cantrips at level 2 (delivered; Poison Spray so far) | 59 | [#147](https://github.com/stdarg/OpenGold/issues/147) |
 | Smite | Paladin level 2 always prepares Divine Smite and gains its own free cast | 54 | [#141](https://github.com/stdarg/OpenGold/issues/141), [#200](https://github.com/stdarg/OpenGold/issues/200) |
 | Favored | Ranger level 1 always prepares Hunter's Mark and gains limited free casts (delivered) | 57–58 | [#146](https://github.com/stdarg/OpenGold/issues/146), [#200](https://github.com/stdarg/OpenGold/issues/200) |
-| Life | Cleric level 3: Aid, Bless, Cure Wounds, Lesser Restoration | 40 | [#94](https://github.com/stdarg/OpenGold/issues/94) |
+| Life | Cleric level 3: Aid, Bless, Cure Wounds, Lesser Restoration (delivered except Aid) | 40 | [#94](https://github.com/stdarg/OpenGold/issues/94) |
 | Arid | Land Druid level 3: Blur, Burning Hands, Fire Bolt | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
 | Polar | Land Druid level 3: Fog Cloud, Hold Person, Ray of Frost | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
 | Temperate | Land Druid level 3: Misty Step, Shocking Grasp, Sleep | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
@@ -266,7 +266,7 @@ are evidence of partial behavior, not certification of the full spell.
 | [Hold Person](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | B, C, D, S, K, W | Polar | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Invisibility](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | B, S, K, W | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Knock](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | B, S, W | — | [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Lesser Restoration](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=144) (p. 144) | B, C, D | Life | [#35](https://github.com/stdarg/OpenGold/issues/35) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
+| [Lesser Restoration](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=144) (p. 144) | B, C, D | Life | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Clerics (Blinded only so far); [Cleric](CLERIC.md#life-domain-level-3) |
 | [Magic Weapon](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=146) (p. 146) | S, W | — | — | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Mind Spike](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=149) (p. 149) | S†, K, W | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Mirror Image](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | B, S, K, W | — | [#46](https://github.com/stdarg/OpenGold/issues/46) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |

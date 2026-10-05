@@ -144,7 +144,9 @@ void cleric_advancement_checks()
     party.advance(id, party.default_advancement(id));
     const auto &sheet = party.member(id).character.sheet();
     const auto access = rules->spell_access(sheet);
-    check(sheet.level == 4 && access.prepared_choices == 7 && access.prepared.size() == 7 &&
+    // Bless, Cure Wounds and Lesser Restoration are Life Domain spells from level
+    // three, so six other spells fill the seven places.
+    check(sheet.level == 4 && access.prepared_choices == 7 && access.prepared.size() == 6 &&
           access.cantrip_choices == 4 && access.cantrips.size() == 1,
           "Level four keeps unfilled Cleric choices pending");
     const auto pending = rules->spell_choice_options(sheet, SpellChoiceContext::advancement);
@@ -181,8 +183,8 @@ void cleric_advancement_checks()
     restored.restore(round.party);
     check(saved(restored) == after_rest, "The Cleric's rest window roundtrips");
     SpellChoices reordered;
-    reordered.prepared = std::vector<std::string> {"blindness", "bless", "shield_of_faith",
-                                                   "inflict_wounds", "healing_word", "cure_wounds",
+    reordered.prepared = std::vector<std::string> {"blindness", "command", "shield_of_faith",
+                                                   "inflict_wounds", "healing_word",
                                                    "protection_from_evil_and_good"
                                                   };
     party.choose_spells(id, reordered);

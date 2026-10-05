@@ -180,6 +180,12 @@ cleric-1 @ 125ft
     sacred_flame|1
 cleric-4 @ 5ft
     adrenaline_rush|1
+    bless_2|1
+    bless_2|2
+    bless_2|3
+    bless|1
+    bless|2
+    bless|3
     blindness|3
     cure_wounds_2|2
     cure_wounds|2
@@ -192,11 +198,18 @@ cleric-4 @ 5ft
     healing_word_2|2
     healing_word|2
     melee|3
+    preserve_life|1
     sacred_flame|1
     sacred_flame|2
     sacred_flame|3
 cleric-4 @ 30ft
     adrenaline_rush|1
+    bless_2|1
+    bless_2|2
+    bless_2|3
+    bless|1
+    bless|2
+    bless|3
     blindness|3
     dash|0
     disengage|0
@@ -206,11 +219,14 @@ cleric-4 @ 30ft
     end|0
     healing_word_2|2
     healing_word|2
+    preserve_life|1
     sacred_flame|1
     sacred_flame|2
     sacred_flame|3
 cleric-4 @ 60ft
     adrenaline_rush|1
+    bless_2|1
+    bless|1
     blindness|3
     dash|0
     disengage|0
@@ -223,6 +239,8 @@ cleric-4 @ 60ft
     sacred_flame|3
 cleric-4 @ 120ft
     adrenaline_rush|1
+    bless_2|1
+    bless|1
     blindness|3
     dash|0
     disengage|0
@@ -231,6 +249,8 @@ cleric-4 @ 120ft
     sacred_flame|1
 cleric-4 @ 125ft
     adrenaline_rush|1
+    bless_2|1
+    bless|1
     dash|0
     disengage|0
     dodge|0

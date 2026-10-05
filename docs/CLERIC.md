@@ -9,7 +9,7 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
 | --- | --- | --- |
 | 1 | Spellcasting, Divine Order | Delivered ([Cleric preparation](CLERIC-PREPARATION.md)) |
 | 2 | Channel Divinity | Delivered (rules 0.6.82) |
-| 3 | Cleric Subclass (Life Domain) | Not yet |
+| 3 | Cleric Subclass (Life Domain) | Delivered (rules 0.6.83) except Aid, which comes next |
 | 4 | Ability Score Improvement | Delivered earlier |
 
 ## Channel Divinity
@@ -34,3 +34,25 @@ Verification: `opengold_cleric_channel_tests` (no Channel Divinity at level one,
 two uses, healing, harming with a save, Turn Undead needing an Undead, a turned
 zombie fleeing then ending its turn, a checkpoint, damage ending it) and
 `opengold_godot_divine_spark` (A cycle and click, English and Spanish).
+
+## Life Domain (level 3)
+
+- The Life Domain is the SRD's only Cleric subclass, taken automatically at
+  level three.
+- **Disciple of Life**: a healing spell cast with a slot restores 2 + the
+  slot's level more, in combat and in camp.
+- **Preserve Life** (Channel Divinity, Action; offered when a Bloodied ally,
+  the Cleric included, is within 30 feet): restores five times the Cleric level,
+  divided among Bloodied allies within 30 feet, none above half its Hit Point
+  maximum. Adaptation: the division is automatic, the most hurt first. Undead
+  and Constructs are not healed. The AI uses it whenever it is offered.
+- **Life Domain spells**: Bless, Cure Wounds and Lesser Restoration are always
+  prepared from level three and not counted; earlier preparations of them free
+  their places. Aid joins them with its own increment.
+- **Lesser Restoration** (level 2, Bonus Action, touch): ends Blinded on an
+  ally, the only one of its conditions the game has so far, so it is offered
+  only on a Blinded ally. The AI uses it whenever it is offered.
+- Verification: `opengold_cleric_channel_tests` (the always prepared spells,
+  Disciple of Life's +3 from a level-one slot on identical rolls, Preserve
+  Life, Lesser Restoration ending Blinded) and the updated preparation checks in
+  `opengold_spell_access_tests` and `opengold_spell_component_tests`.

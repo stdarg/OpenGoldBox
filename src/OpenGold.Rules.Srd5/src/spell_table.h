@@ -63,7 +63,8 @@ enum class Rider : unsigned
     hunters_mark,
     longstrider,
     entangle,
-    fog_cloud
+    fog_cloud,
+    lesser_restoration
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -325,6 +326,17 @@ inline constexpr std::array spell_table
         .rider = Rider::fog_cloud,
         .concentration = true,
         .radius = 20},
+    // SRD 5.2.1 p. 144: ends one condition on a touched creature; Blinded is
+    // the only one of its four the game has so far.
+    SpellDef{
+        .id = "lesser_restoration",
+        .label = "Lesser Restoration",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::lesser_restoration},
     // SRD 5.2.1 pp. 162, 140 and 125. Benefits that need no roll.
     SpellDef{
         .id = "shield_of_faith",

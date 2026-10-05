@@ -60,6 +60,11 @@ Character hero(std::string klass)
             choice.spells.push_back("blindness");
             if (klass == "wizard")
                 choice.spells.push_back("scorching_ray");
+            // The Life Domain keeps Bless and Cure Wounds prepared from level three.
+            if (klass == "cleric")
+                choice.spells = {"healing_word", "inflict_wounds", "shield_of_faith", "blindness",
+                                 "command", "protection_from_evil_and_good"
+                                };
         }
         check(c.advance(*rules, vital, choice),
               "Level-three caster prepared through real advancement");

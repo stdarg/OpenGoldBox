@@ -69,7 +69,7 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 | Class | Levels | Class features in play |
 | --- | --- | --- |
 | Fighter | 1–4 | Fighting Style, Second Wind, Weapon Mastery, Action Surge, Tactical Mind, Champion, Ability Score Improvement or feat |
-| Cleric | 1–4 | Sacred Flame; prepared Bless, Command, Cure Wounds, Healing Word, Inflict Wounds, Protection from Evil and Good, Shield of Faith and Blindness; Divine Order; Channel Divinity (Divine Spark, Turn Undead); Ability Score Improvement or feat. No subclass yet; see [Cleric](docs/CLERIC.md) |
+| Cleric | 1–4 | Sacred Flame; prepared Bless, Command, Cure Wounds, Healing Word, Inflict Wounds, Protection from Evil and Good, Shield of Faith and Blindness; Divine Order; Channel Divinity (Divine Spark, Turn Undead); Life Domain (Disciple of Life, Preserve Life, Lesser Restoration); Ability Score Improvement or feat. Aid not yet; see [Cleric](docs/CLERIC.md) |
 | Wizard | 1–4 | Five cantrips; spellbook and preparation (Magic Missile, Scorching Ray, Blindness); Arcane Recovery; Scholar; Ability Score Improvement or feat. No subclass |
 | Rogue | 1–4 | Expertise, Sneak Attack, Weapon Mastery, Cunning Action (Dash, Disengage), Steady Aim, Ability Score Improvement or feat. No Hide or subclass |
 | Paladin | 1–4 | Spellcasting (Charisma; Bless, Command, Cure Wounds, Divine Favor, Divine Smite, Heroism, Protection from Evil and Good, Searing Smite, Shield of Faith so far), Lay On Hands (in combat and camp), Paladin's Smite, Weapon Mastery, Fighting Style or Blessed Warrior, Channel Divinity with Sacred Weapon (Oath of Devotion), Ability Score Improvement or feat. Other features in progress; see [Paladin](docs/PALADIN.md) |

@@ -206,6 +206,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Ranger", "poison_spray", 2},
     SpellAccessRow{"Paladin", "sacred_flame", 2},
     SpellAccessRow{"Cleric", "command", 1},
+    SpellAccessRow{"Cleric", "lesser_restoration", 3},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
     SpellAccessRow{"Wizard", "magic_missile", 1},
     SpellAccessRow{"Wizard", "scorching_ray", 3},
@@ -266,6 +267,7 @@ struct Definition
     int channel_divinity{};
     bool sacred_weapon{}; // Oath of Devotion, Paladin level 3
     bool divine_spark{};  // Cleric Channel Divinity: Divine Spark and Turn Undead
+    bool life_domain{};   // Cleric level 3: Disciple of Life and Preserve Life
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -606,6 +608,7 @@ character_definition(std::string_view bytes,
                          : 0;
     d.sacred_weapon = klass == "Paladin" && level >= 3;
     d.divine_spark = klass == "Cleric" && level >= 2;
+    d.life_domain = klass == "Cleric" && level >= 3;
     d.free_smite = klass == "Paladin" && level >= 2 ? 1 : 0;
     d.favored_enemy = klass == "Ranger" ? 2 : 0;
     d.medicine = ability_modifier(scores[4]);
@@ -1244,6 +1247,8 @@ class Session final : public CombatSession
     void reveal_lore(const Actor &caster, const Actor &target);
     void resolve_ensnaring_strike(Actor &a);
     void divine_spark(Actor &cleric, Actor &target);
+    [[nodiscard]] int disciple_of_life(const Actor &caster, unsigned slot_level) const;
+    void preserve_life(Actor &cleric);
     void turn_undead(Actor &cleric);
     void flee_turning(std::vector<Command> &commands, const Actor &a) const;
     // `verb` names the spell's "_2" form, which a sphere grows with.
@@ -1996,6 +2001,14 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::entangle:
     case detail::Rider::fog_cloud:
         return; // Area spells resolve through cast_area().
+    case detail::Rider::lesser_restoration:
+        std::erase_if(target.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::blindness;
+        });
+        log(target.source.name + " is no longer Blinded.",
+        {"{name} is no longer Blinded.", {{"name", target.source.name}}});
+        return;
     case detail::Rider::chill_touch:
     {
         const unsigned slot = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
@@ -2103,7 +2116,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         apply_rider(spell, verb, a, actor(target_id), dc);
         return;
     case detail::SpellPattern::heal:
-        heal(actor(target_id), dice(rolled));
+        heal(actor(target_id), dice(rolled) + disciple_of_life(a, upcast ? 2 : spell.level));
         return;
     case detail::SpellPattern::spell_attack:
     {
@@ -2226,6 +2239,9 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.requires_sight && !can_see(a, other))
             continue;
         if (spell.requires_effect_capacity && !detail::can_apply(other.effects))
+            continue;
+        // Lesser Restoration has a condition to end only on a Blinded creature.
+        if (spell.rider == detail::Rider::lesser_restoration && !detail::blinded(other.effects))
             continue;
         const auto *components = detail::spell_components(spell.id);
         if (!components || (components->somatic && !somatic_hand(d)))
@@ -2485,6 +2501,14 @@ std::vector<Command> Session::legal_commands() const
         }
         if (undead)
             add(id, "turn_undead", "Turn Undead", id);
+        // Preserve Life (Life Domain) needs a Bloodied ally within 30 feet.
+        if (d.life_domain && std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.source.side == a.source.side && !other.dead &&
+                   other.hp * 2 <= def(other).hp &&
+                   distance(a.source.cell, other.source.cell) <= 30;
+        }))
+        add(id, "preserve_life", "Preserve Life", id);
     }
     // A creature caught by Ensnaring Strike or Entangle may spend its Action to
     // break free.
@@ -2928,6 +2952,39 @@ void Session::cast_area()
         detail::apply_entangle(other.effects, scope_, a.source.id, a.source.name, dc);
         log(other.source.name + " is Restrained.",
         {"{name} is Restrained.", {{"name", other.source.name}}});
+    }
+}
+
+int Session::disciple_of_life(const Actor &caster, unsigned slot_level) const
+{
+    // Disciple of Life: healing from a spell slot restores 2 + the slot's level more.
+    return def(caster).life_domain ? 2 + int(slot_level) : 0;
+}
+
+void Session::preserve_life(Actor &cleric)
+{
+    // Five times the Cleric level, divided among Bloodied allies within 30
+    // feet, none raised above half its Hit Point maximum. The most hurt first.
+    log(cleric.source.name + " uses Preserve Life.",
+    {"{name} uses Preserve Life.", {{"name", cleric.source.name}}});
+    int pool = 5 * def(cleric).level;
+    std::vector<Actor *> bloodied;
+    for (auto &other : actors_)
+        if (other.source.side == cleric.source.side && !other.dead &&
+                other.hp * 2 <= def(other).hp &&
+                distance(cleric.source.cell, other.source.cell) <= 30 &&
+                def(other).creature_type != "undead" && def(other).creature_type != "construct")
+            bloodied.push_back(&other);
+    std::sort(bloodied.begin(), bloodied.end(), [&](const Actor * x, const Actor * y)
+    {
+        return x->hp * def(*y).hp < y->hp * def(*x).hp;
+    });
+    for (auto *other : bloodied)
+    {
+        const int room = def(*other).hp / 2 - other->hp;
+        if (pool <= 0 || room <= 0)
+            continue;
+        pool -= heal(*other, std::min(pool, room));
     }
 }
 
@@ -4241,6 +4298,13 @@ bool Session::submit(const Command &command)
         (void)a.actions.spend(false);
         --a.channel_divinity;
         divine_spark(a, actor(command.target));
+    }
+    else if (command.verb == "preserve_life")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(false);
+        --a.channel_divinity;
+        preserve_life(a);
     }
     else if (command.verb == "turn_undead")
     {
@@ -5612,6 +5676,9 @@ class Module final : public RulesModule
         if (sheet.character_class == "Cleric" && result.level == 2)
             result.description =
                 "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead.";
+        if (sheet.character_class == "Cleric" && result.level == 3)
+            result.description =
+                "Life Domain: Disciple of Life adds 2 + the slot level to healing spells; Preserve Life (Channel Divinity) restores five times your level among Bloodied allies within 30 feet; Bless, Cure Wounds and Lesser Restoration are always prepared.";
         if (sheet.character_class == "Fighter" && result.level == 3)
             result.description =
                 "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks.";
@@ -5954,6 +6021,13 @@ class Module final : public RulesModule
         }
         if (next.character_class == "Cleric" && next.level == 2)
             next.grants.push_back({"feature:channel_divinity", "class:cleric", 2, {}});
+        // The Life Domain is the SRD's only Cleric subclass.
+        if (next.character_class == "Cleric" && next.level == 3)
+        {
+            next.grants.push_back({"subclass:life", "class:cleric", 3, {}});
+            next.grants.push_back({"feature:disciple_of_life", "subclass:cleric:life", 3, {}});
+            next.grants.push_back({"feature:preserve_life", "subclass:cleric:life", 3, {}});
+        }
         if (next.character_class == "Ranger" && next.level == 3)
         {
             next.grants.push_back({"subclass:hunter", "class:ranger", 3, {}});
@@ -6434,7 +6508,9 @@ class Module final : public RulesModule
                 --caster.slots2;
             else
                 --caster.slots;
-            int amount = caster.definition.casting - 2;
+            // Disciple of Life adds 2 + the slot's level.
+            int amount = caster.definition.casting - 2 +
+                         (caster.definition.life_domain ? 2 + (upcast ? 2 : int(spell.level)) : 0);
             const int count = spell.dice.count + (upcast ? int(spell.upcast.extra_dice) : 0);
             for (int n = 0; n < count; ++n)
                 amount += roll_die(rng, spell.dice.sides);
@@ -7111,7 +7187,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.82", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.83", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {
