@@ -1607,12 +1607,13 @@ void caster_advancement()
               "Dwarven growth preserves HP deficit");
         check(m.vitals.resources ==
               (wizard ? "SRD11 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 1 0 0 0 FX8 1 0 0"
-               : "SRD11 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"),
+               // A level-two Cleric gains two Channel Divinity uses.
+               : "SRD11 0 1 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 2 FX8 1 0 0"),
               "Advancement grants new slot without refilling spent slots");
         check(party.rest() &&
               party.member(pc).vitals.resources ==
               (wizard ? "SRD11 0 3 0 0 0 0 2 0 0 0 \"\" 0 0 1 0 0 0 FX8 1 0 0"
-               : "SRD11 0 3 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"),
+               : "SRD11 0 3 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 2 FX8 1 0 0"),
               "Level-two long rest restores three slots and safely stands the rested character");
         auto participants = party.participants();
         participants.push_back({1000, "bandit", "Bandit", 1, {9, 4}});

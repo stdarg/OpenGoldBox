@@ -304,6 +304,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::heroism:
     case EffectKind::divine_favor:
     case EffectKind::bless:
+    case EffectKind::turned:
         return 60000; // 1 minute
     default:
         return 0;

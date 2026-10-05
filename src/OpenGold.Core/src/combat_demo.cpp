@@ -718,13 +718,17 @@ Command choose_demo_command(const CombatSession &session)
                 {
                     return a.id == command.target;
                 });
-                if (target.hit_points * 2 < target.max_hit_points)
+                if (target.side == active.side && target.hit_points * 2 < target.max_hit_points)
                     return &command;
             }
         return nullptr;
     };
-    if (const auto *command = heal_below_half({"lay_on_hands"}))
+    // Lay On Hands and Divine Spark cost no spell slot.
+    if (const auto *command = heal_below_half({"lay_on_hands", "divine_spark"}))
         return *command;
+    for (const auto &command : offered)
+        if (command.verb == "turn_undead")
+            return command;
     if (const auto *command = heal_below_half({"cure_wounds", "cure_wounds_2", "healing_word",
                                                 "healing_word_2"
                                                }))

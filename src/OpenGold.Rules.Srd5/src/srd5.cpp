@@ -265,6 +265,7 @@ struct Definition
     int favored_enemy{}; // Favored Enemy: two Hunter's Marks without a slot per Long Rest
     int channel_divinity{};
     bool sacred_weapon{}; // Oath of Devotion, Paladin level 3
+    bool divine_spark{};  // Cleric Channel Divinity: Divine Spark and Turn Undead
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -601,8 +602,10 @@ character_definition(std::string_view bytes,
     d.champion = klass == "Fighter" && level >= 3;
     d.arcane = klass == "Wizard" ? 1 : 0;
     d.lay_on_hands = klass == "Paladin" ? 5 * level : 0;
-    d.channel_divinity = klass == "Paladin" && level >= 3 ? 2 : 0;
+    d.channel_divinity = (klass == "Paladin" && level >= 3) || (klass == "Cleric" && level >= 2) ? 2
+                         : 0;
     d.sacred_weapon = klass == "Paladin" && level >= 3;
+    d.divine_spark = klass == "Cleric" && level >= 2;
     d.free_smite = klass == "Paladin" && level >= 2 ? 1 : 0;
     d.favored_enemy = klass == "Ranger" ? 2 : 0;
     d.medicine = ability_modifier(scores[4]);
@@ -1240,6 +1243,9 @@ class Session final : public CombatSession
     [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
     void reveal_lore(const Actor &caster, const Actor &target);
     void resolve_ensnaring_strike(Actor &a);
+    void divine_spark(Actor &cleric, Actor &target);
+    void turn_undead(Actor &cleric);
+    void flee_turning(std::vector<Command> &commands, const Actor &a) const;
     // `verb` names the spell's "_2" form, which a sphere grows with.
     [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell,
             std::string_view verb, Cell center) const;
@@ -2457,6 +2463,29 @@ std::vector<Command> Session::legal_commands() const
     }
     if (a.bonus && a.rushes > 0)
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
+    // The Cleric's Channel Divinity: Divine Spark heals or harms another creature
+    // within 30 feet; Turn Undead needs an Undead enemy within 30 feet.
+    if (a.channel_divinity > 0 && a.actions.available() && d.divine_spark)
+    {
+        bool undead = false;
+        for (const auto &other : actors_)
+        {
+            const int feet = distance(a.source.cell, other.source.cell);
+            if (other.source.id == a.source.id || other.dead || feet > 30)
+                continue;
+            if (other.source.side != a.source.side && other.hp > 0 &&
+                    def(other).creature_type == "undead")
+                undead = true;
+            const bool wounded_ally = other.source.side == a.source.side &&
+                                      other.hp < def(other).hp &&
+                                      !detail::healing_blocked(other.effects);
+            const bool enemy = other.source.side != a.source.side && other.hp > 0;
+            if ((wounded_ally || enemy) && can_see(a, other))
+                add(id, "divine_spark", "Divine Spark", other.source.id);
+        }
+        if (undead)
+            add(id, "turn_undead", "Turn Undead", id);
+    }
     // A creature caught by Ensnaring Strike or Entangle may spend its Action to
     // break free.
     if (a.actions.available() && detail::restrained(a.effects))
@@ -2613,6 +2642,7 @@ std::vector<Command> Session::legal_commands() const
         add(id, "move", "Move", 0, cell);
     auto offered = filtered();
     obey_command(offered, a);
+    flee_turning(offered, a);
     return offered;
 }
 
@@ -2725,6 +2755,11 @@ void Session::damage(Actor &target, int amount, bool critical)
     }
     if (target.hp == 0)
         target.effects.prone = true;
+    // Damage ends Turn Undead on the creature.
+    std::erase_if(target.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::turned;
+    });
     // Sacred Weapon ends when its wielder is Incapacitated.
     if (target.hp == 0)
         std::erase_if(target.effects.active, [](const auto & e)
@@ -2894,6 +2929,91 @@ void Session::cast_area()
         log(other.source.name + " is Restrained.",
         {"{name} is Restrained.", {{"name", other.source.name}}});
     }
+}
+
+void Session::divine_spark(Actor &cleric, Actor &target)
+{
+    // 1d8 + Wisdom modifier: restored to an ally, or Radiant (Necrotic if the
+    // target resists Radiant more) to an enemy, halved on a Constitution save.
+    const int total = std::max(0, roll(8) + def(cleric).casting - 2);
+    log(cleric.source.name + " uses Divine Spark on " + target.source.name + ".",
+    {
+        "{name} uses Divine Spark on {target}.",
+        {{"name", cleric.source.name}, {"target", target.source.name}}
+    });
+    if (target.source.side == cleric.source.side)
+    {
+        heal(target, total);
+        return;
+    }
+    const auto taken = [&](detail::DamageType type)
+    {
+        const std::array parts{detail::DamagePart{type, 100}};
+        return detail::resolve_damage(parts, def(target).affinities).total;
+    };
+    const auto type = taken(detail::DamageType::necrotic) > taken(detail::DamageType::radiant)
+                      ? detail::DamageType::necrotic
+                      : detail::DamageType::radiant;
+    const bool saved = saving_throw_succeeds(target, detail::Ability::constitution,
+                       8 + def(cleric).casting);
+    const int amount = resolved_damage(target, type, saved ? total / 2 : total);
+    const auto name = std::string(detail::damage_name(type));
+    log(target.source.name + " takes " + std::to_string(amount) + " " + name + " damage.",
+    {
+        "{name} takes {damage} {type} damage.",
+        {{"name", target.source.name}, {"damage", std::to_string(amount)}, {"type", name, true}}
+    });
+    damage(target, amount, false);
+}
+
+void Session::turn_undead(Actor &cleric)
+{
+    log(cleric.source.name + " uses Turn Undead.",
+    {"{name} uses Turn Undead.", {{"name", cleric.source.name}}});
+    for (auto &other : actors_)
+        if (other.source.side != cleric.source.side && other.hp > 0 &&
+                def(other).creature_type == "undead" &&
+                distance(cleric.source.cell, other.source.cell) <= 30 &&
+                detail::can_apply(other.effects) &&
+                !saving_throw_succeeds(other, detail::Ability::wisdom, 8 + def(cleric).casting))
+        {
+            detail::apply_spell_benefit(other.effects, scope_, cleric.source.id,
+                                        cleric.source.name, detail::EffectKind::turned, 0);
+            log(other.source.name + " is turned.",
+            {"{name} is turned.", {{"name", other.source.name}}});
+        }
+}
+
+void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
+{
+    // Turned: Incapacitated, it can only move as far from the Cleric as it can.
+    const auto turned = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                     [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::turned;
+    });
+    if (turned == a.effects.active.end())
+        return;
+    const auto cleric = std::find_if(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return turned->source_scope == scope_ && other.source.id == turned->source_actor;
+    });
+    if (cleric == actors_.end() || !conscious(*cleric))
+        return;
+    const Command *farthest = nullptr;
+    int best = distance(a.source.cell, cleric->source.cell);
+    for (const auto &offer : commands)
+        if (offer.verb == "move" && distance(offer.destination, cleric->source.cell) > best)
+        {
+            farthest = &offer;
+            best = distance(offer.destination, cleric->source.cell);
+        }
+    const auto end = std::find_if(commands.begin(), commands.end(), [](const auto & offer)
+    {
+        return offer.verb == "end";
+    });
+    auto kept = farthest ? *farthest : *end;
+    commands = {std::move(kept)};
 }
 
 void Session::resolve_ensnaring_strike(Actor &a)
@@ -3915,6 +4035,7 @@ void Session::progress_movement()
         if (reactors_.empty() && !a.disengaged)
             for (const auto &other : actors_)
                 if (other.source.side != a.source.side && conscious(other) && other.reaction &&
+                        !detail::has_effect(other.effects, detail::EffectKind::turned) &&
                         !detail::opportunity_blocked(other.effects) &&
                         has_weapon_reaction(other, a.source.cell, destination) && can_see(other, a))
                     reactors_.push_back(other.source.id);
@@ -4113,6 +4234,20 @@ bool Session::submit(const Command &command)
         ++a.dashes;
         log(a.source.name + " moves aggressively.",
         {"{name} moves aggressively.", {{"name", a.source.name}}});
+    }
+    else if (command.verb == "divine_spark")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(false);
+        --a.channel_divinity;
+        divine_spark(a, actor(command.target));
+    }
+    else if (command.verb == "turn_undead")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(false);
+        --a.channel_divinity;
+        turn_undead(a);
     }
     else if (command.verb == "escape")
     {
@@ -5474,6 +5609,9 @@ class Module final : public RulesModule
         };
         result.description =
             "Fixed-average HP growth. Resources gain only their new capacity;\nexisting expenditure remains.";
+        if (sheet.character_class == "Cleric" && result.level == 2)
+            result.description =
+                "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead.";
         if (sheet.character_class == "Fighter" && result.level == 3)
             result.description =
                 "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks.";
@@ -5814,6 +5952,8 @@ class Module final : public RulesModule
             next.grants.push_back({"feature:action_surge", "class:fighter", 2, {}});
             next.grants.push_back({"feature:tactical_mind", "class:fighter", 2, {}});
         }
+        if (next.character_class == "Cleric" && next.level == 2)
+            next.grants.push_back({"feature:channel_divinity", "class:cleric", 2, {}});
         if (next.character_class == "Ranger" && next.level == 3)
         {
             next.grants.push_back({"subclass:hunter", "class:ranger", 3, {}});
@@ -6971,7 +7111,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.81", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.82", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

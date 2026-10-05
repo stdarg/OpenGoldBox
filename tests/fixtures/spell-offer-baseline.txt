@@ -185,6 +185,8 @@ cleric-4 @ 5ft
     cure_wounds|2
     dash|0
     disengage|0
+    divine_spark|2
+    divine_spark|3
     dodge|0
     end|0
     healing_word_2|2
@@ -198,6 +200,8 @@ cleric-4 @ 30ft
     blindness|3
     dash|0
     disengage|0
+    divine_spark|2
+    divine_spark|3
     dodge|0
     end|0
     healing_word_2|2

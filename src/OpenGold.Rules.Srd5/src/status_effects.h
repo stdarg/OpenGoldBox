@@ -55,7 +55,10 @@ enum class EffectKind : unsigned
     ensnaring_strike = 18,
     // Entangle: Restrained by the plants; `dc` is the Strength (Athletics)
     // check that frees the creature without ending the spell.
-    entangle = 19
+    entangle = 19,
+    // Turn Undead: Frightened and Incapacitated, fleeing the Cleric, until it
+    // takes damage or the minute ends.
+    turned = 20
 };
 
 // The longest a spell benefit lasts, in milliseconds.
