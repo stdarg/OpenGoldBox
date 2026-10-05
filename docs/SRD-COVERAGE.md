@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Spiritual Weapon
+
+Rules 0.6.89 adds Spiritual Weapon for Clerics. See
+[Cleric](CLERIC.md#spiritual-weapon).
+
 ## Resistance and Silence
 
 Rules 0.6.88 adds the Resistance cantrip and Silence for Clerics. Combat

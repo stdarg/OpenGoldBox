@@ -2309,6 +2309,10 @@ void CombatView::draw_battlefield()
     for (const auto cell : s.silenced)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
                           Color(.45, .5, .85, .25));
+    // Spiritual Weapon's spectral force.
+    for (const auto cell : s.spiritual_weapons)
+        canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .3,
+                            Color(.95, .85, .4, .7));
     for (const auto cell : s.obscured)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
                           Color(.78, .8, .82, .35));

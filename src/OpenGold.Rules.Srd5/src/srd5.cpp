@@ -219,6 +219,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "protection_from_poison", 3},
     SpellAccessRow{"Cleric", "resistance", 1},
     SpellAccessRow{"Cleric", "silence", 3},
+    SpellAccessRow{"Cleric", "spiritual_weapon", 3},
     SpellAccessRow{"Paladin", "resistance", 2},
     SpellAccessRow{"Ranger", "resistance", 2},
     SpellAccessRow{"Paladin", "spare_the_dying", 2},
@@ -1095,7 +1096,8 @@ class Session final : public CombatSession
     {
         plants,
         fog,
-        silence
+        silence,
+        spiritual_weapon // one square: where the spectral force floats
     };
     struct Zone
     {
@@ -1282,6 +1284,8 @@ class Session final : public CombatSession
     [[nodiscard]] bool obscured(Cell cell) const;
     // Inside Silence: no Verbal spells, no Thunder damage.
     [[nodiscard]] bool silenced(Cell cell) const;
+    [[nodiscard]] Cell spectral_cell(const Actor &target, Cell from) const;
+    [[nodiscard]] const Zone *spiritual_weapon(const Actor &caster) const;
     [[nodiscard]] Cell default_area_center(const Actor &caster, const detail::SpellDef &spell) const;
     void aim_area(const Command &command);
     void cast_area();
@@ -1686,6 +1690,35 @@ Battlefield Session::zoned_board() const
     return board;
 }
 
+Cell Session::spectral_cell(const Actor &target, Cell from) const
+{
+    // The open, unoccupied square beside the target nearest `from`.
+    std::optional<Cell> best;
+    for (int dy = -1; dy <= 1; ++dy)
+        for (int dx = -1; dx <= 1; ++dx)
+        {
+            const Cell cell{target.source.cell.x + dx, target.source.cell.y + dy};
+            if ((!dx && !dy) || !board_.contains(cell) || board_.at(cell) == 1 ||
+                    std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+            {
+                return !other.dead && other.source.cell == cell;
+            }))
+            continue;
+            if (!best || distance(cell, from) < distance(*best, from))
+                best = cell;
+        }
+    return best.value_or(target.source.cell);
+}
+
+const Session::Zone *Session::spiritual_weapon(const Actor &caster) const
+{
+    const auto found = std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::spiritual_weapon && zone.caster == caster.source.id;
+    });
+    return found == zones_.end() ? nullptr : &*found;
+}
+
 bool Session::silenced(Cell cell) const
 {
     return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
@@ -1744,6 +1777,8 @@ Snapshot Session::snapshot() const
             s.obscured.insert(s.obscured.end(), zone.cells.begin(), zone.cells.end());
         else if (zone.kind == ZoneKind::silence)
             s.silenced.insert(s.silenced.end(), zone.cells.begin(), zone.cells.end());
+        else if (zone.kind == ZoneKind::spiritual_weapon)
+            s.spiritual_weapons.push_back(zone.cells.front());
     s.log = log_;
     s.log_messages = log_messages_;
     if (!initiative_choices_.empty())
@@ -2074,6 +2109,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::fog_cloud:
     case detail::Rider::silence:
         return; // Area spells resolve through cast_area().
+    case detail::Rider::spiritual_weapon:
+        return; // Its force is placed with the attack.
     case detail::Rider::resistance:
     {
         const auto type = *detail::resistance_type(verb);
@@ -2285,6 +2322,14 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     case detail::SpellPattern::spell_attack:
     {
         auto &target = actor(target_id);
+        // Spiritual Weapon's force appears beside the target and lasts with the
+        // caster's Concentration, whether or not this first attack hits.
+        if (spell.rider == detail::Rider::spiritual_weapon)
+        {
+            begin_concentration(a, spell);
+            zones_.push_back({a.source.id, ZoneKind::spiritual_weapon,
+                              {spectral_cell(target, a.source.cell)}});
+        }
         if (attack(a, target, !spell.melee, true, rolled, spell.damage))
             apply_rider(spell, verb, a, target, dc);
         return;
@@ -2698,6 +2743,13 @@ std::vector<Command> Session::legal_commands() const
     // break free.
     if (a.actions.available() && detail::restrained(a.effects))
         add(id, "escape", "Escape the vines", id);
+    // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
+    // feet and attacks a creature within 5 feet of it.
+    if (const auto *force = spiritual_weapon(a); force && a.bonus && !silenced(a.source.cell))
+        for (const auto &other : actors_)
+            if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+                    distance(force->cells.front(), other.source.cell) <= 25)
+                add(id, "spiritual_weapon_strike", "Spiritual Weapon attack", other.source.id);
     // Horde Breaker: once per turn, after a weapon attack, another creature
     // within 5 feet of the first target and within the weapon's reach or range.
     if (d.horde_breaker && a.horde_origin && !a.horde_used)
@@ -4662,6 +4714,20 @@ bool Session::submit(const Command &command)
         (void)a.actions.spend(false);
         escape_ensnaring(a);
     }
+    else if (command.verb == "spiritual_weapon_strike")
+    {
+        a.bonus = false;
+        end_sanctuary(a);
+        auto &target = actor(command.target);
+        auto &force = *std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+        {
+            return zone.kind == ZoneKind::spiritual_weapon && zone.caster == a.source.id;
+        });
+        force.cells.front() = spectral_cell(target, force.cells.front());
+        log(a.source.name + "'s Spiritual Weapon strikes.",
+        {"{name}'s Spiritual Weapon strikes.", {{"name", a.source.name}}});
+        attack(a, target, false, true, {1, 8, d.casting - 2}, detail::DamageType::force);
+    }
     else if (command.verb == "horde_breaker")
     {
         a.horde_used = true;
@@ -5768,7 +5834,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         std::size_t cells{};
         unsigned kind{};
         input >> zone.caster >> kind >> cells;
-        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::silence) || !cells ||
+        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::spiritual_weapon) || !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
         zone.kind = static_cast<ZoneKind>(kind);
@@ -7552,7 +7618,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.88", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.89", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

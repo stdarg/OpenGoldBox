@@ -451,6 +451,8 @@ struct Snapshot
     std::vector<Cell> obscured;
     // Squares inside Silence.
     std::vector<Cell> silenced;
+    // Where each Spiritual Weapon floats.
+    std::vector<Cell> spiritual_weapons;
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;

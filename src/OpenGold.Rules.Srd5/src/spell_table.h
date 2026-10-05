@@ -76,7 +76,8 @@ enum class Rider : unsigned
     warding_bond,
     protection_from_poison,
     resistance,
-    silence
+    silence,
+    spiritual_weapon
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -436,6 +437,23 @@ inline constexpr std::array spell_table
         .rider = Rider::silence,
         .concentration = true,
         .radius = 20},
+    // SRD 5.2.1 p. 165: a spectral force appears beside a creature within range
+    // and makes a melee spell attack for 1d8 + the spellcasting modifier Force;
+    // on later turns a Bonus Action moves it up to 20 feet and attacks again.
+    SpellDef{
+        .id = "spiritual_weapon",
+        .label = "Spiritual Weapon",
+        .level = 2,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 65,
+        .bonus_action = true,
+        .melee = true,
+        .damage = DamageType::force,
+        .dice = {1, 8, 0},
+        .add_casting_modifier = true,
+        .rider = Rider::spiritual_weapon,
+        .concentration = true},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

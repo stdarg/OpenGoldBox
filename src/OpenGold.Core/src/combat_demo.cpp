@@ -684,7 +684,9 @@ Command choose_demo_command(const CombatSession &session)
             return command;
     // Favored Enemy's Hunter's Mark and moving it cost no slot, and Horde
     // Breaker's attack costs nothing, so they come first.
-    for (const auto verb : {"hunters_mark_move", "hunters_mark_free", "horde_breaker"})
+    for (const auto verb : {"hunters_mark_move", "hunters_mark_free", "horde_breaker",
+                            "spiritual_weapon_strike"
+                           })
         for (const auto &command : offered)
             if (command.verb == verb)
                 return command;

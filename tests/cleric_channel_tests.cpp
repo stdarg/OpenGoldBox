@@ -510,6 +510,31 @@ void silence_checks()
     check(!submit(*c, "sacred_flame", 99) && !submit(*c, "cure_wounds", 2),
           "No spell with a Verbal component inside Silence");
 }
+void spiritual_weapon_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, cleric_with("spiritual_weapon"));
+    check(submit(*c, "spiritual_weapon", 99) && !unit(*c, 1).bonus_action && unit(*c, 1).action,
+          "Spiritual Weapon is a Bonus Action spell");
+    const auto forces = c->snapshot().spiritual_weapons;
+    const auto enemy = unit(*c, 99).cell;
+    check(forces.size() == 1 && std::max(std::abs(forces[0].x - enemy.x),
+                                         std::abs(forces[0].y - enemy.y)) == 1 &&
+          logged(*c, "Cleric -> Enemy"),
+          "The force appears beside the target and attacks it");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "The force survives a checkpoint");
+    check(!submit(*c, "spiritual_weapon_strike", 99), "Its later attack waits for a new Bonus Action");
+    check(submit(*c, "end"), "End the Cleric's turn");
+    while (c->snapshot().actor != 1)
+        check(submit(*c, "end"), "Back to the Cleric");
+    check(submit(*c, "spiritual_weapon_strike", 99) &&
+          logged(*c, "Cleric's Spiritual Weapon strikes."),
+          "A Bonus Action strikes again");
+    check(submit(*c, "bless", 1) && submit(*c, "spell_cast") &&
+          c->snapshot().spiritual_weapons.empty(),
+          "A new Concentration spell ends the force");
+}
 } // namespace
 
 int main()
@@ -531,6 +556,7 @@ int main()
         protection_from_poison_checks();
         resistance_checks();
         silence_checks();
+        spiritual_weapon_checks();
         write_ui_fixture();
         std::cout << "Cleric Channel Divinity tests passed\n";
     }

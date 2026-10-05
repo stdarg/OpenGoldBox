@@ -385,8 +385,10 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
         check(after_target.hit_points <= before_target.hit_points,
               "An attack never restores hit points");
 
-    // A rider is observable whenever the spell actually landed.
-    if (row.rider != Rider::none && after_target.hit_points < before_target.hit_points)
+    // A rider is observable whenever the spell actually landed. Spiritual
+    // Weapon's rider is its force on the battlefield, not a condition.
+    if (row.rider != Rider::none && row.rider != Rider::spiritual_weapon &&
+            after_target.hit_points < before_target.hit_points)
         check(!after_target.conditions.empty() || row.rider == Rider::chill_touch,
               "A landed rider is visible on the target");
 

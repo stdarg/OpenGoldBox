@@ -145,3 +145,17 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
 - Verification: `opengold_cleric_channel_tests` (eleven Resistance entries, the
   ward and its 1d4, Silence's sphere and no Verbal spells inside it), and the
   creation checks with three Cleric cantrips.
+
+## Spiritual Weapon
+
+- **Spiritual Weapon** (level 2, Bonus Action, Concentration up to 1 minute):
+  click an enemy within 65 feet; the spectral force appears in the open square
+  beside it nearest the Cleric (drawn as a gold disc) and makes a melee spell
+  attack for 1d8 + Wisdom modifier Force. On later turns **Spiritual Weapon
+  attack** (Bonus Action, no slot) moves the force beside an enemy within 25
+  feet of it and attacks again. Adaptation: the force goes to the square beside
+  the chosen enemy rather than being placed by hand. The force ends with the
+  Cleric's Concentration. A higher slot's extra die waits for level-three slots.
+  The AI strikes whenever the attack is offered.
+- Verification: `opengold_cleric_channel_tests` (placement beside the target, a
+  checkpoint, the later Bonus Action attack, Concentration ending it).
