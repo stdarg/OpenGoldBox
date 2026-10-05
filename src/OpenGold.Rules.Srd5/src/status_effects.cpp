@@ -1,4 +1,5 @@
 #include "status_effects.h"
+#include "damage.h"
 #include "dice.h"
 #include <algorithm>
 #include <charconv>
@@ -328,6 +329,13 @@ void apply_searing_smite(EffectState &effects, std::uint64_t scope, rules::Entit
                               EffectKind::searing_smite, dc, 60000, 0});
 }
 
+// The largest value a benefit carries: a damage type for Resistance, else a
+// bonus of at most 10.
+int benefit_value_limit(EffectKind kind)
+{
+    return kind == EffectKind::resistance ? int(DamageType::count) - 1 : 10;
+}
+
 unsigned benefit_duration_ms(EffectKind kind)
 {
     switch (kind)
@@ -349,6 +357,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::bless:
     case EffectKind::turned:
     case EffectKind::bane:
+    case EffectKind::resistance:
         return 60000; // 1 minute
     default:
         return 0;
@@ -360,7 +369,7 @@ void apply_spell_benefit(EffectState &effects, std::uint64_t scope, rules::Entit
 {
     const auto duration = benefit_duration_ms(kind);
     if (!duration || !can_apply(effects) || !scope || !caster || name.empty() ||
-            name.size() > 160 || value < 0 || value > 10)
+            name.size() > 160 || value < 0 || value > benefit_value_limit(kind))
         throw std::runtime_error("Invalid spell benefit");
     effects.active.push_back(
     {effects.next_id++, scope, caster, std::move(name), kind, value, duration, 0});
@@ -563,7 +572,8 @@ EffectState read_effects(std::istream &in)
         {
             if (e.id <= previous || e.id >= result.next_id || !e.source_scope ||
                     !e.source_actor || e.source_name.empty() || e.source_name.size() > 160 ||
-                    e.dc < 0 || e.dc > 10 || !e.remaining_ms || e.remaining_ms > benefit ||
+                    e.dc < 0 || e.dc > benefit_value_limit(static_cast<EffectKind>(kind)) ||
+                    !e.remaining_ms || e.remaining_ms > benefit ||
                     e.save_in_ms)
                 throw std::runtime_error("Invalid active effect");
             e.kind = static_cast<EffectKind>(kind);

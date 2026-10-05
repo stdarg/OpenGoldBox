@@ -127,3 +127,21 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   Wisdom save, Warding Bond's AC, resisted and shared damage and no bond on the
   caster itself, resisted Poison damage). The generic spell table checks now
   prepare each row explicitly, so every castable row is probed.
+
+## Resistance and Silence
+
+- **Resistance** (cantrip, Action, touch, Concentration up to 1 minute): once
+  per turn the creature takes 1d4 less damage of the chosen type, before other
+  resistances apply. The A cycle offers it once per type, "Resistance: Fire" and
+  so on ([CLASS-7](SRD-DECISIONS.md#class-7-2026-10-05-choosing-resistances-damage-type)),
+  then click the creature. It is a Cleric and Druid cantrip, so Blessed and
+  Druidic Warriors may learn it.
+- **Silence** (level 2, Action, 120 feet, Concentration up to 10 minutes),
+  aimed like Entangle: a 20-foot-radius sphere, tinted on the map. No spell with
+  a Verbal component can be cast from inside it (smites and Favored Enemy's
+  Hunter's Mark included), and creatures inside take no Thunder damage.
+  Deafened is not modeled.
+- Combat checkpoints become `OGCOMBAT 37` (Resistance's once-per-turn use).
+- Verification: `opengold_cleric_channel_tests` (eleven Resistance entries, the
+  ward and its 1d4, Silence's sphere and no Verbal spells inside it), and the
+  creation checks with three Cleric cantrips.

@@ -41,7 +41,7 @@ void blessed_warrior_checks()
     check(options.learning.size() == 1 && options.learning.front().id == "cantrips:2" &&
           options.learning.front().count == 2 &&
           option_ids(options.learning.front().options) ==
-          std::vector<std::string> {"sacred_flame", "spare_the_dying"},
+          std::vector<std::string> {"resistance", "sacred_flame", "spare_the_dying"},
           "Blessed Warrior learns two Cleric cantrips at level two");
     auto defense = choice;
     defense.fighting_style = "defense";

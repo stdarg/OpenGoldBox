@@ -75,7 +75,9 @@ enum class EffectKind : unsigned
     // the same damage.
     warding_bond = 26,
     // Protection from Poison: Resistance to Poison damage.
-    protection_from_poison = 27
+    protection_from_poison = 27,
+    // Resistance: 1d4 less damage of type `dc` (a DamageType), once per turn.
+    resistance = 28
 };
 
 // The longest a spell benefit lasts, in milliseconds.

@@ -103,7 +103,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::protection_from_evil_and_good ||
            kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike ||
            kind == detail::EffectKind::entangle || kind == detail::EffectKind::bane ||
-           kind == detail::EffectKind::hold_person;
+           kind == detail::EffectKind::hold_person || kind == detail::EffectKind::resistance;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -168,7 +168,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 36;
+constexpr unsigned checkpoint_format = 37;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -217,6 +217,10 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Cleric", "sanctuary", 1},
     SpellAccessRow{"Cleric", "warding_bond", 3},
     SpellAccessRow{"Cleric", "protection_from_poison", 3},
+    SpellAccessRow{"Cleric", "resistance", 1},
+    SpellAccessRow{"Cleric", "silence", 3},
+    SpellAccessRow{"Paladin", "resistance", 2},
+    SpellAccessRow{"Ranger", "resistance", 2},
     SpellAccessRow{"Paladin", "spare_the_dying", 2},
     SpellAccessRow{"Ranger", "spare_the_dying", 2},
     SpellAccessRow{"Wizard", "fire_bolt", 1},
@@ -370,6 +374,7 @@ struct Actor : detail::LifeState
     // Hunter's Prey, once per turn. horde_origin is the first creature this
     // actor attacked with a weapon this turn, which Horde Breaker attacks beside.
     bool colossus_used{}, horde_used{};
+    bool resistance_used{}; // Resistance (the cantrip) reduces damage once per turn
     EntityId horde_origin{};
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     bool light_damage{};        // Transient attack copy only; pending hits carry their own flag.
@@ -1089,7 +1094,8 @@ class Session final : public CombatSession
     enum class ZoneKind : unsigned
     {
         plants,
-        fog
+        fog,
+        silence
     };
     struct Zone
     {
@@ -1274,6 +1280,8 @@ class Session final : public CombatSession
     [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell,
             std::string_view verb, Cell center) const;
     [[nodiscard]] bool obscured(Cell cell) const;
+    // Inside Silence: no Verbal spells, no Thunder damage.
+    [[nodiscard]] bool silenced(Cell cell) const;
     [[nodiscard]] Cell default_area_center(const Actor &caster, const detail::SpellDef &spell) const;
     void aim_area(const Command &command);
     void cast_area();
@@ -1332,7 +1340,7 @@ class Session final : public CombatSession
     [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural);
     [[nodiscard]] int keep_higher_savage_roll(Actor &a, int first, int second);
     void finish_reaction();
-    int resolved_damage(const Actor &target, detail::DamageType type, int amount);
+    int resolved_damage(Actor &target, detail::DamageType type, int amount);
     // The creature's damage affinities with those its effects grant: Warding
     // Bond resists all damage, Protection from Poison resists Poison.
     [[nodiscard]] std::vector<detail::DamageAffinity> affinities(const Actor &target) const;
@@ -1678,6 +1686,15 @@ Battlefield Session::zoned_board() const
     return board;
 }
 
+bool Session::silenced(Cell cell) const
+{
+    return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::silence &&
+               std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
+    });
+}
+
 bool Session::obscured(Cell cell) const
 {
     return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
@@ -1725,6 +1742,8 @@ Snapshot Session::snapshot() const
     for (const auto &zone : zones_)
         if (zone.kind == ZoneKind::fog)
             s.obscured.insert(s.obscured.end(), zone.cells.begin(), zone.cells.end());
+        else if (zone.kind == ZoneKind::silence)
+            s.silenced.insert(s.silenced.end(), zone.cells.begin(), zone.cells.end());
     s.log = log_;
     s.log_messages = log_messages_;
     if (!initiative_choices_.empty())
@@ -2053,7 +2072,21 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::none:
     case detail::Rider::entangle:
     case detail::Rider::fog_cloud:
+    case detail::Rider::silence:
         return; // Area spells resolve through cast_area().
+    case detail::Rider::resistance:
+    {
+        const auto type = *detail::resistance_type(verb);
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::resistance, int(type));
+        const auto name = std::string(detail::damage_name(type));
+        log(target.source.name + " gains Resistance against " + name + " damage.",
+        {
+            "{name} gains Resistance against {type} damage.",
+            {{"name", target.source.name}, {"type", name, true}}
+        });
+        return;
+    }
     case detail::Rider::sanctuary:
         detail::apply_sanctuary(target.effects, scope_, a.source.id, a.source.name, dc);
         log(target.source.name + " gains Sanctuary.",
@@ -2387,7 +2420,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.not_self && other.source.id == a.source.id)
             continue;
         const auto *components = detail::spell_components(spell.id);
-        if (!components || (components->somatic && !somatic_hand(d)))
+        if (!components || (components->somatic && !somatic_hand(d)) ||
+                (components->verbal && silenced(a.source.cell)))
             continue;
         if (spell.bonus_action ? !a.bonus : !a.actions.available(true))
             continue;
@@ -2397,6 +2431,13 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
                                 std::move(verb), std::move(label), Cell{}, 0, aimed});
         };
+        if (spell.rider == detail::Rider::resistance)
+        {
+            for (const auto type : detail::resistance_types)
+                offer("resistance_" + std::string(type),
+                      "Resistance: " + std::string(detail::damage_name(detail::damage_type(type))));
+            continue;
+        }
         if (!spell.level)
         {
             offer(std::string(spell.id), std::string(spell.label));
@@ -2678,7 +2719,8 @@ std::vector<Command> Session::legal_commands() const
         return other.hp > 0 && !other.dead && marked_by(other, a);
     });
     const bool free_mark = a.bonus && a.free_casts > 0 && d.favored_enemy && !marking &&
-                           detail::knows_spell(d.spells, "hunters_mark") && !d.str_dex_disadvantage;
+                           detail::knows_spell(d.spells, "hunters_mark") && !d.str_dex_disadvantage &&
+                           !silenced(a.source.cell);
     const bool moving_mark = a.bonus && mark_can_move(a);
     if (free_mark || moving_mark)
         for (const auto &other : actors_)
@@ -2709,7 +2751,9 @@ std::vector<Command> Session::legal_commands() const
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
     // Smites, right after this actor's own melee hit on a creature still standing.
-    if (a.bonus && a.smite_target && actor(a.smite_target).hp > 0 && !d.spells.empty())
+    // Smites have Verbal components, so Silence stops them.
+    if (a.bonus && a.smite_target && actor(a.smite_target).hp > 0 && !d.spells.empty() &&
+            !silenced(a.source.cell))
     {
         const bool slot = a.slots > 0 && !a.spent_slot;
         const bool melee = a.smite_melee;
@@ -2881,8 +2925,27 @@ std::vector<Cell> Session::movement_reach(EntityId id) const
     return cells;
 }
 
-int Session::resolved_damage(const Actor &target, detail::DamageType type, int amount)
+int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
 {
+    // Resistance (the cantrip): 1d4 less of its type, once per turn, before
+    // resistances halve the rest.
+    const auto ward = std::find_if(target.effects.active.begin(), target.effects.active.end(),
+                                   [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::resistance && e.dc == int(type);
+    });
+    if (ward != target.effects.active.end() && !target.resistance_used && amount > 0)
+    {
+        target.resistance_used = true;
+        const int reduced = std::min(amount, roll(4));
+        amount -= reduced;
+        log(target.source.name + "'s Resistance reduces the damage by " + std::to_string(reduced) +
+            ".",
+        {
+            "{name}'s Resistance reduces the damage by {amount}.",
+            {{"name", target.source.name}, {"amount", std::to_string(reduced)}}
+        });
+    }
     const std::array parts{detail::DamagePart{type, amount}};
     const auto result = detail::resolve_damage(parts, affinities(target));
     if (result.total != amount)
@@ -3108,9 +3171,11 @@ void Session::cast_area()
     const auto cells = area_cells(spell, aimed.verb, aimed.center);
     if (spell.concentration)
         begin_concentration(a, spell);
-    const bool fog = spell.rider == detail::Rider::fog_cloud;
-    zones_.push_back({a.source.id, fog ? ZoneKind::fog : ZoneKind::plants, cells});
-    if (fog)
+    const auto kind = spell.rider == detail::Rider::fog_cloud ? ZoneKind::fog
+                      : spell.rider == detail::Rider::silence ? ZoneKind::silence
+                      : ZoneKind::plants;
+    zones_.push_back({a.source.id, kind, cells});
+    if (kind != ZoneKind::plants)
         return;
     const int dc = 8 + def(a).casting;
     for (auto &other : actors_)
@@ -3414,6 +3479,9 @@ std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) con
     if (detail::has_effect(target.effects, detail::EffectKind::protection_from_poison))
         result.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                           "spell:protection_from_poison"});
+    if (silenced(target.source.cell))
+        result.push_back({detail::AffinityKind::immunity, detail::DamageType::thunder,
+                          "spell:silence"});
     return result;
 }
 
@@ -4116,7 +4184,7 @@ bool Session::begin_turn()
     for (auto &actor : actors_)
     {
         actor.cleave_used = false;
-        actor.colossus_used = actor.horde_used = false;
+        actor.colossus_used = actor.horde_used = actor.resistance_used = false;
         actor.horde_origin = 0;
         actor.savage_used = false;
         actor.sneak_used = false;
@@ -4829,7 +4897,7 @@ std::string Session::save() const
             out << ' ' << id;
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
-            << a.smite_melee << ' ';
+            << a.smite_melee << ' ' << a.resistance_used << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -4969,7 +5037,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.light_origins.push_back(id);
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
-          actor.horde_used >> actor.horde_origin >> actor.smite_melee;
+          actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used;
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -5700,7 +5768,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         std::size_t cells{};
         unsigned kind{};
         input >> zone.caster >> kind >> cells;
-        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::fog) || !cells ||
+        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::silence) || !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
         zone.kind = static_cast<ZoneKind>(kind);
@@ -7484,7 +7552,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.87", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.88", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

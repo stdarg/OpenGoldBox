@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Resistance and Silence
+
+Rules 0.6.88 adds the Resistance cantrip and Silence for Clerics. Combat
+checkpoints become `OGCOMBAT 37`. See [Cleric](CLERIC.md#resistance-and-silence).
+
 ## Sanctuary, Warding Bond and Protection from Poison
 
 Rules 0.6.87 adds Sanctuary, Warding Bond and Protection from Poison for

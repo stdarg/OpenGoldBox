@@ -2305,7 +2305,10 @@ void CombatView::draw_battlefield()
                               ? .6
                               : .23));
             }
-    // Heavily Obscured squares, such as Fog Cloud's.
+    // Silence's squares, then Heavily Obscured ones such as Fog Cloud's.
+    for (const auto cell : s.silenced)
+        canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
+                          Color(.45, .5, .85, .25));
     for (const auto cell : s.obscured)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
                           Color(.78, .8, .82, .35));

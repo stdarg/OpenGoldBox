@@ -356,5 +356,18 @@
   "Sanctuary",
   "Sanctuary (level 2 slot)",
   "Warding Bond",
-  "Protection from Poison"
+  "Protection from Poison",
+  "Silence",
+  "Touch: once per turn the creature takes 1d4 less damage of a chosen type; Concentration.",
+  "Resistance: Acid",
+  "Resistance: Bludgeoning",
+  "Resistance: Cold",
+  "Resistance: Fire",
+  "Resistance: Lightning",
+  "Resistance: Necrotic",
+  "Resistance: Piercing",
+  "Resistance: Poison",
+  "Resistance: Radiant",
+  "Resistance: Slashing",
+  "Resistance: Thunder"
 ]

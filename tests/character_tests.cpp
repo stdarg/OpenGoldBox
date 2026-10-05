@@ -332,6 +332,7 @@ void creation_tests()
           "Completed Cleric training advances to Spell Choices");
     creator.cantrip_choice("sacred_flame", true);
     creator.cantrip_choice("spare_the_dying", true);
+    creator.cantrip_choice("resistance", true);
     rejects(
         [&]
     {

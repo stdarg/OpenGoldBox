@@ -58,7 +58,7 @@ Character cleric(unsigned level, std::vector<std::string> prepared = {"cure_woun
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.cantrips = std::vector<std::string> {"sacred_flame", "spare_the_dying"};
+    d.cantrips = std::vector<std::string> {"sacred_flame", "spare_the_dying", "resistance"};
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     d.training = {{"class:cleric", {"medicine", "persuasion"}},
         {"class:cleric:divine_order", {"protector"}}
@@ -477,6 +477,39 @@ void protection_from_poison_checks()
     enemy_attacks_ally(*c);
     check(logged(*c, "Ally: Poison damage"), "The ally resists Poison damage");
 }
+void resistance_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, cleric(1), "viper");
+    std::vector<std::string> labels;
+    for (const auto &command : c->legal_commands())
+        if (command.verb.starts_with("resistance_") && command.target == 2)
+            labels.push_back(command.label);
+    check(labels.size() == 11 && labels.front() == "Resistance: Acid",
+          "Resistance is offered once per damage type");
+    check(submit(*c, "resistance_poison", 2) && logged(*c, "Ally gains Resistance against Poison damage."),
+          "Resistance wards the ally against the chosen type");
+    enemy_attacks_ally(*c);
+    check(logged(*c, "Ally's Resistance reduces the damage by"), "It takes 1d4 less of that type");
+}
+
+void silence_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, cleric_with("silence"));
+    check(submit(*c, "silence") &&
+          c->submit({c->snapshot().revision, 1, 0, "area_move", "", Cell{1, 1}}) &&
+          submit(*c, "area_cast") && logged(*c, "Cleric casts Silence."),
+          "Silence is aimed and cast");
+    const auto silenced = c->snapshot().silenced;
+    check(std::find(silenced.begin(), silenced.end(), Cell{1, 1}) != silenced.end(),
+          "The sphere is shown as silenced");
+    check(submit(*c, "end"), "End the Cleric's turn");
+    while (c->snapshot().actor != 1)
+        check(submit(*c, "end") || submit(*c, "move"), "Back to the Cleric");
+    check(!submit(*c, "sacred_flame", 99) && !submit(*c, "cure_wounds", 2),
+          "No spell with a Verbal component inside Silence");
+}
 } // namespace
 
 int main()
@@ -496,6 +529,8 @@ int main()
         sanctuary_checks();
         warding_bond_checks();
         protection_from_poison_checks();
+        resistance_checks();
+        silence_checks();
         write_ui_fixture();
         std::cout << "Cleric Channel Divinity tests passed\n";
     }

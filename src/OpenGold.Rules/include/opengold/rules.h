@@ -449,6 +449,8 @@ struct Snapshot
     std::optional<AreaTargeting> area_targeting;
     // Squares a spell makes Heavily Obscured, such as Fog Cloud's.
     std::vector<Cell> obscured;
+    // Squares inside Silence.
+    std::vector<Cell> silenced;
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;

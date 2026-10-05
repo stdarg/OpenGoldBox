@@ -426,15 +426,16 @@ void behaviour()
     for (const auto &row : spell_table)
     {
         // Smites are offered by the caster's own melee hit, not by range, a
-        // spell on several creatures begins a choice, Command is offered once
-        // per option, camp spells only outside combat, area spells are aimed,
+        // spell on several creatures begins a choice, Command and Resistance are
+        // offered once per option, camp spells only outside combat, area spells are aimed,
         // Lesser Restoration needs a Blinded creature and Spare the Dying a dying
         // one; their own tests cover them.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
                  row.instances > 1) ||
                 row.target == SpellTarget::dying_ally ||
-                row.rider == Rider::command || row.pattern == SpellPattern::camp ||
+                row.rider == Rider::command || row.rider == Rider::resistance ||
+                row.pattern == SpellPattern::camp ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration)
             continue;
         bool covered = false;

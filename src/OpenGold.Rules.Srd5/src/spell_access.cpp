@@ -75,7 +75,10 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"sanctuary", "Sanctuary", 1, 0, cleric_list},
     Spell{"warding_bond", "Warding Bond", 2, 0, cleric_list},
     Spell{"protection_from_poison", "Protection from Poison", 2, 0,
-        cleric_list | druid_list | paladin_list | ranger_list}};
+        cleric_list | druid_list | paladin_list | ranger_list},
+    Spell{"resistance", "Resistance", 0, 0, cleric_list | druid_list},
+    // Also on the Bard list; added with that class.
+    Spell{"silence", "Silence", 2, 0, cleric_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
@@ -338,6 +341,10 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
         {
             "spare_the_dying", "Spare the Dying",
             "A creature at 0 Hit Points within 15 feet becomes Stable."
+        },
+        {
+            "resistance", "Resistance",
+            "Touch: once per turn the creature takes 1d4 less damage of a chosen type; Concentration."
         }
     }};
     if (klass != "wizard" && klass != "sorcerer")

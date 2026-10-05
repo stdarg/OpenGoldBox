@@ -103,7 +103,7 @@ void druidic_warrior_checks()
                          SpellChoiceContext::advancement);
     check(options.learning.size() == 1 && options.learning.front().count == 2 &&
           option_ids(options.learning.front().options) ==
-          std::vector<std::string> {"poison_spray", "spare_the_dying"},
+          std::vector<std::string> {"poison_spray", "resistance", "spare_the_dying"},
           "Druidic Warrior learns two Druid cantrips at level two");
     auto cleric_cantrip = choice;
     (*cleric_cantrip.spell_learning)["cantrips:2"] = {"sacred_flame"};

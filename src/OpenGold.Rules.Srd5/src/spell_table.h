@@ -5,6 +5,7 @@
 #include "status_effects.h"
 #include <array>
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -73,7 +74,9 @@ enum class Rider : unsigned
     hold_person,
     sanctuary,
     warding_bond,
-    protection_from_poison
+    protection_from_poison,
+    resistance,
+    silence
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -410,6 +413,29 @@ inline constexpr std::array spell_table
         .target = SpellTarget::ally,
         .range = 5,
         .rider = Rider::protection_from_poison},
+    // SRD 5.2.1 p. 158: once per turn the touched creature takes 1d4 less damage
+    // of the chosen type, offered once per type (CLASS-7).
+    SpellDef{
+        .id = "resistance",
+        .label = "Resistance",
+        .level = 0,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::resistance,
+        .concentration = true},
+    // SRD 5.2.1 p. 162: a 20-foot-radius sphere where no spell with a Verbal
+    // component can be cast and Thunder damage is ignored.
+    SpellDef{
+        .id = "silence",
+        .label = "Silence",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 120,
+        .rider = Rider::silence,
+        .concentration = true,
+        .radius = 20},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",
@@ -578,12 +604,30 @@ inline int command_option(std::string_view verb)
     return found == command_options.end() ? 0 : int(found - command_options.begin()) + 1;
 }
 
+// Resistance's damage types (CLASS-7), each offered as "resistance_<type>".
+inline constexpr std::array<std::string_view, 11> resistance_types{"acid", "bludgeoning", "cold",
+    "fire", "lightning", "necrotic", "piercing", "poison", "radiant", "slashing", "thunder"};
+
+// The damage type a Resistance verb names, if it is one.
+inline std::optional<DamageType> resistance_type(std::string_view verb)
+{
+    if (!verb.starts_with("resistance_"))
+        return std::nullopt;
+    verb.remove_prefix(11);
+    if (std::find(resistance_types.begin(), resistance_types.end(), verb) ==
+            resistance_types.end())
+        return std::nullopt;
+    return damage_type(verb);
+}
+
 inline const SpellDef *find_spell(std::string_view id)
 {
     if (id.ends_with("_2"))
         id.remove_suffix(2);
     if (command_option(id))
         id = "command";
+    if (resistance_type(id))
+        id = "resistance";
     for (const auto &spell : spell_table)
         if (spell.id == id)
             return &spell;
