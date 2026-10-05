@@ -37,7 +37,7 @@ std::unique_ptr<RulesModule> rules()
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
                                "creature fiend 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "type fiend fiend\n" +
+                               "type fiend fiend\n" + "affinity fiend hide resistance slashing\n" +
                                "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
@@ -260,6 +260,7 @@ void write_ui_fixture()
 }
 
 #include "command_checks.h"
+#include "devotion_checks.h"
 
 void combat_end_checks()
 {
@@ -282,6 +283,7 @@ int main()
         bless_checks();
         protection_from_evil_and_good_checks();
         command_checks();
+        devotion_checks();
         concentration_damage_checks();
         combat_end_checks();
         write_ui_fixture();

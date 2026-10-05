@@ -114,6 +114,12 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         required.push_back({"feature:fighting_style", "class:" + std::string(klass), 2, {}});
     if (klass == "rogue" && level >= 3)
         required.push_back({"feature:steady_aim", "class:rogue", 3, {}});
+    if (klass == "paladin" && level >= 3)
+    {
+        required.push_back({"feature:channel_divinity", "class:paladin", 3, {}});
+        required.push_back({"subclass:devotion", "class:paladin", 3, {}});
+        required.push_back({"feature:sacred_weapon", "subclass:paladin:devotion", 3, {}});
+    }
     if (klass == "rogue" && level >= 2)
         required.push_back({"feature:cunning_action", "class:rogue", 2, {}});
     if (klass == "fighter" && level >= 2)

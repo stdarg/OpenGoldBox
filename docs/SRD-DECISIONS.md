@@ -492,3 +492,9 @@ Features and spells that matter outside combat (Lay On Hands, healing spells,
 later Detect Magic and Identify) will be used from the Camp/Rest dialog, in a
 "Cast / Use" section: choose a party member, then the spell or feature, then the
 member it affects.
+
+## CLASS-4 (2026-10-05): Divine Sense
+
+The Paladin's Divine Sense is left out, as DM-3 left out spells: in combat every
+creature is already visible, so it has no effect in this game. Channel Divinity's
+uses go to Sacred Weapon.

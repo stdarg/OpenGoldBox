@@ -22,6 +22,13 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Channel Divinity and the Oath of Devotion
+
+Rules 0.6.73 adds the Paladin's level three: Channel Divinity, the Oath of
+Devotion, Sacred Weapon and the always prepared oath spells; Divine Sense is left
+out ([CLASS-4](SRD-DECISIONS.md#class-4-2026-10-05-divine-sense)). See
+[Paladin](PALADIN.md#channel-divinity-and-the-oath-of-devotion).
+
 ## Blessed Warrior
 
 Rules 0.6.72 adds the Paladin's Blessed Warrior: two Cleric cantrips at level

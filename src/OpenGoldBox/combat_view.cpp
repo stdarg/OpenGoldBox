@@ -1330,7 +1330,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
         {
             for (const char *verb :
                     {"stand_up", "cunning_dash", "cunning_disengage", "steady_aim",
-                     "action_surge", "adrenaline_rush", "second_wind", "dash",
+                     "action_surge", "adrenaline_rush", "sacred_weapon", "second_wind", "dash",
                      "dodge", "disengage", "opportunity", "decline"
                     })
                 if (mode_ == verb)

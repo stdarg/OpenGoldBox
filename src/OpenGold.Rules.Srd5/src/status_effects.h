@@ -42,7 +42,10 @@ enum class EffectKind : unsigned
     protection_from_evil_and_good = 13,
     // Command: the target obeys on its next turn; `dc` holds the option, an
     // index into command_options plus one.
-    command = 14
+    command = 14,
+    // Sacred Weapon: `dc` (the Charisma modifier, at least 1) is added to
+    // attack rolls with Melee weapons; they may deal Radiant damage.
+    sacred_weapon = 15
 };
 
 // The longest a spell benefit lasts, in milliseconds.

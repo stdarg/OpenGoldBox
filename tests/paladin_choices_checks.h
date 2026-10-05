@@ -89,9 +89,61 @@ void blessed_warrior_checks()
     check(saved(restored) == bytes, "A Blessed Warrior round-trips");
 }
 
+const ResourcePool *pool(const RecoveryInfo &info, std::string_view id)
+{
+    for (const auto &resource : info.resources)
+        if (resource.id == id)
+            return &resource;
+    return nullptr;
+}
+
+// Level three: Channel Divinity and the Oath of Devotion's always prepared spells.
+void devotion_checks()
+{
+    auto rules = module();
+    auto creation_rules = srd5::character_rules();
+    CampaignParty party(module());
+    const auto id = party.add_pc(
+                        Character(*creation_rules, paladin_draft({"cure_wounds", "shield_of_faith"}), {}));
+    party.award_experience(900, "devotion-xp");
+    party.advance(id, party.default_advancement(id));
+    check(!pool(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals),
+                "channel_divinity"),
+          "Channel Divinity waits for level three");
+    auto third = party.default_advancement(id);
+    check(std::find(third.spells.begin(), third.spells.end(), "shield_of_faith") == third.spells.end(),
+          "Shield of Faith, prepared earlier, frees its place at level three");
+    auto doubled = third;
+    doubled.spells.back() = "shield_of_faith";
+    const auto before = saved(party);
+    rejects(
+        [&]
+    {
+        party.advance(id, doubled);
+    });
+    check(saved(party) == before, "An always prepared spell cannot also be prepared");
+    party.advance(id, third);
+    const auto &sheet = party.member(id).character.sheet();
+    const auto access = rules->spell_access(sheet);
+    check(access.prepared.size() == 4 &&
+          std::find(access.prepared.begin(), access.prepared.end(), "shield_of_faith") ==
+          access.prepared.end() &&
+          std::any_of(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
+    {
+        return g.id == "subclass:devotion";
+    }),
+    "Level three takes the Oath of Devotion and prepares four other spells");
+    const auto recovery = rules->recovery_info(sheet, party.member(id).vitals);
+    const auto *channel = pool(recovery, "channel_divinity");
+    check(channel && channel->capacity == 2 && channel->remaining == 2 &&
+          channel->short_rest_recovery == 1,
+          "Channel Divinity has two uses and regains one on a Short Rest");
+}
+
 void paladin_choices_checks()
 {
     blessed_warrior_checks();
+    devotion_checks();
     auto rules = module();
     auto creation_rules = srd5::character_rules();
     const auto draft = paladin_draft({"cure_wounds"});
@@ -150,8 +202,13 @@ void paladin_choices_checks()
         check(slot_capacity(*rules, party.member(id)) == slots[level - 1] &&
               access.prepared_choices == level + 1,
               "Paladin slots and prepared spells follow the class table");
-        // Paladin's Smite: Divine Smite is always prepared and not counted.
-        check(access.always_prepared == std::vector<std::string> {"divine_smite"} &&
+        // Paladin's Smite: Divine Smite is always prepared and not counted; the
+        // Oath of Devotion adds its spells at level three.
+        const auto always = level >= 3 ? std::vector<std::string> {"divine_smite",
+                            "protection_from_evil_and_good", "shield_of_faith"
+                                                                  }
+                            : std::vector<std::string> {"divine_smite"};
+        check(access.always_prepared == always &&
               std::find(access.prepared.begin(), access.prepared.end(), "divine_smite") ==
               access.prepared.end() &&
               rules->character_profile(sheet, {}).data.find(" divine_smite ") != std::string::npos,

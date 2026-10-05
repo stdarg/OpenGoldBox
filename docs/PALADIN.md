@@ -11,8 +11,35 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 1 | Lay On Hands | Delivered in combat (rules 0.6.66); outside combat and curing Poisoned not yet |
 | 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Blessed Warrior delivered (rules 0.6.72) |
 | 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.69) |
-| 3 | Channel Divinity, Oath of Devotion | Not yet |
+| 3 | Channel Divinity, Oath of Devotion | Delivered (rules 0.6.73): Sacred Weapon and the oath spells; Divine Sense left out (CLASS-4) |
 | 4 | Ability Score Improvement | Delivered earlier |
+
+## Channel Divinity and the Oath of Devotion
+
+- Level three grants Channel Divinity (two uses; a Short Rest restores one, a
+  Long Rest all) and the Oath of Devotion, the SRD's only Paladin oath, so it is
+  taken automatically.
+- **Sacred Weapon** spends one use. It comes with the Attack action, so it is
+  offered in the A cycle (Space uses it) while the Action is unspent, and costs
+  no Action. For 10 minutes the Paladin adds its Charisma modifier (at least +1)
+  to attack rolls with Melee weapons, and the weapon deals Radiant damage
+  whenever the target resists its own damage type more than Radiant (the SRD
+  leaves the choice to the Paladin; this takes the better one). It ends when
+  the Paladin drops to 0 Hit Points. Its light is not modeled. The party AI uses
+  it before its first melee attack.
+- Divine Sense is left out: every creature in combat is already visible
+  ([CLASS-4](SRD-DECISIONS.md#class-4-2026-10-05-divine-sense)).
+- The oath spells, Protection from Evil and Good and Shield of Faith, are always
+  prepared from level three and not counted. A spell that becomes always
+  prepared (these, or Divine Smite at level two) frees its earlier place on the
+  level-up, and can no longer be chosen as a prepared spell.
+
+Verification: `opengold_paladin_spell_tests` (Sacred Weapon's cost, its attack
+bonus, Radiant damage against a target resisting Slashing, a checkpoint, no
+Sacred Weapon below level three), `opengold_spell_access_tests` (oath spells
+freeing their place, a doubled preparation refused, Channel Divinity's two uses
+and Short Rest recovery) and `opengold_godot_sacred_weapon` (A cycle and Space,
+English and Spanish).
 
 ## Blessed Warrior
 

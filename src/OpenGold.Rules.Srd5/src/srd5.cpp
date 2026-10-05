@@ -248,6 +248,7 @@ struct Definition
     int lay_on_hands{}; // Paladin healing pool: five times Paladin level
     int free_smite{};   // Paladin's Smite: one Divine Smite without a slot per Long Rest
     int channel_divinity{};
+    bool sacred_weapon{}; // Oath of Devotion, Paladin level 3
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -566,6 +567,8 @@ character_definition(std::string_view bytes,
     d.champion = klass == "Fighter" && level >= 3;
     d.arcane = klass == "Wizard" ? 1 : 0;
     d.lay_on_hands = klass == "Paladin" ? 5 * level : 0;
+    d.channel_divinity = klass == "Paladin" && level >= 3 ? 2 : 0;
+    d.sacred_weapon = klass == "Paladin" && level >= 3;
     d.free_smite = klass == "Paladin" && level >= 2 ? 1 : 0;
     d.medicine = ability_modifier(scores[4]);
     d.tactical_mind = klass == "Fighter" && level >= 2;
@@ -1165,6 +1168,9 @@ class Session final : public CombatSession
     // Command's Approach and Flee: the commanded creature only moves toward or
     // away from the caster, then ends its turn.
     void obey_command(std::vector<Command> &commands, const Actor &a) const;
+    // Sacred Weapon's attack bonus, 0 without it.
+    [[nodiscard]] int sacred_weapon_bonus(const Actor &a) const;
+    [[nodiscard]] detail::DamageType sacred_damage_type(const Actor &a, const Actor &target) const;
     unsigned next_save_ms(EntityId target) const;
     unsigned next_turn_ms(const Actor &target) const;
     void advance_turn_time();
@@ -2302,6 +2308,11 @@ std::vector<Command> Session::legal_commands() const
     }
     if (a.bonus && a.rushes > 0)
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
+    // Sacred Weapon comes with the Attack action, so it is offered while the
+    // Action is unspent and costs only a Channel Divinity use.
+    if (d.sacred_weapon && a.channel_divinity > 0 && a.actions.available() && d.melee.count &&
+            !detail::has_effect(a.effects, detail::EffectKind::sacred_weapon))
+        add(id, "sacred_weapon", "Sacred Weapon", id);
     if (a.bonus && d.aggressive && speed > 0 && enemy_in_sight(a))
         add(id, "aggressive", "Aggressive");
     if (a.bonus && a.winds > 0 && a.hp < d.hp)
@@ -2523,6 +2534,12 @@ void Session::damage(Actor &target, int amount, bool critical)
     }
     if (target.hp == 0)
         target.effects.prone = true;
+    // Sacred Weapon ends when its wielder is Incapacitated.
+    if (target.hp == 0)
+        std::erase_if(target.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::sacred_weapon;
+    });
     if (target.hp == 0 && !target.dead && !target.stable)
         target.recovery.death_save_in_ms = next_turn_ms(target);
     if (target.hp == 0)
@@ -3009,7 +3026,8 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     a.aim_ready = false;
     const int natural = detail::d20(modifiers, rng_), bonus = (spell    ? d.casting
         : ranged ? d.ranged_bonus
-        : d.melee_bonus) + bless_die(a);
+        : d.melee_bonus) + bless_die(a) +
+        (spell || ranged ? 0 : sacred_weapon_bonus(a));
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
     const bool hit =
         (!spell && d.champion && natural == 19) || attack_hits(natural, bonus, armor_class(target));
@@ -3040,7 +3058,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
               savage,
               spell    ? spell_type
               : ranged ? d.ranged_type
-              : d.melee_type,
+              : sacred_damage_type(a, target),
               ranged, spell);
     // Divine Favor: a weapon hit deals an extra 1d4 Radiant damage.
     if (hit && !spell && detail::has_effect(a.effects, detail::EffectKind::divine_favor) &&
@@ -3057,6 +3075,29 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         damage(target, extra, false);
     }
     return hit;
+}
+
+int Session::sacred_weapon_bonus(const Actor &a) const
+{
+    for (const auto &effect : a.effects.active)
+        if (effect.kind == detail::EffectKind::sacred_weapon)
+            return effect.dc;
+    return 0;
+}
+
+detail::DamageType Session::sacred_damage_type(const Actor &a, const Actor &target) const
+{
+    // Sacred Weapon's Radiant damage is optional; it is chosen whenever the
+    // target resists the weapon's own type more than Radiant.
+    const auto usual = def(a).melee_type;
+    if (!sacred_weapon_bonus(a))
+        return usual;
+    const auto taken = [&](detail::DamageType type)
+    {
+        const std::array parts{detail::DamagePart{type, 100}};
+        return detail::resolve_damage(parts, def(target).affinities).total;
+    };
+    return taken(detail::DamageType::radiant) > taken(usual) ? detail::DamageType::radiant : usual;
 }
 
 void Session::finish_reaction()
@@ -3613,6 +3654,15 @@ bool Session::submit(const Command &command)
         ++a.dashes;
         log(a.source.name + " moves aggressively.",
         {"{name} moves aggressively.", {{"name", a.source.name}}});
+    }
+    else if (command.verb == "sacred_weapon")
+    {
+        --a.channel_divinity;
+        detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::sacred_weapon,
+                                    std::max(1, d.casting - 2));
+        log(a.source.name + " uses Sacred Weapon.",
+        {"{name} uses Sacred Weapon.", {{"name", a.source.name}}});
     }
     else if (command.verb == "adrenaline_rush")
     {
@@ -4832,7 +4882,7 @@ class Module final : public RulesModule
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief features, Hide and weapon mastery remain unavailable.";
         if (sheet.character_class == "Paladin")
             result.description =
-                "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style and Paladin's Smite at level two. Level four grants an available feat or ability points.\nChannel Divinity and the Oath of Devotion remain unavailable.";
+                "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Ranger")
             result.description =
                 "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
@@ -5004,7 +5054,7 @@ class Module final : public RulesModule
                                         SpellChoiceContext::advancement, false);
             const auto preparation =
                 detail::spell_choice_options(next, SpellChoiceContext::advancement);
-            choice.spells = sheet.prepared_spells;
+            choice.spells = preparation.locked_prepared;
             for (const auto &spell : preparation.preparation)
                 if (choice.spells.size() < preparation.prepared_count &&
                         std::find(choice.spells.begin(), choice.spells.end(), spell.id) ==
@@ -5163,6 +5213,14 @@ class Module final : public RulesModule
             next.grants.push_back({"feature:action_surge", "class:fighter", 2, {}});
             next.grants.push_back({"feature:tactical_mind", "class:fighter", 2, {}});
         }
+        // The Oath of Devotion is the SRD's only Paladin subclass.
+        if (next.character_class == "Paladin" && next.level == 3)
+        {
+            next.grants.push_back({"feature:channel_divinity", "class:paladin", 3, {}});
+            next.grants.push_back({"subclass:devotion", "class:paladin", 3, {}});
+            next.grants.push_back(
+            {"feature:sacred_weapon", "subclass:paladin:devotion", 3, {}});
+        }
         if (next.character_class == "Fighter" && next.level == 3)
         {
             next.grants.push_back({"subclass:champion", "class:fighter", 3, {}});
@@ -5258,7 +5316,7 @@ class Module final : public RulesModule
         {
             const std::string note =
                 next.character_class == "Paladin"
-                ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style and Paladin's Smite at level two. Level four grants an available feat or ability points.\nChannel Divinity and the Oath of Devotion remain unavailable."
+                ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
                 : "Fighting Style and fixed HP advancement. Level four grants an available feat or ability points.\nSpellcasting, cantrip alternatives and other class/subclass features remain unavailable.";
             next.class_modifiers += "\n" + note;
             next.class_messages.push_back({note, {}});
@@ -6201,7 +6259,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.72", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.73", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

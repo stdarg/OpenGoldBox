@@ -80,8 +80,11 @@ struct AlwaysPrepared
     unsigned level;
 };
 
-// Paladin's Smite, SRD 5.2.1 p. 54.
-constexpr std::array always_prepared_table{AlwaysPrepared{"Paladin", "divine_smite", 2}};
+// Paladin's Smite, SRD 5.2.1 p. 54, and the Oath of Devotion spells, p. 56.
+constexpr std::array always_prepared_table{
+    AlwaysPrepared{"Paladin", "divine_smite", 2},
+    AlwaysPrepared{"Paladin", "protection_from_evil_and_good", 3},
+    AlwaysPrepared{"Paladin", "shield_of_faith", 3}};
 
 const PreparedCaster *prepared_caster(std::string_view klass)
 {
@@ -235,8 +238,12 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
                 std::find(access.always_prepared.begin(), access.always_prepared.end(),
                           spell.id) == access.always_prepared.end())
             result.preparation.push_back({std::string(spell.id), std::string(spell.label), {}});
+    // A spell that becomes always prepared at this level frees its place.
     if (context == SpellChoiceContext::advancement)
-        result.locked_prepared = sheet.prepared_spells;
+        for (const auto &id : sheet.prepared_spells)
+            if (std::find(access.always_prepared.begin(), access.always_prepared.end(), id) ==
+                    access.always_prepared.end())
+                result.locked_prepared.push_back(id);
     return result;
 }
 } // namespace
@@ -613,6 +620,9 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
             return std::find(choices.prepared->begin(), choices.prepared->end(), id) ==
                    choices.prepared->end();
         }) <= 1);
+        const auto always = always_prepared_spells(sheet.character_class, sheet.level);
+        for (const auto &id : *choices.prepared)
+            require(std::find(always.begin(), always.end(), id) == always.end());
         candidate.prepared_spells = *choices.prepared;
     }
     const auto access = spell_access(candidate.grants, candidate.character_class, candidate.level,

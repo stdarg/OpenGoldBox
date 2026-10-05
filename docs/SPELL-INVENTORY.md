@@ -106,7 +106,7 @@ list column intentionally does not absorb subclass or species additions.
 | Polar | Land Druid level 3: Fog Cloud, Hold Person, Ray of Frost | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
 | Temperate | Land Druid level 3: Misty Step, Shocking Grasp, Sleep | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
 | Tropical | Land Druid level 3: Acid Splash, Ray of Sickness, Web | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
-| Devotion | Paladin level 3: Protection from Evil and Good, Shield of Faith | 56 | [#142](https://github.com/stdarg/OpenGold/issues/142) |
+| Devotion | Paladin level 3: Protection from Evil and Good, Shield of Faith (delivered, always prepared) | 56 | [#142](https://github.com/stdarg/OpenGold/issues/142) |
 | Draconic | Sorcerer level 3: Chromatic Orb, Command, Dragon's Breath (Alter Self removed by DM-3) | 70 | [#135](https://github.com/stdarg/OpenGold/issues/135) |
 | Fiend | Warlock level 3: Burning Hands, Command, Scorching Ray (Suggestion removed by DM-3) | 76 | [#163](https://github.com/stdarg/OpenGold/issues/163) |
 | Evoker | Level-3 Evocation Savant adds Wizard Evocation spellbook choices no higher than level 2; acquisition must follow the feature rather than automatic preparation | 82 | [#101](https://github.com/stdarg/OpenGold/issues/101) |
