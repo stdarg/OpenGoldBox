@@ -339,6 +339,8 @@ struct Definition
     // has) and the bonus to Strength-based weapon damage.
     int rages{}, rage_damage{};
     int strength{};       // Strength modifier, to tell Strength-based attacks
+    bool danger_sense{}, reckless{}; // Barbarian level 2
+    bool frenzy{};                   // Berserker, Barbarian level 3
     bool heavy_armor{};   // wearing Heavy armor, which prevents Rage
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
@@ -643,7 +645,7 @@ character_definition(std::string_view bytes,
 }))
     throw std::runtime_error("Invalid character profile");
     if (level > 1 && klass != "Fighter" && klass != "Cleric" && klass != "Wizard" &&
-            klass != "Rogue" && klass != "Paladin" && klass != "Ranger")
+            klass != "Rogue" && klass != "Paladin" && klass != "Ranger" && klass != "Barbarian")
         throw std::runtime_error("Advancement is unsupported for this class");
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
@@ -681,6 +683,8 @@ character_definition(std::string_view bytes,
     d.rages = klass == "Barbarian" ? (level >= 3 ? 3 : 2) : 0;
     d.rage_damage = klass == "Barbarian" ? 2 : 0;
     d.strength = str;
+    d.danger_sense = d.reckless = klass == "Barbarian" && level >= 2;
+    d.frenzy = klass == "Barbarian" && level >= 3;
     d.rushes = race == "Orc" ? 2 + (level - 1) / 4 : 0;
     const auto trained_saves = detail::class_save_proficiencies(klass);
     for (unsigned i = 0; i < 6; ++i)
@@ -1490,6 +1494,8 @@ class Session final : public CombatSession
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
     [[nodiscard]] bool strength_attack(const Actor &a, bool ranged) const;
+    void attack_recklessly(Actor &a);
+    int frenzy_damage(Actor &berserker, bool critical);
     int resized_damage(const Actor &a, bool weapon_hit, int amount);
     [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
     // Whether `a` is Charmed by `other`, which it then cannot attack or target.
@@ -2268,7 +2274,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
-                    std::pair{detail::EffectKind::raging, "Raging"}
+                    std::pair{detail::EffectKind::raging, "Raging"},
+                    std::pair{detail::EffectKind::reckless, "Reckless"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -3412,6 +3419,10 @@ std::vector<Command> Session::legal_commands() const
                         a.source.definition.starts_with("slums-kobold") ? "Dagger attack"
                         : "Melee attack",
                         other.source.id);
+                // Reckless Attack: chosen with the turn's first attack roll, which
+                // through level four is the Attack action's one attack.
+                if (feet <= d.reach && d.reckless && strength_attack(a, false))
+                    add(id, "reckless", "Reckless attack", other.source.id);
                 // True Strike: the cantrip's attack with the melee weapon in hand,
                 // which also serves as its Material and Somatic component.
                 if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
@@ -4683,6 +4694,12 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // every melee weapon attack.
     if (!spell && !ranged && detail::has_effect(a.effects, detail::EffectKind::enfeebled))
         result.disadvantage = true;
+    // Reckless Attack: Advantage on the attacker's Strength attack rolls and on
+    // attack rolls against it.
+    if ((!spell && detail::has_effect(a.effects, detail::EffectKind::reckless) &&
+            strength_attack(a, ranged)) ||
+            detail::has_effect(target.effects, detail::EffectKind::reckless))
+        result.advantage = true;
     // Blur: attack rolls against the creature have Disadvantage.
     if (detail::has_effect(target.effects, detail::EffectKind::blur))
         result.disadvantage = true;
@@ -4990,6 +5007,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         weapon_damage += d.rage_damage;
         log("Rage adds " + std::to_string(d.rage_damage) + " damage.",
         {"Rage adds {damage} damage.", {{"damage", std::to_string(d.rage_damage)}}});
+        weapon_damage += frenzy_damage(actor(a.source.id), critical_hit(a, target, natural));
     }
     weapon_damage = resized_damage(a, hit && !spell, weapon_damage);
     // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
@@ -5137,6 +5155,34 @@ int Session::resized_damage(const Actor &a, bool weapon_hit, int amount)
         return std::max(1, amount - less);
     }
     return amount;
+}
+
+int Session::frenzy_damage(Actor &berserker, bool critical)
+{
+    // Frenzy: raging and reckless, the turn's first Strength-based hit deals a
+    // d6 per point of Rage Damage. The Reckless effect records that it struck.
+    if (!def(berserker).frenzy || actors_[turn_].source.id != berserker.source.id)
+        return 0;
+    for (auto &e : berserker.effects.active)
+        if (e.kind == detail::EffectKind::reckless && !e.dc)
+        {
+            e.dc = 1;
+            const int extra = dice({def(berserker).rage_damage, 6, 0}, critical);
+            log("Frenzy adds " + std::to_string(extra) + " damage.",
+            {"Frenzy adds {damage} damage.", {{"damage", std::to_string(extra)}}});
+            return extra;
+        }
+    return 0;
+}
+
+void Session::attack_recklessly(Actor &a)
+{
+    // Until the start of its next turn: Advantage on its Strength attack rolls,
+    // and attack rolls against it have Advantage.
+    detail::apply_poisoned(a.effects, scope_, a.source.id, a.source.name, next_turn_ms(a),
+                           detail::EffectKind::reckless);
+    log(a.source.name + " attacks recklessly.",
+    {"{name} attacks recklessly.", {{"name", a.source.name}}});
 }
 
 bool Session::strength_attack(const Actor &a, bool ranged) const
@@ -5497,6 +5543,9 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     auto modifiers =
         detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
     modifiers.advantage |= advantage;
+    // Danger Sense: Advantage on Dexterity saves unless Incapacitated.
+    modifiers.advantage |= ability == detail::Ability::dexterity && def(target).danger_sense &&
+                           !detail::incapacitated(target.effects);
     // Restrained: Disadvantage on Dexterity saves.
     modifiers.disadvantage |= ability == detail::Ability::dexterity && detail::restrained(target.effects);
     // Ray of Enfeeblement and Reduce: Disadvantage on Strength saves; Enlarge:
@@ -5787,6 +5836,14 @@ void Session::answer_shield(const Command &command)
 
 void Session::dispatch(const Command &command)
 {
+    if (command.verb == "reckless")
+    {
+        attack_recklessly(actor(command.actor));
+        auto melee = command;
+        melee.verb = "melee";
+        dispatch(melee);
+        return;
+    }
     auto &a = actor(command.actor);
     const auto &d = def(a);
     // A smite must follow the hit at once. Resolving that hit's own weapon
@@ -7331,6 +7388,13 @@ class Module final : public RulesModule
             return {detail::scholar_options(sheet.grants)};
         if (sheet.character_class == "Fighter" && sheet.level >= 4)
             return {detail::mastery_options("fighter", 4, sheet.grants)};
+        if (sheet.character_class == "Barbarian" && sheet.level >= 3)
+        {
+            std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
+            if (sheet.level >= 4)
+                groups.push_back(detail::mastery_options("barbarian", 4, sheet.grants));
+            return groups;
+        }
         return {};
     }
 
@@ -7376,7 +7440,8 @@ class Module final : public RulesModule
         if (sheet.level >= 4 ||
                 (sheet.character_class != "Fighter" && sheet.character_class != "Cleric" &&
                  sheet.character_class != "Wizard" && sheet.character_class != "Rogue" &&
-                 sheet.character_class != "Paladin" && sheet.character_class != "Ranger"))
+                 sheet.character_class != "Paladin" && sheet.character_class != "Ranger" &&
+                 sheet.character_class != "Barbarian"))
             return {};
         AdvancementOptions result;
         result.level = sheet.level + 1;
@@ -7422,6 +7487,10 @@ class Module final : public RulesModule
             result.training = {detail::scholar_options(sheet.grants)};
         if (sheet.character_class == "Fighter" && result.level == 4)
             result.training = {detail::mastery_options("fighter", 4, sheet.grants)};
+        if (sheet.character_class == "Barbarian" && result.level == 3)
+            result.training = {detail::primal_knowledge_options(sheet.grants)};
+        if (sheet.character_class == "Barbarian" && result.level == 4)
+            result.training = {detail::mastery_options("barbarian", 4, sheet.grants)};
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
         if (sheet.character_class == "Ranger" && result.level == 3)
             result.training = {{
@@ -7458,6 +7527,8 @@ class Module final : public RulesModule
         if (sheet.character_class == "Paladin")
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        if (sheet.character_class == "Barbarian")
+            result.description = "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery.";
         if (sheet.character_class == "Ranger")
             result.description =
                 "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
@@ -7775,10 +7846,23 @@ class Module final : public RulesModule
                 id == "feat:skilled"             ? value
                 : id == "class:wizard:scholar" ? "expertise:" + value
                 : id == "subclass:ranger:hunter" ? "prey:" + value
+                : id == "class:barbarian:primal_knowledge" ? "skill:" + value
                 : "mastery:" + value,
                 id,
                 unsigned(next.level),
                 {}});
+        }
+        if (next.character_class == "Barbarian" && next.level == 2)
+        {
+            next.grants.push_back({"feature:danger_sense", "class:barbarian", 2, {}});
+            next.grants.push_back({"feature:reckless_attack", "class:barbarian", 2, {}});
+        }
+        // The Berserker is the SRD's only Barbarian subclass.
+        if (next.character_class == "Barbarian" && next.level == 3)
+        {
+            next.grants.push_back({"subclass:berserker", "class:barbarian", 3, {}});
+            next.grants.push_back({"feature:frenzy", "subclass:barbarian:berserker", 3, {}});
+            next.grants.push_back({"feature:primal_knowledge", "class:barbarian", 3, {}});
         }
         // The Thief is the SRD's only Rogue subclass. Fast Hands waits for magic
         // items to have a use; Second-Story Work is cut (SRD-DECISIONS).
@@ -7915,10 +7999,13 @@ class Module final : public RulesModule
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.",
                 {}});
         }
-        if (next.character_class == "Paladin" || next.character_class == "Ranger")
+        if (next.character_class == "Paladin" || next.character_class == "Ranger" ||
+                next.character_class == "Barbarian")
         {
             const std::string note =
-                next.character_class == "Paladin"
+                next.character_class == "Barbarian"
+                ? "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery."
+                : next.character_class == "Paladin"
                 ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
                 : "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
             next.class_modifiers += "\n" + note;
@@ -9084,7 +9171,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.112", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.113", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

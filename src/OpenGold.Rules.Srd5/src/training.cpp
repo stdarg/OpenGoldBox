@@ -343,6 +343,27 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
     return group;
 }
 
+// Primal Knowledge: one more Barbarian skill at level three. Its own grant is
+// left out, so the skill it chose stays a valid option.
+TrainingChoiceGroup primal_knowledge_options(std::span<const FeatureGrant> grants)
+{
+    TrainingChoiceGroup group{"class:barbarian:primal_knowledge", "Primal Knowledge", 1, {}};
+    group.acquired_level = 3;
+    for (const auto &skill : skills)
+    {
+        const auto id = "skill:" + std::string(skill.id);
+        const bool held = std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+        {
+            return g.id == id && g.source_id != group.id;
+        });
+        if ((skill.id == "animal_handling" || skill.id == "athletics" ||
+                skill.id == "intimidation" || skill.id == "nature" || skill.id == "perception" ||
+                skill.id == "survival") && !held)
+            group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+    }
+    return group;
+}
+
 // Skilled grants three skill proficiencies chosen from the whole catalog. Skills the
 // character already holds are omitted, which is what makes an already-known pick
 // fail the membership check rather than silently add a second identical grant.
@@ -419,6 +440,20 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                 selected.push_back(grant.id);
                 continue;
             }
+            if (grant.source_id == "class:barbarian:primal_knowledge")
+            {
+                require(klass == "barbarian" && grant.level == 3 && grant.choices.empty());
+                const auto group = primal_knowledge_options(grants);
+                require(std::any_of(group.options.begin(), group.options.end(),
+                                    [&](const auto & option)
+                {
+                    return grant.id == "skill:" + option.id;
+                }));
+                auto &selected = choices[grant.source_id];
+                require(selected.empty());
+                selected.push_back(grant.id.substr(6));
+                continue;
+            }
             if (grant.source_id == "class:wizard:scholar")
             {
                 require(klass == "wizard" &&
@@ -458,6 +493,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     require(required.empty());
     auto starting = choices;
     starting.erase("class:wizard:scholar");
+    starting.erase("class:barbarian:primal_knowledge");
     starting.erase(std::string(skilled));
     starting.erase(mastery_options(klass, 4).id);
     auto expected = training_grants(klass, background, starting);
@@ -499,6 +535,10 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
     require((picked.empty() && !has_skilled) || level >= 4);
     if (has_skilled)
         result.complete &= picked.size() == 3;
+    const auto &primal = selected(choices, "class:barbarian:primal_knowledge");
+    require(primal.empty() || level >= 3);
+    if (klass == "barbarian" && level >= 3)
+        result.complete &= primal.size() == 1;
     const auto &scholar = selected(choices, "class:wizard:scholar");
     require(scholar.empty() || level >= 2);
     if (klass == "wizard" && level >= 2)

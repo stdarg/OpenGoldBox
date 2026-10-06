@@ -126,7 +126,10 @@ enum class EffectKind : unsigned
     // Charm Person: Charmed by the caster, so it cannot attack or target it.
     charmed = 49,
     // Rage: until the end of the Barbarian's next turn, unless extended.
-    raging = 50
+    raging = 50,
+    // Reckless Attack: until the start of the Barbarian's next turn; `dc` is 1
+    // once this turn's Frenzy has struck.
+    reckless = 51
 };
 
 // The longest a spell benefit lasts, in milliseconds.

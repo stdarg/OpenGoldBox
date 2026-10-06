@@ -145,6 +145,17 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     }
     if (klass == "rogue" && level >= 2)
         required.push_back({"feature:cunning_action", "class:rogue", 2, {}});
+    if (klass == "barbarian" && level >= 2)
+    {
+        required.push_back({"feature:danger_sense", "class:barbarian", 2, {}});
+        required.push_back({"feature:reckless_attack", "class:barbarian", 2, {}});
+    }
+    if (klass == "barbarian" && level >= 3)
+    {
+        required.push_back({"subclass:berserker", "class:barbarian", 3, {}});
+        required.push_back({"feature:frenzy", "subclass:barbarian:berserker", 3, {}});
+        required.push_back({"feature:primal_knowledge", "class:barbarian", 3, {}});
+    }
     if (klass == "fighter" && level >= 2)
     {
         required.push_back({"feature:action_surge", "class:fighter", 2, {}});
@@ -195,6 +206,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         else
         {
             require((klass == "fighter" || klass == "cleric" || klass == "wizard" ||
+                     klass == "barbarian" ||
                      klass == "rogue" || klass == "paladin" || klass == "ranger") &&
                     grant.level == 4 &&
                     grant.source_id ==

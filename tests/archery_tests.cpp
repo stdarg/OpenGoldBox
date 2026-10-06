@@ -132,7 +132,8 @@ void selection()
         auto id = p.add_pc(hero(klass.id));
         p.award_experience(2700, "archery");
         if (klass.id != "fighter" && klass.id != "wizard" && klass.id != "cleric" &&
-                klass.id != "rogue" && klass.id != "paladin" && klass.id != "ranger")
+                klass.id != "rogue" && klass.id != "paladin" && klass.id != "ranger" &&
+                klass.id != "barbarian")
         {
             check(!p.can_advance(id),
                   "Unsupported later advancement does not invent Fighting Style entitlement");

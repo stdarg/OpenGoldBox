@@ -99,7 +99,7 @@ void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId c
 {
     if ((kind != EffectKind::poisoned && kind != EffectKind::dazzled &&
             kind != EffectKind::shield && kind != EffectKind::acid_arrow &&
-            kind != EffectKind::raging) || !can_apply(effects) ||
+            kind != EffectKind::raging && kind != EffectKind::reckless) || !can_apply(effects) ||
             !scope || !caster || name.empty() || name.size() > 160 || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
@@ -609,7 +609,8 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::dazzled) ||
                            kind == unsigned(EffectKind::shield) ||
                            kind == unsigned(EffectKind::acid_arrow) ||
-                           kind == unsigned(EffectKind::raging);
+                           kind == unsigned(EffectKind::raging) ||
+                           kind == unsigned(EffectKind::reckless);
         // Searing Smite, Ensnaring Strike and Entangle act at the start of the
         // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
@@ -654,7 +655,8 @@ EffectState read_effects(std::istream &in)
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
                             (turn_save ? e.save_in_ms != 0
                              : (!e.save_in_ms || e.save_in_ms > round_ms)))) ||
-                (timed && (e.dc != 0 || e.save_in_ms != 0 || !e.remaining_ms ||
+                (timed && ((e.dc != 0 && !(kind == unsigned(EffectKind::reckless) && e.dc == 1)) ||
+                           e.save_in_ms != 0 || !e.remaining_ms ||
                            e.remaining_ms > ((kind == unsigned(EffectKind::chill_touch) ||
                                               kind == unsigned(EffectKind::vex) ||
                                               kind == unsigned(EffectKind::guiding_bolt) ||

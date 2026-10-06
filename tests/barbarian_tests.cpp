@@ -1,3 +1,4 @@
+#include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -37,8 +38,8 @@ std::unique_ptr<RulesModule> rules()
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
-// A level-one Barbarian.
-Character barbarian()
+// A Barbarian of the given level, advanced with the default choices.
+Character barbarian(unsigned level = 1)
 {
     CharacterDraft d;
     d.race = "human";
@@ -53,7 +54,12 @@ Character barbarian()
     d.training = {{"class:barbarian", {"athletics", "perception"}},
         {"class:barbarian:weapon_mastery", {"greataxe", "handaxe"}}
     };
-    return Character(*srd5::character_rules(), d, {});
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    party.award_experience(2700, "barbarian-xp");
+    for (unsigned n = 1; n < level; ++n)
+        party.advance(id, party.default_advancement(id));
+    return party.member(id).character;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
@@ -165,6 +171,76 @@ void heavy_armor_checks()
     check(!offered(*c, "rage"), "No Rage in Heavy armor");
 }
 
+bool has_grant(const Character &hero, std::string_view id, std::string_view source = {})
+{
+    const auto &grants = hero.sheet().grants;
+    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+    {
+        return g.id == id && (source.empty() || g.source_id == source);
+    });
+}
+
+void advancement_checks()
+{
+    const auto second = barbarian(2), third = barbarian(3), fourth = barbarian(4);
+    check(second.sheet().level == 2 && has_grant(second, "feature:danger_sense") &&
+          has_grant(second, "feature:reckless_attack") && !has_grant(second, "subclass:berserker"),
+          "Level two brings Danger Sense and Reckless Attack");
+    const auto &skills = third.sheet().grants;
+    check(has_grant(third, "subclass:berserker") && has_grant(third, "feature:frenzy") &&
+          has_grant(third, "feature:primal_knowledge") &&
+          std::count_if(skills.begin(), skills.end(), [](const auto & g)
+    {
+        return g.source_id == "class:barbarian:primal_knowledge" && g.id.starts_with("skill:");
+    }) == 1,
+    "Level three brings the Berserker, Frenzy and a Primal Knowledge skill");
+    const auto &masteries = fourth.sheet().grants;
+    check(fourth.sheet().level == 4 &&
+          std::count_if(masteries.begin(), masteries.end(), [](const auto & g)
+    {
+        return g.id.starts_with("mastery:");
+    }) == 3,
+    "Level four brings a third Weapon Mastery");
+    auto module = rules();
+    auto c = battle(*module, third);
+    check(rages_left(*c) == 3, "A level-three Barbarian has three Rages");
+}
+
+void reckless_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, barbarian(2));
+    check(offered(*c, "reckless") && submit(*c, "reckless", 98) &&
+          logged(*c, "Barbarian attacks recklessly.") && logged(*c, "(advantage)") &&
+          !unit(*c, 1).action,
+          "A Reckless attack is the Attack action's attack, with Advantage");
+    reach(*c, 98);
+    const auto before = c->snapshot().log.size();
+    check(submit(*c, "melee", 1), "The enemy attacks");
+    const auto log = c->snapshot().log;
+    check(std::any_of(log.begin() + std::ptrdiff_t(before), log.end(), [](const auto & line)
+    {
+        return line.find("Enemy -> Barbarian") != std::string::npos &&
+               line.find("(advantage)") != std::string::npos;
+    }),
+    "Attacks against a reckless Barbarian have Advantage");
+}
+
+void frenzy_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 32; ++seed)
+    {
+        auto c = battle(*module, barbarian(3), {"greataxe"}, seed);
+        check(submit(*c, "rage") && submit(*c, "reckless", 98), "Rage, then attack recklessly");
+        if (!logged(*c, "Rage adds"))
+            continue;
+        check(logged(*c, "Frenzy adds"), "A raging, reckless hit adds Frenzy's 2d6");
+        return;
+    }
+    throw std::runtime_error("No seed hits");
+}
+
 } // namespace
 
 int main()
@@ -173,6 +249,9 @@ int main()
     {
         rage_checks();
         heavy_armor_checks();
+        advancement_checks();
+        reckless_checks();
+        frenzy_checks();
         std::cout << "Barbarian tests passed\n";
     }
     catch (const std::exception &e)
