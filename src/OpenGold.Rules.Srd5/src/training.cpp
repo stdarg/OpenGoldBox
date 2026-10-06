@@ -216,6 +216,14 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
                 "Add your ability modifier to the extra attack granted by the Light property."});
     if (klass == "warlock")
         result.push_back(invocation_options(1, {}, "class:warlock:invocations"));
+    if (klass == "druid")
+        result.push_back({"class:druid:primal_order",
+                          "Primal Order",
+                          1,
+    {   {"magician", "Magician", "One extra Druid cantrip."},
+        {"warden", "Warden", "Training with Martial weapons and Medium armor."}
+    },
+    TrainingChoiceControl::single_selection});
     if (klass == "cleric")
         result.push_back({std::string(divine_order),
                           "Divine Order",
@@ -322,7 +330,8 @@ bool is_training_grant(const FeatureGrant &grant)
 {
     return is_mastery_grant(grant) || grant.id.starts_with("skill:") ||
            grant.id.starts_with("expertise:") || grant.id.starts_with("order:") ||
-           grant.id.starts_with("metamagic:") || grant.id.starts_with("invocation:");
+           grant.id.starts_with("metamagic:") || grant.id.starts_with("invocation:") ||
+           grant.id.starts_with("land:");
 }
 
 std::vector<FeatureGrant> without_training(std::span<const FeatureGrant> grants)
@@ -410,6 +419,20 @@ TrainingChoiceGroup lore_options(std::span<const FeatureGrant> grants)
     return group;
 }
 
+// Circle of the Land: the land type that picks the Circle Spells (SRD 5.2.1 p. 46).
+TrainingChoiceGroup land_options()
+{
+    TrainingChoiceGroup group{"subclass:druid:land", "Circle of the Land", 1, {},
+                              TrainingChoiceControl::single_selection};
+    group.acquired_level = 3;
+    group.options = {
+        {"arid", "Arid Land", "Circle Spells: Blur, Burning Hands and Fire Bolt."},
+        {"polar", "Polar Land", "Circle Spells: Fog Cloud, Hold Person and Ray of Frost."},
+        {"temperate", "Temperate Land", "Circle Spells: Misty Step, Shocking Grasp and Sleep."},
+        {"tropical", "Tropical Land", "Circle Spells: Acid Splash, Ray of Sickness and Web."}};
+    return group;
+}
+
 // Metamagic: two options at Sorcerer level two (SRD 5.2.1 pp. 66-67).
 TrainingChoiceGroup metamagic_options()
 {
@@ -487,7 +510,7 @@ std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_vi
             result, choices, group,
             group.id.ends_with(":weapon_mastery")        ? "mastery:"
             : group.id == "class:fighter:fighting_style" ? "feat:"
-            : group.id == divine_order                   ? "order:"
+            : group.id == divine_order || group.id == "class:druid:primal_order" ? "order:"
             : group.id == "class:warlock:invocations"    ? "invocation:"
             : group.id == "class:" + std::string(klass)  ? "skill:"
             : "expertise:");
@@ -540,6 +563,20 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                 auto &selected = choices[grant.source_id];
                 require(selected.size() < 3);
                 selected.push_back(grant.id.substr(6));
+                continue;
+            }
+            if (grant.source_id == "subclass:druid:land")
+            {
+                require(klass == "druid" && grant.level == 3 && grant.choices.empty());
+                const auto group = land_options();
+                require(std::any_of(group.options.begin(), group.options.end(),
+                                    [&](const auto & option)
+                {
+                    return grant.id == "land:" + option.id;
+                }));
+                auto &selected = choices[grant.source_id];
+                require(selected.empty());
+                selected.push_back(grant.id.substr(5));
                 continue;
             }
             if (grant.source_id == "class:warlock:invocations:2")
@@ -616,7 +653,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             const auto prefix = grant.source_id.ends_with(":weapon_mastery")        ? "mastery:"
                                 : grant.source_id == "class:fighter:fighting_style" ? "feat:"
-                                : grant.source_id == divine_order                   ? "order:"
+                                : grant.source_id == divine_order ||
+                                  grant.source_id == "class:druid:primal_order" ? "order:"
                                 : grant.source_id == "class:warlock:invocations"    ? "invocation:"
                                 : grant.source_id == "class:" + std::string(klass)  ? "skill:"
                                 : "expertise:";
@@ -630,6 +668,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     starting.erase("class:sorcerer:metamagic");
     starting.erase("class:warlock:invocations:2");
     starting.erase("subclass:bard:lore");
+    starting.erase("subclass:druid:land");
     starting.erase(std::string(skilled));
     starting.erase(mastery_options(klass, 4).id);
     auto expected = training_grants(klass, background, starting);

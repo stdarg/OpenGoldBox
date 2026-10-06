@@ -221,7 +221,8 @@ void access()
         });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
-        if (klass.id != "wizard" && klass.id != "warlock" && klass.id != "sorcerer")
+        if (klass.id != "wizard" && klass.id != "warlock" && klass.id != "sorcerer" &&
+                klass.id != "druid")
         {
             d = draft();
             d.character_class = klass.id;

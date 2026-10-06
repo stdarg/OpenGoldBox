@@ -149,7 +149,14 @@ enum class EffectKind : unsigned
     lit = 58,
     // Bardic Inspiration: `dc` is the die the creature may add to a failed
     // attack roll or save.
-    inspired = 59
+    inspired = 59,
+    // Shillelagh: the caster's Club or Quarterstaff uses the spellcasting
+    // ability and a d8.
+    shillelagh = 60,
+    // Produce Flame: a flame in hand the caster may hurl as an Action.
+    produce_flame = 61,
+    // Barkskin: the creature's AC is at least 17.
+    barkskin = 62
 };
 
 // The longest a spell benefit lasts, in milliseconds.

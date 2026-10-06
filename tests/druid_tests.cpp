@@ -1,0 +1,249 @@
+#include "opengold/campaign_party.h"
+#include "opengold/character.h"
+#include "opengold/srd5.h"
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+using namespace opengold;
+using namespace opengold::rules;
+
+namespace
+{
+const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
+void check(bool ok, const char *message)
+{
+    if (!ok)
+        throw std::runtime_error(message);
+}
+
+std::string read(const std::filesystem::path &p)
+{
+    std::ifstream in(p);
+    check(bool(in), "Read rules");
+    return {std::istreambuf_iterator<char>(in), {}};
+}
+
+// A sturdy AC 1 target that hits back.
+std::unique_ptr<RulesModule> rules()
+{
+    return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
+                               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+}
+
+// A Druid with Wisdom 18 and the given Primal Order, advanced to the given level.
+Character druid(unsigned level = 1, std::string order = "warden")
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "druid";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = "Druid";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    d.rolls[4] = {{6, 6, 6, 1}, 3};
+    d.training = {{"class:druid", {"nature", "medicine"}}, {"class:druid:primal_order", {order}}};
+    d.cantrips = {"produce_flame", "shillelagh"};
+    d.spells = SpellChoices{{},
+        std::vector<std::string> {"cure_wounds", "entangle", "faerie_fire", "thunderwave"},
+        {}, {}};
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    party.award_experience(2700, "druid-xp");
+    for (unsigned n = 1; n < level; ++n)
+        party.advance(id, party.default_advancement(id));
+    return party.member(id).character;
+}
+
+CombatantView unit(const CombatSession &c, EntityId id)
+{
+    for (const auto &a : c.snapshot().combatants)
+        if (a.id == id)
+            return a;
+    throw std::runtime_error("Missing combatant");
+}
+
+bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == verb && (!target || command.target == target))
+            return c.submit(command);
+    return false;
+}
+
+bool aim(CombatSession &c, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == "area_move" && command.destination == cell)
+            return c.submit(command);
+    return false;
+}
+
+bool logged(const CombatSession &c, std::string_view text)
+{
+    const auto log = c.snapshot().log;
+    return std::any_of(log.begin(), log.end(), [&](const auto & line)
+    {
+        return line.find(text) != std::string::npos;
+    });
+}
+
+bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
+{
+    const auto conditions = unit(c, id).conditions;
+    return std::any_of(conditions.begin(), conditions.end(), [&](const auto & condition)
+    {
+        return condition.source == label;
+    });
+}
+
+bool has_grant(const Character &hero, std::string_view id)
+{
+    const auto &grants = hero.sheet().grants;
+    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+    {
+        return g.id == id;
+    });
+}
+
+// The Druid (1), an ally (2) and an enemy (98) beside the Druid or 15 feet away.
+std::unique_ptr<CombatSession> battle(const RulesModule &module, const CharacterSheet &sheet,
+                                      std::vector<std::string> gear = {}, bool adjacent = false,
+                                      std::uint64_t seed = 5)
+{
+    const auto profile = module.character_profile(sheet, gear).data;
+    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
+        {   {1, "campaign-character", "Druid", 0, {1, 1}, profile},
+            {2, "target", "Ally", 0, {1, 2}},
+            {98, "target", "Enemy", 1, {adjacent ? 2 : 4, 1}}
+        }},
+    seed);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*c, "end"), "Reach the Druid's turn");
+    check(c->snapshot().actor == 1, "The Druid acts");
+    return c;
+}
+
+// The bonus in the latest "d20 N + B vs AC" line.
+int attack_bonus(const CombatSession &c)
+{
+    const auto log = c.snapshot().log;
+    for (auto line = log.rbegin(); line != log.rend(); ++line)
+        if (const auto at = line->find(" vs AC "); at != std::string::npos)
+        {
+            const auto plus = line->rfind(" + ", at);
+            return std::stoi(line->substr(plus + 3, at - plus - 3));
+        }
+    throw std::runtime_error("No attack roll logged");
+}
+
+void cantrip_checks()
+{
+    auto module = rules();
+    const auto sheet = druid().sheet();
+    {
+        auto c = battle(*module, sheet);
+        check(submit(*c, "produce_flame") && has_condition(*c, 1, "Produce Flame") &&
+              unit(*c, 1).action && !unit(*c, 1).bonus_action,
+              "Produce Flame is a Bonus Action");
+        check(submit(*c, "hurl_flame", 98) && logged(*c, "Druid hurls Produce Flame.") &&
+              !unit(*c, 1).action && has_condition(*c, 1, "Produce Flame"),
+              "Hurling the flame is an Action and the flame stays");
+    }
+    {
+        auto c = battle(*module, sheet);
+        check(std::none_of(c->legal_commands().begin(), c->legal_commands().end(),
+                           [](const auto & command)
+        {
+            return command.verb == "shillelagh" || command.verb == "hurl_flame";
+        }),
+        "Shillelagh needs a Club or Quarterstaff; no flame, no hurl");
+    }
+    auto plain = battle(*module, sheet, {"quarterstaff"}, true);
+    check(submit(*plain, "melee", 98), "A plain staff strike");
+    const int strength_bonus = attack_bonus(*plain);
+    auto c = battle(*module, sheet, {"quarterstaff"}, true);
+    check(submit(*c, "shillelagh") && has_condition(*c, 1, "Shillelagh") && submit(*c, "melee", 98),
+          "Shillelagh, then a staff strike");
+    check(attack_bonus(*c) == strength_bonus + 2,
+          "Shillelagh attacks with Wisdom (+4) instead of Strength (+2)");
+}
+
+void order_checks()
+{
+    auto module = rules();
+    const auto warden = druid(1, "warden").sheet(), magician = druid(1, "magician").sheet();
+    auto draft = CharacterDraft{};
+    draft.character_class = "druid";
+    draft.training["class:druid:primal_order"] = {"magician"};
+    check(srd5::character_rules()->cantrip_options(draft).count == 3 &&
+          module->spell_access(magician).cantrip_choices == 3 &&
+          module->spell_access(warden).cantrip_choices == 2,
+          "Magician learns one extra cantrip");
+    const auto casts = [&](const CharacterSheet & sheet)
+    {
+        auto c = battle(*module, sheet, {"chain_shirt"});
+        const auto commands = c->legal_commands();
+        return std::any_of(commands.begin(), commands.end(), [](const auto & command)
+        {
+            return command.verb == "produce_flame";
+        });
+    };
+    check(casts(warden) && !casts(magician), "Warden trains Medium armor; others cannot cast in it");
+}
+
+void circle_checks()
+{
+    auto module = rules();
+    const auto third = druid(3), fourth = druid(4);
+    check(has_grant(third, "subclass:land") && has_grant(third, "feature:circle_spells") &&
+          has_grant(third, "land:arid"), "Level three brings the Circle of the Land");
+    const auto always = module->spell_access(third.sheet()).always_prepared;
+    check(always == std::vector<std::string> {"blur", "burning_hands", "fire_bolt"},
+          "Arid Land's Circle Spells are always prepared");
+    auto c = battle(*module, third.sheet());
+    check(submit(*c, "fire_bolt", 98), "A Circle cantrip is cast");
+    check(fourth.sheet().level == 4 && module->spell_access(fourth.sheet()).cantrip_choices == 3,
+          "A level-four Druid knows a third cantrip");
+}
+
+void barkskin_checks()
+{
+    auto module = rules();
+    auto sheet = druid(3).sheet();
+    sheet.prepared_spells.back() = "barkskin";
+    auto c = battle(*module, sheet);
+    const int before = unit(*c, 2).armor_class;
+    check(before < 17 && submit(*c, "barkskin", 2) && unit(*c, 2).armor_class == 17 &&
+          unit(*c, 1).action, "Barkskin is a Bonus Action that raises AC to 17");
+}
+
+} // namespace
+
+int main()
+{
+    try
+    {
+        cantrip_checks();
+        order_checks();
+        circle_checks();
+        barkskin_checks();
+        std::cout << "Druid tests passed\n";
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+        return 1;
+    }
+    return 0;
+}

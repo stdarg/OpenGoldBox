@@ -71,13 +71,16 @@ bool trained(std::string_view klass, std::span<const FeatureGrant> grants, std::
     // Starting-class grants, SRD 5.2.1 pp. 49 and 61, plus the Protector Divine
     // Order's Martial weapon and Heavy armor training. Multiclass entry and other
     // optional feature grants are separate, not yet implemented capabilities.
+    // The Druid's Warden Primal Order: Martial weapons and Medium armor.
     const bool protector = detail::has_grant(grants, "order:protector");
+    const bool warden = detail::has_grant(grants, "order:warden");
     if (const auto *weapon = detail::weapon(key))
         return detail::weapon_proficient(detail::grant_source_id(klass), *weapon) ||
-               (protector && weapon->martial);
+               ((protector || warden) && weapon->martial);
     if (const auto *armor = detail::armor(key))
         return detail::armor_trained(klass, armor->category) ||
-               (protector && armor->category == detail::ArmorCategory::heavy);
+               (protector && armor->category == detail::ArmorCategory::heavy) ||
+               (warden && armor->category == detail::ArmorCategory::medium);
     throw std::runtime_error("Unsupported equipment conversion: " + std::string(key));
 }
 } // namespace
@@ -419,6 +422,42 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Bard", "see_invisibility", 3},
     SpellAccessRow{"Bard", "shatter", 3},
     SpellAccessRow{"Bard", "silence", 3},
+    SpellAccessRow{"Druid", "produce_flame", 1},
+    SpellAccessRow{"Druid", "shillelagh", 1},
+    SpellAccessRow{"Druid", "poison_spray", 1},
+    SpellAccessRow{"Druid", "resistance", 1},
+    SpellAccessRow{"Druid", "spare_the_dying", 1},
+    SpellAccessRow{"Druid", "starry_wisp", 1},
+    SpellAccessRow{"Druid", "charm_person", 1},
+    SpellAccessRow{"Druid", "cure_wounds", 1},
+    SpellAccessRow{"Druid", "entangle", 1},
+    SpellAccessRow{"Druid", "faerie_fire", 1},
+    SpellAccessRow{"Druid", "fog_cloud", 1},
+    SpellAccessRow{"Druid", "goodberry", 1},
+    SpellAccessRow{"Druid", "healing_word", 1},
+    SpellAccessRow{"Druid", "ice_knife", 1},
+    SpellAccessRow{"Druid", "longstrider", 1},
+    SpellAccessRow{"Druid", "protection_from_evil_and_good", 1},
+    SpellAccessRow{"Druid", "thunderwave", 1},
+    SpellAccessRow{"Druid", "aid", 3},
+    SpellAccessRow{"Druid", "barkskin", 3},
+    SpellAccessRow{"Druid", "enlarge_reduce", 3},
+    SpellAccessRow{"Druid", "flaming_sphere", 3},
+    SpellAccessRow{"Druid", "gust_of_wind", 3},
+    SpellAccessRow{"Druid", "hold_person", 3},
+    SpellAccessRow{"Druid", "lesser_restoration", 3},
+    SpellAccessRow{"Druid", "protection_from_poison", 3},
+    // Circle Spells come only from the land chosen at level three.
+    SpellAccessRow{"Druid", "blur", 3},
+    SpellAccessRow{"Druid", "burning_hands", 3},
+    SpellAccessRow{"Druid", "fire_bolt", 3},
+    SpellAccessRow{"Druid", "ray_of_frost", 3},
+    SpellAccessRow{"Druid", "misty_step", 3},
+    SpellAccessRow{"Druid", "shocking_grasp", 3},
+    SpellAccessRow{"Druid", "sleep", 3},
+    SpellAccessRow{"Druid", "acid_splash", 3},
+    SpellAccessRow{"Druid", "ray_of_sickness", 3},
+    SpellAccessRow{"Druid", "web", 3},
     // Fiend Spells come only from the Fiend Patron.
     SpellAccessRow{"Warlock", "burning_hands", 3},
     SpellAccessRow{"Warlock", "command", 3},
@@ -515,6 +554,7 @@ struct Definition
     // Actor::arcane, which no Bard has; Cutting Words from level 3.
     int bardic_inspiration{};
     bool cutting_words{};
+    bool shillelagh_weapon{}; // the melee weapon is a Club or Quarterstaff
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -873,7 +913,8 @@ character_definition(std::string_view bytes,
     throw std::runtime_error("Invalid character profile");
     if (level > 1 && klass != "Fighter" && klass != "Cleric" && klass != "Wizard" &&
             klass != "Rogue" && klass != "Paladin" && klass != "Ranger" && klass != "Barbarian" &&
-            klass != "Monk" && klass != "Sorcerer" && klass != "Warlock" && klass != "Bard")
+            klass != "Monk" && klass != "Sorcerer" && klass != "Warlock" && klass != "Bard" &&
+            klass != "Druid")
         throw std::runtime_error("Advancement is unsupported for this class");
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
@@ -962,16 +1003,19 @@ character_definition(std::string_view bytes,
     d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
     // Pact Magic: one level-1 slot, then two; level-2 slots from level 3.
     d.slots = klass == "Warlock" ? (level <= 2 ? int(level) : 0)
-              : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard")
+              : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard" ||
+                 klass == "Druid")
               ? (level == 1 ? 2 : level == 2 ? 3 : 4)
               : (klass == "Paladin" || klass == "Ranger") ? (level <= 2 ? 2 : 3)
               : 0;
     d.slots2 = klass == "Warlock" && level >= 3 ? 2
-               : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard") &&
+               : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard" ||
+                 klass == "Druid") &&
                level >= 3
                ? (level == 3 ? 2 : 3)
                : 0;
-    d.casting = 2 + ability_modifier(scores[(klass == "Cleric" || klass == "Ranger") ? 4
+    d.casting = 2 + ability_modifier(scores[(klass == "Cleric" || klass == "Ranger" ||
+                                             klass == "Druid") ? 4
                                             : (klass == "Warlock" || klass == "Sorcerer" ||
                                                klass == "Paladin") ? 5
                                             : 3]);
@@ -1040,6 +1084,7 @@ character_definition(std::string_view bytes,
             }
             weapon = true;
             d.weapon_label = item->label;
+            d.shillelagh_weapon = key == "club" || key == "quarterstaff";
             d.finesse = item->finesse;
             d.ranged_weapon = item->ranged;
             d.weapon_hands = item->hands;
@@ -1137,7 +1182,7 @@ character_definition(std::string_view bytes,
     {
         // Always-prepared spells are stored with the others but never prepared.
         prepared = detail::spells_of_level(stored_spells, false);
-        for (const auto &id : detail::always_prepared_spells(klass, level))
+        for (const auto &id : detail::always_prepared_spells(klass, level, grants))
             std::erase(prepared, id);
     }
     const auto access = detail::spell_access(grants, klass, level, prepared);
@@ -1840,6 +1885,8 @@ class Session final : public CombatSession
     }
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
+    // Shillelagh is on the Club or Quarterstaff the creature holds.
+    [[nodiscard]] bool shillelagh(const Actor &a) const;
     // A readied Metamagic option and, for Transmuted Spell, its new type.
     struct ReadyMetamagic
     {
@@ -2825,7 +2872,10 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::hex, "Hexed"},
                     std::pair{detail::EffectKind::outlined, "Outlined (Faerie Fire)"},
                     std::pair{detail::EffectKind::lit, "Lit (Starry Wisp)"},
-                    std::pair{detail::EffectKind::inspired, "Inspired"}
+                    std::pair{detail::EffectKind::inspired, "Inspired"},
+                    std::pair{detail::EffectKind::shillelagh, "Shillelagh"},
+                    std::pair{detail::EffectKind::produce_flame, "Produce Flame"},
+                    std::pair{detail::EffectKind::barkskin, "Barkskin"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -3032,6 +3082,27 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     }
     case detail::Rider::faerie_fire:
         return; // An aimed area, resolved by cast_area().
+    case detail::Rider::shillelagh:
+    case detail::Rider::produce_flame:
+    {
+        // Casting it again ends the earlier one.
+        const auto kind = spell.rider == detail::Rider::shillelagh ? detail::EffectKind::shillelagh
+                          : detail::EffectKind::produce_flame;
+        std::erase_if(target.effects.active, [&](const auto & e)
+        {
+            return e.kind == kind;
+        });
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name, kind, 0);
+        log(target.source.name + " gains " + std::string(spell.label) + ".",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
+        return;
+    }
+    case detail::Rider::barkskin:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::barkskin, 0);
+        log(target.source.name + " gains Barkskin.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Barkskin", true}}});
+        return;
     case detail::Rider::hex:
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::hex, 0);
@@ -3500,7 +3571,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 (spell.rider == detail::Rider::mirror_image &&
                  detail::has_effect(other.effects, detail::EffectKind::mirror_image)) ||
                 (spell.rider == detail::Rider::magic_weapon &&
-                 detail::has_effect(other.effects, detail::EffectKind::magic_weapon)))
+                 detail::has_effect(other.effects, detail::EffectKind::magic_weapon)) ||
+                (spell.rider == detail::Rider::barkskin &&
+                 detail::has_effect(other.effects, detail::EffectKind::barkskin)) ||
+                (spell.rider == detail::Rider::shillelagh && !d.shillelagh_weapon))
             continue;
         // Subtle Spell needs neither Verbal nor Somatic components.
         const auto *components = detail::spell_components(spell.id);
@@ -4148,6 +4222,10 @@ std::vector<Command> Session::legal_commands() const
                         a.source.definition.starts_with("slums-kobold") ? "Dagger attack"
                         : "Melee attack",
                         other.source.id);
+                // Produce Flame: the flame in hand is hurled as an Action.
+                if (feet <= 60 && a.actions.available(true) &&
+                        detail::has_effect(a.effects, detail::EffectKind::produce_flame))
+                    add(id, "hurl_flame", "Hurl flame (Produce Flame)", other.source.id);
                 // Reckless Attack: chosen with the turn's first attack roll, which
                 // through level four is the Attack action's one attack.
                 if (feet <= d.reach && d.reckless && strength_attack(a, false))
@@ -5250,7 +5328,9 @@ int Session::armor_class(const Actor &target) const
     const int base = detail::has_effect(target.effects, detail::EffectKind::mage_armor)
                      ? std::max(def(target).ac, def(target).mage_armor_ac)
                      : def(target).ac;
-    return base +
+    // Barkskin: an AC of 17 if it was lower.
+    return (detail::has_effect(target.effects, detail::EffectKind::barkskin) ? std::max(base, 17)
+            : base) +
            (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0) +
            (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
            (detail::has_effect(target.effects, detail::EffectKind::shield) ? 5 : 0);
@@ -5523,6 +5603,9 @@ Dice Session::weapon_dice(const Actor &a, bool ranged) const
     auto result = ranged ? d.ranged : d.melee;
     if (!ranged && d.versatile_sides && d.weapon_hands == 2)
         result.sides = d.versatile_sides;
+    // Shillelagh: a d8 plus the spellcasting modifier.
+    if (!ranged && shillelagh(a))
+        result = {1, 8, d.casting - 2};
     if (a.cleave_damage || (a.light_damage && !d.two_weapon_fighting))
         result.bonus = std::min(0, result.bonus);
     return result;
@@ -5747,7 +5830,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
         extend_rage(actor(a.source.id));
-    int bonus = (spell    ? d.casting
+    int bonus = (spell || (!ranged && shillelagh(a)) ? d.casting
                  : ranged ? d.ranged_bonus
                  : d.melee_bonus) + blessing_die(a) +
                 (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
@@ -6150,6 +6233,11 @@ bool Session::strength_attack(const Actor &a, bool ranged) const
     if (ranged)
         return !d.ranged_weapon && d.ranged_ability == d.strength;
     return !d.melee.count || d.melee_ability == d.strength;
+}
+
+bool Session::shillelagh(const Actor &a) const
+{
+    return def(a).shillelagh_weapon && detail::has_effect(a.effects, detail::EffectKind::shillelagh);
 }
 
 int Session::magic_weapon_bonus(const Actor &a) const
@@ -7244,6 +7332,16 @@ void Session::dispatch(const Command &command)
             else
                 detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
         }
+    }
+    else if (command.verb == "hurl_flame")
+    {
+        // A Magic action, not a casting: a ranged spell attack for 1d8 Fire.
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        end_sanctuary(a);
+        log(a.source.name + " hurls Produce Flame.",
+        {"{name} hurls {spell}.", {{"name", a.source.name}, {"spell", "Produce Flame", true}}});
+        (void)attack(a, actor(command.target), true, true, {1, 8, 0}, detail::DamageType::fire);
     }
     else if (command.verb == "bardic_inspiration")
     {
@@ -8656,6 +8754,8 @@ class Module final : public RulesModule
             return {detail::metamagic_options()};
         if (sheet.character_class == "Bard" && sheet.level >= 3)
             return {detail::lore_options(sheet.grants)};
+        if (sheet.character_class == "Druid" && sheet.level >= 3)
+            return {detail::land_options()};
         if (sheet.character_class == "Barbarian" && sheet.level >= 3)
         {
             std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
@@ -8711,7 +8811,7 @@ class Module final : public RulesModule
                  sheet.character_class != "Paladin" && sheet.character_class != "Ranger" &&
                  sheet.character_class != "Barbarian" && sheet.character_class != "Monk" &&
                  sheet.character_class != "Sorcerer" && sheet.character_class != "Warlock" &&
-                 sheet.character_class != "Bard"))
+                 sheet.character_class != "Bard" && sheet.character_class != "Druid"))
             return {};
         AdvancementOptions result;
         result.level = sheet.level + 1;
@@ -8763,6 +8863,8 @@ class Module final : public RulesModule
             result.training = {detail::metamagic_options()};
         if (sheet.character_class == "Bard" && result.level == 3)
             result.training = {detail::lore_options(sheet.grants)};
+        if (sheet.character_class == "Druid" && result.level == 3)
+            result.training = {detail::land_options()};
         if (sheet.character_class == "Warlock" && result.level == 2)
             result.training = {detail::invocation_options(2, sheet.grants,
                                                           "class:warlock:invocations:2")};
@@ -8804,6 +8906,8 @@ class Module final : public RulesModule
         if (sheet.character_class == "Paladin")
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        if (sheet.character_class == "Druid")
+            result.description = "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points.";
         if (sheet.character_class == "Bard")
             result.description = "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points.";
         if (sheet.character_class == "Warlock")
@@ -8998,7 +9102,7 @@ class Module final : public RulesModule
             choice.feat = "ability_score_improvement";
             const unsigned primary =
                 (sheet.character_class == "Fighter" || sheet.character_class == "Paladin") ? 0
-                : sheet.character_class == "Cleric"                                        ? 4
+                : (sheet.character_class == "Cleric" || sheet.character_class == "Druid") ? 4
                 : (sheet.character_class == "Rogue" || sheet.character_class == "Ranger")  ? 1
                 : (sheet.character_class == "Sorcerer" || sheet.character_class == "Warlock" ||
                    sheet.character_class == "Bard") ? 5
@@ -9138,6 +9242,7 @@ class Module final : public RulesModule
                 : id == "class:sorcerer:metamagic" ? "metamagic:" + value
                 : id == "class:warlock:invocations:2" ? "invocation:" + value
                 : id == "subclass:bard:lore" ? "skill:" + value
+                : id == "subclass:druid:land" ? "land:" + value
                 : "mastery:" + value,
                 id,
                 unsigned(next.level),
@@ -9147,6 +9252,12 @@ class Module final : public RulesModule
             next.grants.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
         if (next.character_class == "Bard" && next.level == 2)
             next.grants.push_back({"feature:jack_of_all_trades", "class:bard", 2, {}});
+        // The Circle of the Land is the SRD's only Druid subclass.
+        if (next.character_class == "Druid" && next.level == 3)
+        {
+            next.grants.push_back({"subclass:land", "class:druid", 3, {}});
+            next.grants.push_back({"feature:circle_spells", "subclass:druid:land", 3, {}});
+        }
         // The College of Lore is the SRD's only Bard subclass.
         if (next.character_class == "Bard" && next.level == 3)
         {
@@ -9337,10 +9448,12 @@ class Module final : public RulesModule
         if (next.character_class == "Paladin" || next.character_class == "Ranger" ||
                 next.character_class == "Barbarian" || next.character_class == "Monk" ||
                 next.character_class == "Sorcerer" || next.character_class == "Warlock" ||
-                next.character_class == "Bard")
+                next.character_class == "Bard" || next.character_class == "Druid")
         {
             const std::string note =
-                next.character_class == "Bard"
+                next.character_class == "Druid"
+                ? "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points."
+                : next.character_class == "Bard"
                 ? "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points."
                 : next.character_class == "Warlock"
                 ? "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points."
@@ -10540,7 +10653,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.124", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.125", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

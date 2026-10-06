@@ -280,10 +280,6 @@ void progression()
         capped.advance(cap, invalid);
     });
     check(saved(capped) == unchanged, "Ability cap rejects without partially applying level or HP");
-    CampaignParty unsupported(module());
-    const auto id = unsupported.add_pc(character("druid"));
-    unsupported.award_experience(2700, "xp");
-    check(!unsupported.can_advance(id), "Unsupported classes cannot select partial advancement");
 }
 
 void hp_history()

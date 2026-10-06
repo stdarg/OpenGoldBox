@@ -389,6 +389,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::hex:
     case EffectKind::inspired:
     case EffectKind::magic_weapon:
+    case EffectKind::barkskin:
     case EffectKind::invisible:
     case EffectKind::see_invisibility:
         return 3600000; // 1 hour
@@ -410,7 +411,10 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::dragons_breath:
     case EffectKind::innate_sorcery:
     case EffectKind::outlined:
+    case EffectKind::shillelagh:
         return 60000; // 1 minute
+    case EffectKind::produce_flame:
+        return 600000; // 10 minutes
     case EffectKind::metamagic:
         return 6000; // the rest of the turn, cleared when it ends
     case EffectKind::extended:

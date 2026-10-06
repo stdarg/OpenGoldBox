@@ -110,7 +110,10 @@ enum class Rider : unsigned
     vicious_mockery,
     starry_wisp,
     dissonant_whispers,
-    faerie_fire
+    faerie_fire,
+    shillelagh,
+    produce_flame,
+    barkskin
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -1161,7 +1164,39 @@ inline constexpr std::array spell_table
         .requires_sight = true,
         .dice = {2, 4, 0},
         .add_casting_modifier = true,
-        .upcast = {.extra_dice = 2}}};
+        .upcast = {.extra_dice = 2}},
+    // SRD 5.2.1 p. 162: the held Club or Quarterstaff uses the spellcasting
+    // ability and a d8 for a minute. Offered only while holding one.
+    SpellDef{
+        .id = "shillelagh",
+        .label = "Shillelagh",
+        .level = 0,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::shillelagh},
+    // SRD 5.2.1 p. 157: a flame in the hand; while it lasts, an Action hurls
+    // it as a ranged spell attack ("hurl_flame").
+    SpellDef{
+        .id = "produce_flame",
+        .label = "Produce Flame",
+        .level = 0,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::produce_flame},
+    // SRD 5.2.1 p. 115: the touched creature's AC is at least 17 for an hour.
+    SpellDef{
+        .id = "barkskin",
+        .label = "Barkskin",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::barkskin}};
 
 // Accepts the "_2" upcast verb form, so callers can pass a command verb directly.
 // Command's options, in the order the effect stores them (1-based).

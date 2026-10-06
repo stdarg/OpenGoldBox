@@ -22,6 +22,13 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Druid spellcasting
+
+Rules 0.6.125 makes the Druid a preparing caster through level 4 with a Primal
+Order, Produce Flame, Shillelagh, Barkskin and the Circle of the Land's Circle
+Spells. See
+[Druid](DRUID.md#spellcasting-primal-order-and-the-circle-of-the-land).
+
 ## Bardic Inspiration and Cutting Words
 
 Rules 0.6.124 adds Bardic Inspiration and the Lore Bard's Cutting Words. See

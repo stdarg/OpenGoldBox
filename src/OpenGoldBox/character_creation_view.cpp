@@ -744,7 +744,8 @@ void CharacterCreationView::refresh()
             d.spells && (d.character_class == "paladin" || d.character_class == "ranger")
             ? N_("Choose prepared spells. Unfilled choices remain pending; Back preserves your choices.")
             : d.spells && (d.character_class == "cleric" || d.character_class == "sorcerer" ||
-                           d.character_class == "warlock" || d.character_class == "bard")
+                           d.character_class == "warlock" || d.character_class == "bard" ||
+                           d.character_class == "druid")
             ? N_("Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices.")
             : d.spells
             ? N_("Choose cantrips, spellbook entries and prepared spells. Back preserves your choices.")

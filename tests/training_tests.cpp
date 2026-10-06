@@ -69,7 +69,8 @@ TrainingChoices choices()
 void complete_mastery(CharacterDraft &d)
 {
     for (const auto &group : srd5::character_rules()->training_options(d))
-        if (group.id.ends_with(":weapon_mastery") || group.id == "class:warlock:invocations")
+        if (group.id.ends_with(":weapon_mastery") || group.id == "class:warlock:invocations" ||
+                group.id == "class:druid:primal_order")
         {
             auto &selected = d.training[group.id];
             for (const auto &option : group.options)

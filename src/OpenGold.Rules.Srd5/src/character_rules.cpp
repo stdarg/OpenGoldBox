@@ -116,7 +116,8 @@ class CreatorRules final : public CharacterRules
     {
         if (draft.character_class == "cleric" || draft.character_class == "paladin" ||
                 draft.character_class == "ranger" || draft.character_class == "sorcerer" ||
-                draft.character_class == "warlock" || draft.character_class == "bard")
+                draft.character_class == "warlock" || draft.character_class == "bard" ||
+                draft.character_class == "druid")
         {
             // These classes prepare from the class list; the selection never changes it.
             auto base = draft;
@@ -148,6 +149,11 @@ class CreatorRules final : public CharacterRules
         const auto order = draft.training.find("class:cleric:divine_order");
         if (draft.character_class == "cleric" && order != draft.training.end() &&
                 order->second == std::vector<std::string> {"thaumaturge"})
+            ++group.count;
+        // So does the Druid's Magician Primal Order.
+        const auto primal = draft.training.find("class:druid:primal_order");
+        if (draft.character_class == "druid" && primal != draft.training.end() &&
+                primal->second == std::vector<std::string> {"magician"})
             ++group.count;
         return group;
     }
@@ -479,7 +485,8 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
         s.prepared_spells = {"magic_missile"};
     if (d.spells && (d.character_class == "cleric" || d.character_class == "paladin" ||
                      d.character_class == "ranger" || d.character_class == "sorcerer" ||
-                     d.character_class == "warlock" || d.character_class == "bard"))
+                     d.character_class == "warlock" || d.character_class == "bard" ||
+                     d.character_class == "druid"))
         detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement, false);
     else if (d.spells)
     {
