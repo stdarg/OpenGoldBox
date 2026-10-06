@@ -878,7 +878,7 @@ void CombatView::use_cunning_action()
         get_node<Button>("UseCunningAction")->release_focus();
         select_mode(verb);
     }
-    else if (verb == "lay_on_hands" || verb == "martial_arts" || verb == "flurry_of_blows")
+    else if (verb == "lay_on_hands" || verb == "martial_arts" || verb.begins_with("flurry_"))
     {
         // A touched ally is chosen on the battlefield, like a spell target.
         get_node<Button>("UseCunningAction")->release_focus();
@@ -1069,13 +1069,15 @@ void CombatView::immediate(String verb)
         wanted = "spell_cast";
     if (state.area_targeting && wanted == "end")
         wanted = "area_cast";
-    // React answers whichever reaction is asked: an opportunity attack or Shield.
+    // React answers whichever reaction is asked: an opportunity attack, Shield,
+    // Deflect Attacks or its redirect.
     const auto legal = demo_->combat().legal_commands();
-    if (wanted == "opportunity" && std::any_of(legal.begin(), legal.end(), [](const auto & c)
-{
-    return c.verb == "shield";
-}))
-    wanted = "shield";
+    for (const char *reaction : {"shield", "deflect", "redirect"})
+        if (wanted == "opportunity" && std::any_of(legal.begin(), legal.end(), [&](const auto & c)
+    {
+        return c.verb == reaction;
+    }))
+        wanted = reaction;
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
                      [&](const auto & a)
 {
@@ -2027,7 +2029,7 @@ void CombatView::refresh()
     }
 })
     get_node<Button>(node)->set_disabled(!enabled(verb));
-    if (enabled("shield"))
+    if (enabled("shield") || enabled("deflect") || enabled("redirect"))
         get_node<Button>("React")->set_disabled(false);
     {
         const bool party_turn = loaded && s.outcome == Outcome::ongoing && player;
@@ -2061,6 +2063,10 @@ void CombatView::refresh()
         : s.reaction_pending && enabled("shield")
         ? (missile_shield ? i18n::text("Magic Missile is aimed at you. Cast Shield or decline.")
            : i18n::text("You are hit. Cast Shield (+5 AC) or decline."))
+        : s.reaction_pending && enabled("deflect")
+        ? i18n::text("You are hit. Deflect the attack (1d10 + Dexterity + Monk level less damage) or decline.")
+        : s.reaction_pending && enabled("redirect")
+        ? i18n::text("The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline.")
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
         : player
     ? i18n::format("Selected: {action}. Click a highlighted square.", {{"action", action}})

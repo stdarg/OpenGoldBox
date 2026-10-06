@@ -175,7 +175,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 39;
+constexpr unsigned checkpoint_format = 40;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -347,6 +347,10 @@ struct Definition
     // Monk level 2: Focus Points (kept in Actor::surges, which no Monk has) and
     // Uncanny Metabolism's once-per-Long-Rest use (kept in Actor::arcane).
     int focus{}, metabolism{};
+    bool deflect{};       // Monk level 3: Deflect Attacks
+    bool open_hand{};     // Warrior of the Open Hand, Monk level 3
+    int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
+    int dexterity{};      // Dexterity modifier
     bool frenzy{};                   // Berserker, Barbarian level 3
     bool heavy_armor{};   // wearing Heavy armor, which prevents Rage
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
@@ -711,6 +715,9 @@ character_definition(std::string_view bytes,
     d.frenzy = klass == "Barbarian" && level >= 3;
     d.focus = klass == "Monk" && level >= 2 ? int(level) : 0;
     d.metabolism = klass == "Monk" && level >= 2 ? 1 : 0;
+    d.deflect = d.open_hand = klass == "Monk" && level >= 3;
+    d.focus_dc = 8 + 2 + ability_modifier(scores[4]);
+    d.dexterity = dex;
     d.rushes = race == "Orc" ? 2 + (level - 1) / 4 : 0;
     const auto trained_saves = detail::class_save_proficiencies(klass);
     for (unsigned i = 0; i < 6; ++i)
@@ -1242,28 +1249,48 @@ class Session final : public CombatSession
     std::vector<Zone> zones_;
     std::vector<ChampionMove> champion_offers_;
     std::optional<EffectReaction> effect_reaction_origin_;
-    // Shield is a Reaction to a hit that lands deep inside a command. The
-    // command is undone at that moment and the creature asked; its answer
+    // Reactions to a hit (Shield, Deflect Attacks) land deep inside a command.
+    // The command is undone at that moment and the creature asked; its answer
     // replays the command with the same dice.
-    struct ShieldQuestion
+    enum class Asked : unsigned
+    {
+        hit,      // an attack roll hit: Shield or Deflect Attacks
+        missile,  // targeted by Magic Missile: Shield
+        redirect  // Deflect Attacks stopped all the damage: redirect it for 1 Focus
+    };
+    struct ReactionQuestion
     {
         EntityId target{};
-        bool missile{}; // targeted by Magic Missile rather than hit by an attack
+        Asked asked{};
+        bool deflectable{}; // the hit deals Bludgeoning, Piercing or Slashing damage
+        bool critical{};    // a hit Shield cannot turn aside
     };
-    struct PendingShield
+    // A creature's answer during the command being replayed: "shield",
+    // "deflect", "redirect" or "decline".
+    struct ReactionAnswer
     {
-        ShieldQuestion question;
-        Command command;
-        std::vector<EntityId> declined;
+        EntityId target{};
+        Asked asked{};
+        std::string verb;
     };
-    std::optional<PendingShield> shield_prompt_;
-    // Creatures that declined Shield during the command being replayed.
-    std::vector<EntityId> shield_declined_;
+    struct PendingReaction
+    {
+        ReactionQuestion question;
+        Command command;
+        std::vector<ReactionAnswer> answers;
+    };
+    std::optional<PendingReaction> reaction_prompt_;
+    std::vector<ReactionAnswer> reaction_answers_;
+    [[nodiscard]] const ReactionAnswer *answer_of(EntityId target, Asked asked) const;
     [[nodiscard]] bool can_shield(const Actor &target) const;
-    void ask_shield(const Actor &target, bool missile) const;
+    [[nodiscard]] bool can_deflect(const Actor &target, bool deflectable) const;
+    void ask_reaction(const Actor &target, Asked asked, bool deflectable = false,
+                      bool critical = false) const;
+    int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
+                  bool ranged);
     void perform(const Command &command);
     void dispatch(const Command &command);
-    void answer_shield(const Command &command);
+    void answer_reaction(const Command &command);
 
     bool effect_waiting() const
     {
@@ -1311,6 +1338,7 @@ class Session final : public CombatSession
     Actor item_actor(const Actor &, unsigned item) const;
     Actor unarmed_actor(const Actor &a) const;
     void use_focus_movement(Actor &a, std::string_view verb);
+    void open_hand(const Actor &monk, Actor &target, std::string_view verb);
     bool weapon_reaction(const Actor &, const Definition &) const;
     bool has_weapon_reaction(const Actor &, Cell, Cell) const;
     void validate_light() const;
@@ -1698,6 +1726,29 @@ void Session::activate_light()
     light_active_ = true;
 }
 
+void Session::open_hand(const Actor &monk, Actor &target, std::string_view verb)
+{
+    // Open Hand Technique on a Flurry hit: Addle stops Opportunity Attacks
+    // until the target's next turn; Push (Strength save) shoves it 15 feet;
+    // Topple (Dexterity save) knocks it Prone.
+    if (verb == "flurry_addle")
+    {
+        detail::apply_poisoned(target.effects, scope_, monk.source.id, monk.source.name,
+                               next_turn_ms(target), detail::EffectKind::addled);
+        log(target.source.name + " is addled.", {"{name} is addled.", {{"name", target.source.name}}});
+    }
+    else if (verb == "flurry_push" &&
+             !saving_throw_succeeds(target, detail::Ability::strength, def(monk).focus_dc))
+        push_away(monk, target, 3);
+    else if (verb == "flurry_topple" && !target.effects.prone &&
+             !saving_throw_succeeds(target, detail::Ability::dexterity, def(monk).focus_dc))
+    {
+        target.effects.prone = true;
+        log(target.source.name + " is knocked Prone.",
+        {"{name} is knocked Prone.", {{"name", target.source.name}}});
+    }
+}
+
 void Session::use_focus_movement(Actor &a, std::string_view verb)
 {
     // Disengage with Patient Defense, Dash with Step of the Wind; a Focus Point
@@ -2062,9 +2113,9 @@ Snapshot Session::snapshot() const
               : pending()      ? pending()
               : actors_[turn_].source.id;
     s.reaction_pending = !champion_move_ && pending() != 0;
-    if (shield_prompt_)
+    if (reaction_prompt_)
     {
-        s.actor = shield_prompt_->question.target;
+        s.actor = reaction_prompt_->question.target;
         s.reaction_pending = true;
     }
     s.battlefield = zoned_board();
@@ -2283,8 +2334,8 @@ Snapshot Session::snapshot() const
         if (def(a).focus)
             view.bonus_actions.insert(view.bonus_actions.end(),
         {
-            "flurry_of_blows", "patient_defense", "patient_defense_focus", "step_of_the_wind",
-            "step_of_the_wind_focus"
+            "flurry_of_blows", "flurry_addle", "flurry_push", "flurry_topple", "patient_defense",
+            "patient_defense_focus", "step_of_the_wind", "step_of_the_wind_focus"
         });
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
             view.bonus_actions.push_back("divine_smite_free");
@@ -2395,7 +2446,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
                     std::pair{detail::EffectKind::raging, "Raging"},
-                    std::pair{detail::EffectKind::reckless, "Reckless"}
+                    std::pair{detail::EffectKind::reckless, "Reckless"},
+                    std::pair{detail::EffectKind::addled, "Addled"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2853,7 +2905,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         if (sanctuary_stops(a, target))
             return;
         if (spell.id == "magic_missile")
-            ask_shield(target, true);
+            ask_reaction(target, Asked::missile);
         if (spell.id == "magic_missile" &&
                 detail::has_effect(target.effects, detail::EffectKind::shield))
         {
@@ -3119,13 +3171,22 @@ std::vector<Command> Session::legal_commands() const
         commands.push_back(
         {revision_, who, target, std::move(verb), std::move(label), destination});
     };
-    if (shield_prompt_)
+    if (reaction_prompt_)
     {
-        const auto who = shield_prompt_->question.target;
-        add(who, "shield",
-            shield_prompt_->question.missile ? "Cast Shield against Magic Missile"
-            : "Cast Shield against the hit");
-        add(who, "decline", "Decline reaction");
+        const auto &question = reaction_prompt_->question;
+        const auto &who = actor(question.target);
+        if (question.asked == Asked::redirect)
+            add(who.source.id, "redirect", "Redirect the attack (1 Focus)");
+        else
+        {
+            if (can_shield(who) && !question.critical)
+                add(who.source.id, "shield",
+                    question.asked == Asked::missile ? "Cast Shield against Magic Missile"
+                    : "Cast Shield against the hit");
+            if (question.asked == Asked::hit && can_deflect(who, question.deflectable))
+                add(who.source.id, "deflect", "Deflect Attacks");
+        }
+        add(who.source.id, "decline", "Decline reaction");
         return commands;
     }
     // While aiming an area spell, only moving the preview, casting or cancelling.
@@ -3386,7 +3447,16 @@ std::vector<Command> Session::legal_commands() const
             for (const auto &other : actors_)
                 if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
                         distance(a.source.cell, other.source.cell) <= 5)
+                {
                     add(id, "flurry_of_blows", "Flurry of Blows", other.source.id);
+                    // Open Hand Technique, chosen for the whole Flurry.
+                    if (d.open_hand)
+                    {
+                        add(id, "flurry_addle", "Flurry of Blows: Addle", other.source.id);
+                        add(id, "flurry_push", "Flurry of Blows: Push", other.source.id);
+                        add(id, "flurry_topple", "Flurry of Blows: Topple", other.source.id);
+                    }
+                }
         }
     }
     // Rage: a Bonus Action outside Heavy armor; on a later turn a Bonus Action
@@ -5117,9 +5187,17 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
     const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
     const bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
-    // Shield cannot turn a critical hit into a miss, so it is not offered then.
-    if (hit && !automatic)
-        ask_shield(target, false);
+    const auto damage_type = spell    ? spell_type
+                             : ranged ? d.ranged_type
+                             : sacred_damage_type(a, target);
+    // Shield cannot turn a critical hit into a miss, but Deflect Attacks can
+    // still lessen one.
+    if (hit)
+        ask_reaction(target, Asked::hit,
+                     damage_type == detail::DamageType::bludgeoning ||
+                     damage_type == detail::DamageType::piercing ||
+                     damage_type == detail::DamageType::slashing,
+                     automatic);
     if (hit && strikes_duplicate(a, target))
         return false;
     const bool sneak = hit && !spell && sneak_eligible(a, target, ranged, modifiers.mode());
@@ -5171,13 +5249,13 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     if (enfeebled)
         log("Ray of Enfeeblement subtracts " + std::to_string(enfeebled) + " damage.",
         {"Ray of Enfeeblement subtracts {damage} damage.", {{"damage", std::to_string(enfeebled)}}});
-    apply_hit(a, target, natural, bonus, modifiers.mode(),
-              std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
-              savage,
-              spell    ? spell_type
-              : ranged ? d.ranged_type
-              : sacred_damage_type(a, target),
-              ranged, spell);
+    const int amount =
+        hit ? deflected(a, target,
+                        std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
+                        damage_type, ranged)
+        : 0;
+    apply_hit(a, target, natural, bonus, modifiers.mode(), amount, savage, damage_type, ranged,
+              spell);
     // Hunter's Mark: any attack-roll hit on the caster's quarry deals 1d6 Force.
     if (hit && marked_by(target, a) && !target.dead)
     {
@@ -5892,8 +5970,8 @@ bool Session::submit(const Command &command)
     return same_command(c, command);
     }))
     return false;
-    if (shield_prompt_)
-        answer_shield(command);
+    if (reaction_prompt_)
+        answer_reaction(command);
     else
         perform(command);
     // Revisions are command tickets; zero is reserved for invalid commands.
@@ -5902,11 +5980,19 @@ bool Session::submit(const Command &command)
         revision_ = 1;
     update_outcome();
     if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
-            !shield_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
+            !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
         end_turn();
     if (outcome_ != Outcome::ongoing)
         advance_turn_time();
     return true;
+}
+
+const Session::ReactionAnswer *Session::answer_of(EntityId target, Asked asked) const
+{
+    for (const auto &answer : reaction_answers_)
+        if (answer.target == target && answer.asked == asked)
+            return &answer;
+    return nullptr;
 }
 
 bool Session::can_shield(const Actor &target) const
@@ -5915,28 +6001,88 @@ bool Session::can_shield(const Actor &target) const
            detail::knows_spell(def(target).spells, "shield") &&
            !detail::incapacitated(target.effects) &&
            !detail::has_effect(target.effects, detail::EffectKind::shield) &&
-           somatic_hand(def(target)) && !silenced(target.source.cell) &&
-           std::find(shield_declined_.begin(), shield_declined_.end(), target.source.id) ==
-           shield_declined_.end();
+           somatic_hand(def(target)) && !silenced(target.source.cell);
 }
 
-void Session::ask_shield(const Actor &target, bool missile) const
+bool Session::can_deflect(const Actor &target, bool deflectable) const
 {
-    // Unwinds the command to perform(), which asks the creature.
-    if (can_shield(target))
-        throw ShieldQuestion{target.source.id, missile};
+    return deflectable && def(target).deflect && conscious(target) && target.reaction &&
+           !detail::incapacitated(target.effects);
+}
+
+void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
+                           bool critical) const
+{
+    // Unwinds the command to perform(), which asks the creature. A creature
+    // asks once per command about the same kind of moment.
+    if (answer_of(target.source.id, asked))
+        return;
+    const bool askable =
+        asked == Asked::redirect ||
+        (can_shield(target) && !critical) ||
+        (asked == Asked::hit && can_deflect(target, deflectable));
+    if (askable)
+        throw ReactionQuestion{target.source.id, asked, deflectable, critical};
+}
+
+int Session::deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
+                       bool ranged)
+{
+    // Deflect Attacks: 1d10 + Dexterity + Monk level less damage. Brought to 0,
+    // a Focus Point redirects the force at the attacker, if it is near enough.
+    const auto found = std::find_if(reaction_answers_.begin(), reaction_answers_.end(),
+                                    [&](const auto & answer)
+    {
+        return answer.target == target.source.id && answer.asked == Asked::hit &&
+               answer.verb == "deflect";
+    });
+    if (found == reaction_answers_.end())
+        return amount;
+    // Spent once: a later hit in the same command is not deflected.
+    found->verb = "deflected";
+    const auto &d = def(target);
+    const int reduction = roll(10) + d.dexterity + d.level;
+    const int left = std::max(0, amount - reduction);
+    log(target.source.name + " deflects " + std::to_string(amount - left) + " damage.",
+    {
+        "{name} deflects {damage} damage.",
+        {{"name", target.source.name}, {"damage", std::to_string(amount - left)}}
+    });
+    const int reach = ranged ? 60 : 5;
+    if (left || target.surges <= 0 || attacker.hp <= 0 ||
+            distance(target.source.cell, attacker.source.cell) > reach ||
+            !can_see(target, attacker))
+        return left;
+    ask_reaction(target, Asked::redirect);
+    if (answer_of(target.source.id, Asked::redirect)->verb != "redirect")
+        return left;
+    --target.surges;
+    auto &foe = actor(attacker.source.id);
+    log(target.source.name + " redirects the attack at " + foe.source.name + ".",
+    {
+        "{name} redirects the attack at {target}.",
+        {{"name", target.source.name}, {"target", foe.source.name}}
+    });
+    if (!saving_throw_succeeds(foe, detail::Ability::dexterity, d.focus_dc))
+    {
+        const int force = resolved_damage(foe, type, dice({2, 6, d.dexterity}));
+        log(foe.source.name + " takes " + std::to_string(force) + " damage.",
+        {"{name} takes {damage} damage.", {{"name", foe.source.name}, {"damage", std::to_string(force)}}});
+        damage(foe, force);
+    }
+    return left;
 }
 
 void Session::perform(const Command &command)
 {
     const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        return can_shield(other);
+        return can_shield(other) || def(other).deflect;
     });
     if (!askable)
     {
         dispatch(command);
-        shield_declined_.clear();
+        reaction_answers_.clear();
         return;
     }
     // Undo everything the command did before the hit: the replay rolls the
@@ -5945,37 +6091,37 @@ void Session::perform(const Command &command)
     try
     {
         dispatch(command);
-        shield_declined_.clear();
+        reaction_answers_.clear();
     }
-    catch (const ShieldQuestion &question)
+    catch (const ReactionQuestion &question)
     {
-        const auto declined = shield_declined_;
         *this = before;
-        shield_prompt_ = PendingShield{question, command, declined};
-        shield_declined_.clear();
+        reaction_prompt_ = PendingReaction{question, command, reaction_answers_};
+        reaction_answers_.clear();
     }
 }
 
-void Session::answer_shield(const Command &command)
+void Session::answer_reaction(const Command &command)
 {
-    const auto prompt = *shield_prompt_;
-    shield_prompt_.reset();
-    shield_declined_ = prompt.declined;
-    auto &caster = actor(prompt.question.target);
+    const auto prompt = *reaction_prompt_;
+    reaction_prompt_.reset();
+    reaction_answers_ = prompt.answers;
+    reaction_answers_.push_back({prompt.question.target, prompt.question.asked, command.verb});
+    auto &defender = actor(prompt.question.target);
     if (command.verb == "shield")
     {
-        caster.reaction = false;
-        if (caster.slots > 0)
-            --caster.slots;
+        defender.reaction = false;
+        if (defender.slots > 0)
+            --defender.slots;
         else
-            --caster.slots2;
-        detail::apply_poisoned(caster.effects, scope_, caster.source.id, caster.source.name,
-                               next_turn_ms(caster), detail::EffectKind::shield);
-        log(caster.source.name + " casts Shield.",
-        {"{name} casts {spell}.", {{"name", caster.source.name}, {"spell", "Shield", true}}});
+            --defender.slots2;
+        detail::apply_poisoned(defender.effects, scope_, defender.source.id, defender.source.name,
+                               next_turn_ms(defender), detail::EffectKind::shield);
+        log(defender.source.name + " casts Shield.",
+        {"{name} casts {spell}.", {{"name", defender.source.name}, {"spell", "Shield", true}}});
     }
-    else
-        shield_declined_.push_back(caster.source.id);
+    else if (command.verb == "deflect")
+        defender.reaction = false;
     perform(prompt.command);
 }
 
@@ -6184,7 +6330,7 @@ void Session::dispatch(const Command &command)
         (void)a.actions.spend(false);
         escape_ensnaring(a);
     }
-    else if (command.verb == "flurry_of_blows")
+    else if (command.verb == "flurry_of_blows" || command.verb.starts_with("flurry_"))
     {
         // Two Unarmed Strikes; the second only if the first leaves the target up.
         a.bonus = false;
@@ -6194,8 +6340,10 @@ void Session::dispatch(const Command &command)
         for (int strike = 0; strike < 2 && actor(command.target).hp > 0; ++strike)
         {
             auto striker = unarmed_actor(a);
-            attack(striker, actor(command.target), false);
+            const bool hit = attack(striker, actor(command.target), false);
             a.aim_ready = striker.aim_ready;
+            if (hit && actor(command.target).hp > 0)
+                open_hand(a, actor(command.target), command.verb);
         }
     }
     else if (command.verb.starts_with("patient_defense") ||
@@ -6610,17 +6758,19 @@ std::string Session::save() const
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
     }
-    out << '\n' << bool(shield_prompt_);
-    if (shield_prompt_)
+    out << '\n' << bool(reaction_prompt_);
+    if (reaction_prompt_)
     {
-        const auto &prompt = *shield_prompt_;
+        const auto &prompt = *reaction_prompt_;
+        const auto &question = prompt.question;
         const auto &command = prompt.command;
-        out << ' ' << prompt.question.target << ' ' << prompt.question.missile << ' '
-            << command.actor << ' ' << command.target << ' ' << std::quoted(command.verb) << ' '
-            << command.destination.x << ' ' << command.destination.y << ' ' << command.item << ' '
-            << prompt.declined.size();
-        for (const auto id : prompt.declined)
-            out << ' ' << id;
+        out << ' ' << question.target << ' ' << unsigned(question.asked) << ' '
+            << question.deflectable << ' ' << question.critical << ' ' << command.actor << ' '
+            << command.target << ' ' << std::quoted(command.verb) << ' ' << command.destination.x
+            << ' ' << command.destination.y << ' ' << command.item << ' ' << prompt.answers.size();
+        for (const auto &answer : prompt.answers)
+            out << ' ' << answer.target << ' ' << unsigned(answer.asked) << ' '
+                << std::quoted(answer.verb);
     }
     out << '\n';
     return out.str();
@@ -7409,25 +7559,32 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     input >> asking;
     if (asking)
     {
-        PendingShield prompt;
+        PendingReaction prompt;
+        auto &question = prompt.question;
         auto &command = prompt.command;
-        std::size_t declined{};
-        input >> prompt.question.target >> prompt.question.missile >> command.actor >>
-              command.target >> std::quoted(command.verb) >> command.destination.x >>
-              command.destination.y >> command.item >> declined;
-        if (!input || !known_actor(prompt.question.target) || !known_actor(command.actor) ||
-                (command.target && !known_actor(command.target)) || command.verb.empty() ||
-                declined > session->actors_.size())
-            throw std::runtime_error("Invalid Shield prompt");
-        for (std::size_t n = 0; n < declined; ++n)
+        unsigned asked{};
+        std::size_t answers{};
+        input >> question.target >> asked >> question.deflectable >> question.critical >>
+              command.actor >> command.target >> std::quoted(command.verb) >>
+              command.destination.x >> command.destination.y >> command.item >> answers;
+        if (!input || !known_actor(question.target) || asked > unsigned(Asked::redirect) ||
+                !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
+                command.verb.empty() || answers > 3 * session->actors_.size())
+            throw std::runtime_error("Invalid reaction prompt");
+        question.asked = Asked(asked);
+        for (std::size_t n = 0; n < answers; ++n)
         {
-            EntityId id{};
-            input >> id;
-            if (!input || !known_actor(id))
-                throw std::runtime_error("Invalid Shield prompt");
-            prompt.declined.push_back(id);
+            ReactionAnswer answer;
+            unsigned kind{};
+            input >> answer.target >> kind >> std::quoted(answer.verb);
+            if (!input || !known_actor(answer.target) || kind > unsigned(Asked::redirect) ||
+                    (answer.verb != "shield" && answer.verb != "deflect" &&
+                     answer.verb != "redirect" && answer.verb != "decline"))
+                throw std::runtime_error("Invalid reaction prompt");
+            answer.asked = Asked(kind);
+            prompt.answers.push_back(std::move(answer));
         }
-        session->shield_prompt_ = std::move(prompt);
+        session->reaction_prompt_ = std::move(prompt);
     }
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
@@ -9359,7 +9516,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.115", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.116", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

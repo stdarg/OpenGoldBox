@@ -129,7 +129,10 @@ enum class EffectKind : unsigned
     raging = 50,
     // Reckless Attack: until the start of the Barbarian's next turn; `dc` is 1
     // once this turn's Frenzy has struck.
-    reckless = 51
+    reckless = 51,
+    // Open Hand Technique's Addle: no Opportunity Attacks until the start of
+    // the creature's next turn.
+    addled = 52
 };
 
 // The longest a spell benefit lasts, in milliseconds.

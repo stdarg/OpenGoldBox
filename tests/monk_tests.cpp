@@ -238,6 +238,68 @@ void metabolism_checks()
           "Uncanny Metabolism restores Hit Points and starts the fight");
 }
 
+// The enemy attacks the Monk until a hit asks about Deflect Attacks.
+std::unique_ptr<CombatSession> deflect_question(const RulesModule &module, std::uint64_t &seed)
+{
+    for (; seed < 64; ++seed)
+    {
+        auto c = battle(module, monk(3), {}, seed);
+        check(submit(*c, "end"), "End the Monk's turn");
+        check(submit(*c, "melee", 1), "The enemy attacks");
+        if (!c->snapshot().reaction_pending)
+            continue;
+        check(c->snapshot().actor == 1 && offered(*c, "deflect") && offered(*c, "decline") &&
+              !offered(*c, "shield"),
+              "A hit Monk is asked about Deflect Attacks");
+        return c;
+    }
+    throw std::runtime_error("No seed hits the Monk");
+}
+
+void deflect_checks()
+{
+    auto module = rules();
+    std::uint64_t seed = 1;
+    auto c = deflect_question(*module, seed);
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "The question survives a checkpoint");
+    const int hp = unit(*c, 1).hit_points;
+    check(submit(*c, "deflect") && !unit(*c, 1).reaction, "Deflect Attacks spends the Reaction");
+    // The target creature's blows are weak, so the deflection stops them all.
+    check(c->snapshot().reaction_pending && offered(*c, "redirect") &&
+          !logged(*c, "Enemy -> Monk"),
+          "Fully deflected, the Monk is asked about redirecting it");
+    const auto at_redirect = c->save();
+    check(module->restore(at_redirect)->save() == at_redirect,
+          "The redirect question survives a checkpoint");
+    check(submit(*c, "redirect") && logged(*c, "Monk deflects") &&
+          logged(*c, "Monk redirects the attack at Enemy.") && logged(*c, "Enemy Dexterity save") &&
+          unit(*c, 1).hit_points == hp && focus_left(*c) == 2,
+          "Redirecting spends a Focus Point and forces a Dexterity save");
+
+    auto declined = deflect_question(*module, ++seed);
+    check(submit(*declined, "decline") && logged(*declined, "Enemy -> Monk") &&
+          !logged(*declined, "deflects"),
+          "Declining lets the hit land");
+}
+
+void open_hand_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, monk(3), {}, seed);
+        check(offered(*c, "flurry_addle") && offered(*c, "flurry_push") &&
+              submit(*c, "flurry_topple", 98),
+              "Open Hand Technique is chosen with the Flurry");
+        if (!logged(*c, "Enemy is knocked Prone."))
+            continue;
+        check(logged(*c, "Enemy Dexterity save"), "Topple calls for a Dexterity save");
+        return;
+    }
+    throw std::runtime_error("No seed topples the enemy");
+}
+
 } // namespace
 
 int main()
@@ -248,6 +310,8 @@ int main()
         advancement_checks();
         focus_checks();
         metabolism_checks();
+        deflect_checks();
+        open_hand_checks();
         std::cout << "Monk tests passed\n";
     }
     catch (const std::exception &e)

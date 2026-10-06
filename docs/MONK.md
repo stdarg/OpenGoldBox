@@ -38,9 +38,37 @@ see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
   "Initiative") offers **Uncanny Metabolism**: all Focus Points back and 1d6 +
   the Monk level in Hit Points. A Monk with Alert picks either the swap or
   Uncanny Metabolism.
-- Level 3 records **Deflect Attacks** and the **Warrior of the Open Hand**
-  (Open Hand Technique); their effects arrive in the next increment. Level 4
-  brings a feat or ability points. Slow Fall is dropped (SRD-DECISIONS).
+- Level 3 brings Deflect Attacks and the Warrior of the Open Hand (below).
+  Level 4 brings a feat or ability points. Slow Fall is dropped
+  (SRD-DECISIONS).
 - Verification: `opengold_monk_tests` (the grants, four Focus and 40 feet at
   level 4, Flurry of Blows, Step of the Wind, Patient Defense's Dodge, Uncanny
   Metabolism at Initiative), `opengold_archery_tests` (Monks advance).
+
+## Deflect Attacks and Open Hand Technique (level 3)
+
+- **Deflect Attacks** (Reaction): when an attack roll hits the Monk with
+  Bludgeoning, Piercing or Slashing damage, play stops and the Monk is asked
+  "You are hit. Deflect the attack ... or decline." (React/Decline, the attack
+  total unseen, as for Shield). Deflecting lowers the hit's damage by 1d10 +
+  Dexterity + Monk level. A critical hit can be deflected too.
+- If that brings the damage to 0, the Monk spends a Focus Point and is near
+  enough to the attacker (5 feet for melee, 60 for ranged), a second question
+  asks whether to **redirect** it: the attacker makes a Dexterity save
+  against 8 + Wisdom + Proficiency or takes 2d6 + Dexterity of the attack's
+  type. Adaptation: the force always goes back at the attacker rather than at
+  a chosen creature.
+- Shield's question became a general hit-reaction question: the creature is
+  asked once per command about each kind of moment (a hit, Magic Missile, a
+  redirect), and its answers replay the command with the same dice.
+  Checkpoints become `OGCOMBAT 40`.
+- **Open Hand Technique**: Flurry of Blows is also offered as **Flurry of
+  Blows: Addle / Push / Topple**, the technique applying to each of its hits.
+  Addle: no Opportunity Attacks until the target's next turn. Push: a Strength
+  save or pushed 15 feet. Topple: a Dexterity save or Prone. Adaptation: the
+  technique is chosen with the Flurry, not after each hit.
+- The computer always deflects and redirects when it can.
+- Verification: `opengold_monk_tests` (the question and its checkpoint,
+  Deflect's Reaction, the redirect question and its checkpoint, the redirect's
+  Focus Point and save, Decline, Topple), `opengold_wizard_spell_tests` (Shield
+  still asked).

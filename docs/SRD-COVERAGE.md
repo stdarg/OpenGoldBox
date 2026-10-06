@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Deflect Attacks and Open Hand Technique
+
+Rules 0.6.116 adds the Monk's Deflect Attacks (a hit Reaction, with an optional
+redirect) and Open Hand Technique; checkpoints become `OGCOMBAT 40`. See
+[Monk](MONK.md#deflect-attacks-and-open-hand-technique-level-3).
+
 ## Monk levels 2–4
 
 Rules 0.6.115 lets Monks advance to level 4 with Monk's Focus, Unarmored
