@@ -348,9 +348,9 @@ void targets()
 })
     {
         auto c = battle(*rules, h, 13, {3, 1}, gear);
-        const bool allowed = gear.size() < 2 && (gear.empty() || gear[0] != "plate");
-        check(has(*c, "sacred_flame", 2) == allowed,
-              "Somatic hands and untrained heavy armor restrict casting");
+        // Full hands block nothing (CLASS-11); untrained heavy armor does.
+        const bool allowed = gear.empty() || gear[0] != "plate";
+        check(has(*c, "sacred_flame", 2) == allowed, "Untrained heavy armor restricts casting");
         check(unit(*c).known_cantrips == std::vector<std::string> {"sacred_flame"},
               "Known spell remains listed while unavailable");
         if (!allowed)
@@ -540,8 +540,9 @@ void ui_fixtures()
     {
         const auto h = hero(3, std::string_view(name) != "unknown");
         const auto profile =
+            // Untrained armor blocks casting; full hands do not (CLASS-11).
             rules->character_profile(h.sheet(), std::string_view(name) == "blocked"
-                                     ? std::vector<std::string> {"mace", "shield"}
+                                     ? std::vector<std::string> {"plate"}
                                      : std::vector<std::string> {"quarterstaff"});
         auto c =
         rules->create({{12, 9, std::vector<std::uint8_t>(108)},
@@ -550,6 +551,14 @@ void ui_fixtures()
                 {99, "vanguard", "Enemy", 1, {5, 1}}
             }},
         2);
+        // Untrained armor's initiative Disadvantage may put the caster later.
+        for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+            for (const auto &end : c->legal_commands())
+                if (end.verb == "end")
+                {
+                    (void)c->submit(end);
+                    break;
+                }
         write(path / (std::string(name) + ".save"), c->save());
     }
 }

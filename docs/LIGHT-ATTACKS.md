@@ -162,8 +162,8 @@ LIGHT-1 is implemented in the current tree: shared game/demo dialog,
 rules-provided legal hand choices and atomic item splitting. Main/other labels
 appear in inventory and character sheets; artwork uses the first equipped weapon.
 The selected stack unit retains its original item provenance. Cancel/Escape
-make no changes. Two equipped weapons block a two-handed Versatile grip,
-shields and somatic casting without a free hand. Ordinary replacement retains
+make no changes. Two equipped weapons block a two-handed Versatile grip and
+shields; spellcasting needs no free hand ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)). Ordinary replacement retains
 its previous behavior.
 
 Focused Party/Training checks pass. The game EN/ES and demo EN hand dialog

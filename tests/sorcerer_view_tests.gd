@@ -75,7 +75,7 @@ func run_checks() -> void:
             cast.release_focus()
             require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No player combat saving")
         await load_fixture("blocked")
-        require(current_scene.get_node("CastCantrip").disabled, "Occupied hands block casting")
+        require(current_scene.get_node("CastCantrip").disabled, "Untrained armor blocks casting")
         await load_fixture("unknown")
         require(not current_scene.get_node("CastCantrip").visible, "Missing choices do not invent spells")
     restore_files()

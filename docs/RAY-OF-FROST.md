@@ -11,7 +11,6 @@ deals 1d8 Cold damage on a hit, and reduces Speed by 10 feet until the start of
 the caster's next turn. Critical hits double the weapon-independent damage dice;
 Cold resistance, vulnerability and immunity use the shared damage resolver.
 A hit still slows a Cold-immune creature. Misses do not apply the effect.
-Somatic eligibility uses the existing occupied-hand rules; V/S metadata is recorded.
 
 Independent applications retain caster identity, encounter scope and duration.
 Their Speed penalties do not stack. Expiring one application leaves the others

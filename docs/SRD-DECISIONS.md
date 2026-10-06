@@ -542,3 +542,12 @@ choose another target.
 - **Heat Metal** targets only a creature wearing metal armor. Monsters and NPCs
   need equipment metadata ([#231](https://github.com/stdarg/OpenGold/issues/231));
   until then a stub lookup says no, so no monster can be targeted.
+
+## CLASS-11 (2026-10-06): no spell components
+
+The user removed spell components for all casters. Spells have no Verbal,
+Somatic or Material components and need no spellcasting focus: a weapon, wand or
+shield in hand never blocks casting, and Silence no longer stops spells (it
+still protects from Thunder damage). Subtle Spell, which only removed
+components, is no longer offered. Untrained armor, Rage and Wild Shape still
+prevent casting. See [spell components](SPELL-COMPONENTS.md).

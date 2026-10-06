@@ -14,7 +14,7 @@ foreign spells/sources, wrong acquisition levels and mismatched spell lists reje
 Missing choices remain pending. The character sheet lists learned cantrips and Charisma provenance.
 
 All four spells use Charisma plus proficiency for attacks. Shared rules retain
-typed damage, criticals, range/line of effect, Somatic hands, armor restrictions,
+typed damage, criticals, range/line of effect, armor restrictions,
 and adjacent hostile Disadvantage for ranged spells. Shocking Grasp uses a melee
 spell attack. Its hit suppresses Opportunity Attacks until the target's next turn,
 without spending the Reaction. Ray of Frost reduces Speed by 10 feet until the

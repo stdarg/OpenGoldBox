@@ -135,7 +135,6 @@ struct SpellDef
     SpellPattern pattern{};
     SpellTarget target{};
     int range{}; // feet
-    bool verbal{true}, somatic{true};
     bool bonus_action{};
     bool melee{};                    // passes ranged=false to attack()
     bool requires_sight{};           // gated on can_see()
@@ -281,7 +280,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::save_condition,
         .target = SpellTarget::enemy,
         .range = 120,
-        .somatic = false,
         .requires_sight = true,
         .requires_effect_capacity = true,
         .save = Ability::constitution,
@@ -324,7 +322,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::smite,
         .target = SpellTarget::enemy,
         .range = 5,
-        .somatic = false,
         .bonus_action = true,
         .damage = DamageType::radiant,
         .dice = {2, 8, 0},
@@ -336,7 +333,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::smite,
         .target = SpellTarget::enemy,
         .range = 5,
-        .somatic = false,
         .bonus_action = true,
         .save = Ability::constitution,
         .damage = DamageType::fire,
@@ -352,7 +348,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::smite,
         .target = SpellTarget::enemy,
         .range = 5,
-        .somatic = false,
         .bonus_action = true,
         .save = Ability::strength,
         .damage = DamageType::piercing,
@@ -367,7 +362,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::save_condition,
         .target = SpellTarget::area,
         .range = 90,
-        .somatic = true,
         .save = Ability::strength,
         .rider = Rider::entangle,
         .concentration = true,
@@ -469,8 +463,9 @@ inline constexpr std::array spell_table
         .range = 5,
         .rider = Rider::resistance,
         .concentration = true},
-    // SRD 5.2.1 p. 162: a 20-foot-radius sphere where no spell with a Verbal
-    // component can be cast and Thunder damage is ignored.
+    // SRD 5.2.1 p. 162: a 20-foot-radius sphere where Thunder damage is
+    // ignored. Spells have no components here (CLASS-11), so it does not stop
+    // spellcasting.
     SpellDef{
         .id = "silence",
         .label = "Silence",
@@ -708,7 +703,7 @@ inline constexpr std::array spell_table
         .target = SpellTarget::self,
         .range = 5},
     // SRD 5.2.1 p. 154: a Bonus Action teleport of up to 30 feet to an
-    // unoccupied space the caster can see. Verbal only.
+    // unoccupied space the caster can see.
     SpellDef{
         .id = "misty_step",
         .label = "Misty Step",
@@ -716,7 +711,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::area,
         .range = 30,
-        .somatic = false,
         .rider = Rider::misty_step,
         .bonus_action = true,
         .area = 5},
@@ -734,7 +728,7 @@ inline constexpr std::array spell_table
         .rider = Rider::acid_arrow,
         .evocation = true},
     // SRD 5.2.1 p. 149: a Wisdom save against 3d8 Psychic, half on a success.
-    // Somatic only; the location it reveals has no use here.
+    // The location it reveals has no use here.
     SpellDef{
         .id = "mind_spike",
         .label = "Mind Spike",
@@ -743,7 +737,6 @@ inline constexpr std::array spell_table
         .target = SpellTarget::enemy,
         .range = 120,
         .requires_sight = true,
-        .verbal = false,
         .save = Ability::wisdom,
         .damage = DamageType::psychic,
         .dice = {3, 8, 0},
@@ -770,7 +763,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::self,
         .range = 5,
-        .somatic = false,
         .rider = Rider::blur,
         .concentration = true},
     // SRD 5.2.1 p. 150: three duplicates that may each take a hit.
@@ -820,7 +812,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::area,
         .range = 60,
-        .somatic = false,
         .rider = Rider::darkness,
         .concentration = true,
         .radius = 15},
@@ -862,8 +853,7 @@ inline constexpr std::array spell_table
         .level = 0,
         .pattern = SpellPattern::weapon_strike,
         .target = SpellTarget::enemy,
-        .range = 5,
-        .verbal = false},
+        .range = 5},
     // SRD 5.2.1 p. 124: a touched willing creature may exhale a cone of the
     // chosen type as an action, each offered as "dragons_breath_<type>".
     SpellDef{
@@ -899,8 +889,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::save_damage,
         .target = SpellTarget::area,
         .range = 60,
-        .verbal = false,
-        .somatic = false,
         .save = Ability::constitution,
         .half_on_success = true,
         .damage = DamageType::necrotic,
@@ -983,7 +971,6 @@ inline constexpr std::array spell_table
         .target = SpellTarget::enemy,
         .range = 60,
         .requires_sight = true,
-        .somatic = false,
         .save = Ability::wisdom,
         .damage = DamageType::psychic,
         .dice = {1, 6, 0},
@@ -1010,7 +997,6 @@ inline constexpr std::array spell_table
         .target = SpellTarget::enemy,
         .range = 60,
         .requires_sight = true,
-        .somatic = false,
         .save = Ability::wisdom,
         .half_on_success = true,
         .damage = DamageType::psychic,
@@ -1027,21 +1013,19 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::save_condition,
         .target = SpellTarget::area,
         .range = 60,
-        .somatic = false,
         .save = Ability::dexterity,
         .rider = Rider::faerie_fire,
         .concentration = true,
         .area = 20},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
-    // locked door while exploring. Verbal only.
+    // locked door while exploring.
     SpellDef{
         .id = "knock",
         .label = "Knock",
         .level = 2,
         .pattern = SpellPattern::exploration,
         .target = SpellTarget::self,
-        .range = 60,
-        .somatic = false},
+        .range = 60},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",
@@ -1124,7 +1108,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::save_condition,
         .target = SpellTarget::any_creature,
         .range = 60,
-        .somatic = false,
         .requires_sight = true,
         .save = Ability::wisdom,
         .upcast = {.extra_instances = 1},
@@ -1138,7 +1121,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::enemy,
         .range = 90,
-        .somatic = false,
         .bonus_action = true,
         .requires_sight = true,
         .rider = Rider::hunters_mark,
@@ -1179,7 +1161,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::heal,
         .target = SpellTarget::wounded_ally,
         .range = 60,
-        .somatic = false,
         .bonus_action = true,
         .requires_sight = true,
         .dice = {2, 4, 0},

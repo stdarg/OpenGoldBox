@@ -291,7 +291,7 @@ void run()
         p.add_pc(std::move(h));
         p.equip(1, 1);
         auto c = battle(p);
-        check(offered(*c, "fire_bolt"), "Known Fire Bolt with a free somatic hand");
+        check(offered(*c, "fire_bolt"), "Known Fire Bolt is offered");
         act(*c, "fire_bolt");
         check(unit(*c).light_attacks.empty(), "Fire Bolt is Magic, not an Attack action");
     }

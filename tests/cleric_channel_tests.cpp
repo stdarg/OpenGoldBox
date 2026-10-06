@@ -507,8 +507,8 @@ void silence_checks()
     check(submit(*c, "end"), "End the Cleric's turn");
     while (c->snapshot().actor != 1)
         check(submit(*c, "end") || submit(*c, "move"), "Back to the Cleric");
-    check(!submit(*c, "sacred_flame", 99) && !submit(*c, "cure_wounds", 2),
-          "No spell with a Verbal component inside Silence");
+    check(submit(*c, "sacred_flame", 99),
+          "Spells have no components (CLASS-11), so Silence does not stop casting");
 }
 void spiritual_weapon_checks()
 {

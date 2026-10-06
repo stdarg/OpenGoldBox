@@ -137,13 +137,13 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   then click the creature. It is a Cleric and Druid cantrip, so Blessed and
   Druidic Warriors may learn it.
 - **Silence** (level 2, Action, 120 feet, Concentration up to 10 minutes),
-  aimed like Entangle: a 20-foot-radius sphere, tinted on the map. No spell with
-  a Verbal component can be cast from inside it (smites and Favored Enemy's
-  Hunter's Mark included), and creatures inside take no Thunder damage.
-  Deafened is not modeled.
+  aimed like Entangle: a 20-foot-radius sphere, tinted on the map. Creatures
+  inside take no Thunder damage. Spells have no components
+  ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so
+  it does not stop spellcasting. Deafened is not modeled.
 - Combat checkpoints become `OGCOMBAT 37` (Resistance's once-per-turn use).
 - Verification: `opengold_cleric_channel_tests` (eleven Resistance entries, the
-  ward and its 1d4, Silence's sphere and no Verbal spells inside it), and the
+  ward and its 1d4, Silence's sphere and a spell cast inside it), and the
   creation checks with three Cleric cantrips.
 
 ## Spiritual Weapon

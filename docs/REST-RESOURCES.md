@@ -22,8 +22,8 @@ healing outside combat happens in the Camp dialog (C), before a rest starts.
   the Hit Points restored. Members with nothing to use show no row.
 - A wounded living member must be chosen, including one at 0 Hit Points. Lay On
   Hands restores what is missing, up to the pool, and spends only that; a spell
-  spends its slot and heals its dice plus the spellcasting modifier. A free hand
-  is not required outside combat. A character in untrained armor cannot cast.
+  spends its slot and heals its dice plus the spellcasting modifier. Spells need
+  no free hand. A character in untrained armor cannot cast.
 - The row shares its place with Arcane Recovery, which appears only during a
   Short Rest; Cast / Use appears only before one. Detect Magic and other
   outside-combat spells will join this row.

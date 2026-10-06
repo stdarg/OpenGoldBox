@@ -8,7 +8,7 @@ partial-cover exception and remaining component/source integration.
 ## Rules and controls
 
 Authority: [SRD 5.2.1 pp. 36–37, 159, 191](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf).
-Sacred Flame uses an Action and Verbal/Somatic components. A visible, living
+Sacred Flame uses an Action. A visible, living
 creature within 60 feet makes a Dexterity save against 8 + proficiency bonus +
 Wisdom modifier. Failure deals 1d8 Radiant damage through character level 4;
 success deals none. Typed defenses apply. This is a saving throw, so natural
@@ -20,7 +20,7 @@ for creatures at zero HP, without consuming a save roll. Sacred Flame damage
 at zero HP causes one death-save failure, including within five feet. Existing
 Dodge and untrained-armor Dexterity-save modifiers apply. Dead targets, total
 cover and lack of sight are rejected; a Blinded caster cannot target even self.
-Somatic hands and untrained armor also restrict casting.
+Untrained armor also restricts casting.
 
 Cleric creation uses the existing Spell Choices step after Training and before
 Name. Sacred Flame has a labeled checkbox, keyboard access and selection counts.

@@ -32,7 +32,7 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
   without a slot; a Long Rest restores both uses ("Favored Enemy" in the rest
   and combat resources). The count is stored where Paladin's Smite keeps its own:
   a character has only one of the two while multiclassing is deferred.
-- **Hunter's Mark** (Bonus Action, 90 feet, Verbal, Concentration up to 1 hour):
+- **Hunter's Mark** (Bonus Action, 90 feet, Concentration up to 1 hour):
   every attack-roll hit by the caster on the marked creature deals an extra 1d6
   Force damage, doubled on a critical hit. When the marked creature drops to 0
   Hit Points, **Move Hunter's Mark** (a Bonus Action, no slot) marks another

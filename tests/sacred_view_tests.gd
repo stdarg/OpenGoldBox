@@ -65,7 +65,7 @@ func run_checks() -> void:
         var spells: OptionButton = combat.get_node("Cantrip")
         require(spells.item_count == (0 if which == "unknown" else 1), "Cleric list omits unlearned cantrips")
         if which != "unknown": require(spells.get_item_metadata(0) == "sacred_flame", "Cleric choice is Sacred Flame")
-        require(sacred.disabled == (which != "known"), "Eligibility follows knowledge and occupied hands")
+        require(sacred.disabled == (which != "known"), "Eligibility follows knowledge and armor training")
         require(sacred.position.x >= combat.get_node("AdrenalineRush").get_rect().end.x and sacred.get_rect().end.x < root.size.x - 300, "Sacred Flame occupies approved first spell position")
         var prompts := ""
         for i in range(18):

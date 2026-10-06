@@ -47,35 +47,35 @@ func run_checks() -> void:
     var combat := current_scene
     combat.set_process(false)
     require(not combat.get_node("Save").visible and not combat.get_node("Load").visible, "No player combat save controls")
+    # Spells have no components (CLASS-11): a weapon and shield in hand block nothing.
     for caster in ["cleric", "wizard"]:
-        for blocked in [true, false]:
-            await load_fixture(caster + ("-blocked" if blocked else "-free"))
-            var somatic := [("FireBolt" if legacy else "CastCantrip"), "MagicMissile", "ScorchingRay"] if caster == "wizard" else ["CureWounds"]
-            for button in somatic:
-                require(combat.get_node(button).disabled == blocked, "Somatic action must follow hands: " + button)
+        for shield in [true, false]:
+            await load_fixture(caster + ("-shield" if shield else "-free"))
+            var spells := [("FireBolt" if legacy else "CastCantrip"), "MagicMissile", "ScorchingRay"] if caster == "wizard" else ["CureWounds"]
+            for button in spells:
+                require(not combat.get_node(button).disabled, "Full hands never disable casting: " + button)
             if not legacy:
-                require(not combat.get_node("Blindness").disabled, "Verbal-only Blindness remains available")
+                require(not combat.get_node("Blindness").disabled, "Blindness remains available")
             if caster == "cleric":
-                require(not combat.get_node("HealingWord").disabled, "Verbal-only Healing Word remains available")
-            if not legacy and blocked:
+                require(not combat.get_node("HealingWord").disabled, "Healing Word remains available")
+            if not legacy and shield and caster == "cleric":
                 var prompts := ""
                 for i in range(16):
                     await key(KEY_A)
                     prompts += combat.get_node("Prompt").text + "\n"
-                for label in ["Fire Bolt", "Magic Missile", "Scorching Ray", "Cure Wounds"]:
-                    require(not prompts.contains(label), "Keyboard cycle offered blocked Somatic casting")
-                require(prompts.contains("Blindness"), "Keyboard cycle omits legal verbal casting")
+                # Bless and Shield of Faith once needed a free hand.
+                require(prompts.contains("Bless") and prompts.contains("Shield of Faith"), "Keyboard cycle offers casting with full hands")
             combat.get_node("Save").pressed.emit()
             var before := FileAccess.get_file_as_string(save_path)
             combat.get_node("Load").pressed.emit()
             combat.get_node("Save").pressed.emit()
             require(FileAccess.get_file_as_string(save_path) == before, "Internal checkpoint keeps eligibility and resources unchanged")
-    await load_fixture("cleric-blocked")
+    await load_fixture("cleric-shield")
     if not legacy:
         require(combat.selected_character_id() == 1, "Caster is selected")
         combat.get_node("HealingWord").pressed.emit()
         await key(KEY_SPACE)
         require(combat.get_node("HealingWord").disabled and not combat.get_node("Dash").disabled, "Keyboard casts Healing Word using Bonus Action and retains Action")
     restore_files()
-    print("Spell component view checks passed: legacy spell controls and internal continuation" if legacy else "Spell component view checks passed: hand eligibility, verbal spells, keyboard action cycle and internal continuation")
+    print("Spell component view checks passed: legacy spell controls and internal continuation" if legacy else "Spell component view checks passed: full hands cast, keyboard action cycle and internal continuation")
     quit(0)

@@ -6,7 +6,7 @@
 #include "training.h"
 #include "weapon_mastery.h"
 #include "spell_access.h"
-#include "spell_components.h"
+#include "spell_table.h"
 #include "creature_equipment.h"
 #include "beast_forms.h"
 #include "combat_grid.h"
@@ -148,7 +148,7 @@ bool metamagic_applies(Metamagic option, const detail::SpellDef &spell)
     case Metamagic::seeking:
         return attacks;
     case Metamagic::subtle:
-        return true;
+        return false; // Retired with spell components (CLASS-11).
     case Metamagic::transmuted:
         return (attacks || spell.pattern == detail::SpellPattern::save_damage) &&
                transmutable(spell.damage);
@@ -626,15 +626,6 @@ struct Content
     Identity identity;
     std::map<std::string, Definition> definitions;
 };
-
-bool somatic_hand(const Definition &d)
-{
-    // Two-Handed/Versatile specifies hands when attacking (SRD p.90). A
-    // Versatile weapon is wielded two-handed only when the other hand is
-    // empty, so that hand is free again for a Somatic gesture between attacks.
-    // A separate shield occupies the remaining hand; a wand is held too.
-    return (!d.shield && !d.other_weapon) || !d.weapon_hands;
-}
 
 struct Actor : detail::LifeState
 {
@@ -1875,7 +1866,7 @@ class Session final : public CombatSession
             std::string_view verb, Cell origin, Cell center) const;
     // Whether `viewer` cannot see into the square.
     [[nodiscard]] bool obscured(const Actor &viewer, Cell cell) const;
-    // Inside Silence: no Verbal spells, no Thunder damage.
+    // Inside Silence: no Thunder damage.
     [[nodiscard]] bool silenced(Cell cell) const;
     [[nodiscard]] Cell spectral_cell(const Actor &target, Cell from) const;
     [[nodiscard]] const Zone *spiritual_weapon(const Actor &caster) const;
@@ -3694,13 +3685,6 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                  detail::has_effect(other.effects, detail::EffectKind::barkskin)) ||
                 (spell.rider == detail::Rider::shillelagh && !d.shillelagh_weapon))
             continue;
-        // Subtle Spell needs neither Verbal nor Somatic components.
-        const auto *components = detail::spell_components(spell.id);
-        if (!components ||
-                (!readies(a, Metamagic::subtle, spell) &&
-                 ((components->somatic && !somatic_hand(d)) ||
-                  (components->verbal && silenced(a.source.cell)))))
-            continue;
         if (as_bonus ? !a.bonus : !a.actions.available(true))
             continue;
         const bool aimed = spell.target == detail::SpellTarget::area;
@@ -4099,7 +4083,8 @@ std::vector<Command> Session::legal_commands() const
                                                known) - metamagic_ids.begin());
                 const auto option = Metamagic(index);
                 const int cost = metamagic_cost(option);
-                if (a.lay_on_hands < cost)
+                // Subtle Spell retired with spell components (CLASS-11).
+                if (a.lay_on_hands < cost || option == Metamagic::subtle)
                     continue;
                 const std::string points = " (" + std::to_string(cost) +
                                            (cost == 1 ? " Sorcery Point)" : " Sorcery Points)");
@@ -4200,7 +4185,7 @@ std::vector<Command> Session::legal_commands() const
                     add(id, "move_moonbeam", "Move Moonbeam", other.source.id);
     // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
     // feet and attacks a creature within 5 feet of it.
-    if (const auto *force = spiritual_weapon(a); force && a.bonus && !silenced(a.source.cell))
+    if (const auto *force = spiritual_weapon(a); force && a.bonus)
         for (const auto &other : actors_)
             if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
                     distance(force->cells.front(), other.source.cell) <= 25)
@@ -4226,8 +4211,7 @@ std::vector<Command> Session::legal_commands() const
         return other.hp > 0 && !other.dead && marked_by(other, a);
     });
     const bool free_mark = a.bonus && a.free_casts > 0 && d.favored_enemy && !marking &&
-                           detail::knows_spell(d.spells, "hunters_mark") && !d.str_dex_disadvantage &&
-                           !silenced(a.source.cell);
+                           detail::knows_spell(d.spells, "hunters_mark") && !d.str_dex_disadvantage;
     const bool moving_mark = a.bonus && mark_can_move(a);
     // Hex moves to a new creature as a Bonus Action once its first drops.
     if (a.bonus && hex_can_move(a))
@@ -4264,9 +4248,7 @@ std::vector<Command> Session::legal_commands() const
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
     // Smites, right after this actor's own melee hit on a creature still standing.
-    // Smites have Verbal components, so Silence stops them.
-    if (a.bonus && a.smite_target && actor(a.smite_target).hp > 0 && !d.spells.empty() &&
-            !silenced(a.source.cell))
+    if (a.bonus && a.smite_target && actor(a.smite_target).hp > 0 && !d.spells.empty())
     {
         const bool slot = a.slots > 0 && !a.spent_slot;
         const bool melee = a.smite_melee;
@@ -4325,7 +4307,7 @@ std::vector<Command> Session::legal_commands() const
         offer_spells(commands, a, a, 0, detail::SpellTarget::area, false);
         // Armor of Shadows and Fiendish Vigor: Mage Armor and False Life on the
         // Warlock, cast without a slot.
-        if (a.actions.available(true) && !rage_of(a) && !silenced(a.source.cell))
+        if (a.actions.available(true) && !rage_of(a))
         {
             if (d.armor_of_shadows && d.mage_armor_ac &&
                     !detail::has_effect(a.effects, detail::EffectKind::mage_armor))
@@ -4383,8 +4365,7 @@ std::vector<Command> Session::legal_commands() const
                 // through level four is the Attack action's one attack.
                 if (feet <= d.reach && d.reckless && strength_attack(a, false))
                     add(id, "reckless", "Reckless attack", other.source.id);
-                // True Strike: the cantrip's attack with the melee weapon in hand,
-                // which also serves as its Material and Somatic component.
+                // True Strike: the cantrip's attack with the melee weapon in hand.
                 if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
                         detail::knows_spell(d.spells, "true_strike") && a.actions.available(true))
                 {
@@ -7196,8 +7177,7 @@ bool Session::can_shield(const Actor &target) const
     return conscious(target) && target.reaction && (target.slots > 0 || target.slots2 > 0) &&
            detail::knows_spell(def(target).spells, "shield") &&
            !detail::incapacitated(target.effects) &&
-           !detail::has_effect(target.effects, detail::EffectKind::shield) &&
-           somatic_hand(def(target)) && !silenced(target.source.cell);
+           !detail::has_effect(target.effects, detail::EffectKind::shield);
 }
 
 bool Session::can_deflect(const Actor &target, bool deflectable) const
@@ -7990,7 +7970,7 @@ void Session::dispatch(const Command &command)
     else
     {
         a.nick_origin = 0;
-        (void)a.actions.spend(detail::spell_components(command.verb) != nullptr);
+        (void)a.actions.spend(detail::find_spell(command.verb) != nullptr);
         if (command.verb == "dash")
         {
             a.movement += d.speed;
@@ -9131,7 +9111,6 @@ class Module final : public RulesModule
                 "weapon_catalog",
                 "armor_catalog",
                 "wizard_spellbook",
-                "somatic_components",
                 "checkpoint"};
     }
 
@@ -10900,16 +10879,6 @@ class Module final : public RulesModule
         {
             "No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0).",
             {{"score", std::to_string(sheet.scores[0])}}});
-        if (!d.spells.empty() && !somatic_hand(d))
-        {
-            const std::string note =
-                "Equipped weapon or wand and shield occupy both hands. Spells with Somatic components are unavailable.";
-            result.spell_modifiers = note + "\n" + result.spell_modifiers;
-            result.spell_messages.push_back(
-            {
-                "Equipped weapon or wand and shield occupy both hands. Spells with Somatic components are unavailable.",
-                {}});
-        }
         if (d.str_dex_disadvantage)
             result.spell_messages.push_back(
         {"Cannot cast spells while wearing untrained armor.", {}});
@@ -11081,7 +11050,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.128", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.129", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

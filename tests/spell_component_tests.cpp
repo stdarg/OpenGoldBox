@@ -1,6 +1,5 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
-#include "spell_components.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -122,38 +121,6 @@ auto battle(const RulesModule &rules, const Character &h, const std::vector<std:
     return c;
 }
 
-void definitions()
-{
-    namespace detail = opengold::srd5::detail;
-    // Components now live on the spell table rather than a parallel array, so
-    // every supported spell has them by construction. Asserting a row count
-    // here would make adding a spell an edit in this file too.
-    for (const auto &spell : detail::spell_table)
-        check(detail::spell_components(spell.id) != nullptr,
-              "Every supported spell has explicit component definitions");
-    for (const auto *id :
-            {"chill_touch", "ray_of_frost", "fire_bolt", "poison_spray",
-             "sacred_flame", "cure_wounds", "magic_missile", "scorching_ray"
-            })
-    {
-        const auto *s = detail::spell_components(id);
-        check(s && s->verbal && s->somatic, "Source spells require Verbal and Somatic components");
-    }
-    for (const auto *id :
-            {"healing_word", "blindness"
-            })
-    {
-        const auto *s = detail::spell_components(id);
-        check(s && s->verbal && !s->somatic, "Source spells require only Verbal components");
-    }
-    check(detail::spell_components("cure_wounds_2") == detail::spell_components("cure_wounds") &&
-          detail::spell_components("healing_word_2") ==
-          detail::spell_components("healing_word"),
-          "Higher slot forms keep base components");
-    check(!detail::spell_components("invented") && !detail::spell_components("melee"),
-          "Unknown spells and non-spell actions have no inferred components");
-}
-
 unsigned slots(const CombatantView &actor, unsigned level)
 {
     std::istringstream in(actor.persistent.resources);
@@ -164,22 +131,23 @@ unsigned slots(const CombatantView &actor, unsigned level)
     return level == 1 ? first : second;
 }
 
+// Spells have no components (CLASS-11): weapons, wands and a shield in hand
+// never block casting; untrained armor still does.
 void expectations()
 {
     auto rules = module();
-    // Independent spell-entry oracle: SRD pp.113,122,131,139,146,160.
     for (const auto &klass :
             {"cleric", "wizard"
             })
     {
         const auto h = hero(klass);
         const bool wizard = std::string_view(klass) == "wizard";
-        const std::vector<std::string> somatic =
+        const std::vector<std::string> spells =
             wizard ? std::vector<std::string> {"fire_bolt", "magic_missile", "magic_missile_2",
-                                               "scorching_ray"
+                                               "scorching_ray", "blindness"
                                               }
             :
-            std::vector<std::string> {"cure_wounds", "cure_wounds_2"};
+            std::vector<std::string> {"cure_wounds", "cure_wounds_2", "healing_word", "blindness"};
         for (const auto &gear : std::vector<std::vector<std::string>> {{},
         {"shield"},
         {"mace"},
@@ -192,87 +160,37 @@ void expectations()
         {"quarterstaff", "shield"}
     })
         {
-            const bool blocked = gear.size() == 2;
             const auto p = rules->character_profile(h.sheet(), gear);
-            check((p.spell_modifiers.find("Somatic components are unavailable") !=
-                   std::string::npos) == blocked,
-                  "Existing Modifiers text explains equipment blocking");
+            check(p.spell_modifiers.find("Somatic") == std::string::npos,
+                  "No Modifiers text about occupied hands");
             auto c = battle(*rules, h, gear);
             const auto initial = c->save();
-            for (const auto &verb : somatic)
+            for (const auto &verb : spells)
             {
-                check(has(*c, verb) == !blocked,
-                      "Somatic availability must follow actual occupied hands");
-                if (blocked)
-                {
-                    Command forged{c->snapshot().revision, 1, wizard ? 99u : 1u, verb};
-                    check(
-                        !c->submit(forged) && c->save() == initial,
-                        "Unavailable cast changes no slots, action, RNG, HP, grip, shield or time");
-                }
-                else
-                {
-                    auto cast = rules->restore(initial);
-                    const auto before = unit(*cast);
-                    check(cast->submit(command(*cast, verb)),
-                          "Eligible Somatic spell resolves normally");
-                    check(!unit(*cast).action && unit(*cast).bonus_action == before.bonus_action &&
-                          unit(*cast).armor_class == before.armor_class,
-                          "Casting spends Action without changing shield AC");
-                    const unsigned spent = verb == "fire_bolt"                               ? 0
-                                           : verb.ends_with("_2") || verb == "scorching_ray" ? 2
-                                           : 1;
-                    for (unsigned level :
-                            {
-                                1u, 2u
-                            })
-                        check(
-                            slots(unit(*cast), level) ==
-                            slots(before, level) - (spent == level ? 1 : 0),
-                            "Somatic casting spends exactly its chosen slot; cantrip spends none");
-                    check(rules->restore(cast->save())->save() == cast->save(),
-                          "Resolved cast round trips exactly");
-                }
-            }
-            check(has(*c, "blindness"),
-                  "Verbal-only Blindness remains available with occupied hands");
-            if (!wizard)
-                for (const auto &verb :
-                        {"healing_word", "healing_word_2"
+                check(has(*c, verb), "Full hands never block a spell");
+                auto cast = rules->restore(initial);
+                const auto before = unit(*cast);
+                check(cast->submit(command(*cast, verb)), "The spell resolves normally");
+                check(unit(*cast).armor_class == before.armor_class,
+                      "Casting keeps the shield's AC");
+                const unsigned spent = verb == "fire_bolt"                               ? 0
+                                       : verb.ends_with("_2") || verb == "scorching_ray" ||
+                                       verb == "blindness" ? 2
+                                       : 1;
+                for (unsigned level :
+                        {
+                            1u, 2u
                         })
-                {
-                    auto cast = rules->restore(initial);
-                    const auto before = unit(*cast);
-                    check(cast->submit(command(*cast, verb)),
-                          "Verbal-only Healing Word casts with occupied hands");
-                    check(
-                        unit(*cast).action && !unit(*cast).bonus_action &&
-                        unit(*cast).hit_points > before.hit_points,
-                        "Healing Word spends Bonus Action and heals with occupied hands");
-                    const unsigned spent = std::string_view(verb).ends_with("_2") ? 2 : 1;
-                    for (unsigned level :
-                            {
-                                1u, 2u
-                            })
-                        check(slots(unit(*cast), level) ==
-                              slots(before, level) - (spent == level ? 1 : 0),
-                              "Healing Word spends exactly the chosen slot with occupied hands");
-                }
-            auto blind = rules->restore(initial);
-            check(blind->submit(command(*blind, "blindness")) && !unit(*blind).action,
-                  "Verbal-only level-two spell spends its Action");
-        }
-        {
-            // A Versatile weapon wielded two-handed leaves the other hand empty
-            // between attacks, so it never blocks a Somatic component.
-            auto c = battle(*rules, h, {"quarterstaff"});
-            check(has(*c, somatic.front()) && c->submit(command(*c, somatic.front())),
-                  "A two-handed Versatile weapon allows a hand for casting");
+                    check(slots(unit(*cast), level) ==
+                          slots(before, level) - (spent == level ? 1 : 0),
+                          "Casting spends exactly its chosen slot; a cantrip spends none");
+                check(rules->restore(cast->save())->save() == cast->save(),
+                      "Resolved cast round trips exactly");
+            }
         }
         auto armored = battle(*rules, h, {"plate"});
-        check(!has(*armored, "blindness") && !has(*armored, somatic.front()) &&
-              !has(*armored, "healing_word"),
-              "Untrained armor still prohibits both Verbal-only and Somatic casting");
+        check(!has(*armored, "blindness") && !has(*armored, spells.front()),
+              "Untrained armor still prohibits casting");
     }
 }
 
@@ -318,21 +236,9 @@ void campaign()
             decode_campaign(bytes, *srd5::character_rules(), *rules, "components", nullptr).party);
         check(encode_campaign(copy, nullptr, "components") == bytes,
               "Equipment, wounds, advancement, resources and clocks survive campaign reload");
-        auto blocked = campaign_battle(*rules, copy);
-        check(!has(*blocked, "cure_wounds") && has(*blocked, "healing_word"),
-              "Normal equipped party encounter uses hand restrictions");
-        const auto before = copy.member(1);
-        copy.unequip(1, 1);
-        auto free = campaign_battle(*rules, copy);
-        check(has(*free, "cure_wounds") && copy.member(1).vitals == before.vitals &&
-              copy.profile(1).armor_class == p.profile(1).armor_class,
-              "Unequipping weapon releases a hand without removing shield AC or healing");
-        copy.equip(1, 1);
-        copy.unequip(1, 2);
-        free = campaign_battle(*rules, copy);
-        check(has(*free, "cure_wounds") &&
-              copy.profile(1).armor_class == p.profile(1).armor_class - 2,
-              "Unequipping shield releases a hand and removes only shield AC");
+        auto armed = campaign_battle(*rules, copy);
+        check(has(*armed, "cure_wounds") && has(*armed, "healing_word"),
+              "A Cleric with mace and shield casts in a party encounter");
     }
 }
 
@@ -353,7 +259,7 @@ void ui_fixtures()
             std::vector<std::string> gear{"quarterstaff"};
             if (shield)
                 gear.push_back("shield");
-            write(path / (std::string(klass) + (shield ? "-blocked.save" : "-free.save")),
+            write(path / (std::string(klass) + (shield ? "-shield.save" : "-free.save")),
                   battle(*rules, h, gear)->save());
         }
 }
@@ -363,7 +269,6 @@ int main()
 {
     try
     {
-        definitions();
         expectations();
         campaign();
         ui_fixtures();

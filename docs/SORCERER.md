@@ -63,8 +63,9 @@ spellcasting ability; the earlier cantrip work is in
   affected yet).
 - **Quickened** (2): Action spells are offered as Bonus Actions.
 - **Seeking** (1): a missed spell attack rolls its d20 again, once.
-- **Subtle** (1): no Verbal or Somatic components (casting in Silence or
-  with full hands).
+- **Subtle** is not offered: it only removed spell components, which the game
+  does not have ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)).
+  A Sorcerer who chose it earlier keeps it, without effect.
 - **Transmuted** (1): readied with a type (Acid, Cold, Fire, Lightning, Poison
   or Thunder); a spell dealing one of those deals the chosen one instead.
 - **Twinned** (1): a spell that takes one more creature from a higher slot

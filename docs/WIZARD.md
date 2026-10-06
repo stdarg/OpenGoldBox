@@ -170,7 +170,7 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 
 ## Misty Step
 
-- **Misty Step** (level 2, from Wizard level 3, Bonus Action, Verbal only):
+- **Misty Step** (level 2, from Wizard level 3, Bonus Action):
   chosen from the A cycle, it is aimed like an area spell, but the preview
   starts on the Wizard and only unoccupied squares within 30 feet that the
   Wizard can see (not Heavily Obscured, not walls) can be chosen; Cast is
@@ -187,7 +187,7 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - **Acid Arrow** (level 2, 90 feet): a spell attack for 4d4 Acid, and 2d4 Acid
   more at the end of the target's next turn. A miss splashes half the initial
   damage and nothing later.
-- **Mind Spike** (level 2, 120 feet, Somatic only, Concentration): a Wisdom
+- **Mind Spike** (level 2, 120 feet, Concentration): a Wisdom
   save against 3d8 Psychic, half on a success. Knowing the target's location
   has no use here yet.
 - **Ray of Enfeeblement** (level 2, 60 feet, Concentration): on a failed
@@ -206,7 +206,7 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 
 ## Blur, Mirror Image and Magic Weapon
 
-- **Blur** (level 2, self, Verbal only, Concentration up to 1 minute): attack
+- **Blur** (level 2, self, Concentration up to 1 minute): attack
   rolls against the Wizard have Disadvantage. No creature has Blindsight or
   Truesight yet, so none ignores it.
 - **Mirror Image** (level 2, self, 1 minute): three duplicates, shown as
@@ -231,7 +231,7 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   The extra targets from higher slots are beyond levels 1-4.
 - **See Invisibility** (level 2, self, 1 hour): Invisible creatures are seen as
   if visible.
-- **Darkness** (level 2, 60 feet, Verbal only, Concentration up to 10 minutes):
+- **Darkness** (level 2, 60 feet, Concentration up to 10 minutes):
   aimed like other areas, a 15-foot-radius sphere that is Heavily Obscured,
   like Fog Cloud: creatures in it can neither see nor be seen. Casting it on
   an object and dispelling light spells are not modeled.
@@ -255,7 +255,7 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 
 ## Knock
 
-- **Knock** (level 2, Verbal only): at a locked door the menu offers
+- **Knock** (level 2): at a locked door the menu offers
   **Knock** beside Bash and Pick when an active member has it prepared and a
   level-two slot. The first such member casts it, the slot is spent, and the
   door opens: "Wizard casts Knock, and the lock opens." It is never offered in
@@ -279,8 +279,7 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 
 ## True Strike
 
-- **True Strike** (cantrip, Wizard and Sorcerer, Somatic and the weapon as
-  Material): with a melee weapon in hand, **True Strike** and **True Strike
+- **True Strike** (cantrip, Wizard and Sorcerer): with a melee weapon in hand, **True Strike** and **True Strike
   (Radiant)** are offered against each enemy in reach. The attack uses the
   spellcasting modifier for its attack and damage rolls and deals the weapon's
   type or Radiant damage. It is a cantrip choice at creation (Sorcerers now

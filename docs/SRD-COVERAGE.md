@@ -19,8 +19,15 @@ Scope since the [2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplifi
 progression targets level 15 and multiclassing is deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
 Tools, languages, DM-adjudicated spells and Ritual Adept are removed (DM-1);
 Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1);
-natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
-below that describe those features are delivery history, not current behavior.
+natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1); spells
+have no components and Subtle Spell is gone (CLASS-11). Entries below that
+describe those features are delivery history, not current behavior.
+
+## No spell components
+
+Rules 0.6.129 removes spell components for all casters: a weapon, wand or
+shield in hand never blocks casting, Silence no longer stops spells, and Subtle
+Spell is no longer offered. See [spell components](SPELL-COMPONENTS.md).
 
 ## Wild Shape and Land's Aid
 

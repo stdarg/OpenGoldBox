@@ -430,17 +430,20 @@ void legality()
                   "Range rejection atomic");
         }
     }
+    // Full hands block nothing (CLASS-11); untrained armor does.
     for (auto gear : std::vector<std::vector<std::string>>
 {
-    {"quarterstaff", "shield"}, {"wand", "shield"}, {"plate"}
+    {"quarterstaff", "shield"}, {"wand", "shield"}
 })
+    check(has(*battle(*rules, hero(), 13, {2, 1}, gear), "shocking_grasp"),
+          "Full hands do not block casting");
     {
-        auto c = battle(*rules, hero(), 13, {2, 1}, gear);
+        auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
         auto before = c->save();
         check(!has(*c, "shocking_grasp") &&
               !c->submit({c->snapshot().revision, 1, 2, "shocking_grasp"}) &&
               c->save() == before,
-              "Hands/untrained armor reject without mutation");
+              "Untrained armor rejects without mutation");
     }
     auto c = battle(*rules, hero());
     auto before = c->save();

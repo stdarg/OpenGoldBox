@@ -125,16 +125,19 @@ void eligibility()
                   "Out-of-range rejection leaves all state intact");
         }
     }
+    // Full hands block nothing (CLASS-11); untrained armor does.
     for (auto gear : std::vector<std::vector<std::string>>
 {
-    {"quarterstaff", "shield"}, {"wand", "shield"}, {"plate"}
+    {"quarterstaff", "shield"}, {"wand", "shield"}
 })
+    check(has(*battle(*rules, selected(), 13, {3, 1}, gear), "poison_spray"),
+          "Full hands do not block the Warlock grant");
     {
-        auto c = battle(*rules, selected(), 13, {3, 1}, gear);
+        auto c = battle(*rules, selected(), 13, {3, 1}, {"plate"});
         const auto before = c->save();
         check(!has(*c, "poison_spray") &&
               !c->submit({c->snapshot().revision, 1, 2, "poison_spray"}) && c->save() == before,
-              "Somatic/untrained armor checks apply to Warlock grant");
+              "Untrained armor checks apply to Warlock grant");
     }
     auto c = battle(*rules, selected(), 13, {2, 1});
     check(c->submit(command(*c, "poison_spray", 2)) && unit(*c, 2).hit_points == 996 &&

@@ -11,7 +11,8 @@ Light armor adds the full Dexterity modifier. Medium armor adds no more than
 Mail reduces speed by 10 feet below Strength 13; Splint and Plate do so below
 15. Ring Mail has no Strength threshold. These rules apply to Dwarves too.
 A trained Shield adds +2 AC; an untrained Shield gives no AC bonus and does not
-prevent spellcasting. One suit and one Shield are allowed, subject to free hands.
+prevent spellcasting. One suit and one Shield are allowed, subject to free hands
+for wielding; spells need no free hand ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)).
 Armor replaces unarmored class AC calculations. Barbarian unarmored AC still
 works with a Shield; Monk unarmored AC does not.
 

@@ -235,9 +235,8 @@ void all_classes()
                   "Actual initiative uses seed-2 rolls 11/7 once for untrained armor");
             if (klass == "wizard")
                 check(
-                    has(*c, "fire_bolt") == (!penalty && !shield) &&
-                    has(*c, "magic_missile") == (!penalty && !shield),
-                    "Untrained armor blocks casting; dagger plus shield independently blocks Somatic components");
+                    has(*c, "fire_bolt") == !penalty && has(*c, "magic_missile") == !penalty,
+                    "Untrained armor blocks casting; a dagger and shield do not (CLASS-11)");
             auto copy = rules->restore(c->save());
             const auto before = unit(*c);
             const auto ticket = command(*c, "melee");

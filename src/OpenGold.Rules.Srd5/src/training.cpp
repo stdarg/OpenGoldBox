@@ -447,7 +447,6 @@ TrainingChoiceGroup metamagic_options()
         {"heightened", "Heightened Spell", "2 Sorcery Points: one target has Disadvantage on its save against the spell."},
         {"quickened", "Quickened Spell", "2 Sorcery Points: cast an Action spell as a Bonus Action."},
         {"seeking", "Seeking Spell", "1 Sorcery Point: reroll a missed spell attack roll."},
-        {"subtle", "Subtle Spell", "1 Sorcery Point: cast without Verbal or Somatic components."},
         {"transmuted", "Transmuted Spell", "1 Sorcery Point: change Acid, Cold, Fire, Lightning, Poison or Thunder damage to another of them."},
         {"twinned", "Twinned Spell", "1 Sorcery Point: a spell that can take more creatures from a higher slot takes one more."}};
     return group;
@@ -596,8 +595,11 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             if (grant.source_id == "class:sorcerer:metamagic")
             {
                 require(klass == "sorcerer" && grant.level == 2 && grant.choices.empty());
+                // Subtle Spell, retired with spell components (CLASS-11), stays
+                // valid in older saves and does nothing.
                 const auto group = metamagic_options();
-                require(std::any_of(group.options.begin(), group.options.end(),
+                require(grant.id == "metamagic:subtle" ||
+                        std::any_of(group.options.begin(), group.options.end(),
                                     [&](const auto & option)
                 {
                     return grant.id == "metamagic:" + option.id;

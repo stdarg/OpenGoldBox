@@ -11,7 +11,6 @@
 #include "opengold/character_pool.h"
 #include "opengold/srd5.h"
 #include "spell_access.h"
-#include "spell_components.h"
 #include "spell_table.h"
 #include <algorithm>
 #include <filesystem>
@@ -111,8 +110,8 @@ std::vector<Caster> casters()
     add("sorcerer-1",
         hero("sorcerer", 1, {"fire_bolt", "poison_spray", "ray_of_frost", "shocking_grasp"})
         .sheet());
-    // Gear variants exercise the somatic-hand and untrained-armor gates that
-    // suppress every spell offer.
+    // Gear variants: a weapon and shield block nothing (CLASS-11); untrained
+    // armor suppresses every spell offer.
     add("wizard-4+shield",
     hero("wizard", 4, {"shocking_grasp", "chill_touch", "fire_bolt"}).sheet(),
     {"quarterstaff", "shield"});
@@ -197,11 +196,6 @@ void table()
         check(!spell.mask || (seen_masks & spell.mask) == 0, "Every mask bit is distinct");
         seen_masks |= spell.mask;
         check(spell.range > 0, "Every row has a range");
-        // Components must agree with the catalog the components table served.
-        const auto *components = spell_components(spell.id);
-        check(components && components->verbal == spell.verbal &&
-              components->somatic == spell.somatic,
-              "Row components match the component catalog");
         // Searing Smite's ongoing burn ends with a Constitution save.
         // Hellish Rebuke's Reaction forces a Dexterity save.
         const bool saves = spell.pattern == SpellPattern::save_damage ||
@@ -359,11 +353,10 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
               "Out-of-range casting is rejected atomically");
     }
 
-    // Somatic spells need a free hand; a weapon plus shield occupies both.
-    if (row.somatic)
+    // Spells have no components (CLASS-11): a weapon plus shield blocks nothing.
     {
         auto encumbered = battle(rules, sheet, row.range, {"quarterstaff", "shield"});
-        check(!find(*encumbered, row.id, target), "A Somatic spell needs a free hand");
+        check(find(*encumbered, row.id, target).has_value(), "Full hands never block a spell");
     }
 
     // Resolution is deterministic: the same ticket on a restored copy must

@@ -72,7 +72,7 @@ func run_checks() -> void:
         require(current_scene.get_node("Log").get_parsed_text().contains("d20"), "Actual selected cast resolves an attack")
         cast.release_focus()
         await load_fixture("blocked")
-        require(cast.disabled, "Occupied Somatic hand disables casting")
+        require(cast.disabled, "Untrained armor disables casting")
         await load_fixture("unknown")
         require(not cast.visible, "Unselected spell has no casting control")
         await load_fixture("both")

@@ -68,11 +68,11 @@ func run_checks() -> void:
         require(spells.item_count == (1 if which == "unknown" else 2), "Dropdown includes only known cantrips")
         require(spells.get_item_metadata(0) == "fire_bolt", "Fire Bolt remains a known choice")
         spells.select(0); spells.item_selected.emit(0)
-        require(cast.disabled == (which == "blocked"), "Fire Bolt follows Somatic eligibility")
+        require(cast.disabled == (which == "blocked"), "Fire Bolt follows casting eligibility")
         if which != "unknown":
             require(spells.get_item_metadata(1) == "poison_spray", "Poison Spray is selectable when known")
             spells.select(1); spells.item_selected.emit(1)
-            require(cast.disabled == (which == "blocked"), "Selected Poison Spray follows Somatic eligibility")
+            require(cast.disabled == (which == "blocked"), "Selected Poison Spray follows casting eligibility")
         require(combat.get_node("CantripLabel").position.x >= combat.get_node("AdrenalineRush").get_rect().end.x, "Approved spell row stays right of Adrenaline Rush")
         require(cast.get_rect().end.x < root.size.x - 300 and cast.get_rect().end.y <= combat.get_node("Log").position.y, "Shared controls fit and do not cover the log")
         var prompts := ""

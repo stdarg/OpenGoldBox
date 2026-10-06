@@ -365,14 +365,15 @@ void eligibility()
                       "Illegal range atomicity");
             }
         }
-        for (auto gear :
-        std::vector<std::vector<std::string>> {{"quarterstaff", "shield"}, {"plate"}})
+        // Full hands block nothing (CLASS-11); untrained armor does.
+        check(has(*battle(*rules, hero(), 13, {2, 1}, {"quarterstaff", "shield"}), spell),
+              "Full hands do not block casting");
         {
-            auto c = battle(*rules, hero(), 13, {2, 1}, gear);
+            auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
             auto saved = c->save();
             check(!has(*c, spell) && !c->submit({c->snapshot().revision, 1, 2, spell}) &&
                   c->save() == saved,
-                  "Hand/armor blockers apply");
+                  "Untrained armor blocks casting");
         }
         auto c = battle(*rules, hero(), 13, {2, 1});
         check(c->submit(command(*c, spell, 2)), "Adjacent cast allowed");
@@ -454,7 +455,7 @@ void fixtures()
     {
         auto h = hero(kind == "unknown" ? std::vector<std::string> {} : choices);
         auto profile = rules->character_profile(
-                           h.sheet(), kind == "blocked" ? std::vector<std::string> {"quarterstaff", "shield"}
+                           h.sheet(), kind == "blocked" ? std::vector<std::string> {"plate"}
                            : std::vector<std::string> {});
         auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
             {   {1, "campaign-character", "Sorcerer", 0, {1, 1}, profile.data},
@@ -462,6 +463,14 @@ void fixtures()
                 {99, "vanguard", "Enemy", 1, {5, 1}}
             }},
         2);
+        // Untrained armor's initiative Disadvantage may put the caster later.
+        for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+            for (const auto &end : c->legal_commands())
+                if (end.verb == "end")
+                {
+                    (void)c->submit(end);
+                    break;
+                }
         write(path / (kind + ".save"), c->save());
     }
 }

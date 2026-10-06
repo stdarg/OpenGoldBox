@@ -136,7 +136,7 @@ and selected casting ability; [#200](https://github.com/stdarg/OpenGold/issues/2
 
 ## Delivery and evidence
 
-Every spell needs source-correct targets, components, casting time, resource
+Every spell needs source-correct targets, casting time, resource
 costs, range, duration, concentration, effects, defenses, upcasting where
 available, grant access and ordinary playable controls. Relevant exploration
 uses and camp/inn save continuation are part of completion. No reviewed
@@ -174,10 +174,10 @@ complete its still-pending class/species/feat integrations.
 | Magic Missile | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [typed damage](../tests/damage_tests.cpp), [components](../tests/spell_component_tests.cpp) | [#168](https://github.com/stdarg/OpenGold/issues/168), [#42](https://github.com/stdarg/OpenGold/issues/42), [#41](https://github.com/stdarg/OpenGold/issues/41): split targets, simultaneous damage/roll policy and Shield |
 | Healing Word | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [components](../tests/spell_component_tests.cpp) | [#169](https://github.com/stdarg/OpenGold/issues/169): all sources, contextual healing and complete casting restrictions |
 | Scorching Ray | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [typed damage](../tests/damage_tests.cpp), [components](../tests/spell_component_tests.cpp) | [#170](https://github.com/stdarg/OpenGold/issues/170), [#42](https://github.com/stdarg/OpenGold/issues/42): split targets and complete casting restrictions |
-| Blindness/Deafness | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [effects](../src/OpenGold.Rules.Srd5/src/status_effects.cpp) | [status tests](../tests/status_effect_tests.cpp), [components](../tests/spell_component_tests.cpp) | [#171](https://github.com/stdarg/OpenGold/issues/171): Deafness choice, dismissal, overlapping effects, Verbal blocking and future higher-slot targets |
+| Blindness/Deafness | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [effects](../src/OpenGold.Rules.Srd5/src/status_effects.cpp) | [status tests](../tests/status_effect_tests.cpp), [components](../tests/spell_component_tests.cpp) | [#171](https://github.com/stdarg/OpenGold/issues/171): Deafness choice, dismissal, overlapping effects and future higher-slot targets |
 
-Higher character levels and slots remain [#176](https://github.com/stdarg/OpenGold/issues/176)–178. Current Somatic restrictions
-are covered by [#201](https://github.com/stdarg/OpenGold/issues/201); speech-blocking sources remain [#39](https://github.com/stdarg/OpenGold/issues/39). These existing tests
+Higher character levels and slots remain [#176](https://github.com/stdarg/OpenGold/issues/176)–178. Spells have no
+components ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)). These existing tests
 are evidence of partial behavior, not certification of the full spell.
 
 ## Cantrips

@@ -355,10 +355,7 @@ void legality()
         }
     }
     auto c = battle(*rules, hero(), 13, {3, 1}, {"quarterstaff", "shield"});
-    check(!has(*c, "ray_of_frost"), "Somatic component obeys occupied hands");
-    auto before = c->save();
-    check(!c->submit({c->snapshot().revision, 1, 2, "ray_of_frost"}) && c->save() == before,
-          "Blocked gesture is atomic");
+    check(has(*c, "ray_of_frost"), "Full hands do not block casting (CLASS-11)");
     auto board = Battlefield{20, 8, std::vector<std::uint8_t>(160)};
     board.terrain[22] = 1;
     c = rules->create({board,
@@ -375,7 +372,7 @@ void legality()
     13);
     check(!has(*c, "ray_of_frost", 2), "Opaque terrain blocks casting");
     c = battle(*rules, hero());
-    before = c->save();
+    auto before = c->save();
     for (EntityId target :
             {
                 0u, 999u

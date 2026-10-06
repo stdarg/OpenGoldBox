@@ -415,16 +415,19 @@ void legality()
                   "Out of range is atomic");
         }
     }
+    // Full hands block nothing (CLASS-11); untrained armor does.
     for (auto gear : std::vector<std::vector<std::string>>
 {
-    {"quarterstaff", "shield"}, {"wand", "shield"}, {"plate"}
+    {"quarterstaff", "shield"}, {"wand", "shield"}
 })
+    check(has(*battle(*rules, hero(), 13, {2, 1}, gear), "chill_touch"),
+          "Full hands do not block casting");
     {
-        auto c = battle(*rules, hero(), 13, {2, 1}, gear);
+        auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
         auto saved = c->save();
         check(!has(*c, "chill_touch") &&
               !c->submit({c->snapshot().revision, 1, 2, "chill_touch"}) && c->save() == saved,
-              "Components and armor prevent casting");
+              "Untrained armor prevents casting");
     }
 }
 
