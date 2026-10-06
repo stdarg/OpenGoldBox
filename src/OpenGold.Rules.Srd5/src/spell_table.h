@@ -90,7 +90,9 @@ enum class Rider : unsigned
     color_spray,
     grease,
     web,
-    misty_step
+    misty_step,
+    acid_arrow,
+    ray_of_enfeeblement
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -692,6 +694,48 @@ inline constexpr std::array spell_table
         .rider = Rider::misty_step,
         .bonus_action = true,
         .area = 5},
+    // SRD 5.2.1 p. 107: 4d4 Acid on a hit and 2d4 more at the end of the
+    // target's next turn; half the initial damage on a miss.
+    SpellDef{
+        .id = "acid_arrow",
+        .label = "Acid Arrow",
+        .level = 2,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 90,
+        .damage = DamageType::acid,
+        .dice = {4, 4, 0},
+        .rider = Rider::acid_arrow,
+        .evocation = true},
+    // SRD 5.2.1 p. 149: a Wisdom save against 3d8 Psychic, half on a success.
+    // Somatic only; the location it reveals has no use here.
+    SpellDef{
+        .id = "mind_spike",
+        .label = "Mind Spike",
+        .level = 2,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 120,
+        .requires_sight = true,
+        .verbal = false,
+        .save = Ability::wisdom,
+        .damage = DamageType::psychic,
+        .dice = {3, 8, 0},
+        .half_on_success = true,
+        .concentration = true},
+    // SRD 5.2.1 p. 157: a failed Constitution save enfeebles the target; a
+    // success gives Disadvantage on its next attack roll.
+    SpellDef{
+        .id = "ray_of_enfeeblement",
+        .label = "Ray of Enfeeblement",
+        .level = 2,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_effect_capacity = true,
+        .save = Ability::constitution,
+        .rider = Rider::ray_of_enfeeblement,
+        .concentration = true},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

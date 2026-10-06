@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Acid Arrow, Mind Spike and Ray of Enfeeblement
+
+Rules 0.6.100 adds three level-two Wizard spells and starts Concentration for
+single-target save spells (Hideous Laughter had not). See
+[Wizard](WIZARD.md#acid-arrow-mind-spike-and-ray-of-enfeeblement).
+
 ## Misty Step
 
 Rules 0.6.99 adds Misty Step, the first aimed Bonus Action spell. See

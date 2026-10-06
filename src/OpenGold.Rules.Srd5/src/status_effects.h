@@ -100,7 +100,13 @@ enum class EffectKind : unsigned
     // Web: Restrained until an Athletics check breaks free, like Entangle.
     webbed = 37,
     // Shield: +5 AC and no Magic Missile damage until the caster's next turn.
-    shield = 38
+    shield = 38,
+    // Acid Arrow: 2d4 Acid damage when it runs out, at the end of the
+    // target's next turn.
+    acid_arrow = 39,
+    // Ray of Enfeeblement: Disadvantage on Strength-based D20 Tests and 1d8
+    // less damage, with a Constitution save at the end of each of its turns.
+    enfeebled = 40
 };
 
 // The longest a spell benefit lasts, in milliseconds.

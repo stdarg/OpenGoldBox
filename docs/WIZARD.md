@@ -181,3 +181,25 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (occupied and out-of-range
   squares refused, the teleport, the Bonus Action and level-two slot, no
   Opportunity Attack).
+
+## Acid Arrow, Mind Spike and Ray of Enfeeblement
+
+- **Acid Arrow** (level 2, 90 feet): a spell attack for 4d4 Acid, and 2d4 Acid
+  more at the end of the target's next turn. A miss splashes half the initial
+  damage and nothing later.
+- **Mind Spike** (level 2, 120 feet, Somatic only, Concentration): a Wisdom
+  save against 3d8 Psychic, half on a success. Knowing the target's location
+  has no use here yet.
+- **Ray of Enfeeblement** (level 2, 60 feet, Concentration): on a failed
+  Constitution save the target is **Enfeebled**: Disadvantage on Strength
+  saves and on melee weapon attacks (taken as its Strength-based attacks), and
+  1d8 less damage on each attack that hits. It repeats the save at the end of
+  each of its turns. On a success it still has Disadvantage on its next attack
+  roll before the start of the Wizard's next turn. Strength checks and the
+  damage of its spells and saves are not reduced yet.
+- Fix: single-target save spells with Concentration now start it, so a second
+  Hideous Laughter ends the first.
+- The computer casts Acid Arrow, Mind Spike and Ray of Enfeeblement.
+- Verification: `opengold_wizard_spell_tests` (the hit and the later burn,
+  the splash on a miss, Mind Spike's save, both outcomes of the ray and their
+  Disadvantage, a checkpoint, Concentration replacing Hideous Laughter).

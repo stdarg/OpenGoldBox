@@ -559,6 +559,88 @@ void misty_step_checks()
           "A Bonus Action from a level-two slot, with no Opportunity Attack");
 }
 
+void acid_arrow_checks()
+{
+    auto module = rules();
+    {
+        auto c = battle(*module, wizard(3, {"magic_missile"}, {"acid_arrow", "shatter"}), {4, 1},
+                        {11, 5});
+        check(submit(*c, "acid_arrow", 98) && logged(*c, "Wizard -> First") && logged(*c, "hits"),
+              "Acid Arrow hits");
+        check(!logged(*c, "from Acid Arrow"), "The later burn waits");
+        reach(*c, 98);
+        check(submit(*c, "end") && logged(*c, "Acid damage from Acid Arrow."),
+              "The acid burns at the end of the target's next turn");
+    }
+    {
+        auto c = battle(*module, wizard(3, {"magic_missile"}, {"acid_arrow", "shatter"}), {4, 1},
+                        {11, 5}, 5, {1, 2}, "armored");
+        check(submit(*c, "acid_arrow", 98) && logged(*c, "misses") &&
+              logged(*c, "Acid damage from the splash."),
+              "A miss splashes half the damage");
+        reach(*c, 98);
+        check(submit(*c, "end") && !logged(*c, "from Acid Arrow"), "A miss leaves no later burn");
+    }
+}
+
+void mind_spike_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(3, {"magic_missile"}, {"mind_spike", "shatter"}), {8, 1},
+                    {11, 5});
+    check(submit(*c, "mind_spike", 98) && logged(*c, "First Wisdom save") &&
+          logged(*c, "First takes"),
+          "Mind Spike deals Psychic damage, half on a successful save");
+}
+
+void ray_of_enfeeblement_checks()
+{
+    auto module = rules();
+    bool failed = false, saved = false;
+    for (std::uint64_t seed = 1; seed < 64 && !(failed && saved); ++seed)
+    {
+        auto c = battle(*module, wizard(3, {"magic_missile"}, {"ray_of_enfeeblement", "shatter"}),
+                        {2, 1}, {11, 5}, seed);
+        check(submit(*c, "ray_of_enfeeblement", 98) && logged(*c, "First Constitution save"),
+              "Ray of Enfeeblement calls for a Constitution save");
+        if (logged(*c, "First is enfeebled."))
+        {
+            failed = true;
+            const auto snapshot = c->save();
+            check(module->restore(snapshot)->save() == snapshot, "Enfeeblement survives a checkpoint");
+        }
+        else
+        {
+            saved = true;
+            check(logged(*c, "First has Disadvantage on its next attack roll."),
+                  "A success still costs the next attack");
+        }
+        reach(*c, 98);
+        check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
+              "Either way its next melee attack has Disadvantage");
+    }
+    check(failed && saved, "Seeds cover both a failed and a successful save");
+}
+
+void laughter_concentration_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "hideous_laughter"}), {4, 1}, {5, 1},
+                        seed);
+        check(submit(*c, "hideous_laughter", 98), "Cast Hideous Laughter");
+        if (!logged(*c, "First falls Prone, laughing."))
+            continue;
+        next_turn(*c);
+        check(submit(*c, "hideous_laughter", 99) && logged(*c, "Wizard loses Concentration.") &&
+              !has_condition(*c, 98, "Prone and Incapacitated (laughing)"),
+              "A new Concentration spell ends the laughter");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Wisdom save");
+}
+
 } // namespace
 
 int main()
@@ -585,6 +667,10 @@ int main()
         shield_checks();
         shield_missile_checks();
         misty_step_checks();
+        acid_arrow_checks();
+        mind_spike_checks();
+        ray_of_enfeeblement_checks();
+        laughter_concentration_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

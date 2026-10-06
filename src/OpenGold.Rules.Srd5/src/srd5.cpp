@@ -106,7 +106,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::hold_person || kind == detail::EffectKind::resistance ||
            kind == detail::EffectKind::expeditious_retreat || kind == detail::EffectKind::drowsy ||
            kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing ||
-           kind == detail::EffectKind::webbed;
+           kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -252,6 +252,9 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "web", 3},
     SpellAccessRow{"Wizard", "shield", 1},
     SpellAccessRow{"Wizard", "misty_step", 3},
+    SpellAccessRow{"Wizard", "acid_arrow", 3},
+    SpellAccessRow{"Wizard", "mind_spike", 3},
+    SpellAccessRow{"Wizard", "ray_of_enfeeblement", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -2162,7 +2165,9 @@ Snapshot Session::snapshot() const
                 {
                     std::pair{detail::EffectKind::drowsy, "Incapacitated (Sleep)"},
                     std::pair{detail::EffectKind::asleep, "Unconscious (Sleep)"},
-                    std::pair{detail::EffectKind::laughing, "Prone and Incapacitated (laughing)"}
+                    std::pair{detail::EffectKind::laughing, "Prone and Incapacitated (laughing)"},
+                    std::pair{detail::EffectKind::enfeebled, "Enfeebled (Ray of Enfeeblement)"},
+                    std::pair{detail::EffectKind::acid_arrow, "Burning acid (Acid Arrow)"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2317,6 +2322,17 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::web:
     case detail::Rider::misty_step:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::acid_arrow:
+        detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
+                               next_save_ms(target.source.id), detail::EffectKind::acid_arrow);
+        return;
+    case detail::Rider::ray_of_enfeeblement:
+        detail::apply_repeating_condition(target.effects, detail::EffectKind::enfeebled, scope_,
+                                          a.source.id, a.source.name, dc,
+                                          next_save_ms(target.source.id));
+        log(target.source.name + " is enfeebled.",
+        {"{name} is enfeebled.", {{"name", target.source.name}}});
+        return;
     case detail::Rider::hold_person:
         detail::apply_hold_person(target.effects, scope_, a.source.id, a.source.name, dc,
                                   next_save_ms(target.source.id));
@@ -2498,6 +2514,18 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         const auto type = detail::chromatic_type(verb).value_or(spell.damage);
         if (attack(a, target, !spell.melee, true, rolled, type))
             apply_rider(spell, verb, a, target, dc);
+        else if (spell.rider == detail::Rider::acid_arrow && target.hp > 0)
+        {
+            // A miss splashes half the initial damage, without the later burn.
+            const int amount = resolved_damage(target, spell.damage, dice(rolled) / 2);
+            log(target.source.name + " takes " + std::to_string(amount) +
+                " Acid damage from the splash.",
+            {
+                "{name} takes {damage} Acid damage from the splash.",
+                {{"name", target.source.name}, {"damage", std::to_string(amount)}}
+            });
+            damage(target, amount, false);
+        }
         else if (d.evoker && !spell.level && target.hp > 0)
             potent_cantrip(target, spell, rolled);
         // Ice Knife's shard explodes, hit or miss.
@@ -2553,6 +2581,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         auto &target = actor(target_id);
         if (sanctuary_stops(a, target))
             return;
+        if (spell.concentration)
+            begin_concentration(a, spell);
         log(a.source.name + " casts " + name + " at " + target.source.name + ".",
         {
             "{name} casts {spell} at {target}.",
@@ -2581,8 +2611,19 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     case detail::SpellPattern::save_condition:
     {
         auto &target = actor(target_id);
+        if (spell.concentration)
+            begin_concentration(a, spell);
         if (!saving_throw_succeeds(target, spell.save, dc))
             apply_rider(spell, verb, a, target, dc);
+        else if (spell.rider == detail::Rider::ray_of_enfeeblement)
+        {
+            // A success still leaves Disadvantage on its next attack roll until
+            // the start of the caster's next turn, as Sap does.
+            detail::apply_attack_mastery(target.effects, detail::EffectKind::sap, scope_,
+                                         a.source.id, a.source.name, next_turn_ms(a));
+            log(target.source.name + " has Disadvantage on its next attack roll.",
+            {"{name} has Disadvantage on its next attack roll.", {{"name", target.source.name}}});
+        }
         return;
     }
     }
@@ -4223,6 +4264,10 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     if (detail::sapped(a.effects) ||
             detail::has_effect(a.effects, detail::EffectKind::poisoned))
         result.disadvantage = true;
+    // Ray of Enfeeblement: Disadvantage on Strength-based attack rolls, here
+    // every melee weapon attack.
+    if (!spell && !ranged && detail::has_effect(a.effects, detail::EffectKind::enfeebled))
+        result.disadvantage = true;
     // Guiding Bolt: the next attack roll against the target has Advantage.
     if (detail::has_effect(target.effects, detail::EffectKind::guiding_bolt))
         result.advantage = true;
@@ -4520,8 +4565,15 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         log("Colossus Slayer adds " + std::to_string(extra) + " damage.",
         {"Colossus Slayer adds {damage} damage.", {{"damage", std::to_string(extra)}}});
     }
+    // Ray of Enfeeblement: 1d8 less on each of the creature's damage rolls.
+    const int enfeebled = hit && detail::has_effect(a.effects, detail::EffectKind::enfeebled)
+                          ? roll(8)
+                          : 0;
+    if (enfeebled)
+        log("Ray of Enfeeblement subtracts " + std::to_string(enfeebled) + " damage.",
+        {"Ray of Enfeeblement subtracts {damage} damage.", {{"damage", std::to_string(enfeebled)}}});
     apply_hit(a, target, natural, bonus, modifiers.mode(),
-              std::max(0, weapon_damage + sneak_damage + advantage_damage),
+              std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
               savage,
               spell    ? spell_type
               : ranged ? d.ranged_type
@@ -4927,6 +4979,9 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     modifiers.advantage |= advantage;
     // Restrained: Disadvantage on Dexterity saves.
     modifiers.disadvantage |= ability == detail::Ability::dexterity && detail::restrained(target.effects);
+    // Ray of Enfeeblement: Disadvantage on Strength saves.
+    modifiers.disadvantage |= ability == detail::Ability::strength &&
+                              detail::has_effect(target.effects, detail::EffectKind::enfeebled);
     const auto result = detail::saving_throw(
                             ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
                             modifiers, rng_);
@@ -4944,6 +4999,8 @@ void Session::advance_turn_time()
         detail::start_stable_recovery(a, rng_);
     std::vector<detail::RecoverySubject> subjects;
     std::vector<EntityId> unconscious;
+    // Acid Arrow burns once its effect runs out, after the effects are walked.
+    std::vector<EntityId> burned;
     for (auto &a : actors_)
     {
         subjects.push_back(
@@ -4992,7 +5049,22 @@ void Session::advance_turn_time()
         if (event.removed && event.effect.kind == detail::EffectKind::hold_person)
             log(target.source.name + " is no longer Paralyzed.",
         {"{name} is no longer Paralyzed.", {{"name", target.source.name}}});
+        if (event.removed && event.effect.kind == detail::EffectKind::acid_arrow)
+            burned.push_back(event.target);
     });
+    for (const auto id : burned)
+    {
+        auto &target = actor(id);
+        if (target.dead)
+            continue;
+        const int amount = resolved_damage(target, detail::DamageType::acid, dice({2, 4, 0}));
+        log(target.source.name + " takes " + std::to_string(amount) + " Acid damage from Acid Arrow.",
+        {
+            "{name} takes {damage} Acid damage from Acid Arrow.",
+            {{"name", target.source.name}, {"damage", std::to_string(amount)}}
+        });
+        damage(target, amount, false);
+    }
     for (auto &a : actors_)
         if (a.concentration.elapse(delta))
             drop_concentration_effects(a);
@@ -8411,7 +8483,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.99", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.100", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

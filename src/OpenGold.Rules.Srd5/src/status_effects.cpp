@@ -98,7 +98,7 @@ void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId c
                     std::string name, unsigned duration_ms, EffectKind kind)
 {
     if ((kind != EffectKind::poisoned && kind != EffectKind::dazzled &&
-            kind != EffectKind::shield) || !can_apply(effects) ||
+            kind != EffectKind::shield && kind != EffectKind::acid_arrow) || !can_apply(effects) ||
             !scope || !caster || name.empty() || name.size() > 160 || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
@@ -266,7 +266,8 @@ void apply_repeating_condition(EffectState &effects, EffectKind kind, std::uint6
                                rules::EntityId caster, std::string name, int dc,
                                unsigned first_save_ms)
 {
-    if ((kind != EffectKind::drowsy && kind != EffectKind::laughing) || !can_apply(effects) ||
+    if ((kind != EffectKind::drowsy && kind != EffectKind::laughing &&
+            kind != EffectKind::enfeebled) || !can_apply(effects) ||
             !scope || !caster || name.empty() || name.size() > 160 || dc < -2 || dc > 38 ||
             !first_save_ms || first_save_ms > round_ms)
         throw std::runtime_error("Invalid repeated condition");
@@ -500,13 +501,16 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                 if (!e.remaining_ms)
                     event.removed = true;
                 else if ((e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
-                          e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing) &&
+                          e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
+                          e.kind == EffectKind::enfeebled) &&
                          !e.save_in_ms)
                 {
-                    // Blindness repeats a Constitution save, the others a Wisdom one,
-                    // at the end of each of the target's turns.
-                    const auto ability = e.kind == EffectKind::blindness ? Ability::constitution
-                                         : Ability::wisdom;
+                    // Blindness and Ray of Enfeeblement repeat a Constitution save,
+                    // the others a Wisdom one, at the end of each of the target's turns.
+                    const auto ability =
+                        e.kind == EffectKind::blindness || e.kind == EffectKind::enfeebled
+                        ? Ability::constitution
+                        : Ability::wisdom;
                     e.save_in_ms = round_ms;
                     if (!subject.dead)
                     {
@@ -591,7 +595,8 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::guiding_bolt) ||
                            kind == unsigned(EffectKind::poisoned) ||
                            kind == unsigned(EffectKind::dazzled) ||
-                           kind == unsigned(EffectKind::shield);
+                           kind == unsigned(EffectKind::shield) ||
+                           kind == unsigned(EffectKind::acid_arrow);
         // Searing Smite, Ensnaring Strike and Entangle act at the start of the
         // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
@@ -629,7 +634,8 @@ EffectState read_effects(std::istream &in)
         }
         if (!in || (!timed && !turn_save && kind != unsigned(EffectKind::blindness) &&
                     kind != unsigned(EffectKind::hold_person) &&
-                    kind != unsigned(EffectKind::drowsy) && kind != unsigned(EffectKind::laughing)) ||
+                    kind != unsigned(EffectKind::drowsy) && kind != unsigned(EffectKind::laughing) &&
+                    kind != unsigned(EffectKind::enfeebled)) ||
                 e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 ||
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
@@ -640,7 +646,8 @@ EffectState read_effects(std::istream &in)
                                               kind == unsigned(EffectKind::vex) ||
                                               kind == unsigned(EffectKind::guiding_bolt) ||
                                               kind == unsigned(EffectKind::poisoned) ||
-                                              kind == unsigned(EffectKind::dazzled))
+                                              kind == unsigned(EffectKind::dazzled) ||
+                                              kind == unsigned(EffectKind::acid_arrow))
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

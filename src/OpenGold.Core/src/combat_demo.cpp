@@ -761,7 +761,7 @@ Command choose_demo_command(const CombatSession &session)
             return command;
     for (const auto &command : offered)
         if (command.verb == "blindness" || command.verb == "hold_person" ||
-                command.verb == "hideous_laughter")
+                command.verb == "hideous_laughter" || command.verb == "ray_of_enfeeblement")
         {
             const auto target = std::find_if(state.combatants.begin(), state.combatants.end(),
                                              [&](const auto & a)
@@ -772,7 +772,8 @@ Command choose_demo_command(const CombatSession &session)
                 return command;
         }
     for (const auto verb :
-            {"magic_missile", "magic_missile_2", "scorching_ray", "inflict_wounds", "guiding_bolt", "melee",
+            {"magic_missile", "magic_missile_2", "scorching_ray", "acid_arrow", "mind_spike",
+             "inflict_wounds", "guiding_bolt", "melee",
              "fire_bolt", "sacred_flame", "ranged"
             })
     {
