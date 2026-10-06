@@ -766,6 +766,119 @@ Command choose_demo_command(const CombatSession &session)
     for (const auto &command : offered)
         if (command.verb == "shake_awake")
             return command;
+    const auto offers = [&](std::string_view verb) -> const Command *
+    {
+        for (const auto &command : offered)
+            if (command.verb == verb)
+                return &command;
+        return nullptr;
+    };
+    const auto shows = [](const CombatantView & unit, std::string_view condition)
+    {
+        return std::any_of(unit.conditions.begin(), unit.conditions.end(),
+                           [&](const auto & c)
+        {
+            return c.source == condition;
+        });
+    };
+    const auto unit = [&](EntityId id) -> const CombatantView &
+    {
+        return *std::find_if(state.combatants.begin(), state.combatants.end(),
+                             [&](const auto & a)
+        {
+            return a.id == id;
+        });
+    };
+    const bool concentrating = shows(active, "Concentrating");
+    const auto beside = [](Cell a, Cell b)
+    {
+        return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)) <= 1;
+    };
+    // Moonbeam's 5-foot radius is the target's square and those around it, so
+    // it is aimed only at an enemy with no ally of the caster beside it.
+    const auto clear_of_allies = [&](Cell center)
+    {
+        return std::none_of(state.combatants.begin(), state.combatants.end(), [&](const auto & a)
+        {
+            return a.side == active.side && !a.dead && beside(a.cell, center);
+        });
+    };
+    if (state.area_targeting)
+    {
+        if (state.area_targeting->verb == "moonbeam" || state.area_targeting->verb == "lands_aid")
+        {
+            for (const auto &a : state.combatants)
+                if (a.side != active.side && a.conscious && clear_of_allies(a.cell) &&
+                        std::max(std::abs(a.cell.x - active.cell.x),
+                                 std::abs(a.cell.y - active.cell.y)) <= 24)
+                {
+                    if (a.cell == state.area_targeting->center)
+                        if (const auto *cast = offers("area_cast"))
+                            return *cast;
+                    for (const auto &command : offered)
+                        if (command.verb == "area_move" && command.destination == a.cell)
+                            return command;
+                }
+        }
+        if (const auto *cancel = offers("spell_cancel"))
+            return *cancel;
+    }
+    // Moonbeam reaches 120 feet: 24 squares, each 5 feet in any direction. A
+    // target within it is always aimable, so aiming never starts over.
+    const bool moonbeam_target = std::any_of(state.combatants.begin(), state.combatants.end(),
+                                 [&](const auto & a)
+    {
+        return a.side != active.side && a.conscious && clear_of_allies(a.cell) &&
+               std::max(std::abs(a.cell.x - active.cell.x), std::abs(a.cell.y - active.cell.y)) <= 24;
+    });
+    // Bonus Action buffs come before the Action: Innate Sorcery before a spell
+    // attack, a Druid's flame or staff, Hex and Bardic Inspiration on an ally.
+    struct Buff
+    {
+        const char *verb, *condition;
+    };
+    for (const auto buff : {Buff{"innate_sorcery", "Innate Sorcery"},
+                            Buff{"produce_flame", "Produce Flame"}, Buff{"shillelagh", "Shillelagh"}
+                           })
+        if (const auto *command = offers(buff.verb);
+                command && !shows(active, buff.condition) &&
+                (std::string_view(buff.verb) != "innate_sorcery" || offers("eldritch_blast") ||
+                 offers("sorcerous_burst_fire")))
+            return *command;
+    if (!concentrating)
+        for (const auto verb : {"hex", "spiritual_weapon"})
+            if (const auto *command = offers(verb))
+                return *command;
+    for (const auto &command : offered)
+        if (command.verb == "bardic_inspiration" && command.target != active.id &&
+                !shows(unit(command.target), "Inspired"))
+            return command;
+    // A Druid holds Moonbeam on the enemies, then fights as a Wolf; a Wolf
+    // whose Moonbeam has ended leaves the form to cast it again.
+    if (!active.form.empty() && !concentrating)
+        if (const auto *command = offers("leave_wild_shape"))
+            return *command;
+    if (!concentrating && moonbeam_target)
+        if (const auto *command = offers("moonbeam"))
+            return *command;
+    if (active.form.empty() && concentrating)
+        if (const auto *command = offers("wild_shape_wolf"))
+            return *command;
+    if (const auto *command = offers("move_moonbeam"); command && moonbeam_target)
+    {
+        const auto &beamed = state.moonbeams;
+        const bool burning = std::any_of(state.combatants.begin(), state.combatants.end(),
+                                         [&](const auto & a)
+        {
+            return a.side != active.side && a.conscious &&
+                   std::find(beamed.begin(), beamed.end(), a.cell) != beamed.end();
+        });
+        if (!burning)
+            for (const auto &move : offered)
+                if (move.verb == "move_moonbeam" && unit(move.target).side != active.side &&
+                        clear_of_allies(unit(move.target).cell))
+                    return move;
+    }
     for (const auto &command : offered)
         if (command.verb == "blindness" || command.verb == "hold_person" ||
                 command.verb == "hideous_laughter" || command.verb == "ray_of_enfeeblement")
@@ -780,8 +893,10 @@ Command choose_demo_command(const CombatSession &session)
         }
     for (const auto verb :
             {"magic_missile", "magic_missile_2", "scorching_ray", "acid_arrow", "mind_spike",
-             "inflict_wounds", "guiding_bolt", "melee",
-             "fire_bolt", "sacred_flame", "ranged"
+             "inflict_wounds", "guiding_bolt", "dissonant_whispers", "eldritch_blast",
+             "sorcerous_burst_fire", "flame_blade_strike", "hurl_flame", "heat_metal_again",
+             "melee", "fire_bolt", "sacred_flame", "vicious_mockery", "starry_wisp",
+             "ray_of_frost", "chill_touch", "shocking_grasp", "poison_spray", "ranged"
             })
     {
         const Command *best = nullptr;
@@ -803,6 +918,12 @@ Command choose_demo_command(const CombatSession &session)
         if (best)
             return *best;
     }
+    // With the Action spent, a Bonus Action may still strike: Flurry of Blows,
+    // a Martial Arts strike, Hex or Heat Metal again.
+    if (!active.action)
+        for (const auto verb : {"flurry_of_blows", "martial_arts", "hex_move", "heat_metal_again"})
+            if (const auto *command = offers(verb))
+                return *command;
     // With no action left, approaching for another attack cannot help this
     // turn. The bonus-action recovery choices above still get their chance.
     if (!active.action)

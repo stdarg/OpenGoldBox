@@ -2961,6 +2961,12 @@ Snapshot Session::snapshot() const
                 s.combatants.back().status += std::string(" | ") + label;
                 s.combatants.back().conditions.push_back({label, {}});
             }
+        if (a.concentration.active())
+        {
+            messages.push_back({"Concentrating", {}});
+            s.combatants.back().status += " | Concentrating";
+            s.combatants.back().conditions.push_back({"Concentrating", {}});
+        }
         for (const auto &effect : a.effects.active)
             if (effect.kind == detail::EffectKind::wild_shape)
             {
@@ -9902,8 +9908,19 @@ class Module final : public RulesModule
         actor.definition = character_definition(character_profile(next, {}).data);
         if (actor.hp > 0)
             actor.hp += growth;
-        actor.slots += actor.definition.slots - old.slots;
-        actor.slots2 += actor.definition.slots2 - old.slots2;
+        // Pact Magic's slots become level-two slots at Warlock level 3; the
+        // slots already spent stay spent.
+        const int spent_slots = old.slots - actor.slots + old.slots2 - actor.slots2;
+        if (actor.definition.pact_magic && !actor.definition.slots && old.slots)
+        {
+            actor.slots = 0;
+            actor.slots2 = std::max(0, actor.definition.slots2 - spent_slots);
+        }
+        else
+        {
+            actor.slots += actor.definition.slots - old.slots;
+            actor.slots2 += actor.definition.slots2 - old.slots2;
+        }
         actor.winds += actor.definition.winds - old.winds;
         actor.rushes += actor.definition.rushes - old.rushes;
         actor.surges += surge_capacity(actor.definition) - surge_capacity(old);
@@ -11064,7 +11081,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.127", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.128", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

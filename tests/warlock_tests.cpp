@@ -1,5 +1,6 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -213,6 +214,13 @@ void advancement_checks()
     auto vitals = unit(*c, 1).persistent;
     std::vector<CampTarget> party{{&second.sheet(), &vitals}};
     std::uint64_t random = 7;
+    // Reaching level 3 with a slot spent: the Pact slots become level 2 and
+    // the spent one stays spent.
+    auto spent = unit(*c, 1).persistent;
+    auto sheet = second.sheet();
+    check(rules_module->advance_character(sheet, spent, rules_module->default_advancement(sheet)) &&
+          slots(spent) == std::pair{0, 1},
+          "A spent Pact slot stays spent when the slots change level");
     rules_module->use_party_camp_action(second.sheet(), vitals, party, "magical_cunning", random);
     check(slots(vitals).first == 2, "Magical Cunning restores the spent slot");
 
@@ -324,12 +332,25 @@ void fiend_checks()
     throw std::runtime_error("No seed drops the weakling");
 }
 
+
+
+// The automated policy marks its foe with Hex, then blasts it.
+void policy_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, warlock());
+    const auto hex = choose_demo_command(*c);
+    check(hex.verb == "hex" && hex.target == 98 && c->submit(hex), "The policy casts Hex first");
+    check(choose_demo_command(*c).verb == "eldritch_blast", "Then it casts Eldritch Blast");
+}
+
 } // namespace
 
 int main()
 {
     try
     {
+        policy_checks();
         pact_magic_checks();
         hellish_rebuke_checks();
         advancement_checks();

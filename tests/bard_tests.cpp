@@ -1,5 +1,6 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -247,12 +248,23 @@ void inspiration_checks()
     throw std::runtime_error("No seed asks about Cutting Words");
 }
 
+// The automated policy inspires an ally before acting.
+void policy_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, bard());
+    const auto inspire = choose_demo_command(*c);
+    check(inspire.verb == "bardic_inspiration" && inspire.target == 2,
+          "The policy gives the ally Bardic Inspiration first");
+}
+
 } // namespace
 
 int main()
 {
     try
     {
+        policy_checks();
         spell_checks();
         advancement_checks();
         inspiration_checks();

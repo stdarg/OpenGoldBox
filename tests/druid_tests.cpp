@@ -1,5 +1,6 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -393,6 +394,25 @@ void lands_aid_checks()
           "Land's Aid spends a Wild Shape use: thorns for the enemy, flowers for the ally");
 }
 
+// The automated policy aims Moonbeam at an enemy clear of allies, then fights
+// as a Wolf while it holds the beam.
+void policy_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, preparing("moonbeam"), {}, false, Cell{1, 5});
+    check(choose_demo_command(*c).verb == "produce_flame" && c->submit(choose_demo_command(*c)),
+          "The policy lights Produce Flame with its Bonus Action");
+    check(choose_demo_command(*c).verb == "moonbeam", "Then it casts Moonbeam");
+    for (unsigned n = 0; n < 4 && c->snapshot().moonbeams.empty(); ++n)
+        check(c->submit(choose_demo_command(*c)), "Aim and cast Moonbeam");
+    check(c->snapshot().moonbeams.front() == Cell{4, 1} && has_condition(*c, 1, "Concentrating"),
+          "The beam shines on the enemy while the Druid concentrates");
+    // Produce Flame spent this turn's Bonus Action.
+    reach(*c, 1);
+    check(choose_demo_command(*c).verb == "wild_shape_wolf",
+          "On its next turn it takes the Wolf's form");
+}
+
 } // namespace
 
 int main()
@@ -409,6 +429,7 @@ int main()
         heat_metal_checks();
         wild_shape_checks();
         lands_aid_checks();
+        policy_checks();
         std::cout << "Druid tests passed\n";
     }
     catch (const std::exception &e)
