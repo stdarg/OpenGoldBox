@@ -382,6 +382,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::longstrider:
     case EffectKind::warding_bond:
     case EffectKind::protection_from_poison:
+    case EffectKind::charmed:
     case EffectKind::magic_weapon:
     case EffectKind::invisible:
     case EffectKind::see_invisibility:

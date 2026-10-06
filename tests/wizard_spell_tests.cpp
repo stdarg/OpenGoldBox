@@ -898,6 +898,39 @@ void dragons_breath_checks()
           "The ally exhales a 15-foot cone of the chosen type with its Action");
 }
 
+void charm_person_checks()
+{
+    auto module = rules();
+    bool charmed = false;
+    for (std::uint64_t seed = 1; seed < 64 && !charmed; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "charm_person"}), {2, 1}, {11, 5},
+                        seed);
+        check(submit(*c, "charm_person", 98) && logged(*c, "First Wisdom save"),
+              "Charm Person calls for a Wisdom save");
+        charmed = logged(*c, "First is Charmed by Wizard.");
+        if (!charmed)
+            continue;
+        check(has_condition(*c, 98, "Charmed"), "The creature is Charmed");
+        reach(*c, 98);
+        const auto commands = c->legal_commands();
+        check(std::none_of(commands.begin(), commands.end(), [](const auto & command)
+        {
+            return command.target == 1;
+        }) && submit(*c, "melee", 2),
+        "A Charmed creature cannot target its charmer, but may attack others");
+        reach(*c, 1);
+        check(submit(*c, "magic_missile", 98) && !has_condition(*c, 98, "Charmed"),
+              "Damage ends the charm");
+    }
+    check(charmed, "Some seed fails the save");
+
+    auto c = battle(*module, wizard(3, {"magic_missile", "charm_person"}), {2, 1}, {4, 1});
+    check(submit(*c, "charm_person_2", 98) && submit(*c, "charm_person_2", 99) &&
+          logged(*c, "First Wisdom save") && logged(*c, "Second Wisdom save"),
+          "A level-two slot charms two creatures");
+}
+
 } // namespace
 
 int main()
@@ -939,6 +972,7 @@ int main()
         enlarge_reduce_checks();
         true_strike_checks();
         dragons_breath_checks();
+        charm_person_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

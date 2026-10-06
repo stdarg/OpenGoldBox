@@ -122,7 +122,9 @@ enum class EffectKind : unsigned
     enlarged = 46,
     reduced = 47,
     // Dragon's Breath: `dc` is the damage type the creature may exhale.
-    dragons_breath = 48
+    dragons_breath = 48,
+    // Charm Person: Charmed by the caster, so it cannot attack or target it.
+    charmed = 49
 };
 
 // The longest a spell benefit lasts, in milliseconds.

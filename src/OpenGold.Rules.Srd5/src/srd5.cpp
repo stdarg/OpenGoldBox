@@ -133,7 +133,8 @@ std::string fighting_style_grant(std::string_view style)
 bool selects_creatures(const detail::SpellDef &spell)
 {
     return spell.pattern == detail::SpellPattern::buff || spell.rider == detail::Rider::command ||
-           (spell.pattern == detail::SpellPattern::save_condition && spell.instances > 1);
+           (spell.pattern == detail::SpellPattern::save_condition &&
+            (spell.instances > 1 || spell.upcast.extra_instances));
 }
 
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
@@ -269,6 +270,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "enlarge_reduce", 3},
     SpellAccessRow{"Wizard", "true_strike", 1},
     SpellAccessRow{"Wizard", "dragons_breath", 3},
+    SpellAccessRow{"Wizard", "charm_person", 1},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1464,6 +1466,9 @@ class Session final : public CombatSession
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
     int resized_damage(const Actor &a, bool weapon_hit, int amount);
+    [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
+    // Whether `a` is Charmed by `other`, which it then cannot attack or target.
+    [[nodiscard]] bool charmed_by(const Actor &a, EntityId other) const;
     void strike_true(Actor &a, Actor &target, bool radiant);
     bool strikes_duplicate(const Actor &attacker, Actor &target);
     bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
@@ -2232,7 +2237,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::acid_arrow, "Burning acid (Acid Arrow)"},
                     std::pair{detail::EffectKind::invisible, "Invisible"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
-                    std::pair{detail::EffectKind::reduced, "Reduced"}
+                    std::pair{detail::EffectKind::reduced, "Reduced"},
+                    std::pair{detail::EffectKind::charmed, "Charmed"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2412,6 +2418,15 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::darkness:
     case detail::Rider::flaming_sphere:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::charm_person:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::charmed, 0);
+        log(target.source.name + " is Charmed by " + a.source.name + ".",
+        {
+            "{name} is Charmed by {caster}.",
+            {{"name", target.source.name}, {"caster", a.source.name}}
+        });
+        return;
     case detail::Rider::dragons_breath:
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::dragons_breath,
@@ -2750,7 +2765,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         if (spell.concentration)
             begin_concentration(a, spell);
         // A willing creature forgoes the save.
-        if (verb == "enlarge" || !saving_throw_succeeds(target, spell.save, dc))
+        if (verb == "enlarge" ||
+                !saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell)))
             apply_rider(spell, verb, a, target, dc);
         else if (spell.rider == detail::Rider::ray_of_enfeeblement)
         {
@@ -3013,6 +3029,12 @@ std::vector<Command> Session::legal_commands() const
     };
     const auto filtered = [&]
     {
+        // A Charmed creature cannot attack or target its charmer.
+        std::erase_if(commands, [&](const auto & command)
+        {
+            return command.target && command.target != command.actor &&
+                   charmed_by(actor(command.actor), command.target);
+        });
         std::erase_if(commands,
         [&](const auto & command)
         {
@@ -3526,11 +3548,12 @@ void Session::damage(Actor &target, int amount, bool critical)
     }
     if (target.hp == 0)
         target.effects.prone = true;
-    // Damage ends Turn Undead and Sleep on the creature.
+    // Damage ends Turn Undead, Sleep and Charm Person on the creature.
+    // Adaptation: any damage ends the charm, not only the charmer's side's.
     std::erase_if(target.effects.active, [](const auto & e)
     {
         return e.kind == detail::EffectKind::turned || e.kind == detail::EffectKind::drowsy ||
-               e.kind == detail::EffectKind::asleep;
+               e.kind == detail::EffectKind::asleep || e.kind == detail::EffectKind::charmed;
     });
     // Hideous Laughter: damage calls for a new Wisdom save, with Advantage.
     for (std::size_t n = 0; n < target.effects.active.size() && target.hp > 0; ++n)
@@ -4340,11 +4363,29 @@ void Session::cast_on_selection()
     for (const auto id : selection.chosen)
     {
         auto &target = actor(id);
+        if (spell.humanoid_only && def(target).creature_type != "humanoid")
+            continue;
         if (spell.pattern == detail::SpellPattern::save_condition &&
-                saving_throw_succeeds(target, spell.save, dc))
+                saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell)))
             continue;
         apply_rider(spell, selection.verb, a, target, dc);
     }
+}
+
+bool Session::charmed_by(const Actor &a, EntityId other) const
+{
+    return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::charmed && e.source_actor == other &&
+               e.source_scope == scope_;
+    });
+}
+
+bool Session::fought_advantage(const detail::SpellDef &spell)
+{
+    // Charm Person: Advantage on the save while the caster's side fights the
+    // creature, which in combat is always.
+    return spell.rider == detail::Rider::charm_person;
 }
 
 int Session::armor_class(const Actor &target) const
@@ -5480,6 +5521,7 @@ void Session::progress_movement()
                         !detail::has_effect(other.effects, detail::EffectKind::turned) &&
                         !detail::incapacitated(other.effects) &&
                         !detail::opportunity_blocked(other.effects) &&
+                        !charmed_by(other, a.source.id) &&
                         has_weapon_reaction(other, a.source.cell, destination) && can_see(other, a))
                     reactors_.push_back(other.source.id);
         if (pending())
@@ -8885,7 +8927,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.107", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.108", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

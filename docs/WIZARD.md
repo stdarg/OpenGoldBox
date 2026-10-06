@@ -300,3 +300,18 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   half on a success.
 - Verification: `opengold_wizard_spell_tests` (five options, the Bonus Action,
   the ally's exhale and its saves).
+
+## Charm Person
+
+- **Charm Person** (level 1, 30 feet, 1 hour): a Humanoid makes a Wisdom save,
+  with Advantage because the Wizard's side is fighting it (always, in combat),
+  or is **Charmed** by the Wizard: it is offered no attack, spell or other
+  command against the Wizard and makes no Opportunity Attack against the
+  Wizard, though it may still fight the Wizard's allies. From a level-two slot
+  two creatures are chosen, as with other multi-creature spells.
+- Adaptation: any damage ends the charm, not only damage from the Wizard's
+  side (in practice the same, since a creature's allies rarely harm it).
+  Social Advantage outside combat has no use yet.
+- Verification: `opengold_wizard_spell_tests` (the save, no command against
+  the charmer, attacks on others, damage ending it, two targets from a
+  level-two slot).

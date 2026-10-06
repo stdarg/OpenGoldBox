@@ -103,7 +103,8 @@ enum class Rider : unsigned
     darkness,
     flaming_sphere,
     enlarge_reduce,
-    dragons_breath
+    dragons_breath,
+    charm_person
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -875,6 +876,22 @@ inline constexpr std::array spell_table
         .dice = {3, 6, 0},
         .half_on_success = true,
         .cone = 15},
+    // SRD 5.2.1 p. 115: a Humanoid saves, with Advantage while the caster's side
+    // is fighting it, or is Charmed by the caster until damaged; one more
+    // creature from a level-two slot.
+    SpellDef{
+        .id = "charm_person",
+        .label = "Charm Person",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 30,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::charm_person,
+        .humanoid_only = true},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
     // locked door while exploring. Verbal only.
     SpellDef{
