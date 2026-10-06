@@ -119,12 +119,12 @@ bool has_grant(const Character &hero, std::string_view id)
 // The Druid (1), an ally (2) and an enemy (98) beside the Druid or 15 feet away.
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const CharacterSheet &sheet,
                                       std::vector<std::string> gear = {}, bool adjacent = false,
-                                      std::uint64_t seed = 5)
+                                      Cell ally = {1, 2}, std::uint64_t seed = 5)
 {
     const auto profile = module.character_profile(sheet, gear).data;
     auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
         {   {1, "campaign-character", "Druid", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, {1, 2}},
+            {2, "target", "Ally", 0, ally},
             {98, "target", "Enemy", 1, {adjacent ? 2 : 4, 1}}
         }},
     seed);
@@ -228,6 +228,113 @@ void barkskin_checks()
           unit(*c, 1).action, "Barkskin is a Bonus Action that raises AC to 17");
 }
 
+// A level-three Druid with `spell` prepared in place of its last prepared spell.
+CharacterSheet preparing(std::string spell)
+{
+    auto sheet = druid(3).sheet();
+    sheet.prepared_spells.back() = std::move(spell);
+    return sheet;
+}
+
+std::size_t count_logged(const CombatSession &c, std::string_view text)
+{
+    const auto log = c.snapshot().log;
+    return std::count_if(log.begin(), log.end(), [&](const auto & line)
+    {
+        return line.find(text) != std::string::npos;
+    });
+}
+
+// Ends turns until the given creature acts.
+void reach(CombatSession &c, EntityId id)
+{
+    check(submit(c, "end"), "End the turn");
+    for (unsigned turns = 0; c.snapshot().actor != id && turns < 4; ++turns)
+        check(submit(c, "end"), "End a turn");
+}
+
+bool move_to(CombatSession &c, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == "move" && command.destination == cell)
+            return c.submit(command);
+    return false;
+}
+
+void flame_blade_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, preparing("flame_blade"), {}, true);
+    check(!submit(*c, "flame_blade_strike", 98) && submit(*c, "flame_blade") &&
+          has_condition(*c, 1, "Flame Blade") && unit(*c, 1).action,
+          "Flame Blade is a Bonus Action that evokes the blade");
+    check(submit(*c, "flame_blade_strike", 98) && !unit(*c, 1).action && logged(*c, "Druid -> Enemy"),
+          "A melee spell attack with the blade is an Action");
+}
+
+void moonbeam_checks()
+{
+    auto module = rules();
+    // The ally stands far enough from the Druid that a beam on it spares the Druid.
+    auto c = battle(*module, preparing("moonbeam"), {}, false, Cell{1, 5});
+    check(submit(*c, "moonbeam") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
+          c->snapshot().moonbeams.front() == Cell{4, 1},
+          "Moonbeam shines on the enemy");
+    const auto burned = [&]
+    {
+        return count_logged(*c, "Radiant damage from the Moonbeam.");
+    };
+    check(burned() == 1 && logged(*c, "Enemy Constitution save"), "The enemy saves when it appears");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "The beam survives a checkpoint");
+    reach(*c, 98);
+    check(move_to(*c, Cell{5, 1}) && burned() == 1, "Moving within the beam is not entering it");
+    check(submit(*c, "end") && burned() == 2, "Ending its turn in the beam burns again");
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*c, "end"), "Reach the Druid's turn");
+    check(submit(*c, "move_moonbeam", 2) && !unit(*c, 1).action && burned() == 3 &&
+          logged(*c, "Ally Constitution save"), "A Magic action moves the beam onto the ally");
+}
+
+void spike_growth_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, preparing("spike_growth"));
+    check(submit(*c, "spike_growth") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
+          c->snapshot().battlefield.at(Cell{4, 1}) == 2,
+          "Spike Growth makes Difficult Terrain");
+    reach(*c, 98);
+    check(move_to(*c, Cell{5, 1}) && count_logged(*c, "Piercing damage from the spikes.") == 1,
+          "Each square moved within the spikes pierces");
+}
+
+void heat_metal_checks()
+{
+    auto module = rules();
+    const auto caster = module->character_profile(preparing("heat_metal"),
+                        std::vector<std::string> {}).data;
+    // An enemy Druid in Chain Mail wears metal; the monster's armor is unknown (#231).
+    const auto knight = module->character_profile(druid().sheet(),
+                        std::vector<std::string> {"chain_mail"}).data;
+    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+        {   {1, "campaign-character", "Druid", 0, {1, 1}, caster},
+            {2, "target", "Ally", 0, {1, 2}},
+            {97, "campaign-character", "Knight", 1, {3, 1}, knight},
+            {98, "target", "Enemy", 1, {4, 1}}
+        }},
+    5);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Druid's turn");
+    check(!submit(*c, "heat_metal", 98), "No monster is known to wear metal armor yet");
+    check(submit(*c, "heat_metal", 97) && logged(*c, "Fire damage from the hot metal.") &&
+          has_condition(*c, 97, "Heated (Heat Metal)"), "Heat Metal burns the Knight in Chain Mail");
+    check(!submit(*c, "heat_metal_again", 97), "Not again on the casting turn");
+    reach(*c, 1);
+    check(submit(*c, "heat_metal_again", 97) && !unit(*c, 1).bonus_action &&
+          count_logged(*c, "Fire damage from the hot metal.") == 2,
+          "A Bonus Action on a later turn heats it again");
+}
+
 } // namespace
 
 int main()
@@ -238,6 +345,10 @@ int main()
         order_checks();
         circle_checks();
         barkskin_checks();
+        flame_blade_checks();
+        moonbeam_checks();
+        spike_growth_checks();
+        heat_metal_checks();
         std::cout << "Druid tests passed\n";
     }
     catch (const std::exception &e)

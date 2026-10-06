@@ -463,6 +463,8 @@ struct Snapshot
     std::vector<Cell> spiritual_weapons;
     // Where each Flaming Sphere burns.
     std::vector<Cell> flaming_spheres;
+    // Squares inside a Moonbeam.
+    std::vector<Cell> moonbeams;
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;

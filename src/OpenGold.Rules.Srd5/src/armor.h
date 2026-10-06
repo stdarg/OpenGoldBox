@@ -77,6 +77,14 @@ inline bool armor_trained(std::string_view klass, ArmorCategory category)
     return false;
 }
 
+// Heat Metal's "suit of Heavy or Medium metal armor": every Medium or Heavy
+// armor but Hide.
+inline bool metal_armor(const Armor &armor)
+{
+    return armor.category == ArmorCategory::heavy ||
+           (armor.category == ArmorCategory::medium && armor.key != "hide");
+}
+
 inline std::string_view armor_category_label(ArmorCategory category)
 {
     switch (category)

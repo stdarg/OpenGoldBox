@@ -7,6 +7,7 @@
 #include "weapon_mastery.h"
 #include "spell_access.h"
 #include "spell_components.h"
+#include "creature_equipment.h"
 #include "combat_grid.h"
 #include "status_effects.h"
 #include "concentration.h"
@@ -184,7 +185,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible ||
            kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced ||
            kind == detail::EffectKind::dragons_breath || kind == detail::EffectKind::extended ||
-           kind == detail::EffectKind::hex || kind == detail::EffectKind::outlined;
+           kind == detail::EffectKind::hex || kind == detail::EffectKind::outlined ||
+           kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -441,6 +443,11 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Druid", "thunderwave", 1},
     SpellAccessRow{"Druid", "aid", 3},
     SpellAccessRow{"Druid", "barkskin", 3},
+    SpellAccessRow{"Druid", "flame_blade", 3},
+    SpellAccessRow{"Druid", "moonbeam", 3},
+    SpellAccessRow{"Druid", "spike_growth", 3},
+    SpellAccessRow{"Druid", "heat_metal", 3},
+    SpellAccessRow{"Bard", "heat_metal", 3},
     SpellAccessRow{"Druid", "enlarge_reduce", 3},
     SpellAccessRow{"Druid", "flaming_sphere", 3},
     SpellAccessRow{"Druid", "gust_of_wind", 3},
@@ -1530,7 +1537,9 @@ class Session final : public CombatSession
         web,
         flaming_sphere, // one square: where the fire burns
         gust,           // Gust of Wind's line
-        darkness        // magical Darkness, Heavily Obscured except to Devil's Sight
+        darkness,       // magical Darkness, Heavily Obscured except to Devil's Sight
+        moonbeam,       // Moonbeam's beam; cells.front() is its centre
+        spikes          // Spike Growth's Difficult Terrain
     };
     struct Zone
     {
@@ -1840,6 +1849,16 @@ class Session final : public CombatSession
     // Flaming Sphere burns a creature ending its turn within 5 feet of it.
     void burn_beside_spheres(Actor &creature);
     void sphere_burns(const Actor &caster, Actor &creature);
+    [[nodiscard]] std::vector<Cell> beam_cells(Cell center) const;
+    // A save against the beam's Radiant damage, once per turn.
+    void moonbeam_burns(const Zone &beam, Actor &creature);
+    // Moonbeam's beam moves onto a creature, burning those it reaches.
+    void move_moonbeam(Actor &caster, const Actor &onto);
+    void spikes_pierce(Actor &creature);
+    // Heat Metal targets only metal armor a creature wears.
+    [[nodiscard]] bool wears_metal(const Actor &creature) const;
+    // Heat Metal's 2d8 Fire and Constitution save.
+    void heat_metal(const Actor &caster, Actor &creature);
     void potent_cantrip(Actor &target, const detail::SpellDef &spell, detail::DamageDice rolled);
     [[nodiscard]] std::vector<EntityId> sculpted(const Actor &caster, const detail::SpellDef &spell,
             unsigned slot_level, const std::vector<Cell> &cells) const;
@@ -2427,7 +2446,8 @@ Battlefield Session::zoned_board() const
     auto board = board_;
     for (const auto &zone : zones_)
         if (zone.kind == ZoneKind::plants || zone.kind == ZoneKind::grease ||
-                zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust)
+                zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust ||
+                zone.kind == ZoneKind::spikes)
             for (const auto cell : zone.cells)
                 if (board.at(cell) == 0)
                     board.terrain[std::size_t(cell.y * board.width + cell.x)] = 2;
@@ -2532,6 +2552,8 @@ Snapshot Session::snapshot() const
             s.spiritual_weapons.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::flaming_sphere)
             s.flaming_spheres.push_back(zone.cells.front());
+        else if (zone.kind == ZoneKind::moonbeam)
+            s.moonbeams.insert(s.moonbeams.end(), zone.cells.begin(), zone.cells.end());
     s.log = log_;
     s.log_messages = log_messages_;
     if (!initiative_choices_.empty())
@@ -2875,7 +2897,10 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::inspired, "Inspired"},
                     std::pair{detail::EffectKind::shillelagh, "Shillelagh"},
                     std::pair{detail::EffectKind::produce_flame, "Produce Flame"},
-                    std::pair{detail::EffectKind::barkskin, "Barkskin"}
+                    std::pair{detail::EffectKind::barkskin, "Barkskin"},
+                    std::pair{detail::EffectKind::flame_blade, "Flame Blade"},
+                    std::pair{detail::EffectKind::heated, "Heated (Heat Metal)"},
+                    std::pair{detail::EffectKind::scorched, "Scorched (Heat Metal)"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -3055,7 +3080,17 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::darkness:
     case detail::Rider::gust_of_wind:
     case detail::Rider::flaming_sphere:
+    case detail::Rider::moonbeam:
+    case detail::Rider::spike_growth:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::heat_metal:
+        return; // Resolved by heat_metal().
+    case detail::Rider::flame_blade:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::flame_blade, 0);
+        log(target.source.name + " gains Flame Blade.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Flame Blade", true}}});
+        return;
     case detail::Rider::vicious_mockery:
         // Disadvantage on its next attack roll before the end of its next turn.
         detail::apply_attack_mastery(target.effects, detail::EffectKind::sap, scope_, a.source.id,
@@ -3472,6 +3507,18 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         auto &target = actor(target_id);
         if (spell.concentration)
             begin_concentration(a, spell);
+        if (spell.rider == detail::Rider::heat_metal)
+        {
+            std::erase_if(target.effects.active, [&](const auto & e)
+            {
+                return e.kind == detail::EffectKind::heated && e.source_actor == a.source.id;
+            });
+            if (detail::can_apply(target.effects))
+                detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                            detail::EffectKind::heated, 1);
+            heat_metal(a, target);
+            return;
+        }
         // A willing creature forgoes the save.
         if (verb == "enlarge" ||
                 !saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell)))
@@ -3549,6 +3596,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         // Lesser Restoration has a condition to end only on a Blinded creature.
         if (spell.rider == detail::Rider::lesser_restoration && !detail::blinded(other.effects))
+            continue;
+        if (spell.rider == detail::Rider::heat_metal && !wears_metal(other))
             continue;
         if (spell.humanoid_only && def(other).creature_type != "humanoid")
             continue;
@@ -4052,6 +4101,24 @@ std::vector<Command> Session::legal_commands() const
                 if (other.hp > 0 && !other.dead && other.source.id != id &&
                         distance(zone.cells.front(), other.source.cell) <= 30)
                     add(id, "roll_flaming_sphere", "Roll Flaming Sphere", other.source.id);
+    // Heat Metal: a Bonus Action on later turns heats the metal again.
+    if (a.bonus)
+        for (const auto &other : actors_)
+            if (!other.dead && other.hp > 0 &&
+                    distance(a.source.cell, other.source.cell) <= 60 &&
+                    std::any_of(other.effects.active.begin(), other.effects.active.end(),
+                                [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::heated && e.source_actor == id && !e.dc;
+        }))
+        add(id, "heat_metal_again", "Heat Metal again", other.source.id);
+    // Moonbeam: a Magic action moves the beam up to 60 feet, here onto a creature.
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::moonbeam && zone.caster == id && a.actions.available(true))
+            for (const auto &other : actors_)
+                if (other.hp > 0 && !other.dead && !in_zone(zone, other.source.cell) &&
+                        distance(zone.cells.front(), other.source.cell) <= 60)
+                    add(id, "move_moonbeam", "Move Moonbeam", other.source.id);
     // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
     // feet and attacks a creature within 5 feet of it.
     if (const auto *force = spiritual_weapon(a); force && a.bonus && !silenced(a.source.cell))
@@ -4222,6 +4289,10 @@ std::vector<Command> Session::legal_commands() const
                         a.source.definition.starts_with("slums-kobold") ? "Dagger attack"
                         : "Melee attack",
                         other.source.id);
+                // Flame Blade: a melee spell attack with the blade as an Action.
+                if (feet <= 5 && a.actions.available(true) &&
+                        detail::has_effect(a.effects, detail::EffectKind::flame_blade))
+                    add(id, "flame_blade_strike", "Flame Blade attack", other.source.id);
                 // Produce Flame: the flame in hand is hurled as an Action.
                 if (feet <= 60 && a.actions.available(true) &&
                         detail::has_effect(a.effects, detail::EffectKind::produce_flame))
@@ -4815,6 +4886,102 @@ void Session::sphere_burns(const Actor &caster, Actor &creature)
     damage(creature, amount);
 }
 
+bool Session::wears_metal(const Actor &creature) const
+{
+    if (creature.source.character_profile.empty())
+        return detail::creature_wears_metal(creature.source.definition);
+    const auto &keys = def(creature).equipment_keys;
+    return std::any_of(keys.begin(), keys.end(), [](const auto & key)
+    {
+        const auto *worn = detail::armor(key);
+        return worn && detail::metal_armor(*worn);
+    });
+}
+
+void Session::heat_metal(const Actor &caster, Actor &creature)
+{
+    const auto &spell = *detail::find_spell("heat_metal");
+    const int amount = resolved_damage(creature, spell.damage, dice(spell.dice));
+    log(creature.source.name + " takes " + std::to_string(amount) + " Fire damage from the hot metal.",
+    {
+        "{name} takes {damage} Fire damage from the hot metal.",
+        {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(creature, amount);
+    if (creature.dead || creature.hp == 0 || !detail::can_apply(creature.effects) ||
+            saving_throw_succeeds(creature, spell.save, spell_dc(caster)))
+        return;
+    detail::apply_poisoned(creature.effects, scope_, caster.source.id, caster.source.name,
+                           next_turn_ms(caster), detail::EffectKind::scorched);
+    log(creature.source.name + " has Disadvantage on attack rolls.",
+    {"{name} has Disadvantage on attack rolls.", {{"name", creature.source.name}}});
+}
+
+void Session::move_moonbeam(Actor &caster, const Actor &onto)
+{
+    auto &beam = *std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::moonbeam && zone.caster == caster.source.id;
+    });
+    const auto before = beam;
+    beam.cells = beam_cells(onto.source.cell);
+    const auto after = beam;
+    log(caster.source.name + " moves the Moonbeam.",
+    {"{name} moves the Moonbeam.", {{"name", caster.source.name}}});
+    for (auto &other : actors_)
+        if (in_zone(after, other.source.cell) && !in_zone(before, other.source.cell))
+            moonbeam_burns(after, other);
+}
+
+std::vector<Cell> Session::beam_cells(Cell center) const
+{
+    // Moonbeam's 5-foot radius, its centre first so a moved beam keeps it.
+    std::vector<Cell> cells{center};
+    for (const auto cell : area_cells(*detail::find_spell("moonbeam"), "moonbeam", center, center))
+        if (cell != center)
+            cells.push_back(cell);
+    return cells;
+}
+
+void Session::moonbeam_burns(const Zone &beam, Actor &creature)
+{
+    // A creature saves against a Moonbeam only once per turn.
+    // The beam may have ended with its caster's Concentration mid-burn.
+    const bool shining = std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::moonbeam && zone.caster == beam.caster;
+    });
+    if (!shining || creature.dead || creature.hp == 0 ||
+            detail::has_effect(creature.effects, detail::EffectKind::moonlit))
+        return;
+    const auto &caster = actor(beam.caster);
+    const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+    if (detail::can_apply(creature.effects))
+        detail::apply_poisoned(creature.effects, scope_, caster.source.id, caster.source.name,
+                               rest_of_turn, detail::EffectKind::moonlit);
+    const auto &spell = *detail::find_spell("moonbeam");
+    const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster));
+    const int rolled = dice(spell.dice);
+    const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
+    log(creature.source.name + " takes " + std::to_string(amount) + " Radiant damage from the Moonbeam.",
+    {
+        "{name} takes {damage} Radiant damage from the Moonbeam.",
+        {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(creature, amount);
+}
+
+void Session::spikes_pierce(Actor &creature)
+{
+    const int amount = resolved_damage(creature, detail::DamageType::piercing, dice({2, 4, 0}));
+    log(creature.source.name + " takes " + std::to_string(amount) + " Piercing damage from the spikes.",
+    {
+        "{name} takes {damage} Piercing damage from the spikes.",
+        {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(creature, amount);
+}
+
 bool Session::in_zone(const Zone &zone, Cell cell)
 {
     return std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
@@ -4950,6 +5117,16 @@ void Session::cast_area()
         zones_.push_back({a.source.id, ZoneKind::flaming_sphere, {aimed.center}});
         return;
     }
+    if (spell.rider == detail::Rider::moonbeam)
+    {
+        begin_concentration(a, spell);
+        zones_.push_back({a.source.id, ZoneKind::moonbeam, beam_cells(aimed.center)});
+        const auto beam = zones_.back();
+        for (auto &other : actors_)
+            if (in_zone(beam, other.source.cell))
+                moonbeam_burns(beam, other);
+        return;
+    }
     if (spell.rider == detail::Rider::gust_of_wind)
     {
         begin_concentration(a, spell);
@@ -4991,6 +5168,7 @@ void Session::cast_area()
                       : spell.rider == detail::Rider::silence ? ZoneKind::silence
                       : spell.rider == detail::Rider::grease  ? ZoneKind::grease
                       : spell.rider == detail::Rider::web     ? ZoneKind::web
+                      : spell.rider == detail::Rider::spike_growth ? ZoneKind::spikes
                       : ZoneKind::plants;
     zones_.push_back({a.source.id, kind, cells, kind == ZoneKind::grease ? elapsed_ms_ + 60000 : 0});
     if (kind == ZoneKind::grease || kind == ZoneKind::web)
@@ -5544,7 +5722,8 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
             detail::vexed_by(target.effects, scope_, a.source.id))
         result.advantage = true;
     if (detail::sapped(a.effects) ||
-            detail::has_effect(a.effects, detail::EffectKind::poisoned))
+            detail::has_effect(a.effects, detail::EffectKind::poisoned) ||
+            detail::has_effect(a.effects, detail::EffectKind::scorched))
         result.disadvantage = true;
     // Ray of Enfeeblement: Disadvantage on Strength-based attack rolls, here
     // every melee weapon attack.
@@ -6407,6 +6586,11 @@ bool Session::begin_turn()
     }
     burn_searing_smites(a);
     squeeze_ensnared(a);
+    // Heat Metal may be repeated from the caster's next turn on.
+    for (auto &other : actors_)
+        for (auto &effect : other.effects.active)
+            if (effect.kind == detail::EffectKind::heated && effect.source_actor == a.source.id)
+                effect.dc = 0;
     if (a.dead)
         return false;
     spring_zones(a, ZoneKind::web);
@@ -6733,6 +6917,9 @@ void Session::end_turn()
     spring_zones(actors_[turn_], ZoneKind::grease);
     burn_beside_spheres(actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
+        if (zone.kind == ZoneKind::moonbeam && in_zone(zone, actors_[turn_].source.cell))
+            moonbeam_burns(zone, actors_[turn_]);
+    for (const auto &zone : std::vector<Zone>(zones_))
         if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_].source.cell))
             blow(zone, actors_[turn_]);
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
@@ -6779,12 +6966,21 @@ void Session::progress_movement()
         reactors_.clear();
         reactor_index_ = 0;
         // Entering Grease or Web calls for a save; a creature caught stops.
+        // Each square moved into or within Spike Growth pierces; entering a
+        // Moonbeam burns.
         const auto zones = zones_;
         bool caught = false;
         for (const auto &zone : zones)
+        {
             if ((zone.kind == ZoneKind::grease || zone.kind == ZoneKind::web) &&
                     in_zone(zone, destination) && !in_zone(zone, departed))
                 caught = spring_zone(zone, a) || caught;
+            if (zone.kind == ZoneKind::spikes && in_zone(zone, destination))
+                spikes_pierce(a);
+            if (zone.kind == ZoneKind::moonbeam && in_zone(zone, destination) &&
+                    !in_zone(zone, departed))
+                moonbeam_burns(zone, a);
+        }
         if (caught)
             break;
     }
@@ -7332,6 +7528,28 @@ void Session::dispatch(const Command &command)
             else
                 detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
         }
+    }
+    else if (command.verb == "flame_blade_strike")
+    {
+        // A Magic action: 3d6 + the spellcasting modifier Fire on a hit.
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        end_sanctuary(a);
+        (void)attack(a, actor(command.target), false, true, {3, 6, def(a).casting - 2},
+                     detail::DamageType::fire);
+    }
+    else if (command.verb == "heat_metal_again")
+    {
+        a.bonus = false;
+        log(a.source.name + " heats the metal again.",
+        {"{name} heats the metal again.", {{"name", a.source.name}}});
+        heat_metal(a, actor(command.target));
+    }
+    else if (command.verb == "move_moonbeam")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        move_moonbeam(a, actor(command.target));
     }
     else if (command.verb == "hurl_flame")
     {
@@ -8573,7 +8791,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         unsigned kind{};
         input >> zone.caster >> kind >> zone.ends_ms >> cells;
         // Only Grease keeps time; every other zone ends with Concentration.
-        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::darkness) ||
+        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::spikes) ||
                 (kind == unsigned(ZoneKind::grease)) != (zone.ends_ms != 0) || !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
@@ -10653,7 +10871,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.125", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.126", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

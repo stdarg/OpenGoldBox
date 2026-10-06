@@ -443,8 +443,9 @@ void behaviour()
         // spell on several creatures begins a choice, Command, Resistance and
         // Chromatic Orb are offered once per option, camp spells only outside combat, area spells are aimed,
         // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one
-        // Mage Armor an unarmored character and Shillelagh a Club or
-        // Quarterstaff; their own tests cover them.
+        // Mage Armor an unarmored character, Shillelagh a Club or
+        // Quarterstaff and Heat Metal a creature in metal armor; their own
+        // tests cover them.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
                  row.instances > 1) ||
@@ -458,7 +459,8 @@ void behaviour()
                 row.pattern == SpellPattern::weapon_strike ||
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
-                row.rider == Rider::mage_armor || row.rider == Rider::shillelagh)
+                row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
+                row.rider == Rider::heat_metal)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

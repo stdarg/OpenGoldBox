@@ -529,3 +529,16 @@ CLASS-3's holy water, the spell costs only its slot.
 A creature that targets a creature warded by Sanctuary with an attack or a
 harmful spell and fails its Wisdom save loses that attack or spell; it does not
 choose another target.
+
+## CLASS-10 (2026-10-06): Wild Shape forms and Heat Metal
+
+- **Wild Shape forms** are the Beasts the game has combat art for that the SRD
+  allows a Druid of levels 2-4 (CR 1/4, or 1/2 from level 4, and no Fly
+  Speed): Wolf, Boar (the game's Wild Boar), Giant Lizard and Giant Snake (the
+  SRD Constrictor Snake). Giant Snake is kept although it has a Swim Speed,
+  which goes unused; this replaces the earlier "no swim forms" for it. Every
+  Druid knows all of them, and the form is picked from the Bonus Action
+  dropdown.
+- **Heat Metal** targets only a creature wearing metal armor. Monsters and NPCs
+  need equipment metadata ([#231](https://github.com/stdarg/OpenGold/issues/231));
+  until then a stub lookup says no, so no monster can be targeted.

@@ -23,6 +23,8 @@ ability.
   creature in it that fails a Dexterity save is **Outlined**: attack rolls
   against it have Advantage when the attacker sees it, and it cannot be
   Invisible.
+- **Heat Metal** (level 2, also Druid) is on the Bard list from level 3; see
+  [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal).
 - **Jack of All Trades** (level 2): + 1 (half the Proficiency Bonus) to
   Initiative, as SRD-DECISIONS keeps it, unless Alert already adds the whole
   bonus. Bard Expertise is not pursued (SRD-DECISIONS).

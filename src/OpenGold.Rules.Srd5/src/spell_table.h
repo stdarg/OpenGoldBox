@@ -113,7 +113,11 @@ enum class Rider : unsigned
     faerie_fire,
     shillelagh,
     produce_flame,
-    barkskin
+    barkskin,
+    flame_blade,
+    moonbeam,
+    spike_growth,
+    heat_metal
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -1196,7 +1200,69 @@ inline constexpr std::array spell_table
         .target = SpellTarget::ally,
         .range = 5,
         .bonus_action = true,
-        .rider = Rider::barkskin}};
+        .rider = Rider::barkskin},
+    // SRD 5.2.1 p. 131: a fiery blade in hand; while it lasts, an Action makes
+    // a melee spell attack with it ("flame_blade_strike") for 3d6 + the
+    // spellcasting modifier Fire.
+    SpellDef{
+        .id = "flame_blade",
+        .label = "Flame Blade",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::flame_blade,
+        .concentration = true},
+    // SRD 5.2.1 p. 150: a 5-foot-radius beam; creatures in it save against
+    // 2d10 Radiant, half on a success, at most once a turn: when it appears or
+    // moves onto them, and when they enter it or end their turn there.
+    SpellDef{
+        .id = "moonbeam",
+        .label = "Moonbeam",
+        .level = 2,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::radiant,
+        .dice = {2, 10, 0},
+        .rider = Rider::moonbeam,
+        .concentration = true,
+        .radius = 5},
+    // SRD 5.2.1 p. 164: a 20-foot-radius Sphere of Difficult Terrain; a
+    // creature takes 2d4 Piercing for every 5 feet it moves into or within it.
+    SpellDef{
+        .id = "spike_growth",
+        .label = "Spike Growth",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 150,
+        .damage = DamageType::piercing,
+        .dice = {2, 4, 0},
+        .rider = Rider::spike_growth,
+        .concentration = true,
+        .radius = 20},
+    // SRD 5.2.1 p. 139: metal armor a creature wears glows red-hot: 2d8 Fire,
+    // then a Constitution save or Disadvantage on attack rolls until the
+    // caster's next turn. A Bonus Action on later turns repeats it. Offered
+    // only against a creature known to wear metal armor; worn armor cannot be
+    // dropped.
+    SpellDef{
+        .id = "heat_metal",
+        .label = "Heat Metal",
+        .level = 2,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::any_creature,
+        .range = 60,
+        .requires_sight = true,
+        .save = Ability::constitution,
+        .damage = DamageType::fire,
+        .dice = {2, 8, 0},
+        .rider = Rider::heat_metal,
+        .concentration = true}};
 
 // Accepts the "_2" upcast verb form, so callers can pass a command verb directly.
 // Command's options, in the order the effect stores them (1-based).

@@ -2348,6 +2348,10 @@ void CombatView::draw_battlefield()
     for (const auto cell : s.flaming_spheres)
         canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .4,
                             Color(1, .45, .1, .8));
+    // Moonbeam's pale light.
+    for (const auto cell : s.moonbeams)
+        canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
+                          Color(.85, .9, 1, .3));
     for (const auto cell : s.obscured)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
                           Color(.78, .8, .82, .35));

@@ -100,7 +100,8 @@ void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId c
     if ((kind != EffectKind::poisoned && kind != EffectKind::dazzled &&
             kind != EffectKind::shield && kind != EffectKind::acid_arrow &&
             kind != EffectKind::raging && kind != EffectKind::reckless &&
-            kind != EffectKind::addled && kind != EffectKind::lit) || !can_apply(effects) ||
+            kind != EffectKind::addled && kind != EffectKind::lit &&
+            kind != EffectKind::moonlit && kind != EffectKind::scorched) || !can_apply(effects) ||
             !scope || !caster || name.empty() || name.size() > 160 || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
@@ -412,8 +413,10 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::innate_sorcery:
     case EffectKind::outlined:
     case EffectKind::shillelagh:
+    case EffectKind::heated:
         return 60000; // 1 minute
     case EffectKind::produce_flame:
+    case EffectKind::flame_blade:
         return 600000; // 10 minutes
     case EffectKind::metamagic:
         return 6000; // the rest of the turn, cleared when it ends
@@ -626,7 +629,9 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::raging) ||
                            kind == unsigned(EffectKind::reckless) ||
                            kind == unsigned(EffectKind::addled) ||
-                           kind == unsigned(EffectKind::lit);
+                           kind == unsigned(EffectKind::lit) ||
+                           kind == unsigned(EffectKind::moonlit) ||
+                           kind == unsigned(EffectKind::scorched);
         // Searing Smite, Ensnaring Strike and Entangle act at the start of the
         // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||

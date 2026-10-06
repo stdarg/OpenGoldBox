@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Flame Blade, Moonbeam, Spike Growth and Heat Metal
+
+Rules 0.6.126 adds the Druid's Flame Blade, Moonbeam, Spike Growth and Heat
+Metal (also Bard). See
+[Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal).
+
 ## Druid spellcasting
 
 Rules 0.6.125 makes the Druid a preparing caster through level 4 with a Primal

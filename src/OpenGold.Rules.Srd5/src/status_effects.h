@@ -156,7 +156,16 @@ enum class EffectKind : unsigned
     // Produce Flame: a flame in hand the caster may hurl as an Action.
     produce_flame = 61,
     // Barkskin: the creature's AC is at least 17.
-    barkskin = 62
+    barkskin = 62,
+    // Flame Blade: a fiery blade in hand the caster attacks with as an Action.
+    flame_blade = 63,
+    // Moonbeam: the creature has made this turn's save against a Moonbeam.
+    moonlit = 64,
+    // Heat Metal: the creature's armor glows red-hot; `dc` is 1 during the
+    // turn it was cast, before the caster may heat it again.
+    heated = 65,
+    // Heat Metal: Disadvantage on attack rolls until the caster's next turn.
+    scorched = 66
 };
 
 // The longest a spell benefit lasts, in milliseconds.
