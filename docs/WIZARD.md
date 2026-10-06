@@ -239,3 +239,16 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   Advantage for an Invisible Wizard, no Opportunity Attack, the attack ending
   it; a foe that can't be targeted until See Invisibility; Darkness's sphere
   hiding a creature).
+
+## Flaming Sphere
+
+- **Flaming Sphere** (level 2, 60 feet, Concentration up to 1 minute): aimed
+  at an unoccupied square (the preview starts beside the nearest enemy), it is
+  drawn as an orange ball. Any creature ending its turn within 5 feet makes a
+  Dexterity save against 2d6 Fire, half on a success.
+- **Roll Flaming Sphere** (Bonus Action on later turns): choose a creature
+  within 30 feet of the sphere; it rolls into that creature, which saves at
+  once, and stops in the open square beside it. Rolling it to an empty square,
+  jumping pits and its light are not modeled.
+- Verification: `opengold_wizard_spell_tests` (the open square, the burn at
+  the end of a turn, the Bonus Action roll, a checkpoint).

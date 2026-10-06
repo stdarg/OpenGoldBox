@@ -2329,6 +2329,10 @@ void CombatView::draw_battlefield()
     for (const auto cell : s.spiritual_weapons)
         canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .3,
                             Color(.95, .85, .4, .7));
+    // Flaming Sphere's ball of fire.
+    for (const auto cell : s.flaming_spheres)
+        canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .4,
+                            Color(1, .45, .1, .8));
     for (const auto cell : s.obscured)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
                           Color(.78, .8, .82, .35));

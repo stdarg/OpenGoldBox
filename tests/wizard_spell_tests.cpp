@@ -3,6 +3,7 @@
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -756,6 +757,33 @@ void darkness_checks()
     check(!submit(*c, "magic_missile", 98), "A creature in the Darkness cannot be seen");
 }
 
+void flaming_sphere_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(3, {"magic_missile"}, {"flaming_sphere", "shatter"}), {4, 1},
+                    {9, 1});
+    check(submit(*c, "flaming_sphere") && !aim(*c, Cell{4, 1}) && submit(*c, "area_cast"),
+          "The sphere starts beside the nearest enemy, never in its square");
+    const auto spheres = c->snapshot().flaming_spheres;
+    const auto beside = [](Cell a, Cell b)
+    {
+        return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)) == 1;
+    };
+    check(spheres.size() == 1 && beside(spheres.front(), {4, 1}), "The sphere burns beside First");
+    reach(*c, 98);
+    check(submit(*c, "end") && logged(*c, "First takes") &&
+          logged(*c, "Fire damage from the Flaming Sphere."),
+          "A creature ending its turn beside the sphere is burned");
+    reach(*c, 1);
+    check(submit(*c, "roll_flaming_sphere", 99) &&
+          logged(*c, "Wizard rolls the Flaming Sphere into Second.") &&
+          logged(*c, "Second takes") && unit(*c, 1).action &&
+          beside(c->snapshot().flaming_spheres.front(), {9, 1}),
+          "A Bonus Action rolls the sphere into another creature");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "The sphere survives a checkpoint");
+}
+
 } // namespace
 
 int main()
@@ -792,6 +820,7 @@ int main()
         invisibility_checks();
         see_invisibility_checks();
         darkness_checks();
+        flaming_sphere_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

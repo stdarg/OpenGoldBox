@@ -262,6 +262,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "invisibility", 3},
     SpellAccessRow{"Wizard", "see_invisibility", 3},
     SpellAccessRow{"Wizard", "darkness", 3},
+    SpellAccessRow{"Wizard", "flaming_sphere", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1145,7 +1146,8 @@ class Session final : public CombatSession
         silence,
         spiritual_weapon, // one square: where the spectral force floats
         grease,
-        web
+        web,
+        flaming_sphere // one square: where the fire burns
     };
     struct Zone
     {
@@ -1407,6 +1409,9 @@ class Session final : public CombatSession
     // Makes a creature in a Grease or Web zone save; true when it is caught.
     bool spring_zone(const Zone &zone, Actor &creature);
     void spring_zones(Actor &creature, ZoneKind kind);
+    // Flaming Sphere burns a creature ending its turn within 5 feet of it.
+    void burn_beside_spheres(Actor &creature);
+    void sphere_burns(const Actor &caster, Actor &creature);
     void potent_cantrip(Actor &target, const detail::SpellDef &spell, detail::DamageDice rolled);
     [[nodiscard]] std::vector<EntityId> sculpted(const Actor &caster, const detail::SpellDef &spell,
             unsigned slot_level, const std::vector<Cell> &cells) const;
@@ -1910,6 +1915,8 @@ Snapshot Session::snapshot() const
             s.silenced.insert(s.silenced.end(), zone.cells.begin(), zone.cells.end());
         else if (zone.kind == ZoneKind::spiritual_weapon)
             s.spiritual_weapons.push_back(zone.cells.front());
+        else if (zone.kind == ZoneKind::flaming_sphere)
+            s.flaming_spheres.push_back(zone.cells.front());
     s.log = log_;
     s.log_messages = log_messages_;
     if (!initiative_choices_.empty())
@@ -2391,7 +2398,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "See Invisibility", true}}});
         return;
     case detail::Rider::darkness:
-        return; // An aimed area, resolved by cast_area().
+    case detail::Rider::flaming_sphere:
+        return; // Aimed areas, resolved by cast_area().
     case detail::Rider::blur:
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::blur, 0);
@@ -2897,13 +2905,15 @@ std::vector<Command> Session::legal_commands() const
     {
         const auto &caster = actor(area_->caster);
         const auto &spell = *detail::find_spell(area_->verb);
-        const bool teleport = spell.rider == detail::Rider::misty_step;
+        // Misty Step and Flaming Sphere need an unoccupied square.
+        const bool open_square = spell.rider == detail::Rider::misty_step ||
+                                 spell.rider == detail::Rider::flaming_sphere;
         for (int y = 0; y < board_.height; ++y)
             for (int x = 0; x < board_.width; ++x)
                 if (distance(caster.source.cell, Cell{x, y}) <= spell.range &&
-                        (!teleport || teleport_open(caster, Cell{x, y})))
+                        (!open_square || teleport_open(caster, Cell{x, y})))
                     add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
-        if (!teleport || teleport_open(caster, area_->center))
+        if (!open_square || teleport_open(caster, area_->center))
             add(caster.source.id, "area_cast", "Cast spell");
         add(caster.source.id, "spell_cancel", "Cancel");
         return commands;
@@ -3123,6 +3133,14 @@ std::vector<Command> Session::legal_commands() const
     // Expeditious Retreat: Dash as a Bonus Action while it lasts.
     if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::expeditious_retreat))
         add(id, "retreat_dash", "Expeditious Retreat: Dash");
+    // Flaming Sphere: a Bonus Action rolls it up to 30 feet into a creature's
+    // space, where it stops beside the creature and burns it.
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::flaming_sphere && zone.caster == id && a.bonus)
+            for (const auto &other : actors_)
+                if (other.hp > 0 && !other.dead && other.source.id != id &&
+                        distance(zone.cells.front(), other.source.cell) <= 30)
+                    add(id, "roll_flaming_sphere", "Roll Flaming Sphere", other.source.id);
     // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
     // feet and attacks a creature within 5 feet of it.
     if (const auto *force = spiritual_weapon(a); force && a.bonus && !silenced(a.source.cell))
@@ -3624,6 +3642,17 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
     // A teleport's preview starts on the caster; it must be moved before casting.
     if (spell.rider == detail::Rider::misty_step)
         return caster.source.cell;
+    // Flaming Sphere starts in the open square beside the nearest enemy.
+    if (spell.rider == detail::Rider::flaming_sphere)
+    {
+        const Actor *nearest = nullptr; // Borrowed from actors_.
+        for (const auto &other : actors_)
+            if (other.source.side != caster.source.side && other.hp > 0 && !other.dead &&
+                    (!nearest || distance(caster.source.cell, other.source.cell) <
+                     distance(caster.source.cell, nearest->source.cell)))
+                nearest = &other;
+        return nearest ? spectral_cell(*nearest, caster.source.cell) : caster.source.cell;
+    }
     // The preview starts on the nearest living enemy in range, else the caster.
     Cell best = caster.source.cell;
     int best_feet = spell.range + 1;
@@ -3756,6 +3785,33 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     }
 }
 
+void Session::burn_beside_spheres(Actor &creature)
+{
+    // Copies: the burn can end a caster's Concentration and with it the sphere.
+    const auto zones = zones_;
+    for (const auto &zone : zones)
+        if (zone.kind == ZoneKind::flaming_sphere &&
+                distance(zone.cells.front(), creature.source.cell) <= 5)
+            sphere_burns(actor(zone.caster), creature);
+}
+
+void Session::sphere_burns(const Actor &caster, Actor &creature)
+{
+    if (creature.dead || creature.hp == 0)
+        return;
+    const auto &spell = *detail::find_spell("flaming_sphere");
+    const bool saved = saving_throw_succeeds(creature, spell.save, 8 + def(caster).casting);
+    const int rolled = dice({spell.dice.count, spell.dice.sides, 0});
+    const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
+    log(creature.source.name + " takes " + std::to_string(amount) +
+        " Fire damage from the Flaming Sphere.",
+    {
+        "{name} takes {damage} Fire damage from the Flaming Sphere.",
+        {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(creature, amount);
+}
+
 bool Session::in_zone(const Zone &zone, Cell cell)
 {
     return std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
@@ -3871,6 +3927,12 @@ void Session::cast_area()
     }
     log(a.source.name + " casts " + std::string(spell.label) + ".",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
+    if (spell.rider == detail::Rider::flaming_sphere)
+    {
+        begin_concentration(a, spell);
+        zones_.push_back({a.source.id, ZoneKind::flaming_sphere, {aimed.center}});
+        return;
+    }
     if (spell.rider == detail::Rider::misty_step)
     {
         // Teleporting provokes no Opportunity Attacks.
@@ -5261,6 +5323,7 @@ void Session::end_turn()
 {
     actors_[turn_].actions.surge = false;
     spring_zones(actors_[turn_], ZoneKind::grease);
+    burn_beside_spheres(actors_[turn_]);
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -5633,6 +5696,22 @@ void Session::dispatch(const Command &command)
         a.movement += d.speed;
         ++a.dashes;
         log(a.source.name + " dashes.", {"{name} dashes.", {{"name", a.source.name}}});
+    }
+    else if (command.verb == "roll_flaming_sphere")
+    {
+        a.bonus = false;
+        auto &target = actor(command.target);
+        auto &sphere = *std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+        {
+            return zone.kind == ZoneKind::flaming_sphere && zone.caster == a.source.id;
+        });
+        sphere.cells.front() = spectral_cell(target, sphere.cells.front());
+        log(a.source.name + " rolls the Flaming Sphere into " + target.source.name + ".",
+        {
+            "{name} rolls the Flaming Sphere into {target}.",
+            {{"name", a.source.name}, {"target", target.source.name}}
+        });
+        sphere_burns(a, target);
     }
     else if (command.verb == "spiritual_weapon_strike")
     {
@@ -6760,7 +6839,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         unsigned kind{};
         input >> zone.caster >> kind >> zone.ends_ms >> cells;
         // Only Grease keeps time; every other zone ends with Concentration.
-        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::web) ||
+        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::flaming_sphere) ||
                 (kind == unsigned(ZoneKind::grease)) != (zone.ends_ms != 0) || !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
@@ -8651,7 +8730,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.102", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.103", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

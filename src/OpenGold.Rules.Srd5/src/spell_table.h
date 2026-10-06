@@ -98,7 +98,8 @@ enum class Rider : unsigned
     magic_weapon,
     invisibility,
     see_invisibility,
-    darkness
+    darkness,
+    flaming_sphere
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -804,6 +805,22 @@ inline constexpr std::array spell_table
         .rider = Rider::darkness,
         .concentration = true,
         .radius = 15},
+    // SRD 5.2.1 p. 132: a sphere of fire in an unoccupied space; a creature
+    // ending its turn within 5 feet saves against 2d6 Fire, half on a success.
+    SpellDef{
+        .id = "flaming_sphere",
+        .label = "Flaming Sphere",
+        .level = 2,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .damage = DamageType::fire,
+        .dice = {2, 6, 0},
+        .half_on_success = true,
+        .rider = Rider::flaming_sphere,
+        .concentration = true,
+        .area = 5},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",
