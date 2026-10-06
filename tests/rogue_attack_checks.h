@@ -138,6 +138,14 @@ void run()
             check(h.advance(*rules, wounds), "Rogue advances normally through level four");
         check(h.sheet().level == level && wounds.hit_points == h.sheet().hit_points - 2,
               "Rogue advancement preserves wounds");
+        const auto &grants = h.sheet().grants;
+        for (const auto *thief : {"subclass:thief", "feature:fast_hands",
+                                  "feature:second_story_work"})
+            check(std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+        {
+            return g.id == thief;
+        }) == (level >= 3),
+        "Rogue level three records the Thief subclass and its features");
         auto c = battle(*rules, h);
         act(*c, "melee");
         check(sneak_lines(*c).size() == 1, "Ally near target applies Sneak Attack automatically");

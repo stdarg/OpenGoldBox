@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Thief
+
+Rules 0.6.110 records the Rogue's Thief subclass at level three; its features
+wait for magic items, traps and climbing. See
+[Rogue attacks](ROGUE-ATTACKS.md#thief-level-3).
+
 ## Gust of Wind
 
 Rules 0.6.109 adds Gust of Wind and Line areas. See

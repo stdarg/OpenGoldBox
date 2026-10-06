@@ -7348,7 +7348,7 @@ class Module final : public RulesModule
                 "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks.";
         if (sheet.character_class == "Rogue" && result.level >= 3)
             result.description =
-                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief features, Hide and weapon mastery remain unavailable.";
+                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands and Second-Story Work have no use until magic items, traps and climbing arrive. Hide and weapon mastery remain unavailable.";
         if (sheet.character_class == "Paladin")
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
@@ -7674,8 +7674,15 @@ class Module final : public RulesModule
                 unsigned(next.level),
                 {}});
         }
+        // The Thief is the SRD's only Rogue subclass. Its level-three features
+        // wait for magic items, traps and climbing to have a use.
         if (next.character_class == "Rogue" && next.level == 3)
+        {
             next.grants.push_back({"feature:steady_aim", "class:rogue", 3, {}});
+            next.grants.push_back({"subclass:thief", "class:rogue", 3, {}});
+            next.grants.push_back({"feature:fast_hands", "subclass:rogue:thief", 3, {}});
+            next.grants.push_back({"feature:second_story_work", "subclass:rogue:thief", 3, {}});
+        }
         if (next.character_class == "Rogue" && next.level == 2)
             next.grants.push_back({"feature:cunning_action", "class:rogue", 2, {}});
         if (next.character_class == "Fighter" && next.level == 2)
@@ -8972,7 +8979,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.109", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.110", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

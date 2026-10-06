@@ -113,7 +113,12 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     if ((klass == "paladin" || klass == "ranger") && level >= 2)
         required.push_back({"feature:fighting_style", "class:" + std::string(klass), 2, {}});
     if (klass == "rogue" && level >= 3)
+    {
         required.push_back({"feature:steady_aim", "class:rogue", 3, {}});
+        required.push_back({"subclass:thief", "class:rogue", 3, {}});
+        required.push_back({"feature:fast_hands", "subclass:rogue:thief", 3, {}});
+        required.push_back({"feature:second_story_work", "subclass:rogue:thief", 3, {}});
+    }
     if (klass == "cleric" && level >= 2)
         required.push_back({"feature:channel_divinity", "class:cleric", 2, {}});
     if (klass == "cleric" && level >= 3)
