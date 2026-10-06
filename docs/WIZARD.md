@@ -265,3 +265,14 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   for spells cast while exploring.
 - Verification: `opengold_wizard_spell_tests` (no Knock without the spell, the
   cast with its level-two slot, never offered in combat).
+
+## Enlarge/Reduce
+
+- **Enlarge/Reduce** (level 2, 30 feet, Concentration up to 1 minute): offered
+  as **Enlarge** on allies (willing, so no save) and **Reduce** on enemies
+  (Constitution save), since the other pairings only hurt the caster's side.
+  Enlarged: Advantage on Strength saves and 1d4 more damage on weapon hits.
+  Reduced: Disadvantage on Strength saves and 1d4 less (not below 1).
+  The size change itself, Strength checks and objects are not modeled.
+- Verification: `opengold_wizard_spell_tests` (Enlarge without a save and its
+  extra damage; Reduce offered only on enemies, its save and lowered damage).

@@ -116,7 +116,11 @@ enum class EffectKind : unsigned
     // Invisibility: the Invisible condition until the creature attacks or casts.
     invisible = 44,
     // See Invisibility: Invisible creatures are seen as if visible.
-    see_invisibility = 45
+    see_invisibility = 45,
+    // Enlarge/Reduce: Advantage (Enlarge) or Disadvantage (Reduce) on Strength
+    // saves, and 1d4 more or less weapon damage.
+    enlarged = 46,
+    reduced = 47
 };
 
 // The longest a spell benefit lasts, in milliseconds.

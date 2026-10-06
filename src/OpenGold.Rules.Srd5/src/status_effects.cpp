@@ -397,6 +397,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::resistance:
     case EffectKind::blur:
     case EffectKind::mirror_image:
+    case EffectKind::enlarged:
+    case EffectKind::reduced:
         return 60000; // 1 minute
     default:
         return 0;

@@ -447,6 +447,7 @@ void behaviour()
                  row.instances > 1) ||
                 row.target == SpellTarget::dying_ally ||
                 row.rider == Rider::command || row.rider == Rider::resistance ||
+                row.rider == Rider::enlarge_reduce ||
                 row.id == std::string_view("chromatic_orb") ||
                 row.pattern == SpellPattern::camp || row.pattern == SpellPattern::reaction ||
                 row.pattern == SpellPattern::exploration ||

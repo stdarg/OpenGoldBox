@@ -22,6 +22,10 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Enlarge/Reduce
+
+Rules 0.6.105 adds Enlarge/Reduce. See [Wizard](WIZARD.md#enlargereduce).
+
 ## Knock
 
 Rules 0.6.104 adds Knock, the first spell cast while exploring: it opens a

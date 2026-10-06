@@ -107,7 +107,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::expeditious_retreat || kind == detail::EffectKind::drowsy ||
            kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing ||
            kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled ||
-           kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible;
+           kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible ||
+           kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -264,6 +265,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "darkness", 3},
     SpellAccessRow{"Wizard", "flaming_sphere", 3},
     SpellAccessRow{"Wizard", "knock", 3},
+    SpellAccessRow{"Wizard", "enlarge_reduce", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1456,6 +1458,7 @@ class Session final : public CombatSession
     }
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
+    int resized_damage(const Actor &a, bool weapon_hit, int amount);
     bool strikes_duplicate(const Actor &attacker, Actor &target);
     bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
                 Dice spell_dice = {1, 10, 0},
@@ -2221,7 +2224,9 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::laughing, "Prone and Incapacitated (laughing)"},
                     std::pair{detail::EffectKind::enfeebled, "Enfeebled (Ray of Enfeeblement)"},
                     std::pair{detail::EffectKind::acid_arrow, "Burning acid (Acid Arrow)"},
-                    std::pair{detail::EffectKind::invisible, "Invisible"}
+                    std::pair{detail::EffectKind::invisible, "Invisible"},
+                    std::pair{detail::EffectKind::enlarged, "Enlarged"},
+                    std::pair{detail::EffectKind::reduced, "Reduced"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2401,6 +2406,16 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::darkness:
     case detail::Rider::flaming_sphere:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::enlarge_reduce:
+    {
+        const bool enlarge = verb == "enlarge";
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    enlarge ? detail::EffectKind::enlarged
+                                    : detail::EffectKind::reduced, 0);
+        log(target.source.name + (enlarge ? " is enlarged." : " is reduced."),
+        {enlarge ? "{name} is enlarged." : "{name} is reduced.", {{"name", target.source.name}}});
+        return;
+    }
     case detail::Rider::blur:
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::blur, 0);
@@ -2719,7 +2734,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         auto &target = actor(target_id);
         if (spell.concentration)
             begin_concentration(a, spell);
-        if (!saving_throw_succeeds(target, spell.save, dc))
+        // A willing creature forgoes the save.
+        if (verb == "enlarge" || !saving_throw_succeeds(target, spell.save, dc))
             apply_rider(spell, verb, a, target, dc);
         else if (spell.rider == detail::Rider::ray_of_enfeeblement)
         {
@@ -2859,8 +2875,17 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // no separate upcast verb.
         if (spell.level >= 2)
         {
-            if (a.slots2 > 0)
-                offer(std::string(spell.id), std::string(spell.label));
+            if (a.slots2 <= 0)
+                continue;
+            if (spell.rider == detail::Rider::enlarge_reduce)
+            {
+                if (other.source.side == a.source.side)
+                    offer("enlarge", "Enlarge");
+                else
+                    offer("reduce", "Reduce");
+                continue;
+            }
+            offer(std::string(spell.id), std::string(spell.label));
             continue;
         }
         if (spell.rider == detail::Rider::command)
@@ -4755,6 +4780,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
     if (hit)
         weapon_damage += weapon_magic;
+    weapon_damage = resized_damage(a, hit && !spell, weapon_damage);
     // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
     if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.hp < max_hp(target))
     {
@@ -4860,6 +4886,28 @@ bool Session::mark_can_move(const Actor &caster) const
             marked = true;
         }
     return marked;
+}
+
+int Session::resized_damage(const Actor &a, bool weapon_hit, int amount)
+{
+    // Enlarge: 1d4 more weapon damage. Reduce: 1d4 less, but not below 1.
+    if (!weapon_hit)
+        return amount;
+    if (detail::has_effect(a.effects, detail::EffectKind::enlarged))
+    {
+        const int extra = roll(4);
+        log("Enlarge adds " + std::to_string(extra) + " damage.",
+        {"Enlarge adds {damage} damage.", {{"damage", std::to_string(extra)}}});
+        return amount + extra;
+    }
+    if (detail::has_effect(a.effects, detail::EffectKind::reduced))
+    {
+        const int less = roll(4);
+        log("Reduce subtracts " + std::to_string(less) + " damage.",
+        {"Reduce subtracts {damage} damage.", {{"damage", std::to_string(less)}}});
+        return std::max(1, amount - less);
+    }
+    return amount;
 }
 
 int Session::magic_weapon_bonus(const Actor &a) const
@@ -5212,9 +5260,14 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     modifiers.advantage |= advantage;
     // Restrained: Disadvantage on Dexterity saves.
     modifiers.disadvantage |= ability == detail::Ability::dexterity && detail::restrained(target.effects);
-    // Ray of Enfeeblement: Disadvantage on Strength saves.
-    modifiers.disadvantage |= ability == detail::Ability::strength &&
-                              detail::has_effect(target.effects, detail::EffectKind::enfeebled);
+    // Ray of Enfeeblement and Reduce: Disadvantage on Strength saves; Enlarge:
+    // Advantage.
+    if (ability == detail::Ability::strength)
+    {
+        modifiers.disadvantage |= detail::has_effect(target.effects, detail::EffectKind::enfeebled) ||
+                                  detail::has_effect(target.effects, detail::EffectKind::reduced);
+        modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::enlarged);
+    }
     const auto result = detail::saving_throw(
                             ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
                             modifiers, rng_);
@@ -8757,7 +8810,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.104", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.105", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

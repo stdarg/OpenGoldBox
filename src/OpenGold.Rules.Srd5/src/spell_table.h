@@ -100,7 +100,8 @@ enum class Rider : unsigned
     invisibility,
     see_invisibility,
     darkness,
-    flaming_sphere
+    flaming_sphere,
+    enlarge_reduce
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -822,6 +823,20 @@ inline constexpr std::array spell_table
         .rider = Rider::flaming_sphere,
         .concentration = true,
         .area = 5},
+    // SRD 5.2.1 p. 127: Enlarge (offered on allies, who are willing) or Reduce
+    // (offered on enemies, which make a Constitution save).
+    SpellDef{
+        .id = "enlarge_reduce",
+        .label = "Enlarge/Reduce",
+        .level = 2,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::any_creature,
+        .range = 30,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::constitution,
+        .rider = Rider::enlarge_reduce,
+        .concentration = true},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
     // locked door while exploring. Verbal only.
     SpellDef{
@@ -1043,6 +1058,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "resistance";
     if (chromatic_type(id))
         id = "chromatic_orb";
+    if (id == "enlarge" || id == "reduce")
+        id = "enlarge_reduce";
     for (const auto &spell : spell_table)
         if (spell.id == id)
             return &spell;

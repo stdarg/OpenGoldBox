@@ -812,6 +812,42 @@ void knock_checks()
     check(!offered(*c, "knock"), "Knock is not a combat spell");
 }
 
+void enlarge_reduce_checks()
+{
+    auto module = rules();
+    bool enlarged_hit = false;
+    for (std::uint64_t seed = 1; seed < 64 && !enlarged_hit; ++seed)
+    {
+        auto c = battle(*module, wizard(3, {"magic_missile"}, {"enlarge_reduce", "shatter"}),
+                        {2, 1}, {11, 5}, seed);
+        check(submit(*c, "enlarge", 2) && !logged(*c, "Ally Constitution save") &&
+              has_condition(*c, 2, "Enlarged"),
+              "A willing ally is enlarged without a save");
+        reach(*c, 2);
+        check(submit(*c, "melee", 98), "The enlarged ally attacks");
+        enlarged_hit = logged(*c, "Enlarge adds");
+    }
+    check(enlarged_hit, "An enlarged creature's weapon hits deal 1d4 more");
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(3, {"magic_missile"}, {"enlarge_reduce", "shatter"}),
+                        {2, 1}, {11, 5}, seed);
+        check(!submit(*c, "enlarge", 98) && submit(*c, "reduce", 98) &&
+              logged(*c, "First Constitution save"),
+              "An enemy is offered only Reduce, and saves");
+        if (!logged(*c, "First is reduced."))
+            continue;
+        check(has_condition(*c, 98, "Reduced"), "A failed save reduces it");
+        reach(*c, 98);
+        check(submit(*c, "melee", 1), "The reduced enemy attacks");
+        if (!logged(*c, "First -> Wizard") || !logged(*c, "hits"))
+            continue;
+        check(logged(*c, "Reduce subtracts"), "A reduced creature's weapon hits deal 1d4 less");
+        return;
+    }
+    throw std::runtime_error("No seed reduces the enemy and lets it hit");
+}
+
 } // namespace
 
 int main()
@@ -850,6 +886,7 @@ int main()
         darkness_checks();
         flaming_sphere_checks();
         knock_checks();
+        enlarge_reduce_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)
