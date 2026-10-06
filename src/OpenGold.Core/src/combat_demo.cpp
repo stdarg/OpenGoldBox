@@ -690,6 +690,10 @@ Command choose_demo_command(const CombatSession &session)
         for (const auto &command : offered)
             if (command.verb == verb)
                 return command;
+    // A Barbarian rages before it fights; its attacks keep the Rage going.
+    for (const auto &command : offered)
+        if (command.verb == "rage")
+            return command;
     // Sacred Weapon lasts the fight, so it is taken before the first melee attack.
     const bool can_strike = std::any_of(offered.begin(), offered.end(), [](const auto & command)
     {

@@ -98,7 +98,8 @@ void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId c
                     std::string name, unsigned duration_ms, EffectKind kind)
 {
     if ((kind != EffectKind::poisoned && kind != EffectKind::dazzled &&
-            kind != EffectKind::shield && kind != EffectKind::acid_arrow) || !can_apply(effects) ||
+            kind != EffectKind::shield && kind != EffectKind::acid_arrow &&
+            kind != EffectKind::raging) || !can_apply(effects) ||
             !scope || !caster || name.empty() || name.size() > 160 || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
@@ -607,7 +608,8 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::poisoned) ||
                            kind == unsigned(EffectKind::dazzled) ||
                            kind == unsigned(EffectKind::shield) ||
-                           kind == unsigned(EffectKind::acid_arrow);
+                           kind == unsigned(EffectKind::acid_arrow) ||
+                           kind == unsigned(EffectKind::raging);
         // Searing Smite, Ensnaring Strike and Entangle act at the start of the
         // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
@@ -658,7 +660,8 @@ EffectState read_effects(std::istream &in)
                                               kind == unsigned(EffectKind::guiding_bolt) ||
                                               kind == unsigned(EffectKind::poisoned) ||
                                               kind == unsigned(EffectKind::dazzled) ||
-                                              kind == unsigned(EffectKind::acid_arrow))
+                                              kind == unsigned(EffectKind::acid_arrow) ||
+                                              kind == unsigned(EffectKind::raging))
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

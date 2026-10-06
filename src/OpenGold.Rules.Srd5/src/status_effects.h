@@ -124,7 +124,9 @@ enum class EffectKind : unsigned
     // Dragon's Breath: `dc` is the damage type the creature may exhale.
     dragons_breath = 48,
     // Charm Person: Charmed by the caster, so it cannot attack or target it.
-    charmed = 49
+    charmed = 49,
+    // Rage: until the end of the Barbarian's next turn, unless extended.
+    raging = 50
 };
 
 // The longest a spell benefit lasts, in milliseconds.

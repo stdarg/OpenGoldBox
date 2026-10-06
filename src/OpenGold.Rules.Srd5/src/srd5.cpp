@@ -335,6 +335,11 @@ struct Definition
     bool evoker{};        // Wizard level 3: Potent Cantrip and Sculpt Spells
     int mage_armor_ac{};  // the AC Mage Armor gives; 0 while wearing armor
     bool sleepless{};     // an Elf: Sleep has no effect
+    // Barbarian Rage: uses (kept in Actor::channel_divinity, which no Barbarian
+    // has) and the bonus to Strength-based weapon damage.
+    int rages{}, rage_damage{};
+    int strength{};       // Strength modifier, to tell Strength-based attacks
+    bool heavy_armor{};   // wearing Heavy armor, which prevents Rage
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -468,7 +473,8 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"favored_enemy", "Favored Enemy", &Actor::free_casts,
         &Definition::favored_enemy, 0, true},
     ResourceDescriptor{"channel_divinity", "Channel Divinity", &Actor::channel_divinity,
-        &Definition::channel_divinity, 1, true}};
+        &Definition::channel_divinity, 1, true},
+    ResourceDescriptor{"rage", "Rage", &Actor::channel_divinity, &Definition::rages, 1, true}};
 
 // The Hit Point maximum with Aid's increase.
 int max_hp(const Actor &a)
@@ -479,6 +485,13 @@ int max_hp(const Actor &a)
 int free_cast_capacity(const Definition &d)
 {
     return d.free_smite + d.favored_enemy;
+}
+
+// Channel Divinity and Rage share one store; no class has both, and each
+// regains one use on a Short Rest.
+int channel_capacity(const Definition &d)
+{
+    return d.channel_divinity + d.rages;
 }
 
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
@@ -665,6 +678,9 @@ character_definition(std::string_view bytes,
     d.dwarf = race == "Dwarf";
     // Elves do not sleep, so Sleep cannot touch them.
     d.sleepless = race == "Elf";
+    d.rages = klass == "Barbarian" ? (level >= 3 ? 3 : 2) : 0;
+    d.rage_damage = klass == "Barbarian" ? 2 : 0;
+    d.strength = str;
     d.rushes = race == "Orc" ? 2 + (level - 1) / 4 : 0;
     const auto trained_saves = detail::class_save_proficiencies(klass);
     for (unsigned i = 0; i < 6; ++i)
@@ -785,6 +801,7 @@ character_definition(std::string_view bytes,
                 d.spells.clear();
             }
             armor = true;
+            d.heavy_armor = item->category == detail::ArmorCategory::heavy;
             d.ac = item->base_ac + item->dexterity_contribution(dex);
             d.stealth_disadvantage = item->stealth_disadvantage;
             if (scores[0] < item->strength)
@@ -900,7 +917,7 @@ void restore_vitals(Actor &a, const VitalState &state)
     a.arcane = a.definition.arcane;
     a.lay_on_hands = a.definition.lay_on_hands;
     a.free_casts = free_cast_capacity(a.definition);
-    a.channel_divinity = a.definition.channel_divinity;
+    a.channel_divinity = channel_capacity(a.definition);
     if (!state.resources.empty())
     {
         std::istringstream in(state.resources);
@@ -925,7 +942,7 @@ void restore_vitals(Actor &a, const VitalState &state)
             a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4 ||
             a.lay_on_hands < 0 || a.lay_on_hands > d.lay_on_hands || a.free_casts < 0 ||
             a.free_casts > free_cast_capacity(d) || a.channel_divinity < 0 ||
-            a.channel_divinity > d.channel_divinity)
+            a.channel_divinity > channel_capacity(d))
         throw std::runtime_error("Invalid character vitals");
     detail::validate_recovery(a);
     detail::validate_temporary_hp(a.temporary_hp);
@@ -1043,7 +1060,7 @@ class Session final : public CombatSession
             a.arcane = d.arcane;
             a.lay_on_hands = d.lay_on_hands;
             a.free_casts = free_cast_capacity(d);
-            a.channel_divinity = d.channel_divinity;
+            a.channel_divinity = channel_capacity(d);
             a.facing_left = a.source.facing_left;
             if (a.source.state)
                 restore_vitals(a, *a.source.state);
@@ -1345,6 +1362,10 @@ class Session final : public CombatSession
         bool invisible_;
     };
     void end_invisibility(EntityId id);
+    // The Barbarian's Rage effect, if it is raging; borrowed from its effects.
+    [[nodiscard]] static const detail::Effect *rage_of(const Actor &a);
+    [[nodiscard]] unsigned rage_duration(const Actor &a) const;
+    void extend_rage(Actor &a);
 
     bool enemy_in_sight(const Actor &a) const
     {
@@ -1468,6 +1489,7 @@ class Session final : public CombatSession
     }
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
+    [[nodiscard]] bool strength_attack(const Actor &a, bool ranged) const;
     int resized_damage(const Actor &a, bool weapon_hit, int amount);
     [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
     // Whether `a` is Charmed by `other`, which it then cannot attack or target.
@@ -2136,6 +2158,8 @@ Snapshot Session::snapshot() const
             view.bonus_actions.push_back("steady_aim");
         if (def(a).lay_on_hands)
             view.bonus_actions.push_back("lay_on_hands");
+        if (def(a).rages)
+            view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
             view.bonus_actions.push_back("divine_smite_free");
         for (const auto *smite :
@@ -2243,7 +2267,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::invisible, "Invisible"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
-                    std::pair{detail::EffectKind::charmed, "Charmed"}
+                    std::pair{detail::EffectKind::charmed, "Charmed"},
+                    std::pair{detail::EffectKind::raging, "Raging"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2793,7 +2818,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
 {
     // The Bonus Action pass runs before the loop that skips corpses, so filter
     // them here too; the Action pass has already done it and is unaffected.
-    if (other.dead)
+    // A raging creature cannot cast spells.
+    if (other.dead || rage_of(a))
         return;
     const auto &d = def(a);
     for (const auto &spell : detail::spell_table)
@@ -3211,6 +3237,16 @@ std::vector<Command> Session::legal_commands() const
                     (detail::has_effect(other.effects, detail::EffectKind::drowsy) ||
                      detail::has_effect(other.effects, detail::EffectKind::asleep)))
                 add(id, "shake_awake", "Shake awake", other.source.id);
+    // Rage: a Bonus Action outside Heavy armor; on a later turn a Bonus Action
+    // extends it.
+    if (a.bonus && d.rages)
+    {
+        const auto *rage = rage_of(a);
+        if (!rage && a.channel_divinity > 0 && !d.heavy_armor)
+            add(id, "rage", "Rage");
+        else if (rage && rage->remaining_ms <= detail::round_ms)
+            add(id, "extend_rage", "Extend Rage");
+    }
     // Expeditious Retreat: Dash as a Bonus Action while it lasts.
     if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::expeditious_retreat))
         add(id, "retreat_dash", "Expeditious Retreat: Dash");
@@ -4450,6 +4486,10 @@ std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) con
     if (detail::has_effect(target.effects, detail::EffectKind::protection_from_poison))
         result.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                           "spell:protection_from_poison"});
+    if (rage_of(target))
+        for (const auto type : {detail::DamageType::bludgeoning, detail::DamageType::piercing,
+                                detail::DamageType::slashing})
+            result.push_back({detail::AffinityKind::resistance, type, "feature:rage"});
     if (silenced(target.source.cell))
         result.push_back({detail::AffinityKind::immunity, detail::DamageType::thunder,
                           "spell:silence"});
@@ -4467,6 +4507,29 @@ std::vector<EntityId> Session::bonds_on(const Actor &target) const
                         distance(caster.source.cell, target.source.cell) <= 60)
                     casters.push_back(caster.source.id);
     return casters;
+}
+
+const detail::Effect *Session::rage_of(const Actor &a)
+{
+    const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                    [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::raging;
+    });
+    return found == a.effects.active.end() ? nullptr : &*found;
+}
+
+unsigned Session::rage_duration(const Actor &a) const
+{
+    // Until the end of the Barbarian's next turn, counted from its current one.
+    return next_save_ms(a.source.id) + detail::round_ms;
+}
+
+void Session::extend_rage(Actor &a)
+{
+    for (auto &e : a.effects.active)
+        if (e.kind == detail::EffectKind::raging)
+            e.remaining_ms = rage_duration(a);
 }
 
 void Session::end_invisibility(EntityId id)
@@ -4882,6 +4945,9 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
     const int natural = detail::d20(modifiers, rng_);
     end_invisibility(a.source.id);
+    // An attack roll against an enemy on its own turn extends a Rage.
+    if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
+        extend_rage(actor(a.source.id));
     const int bonus = (spell    ? d.casting
         : ranged ? d.ranged_bonus
         : d.melee_bonus) + blessing_die(a) +
@@ -4918,6 +4984,13 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
     if (hit)
         weapon_damage += weapon_magic;
+    // Rage Damage: Strength-based weapon and unarmed hits.
+    if (hit && !spell && rage_of(a) && strength_attack(a, ranged))
+    {
+        weapon_damage += d.rage_damage;
+        log("Rage adds " + std::to_string(d.rage_damage) + " damage.",
+        {"Rage adds {damage} damage.", {{"damage", std::to_string(d.rage_damage)}}});
+    }
     weapon_damage = resized_damage(a, hit && !spell, weapon_damage);
     // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
     if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.hp < max_hp(target))
@@ -5064,6 +5137,16 @@ int Session::resized_damage(const Actor &a, bool weapon_hit, int amount)
         return std::max(1, amount - less);
     }
     return amount;
+}
+
+bool Session::strength_attack(const Actor &a, bool ranged) const
+{
+    // A melee attack without a weapon is an Unarmed Strike, always Strength;
+    // a ranged one is Strength only when thrown.
+    const auto &d = def(a);
+    if (ranged)
+        return !d.ranged_weapon && d.ranged_ability == d.strength;
+    return !d.melee.count || d.melee_ability == d.strength;
 }
 
 int Session::magic_weapon_bonus(const Actor &a) const
@@ -5422,7 +5505,8 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     {
         modifiers.disadvantage |= detail::has_effect(target.effects, detail::EffectKind::enfeebled) ||
                                   detail::has_effect(target.effects, detail::EffectKind::reduced);
-        modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::enlarged);
+        modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::enlarged) ||
+                               rage_of(target);
     }
     const auto result = detail::saving_throw(
                             ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
@@ -5510,6 +5594,13 @@ void Session::advance_turn_time()
     for (auto &a : actors_)
         if (a.concentration.elapse(delta))
             drop_concentration_effects(a);
+    // Rage ends early when the Barbarian is Incapacitated or falls.
+    for (auto &a : actors_)
+        if (rage_of(a) && (detail::incapacitated(a.effects) || a.hp == 0))
+            std::erase_if(a.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::raging;
+        });
     // An ended Aid lowers the maximum, and Hit Points above it with it.
     for (auto &a : actors_)
         a.hp = std::min(a.hp, max_hp(a));
@@ -5890,6 +5981,21 @@ void Session::dispatch(const Command &command)
         a.nick_origin = 0;
         (void)a.actions.spend(false);
         escape_ensnaring(a);
+    }
+    else if (command.verb == "rage")
+    {
+        a.bonus = false;
+        --a.channel_divinity;
+        // A raging creature cannot keep Concentration.
+        end_concentration(a);
+        detail::apply_poisoned(a.effects, scope_, a.source.id, a.source.name, rage_duration(a),
+                               detail::EffectKind::raging);
+        log(a.source.name + " enters a Rage.", {"{name} enters a Rage.", {{"name", a.source.name}}});
+    }
+    else if (command.verb == "extend_rage")
+    {
+        a.bonus = false;
+        extend_rage(a);
     }
     else if (command.verb == "shake_awake")
     {
@@ -6385,7 +6491,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.successes < 0 || actor.successes > 3 || actor.failures < 0 || actor.failures > 4 ||
             actor.lay_on_hands < 0 || actor.lay_on_hands > definition.lay_on_hands ||
             actor.free_casts < 0 || actor.free_casts > free_cast_capacity(definition) ||
-            actor.channel_divinity < 0 || actor.channel_divinity > definition.channel_divinity)
+            actor.channel_divinity < 0 || actor.channel_divinity > channel_capacity(definition))
         throw std::runtime_error("Invalid checkpoint actor state");
     detail::validate_recovery(actor);
     detail::validate_temporary_hp(actor.temporary_hp);
@@ -7847,7 +7953,7 @@ class Module final : public RulesModule
         actor.surges += actor.definition.surges - old.surges;
         actor.lay_on_hands += actor.definition.lay_on_hands - old.lay_on_hands;
         actor.free_casts += free_cast_capacity(actor.definition) - free_cast_capacity(old);
-        actor.channel_divinity += actor.definition.channel_divinity - old.channel_divinity;
+        actor.channel_divinity += channel_capacity(actor.definition) - channel_capacity(old);
         actor.hit_dice += actor.definition.level - old.level;
         auto continuation = vitals(actor);
         sheet = std::move(next);
@@ -7957,7 +8063,7 @@ class Module final : public RulesModule
         actor.arcane = d.arcane;
         actor.lay_on_hands = d.lay_on_hands;
         actor.free_casts = free_cast_capacity(d);
-        actor.channel_divinity = d.channel_divinity;
+        actor.channel_divinity = channel_capacity(d);
         state = vitals(actor);
     }
 
@@ -8015,7 +8121,7 @@ class Module final : public RulesModule
         actor.winds = std::min(d.winds, actor.winds + 1);
         actor.rushes = d.rushes;
         actor.surges = d.surges;
-        actor.channel_divinity = std::min(d.channel_divinity, actor.channel_divinity + 1);
+        actor.channel_divinity = std::min(channel_capacity(d), actor.channel_divinity + 1);
         state = vitals(actor);
     }
 
@@ -8978,7 +9084,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.111", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.112", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {
