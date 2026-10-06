@@ -449,6 +449,7 @@ void behaviour()
                 row.rider == Rider::command || row.rider == Rider::resistance ||
                 row.rider == Rider::enlarge_reduce ||
                 row.id == std::string_view("chromatic_orb") ||
+                row.id == std::string_view("sorcerous_burst") ||
                 row.pattern == SpellPattern::camp || row.pattern == SpellPattern::reaction ||
                 row.pattern == SpellPattern::exploration ||
                 row.pattern == SpellPattern::weapon_strike ||

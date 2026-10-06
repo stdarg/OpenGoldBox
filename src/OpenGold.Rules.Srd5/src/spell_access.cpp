@@ -20,7 +20,8 @@ enum SpellList : unsigned
     cleric_list = 2,
     paladin_list = 4,
     ranger_list = 8,
-    druid_list = 16
+    druid_list = 16,
+    sorcerer_list = 32
 };
 
 struct Spell
@@ -31,17 +32,17 @@ struct Spell
 };
 
 // Existing spell implementations only. This is not any class's complete list.
-constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
-    Spell{"shocking_grasp", "Shocking Grasp", 0, 1024},
+constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_list | sorcerer_list},
+    Spell{"shocking_grasp", "Shocking Grasp", 0, 1024, wizard_list | sorcerer_list},
     Spell{"eldritch_blast", "Eldritch Blast", 0, 512, 0},
-    Spell{"ray_of_frost", "Ray of Frost", 0, 256},
+    Spell{"ray_of_frost", "Ray of Frost", 0, 256, wizard_list | sorcerer_list},
     Spell{"sacred_flame", "Sacred Flame", 0, 128, cleric_list},
-    Spell{"fire_bolt", "Fire Bolt", 0, 1},
-    Spell{"poison_spray", "Poison Spray", 0, 64, wizard_list | druid_list},
+    Spell{"fire_bolt", "Fire Bolt", 0, 1, wizard_list | sorcerer_list},
+    Spell{"poison_spray", "Poison Spray", 0, 64, wizard_list | druid_list | sorcerer_list},
     Spell{"spare_the_dying", "Spare the Dying", 0, 0, cleric_list | druid_list},
-    Spell{"magic_missile", "Magic Missile", 1, 4},
-    Spell{"scorching_ray", "Scorching Ray", 2, 16},
-    Spell{"blindness", "Blindness", 2, 32, wizard_list | cleric_list},
+    Spell{"magic_missile", "Magic Missile", 1, 4, wizard_list | sorcerer_list},
+    Spell{"scorching_ray", "Scorching Ray", 2, 16, wizard_list | sorcerer_list},
+    Spell{"blindness", "Blindness", 2, 32, wizard_list | cleric_list | sorcerer_list},
     Spell{"inflict_wounds", "Inflict Wounds", 1, 0, cleric_list},
     Spell{"cure_wounds", "Cure Wounds", 1, 0, cleric_list | paladin_list | ranger_list},
     Spell{"healing_word", "Healing Word", 1, 0, cleric_list},
@@ -62,7 +63,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"ensnaring_strike", "Ensnaring Strike", 1, 0, ranger_list},
     Spell{"entangle", "Entangle", 1, 0, ranger_list | druid_list},
     // Also on the Sorcerer list; added with that class.
-    Spell{"fog_cloud", "Fog Cloud", 1, 0, ranger_list | druid_list | wizard_list},
+    Spell{"fog_cloud", "Fog Cloud", 1, 0, ranger_list | druid_list | wizard_list | sorcerer_list},
     // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
     Spell{"lesser_restoration", "Lesser Restoration", 2, 0, cleric_list},
     // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
@@ -71,7 +72,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     // Also on the Bard and Warlock lists; added with those classes.
     Spell{"bane", "Bane", 1, 0, cleric_list},
     // Also on the Bard, Druid, Sorcerer and Warlock lists.
-    Spell{"hold_person", "Hold Person", 2, 0, cleric_list | druid_list | wizard_list},
+    Spell{"hold_person", "Hold Person", 2, 0, cleric_list | druid_list | wizard_list | sorcerer_list},
     Spell{"sanctuary", "Sanctuary", 1, 0, cleric_list},
     Spell{"warding_bond", "Warding Bond", 2, 0, cleric_list},
     Spell{"protection_from_poison", "Protection from Poison", 2, 0,
@@ -83,54 +84,55 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     Spell{"prayer_of_healing", "Prayer of Healing", 2, 0, cleric_list},
     // Also on the Sorcerer list (and Thunderwave and Shatter on the Bard's and
     // Druid's); added with those classes.
-    Spell{"burning_hands", "Burning Hands", 1, 0, wizard_list},
-    Spell{"thunderwave", "Thunderwave", 1, 0, wizard_list | druid_list},
-    Spell{"shatter", "Shatter", 2, 0, wizard_list},
+    Spell{"burning_hands", "Burning Hands", 1, 0, wizard_list | sorcerer_list},
+    Spell{"thunderwave", "Thunderwave", 1, 0, wizard_list | druid_list | sorcerer_list},
+    Spell{"shatter", "Shatter", 2, 0, wizard_list | sorcerer_list},
     // Also on the Sorcerer list (and Expeditious Retreat on the Warlock's).
-    Spell{"mage_armor", "Mage Armor", 1, 0, wizard_list},
-    Spell{"false_life", "False Life", 1, 0, wizard_list},
-    Spell{"expeditious_retreat", "Expeditious Retreat", 1, 0, wizard_list},
+    Spell{"mage_armor", "Mage Armor", 1, 0, wizard_list | sorcerer_list},
+    Spell{"false_life", "False Life", 1, 0, wizard_list | sorcerer_list},
+    Spell{"expeditious_retreat", "Expeditious Retreat", 1, 0, wizard_list | sorcerer_list},
     // Also on the Sorcerer list (Ice Knife on the Druid's); added with those classes.
-    Spell{"ray_of_sickness", "Ray of Sickness", 1, 0, wizard_list},
-    Spell{"ice_knife", "Ice Knife", 1, 0, wizard_list | druid_list},
-    Spell{"chromatic_orb", "Chromatic Orb", 1, 0, wizard_list},
-    Spell{"acid_splash", "Acid Splash", 0, 0, wizard_list},
+    Spell{"ray_of_sickness", "Ray of Sickness", 1, 0, wizard_list | sorcerer_list},
+    Spell{"ice_knife", "Ice Knife", 1, 0, wizard_list | druid_list | sorcerer_list},
+    Spell{"chromatic_orb", "Chromatic Orb", 1, 0, wizard_list | sorcerer_list},
+    Spell{"acid_splash", "Acid Splash", 0, 0, wizard_list | sorcerer_list},
     // Also on the Bard and Sorcerer lists; added with those classes.
-    Spell{"sleep", "Sleep", 1, 0, wizard_list},
+    Spell{"sleep", "Sleep", 1, 0, wizard_list | sorcerer_list},
     Spell{"hideous_laughter", "Hideous Laughter", 1, 0, wizard_list},
-    Spell{"color_spray", "Color Spray", 1, 0, wizard_list},
-    Spell{"grease", "Grease", 1, 0, wizard_list},
-    Spell{"web", "Web", 2, 0, wizard_list},
-    Spell{"shield", "Shield", 1, 0, wizard_list},
-    Spell{"misty_step", "Misty Step", 2, 0, wizard_list},
+    Spell{"color_spray", "Color Spray", 1, 0, wizard_list | sorcerer_list},
+    Spell{"grease", "Grease", 1, 0, wizard_list | sorcerer_list},
+    Spell{"web", "Web", 2, 0, wizard_list | sorcerer_list},
+    Spell{"shield", "Shield", 1, 0, wizard_list | sorcerer_list},
+    Spell{"misty_step", "Misty Step", 2, 0, wizard_list | sorcerer_list},
     Spell{"acid_arrow", "Acid Arrow", 2, 0, wizard_list},
     // Mind Spike is also on the Sorcerer and Warlock lists, Ray of
     // Enfeeblement on the Warlock list; added with those classes.
-    Spell{"mind_spike", "Mind Spike", 2, 0, wizard_list},
+    Spell{"mind_spike", "Mind Spike", 2, 0, wizard_list | sorcerer_list},
     Spell{"ray_of_enfeeblement", "Ray of Enfeeblement", 2, 0, wizard_list},
     // Blur and Mirror Image are also on the Sorcerer (and Bard and Warlock)
     // lists, Magic Weapon on the Paladin, Ranger and Sorcerer lists.
-    Spell{"blur", "Blur", 2, 0, wizard_list},
-    Spell{"mirror_image", "Mirror Image", 2, 0, wizard_list},
-    Spell{"magic_weapon", "Magic Weapon", 2, 0, wizard_list},
+    Spell{"blur", "Blur", 2, 0, wizard_list | sorcerer_list},
+    Spell{"mirror_image", "Mirror Image", 2, 0, wizard_list | sorcerer_list},
+    Spell{"magic_weapon", "Magic Weapon", 2, 0, wizard_list | sorcerer_list},
     // Also on the Bard, Sorcerer and Warlock lists; added with those classes.
-    Spell{"invisibility", "Invisibility", 2, 0, wizard_list},
-    Spell{"see_invisibility", "See Invisibility", 2, 0, wizard_list},
-    Spell{"darkness", "Darkness", 2, 0, wizard_list},
+    Spell{"invisibility", "Invisibility", 2, 0, wizard_list | sorcerer_list},
+    Spell{"see_invisibility", "See Invisibility", 2, 0, wizard_list | sorcerer_list},
+    Spell{"darkness", "Darkness", 2, 0, wizard_list | sorcerer_list},
     // Also on the Druid and Sorcerer lists; added with those classes.
-    Spell{"flaming_sphere", "Flaming Sphere", 2, 0, wizard_list},
+    Spell{"flaming_sphere", "Flaming Sphere", 2, 0, wizard_list | sorcerer_list},
     // Also on the Bard and Sorcerer lists; added with those classes.
-    Spell{"knock", "Knock", 2, 0, wizard_list},
+    Spell{"knock", "Knock", 2, 0, wizard_list | sorcerer_list},
     // Also on the Bard, Druid and Sorcerer lists; added with those classes.
-    Spell{"enlarge_reduce", "Enlarge/Reduce", 2, 0, wizard_list},
+    Spell{"enlarge_reduce", "Enlarge/Reduce", 2, 0, wizard_list | sorcerer_list},
     // Also on the Bard and Warlock lists; added with those classes.
-    Spell{"true_strike", "True Strike", 0, 0, wizard_list},
+    Spell{"true_strike", "True Strike", 0, 0, wizard_list | sorcerer_list},
     // Also on the Sorcerer list; added with that class.
-    Spell{"dragons_breath", "Dragon's Breath", 2, 0, wizard_list},
+    Spell{"dragons_breath", "Dragon's Breath", 2, 0, wizard_list | sorcerer_list},
     // Also on the Bard, Druid, Sorcerer and Warlock lists; added with those classes.
-    Spell{"charm_person", "Charm Person", 1, 0, wizard_list},
+    Spell{"charm_person", "Charm Person", 1, 0, wizard_list | sorcerer_list},
     // Also on the Druid, Ranger and Sorcerer lists; added with those classes.
-    Spell{"gust_of_wind", "Gust of Wind", 2, 0, wizard_list}};
+    Spell{"gust_of_wind", "Gust of Wind", 2, 0, wizard_list | sorcerer_list},
+    Spell{"sorcerous_burst", "Sorcerous Burst", 0, 0, sorcerer_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
@@ -139,24 +141,34 @@ struct PreparedCaster
     std::string_view klass, source, cantrip_label;
     unsigned list, cantrip_list;
     std::array<unsigned, 4> cantrips, prepared, highest_slot;
-    // A Paladin or Ranger replaces one prepared spell after a Long Rest; a Cleric any.
-    bool rest_replaces_one;
+    // What a Long Rest may change: a Cleric any prepared spell, a Paladin or
+    // Ranger one, a Sorcerer none (it changes spells only on gaining a level).
+    enum class RestChange
+    {
+        any,
+        one,
+        none
+    } rest_change;
 };
 
 constexpr std::array prepared_casters{
     PreparedCaster{
         "Cleric", "class:cleric:spellcasting", "Cleric cantrips", cleric_list, cleric_list,
-        {3, 3, 3, 4}, {4, 5, 6, 7}, {1, 1, 2, 2}, false},
+        {3, 3, 3, 4}, {4, 5, 6, 7}, {1, 1, 2, 2}, PreparedCaster::RestChange::any},
     PreparedCaster{
         // Paladin cantrips come only from Blessed Warrior, from the Cleric list.
         "Paladin", "class:paladin:spellcasting", "Blessed Warrior cantrips", paladin_list,
         cleric_list, {0, 0, 0, 0},
-        {2, 3, 4, 5}, {1, 1, 1, 1}, true},
+        {2, 3, 4, 5}, {1, 1, 1, 1}, PreparedCaster::RestChange::one},
     // Ranger cantrips come only from Druidic Warrior, from the Druid list.
     PreparedCaster{
         "Ranger", "class:ranger:spellcasting", "Druidic Warrior cantrips", ranger_list,
         druid_list,
-        {0, 0, 0, 0}, {2, 3, 4, 4}, {1, 1, 1, 1}, true}};
+        {0, 0, 0, 0}, {2, 3, 4, 4}, {1, 1, 1, 1}, PreparedCaster::RestChange::one},
+    PreparedCaster{
+        "Sorcerer", "class:sorcerer:spellcasting", "Sorcerer cantrips", sorcerer_list,
+        sorcerer_list, {4, 4, 4, 5}, {2, 4, 6, 7}, {1, 1, 2, 2},
+        PreparedCaster::RestChange::none}};
 
 // Spells a class always has prepared from a class level on.
 struct AlwaysPrepared
@@ -169,6 +181,10 @@ struct AlwaysPrepared
 // Ranger's Favored Enemy and the Cleric's Life Domain.
 constexpr std::array always_prepared_table{
     AlwaysPrepared{"Paladin", "divine_smite", 2},
+    // Draconic Spells, p. 70 (Alter Self removed by DM-3).
+    AlwaysPrepared{"Sorcerer", "chromatic_orb", 3},
+    AlwaysPrepared{"Sorcerer", "command", 3},
+    AlwaysPrepared{"Sorcerer", "dragons_breath", 3},
     AlwaysPrepared{"Paladin", "protection_from_evil_and_good", 3},
     AlwaysPrepared{"Paladin", "shield_of_faith", 3},
     // Favored Enemy, SRD 5.2.1 p. 57.
@@ -333,7 +349,8 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
         }
     }
     result.prepared_count = access.prepared_choices;
-    result.may_prepare = true;
+    result.may_prepare = context != SpellChoiceContext::long_rest ||
+                         caster.rest_change != PreparedCaster::RestChange::none;
     for (const auto &spell : spells)
         if ((spell.lists & caster.list) && spell.level >= 1 &&
                 spell.level <= caster.highest_slot[level - 1] &&
@@ -401,7 +418,7 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
     }};
     if (klass != "wizard" && klass != "sorcerer")
         return {};
-    return
+    TrainingChoiceGroup group
     {
         klass == "sorcerer" ? "class:sorcerer:spellcasting" : std::string(source),
         klass == "sorcerer" ? "Sorcerer cantrips" : "Wizard cantrips",
@@ -429,6 +446,13 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
                 "Melee weapon attack using your spellcasting ability; Radiant or the weapon's damage type."
             }
         }};
+    if (klass == "sorcerer")
+        group.options.push_back(
+        {
+            "sorcerous_burst", "Sorcerous Burst",
+            "Ranged spell attack: 1d8 damage of a chosen type, 120 feet; an 8 rolls another d8."
+        });
+    return group;
 }
 
 std::vector<FeatureGrant>
@@ -439,14 +463,15 @@ starting_spell_grants(std::string_view klass,
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
+        const auto offered = starting_cantrip_options("sorcerer").options;
         const auto chosen = cantrips.value_or(std::vector<std::string> {});
         require(chosen.size() <= 4);
         for (const auto &id : chosen)
         {
-            require((id == "fire_bolt" || id == "poison_spray" || id == "ray_of_frost" ||
-                     id == "shocking_grasp" || id == "chill_touch" || id == "acid_splash" ||
-                     id == "true_strike") &&
-                    unique.insert(id).second);
+            require(std::any_of(offered.begin(), offered.end(), [&](const auto & option)
+            {
+                return option.id == id;
+            }) && unique.insert(id).second);
             result.push_back(grant(id, 1, "class:sorcerer:spellcasting"));
         }
         return result;
@@ -504,28 +529,6 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
                          unsigned level, std::span<const std::string> prepared)
 {
     SpellAccess result;
-    if (klass == "Sorcerer")
-    {
-        // Starting cantrips only. Leveled spells, replacement and advancement remain #132.
-        require(level == 1 && prepared.empty());
-        result.cantrip_choices = 4;
-        std::set<std::string> known;
-        for (const auto &g : grants)
-            if (is_spell_grant(g))
-            {
-                require(g.id == "spell:fire_bolt" || g.id == "spell:poison_spray" ||
-                        g.id == "spell:ray_of_frost" || g.id == "spell:shocking_grasp" ||
-                        g.id == "spell:chill_touch" || g.id == "spell:acid_splash" ||
-                        g.id == "spell:true_strike");
-                const auto &spell = find(std::string_view(g.id).substr(6));
-                require(g == grant(spell.id, 1, "class:sorcerer:spellcasting") &&
-                        known.insert(g.id).second);
-                result.cantrips.push_back(
-                {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
-            }
-        require(result.cantrips.size() <= 4);
-        return result;
-    }
     if (klass == "Warlock")
     {
         // Cantrip portion of Pact Magic only; slots and advancement remain separate.
@@ -738,7 +741,8 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
         for (const auto &id : options.locked_prepared)
             require(std::find(choices.prepared->begin(), choices.prepared->end(), id) !=
                     choices.prepared->end());
-        if (caster && caster->rest_replaces_one && context == SpellChoiceContext::long_rest)
+        if (caster && caster->rest_change == PreparedCaster::RestChange::one &&
+                context == SpellChoiceContext::long_rest)
             require(std::count_if(sheet.prepared_spells.begin(), sheet.prepared_spells.end(),
                                   [&](const auto & id)
         {

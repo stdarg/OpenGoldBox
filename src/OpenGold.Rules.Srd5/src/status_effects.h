@@ -132,7 +132,9 @@ enum class EffectKind : unsigned
     reckless = 51,
     // Open Hand Technique's Addle: no Opportunity Attacks until the start of
     // the creature's next turn.
-    addled = 52
+    addled = 52,
+    // Innate Sorcery: +1 spell save DC and Advantage on spell attack rolls.
+    innate_sorcery = 53
 };
 
 // The longest a spell benefit lasts, in milliseconds.

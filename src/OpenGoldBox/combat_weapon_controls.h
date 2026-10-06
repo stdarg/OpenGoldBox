@@ -66,6 +66,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "cunning_disengage" ? "Disengage"
             : verb == "lay_on_hands"      ? "Lay On Hands"
             : verb == "rage"              ? "Rage"
+            : verb == "innate_sorcery"    ? "Innate Sorcery"
             : verb == "martial_arts"      ? "Unarmed Strike"
             : verb == "flurry_of_blows"   ? "Flurry of Blows"
             : verb == "flurry_addle"      ? "Flurry of Blows: Addle"

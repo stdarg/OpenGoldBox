@@ -362,6 +362,7 @@ sorcerer-1 @ 5ft
     dodge|0
     end|0
     fire_bolt|3
+    innate_sorcery|0
     melee|3
     poison_spray|1
     poison_spray|2
@@ -379,6 +380,7 @@ sorcerer-1 @ 30ft
     dodge|0
     end|0
     fire_bolt|3
+    innate_sorcery|0
     poison_spray|1
     poison_spray|2
     poison_spray|3
@@ -393,6 +395,7 @@ sorcerer-1 @ 60ft
     dodge|0
     end|0
     fire_bolt|3
+    innate_sorcery|0
     poison_spray|1
     ray_of_frost|1
     ray_of_frost|2
@@ -405,6 +408,7 @@ sorcerer-1 @ 120ft
     dodge|0
     end|0
     fire_bolt|3
+    innate_sorcery|0
     poison_spray|1
     ray_of_frost|1
     shocking_grasp|1
@@ -414,6 +418,7 @@ sorcerer-1 @ 125ft
     disengage|0
     dodge|0
     end|0
+    innate_sorcery|0
     poison_spray|1
     ray_of_frost|1
     shocking_grasp|1

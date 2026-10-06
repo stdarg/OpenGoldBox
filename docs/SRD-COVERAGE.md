@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Sorcerer spellcasting
+
+Rules 0.6.117 makes the Sorcerer a preparing caster through level 4 with
+Sorcerous Burst, Innate Sorcery and Draconic Sorcery. See
+[Sorcerer](SORCERER.md#spellcasting-innate-sorcery-and-draconic-sorcery).
+
 ## Deflect Attacks and Open Hand Technique
 
 Rules 0.6.116 adds the Monk's Deflect Attacks (a hit Reaction, with an optional

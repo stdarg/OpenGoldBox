@@ -906,6 +906,17 @@ inline constexpr std::array spell_table
         .rider = Rider::gust_of_wind,
         .concentration = true,
         .line = 60},
+    // SRD 5.2.1 p. 163: a spell attack for 1d8 of a chosen type, offered as
+    // "sorcerous_burst_<type>"; each 8 rolls another d8, up to the
+    // spellcasting modifier in extra dice.
+    SpellDef{
+        .id = "sorcerous_burst",
+        .label = "Sorcerous Burst",
+        .level = 0,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 120,
+        .dice = {1, 8, 0}},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
     // locked door while exploring. Verbal only.
     SpellDef{
@@ -1120,6 +1131,21 @@ inline std::optional<DamageType> dragon_type(std::string_view verb)
     return std::nullopt;
 }
 
+// Sorcerous Burst's damage types, each offered as "sorcerous_burst_<type>".
+inline constexpr std::array<std::string_view, 7> burst_types{"acid", "cold", "fire", "lightning",
+    "poison", "psychic", "thunder"};
+
+// The damage type a Sorcerous Burst verb names, if it is one.
+inline std::optional<DamageType> burst_type(std::string_view verb)
+{
+    if (!verb.starts_with("sorcerous_burst_"))
+        return std::nullopt;
+    verb.remove_prefix(16);
+    if (std::find(burst_types.begin(), burst_types.end(), verb) == burst_types.end())
+        return std::nullopt;
+    return damage_type(verb);
+}
+
 // Resistance's damage types (CLASS-7), each offered as "resistance_<type>".
 inline constexpr std::array<std::string_view, 11> resistance_types{"acid", "bludgeoning", "cold",
     "fire", "lightning", "necrotic", "piercing", "poison", "radiant", "slashing", "thunder"};
@@ -1150,6 +1176,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "enlarge_reduce";
     if (id == "true_strike_radiant")
         id = "true_strike";
+    if (burst_type(id))
+        id = "sorcerous_burst";
     if (dragon_type(id))
         id = id.starts_with("dragons_breath_exhale_") ? "dragons_breath_exhale" : "dragons_breath";
     for (const auto &spell : spell_table)

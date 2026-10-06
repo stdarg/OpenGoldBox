@@ -286,7 +286,43 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Sorcerer", "shocking_grasp", 1},
     SpellAccessRow{"Sorcerer", "chill_touch", 1},
     SpellAccessRow{"Sorcerer", "acid_splash", 1},
-    SpellAccessRow{"Sorcerer", "true_strike", 1}};
+    SpellAccessRow{"Sorcerer", "true_strike", 1},
+    // Prepared Sorcerer spells; Command comes only from Draconic Spells.
+    SpellAccessRow{"Sorcerer", "burning_hands", 1},
+    SpellAccessRow{"Sorcerer", "charm_person", 1},
+    SpellAccessRow{"Sorcerer", "chromatic_orb", 1},
+    SpellAccessRow{"Sorcerer", "color_spray", 1},
+    SpellAccessRow{"Sorcerer", "expeditious_retreat", 1},
+    SpellAccessRow{"Sorcerer", "false_life", 1},
+    SpellAccessRow{"Sorcerer", "fog_cloud", 1},
+    SpellAccessRow{"Sorcerer", "grease", 1},
+    SpellAccessRow{"Sorcerer", "ice_knife", 1},
+    SpellAccessRow{"Sorcerer", "mage_armor", 1},
+    SpellAccessRow{"Sorcerer", "magic_missile", 1},
+    SpellAccessRow{"Sorcerer", "ray_of_sickness", 1},
+    SpellAccessRow{"Sorcerer", "shield", 1},
+    SpellAccessRow{"Sorcerer", "sleep", 1},
+    SpellAccessRow{"Sorcerer", "thunderwave", 1},
+    SpellAccessRow{"Sorcerer", "sorcerous_burst", 1},
+    SpellAccessRow{"Sorcerer", "blindness", 3},
+    SpellAccessRow{"Sorcerer", "blur", 3},
+    SpellAccessRow{"Sorcerer", "darkness", 3},
+    SpellAccessRow{"Sorcerer", "dragons_breath", 3},
+    SpellAccessRow{"Sorcerer", "enlarge_reduce", 3},
+    SpellAccessRow{"Sorcerer", "flaming_sphere", 3},
+    SpellAccessRow{"Sorcerer", "gust_of_wind", 3},
+    SpellAccessRow{"Sorcerer", "hold_person", 3},
+    SpellAccessRow{"Sorcerer", "invisibility", 3},
+    SpellAccessRow{"Sorcerer", "knock", 3},
+    SpellAccessRow{"Sorcerer", "magic_weapon", 3},
+    SpellAccessRow{"Sorcerer", "mind_spike", 3},
+    SpellAccessRow{"Sorcerer", "mirror_image", 3},
+    SpellAccessRow{"Sorcerer", "misty_step", 3},
+    SpellAccessRow{"Sorcerer", "scorching_ray", 3},
+    SpellAccessRow{"Sorcerer", "see_invisibility", 3},
+    SpellAccessRow{"Sorcerer", "shatter", 3},
+    SpellAccessRow{"Sorcerer", "web", 3},
+    SpellAccessRow{"Sorcerer", "command", 3}};
 
 std::vector<std::string> allowed_spells(std::string_view klass, unsigned level)
 {
@@ -347,6 +383,7 @@ struct Definition
     // Monk level 2: Focus Points (kept in Actor::surges, which no Monk has) and
     // Uncanny Metabolism's once-per-Long-Rest use (kept in Actor::arcane).
     int focus{}, metabolism{};
+    int innate_sorcery{}; // Sorcerer: Innate Sorcery uses, in Actor::free_casts
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -489,6 +526,8 @@ constexpr std::array resource_descriptors
         &Definition::channel_divinity, 1, true},
     ResourceDescriptor{"rage", "Rage", &Actor::channel_divinity, &Definition::rages, 1, true},
     ResourceDescriptor{"focus", "Focus Points", &Actor::surges, &Definition::focus, -1, true},
+    ResourceDescriptor{"innate_sorcery", "Innate Sorcery", &Actor::free_casts,
+        &Definition::innate_sorcery, 0, true},
     ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
         &Definition::metabolism, 0, false}};
 
@@ -498,9 +537,11 @@ int max_hp(const Actor &a)
     return a.definition.hp + detail::hit_point_bonus(a.effects);
 }
 
+// Paladin's Smite, Favored Enemy and Innate Sorcery share one store, restored
+// by a Long Rest; no class has two of them.
 int free_cast_capacity(const Definition &d)
 {
-    return d.free_smite + d.favored_enemy;
+    return d.free_smite + d.favored_enemy + d.innate_sorcery;
 }
 
 // Action Surge and Focus Points share one store; no class has both, and a
@@ -615,7 +656,8 @@ struct PendingCheck
     bool surge_spent{};
 };
 
-int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers)
+// `draconic`: a Draconic Sorcerer gains its level in Hit Points from level 3.
+int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers, bool draconic)
 {
     if (modifiers.empty() || modifiers.size() > 4 ||
             std::any_of(modifiers.begin(), modifiers.end(),
@@ -624,7 +666,8 @@ int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers)
     return n < -4 || n > 5;
 }))
     throw std::runtime_error("Invalid HP advancement history");
-    int hp = die + modifiers.front() + (dwarf ? int(modifiers.size()) : 0);
+    int hp = die + modifiers.front() + (dwarf ? int(modifiers.size()) : 0) +
+             (draconic && modifiers.size() >= 3 ? int(modifiers.size()) : 0);
     for (std::size_t i = 1; i < modifiers.size(); ++i)
     {
         const int increase = modifiers[i] - modifiers[i - 1];
@@ -673,7 +716,7 @@ character_definition(std::string_view bytes,
     throw std::runtime_error("Invalid character profile");
     if (level > 1 && klass != "Fighter" && klass != "Cleric" && klass != "Wizard" &&
             klass != "Rogue" && klass != "Paladin" && klass != "Ranger" && klass != "Barbarian" &&
-            klass != "Monk")
+            klass != "Monk" && klass != "Sorcerer")
         throw std::runtime_error("Advancement is unsupported for this class");
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
@@ -702,7 +745,7 @@ character_definition(std::string_view bytes,
                     : (klass == "Wizard" || klass == "Sorcerer")                      ? 6
                     : 8;
     Definition d;
-    d.hp = maximum_hit_points(die, race == "Dwarf", hp_modifiers);
+    d.hp = maximum_hit_points(die, race == "Dwarf", hp_modifiers, klass == "Sorcerer");
     d.hit_die = die;
     d.constitution = con;
     d.dwarf = race == "Dwarf";
@@ -715,6 +758,7 @@ character_definition(std::string_view bytes,
     d.frenzy = klass == "Barbarian" && level >= 3;
     d.focus = klass == "Monk" && level >= 2 ? int(level) : 0;
     d.metabolism = klass == "Monk" && level >= 2 ? 1 : 0;
+    d.innate_sorcery = klass == "Sorcerer" ? 2 : 0;
     d.deflect = d.open_hand = klass == "Monk" && level >= 3;
     d.focus_dc = 8 + 2 + ability_modifier(scores[4]);
     d.dexterity = dex;
@@ -749,10 +793,13 @@ character_definition(std::string_view bytes,
     d.two_weapon_fighting = (features & 16) != 0;
     d.surges = klass == "Fighter" && level >= 2 ? 1 : 0;
     d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
-    d.slots = (klass == "Cleric" || klass == "Wizard") ? (level == 1 ? 2 : level == 2 ? 3 : 4)
+    d.slots = (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer")
+              ? (level == 1 ? 2 : level == 2 ? 3 : 4)
               : (klass == "Paladin" || klass == "Ranger") ? (level <= 2 ? 2 : 3)
               : 0;
-    d.slots2 = (klass == "Cleric" || klass == "Wizard") && level >= 3 ? (level == 3 ? 2 : 3) : 0;
+    d.slots2 = (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer") && level >= 3
+               ? (level == 3 ? 2 : 3)
+               : 0;
     d.casting = 2 + ability_modifier(scores[(klass == "Cleric" || klass == "Ranger") ? 4
                                             : (klass == "Warlock" || klass == "Sorcerer" ||
                                                klass == "Paladin") ? 5
@@ -903,8 +950,7 @@ character_definition(std::string_view bytes,
         std::sort(right.begin(), right.end());
         return left == right;
     };
-    if ((klass == "Sorcerer" || klass == "Warlock") &&
-            !same_spells(detail::known_cantrip_ids(access), stored_spells))
+    if (klass == "Warlock" && !same_spells(detail::known_cantrip_ids(access), stored_spells))
         throw std::runtime_error("Character cantrip access disagrees with spell grants");
     if (detail::prepares_spells(klass) &&
             !same_spells(detail::casting_ids(access), stored_spells))
@@ -926,6 +972,9 @@ character_definition(std::string_view bytes,
             "Not enough free hands. Unequip the shield or two-handed weapon first.");
     if (!armor && klass == "Barbarian")
         d.ac = std::max(d.ac, 10 + dex + con);
+    // Draconic Resilience: dragon-like scales.
+    if (!armor && klass == "Sorcerer" && level >= 3)
+        d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[5]));
     if (!armor && !shield && klass == "Monk")
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[4]));
     // Martial Arts: the better of Strength and Dexterity for attack and damage
@@ -1574,18 +1623,27 @@ class Session final : public CombatSession
     }
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
+    // 8 + the caster's spellcasting modifier and Proficiency Bonus, +1 during
+    // Innate Sorcery.
+    [[nodiscard]] int spell_dc(const Actor &caster) const
+    {
+        return 8 + def(caster).casting +
+               (detail::has_effect(caster.effects, detail::EffectKind::innate_sorcery) ? 1 : 0);
+    }
     [[nodiscard]] bool strength_attack(const Actor &a, bool ranged) const;
     void attack_recklessly(Actor &a);
     int frenzy_damage(Actor &berserker, bool critical);
     int resized_damage(const Actor &a, bool weapon_hit, int amount);
+    int burst_damage(Dice dice, bool critical, int bursts);
     [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
     // Whether `a` is Charmed by `other`, which it then cannot attack or target.
     [[nodiscard]] bool charmed_by(const Actor &a, EntityId other) const;
     void strike_true(Actor &a, Actor &target, bool radiant);
     bool strikes_duplicate(const Actor &attacker, Actor &target);
+    // `bursts` is how many extra d8s an 8 may add (Sorcerous Burst).
     bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
                 Dice spell_dice = {1, 10, 0},
-                detail::DamageType spell_type = detail::DamageType::fire);
+                detail::DamageType spell_type = detail::DamageType::fire, int bursts = 0);
     detail::Mastery weapon_mastery(const Actor &, bool ranged) const;
     bool mastery_capacity(const Actor &, const Actor &, bool ranged) const;
     detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target, bool ranged,
@@ -2331,6 +2389,8 @@ Snapshot Session::snapshot() const
             view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
         if (def(a).martial_arts)
             view.bonus_actions.push_back("martial_arts");
+        if (def(a).innate_sorcery)
+            view.bonus_actions.push_back("innate_sorcery");
         if (def(a).focus)
             view.bonus_actions.insert(view.bonus_actions.end(),
         {
@@ -2447,7 +2507,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::charmed, "Charmed"},
                     std::pair{detail::EffectKind::raging, "Raging"},
                     std::pair{detail::EffectKind::reckless, "Reckless"},
-                    std::pair{detail::EffectKind::addled, "Addled"}
+                    std::pair{detail::EffectKind::addled, "Addled"},
+                    std::pair{detail::EffectKind::innate_sorcery, "Innate Sorcery"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2829,7 +2890,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     if (spell.add_casting_modifier)
         rolled.bonus = d.casting - 2;
     const unsigned instances = spell.instances + (upcast ? spell.upcast.extra_instances : 0u);
-    const int dc = 8 + d.casting;
+    const int dc = spell_dc(a);
     const auto name = std::string(spell.label);
     switch (spell.pattern)
     {
@@ -2872,8 +2933,11 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
             zones_.push_back({a.source.id, ZoneKind::spiritual_weapon,
                               {spectral_cell(target, a.source.cell)}});
         }
-        const auto type = detail::chromatic_type(verb).value_or(spell.damage);
-        if (attack(a, target, !spell.melee, true, rolled, type))
+        const auto type = detail::chromatic_type(verb)
+                          .value_or(detail::burst_type(verb).value_or(spell.damage));
+        // Sorcerous Burst: each 8 adds a d8, at most the spellcasting modifier.
+        const int bursts = spell.id == "sorcerous_burst" ? std::max(1, d.casting - 2) : 0;
+        if (attack(a, target, !spell.melee, true, rolled, type, bursts))
             apply_rider(spell, verb, a, target, dc);
         else if (spell.rider == detail::Rider::acid_arrow && target.hp > 0)
         {
@@ -3105,6 +3169,14 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             for (const auto type : detail::resistance_types)
                 offer("resistance_" + std::string(type),
                       "Resistance: " + std::string(detail::damage_name(detail::damage_type(type))));
+            continue;
+        }
+        if (spell.id == "sorcerous_burst")
+        {
+            for (const auto type : detail::burst_types)
+                offer("sorcerous_burst_" + std::string(type),
+                      "Sorcerous Burst: " +
+                      std::string(detail::damage_name(detail::damage_type(type))));
             continue;
         }
         if (!spell.level)
@@ -3434,6 +3506,10 @@ std::vector<Command> Session::legal_commands() const
             if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "martial_arts", "Unarmed Strike", other.source.id);
+    // Innate Sorcery: a Bonus Action, twice per Long Rest.
+    if (a.bonus && d.innate_sorcery && a.free_casts > 0 &&
+            !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
+        add(id, "innate_sorcery", "Innate Sorcery");
     // Monk's Focus: Patient Defense and Step of the Wind, free or with a Focus
     // Point, and Flurry of Blows for a Focus Point.
     if (a.bonus && d.focus)
@@ -3922,7 +3998,7 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     damage(target, amount, false);
     if (searing && target.hp > 0 && detail::can_apply(target.effects))
         detail::apply_searing_smite(target.effects, scope_, a.source.id, a.source.name,
-                                    8 + def(a).casting);
+                                    spell_dc(a));
 }
 
 std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, std::string_view verb,
@@ -4088,8 +4164,8 @@ int Session::area_dc(const Actor &caster, const detail::SpellDef &spell) const
     if (spell.id == "dragons_breath_exhale")
         for (const auto &effect : caster.effects.active)
             if (effect.kind == detail::EffectKind::dragons_breath)
-                return 8 + def(actor(effect.source_actor)).casting;
-    return 8 + def(caster).casting;
+                return spell_dc(actor(effect.source_actor));
+    return spell_dc(caster);
 }
 
 void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
@@ -4134,7 +4210,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     // Sleep chooses the enemies in its sphere; Color Spray's cone takes every
     // creature in it.
     const bool sleep = spell.rider == detail::Rider::sleep;
-    const int dc = 8 + def(caster).casting;
+    const int dc = spell_dc(caster);
     const auto index = static_cast<std::size_t>(&caster - actors_.data());
     const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
     for (auto &other : actors_)
@@ -4176,7 +4252,7 @@ void Session::blow(const Zone &line, Actor &creature)
     if (creature.dead || creature.hp == 0 || creature.source.id == line.caster)
         return;
     const auto &caster = actor(line.caster);
-    if (!saving_throw_succeeds(creature, detail::Ability::strength, 8 + def(caster).casting))
+    if (!saving_throw_succeeds(creature, detail::Ability::strength, spell_dc(caster)))
         push_away(caster, creature, 3);
 }
 
@@ -4195,7 +4271,7 @@ void Session::sphere_burns(const Actor &caster, Actor &creature)
     if (creature.dead || creature.hp == 0)
         return;
     const auto &spell = *detail::find_spell("flaming_sphere");
-    const bool saved = saving_throw_succeeds(creature, spell.save, 8 + def(caster).casting);
+    const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster));
     const int rolled = dice({spell.dice.count, spell.dice.sides, 0});
     const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
     log(creature.source.name + " takes " + std::to_string(amount) +
@@ -4223,7 +4299,7 @@ bool Session::spring_zone(const Zone &zone, Actor &creature)
              !detail::can_apply(creature.effects)))
         return false;
     const auto &caster = actor(zone.caster);
-    const int dc = 8 + def(caster).casting;
+    const int dc = spell_dc(caster);
     if (saving_throw_succeeds(creature, detail::Ability::dexterity, dc))
         return false;
     if (grease)
@@ -4254,7 +4330,7 @@ void Session::ice_burst(Actor &caster, const Actor &target, bool upcast)
     // The target and each creature within 5 feet of it save against 2d6 Cold
     // (3d6 from a level-two slot).
     const int total = dice({upcast ? 3 : 2, 6, 0});
-    const int dc = 8 + def(caster).casting;
+    const int dc = spell_dc(caster);
     const auto centre = target.source.cell;
     for (auto &other : actors_)
     {
@@ -4386,7 +4462,7 @@ void Session::cast_area()
     }
     if (kind != ZoneKind::plants)
         return;
-    const int dc = 8 + def(a).casting;
+    const int dc = spell_dc(a);
     for (auto &other : actors_)
     {
         if (other.dead || other.source.id == a.source.id ||
@@ -4457,7 +4533,7 @@ void Session::divine_spark(Actor &cleric, Actor &target)
                       ? detail::DamageType::necrotic
                       : detail::DamageType::radiant;
     const bool saved = saving_throw_succeeds(target, detail::Ability::constitution,
-                       8 + def(cleric).casting);
+                       spell_dc(cleric));
     const int amount = resolved_damage(target, type, saved ? total / 2 : total);
     const auto name = std::string(detail::damage_name(type));
     log(target.source.name + " takes " + std::to_string(amount) + " " + name + " damage.",
@@ -4477,7 +4553,7 @@ void Session::turn_undead(Actor &cleric)
                 def(other).creature_type == "undead" &&
                 distance(cleric.source.cell, other.source.cell) <= 30 &&
                 detail::can_apply(other.effects) &&
-                !saving_throw_succeeds(other, detail::Ability::wisdom, 8 + def(cleric).casting))
+                !saving_throw_succeeds(other, detail::Ability::wisdom, spell_dc(cleric)))
         {
             detail::apply_spell_benefit(other.effects, scope_, cleric.source.id,
                                         cleric.source.name, detail::EffectKind::turned, 0);
@@ -4546,7 +4622,7 @@ void Session::resolve_ensnaring_strike(Actor &a)
         "{name} casts Ensnaring Strike on {target}.",
         {{"name", a.source.name}, {"target", target.source.name}}
     });
-    const int dc = 8 + def(a).casting;
+    const int dc = spell_dc(a);
     if (target.hp == 0 || !detail::can_apply(target.effects) ||
             saving_throw_succeeds(target, detail::Ability::strength, dc, def(target).size >= 3))
         return;
@@ -4663,7 +4739,7 @@ void Session::cast_on_selection()
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
     if (spell.concentration)
         begin_concentration(a, spell);
-    const int dc = 8 + def(a).casting;
+    const int dc = spell_dc(a);
     for (const auto id : selection.chosen)
     {
         auto &target = actor(id);
@@ -4915,6 +4991,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
             strength_attack(a, ranged)) ||
             detail::has_effect(target.effects, detail::EffectKind::reckless))
         result.advantage = true;
+    // Innate Sorcery: Advantage on spell attack rolls.
+    if (spell && detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
+        result.advantage = true;
     // Blur: attack rolls against the creature have Disadvantage.
     if (detail::has_effect(target.effects, detail::EffectKind::blur))
         result.disadvantage = true;
@@ -5160,7 +5239,7 @@ int Session::keep_higher_savage_roll(Actor &a, int first, int second)
 }
 
 bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spell_dice,
-                     detail::DamageType spell_type)
+                     detail::DamageType spell_type, int bursts)
 {
     if (target.source.cell.x != a.source.cell.x)
         a.facing_left = target.source.cell.x < a.source.cell.x;
@@ -5210,7 +5289,10 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
                                                weapon_die_rule(a, ranged))
                : dice(damage_dice, critical_hit(a, target, natural, spell));
     };
-    int weapon_damage = hit ? roll_damage() : 0;
+    int weapon_damage = hit ? (bursts ? burst_damage(spell_dice, critical_hit(a, target, natural,
+                                spell), bursts)
+                               : roll_damage())
+                        : 0;
     // Sneak Attack and Savage Attacker have one right answer, so they apply
     // automatically and the log records what they added.
     const int sneak_damage = sneak ? roll_sneak_attack(a, target, natural) : 0;
@@ -5356,6 +5438,21 @@ void Session::strike_true(Actor &a, Actor &target, bool radiant)
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", "True Strike", true}}});
     attack(striker, target, false);
     a.aim_ready = striker.aim_ready;
+}
+
+int Session::burst_damage(Dice dice, bool critical, int bursts)
+{
+    // Each die showing its maximum adds another, up to `bursts` extra dice.
+    const int count = dice.count * (critical ? 2 : 1);
+    int total = dice.bonus, extra = 0;
+    for (int n = 0; n < count + extra; ++n)
+    {
+        const int rolled = roll(dice.sides);
+        total += rolled;
+        if (rolled == dice.sides && extra < bursts)
+            ++extra;
+    }
+    return total;
 }
 
 int Session::resized_damage(const Actor &a, bool weapon_hit, int amount)
@@ -6349,6 +6446,15 @@ void Session::dispatch(const Command &command)
     else if (command.verb.starts_with("patient_defense") ||
              command.verb.starts_with("step_of_the_wind"))
         use_focus_movement(a, command.verb);
+    else if (command.verb == "innate_sorcery")
+    {
+        a.bonus = false;
+        --a.free_casts;
+        detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::innate_sorcery, 0);
+        log(a.source.name + " unleashes Innate Sorcery.",
+        {"{name} unleashes Innate Sorcery.", {{"name", a.source.name}}});
+    }
     else if (command.verb == "martial_arts")
     {
         a.bonus = false;
@@ -6439,7 +6545,7 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " casts Hunter's Mark (Favored Enemy).",
         {"{name} casts Hunter's Mark (Favored Enemy).", {{"name", a.source.name}}});
         begin_concentration(a, spell);
-        apply_rider(spell, command.verb, a, actor(command.target), 8 + d.casting);
+        apply_rider(spell, command.verb, a, actor(command.target), spell_dc(a));
     }
     else if (command.verb == "hunters_mark_move")
     {
@@ -7768,7 +7874,8 @@ class Module final : public RulesModule
                 (sheet.character_class != "Fighter" && sheet.character_class != "Cleric" &&
                  sheet.character_class != "Wizard" && sheet.character_class != "Rogue" &&
                  sheet.character_class != "Paladin" && sheet.character_class != "Ranger" &&
-                 sheet.character_class != "Barbarian" && sheet.character_class != "Monk"))
+                 sheet.character_class != "Barbarian" && sheet.character_class != "Monk" &&
+                 sheet.character_class != "Sorcerer"))
             return {};
         AdvancementOptions result;
         result.level = sheet.level + 1;
@@ -7854,6 +7961,8 @@ class Module final : public RulesModule
         if (sheet.character_class == "Paladin")
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        if (sheet.character_class == "Sorcerer")
+            result.description = "Prepared Sorcerer spells and Innate Sorcery; more spell slots at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
         if (sheet.character_class == "Monk")
             result.description = "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Barbarian")
@@ -8043,6 +8152,7 @@ class Module final : public RulesModule
                 (sheet.character_class == "Fighter" || sheet.character_class == "Paladin") ? 0
                 : sheet.character_class == "Cleric"                                        ? 4
                 : (sheet.character_class == "Rogue" || sheet.character_class == "Ranger")  ? 1
+                : sheet.character_class == "Sorcerer"                                      ? 5
                 : 3;
             unsigned remaining = 2;
             for (unsigned n = 0; n < 6 && remaining; ++n)
@@ -8181,6 +8291,13 @@ class Module final : public RulesModule
                 unsigned(next.level),
                 {}});
         }
+        // Draconic Sorcery is the SRD's only Sorcerer subclass.
+        if (next.character_class == "Sorcerer" && next.level == 3)
+        {
+            next.grants.push_back({"subclass:draconic", "class:sorcerer", 3, {}});
+            next.grants.push_back({"feature:draconic_resilience", "subclass:sorcerer:draconic", 3, {}});
+            next.grants.push_back({"feature:draconic_spells", "subclass:sorcerer:draconic", 3, {}});
+        }
         if (next.character_class == "Monk" && next.level == 2)
         {
             next.grants.push_back({"feature:monks_focus", "class:monk", 2, {}});
@@ -8298,7 +8415,8 @@ class Module final : public RulesModule
                             detail::grant_source_id(next.background), next.level, next.scores);
         next.hit_point_modifiers.push_back(next.modifiers[2]);
         next.hit_points =
-            maximum_hit_points(next.hit_die, next.race == "Dwarf", next.hit_point_modifiers);
+            maximum_hit_points(next.hit_die, next.race == "Dwarf", next.hit_point_modifiers,
+                               next.character_class == "Sorcerer");
         if (next.race == "Dwarf")
         {
             next.racial_modifiers.replace(0, next.racial_modifiers.find('\n'),
@@ -8342,10 +8460,13 @@ class Module final : public RulesModule
                 {}});
         }
         if (next.character_class == "Paladin" || next.character_class == "Ranger" ||
-                next.character_class == "Barbarian" || next.character_class == "Monk")
+                next.character_class == "Barbarian" || next.character_class == "Monk" ||
+                next.character_class == "Sorcerer")
         {
             const std::string note =
-                next.character_class == "Monk"
+                next.character_class == "Sorcerer"
+                ? "Prepared Sorcerer spells and Innate Sorcery; more spell slots at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
+                : next.character_class == "Monk"
                 ? "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points."
                 : next.character_class == "Barbarian"
                 ? "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery."
@@ -9516,7 +9637,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.116", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.117", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

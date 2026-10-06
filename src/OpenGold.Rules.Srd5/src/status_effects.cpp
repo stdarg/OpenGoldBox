@@ -405,6 +405,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::enlarged:
     case EffectKind::reduced:
     case EffectKind::dragons_breath:
+    case EffectKind::innate_sorcery:
         return 60000; // 1 minute
     default:
         return 0;
