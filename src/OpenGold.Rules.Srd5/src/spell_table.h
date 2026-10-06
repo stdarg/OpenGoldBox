@@ -89,7 +89,8 @@ enum class Rider : unsigned
     hideous_laughter,
     color_spray,
     grease,
-    web
+    web,
+    misty_step
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -678,6 +679,19 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::reaction,
         .target = SpellTarget::self,
         .range = 5},
+    // SRD 5.2.1 p. 154: a Bonus Action teleport of up to 30 feet to an
+    // unoccupied space the caster can see. Verbal only.
+    SpellDef{
+        .id = "misty_step",
+        .label = "Misty Step",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 30,
+        .somatic = false,
+        .rider = Rider::misty_step,
+        .bonus_action = true,
+        .area = 5},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

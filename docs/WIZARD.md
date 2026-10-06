@@ -167,3 +167,17 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (the question and its
   checkpoint, React's +5 AC and slot with one resolved attack, Decline, and
   Shield blocking Magic Missile).
+
+## Misty Step
+
+- **Misty Step** (level 2, from Wizard level 3, Bonus Action, Verbal only):
+  chosen from the A cycle, it is aimed like an area spell, but the preview
+  starts on the Wizard and only unoccupied squares within 30 feet that the
+  Wizard can see (not Heavily Obscured, not walls) can be chosen; Cast is
+  unavailable until one is. The Wizard teleports there without provoking
+  Opportunity Attacks, keeping the Action.
+- Aimed spells may now be Bonus Actions: casting spends the Bonus Action
+  instead of the Action.
+- Verification: `opengold_wizard_spell_tests` (occupied and out-of-range
+  squares refused, the teleport, the Bonus Action and level-two slot, no
+  Opportunity Attack).

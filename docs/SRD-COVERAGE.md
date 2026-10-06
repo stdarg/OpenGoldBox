@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Misty Step
+
+Rules 0.6.99 adds Misty Step, the first aimed Bonus Action spell. See
+[Wizard](WIZARD.md#misty-step).
+
 ## Shield
 
 Rules 0.6.98 adds the Wizard's Shield, the first Reaction to an attack's hit,

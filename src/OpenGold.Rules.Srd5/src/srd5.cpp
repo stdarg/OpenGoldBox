@@ -251,6 +251,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "grease", 1},
     SpellAccessRow{"Wizard", "web", 3},
     SpellAccessRow{"Wizard", "shield", 1},
+    SpellAccessRow{"Wizard", "misty_step", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1355,6 +1356,7 @@ class Session final : public CombatSession
     void ice_burst(Actor &caster, const Actor &target, bool upcast);
     void condition_area(Actor &caster, const detail::SpellDef &spell,
                         const std::vector<Cell> &cells);
+    [[nodiscard]] bool teleport_open(const Actor &caster, Cell cell) const;
     [[nodiscard]] static bool in_zone(const Zone &zone, Cell cell);
     // Makes a creature in a Grease or Web zone save; true when it is caught.
     bool spring_zone(const Zone &zone, Actor &creature);
@@ -2313,6 +2315,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::color_spray:
     case detail::Rider::grease:
     case detail::Rider::web:
+    case detail::Rider::misty_step:
         return; // Aimed areas, resolved by cast_area().
     case detail::Rider::hold_person:
         detail::apply_hold_person(target.effects, scope_, a.source.id, a.source.name, dc,
@@ -2746,11 +2749,14 @@ std::vector<Command> Session::legal_commands() const
     {
         const auto &caster = actor(area_->caster);
         const auto &spell = *detail::find_spell(area_->verb);
+        const bool teleport = spell.rider == detail::Rider::misty_step;
         for (int y = 0; y < board_.height; ++y)
             for (int x = 0; x < board_.width; ++x)
-                if (distance(caster.source.cell, Cell{x, y}) <= spell.range)
+                if (distance(caster.source.cell, Cell{x, y}) <= spell.range &&
+                        (!teleport || teleport_open(caster, Cell{x, y})))
                     add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
-        add(caster.source.id, "area_cast", "Cast spell");
+        if (!teleport || teleport_open(caster, area_->center))
+            add(caster.source.id, "area_cast", "Cast spell");
         add(caster.source.id, "spell_cancel", "Cancel");
         return commands;
     }
@@ -3052,6 +3058,7 @@ std::vector<Command> Session::legal_commands() const
                 })
             offer_spells(commands, a, other, distance(a.source.cell, other.source.cell), scope,
                          true);
+    offer_spells(commands, a, a, 0, detail::SpellTarget::area, true);
     if (!a.light_extra && !a.light_origins.empty())
         for (const auto &item : items_)
             if (item.holder == id && light_eligible(a, item.id))
@@ -3453,8 +3460,22 @@ std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, std::string
     return cells;
 }
 
+bool Session::teleport_open(const Actor &caster, Cell cell) const
+{
+    // Misty Step: an unoccupied space the caster can see.
+    return cell != caster.source.cell && board_.at(cell) != 1 &&
+           line_of_sight(caster.source.cell, cell) && !obscured(cell) &&
+           std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return !other.dead && other.source.cell == cell;
+    });
+}
+
 Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &spell) const
 {
+    // A teleport's preview starts on the caster; it must be moved before casting.
+    if (spell.rider == detail::Rider::misty_step)
+        return caster.source.cell;
     // The preview starts on the nearest living enemy in range, else the caster.
     Cell best = caster.source.cell;
     int best_feet = spell.range + 1;
@@ -3684,8 +3705,13 @@ void Session::cast_area()
     auto &a = actor(aimed.caster);
     end_sanctuary(a);
     const auto &spell = *detail::find_spell(aimed.verb);
-    a.nick_origin = 0;
-    (void)a.actions.spend(true);
+    if (spell.bonus_action)
+        a.bonus = false;
+    else
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+    }
     if (spell.level)
     {
         if (aimed.verb.ends_with("_2") || spell.level >= 2)
@@ -3696,6 +3722,15 @@ void Session::cast_area()
     }
     log(a.source.name + " casts " + std::string(spell.label) + ".",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
+    if (spell.rider == detail::Rider::misty_step)
+    {
+        // Teleporting provokes no Opportunity Attacks.
+        a.source.cell = aimed.center;
+        clear_departed_overlaps();
+        log(a.source.name + " steps through the mist.",
+        {"{name} steps through the mist.", {{"name", a.source.name}}});
+        return;
+    }
     const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
     if (spell.pattern == detail::SpellPattern::save_damage)
     {
@@ -8376,7 +8411,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.98", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.99", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

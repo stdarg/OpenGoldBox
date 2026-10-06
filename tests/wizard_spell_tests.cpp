@@ -544,6 +544,21 @@ void shield_missile_checks()
           "Shield stops Magic Missile");
 }
 
+void misty_step_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(3, {"magic_missile"}, {"misty_step", "shatter"}), {2, 1}, {11, 5});
+    const auto before = slots(*c);
+    check(submit(*c, "misty_step") && !offered(*c, "area_cast") && !aim(*c, Cell{2, 1}) &&
+          !aim(*c, Cell{8, 1}),
+          "Misty Step needs an unoccupied square within 30 feet");
+    check(aim(*c, Cell{6, 1}) && submit(*c, "area_cast") && unit(*c, 1).cell == Cell{6, 1},
+          "The Wizard teleports to the chosen square");
+    check(!c->snapshot().reaction_pending && unit(*c, 1).action && !unit(*c, 1).bonus_action &&
+          slots(*c).second == before.second - 1,
+          "A Bonus Action from a level-two slot, with no Opportunity Attack");
+}
+
 } // namespace
 
 int main()
@@ -569,6 +584,7 @@ int main()
         web_checks();
         shield_checks();
         shield_missile_checks();
+        misty_step_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)
