@@ -44,8 +44,11 @@ std::unique_ptr<RulesModule> module_rules()
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
 
-// A Warlock with Hex and Hellish Rebuke prepared, advanced to the given level.
-Character warlock(unsigned level = 1)
+// A Warlock with Hex and Hellish Rebuke prepared and Charisma 18, advanced to
+// the given level, with the given invocations at levels 1 and 2 and spells
+// added to its preparation at level 3.
+Character warlock(unsigned level = 1, std::vector<std::string> first = {},
+                  std::vector<std::string> second = {}, std::vector<std::string> third = {})
 {
     CharacterDraft d;
     d.race = "human";
@@ -57,14 +60,27 @@ Character warlock(unsigned level = 1)
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
+    d.rolls[5] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:warlock", {"arcana", "deception"}}};
+    if (!first.empty())
+        d.training["class:warlock:invocations"] = first;
     d.cantrips = {"eldritch_blast", "chill_touch"};
     d.spells = SpellChoices{{}, std::vector<std::string> {"hex", "hellish_rebuke"}, {}, {}};
     CampaignParty party(module_rules());
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "warlock-xp");
     for (unsigned n = 1; n < level; ++n)
-        party.advance(id, party.default_advancement(id));
+    {
+        auto choice = party.default_advancement(id);
+        if (n == 1 && !second.empty())
+            choice.training["class:warlock:invocations:2"] = second;
+        if (n == 2 && !third.empty())
+        {
+            choice.spells = party.member(id).character.sheet().prepared_spells;
+            choice.spells.insert(choice.spells.end(), third.begin(), third.end());
+        }
+        party.advance(id, choice);
+    }
     return party.member(id).character;
 }
 
@@ -112,6 +128,9 @@ std::pair<int, int> slots(const VitalState &vitals)
     return {first, second};
 }
 
+// Ends the Warlock's turn and comes back to it.
+void reach_turn(CombatSession &c);
+
 // The Warlock (1) and an enemy (98) beside it.
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
                                       std::uint64_t seed = 5)
@@ -122,10 +141,19 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
             {98, "target", "Enemy", 1, {2, 1}}
         }},
     seed);
+    if (!c->snapshot().initiative_choices.empty())
+        check(submit(*c, "initiative_keep"), "Keep Initiative");
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Warlock's turn");
     check(c->snapshot().actor == 1, "The Warlock acts");
     return c;
+}
+
+void reach_turn(CombatSession &c)
+{
+    check(submit(c, "end"), "End the Warlock's turn");
+    for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(c, "end"), "Back to the Warlock");
 }
 
 void pact_magic_checks()
@@ -195,6 +223,71 @@ void advancement_checks()
     check(warlock(4).sheet().level == 4, "A Warlock reaches level 4");
 }
 
+void invocation_checks()
+{
+    auto creation = srd5::character_rules();
+    CharacterDraft draft;
+    draft.character_class = "warlock";
+    draft.background = "sage";
+    std::vector<std::string> first;
+    for (const auto &group : creation->training_options(draft))
+        if (group.id == "class:warlock:invocations")
+            for (const auto &option : group.options)
+                first.push_back(option.id);
+    check(first == std::vector<std::string> {"armor_of_shadows", "eldritch_mind", "pact_of_the_blade"},
+          "Level 1 offers the invocations without prerequisites");
+    auto module = rules();
+    {
+        auto c = battle(*module, warlock(1, {"armor_of_shadows"}));
+        const int ac = unit(*c, 1).armor_class;
+        check(submit(*c, "armor_of_shadows", 1) && unit(*c, 1).armor_class == ac + 3 &&
+              slots(unit(*c, 1).persistent).first == 1,
+              "Armor of Shadows casts Mage Armor without a slot");
+    }
+    {
+        const auto hero = warlock(2, {"eldritch_mind"}, {"agonizing_blast", "repelling_blast"});
+        auto c = battle(*module, hero);
+        check(submit(*c, "eldritch_blast", 98) && logged(*c, "Enemy is pushed 10 feet."),
+              "Repelling Blast pushes the creature Eldritch Blast hits");
+        for (const auto &line : c->snapshot().log)
+            if (line.starts_with("Warlock -> Enemy") && line.find(" hits for ") != std::string::npos)
+            {
+                const int damage = std::stoi(line.substr(line.find(" hits for ") + 10));
+                check(damage >= 5 && damage <= 14, "Agonizing Blast adds +4 to 1d10");
+            }
+    }
+    {
+        const auto hero = warlock(2, {"eldritch_mind"}, {"fiendish_vigor", "lessons_alert"});
+        auto c = battle(*module, hero);
+        check(submit(*c, "fiendish_vigor", 1) && unit(*c, 1).temporary_hp.amount == 12,
+              "Fiendish Vigor grants False Life's highest result");
+        const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
+        auto start = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+            {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
+                {2, "target", "Ally", 0, {1, 2}},
+                {98, "target", "Enemy", 1, {2, 1}}
+            }},
+        5);
+        check(start->snapshot().initiative_choices == std::vector<EntityId> {1},
+              "Lessons of the First Ones grants Alert's Initiative swap");
+    }
+    {
+        // Pact of the Blade: a longsword with proficiency and Charisma (+4).
+        auto blade = rules();
+        const auto hero = warlock(1, {"pact_of_the_blade"});
+        const auto profile = blade->character_profile(hero.sheet(), std::vector<std::string> {"longsword"});
+        check(profile.melee_attack_bonus == 6, "Pact of the Blade uses Charisma and proficiency");
+    }
+    {
+        auto c = battle(*module, warlock(3, {"eldritch_mind"}, {"devils_sight", "agonizing_blast"},
+                                         {"darkness"}));
+        check(submit(*c, "darkness") && submit(*c, "area_cast"), "Darkness over both creatures");
+        reach_turn(*c);
+        check(submit(*c, "eldritch_blast", 98) && logged(*c, "(advantage)"),
+              "Devil's Sight sees through Darkness the enemy cannot");
+    }
+}
+
 } // namespace
 
 int main()
@@ -204,6 +297,7 @@ int main()
         pact_magic_checks();
         hellish_rebuke_checks();
         advancement_checks();
+        invocation_checks();
         std::cout << "Warlock tests passed\n";
     }
     catch (const std::exception &e)

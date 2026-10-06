@@ -64,10 +64,12 @@ TrainingChoices choices()
         {"class:rogue:weapon_mastery", {"dagger", "shortbow"}}};
 }
 
+// Fills the class's other required choices: Weapon Mastery and a Warlock's
+// Eldritch Invocation.
 void complete_mastery(CharacterDraft &d)
 {
     for (const auto &group : srd5::character_rules()->training_options(d))
-        if (group.id.ends_with(":weapon_mastery"))
+        if (group.id.ends_with(":weapon_mastery") || group.id == "class:warlock:invocations")
         {
             auto &selected = d.training[group.id];
             for (const auto &option : group.options)

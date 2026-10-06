@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Eldritch Invocations
+
+Rules 0.6.121 adds the Warlock's Eldritch Invocations through level 4 and
+makes magical Darkness its own zone. See [Warlock](WARLOCK.md#eldritch-invocations).
+
 ## Warlock Pact Magic
 
 Rules 0.6.120 makes the Warlock a preparing caster through level 4 with Pact

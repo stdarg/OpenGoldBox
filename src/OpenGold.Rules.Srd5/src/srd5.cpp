@@ -474,6 +474,9 @@ struct Definition
     int sorcery_points{}; // Sorcerer level 2: Font of Magic, in Actor::lay_on_hands
     std::vector<std::string> metamagic; // the Sorcerer's Metamagic options
     bool pact_magic{};    // Warlock: slots of one level, back on a Short Rest
+    // Eldritch Invocations.
+    bool agonizing_blast{}, armor_of_shadows{}, devils_sight{}, eldritch_mind{},
+         eldritch_spear{}, fiendish_vigor{}, pact_of_the_blade{}, repelling_blast{};
     int magical_cunning{}; // Warlock level 2: once per Long Rest, in Actor::arcane
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
@@ -953,6 +956,28 @@ character_definition(std::string_view bytes,
     std::string background;
     in >> std::quoted(background);
     const auto grants = detail::read_grants(in);
+    const auto invoked = [&](std::string_view id)
+    {
+        return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+        {
+            return g.id == "invocation:" + std::string(id);
+        });
+    };
+    d.agonizing_blast = invoked("agonizing_blast");
+    d.armor_of_shadows = invoked("armor_of_shadows");
+    d.devils_sight = invoked("devils_sight");
+    d.eldritch_mind = invoked("eldritch_mind");
+    d.eldritch_spear = invoked("eldritch_spear");
+    d.fiendish_vigor = invoked("fiendish_vigor");
+    d.pact_of_the_blade = invoked("pact_of_the_blade");
+    d.repelling_blast = invoked("repelling_blast");
+    // Lessons of the First Ones: an Origin feat.
+    d.savage |= invoked("lessons_savage_attacker");
+    if (invoked("lessons_alert"))
+    {
+        d.alert = true;
+        d.initiative = dex + int(2 + (level - 1) / 4);
+    }
     for (const auto &key : d.equipment_keys)
     {
         if (const auto *item = detail::weapon(key))
@@ -973,8 +998,12 @@ character_definition(std::string_view bytes,
             d.weapon_hands = item->hands;
             d.versatile_sides = item->versatile_sides;
             hands += d.weapon_hands;
-            const int modifier = item->finesse ? std::max(str, dex) : item->ranged ? dex : str;
-            const int bonus = (trained(klass, grants, key) ? 2 : 0) + modifier;
+            // Pact of the Blade: a melee pact weapon uses Charisma if better,
+            // with proficiency.
+            const bool pact = d.pact_of_the_blade && !item->ranged;
+            const int modifier = std::max(item->finesse ? std::max(str, dex) : item->ranged ? dex : str,
+                                          pact ? ability_modifier(scores[5]) : -5);
+            const int bonus = (trained(klass, grants, key) || pact ? 2 : 0) + modifier;
             if (item->dice && !item->ranged)
             {
                 d.melee_ability = modifier;
@@ -1408,7 +1437,8 @@ class Session final : public CombatSession
         grease,
         web,
         flaming_sphere, // one square: where the fire burns
-        gust            // Gust of Wind's line
+        gust,           // Gust of Wind's line
+        darkness        // magical Darkness, Heavily Obscured except to Devil's Sight
     };
     struct Zone
     {
@@ -1584,8 +1614,8 @@ class Session final : public CombatSession
     // Heavily Obscured squares block sight into and out of them.
     bool can_see(const Actor &a, const Actor &b) const
     {
-        return conscious(a) && !detail::blinded(a.effects) && !obscured(a.source.cell) &&
-               !obscured(b.source.cell) && line_of_sight(a.source.cell, b.source.cell) &&
+        return conscious(a) && !detail::blinded(a.effects) && !obscured(a, a.source.cell) &&
+               !obscured(a, b.source.cell) && line_of_sight(a.source.cell, b.source.cell) &&
                !unseen(a, b);
     }
 
@@ -1684,7 +1714,8 @@ class Session final : public CombatSession
     // `origin` is the caster's square, from which cones and cubes extend.
     [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell,
             std::string_view verb, Cell origin, Cell center) const;
-    [[nodiscard]] bool obscured(Cell cell) const;
+    // Whether `viewer` cannot see into the square.
+    [[nodiscard]] bool obscured(const Actor &viewer, Cell cell) const;
     // Inside Silence: no Verbal spells, no Thunder damage.
     [[nodiscard]] bool silenced(Cell cell) const;
     [[nodiscard]] Cell spectral_cell(const Actor &target, Cell from) const;
@@ -2337,11 +2368,13 @@ bool Session::silenced(Cell cell) const
     });
 }
 
-bool Session::obscured(Cell cell) const
+bool Session::obscured(const Actor &viewer, Cell cell) const
 {
+    // Fog Cloud hides from everyone; magical Darkness from all but Devil's Sight.
     return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
     {
-        return zone.kind == ZoneKind::fog &&
+        return (zone.kind == ZoneKind::fog ||
+                (zone.kind == ZoneKind::darkness && !def(viewer).devils_sight)) &&
                std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
     });
 }
@@ -2387,7 +2420,7 @@ Snapshot Session::snapshot() const
     }
     s.battlefield = zoned_board();
     for (const auto &zone : zones_)
-        if (zone.kind == ZoneKind::fog)
+        if (zone.kind == ZoneKind::fog || zone.kind == ZoneKind::darkness)
             s.obscured.insert(s.obscured.end(), zone.cells.begin(), zone.cells.end());
         else if (zone.kind == ZoneKind::silence)
             s.silenced.insert(s.silenced.end(), zone.cells.begin(), zone.cells.end());
@@ -3168,7 +3201,15 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
                               .value_or(detail::burst_type(verb).value_or(spell.damage)));
         // Sorcerous Burst: each 8 adds a d8, at most the spellcasting modifier.
         const int bursts = spell.id == "sorcerous_burst" ? std::max(1, d.casting - 2) : 0;
-        if (attack(a, target, !spell.melee, true, rolled, type, bursts))
+        const bool blast = spell.id == "eldritch_blast";
+        // Agonizing Blast adds the Charisma modifier to Eldritch Blast's damage.
+        if (blast && d.agonizing_blast)
+            rolled.bonus += d.casting - 2;
+        const bool struck = attack(a, target, !spell.melee, true, rolled, type, bursts);
+        // Repelling Blast pushes a Large or smaller creature 10 feet away.
+        if (struck && blast && d.repelling_blast && !target.dead && def(target).size <= 3)
+            push_away(a, target, 2);
+        if (struck)
             apply_rider(spell, verb, a, target, dc);
         else if (spell.rider == detail::Rider::acid_arrow && target.hp > 0)
         {
@@ -3961,6 +4002,16 @@ std::vector<Command> Session::legal_commands() const
     if (a.actions.available())
     {
         offer_spells(commands, a, a, 0, detail::SpellTarget::area, false);
+        // Armor of Shadows and Fiendish Vigor: Mage Armor and False Life on the
+        // Warlock, cast without a slot.
+        if (a.actions.available(true) && !rage_of(a) && !silenced(a.source.cell))
+        {
+            if (d.armor_of_shadows && d.mage_armor_ac &&
+                    !detail::has_effect(a.effects, detail::EffectKind::mage_armor))
+                add(id, "armor_of_shadows", "Armor of Shadows (Mage Armor)", id);
+            if (d.fiendish_vigor)
+                add(id, "fiendish_vigor", "Fiendish Vigor (False Life)", id);
+        }
         // Dragon's Breath: its holder exhales the chosen cone as an Action.
         for (const auto &effect : a.effects.active)
             if (effect.kind == detail::EffectKind::dragons_breath)
@@ -4168,7 +4219,8 @@ void Session::damage(Actor &target, int amount, bool critical)
         const bool rolls = target.hp > 0 && !target.dead;
         auto modifiers = detail::saving_modifiers(detail::Ability::constitution,
                          def(target).str_dex_disadvantage, target.dodge);
-        modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::extended);
+        modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::extended) ||
+                               def(target).eldritch_mind;
         const auto result = target.concentration.damage(
                                 amount, def(target).saves[2] + (rolls ? blessing_die(target) : 0),
                                 modifiers, target.hp == 0 || target.dead, rng_);
@@ -4368,7 +4420,7 @@ bool Session::teleport_open(const Actor &caster, Cell cell) const
 {
     // Misty Step: an unoccupied space the caster can see.
     return cell != caster.source.cell && board_.at(cell) != 1 &&
-           line_of_sight(caster.source.cell, cell) && !obscured(cell) &&
+           line_of_sight(caster.source.cell, cell) && !obscured(caster, cell) &&
            std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
         return !other.dead && other.source.cell == cell;
@@ -4745,10 +4797,8 @@ void Session::cast_area()
     }
     if (spell.concentration)
         begin_concentration(a, spell);
-    // Magical Darkness hides what is in it just as Fog Cloud does.
-    const auto kind = spell.rider == detail::Rider::fog_cloud ||
-                      spell.rider == detail::Rider::darkness
-                      ? ZoneKind::fog
+    const auto kind = spell.rider == detail::Rider::fog_cloud ? ZoneKind::fog
+                      : spell.rider == detail::Rider::darkness ? ZoneKind::darkness
                       : spell.rider == detail::Rider::silence ? ZoneKind::silence
                       : spell.rider == detail::Rider::grease  ? ZoneKind::grease
                       : spell.rider == detail::Rider::web     ? ZoneKind::web
@@ -5289,9 +5339,11 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
                 disadvantaged = true;
     }
     // Fog hides either creature from the other, as Blinded would.
-    const bool fogged = obscured(a.source.cell) || obscured(target.source.cell);
-    auto result = detail::attack_modifiers(detail::blinded(a.effects) || fogged || unseen(a, target),
-                                           detail::blinded(target.effects) || fogged ||
+    const bool attacker_fogged = obscured(a, a.source.cell) || obscured(a, target.source.cell);
+    const bool target_fogged = obscured(target, a.source.cell) || obscured(target, target.source.cell);
+    auto result = detail::attack_modifiers(detail::blinded(a.effects) || attacker_fogged ||
+                                           unseen(a, target),
+                                           detail::blinded(target.effects) || target_fogged ||
                                            unseen(target, a),
                                            target.dodge, disadvantaged || a.effects.prone);
     // At zero HP the creature is Unconscious and Prone (SRD pp.187,191).
@@ -5850,10 +5902,14 @@ void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
 
 int Session::spell_range(const Actor &caster, const detail::SpellDef &spell) const
 {
+    // Eldritch Spear: 30 feet more per Warlock level for Eldritch Blast.
+    const int range = spell.range + (spell.id == "eldritch_blast" && def(caster).eldritch_spear
+                                     ? 30 * def(caster).level
+                                     : 0);
     // Distant Spell: double the range, or 30 feet for Touch.
     if (!readies(caster, Metamagic::distant, spell))
-        return spell.range;
-    return spell.range <= 5 ? 30 : 2 * spell.range;
+        return range;
+    return range <= 5 ? 30 : 2 * range;
 }
 
 detail::DamageType Session::cast_damage_type(detail::DamageType type) const
@@ -6955,6 +7011,31 @@ void Session::dispatch(const Command &command)
         use_font_of_magic(a, command.verb);
     else if (command.verb.starts_with("metamagic_"))
         ready_metamagic(a, command.verb.substr(10));
+    else if (command.verb == "armor_of_shadows" || command.verb == "fiendish_vigor")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        end_sanctuary(a);
+        const InvisibilityEnds ends{*this, a};
+        if (command.verb == "armor_of_shadows")
+        {
+            detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+                                        detail::EffectKind::mage_armor, 0);
+            log(a.source.name + " gains Mage Armor.",
+            {"{name} gains {spell}.", {{"name", a.source.name}, {"spell", "Mage Armor", true}}});
+        }
+        else
+        {
+            // Fiendish Vigor takes False Life's highest result: 2d4 + 4 = 12.
+            TemporaryHitPoints offered{12, "spell:false_life"};
+            log(a.source.name + " gains False Life.",
+            {"{name} gains {spell}.", {{"name", a.source.name}, {"spell", "False Life", true}}});
+            if (a.temporary_hp.amount)
+                temporary_offer_ = std::move(offered);
+            else
+                detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
+        }
+    }
     else if (command.verb == "innate_sorcery")
     {
         a.bonus = false;
@@ -8175,7 +8256,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         unsigned kind{};
         input >> zone.caster >> kind >> zone.ends_ms >> cells;
         // Only Grease keeps time; every other zone ends with Concentration.
-        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::gust) ||
+        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::darkness) ||
                 (kind == unsigned(ZoneKind::grease)) != (zone.ends_ms != 0) || !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
@@ -8457,6 +8538,9 @@ class Module final : public RulesModule
             result.training = {detail::primal_knowledge_options(sheet.grants)};
         if (sheet.character_class == "Sorcerer" && result.level == 2)
             result.training = {detail::metamagic_options()};
+        if (sheet.character_class == "Warlock" && result.level == 2)
+            result.training = {detail::invocation_options(2, sheet.grants,
+                                                          "class:warlock:invocations:2")};
         if (sheet.character_class == "Barbarian" && result.level == 4)
             result.training = {detail::mastery_options("barbarian", 4, sheet.grants)};
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
@@ -8824,6 +8908,7 @@ class Module final : public RulesModule
                 : id == "subclass:ranger:hunter" ? "prey:" + value
                 : id == "class:barbarian:primal_knowledge" ? "skill:" + value
                 : id == "class:sorcerer:metamagic" ? "metamagic:" + value
+                : id == "class:warlock:invocations:2" ? "invocation:" + value
                 : "mastery:" + value,
                 id,
                 unsigned(next.level),
@@ -10207,7 +10292,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.120", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.121", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

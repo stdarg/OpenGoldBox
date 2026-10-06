@@ -214,6 +214,8 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
             {
                 "two_weapon_fighting", "Two-Weapon Fighting",
                 "Add your ability modifier to the extra attack granted by the Light property."});
+    if (klass == "warlock")
+        result.push_back(invocation_options(1, {}, "class:warlock:invocations"));
     if (klass == "cleric")
         result.push_back({std::string(divine_order),
                           "Divine Order",
@@ -320,7 +322,7 @@ bool is_training_grant(const FeatureGrant &grant)
 {
     return is_mastery_grant(grant) || grant.id.starts_with("skill:") ||
            grant.id.starts_with("expertise:") || grant.id.starts_with("order:") ||
-           grant.id.starts_with("metamagic:");
+           grant.id.starts_with("metamagic:") || grant.id.starts_with("invocation:");
 }
 
 std::vector<FeatureGrant> without_training(std::span<const FeatureGrant> grants)
@@ -341,6 +343,52 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
                 skill.id == "medicine" || skill.id == "nature" || skill.id == "religion") &&
                 source(grants, "skill:" + std::string(skill.id)))
             group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+    return group;
+}
+
+// Eldritch Invocations a Warlock of the given level qualifies for (SRD 5.2.1
+// pp. 72-74), less those it holds from another entitlement. Agonizing Blast,
+// Eldritch Spear and Repelling Blast improve Eldritch Blast, the Warlock
+// cantrip they suit. Invocations that only cast removed spells, Pact of the
+// Chain and Pact of the Tome (pending) are not offered.
+TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGrant> grants,
+                                       std::string_view source)
+{
+    TrainingChoiceGroup group{std::string(source), "Eldritch Invocations", level == 1 ? 1u : 2u,
+                              {}, TrainingChoiceControl::checkboxes};
+    group.acquired_level = level;
+    const bool blast = std::any_of(grants.begin(), grants.end(), [](const auto & g)
+    {
+        return g.id == "spell:eldritch_blast";
+    });
+    struct Invocation
+    {
+        std::string_view id, label, description;
+        unsigned level;
+        bool needs_blast;
+    };
+    static constexpr std::array<Invocation, 10> all{{
+        {"agonizing_blast", "Agonizing Blast", "Add your Charisma modifier to Eldritch Blast's damage.", 2, true},
+        {"armor_of_shadows", "Armor of Shadows", "Cast Mage Armor on yourself without a spell slot.", 1, false},
+        {"devils_sight", "Devil's Sight", "See normally in magical and nonmagical Darkness.", 2, false},
+        {"eldritch_mind", "Eldritch Mind", "Advantage on Constitution saves to keep Concentration.", 1, false},
+        {"eldritch_spear", "Eldritch Spear", "Eldritch Blast reaches 30 feet farther per Warlock level.", 2, true},
+        {"fiendish_vigor", "Fiendish Vigor", "Cast False Life on yourself without a slot, for its highest result.", 2, false},
+        {"lessons_alert", "Lessons of the First Ones: Alert", "Gain the Alert feat.", 2, false},
+        {"lessons_savage_attacker", "Lessons of the First Ones: Savage Attacker", "Gain the Savage Attacker feat.", 2, false},
+        {"pact_of_the_blade", "Pact of the Blade", "Your melee weapon is your pact weapon: proficiency, and Charisma for its attack and damage rolls.", 1, false},
+        {"repelling_blast", "Repelling Blast", "An Eldritch Blast hit pushes a Large or smaller creature 10 feet away.", 2, true}}};
+    for (const auto &invocation : all)
+    {
+        const auto id = "invocation:" + std::string(invocation.id);
+        const bool held = std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+        {
+            return g.id == id && g.source_id != source;
+        });
+        if (invocation.level <= level && (!invocation.needs_blast || blast) && !held)
+            group.options.push_back({std::string(invocation.id), std::string(invocation.label),
+                                     std::string(invocation.description)});
+    }
     return group;
 }
 
@@ -422,6 +470,7 @@ std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_vi
             group.id.ends_with(":weapon_mastery")        ? "mastery:"
             : group.id == "class:fighter:fighting_style" ? "feat:"
             : group.id == divine_order                   ? "order:"
+            : group.id == "class:warlock:invocations"    ? "invocation:"
             : group.id == "class:" + std::string(klass)  ? "skill:"
             : "expertise:");
     return result;
@@ -459,6 +508,20 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                     return other.id == grant.id && other.source_id != grant.source_id;
                 }));
                 selected.push_back(grant.id);
+                continue;
+            }
+            if (grant.source_id == "class:warlock:invocations:2")
+            {
+                require(klass == "warlock" && grant.level == 2 && grant.choices.empty());
+                const auto group = invocation_options(2, grants, grant.source_id);
+                require(std::any_of(group.options.begin(), group.options.end(),
+                                    [&](const auto & option)
+                {
+                    return grant.id == "invocation:" + option.id;
+                }));
+                auto &selected = choices[grant.source_id];
+                require(selected.size() < 2);
+                selected.push_back(grant.id.substr(11));
                 continue;
             }
             if (grant.source_id == "class:sorcerer:metamagic")
@@ -522,6 +585,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             const auto prefix = grant.source_id.ends_with(":weapon_mastery")        ? "mastery:"
                                 : grant.source_id == "class:fighter:fighting_style" ? "feat:"
                                 : grant.source_id == divine_order                   ? "order:"
+                                : grant.source_id == "class:warlock:invocations"    ? "invocation:"
                                 : grant.source_id == "class:" + std::string(klass)  ? "skill:"
                                 : "expertise:";
             require(grant.id.starts_with(prefix));
@@ -532,6 +596,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     starting.erase("class:wizard:scholar");
     starting.erase("class:barbarian:primal_knowledge");
     starting.erase("class:sorcerer:metamagic");
+    starting.erase("class:warlock:invocations:2");
     starting.erase(std::string(skilled));
     starting.erase(mastery_options(klass, 4).id);
     auto expected = training_grants(klass, background, starting);
@@ -573,6 +638,8 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
     require((picked.empty() && !has_skilled) || level >= 4);
     if (has_skilled)
         result.complete &= picked.size() == 3;
+    const auto &invocations = selected(choices, "class:warlock:invocations:2");
+    require(invocations.empty() || level >= 2);
     const auto &metamagic = selected(choices, "class:sorcerer:metamagic");
     require(metamagic.empty() || level >= 2);
     if (klass == "sorcerer" && level >= 2)
