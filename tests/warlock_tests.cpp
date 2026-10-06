@@ -342,6 +342,28 @@ void policy_checks()
     const auto hex = choose_demo_command(*c);
     check(hex.verb == "hex" && hex.target == 98 && c->submit(hex), "The policy casts Hex first");
     check(choose_demo_command(*c).verb == "eldritch_blast", "Then it casts Eldritch Blast");
+    // Eldritch Blast may target any creature; the policy still blasts the
+    // enemy, not a weaker ally.
+    const auto profile = module->character_profile(warlock().sheet(), std::vector<std::string> {}).data;
+    auto d = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+        {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
+            {2, "target", "Ally", 0, {1, 3}, {}, VitalState{3, false, {}}},
+            {98, "target", "Enemy", 1, {4, 1}}
+        }},
+    5);
+    for (unsigned turns = 0; d->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*d, "end"), "Reach the Warlock's turn");
+    for (unsigned n = 0; n < 3; ++n)
+    {
+        const auto command = choose_demo_command(*d);
+        if (command.verb == "eldritch_blast")
+        {
+            check(command.target == 98, "The policy never blasts its own side");
+            return;
+        }
+        check(d->submit(command), "Take the policy's earlier choices");
+    }
+    throw std::runtime_error("The policy never casts Eldritch Blast");
 }
 
 } // namespace

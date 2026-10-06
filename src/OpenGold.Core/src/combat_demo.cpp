@@ -909,7 +909,9 @@ Command choose_demo_command(const CombatSession &session)
                 {
                     return a.id == command.target;
                 });
-                if (target.hit_points < hp)
+                // Some attack spells, such as Eldritch Blast, may target any
+                // creature; the policy attacks only the other side.
+                if (target.side != active.side && target.hit_points < hp)
                 {
                     best = &command;
                     hp = target.hit_points;
