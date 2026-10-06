@@ -106,7 +106,13 @@ enum class EffectKind : unsigned
     acid_arrow = 39,
     // Ray of Enfeeblement: Disadvantage on Strength-based D20 Tests and 1d8
     // less damage, with a Constitution save at the end of each of its turns.
-    enfeebled = 40
+    enfeebled = 40,
+    // Blur: attack rolls against the creature have Disadvantage.
+    blur = 41,
+    // Mirror Image: `dc` counts the duplicates left that may take a hit.
+    mirror_image = 42,
+    // Magic Weapon: `dc` is the bonus to weapon attack and damage rolls.
+    magic_weapon = 43
 };
 
 // The longest a spell benefit lasts, in milliseconds.

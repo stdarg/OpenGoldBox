@@ -92,7 +92,10 @@ enum class Rider : unsigned
     web,
     misty_step,
     acid_arrow,
-    ray_of_enfeeblement
+    ray_of_enfeeblement,
+    blur,
+    mirror_image,
+    magic_weapon
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -736,6 +739,36 @@ inline constexpr std::array spell_table
         .save = Ability::constitution,
         .rider = Rider::ray_of_enfeeblement,
         .concentration = true},
+    // SRD 5.2.1 p. 114: attack rolls against the caster have Disadvantage.
+    SpellDef{
+        .id = "blur",
+        .label = "Blur",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .somatic = false,
+        .rider = Rider::blur,
+        .concentration = true},
+    // SRD 5.2.1 p. 150: three duplicates that may each take a hit.
+    SpellDef{
+        .id = "mirror_image",
+        .label = "Mirror Image",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::mirror_image},
+    // SRD 5.2.1 p. 146: a touched weapon gains +1 to attack and damage rolls.
+    SpellDef{
+        .id = "magic_weapon",
+        .label = "Magic Weapon",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::magic_weapon},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

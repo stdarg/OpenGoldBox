@@ -380,6 +380,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::longstrider:
     case EffectKind::warding_bond:
     case EffectKind::protection_from_poison:
+    case EffectKind::magic_weapon:
         return 3600000; // 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
@@ -392,6 +393,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::turned:
     case EffectKind::bane:
     case EffectKind::resistance:
+    case EffectKind::blur:
+    case EffectKind::mirror_image:
         return 60000; // 1 minute
     default:
         return 0;

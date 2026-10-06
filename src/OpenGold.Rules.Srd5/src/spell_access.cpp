@@ -107,7 +107,12 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     // Mind Spike is also on the Sorcerer and Warlock lists, Ray of
     // Enfeeblement on the Warlock list; added with those classes.
     Spell{"mind_spike", "Mind Spike", 2, 0, wizard_list},
-    Spell{"ray_of_enfeeblement", "Ray of Enfeeblement", 2, 0, wizard_list}};
+    Spell{"ray_of_enfeeblement", "Ray of Enfeeblement", 2, 0, wizard_list},
+    // Blur and Mirror Image are also on the Sorcerer (and Bard and Warlock)
+    // lists, Magic Weapon on the Paladin, Ranger and Sorcerer lists.
+    Spell{"blur", "Blur", 2, 0, wizard_list},
+    Spell{"mirror_image", "Mirror Image", 2, 0, wizard_list},
+    Spell{"magic_weapon", "Magic Weapon", 2, 0, wizard_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).

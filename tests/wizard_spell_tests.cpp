@@ -641,6 +641,64 @@ void laughter_concentration_checks()
     throw std::runtime_error("No seed fails the Wisdom save");
 }
 
+void blur_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(3, {"magic_missile"}, {"blur", "shatter"}), {2, 1}, {11, 5});
+    check(submit(*c, "blur", 1) && logged(*c, "Wizard gains Blur."), "Blur is cast");
+    reach(*c, 98);
+    check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
+          "Attacks against a blurred Wizard have Disadvantage");
+}
+
+void mirror_image_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(3, {"magic_missile"}, {"mirror_image", "shatter"}), {2, 1},
+                        {11, 5}, seed);
+        check(submit(*c, "mirror_image", 1) &&
+              has_condition(*c, 1, "Mirror Image ({count} duplicates)"),
+              "Mirror Image shows its duplicates");
+        reach(*c, 98);
+        const int hp = unit(*c, 1).hit_points;
+        check(submit(*c, "melee", 1), "The enemy attacks");
+        if (!logged(*c, "First hits one of Wizard's duplicates, which vanishes."))
+            continue;
+        check(unit(*c, 1).hit_points == hp, "The duplicate takes the hit");
+        const auto snapshot = c->save();
+        check(module->restore(snapshot)->save() == snapshot, "The duplicates survive a checkpoint");
+        return;
+    }
+    throw std::runtime_error("No seed strikes a duplicate");
+}
+
+// The attack bonus in the Wizard's first "d20 N + B vs" log line.
+int logged_attack_bonus(const CombatSession &c)
+{
+    for (const auto &line : c.snapshot().log)
+        if (line.starts_with("Wizard -> First: d20 "))
+        {
+            const auto plus = line.find(" + ");
+            return std::stoi(line.substr(plus + 3));
+        }
+    throw std::runtime_error("No Wizard attack logged");
+}
+
+void magic_weapon_checks()
+{
+    auto module = rules();
+    const auto hero = wizard(3, {"magic_missile"}, {"magic_weapon", "shatter"});
+    auto plain = battle(*module, hero, {2, 1}, {11, 5});
+    check(submit(*plain, "melee", 98), "An ordinary attack");
+    auto c = battle(*module, hero, {2, 1}, {11, 5});
+    check(submit(*c, "magic_weapon", 1) && unit(*c, 1).action && !unit(*c, 1).bonus_action,
+          "Magic Weapon is a Bonus Action");
+    check(submit(*c, "melee", 98) && logged_attack_bonus(*c) == logged_attack_bonus(*plain) + 1,
+          "The weapon gains +1 to attack rolls");
+}
+
 } // namespace
 
 int main()
@@ -671,6 +729,9 @@ int main()
         mind_spike_checks();
         ray_of_enfeeblement_checks();
         laughter_concentration_checks();
+        blur_checks();
+        mirror_image_checks();
+        magic_weapon_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

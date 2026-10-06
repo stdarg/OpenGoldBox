@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Blur, Mirror Image and Magic Weapon
+
+Rules 0.6.101 adds two level-two Wizard defenses and a weapon buff. See
+[Wizard](WIZARD.md#blur-mirror-image-and-magic-weapon).
+
 ## Acid Arrow, Mind Spike and Ray of Enfeeblement
 
 Rules 0.6.100 adds three level-two Wizard spells and starts Concentration for

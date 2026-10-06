@@ -106,7 +106,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::hold_person || kind == detail::EffectKind::resistance ||
            kind == detail::EffectKind::expeditious_retreat || kind == detail::EffectKind::drowsy ||
            kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing ||
-           kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled;
+           kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled ||
+           kind == detail::EffectKind::blur;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -255,6 +256,9 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "acid_arrow", 3},
     SpellAccessRow{"Wizard", "mind_spike", 3},
     SpellAccessRow{"Wizard", "ray_of_enfeeblement", 3},
+    SpellAccessRow{"Wizard", "blur", 3},
+    SpellAccessRow{"Wizard", "mirror_image", 3},
+    SpellAccessRow{"Wizard", "magic_weapon", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1406,6 +1410,8 @@ class Session final : public CombatSession
                detail::has_effect(target.effects, detail::EffectKind::asleep);
     }
 
+    [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
+    bool strikes_duplicate(const Actor &attacker, Actor &target);
     bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
                 Dice spell_dice = {1, 10, 0},
                 detail::DamageType spell_type = detail::DamageType::fire);
@@ -2175,6 +2181,16 @@ Snapshot Session::snapshot() const
                 s.combatants.back().status += std::string(" | ") + label;
                 s.combatants.back().conditions.push_back({label, {}});
             }
+        for (const auto &effect : a.effects.active)
+            if (effect.kind == detail::EffectKind::mirror_image)
+            {
+                const Message duplicates{"Mirror Image ({count} duplicates)",
+                    {{"count", std::to_string(effect.dc)}}};
+                messages.push_back(duplicates);
+                s.combatants.back().status += " | Mirror Image (" + std::to_string(effect.dc) +
+                                              " duplicates)";
+                s.combatants.back().conditions.push_back(duplicates);
+            }
         if (detail::has_effect(a.effects, detail::EffectKind::poisoned))
         {
             messages.push_back({"Poisoned", {}});
@@ -2322,6 +2338,31 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::web:
     case detail::Rider::misty_step:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::blur:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::blur, 0);
+        log(target.source.name + " gains Blur.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Blur", true}}});
+        return;
+    case detail::Rider::mirror_image:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::mirror_image, 3);
+        log(target.source.name + " gains Mirror Image.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Mirror Image", true}}});
+        return;
+    case detail::Rider::magic_weapon:
+        // Casting it again ends the earlier one.
+        for (auto &other : actors_)
+            std::erase_if(other.effects.active, [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::magic_weapon && e.source_actor == a.source.id &&
+                   e.source_scope == scope_;
+        });
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::magic_weapon, 1);
+        log(target.source.name + " gains Magic Weapon.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Magic Weapon", true}}});
+        return;
     case detail::Rider::acid_arrow:
         detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
                                next_save_ms(target.source.id), detail::EffectKind::acid_arrow);
@@ -2694,6 +2735,13 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         if (spell.rider == detail::Rider::expeditious_retreat &&
                 detail::has_effect(other.effects, detail::EffectKind::expeditious_retreat))
+            continue;
+        if ((spell.rider == detail::Rider::blur &&
+                detail::has_effect(other.effects, detail::EffectKind::blur)) ||
+                (spell.rider == detail::Rider::mirror_image &&
+                 detail::has_effect(other.effects, detail::EffectKind::mirror_image)) ||
+                (spell.rider == detail::Rider::magic_weapon &&
+                 detail::has_effect(other.effects, detail::EffectKind::magic_weapon)))
             continue;
         const auto *components = detail::spell_components(spell.id);
         if (!components || (components->somatic && !somatic_hand(d)) ||
@@ -4268,6 +4316,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // every melee weapon attack.
     if (!spell && !ranged && detail::has_effect(a.effects, detail::EffectKind::enfeebled))
         result.disadvantage = true;
+    // Blur: attack rolls against the creature have Disadvantage.
+    if (detail::has_effect(target.effects, detail::EffectKind::blur))
+        result.disadvantage = true;
     // Guiding Bolt: the next attack roll against the target has Advantage.
     if (detail::has_effect(target.effects, detail::EffectKind::guiding_bolt))
         result.advantage = true;
@@ -4524,16 +4575,19 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     {
         return e.kind == detail::EffectKind::guiding_bolt;
     });
+    const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
     const int natural = detail::d20(modifiers, rng_), bonus = (spell    ? d.casting
         : ranged ? d.ranged_bonus
         : d.melee_bonus) + blessing_die(a) +
-        (spell || ranged ? 0 : sacred_weapon_bonus(a));
+        (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
     const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
     const bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
     // Shield cannot turn a critical hit into a miss, so it is not offered then.
     if (hit && !automatic)
         ask_shield(target, false);
+    if (hit && strikes_duplicate(a, target))
+        return false;
     const bool sneak = hit && !spell && sneak_eligible(a, target, ranged, modifiers.mode());
     const auto roll_damage = [&]
     {
@@ -4556,6 +4610,8 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
                         !actor(a.source.id).savage_used;
     if (savage)
         weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
+    if (hit)
+        weapon_damage += weapon_magic;
     // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
     if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.hp < max_hp(target))
     {
@@ -4661,6 +4717,40 @@ bool Session::mark_can_move(const Actor &caster) const
             marked = true;
         }
     return marked;
+}
+
+int Session::magic_weapon_bonus(const Actor &a) const
+{
+    for (const auto &effect : a.effects.active)
+        if (effect.kind == detail::EffectKind::magic_weapon)
+            return effect.dc;
+    return 0;
+}
+
+bool Session::strikes_duplicate(const Actor &attacker, Actor &target)
+{
+    // Mirror Image: a d6 per duplicate left; any 3 or higher and a duplicate
+    // takes the hit and vanishes. A Blinded attacker is not fooled.
+    const auto image = std::find_if(target.effects.active.begin(), target.effects.active.end(),
+                                    [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::mirror_image;
+    });
+    if (image == target.effects.active.end() || detail::blinded(attacker.effects))
+        return false;
+    bool diverted = false;
+    for (int duplicate = 0; duplicate < image->dc; ++duplicate)
+        diverted = roll(6) >= 3 || diverted;
+    if (!diverted)
+        return false;
+    log(attacker.source.name + " hits one of " + target.source.name + "'s duplicates, which vanishes.",
+    {
+        "{attacker} hits one of {name}'s duplicates, which vanishes.",
+        {{"attacker", attacker.source.name}, {"name", target.source.name}}
+    });
+    if (--image->dc == 0)
+        target.effects.active.erase(image);
+    return true;
 }
 
 int Session::sacred_weapon_bonus(const Actor &a) const
@@ -8483,7 +8573,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.100", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.101", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

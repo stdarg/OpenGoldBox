@@ -203,3 +203,20 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (the hit and the later burn,
   the splash on a miss, Mind Spike's save, both outcomes of the ray and their
   Disadvantage, a checkpoint, Concentration replacing Hideous Laughter).
+
+## Blur, Mirror Image and Magic Weapon
+
+- **Blur** (level 2, self, Verbal only, Concentration up to 1 minute): attack
+  rolls against the Wizard have Disadvantage. No creature has Blindsight or
+  Truesight yet, so none ignores it.
+- **Mirror Image** (level 2, self, 1 minute): three duplicates, shown as
+  "Mirror Image (3 duplicates)". Each hit rolls a d6 per duplicate left; any 3
+  or higher and a duplicate takes the hit instead and vanishes. A Blinded
+  attacker is not fooled. Shield is asked about before the duplicates roll.
+- **Magic Weapon** (level 2, Bonus Action, touch): the creature's weapon
+  attacks gain +1 to attack and damage rolls for an hour; casting it again
+  ends the earlier one. Adaptation: the bonus follows the creature's weapon
+  attacks rather than one particular weapon.
+- Verification: `opengold_wizard_spell_tests` (Disadvantage against a blurred
+  Wizard, a duplicate taking a hit and its checkpoint, Magic Weapon's Bonus
+  Action and +1 to the attack roll).
