@@ -22,6 +22,13 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Bard spellcasting
+
+Rules 0.6.123 makes the Bard a preparing caster through level 4 with Vicious
+Mockery, Starry Wisp, Dissonant Whispers, Faerie Fire, Jack of All Trades and
+the College of Lore. See
+[Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore).
+
 ## Fiend Patron
 
 Rules 0.6.122 adds the Warlock's Fiend Patron. See

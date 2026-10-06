@@ -141,7 +141,12 @@ enum class EffectKind : unsigned
     // Extended Spell: Advantage on saves to keep this Concentration.
     extended = 55,
     // Hex: the caster's attack-roll hits deal 1d6 more Necrotic damage.
-    hex = 56
+    hex = 56,
+    // Faerie Fire: attack rolls against the creature have Advantage if the
+    // attacker sees it, and it cannot be Invisible.
+    outlined = 57,
+    // Starry Wisp: it cannot be Invisible until the end of the caster's next turn.
+    lit = 58
 };
 
 // The longest a spell benefit lasts, in milliseconds.

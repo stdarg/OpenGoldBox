@@ -392,6 +392,24 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
     return group;
 }
 
+// College of Lore's Bonus Proficiencies: three skills not yet held.
+TrainingChoiceGroup lore_options(std::span<const FeatureGrant> grants)
+{
+    TrainingChoiceGroup group{"subclass:bard:lore", "Bonus Proficiencies", 3, {},
+                              TrainingChoiceControl::checkboxes};
+    group.acquired_level = 3;
+    for (const auto &skill : skills)
+    {
+        const auto id = "skill:" + std::string(skill.id);
+        if (std::none_of(grants.begin(), grants.end(), [&](const auto & g)
+    {
+        return g.id == id && g.source_id != group.id;
+    }))
+        group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+    }
+    return group;
+}
+
 // Metamagic: two options at Sorcerer level two (SRD 5.2.1 pp. 66-67).
 TrainingChoiceGroup metamagic_options()
 {
@@ -510,6 +528,20 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                 selected.push_back(grant.id);
                 continue;
             }
+            if (grant.source_id == "subclass:bard:lore")
+            {
+                require(klass == "bard" && grant.level == 3 && grant.choices.empty());
+                const auto group = lore_options(grants);
+                require(std::any_of(group.options.begin(), group.options.end(),
+                                    [&](const auto & option)
+                {
+                    return grant.id == "skill:" + option.id;
+                }));
+                auto &selected = choices[grant.source_id];
+                require(selected.size() < 3);
+                selected.push_back(grant.id.substr(6));
+                continue;
+            }
             if (grant.source_id == "class:warlock:invocations:2")
             {
                 require(klass == "warlock" && grant.level == 2 && grant.choices.empty());
@@ -597,6 +629,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     starting.erase("class:barbarian:primal_knowledge");
     starting.erase("class:sorcerer:metamagic");
     starting.erase("class:warlock:invocations:2");
+    starting.erase("subclass:bard:lore");
     starting.erase(std::string(skilled));
     starting.erase(mastery_options(klass, 4).id);
     auto expected = training_grants(klass, background, starting);
@@ -638,6 +671,10 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
     require((picked.empty() && !has_skilled) || level >= 4);
     if (has_skilled)
         result.complete &= picked.size() == 3;
+    const auto &lore = selected(choices, "subclass:bard:lore");
+    require(lore.empty() || level >= 3);
+    if (klass == "bard" && level >= 3)
+        result.complete &= lore.size() == 3;
     const auto &invocations = selected(choices, "class:warlock:invocations:2");
     require(invocations.empty() || level >= 2);
     const auto &metamagic = selected(choices, "class:sorcerer:metamagic");

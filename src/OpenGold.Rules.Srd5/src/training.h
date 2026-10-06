@@ -7,6 +7,7 @@ namespace opengold::srd5::detail
 rules::TrainingChoiceGroup scholar_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup primal_knowledge_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup metamagic_options();
+rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup invocation_options(unsigned level,
         std::span<const rules::FeatureGrant> grants, std::string_view source);
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);

@@ -106,7 +106,11 @@ enum class Rider : unsigned
     dragons_breath,
     charm_person,
     gust_of_wind,
-    hex
+    hex,
+    vicious_mockery,
+    starry_wisp,
+    dissonant_whispers,
+    faerie_fire
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -946,6 +950,65 @@ inline constexpr std::array spell_table
         .dice = {2, 10, 0},
         .half_on_success = true,
         .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 p. 171: a Wisdom save against 1d6 Psychic; a failure also
+    // gives Disadvantage on the target's next attack roll.
+    SpellDef{
+        .id = "vicious_mockery",
+        .label = "Vicious Mockery",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .somatic = false,
+        .save = Ability::wisdom,
+        .damage = DamageType::psychic,
+        .dice = {1, 6, 0},
+        .rider = Rider::vicious_mockery},
+    // SRD 5.2.1 p. 165: a spell attack for 1d8 Radiant; the target cannot be
+    // Invisible until the end of the caster's next turn.
+    SpellDef{
+        .id = "starry_wisp",
+        .label = "Starry Wisp",
+        .level = 0,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .damage = DamageType::radiant,
+        .dice = {1, 8, 0},
+        .rider = Rider::starry_wisp},
+    // SRD 5.2.1 p. 124: a Wisdom save against 3d6 Psychic, half on a success;
+    // a failure spends the target's Reaction fleeing from the caster.
+    SpellDef{
+        .id = "dissonant_whispers",
+        .label = "Dissonant Whispers",
+        .level = 1,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .somatic = false,
+        .save = Ability::wisdom,
+        .half_on_success = true,
+        .damage = DamageType::psychic,
+        .dice = {3, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::dissonant_whispers},
+    // SRD 5.2.1 p. 129: creatures in a 20-foot cube that fail a Dexterity save
+    // are outlined: attackers who see them have Advantage, and they cannot be
+    // Invisible.
+    SpellDef{
+        .id = "faerie_fire",
+        .label = "Faerie Fire",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 60,
+        .somatic = false,
+        .save = Ability::dexterity,
+        .rider = Rider::faerie_fire,
+        .concentration = true,
+        .area = 20},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
     // locked door while exploring. Verbal only.
     SpellDef{

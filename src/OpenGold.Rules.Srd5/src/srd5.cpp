@@ -181,7 +181,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible ||
            kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced ||
            kind == detail::EffectKind::dragons_breath || kind == detail::EffectKind::extended ||
-           kind == detail::EffectKind::hex;
+           kind == detail::EffectKind::hex || kind == detail::EffectKind::outlined;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -392,6 +392,33 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Sorcerer", "shatter", 3},
     SpellAccessRow{"Sorcerer", "web", 3},
     SpellAccessRow{"Sorcerer", "command", 3},
+    SpellAccessRow{"Bard", "true_strike", 1},
+    SpellAccessRow{"Bard", "vicious_mockery", 1},
+    SpellAccessRow{"Bard", "starry_wisp", 1},
+    SpellAccessRow{"Bard", "bane", 1},
+    SpellAccessRow{"Bard", "charm_person", 1},
+    SpellAccessRow{"Bard", "color_spray", 1},
+    SpellAccessRow{"Bard", "command", 1},
+    SpellAccessRow{"Bard", "cure_wounds", 1},
+    SpellAccessRow{"Bard", "dissonant_whispers", 1},
+    SpellAccessRow{"Bard", "faerie_fire", 1},
+    SpellAccessRow{"Bard", "healing_word", 1},
+    SpellAccessRow{"Bard", "heroism", 1},
+    SpellAccessRow{"Bard", "hideous_laughter", 1},
+    SpellAccessRow{"Bard", "longstrider", 1},
+    SpellAccessRow{"Bard", "sleep", 1},
+    SpellAccessRow{"Bard", "thunderwave", 1},
+    SpellAccessRow{"Bard", "aid", 3},
+    SpellAccessRow{"Bard", "blindness", 3},
+    SpellAccessRow{"Bard", "enlarge_reduce", 3},
+    SpellAccessRow{"Bard", "hold_person", 3},
+    SpellAccessRow{"Bard", "invisibility", 3},
+    SpellAccessRow{"Bard", "knock", 3},
+    SpellAccessRow{"Bard", "lesser_restoration", 3},
+    SpellAccessRow{"Bard", "mirror_image", 3},
+    SpellAccessRow{"Bard", "see_invisibility", 3},
+    SpellAccessRow{"Bard", "shatter", 3},
+    SpellAccessRow{"Bard", "silence", 3},
     // Fiend Spells come only from the Fiend Patron.
     SpellAccessRow{"Warlock", "burning_hands", 3},
     SpellAccessRow{"Warlock", "command", 3},
@@ -840,7 +867,7 @@ character_definition(std::string_view bytes,
     throw std::runtime_error("Invalid character profile");
     if (level > 1 && klass != "Fighter" && klass != "Cleric" && klass != "Wizard" &&
             klass != "Rogue" && klass != "Paladin" && klass != "Ranger" && klass != "Barbarian" &&
-            klass != "Monk" && klass != "Sorcerer" && klass != "Warlock")
+            klass != "Monk" && klass != "Sorcerer" && klass != "Warlock" && klass != "Bard")
         throw std::runtime_error("Advancement is unsupported for this class");
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
@@ -898,7 +925,10 @@ character_definition(std::string_view bytes,
                      ((i == trained_saves[0] || i == trained_saves[1]) ? 2 : 0);
     d.alert = (features & 32) != 0;
     d.ac = 10 + dex;
-    d.initiative = dex + (d.alert ? int(2 + (level - 1) / 4) : 0);
+    // Jack of All Trades adds half the Proficiency Bonus to Initiative, as
+    // SRD-DECISIONS keeps it, unless Alert already adds the whole bonus.
+    d.initiative = dex + (d.alert ? int(2 + (level - 1) / 4)
+                          : klass == "Bard" && level >= 2 ? 1 : 0);
     d.speed = race == "Goliath" ? 35 : 30;
     d.level = level;
     d.melee_bonus = 2 + str;
@@ -924,12 +954,13 @@ character_definition(std::string_view bytes,
     d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
     // Pact Magic: one level-1 slot, then two; level-2 slots from level 3.
     d.slots = klass == "Warlock" ? (level <= 2 ? int(level) : 0)
-              : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer")
+              : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard")
               ? (level == 1 ? 2 : level == 2 ? 3 : 4)
               : (klass == "Paladin" || klass == "Ranger") ? (level <= 2 ? 2 : 3)
               : 0;
     d.slots2 = klass == "Warlock" && level >= 3 ? 2
-               : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer") && level >= 3
+               : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard") &&
+               level >= 3
                ? (level == 3 ? 2 : 3)
                : 0;
     d.casting = 2 + ability_modifier(scores[(klass == "Cleric" || klass == "Ranger") ? 4
@@ -1631,8 +1662,11 @@ class Session final : public CombatSession
     // An Invisible creature hides from all but those with See Invisibility.
     static bool unseen(const Actor &viewer, const Actor &target)
     {
+        // Faerie Fire and Starry Wisp keep a creature from being Invisible.
         return detail::has_effect(target.effects, detail::EffectKind::invisible) &&
-               !detail::has_effect(viewer.effects, detail::EffectKind::see_invisibility);
+               !detail::has_effect(viewer.effects, detail::EffectKind::see_invisibility) &&
+               !detail::has_effect(target.effects, detail::EffectKind::outlined) &&
+               !detail::has_effect(target.effects, detail::EffectKind::lit);
     }
 
     // Invisibility ends right after its creature casts a spell, once any
@@ -2772,7 +2806,9 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::addled, "Addled"},
                     std::pair{detail::EffectKind::innate_sorcery, "Innate Sorcery"},
                     std::pair{detail::EffectKind::metamagic, "Metamagic readied"},
-                    std::pair{detail::EffectKind::hex, "Hexed"}
+                    std::pair{detail::EffectKind::hex, "Hexed"},
+                    std::pair{detail::EffectKind::outlined, "Outlined (Faerie Fire)"},
+                    std::pair{detail::EffectKind::lit, "Lit (Starry Wisp)"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2953,6 +2989,32 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::gust_of_wind:
     case detail::Rider::flaming_sphere:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::vicious_mockery:
+        // Disadvantage on its next attack roll before the end of its next turn.
+        detail::apply_attack_mastery(target.effects, detail::EffectKind::sap, scope_, a.source.id,
+                                     a.source.name, next_save_ms(target.source.id));
+        log(target.source.name + " has Disadvantage on its next attack roll.",
+        {"{name} has Disadvantage on its next attack roll.", {{"name", target.source.name}}});
+        return;
+    case detail::Rider::dissonant_whispers:
+        // Its Reaction carries it as far from the caster as it can.
+        if (!target.reaction || detail::incapacitated(target.effects))
+            return;
+        target.reaction = false;
+        log(target.source.name + " flees from " + a.source.name + ".",
+        {"{name} flees from {caster}.", {{"name", target.source.name}, {"caster", a.source.name}}});
+        push_away(a, target, std::max(0, def(target).speed - detail::speed_penalty(target.effects)) / 5);
+        return;
+    case detail::Rider::starry_wisp:
+    {
+        const auto index = static_cast<std::size_t>(&a - actors_.data());
+        const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+        detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
+                               next_turn_ms(a) + slot, detail::EffectKind::lit);
+        return;
+    }
+    case detail::Rider::faerie_fire:
+        return; // An aimed area, resolved by cast_area().
     case detail::Rider::hex:
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::hex, 0);
@@ -3313,6 +3375,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
             }
         });
         damage(target, amount);
+        if (!saved && spell.rider != detail::Rider::none && !target.dead)
+            apply_rider(spell, verb, a, target, dc);
         return;
     }
     case detail::SpellPattern::save_condition:
@@ -4584,7 +4648,13 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
         }
         if (saving_throw_succeeds(other, spell.save, dc))
             continue;
-        if (sleep)
+        if (spell.rider == detail::Rider::faerie_fire)
+        {
+            detail::apply_spell_benefit(other.effects, scope_, caster.source.id, caster.source.name,
+                                        detail::EffectKind::outlined, 0);
+            log(other.source.name + " is outlined.", {"{name} is outlined.", {{"name", other.source.name}}});
+        }
+        else if (sleep)
         {
             detail::apply_repeating_condition(other.effects, detail::EffectKind::drowsy, scope_,
                                               caster.source.id, caster.source.name, dc,
@@ -4800,7 +4870,8 @@ void Session::cast_area()
         damage_area(a, spell, aimed.verb, cells, area_dc(a, spell));
         return;
     }
-    if (spell.rider == detail::Rider::sleep || spell.rider == detail::Rider::color_spray)
+    if (spell.rider == detail::Rider::sleep || spell.rider == detail::Rider::color_spray ||
+            spell.rider == detail::Rider::faerie_fire)
     {
         if (spell.concentration)
             begin_concentration(a, spell);
@@ -5376,6 +5447,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     if ((!spell && detail::has_effect(a.effects, detail::EffectKind::reckless) &&
             strength_attack(a, ranged)) ||
             detail::has_effect(target.effects, detail::EffectKind::reckless))
+        result.advantage = true;
+    // Faerie Fire: Advantage against an outlined creature the attacker sees.
+    if (detail::has_effect(target.effects, detail::EffectKind::outlined) && can_see(a, target))
         result.advantage = true;
     // Innate Sorcery: Advantage on spell attack rolls.
     if (spell && detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
@@ -8472,6 +8546,8 @@ class Module final : public RulesModule
             return {detail::mastery_options("fighter", 4, sheet.grants)};
         if (sheet.character_class == "Sorcerer" && sheet.level >= 2)
             return {detail::metamagic_options()};
+        if (sheet.character_class == "Bard" && sheet.level >= 3)
+            return {detail::lore_options(sheet.grants)};
         if (sheet.character_class == "Barbarian" && sheet.level >= 3)
         {
             std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
@@ -8526,7 +8602,8 @@ class Module final : public RulesModule
                  sheet.character_class != "Wizard" && sheet.character_class != "Rogue" &&
                  sheet.character_class != "Paladin" && sheet.character_class != "Ranger" &&
                  sheet.character_class != "Barbarian" && sheet.character_class != "Monk" &&
-                 sheet.character_class != "Sorcerer" && sheet.character_class != "Warlock"))
+                 sheet.character_class != "Sorcerer" && sheet.character_class != "Warlock" &&
+                 sheet.character_class != "Bard"))
             return {};
         AdvancementOptions result;
         result.level = sheet.level + 1;
@@ -8576,6 +8653,8 @@ class Module final : public RulesModule
             result.training = {detail::primal_knowledge_options(sheet.grants)};
         if (sheet.character_class == "Sorcerer" && result.level == 2)
             result.training = {detail::metamagic_options()};
+        if (sheet.character_class == "Bard" && result.level == 3)
+            result.training = {detail::lore_options(sheet.grants)};
         if (sheet.character_class == "Warlock" && result.level == 2)
             result.training = {detail::invocation_options(2, sheet.grants,
                                                           "class:warlock:invocations:2")};
@@ -8617,6 +8696,8 @@ class Module final : public RulesModule
         if (sheet.character_class == "Paladin")
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        if (sheet.character_class == "Bard")
+            result.description = "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points.";
         if (sheet.character_class == "Warlock")
             result.description = "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points.";
         if (sheet.character_class == "Sorcerer")
@@ -8811,7 +8892,8 @@ class Module final : public RulesModule
                 (sheet.character_class == "Fighter" || sheet.character_class == "Paladin") ? 0
                 : sheet.character_class == "Cleric"                                        ? 4
                 : (sheet.character_class == "Rogue" || sheet.character_class == "Ranger")  ? 1
-                : (sheet.character_class == "Sorcerer" || sheet.character_class == "Warlock") ? 5
+                : (sheet.character_class == "Sorcerer" || sheet.character_class == "Warlock" ||
+                   sheet.character_class == "Bard") ? 5
                 : 3;
             unsigned remaining = 2;
             for (unsigned n = 0; n < 6 && remaining; ++n)
@@ -8947,6 +9029,7 @@ class Module final : public RulesModule
                 : id == "class:barbarian:primal_knowledge" ? "skill:" + value
                 : id == "class:sorcerer:metamagic" ? "metamagic:" + value
                 : id == "class:warlock:invocations:2" ? "invocation:" + value
+                : id == "subclass:bard:lore" ? "skill:" + value
                 : "mastery:" + value,
                 id,
                 unsigned(next.level),
@@ -8954,6 +9037,14 @@ class Module final : public RulesModule
         }
         if (next.character_class == "Warlock" && next.level == 2)
             next.grants.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
+        if (next.character_class == "Bard" && next.level == 2)
+            next.grants.push_back({"feature:jack_of_all_trades", "class:bard", 2, {}});
+        // The College of Lore is the SRD's only Bard subclass.
+        if (next.character_class == "Bard" && next.level == 3)
+        {
+            next.grants.push_back({"subclass:lore", "class:bard", 3, {}});
+            next.grants.push_back({"feature:bonus_proficiencies", "subclass:bard:lore", 3, {}});
+        }
         // The Fiend Patron is the SRD's only Warlock subclass.
         if (next.character_class == "Warlock" && next.level == 3)
         {
@@ -9136,10 +9227,13 @@ class Module final : public RulesModule
         }
         if (next.character_class == "Paladin" || next.character_class == "Ranger" ||
                 next.character_class == "Barbarian" || next.character_class == "Monk" ||
-                next.character_class == "Sorcerer" || next.character_class == "Warlock")
+                next.character_class == "Sorcerer" || next.character_class == "Warlock" ||
+                next.character_class == "Bard")
         {
             const std::string note =
-                next.character_class == "Warlock"
+                next.character_class == "Bard"
+                ? "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points."
+                : next.character_class == "Warlock"
                 ? "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points."
                 : next.character_class == "Sorcerer"
                 ? "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
@@ -10337,7 +10431,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.122", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.123", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -134,7 +134,7 @@ void selection()
         if (klass.id != "fighter" && klass.id != "wizard" && klass.id != "cleric" &&
                 klass.id != "rogue" && klass.id != "paladin" && klass.id != "ranger" &&
                 klass.id != "barbarian" && klass.id != "monk" && klass.id != "sorcerer" &&
-                klass.id != "warlock")
+                klass.id != "warlock" && klass.id != "bard")
         {
             check(!p.can_advance(id),
                   "Unsupported later advancement does not invent Fighting Style entitlement");

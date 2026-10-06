@@ -116,7 +116,7 @@ class CreatorRules final : public CharacterRules
     {
         if (draft.character_class == "cleric" || draft.character_class == "paladin" ||
                 draft.character_class == "ranger" || draft.character_class == "sorcerer" ||
-                draft.character_class == "warlock")
+                draft.character_class == "warlock" || draft.character_class == "bard")
         {
             // These classes prepare from the class list; the selection never changes it.
             auto base = draft;
@@ -479,7 +479,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
         s.prepared_spells = {"magic_missile"};
     if (d.spells && (d.character_class == "cleric" || d.character_class == "paladin" ||
                      d.character_class == "ranger" || d.character_class == "sorcerer" ||
-                     d.character_class == "warlock"))
+                     d.character_class == "warlock" || d.character_class == "bard"))
         detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement, false);
     else if (d.spells)
     {
