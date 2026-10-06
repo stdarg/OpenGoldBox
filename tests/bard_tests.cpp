@@ -197,6 +197,56 @@ void advancement_checks()
           "A level-four Bard prepares seven spells");
 }
 
+unsigned inspiration_left(const CombatSession &c)
+{
+    for (const auto &pool : unit(c, 1).resources)
+        if (pool.id == "bardic_inspiration")
+            return pool.remaining;
+    throw std::runtime_error("No Bardic Inspiration pool");
+}
+
+void inspiration_checks()
+{
+    auto module = rules();
+    {
+        auto c = battle(*module, bard());
+        check(inspiration_left(*c) == 4 && submit(*c, "bardic_inspiration", 2) &&
+              logged(*c, "Bard inspires Ally.") && has_condition(*c, 2, "Inspired") &&
+              inspiration_left(*c) == 3 && unit(*c, 1).action,
+              "Bardic Inspiration is a Bonus Action; Charisma 18 gives four uses");
+    }
+    // The ally (AC 20 against the target's +4) misses often; the die is asked about.
+    bool asked = false;
+    for (std::uint64_t seed = 1; seed < 64 && !asked; ++seed)
+    {
+        auto c = battle(*module, bard(), seed);
+        check(submit(*c, "bardic_inspiration", 2), "Inspire the ally");
+        reach(*c, 2);
+        check(submit(*c, "melee", 98), "The ally attacks");
+        if (!c->snapshot().reaction_pending)
+            continue;
+        check(c->snapshot().actor == 2 && submit(*c, "inspire") &&
+              logged(*c, "Bardic Inspiration adds") && !has_condition(*c, 2, "Inspired"),
+              "A miss asks the inspired ally, who adds the die");
+        asked = true;
+    }
+    check(asked, "Some seed misses with the inspired ally");
+    // The enemy's hit on the ally asks the Lore Bard about Cutting Words.
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, bard(3), seed);
+        reach(*c, 98);
+        check(submit(*c, "melee", 2), "The enemy attacks the ally");
+        if (!c->snapshot().reaction_pending)
+            continue;
+        check(c->snapshot().actor == 1 && submit(*c, "cutting") &&
+              logged(*c, "Bard uses Cutting Words: -") && !unit(*c, 1).reaction,
+              "Cutting Words spends the Bard's Reaction and a use");
+        return;
+    }
+    throw std::runtime_error("No seed asks about Cutting Words");
+}
+
 } // namespace
 
 int main()
@@ -205,6 +255,7 @@ int main()
     {
         spell_checks();
         advancement_checks();
+        inspiration_checks();
         std::cout << "Bard tests passed\n";
     }
     catch (const std::exception &e)

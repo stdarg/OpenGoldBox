@@ -52,6 +52,8 @@ std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::st
         result.push_back({"feature:spellcasting", "class:" + std::string(klass), 1, {}});
     if (klass == "sorcerer")
         result.push_back({"feature:innate_sorcery", "class:sorcerer", 1, {}});
+    if (klass == "bard")
+        result.push_back({"feature:bardic_inspiration", "class:bard", 1, {}});
     if (klass == "warlock")
         result.push_back({"feature:pact_magic", "class:warlock", 1, {}});
     if (klass == "rogue")
@@ -161,6 +163,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     {
         required.push_back({"subclass:lore", "class:bard", 3, {}});
         required.push_back({"feature:bonus_proficiencies", "subclass:bard:lore", 3, {}});
+        required.push_back({"feature:cutting_words", "subclass:bard:lore", 3, {}});
     }
     if (klass == "warlock" && level >= 2)
         required.push_back({"feature:magical_cunning", "class:warlock", 2, {}});

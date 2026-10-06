@@ -146,7 +146,10 @@ enum class EffectKind : unsigned
     // attacker sees it, and it cannot be Invisible.
     outlined = 57,
     // Starry Wisp: it cannot be Invisible until the end of the caster's next turn.
-    lit = 58
+    lit = 58,
+    // Bardic Inspiration: `dc` is the die the creature may add to a failed
+    // attack roll or save.
+    inspired = 59
 };
 
 // The longest a spell benefit lasts, in milliseconds.

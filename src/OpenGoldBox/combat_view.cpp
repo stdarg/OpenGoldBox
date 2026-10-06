@@ -878,7 +878,8 @@ void CombatView::use_cunning_action()
         get_node<Button>("UseCunningAction")->release_focus();
         select_mode(verb);
     }
-    else if (verb == "lay_on_hands" || verb == "martial_arts" || verb.begins_with("flurry_"))
+    else if (verb == "lay_on_hands" || verb == "martial_arts" || verb.begins_with("flurry_") ||
+             verb == "bardic_inspiration")
     {
         // A touched ally is chosen on the battlefield, like a spell target.
         get_node<Button>("UseCunningAction")->release_focus();
@@ -1072,7 +1073,7 @@ void CombatView::immediate(String verb)
     // React answers whichever reaction is asked: an opportunity attack, Shield,
     // Deflect Attacks or its redirect.
     const auto legal = demo_->combat().legal_commands();
-    for (const char *reaction : {"shield", "deflect", "redirect", "rebuke"})
+    for (const char *reaction : {"shield", "deflect", "redirect", "rebuke", "inspire", "cutting"})
         if (wanted == "opportunity" && std::any_of(legal.begin(), legal.end(), [&](const auto & c)
     {
         return c.verb == reaction;
@@ -2029,7 +2030,8 @@ void CombatView::refresh()
     }
 })
     get_node<Button>(node)->set_disabled(!enabled(verb));
-    if (enabled("shield") || enabled("deflect") || enabled("redirect") || enabled("rebuke"))
+    if (enabled("shield") || enabled("deflect") || enabled("redirect") || enabled("rebuke") ||
+            enabled("inspire") || enabled("cutting"))
         get_node<Button>("React")->set_disabled(false);
     {
         const bool party_turn = loaded && s.outcome == Outcome::ongoing && player;
@@ -2069,6 +2071,10 @@ void CombatView::refresh()
         ? i18n::text("The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline.")
         : s.reaction_pending && enabled("rebuke")
         ? i18n::text("You are hurt. Cast Hellish Rebuke at the attacker, or decline.")
+        : s.reaction_pending && enabled("inspire")
+        ? i18n::text("The roll fails. Add your Bardic Inspiration die, or decline.")
+        : s.reaction_pending && enabled("cutting")
+        ? i18n::text("An enemy's attack hits. Use Cutting Words to subtract your Bardic Inspiration die, or decline.")
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
         : player
     ? i18n::format("Selected: {action}. Click a highlighted square.", {{"action", action}})

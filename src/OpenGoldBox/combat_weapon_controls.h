@@ -77,6 +77,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "lay_on_hands"      ? "Lay On Hands"
             : verb == "rage"              ? "Rage"
             : verb == "innate_sorcery"    ? "Innate Sorcery"
+            : verb == "bardic_inspiration" ? "Bardic Inspiration"
             : verb == "create_slot_1"     ? "Font of Magic: create a level-1 slot (2 Sorcery Points)"
             : verb == "create_slot_2"     ? "Font of Magic: create a level-2 slot (3 Sorcery Points)"
             : verb == "convert_slot_1"    ? "Font of Magic: a level-1 slot into 1 Sorcery Point"

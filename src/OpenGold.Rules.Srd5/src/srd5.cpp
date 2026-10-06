@@ -511,6 +511,10 @@ struct Definition
     int magical_cunning{}; // Warlock level 2: once per Long Rest, in Actor::arcane
     // Fiend Patron, Warlock level 3: Temporary Hit Points when an enemy drops.
     int dark_ones_blessing{};
+    // Bard: Bardic Inspiration uses (Charisma modifier, at least one), kept in
+    // Actor::arcane, which no Bard has; Cutting Words from level 3.
+    int bardic_inspiration{};
+    bool cutting_words{};
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -659,6 +663,8 @@ constexpr std::array resource_descriptors
         &Definition::sorcery_points, 0, true},
     ResourceDescriptor{"magical_cunning", "Magical Cunning", &Actor::arcane,
         &Definition::magical_cunning, 0, false},
+    ResourceDescriptor{"bardic_inspiration", "Bardic Inspiration", &Actor::arcane,
+        &Definition::bardic_inspiration, 0, true},
     ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
         &Definition::metabolism, 0, false}};
 
@@ -705,7 +711,7 @@ int surge_capacity(const Definition &d)
 // once per Long Rest.
 int arcane_capacity(const Definition &d)
 {
-    return d.arcane + d.metabolism + d.magical_cunning;
+    return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration;
 }
 
 // Channel Divinity and Rage share one store; no class has both, and each
@@ -913,6 +919,8 @@ character_definition(std::string_view bytes,
     d.sorcery_points = klass == "Sorcerer" && level >= 2 ? int(level) : 0;
     d.pact_magic = klass == "Warlock";
     d.magical_cunning = klass == "Warlock" && level >= 2 ? 1 : 0;
+    d.bardic_inspiration = klass == "Bard" ? std::max(1, ability_modifier(scores[5])) : 0;
+    d.cutting_words = klass == "Bard" && level >= 3;
     d.dark_ones_blessing =
         klass == "Warlock" && level >= 3 ? std::max(1, ability_modifier(scores[5]) + int(level)) : 0;
     d.deflect = d.open_hand = klass == "Monk" && level >= 3;
@@ -1497,7 +1505,9 @@ class Session final : public CombatSession
         hit,      // an attack roll hit: Shield or Deflect Attacks
         missile,  // targeted by Magic Missile: Shield
         redirect, // Deflect Attacks stopped all the damage: redirect it for 1 Focus
-        rebuke    // an attack damaged a Warlock: Hellish Rebuke
+        rebuke,      // an attack damaged a Warlock: Hellish Rebuke
+        inspiration, // an inspired creature failed an attack roll or save
+        cutting      // an enemy's attack roll hit: a Lore Bard's Cutting Words
     };
     struct ReactionQuestion
     {
@@ -1530,6 +1540,10 @@ class Session final : public CombatSession
     int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
                   bool ranged);
     [[nodiscard]] bool can_rebuke(const Actor &warlock, const Actor &attacker) const;
+    // Bardic Inspiration's die added to a failed roll, if the creature uses it.
+    int inspiration_roll(const Actor &creature);
+    // Cutting Words' die taken from an attack roll, if a Bard uses it.
+    int cutting_words(const Actor &attacker);
     void bless_fiends(const Actor &fallen);
     void rebuke(const Actor &attacker, Actor &warlock);
     void perform(const Command &command);
@@ -2676,6 +2690,8 @@ Snapshot Session::snapshot() const
             view.bonus_actions.push_back("martial_arts");
         if (def(a).innate_sorcery)
             view.bonus_actions.push_back("innate_sorcery");
+        if (def(a).bardic_inspiration)
+            view.bonus_actions.push_back("bardic_inspiration");
         if (def(a).sorcery_points)
             view.bonus_actions.insert(view.bonus_actions.end(),
         {"create_slot_1", "create_slot_2", "convert_slot_1", "convert_slot_2"});
@@ -2808,7 +2824,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::metamagic, "Metamagic readied"},
                     std::pair{detail::EffectKind::hex, "Hexed"},
                     std::pair{detail::EffectKind::outlined, "Outlined (Faerie Fire)"},
-                    std::pair{detail::EffectKind::lit, "Lit (Starry Wisp)"}
+                    std::pair{detail::EffectKind::lit, "Lit (Starry Wisp)"},
+                    std::pair{detail::EffectKind::inspired, "Inspired"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -3603,6 +3620,10 @@ std::vector<Command> Session::legal_commands() const
             add(who.source.id, "redirect", "Redirect the attack (1 Focus)");
         else if (question.asked == Asked::rebuke)
             add(who.source.id, "rebuke", "Cast Hellish Rebuke");
+        else if (question.asked == Asked::inspiration)
+            add(who.source.id, "inspire", "Use Bardic Inspiration");
+        else if (question.asked == Asked::cutting)
+            add(who.source.id, "cutting", "Use Cutting Words");
         else
         {
             if (can_shield(who) && !question.critical)
@@ -3900,6 +3921,13 @@ std::vector<Command> Session::legal_commands() const
                             std::string(detail::damage_name(detail::damage_type(type))) + points);
             }
     }
+    // Bardic Inspiration: a Bonus Action gives an ally within 60 feet the die.
+    if (a.bonus && d.bardic_inspiration && a.arcane > 0)
+        for (const auto &other : actors_)
+            if (other.source.side == a.source.side && other.source.id != id && !other.dead &&
+                    distance(a.source.cell, other.source.cell) <= 60 &&
+                    !detail::has_effect(other.effects, detail::EffectKind::inspired))
+                add(id, "bardic_inspiration", "Bardic Inspiration", other.source.id);
     // Innate Sorcery: a Bonus Action, twice per Long Rest.
     if (a.bonus && d.innate_sorcery && a.free_casts > 0 &&
             !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
@@ -5719,10 +5747,10 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
         extend_rage(actor(a.source.id));
-    const int bonus = (spell    ? d.casting
-        : ranged ? d.ranged_bonus
-        : d.melee_bonus) + blessing_die(a) +
-        (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
+    int bonus = (spell    ? d.casting
+                 : ranged ? d.ranged_bonus
+                 : d.melee_bonus) + blessing_die(a) +
+                (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
     // Seeking Spell: a missed spell attack rolls its d20 again, once.
     if (spell && casting_with(Metamagic::seeking) && natural != 20 &&
@@ -5733,7 +5761,18 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         log("Seeking Spell rerolls the missed attack.", {"Seeking Spell rerolls the missed attack.", {}});
     }
     const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
-    const bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
+    bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
+    // Bardic Inspiration may rescue a miss; Cutting Words may spoil a hit.
+    if (!hit)
+    {
+        bonus += inspiration_roll(a);
+        hit = attack_hits(natural, bonus, armor_class(target));
+    }
+    else if (!automatic)
+    {
+        bonus -= cutting_words(a);
+        hit = attack_hits(natural, bonus, armor_class(target));
+    }
     const auto damage_type = spell    ? spell_type
                              : ranged ? d.ranged_type
                              : sacred_damage_type(a, target);
@@ -6477,10 +6516,14 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::enlarged) ||
                                rage_of(target);
     }
-    const auto result = detail::saving_throw(
-                            ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
-                            modifiers, rng_);
+    auto result = detail::saving_throw(
+                      ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
+                      modifiers, rng_);
     log_save(target, result);
+    // Bardic Inspiration may turn the failure into a success.
+    if (!result.success)
+        if (const int die = inspiration_roll(target))
+            result.success = result.natural + result.bonus + die >= dc;
     return result.success;
 }
 
@@ -6720,7 +6763,8 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
     if (answer_of(target.source.id, asked))
         return;
     const bool askable =
-        asked == Asked::redirect || asked == Asked::rebuke ||
+        asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::inspiration ||
+        asked == Asked::cutting ||
         (can_shield(target) && !critical) ||
         (asked == Asked::hit && can_deflect(target, deflectable));
     if (askable)
@@ -6801,6 +6845,57 @@ void Session::bless_fiends(const Actor &fallen)
     }
 }
 
+int Session::inspiration_roll(const Actor &creature)
+{
+    auto &inspired = actor(creature.source.id);
+    const auto found = std::find_if(inspired.effects.active.begin(), inspired.effects.active.end(),
+                                    [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::inspired;
+    });
+    if (found == inspired.effects.active.end() || !conscious(inspired))
+        return 0;
+    ask_reaction(inspired, Asked::inspiration);
+    if (answer_of(inspired.source.id, Asked::inspiration)->verb != "inspire")
+        return 0;
+    const int sides = found->dc;
+    inspired.effects.active.erase(found);
+    const int die = roll(sides);
+    log("Bardic Inspiration adds " + std::to_string(die) + " to " + inspired.source.name + "'s roll.",
+    {
+        "Bardic Inspiration adds {amount} to {name}'s roll.",
+        {{"amount", std::to_string(die)}, {"name", inspired.source.name}}
+    });
+    return die;
+}
+
+int Session::cutting_words(const Actor &attacker)
+{
+    // A Lore Bard who sees the attacker within 60 feet may spend a Reaction and
+    // a Bardic Inspiration use to subtract the die from the attack roll.
+    for (auto &bard : actors_)
+    {
+        if (!def(bard).cutting_words || bard.source.side == attacker.source.side ||
+                !conscious(bard) || !bard.reaction || detail::incapacitated(bard.effects) ||
+                bard.arcane <= 0 || distance(bard.source.cell, attacker.source.cell) > 60 ||
+                !can_see(bard, attacker))
+            continue;
+        ask_reaction(bard, Asked::cutting);
+        if (answer_of(bard.source.id, Asked::cutting)->verb != "cutting")
+            continue;
+        bard.reaction = false;
+        --bard.arcane;
+        const int die = roll(6);
+        log(bard.source.name + " uses Cutting Words: -" + std::to_string(die) + ".",
+        {
+            "{name} uses Cutting Words: -{amount}.",
+            {{"name", bard.source.name}, {"amount", std::to_string(die)}}
+        });
+        return die;
+    }
+    return 0;
+}
+
 bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
 {
     return warlock.source.side != attacker.source.side && conscious(warlock) &&
@@ -6847,7 +6942,9 @@ void Session::perform(const Command &command)
     const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
         return can_shield(other) || def(other).deflect ||
-               detail::knows_spell(def(other).spells, "hellish_rebuke");
+               detail::knows_spell(def(other).spells, "hellish_rebuke") ||
+               def(other).cutting_words ||
+               detail::has_effect(other.effects, detail::EffectKind::inspired);
     });
     if (!askable)
     {
@@ -7147,6 +7244,16 @@ void Session::dispatch(const Command &command)
             else
                 detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
         }
+    }
+    else if (command.verb == "bardic_inspiration")
+    {
+        a.bonus = false;
+        --a.arcane;
+        auto &ally = actor(command.target);
+        detail::apply_spell_benefit(ally.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::inspired, 6);
+        log(a.source.name + " inspires " + ally.source.name + ".",
+        {"{name} inspires {target}.", {{"name", a.source.name}, {"target", ally.source.name}}});
     }
     else if (command.verb == "innate_sorcery")
     {
@@ -8395,7 +8502,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         input >> question.target >> asked >> question.deflectable >> question.critical >>
               command.actor >> command.target >> std::quoted(command.verb) >>
               command.destination.x >> command.destination.y >> command.item >> answers;
-        if (!input || !known_actor(question.target) || asked > unsigned(Asked::rebuke) ||
+        if (!input || !known_actor(question.target) || asked > unsigned(Asked::cutting) ||
                 !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
                 command.verb.empty() || answers > 3 * session->actors_.size())
             throw std::runtime_error("Invalid reaction prompt");
@@ -8405,9 +8512,10 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             ReactionAnswer answer;
             unsigned kind{};
             input >> answer.target >> kind >> std::quoted(answer.verb);
-            if (!input || !known_actor(answer.target) || kind > unsigned(Asked::rebuke) ||
+            if (!input || !known_actor(answer.target) || kind > unsigned(Asked::cutting) ||
                     (answer.verb != "shield" && answer.verb != "deflect" &&
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
+                     answer.verb != "inspire" && answer.verb != "cutting" &&
                      answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
             answer.asked = Asked(kind);
@@ -9044,6 +9152,7 @@ class Module final : public RulesModule
         {
             next.grants.push_back({"subclass:lore", "class:bard", 3, {}});
             next.grants.push_back({"feature:bonus_proficiencies", "subclass:bard:lore", 3, {}});
+            next.grants.push_back({"feature:cutting_words", "subclass:bard:lore", 3, {}});
         }
         // The Fiend Patron is the SRD's only Warlock subclass.
         if (next.character_class == "Warlock" && next.level == 3)
@@ -10431,7 +10540,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.123", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.124", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {
