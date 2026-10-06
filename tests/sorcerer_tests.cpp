@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -36,7 +37,8 @@ std::string read(const std::filesystem::path &p)
 std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
-                               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "creature armored 40 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 std::unique_ptr<RulesModule> module_rules()
@@ -44,8 +46,10 @@ std::unique_ptr<RulesModule> module_rules()
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
 
-// A Sorcerer with Dexterity 15 and Charisma 15, advanced to the given level.
-Character sorcerer(unsigned level = 1)
+// A Sorcerer with Dexterity 15 and Charisma 15, advanced to the given level,
+// taking the given Metamagic options at level two (the first two by default).
+Character sorcerer(unsigned level = 1, std::vector<std::string> metamagic = {},
+                   std::vector<std::string> prepared = {"magic_missile", "burning_hands"})
 {
     CharacterDraft d;
     d.race = "human";
@@ -59,12 +63,17 @@ Character sorcerer(unsigned level = 1)
         r = {{6, 5, 4, 1}, 3};
     d.training = {{"class:sorcerer", {"arcana", "insight"}}};
     d.cantrips = {"sorcerous_burst", "fire_bolt", "ray_of_frost", "shocking_grasp"};
-    d.spells = SpellChoices{{}, std::vector<std::string> {"magic_missile", "burning_hands"}, {}, {}};
+    d.spells = SpellChoices{{}, prepared, {}, {}};
     CampaignParty party(module_rules());
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "sorcerer-xp");
     for (unsigned n = 1; n < level; ++n)
-        party.advance(id, party.default_advancement(id));
+    {
+        auto choice = party.default_advancement(id);
+        if (n == 1 && !metamagic.empty())
+            choice.training["class:sorcerer:metamagic"] = metamagic;
+        party.advance(id, choice);
+    }
     return party.member(id).character;
 }
 
@@ -129,15 +138,18 @@ bool has_grant(const Character &hero, std::string_view id)
     });
 }
 
-// The Sorcerer (1) and an enemy (98) 15 feet away.
-std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero)
+// The Sorcerer (1), an enemy (98) 15 feet away and, optionally, an ally (2).
+std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
+                                      std::string enemy = "target",
+                                      std::optional<Cell> ally = std::nullopt)
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
-    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
-        {   {1, "campaign-character", "Sorcerer", 0, {1, 1}, profile},
-            {98, "target", "Enemy", 1, {4, 1}}
-        }},
-    5);
+    std::vector<Participant> participants{
+        {1, "campaign-character", "Sorcerer", 0, {1, 1}, profile},
+        {98, enemy, "Enemy", 1, {4, 1}}};
+    if (ally)
+        participants.push_back({2, "target", "Ally", 0, *ally});
+    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)}, participants}, 5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Sorcerer's turn");
     check(c->snapshot().actor == 1, "The Sorcerer acts");
@@ -213,6 +225,66 @@ void font_of_magic_checks()
     check(module->restore(saved)->save() == saved, "Sorcery Points survive a checkpoint");
 }
 
+void metamagic_checks()
+{
+    auto module = rules();
+    check(has_grant(sorcerer(2), "feature:metamagic") && has_grant(sorcerer(2), "metamagic:careful"),
+          "Level two brings two Metamagic options");
+    {
+        auto c = battle(*module, sorcerer(2, {"quickened", "seeking"}));
+        check(submit(*c, "metamagic_quickened") && pool(*c, "sorcery_points") == 2 &&
+              offered(*c, "metamagic_cancel"),
+          "Readying Quickened Spell costs nothing yet");
+        const auto saved = c->save();
+        check(module->restore(saved)->save() == saved, "A readied option survives a checkpoint");
+        check(submit(*c, "fire_bolt", 98) && logged(*c, "Sorcerer uses Quickened Spell.") &&
+              unit(*c, 1).action && !unit(*c, 1).bonus_action && pool(*c, "sorcery_points") == 0,
+              "Quickened Spell casts an Action spell as a Bonus Action for 2 Sorcery Points");
+    }
+    {
+        auto c = battle(*module, sorcerer(2, {"quickened", "seeking"}), "armored");
+        check(submit(*c, "metamagic_seeking") && submit(*c, "fire_bolt", 98) &&
+              logged(*c, "Seeking Spell rerolls the missed attack.") &&
+              pool(*c, "sorcery_points") == 1,
+              "Seeking Spell rerolls a missed spell attack for 1 Sorcery Point");
+        check(submit(*c, "end") && pool(*c, "sorcery_points") == 1, "End the turn");
+    }
+    {
+        auto c = battle(*module, sorcerer(2, {"distant", "transmuted"}));
+        const auto at_enemy = [&]
+        {
+            const auto commands = c->legal_commands();
+            return std::any_of(commands.begin(), commands.end(), [](const auto & command)
+            {
+                return command.verb == "shocking_grasp" && command.target == 98;
+            });
+        };
+        check(!at_enemy() && submit(*c, "metamagic_distant") && at_enemy() &&
+              submit(*c, "shocking_grasp", 98) && logged(*c, "Sorcerer uses Distant Spell."),
+              "Distant Spell turns Touch into 30 feet");
+    }
+    {
+        auto c = battle(*module, sorcerer(2, {"distant", "transmuted"}));
+        check(submit(*c, "metamagic_transmuted_cold") && submit(*c, "burning_hands") &&
+              submit(*c, "area_cast") && logged(*c, "Cold damage"),
+              "Transmuted Spell changes Burning Hands' Fire to Cold");
+    }
+    {
+        auto c = battle(*module, sorcerer(2, {"careful", "twinned"}), "target", Cell{2, 1});
+        check(submit(*c, "metamagic_careful") && submit(*c, "burning_hands") &&
+              submit(*c, "area_cast") && logged(*c, "Enemy Dexterity save") &&
+              !logged(*c, "Ally Dexterity save") && !logged(*c, "Ally takes"),
+              "Careful Spell spares the ally in the cone");
+    }
+    {
+        auto c = battle(*module, sorcerer(2, {"careful", "twinned"}, {"magic_missile", "charm_person"}),
+                        "target", Cell{2, 2});
+        check(submit(*c, "metamagic_twinned") && submit(*c, "charm_person", 98) &&
+              c->snapshot().spell_targeting.has_value(),
+              "Twinned Spell lets Charm Person choose a second creature");
+    }
+}
+
 } // namespace
 
 int main()
@@ -223,6 +295,7 @@ int main()
         innate_sorcery_checks();
         draconic_checks();
         font_of_magic_checks();
+        metamagic_checks();
         std::cout << "Sorcerer tests passed\n";
     }
     catch (const std::exception &e)

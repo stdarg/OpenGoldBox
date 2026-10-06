@@ -319,7 +319,8 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
 bool is_training_grant(const FeatureGrant &grant)
 {
     return is_mastery_grant(grant) || grant.id.starts_with("skill:") ||
-           grant.id.starts_with("expertise:") || grant.id.starts_with("order:");
+           grant.id.starts_with("expertise:") || grant.id.starts_with("order:") ||
+           grant.id.starts_with("metamagic:");
 }
 
 std::vector<FeatureGrant> without_training(std::span<const FeatureGrant> grants)
@@ -340,6 +341,26 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
                 skill.id == "medicine" || skill.id == "nature" || skill.id == "religion") &&
                 source(grants, "skill:" + std::string(skill.id)))
             group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+    return group;
+}
+
+// Metamagic: two options at Sorcerer level two (SRD 5.2.1 pp. 66-67).
+TrainingChoiceGroup metamagic_options()
+{
+    TrainingChoiceGroup group{"class:sorcerer:metamagic", "Metamagic", 2, {},
+                              TrainingChoiceControl::checkboxes};
+    group.acquired_level = 2;
+    group.options = {
+        {"careful", "Careful Spell", "1 Sorcery Point: allies in your save spell's area succeed and take no half damage."},
+        {"distant", "Distant Spell", "1 Sorcery Point: double a spell's range, or Touch becomes 30 feet."},
+        {"empowered", "Empowered Spell", "1 Sorcery Point: reroll your lowest damage dice, up to your Charisma modifier."},
+        {"extended", "Extended Spell", "1 Sorcery Point: double a Concentration spell's duration and gain Advantage to keep it."},
+        {"heightened", "Heightened Spell", "2 Sorcery Points: one target has Disadvantage on its save against the spell."},
+        {"quickened", "Quickened Spell", "2 Sorcery Points: cast an Action spell as a Bonus Action."},
+        {"seeking", "Seeking Spell", "1 Sorcery Point: reroll a missed spell attack roll."},
+        {"subtle", "Subtle Spell", "1 Sorcery Point: cast without Verbal or Somatic components."},
+        {"transmuted", "Transmuted Spell", "1 Sorcery Point: change Acid, Cold, Fire, Lightning, Poison or Thunder damage to another of them."},
+        {"twinned", "Twinned Spell", "1 Sorcery Point: a spell that can take more creatures from a higher slot takes one more."}};
     return group;
 }
 
@@ -440,6 +461,22 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                 selected.push_back(grant.id);
                 continue;
             }
+            if (grant.source_id == "class:sorcerer:metamagic")
+            {
+                require(klass == "sorcerer" && grant.level == 2 && grant.choices.empty());
+                const auto group = metamagic_options();
+                require(std::any_of(group.options.begin(), group.options.end(),
+                                    [&](const auto & option)
+                {
+                    return grant.id == "metamagic:" + option.id;
+                }));
+                auto &selected = choices[grant.source_id];
+                require(selected.size() < 2 &&
+                        std::find(selected.begin(), selected.end(), grant.id.substr(10)) ==
+                        selected.end());
+                selected.push_back(grant.id.substr(10));
+                continue;
+            }
             if (grant.source_id == "class:barbarian:primal_knowledge")
             {
                 require(klass == "barbarian" && grant.level == 3 && grant.choices.empty());
@@ -494,6 +531,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     auto starting = choices;
     starting.erase("class:wizard:scholar");
     starting.erase("class:barbarian:primal_knowledge");
+    starting.erase("class:sorcerer:metamagic");
     starting.erase(std::string(skilled));
     starting.erase(mastery_options(klass, 4).id);
     auto expected = training_grants(klass, background, starting);
@@ -535,6 +573,10 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
     require((picked.empty() && !has_skilled) || level >= 4);
     if (has_skilled)
         result.complete &= picked.size() == 3;
+    const auto &metamagic = selected(choices, "class:sorcerer:metamagic");
+    require(metamagic.empty() || level >= 2);
+    if (klass == "sorcerer" && level >= 2)
+        result.complete &= metamagic.size() == 2;
     const auto &primal = selected(choices, "class:barbarian:primal_knowledge");
     require(primal.empty() || level >= 3);
     if (klass == "barbarian" && level >= 3)

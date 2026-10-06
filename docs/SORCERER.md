@@ -23,7 +23,7 @@ spellcasting ability; the earlier cantrip work is in
   more per later level, and makes unarmored AC 10 + Dexterity + Charisma;
   Chromatic Orb, Command and Dragon's Breath are always prepared (Alter Self is
   removed by DM-3).
-- Level 2's Font of Magic is below; Metamagic arrives next.
+- Level 2's Font of Magic and Metamagic are below.
 - Verification: `opengold_sorcerer_tests` (creation's prepared spells,
   Sorcerous Burst per type, no Long Rest preparation, Innate Sorcery's uses and
   Advantage, the Draconic grants, Hit Points and AC, always-prepared spells,
@@ -41,3 +41,38 @@ spellcasting ability; the earlier cantrip work is in
   the usual count and vanish on a Long Rest.
 - Verification: `opengold_sorcerer_tests` (two points at level 2, creating a
   slot, converting one back, a checkpoint).
+
+## Metamagic (level 2)
+
+- At level 2 the Sorcerer picks two options (the level-up's Metamagic list).
+  In combat, each known option appears in the Bonus Action list as
+  **Metamagic: <option> (<cost>)**; choosing it readies the option, costing
+  nothing and taking no action, and **Metamagic: cancel** drops it. The next
+  spell this turn that the option can change spends the Sorcery Points and
+  uses it; a readied option lapses when the turn ends. This follows the
+  common CRPG toggle rather than asking during each cast.
+- **Careful** (1): allies in the area of a save spell, up to the Charisma
+  modifier, succeed and take no half damage (chosen automatically: the allies).
+- **Distant** (1): double range, or Touch becomes 30 feet (offers and aiming).
+- **Empowered** (1): rerolls the lowest damage dice that are below average, up
+  to the Charisma modifier, for spell attacks and save-for-damage spells.
+- **Extended** (1): a Concentration spell lasts twice as long, with Advantage
+  on the saves to keep it.
+- **Heightened** (2): the spell's target, or the first enemy in its area, has
+  Disadvantage on its save against it (repeated saves later are not
+  affected yet).
+- **Quickened** (2): Action spells are offered as Bonus Actions.
+- **Seeking** (1): a missed spell attack rolls its d20 again, once.
+- **Subtle** (1): no Verbal or Somatic components (casting in Silence or
+  with full hands).
+- **Transmuted** (1): readied with a type (Acid, Cold, Fire, Lightning, Poison
+  or Thunder); a spell dealing one of those deals the chosen one instead.
+- **Twinned** (1): a spell that takes one more creature from a higher slot
+  (Charm Person, for one) takes one more.
+- Adaptations: Empowered's rerolls and Careful's allies are chosen for the
+  player; replacing an option on gaining a level is not offered yet.
+- The default level-up now fills every training choice it offers.
+- Verification: `opengold_sorcerer_tests` (two options at level 2;
+  readying and a checkpoint; Quickened's Bonus Action and cost; Seeking's
+  reroll; Distant's Touch at 30 feet; Transmuted's Cold; Careful sparing an
+  ally; Twinned's second creature).

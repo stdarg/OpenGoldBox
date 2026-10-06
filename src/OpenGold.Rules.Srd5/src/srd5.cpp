@@ -82,6 +82,77 @@ bool trained(std::string_view klass, std::span<const FeatureGrant> grants, std::
 }
 } // namespace
 
+// Metamagic options, in the order of metamagic_options().
+enum class Metamagic : int
+{
+    careful,
+    distant,
+    empowered,
+    extended,
+    heightened,
+    quickened,
+    seeking,
+    subtle,
+    transmuted,
+    twinned
+};
+
+constexpr std::array<std::string_view, 10> metamagic_ids{"careful", "distant", "empowered",
+    "extended", "heightened", "quickened", "seeking", "subtle", "transmuted", "twinned"};
+constexpr std::array<std::string_view, 10> metamagic_labels{"Careful Spell", "Distant Spell",
+    "Empowered Spell", "Extended Spell", "Heightened Spell", "Quickened Spell", "Seeking Spell",
+    "Subtle Spell", "Transmuted Spell", "Twinned Spell"};
+// Transmuted Spell changes one of these damage types into another.
+constexpr std::array<std::string_view, 6> transmuted_types{"acid", "cold", "fire", "lightning",
+    "poison", "thunder"};
+
+int metamagic_cost(Metamagic option)
+{
+    return option == Metamagic::heightened || option == Metamagic::quickened ? 2 : 1;
+}
+
+bool transmutable(detail::DamageType type)
+{
+    return std::any_of(transmuted_types.begin(), transmuted_types.end(), [&](auto id)
+    {
+        return detail::damage_type(id) == type;
+    });
+}
+
+// Whether a readied Metamagic option can change this spell.
+bool metamagic_applies(Metamagic option, const detail::SpellDef &spell)
+{
+    const bool saves = spell.pattern == detail::SpellPattern::save_damage ||
+                       spell.pattern == detail::SpellPattern::save_condition;
+    const bool attacks = spell.pattern == detail::SpellPattern::spell_attack ||
+                         spell.pattern == detail::SpellPattern::repeat_attack;
+    switch (option)
+    {
+    case Metamagic::careful:
+        return saves && spell.target == detail::SpellTarget::area;
+    case Metamagic::distant:
+        return spell.target != detail::SpellTarget::self;
+    case Metamagic::empowered:
+        return spell.dice.count && (attacks || spell.pattern == detail::SpellPattern::save_damage);
+    case Metamagic::extended:
+        return spell.concentration;
+    case Metamagic::heightened:
+        return saves;
+    case Metamagic::quickened:
+        return !spell.bonus_action;
+    case Metamagic::seeking:
+        return attacks;
+    case Metamagic::subtle:
+        return true;
+    case Metamagic::transmuted:
+        return (attacks || spell.pattern == detail::SpellPattern::save_damage) &&
+               transmutable(spell.damage);
+    case Metamagic::twinned:
+        return spell.upcast.extra_instances > 0;
+    }
+    return false;
+}
+
 // The lasting benefit a buff spell's rider applies.
 detail::EffectKind rider_effect(detail::Rider rider)
 {
@@ -109,7 +180,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled ||
            kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible ||
            kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced ||
-           kind == detail::EffectKind::dragons_breath;
+           kind == detail::EffectKind::dragons_breath || kind == detail::EffectKind::extended;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -385,6 +456,7 @@ struct Definition
     int focus{}, metabolism{};
     int innate_sorcery{}; // Sorcerer: Innate Sorcery uses, in Actor::free_casts
     int sorcery_points{}; // Sorcerer level 2: Font of Magic, in Actor::lay_on_hands
+    std::vector<std::string> metamagic; // the Sorcerer's Metamagic options
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -952,6 +1024,8 @@ character_definition(std::string_view bytes,
     {
         if (detail::is_mastery_grant(grant))
             d.masteries.push_back(grant.id.substr(8));
+        if (grant.id.starts_with("metamagic:"))
+            d.metamagic.push_back(grant.id.substr(10));
         d.hunters_lore |= grant.id == "feature:hunters_lore";
         d.colossus_slayer |= grant.id == "prey:colossus_slayer";
         d.horde_breaker |= grant.id == "prey:horde_breaker";
@@ -1412,6 +1486,7 @@ class Session final : public CombatSession
     Actor unarmed_actor(const Actor &a) const;
     void use_focus_movement(Actor &a, std::string_view verb);
     void use_font_of_magic(Actor &a, std::string_view verb);
+    void ready_metamagic(Actor &a, std::string_view choice);
     void open_hand(const Actor &monk, Actor &target, std::string_view verb);
     bool weapon_reaction(const Actor &, const Definition &) const;
     bool has_weapon_reaction(const Actor &, Cell, Cell) const;
@@ -1648,6 +1723,32 @@ class Session final : public CombatSession
     }
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
+    // A readied Metamagic option and, for Transmuted Spell, its new type.
+    struct ReadyMetamagic
+    {
+        Metamagic option{};
+        std::optional<detail::DamageType> type;
+    };
+    [[nodiscard]] static std::optional<ReadyMetamagic> readied_metamagic(const Actor &a);
+    // The readied option, if it can change this spell and is affordable.
+    [[nodiscard]] static bool readies(const Actor &a, Metamagic option,
+                                      const detail::SpellDef &spell);
+    // Spends the readied option on the spell being cast, if it applies.
+    void take_metamagic(Actor &caster, const detail::SpellDef &spell);
+    [[nodiscard]] bool casting_with(Metamagic option) const
+    {
+        return casting_metamagic_ && casting_metamagic_->option == option;
+    }
+    [[nodiscard]] int spell_range(const Actor &caster, const detail::SpellDef &spell) const;
+    [[nodiscard]] detail::DamageType cast_damage_type(detail::DamageType type) const;
+    int spell_dice(const Actor &caster, Dice dice, bool critical = false);
+    // Careful Spell: up to the Charisma modifier (at least one) of the caster's
+    // allies in the area, who then succeed on their saves.
+    [[nodiscard]] std::vector<EntityId> careful_allies(const Actor &caster,
+            const std::vector<Cell> &cells) const;
+    // Metamagic spent on the spell now resolving, and Heightened Spell's target.
+    std::optional<ReadyMetamagic> casting_metamagic_;
+    EntityId heightened_target_{};
     // 8 + the caster's spellcasting modifier and Proficiency Bonus, +1 during
     // Innate Sorcery.
     [[nodiscard]] int spell_dc(const Actor &caster) const
@@ -1830,6 +1931,35 @@ void Session::open_hand(const Actor &monk, Actor &target, std::string_view verb)
         log(target.source.name + " is knocked Prone.",
         {"{name} is knocked Prone.", {{"name", target.source.name}}});
     }
+}
+
+void Session::ready_metamagic(Actor &a, std::string_view choice)
+{
+    std::erase_if(a.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::metamagic;
+    });
+    if (choice == "cancel")
+        return;
+    int value = 0;
+    std::string label;
+    if (choice.starts_with("transmuted_"))
+    {
+        const auto type = choice.substr(11);
+        value = 10 + int(std::find(transmuted_types.begin(), transmuted_types.end(), type) -
+                         transmuted_types.begin());
+        label = "Transmuted Spell";
+    }
+    else
+    {
+        value = int(std::find(metamagic_ids.begin(), metamagic_ids.end(), choice) -
+                    metamagic_ids.begin());
+        label = metamagic_labels[std::size_t(value)];
+    }
+    detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+                                detail::EffectKind::metamagic, value);
+    log(a.source.name + " readies " + label + ".",
+    {"{name} readies {feature}.", {{"name", a.source.name}, {"feature", label, true}}});
 }
 
 void Session::use_font_of_magic(Actor &a, std::string_view verb)
@@ -2444,6 +2574,14 @@ Snapshot Session::snapshot() const
         if (def(a).sorcery_points)
             view.bonus_actions.insert(view.bonus_actions.end(),
         {"create_slot_1", "create_slot_2", "convert_slot_1", "convert_slot_2"});
+        for (const auto &known : def(a).metamagic)
+            if (known == "transmuted")
+                for (const auto type : transmuted_types)
+                    view.bonus_actions.push_back("metamagic_transmuted_" + std::string(type));
+            else
+                view.bonus_actions.push_back("metamagic_" + known);
+        if (!def(a).metamagic.empty())
+            view.bonus_actions.push_back("metamagic_cancel");
         if (def(a).focus)
             view.bonus_actions.insert(view.bonus_actions.end(),
         {
@@ -2561,7 +2699,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::raging, "Raging"},
                     std::pair{detail::EffectKind::reckless, "Reckless"},
                     std::pair{detail::EffectKind::addled, "Addled"},
-                    std::pair{detail::EffectKind::innate_sorcery, "Innate Sorcery"}
+                    std::pair{detail::EffectKind::innate_sorcery, "Innate Sorcery"},
+                    std::pair{detail::EffectKind::metamagic, "Metamagic readied"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2928,6 +3067,9 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     const bool upcast = verb.ends_with("_2");
     end_sanctuary(a);
     const InvisibilityEnds ends{*this, a};
+    take_metamagic(a, spell);
+    if (casting_with(Metamagic::heightened))
+        heightened_target_ = target_id;
     // A level-two spell always draws a level-two slot; a level-one spell draws
     // one only in its upcast form.
     if (spell.level)
@@ -2986,8 +3128,9 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
             zones_.push_back({a.source.id, ZoneKind::spiritual_weapon,
                               {spectral_cell(target, a.source.cell)}});
         }
-        const auto type = detail::chromatic_type(verb)
-                          .value_or(detail::burst_type(verb).value_or(spell.damage));
+        const auto type = cast_damage_type(
+                              detail::chromatic_type(verb)
+                              .value_or(detail::burst_type(verb).value_or(spell.damage)));
         // Sorcerous Burst: each 8 adds a d8, at most the spellcasting modifier.
         const int bursts = spell.id == "sorcerous_burst" ? std::max(1, d.casting - 2) : 0;
         if (attack(a, target, !spell.melee, true, rolled, type, bursts))
@@ -3014,7 +3157,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     case detail::SpellPattern::repeat_attack:
         // Re-read the target each pass: it may drop before the later rays.
         for (unsigned ray = 0; ray < instances && actor(target_id).hp > 0; ++ray)
-            attack(a, actor(target_id), !spell.melee, true, rolled, spell.damage);
+            attack(a, actor(target_id), !spell.melee, true, rolled, cast_damage_type(spell.damage));
         return;
     case detail::SpellPattern::auto_damage:
     {
@@ -3071,10 +3214,11 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         if (saved && !spell.half_on_success && !(d.evoker && !spell.level))
             return;
         // Halving comes before resistance, which resolved_damage applies.
-        const int rolled_damage = dice(rolled);
-        const auto type = std::string(detail::damage_name(spell.damage));
+        const int rolled_damage = spell_dice(a, rolled);
+        const auto damage_type = cast_damage_type(spell.damage);
+        const auto type = std::string(detail::damage_name(damage_type));
         const int amount =
-            resolved_damage(target, spell.damage, saved ? rolled_damage / 2 : rolled_damage);
+            resolved_damage(target, damage_type, saved ? rolled_damage / 2 : rolled_damage);
         log(target.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
         {
             "{name} takes {damage} {type} damage.",
@@ -3125,8 +3269,11 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 spell.pattern == detail::SpellPattern::camp ||
                 spell.pattern == detail::SpellPattern::exploration ||
                 spell.pattern == detail::SpellPattern::weapon_strike ||
-                spell.pattern == detail::SpellPattern::reaction || spell.target != scope ||
-                spell.bonus_action != bonus_pass)
+                spell.pattern == detail::SpellPattern::reaction || spell.target != scope)
+            continue;
+        // Quickened Spell offers an Action spell in the Bonus Action pass.
+        const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
+        if (as_bonus != bonus_pass)
             continue;
         if (!detail::knows_spell(d.spells, spell.id))
             continue;
@@ -3157,7 +3304,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 continue;
             break;
         }
-        if (feet > spell.range)
+        if (feet > spell_range(a, spell))
             continue;
         if (spell.requires_sight && !can_see(a, other))
             continue;
@@ -3189,11 +3336,14 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 (spell.rider == detail::Rider::magic_weapon &&
                  detail::has_effect(other.effects, detail::EffectKind::magic_weapon)))
             continue;
+        // Subtle Spell needs neither Verbal nor Somatic components.
         const auto *components = detail::spell_components(spell.id);
-        if (!components || (components->somatic && !somatic_hand(d)) ||
-                (components->verbal && silenced(a.source.cell)))
+        if (!components ||
+                (!readies(a, Metamagic::subtle, spell) &&
+                 ((components->somatic && !somatic_hand(d)) ||
+                  (components->verbal && silenced(a.source.cell)))))
             continue;
-        if (spell.bonus_action ? !a.bonus : !a.actions.available(true))
+        if (as_bonus ? !a.bonus : !a.actions.available(true))
             continue;
         const bool aimed = spell.target == detail::SpellTarget::area;
         const auto offer = [&](std::string verb, std::string label)
@@ -3324,7 +3474,7 @@ std::vector<Command> Session::legal_commands() const
                                  spell.rider == detail::Rider::flaming_sphere;
         for (int y = 0; y < board_.height; ++y)
             for (int x = 0; x < board_.width; ++x)
-                if (distance(caster.source.cell, Cell{x, y}) <= spell.range &&
+                if (distance(caster.source.cell, Cell{x, y}) <= spell_range(caster, spell) &&
                         (!open_square || teleport_open(caster, Cell{x, y})))
                     add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
         if (!open_square || teleport_open(caster, area_->center))
@@ -3571,6 +3721,33 @@ std::vector<Command> Session::legal_commands() const
             add(id, "convert_slot_1", "Font of Magic: a level-1 slot into 1 Sorcery Point");
         if (a.slots2 > 0 && a.lay_on_hands < d.sorcery_points)
             add(id, "convert_slot_2", "Font of Magic: a level-2 slot into 2 Sorcery Points");
+    }
+    // Metamagic: ready an affordable option for the next spell this turn, no
+    // action; the Sorcery Points are spent when a spell it changes is cast.
+    if (!d.metamagic.empty())
+    {
+        if (readied_metamagic(a))
+            add(id, "metamagic_cancel", "Metamagic: cancel");
+        else
+            for (const auto &known : d.metamagic)
+            {
+                const auto index = std::size_t(std::find(metamagic_ids.begin(), metamagic_ids.end(),
+                                               known) - metamagic_ids.begin());
+                const auto option = Metamagic(index);
+                const int cost = metamagic_cost(option);
+                if (a.lay_on_hands < cost)
+                    continue;
+                const std::string points = " (" + std::to_string(cost) +
+                                           (cost == 1 ? " Sorcery Point)" : " Sorcery Points)");
+                const std::string label(metamagic_labels[index]);
+                if (option != Metamagic::transmuted)
+                    add(id, "metamagic_" + known, "Metamagic: " + label + points);
+                else
+                    for (const auto type : transmuted_types)
+                        add(id, "metamagic_transmuted_" + std::string(type),
+                            "Metamagic: " + label + " to " +
+                            std::string(detail::damage_name(detail::damage_type(type))) + points);
+            }
     }
     // Innate Sorcery: a Bonus Action, twice per Long Rest.
     if (a.bonus && d.innate_sorcery && a.free_casts > 0 &&
@@ -3946,11 +4123,12 @@ void Session::damage(Actor &target, int amount, bool critical)
     if (target.concentration.active())
     {
         const bool rolls = target.hp > 0 && !target.dead;
+        auto modifiers = detail::saving_modifiers(detail::Ability::constitution,
+                         def(target).str_dex_disadvantage, target.dodge);
+        modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::extended);
         const auto result = target.concentration.damage(
                                 amount, def(target).saves[2] + (rolls ? blessing_die(target) : 0),
-                                detail::saving_modifiers(detail::Ability::constitution,
-                                        def(target).str_dex_disadvantage, target.dodge),
-                                target.hp == 0 || target.dead, rng_);
+                                modifiers, target.hp == 0 || target.dead, rng_);
         if (result.save)
             log_save(target, *result.save);
         if (result.ended)
@@ -4244,14 +4422,17 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         {"{name} is spared by Sculpt Spells.", {{"name", actor(id).source.name}}});
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(verb.ends_with("_2") ? spell.upcast.extra_dice : 0u);
-    const int total = dice(rolled);
-    const auto damage_type = detail::dragon_type(verb).value_or(spell.damage);
+    const int total = spell_dice(caster, rolled);
+    const auto damage_type = cast_damage_type(detail::dragon_type(verb).value_or(spell.damage));
     const auto type = std::string(detail::damage_name(damage_type));
+    // Careful Spell: the chosen allies succeed and so take no half damage.
+    const auto careful = careful_allies(caster, cells);
     for (auto &other : actors_)
     {
         if (other.dead || other.source.id == caster.source.id ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
-                std::find(spared.begin(), spared.end(), other.source.id) != spared.end())
+                std::find(spared.begin(), spared.end(), other.source.id) != spared.end() ||
+                std::find(careful.begin(), careful.end(), other.source.id) != careful.end())
             continue;
         const bool saved = saving_throw_succeeds(other, spell.save, dc);
         // Potent Cantrip: an Evoker's saved-against cantrip still deals half.
@@ -4279,10 +4460,12 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     const int dc = spell_dc(caster);
     const auto index = static_cast<std::size_t>(&caster - actors_.data());
     const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+    const auto careful = careful_allies(caster, cells);
     for (auto &other : actors_)
     {
         if (other.dead || other.hp == 0 || other.source.id == caster.source.id ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+                std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
                 (sleep && other.source.side == caster.source.side) || !detail::can_apply(other.effects))
             continue;
         if (sleep && (def(other).sleepless || def(other).creature_type == "undead" ||
@@ -4447,7 +4630,10 @@ void Session::cast_area()
     end_sanctuary(a);
     const InvisibilityEnds ends{*this, a};
     const auto &spell = *detail::find_spell(aimed.verb);
-    if (spell.bonus_action)
+    // Quickened Spell casts an Action spell as a Bonus Action.
+    const bool quickened = !spell.bonus_action && readies(a, Metamagic::quickened, spell);
+    take_metamagic(a, spell);
+    if (spell.bonus_action || quickened)
         a.bonus = false;
     else
     {
@@ -4468,6 +4654,13 @@ void Session::cast_area()
     else
         log(a.source.name + " casts " + std::string(spell.label) + ".",
         {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
+    // Heightened Spell takes the first enemy in the area.
+    if (casting_with(Metamagic::heightened))
+        for (const auto cell : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
+            for (const auto &other : actors_)
+                if (!heightened_target_ && !other.dead && other.source.cell == cell &&
+                        other.source.side != a.source.side)
+                    heightened_target_ = other.source.id;
     if (spell.rider == detail::Rider::flaming_sphere)
     {
         begin_concentration(a, spell);
@@ -4761,7 +4954,11 @@ int Session::blessing_die(const Actor &a)
 unsigned Session::selection_maximum(const PendingSelection &selection) const
 {
     const auto &spell = *detail::find_spell(selection.verb);
-    return spell.instances + (selection.verb.ends_with("_2") ? spell.upcast.extra_instances : 0u);
+    // Twinned Spell raises the spell's effective level by one.
+    const bool twinned = readies(actor(selection.caster), Metamagic::twinned, spell);
+    return spell.instances +
+           (selection.verb.ends_with("_2") || twinned ? spell.upcast.extra_instances : 0u) +
+           (selection.verb.ends_with("_2") && twinned ? spell.upcast.extra_instances : 0u);
 }
 
 void Session::choose_target(const Command &command)
@@ -4794,8 +4991,17 @@ void Session::cast_on_selection()
     end_sanctuary(a);
     const InvisibilityEnds ends{*this, a};
     const auto &spell = *detail::find_spell(selection.verb);
-    a.nick_origin = 0;
-    (void)a.actions.spend(true);
+    const bool quickened = readies(a, Metamagic::quickened, spell);
+    take_metamagic(a, spell);
+    if (casting_with(Metamagic::heightened))
+        heightened_target_ = selection.chosen.front();
+    if (quickened)
+        a.bonus = false;
+    else
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+    }
     if (selection.verb.ends_with("_2") || spell.level >= 2)
         --a.slots2;
     else
@@ -4941,9 +5147,16 @@ bool Session::sanctuary_stops(Actor &attacker, const Actor &target)
 void Session::begin_concentration(Actor &caster, const detail::SpellDef &spell)
 {
     // A new Concentration spell ends the old one first, removing its effects.
+    // Extended Spell doubles it and gives Advantage on the saves to keep it.
     end_concentration(caster);
+    const bool extended = casting_with(Metamagic::extended);
     caster.concentration.begin(
-    {{scope_, 1, caster.source.id}, detail::benefit_duration_ms(rider_effect(spell.rider))});
+    {   {scope_, 1, caster.source.id},
+        detail::benefit_duration_ms(rider_effect(spell.rider)) * (extended ? 2 : 1)
+    });
+    if (extended)
+        detail::apply_spell_benefit(caster.effects, scope_, caster.source.id, caster.source.name,
+                                    detail::EffectKind::extended, 0);
 }
 
 void Session::end_concentration(Actor &caster)
@@ -5320,7 +5533,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         return e.kind == detail::EffectKind::guiding_bolt;
     });
     const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
-    const int natural = detail::d20(modifiers, rng_);
+    int natural = detail::d20(modifiers, rng_);
     end_invisibility(a.source.id);
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
@@ -5330,6 +5543,14 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         : d.melee_bonus) + blessing_die(a) +
         (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
+    // Seeking Spell: a missed spell attack rolls its d20 again, once.
+    if (spell && casting_with(Metamagic::seeking) && natural != 20 &&
+            !attack_hits(natural, bonus, armor_class(target)))
+    {
+        casting_metamagic_.reset();
+        natural = detail::d20(modifiers, rng_);
+        log("Seeking Spell rerolls the missed attack.", {"Seeking Spell rerolls the missed attack.", {}});
+    }
     const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
     const bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
     const auto damage_type = spell    ? spell_type
@@ -5353,6 +5574,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
                ? detail::roll_damage_component(rng_, damage_dice,
                                                critical_hit(a, target, natural),
                                                weapon_die_rule(a, ranged))
+               : spell ? this->spell_dice(a, damage_dice, critical_hit(a, target, natural, spell))
                : dice(damage_dice, critical_hit(a, target, natural, spell));
     };
     int weapon_damage = hit ? (bursts ? burst_damage(spell_dice, critical_hit(a, target, natural,
@@ -5504,6 +5726,92 @@ void Session::strike_true(Actor &a, Actor &target, bool radiant)
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", "True Strike", true}}});
     attack(striker, target, false);
     a.aim_ready = striker.aim_ready;
+}
+
+std::optional<Session::ReadyMetamagic> Session::readied_metamagic(const Actor &a)
+{
+    for (const auto &e : a.effects.active)
+        if (e.kind == detail::EffectKind::metamagic)
+        {
+            if (e.dc < 10)
+                return ReadyMetamagic{Metamagic(e.dc), std::nullopt};
+            return ReadyMetamagic{Metamagic::transmuted,
+                                  detail::damage_type(transmuted_types.at(std::size_t(e.dc - 10)))};
+        }
+    return std::nullopt;
+}
+
+bool Session::readies(const Actor &a, Metamagic option, const detail::SpellDef &spell)
+{
+    const auto ready = readied_metamagic(a);
+    return ready && ready->option == option && metamagic_applies(option, spell) &&
+           a.lay_on_hands >= metamagic_cost(option);
+}
+
+void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
+{
+    casting_metamagic_.reset();
+    heightened_target_ = 0;
+    const auto ready = readied_metamagic(caster);
+    if (!ready || !readies(caster, ready->option, spell))
+        return;
+    caster.lay_on_hands -= metamagic_cost(ready->option);
+    std::erase_if(caster.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::metamagic;
+    });
+    casting_metamagic_ = ready;
+    const std::string label(metamagic_labels[std::size_t(ready->option)]);
+    log(caster.source.name + " uses " + label + ".",
+    {"{name} uses {feature}.", {{"name", caster.source.name}, {"feature", label, true}}});
+}
+
+int Session::spell_range(const Actor &caster, const detail::SpellDef &spell) const
+{
+    // Distant Spell: double the range, or 30 feet for Touch.
+    if (!readies(caster, Metamagic::distant, spell))
+        return spell.range;
+    return spell.range <= 5 ? 30 : 2 * spell.range;
+}
+
+detail::DamageType Session::cast_damage_type(detail::DamageType type) const
+{
+    if (casting_with(Metamagic::transmuted) && transmutable(type))
+        return *casting_metamagic_->type;
+    return type;
+}
+
+int Session::spell_dice(const Actor &caster, Dice dice, bool critical)
+{
+    // Empowered Spell rerolls the lowest dice below their average, up to the
+    // Charisma modifier (at least one), and keeps the new rolls.
+    if (!casting_with(Metamagic::empowered))
+        return this->dice(dice, critical);
+    std::vector<int> rolls;
+    for (int n = 0; n < dice.count * (critical ? 2 : 1); ++n)
+        rolls.push_back(roll(dice.sides));
+    std::sort(rolls.begin(), rolls.end());
+    const int rerolls = std::max(1, def(caster).casting - 2);
+    for (int n = 0; n < rerolls && n < int(rolls.size()) && rolls[n] * 2 < dice.sides + 1; ++n)
+        rolls[n] = roll(dice.sides);
+    int total = dice.bonus;
+    for (const int value : rolls)
+        total += value;
+    return total;
+}
+
+std::vector<EntityId> Session::careful_allies(const Actor &caster, const std::vector<Cell> &cells) const
+{
+    std::vector<EntityId> spared;
+    if (!casting_with(Metamagic::careful))
+        return spared;
+    const auto most = std::size_t(std::max(1, def(caster).casting - 2));
+    for (const auto &other : actors_)
+        if (spared.size() < most && other.source.side == caster.source.side &&
+                other.source.id != caster.source.id && !other.dead &&
+                std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            spared.push_back(other.source.id);
+    return spared;
 }
 
 int Session::burst_damage(Dice dice, bool critical, int bursts)
@@ -5929,6 +6237,8 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     auto modifiers =
         detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
     modifiers.advantage |= advantage;
+    // Heightened Spell: Disadvantage on the save against the spell.
+    modifiers.disadvantage |= heightened_target_ == target.source.id;
     // Danger Sense: Advantage on Dexterity saves unless Incapacitated.
     modifiers.advantage |= ability == detail::Ability::dexterity && def(target).danger_sense &&
                            !detail::incapacitated(target.effects);
@@ -6060,6 +6370,11 @@ void Session::advance_turn_time()
 void Session::end_turn()
 {
     actors_[turn_].actions.surge = false;
+    // A readied Metamagic option lapses with the turn.
+    std::erase_if(actors_[turn_].effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::metamagic;
+    });
     spring_zones(actors_[turn_], ZoneKind::grease);
     burn_beside_spheres(actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
@@ -6238,6 +6553,8 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
 
 void Session::perform(const Command &command)
 {
+    casting_metamagic_.reset();
+    heightened_target_ = 0;
     const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
         return can_shield(other) || def(other).deflect;
@@ -6514,6 +6831,8 @@ void Session::dispatch(const Command &command)
         use_focus_movement(a, command.verb);
     else if (command.verb.starts_with("create_slot_") || command.verb.starts_with("convert_slot_"))
         use_font_of_magic(a, command.verb);
+    else if (command.verb.starts_with("metamagic_"))
+        ready_metamagic(a, command.verb.substr(10));
     else if (command.verb == "innate_sorcery")
     {
         a.bonus = false;
@@ -6710,7 +7029,8 @@ void Session::dispatch(const Command &command)
     else if (is_smite(command.verb))
         resolve_smite(a, command.verb);
     else if (const auto *bonus_spell = detail::find_spell(command.verb);
-             bonus_spell && bonus_spell->bonus_action)
+             bonus_spell && (bonus_spell->bonus_action ||
+                             readies(a, Metamagic::quickened, *bonus_spell)))
     {
         // A Bonus Action spell spends no Action, so it resolves outside the
         // Action block below.
@@ -7890,6 +8210,8 @@ class Module final : public RulesModule
             return {detail::scholar_options(sheet.grants)};
         if (sheet.character_class == "Fighter" && sheet.level >= 4)
             return {detail::mastery_options("fighter", 4, sheet.grants)};
+        if (sheet.character_class == "Sorcerer" && sheet.level >= 2)
+            return {detail::metamagic_options()};
         if (sheet.character_class == "Barbarian" && sheet.level >= 3)
         {
             std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
@@ -7992,6 +8314,8 @@ class Module final : public RulesModule
             result.training = {detail::mastery_options("fighter", 4, sheet.grants)};
         if (sheet.character_class == "Barbarian" && result.level == 3)
             result.training = {detail::primal_knowledge_options(sheet.grants)};
+        if (sheet.character_class == "Sorcerer" && result.level == 2)
+            result.training = {detail::metamagic_options()};
         if (sheet.character_class == "Barbarian" && result.level == 4)
             result.training = {detail::mastery_options("barbarian", 4, sheet.grants)};
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
@@ -8183,8 +8507,9 @@ class Module final : public RulesModule
             choice.fighting_style = "defense";
         choice.spells = sheet.prepared_spells;
         for (const auto &group : options.training)
-            if (!group.options.empty())
-                choice.training[group.id] = {group.options.front().id};
+            for (const auto &option : group.options)
+                if (choice.training[group.id].size() < group.count)
+                    choice.training[group.id].push_back(option.id);
         if (choice.spells.empty() && sheet.character_class == "Wizard")
             choice.spells = {"magic_missile"};
         if (detail::prepares_spells(sheet.character_class))
@@ -8355,13 +8680,17 @@ class Module final : public RulesModule
                 : id == "class:wizard:scholar" ? "expertise:" + value
                 : id == "subclass:ranger:hunter" ? "prey:" + value
                 : id == "class:barbarian:primal_knowledge" ? "skill:" + value
+                : id == "class:sorcerer:metamagic" ? "metamagic:" + value
                 : "mastery:" + value,
                 id,
                 unsigned(next.level),
                 {}});
         }
         if (next.character_class == "Sorcerer" && next.level == 2)
+        {
             next.grants.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
+            next.grants.push_back({"feature:metamagic", "class:sorcerer", 2, {}});
+        }
         // Draconic Sorcery is the SRD's only Sorcerer subclass.
         if (next.character_class == "Sorcerer" && next.level == 3)
         {
@@ -9708,7 +10037,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.118", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.119", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -367,6 +367,7 @@ int benefit_value_limit(EffectKind kind)
 {
     return kind == EffectKind::resistance || kind == EffectKind::dragons_breath
            ? int(DamageType::count) - 1
+           : kind == EffectKind::metamagic ? 15
            : 10;
 }
 
@@ -407,6 +408,10 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::dragons_breath:
     case EffectKind::innate_sorcery:
         return 60000; // 1 minute
+    case EffectKind::metamagic:
+        return 6000; // the rest of the turn, cleared when it ends
+    case EffectKind::extended:
+        return 1200000; // a doubled 10-minute Concentration
     default:
         return 0;
     }

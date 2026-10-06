@@ -58,11 +58,21 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
     std::vector<ItemAttackOption> options;
     if (actor)
     {
+        // Metamagic labels carry their option, cost and type, so they come from
+        // the offered command.
+        const auto offered_label = [&](const std::string & verb) -> std::string
+        {
+            for (const auto &c : offered)
+                if (c.actor == actor->id && c.verb == verb)
+                    return c.label;
+            return "Metamagic";
+        };
         for (const auto &verb : actor->bonus_actions)
             options.push_back({0,
                                verb,
         {
-            verb == "cunning_dash"        ? "Dash"
+            verb.starts_with("metamagic_") ? offered_label(verb)
+            : verb == "cunning_dash"        ? "Dash"
             : verb == "cunning_disengage" ? "Disengage"
             : verb == "lay_on_hands"      ? "Lay On Hands"
             : verb == "rage"              ? "Rage"

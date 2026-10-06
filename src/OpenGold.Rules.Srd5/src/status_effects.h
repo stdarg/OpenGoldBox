@@ -134,7 +134,12 @@ enum class EffectKind : unsigned
     // the creature's next turn.
     addled = 52,
     // Innate Sorcery: +1 spell save DC and Advantage on spell attack rolls.
-    innate_sorcery = 53
+    innate_sorcery = 53,
+    // A Metamagic option readied for the Sorcerer's next spell this turn; `dc`
+    // is the option, or 10 + the type for Transmuted Spell.
+    metamagic = 54,
+    // Extended Spell: Advantage on saves to keep this Concentration.
+    extended = 55
 };
 
 // The longest a spell benefit lasts, in milliseconds.

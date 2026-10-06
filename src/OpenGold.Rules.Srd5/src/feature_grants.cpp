@@ -149,7 +149,10 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     if (klass == "rogue" && level >= 2)
         required.push_back({"feature:cunning_action", "class:rogue", 2, {}});
     if (klass == "sorcerer" && level >= 2)
+    {
         required.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
+        required.push_back({"feature:metamagic", "class:sorcerer", 2, {}});
+    }
     if (klass == "sorcerer" && level >= 3)
     {
         required.push_back({"subclass:draconic", "class:sorcerer", 3, {}});
