@@ -23,8 +23,21 @@ spellcasting ability; the earlier cantrip work is in
   more per later level, and makes unarmored AC 10 + Dexterity + Charisma;
   Chromatic Orb, Command and Dragon's Breath are always prepared (Alter Self is
   removed by DM-3).
-- Level 2's Font of Magic and Metamagic arrive in the next increments.
+- Level 2's Font of Magic is below; Metamagic arrives next.
 - Verification: `opengold_sorcerer_tests` (creation's prepared spells,
   Sorcerous Burst per type, no Long Rest preparation, Innate Sorcery's uses and
   Advantage, the Draconic grants, Hit Points and AC, always-prepared spells,
   seven prepared spells at level 4), `opengold_sorcerer_cantrip_tests`.
+
+## Font of Magic (level 2)
+
+- Sorcery Points equal the Sorcerer level, all back on a Long Rest. They share
+  the Lay On Hands store, which no Sorcerer has.
+- From the Bonus Action list: **Font of Magic: create a level-1 slot (2
+  Sorcery Points)** and, from level 3, **a level-2 slot (3 Sorcery Points)**,
+  each a Bonus Action. **A level-1 slot into 1 Sorcery Point** and **a
+  level-2 slot into 2 Sorcery Points** take no action and are listed there
+  too; they never raise the points past the maximum. Created slots may exceed
+  the usual count and vanish on a Long Rest.
+- Verification: `opengold_sorcerer_tests` (two points at level 2, creating a
+  slot, converting one back, a checkpoint).

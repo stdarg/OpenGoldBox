@@ -384,6 +384,7 @@ struct Definition
     // Uncanny Metabolism's once-per-Long-Rest use (kept in Actor::arcane).
     int focus{}, metabolism{};
     int innate_sorcery{}; // Sorcerer: Innate Sorcery uses, in Actor::free_casts
+    int sorcery_points{}; // Sorcerer level 2: Font of Magic, in Actor::lay_on_hands
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -528,6 +529,8 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"focus", "Focus Points", &Actor::surges, &Definition::focus, -1, true},
     ResourceDescriptor{"innate_sorcery", "Innate Sorcery", &Actor::free_casts,
         &Definition::innate_sorcery, 0, true},
+    ResourceDescriptor{"sorcery_points", "Sorcery Points", &Actor::lay_on_hands,
+        &Definition::sorcery_points, 0, true},
     ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
         &Definition::metabolism, 0, false}};
 
@@ -535,6 +538,25 @@ constexpr std::array resource_descriptors
 int max_hp(const Actor &a)
 {
     return a.definition.hp + detail::hit_point_bonus(a.effects);
+}
+
+// Lay On Hands and Sorcery Points share one store, restored by a Long Rest; no
+// class has both.
+int lay_capacity(const Definition &d)
+{
+    return d.lay_on_hands + d.sorcery_points;
+}
+
+// Spell slots, with room for the ones Font of Magic creates from Sorcery
+// Points (2 for a level-1 slot, 3 for a level-2 one); they vanish on a Long Rest.
+int slot_room(const Definition &d)
+{
+    return d.slots + d.sorcery_points / 2;
+}
+
+int slot2_room(const Definition &d)
+{
+    return d.slots2 + d.sorcery_points / 3;
 }
 
 // Paladin's Smite, Favored Enemy and Innate Sorcery share one store, restored
@@ -759,6 +781,7 @@ character_definition(std::string_view bytes,
     d.focus = klass == "Monk" && level >= 2 ? int(level) : 0;
     d.metabolism = klass == "Monk" && level >= 2 ? 1 : 0;
     d.innate_sorcery = klass == "Sorcerer" ? 2 : 0;
+    d.sorcery_points = klass == "Sorcerer" && level >= 2 ? int(level) : 0;
     d.deflect = d.open_hand = klass == "Monk" && level >= 3;
     d.focus_dc = 8 + 2 + ability_modifier(scores[4]);
     d.dexterity = dex;
@@ -1025,7 +1048,7 @@ void restore_vitals(Actor &a, const VitalState &state)
     a.rushes = a.definition.rushes;
     a.surges = surge_capacity(a.definition);
     a.arcane = arcane_capacity(a.definition);
-    a.lay_on_hands = a.definition.lay_on_hands;
+    a.lay_on_hands = lay_capacity(a.definition);
     a.free_casts = free_cast_capacity(a.definition);
     a.channel_divinity = channel_capacity(a.definition);
     if (!state.resources.empty())
@@ -1046,11 +1069,12 @@ void restore_vitals(Actor &a, const VitalState &state)
     }
     const auto &d = a.definition;
     if (a.hp < 0 || a.hp > max_hp(a) || (a.dead && a.hp != 0) || a.winds < 0 || a.winds > d.winds ||
-            a.slots < 0 || a.slots > d.slots || a.arcane < 0 || a.arcane > arcane_capacity(d) || a.slots2 < 0 ||
-            a.slots2 > d.slots2 || a.surges < 0 || a.surges > surge_capacity(d) || a.rushes < 0 ||
+            a.slots < 0 || a.slots > slot_room(d) || a.arcane < 0 || a.arcane > arcane_capacity(d) ||
+            a.slots2 < 0 || a.slots2 > slot2_room(d) || a.surges < 0 ||
+            a.surges > surge_capacity(d) || a.rushes < 0 ||
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
             a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4 ||
-            a.lay_on_hands < 0 || a.lay_on_hands > d.lay_on_hands || a.free_casts < 0 ||
+            a.lay_on_hands < 0 || a.lay_on_hands > lay_capacity(d) || a.free_casts < 0 ||
             a.free_casts > free_cast_capacity(d) || a.channel_divinity < 0 ||
             a.channel_divinity > channel_capacity(d))
         throw std::runtime_error("Invalid character vitals");
@@ -1168,7 +1192,7 @@ class Session final : public CombatSession
             a.rushes = d.rushes;
             a.surges = surge_capacity(d);
             a.arcane = arcane_capacity(d);
-            a.lay_on_hands = d.lay_on_hands;
+            a.lay_on_hands = lay_capacity(d);
             a.free_casts = free_cast_capacity(d);
             a.channel_divinity = channel_capacity(d);
             a.facing_left = a.source.facing_left;
@@ -1387,6 +1411,7 @@ class Session final : public CombatSession
     Actor item_actor(const Actor &, unsigned item) const;
     Actor unarmed_actor(const Actor &a) const;
     void use_focus_movement(Actor &a, std::string_view verb);
+    void use_font_of_magic(Actor &a, std::string_view verb);
     void open_hand(const Actor &monk, Actor &target, std::string_view verb);
     bool weapon_reaction(const Actor &, const Definition &) const;
     bool has_weapon_reaction(const Actor &, Cell, Cell) const;
@@ -1805,6 +1830,31 @@ void Session::open_hand(const Actor &monk, Actor &target, std::string_view verb)
         log(target.source.name + " is knocked Prone.",
         {"{name} is knocked Prone.", {{"name", target.source.name}}});
     }
+}
+
+void Session::use_font_of_magic(Actor &a, std::string_view verb)
+{
+    const bool second = verb.ends_with("_2");
+    if (verb.starts_with("create_slot_"))
+    {
+        a.bonus = false;
+        a.lay_on_hands -= second ? 3 : 2;
+        ++(second ? a.slots2 : a.slots);
+    }
+    else
+    {
+        --(second ? a.slots2 : a.slots);
+        a.lay_on_hands = std::min(def(a).sorcery_points, a.lay_on_hands + (second ? 2 : 1));
+    }
+    const std::string level = second ? "2" : "1";
+    log(a.source.name + (verb.starts_with("create_slot_")
+                         ? " creates a level-" + level + " spell slot."
+                         : " turns a level-" + level + " spell slot into Sorcery Points."),
+    {
+        verb.starts_with("create_slot_") ? "{name} creates a level-{level} spell slot."
+        : "{name} turns a level-{level} spell slot into Sorcery Points.",
+        {{"name", a.source.name}, {"level", level}}
+    });
 }
 
 void Session::use_focus_movement(Actor &a, std::string_view verb)
@@ -2391,6 +2441,9 @@ Snapshot Session::snapshot() const
             view.bonus_actions.push_back("martial_arts");
         if (def(a).innate_sorcery)
             view.bonus_actions.push_back("innate_sorcery");
+        if (def(a).sorcery_points)
+            view.bonus_actions.insert(view.bonus_actions.end(),
+        {"create_slot_1", "create_slot_2", "convert_slot_1", "convert_slot_2"});
         if (def(a).focus)
             view.bonus_actions.insert(view.bonus_actions.end(),
         {
@@ -3506,6 +3559,19 @@ std::vector<Command> Session::legal_commands() const
             if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "martial_arts", "Unarmed Strike", other.source.id);
+    // Font of Magic: a Bonus Action turns Sorcery Points into a slot; a slot
+    // becomes Sorcery Points without an action.
+    if (d.sorcery_points)
+    {
+        if (a.bonus && a.lay_on_hands >= 2 && a.slots < slot_room(d))
+            add(id, "create_slot_1", "Font of Magic: create a level-1 slot (2 Sorcery Points)");
+        if (a.bonus && d.level >= 3 && a.lay_on_hands >= 3 && a.slots2 < slot2_room(d))
+            add(id, "create_slot_2", "Font of Magic: create a level-2 slot (3 Sorcery Points)");
+        if (a.slots > 0 && a.lay_on_hands < d.sorcery_points)
+            add(id, "convert_slot_1", "Font of Magic: a level-1 slot into 1 Sorcery Point");
+        if (a.slots2 > 0 && a.lay_on_hands < d.sorcery_points)
+            add(id, "convert_slot_2", "Font of Magic: a level-2 slot into 2 Sorcery Points");
+    }
     // Innate Sorcery: a Bonus Action, twice per Long Rest.
     if (a.bonus && d.innate_sorcery && a.free_casts > 0 &&
             !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
@@ -3609,7 +3675,7 @@ std::vector<Command> Session::legal_commands() const
         add(id, "second_wind", "Second Wind", id);
     // Lay On Hands: touch yourself or an adjacent wounded ally whose healing
     // can take effect, including one at 0 Hit Points.
-    if (a.bonus && a.lay_on_hands > 0)
+    if (a.bonus && d.lay_on_hands && a.lay_on_hands > 0)
         for (const auto &other : actors_)
             if (other.source.side == a.source.side && !other.dead &&
                     other.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
@@ -6446,6 +6512,8 @@ void Session::dispatch(const Command &command)
     else if (command.verb.starts_with("patient_defense") ||
              command.verb.starts_with("step_of_the_wind"))
         use_focus_movement(a, command.verb);
+    else if (command.verb.starts_with("create_slot_") || command.verb.starts_with("convert_slot_"))
+        use_font_of_magic(a, command.verb);
     else if (command.verb == "innate_sorcery")
     {
         a.bonus = false;
@@ -6968,10 +7036,11 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             (actor.rush_used &&
              (actor.bonus || !definition.rushes || actor.rushes == definition.rushes)) ||
             actor.winds < 0 || actor.winds > definition.winds || actor.slots < 0 ||
-            actor.slots > definition.slots || actor.slots2 < 0 || actor.slots2 > definition.slots2 ||
+            actor.slots > slot_room(definition) || actor.slots2 < 0 ||
+            actor.slots2 > slot2_room(definition) ||
             actor.hit_dice < 0 || actor.hit_dice > (definition.hit_die ? definition.level : 0) ||
             actor.successes < 0 || actor.successes > 3 || actor.failures < 0 || actor.failures > 4 ||
-            actor.lay_on_hands < 0 || actor.lay_on_hands > definition.lay_on_hands ||
+            actor.lay_on_hands < 0 || actor.lay_on_hands > lay_capacity(definition) ||
             actor.free_casts < 0 || actor.free_casts > free_cast_capacity(definition) ||
             actor.channel_divinity < 0 || actor.channel_divinity > channel_capacity(definition))
         throw std::runtime_error("Invalid checkpoint actor state");
@@ -7962,7 +8031,7 @@ class Module final : public RulesModule
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Sorcerer")
-            result.description = "Prepared Sorcerer spells and Innate Sorcery; more spell slots at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
+            result.description = "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
         if (sheet.character_class == "Monk")
             result.description = "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Barbarian")
@@ -8291,6 +8360,8 @@ class Module final : public RulesModule
                 unsigned(next.level),
                 {}});
         }
+        if (next.character_class == "Sorcerer" && next.level == 2)
+            next.grants.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
         // Draconic Sorcery is the SRD's only Sorcerer subclass.
         if (next.character_class == "Sorcerer" && next.level == 3)
         {
@@ -8465,7 +8536,7 @@ class Module final : public RulesModule
         {
             const std::string note =
                 next.character_class == "Sorcerer"
-                ? "Prepared Sorcerer spells and Innate Sorcery; more spell slots at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
+                ? "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
                 : next.character_class == "Monk"
                 ? "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points."
                 : next.character_class == "Barbarian"
@@ -8504,7 +8575,7 @@ class Module final : public RulesModule
         actor.rushes += actor.definition.rushes - old.rushes;
         actor.surges += surge_capacity(actor.definition) - surge_capacity(old);
         actor.arcane += arcane_capacity(actor.definition) - arcane_capacity(old);
-        actor.lay_on_hands += actor.definition.lay_on_hands - old.lay_on_hands;
+        actor.lay_on_hands += lay_capacity(actor.definition) - lay_capacity(old);
         actor.free_casts += free_cast_capacity(actor.definition) - free_cast_capacity(old);
         actor.channel_divinity += channel_capacity(actor.definition) - channel_capacity(old);
         actor.hit_dice += actor.definition.level - old.level;
@@ -8614,7 +8685,7 @@ class Module final : public RulesModule
         actor.rushes = d.rushes;
         actor.surges = surge_capacity(d);
         actor.arcane = arcane_capacity(d);
-        actor.lay_on_hands = d.lay_on_hands;
+        actor.lay_on_hands = lay_capacity(d);
         actor.free_casts = free_cast_capacity(d);
         actor.channel_divinity = channel_capacity(d);
         state = vitals(actor);
@@ -8808,7 +8879,7 @@ class Module final : public RulesModule
         std::vector<CampAction> actions;
         if (actor.dead || actor.hp == 0)
             return actions;
-        if (actor.lay_on_hands > 0)
+        if (d.lay_on_hands && actor.lay_on_hands > 0)
             actions.push_back({"lay_on_hands", {"Lay On Hands", {}}});
         if (d.str_dex_disadvantage)
             return actions;
@@ -9637,7 +9708,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.117", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.118", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

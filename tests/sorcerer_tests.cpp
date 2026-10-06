@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -109,6 +110,16 @@ unsigned pool(const CombatSession &c, std::string_view id)
     throw std::runtime_error("Missing resource pool");
 }
 
+// Level-one slots, read from "SRD11 winds slots slots2 ...".
+int first_level_slots(const CombatSession &c)
+{
+    std::istringstream in(unit(c, 1).persistent.resources);
+    std::string magic;
+    int winds{}, slots{};
+    in >> magic >> winds >> slots;
+    return slots;
+}
+
 bool has_grant(const Character &hero, std::string_view id)
 {
     const auto &grants = hero.sheet().grants;
@@ -183,6 +194,25 @@ void draconic_checks()
           "Draconic Spells are always prepared, with level-two spells");
 }
 
+void font_of_magic_checks()
+{
+    const auto second = sorcerer(2);
+    check(has_grant(second, "feature:font_of_magic"), "Level two brings Font of Magic");
+    auto module = rules();
+    auto c = battle(*module, second);
+    check(pool(*c, "sorcery_points") == 2 && first_level_slots(*c) == 3 &&
+          !offered(*c, "convert_slot_1") && !offered(*c, "create_slot_2"),
+          "Two Sorcery Points; a full pool takes no more, and level-2 slots wait for level three");
+    check(submit(*c, "create_slot_1") && pool(*c, "sorcery_points") == 0 &&
+          first_level_slots(*c) == 4 && !unit(*c, 1).bonus_action,
+          "A Bonus Action turns 2 Sorcery Points into a level-1 slot");
+    check(submit(*c, "convert_slot_1") && pool(*c, "sorcery_points") == 1 &&
+          first_level_slots(*c) == 3 && unit(*c, 1).action,
+          "A slot becomes Sorcery Points without an action");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "Sorcery Points survive a checkpoint");
+}
+
 } // namespace
 
 int main()
@@ -192,6 +222,7 @@ int main()
         spellcasting_checks();
         innate_sorcery_checks();
         draconic_checks();
+        font_of_magic_checks();
         std::cout << "Sorcerer tests passed\n";
     }
     catch (const std::exception &e)
