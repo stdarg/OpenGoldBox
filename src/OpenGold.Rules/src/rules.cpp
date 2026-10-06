@@ -136,6 +136,12 @@ void RulesModule::use_party_camp_action(const CharacterSheet &, VitalState &,
     throw std::runtime_error("This rules module has no camp actions");
 }
 
+void RulesModule::cast_exploration_spell(const CharacterSheet &, VitalState &,
+        std::string_view) const
+{
+    throw std::runtime_error("This rules module has no exploration spells");
+}
+
 bool Battlefield::contains(Cell p) const noexcept
 {
     return p.x >= 0 && p.y >= 0 && p.x < width && p.y < height;

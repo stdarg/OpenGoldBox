@@ -631,6 +631,14 @@ class RulesModule
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
                                        std::span<const CampTarget> party, std::string_view action,
                                        std::uint64_t &random_state) const;
+    // A spell cast while exploring, such as Knock on a locked door.
+    [[nodiscard]] virtual bool can_cast_exploration_spell(const CharacterSheet &,
+            const VitalState &, std::string_view) const
+    {
+        return false;
+    }
+    virtual void cast_exploration_spell(const CharacterSheet &caster, VitalState &state,
+                                        std::string_view spell) const;
 };
 } // namespace opengold::rules
 #endif

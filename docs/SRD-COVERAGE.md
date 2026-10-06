@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Knock
+
+Rules 0.6.104 adds Knock, the first spell cast while exploring: it opens a
+locked door. See [Wizard](WIZARD.md#knock).
+
 ## Flaming Sphere
 
 Rules 0.6.103 adds Flaming Sphere. See [Wizard](WIZARD.md#flaming-sphere).

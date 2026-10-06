@@ -50,11 +50,13 @@ struct RestResult
 };
 
 // How the party tries a locked door: Bash is Strength (Athletics) by anyone
-// conscious; Pick is Dexterity (Sleight of Hand) by a conscious Rogue.
+// conscious; Pick is Dexterity (Sleight of Hand) by a conscious Rogue; Knock is
+// the spell, cast by a member who has it prepared, and always opens it.
 enum class DoorMethod
 {
     bash,
-    pick
+    pick,
+    knock
 };
 
 // One member's check against a locked door.
@@ -226,6 +228,7 @@ class CampaignParty
     }
 
   private:
+    [[nodiscard]] std::vector<DoorAttempt> cast_knock(int difficulty);
     void change_equipment(MemberId id, std::uint64_t item, rules::EquipmentOperation operation);
     std::unique_ptr<rules::RulesModule> rules_;
     PartyState state_;

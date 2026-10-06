@@ -815,13 +815,20 @@ bool CampaignParty::can_try_door(DoorMethod method) const
 {
     return std::any_of(state_.slots.begin(), state_.slots.end(), [&](MemberId id)
     {
-        return id && tries_door(member(id), method);
+        if (!id)
+            return false;
+        const auto &m = member(id);
+        return method == DoorMethod::knock
+               ? rules_->can_cast_exploration_spell(m.character.sheet(), m.vitals, "knock")
+               : tries_door(m, method);
     });
 }
 
 std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficulty)
 {
     editable();
+    if (method == DoorMethod::knock)
+        return cast_knock(difficulty);
     std::vector<DoorAttempt> attempts;
     auto random_state = state_.random_state;
     for (auto id : state_.slots)
@@ -851,6 +858,27 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
     }
     state_.random_state = random_state;
     return attempts;
+}
+
+std::vector<DoorAttempt> CampaignParty::cast_knock(int difficulty)
+{
+    // The first active member able to cast it does; the lock always opens.
+    auto next = state_;
+    for (const auto id : next.slots)
+    {
+        if (!id)
+            continue;
+        auto &caster = *std::find_if(next.roster.begin(), next.roster.end(), [&](const auto & m)
+        {
+            return m.id == id;
+        });
+        if (!rules_->can_cast_exploration_spell(caster.character.sheet(), caster.vitals, "knock"))
+            continue;
+        rules_->cast_exploration_spell(caster.character.sheet(), caster.vitals, "knock");
+        state_ = std::move(next);
+        return {{id, {0, difficulty}}};
+    }
+    throw std::runtime_error("No member can cast Knock");
 }
 
 void CampaignParty::temple_heal(MemberId target)

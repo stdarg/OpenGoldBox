@@ -449,6 +449,7 @@ void behaviour()
                 row.rider == Rider::command || row.rider == Rider::resistance ||
                 row.id == std::string_view("chromatic_orb") ||
                 row.pattern == SpellPattern::camp || row.pattern == SpellPattern::reaction ||
+                row.pattern == SpellPattern::exploration ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor)
             continue;

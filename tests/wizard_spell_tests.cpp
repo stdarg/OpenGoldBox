@@ -784,6 +784,34 @@ void flaming_sphere_checks()
     check(module->restore(saved)->save() == saved, "The sphere survives a checkpoint");
 }
 
+// Level-two slots in "SRD11 winds slots slots2 ..." vitals.
+int second_level_slots(const VitalState &vitals)
+{
+    std::istringstream in(vitals.resources);
+    std::string magic;
+    int winds{}, first{}, second{};
+    in >> magic >> winds >> first >> second;
+    return second;
+}
+
+void knock_checks()
+{
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto plain = party.add_pc(wizard(3, {"magic_missile"}, {"shatter", "blindness"}));
+    check(!party.can_try_door(DoorMethod::knock), "A Wizard without Knock cannot cast it");
+    const auto id = party.add_pc(wizard(3, {"magic_missile"}, {"knock", "shatter"}));
+    check(party.can_try_door(DoorMethod::knock), "Knock is offered at a locked door");
+    const auto attempts = party.try_door(DoorMethod::knock, 15);
+    // A level-three Wizard has two level-two slots; untouched vitals are empty.
+    check(attempts.size() == 1 && attempts[0].member == id && attempts[0].roll.total >= 15 &&
+          second_level_slots(party.member(id).vitals) == 1 &&
+          party.member(plain).vitals.resources.empty(),
+          "Knock opens the lock with the caster's level-two slot");
+    auto module = rules();
+    auto c = battle(*module, wizard(3, {"magic_missile"}, {"knock", "shatter"}), {4, 1}, {11, 5});
+    check(!offered(*c, "knock"), "Knock is not a combat spell");
+}
+
 } // namespace
 
 int main()
@@ -821,6 +849,7 @@ int main()
         see_invisibility_checks();
         darkness_checks();
         flaming_sphere_checks();
+        knock_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

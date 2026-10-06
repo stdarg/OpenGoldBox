@@ -568,8 +568,11 @@ void RolfTourSession::show_locked_door()
         door_choices_.push_back(DoorMethod::pick);
         snapshot_.choices.push_back("Pick");
     }
-    // Knock belongs here, offered when a member can cast the Knock spell; the
-    // rules module does not have that spell yet.
+    if (campaign_->can_try_door(DoorMethod::knock))
+    {
+        door_choices_.push_back(DoorMethod::knock);
+        snapshot_.choices.push_back("Knock");
+    }
     snapshot_.choices.push_back("Exit");
     snapshot_.dialogue = "Locked.";
     snapshot_.phase = TourPhase::awaiting_continue;

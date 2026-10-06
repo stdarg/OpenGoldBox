@@ -252,3 +252,16 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   jumping pits and its light are not modeled.
 - Verification: `opengold_wizard_spell_tests` (the open square, the burn at
   the end of a turn, the Bonus Action roll, a checkpoint).
+
+## Knock
+
+- **Knock** (level 2, Verbal only): at a locked door the menu offers
+  **Knock** beside Bash and Pick when an active member has it prepared and a
+  level-two slot. The first such member casts it, the slot is spent, and the
+  door opens: "Wizard casts Knock, and the lock opens." It is never offered in
+  combat. The loud knock it makes draws no attention yet, and wizard-locked
+  doors (Arcane Lock) are not modeled.
+- Rules modules gain `can_cast_exploration_spell` and `cast_exploration_spell`
+  for spells cast while exploring.
+- Verification: `opengold_wizard_spell_tests` (no Knock without the spell, the
+  cast with its level-two slot, never offered in combat).

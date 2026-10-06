@@ -263,6 +263,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "see_invisibility", 3},
     SpellAccessRow{"Wizard", "darkness", 3},
     SpellAccessRow{"Wizard", "flaming_sphere", 3},
+    SpellAccessRow{"Wizard", "knock", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -2582,6 +2583,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     case detail::SpellPattern::smite:
         return; // Smites resolve through resolve_smite, after the caster's own hit.
     case detail::SpellPattern::camp:
+    case detail::SpellPattern::exploration:
         return; // Never offered in combat.
     case detail::SpellPattern::reaction:
         return; // Cast through the Shield prompt.
@@ -2746,6 +2748,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // Smites follow the caster's own melee hit; the smite window offers them.
         if (spell.pattern == detail::SpellPattern::smite ||
                 spell.pattern == detail::SpellPattern::camp ||
+                spell.pattern == detail::SpellPattern::exploration ||
                 spell.pattern == detail::SpellPattern::reaction || spell.target != scope ||
                 spell.bonus_action != bonus_pass)
             continue;
@@ -8005,6 +8008,30 @@ class Module final : public RulesModule
         random_state = rng;
     }
 
+    bool can_cast_exploration_spell(const CharacterSheet &sheet, const VitalState &state,
+                                    std::string_view id) const override
+    {
+        const auto actor = camp_actor(sheet, state);
+        const auto *spell = detail::find_spell(id);
+        return spell && spell->pattern == detail::SpellPattern::exploration && !actor.dead &&
+               actor.hp > 0 && !actor.definition.str_dex_disadvantage &&
+               detail::knows_spell(actor.definition.spells, id) &&
+               (spell->level >= 2 ? actor.slots2 : actor.slots) > 0;
+    }
+
+    void cast_exploration_spell(const CharacterSheet &sheet, VitalState &state,
+                                std::string_view id) const override
+    {
+        if (!can_cast_exploration_spell(sheet, state, id))
+            throw std::runtime_error("That spell cannot be cast now");
+        auto caster = camp_actor(sheet, state);
+        if (detail::find_spell(id)->level >= 2)
+            --caster.slots2;
+        else
+            --caster.slots;
+        state = vitals(caster);
+    }
+
     // Prayer of Healing: the five most hurt members it has not healed since
     // their last Long Rest each regain 2d8 + the spellcasting modifier.
     void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
@@ -8730,7 +8757,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.103", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.104", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -30,6 +30,7 @@ enum class SpellPattern : unsigned
     smite,          // Bonus Action right after the caster's own melee hit; extra damage to that target
     buff,           // a lasting benefit on the target, no roll; `rider` names it
     camp,           // used only from the Camp dialog (CLASS-3), never offered in combat
+    exploration,    // cast while exploring, such as Knock at a locked door
     stabilize,      // a dying creature becomes Stable
     reaction        // cast only when its trigger asks the caster (React/Decline)
 };
@@ -821,6 +822,16 @@ inline constexpr std::array spell_table
         .rider = Rider::flaming_sphere,
         .concentration = true,
         .area = 5},
+    // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
+    // locked door while exploring. Verbal only.
+    SpellDef{
+        .id = "knock",
+        .label = "Knock",
+        .level = 2,
+        .pattern = SpellPattern::exploration,
+        .target = SpellTarget::self,
+        .range = 60,
+        .somatic = false},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

@@ -669,7 +669,7 @@ String choice_label(const std::string &resource, const std::string &choice)
 {
     for (const auto *host :
             {
-                N_("Bash"), N_("Pick"), N_("Exit")
+                N_("Bash"), N_("Pick"), N_("Knock"), N_("Exit")
             })
         if (choice == host)
             return i18n::text(host);
@@ -709,6 +709,8 @@ String payment_notice(const CoinPayment &payment)
 String door_check_notice(const DoorCheck &check)
 {
     const auto name = String::utf8(check.member.c_str());
+    if (check.method == opengold::DoorMethod::knock)
+        return i18n::format("{name} casts Knock, and the lock opens.", {{"name", name}});
     if (check.method == opengold::DoorMethod::pick)
         return i18n::format(
                    "{name} tries to pick the lock: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}.",
