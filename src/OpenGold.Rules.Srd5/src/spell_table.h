@@ -890,6 +890,22 @@ inline constexpr std::array spell_table
         .dice = {3, 6, 0},
         .half_on_success = true,
         .cone = 15},
+    // Land's Aid (SRD 5.2.1 p. 46), aimed by a Circle of the Land Druid as
+    // "lands_aid" with a use of Wild Shape. No one learns it as a spell.
+    SpellDef{
+        .id = "lands_aid",
+        .label = "Land's Aid",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .verbal = false,
+        .somatic = false,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::necrotic,
+        .dice = {2, 6, 0},
+        .radius = 10},
     // SRD 5.2.1 p. 115: a Humanoid saves, with Advantage while the caster's side
     // is fighting it, or is Charmed by the caster until damaged; one more
     // creature from a level-two slot.

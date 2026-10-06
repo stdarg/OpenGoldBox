@@ -391,6 +391,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::inspired:
     case EffectKind::magic_weapon:
     case EffectKind::barkskin:
+    case EffectKind::wild_shape:
     case EffectKind::invisible:
     case EffectKind::see_invisibility:
         return 3600000; // 1 hour

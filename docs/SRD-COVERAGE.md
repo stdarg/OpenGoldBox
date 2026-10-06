@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Wild Shape and Land's Aid
+
+Rules 0.6.127 adds the Druid's Wild Shape (Wolf, Boar, Giant Lizard and Giant
+Snake) and the Circle of the Land's Land's Aid, finishing the Druid through
+level 4. See [Druid](DRUID.md#wild-shape-and-lands-aid).
+
 ## Flame Blade, Moonbeam, Spike Growth and Heat Metal
 
 Rules 0.6.126 adds the Druid's Flame Blade, Moonbeam, Spike Growth and Heat

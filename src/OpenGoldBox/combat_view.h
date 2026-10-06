@@ -99,6 +99,9 @@ class CombatView : public godot::Control
     };
 
     std::map<opengold::rules::EntityId, SpriteArt> art_;
+    // Wild Shape's Beast forms, by form key, from the original combat icons.
+    std::map<std::string, SpriteArt> form_art_;
+    [[nodiscard]] const SpriteArt *combatant_art(const opengold::rules::CombatantView &a) const;
     godot::Ref<godot::ImageTexture> skull_art_;
     std::map<opengold::rules::EntityId, bool> known_dead_;
     std::map<opengold::rules::EntityId, double> skull_seconds_;

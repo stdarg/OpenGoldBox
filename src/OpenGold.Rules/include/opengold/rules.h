@@ -365,6 +365,7 @@ struct CombatantView
     std::vector<std::string>
     bonus_actions; // Entitlements remain visible after spending the Bonus Action.
     std::vector<std::string> known_cantrips; // Knowledge persists while casting is unavailable.
+    std::string form; // Wild Shape's Beast form, such as "wolf"; empty otherwise.
     bool prone{};
     std::vector<ThrownWeaponOption> thrown_weapons;
     std::vector<ThrownWeaponOption> weapons;

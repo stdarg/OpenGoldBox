@@ -165,10 +165,13 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         required.push_back({"feature:bonus_proficiencies", "subclass:bard:lore", 3, {}});
         required.push_back({"feature:cutting_words", "subclass:bard:lore", 3, {}});
     }
+    if (klass == "druid" && level >= 2)
+        required.push_back({"feature:wild_shape", "class:druid", 2, {}});
     if (klass == "druid" && level >= 3)
     {
         required.push_back({"subclass:land", "class:druid", 3, {}});
         required.push_back({"feature:circle_spells", "subclass:druid:land", 3, {}});
+        required.push_back({"feature:lands_aid", "subclass:druid:land", 3, {}});
     }
     if (klass == "warlock" && level >= 2)
         required.push_back({"feature:magical_cunning", "class:warlock", 2, {}});

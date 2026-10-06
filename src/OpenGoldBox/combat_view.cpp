@@ -155,12 +155,27 @@ bool CombatView::sprite_facing_left(std::int64_t id) const
     return actor != state.combatants.end() && actor->facing_left;
 }
 
+const CombatView::SpriteArt *CombatView::combatant_art(const CombatantView &a) const
+{
+    // A Druid in Wild Shape shows its Beast form.
+    if (const auto form = form_art_.find(a.form); !a.form.empty() && form != form_art_.end())
+        return &form->second;
+    const auto found = art_.find(a.id);
+    return found == art_.end() ? nullptr : &found->second;
+}
+
 Ref<Texture2D> CombatView::sprite_texture(EntityId id, bool action) const
 {
-    const auto found = art_.find(id);
-    if (found == art_.end())
+    CombatantView combatant;
+    combatant.id = id;
+    if (demo_ && demo_->has_combat())
+        for (const auto &a : demo_->combat().snapshot().combatants)
+            if (a.id == id)
+                combatant = a;
+    const auto *art = combatant_art(combatant);
+    if (!art)
         return {};
-    return action ? found->second.action : found->second.texture;
+    return action ? art->action : art->texture;
 }
 
 void CombatView::prepare_combat()
@@ -620,6 +635,7 @@ void CombatView::sync_art(bool preserve_effects)
     auto prior_actions = std::move(action_seconds_);
     missing_art_.clear();
     art_.clear();
+    form_art_.clear();
     portraits_.clear();
     terrain_art_.clear();
     skull_art_.unref();
@@ -658,11 +674,8 @@ void CombatView::sync_art(bool preserve_effects)
     {
         terrain_art_.push_back(presentation::image_texture(source));
     }
-    const auto install = [&](const CombatArt & source, bool goliath)
+    const auto build = [](const CombatArt & source, bool goliath)
     {
-        missing_art_.erase(source.entity);
-        if (!source.missing_combination.empty())
-            missing_art_[source.entity] = source.missing_combination;
         const auto image = presentation::rgba_image(source.image);
         const auto visible = image->get_used_rect();
         const auto mirrored =
@@ -684,17 +697,24 @@ void CombatView::sync_art(bool preserve_effects)
             mirrored_action->flip_x();
             left_action = ImageTexture::create_from_image(mirrored_action);
         }
-        art_[source.entity] = {ImageTexture::create_from_image(image),
-                               action,
-                               ImageTexture::create_from_image(mirrored),
-                               left_action,
-                               ImageTexture::create_from_image(lying),
-                               visible,
-                               Rect2(image->get_width() - visible.get_end().x, visible.position.y,
-                                     visible.size.x, visible.size.y),
-                               lying->get_used_rect(),
-                               goliath
-                              };
+        return SpriteArt{ImageTexture::create_from_image(image),
+                         action,
+                         ImageTexture::create_from_image(mirrored),
+                         left_action,
+                         ImageTexture::create_from_image(lying),
+                         visible,
+                         Rect2(image->get_width() - visible.get_end().x, visible.position.y,
+                               visible.size.x, visible.size.y),
+                         lying->get_used_rect(),
+                         goliath
+                        };
+    };
+    const auto install = [&](const CombatArt & source, bool goliath)
+    {
+        missing_art_.erase(source.entity);
+        if (!source.missing_combination.empty())
+            missing_art_[source.entity] = source.missing_combination;
+        art_[source.entity] = build(source, goliath);
     };
     for (const auto &source : demo_->art())
         install(source, false);
@@ -728,6 +748,45 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
                 }
         install(source, goliath);
     }
+    // Wild Shape's Beast forms use the original combat icons the art research
+    // matched to those monsters (docs/monster-art-mapping.md); the action pose
+    // is the icon 128 records on.
+    struct FormIcon
+    {
+        const char *form, *archive;
+        std::uint8_t icon;
+    };
+    constexpr std::array form_icons{FormIcon{"wolf", "CPIC4.DAX", 106},
+                                    FormIcon{"boar", "CPIC6.DAX", 120},
+                                    FormIcon{"giant_lizard", "CPIC8.DAX", 59},
+                                    FormIcon{"giant_snake", "CPIC5.DAX", 60}};
+    if (std::filesystem::is_directory(directory))
+        for (const auto &file : std::filesystem::directory_iterator(directory))
+        {
+            auto name = file.path().filename().string();
+            for (auto &c : name)
+                if (c >= 'a' && c <= 'z')
+                    c -= 32;
+            for (const auto &entry : form_icons)
+            {
+                if (name != entry.archive)
+                    continue;
+                if (std::filesystem::file_size(file.path()) > 32 * 1024 * 1024)
+                    throw std::runtime_error("Combat art archive exceeds limit");
+                std::ifstream input(file.path(), std::ios::binary);
+                std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input), {}};
+                if (input.bad())
+                    throw std::runtime_error("Cannot read combat art");
+                auto ready = decode_ega_combat_icon(bytes, entry.icon, 0);
+                auto action = decode_ega_combat_icon(bytes, std::uint8_t(entry.icon + 128), 0);
+                if (!ready)
+                    continue;
+                CombatArt source{0, std::move(ready.image), {}, {}};
+                if (action)
+                    source.action = std::move(action.image);
+                form_art_[entry.form] = build(source, false);
+            }
+        }
     if (campaign_)
     {
         auto legacy = por::CharacterArt::load(
@@ -2395,9 +2454,9 @@ void CombatView::draw_battlefield()
                     Rect2(Vector2(a.cell.x * tile, a.cell.y * tile), Vector2(tile, tile)), false);
             continue;
         }
-        if (art_.contains(a.id))
+        if (const auto *found = combatant_art(a))
         {
-            const auto &art = art_.at(a.id);
+            const auto &art = *found;
             const bool left = a.facing_left;
             const bool acting = action_seconds_.contains(a.id) && art.action.is_valid();
             const bool unconscious = a.prone || !a.conscious;

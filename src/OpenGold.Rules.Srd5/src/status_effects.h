@@ -165,7 +165,9 @@ enum class EffectKind : unsigned
     // turn it was cast, before the caster may heat it again.
     heated = 65,
     // Heat Metal: Disadvantage on attack rolls until the caster's next turn.
-    scorched = 66
+    scorched = 66,
+    // Wild Shape: `dc` is the Beast form, one past its index in beast_forms.
+    wild_shape = 67
 };
 
 // The longest a spell benefit lasts, in milliseconds.

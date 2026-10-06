@@ -30,7 +30,7 @@ ability.
   Tropical (Acid Splash, Ray of Sickness, Web). The land is not changed on a
   Long Rest.
 - Druidic and Wild Companion are removed (SRD-DECISIONS). Wild Shape and
-  Land's Aid follow in a later increment.
+  Land's Aid are below.
 - Verification: `opengold_druid_tests` (Produce Flame and its hurl,
   Shillelagh's Wisdom attack bonus, Magician's cantrip and Warden's armor,
   the Arid Circle Spells and Fire Bolt, Barkskin's AC, a third cantrip at
@@ -67,3 +67,41 @@ ability.
   the beam's saves on appearing, entering, ending a turn and moving, Difficult
   Terrain and spike damage, Heat Metal on a character in Chain Mail but not on
   a monster, and its later Bonus Action).
+
+## Wild Shape and Land's Aid
+
+- **Wild Shape** (level 2): two uses, one back on a Short Rest and all on a
+  Long Rest, kept in the store Channel Divinity and Rage use. The Bonus Action
+  dropdown offers "Wild Shape: Wolf", "...: Boar", "...: Giant Lizard" and
+  "...: Giant Snake", and "Leave Wild Shape" while in a form (CLASS-10: the
+  Beasts with game art that the SRD allows at levels 2-4; every Druid knows
+  all four).
+- In a form the Druid keeps its Hit Points, mental scores, proficiencies and
+  features and gains Temporary Hit Points equal to its Druid level. The
+  Beast's AC, Speed, size, Strength, Dexterity, physical saves and attack
+  replace the Druid's; equipment merges into the form (so Heat Metal finds no
+  armor); no spells are cast, but Concentration continues.
+  - Wolf: AC 12, Speed 40, Bite +4 for 1d6 + 2 Piercing; Pack Tactics, and a
+    hit knocks a Medium or smaller creature Prone.
+  - Boar: AC 11, Speed 40, Gore +3 for 1d6 + 1 Piercing; Bloodied Fury
+    (Advantage at half its Hit Points or fewer). The charge is not modeled.
+  - Giant Lizard (Large): AC 12, Speed 40, Bite +4 for 1d8 + 2 Piercing.
+  - Giant Snake (the SRD Constrictor Snake, Large): AC 13, Speed 30, Bite +4
+    for 1d8 + 2 Piercing. Constrict is not offered: grappling is not planned
+    (SCOPE-2), and its Swim Speed goes unused.
+  - Large forms take one square until multi-square footprints
+    ([#45](https://github.com/stdarg/OpenGold/issues/45)).
+- The form ends on "Leave Wild Shape", another Wild Shape, 0 Hit Points, being
+  Incapacitated at the start of the Druid's turn, or after an hour (half the
+  Druid level in hours from level 4 is not distinguished).
+- The combat view draws the Druid as the Beast's original combat icon (the
+  art research's candidates: Wolf CPIC4 106, Wild Boar CPIC6 120, Giant
+  Lizard CPIC8 59, Giant Snake CPIC5 60).
+- **Land's Aid** (Circle of the Land, level 3): a Magic action spending a use
+  of Wild Shape, aimed at a point within 60 feet. Each enemy in the 10-foot
+  Sphere makes a Constitution save against the spell save DC, taking 2d6
+  Necrotic, half on a success; the most wounded ally in it regains 2d6 Hit
+  Points. The enemies and the ally are chosen automatically.
+- Verification: `opengold_druid_tests` (the Wolf's AC, Temporary HP, no
+  spells, a checkpoint, the bite and its Prone, leaving the form, and Land's
+  Aid's thorns, healing and spent use).

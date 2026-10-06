@@ -8,6 +8,7 @@
 #include "spell_access.h"
 #include "spell_components.h"
 #include "creature_equipment.h"
+#include "beast_forms.h"
 #include "combat_grid.h"
 #include "status_effects.h"
 #include "concentration.h"
@@ -562,6 +563,11 @@ struct Definition
     int bardic_inspiration{};
     bool cutting_words{};
     bool shillelagh_weapon{}; // the melee weapon is a Club or Quarterstaff
+    // Druid: Wild Shape uses, kept in Actor::channel_divinity, which no Druid
+    // has; Land's Aid spends them from level 3.
+    int wild_shapes{};
+    bool lands_aid{};
+    bool prone_bite{}, bloodied_fury{}; // a Beast form's attack traits
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -661,6 +667,8 @@ struct Actor : detail::LifeState
     bool resistance_used{}; // Resistance (the cantrip) reduces damage once per turn
     EntityId horde_origin{};
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
+    // Wild Shape: the Beast form's statistics, derived from the wild_shape effect.
+    std::optional<Definition> form;
     bool light_damage{};        // Transient attack copy only; pending hits carry their own flag.
     bool involuntary_overlap{}; // Interrupted in an occupied space; retained through recovery until
     // separated.
@@ -703,6 +711,8 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"channel_divinity", "Channel Divinity", &Actor::channel_divinity,
         &Definition::channel_divinity, 1, true},
     ResourceDescriptor{"rage", "Rage", &Actor::channel_divinity, &Definition::rages, 1, true},
+    ResourceDescriptor{"wild_shape", "Wild Shape", &Actor::channel_divinity,
+        &Definition::wild_shapes, 1, true},
     ResourceDescriptor{"focus", "Focus Points", &Actor::surges, &Definition::focus, -1, true},
     ResourceDescriptor{"innate_sorcery", "Innate Sorcery", &Actor::free_casts,
         &Definition::innate_sorcery, 0, true},
@@ -765,7 +775,43 @@ int arcane_capacity(const Definition &d)
 // regains one use on a Short Rest.
 int channel_capacity(const Definition &d)
 {
-    return d.channel_divinity + d.rages;
+    return d.channel_divinity + d.rages + d.wild_shapes;
+}
+
+// Wild Shape: the Beast's AC, Speed, size, Strength, Dexterity, physical saves
+// and attack replace the Druid's; Hit Points, mental scores, proficiencies
+// and features stay. Equipment merges into the form, and no spells are cast.
+Definition shaped(Definition d, const detail::BeastForm &form)
+{
+    d.ac = form.armor_class;
+    d.mage_armor_ac = 0;
+    d.speed = form.speed;
+    d.size = form.size;
+    d.strength = form.strength;
+    d.dexterity = form.dexterity;
+    std::copy(form.saves.begin(), form.saves.end(), d.saves.begin());
+    d.melee = form.attack;
+    d.melee_bonus = form.attack_bonus;
+    d.melee_ability = form.attack.bonus;
+    d.melee_type = detail::DamageType::piercing;
+    d.reach = 5;
+    d.weapon_label = std::string(form.attack_label);
+    d.finesse = d.ranged_weapon = d.shield = d.other_weapon = false;
+    d.weapon_hands = 0;
+    d.versatile_sides = 0;
+    d.ranged = {};
+    d.ranged_bonus = d.range = d.long_range = 0;
+    d.masteries.clear();
+    d.savage = d.great_weapon_fighting = d.two_weapon_fighting = false;
+    d.melee_heavy_disadvantage = d.ranged_heavy_disadvantage = false;
+    d.str_dex_disadvantage = d.stealth_disadvantage = false;
+    d.shillelagh_weapon = false;
+    d.equipment_keys.clear();
+    d.spells.clear();
+    d.pack_tactics = form.pack_tactics;
+    d.prone_bite = form.prone_bite;
+    d.bloodied_fury = form.bloodied_fury;
+    return d;
 }
 
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
@@ -957,6 +1003,8 @@ character_definition(std::string_view bytes,
     // Elves do not sleep, so Sleep cannot touch them.
     d.sleepless = race == "Elf";
     d.rages = klass == "Barbarian" ? (level >= 3 ? 3 : 2) : 0;
+    d.wild_shapes = klass == "Druid" && level >= 2 ? 2 : 0;
+    d.lands_aid = klass == "Druid" && level >= 3;
     d.rage_damage = klass == "Barbarian" ? 2 : 0;
     d.strength = str;
     d.danger_sense = d.reckless = klass == "Barbarian" && level >= 2;
@@ -1670,7 +1718,7 @@ class Session final : public CombatSession
 
     const Definition &def(const Actor &a) const
     {
-        return a.definition;
+        return a.form ? *a.form : a.definition;
     }
 
     const Actor &actor(EntityId id) const
@@ -1855,6 +1903,11 @@ class Session final : public CombatSession
     // Moonbeam's beam moves onto a creature, burning those it reaches.
     void move_moonbeam(Actor &caster, const Actor &onto);
     void spikes_pierce(Actor &creature);
+    // Wild Shape's Beast form, kept in step with the wild_shape effect.
+    static void refresh_form(Actor &a);
+    void end_wild_shape(Actor &a);
+    // Land's Aid: thorns in a 10-foot Sphere and flowers that heal one ally.
+    void lands_aid(Actor &druid, Cell center);
     // Heat Metal targets only metal armor a creature wears.
     [[nodiscard]] bool wears_metal(const Actor &creature) const;
     // Heat Metal's 2d8 Fire and Constitution save.
@@ -2907,6 +2960,16 @@ Snapshot Session::snapshot() const
                 messages.push_back({label, {}});
                 s.combatants.back().status += std::string(" | ") + label;
                 s.combatants.back().conditions.push_back({label, {}});
+            }
+        for (const auto &effect : a.effects.active)
+            if (effect.kind == detail::EffectKind::wild_shape)
+            {
+                const auto &form = detail::beast_forms.at(std::size_t(effect.dc - 1));
+                s.combatants.back().form = std::string(form.key);
+                const Message shape{"Wild Shape ({form})", {{"form", std::string(form.label), true}}};
+                messages.push_back(shape);
+                s.combatants.back().status += " | Wild Shape (" + std::string(form.label) + ")";
+                s.combatants.back().conditions.push_back(shape);
             }
         for (const auto &effect : a.effects.active)
             if (effect.kind == detail::EffectKind::mirror_image)
@@ -4080,6 +4143,16 @@ std::vector<Command> Session::legal_commands() const
                 }
         }
     }
+    // Wild Shape: a Bonus Action takes a Beast form or leaves it.
+    if (a.bonus && d.wild_shapes)
+    {
+        if (a.channel_divinity > 0)
+            for (const auto &form : detail::beast_forms)
+                add(id, "wild_shape_" + std::string(form.key),
+                    "Wild Shape: " + std::string(form.label));
+        if (a.form)
+            add(id, "leave_wild_shape", "Leave Wild Shape");
+    }
     // Rage: a Bonus Action outside Heavy armor; on a later turn a Bonus Action
     // extends it.
     if (a.bonus && d.rages)
@@ -4254,6 +4327,9 @@ std::vector<Command> Session::legal_commands() const
             if (d.fiendish_vigor)
                 add(id, "fiendish_vigor", "Fiendish Vigor (False Life)", id);
         }
+        // Land's Aid: a Magic action spending a use of Wild Shape, aimed at a point.
+        if (d.lands_aid && a.channel_divinity > 0 && a.actions.available(true))
+            commands.push_back({revision_, id, 0, "lands_aid", "Land's Aid", Cell{}, 0, true});
         // Dragon's Breath: its holder exhales the chosen cone as an Action.
         for (const auto &effect : a.effects.active)
             if (effect.kind == detail::EffectKind::dragons_breath)
@@ -4483,7 +4559,10 @@ void Session::damage(Actor &target, int amount, bool critical)
             drop_concentration_effects(target);
     }
     if (target.hp == 0)
+    {
         target.effects.prone = true;
+        end_wild_shape(target);
+    }
     // Damage ends Turn Undead, Sleep and Charm Person on the creature.
     // Adaptation: any damage ends the charm, not only the charmer's side's.
     std::erase_if(target.effects.active, [](const auto & e)
@@ -4886,6 +4965,68 @@ void Session::sphere_burns(const Actor &caster, Actor &creature)
     damage(creature, amount);
 }
 
+void Session::refresh_form(Actor &a)
+{
+    const auto shape = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                    [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::wild_shape;
+    });
+    if (shape == a.effects.active.end())
+        a.form.reset();
+    else
+        a.form = shaped(a.definition, detail::beast_forms.at(std::size_t(shape->dc - 1)));
+}
+
+void Session::end_wild_shape(Actor &a)
+{
+    if (!a.form)
+        return;
+    std::erase_if(a.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::wild_shape;
+    });
+    a.form.reset();
+    log(a.source.name + " leaves Wild Shape.", {"{name} leaves Wild Shape.", {{"name", a.source.name}}});
+}
+
+void Session::lands_aid(Actor &druid, Cell center)
+{
+    druid.nick_origin = 0;
+    (void)druid.actions.spend(true);
+    --druid.channel_divinity;
+    log(druid.source.name + " uses Land's Aid.", {"{name} uses Land's Aid.", {{"name", druid.source.name}}});
+    const auto &aid = *detail::find_spell("lands_aid");
+    const auto cells = area_cells(aid, aid.id, druid.source.cell, center);
+    const auto inside = [&](const Actor & other)
+    {
+        return !other.dead && std::find(cells.begin(), cells.end(), other.source.cell) != cells.end();
+    };
+    // The Druid chooses its enemies for the thorns and its most wounded ally
+    // for the flowers.
+    const int dc = spell_dc(druid), rolled = dice(aid.dice);
+    for (auto &other : actors_)
+    {
+        if (!inside(other) || other.source.side == druid.source.side || other.hp == 0)
+            continue;
+        const bool saved = saving_throw_succeeds(other, aid.save, dc);
+        const int amount = resolved_damage(other, aid.damage, saved ? rolled / 2 : rolled);
+        log(other.source.name + " takes " + std::to_string(amount) + " Necrotic damage from the thorns.",
+        {
+            "{name} takes {damage} Necrotic damage from the thorns.",
+            {{"name", other.source.name}, {"damage", std::to_string(amount)}}
+        });
+        damage(other, amount);
+    }
+    Actor *wounded = nullptr; // Borrowed from actors_.
+    for (auto &other : actors_)
+        if (inside(other) && other.source.side == druid.source.side && other.hp < max_hp(other) &&
+                (!wounded || max_hp(other) - other.hp > max_hp(*wounded) - wounded->hp))
+            wounded = &other;
+    if (wounded)
+        (void)heal(*wounded, dice(aid.dice));
+}
+
 bool Session::wears_metal(const Actor &creature) const
 {
     if (creature.source.character_profile.empty())
@@ -5077,6 +5218,11 @@ void Session::cast_area()
     const auto aimed = *area_;
     area_.reset();
     auto &a = actor(aimed.caster);
+    if (aimed.verb == "lands_aid")
+    {
+        lands_aid(a, aimed.center);
+        return;
+    }
     end_sanctuary(a);
     const InvisibilityEnds ends{*this, a};
     const auto &spell = *detail::find_spell(aimed.verb);
@@ -5718,6 +5864,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // At zero HP the creature is Unconscious and Prone (SRD pp.187,191).
     // At longer range their opposing attack modifiers cancel, not stack.
     const bool pack_tactics = !spell && d.pack_tactics && ally_beside(a, target);
+    // A Boar's Bloodied Fury: Advantage at half its Hit Points or fewer.
+    if (!spell && d.bloodied_fury && a.hp * 2 <= max_hp(a))
+        result.advantage = true;
     if (helpless(target) || a.aim_ready || pack_tactics ||
             detail::vexed_by(target.effects, scope_, a.source.id))
         result.advantage = true;
@@ -5841,6 +5990,14 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
         arguments
     });
 damage(target, amount, critical);
+    // A Wolf's bite knocks a Medium or smaller target Prone.
+    if (!spell && !ranged && def(a).prone_bite && def(target).size <= 2 && target.hp > 0 &&
+            !target.effects.prone)
+    {
+        target.effects.prone = true;
+        log(target.source.name + " is knocked Prone.",
+        {"{name} is knocked Prone.", {{"name", target.source.name}}});
+    }
     // A smite may follow a weapon hit or an Unarmed Strike on the attacker's own
     // turn; Divine and Searing Smite need it to be a Melee hit.
     if (!spell && actors_[turn_].source.id == a.source.id)
@@ -6586,6 +6743,10 @@ bool Session::begin_turn()
     }
     burn_searing_smites(a);
     squeeze_ensnared(a);
+    // Wild Shape ends when it lapses or its Druid is Incapacitated.
+    if (a.form && detail::incapacitated(a.effects))
+        end_wild_shape(a);
+    refresh_form(a);
     // Heat Metal may be repeated from the caster's next turn on.
     for (auto &other : actors_)
         for (auto &effect : other.effects.active)
@@ -7537,6 +7698,33 @@ void Session::dispatch(const Command &command)
         end_sanctuary(a);
         (void)attack(a, actor(command.target), false, true, {3, 6, def(a).casting - 2},
                      detail::DamageType::fire);
+    }
+    else if (command.verb.starts_with("wild_shape_"))
+    {
+        a.bonus = false;
+        --a.channel_divinity;
+        const auto *form = detail::beast_form(std::string_view(command.verb).substr(11));
+        std::erase_if(a.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::wild_shape;
+        });
+        detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::wild_shape,
+                                    int(form - detail::beast_forms.data()) + 1);
+        refresh_form(a);
+        log(a.source.name + " takes the shape of a " + std::string(form->label) + ".",
+        {"{name} takes the shape of a {form}.", {{"name", a.source.name}, {"form", std::string(form->label), true}}});
+        // Temporary Hit Points equal to the Druid level.
+        TemporaryHitPoints offered{def(a).level, "feature:wild_shape"};
+        if (a.temporary_hp.amount)
+            temporary_offer_ = std::move(offered);
+        else
+            detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
+    }
+    else if (command.verb == "leave_wild_shape")
+    {
+        a.bonus = false;
+        end_wild_shape(a);
     }
     else if (command.verb == "heat_metal_again")
     {
@@ -8841,6 +9029,8 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     }
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
+    for (auto &a : session->actors_)
+        refresh_form(a);
     session->light_active_ = saved_light;
     session->nick_active_ = saved_nick;
     session->validate_light();
@@ -9471,10 +9661,13 @@ class Module final : public RulesModule
         if (next.character_class == "Bard" && next.level == 2)
             next.grants.push_back({"feature:jack_of_all_trades", "class:bard", 2, {}});
         // The Circle of the Land is the SRD's only Druid subclass.
+        if (next.character_class == "Druid" && next.level == 2)
+            next.grants.push_back({"feature:wild_shape", "class:druid", 2, {}});
         if (next.character_class == "Druid" && next.level == 3)
         {
             next.grants.push_back({"subclass:land", "class:druid", 3, {}});
             next.grants.push_back({"feature:circle_spells", "subclass:druid:land", 3, {}});
+            next.grants.push_back({"feature:lands_aid", "subclass:druid:land", 3, {}});
         }
         // The College of Lore is the SRD's only Bard subclass.
         if (next.character_class == "Bard" && next.level == 3)
@@ -10871,7 +11064,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.126", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.127", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

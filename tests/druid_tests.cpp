@@ -335,6 +335,64 @@ void heat_metal_checks()
           "A Bonus Action on a later turn heats it again");
 }
 
+unsigned wild_shapes_left(const CombatSession &c)
+{
+    for (const auto &pool : unit(c, 1).resources)
+        if (pool.id == "wild_shape")
+            return pool.remaining;
+    throw std::runtime_error("No Wild Shape pool");
+}
+
+void wild_shape_checks()
+{
+    auto module = rules();
+    check(has_grant(druid(2), "feature:wild_shape") && !has_grant(druid(1), "feature:wild_shape"),
+          "Level two brings Wild Shape");
+    auto c = battle(*module, druid(2).sheet(), {}, true);
+    const int druid_ac = unit(*c, 1).armor_class;
+    check(wild_shapes_left(*c) == 2 && submit(*c, "wild_shape_wolf") && wild_shapes_left(*c) == 1 &&
+          unit(*c, 1).form == "wolf" && has_condition(*c, 1, "Wild Shape ({form})") &&
+          unit(*c, 1).armor_class == 12 && unit(*c, 1).temporary_hp.amount == 2 &&
+          !unit(*c, 1).bonus_action && unit(*c, 1).action,
+          "A Bonus Action takes the Wolf's form with Temporary HP equal to the Druid level");
+    const auto commands = c->legal_commands();
+    check(std::none_of(commands.begin(), commands.end(), [](const auto & command)
+    {
+        return command.verb == "produce_flame" || command.verb == "cure_wounds";
+    }), "A Beast form casts no spells");
+    const auto saved = c->save();
+    check(module->restore(saved)->snapshot().combatants.front().form == "wolf",
+          "The form survives a checkpoint");
+    check(submit(*c, "melee", 98) && logged(*c, "Druid -> Enemy: d20") && logged(*c, " + 4 vs AC"),
+          "The Wolf bites at +4");
+    // The enemy's AC is 1, so the bite hits.
+    check(unit(*c, 98).prone && logged(*c, "Enemy is knocked Prone."),
+          "The Wolf's bite knocks a Medium creature Prone");
+    reach(*c, 1);
+    check(submit(*c, "leave_wild_shape") && unit(*c, 1).form.empty() &&
+          unit(*c, 1).armor_class == druid_ac && logged(*c, "Druid leaves Wild Shape."),
+          "A Bonus Action leaves the form");
+}
+
+void lands_aid_checks()
+{
+    auto module = rules();
+    const auto profile = module->character_profile(druid(3).sheet(), std::vector<std::string> {}).data;
+    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+        {   {1, "campaign-character", "Druid", 0, {1, 1}, profile},
+            {2, "target", "Ally", 0, {4, 2}, {}, VitalState{3, false, {}}},
+            {98, "target", "Enemy", 1, {4, 1}}
+        }},
+    5);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*c, "end"), "Reach the Druid's turn");
+    check(submit(*c, "lands_aid") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
+          logged(*c, "Druid uses Land's Aid.") && logged(*c, "Enemy takes") &&
+          logged(*c, "Necrotic damage from the thorns.") && unit(*c, 2).hit_points > 3 &&
+          !unit(*c, 1).action && wild_shapes_left(*c) == 1,
+          "Land's Aid spends a Wild Shape use: thorns for the enemy, flowers for the ally");
+}
+
 } // namespace
 
 int main()
@@ -349,6 +407,8 @@ int main()
         moonbeam_checks();
         spike_growth_checks();
         heat_metal_checks();
+        wild_shape_checks();
+        lands_aid_checks();
         std::cout << "Druid tests passed\n";
     }
     catch (const std::exception &e)
