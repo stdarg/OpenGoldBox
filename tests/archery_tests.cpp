@@ -133,7 +133,8 @@ void selection()
         p.award_experience(2700, "archery");
         if (klass.id != "fighter" && klass.id != "wizard" && klass.id != "cleric" &&
                 klass.id != "rogue" && klass.id != "paladin" && klass.id != "ranger" &&
-                klass.id != "barbarian" && klass.id != "monk" && klass.id != "sorcerer")
+                klass.id != "barbarian" && klass.id != "monk" && klass.id != "sorcerer" &&
+                klass.id != "warlock")
         {
             check(!p.can_advance(id),
                   "Unsupported later advancement does not invent Fighting Style entitlement");

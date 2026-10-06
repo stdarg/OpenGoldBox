@@ -52,6 +52,8 @@ std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::st
         result.push_back({"feature:spellcasting", "class:" + std::string(klass), 1, {}});
     if (klass == "sorcerer")
         result.push_back({"feature:innate_sorcery", "class:sorcerer", 1, {}});
+    if (klass == "warlock")
+        result.push_back({"feature:pact_magic", "class:warlock", 1, {}});
     if (klass == "rogue")
         result.push_back({"feature:sneak_attack", "class:rogue", 1, {}});
     if (klass == "wizard")
@@ -153,6 +155,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         required.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
         required.push_back({"feature:metamagic", "class:sorcerer", 2, {}});
     }
+    if (klass == "warlock" && level >= 2)
+        required.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
     if (klass == "sorcerer" && level >= 3)
     {
         required.push_back({"subclass:draconic", "class:sorcerer", 3, {}});
@@ -233,6 +237,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         {
             require((klass == "fighter" || klass == "cleric" || klass == "wizard" ||
                      klass == "barbarian" || klass == "monk" || klass == "sorcerer" ||
+                     klass == "warlock" ||
                      klass == "rogue" || klass == "paladin" || klass == "ranger") &&
                     grant.level == 4 &&
                     grant.source_id ==

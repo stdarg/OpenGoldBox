@@ -203,9 +203,11 @@ void table()
               components->somatic == spell.somatic,
               "Row components match the component catalog");
         // Searing Smite's ongoing burn ends with a Constitution save.
+        // Hellish Rebuke's Reaction forces a Dexterity save.
         const bool saves = spell.pattern == SpellPattern::save_damage ||
                            spell.pattern == SpellPattern::save_condition ||
-                           spell.pattern == SpellPattern::smite;
+                           spell.pattern == SpellPattern::smite ||
+                           spell.pattern == SpellPattern::reaction;
         check(saves || spell.save == Ability::strength, "Only save patterns carry a save ability");
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
               spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff ||

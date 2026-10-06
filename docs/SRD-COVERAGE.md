@@ -22,6 +22,12 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Warlock Pact Magic
+
+Rules 0.6.120 makes the Warlock a preparing caster through level 4 with Pact
+Magic slots, Hex, Hellish Rebuke and Magical Cunning. See
+[Warlock](WARLOCK.md#pact-magic-hex-hellish-rebuke-and-magical-cunning).
+
 ## Metamagic
 
 Rules 0.6.119 adds the Sorcerer's ten Metamagic options, readied before a

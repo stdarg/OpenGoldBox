@@ -139,7 +139,9 @@ enum class EffectKind : unsigned
     // is the option, or 10 + the type for Transmuted Spell.
     metamagic = 54,
     // Extended Spell: Advantage on saves to keep this Concentration.
-    extended = 55
+    extended = 55,
+    // Hex: the caster's attack-roll hits deal 1d6 more Necrotic damage.
+    hex = 56
 };
 
 // The longest a spell benefit lasts, in milliseconds.

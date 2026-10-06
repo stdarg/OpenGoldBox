@@ -1072,7 +1072,7 @@ void CombatView::immediate(String verb)
     // React answers whichever reaction is asked: an opportunity attack, Shield,
     // Deflect Attacks or its redirect.
     const auto legal = demo_->combat().legal_commands();
-    for (const char *reaction : {"shield", "deflect", "redirect"})
+    for (const char *reaction : {"shield", "deflect", "redirect", "rebuke"})
         if (wanted == "opportunity" && std::any_of(legal.begin(), legal.end(), [&](const auto & c)
     {
         return c.verb == reaction;
@@ -2029,7 +2029,7 @@ void CombatView::refresh()
     }
 })
     get_node<Button>(node)->set_disabled(!enabled(verb));
-    if (enabled("shield") || enabled("deflect") || enabled("redirect"))
+    if (enabled("shield") || enabled("deflect") || enabled("redirect") || enabled("rebuke"))
         get_node<Button>("React")->set_disabled(false);
     {
         const bool party_turn = loaded && s.outcome == Outcome::ongoing && player;
@@ -2067,6 +2067,8 @@ void CombatView::refresh()
         ? i18n::text("You are hit. Deflect the attack (1d10 + Dexterity + Monk level less damage) or decline.")
         : s.reaction_pending && enabled("redirect")
         ? i18n::text("The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline.")
+        : s.reaction_pending && enabled("rebuke")
+        ? i18n::text("You are hurt. Cast Hellish Rebuke at the attacker, or decline.")
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
         : player
     ? i18n::format("Selected: {action}. Click a highlighted square.", {{"action", action}})

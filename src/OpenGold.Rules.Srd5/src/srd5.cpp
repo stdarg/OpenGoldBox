@@ -180,7 +180,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled ||
            kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible ||
            kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced ||
-           kind == detail::EffectKind::dragons_breath || kind == detail::EffectKind::extended;
+           kind == detail::EffectKind::dragons_breath || kind == detail::EffectKind::extended ||
+           kind == detail::EffectKind::hex;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -348,9 +349,6 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
     SpellAccessRow{"Wizard", "shocking_grasp", 1},
     SpellAccessRow{"Wizard", "chill_touch", 1},
-    SpellAccessRow{"Warlock", "eldritch_blast", 1},
-    SpellAccessRow{"Warlock", "poison_spray", 1},
-    SpellAccessRow{"Warlock", "chill_touch", 1},
     SpellAccessRow{"Sorcerer", "fire_bolt", 1},
     SpellAccessRow{"Sorcerer", "poison_spray", 1},
     SpellAccessRow{"Sorcerer", "ray_of_frost", 1},
@@ -393,7 +391,25 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Sorcerer", "see_invisibility", 3},
     SpellAccessRow{"Sorcerer", "shatter", 3},
     SpellAccessRow{"Sorcerer", "web", 3},
-    SpellAccessRow{"Sorcerer", "command", 3}};
+    SpellAccessRow{"Sorcerer", "command", 3},
+    SpellAccessRow{"Warlock", "chill_touch", 1},
+    SpellAccessRow{"Warlock", "eldritch_blast", 1},
+    SpellAccessRow{"Warlock", "poison_spray", 1},
+    SpellAccessRow{"Warlock", "true_strike", 1},
+    SpellAccessRow{"Warlock", "bane", 1},
+    SpellAccessRow{"Warlock", "charm_person", 1},
+    SpellAccessRow{"Warlock", "expeditious_retreat", 1},
+    SpellAccessRow{"Warlock", "hellish_rebuke", 1},
+    SpellAccessRow{"Warlock", "hex", 1},
+    SpellAccessRow{"Warlock", "hideous_laughter", 1},
+    SpellAccessRow{"Warlock", "protection_from_evil_and_good", 1},
+    SpellAccessRow{"Warlock", "darkness", 3},
+    SpellAccessRow{"Warlock", "hold_person", 3},
+    SpellAccessRow{"Warlock", "invisibility", 3},
+    SpellAccessRow{"Warlock", "mind_spike", 3},
+    SpellAccessRow{"Warlock", "mirror_image", 3},
+    SpellAccessRow{"Warlock", "misty_step", 3},
+    SpellAccessRow{"Warlock", "ray_of_enfeeblement", 3}};
 
 std::vector<std::string> allowed_spells(std::string_view klass, unsigned level)
 {
@@ -457,6 +473,8 @@ struct Definition
     int innate_sorcery{}; // Sorcerer: Innate Sorcery uses, in Actor::free_casts
     int sorcery_points{}; // Sorcerer level 2: Font of Magic, in Actor::lay_on_hands
     std::vector<std::string> metamagic; // the Sorcerer's Metamagic options
+    bool pact_magic{};    // Warlock: slots of one level, back on a Short Rest
+    int magical_cunning{}; // Warlock level 2: once per Long Rest, in Actor::arcane
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -603,6 +621,8 @@ constexpr std::array resource_descriptors
         &Definition::innate_sorcery, 0, true},
     ResourceDescriptor{"sorcery_points", "Sorcery Points", &Actor::lay_on_hands,
         &Definition::sorcery_points, 0, true},
+    ResourceDescriptor{"magical_cunning", "Magical Cunning", &Actor::arcane,
+        &Definition::magical_cunning, 0, false},
     ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
         &Definition::metabolism, 0, false}};
 
@@ -645,10 +665,11 @@ int surge_capacity(const Definition &d)
     return d.surges + d.focus;
 }
 
-// Arcane Recovery and Uncanny Metabolism share one store, once per Long Rest.
+// Arcane Recovery, Uncanny Metabolism and Magical Cunning share one store,
+// once per Long Rest.
 int arcane_capacity(const Definition &d)
 {
-    return d.arcane + d.metabolism;
+    return d.arcane + d.metabolism + d.magical_cunning;
 }
 
 // Channel Divinity and Rage share one store; no class has both, and each
@@ -810,7 +831,7 @@ character_definition(std::string_view bytes,
     throw std::runtime_error("Invalid character profile");
     if (level > 1 && klass != "Fighter" && klass != "Cleric" && klass != "Wizard" &&
             klass != "Rogue" && klass != "Paladin" && klass != "Ranger" && klass != "Barbarian" &&
-            klass != "Monk" && klass != "Sorcerer")
+            klass != "Monk" && klass != "Sorcerer" && klass != "Warlock")
         throw std::runtime_error("Advancement is unsupported for this class");
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
@@ -854,6 +875,8 @@ character_definition(std::string_view bytes,
     d.metabolism = klass == "Monk" && level >= 2 ? 1 : 0;
     d.innate_sorcery = klass == "Sorcerer" ? 2 : 0;
     d.sorcery_points = klass == "Sorcerer" && level >= 2 ? int(level) : 0;
+    d.pact_magic = klass == "Warlock";
+    d.magical_cunning = klass == "Warlock" && level >= 2 ? 1 : 0;
     d.deflect = d.open_hand = klass == "Monk" && level >= 3;
     d.focus_dc = 8 + 2 + ability_modifier(scores[4]);
     d.dexterity = dex;
@@ -888,11 +911,14 @@ character_definition(std::string_view bytes,
     d.two_weapon_fighting = (features & 16) != 0;
     d.surges = klass == "Fighter" && level >= 2 ? 1 : 0;
     d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
-    d.slots = (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer")
+    // Pact Magic: one level-1 slot, then two; level-2 slots from level 3.
+    d.slots = klass == "Warlock" ? (level <= 2 ? int(level) : 0)
+              : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer")
               ? (level == 1 ? 2 : level == 2 ? 3 : 4)
               : (klass == "Paladin" || klass == "Ranger") ? (level <= 2 ? 2 : 3)
               : 0;
-    d.slots2 = (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer") && level >= 3
+    d.slots2 = klass == "Warlock" && level >= 3 ? 2
+               : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer") && level >= 3
                ? (level == 3 ? 2 : 3)
                : 0;
     d.casting = 2 + ability_modifier(scores[(klass == "Cleric" || klass == "Ranger") ? 4
@@ -1047,8 +1073,6 @@ character_definition(std::string_view bytes,
         std::sort(right.begin(), right.end());
         return left == right;
     };
-    if (klass == "Warlock" && !same_spells(detail::known_cantrip_ids(access), stored_spells))
-        throw std::runtime_error("Character cantrip access disagrees with spell grants");
     if (detail::prepares_spells(klass) &&
             !same_spells(detail::casting_ids(access), stored_spells))
         throw std::runtime_error("Character casting access disagrees with spell grants");
@@ -1403,7 +1427,8 @@ class Session final : public CombatSession
     {
         hit,      // an attack roll hit: Shield or Deflect Attacks
         missile,  // targeted by Magic Missile: Shield
-        redirect  // Deflect Attacks stopped all the damage: redirect it for 1 Focus
+        redirect, // Deflect Attacks stopped all the damage: redirect it for 1 Focus
+        rebuke    // an attack damaged a Warlock: Hellish Rebuke
     };
     struct ReactionQuestion
     {
@@ -1435,6 +1460,8 @@ class Session final : public CombatSession
                       bool critical = false) const;
     int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
                   bool ranged);
+    [[nodiscard]] bool can_rebuke(const Actor &warlock, const Actor &attacker) const;
+    void rebuke(const Actor &attacker, Actor &warlock);
     void perform(const Command &command);
     void dispatch(const Command &command);
     void answer_reaction(const Command &command);
@@ -1687,6 +1714,8 @@ class Session final : public CombatSession
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
     [[nodiscard]] bool mark_can_move(const Actor &caster) const;
+    [[nodiscard]] bool hexed_by(const Actor &target, const Actor &caster) const;
+    [[nodiscard]] bool hex_can_move(const Actor &caster) const;
     // Sacred Weapon's attack bonus, 0 without it.
     [[nodiscard]] int sacred_weapon_bonus(const Actor &a) const;
     [[nodiscard]] detail::DamageType sacred_damage_type(const Actor &a, const Actor &target) const;
@@ -2700,7 +2729,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::reckless, "Reckless"},
                     std::pair{detail::EffectKind::addled, "Addled"},
                     std::pair{detail::EffectKind::innate_sorcery, "Innate Sorcery"},
-                    std::pair{detail::EffectKind::metamagic, "Metamagic readied"}
+                    std::pair{detail::EffectKind::metamagic, "Metamagic readied"},
+                    std::pair{detail::EffectKind::hex, "Hexed"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2881,6 +2911,11 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::gust_of_wind:
     case detail::Rider::flaming_sphere:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::hex:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::hex, 0);
+        log(target.source.name + " is hexed.", {"{name} is hexed.", {{"name", target.source.name}}});
+        return;
     case detail::Rider::charm_person:
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::charmed, 0);
@@ -3452,6 +3487,8 @@ std::vector<Command> Session::legal_commands() const
         const auto &who = actor(question.target);
         if (question.asked == Asked::redirect)
             add(who.source.id, "redirect", "Redirect the attack (1 Focus)");
+        else if (question.asked == Asked::rebuke)
+            add(who.source.id, "rebuke", "Cast Hellish Rebuke");
         else
         {
             if (can_shield(who) && !question.critical)
@@ -3830,6 +3867,12 @@ std::vector<Command> Session::legal_commands() const
                            detail::knows_spell(d.spells, "hunters_mark") && !d.str_dex_disadvantage &&
                            !silenced(a.source.cell);
     const bool moving_mark = a.bonus && mark_can_move(a);
+    // Hex moves to a new creature as a Bonus Action once its first drops.
+    if (a.bonus && hex_can_move(a))
+        for (const auto &other : actors_)
+            if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+                    distance(a.source.cell, other.source.cell) <= 90 && can_see(a, other))
+                add(id, "hex_move", "Move Hex", other.source.id);
     if (free_mark || moving_mark)
         for (const auto &other : actors_)
             if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
@@ -5639,6 +5682,18 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         });
         damage(target, extra, false);
     }
+    // Hex: the caster's attack-roll hits deal 1d6 more Necrotic damage.
+    if (hit && hexed_by(target, a) && !target.dead)
+    {
+        const int extra = resolved_damage(target, detail::DamageType::necrotic,
+                                          dice({1, 6, 0}, critical_hit(a, target, natural, spell)));
+        log(target.source.name + " takes " + std::to_string(extra) + " Necrotic damage from Hex.",
+        {
+            "{name} takes {damage} Necrotic damage from Hex.",
+            {{"name", target.source.name}, {"damage", std::to_string(extra)}}
+        });
+        damage(target, extra, false);
+    }
     // Divine Favor: a weapon hit deals an extra 1d4 Radiant damage.
     if (hit && !spell && detail::has_effect(a.effects, detail::EffectKind::divine_favor) &&
             !target.dead)
@@ -5653,6 +5708,9 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         });
         damage(target, extra, false);
     }
+    // Hellish Rebuke answers the damage once the attack is done.
+    if (hit && amount > 0 && target.hp > 0)
+        rebuke(a, target);
     return hit;
 }
 
@@ -5693,6 +5751,30 @@ bool Session::marked_by(const Actor &target, const Actor &caster) const
         return e.kind == detail::EffectKind::hunters_mark && e.source_scope == scope_ &&
                e.source_actor == caster.source.id;
     });
+}
+
+bool Session::hexed_by(const Actor &target, const Actor &caster) const
+{
+    return std::any_of(target.effects.active.begin(), target.effects.active.end(),
+                       [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::hex && e.source_scope == scope_ &&
+               e.source_actor == caster.source.id;
+    });
+}
+
+bool Session::hex_can_move(const Actor &caster) const
+{
+    // Hex moves once its creature drops, while the caster concentrates on it.
+    bool hexed = false;
+    for (const auto &other : actors_)
+        if (hexed_by(other, caster))
+        {
+            if (other.hp > 0 && !other.dead)
+                return false;
+            hexed = true;
+        }
+    return hexed;
 }
 
 bool Session::mark_can_move(const Actor &caster) const
@@ -6496,7 +6578,7 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
     if (answer_of(target.source.id, asked))
         return;
     const bool askable =
-        asked == Asked::redirect ||
+        asked == Asked::redirect || asked == Asked::rebuke ||
         (can_shield(target) && !critical) ||
         (asked == Asked::hit && can_deflect(target, deflectable));
     if (askable)
@@ -6551,13 +6633,53 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
     return left;
 }
 
+bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
+{
+    return warlock.source.side != attacker.source.side && conscious(warlock) &&
+           warlock.reaction && !detail::incapacitated(warlock.effects) &&
+           (warlock.slots > 0 || warlock.slots2 > 0) &&
+           detail::knows_spell(def(warlock).spells, "hellish_rebuke") &&
+           distance(warlock.source.cell, attacker.source.cell) <= 60 && can_see(warlock, attacker) &&
+           !attacker.dead;
+}
+
+void Session::rebuke(const Actor &attacker, Actor &warlock)
+{
+    // Hellish Rebuke: the attacker saves against 2d10 Fire, 3d10 from a
+    // level-2 slot, taking half on a success.
+    if (!can_rebuke(warlock, attacker))
+        return;
+    ask_reaction(warlock, Asked::rebuke);
+    if (answer_of(warlock.source.id, Asked::rebuke)->verb != "rebuke")
+        return;
+    warlock.reaction = false;
+    const bool second = warlock.slots <= 0;
+    --(second ? warlock.slots2 : warlock.slots);
+    auto &foe = actor(attacker.source.id);
+    log(warlock.source.name + " casts Hellish Rebuke at " + foe.source.name + ".",
+    {
+        "{name} casts Hellish Rebuke at {target}.",
+        {{"name", warlock.source.name}, {"target", foe.source.name}}
+    });
+    const bool saved = saving_throw_succeeds(foe, detail::Ability::dexterity, spell_dc(warlock));
+    const int rolled = dice({second ? 3 : 2, 10, 0});
+    const int amount = resolved_damage(foe, detail::DamageType::fire, saved ? rolled / 2 : rolled);
+    log(foe.source.name + " takes " + std::to_string(amount) + " Fire damage.",
+    {
+        "{name} takes {damage} {type} damage.",
+        {{"name", foe.source.name}, {"damage", std::to_string(amount)}, {"type", "Fire", true}}
+    });
+    damage(foe, amount);
+}
+
 void Session::perform(const Command &command)
 {
     casting_metamagic_.reset();
     heightened_target_ = 0;
     const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        return can_shield(other) || def(other).deflect;
+        return can_shield(other) || def(other).deflect ||
+               detail::knows_spell(def(other).spells, "hellish_rebuke");
     });
     if (!askable)
     {
@@ -6933,6 +7055,24 @@ void Session::dispatch(const Command &command)
         {"{name} casts Hunter's Mark (Favored Enemy).", {{"name", a.source.name}}});
         begin_concentration(a, spell);
         apply_rider(spell, command.verb, a, actor(command.target), spell_dc(a));
+    }
+    else if (command.verb == "hex_move")
+    {
+        a.bonus = false;
+        for (auto &other : actors_)
+            std::erase_if(other.effects.active, [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::hex && e.source_scope == scope_ &&
+                   e.source_actor == a.source.id;
+        });
+        auto &cursed = actor(command.target);
+        detail::apply_spell_benefit(cursed.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::hex, 0);
+        log(a.source.name + " moves Hex to " + cursed.source.name + ".",
+        {
+            "{name} moves Hex to {target}.",
+            {{"name", a.source.name}, {"target", cursed.source.name}}
+        });
     }
     else if (command.verb == "hunters_mark_move")
     {
@@ -8062,7 +8202,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         input >> question.target >> asked >> question.deflectable >> question.critical >>
               command.actor >> command.target >> std::quoted(command.verb) >>
               command.destination.x >> command.destination.y >> command.item >> answers;
-        if (!input || !known_actor(question.target) || asked > unsigned(Asked::redirect) ||
+        if (!input || !known_actor(question.target) || asked > unsigned(Asked::rebuke) ||
                 !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
                 command.verb.empty() || answers > 3 * session->actors_.size())
             throw std::runtime_error("Invalid reaction prompt");
@@ -8072,9 +8212,10 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             ReactionAnswer answer;
             unsigned kind{};
             input >> answer.target >> kind >> std::quoted(answer.verb);
-            if (!input || !known_actor(answer.target) || kind > unsigned(Asked::redirect) ||
+            if (!input || !known_actor(answer.target) || kind > unsigned(Asked::rebuke) ||
                     (answer.verb != "shield" && answer.verb != "deflect" &&
-                     answer.verb != "redirect" && answer.verb != "decline"))
+                     answer.verb != "redirect" && answer.verb != "rebuke" &&
+                     answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
             answer.asked = Asked(kind);
             prompt.answers.push_back(std::move(answer));
@@ -8266,7 +8407,7 @@ class Module final : public RulesModule
                  sheet.character_class != "Wizard" && sheet.character_class != "Rogue" &&
                  sheet.character_class != "Paladin" && sheet.character_class != "Ranger" &&
                  sheet.character_class != "Barbarian" && sheet.character_class != "Monk" &&
-                 sheet.character_class != "Sorcerer"))
+                 sheet.character_class != "Sorcerer" && sheet.character_class != "Warlock"))
             return {};
         AdvancementOptions result;
         result.level = sheet.level + 1;
@@ -8354,6 +8495,8 @@ class Module final : public RulesModule
         if (sheet.character_class == "Paladin")
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        if (sheet.character_class == "Warlock")
+            result.description = "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three. Level four grants a third cantrip and an available feat or ability points.";
         if (sheet.character_class == "Sorcerer")
             result.description = "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
         if (sheet.character_class == "Monk")
@@ -8546,7 +8689,7 @@ class Module final : public RulesModule
                 (sheet.character_class == "Fighter" || sheet.character_class == "Paladin") ? 0
                 : sheet.character_class == "Cleric"                                        ? 4
                 : (sheet.character_class == "Rogue" || sheet.character_class == "Ranger")  ? 1
-                : sheet.character_class == "Sorcerer"                                      ? 5
+                : (sheet.character_class == "Sorcerer" || sheet.character_class == "Warlock") ? 5
                 : 3;
             unsigned remaining = 2;
             for (unsigned n = 0; n < 6 && remaining; ++n)
@@ -8686,6 +8829,8 @@ class Module final : public RulesModule
                 unsigned(next.level),
                 {}});
         }
+        if (next.character_class == "Warlock" && next.level == 2)
+            next.grants.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
         if (next.character_class == "Sorcerer" && next.level == 2)
         {
             next.grants.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
@@ -8861,10 +9006,12 @@ class Module final : public RulesModule
         }
         if (next.character_class == "Paladin" || next.character_class == "Ranger" ||
                 next.character_class == "Barbarian" || next.character_class == "Monk" ||
-                next.character_class == "Sorcerer")
+                next.character_class == "Sorcerer" || next.character_class == "Warlock")
         {
             const std::string note =
-                next.character_class == "Sorcerer"
+                next.character_class == "Warlock"
+                ? "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three. Level four grants a third cantrip and an available feat or ability points."
+                : next.character_class == "Sorcerer"
                 ? "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
                 : next.character_class == "Monk"
                 ? "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points."
@@ -9075,6 +9222,12 @@ class Module final : public RulesModule
         actor.rushes = d.rushes;
         actor.surges = surge_capacity(d);
         actor.channel_divinity = std::min(channel_capacity(d), actor.channel_divinity + 1);
+        // Pact Magic slots all return on a Short Rest.
+        if (d.pact_magic)
+        {
+            actor.slots = d.slots;
+            actor.slots2 = d.slots2;
+        }
         state = vitals(actor);
     }
 
@@ -9210,6 +9363,11 @@ class Module final : public RulesModule
             return actions;
         if (d.lay_on_hands && actor.lay_on_hands > 0)
             actions.push_back({"lay_on_hands", {"Lay On Hands", {}}});
+        // Magical Cunning: a one-minute rite, so a camp action; it needs no
+        // target and so takes the whole-party path.
+        if (d.magical_cunning && actor.arcane > 0 &&
+                actor.slots + actor.slots2 < d.slots + d.slots2)
+            actions.push_back({"magical_cunning", {"Magical Cunning", {}}, true});
         if (d.str_dex_disadvantage)
             return actions;
         for (const auto &spell : detail::spell_table)
@@ -9325,6 +9483,18 @@ class Module final : public RulesModule
     }))
         throw std::runtime_error("That spell or feature cannot be used now");
         auto caster = camp_actor(user, user_state);
+        if (action == "magical_cunning")
+        {
+            // Back come expended Pact Magic slots, up to half the maximum
+            // (rounded up).
+            const auto &d = caster.definition;
+            auto &slots = d.slots2 ? caster.slots2 : caster.slots;
+            const int maximum = d.slots2 ? d.slots2 : d.slots;
+            slots = std::min(maximum, slots + (maximum + 1) / 2);
+            --caster.arcane;
+            user_state = vitals(caster);
+            return;
+        }
         std::vector<std::pair<Actor, VitalState *>> members;
         for (const auto &member : party)
             if (member.state != &user_state)
@@ -10037,7 +10207,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.119", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.120", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

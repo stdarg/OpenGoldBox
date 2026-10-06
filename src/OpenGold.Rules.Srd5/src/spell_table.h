@@ -105,7 +105,8 @@ enum class Rider : unsigned
     enlarge_reduce,
     dragons_breath,
     charm_person,
-    gust_of_wind
+    gust_of_wind,
+    hex
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -917,6 +918,34 @@ inline constexpr std::array spell_table
         .target = SpellTarget::enemy,
         .range = 120,
         .dice = {1, 8, 0}},
+    // SRD 5.2.1 p. 140: a curse adding 1d6 Necrotic to the caster's attack-roll
+    // hits; moved after the target drops as a later Bonus Action. The ability
+    // check Disadvantage has no use here.
+    SpellDef{
+        .id = "hex",
+        .label = "Hex",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::enemy,
+        .range = 90,
+        .bonus_action = true,
+        .requires_sight = true,
+        .rider = Rider::hex,
+        .concentration = true},
+    // SRD 5.2.1 p. 140: a Reaction to taking damage from a creature within 60
+    // feet: it makes a Dexterity save against 2d10 Fire, half on a success.
+    SpellDef{
+        .id = "hellish_rebuke",
+        .label = "Hellish Rebuke",
+        .level = 1,
+        .pattern = SpellPattern::reaction,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .save = Ability::dexterity,
+        .damage = DamageType::fire,
+        .dice = {2, 10, 0},
+        .half_on_success = true,
+        .upcast = {.extra_dice = 1}},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
     // locked door while exploring. Verbal only.
     SpellDef{

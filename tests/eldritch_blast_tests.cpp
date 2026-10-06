@@ -158,7 +158,7 @@ void access()
     auto rules = module();
     auto d = draft();
     auto options = creation->cantrip_options(d);
-    check(options.count == 2 && options.options.size() == 3 &&
+    check(options.count == 2 && options.options.size() == 4 &&
           options.options[0].id == "eldritch_blast",
           "Two Warlock choices, supported catalog is explicit");
     check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
