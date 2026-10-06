@@ -276,3 +276,15 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   The size change itself, Strength checks and objects are not modeled.
 - Verification: `opengold_wizard_spell_tests` (Enlarge without a save and its
   extra damage; Reduce offered only on enemies, its save and lowered damage).
+
+## True Strike
+
+- **True Strike** (cantrip, Wizard and Sorcerer, Somatic and the weapon as
+  Material): with a melee weapon in hand, **True Strike** and **True Strike
+  (Radiant)** are offered against each enemy in reach. The attack uses the
+  spellcasting modifier for its attack and damage rolls and deals the weapon's
+  type or Radiant damage. It is a cantrip choice at creation (Sorcerers now
+  have seven options). Ranged weapons are not supported yet; the extra Radiant
+  damage starts at level 5, beyond this milestone.
+- Verification: `opengold_wizard_spell_tests` (no weapon, no True Strike; both
+  damage types against a Radiant-immune target), `opengold_sorcerer_cantrip_tests`.

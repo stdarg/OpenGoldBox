@@ -170,8 +170,8 @@ void access()
     auto creation = srd5::character_rules();
     auto d = draft();
     auto options = creation->cantrip_options(d);
-    check(options.count == 4 && options.options.size() == 6,
-          "Six supported Sorcerer options, four choices");
+    check(options.count == 4 && options.options.size() == 7,
+          "Seven supported Sorcerer options, four choices");
     check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
           "A draft without selections has no invented cantrips");
     const auto h = hero();

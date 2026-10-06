@@ -35,12 +35,13 @@ std::string read(const std::filesystem::path &p)
 }
 
 // A sturdy AC 1 target that hits back and a one-Hit-Point weakling.
-std::unique_ptr<RulesModule> rules()
+std::unique_ptr<RulesModule> rules(const std::string &extra = {})
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
                                "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "creature armored 40 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "creature armored 40 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               extra);
 }
 
 
@@ -130,9 +131,10 @@ bool has(const std::vector<Cell> &cells, Cell cell)
 // The Wizard (1) at (1,1), an ally (2) below it and enemies (98, 99) east of it.
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
                                       Cell first, Cell second, std::uint64_t seed = 5,
-                                      Cell ally = {1, 2}, std::string enemy = "target")
+                                      Cell ally = {1, 2}, std::string enemy = "target",
+                                      std::vector<std::string> equipment = {})
 {
-    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto profile = module.character_profile(hero.sheet(), equipment).data;
     auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
             {2, "target", "Ally", 0, ally},
@@ -848,6 +850,32 @@ void enlarge_reduce_checks()
     throw std::runtime_error("No seed reduces the enemy and lets it hit");
 }
 
+void true_strike_checks()
+{
+    // The targets are immune to Radiant damage, so only the weapon's type hurts.
+    auto module = rules("affinity target radiant-ward immunity radiant\n");
+    const auto hero = wizard(1, {"magic_missile"}, {}, {"true_strike", "fire_bolt", "ray_of_frost"});
+    {
+        auto c = battle(*module, hero, {2, 1}, {11, 5});
+        check(!offered(*c, "true_strike"), "True Strike needs a weapon in hand");
+    }
+    for (const bool radiant : {false, true})
+    {
+        auto c = battle(*module, hero, {2, 1}, {11, 5}, 5, {1, 2}, "target", {"dagger"});
+        const int hp = unit(*c, 98).hit_points;
+        check(offered(*c, "true_strike") && offered(*c, "true_strike_radiant"),
+              "True Strike is offered with either damage type");
+        check(submit(*c, radiant ? "true_strike_radiant" : "true_strike", 98) &&
+              logged(*c, "Wizard casts True Strike.") && logged(*c, "Wizard -> First") &&
+              !unit(*c, 1).action,
+              "True Strike makes a weapon attack with the Action");
+        if (!logged(*c, " hits for "))
+            throw std::runtime_error("The True Strike test expects a hit on AC 1");
+        check((unit(*c, 98).hit_points == hp) == radiant,
+              "Radiant damage is the chosen type, the weapon's type otherwise");
+    }
+}
+
 } // namespace
 
 int main()
@@ -887,6 +915,7 @@ int main()
         flaming_sphere_checks();
         knock_checks();
         enlarge_reduce_checks();
+        true_strike_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

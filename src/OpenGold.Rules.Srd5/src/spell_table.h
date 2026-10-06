@@ -31,6 +31,7 @@ enum class SpellPattern : unsigned
     buff,           // a lasting benefit on the target, no roll; `rider` names it
     camp,           // used only from the Camp dialog (CLASS-3), never offered in combat
     exploration,    // cast while exploring, such as Knock at a locked door
+    weapon_strike,  // a weapon attack made by casting it, such as True Strike
     stabilize,      // a dying creature becomes Stable
     reaction        // cast only when its trigger asks the caster (React/Decline)
 };
@@ -837,6 +838,16 @@ inline constexpr std::array spell_table
         .save = Ability::constitution,
         .rider = Rider::enlarge_reduce,
         .concentration = true},
+    // SRD 5.2.1 p. 171: one attack with the caster's melee weapon using the
+    // spellcasting ability; its damage may be Radiant or the weapon's type.
+    SpellDef{
+        .id = "true_strike",
+        .label = "True Strike",
+        .level = 0,
+        .pattern = SpellPattern::weapon_strike,
+        .target = SpellTarget::enemy,
+        .range = 5,
+        .verbal = false},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
     // locked door while exploring. Verbal only.
     SpellDef{
@@ -1060,6 +1071,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "chromatic_orb";
     if (id == "enlarge" || id == "reduce")
         id = "enlarge_reduce";
+    if (id == "true_strike_radiant")
+        id = "true_strike";
     for (const auto &spell : spell_table)
         if (spell.id == id)
             return &spell;

@@ -266,6 +266,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "flaming_sphere", 3},
     SpellAccessRow{"Wizard", "knock", 3},
     SpellAccessRow{"Wizard", "enlarge_reduce", 3},
+    SpellAccessRow{"Wizard", "true_strike", 1},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -279,7 +280,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Sorcerer", "ray_of_frost", 1},
     SpellAccessRow{"Sorcerer", "shocking_grasp", 1},
     SpellAccessRow{"Sorcerer", "chill_touch", 1},
-    SpellAccessRow{"Sorcerer", "acid_splash", 1}};
+    SpellAccessRow{"Sorcerer", "acid_splash", 1},
+    SpellAccessRow{"Sorcerer", "true_strike", 1}};
 
 std::vector<std::string> allowed_spells(std::string_view klass, unsigned level)
 {
@@ -1459,6 +1461,7 @@ class Session final : public CombatSession
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
     int resized_damage(const Actor &a, bool weapon_hit, int amount);
+    void strike_true(Actor &a, Actor &target, bool radiant);
     bool strikes_duplicate(const Actor &attacker, Actor &target);
     bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
                 Dice spell_dice = {1, 10, 0},
@@ -2600,6 +2603,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     case detail::SpellPattern::camp:
     case detail::SpellPattern::exploration:
         return; // Never offered in combat.
+    case detail::SpellPattern::weapon_strike:
+        return; // Resolved by strike_true().
     case detail::SpellPattern::reaction:
         return; // Cast through the Shield prompt.
     case detail::SpellPattern::stabilize:
@@ -2765,6 +2770,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.pattern == detail::SpellPattern::smite ||
                 spell.pattern == detail::SpellPattern::camp ||
                 spell.pattern == detail::SpellPattern::exploration ||
+                spell.pattern == detail::SpellPattern::weapon_strike ||
                 spell.pattern == detail::SpellPattern::reaction || spell.target != scope ||
                 spell.bonus_action != bonus_pass)
             continue;
@@ -3315,6 +3321,14 @@ std::vector<Command> Session::legal_commands() const
                         a.source.definition.starts_with("slums-kobold") ? "Dagger attack"
                         : "Melee attack",
                         other.source.id);
+                // True Strike: the cantrip's attack with the melee weapon in hand,
+                // which also serves as its Material and Somatic component.
+                if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
+                        detail::knows_spell(d.spells, "true_strike") && a.actions.available(true))
+                {
+                    add(id, "true_strike", "True Strike", other.source.id);
+                    add(id, "true_strike_radiant", "True Strike (Radiant)", other.source.id);
+                }
                 if (d.range > 0 && feet <= d.long_range)
                     add(id, "ranged", "Ranged attack", other.source.id);
                 offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
@@ -4888,6 +4902,24 @@ bool Session::mark_can_move(const Actor &caster) const
     return marked;
 }
 
+void Session::strike_true(Actor &a, Actor &target, bool radiant)
+{
+    // The attack uses the spellcasting modifier for its attack and damage
+    // rolls; `casting` is that modifier plus the +2 Proficiency Bonus.
+    auto striker = a;
+    auto &d = striker.definition;
+    const int modifier = d.casting - 2;
+    d.melee_bonus += modifier - d.melee_ability;
+    d.melee_ability = modifier;
+    d.melee.bonus = modifier;
+    if (radiant)
+        d.melee_type = detail::DamageType::radiant;
+    log(a.source.name + " casts True Strike.",
+    {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", "True Strike", true}}});
+    attack(striker, target, false);
+    a.aim_ready = striker.aim_ready;
+}
+
 int Session::resized_damage(const Actor &a, bool weapon_hit, int amount)
 {
     // Enlarge: 1d4 more weapon damage. Reduce: 1d4 less, but not below 1.
@@ -5923,6 +5955,8 @@ void Session::dispatch(const Command &command)
             a.disengaged = true;
             log(a.source.name + " disengages.", {"{name} disengages.", {{"name", a.source.name}}});
         }
+        else if (command.verb == "true_strike" || command.verb == "true_strike_radiant")
+            strike_true(a, actor(command.target), command.verb == "true_strike_radiant");
         else if (const auto *spell = detail::find_spell(command.verb))
             resolve_spell(*spell, command.verb, a, command.target);
         else if (command.verb == "throw")
@@ -8810,7 +8844,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.105", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.106", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -451,6 +451,7 @@ void behaviour()
                 row.id == std::string_view("chromatic_orb") ||
                 row.pattern == SpellPattern::camp || row.pattern == SpellPattern::reaction ||
                 row.pattern == SpellPattern::exploration ||
+                row.pattern == SpellPattern::weapon_strike ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor)
             continue;
