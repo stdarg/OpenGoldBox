@@ -102,7 +102,8 @@ enum class Rider : unsigned
     see_invisibility,
     darkness,
     flaming_sphere,
-    enlarge_reduce
+    enlarge_reduce,
+    dragons_breath
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -848,6 +849,32 @@ inline constexpr std::array spell_table
         .target = SpellTarget::enemy,
         .range = 5,
         .verbal = false},
+    // SRD 5.2.1 p. 124: a touched willing creature may exhale a cone of the
+    // chosen type as an action, each offered as "dragons_breath_<type>".
+    SpellDef{
+        .id = "dragons_breath",
+        .label = "Dragon's Breath",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::dragons_breath,
+        .concentration = true},
+    // The breath itself, aimed by the creature that holds Dragon's Breath as
+    // "dragons_breath_exhale_<type>". No one learns it as a spell.
+    SpellDef{
+        .id = "dragons_breath_exhale",
+        .label = "Dragon's Breath",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 15,
+        .save = Ability::dexterity,
+        .damage = DamageType::fire,
+        .dice = {3, 6, 0},
+        .half_on_success = true,
+        .cone = 15},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
     // locked door while exploring. Verbal only.
     SpellDef{
@@ -1043,6 +1070,25 @@ inline std::optional<DamageType> chromatic_type(std::string_view verb)
     return damage_type(verb);
 }
 
+// Dragon's Breath's damage types, each offered as "dragons_breath_<type>" and
+// exhaled as "dragons_breath_exhale_<type>".
+inline constexpr std::array<std::string_view, 5> dragon_types{"acid", "cold", "fire",
+    "lightning", "poison"};
+
+// The damage type a Dragon's Breath or exhale verb names, if it is one.
+inline std::optional<DamageType> dragon_type(std::string_view verb)
+{
+    for (const std::string_view prefix : {"dragons_breath_exhale_", "dragons_breath_"})
+        if (verb.starts_with(prefix))
+        {
+            verb.remove_prefix(prefix.size());
+            if (std::find(dragon_types.begin(), dragon_types.end(), verb) == dragon_types.end())
+                return std::nullopt;
+            return damage_type(verb);
+        }
+    return std::nullopt;
+}
+
 // Resistance's damage types (CLASS-7), each offered as "resistance_<type>".
 inline constexpr std::array<std::string_view, 11> resistance_types{"acid", "bludgeoning", "cold",
     "fire", "lightning", "necrotic", "piercing", "poison", "radiant", "slashing", "thunder"};
@@ -1073,6 +1119,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "enlarge_reduce";
     if (id == "true_strike_radiant")
         id = "true_strike";
+    if (dragon_type(id))
+        id = id.starts_with("dragons_breath_exhale_") ? "dragons_breath_exhale" : "dragons_breath";
     for (const auto &spell : spell_table)
         if (spell.id == id)
             return &spell;

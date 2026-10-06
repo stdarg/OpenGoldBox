@@ -876,6 +876,28 @@ void true_strike_checks()
     }
 }
 
+void dragons_breath_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(3, {"magic_missile"}, {"dragons_breath", "shatter"}), {2, 1},
+                    {11, 5});
+    std::vector<std::string> labels;
+    for (const auto &command : c->legal_commands())
+        if (command.verb.starts_with("dragons_breath_") && command.target == 2)
+            labels.push_back(command.label);
+    check(labels.size() == 5 && labels.front() == "Dragon's Breath: Acid",
+          "Dragon's Breath is offered once per damage type");
+    check(submit(*c, "dragons_breath_fire", 2) && unit(*c, 1).action &&
+          logged(*c, "Ally gains Dragon's Breath."),
+          "The ally gains the breath with the Wizard's Bonus Action");
+    reach(*c, 2);
+    check(submit(*c, "dragons_breath_exhale_fire") && aim(*c, Cell{2, 1}) &&
+          submit(*c, "area_cast") && logged(*c, "Ally exhales Dragon's Breath.") &&
+          logged(*c, "First Dexterity save") && logged(*c, "Fire damage") &&
+          !unit(*c, 2).action,
+          "The ally exhales a 15-foot cone of the chosen type with its Action");
+}
+
 } // namespace
 
 int main()
@@ -916,6 +938,7 @@ int main()
         knock_checks();
         enlarge_reduce_checks();
         true_strike_checks();
+        dragons_breath_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

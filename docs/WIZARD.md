@@ -288,3 +288,15 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   damage starts at level 5, beyond this milestone.
 - Verification: `opengold_wizard_spell_tests` (no weapon, no True Strike; both
   damage types against a Radiant-immune target), `opengold_sorcerer_cantrip_tests`.
+
+## Dragon's Breath
+
+- **Dragon's Breath** (level 2, Bonus Action, touch, Concentration up to 1
+  minute): offered once per type ("Dragon's Breath: Fire" and so on: Acid,
+  Cold, Fire, Lightning, Poison) on an ally within 5 feet, including the
+  Wizard. While it lasts, that creature has **Exhale (Dragon's Breath)** as an
+  Action, aimed like Burning Hands: a 15-foot cone where each creature makes a
+  Dexterity save against the Wizard's spell DC, taking 3d6 of the chosen type,
+  half on a success.
+- Verification: `opengold_wizard_spell_tests` (five options, the Bonus Action,
+  the ally's exhale and its saves).

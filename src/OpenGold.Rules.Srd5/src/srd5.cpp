@@ -108,7 +108,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing ||
            kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled ||
            kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible ||
-           kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced;
+           kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced ||
+           kind == detail::EffectKind::dragons_breath;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -267,6 +268,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "knock", 3},
     SpellAccessRow{"Wizard", "enlarge_reduce", 3},
     SpellAccessRow{"Wizard", "true_strike", 1},
+    SpellAccessRow{"Wizard", "dragons_breath", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1404,7 +1406,8 @@ class Session final : public CombatSession
     [[nodiscard]] Cell default_area_center(const Actor &caster, const detail::SpellDef &spell) const;
     void aim_area(const Command &command);
     void damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
-                     const std::vector<Cell> &cells);
+                     const std::vector<Cell> &cells, int dc);
+    [[nodiscard]] int area_dc(const Actor &caster, const detail::SpellDef &spell) const;
     void push_away(const Actor &from, Actor &target, int squares);
     void ice_burst(Actor &caster, const Actor &target, bool upcast);
     void condition_area(Actor &caster, const detail::SpellDef &spell,
@@ -2409,6 +2412,13 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::darkness:
     case detail::Rider::flaming_sphere:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::dragons_breath:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::dragons_breath,
+                                    int(*detail::dragon_type(verb)));
+        log(target.source.name + " gains Dragon's Breath.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Dragon's Breath", true}}});
+        return;
     case detail::Rider::enlarge_reduce:
     {
         const bool enlarge = verb == "enlarge";
@@ -2883,6 +2893,15 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         {
             if (a.slots2 <= 0)
                 continue;
+            if (spell.rider == detail::Rider::dragons_breath)
+            {
+                if (!detail::has_effect(other.effects, detail::EffectKind::dragons_breath))
+                    for (const auto type : detail::dragon_types)
+                        offer("dragons_breath_" + std::string(type),
+                              "Dragon's Breath: " +
+                              std::string(detail::damage_name(detail::damage_type(type))));
+                continue;
+            }
             if (spell.rider == detail::Rider::enlarge_reduce)
             {
                 if (other.source.side == a.source.side)
@@ -3294,6 +3313,14 @@ std::vector<Command> Session::legal_commands() const
     if (a.actions.available())
     {
         offer_spells(commands, a, a, 0, detail::SpellTarget::area, false);
+        // Dragon's Breath: its holder exhales the chosen cone as an Action.
+        for (const auto &effect : a.effects.active)
+            if (effect.kind == detail::EffectKind::dragons_breath)
+                for (const auto type : detail::dragon_types)
+                    if (detail::damage_type(type) == detail::DamageType(effect.dc))
+                        commands.push_back({revision_, id, 0,
+                                            "dragons_breath_exhale_" + std::string(type),
+                                            "Exhale (Dragon's Breath)", Cell{}, 0, true});
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
         add(id, "disengage", "Disengage");
@@ -3749,8 +3776,18 @@ std::vector<EntityId> Session::sculpted(const Actor &caster, const detail::Spell
     return spared;
 }
 
+int Session::area_dc(const Actor &caster, const detail::SpellDef &spell) const
+{
+    // A breath given by Dragon's Breath uses the spell caster's save DC.
+    if (spell.id == "dragons_breath_exhale")
+        for (const auto &effect : caster.effects.active)
+            if (effect.kind == detail::EffectKind::dragons_breath)
+                return 8 + def(actor(effect.source_actor)).casting;
+    return 8 + def(caster).casting;
+}
+
 void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
-                          const std::vector<Cell> &cells)
+                          const std::vector<Cell> &cells, int dc)
 {
     // Each creature in the area, the caster aside, saves for half.
     const auto spared = sculpted(caster, spell, verb.ends_with("_2") ? 2 : spell.level, cells);
@@ -3759,9 +3796,9 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         {"{name} is spared by Sculpt Spells.", {{"name", actor(id).source.name}}});
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(verb.ends_with("_2") ? spell.upcast.extra_dice : 0u);
-    const int dc = 8 + def(caster).casting;
     const int total = dice(rolled);
-    const auto type = std::string(detail::damage_name(spell.damage));
+    const auto damage_type = detail::dragon_type(verb).value_or(spell.damage);
+    const auto type = std::string(detail::damage_name(damage_type));
     for (auto &other : actors_)
     {
         if (other.dead || other.source.id == caster.source.id ||
@@ -3773,7 +3810,7 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         const bool halved = spell.half_on_success || (def(caster).evoker && !spell.level);
         if (saved && !halved)
             continue;
-        const int amount = resolved_damage(other, spell.damage, saved ? total / 2 : total);
+        const int amount = resolved_damage(other, damage_type, saved ? total / 2 : total);
         log(other.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
         {
             "{name} takes {damage} {type} damage.",
@@ -3967,8 +4004,12 @@ void Session::cast_area()
             --a.slots;
         a.spent_slot = true;
     }
-    log(a.source.name + " casts " + std::string(spell.label) + ".",
-    {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
+    if (spell.id == "dragons_breath_exhale")
+        log(a.source.name + " exhales Dragon's Breath.",
+        {"{name} exhales Dragon's Breath.", {{"name", a.source.name}}});
+    else
+        log(a.source.name + " casts " + std::string(spell.label) + ".",
+        {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
     if (spell.rider == detail::Rider::flaming_sphere)
     {
         begin_concentration(a, spell);
@@ -3987,7 +4028,7 @@ void Session::cast_area()
     const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
     if (spell.pattern == detail::SpellPattern::save_damage)
     {
-        damage_area(a, spell, aimed.verb, cells);
+        damage_area(a, spell, aimed.verb, cells, area_dc(a, spell));
         return;
     }
     if (spell.rider == detail::Rider::sleep || spell.rider == detail::Rider::color_spray)
@@ -8844,7 +8885,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.106", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.107", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

@@ -363,7 +363,9 @@ void apply_searing_smite(EffectState &effects, std::uint64_t scope, rules::Entit
 // bonus of at most 10.
 int benefit_value_limit(EffectKind kind)
 {
-    return kind == EffectKind::resistance ? int(DamageType::count) - 1 : 10;
+    return kind == EffectKind::resistance || kind == EffectKind::dragons_breath
+           ? int(DamageType::count) - 1
+           : 10;
 }
 
 unsigned benefit_duration_ms(EffectKind kind)
@@ -399,6 +401,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::mirror_image:
     case EffectKind::enlarged:
     case EffectKind::reduced:
+    case EffectKind::dragons_breath:
         return 60000; // 1 minute
     default:
         return 0;

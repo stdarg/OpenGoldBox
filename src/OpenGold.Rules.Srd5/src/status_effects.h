@@ -120,7 +120,9 @@ enum class EffectKind : unsigned
     // Enlarge/Reduce: Advantage (Enlarge) or Disadvantage (Reduce) on Strength
     // saves, and 1d4 more or less weapon damage.
     enlarged = 46,
-    reduced = 47
+    reduced = 47,
+    // Dragon's Breath: `dc` is the damage type the creature may exhale.
+    dragons_breath = 48
 };
 
 // The longest a spell benefit lasts, in milliseconds.

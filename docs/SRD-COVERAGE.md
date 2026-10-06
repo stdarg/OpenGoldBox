@@ -22,6 +22,10 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Dragon's Breath
+
+Rules 0.6.107 adds Dragon's Breath. See [Wizard](WIZARD.md#dragons-breath).
+
 ## True Strike
 
 Rules 0.6.106 adds the True Strike cantrip for Wizards and Sorcerers. See

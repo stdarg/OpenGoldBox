@@ -452,6 +452,7 @@ void behaviour()
                 row.pattern == SpellPattern::camp || row.pattern == SpellPattern::reaction ||
                 row.pattern == SpellPattern::exploration ||
                 row.pattern == SpellPattern::weapon_strike ||
+                row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor)
             continue;
