@@ -98,7 +98,9 @@ enum class EffectKind : unsigned
     // Color Spray: Blinded until the end of the caster's next turn.
     dazzled = 36,
     // Web: Restrained until an Athletics check breaks free, like Entangle.
-    webbed = 37
+    webbed = 37,
+    // Shield: +5 AC and no Magic Missile damage until the caster's next turn.
+    shield = 38
 };
 
 // The longest a spell benefit lasts, in milliseconds.

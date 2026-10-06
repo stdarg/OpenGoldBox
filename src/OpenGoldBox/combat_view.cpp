@@ -1068,6 +1068,13 @@ void CombatView::immediate(String verb)
         wanted = "spell_cast";
     if (state.area_targeting && wanted == "end")
         wanted = "area_cast";
+    // React answers whichever reaction is asked: an opportunity attack or Shield.
+    const auto legal = demo_->combat().legal_commands();
+    if (wanted == "opportunity" && std::any_of(legal.begin(), legal.end(), [](const auto & c)
+{
+    return c.verb == "shield";
+}))
+    wanted = "shield";
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
                      [&](const auto & a)
 {
@@ -2019,6 +2026,8 @@ void CombatView::refresh()
     }
 })
     get_node<Button>(node)->set_disabled(!enabled(verb));
+    if (enabled("shield"))
+        get_node<Button>("React")->set_disabled(false);
     {
         const bool party_turn = loaded && s.outcome == Outcome::ongoing && player;
         const bool reaction =
@@ -2033,6 +2042,10 @@ void CombatView::refresh()
     get_node<Button>("Load")->set_disabled(!loaded || demo_->is_slums());
     get_node<Button>("Revisit")->set_disabled(!loaded || !demo_->script_complete() ||
             s.outcome != Outcome::victory);
+    const bool missile_shield = std::any_of(offered.begin(), offered.end(), [](const auto & c)
+    {
+        return c.verb == "shield" && c.label == "Cast Shield against Magic Missile";
+    });
     String action = i18n::text("Move");
     for (const auto &command : offered)
         if (command.verb == mode_ && matches_item(command))
@@ -2044,6 +2057,9 @@ void CombatView::refresh()
         !error_.empty()             ? i18n::text(error_)
         : demo_ && demo_->waiting() ? i18n::text("Read the encounter text, then Continue.")
         : loaded && s.outcome != Outcome::ongoing ? i18n::text(demo_->status())
+        : s.reaction_pending && enabled("shield")
+        ? (missile_shield ? i18n::text("Magic Missile is aimed at you. Cast Shield or decline.")
+           : i18n::text("You are hit. Cast Shield (+5 AC) or decline."))
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
         : player
     ? i18n::format("Selected: {action}. Click a highlighted square.", {{"action", action}})

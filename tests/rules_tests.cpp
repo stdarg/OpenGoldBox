@@ -1212,7 +1212,7 @@ void checkpoint_cutoff_tests()
         }
         return false;
     };
-    check(checkpoint.starts_with("OGCOMBAT 38 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 39 "), "Checkpoints use the current format");
     auto older_format = checkpoint;
     older_format.replace(9, 2, "26");
     check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");

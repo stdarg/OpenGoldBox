@@ -30,7 +30,8 @@ enum class SpellPattern : unsigned
     smite,          // Bonus Action right after the caster's own melee hit; extra damage to that target
     buff,           // a lasting benefit on the target, no roll; `rider` names it
     camp,           // used only from the Camp dialog (CLASS-3), never offered in combat
-    stabilize       // a dying creature becomes Stable
+    stabilize,      // a dying creature becomes Stable
+    reaction        // cast only when its trigger asks the caster (React/Decline)
 };
 
 // Which creatures the spell may be offered against. These reproduce the
@@ -667,6 +668,16 @@ inline constexpr std::array spell_table
         .rider = Rider::web,
         .concentration = true,
         .area = 20},
+    // SRD 5.2.1 p. 173: a Reaction when hit by an attack roll or targeted by
+    // Magic Missile; +5 AC, including against the triggering attack, and no
+    // Magic Missile damage until the start of the caster's next turn.
+    SpellDef{
+        .id = "shield",
+        .label = "Shield",
+        .level = 1,
+        .pattern = SpellPattern::reaction,
+        .target = SpellTarget::self,
+        .range = 5},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

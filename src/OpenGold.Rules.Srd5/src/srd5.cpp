@@ -171,7 +171,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 38;
+constexpr unsigned checkpoint_format = 39;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -250,6 +250,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "color_spray", 1},
     SpellAccessRow{"Wizard", "grease", 1},
     SpellAccessRow{"Wizard", "web", 3},
+    SpellAccessRow{"Wizard", "shield", 1},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1145,6 +1146,28 @@ class Session final : public CombatSession
     std::vector<Zone> zones_;
     std::vector<ChampionMove> champion_offers_;
     std::optional<EffectReaction> effect_reaction_origin_;
+    // Shield is a Reaction to a hit that lands deep inside a command. The
+    // command is undone at that moment and the creature asked; its answer
+    // replays the command with the same dice.
+    struct ShieldQuestion
+    {
+        EntityId target{};
+        bool missile{}; // targeted by Magic Missile rather than hit by an attack
+    };
+    struct PendingShield
+    {
+        ShieldQuestion question;
+        Command command;
+        std::vector<EntityId> declined;
+    };
+    std::optional<PendingShield> shield_prompt_;
+    // Creatures that declined Shield during the command being replayed.
+    std::vector<EntityId> shield_declined_;
+    [[nodiscard]] bool can_shield(const Actor &target) const;
+    void ask_shield(const Actor &target, bool missile) const;
+    void perform(const Command &command);
+    void dispatch(const Command &command);
+    void answer_shield(const Command &command);
 
     bool effect_waiting() const
     {
@@ -1824,6 +1847,11 @@ Snapshot Session::snapshot() const
               : pending()      ? pending()
               : actors_[turn_].source.id;
     s.reaction_pending = !champion_move_ && pending() != 0;
+    if (shield_prompt_)
+    {
+        s.actor = shield_prompt_->question.target;
+        s.reaction_pending = true;
+    }
     s.battlefield = zoned_board();
     for (const auto &zone : zones_)
         if (zone.kind == ZoneKind::fog)
@@ -2432,6 +2460,8 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         return; // Smites resolve through resolve_smite, after the caster's own hit.
     case detail::SpellPattern::camp:
         return; // Never offered in combat.
+    case detail::SpellPattern::reaction:
+        return; // Cast through the Shield prompt.
     case detail::SpellPattern::stabilize:
     {
         auto &target = actor(target_id);
@@ -2482,6 +2512,15 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
         auto &target = actor(target_id);
         if (sanctuary_stops(a, target))
             return;
+        if (spell.id == "magic_missile")
+            ask_shield(target, true);
+        if (spell.id == "magic_missile" &&
+                detail::has_effect(target.effects, detail::EffectKind::shield))
+        {
+            log(target.source.name + "'s Shield blocks Magic Missile.",
+            {"{name}'s Shield blocks Magic Missile.", {{"name", target.source.name}}});
+            return;
+        }
         int total = 0;
         // Instances resolve separately so resistance applies per instance.
         for (unsigned n = 0; n < instances; ++n)
@@ -2558,7 +2597,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
     {
         // Smites follow the caster's own melee hit; the smite window offers them.
         if (spell.pattern == detail::SpellPattern::smite ||
-                spell.pattern == detail::SpellPattern::camp || spell.target != scope ||
+                spell.pattern == detail::SpellPattern::camp ||
+                spell.pattern == detail::SpellPattern::reaction || spell.target != scope ||
                 spell.bonus_action != bonus_pass)
             continue;
         if (!detail::knows_spell(d.spells, spell.id))
@@ -2692,6 +2732,15 @@ std::vector<Command> Session::legal_commands() const
         commands.push_back(
         {revision_, who, target, std::move(verb), std::move(label), destination});
     };
+    if (shield_prompt_)
+    {
+        const auto who = shield_prompt_->question.target;
+        add(who, "shield",
+            shield_prompt_->question.missile ? "Cast Shield against Magic Missile"
+            : "Cast Shield against the hit");
+        add(who, "decline", "Decline reaction");
+        return commands;
+    }
     // While aiming an area spell, only moving the preview, casting or cancelling.
     if (area_)
     {
@@ -3973,7 +4022,8 @@ int Session::armor_class(const Actor &target) const
                      : def(target).ac;
     return base +
            (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0) +
-           (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0);
+           (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
+           (detail::has_effect(target.effects, detail::EffectKind::shield) ? 5 : 0);
 }
 
 std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) const
@@ -4399,8 +4449,11 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         : d.melee_bonus) + blessing_die(a) +
         (spell || ranged ? 0 : sacred_weapon_bonus(a));
     const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
-    const bool hit =
-        (!spell && d.champion && natural == 19) || attack_hits(natural, bonus, armor_class(target));
+    const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
+    const bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
+    // Shield cannot turn a critical hit into a miss, so it is not offered then.
+    if (hit && !automatic)
+        ask_shield(target, false);
     const bool sneak = hit && !spell && sneak_eligible(a, target, ranged, modifiers.mode());
     const auto roll_damage = [&]
     {
@@ -5000,6 +5053,95 @@ bool Session::submit(const Command &command)
     return same_command(c, command);
     }))
     return false;
+    if (shield_prompt_)
+        answer_shield(command);
+    else
+        perform(command);
+    // Revisions are command tickets; zero is reserved for invalid commands.
+    // Unsigned wrap is defined, but must skip that reserved value.
+    if (++revision_ == 0)
+        revision_ = 1;
+    update_outcome();
+    if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
+            !shield_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
+        end_turn();
+    if (outcome_ != Outcome::ongoing)
+        advance_turn_time();
+    return true;
+}
+
+bool Session::can_shield(const Actor &target) const
+{
+    return conscious(target) && target.reaction && (target.slots > 0 || target.slots2 > 0) &&
+           detail::knows_spell(def(target).spells, "shield") &&
+           !detail::incapacitated(target.effects) &&
+           !detail::has_effect(target.effects, detail::EffectKind::shield) &&
+           somatic_hand(def(target)) && !silenced(target.source.cell) &&
+           std::find(shield_declined_.begin(), shield_declined_.end(), target.source.id) ==
+           shield_declined_.end();
+}
+
+void Session::ask_shield(const Actor &target, bool missile) const
+{
+    // Unwinds the command to perform(), which asks the creature.
+    if (can_shield(target))
+        throw ShieldQuestion{target.source.id, missile};
+}
+
+void Session::perform(const Command &command)
+{
+    const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return can_shield(other);
+    });
+    if (!askable)
+    {
+        dispatch(command);
+        shield_declined_.clear();
+        return;
+    }
+    // Undo everything the command did before the hit: the replay rolls the
+    // same dice from the same state.
+    const Session before = *this;
+    try
+    {
+        dispatch(command);
+        shield_declined_.clear();
+    }
+    catch (const ShieldQuestion &question)
+    {
+        const auto declined = shield_declined_;
+        *this = before;
+        shield_prompt_ = PendingShield{question, command, declined};
+        shield_declined_.clear();
+    }
+}
+
+void Session::answer_shield(const Command &command)
+{
+    const auto prompt = *shield_prompt_;
+    shield_prompt_.reset();
+    shield_declined_ = prompt.declined;
+    auto &caster = actor(prompt.question.target);
+    if (command.verb == "shield")
+    {
+        caster.reaction = false;
+        if (caster.slots > 0)
+            --caster.slots;
+        else
+            --caster.slots2;
+        detail::apply_poisoned(caster.effects, scope_, caster.source.id, caster.source.name,
+                               next_turn_ms(caster), detail::EffectKind::shield);
+        log(caster.source.name + " casts Shield.",
+        {"{name} casts {spell}.", {{"name", caster.source.name}, {"spell", "Shield", true}}});
+    }
+    else
+        shield_declined_.push_back(caster.source.id);
+    perform(prompt.command);
+}
+
+void Session::dispatch(const Command &command)
+{
     auto &a = actor(command.actor);
     const auto &d = def(a);
     // A smite must follow the hit at once. Resolving that hit's own weapon
@@ -5417,17 +5559,6 @@ bool Session::submit(const Command &command)
             }
         }
     }
-    // Revisions are command tickets; zero is reserved for invalid commands.
-    // Unsigned wrap is defined, but must skip that reserved value.
-    if (++revision_ == 0)
-        revision_ = 1;
-    update_outcome();
-    if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
-            !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
-        end_turn();
-    if (outcome_ != Outcome::ongoing)
-        advance_turn_time();
-    return true;
 }
 
 std::string Session::save() const
@@ -5574,6 +5705,18 @@ std::string Session::save() const
             << zone.cells.size();
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
+    }
+    out << '\n' << bool(shield_prompt_);
+    if (shield_prompt_)
+    {
+        const auto &prompt = *shield_prompt_;
+        const auto &command = prompt.command;
+        out << ' ' << prompt.question.target << ' ' << prompt.question.missile << ' '
+            << command.actor << ' ' << command.target << ' ' << std::quoted(command.verb) << ' '
+            << command.destination.x << ' ' << command.destination.y << ' ' << command.item << ' '
+            << prompt.declined.size();
+        for (const auto id : prompt.declined)
+            out << ' ' << id;
     }
     out << '\n';
     return out.str();
@@ -6356,6 +6499,30 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             zone.cells.push_back(cell);
         }
         session->zones_.push_back(std::move(zone));
+    }
+    bool asking{};
+    input >> asking;
+    if (asking)
+    {
+        PendingShield prompt;
+        auto &command = prompt.command;
+        std::size_t declined{};
+        input >> prompt.question.target >> prompt.question.missile >> command.actor >>
+              command.target >> std::quoted(command.verb) >> command.destination.x >>
+              command.destination.y >> command.item >> declined;
+        if (!input || !known_actor(prompt.question.target) || !known_actor(command.actor) ||
+                (command.target && !known_actor(command.target)) || command.verb.empty() ||
+                declined > session->actors_.size())
+            throw std::runtime_error("Invalid Shield prompt");
+        for (std::size_t n = 0; n < declined; ++n)
+        {
+            EntityId id{};
+            input >> id;
+            if (!input || !known_actor(id))
+                throw std::runtime_error("Invalid Shield prompt");
+            prompt.declined.push_back(id);
+        }
+        session->shield_prompt_ = std::move(prompt);
     }
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
@@ -8209,7 +8376,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.97", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.98", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

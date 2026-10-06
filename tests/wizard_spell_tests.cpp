@@ -462,6 +462,88 @@ void web_checks()
     check(caught_entering, "Some seed catches the entering creature");
 }
 
+bool offered(const CombatSession &c, std::string_view verb)
+{
+    const auto commands = c.legal_commands();
+    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
+    {
+        return command.verb == verb;
+    });
+}
+
+std::size_t count_logged(const CombatSession &c, std::string_view text)
+{
+    const auto log = c.snapshot().log;
+    return std::count_if(log.begin(), log.end(), [&](const auto & line)
+    {
+        return line.find(text) != std::string::npos;
+    });
+}
+
+// The enemy beside the Wizard attacks until a hit asks the Wizard about Shield.
+std::unique_ptr<CombatSession> shield_question(const RulesModule &module)
+{
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(module, wizard(1, {"magic_missile", "shield"}), {2, 1}, {11, 5}, seed);
+        reach(*c, 98);
+        check(submit(*c, "melee", 1), "The enemy attacks the Wizard");
+        if (!c->snapshot().reaction_pending)
+            continue;
+        check(c->snapshot().actor == 1 && offered(*c, "shield") && offered(*c, "decline"),
+              "The hit Wizard is asked to cast Shield or decline");
+        check(!logged(*c, "First -> Wizard"), "The attack waits for the answer");
+        return c;
+    }
+    throw std::runtime_error("No seed hits the Wizard");
+}
+
+void shield_checks()
+{
+    auto module = rules();
+    {
+        auto c = shield_question(*module);
+        const auto saved = c->save();
+        check(module->restore(saved)->save() == saved, "The Shield question survives a checkpoint");
+        const int ac = unit(*c, 1).armor_class;
+        const auto before = slots(*c);
+        check(submit(*c, "shield") && logged(*c, "Wizard casts Shield.") &&
+              unit(*c, 1).armor_class == ac + 5 && slots(*c).first == before.first - 1,
+              "Shield spends the Reaction and a slot for +5 AC");
+        check(count_logged(*c, "First -> Wizard") == 1 && c->snapshot().actor == 98,
+              "The attack resolves once, against the shielded AC");
+    }
+    {
+        auto c = shield_question(*module);
+        const int hp = unit(*c, 1).hit_points;
+        check(submit(*c, "decline") && !logged(*c, "casts Shield") &&
+              count_logged(*c, "First -> Wizard") == 1 && unit(*c, 1).hit_points < hp,
+              "Declining lets the hit land");
+    }
+}
+
+void shield_missile_checks()
+{
+    auto module = rules();
+    const auto hero = wizard(1, {"magic_missile", "shield"});
+    const auto foe = wizard(1, {"magic_missile"});
+    const auto profile = [&](const Character &who)
+    {
+        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+    };
+    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", 1, {6, 1}, profile(foe)}
+        }},
+    5);
+    reach(*c, 98);
+    check(submit(*c, "magic_missile", 1) && c->snapshot().actor == 1, "Magic Missile asks");
+    const int hp = unit(*c, 1).hit_points;
+    check(submit(*c, "shield") && logged(*c, "Wizard's Shield blocks Magic Missile.") &&
+          unit(*c, 1).hit_points == hp,
+          "Shield stops Magic Missile");
+}
+
 } // namespace
 
 int main()
@@ -485,6 +567,8 @@ int main()
         color_spray_checks();
         grease_checks();
         web_checks();
+        shield_checks();
+        shield_missile_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

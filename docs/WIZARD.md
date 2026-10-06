@@ -145,3 +145,25 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (Grease's square, Prone, a
   checkpoint and its expiry; Web's level-two slot and cube, the save on entry,
   the stop and Escape the webs).
+
+## Shield
+
+- **Shield** (level 1, Reaction): when an attack roll hits a Wizard who has
+  Shield prepared, a Reaction and a slot, play stops and the Wizard is asked
+  "You are hit. Cast Shield (+5 AC) or decline." The attack total is not shown,
+  as at a table where the DM only says the attack hits. **React** casts it:
+  +5 AC until the start of the Wizard's next turn, including against the
+  triggering attack, which may now miss. Being targeted by Magic Missile asks
+  the same way, and a shielded Wizard takes no Magic Missile damage.
+- A critical hit is not asked about, since +5 AC cannot stop it. A Wizard who
+  declines is not asked again during the same command (the later rays of one
+  Scorching Ray, for example).
+- How it works: the attack sits deep inside the command, so the command is
+  undone at the hit, the question is asked, and the answer replays it with the
+  same dice. The log shows the attack once, after the answer.
+- Computer-controlled casters always cast Shield when asked.
+- Checkpoints become `OGCOMBAT 39`: a pending Shield question records the
+  asked creature, the command to replay and who has declined.
+- Verification: `opengold_wizard_spell_tests` (the question and its
+  checkpoint, React's +5 AC and slot with one resolved attack, Decline, and
+  Shield blocking Magic Missile).

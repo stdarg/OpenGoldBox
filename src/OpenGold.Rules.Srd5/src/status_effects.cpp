@@ -97,7 +97,8 @@ void apply_guiding_bolt(EffectState &effects, std::uint64_t scope, rules::Entity
 void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
                     std::string name, unsigned duration_ms, EffectKind kind)
 {
-    if ((kind != EffectKind::poisoned && kind != EffectKind::dazzled) || !can_apply(effects) ||
+    if ((kind != EffectKind::poisoned && kind != EffectKind::dazzled &&
+            kind != EffectKind::shield) || !can_apply(effects) ||
             !scope || !caster || name.empty() || name.size() > 160 || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
@@ -589,7 +590,8 @@ EffectState read_effects(std::istream &in)
                            kind == unsigned(EffectKind::slow) ||
                            kind == unsigned(EffectKind::guiding_bolt) ||
                            kind == unsigned(EffectKind::poisoned) ||
-                           kind == unsigned(EffectKind::dazzled);
+                           kind == unsigned(EffectKind::dazzled) ||
+                           kind == unsigned(EffectKind::shield);
         // Searing Smite, Ensnaring Strike and Entangle act at the start of the
         // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
