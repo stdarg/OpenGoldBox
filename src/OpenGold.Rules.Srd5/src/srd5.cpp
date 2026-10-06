@@ -344,6 +344,9 @@ struct Definition
     // modifier is the better of Strength and Dexterity.
     bool martial_arts{};
     int martial_modifier{};
+    // Monk level 2: Focus Points (kept in Actor::surges, which no Monk has) and
+    // Uncanny Metabolism's once-per-Long-Rest use (kept in Actor::arcane).
+    int focus{}, metabolism{};
     bool frenzy{};                   // Berserker, Barbarian level 3
     bool heavy_armor{};   // wearing Heavy armor, which prevents Rage
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
@@ -480,7 +483,10 @@ constexpr std::array resource_descriptors
         &Definition::favored_enemy, 0, true},
     ResourceDescriptor{"channel_divinity", "Channel Divinity", &Actor::channel_divinity,
         &Definition::channel_divinity, 1, true},
-    ResourceDescriptor{"rage", "Rage", &Actor::channel_divinity, &Definition::rages, 1, true}};
+    ResourceDescriptor{"rage", "Rage", &Actor::channel_divinity, &Definition::rages, 1, true},
+    ResourceDescriptor{"focus", "Focus Points", &Actor::surges, &Definition::focus, -1, true},
+    ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
+        &Definition::metabolism, 0, false}};
 
 // The Hit Point maximum with Aid's increase.
 int max_hp(const Actor &a)
@@ -491,6 +497,19 @@ int max_hp(const Actor &a)
 int free_cast_capacity(const Definition &d)
 {
     return d.free_smite + d.favored_enemy;
+}
+
+// Action Surge and Focus Points share one store; no class has both, and a
+// Short Rest restores each fully.
+int surge_capacity(const Definition &d)
+{
+    return d.surges + d.focus;
+}
+
+// Arcane Recovery and Uncanny Metabolism share one store, once per Long Rest.
+int arcane_capacity(const Definition &d)
+{
+    return d.arcane + d.metabolism;
 }
 
 // Channel Divinity and Rage share one store; no class has both, and each
@@ -649,7 +668,8 @@ character_definition(std::string_view bytes,
 }))
     throw std::runtime_error("Invalid character profile");
     if (level > 1 && klass != "Fighter" && klass != "Cleric" && klass != "Wizard" &&
-            klass != "Rogue" && klass != "Paladin" && klass != "Ranger" && klass != "Barbarian")
+            klass != "Rogue" && klass != "Paladin" && klass != "Ranger" && klass != "Barbarian" &&
+            klass != "Monk")
         throw std::runtime_error("Advancement is unsupported for this class");
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
@@ -689,6 +709,8 @@ character_definition(std::string_view bytes,
     d.strength = str;
     d.danger_sense = d.reckless = klass == "Barbarian" && level >= 2;
     d.frenzy = klass == "Barbarian" && level >= 3;
+    d.focus = klass == "Monk" && level >= 2 ? int(level) : 0;
+    d.metabolism = klass == "Monk" && level >= 2 ? 1 : 0;
     d.rushes = race == "Orc" ? 2 + (level - 1) / 4 : 0;
     const auto trained_saves = detail::class_save_proficiencies(klass);
     for (unsigned i = 0; i < 6; ++i)
@@ -902,6 +924,9 @@ character_definition(std::string_view bytes,
     // Martial Arts: the better of Strength and Dexterity for attack and damage
     // rolls, and the Martial Arts die (a d6 through level four) when larger.
     d.martial_arts = klass == "Monk" && !armor && !shield && monk_weapons;
+    // Unarmored Movement: 10 feet more without armor or a Shield.
+    if (klass == "Monk" && level >= 2 && !armor && !shield)
+        d.speed += 10;
     if (d.martial_arts)
     {
         d.martial_modifier = std::max(str, dex);
@@ -942,8 +967,8 @@ void restore_vitals(Actor &a, const VitalState &state)
     // full. Callers supply the full Second Wind and spell-slot values.
     a.hit_dice = a.definition.hit_die ? a.definition.level : 0;
     a.rushes = a.definition.rushes;
-    a.surges = a.definition.surges;
-    a.arcane = a.definition.arcane;
+    a.surges = surge_capacity(a.definition);
+    a.arcane = arcane_capacity(a.definition);
     a.lay_on_hands = a.definition.lay_on_hands;
     a.free_casts = free_cast_capacity(a.definition);
     a.channel_divinity = channel_capacity(a.definition);
@@ -965,8 +990,8 @@ void restore_vitals(Actor &a, const VitalState &state)
     }
     const auto &d = a.definition;
     if (a.hp < 0 || a.hp > max_hp(a) || (a.dead && a.hp != 0) || a.winds < 0 || a.winds > d.winds ||
-            a.slots < 0 || a.slots > d.slots || a.arcane < 0 || a.arcane > d.arcane || a.slots2 < 0 ||
-            a.slots2 > d.slots2 || a.surges < 0 || a.surges > d.surges || a.rushes < 0 ||
+            a.slots < 0 || a.slots > d.slots || a.arcane < 0 || a.arcane > arcane_capacity(d) || a.slots2 < 0 ||
+            a.slots2 > d.slots2 || a.surges < 0 || a.surges > surge_capacity(d) || a.rushes < 0 ||
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
             a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4 ||
             a.lay_on_hands < 0 || a.lay_on_hands > d.lay_on_hands || a.free_casts < 0 ||
@@ -1085,8 +1110,8 @@ class Session final : public CombatSession
             a.slots2 = d.slots2;
             a.hit_dice = d.hit_die ? d.level : 0;
             a.rushes = d.rushes;
-            a.surges = d.surges;
-            a.arcane = d.arcane;
+            a.surges = surge_capacity(d);
+            a.arcane = arcane_capacity(d);
             a.lay_on_hands = d.lay_on_hands;
             a.free_casts = free_cast_capacity(d);
             a.channel_divinity = channel_capacity(d);
@@ -1148,7 +1173,8 @@ class Session final : public CombatSession
         {
             if (outcome_ == Outcome::ongoing)
                 for (const auto &a : actors_)
-                    if (a.source.side == 0 && def(a).alert && conscious(a))
+                    if (a.source.side == 0 && (def(a).alert || metabolism_ready(a)) &&
+                            conscious(a))
                         initiative_choices_.push_back(a.source.id);
             if (initiative_choices_.empty())
                 start_encounter_turns();
@@ -1284,6 +1310,7 @@ class Session final : public CombatSession
     void qualify_light(Actor &, unsigned item);
     Actor item_actor(const Actor &, unsigned item) const;
     Actor unarmed_actor(const Actor &a) const;
+    void use_focus_movement(Actor &a, std::string_view verb);
     bool weapon_reaction(const Actor &, const Definition &) const;
     bool has_weapon_reaction(const Actor &, Cell, Cell) const;
     void validate_light() const;
@@ -1591,10 +1618,29 @@ class Session final : public CombatSession
             end_turn();
     }
 
+    // Uncanny Metabolism is offered at Initiative only while it would restore
+    // something: spent Focus or missing Hit Points.
+    bool metabolism_ready(const Actor &a) const
+    {
+        return def(a).metabolism && a.arcane > 0 &&
+               (a.surges < surge_capacity(def(a)) || a.hp < max_hp(a));
+    }
+
     void resolve_initiative(const Command &command)
     {
         if (command.verb == "initiative_swap")
             std::swap(actor(command.actor).initiative, actor(command.target).initiative);
+        if (command.verb == "uncanny_metabolism")
+        {
+            // All Focus Points back, and the Martial Arts die plus the Monk
+            // level in Hit Points.
+            auto &monk = actor(command.actor);
+            --monk.arcane;
+            monk.surges = surge_capacity(def(monk));
+            log(monk.source.name + " uses Uncanny Metabolism.",
+            {"{name} uses Uncanny Metabolism.", {{"name", monk.source.name}}});
+            heal(monk, roll(6) + def(monk).level);
+        }
         std::erase(initiative_choices_, command.actor);
         std::stable_sort(actors_.begin(), actors_.end(),
                          [](const Actor & a, const Actor & b)
@@ -1650,6 +1696,29 @@ void Session::activate_light()
             items_.push_back(std::move(carried));
         }
     light_active_ = true;
+}
+
+void Session::use_focus_movement(Actor &a, std::string_view verb)
+{
+    // Disengage with Patient Defense, Dash with Step of the Wind; a Focus Point
+    // adds Dodge or Disengage.
+    const bool focus = verb.ends_with("_focus");
+    const bool patient = verb.starts_with("patient_defense");
+    a.bonus = false;
+    if (focus)
+        --a.surges;
+    if (patient || focus)
+        a.disengaged = true;
+    if (patient && focus)
+        a.dodge = true;
+    if (!patient)
+    {
+        a.movement += def(a).speed;
+        ++a.dashes;
+    }
+    const std::string name = patient ? "Patient Defense" : "Step of the Wind";
+    log(a.source.name + " uses " + name + ".",
+    {"{name} uses {feature}.", {{"name", a.source.name}, {"feature", name, true}}});
 }
 
 Actor Session::unarmed_actor(const Actor &a) const
@@ -2211,6 +2280,12 @@ Snapshot Session::snapshot() const
             view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
         if (def(a).martial_arts)
             view.bonus_actions.push_back("martial_arts");
+        if (def(a).focus)
+            view.bonus_actions.insert(view.bonus_actions.end(),
+        {
+            "flurry_of_blows", "patient_defense", "patient_defense_focus", "step_of_the_wind",
+            "step_of_the_wind_focus"
+        });
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
             view.bonus_actions.push_back("divine_smite_free");
         for (const auto *smite :
@@ -3091,9 +3166,12 @@ std::vector<Command> Session::legal_commands() const
         {
             const auto &a = actor(id);
             add(id, "initiative_keep", "Keep initiative");
-            for (const auto &ally : actors_)
-                if (ally.source.id != id && ally.source.side == a.source.side && conscious(ally))
-                    add(id, "initiative_swap", "Swap initiative", ally.source.id);
+            if (def(a).alert)
+                for (const auto &ally : actors_)
+                    if (ally.source.id != id && ally.source.side == a.source.side && conscious(ally))
+                        add(id, "initiative_swap", "Swap initiative", ally.source.id);
+            if (metabolism_ready(a))
+                add(id, "uncanny_metabolism", "Uncanny Metabolism");
         }
         return commands;
     }
@@ -3232,7 +3310,7 @@ std::vector<Command> Session::legal_commands() const
     const int speed = a.aim_used ? 0 : std::max(0, d.speed - detail::speed_penalty(a.effects));
     if (a.effects.prone && speed > 0 && movement_left(a) >= speed / 2)
         add(id, "stand_up", "Stand up");
-    if (a.surges > 0 && !a.surge_used)
+    if (d.surges && a.surges > 0 && !a.surge_used)
         add(id, "action_surge", "Action Surge", id);
     if (a.bonus && d.sneak_level >= 3 && !a.moved)
         add(id, "steady_aim", "Steady Aim");
@@ -3295,6 +3373,22 @@ std::vector<Command> Session::legal_commands() const
             if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "martial_arts", "Unarmed Strike", other.source.id);
+    // Monk's Focus: Patient Defense and Step of the Wind, free or with a Focus
+    // Point, and Flurry of Blows for a Focus Point.
+    if (a.bonus && d.focus)
+    {
+        add(id, "patient_defense", "Patient Defense: Disengage");
+        add(id, "step_of_the_wind", "Step of the Wind: Dash");
+        if (a.surges > 0)
+        {
+            add(id, "patient_defense_focus", "Patient Defense: Disengage and Dodge (1 Focus)");
+            add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
+            for (const auto &other : actors_)
+                if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+                        distance(a.source.cell, other.source.cell) <= 5)
+                    add(id, "flurry_of_blows", "Flurry of Blows", other.source.id);
+        }
+    }
     // Rage: a Bonus Action outside Heavy armor; on a later turn a Bonus Action
     // extends it.
     if (a.bonus && d.rages)
@@ -6090,6 +6184,23 @@ void Session::dispatch(const Command &command)
         (void)a.actions.spend(false);
         escape_ensnaring(a);
     }
+    else if (command.verb == "flurry_of_blows")
+    {
+        // Two Unarmed Strikes; the second only if the first leaves the target up.
+        a.bonus = false;
+        --a.surges;
+        log(a.source.name + " uses Flurry of Blows.",
+        {"{name} uses Flurry of Blows.", {{"name", a.source.name}}});
+        for (int strike = 0; strike < 2 && actor(command.target).hp > 0; ++strike)
+        {
+            auto striker = unarmed_actor(a);
+            attack(striker, actor(command.target), false);
+            a.aim_ready = striker.aim_ready;
+        }
+    }
+    else if (command.verb.starts_with("patient_defense") ||
+             command.verb.starts_with("step_of_the_wind"))
+        use_focus_movement(a, command.verb);
     else if (command.verb == "martial_arts")
     {
         a.bonus = false;
@@ -6593,8 +6704,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             definition.speed * (1 + !actor.actions.normal +
                                 int(actor.rush_used || bonus_dash) +
                                 (actor.surge_used && !actor.actions.surge)) ||
-            actor.arcane < 0 || actor.arcane > definition.arcane || actor.surges < 0 ||
-            actor.surges > definition.surges ||
+            actor.arcane < 0 || actor.arcane > arcane_capacity(definition) || actor.surges < 0 ||
+            actor.surges > surge_capacity(definition) ||
             (actor.surge_used && (!definition.surges || actor.surges == definition.surges)) ||
             (actor.actions.surge && !actor.surge_used) || actor.rushes < 0 ||
             actor.rushes > definition.rushes ||
@@ -6847,7 +6958,8 @@ void Session::validate_initiative() const
     for (const auto id : initiative_choices_)
     {
         const auto &a = actor(id);
-        if (!seen.insert(id).second || a.source.side != 0 || !def(a).alert || !conscious(a))
+        if (!seen.insert(id).second || a.source.side != 0 ||
+                (!def(a).alert && !metabolism_ready(a)) || !conscious(a))
             throw std::runtime_error("Invalid Initiative holder");
     }
     for (std::size_t i = 0; i < actors_.size(); ++i)
@@ -7499,7 +7611,7 @@ class Module final : public RulesModule
                 (sheet.character_class != "Fighter" && sheet.character_class != "Cleric" &&
                  sheet.character_class != "Wizard" && sheet.character_class != "Rogue" &&
                  sheet.character_class != "Paladin" && sheet.character_class != "Ranger" &&
-                 sheet.character_class != "Barbarian"))
+                 sheet.character_class != "Barbarian" && sheet.character_class != "Monk"))
             return {};
         AdvancementOptions result;
         result.level = sheet.level + 1;
@@ -7585,6 +7697,8 @@ class Module final : public RulesModule
         if (sheet.character_class == "Paladin")
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        if (sheet.character_class == "Monk")
+            result.description = "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Barbarian")
             result.description = "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery.";
         if (sheet.character_class == "Ranger")
@@ -7910,6 +8024,19 @@ class Module final : public RulesModule
                 unsigned(next.level),
                 {}});
         }
+        if (next.character_class == "Monk" && next.level == 2)
+        {
+            next.grants.push_back({"feature:monks_focus", "class:monk", 2, {}});
+            next.grants.push_back({"feature:unarmored_movement", "class:monk", 2, {}});
+            next.grants.push_back({"feature:uncanny_metabolism", "class:monk", 2, {}});
+        }
+        // The Warrior of the Open Hand is the SRD's only Monk subclass.
+        if (next.character_class == "Monk" && next.level == 3)
+        {
+            next.grants.push_back({"feature:deflect_attacks", "class:monk", 3, {}});
+            next.grants.push_back({"subclass:open_hand", "class:monk", 3, {}});
+            next.grants.push_back({"feature:open_hand_technique", "subclass:monk:open_hand", 3, {}});
+        }
         if (next.character_class == "Barbarian" && next.level == 2)
         {
             next.grants.push_back({"feature:danger_sense", "class:barbarian", 2, {}});
@@ -8058,10 +8185,12 @@ class Module final : public RulesModule
                 {}});
         }
         if (next.character_class == "Paladin" || next.character_class == "Ranger" ||
-                next.character_class == "Barbarian")
+                next.character_class == "Barbarian" || next.character_class == "Monk")
         {
             const std::string note =
-                next.character_class == "Barbarian"
+                next.character_class == "Monk"
+                ? "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points."
+                : next.character_class == "Barbarian"
                 ? "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery."
                 : next.character_class == "Paladin"
                 ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
@@ -8095,7 +8224,8 @@ class Module final : public RulesModule
         actor.slots2 += actor.definition.slots2 - old.slots2;
         actor.winds += actor.definition.winds - old.winds;
         actor.rushes += actor.definition.rushes - old.rushes;
-        actor.surges += actor.definition.surges - old.surges;
+        actor.surges += surge_capacity(actor.definition) - surge_capacity(old);
+        actor.arcane += arcane_capacity(actor.definition) - arcane_capacity(old);
         actor.lay_on_hands += actor.definition.lay_on_hands - old.lay_on_hands;
         actor.free_casts += free_cast_capacity(actor.definition) - free_cast_capacity(old);
         actor.channel_divinity += channel_capacity(actor.definition) - channel_capacity(old);
@@ -8204,8 +8334,8 @@ class Module final : public RulesModule
         actor.recovery = {};
         actor.temporary_hp = {};
         actor.rushes = d.rushes;
-        actor.surges = d.surges;
-        actor.arcane = d.arcane;
+        actor.surges = surge_capacity(d);
+        actor.arcane = arcane_capacity(d);
         actor.lay_on_hands = d.lay_on_hands;
         actor.free_casts = free_cast_capacity(d);
         actor.channel_divinity = channel_capacity(d);
@@ -8265,7 +8395,7 @@ class Module final : public RulesModule
             throw std::runtime_error("Short rest requires at least one HP at its start");
         actor.winds = std::min(d.winds, actor.winds + 1);
         actor.rushes = d.rushes;
-        actor.surges = d.surges;
+        actor.surges = surge_capacity(d);
         actor.channel_divinity = std::min(channel_capacity(d), actor.channel_divinity + 1);
         state = vitals(actor);
     }
@@ -9229,7 +9359,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.114", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.115", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

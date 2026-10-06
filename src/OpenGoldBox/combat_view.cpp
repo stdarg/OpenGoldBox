@@ -234,6 +234,7 @@ void CombatView::_ready()
     presentation::setup_initiative(
         *this, i18n::text, callable_mp(this, &CombatView::immediate).bind("initiative_swap"),
         callable_mp(this, &CombatView::immediate).bind("initiative_keep"),
+        callable_mp(this, &CombatView::immediate).bind("uncanny_metabolism"),
         callable_mp(this, &CombatView::initiative_input),
         callable_mp(this, &CombatView::refresh).unbind(1));
     presentation::setup_optional_effect(
@@ -877,7 +878,7 @@ void CombatView::use_cunning_action()
         get_node<Button>("UseCunningAction")->release_focus();
         select_mode(verb);
     }
-    else if (verb == "lay_on_hands" || verb == "martial_arts")
+    else if (verb == "lay_on_hands" || verb == "martial_arts" || verb == "flurry_of_blows")
     {
         // A touched ally is chosen on the battlefield, like a spell target.
         get_node<Button>("UseCunningAction")->release_focus();

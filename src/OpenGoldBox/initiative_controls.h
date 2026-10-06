@@ -13,15 +13,15 @@ namespace presentation
 {
 template <class Text>
 void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
-                      const godot::Callable &keep, const godot::Callable &input,
-                      const godot::Callable &select)
+                      const godot::Callable &keep, const godot::Callable &metabolism,
+                      const godot::Callable &input, const godot::Callable &select)
 {
     using namespace godot;
     auto owned = make_node<Window>();
     owned->set_name("InitiativeChoice");
-    owned->set_size(Vector2i(640, 360));
-    owned->set_min_size(Vector2i(640, 360));
-    owned->set_title(text(N_("Alert")));
+    owned->set_size(Vector2i(640, 410));
+    owned->set_min_size(Vector2i(640, 410));
+    owned->set_title(text(N_("Initiative")));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
@@ -47,18 +47,23 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
     auto *yes = add_control<Button>(*w, "Swap", Rect2(396, 296, 220, 40));
     yes->set_text(text(N_("Swap initiative")));
     yes->connect("pressed", swap);
+    // A Monk's Uncanny Metabolism, used when Initiative is rolled.
+    auto *restore = add_control<Button>(*w, "Metabolism", Rect2(164, 346, 452, 40));
+    restore->set_text(text(N_("Uncanny Metabolism")));
+    restore->connect("pressed", metabolism);
 }
 
 inline bool initiative_command(godot::Node &root, const opengold::rules::Command &command)
 {
-    if (command.verb != "initiative_keep" && command.verb != "initiative_swap")
+    if (command.verb != "initiative_keep" && command.verb != "initiative_swap" &&
+            command.verb != "uncanny_metabolism")
         return true;
     const auto owner =
         root.get_node<godot::OptionButton>("InitiativeChoice/Resolve")->get_selected_id();
     const auto ally =
         root.get_node<godot::OptionButton>("InitiativeChoice/Ally")->get_selected_id();
     return command.actor == unsigned(owner) &&
-           (command.verb == "initiative_keep" || command.target == unsigned(ally));
+           (command.verb != "initiative_swap" || command.target == unsigned(ally));
 }
 
 template <class Text, class Render>
@@ -121,10 +126,19 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
         }
     allies->select(selected);
     allies->set_block_signals(false);
+    // Alert offers the swap; a Monk's Uncanny Metabolism its own button.
+    const bool swaps = allies->get_item_count() > 1;
+    const bool metabolism = std::any_of(commands.begin(), commands.end(), [&](const auto & c)
+    {
+        return c.verb == "uncanny_metabolism" && c.actor == unsigned(owner);
+    });
+    for (const char *name : {"AllyLabel", "Ally", "Swap"})
+        w->get_node<Control>(name)->set_visible(swaps);
+    w->get_node<Button>("Metabolism")->set_visible(metabolism);
     w->get_node<Label>("Text")->set_text(
         label(owner) + "\n\n" +
-        text(
-            N_("Swap these Initiative totals, or keep your Initiative. No turn has started yet.")));
+        (swaps ? text(N_("Swap these Initiative totals, or keep your Initiative. No turn has started yet."))
+         : text(N_("Use Uncanny Metabolism to regain all Focus Points and 1d6 + your Monk level Hit Points (once per Long Rest), or keep going. No turn has started yet."))));
     w->get_node<Button>("Swap")->set_disabled(selected == 0);
     if (!w->is_visible())
     {

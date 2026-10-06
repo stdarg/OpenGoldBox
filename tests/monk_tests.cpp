@@ -145,6 +145,99 @@ void martial_arts_checks()
     check(!offered(*armored, "martial_arts"), "Armor ends Martial Arts");
 }
 
+bool logged(const CombatSession &c, std::string_view text)
+{
+    const auto log = c.snapshot().log;
+    return std::any_of(log.begin(), log.end(), [&](const auto & line)
+    {
+        return line.find(text) != std::string::npos;
+    });
+}
+
+unsigned focus_left(const CombatSession &c)
+{
+    for (const auto &pool : unit(c, 1).resources)
+        if (pool.id == "focus")
+            return pool.remaining;
+    throw std::runtime_error("No Focus pool");
+}
+
+bool has_grant(const Character &hero, std::string_view id)
+{
+    const auto &grants = hero.sheet().grants;
+    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+    {
+        return g.id == id;
+    });
+}
+
+void advancement_checks()
+{
+    const auto second = monk(2), third = monk(3), fourth = monk(4);
+    check(has_grant(second, "feature:monks_focus") && has_grant(second, "feature:unarmored_movement") &&
+          has_grant(second, "feature:uncanny_metabolism") &&
+          !has_grant(second, "feature:deflect_attacks"),
+          "Level two brings Monk's Focus, Unarmored Movement and Uncanny Metabolism");
+    check(has_grant(third, "feature:deflect_attacks") && has_grant(third, "subclass:open_hand") &&
+          has_grant(third, "feature:open_hand_technique") && fourth.sheet().level == 4,
+          "Level three brings Deflect Attacks and the Open Hand; level four is reached");
+    auto module = rules();
+    auto c = battle(*module, fourth);
+    check(focus_left(*c) == 4 && unit(*c, 1).movement_feet == 40,
+          "Four Focus Points and 10 feet more Speed at level four");
+}
+
+void focus_checks()
+{
+    auto module = rules();
+    {
+        auto c = battle(*module, monk(2));
+        check(submit(*c, "flurry_of_blows", 98) && logged(*c, "Monk uses Flurry of Blows.") &&
+              attack_lines(*c).size() == 2 && focus_left(*c) == 1 && unit(*c, 1).action,
+              "Flurry of Blows: two Unarmed Strikes for a Focus Point and the Bonus Action");
+    }
+    {
+        auto c = battle(*module, monk(2));
+        const int feet = unit(*c, 1).movement_feet;
+        check(submit(*c, "step_of_the_wind") && unit(*c, 1).movement_feet == 2 * feet &&
+              focus_left(*c) == 2,
+              "Step of the Wind Dashes for free");
+    }
+    {
+        auto c = battle(*module, monk(2));
+        check(submit(*c, "patient_defense_focus") && focus_left(*c) == 1 &&
+              logged(*c, "Monk uses Patient Defense."),
+              "Patient Defense with a Focus Point Disengages and Dodges");
+        check(submit(*c, "end"), "End the Monk's turn");
+        check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
+              "The Dodge gives attackers Disadvantage");
+    }
+}
+
+// The Monk (1), hurt, beside an enemy (98), before Initiative decisions.
+std::unique_ptr<CombatSession> hurt_battle(const RulesModule &module, const Character &hero)
+{
+    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    Participant monk{1, "campaign-character", "Monk", 0, {1, 1}, profile};
+    monk.state = VitalState{hero.sheet().hit_points - 5};
+    return module.create({{12, 6, std::vector<std::uint8_t>(72)},
+        {monk, {98, "target", "Enemy", 1, {2, 1}}}},
+    5);
+}
+
+void metabolism_checks()
+{
+    auto module = rules();
+    auto c = hurt_battle(*module, monk(2));
+    check(c->snapshot().initiative_choices == std::vector<EntityId> {1} &&
+          offered(*c, "uncanny_metabolism") && offered(*c, "initiative_keep"),
+          "A hurt Monk is offered Uncanny Metabolism at Initiative");
+    const int hp = unit(*c, 1).hit_points;
+    check(submit(*c, "uncanny_metabolism") && logged(*c, "Monk uses Uncanny Metabolism.") &&
+          unit(*c, 1).hit_points > hp && c->snapshot().initiative_choices.empty(),
+          "Uncanny Metabolism restores Hit Points and starts the fight");
+}
+
 } // namespace
 
 int main()
@@ -152,6 +245,9 @@ int main()
     try
     {
         martial_arts_checks();
+        advancement_checks();
+        focus_checks();
+        metabolism_checks();
         std::cout << "Monk tests passed\n";
     }
     catch (const std::exception &e)

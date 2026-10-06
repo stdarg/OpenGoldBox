@@ -145,6 +145,18 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     }
     if (klass == "rogue" && level >= 2)
         required.push_back({"feature:cunning_action", "class:rogue", 2, {}});
+    if (klass == "monk" && level >= 2)
+    {
+        required.push_back({"feature:monks_focus", "class:monk", 2, {}});
+        required.push_back({"feature:unarmored_movement", "class:monk", 2, {}});
+        required.push_back({"feature:uncanny_metabolism", "class:monk", 2, {}});
+    }
+    if (klass == "monk" && level >= 3)
+    {
+        required.push_back({"feature:deflect_attacks", "class:monk", 3, {}});
+        required.push_back({"subclass:open_hand", "class:monk", 3, {}});
+        required.push_back({"feature:open_hand_technique", "subclass:monk:open_hand", 3, {}});
+    }
     if (klass == "barbarian" && level >= 2)
     {
         required.push_back({"feature:danger_sense", "class:barbarian", 2, {}});
@@ -206,7 +218,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         else
         {
             require((klass == "fighter" || klass == "cleric" || klass == "wizard" ||
-                     klass == "barbarian" ||
+                     klass == "barbarian" || klass == "monk" ||
                      klass == "rogue" || klass == "paladin" || klass == "ranger") &&
                     grant.level == 4 &&
                     grant.source_id ==
