@@ -931,6 +931,32 @@ void charm_person_checks()
           "A level-two slot charms two creatures");
 }
 
+void gust_of_wind_checks()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(3, {"magic_missile"}, {"gust_of_wind", "shatter"}), {3, 1},
+                        {11, 4}, seed);
+        check(submit(*c, "gust_of_wind") && aim(*c, Cell{4, 1}), "Aim Gust of Wind east");
+        const auto line = c->snapshot().area_targeting->cells;
+        check(line.size() == 20 && has(line, {2, 1}) && has(line, {11, 1}) && !has(line, {1, 1}) &&
+              !has(line, {4, 3}),
+              "A two-square-wide line runs 60 feet from the Wizard");
+        check(submit(*c, "area_cast") && logged(*c, "First Strength save") &&
+              !logged(*c, "Second Strength save"),
+              "Only creatures in the line save");
+        if (!logged(*c, "First is pushed"))
+            continue;
+        check(unit(*c, 98).cell.x > 3, "A failed save pushes the creature along the line");
+        reach(*c, 98);
+        check(submit(*c, "end") && count_logged(*c, "First Strength save") == 2,
+              "Ending a turn in the line calls for the save again");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Strength save");
+}
+
 } // namespace
 
 int main()
@@ -973,6 +999,7 @@ int main()
         true_strike_checks();
         dragons_breath_checks();
         charm_person_checks();
+        gust_of_wind_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

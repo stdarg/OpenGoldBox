@@ -315,3 +315,16 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (the save, no command against
   the charmer, attacks on others, damage ending it, two targets from a
   level-two slot).
+
+## Gust of Wind
+
+- **Gust of Wind** (level 2, Concentration up to 1 minute): aimed from the
+  Wizard like Burning Hands, a Line 60 feet long and two squares (10 feet)
+  wide. Each creature in it makes a Strength save or is pushed 15 feet away
+  from the Wizard; a creature ending its turn in the line saves again.
+- Adaptations: the line stays where it was cast; its squares are Difficult
+  Terrain for all movement (the wind only slows movement toward the caster);
+  changing its direction as a Bonus Action and its effects on gas and flames
+  are not modeled.
+- Verification: `opengold_wizard_spell_tests` (the line's squares, saves only
+  in it, the push, the save at the end of a turn).

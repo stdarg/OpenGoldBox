@@ -271,6 +271,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "true_strike", 1},
     SpellAccessRow{"Wizard", "dragons_breath", 3},
     SpellAccessRow{"Wizard", "charm_person", 1},
+    SpellAccessRow{"Wizard", "gust_of_wind", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1156,7 +1157,8 @@ class Session final : public CombatSession
         spiritual_weapon, // one square: where the spectral force floats
         grease,
         web,
-        flaming_sphere // one square: where the fire burns
+        flaming_sphere, // one square: where the fire burns
+        gust            // Gust of Wind's line
     };
     struct Zone
     {
@@ -1419,6 +1421,7 @@ class Session final : public CombatSession
     // Makes a creature in a Grease or Web zone save; true when it is caught.
     bool spring_zone(const Zone &zone, Actor &creature);
     void spring_zones(Actor &creature, ZoneKind kind);
+    void blow(const Zone &line, Actor &creature);
     // Flaming Sphere burns a creature ending its turn within 5 feet of it.
     void burn_beside_spheres(Actor &creature);
     void sphere_burns(const Actor &caster, Actor &creature);
@@ -1825,11 +1828,13 @@ void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
 
 Battlefield Session::zoned_board() const
 {
-    // Entangle's plants, Grease and Web make their open squares Difficult Terrain.
+    // Entangle's plants, Grease and Web make their open squares Difficult
+    // Terrain. Adaptation: so does Gust of Wind's line, whose wind only slows
+    // movement toward its caster.
     auto board = board_;
     for (const auto &zone : zones_)
         if (zone.kind == ZoneKind::plants || zone.kind == ZoneKind::grease ||
-                zone.kind == ZoneKind::web)
+                zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust)
             for (const auto cell : zone.cells)
                 if (board.at(cell) == 0)
                     board.terrain[std::size_t(cell.y * board.width + cell.x)] = 2;
@@ -2416,6 +2421,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "See Invisibility", true}}});
         return;
     case detail::Rider::darkness:
+    case detail::Rider::gust_of_wind:
     case detail::Rider::flaming_sphere:
         return; // Aimed areas, resolved by cast_area().
     case detail::Rider::charm_person:
@@ -3680,6 +3686,21 @@ std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, std::string
             }
         return cells;
     }
+    // A line two squares wide from the caster toward the aim.
+    if (spell.line)
+    {
+        const double length = std::sqrt(ax * ax + ay * ay);
+        for (int y = 0; y < board_.height; ++y)
+            for (int x = 0; x < board_.width; ++x)
+            {
+                const double vx = x - origin.x, vy = y - origin.y;
+                const double along = (vx * ax + vy * ay) / length;
+                const double across = (vx * ay - vy * ax) / length;
+                if (along > 0 && along * 5 <= spell.line && across > -0.5 && across <= 1.0)
+                    cells.push_back({x, y});
+            }
+        return cells;
+    }
     // A cube with a face against the caster, on the aimed side.
     if (spell.cube)
     {
@@ -3887,6 +3908,16 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     }
 }
 
+void Session::blow(const Zone &line, Actor &creature)
+{
+    // Gust of Wind: a Strength save or 15 feet away from the caster.
+    if (creature.dead || creature.hp == 0 || creature.source.id == line.caster)
+        return;
+    const auto &caster = actor(line.caster);
+    if (!saving_throw_succeeds(creature, detail::Ability::strength, 8 + def(caster).casting))
+        push_away(caster, creature, 3);
+}
+
 void Session::burn_beside_spheres(Actor &creature)
 {
     // Copies: the burn can end a caster's Concentration and with it the sphere.
@@ -4037,6 +4068,17 @@ void Session::cast_area()
     {
         begin_concentration(a, spell);
         zones_.push_back({a.source.id, ZoneKind::flaming_sphere, {aimed.center}});
+        return;
+    }
+    if (spell.rider == detail::Rider::gust_of_wind)
+    {
+        begin_concentration(a, spell);
+        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        zones_.push_back({a.source.id, ZoneKind::gust, cells});
+        const auto line = zones_.back();
+        for (auto &other : actors_)
+            if (other.source.id != a.source.id && in_zone(line, other.source.cell))
+                blow(line, other);
         return;
     }
     if (spell.rider == detail::Rider::misty_step)
@@ -5494,6 +5536,9 @@ void Session::end_turn()
     actors_[turn_].actions.surge = false;
     spring_zones(actors_[turn_], ZoneKind::grease);
     burn_beside_spheres(actors_[turn_]);
+    for (const auto &zone : std::vector<Zone>(zones_))
+        if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_].source.cell))
+            blow(zone, actors_[turn_]);
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -7012,7 +7057,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         unsigned kind{};
         input >> zone.caster >> kind >> zone.ends_ms >> cells;
         // Only Grease keeps time; every other zone ends with Concentration.
-        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::flaming_sphere) ||
+        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::gust) ||
                 (kind == unsigned(ZoneKind::grease)) != (zone.ends_ms != 0) || !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
@@ -8927,7 +8972,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.108", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.109", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

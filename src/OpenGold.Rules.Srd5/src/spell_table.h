@@ -104,7 +104,8 @@ enum class Rider : unsigned
     flaming_sphere,
     enlarge_reduce,
     dragons_breath,
-    charm_person
+    charm_person,
+    gust_of_wind
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -143,6 +144,7 @@ struct SpellDef
     bool evocation{};     // an Evocation spell, for the Evoker's Sculpt Spells
     bool humanoid_only{}; // offered only against a Humanoid
     bool not_self{};      // offered only on another creature
+    int line{};           // or the length of a 10-foot-wide line from the caster, feet
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -892,6 +894,18 @@ inline constexpr std::array spell_table
         .upcast = {.extra_instances = 1},
         .rider = Rider::charm_person,
         .humanoid_only = true},
+    // SRD 5.2.1 p. 138: a 60-foot Line of wind; each creature in it, and each
+    // ending its turn there, makes a Strength save or is pushed 15 feet.
+    SpellDef{
+        .id = "gust_of_wind",
+        .label = "Gust of Wind",
+        .level = 2,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 60,
+        .rider = Rider::gust_of_wind,
+        .concentration = true,
+        .line = 60},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
     // locked door while exploring. Verbal only.
     SpellDef{

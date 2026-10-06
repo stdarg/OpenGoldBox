@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Gust of Wind
+
+Rules 0.6.109 adds Gust of Wind and Line areas. See
+[Wizard](WIZARD.md#gust-of-wind).
+
 ## Charm Person
 
 Rules 0.6.108 adds Charm Person and the Charmed condition. See
