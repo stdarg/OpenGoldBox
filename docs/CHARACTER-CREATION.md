@@ -159,9 +159,9 @@ effect support.
 archive IDs and indexed combat pixels. No extracted artwork is distributed.
 
 - Complete portraits and metadata come from `art/portraits/portraits.json` and its
-  sibling PNGs. Build copies go to `demos/godot/bin/portraits/`. The Godot boundary
-  parses the catalog and loads full-resolution images, displayed with nearest
-  filtering in creation, pool and party previews.
+  sibling PNGs. Build copies go to `src/OpenGoldBox/godot/bin/portraits/`. The
+  Godot boundary parses the catalog and loads full-resolution images, displayed
+  with nearest filtering in creation, pool and party previews.
 - Campaign saves store the selected basename;
   characters without a current catalog entry display a deterministic recommendation.
 - Legacy head/body decoding remains for compatibility and the existing pool's
@@ -223,11 +223,20 @@ build.cmd
 Run the Godot scene's automated creation check:
 
 ```cmd
-godot --headless --path demos/godot res://scenes/character_creation.tscn -- --character-check
+godot --headless --path src/OpenGoldBox/godot res://scenes/character_creation.tscn -- --character-check
 ```
 
-This exercises choices, rolling, swaps, background bonuses, HP, name entry,
-all catalog portraits, combined optional filters, race/gender defaults, all twelve
+For a focused check of every catalog image and all 324 Gender/Class/Race
+filter combinations, run from the repository root:
+
+```bash
+OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path src/OpenGoldBox/godot \
+  res://scenes/character_creation.tscn -- --portrait-check
+```
+
+The full `--character-check` exercises choices, rolling, swaps, background
+bonuses, HP, name entry, all catalog portraits, combined optional filters,
+race/gender defaults, all twelve
 colors, sheet review and restart. Each
 palette click checks the preview texture pixels against the composed icon and
 counts changed pixels in each pose; it also checks that the portrait is intact.

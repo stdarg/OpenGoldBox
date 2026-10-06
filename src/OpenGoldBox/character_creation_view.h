@@ -32,7 +32,7 @@ class CharacterCreationView : public godot::Control
     int selected_score_{-1}, color_bank_{}, color_part_{};
     unsigned check_stage_{}, check_frames_{}, check_head_{}, check_default_{};
     unsigned drag_check_stage_{}, modal_check_stage_{};
-    bool ready_{}, refreshing_{}, checking_{}, capture_{}, fatal_{}, portrait_chosen_{};
+    bool ready_{}, refreshing_{}, checking_{}, portrait_check_{}, capture_{}, fatal_{}, portrait_chosen_{};
     void layout();
     void refresh();
     void refresh_art();

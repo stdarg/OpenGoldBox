@@ -248,7 +248,8 @@ void CharacterCreationView::_ready()
     if (Engine::get_singleton()->is_editor_hint())
         return;
     const auto args = OS::get_singleton()->get_cmdline_user_args();
-    checking_ = args.has("--character-check");
+    portrait_check_ = args.has("--portrait-check");
+    checking_ = args.has("--character-check") || portrait_check_;
     capture_ = args.has("--capture");
     try
     {
@@ -1502,40 +1503,44 @@ void CharacterCreationView::check_run()
     {
         const auto before = creator_->appearance();
         const auto draft = creator_->draft();
-        for (const auto *gender :
-                {"Female", "Male", "Nonbinary"
-                })
-            for (const auto *klass :
-                    {"Barbarian", "Wizard"
-                    })
-                for (const auto *race :
-                        {"Human", "Orc", "Dragonborn"
-                        })
+        auto *gender_filter = get_node<OptionButton>("PortraitGender");
+        auto *class_filter = get_node<OptionButton>("PortraitClass");
+        auto *race_filter = get_node<OptionButton>("PortraitRace");
+        if (gender_filter->get_item_count() != 4 || class_filter->get_item_count() != 13 ||
+                race_filter->get_item_count() != 10)
+            throw std::runtime_error("Portrait filters do not list every gender, class and race");
+        for (int gender = 1; gender < gender_filter->get_item_count(); ++gender)
+            for (int klass = 1; klass < class_filter->get_item_count(); ++klass)
+                for (int race = 1; race < race_filter->get_item_count(); ++race)
                 {
-                    for (const auto &filter : std::array<std::pair<const char *, const char *>, 3>
-                {
-                    {   {"PortraitGender", gender},
-                        {"PortraitClass", klass},
-                        {"PortraitRace", race}
-                    }
-                })
+                    for (const auto &[filter, index] :
+                            {std::pair{gender_filter, gender}, std::pair{class_filter, klass},
+                             std::pair{race_filter, race}})
                     {
-                        auto *c = get_node<OptionButton>(filter.first);
-                        for (int i = 1; i < c->get_item_count(); ++i)
-                            if (c->get_item_text(i) == filter.second)
-                            {
-                                c->select(i);
-                                c->emit_signal("item_selected", i);
-                                break;
-                            }
+                        filter->select(index);
+                        filter->emit_signal("item_selected", index);
                     }
+                    const auto gender_value = String(gender_filter->get_item_metadata(gender));
+                    const auto class_value = String(class_filter->get_item_metadata(klass));
+                    const auto race_value = String(race_filter->get_item_metadata(race));
                     std::size_t count = 0;
                     for (const auto &p : portraits_)
-                        if (p.gender == gender && p.klass == klass && p.race == race)
+                        if (gs(p.gender) == gender_value && gs(p.klass) == class_value &&
+                                gs(p.race) == race_value)
                             ++count;
-                    if (filtered_portraits_.size() != count ||
-                            get_node<Button>("PortraitNext")->is_disabled() != (count == 0))
-                        throw std::runtime_error("Portrait intersection or empty-state failed");
+                    if (count == 0 || filtered_portraits_.size() != count ||
+                            get_node<OptionButton>("PortraitSelect")->get_item_count() != count ||
+                            get_node<Button>("PortraitNext")->is_disabled() ||
+                            get_node<Button>("PortraitPrevious")->is_disabled())
+                        throw std::runtime_error("Portrait intersection is missing or cannot be selected");
+                    for (const auto index : filtered_portraits_)
+                    {
+                        const auto &portrait = portraits_.at(index);
+                        if (gs(portrait.gender) != gender_value ||
+                                gs(portrait.klass) != class_value ||
+                                gs(portrait.race) != race_value)
+                            throw std::runtime_error("Portrait filter returned the wrong character");
+                    }
                     if (creator_->appearance() != before || creator_->draft().race != draft.race ||
                             creator_->draft().gender != draft.gender ||
                             creator_->draft().character_class != draft.character_class)
@@ -1545,12 +1550,22 @@ void CharacterCreationView::check_run()
                 {"PortraitGender", "PortraitClass", "PortraitRace"
                 })
         {
-            get_node<OptionButton>(name)->select(0);
-            portrait_filter_selected(0);
+            auto *filter = get_node<OptionButton>(name);
+            filter->select(0);
+            filter->emit_signal("item_selected", 0);
         }
         if (filtered_portraits_.size() != portraits_.size())
             throw std::runtime_error("Clearing filters failed");
         ++check_default_;
+        if (portrait_check_)
+        {
+            UtilityFunctions::print("Portrait picker check passed: ",
+                                    static_cast<std::int64_t>(portraits_.size()),
+                                    " portraits and all gender, class and race combinations");
+            checking_ = false;
+            get_tree()->quit(0);
+            return;
+        }
         restart();
         return;
     }
