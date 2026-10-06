@@ -392,6 +392,10 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Sorcerer", "shatter", 3},
     SpellAccessRow{"Sorcerer", "web", 3},
     SpellAccessRow{"Sorcerer", "command", 3},
+    // Fiend Spells come only from the Fiend Patron.
+    SpellAccessRow{"Warlock", "burning_hands", 3},
+    SpellAccessRow{"Warlock", "command", 3},
+    SpellAccessRow{"Warlock", "scorching_ray", 3},
     SpellAccessRow{"Warlock", "chill_touch", 1},
     SpellAccessRow{"Warlock", "eldritch_blast", 1},
     SpellAccessRow{"Warlock", "poison_spray", 1},
@@ -478,6 +482,8 @@ struct Definition
     bool agonizing_blast{}, armor_of_shadows{}, devils_sight{}, eldritch_mind{},
          eldritch_spear{}, fiendish_vigor{}, pact_of_the_blade{}, repelling_blast{};
     int magical_cunning{}; // Warlock level 2: once per Long Rest, in Actor::arcane
+    // Fiend Patron, Warlock level 3: Temporary Hit Points when an enemy drops.
+    int dark_ones_blessing{};
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -880,6 +886,8 @@ character_definition(std::string_view bytes,
     d.sorcery_points = klass == "Sorcerer" && level >= 2 ? int(level) : 0;
     d.pact_magic = klass == "Warlock";
     d.magical_cunning = klass == "Warlock" && level >= 2 ? 1 : 0;
+    d.dark_ones_blessing =
+        klass == "Warlock" && level >= 3 ? std::max(1, ability_modifier(scores[5]) + int(level)) : 0;
     d.deflect = d.open_hand = klass == "Monk" && level >= 3;
     d.focus_dc = 8 + 2 + ability_modifier(scores[4]);
     d.dexterity = dex;
@@ -1491,6 +1499,7 @@ class Session final : public CombatSession
     int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
                   bool ranged);
     [[nodiscard]] bool can_rebuke(const Actor &warlock, const Actor &attacker) const;
+    void bless_fiends(const Actor &fallen);
     void rebuke(const Actor &attacker, Actor &warlock);
     void perform(const Command &command);
     void dispatch(const Command &command);
@@ -4192,7 +4201,10 @@ void Session::damage(Actor &target, int amount, bool critical)
 {
     if (!amount || target.dead)
         return;
+    const bool standing = target.hp > 0;
     detail::damage_life(target, amount, max_hp(target), critical, target.source.side == 1);
+    if (standing && target.hp == 0)
+        bless_fiends(target);
     // Warding Bond: the caster takes the same damage; the bond ends when the
     // caster drops to 0 Hit Points or is more than 60 feet away.
     for (const auto bond : bonds_on(target))
@@ -6689,6 +6701,32 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
     return left;
 }
 
+void Session::bless_fiends(const Actor &fallen)
+{
+    // Dark One's Blessing: a Fiend Warlock gains Temporary Hit Points when it
+    // drops an enemy, or someone drops one within 10 feet of it. The creature
+    // acting (or reacting) now is taken as the one who dropped it, and the
+    // better Temporary Hit Points are kept, as with Heroism.
+    const auto by = pending() ? pending() : actors_[turn_].source.id;
+    for (auto &warlock : actors_)
+    {
+        const int amount = def(warlock).dark_ones_blessing;
+        if (!amount || warlock.hp <= 0 || warlock.dead ||
+                warlock.source.side == fallen.source.side ||
+                (by != warlock.source.id && distance(warlock.source.cell, fallen.source.cell) > 10) ||
+                amount <= warlock.temporary_hp.amount)
+            continue;
+        detail::grant_temporary_hp(warlock, {amount, "feature:dark_ones_blessing"},
+                                   TemporaryHpChoice::use_new);
+        log("Dark One's Blessing: " + warlock.source.name + " gains " + std::to_string(amount) +
+            " Temporary Hit Points.",
+        {
+            "Dark One's Blessing: {name} gains {amount} Temporary Hit Points.",
+            {{"name", warlock.source.name}, {"amount", std::to_string(amount)}}
+        });
+    }
+}
+
 bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
 {
     return warlock.source.side != attacker.source.side && conscious(warlock) &&
@@ -8580,7 +8618,7 @@ class Module final : public RulesModule
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
         if (sheet.character_class == "Warlock")
-            result.description = "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three. Level four grants a third cantrip and an available feat or ability points.";
+            result.description = "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points.";
         if (sheet.character_class == "Sorcerer")
             result.description = "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
         if (sheet.character_class == "Monk")
@@ -8916,6 +8954,13 @@ class Module final : public RulesModule
         }
         if (next.character_class == "Warlock" && next.level == 2)
             next.grants.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
+        // The Fiend Patron is the SRD's only Warlock subclass.
+        if (next.character_class == "Warlock" && next.level == 3)
+        {
+            next.grants.push_back({"subclass:fiend", "class:warlock", 3, {}});
+            next.grants.push_back({"feature:dark_ones_blessing", "subclass:warlock:fiend", 3, {}});
+            next.grants.push_back({"feature:fiend_spells", "subclass:warlock:fiend", 3, {}});
+        }
         if (next.character_class == "Sorcerer" && next.level == 2)
         {
             next.grants.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
@@ -9095,7 +9140,7 @@ class Module final : public RulesModule
         {
             const std::string note =
                 next.character_class == "Warlock"
-                ? "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three. Level four grants a third cantrip and an available feat or ability points."
+                ? "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points."
                 : next.character_class == "Sorcerer"
                 ? "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
                 : next.character_class == "Monk"
@@ -10292,7 +10337,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.121", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.122", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

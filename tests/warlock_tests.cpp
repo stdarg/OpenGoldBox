@@ -36,7 +36,8 @@ std::string read(const std::filesystem::path &p)
 std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
-                               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 std::unique_ptr<RulesModule> module_rules()
@@ -133,12 +134,12 @@ void reach_turn(CombatSession &c);
 
 // The Warlock (1) and an enemy (98) beside it.
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
-                                      std::uint64_t seed = 5)
+                                      std::uint64_t seed = 5, std::string enemy = "target")
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
     auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
         {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
-            {98, "target", "Enemy", 1, {2, 1}}
+            {98, enemy, "Enemy", 1, {2, 1}}
         }},
     seed);
     if (!c->snapshot().initiative_choices.empty())
@@ -288,6 +289,41 @@ void invocation_checks()
     }
 }
 
+bool has_grant(const Character &hero, std::string_view id)
+{
+    const auto &grants = hero.sheet().grants;
+    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+    {
+        return g.id == id;
+    });
+}
+
+void fiend_checks()
+{
+    const auto third = warlock(3);
+    check(has_grant(third, "subclass:fiend") && has_grant(third, "feature:dark_ones_blessing") &&
+          has_grant(third, "feature:fiend_spells"),
+          "Level three brings the Fiend Patron");
+    auto module = rules();
+    auto c = battle(*module, third);
+    check(offered(*c, "burning_hands_2") && offered(*c, "command_halt_2") &&
+          offered(*c, "scorching_ray"),
+          "Fiend Spells are always prepared");
+    for (std::uint64_t seed = 1; seed < 32; ++seed)
+    {
+        auto d = battle(*module, third, seed, "weakling");
+        check(submit(*d, "eldritch_blast", 98), "Eldritch Blast at a weakling");
+        if (unit(*d, 98).hit_points > 0)
+            continue;
+        // Charisma 18 (+4) and Warlock level 3.
+        check(logged(*d, "Dark One's Blessing: Warlock gains 7 Temporary Hit Points.") &&
+              unit(*d, 1).temporary_hp.amount == 7,
+              "Dropping an enemy grants Dark One's Blessing");
+        return;
+    }
+    throw std::runtime_error("No seed drops the weakling");
+}
+
 } // namespace
 
 int main()
@@ -298,6 +334,7 @@ int main()
         hellish_rebuke_checks();
         advancement_checks();
         invocation_checks();
+        fiend_checks();
         std::cout << "Warlock tests passed\n";
     }
     catch (const std::exception &e)

@@ -26,7 +26,7 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 - **Magical Cunning** (level 2, once per Long Rest): from the Camp dialog's
   Cast / Use, a one-minute rite restores expended Pact Magic slots, up to half
   the maximum (rounded up). It shares Arcane Recovery's store.
-- Eldritch Invocations are below; the Fiend Patron arrives next.
+- Eldritch Invocations and the Fiend Patron are below.
 - Verification: `opengold_warlock_tests` (one slot and Hex's Bonus Action and
   Necrotic, the Short Rest, Hellish Rebuke's question, checkpoint, save and
   slot, two slots at level 2 and Magical Cunning at camp, level-2 slots and
@@ -62,3 +62,17 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   Shadows, Agonizing and Repelling Blast, Fiendish Vigor, Lessons' Alert,
   Pact of the Blade's attack bonus, Devil's Sight in Darkness),
   `opengold_training_tests` (a Warlock's invocation completes Training).
+
+## The Fiend Patron (level 3)
+
+- **Dark One's Blessing**: when an enemy drops to 0 Hit Points, a Fiend Warlock
+  that dropped it, or stands within 10 feet of it, gains Temporary Hit Points
+  equal to its Charisma modifier + Warlock level (at least 1). The better
+  Temporary Hit Points are kept automatically, as with Heroism, and the log
+  says so. Adaptation: the creature acting (or reacting) when the enemy drops
+  counts as the one who dropped it.
+- **Fiend Spells**: Burning Hands, Command and Scorching Ray are always
+  prepared (Suggestion is removed by DM-3); at levels 3–4 the level-1 ones
+  are cast with the level-2 Pact Magic slots.
+- Verification: `opengold_warlock_tests` (the grants, the always-prepared
+  spells, 7 Temporary Hit Points from dropping a weakling).

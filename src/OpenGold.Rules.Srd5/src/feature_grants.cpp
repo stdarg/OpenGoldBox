@@ -157,6 +157,12 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
     }
     if (klass == "warlock" && level >= 2)
         required.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
+    if (klass == "warlock" && level >= 3)
+    {
+        required.push_back({"subclass:fiend", "class:warlock", 3, {}});
+        required.push_back({"feature:dark_ones_blessing", "subclass:warlock:fiend", 3, {}});
+        required.push_back({"feature:fiend_spells", "subclass:warlock:fiend", 3, {}});
+    }
     if (klass == "sorcerer" && level >= 3)
     {
         required.push_back({"subclass:draconic", "class:sorcerer", 3, {}});

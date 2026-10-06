@@ -190,6 +190,10 @@ struct AlwaysPrepared
 // Ranger's Favored Enemy and the Cleric's Life Domain.
 constexpr std::array always_prepared_table{
     AlwaysPrepared{"Paladin", "divine_smite", 2},
+    // Fiend Spells, p. 76 (Suggestion removed by DM-3).
+    AlwaysPrepared{"Warlock", "burning_hands", 3},
+    AlwaysPrepared{"Warlock", "command", 3},
+    AlwaysPrepared{"Warlock", "scorching_ray", 3},
     // Draconic Spells, p. 70 (Alter Self removed by DM-3).
     AlwaysPrepared{"Sorcerer", "chromatic_orb", 3},
     AlwaysPrepared{"Sorcerer", "command", 3},
