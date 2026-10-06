@@ -785,7 +785,9 @@ void class_weapon_proficiency()
         check(rules->character_profile(pc.sheet(), longsword).melee_attack_bonus ==
               (expected.other_martial ? 4 : 2),
               "Rogue and Monk do not gain all martial weapons");
-        check(rules->character_profile(pc.sheet(), mace).melee_attack_bonus == 4,
+        // Martial Arts: a Monk swings the mace, a Monk weapon, with Dexterity.
+        check(rules->character_profile(pc.sheet(), mace).melee_attack_bonus ==
+              (expected.klass == "monk" ? 5 : 4),
               "Every starting class retains simple weapon proficiency");
     }
     for (const std::string klass :

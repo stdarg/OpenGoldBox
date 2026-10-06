@@ -251,7 +251,11 @@ void all_classes()
                     klass.id == "paladin" || klass.id == "ranger" ||
                     (klass.id == "rogue" && (e.has("finesse") || e.has("light"))) ||
                     (klass.id == "monk" && e.has("light"));
-                const int modifier = e.ranged || e.has("finesse") ? 3 : 2;
+                // Martial Arts: a Monk's Monk weapons use Dexterity and roll at
+                // least a d6.
+                const bool monk_weapon =
+                    klass.id == "monk" && !e.ranged && (!e.martial || e.has("light"));
+                const int modifier = e.ranged || e.has("finesse") || monk_weapon ? 3 : 2;
                 auto c = battle(*rules, h, e.key, seed, e.ranged ? Cell{3, 1} : Cell{2, 1});
                 auto copy = rules->restore(c->save());
                 const auto before = unit(*c);
@@ -266,6 +270,7 @@ void all_classes()
                       "Independent seed and all-class proficiency/ability expectations");
                 // With the other hand empty a Versatile melee weapon uses its larger die.
                 const auto dice = e.versatile && !e.ranged ? "1d" + std::to_string(e.versatile)
+                                  : monk_weapon && e.damage == "1d4" ? std::string("1d6")
                                   : e.damage;
                 const int damage =
                     seed == 40 ? 0

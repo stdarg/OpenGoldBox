@@ -66,6 +66,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "cunning_disengage" ? "Disengage"
             : verb == "lay_on_hands"      ? "Lay On Hands"
             : verb == "rage"              ? "Rage"
+            : verb == "martial_arts"      ? "Unarmed Strike"
             : verb == "extend_rage"       ? "Extend Rage"
             : verb == "divine_smite_free" ? "Divine Smite (Paladin's Smite)"
             : verb == "divine_smite"      ? "Divine Smite"

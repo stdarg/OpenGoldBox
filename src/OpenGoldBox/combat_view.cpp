@@ -877,7 +877,7 @@ void CombatView::use_cunning_action()
         get_node<Button>("UseCunningAction")->release_focus();
         select_mode(verb);
     }
-    else if (verb == "lay_on_hands")
+    else if (verb == "lay_on_hands" || verb == "martial_arts")
     {
         // A touched ally is chosen on the battlefield, like a spell target.
         get_node<Button>("UseCunningAction")->release_focus();

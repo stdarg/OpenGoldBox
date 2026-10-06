@@ -340,6 +340,10 @@ struct Definition
     int rages{}, rage_damage{};
     int strength{};       // Strength modifier, to tell Strength-based attacks
     bool danger_sense{}, reckless{}; // Barbarian level 2
+    // Monk Martial Arts: unarmored, unarmed or with only Monk weapons. The
+    // modifier is the better of Strength and Dexterity.
+    bool martial_arts{};
+    int martial_modifier{};
     bool frenzy{};                   // Berserker, Barbarian level 3
     bool heavy_armor{};   // wearing Heavy armor, which prevents Rage
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
@@ -738,6 +742,7 @@ character_definition(std::string_view bytes,
     d.known_cantrips = detail::spells_of_level(d.spells, true);
 
     bool weapon = false, armor = false, shield = false;
+    bool monk_weapons = true; // every wielded weapon is a Simple Melee or Light Martial one
     unsigned hands = 0;
     for (unsigned i = 0; i < count; ++i)
     {
@@ -755,6 +760,7 @@ character_definition(std::string_view bytes,
     {
         if (const auto *item = detail::weapon(key))
         {
+            monk_weapons &= item->dice && !item->ranged && (!item->martial || item->light);
             if (weapon)
             {
                 if (d.other_weapon)
@@ -893,6 +899,25 @@ character_definition(std::string_view bytes,
         d.ac = std::max(d.ac, 10 + dex + con);
     if (!armor && !shield && klass == "Monk")
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[4]));
+    // Martial Arts: the better of Strength and Dexterity for attack and damage
+    // rolls, and the Martial Arts die (a d6 through level four) when larger.
+    d.martial_arts = klass == "Monk" && !armor && !shield && monk_weapons;
+    if (d.martial_arts)
+    {
+        d.martial_modifier = std::max(str, dex);
+        if (!weapon)
+        {
+            d.melee = {1, 6, d.martial_modifier};
+            d.melee_bonus = 2 + d.martial_modifier;
+        }
+        else
+        {
+            d.melee_bonus += d.martial_modifier - d.melee_ability;
+            d.melee.bonus = d.martial_modifier;
+            d.melee.sides = std::max(d.melee.sides, 6);
+        }
+        d.melee_ability = d.martial_modifier;
+    }
     if (shield && trained(klass, grants, "shield"))
         d.ac += 2;
     // Mage Armor's AC for a creature wearing no armor.
@@ -1258,6 +1283,7 @@ class Session final : public CombatSession
     bool nick_weapon(const Actor &, unsigned item) const;
     void qualify_light(Actor &, unsigned item);
     Actor item_actor(const Actor &, unsigned item) const;
+    Actor unarmed_actor(const Actor &a) const;
     bool weapon_reaction(const Actor &, const Definition &) const;
     bool has_weapon_reaction(const Actor &, Cell, Cell) const;
     void validate_light() const;
@@ -1624,6 +1650,23 @@ void Session::activate_light()
             items_.push_back(std::move(carried));
         }
     light_active_ = true;
+}
+
+Actor Session::unarmed_actor(const Actor &a) const
+{
+    // A Monk's Unarmed Strike: the Martial Arts die plus its modifier, with no
+    // weapon's mastery, grip or feat riders.
+    auto result = a;
+    auto &d = result.definition;
+    d.melee = {1, 6, d.martial_modifier};
+    d.melee_bonus = 2 + d.martial_modifier;
+    d.melee_ability = d.martial_modifier;
+    d.melee_type = detail::DamageType::bludgeoning;
+    d.reach = 5;
+    d.versatile_sides = 0;
+    d.masteries.clear();
+    d.savage = d.great_weapon_fighting = false;
+    return result;
 }
 
 Actor Session::item_actor(const Actor &a, unsigned token) const
@@ -2166,6 +2209,8 @@ Snapshot Session::snapshot() const
             view.bonus_actions.push_back("lay_on_hands");
         if (def(a).rages)
             view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
+        if (def(a).martial_arts)
+            view.bonus_actions.push_back("martial_arts");
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
             view.bonus_actions.push_back("divine_smite_free");
         for (const auto *smite :
@@ -3244,6 +3289,12 @@ std::vector<Command> Session::legal_commands() const
                     (detail::has_effect(other.effects, detail::EffectKind::drowsy) ||
                      detail::has_effect(other.effects, detail::EffectKind::asleep)))
                 add(id, "shake_awake", "Shake awake", other.source.id);
+    // Martial Arts: an Unarmed Strike as a Bonus Action.
+    if (a.bonus && d.martial_arts)
+        for (const auto &other : actors_)
+            if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+                    distance(a.source.cell, other.source.cell) <= 5)
+                add(id, "martial_arts", "Unarmed Strike", other.source.id);
     // Rage: a Bonus Action outside Heavy armor; on a later turn a Bonus Action
     // extends it.
     if (a.bonus && d.rages)
@@ -6038,6 +6089,13 @@ void Session::dispatch(const Command &command)
         a.nick_origin = 0;
         (void)a.actions.spend(false);
         escape_ensnaring(a);
+    }
+    else if (command.verb == "martial_arts")
+    {
+        a.bonus = false;
+        auto striker = unarmed_actor(a);
+        attack(striker, actor(command.target), false);
+        a.aim_ready = striker.aim_ready;
     }
     else if (command.verb == "rage")
     {
@@ -9171,7 +9229,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.113", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.114", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {
