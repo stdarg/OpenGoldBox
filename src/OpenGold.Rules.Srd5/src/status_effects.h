@@ -112,7 +112,11 @@ enum class EffectKind : unsigned
     // Mirror Image: `dc` counts the duplicates left that may take a hit.
     mirror_image = 42,
     // Magic Weapon: `dc` is the bonus to weapon attack and damage rolls.
-    magic_weapon = 43
+    magic_weapon = 43,
+    // Invisibility: the Invisible condition until the creature attacks or casts.
+    invisible = 44,
+    // See Invisibility: Invisible creatures are seen as if visible.
+    see_invisibility = 45
 };
 
 // The longest a spell benefit lasts, in milliseconds.

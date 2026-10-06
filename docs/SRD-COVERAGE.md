@@ -22,6 +22,11 @@ Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
 below that describe those features are delivery history, not current behavior.
 
+## Invisibility, See Invisibility and Darkness
+
+Rules 0.6.102 adds the Invisible condition and three level-two Wizard spells.
+See [Wizard](WIZARD.md#invisibility-see-invisibility-and-darkness).
+
 ## Blur, Mirror Image and Magic Weapon
 
 Rules 0.6.101 adds two level-two Wizard defenses and a weapon buff. See

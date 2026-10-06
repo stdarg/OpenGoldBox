@@ -112,7 +112,11 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048},
     // lists, Magic Weapon on the Paladin, Ranger and Sorcerer lists.
     Spell{"blur", "Blur", 2, 0, wizard_list},
     Spell{"mirror_image", "Mirror Image", 2, 0, wizard_list},
-    Spell{"magic_weapon", "Magic Weapon", 2, 0, wizard_list}};
+    Spell{"magic_weapon", "Magic Weapon", 2, 0, wizard_list},
+    // Also on the Bard, Sorcerer and Warlock lists; added with those classes.
+    Spell{"invisibility", "Invisibility", 2, 0, wizard_list},
+    Spell{"see_invisibility", "See Invisibility", 2, 0, wizard_list},
+    Spell{"darkness", "Darkness", 2, 0, wizard_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).

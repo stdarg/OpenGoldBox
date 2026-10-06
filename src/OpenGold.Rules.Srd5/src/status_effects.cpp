@@ -381,6 +381,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::warding_bond:
     case EffectKind::protection_from_poison:
     case EffectKind::magic_weapon:
+    case EffectKind::invisible:
+    case EffectKind::see_invisibility:
         return 3600000; // 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:

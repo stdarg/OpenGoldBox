@@ -95,7 +95,10 @@ enum class Rider : unsigned
     ray_of_enfeeblement,
     blur,
     mirror_image,
-    magic_weapon
+    magic_weapon,
+    invisibility,
+    see_invisibility,
+    darkness
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -769,6 +772,38 @@ inline constexpr std::array spell_table
         .range = 5,
         .bonus_action = true,
         .rider = Rider::magic_weapon},
+    // SRD 5.2.1 p. 143: the touched creature is Invisible until it makes an
+    // attack roll, deals damage or casts a spell.
+    SpellDef{
+        .id = "invisibility",
+        .label = "Invisibility",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::invisibility,
+        .concentration = true},
+    // SRD 5.2.1 p. 160: the caster sees Invisible creatures for an hour.
+    SpellDef{
+        .id = "see_invisibility",
+        .label = "See Invisibility",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::see_invisibility},
+    // SRD 5.2.1 p. 122: magical Darkness fills a 15-foot-radius sphere.
+    SpellDef{
+        .id = "darkness",
+        .label = "Darkness",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 60,
+        .somatic = false,
+        .rider = Rider::darkness,
+        .concentration = true,
+        .radius = 15},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",

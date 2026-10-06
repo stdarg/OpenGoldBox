@@ -220,3 +220,22 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - Verification: `opengold_wizard_spell_tests` (Disadvantage against a blurred
   Wizard, a duplicate taking a hit and its checkpoint, Magic Weapon's Bonus
   Action and +1 to the attack roll).
+
+## Invisibility, See Invisibility and Darkness
+
+- **Invisibility** (level 2, touch, Concentration up to 1 hour): the creature
+  is **Invisible**: attack rolls against it have Disadvantage, its own have
+  Advantage, spells that need sight cannot target it, and it can leave an
+  enemy's reach without an Opportunity Attack. It ends right after the
+  creature makes an attack roll (which still has Advantage) or casts a spell.
+  The extra targets from higher slots are beyond levels 1-4.
+- **See Invisibility** (level 2, self, 1 hour): Invisible creatures are seen as
+  if visible.
+- **Darkness** (level 2, 60 feet, Verbal only, Concentration up to 10 minutes):
+  aimed like other areas, a 15-foot-radius sphere that is Heavily Obscured,
+  like Fog Cloud: creatures in it can neither see nor be seen. Casting it on
+  an object and dispelling light spells are not modeled.
+- Verification: `opengold_wizard_spell_tests` (Disadvantage against and
+  Advantage for an Invisible Wizard, no Opportunity Attack, the attack ending
+  it; a foe that can't be targeted until See Invisibility; Darkness's sphere
+  hiding a creature).

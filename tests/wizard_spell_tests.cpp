@@ -699,6 +699,63 @@ void magic_weapon_checks()
           "The weapon gains +1 to attack rolls");
 }
 
+void invisibility_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(3, {"magic_missile"}, {"invisibility", "shatter"}), {2, 1},
+                    {11, 5});
+    check(submit(*c, "invisibility", 1) && has_condition(*c, 1, "Invisible"),
+          "Invisibility makes the Wizard Invisible");
+    reach(*c, 98);
+    check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
+          "Attacks against an Invisible creature have Disadvantage");
+    reach(*c, 1);
+    check(move_to(*c, Cell{1, 3}) && !c->snapshot().reaction_pending,
+          "An unseen creature leaves reach without an Opportunity Attack");
+    check(submit(*c, "fire_bolt", 98) && logged(*c, "(advantage)") &&
+          logged(*c, "Wizard is no longer Invisible.") && !has_condition(*c, 1, "Invisible"),
+          "Its own attack has Advantage and ends the Invisibility");
+}
+
+void see_invisibility_checks()
+{
+    auto module = rules();
+    const auto hero = wizard(3, {"magic_missile"}, {"see_invisibility", "shatter"});
+    const auto foe = wizard(3, {"magic_missile"}, {"invisibility", "shatter"});
+    const auto profile = [&](const Character &who)
+    {
+        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+    };
+    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", 1, {8, 1}, profile(foe)}
+        }},
+    5);
+    reach(*c, 98);
+    check(submit(*c, "invisibility", 98), "The foe turns Invisible");
+    reach(*c, 1);
+    check(!submit(*c, "magic_missile", 98) && submit(*c, "see_invisibility", 1),
+          "An Invisible foe cannot be targeted by sight until See Invisibility");
+    reach(*c, 98);
+    check(submit(*c, "end"), "The foe waits");
+    reach(*c, 1);
+    check(submit(*c, "magic_missile", 98), "See Invisibility reveals the foe");
+}
+
+void darkness_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, wizard(3, {"magic_missile"}, {"darkness", "shatter"}), {8, 1},
+                    {11, 5});
+    check(submit(*c, "darkness") && aim(*c, Cell{8, 1}) && submit(*c, "area_cast"),
+          "Cast Darkness on the enemy");
+    const auto obscured = c->snapshot().obscured;
+    check(has(obscured, {8, 1}) && has(obscured, {11, 4}) && !has(obscured, {4, 1}),
+          "Darkness fills a 15-foot-radius sphere");
+    next_turn(*c);
+    check(!submit(*c, "magic_missile", 98), "A creature in the Darkness cannot be seen");
+}
+
 } // namespace
 
 int main()
@@ -732,6 +789,9 @@ int main()
         blur_checks();
         mirror_image_checks();
         magic_weapon_checks();
+        invisibility_checks();
+        see_invisibility_checks();
+        darkness_checks();
         std::cout << "Wizard spell tests passed\n";
     }
     catch (const std::exception &e)

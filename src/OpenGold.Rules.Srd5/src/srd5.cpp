@@ -107,7 +107,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::expeditious_retreat || kind == detail::EffectKind::drowsy ||
            kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing ||
            kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled ||
-           kind == detail::EffectKind::blur;
+           kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible;
 }
 
 // Command's option as players read it, "Approach" for 1.
@@ -259,6 +259,9 @@ constexpr std::array class_spell_access
     SpellAccessRow{"Wizard", "blur", 3},
     SpellAccessRow{"Wizard", "mirror_image", 3},
     SpellAccessRow{"Wizard", "magic_weapon", 3},
+    SpellAccessRow{"Wizard", "invisibility", 3},
+    SpellAccessRow{"Wizard", "see_invisibility", 3},
+    SpellAccessRow{"Wizard", "darkness", 3},
     SpellAccessRow{"Wizard", "blindness", 3},
     SpellAccessRow{"Wizard", "poison_spray", 1},
     SpellAccessRow{"Wizard", "ray_of_frost", 1},
@@ -1291,8 +1294,44 @@ class Session final : public CombatSession
     bool can_see(const Actor &a, const Actor &b) const
     {
         return conscious(a) && !detail::blinded(a.effects) && !obscured(a.source.cell) &&
-               !obscured(b.source.cell) && line_of_sight(a.source.cell, b.source.cell);
+               !obscured(b.source.cell) && line_of_sight(a.source.cell, b.source.cell) &&
+               !unseen(a, b);
     }
+
+    // An Invisible creature hides from all but those with See Invisibility.
+    static bool unseen(const Actor &viewer, const Actor &target)
+    {
+        return detail::has_effect(target.effects, detail::EffectKind::invisible) &&
+               !detail::has_effect(viewer.effects, detail::EffectKind::see_invisibility);
+    }
+
+    // Invisibility ends right after its creature casts a spell, once any
+    // attack roll the spell makes has had the benefit. Casting Invisibility on
+    // oneself starts it rather than ending it.
+    class InvisibilityEnds
+    {
+      public:
+        InvisibilityEnds(Session &session, const Actor &caster)
+            : session_(session), id_(caster.source.id),
+              invisible_(detail::has_effect(caster.effects, detail::EffectKind::invisible))
+        {
+        }
+
+        InvisibilityEnds(const InvisibilityEnds &) = delete;
+        InvisibilityEnds &operator=(const InvisibilityEnds &) = delete;
+
+        ~InvisibilityEnds()
+        {
+            if (invisible_)
+                session_.end_invisibility(id_);
+        }
+
+      private:
+        Session &session_;
+        EntityId id_;
+        bool invisible_;
+    };
+    void end_invisibility(EntityId id);
 
     bool enemy_in_sight(const Actor &a) const
     {
@@ -2173,7 +2212,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::asleep, "Unconscious (Sleep)"},
                     std::pair{detail::EffectKind::laughing, "Prone and Incapacitated (laughing)"},
                     std::pair{detail::EffectKind::enfeebled, "Enfeebled (Ray of Enfeeblement)"},
-                    std::pair{detail::EffectKind::acid_arrow, "Burning acid (Acid Arrow)"}
+                    std::pair{detail::EffectKind::acid_arrow, "Burning acid (Acid Arrow)"},
+                    std::pair{detail::EffectKind::invisible, "Invisible"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -2338,6 +2378,20 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::web:
     case detail::Rider::misty_step:
         return; // Aimed areas, resolved by cast_area().
+    case detail::Rider::invisibility:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::invisible, 0);
+        log(target.source.name + " turns Invisible.",
+        {"{name} turns Invisible.", {{"name", target.source.name}}});
+        return;
+    case detail::Rider::see_invisibility:
+        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                                    detail::EffectKind::see_invisibility, 0);
+        log(target.source.name + " gains See Invisibility.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "See Invisibility", true}}});
+        return;
+    case detail::Rider::darkness:
+        return; // An aimed area, resolved by cast_area().
     case detail::Rider::blur:
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::blur, 0);
@@ -2497,6 +2551,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     const auto &d = def(a);
     const bool upcast = verb.ends_with("_2");
     end_sanctuary(a);
+    const InvisibilityEnds ends{*this, a};
     // A level-two spell always draws a level-two slot; a level-one spell draws
     // one only in its upcast form.
     if (spell.level)
@@ -2738,6 +2793,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         if ((spell.rider == detail::Rider::blur &&
                 detail::has_effect(other.effects, detail::EffectKind::blur)) ||
+                (spell.rider == detail::Rider::invisibility &&
+                 detail::has_effect(other.effects, detail::EffectKind::invisible)) ||
+                (spell.rider == detail::Rider::see_invisibility &&
+                 detail::has_effect(other.effects, detail::EffectKind::see_invisibility)) ||
                 (spell.rider == detail::Rider::mirror_image &&
                  detail::has_effect(other.effects, detail::EffectKind::mirror_image)) ||
                 (spell.rider == detail::Rider::magic_weapon &&
@@ -3793,6 +3852,7 @@ void Session::cast_area()
     area_.reset();
     auto &a = actor(aimed.caster);
     end_sanctuary(a);
+    const InvisibilityEnds ends{*this, a};
     const auto &spell = *detail::find_spell(aimed.verb);
     if (spell.bonus_action)
         a.bonus = false;
@@ -3835,7 +3895,10 @@ void Session::cast_area()
     }
     if (spell.concentration)
         begin_concentration(a, spell);
-    const auto kind = spell.rider == detail::Rider::fog_cloud ? ZoneKind::fog
+    // Magical Darkness hides what is in it just as Fog Cloud does.
+    const auto kind = spell.rider == detail::Rider::fog_cloud ||
+                      spell.rider == detail::Rider::darkness
+                      ? ZoneKind::fog
                       : spell.rider == detail::Rider::silence ? ZoneKind::silence
                       : spell.rider == detail::Rider::grease  ? ZoneKind::grease
                       : spell.rider == detail::Rider::web     ? ZoneKind::web
@@ -4115,6 +4178,7 @@ void Session::cast_on_selection()
     selection_.reset();
     auto &a = actor(selection.caster);
     end_sanctuary(a);
+    const InvisibilityEnds ends{*this, a};
     const auto &spell = *detail::find_spell(selection.verb);
     a.nick_origin = 0;
     (void)a.actions.spend(true);
@@ -4175,6 +4239,17 @@ std::vector<EntityId> Session::bonds_on(const Actor &target) const
                         distance(caster.source.cell, target.source.cell) <= 60)
                     casters.push_back(caster.source.id);
     return casters;
+}
+
+void Session::end_invisibility(EntityId id)
+{
+    auto &a = actor(id);
+    if (std::erase_if(a.effects.active, [](const auto & e)
+{
+    return e.kind == detail::EffectKind::invisible;
+}))
+    log(a.source.name + " is no longer Invisible.",
+    {"{name} is no longer Invisible.", {{"name", a.source.name}}});
 }
 
 void Session::end_sanctuary(Actor &a)
@@ -4300,8 +4375,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     }
     // Fog hides either creature from the other, as Blinded would.
     const bool fogged = obscured(a.source.cell) || obscured(target.source.cell);
-    auto result = detail::attack_modifiers(detail::blinded(a.effects) || fogged,
-                                           detail::blinded(target.effects) || fogged,
+    auto result = detail::attack_modifiers(detail::blinded(a.effects) || fogged || unseen(a, target),
+                                           detail::blinded(target.effects) || fogged ||
+                                           unseen(target, a),
                                            target.dodge, disadvantaged || a.effects.prone);
     // At zero HP the creature is Unconscious and Prone (SRD pp.187,191).
     // At longer range their opposing attack modifiers cancel, not stack.
@@ -4576,7 +4652,9 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         return e.kind == detail::EffectKind::guiding_bolt;
     });
     const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
-    const int natural = detail::d20(modifiers, rng_), bonus = (spell    ? d.casting
+    const int natural = detail::d20(modifiers, rng_);
+    end_invisibility(a.source.id);
+    const int bonus = (spell    ? d.casting
         : ranged ? d.ranged_bonus
         : d.melee_bonus) + blessing_die(a) +
         (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
@@ -8573,7 +8651,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.101", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.102", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {
