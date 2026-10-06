@@ -191,13 +191,12 @@ are delivered, with four existing issue closures total and no new issues.
 
 ## Thief (level 3)
 
-Rules 0.6.110 records the Thief, the SRD's only Rogue subclass, at Rogue level
-three: `subclass:thief` with `feature:fast_hands` and
-`feature:second_story_work`, granted on advancement and required by grant
-validation. Neither feature has a use yet. Fast Hands' lock picking only
-matters in combat, where there are no locks, and its Use an Object waits for
-magic items (a wand or similar used as a Bonus Action is its future use).
-Second-Story Work's climbing and jumping need vertical movement the battle grid
-does not have. The level-up note says so. Verification: the Rogue progression
-checks in `opengold_training_tests` (rogue_attack_checks.h) find the three grants from level three
-only.
+Rules 0.6.111 records the Thief, the SRD's only Rogue subclass, at Rogue level
+three: `subclass:thief` with `feature:fast_hands`, granted on advancement and
+required by grant validation. Second-Story Work is cut, as
+[SRD-DECISIONS](SRD-DECISIONS.md) records (0.6.110 had briefly granted it).
+Fast Hands has no use yet: its lock picking only matters in combat, where there
+are no locks, and its Use an Object waits for magic items (a wand or similar
+used as a Bonus Action is its future use). The level-up note says so.
+Verification: the Rogue progression checks in `opengold_training_tests`
+(rogue_attack_checks.h) find both grants from level three only.

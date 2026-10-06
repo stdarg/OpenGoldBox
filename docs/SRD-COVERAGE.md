@@ -24,8 +24,8 @@ below that describe those features are delivery history, not current behavior.
 
 ## Thief
 
-Rules 0.6.110 records the Rogue's Thief subclass at level three; its features
-wait for magic items, traps and climbing. See
+Rules 0.6.111 records the Rogue's Thief subclass and Fast Hands at level
+three; Fast Hands waits for magic items, and Second-Story Work is cut. See
 [Rogue attacks](ROGUE-ATTACKS.md#thief-level-3).
 
 ## Gust of Wind
