@@ -189,9 +189,22 @@ void CombatView::prepare_combat()
     {
         const auto directory = std::filesystem::u8path(settings::game_path().utf8().get_data());
         auto characters = srd5::character_rules();
+        // Play-testing: --combat-demo-party=druid,warlock,... and --combat-demo-level=4.
+        std::vector<std::string> classes;
+        unsigned level = 1;
+        for (const auto &arg : OS::get_singleton()->get_cmdline_user_args())
+        {
+            if (arg.begins_with("--combat-demo-party="))
+                for (const auto &klass : arg.trim_prefix("--combat-demo-party=").split(","))
+                    classes.emplace_back(klass.utf8().get_data());
+            if (arg.begins_with("--combat-demo-level="))
+                level = unsigned(std::clamp<std::int64_t>(
+                                     arg.trim_prefix("--combat-demo-level=").to_int(), 1, 4));
+        }
         auto showcase = make_combat_demo(
                             srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data())), *characters,
-                            directory, std::filesystem::u8path(game_combat_body_file().utf8().get_data()));
+                            directory, std::filesystem::u8path(game_combat_body_file().utf8().get_data()),
+                            classes, level);
         campaign_ = std::move(showcase.party);
         encounter_ = std::move(showcase.encounter);
     }
@@ -1447,19 +1460,20 @@ void CombatView::_input(const Ref<InputEvent> &event)
         }
         if (key->get_keycode() == Key::KEY_SPACE)
         {
-            for (const char *verb :
-                    {"stand_up", "cunning_dash", "cunning_disengage", "steady_aim",
-                     "action_surge", "adrenaline_rush", "sacred_weapon", "turn_undead",
-                     "preserve_life",
-                     "second_wind", "dash",
-                     "dodge", "disengage", "opportunity", "decline"
-                    })
-                if (mode_ == verb)
-                {
-                    immediate(gs(mode_));
-                    break;
-                }
             const auto offered = demo_->combat().legal_commands();
+            // An action without a target, such as Rage or Wild Shape, is used at once.
+            const auto untargeted =
+                std::find_if(offered.begin(), offered.end(), [&](const auto & c)
+            {
+                return c.verb == mode_ && mode_ != "move" && !c.target && !c.aims_area &&
+                       c.destination == Cell{} && matches_item(c);
+            });
+            if (untargeted != offered.end())
+            {
+                immediate(gs(mode_));
+                get_viewport()->set_input_as_handled();
+                return;
+            }
             const auto target =
                 std::find_if(offered.begin(), offered.end(),
                              [&](const auto & c)
@@ -2100,6 +2114,16 @@ void CombatView::refresh()
         get_node<Button>("End")->set_visible(party_turn && !reaction);
         get_node<Button>("React")->set_visible(reaction);
         get_node<Button>("Decline")->set_visible(reaction);
+        // React names the reaction asked about: Shield, Cutting Words and so on.
+        String react = i18n::text("Opportunity attack");
+        for (const auto &c : offered)
+            if (c.verb == "shield" || c.verb == "deflect" || c.verb == "redirect" ||
+                    c.verb == "rebuke" || c.verb == "inspire" || c.verb == "cutting")
+            {
+                react = i18n::text(c.label);
+                break;
+            }
+        get_node<Button>("React")->set_text(react);
     }
     get_node<Button>("Continue")->set_disabled(!demo_ || !demo_->waiting());
     get_node<Button>("Save")->set_disabled(!loaded || demo_->is_slums());

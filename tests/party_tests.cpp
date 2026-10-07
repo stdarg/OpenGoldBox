@@ -1717,6 +1717,20 @@ void combat_demo_fixture()
         return;
     auto characters = srd5::character_rules();
     auto scene = make_combat_demo(module(), *characters, directory);
+    {
+        // Play-testing: chosen classes in their kits at a chosen level.
+        const std::vector<std::string> classes{"druid", "warlock", "druid"};
+        const auto custom = make_combat_demo(module(), *characters, directory, {}, classes, 4);
+        const auto &roster = custom.party->state().roster;
+        check(roster.size() == 3 && custom.encounter.positions.size() ==
+              3 + custom.encounter.enemies.size() &&
+              std::all_of(roster.begin(), roster.end(), [](const auto & m)
+        {
+            return m.character.sheet().level == 4 && !m.equipped.empty();
+        }) &&
+        roster[0].character.creation_data().name != roster[2].character.creation_data().name,
+        "A play-test party has the chosen classes, kits and level, two Druids distinct");
+    }
     auto mapped = make_combat_demo(module(), *characters, directory,
                                    std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                                    "data/art/combat-body-looks.tsv");

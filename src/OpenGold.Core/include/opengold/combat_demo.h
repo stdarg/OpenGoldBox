@@ -141,10 +141,13 @@ struct CombatDemoSetup
     CampaignEncounter encounter;
 };
 
+// The showcase party, or up to six pool characters of the given classes in their
+// starting kits, advanced to `level`, for play-testing.
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,
         const rules::CharacterRules &characters,
         const std::filesystem::path &game_directory,
-        const std::filesystem::path &body_catalog_file = {});
+        const std::filesystem::path &body_catalog_file = {},
+        std::span<const std::string> classes = {}, unsigned level = 1);
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
 [[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session);
 } // namespace opengold

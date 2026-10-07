@@ -2,6 +2,7 @@
 #define OPENGOLDBOX_COMBAT_WEAPON_CONTROLS_H
 #include "godot_nodes.h"
 #include <algorithm>
+#include <cctype>
 #include "opengold/rules.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -58,20 +59,36 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
     std::vector<ItemAttackOption> options;
     if (actor)
     {
-        // Metamagic labels carry their option, cost and type, so they come from
-        // the offered command.
-        const auto offered_label = [&](const std::string & verb) -> std::string
+        // "wild_shape_giant_lizard" reads "Wild Shape: Giant Lizard" when no use
+        // is left to offer it.
+        const auto wild_shape_label = [](const std::string & verb)
+        {
+            std::string form = verb.substr(11);
+            for (std::size_t i = 0; i < form.size(); ++i)
+                if (form[i] == '_')
+                    form[i] = ' ';
+                else if (i == 0 || form[i - 1] == ' ')
+                    form[i] = char(std::toupper(static_cast<unsigned char>(form[i])));
+            return "Wild Shape: " + form;
+        };
+        // Metamagic and Wild Shape labels carry their option, cost or form, so
+        // they come from the offered command.
+        const auto offered_label = [&](const std::string & verb,
+                                       const std::string & fallback) -> std::string
         {
             for (const auto &c : offered)
                 if (c.actor == actor->id && c.verb == verb)
                     return c.label;
-            return "Metamagic";
+            return fallback;
         };
         for (const auto &verb : actor->bonus_actions)
             options.push_back({0,
                                verb,
         {
-            verb.starts_with("metamagic_") ? offered_label(verb)
+            verb == "metamagic_cancel"     ? "Metamagic: cancel"
+            : verb.starts_with("metamagic_") ? offered_label(verb, "Metamagic")
+            : verb.starts_with("wild_shape_") ? offered_label(verb, wild_shape_label(verb))
+            : verb == "leave_wild_shape"  ? "Leave Wild Shape"
             : verb == "cunning_dash"        ? "Dash"
             : verb == "cunning_disengage" ? "Disengage"
             : verb == "lay_on_hands"      ? "Lay On Hands"
@@ -96,7 +113,8 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "divine_smite"      ? "Divine Smite"
             : verb == "searing_smite"     ? "Searing Smite"
             : verb == "ensnaring_strike"  ? "Ensnaring Strike"
-            : "Steady Aim",
+            : verb == "steady_aim"        ? "Steady Aim"
+            : offered_label(verb, verb),
             {}
         },
         std::any_of(offered.begin(), offered.end(),

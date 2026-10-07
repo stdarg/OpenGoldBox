@@ -257,7 +257,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
 CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                                  const CharacterRules &characters,
                                  const std::filesystem::path &game_directory,
-                                 const std::filesystem::path &body_catalog_file)
+                                 const std::filesystem::path &body_catalog_file,
+                                 std::span<const std::string> classes, unsigned level)
 {
     if (!rules)
         throw std::runtime_error("Combat demo requires combat rules");
@@ -274,35 +275,52 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
     CombatDemoSetup result{party, {}};
     result.encounter.field.geometry = {12, 12, std::vector<std::uint8_t>(144, 0)};
     result.encounter.field.tiles = std::vector<std::uint8_t>(144, 0);
-    const std::array<std::string_view, 6> classes{"fighter", "paladin", "cleric",
+    const std::array<std::string_view, 6> showcase{"fighter", "paladin", "cleric",
             "ranger",  "rogue",   "bard"};
     const std::array<unsigned, 6> weapons{36, 36, 23, 36, 8, 33};
     const std::array<Cell, 6> positions{{{5, 5}, {6, 5}, {7, 5}, {5, 6}, {6, 6}, {7, 6}}};
-    for (std::size_t i = 0; i < classes.size(); ++i)
+    if (classes.size() > positions.size())
+        throw std::runtime_error("A play-test party has at most six members");
+    const bool custom = !classes.empty();
+    for (std::size_t i = 0; i < (custom ? classes.size() : showcase.size()); ++i)
     {
+        const std::string_view klass = custom ? std::string_view(classes[i]) : showcase[i];
+        // A repeated class takes the class's next pool variant.
+        const auto earlier =
+            custom ? unsigned(std::count(classes.begin(), classes.begin() + std::ptrdiff_t(i),
+                                         std::string(klass)))
+            : 0u;
+        unsigned seen = 0;
         const auto found =
             std::find_if(pool.begin(), pool.end(),
                          [&](const Character & candidate)
         {
-            return candidate.creation_data().character_class == classes[i] &&
-                   (i != 0 || candidate.creation_data().race == "goliath");
+            if (candidate.creation_data().character_class != klass)
+                return false;
+            if (custom)
+                return seen++ == earlier % 4;
+            return i != 0 || candidate.creation_data().race == "goliath";
         });
         if (found == pool.end())
             throw std::runtime_error("Missing showcase hero in character pool");
         const auto id = party->add_pc(*found);
         party->set_wealth(id, {0, 0, 0, 10, 0, 0, 0});
-        for (const unsigned type :
-                {
-                    weapons[i], i < 2 ? 55u : 50u
-                })
-        {
-            Equipment item;
-            item.stored.type = type;
-            item.stored.stack_size = 1;
-            item.stored.value = 1;
-            party->purchase(id, item);
-            party->equip(id, party->member(id).character.inventory().items().back().id);
-        }
+        if (custom)
+            outfit_pool_member(*party, id);
+        else
+            for (const unsigned type :
+                    {
+                        weapons[i], i < 2 ? 55u : 50u
+                    })
+            {
+                Equipment item;
+                item.stored.type = type;
+                item.stored.stack_size = 1;
+                item.stored.value = 1;
+                party->purchase(id, item);
+                party->equip(id, party->member(id).character.inventory().items().back().id);
+            }
+
         auto appearance = found->appearance();
         std::string missing;
         if (body_catalog)
@@ -317,7 +335,16 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             result.encounter.art.push_back(
         {id, art.icon(appearance, false), art.icon(appearance, true), missing});
     }
-    result.encounter.positions.assign(positions.begin(), positions.end());
+    // Every member gains the experience for `level` and takes default choices.
+    if (level > 1)
+    {
+        party->award_experience(level >= 4 ? 2700 : level == 3 ? 900 : 300, "playtest:level");
+        for (const auto id : party->state().slots)
+            while (id && party->can_advance(id))
+                party->advance(id, party->default_advancement(id));
+    }
+    result.encounter.positions.assign(positions.begin(),
+                                      positions.begin() + std::ptrdiff_t(party->state().roster.size()));
     const auto kobold = original_icon(game_directory, 0);
     const auto kobold_action = original_icon(game_directory, 128);
     const auto leader = original_icon(game_directory, 1);

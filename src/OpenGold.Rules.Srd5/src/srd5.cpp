@@ -2805,6 +2805,12 @@ Snapshot Session::snapshot() const
             view.bonus_actions.push_back("innate_sorcery");
         if (def(a).bardic_inspiration)
             view.bonus_actions.push_back("bardic_inspiration");
+        if (def(a).wild_shapes)
+        {
+            for (const auto &form : detail::beast_forms)
+                view.bonus_actions.push_back("wild_shape_" + std::string(form.key));
+            view.bonus_actions.push_back("leave_wild_shape");
+        }
         if (def(a).sorcery_points)
             view.bonus_actions.insert(view.bonus_actions.end(),
         {"create_slot_1", "create_slot_2", "convert_slot_1", "convert_slot_2"});
