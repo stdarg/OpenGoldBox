@@ -273,9 +273,8 @@ RunResult play(const std::vector<Character> &members, const por::GeoMap &slums,
         unsigned experience = 0;
         for (const auto &group : groups)
             experience += group.count * original_xp(group.kind.record);
-        // The session fits roaming groups to the XP budget and to one creature
-        // per living character; the four-orc search keeps its four.
-        if (step.record != 13)
+        // The session fits every Slums encounter, the four-orc search too, to
+        // the XP budget and to one creature per living character.
         {
             std::vector<unsigned> levels;
             std::vector<EncounterGroup> sizes;

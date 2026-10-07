@@ -19,9 +19,9 @@ Fights, in order: street kobolds, the four-orc search event, street goblins,
 street orcs, guild kobolds, street goblins, guild goblins, street orcs, guild
 orcs, street goblins, guild orcs, guild orcs. Roaming groups follow the
 original ECL2:20 mix from the party's strength (as
-`tools/encounter_balance.cpp` documents it) and are fitted to the XP budget at
-the default encounter challenge and to one creature per living member, as the
-campaign session does. Each living member gains the original encounter's
+`tools/encounter_balance.cpp` documents it). Every encounter, the four-orc
+search included, is fitted to the XP budget at the default encounter challenge
+and to one creature per living member, as the campaign session does. Each living member gains the original encounter's
 experience.
 
 After a victory, dying members make their death saves and the Stable regain a

@@ -31,7 +31,9 @@ complete official monster stat blocks or translations of AD&D statistics:
 The four-orc event retains its approved 300 XP reward and stable completion
 identity. Existing campaign semantics award that amount to each living active
 member. Roaming encounters use a distinct persisted reward identity each time.
-Original groups can be large and dangerous to a new party; counts are preserved.
+Original groups can be large and dangerous to a new party; they are scaled back
+to the party's XP budget as the [encounter size](SRD-DECISIONS.md) decision
+describes, the four-orc search included.
 
 **Decision (2026-09-30, issue #14): AD&D-equivalent encounter sizing.** Roaming
 group sizes come from the original PARTY STRENGTH, which is fed what an
@@ -39,7 +41,8 @@ equivalent AD&D character would have (class THAC0 by level, worn armor AC,
 current HP, spellcaster levels) instead of converted SRD bonuses; see
 [party strength](PARTY.md). Six level-two fighters in chain and shield now meet
 eight goblins and four leaders where the SRD-bonus conversion produced sixteen
-and four. Group counts still follow the original script exactly.
+and four. Group counts start from the original script and are then scaled back to the XP
+budget.
 
 When the script starts combat, the approached monster's animated close-up
 fills the 3D view until any key is pressed, then combat opens. See
