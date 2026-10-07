@@ -1063,7 +1063,7 @@ character_definition(std::string_view bytes,
     d.casting = 2 + ability_modifier(scores[(klass == "Cleric" || klass == "Ranger" ||
                                              klass == "Druid") ? 4
                                             : (klass == "Warlock" || klass == "Sorcerer" ||
-                                               klass == "Paladin") ? 5
+                                               klass == "Paladin" || klass == "Bard") ? 5
                                             : 3]);
     const auto allowed = allowed_spells(klass, level);
     const bool eligible = std::all_of(stored_spells.begin(), stored_spells.end(),
@@ -11050,7 +11050,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.129", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.130", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
     while (std::getline(lines, line))
     {

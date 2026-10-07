@@ -145,6 +145,12 @@ void reach(CombatSession &c, EntityId id)
 void spell_checks()
 {
     auto module = rules();
+    {
+        // Charisma is the Bard's spellcasting ability: 8 + 2 + 4 at Charisma 18.
+        auto c = battle(*module, bard());
+        check(submit(*c, "vicious_mockery", 98) && logged(*c, "vs DC 14"),
+              "Bard spells use Charisma for their save DC");
+    }
     bool mocked = false, fled = false, outlined = false;
     for (std::uint64_t seed = 1; seed < 64 && !(mocked && fled && outlined); ++seed)
     {
