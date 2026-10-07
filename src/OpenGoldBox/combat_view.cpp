@@ -2252,7 +2252,9 @@ void CombatView::refresh()
         }) +
         "\n" + i18n::text("Click: choose or remove | Space or Cast spell: cast | Escape: cancel"));
     }
-    String log = turn + "\n" + get_node<Label>("Prompt")->get_text() + "\n" +
+    // The prompt comes first: when other controls shrink the log, what the player
+    // must do now (aim, react, choose) stays in view.
+    String log = get_node<Label>("Prompt")->get_text() + "\n" + turn + "\n" +
                  i18n::text("A: next action | Space: use | Z: spell slot | Enter: end turn") +
                  "\n\n";
     if (demo_)

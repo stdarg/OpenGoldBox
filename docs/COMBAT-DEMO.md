@@ -43,3 +43,15 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
     --combat-demo-party=wizard,cleric,paladin,ranger,fighter,rogue \
     --combat-demo-level=4 --playtest-out=/tmp/playtest
 ```
+
+`tests/playtest_actions.gd` plays aimed and targeted actions through the same
+controls, using saves that `opengold_playtest_fixtures` writes to
+`build/<preset>/playtest-fixtures`: Moonbeam (aim, cast, move), Spike Growth,
+Land's Aid, Produce Flame and its hurl, Flame Blade, Heat Metal and its
+repeat, and Bardic Inspiration from the Bonus Action dropdown. It screenshots
+each step and reports what the combat log shows:
+
+```sh
+godot --path src/OpenGoldBox/godot --script tests/playtest_actions.gd -- \
+    --playtest-fixtures=build/default/playtest-fixtures --playtest-out=/tmp/playtest-actions
+```
