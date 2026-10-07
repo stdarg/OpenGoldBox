@@ -23,6 +23,12 @@ natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1); spells
 have no components and Subtle Spell is gone (CLASS-11). Entries below that
 describe those features are delivery history, not current behavior.
 
+## Creature equipment
+
+Rules 0.6.131 adds `equipment` rows to combat.rules: the Slums goblin and orc
+leaders wear metal armor, so Heat Metal can target them. See
+[creature equipment](CREATURE-EQUIPMENT.md).
+
 ## No spell components
 
 Rules 0.6.129 removes spell components for all casters: a weapon, wand or

@@ -73,3 +73,9 @@ advantage_damage slums-goblin-leader 1 4
 aggressive slums-orc
 aggressive slums-orc-leader
 aggressive slums-orc-leader-archer
+# equipment creature metal_armor source armor: the creature wears Medium or Heavy
+# metal armor, read from the armor its original record readies (#231; see
+# docs/CREATURE-EQUIPMENT.md). Creatures without a row wear none.
+equipment slums-goblin-leader metal_armor MON2CHA.DAX:3 scale_mail
+equipment slums-orc-leader metal_armor MON2CHA.DAX:5 chain_mail
+equipment slums-orc-leader-archer metal_armor MON2CHA.DAX:5 chain_mail

@@ -314,7 +314,8 @@ void heat_metal_checks()
     auto module = rules();
     const auto caster = module->character_profile(preparing("heat_metal"),
                         std::vector<std::string> {}).data;
-    // An enemy Druid in Chain Mail wears metal; the monster's armor is unknown (#231).
+    // An enemy Druid in Chain Mail wears metal; the "target" monster has no
+    // equipment row, so it wears none.
     const auto knight = module->character_profile(druid().sheet(),
                         std::vector<std::string> {"chain_mail"}).data;
     auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
@@ -326,7 +327,7 @@ void heat_metal_checks()
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Druid's turn");
-    check(!submit(*c, "heat_metal", 98), "No monster is known to wear metal armor yet");
+    check(!submit(*c, "heat_metal", 98), "A monster without an equipment row wears no metal");
     check(submit(*c, "heat_metal", 97) && logged(*c, "Fire damage from the hot metal.") &&
           has_condition(*c, 97, "Heated (Heat Metal)"), "Heat Metal burns the Knight in Chain Mail");
     check(!submit(*c, "heat_metal_again", 97), "Not again on the casting turn");
@@ -342,6 +343,51 @@ unsigned wild_shapes_left(const CombatSession &c)
         if (pool.id == "wild_shape")
             return pool.remaining;
     throw std::runtime_error("No Wild Shape pool");
+}
+
+// combat.rules' equipment rows (#231): the orc leader readies chain mail, the
+// orc no armor.
+void creature_equipment_checks()
+{
+    auto module = rules();
+    const auto caster = module->character_profile(preparing("heat_metal"),
+                        std::vector<std::string> {}).data;
+    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+        {   {1, "campaign-character", "Druid", 0, {1, 1}, caster},
+            {96, "slums-orc-leader", "Orc Leader", 1, {5, 1}},
+            {95, "slums-orc", "Orc", 1, {5, 3}}
+        }},
+    5);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Druid's turn");
+    const auto commands = c->legal_commands();
+    const auto heats = [&](EntityId target)
+    {
+        return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
+        {
+            return command.verb == "heat_metal" && command.target == target;
+        });
+    };
+    check(heats(96) && !heats(95), "Heat Metal targets the orc leader in chain mail, not the orc");
+    const auto base = read(root / "data/rules/srd-5.2.1/combat.rules");
+    for (const auto *bad :
+            {"equipment slums-orc metal_armor", "equipment nobody metal_armor MON2CHA.DAX:4 chain_mail",
+             "equipment slums-orc shield MON2CHA.DAX:4 shield",
+             "equipment slums-orc-leader metal_armor MON2CHA.DAX:5 chain_mail",
+             "equipment slums-orc metal_armor MON2CHA.DAX:4 chain_mail extra"
+            })
+    {
+        bool rejected = false;
+        try
+        {
+            (void)srd5::parse_content(base + "\n" + bad + "\n");
+        }
+        catch (const std::exception &)
+        {
+            rejected = true;
+        }
+        check(rejected, ("Invalid equipment row rejected: " + std::string(bad)).c_str());
+    }
 }
 
 void wild_shape_checks()
@@ -427,6 +473,7 @@ int main()
         moonbeam_checks();
         spike_growth_checks();
         heat_metal_checks();
+        creature_equipment_checks();
         wild_shape_checks();
         lands_aid_checks();
         policy_checks();

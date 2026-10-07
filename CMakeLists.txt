@@ -450,6 +450,7 @@ endif()
 
 add_executable(opengold_creatures tools/creatures.cpp)
 target_link_libraries(opengold_creatures PRIVATE opengold_core)
+target_include_directories(opengold_creatures PRIVATE src/OpenGold.Rules.Srd5/src)
 add_executable(opengold_maps tools/maps.cpp)
 target_link_libraries(opengold_maps PRIVATE opengold_core)
 add_executable(opengold_scripts tools/scripts.cpp)

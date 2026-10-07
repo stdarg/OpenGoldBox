@@ -539,9 +539,11 @@ choose another target.
   which goes unused; this replaces the earlier "no swim forms" for it. Every
   Druid knows all of them, and the form is picked from the Bonus Action
   dropdown.
-- **Heat Metal** targets only a creature wearing metal armor. Monsters and NPCs
-  need equipment metadata ([#231](https://github.com/stdarg/OpenGold/issues/231));
-  until then a stub lookup says no, so no monster can be targeted.
+- **Heat Metal** targets only a creature wearing metal armor. Monsters' armor
+  comes from `equipment` rows in combat.rules, derived from the armor their
+  original records ready ([#231](https://github.com/stdarg/OpenGold/issues/231);
+  [creature equipment](CREATURE-EQUIPMENT.md)). The user chose rows in the
+  rules file over a separate JSON file on 2026-10-07.
 
 ## CLASS-11 (2026-10-06): no spell components
 

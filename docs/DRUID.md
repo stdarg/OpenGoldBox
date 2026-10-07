@@ -56,10 +56,9 @@ ability.
 - **Heat Metal** (level 2, Druid and Bard, Concentration): offered only against
   a creature wearing metal armor (Medium or Heavy armor other than Hide), as
   the user decided on 2026-10-06. Player characters are judged from their
-  equipment; monsters and NPCs go through a lookup that is a stub until
-  creature equipment metadata exists
-  ([#231](https://github.com/stdarg/OpenGold/issues/231)), so no monster can be
-  targeted yet. The armor deals 2d8 Fire; a failed Constitution save gives
+  equipment, monsters from their `equipment` rows in combat.rules
+  ([creature equipment](CREATURE-EQUIPMENT.md)): the Slums goblin and orc
+  leaders wear metal. The armor deals 2d8 Fire; a failed Constitution save gives
   Disadvantage on attack rolls until the start of the caster's next turn (worn
   armor cannot be dropped). "Heat Metal again" repeats it as a Bonus Action on
   the caster's later turns within 60 feet. Ability checks are not affected.

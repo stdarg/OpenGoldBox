@@ -7,7 +7,6 @@
 #include "weapon_mastery.h"
 #include "spell_access.h"
 #include "spell_table.h"
-#include "creature_equipment.h"
 #include "beast_forms.h"
 #include "combat_grid.h"
 #include "status_effects.h"
@@ -525,6 +524,8 @@ struct Definition
     unsigned weapon_hands{};
     int versatile_sides{};
     bool shield{}, other_weapon{};
+    // A monster's `equipment` row: it wears Medium or Heavy metal armor.
+    bool metal_armor{};
     int hit_die{}, constitution{}, rushes{}, surges{}, arcane{};
     int lay_on_hands{}; // Paladin healing pool: five times Paladin level
     int free_smite{};   // Paladin's Smite: one Divine Smite without a slot per Long Rest
@@ -5023,7 +5024,7 @@ void Session::lands_aid(Actor &druid, Cell center)
 bool Session::wears_metal(const Actor &creature) const
 {
     if (creature.source.character_profile.empty())
-        return detail::creature_wears_metal(creature.source.definition);
+        return def(creature).metal_armor;
     const auto &keys = def(creature).equipment_keys;
     return std::any_of(keys.begin(), keys.end(), [](const auto & key)
     {
@@ -11056,8 +11057,9 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.130", revision + "/" + std::to_string(hash)};
-    std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows;
+    content.identity = {"opengold.srd5", "0.6.131", revision + "/" + std::to_string(hash)};
+    std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
+        equipment_rows;
     while (std::getline(lines, line))
     {
         if (line.empty() || line[0] == '#' || line == "\r")
@@ -11145,6 +11147,22 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             row >> std::ws;
             if (!row.eof())
                 throw std::runtime_error("Unknown creature type fields");
+            continue;
+        }
+        // "equipment <creature> metal_armor <source record> <armor>": the source
+        // and armor document where the fact comes from (#231).
+        if (tag == "equipment")
+        {
+            std::string fact, source, armor;
+            row >> fact >> source >> armor;
+            const auto found = content.definitions.find(key);
+            if (!row || found == content.definitions.end() || fact != "metal_armor" ||
+                    !equipment_rows.insert(key).second)
+                throw std::runtime_error("Invalid creature equipment: " + key);
+            found->second.metal_armor = true;
+            row >> std::ws;
+            if (!row.eof())
+                throw std::runtime_error("Unknown creature equipment fields: " + key);
             continue;
         }
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage")
