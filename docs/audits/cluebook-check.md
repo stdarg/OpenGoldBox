@@ -25,6 +25,17 @@ Kuto's Well. It is used for facts only; nothing here is quoted from it.
 - The catacombs' arrows come from Norris's **kobold** archers, not bandits:
   each arrow now attacks at the SRD Kobold Warrior's +4 (was +3).
 
+## Added since
+
+- **Slums set encounters (2026-10-08):** the hobgoblins arguing over gold, the
+  monster leaders (ogre, gnolls, hobgoblin leaders) and the trolls and ogres
+  now fight with SRD conversions. Treasure a script adds to a fight is held
+  until victory, and fixed item lists load from each area's `ITEMn.DAX`; the
+  Slums' fixed lists now run without diagnostics, but no test yet wins the
+  trolls' fight to see its treasure awarded. The expedition test
+  fights the first two and brings the third to combat; the simulator plays all
+  three. A party without Acid or Fire cannot kill a troll (Regeneration).
+
 ## Not done yet
 
 - **Search mode** (an exploration command; `0x6DCA` = 1). Without it the hag's
@@ -32,13 +43,6 @@ Kuto's Well. It is used for facts only; nothing here is quoted from it.
   reached.
 - **Norris's position:** he waits wherever the party first reaches one of
   several spots; only the first spot the tests reach is checked.
-- **Slums set encounters** whose creatures have no SRD conversion yet, so they
-  stop with a diagnostic: hobgoblins arguing over gold (`MON2CHA` 6), the
-  monster leaders (ogre 8, gnolls 73, hobgoblin leaders 7), the trolls and
-  ogres tossing things (troll 31, ogres 8), and Ohlo's or the potion seller's
-  defenders if attacked (hobgoblins 6, a level-3 magic-user 94).
 - **Clearing rewards:** the council pays for a cleared block (the Slums after
   its random encounters and set fights; Kuto's Well after Norris). Not checked
   or supported yet.
-- **The simulator's Slums arc** covers roaming fights and the four orcs only,
-  so its Slums success rates leave out the hard set fights above.

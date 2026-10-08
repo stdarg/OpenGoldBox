@@ -252,7 +252,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 40;
+constexpr unsigned checkpoint_format = 41;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -592,6 +592,12 @@ struct Definition
     // Monster traits from supplemental content rows.
     bool pack_tactics{}, aggressive{};
     Dice advantage_damage; // Extra weapon damage when the attack roll had Advantage.
+    // A second damage type a ranged hit adds (the Hobgoblin Warrior's poisoned arrows).
+    Dice ranged_extra;
+    detail::DamageType ranged_extra_type{detail::DamageType::poison};
+    // Hit Points regained at the start of each turn; Acid or Fire damage stops it
+    // for the next turn, and the creature dies only at 0 HP without regenerating.
+    int regeneration{};
 };
 
 struct CombatDisplay
@@ -659,6 +665,7 @@ struct Actor : detail::LifeState
     // actor attacked with a weapon this turn, which Horde Breaker attacks beside.
     bool colossus_used{}, horde_used{};
     bool resistance_used{}; // Resistance (the cantrip) reduces damage once per turn
+    bool regeneration_blocked{}; // Took Acid or Fire damage since its last turn began
     EntityId horde_origin{};
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     // Wild Shape: the Beast form's statistics, derived from the wild_shape effect.
@@ -2058,6 +2065,12 @@ class Session final : public CombatSession
     void update_outcome();
     void wake_resting_participants();
     void resolve_death_saves_after_victory();
+    // A downed creature with Regeneration that has not died yet: still in the fight.
+    bool may_rise(const Actor &a) const
+    {
+        return def(a).regeneration && !a.dead;
+    }
+    void regenerate(Actor &a);
     std::vector<EntityId> initiative_choices_;
 
     void start_encounter_turns()
@@ -4359,10 +4372,11 @@ std::vector<Command> Session::legal_commands() const
             if (other.dead || !line_of_sight(a.source.cell, other.source.cell))
                 continue;
             const int feet = distance(a.source.cell, other.source.cell);
-            if (!a.source.character_profile.empty() && other.hp == 0 && !other.stable && feet <= 5)
+            if (!a.source.character_profile.empty() && other.hp == 0 && !other.stable &&
+                    !may_rise(other) && feet <= 5)
                 add(id, "stabilize", "Stabilize", other.source.id);
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, false);
-            if (other.source.side != a.source.side && other.hp > 0)
+            if (other.source.side != a.source.side && (other.hp > 0 || may_rise(other)))
             {
                 if (physical_inventory_)
                     for (const auto &item : items_)
@@ -4509,6 +4523,9 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
     }
     const std::array parts{detail::DamagePart{type, amount}};
     const auto result = detail::resolve_damage(parts, affinities(target));
+    if (def(target).regeneration && result.total > 0 &&
+            (type == detail::DamageType::acid || type == detail::DamageType::fire))
+        target.regeneration_blocked = true;
     if (result.total != amount)
     {
         const auto name = std::string(detail::damage_name(type));
@@ -4531,7 +4548,16 @@ void Session::damage(Actor &target, int amount, bool critical)
     if (!amount || target.dead)
         return;
     const bool standing = target.hp > 0;
-    detail::damage_life(target, amount, max_hp(target), critical, target.source.side == 1);
+    detail::damage_life(target, amount, max_hp(target), critical,
+                        target.source.side == 1 && !def(target).regeneration);
+    // Regeneration: damage never kills it and it makes no death saves; the start
+    // of its next turn decides (regenerate).
+    if (def(target).regeneration && target.hp == 0)
+    {
+        target.dead = false;
+        target.successes = target.failures = 0;
+        target.recovery = {detail::death_turn_ms, 0};
+    }
     if (standing && target.hp == 0)
         bless_fiends(target);
     // Warding Bond: the caster takes the same damage; the bond ends when the
@@ -6268,6 +6294,20 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         : 0;
     apply_hit(a, target, natural, bonus, modifiers.mode(), amount, savage, damage_type, ranged,
               spell);
+    // A ranged hit's added damage of a second type (the Hobgoblin Warrior's poison).
+    if (hit && !spell && ranged && d.ranged_extra.count && !target.dead)
+    {
+        const auto type = d.ranged_extra_type;
+        const int extra = resolved_damage(target, type,
+                                          dice(d.ranged_extra, critical_hit(a, target, natural)));
+        const auto name = std::string(detail::damage_name(type));
+        log(target.source.name + " takes " + std::to_string(extra) + " " + name + " damage.",
+        {
+            "{name} takes {damage} {type} damage.",
+            {{"name", target.source.name}, {"damage", std::to_string(extra)}, {"type", name, true}}
+        });
+        damage(target, extra, false);
+    }
     // Hunter's Mark: any attack-roll hit on the caster's quarry deals 1d6 Force.
     if (hit && marked_by(target, a) && !target.dead)
     {
@@ -6658,7 +6698,7 @@ void Session::update_outcome()
 {
     bool party = false, enemies = false;
     for (const auto &a : actors_)
-        if (a.hp > 0 && !a.dead)
+        if ((a.hp > 0 && !a.dead) || may_rise(a))
             (a.source.side == 0 ? party : enemies) = true;
     if (!party || !enemies)
     {
@@ -6724,6 +6764,45 @@ void Session::resolve_death_saves_after_victory()
         a.effects.prone = false;
 }
 
+// Regeneration at the start of the creature's turn: Acid or Fire damage since its
+// last turn stops it, and a creature at 0 HP that cannot regenerate dies.
+void Session::regenerate(Actor &a)
+{
+    const bool blocked = a.regeneration_blocked;
+    a.regeneration_blocked = false;
+    if (blocked)
+    {
+        if (a.hp > 0)
+        {
+            log(a.source.name + " cannot regenerate this turn.",
+            {"{name} cannot regenerate this turn.", {{"name", a.source.name}}});
+            return;
+        }
+        a.dead = true;
+        a.stable = false;
+        log(a.source.name + " cannot regenerate and dies.",
+        {"{name} cannot regenerate and dies.", {{"name", a.source.name}}});
+        clear_departed_overlaps();
+        return;
+    }
+    const bool rising = a.hp == 0;
+    const int healed = detail::heal_life(a, def(a).regeneration, max_hp(a),
+                                         !detail::healing_blocked(a.effects));
+    if (!healed)
+        return;
+    log(a.source.name + " regenerates " + std::to_string(healed) + " Hit Points.",
+    {
+        "{name} regenerates {amount} Hit Points.",
+        {{"name", a.source.name}, {"amount", std::to_string(healed)}}
+    });
+    if (rising)
+    {
+        a.effects.prone = true;
+        if (shares_occupied_space(a))
+            a.involuntary_overlap = true;
+    }
+}
+
 bool Session::begin_turn()
 {
     auto &a = actors_[turn_];
@@ -6765,6 +6844,12 @@ bool Session::begin_turn()
                 effect.dc > a.temporary_hp.amount)
             detail::grant_temporary_hp(a, {effect.dc, "spell:heroism"},
                                        TemporaryHpChoice::use_new);
+    if (def(a).regeneration)
+    {
+        regenerate(a);
+        if (a.hp == 0)
+            return false;
+    }
     if (a.hp == 0)
     {
         if (!a.stable)
@@ -8093,7 +8178,7 @@ std::string Session::save() const
             out << ' ' << id;
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
-            << a.smite_melee << ' ' << a.resistance_used << ' ';
+            << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -8248,7 +8333,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.light_origins.push_back(id);
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
-          actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used;
+          actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used >>
+          actor.regeneration_blocked;
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -8609,7 +8695,9 @@ void Session::validate_restored_state() const
             throw std::runtime_error("Action Surge allowance outside its turn");
         if (actor.involuntary_overlap && (actor.dead || !shares_occupied_space(actor)))
             throw std::runtime_error("Invalid involuntary checkpoint overlap");
-        if (actor.hp > 0 && !actor.dead)
+        if (actor.regeneration_blocked && !def(actor).regeneration)
+            throw std::runtime_error("Regeneration blocked without Regeneration");
+        if ((actor.hp > 0 && !actor.dead) || may_rise(actor))
             (actor.source.side == 0 ? party : enemies) = true;
         if (actor.dead)
             continue;
@@ -11104,7 +11192,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.132", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.133", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -11210,6 +11298,41 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             row >> std::ws;
             if (!row.eof())
                 throw std::runtime_error("Unknown creature equipment fields: " + key);
+            continue;
+        }
+        // reach: the creature's melee reach in feet; regeneration: Hit Points it
+        // regains at the start of each turn.
+        if (tag == "reach" || tag == "regeneration")
+        {
+            const auto found = content.definitions.find(key);
+            int value{};
+            row >> value;
+            const bool valid = tag == "reach" ? value == 10 || value == 15 : value > 0 && value <= 50;
+            if (!row || found == content.definitions.end() || !valid ||
+                    !trait_rows.insert(tag + " " + key).second)
+                throw std::runtime_error("Invalid " + tag + ": " + key);
+            (tag == "reach" ? found->second.reach : found->second.regeneration) = value;
+            row >> std::ws;
+            if (!row.eof())
+                throw std::runtime_error("Unknown " + tag + " fields: " + key);
+            continue;
+        }
+        // ranged_extra_damage creature count sides type: a ranged hit's added damage.
+        if (tag == "ranged_extra_damage")
+        {
+            const auto found = content.definitions.find(key);
+            Dice extra;
+            std::string type;
+            row >> extra.count >> extra.sides >> type;
+            if (!row || found == content.definitions.end() || !found->second.ranged.count ||
+                    extra.count < 1 || extra.count > 10 || extra.sides < 2 || extra.sides > 20 ||
+                    !trait_rows.insert(tag + " " + key).second)
+                throw std::runtime_error("Invalid ranged extra damage: " + key);
+            found->second.ranged_extra = extra;
+            found->second.ranged_extra_type = detail::damage_type(type);
+            row >> std::ws;
+            if (!row.eof())
+                throw std::runtime_error("Unknown ranged extra damage fields: " + key);
             continue;
         }
         if (tag == "multiattack")

@@ -2,8 +2,8 @@
 
 `opengold_campaign_sim` estimates how often a party gets through the Slums and
 then Kuto's Well. Each run is one seed: a level-one party from the curated
-character pool, in its class starting kits, plays a fixed arc of eighteen fights
-and two arrow volleys and gains levels up to four. Both sides use the automated
+character pool, in its class starting kits, plays a fixed arc of twenty-two
+fights and two arrow volleys and gains levels up to four. Both sides use the automated
 demo policy (`choose_demo_command`).
 
 ```sh
@@ -20,7 +20,11 @@ Fights, in order: street kobolds, the four-orc search event, street goblins,
 street orcs, guild kobolds, street goblins, guild goblins, street orcs, guild
 orcs, street goblins, guild orcs, guild orcs. Roaming groups follow the
 original ECL2:20 mix from the party's strength (as
-`tools/encounter_balance.cpp` documents it).
+`tools/encounter_balance.cpp` documents it). Then the Slums' set encounters, each
+in its own room: the hobgoblins arguing over gold (5 hobgoblins), the monster
+leaders (an ogre, 2 gnolls, 2 hobgoblin leaders) and the trolls and ogres (2
+ogres, 4 trolls). A troll only stays down after Acid or Fire, so a party with
+neither cannot win that fight.
 
 Kuto's Well follows (its fights on `GEO8:29` and `GEO8:32`): plaza gnolls,
 the sickly kobolds (2 kobolds, 4 leaders), plaza kobolds, the well's kobolds

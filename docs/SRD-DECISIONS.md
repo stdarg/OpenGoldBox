@@ -388,6 +388,13 @@ the earlier authored Slums conversions.
   choice. Lizardfolk Multiattack is two melee attacks. Norris the Gray is the
   SRD 5.2.1 Bandit Captain at its own AC 15, matching his portrait's leather
   rather than his record's chain mail and shield (the user, 2026-10-08).
+  The Slums' set encounters (2026-10-08): Hobgoblin Warrior (its leaders the
+  same, as their records ready no armor), Ogre and Troll (SRD 5.2.1). The user
+  chose the Troll's full Regeneration (so only Acid or Fire keeps one down, and
+  a party without either cannot kill it), the Hobgoblin's poisoned arrows as
+  written, and, as SRD 5.2.1 has no apprentice mage, a level-3 Wizard profile
+  for the magic-user defending Ohlo. The Troll's Charge and Loathsome Limbs
+  are not modeled.
 - **Script hazards and robbery (Kuto's Well, the user, 2026-10-08):** an
   original `DAMAGE` arrow volley is one SRD attack roll per arrow, at +4 (the
   hidden archers are Norris's kobolds, as the SRD Kobold Warrior; corrected

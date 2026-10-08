@@ -385,6 +385,9 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     pending_loot_.push_back(encounter_loot(current_area_, encounter_records_, reward + ":loot",
                                            machine_.variable(0x6DE3) != 1));
     claim_loot();
+    // Treasure the script added to the fight is won with it.
+    if (staged_treasure_)
+        award_staged_treasure();
     auto reply = character_reply(selected_character_);
     for (auto write : std::array<EclMemoryWrite, 7> {{{0x6DC7, 0},
         {0x6DC8, static_cast<std::uint16_t>(defeated)},
@@ -638,8 +641,6 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
     // Operands: copper, silver, electrum, gold, platinum, gems, jewelry, then an
     // item code: an ITEMn list below 128, 128 + n random items, or 255 for none.
     const auto items = request.arguments.at(7).value;
-    if (items < 128)
-        throw EclError("Treasure item lists outside shops are not supported");
     if (!campaign_)
         throw EclError("Treasure awards require a campaign party");
     PendingLoot loot;
@@ -647,7 +648,20 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
         loot.wealth[coin] = request.arguments.at(coin).value;
     loot.reward_id = treasure_identity(request.instruction->address);
     loot.include_items = false;
-    if (items != 255)
+    if (items < 128)
+    {
+        // A fixed list from the area's item archive.
+        const auto &lists = area_resources().treasure;
+        const auto found = lists.find(items);
+        if (found == lists.end())
+            throw EclError("Unknown treasure list " + std::to_string(items));
+        for (auto item : found->second)
+        {
+            item.index = loot.items.size();
+            loot.items.push_back(std::move(item));
+        }
+    }
+    else if (items != 255)
     {
         // Rolled on the script's own saved random stream, as the original did here.
         const auto roll = [&](unsigned sides)
@@ -1230,7 +1244,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         bool money = false;
         for (unsigned n = 0; n < 7; ++n)
             money = money || arg(n);
-        if (money)
+        // In an area, a fixed item list is script treasure like money.
+        if (money || (current_area_ && arg(7) != 255))
         {
             stage_treasure(request);
             break;
@@ -1244,8 +1259,6 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 36:
-        if (staged_treasure_ && !staged_enemies_.empty())
-            throw EclError("Script treasure added to a fight is not supported");
         if (current_area_ && !staged_enemies_.empty())
         {
             read_character();

@@ -102,3 +102,33 @@ damage_types norris-the-gray slashing piercing
 # multiattack creature attacks: the Attack action's melee attacks a turn.
 multiattack lizardfolk 2
 multiattack norris-the-gray 2
+# Slums set encounters (docs/audits/cluebook-check.md): Hobgoblin Warrior, Ogre and
+# Troll (SRD 5.2.1). Hobgoblin leaders are the same stat block: their record
+# readies no armor. The Troll's reach, three Rends and Regeneration are rows; its
+# Charge and Loathsome Limbs are not modeled. The magic-user defending Ohlo is a
+# level-3 Wizard profile (SRD 5.2.1 has no apprentice mage): Fire Bolt and Magic
+# Missile with four level-one slots, Intelligence 16, a dagger.
+creature slums-hobgoblin 18 11 3 30 3 2 10 1 3 1 8 1 150 600 0 0 0 1 0
+creature ogre 11 68 -1 40 6 2 8 4 6 2 6 4 30 120 0 0 0 1 0
+creature troll 15 94 1 30 7 2 6 4 0 0 0 0 0 0 0 0 0 1 0
+creature slums-magic-user 12 17 2 30 4 1 4 2 0 0 0 0 0 0 0 4 5 3 5
+saves slums-hobgoblin 1 1 1 0 0 -1
+saves ogre 4 -1 3 -3 -2 -2
+saves troll 4 1 5 -2 -1 -2
+saves slums-magic-user -1 2 1 5 3 0
+damage_types slums-hobgoblin slashing piercing
+damage_types ogre bludgeoning piercing
+damage_types troll slashing slashing
+damage_types slums-magic-user piercing piercing
+size ogre large
+size troll large
+type slums-hobgoblin fey
+type ogre giant
+type troll giant
+pack_tactics slums-hobgoblin
+# ranged_extra_damage creature count sides type: damage a ranged hit adds.
+ranged_extra_damage slums-hobgoblin 3 4 poison
+# reach creature feet; regeneration creature hit_points (stopped by Acid or Fire).
+reach troll 10
+regeneration troll 15
+multiattack troll 3

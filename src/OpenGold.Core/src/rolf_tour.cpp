@@ -133,23 +133,30 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     const auto templates = decode_item_templates(read_archive(resolve_archive(directory, "ITEMS")));
     if (!templates)
         throw EclError("Invalid item templates");
-    for (const auto &record : archive("ITEM3.DAX").records)
+    // An archive's fixed item lists (shop stock in town, script treasure in areas).
+    const auto item_lists = [&](const std::string &name)
     {
-        const auto items = decode_items(record.bytes);
-        if (!items)
-            throw EclError("Invalid town treasure record");
-        auto &stock = town->treasure[record.id];
-        for (const auto &item : *items)
+        std::map<unsigned, std::vector<Equipment>> lists;
+        for (const auto &record : archive(name.c_str()).records)
         {
-            if (item.type >= templates->size())
-                throw EclError("Invalid town item type");
-            Equipment equipment;
-            equipment.index = stock.size();
-            equipment.stored = item;
-            equipment.base = (*templates)[item.type];
-            stock.push_back(std::move(equipment));
+            const auto items = decode_items(record.bytes);
+            if (!items)
+                throw EclError("Invalid treasure record in " + name);
+            auto &stock = lists[record.id];
+            for (const auto &item : *items)
+            {
+                if (item.type >= templates->size())
+                    throw EclError("Invalid item type in " + name);
+                Equipment equipment;
+                equipment.index = stock.size();
+                equipment.stored = item;
+                equipment.base = (*templates)[item.type];
+                stock.push_back(std::move(equipment));
+            }
         }
-    }
+        return lists;
+    };
+    town->treasure = item_lists("ITEM3.DAX");
     town->item_templates = *templates;
     town->sprite_archive = bytes;
     const auto pictures = [&](const char *name, auto & destination)
@@ -187,8 +194,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         std::vector<DistrictMap> maps;
         std::vector<Conversion> creatures;
     };
-    // Slums experience follows docs/EXPEDITION.md; Kuto's Well awards each
-    // conversion's stat-block XP (docs/audits/kutos-well.md).
+    // The original Slums creatures' experience follows docs/EXPEDITION.md; the
+    // set-encounter creatures added later and Kuto's Well award each stat
+    // block's XP, a leader double (docs/audits/kutos-well.md).
     const std::array areas{
         AreaSource{20, 2, {{20, {2, 4, 1}}},
             {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
@@ -196,7 +204,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                 {3, "slums-goblin-leader", 50, 100}, {12, "slums-goblin-leader", 50, 100},
                 {4, "slums-orc", 100, 75}, {13, "slums-orc", 100, 75},
                 {5, "slums-orc-leader", 100, 150}, {14, "slums-orc-leader", 100, 150},
-                {15, "slums-orc-leader", 100, 150}, {63, "slums-bugbear", 200, 200}
+                {15, "slums-orc-leader", 100, 150}, {63, "slums-bugbear", 200, 200},
+                {6, "slums-hobgoblin", 100, 100}, {7, "slums-hobgoblin", 100, 200},
+                {8, "ogre", 450, 450}, {31, "troll", 1800, 1800},
+                {73, "gnoll-warrior", 100, 100}, {94, "slums-magic-user", 200, 200}
             }},
         AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}},
             {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
@@ -232,6 +243,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             district->script = area.script;
             district->bank = area.bank;
             district->pieces = geo.pieces;
+            district->treasure = item_lists("ITEM" + bank + ".DAX");
             // Three five-appearance banks, each with the common tiles followed
             // by its own 70 tiles. Decode independently before concatenating.
             for (const auto id : geo.pieces)

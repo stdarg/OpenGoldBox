@@ -40,6 +40,11 @@ comment otherwise:
 | slums-orc | MON2CHA.DAX:4 | none | no |
 | slums-orc-leader, -archer | MON2CHA.DAX:5 | chain mail | yes |
 | slums-bugbear | MON2CHA.DAX:63 | none | no |
+| slums-hobgoblin | MON2CHA.DAX:6, 7 | none | no |
+| ogre | MON2CHA.DAX:8 | none | no |
+| troll | MON2CHA.DAX:31 | none | no |
+| gnoll-warrior | MON2CHA.DAX:73 | none | no |
+| slums-magic-user | MON2CHA.DAX:94 | none | no |
 
 The training profiles (bandit, vanguard, scout, adept, healer) have no original
 record and no rows. Encounter art is a tie-breaker only where a record and its

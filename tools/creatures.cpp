@@ -129,7 +129,9 @@ constexpr std::array slums_conversions{
     Conversion{"slums-kobold-leader-sword", 11}, Conversion{"slums-goblin", 2},
     Conversion{"slums-goblin-leader", 3}, Conversion{"slums-orc", 4},
     Conversion{"slums-orc-leader", 5}, Conversion{"slums-orc-leader-archer", 5},
-    Conversion{"slums-bugbear", 63}};
+    Conversion{"slums-bugbear", 63}, Conversion{"slums-hobgoblin", 6},
+    Conversion{"slums-hobgoblin", 7}, Conversion{"ogre", 8}, Conversion{"troll", 31},
+    Conversion{"gnoll-warrior", 73}, Conversion{"slums-magic-user", 94}};
 
 // Prints an `equipment` row for each creature whose readied armor is Medium or
 // Heavy metal armor (Heat Metal's rule), and a comment for the others.

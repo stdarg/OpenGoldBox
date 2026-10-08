@@ -918,6 +918,23 @@ Command choose_demo_command(const CombatSession &session)
             if (target->conditions.empty())
                 return command;
         }
+    // A downed enemy is still offered only when it may rise again (a troll's
+    // Regeneration): only Acid or Fire stops it, so finish it with one of those.
+    for (const auto verb :
+            {"fire_bolt", "sorcerous_burst_fire", "scorching_ray", "acid_arrow", "hurl_flame",
+             "flame_blade_strike"
+            })
+        for (const auto &command : offered)
+            if (command.verb == verb)
+            {
+                const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
+                                                   [&](const auto & a)
+                {
+                    return a.id == command.target;
+                });
+                if (target.side != active.side && target.hit_points == 0)
+                    return command;
+            }
     for (const auto verb :
             {"magic_missile", "magic_missile_2", "scorching_ray", "acid_arrow", "mind_spike",
              "inflict_wounds", "guiding_bolt", "dissonant_whispers", "eldritch_blast",
@@ -938,7 +955,7 @@ Command choose_demo_command(const CombatSession &session)
                 });
                 // Some attack spells, such as Eldritch Blast, may target any
                 // creature; the policy attacks only the other side.
-                if (target.side != active.side && target.hit_points < hp)
+                if (target.side != active.side && target.hit_points > 0 && target.hit_points < hp)
                 {
                     best = &command;
                     hp = target.hit_points;

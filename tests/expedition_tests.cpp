@@ -553,11 +553,16 @@ std::size_t peaceful(const por::TourSnapshot &s)
     return s.choices.size() - 1;
 }
 
+// Every combat definition fight() has faced, in order.
+std::vector<std::string> enemies_fought;
+
 void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
 {
     if (town.monster_picture())
         check(town.start_encounter(), "The monster close-up is dismissed");
     check(town.pending_encounter().has_value(), "The original encounter reaches combat");
+    for (const auto &enemy : town.pending_encounter()->enemies)
+        enemies_fought.push_back(enemy.definition);
     CombatDemo combat(module());
     combat.campaign_party(party);
     combat.encounter(*town.pending_encounter(), 42);
@@ -1424,6 +1429,83 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
           "Surrendering to Norris costs all money, keeps items and frees the party above");
 }
 
+// The Slums' set encounters with converted creatures (docs/audits/cluebook-check.md):
+// the hobgoblins arguing over gold and the gathering of monster leaders are
+// fought, and the trolls and ogres reach combat with the treasure they guard.
+// Walks toward (x, y) for the event there. Some events move the party off the
+// square afterwards, so not arriving is accepted; any other failure is not.
+void visit(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned x,
+           unsigned y, const Answer &answer)
+{
+    try
+    {
+        walk_to(town, party, x, y, answer, true, true);
+    }
+    catch (const std::runtime_error &e)
+    {
+        if (std::string_view(e.what()) != "Walk did not arrive")
+            throw;
+    }
+}
+
+void slums_set_encounters(const std::filesystem::path &save, const std::filesystem::path &directory)
+{
+    const Answer fight_them = [](const por::TourSnapshot &s) -> std::size_t
+    {
+        for (std::size_t n = 0; n < s.choices.size(); ++n)
+            if (s.choices[n] == "Fight" || s.choices[n] == "Bash")
+                return n;
+        return peaceful(s);
+    };
+    const auto fought = [](std::string_view definition)
+    {
+        return std::find(enemies_fought.begin(), enemies_fought.end(), definition) !=
+               enemies_fought.end();
+    };
+    auto trip = load_expedition(save, directory);
+    auto &[party, town] = trip;
+    if (town.snapshot().area_id == 0)
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+    }
+    enemies_fought.clear();
+    visit(town, party, 0, 2, fight_them);
+    check(fought("slums-hobgoblin"), "The party fights the hobgoblins arguing over gold");
+    visit(town, party, 1, 5, fight_them);
+    check(fought("ogre") && fought("gnoll-warrior"),
+          "The party fights the gathering of monster leaders");
+
+    auto troll_trip = load_expedition(save, directory);
+    auto &[troll_party, trolls] = troll_trip;
+    if (trolls.snapshot().area_id == 0)
+    {
+        walk_to(trolls, troll_party, 0, 4);
+        step(trolls, troll_party, 3);
+    }
+    // The trolls' room at (0, 14) opens only to the south.
+    walk_to(trolls, troll_party, 0, 15, fight_them, true, true);
+    face(trolls, troll_party, 0);
+    trolls.explore(por::ExplorationCommand::forward);
+    for (unsigned n = 0; n < 200 && trolls.snapshot().phase != por::TourPhase::combat; ++n)
+        if (trolls.snapshot().phase == por::TourPhase::awaiting_continue)
+            check(trolls.choose(trolls.snapshot().continue_ticket, 0), "The story continues");
+        else
+            trolls.advance(.5);
+    if (trolls.monster_picture())
+        check(trolls.start_encounter(), "The monster close-up is dismissed");
+    const auto &enemies = trolls.pending_encounter().value().enemies;
+    const auto has = [&](std::string_view definition)
+    {
+        return std::any_of(enemies.begin(), enemies.end(), [&](const auto & e)
+        {
+            return e.definition == definition;
+        });
+    };
+    check(has("troll") && has("ogre") && trolls.script_diagnostics().empty(),
+          "The trolls and ogres and their treasure reach combat");
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -1465,6 +1547,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
     hand_in_potion(trip);
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
     {
+        slums_set_encounters(save, directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -1494,8 +1577,9 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::filesystem::remove_all(folder);
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
               "returned, paid the inn with change, rested, delivered Ohlo's potion, finished "
-              "it again from each Slums save, reloaded, revisited and camped in the Slums, won "
-              "fights in Kuto's Well, defeated Norris and surrendered to him from a save.\n";
+              "it again from each Slums save, reloaded, revisited and camped in the Slums, fought its "
+              "hobgoblins and monster leaders, met its trolls, won fights in Kuto's Well, "
+              "defeated Norris and surrendered to him from a save.\n";
 }
 
 } // namespace

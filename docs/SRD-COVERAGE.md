@@ -23,6 +23,16 @@ natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1); spells
 have no components and Subtle Spell is gone (CLASS-11). Entries below that
 describe those features are delivery history, not current behavior.
 
+## Slums set-encounter creatures
+
+Rules 0.6.133 adds the Hobgoblin Warrior, Ogre and Troll and a level-3
+magic-user profile, with three creature rows: `reach`, `regeneration` and
+`ranged_extra_damage` (a ranged hit's second damage type). A creature with
+Regeneration regains its Hit Points at the start of each turn; Acid or Fire
+damage stops it for that turn. At 0 HP it makes no death saves and stays in the
+fight; it dies only if its turn starts at 0 HP without regenerating, and it can
+still be targeted while down. Combat checkpoints become `OGCOMBAT 41`.
+
 ## Creature equipment
 
 Rules 0.6.131 adds `equipment` rows to combat.rules: the Slums goblin and orc

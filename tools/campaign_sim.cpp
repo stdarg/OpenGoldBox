@@ -73,6 +73,14 @@ Creature creature(unsigned record)
         return {5, "slums-orc-leader-archer", 100};
     case 13:
         return {13, "slums-orc-leader", 100};
+    case 6:
+        return {6, "slums-hobgoblin", 100};
+    case 7:
+        return {7, "slums-hobgoblin", 100};
+    case 8:
+        return {8, "ogre", 450};
+    case 31:
+        return {31, "troll", 1800};
     case 32:
         return {32, "norris-the-gray", 450};
     case 57:
@@ -86,11 +94,14 @@ Creature creature(unsigned record)
     }
 }
 
-// Experience as the campaign awards it: the original encounter's, per member.
-// Kuto's Well records (32 and up) award their stat block's XP.
+// Experience as the campaign awards it (rolf_tour.cpp's area table), per member:
+// the original Slums creatures' values, otherwise the stat block's XP, a
+// hobgoblin leader double.
 unsigned original_xp(unsigned record)
 {
-    if (record >= 32 && record != 63)
+    if (record == 7)
+        return 200;
+    if (record == 6 || record == 8 || record == 31 || (record >= 32 && record != 63))
         return creature(record).fit_xp;
     return record == 63                                 ? 200
            : record == 0                                ? 25
@@ -134,14 +145,26 @@ std::vector<Group> kutos_roaming(unsigned record, unsigned strength)
     return groups;
 }
 
-// Where a fight happens: its map and a square the battlefield is cut around.
-enum class Place
+enum class ArcMap
 {
-    slums_street,
-    slums_guild,
+    slums,
     kutos_plaza,
     kutos_catacombs
 };
+
+// Where a fight happens: its map and the square the battlefield is cut around.
+struct Place
+{
+    ArcMap map;
+    unsigned x, y;
+};
+
+// A Slums street, the Old Rope Guild and three set-encounter rooms; north of
+// Kuto's Well and Norris's hall.
+constexpr Place slums_street{ArcMap::slums, 14, 7}, slums_guild{ArcMap::slums, 6, 14},
+          hobgoblin_room{ArcMap::slums, 0, 2}, leaders_room{ArcMap::slums, 1, 5},
+          troll_room{ArcMap::slums, 0, 14}, kutos_plaza{ArcMap::kutos_plaza, 7, 4},
+          kutos_catacombs{ArcMap::kutos_catacombs, 10, 3};
 
 struct Step
 {
@@ -152,40 +175,50 @@ struct Step
 };
 
 // The arc: the Slums' kobolds, goblins and orcs on the streets and in the Old
-// Rope Guild, with the four-orc search second; then Kuto's Well's plaza, the
-// catacombs' arrow volleys and Norris the Gray's band.
+// Rope Guild, with the four-orc search second and its set encounters (the
+// hobgoblins arguing over gold, the monster leaders and, last, the trolls and
+// ogres); then Kuto's Well's plaza, the catacombs' arrow volleys and Norris the
+// Gray's band.
 const std::vector<Step> arc{
-    {"street kobolds", Place::slums_street, [](unsigned s) { return roaming(0, s, false); }},
-    {"four orcs", Place::slums_street,
+    {"street kobolds", slums_street, [](unsigned s) { return roaming(0, s, false); }},
+    {"four orcs", slums_street,
      [](unsigned) { return std::vector<Group>{{creature(13), 1}, {creature(4), 3}}; }},
-    {"street goblins", Place::slums_street, [](unsigned s) { return roaming(2, s, false); }},
-    {"street orcs", Place::slums_street, [](unsigned s) { return roaming(4, s, false); }},
-    {"guild kobolds", Place::slums_guild, [](unsigned s) { return roaming(0, s, true); }},
-    {"street goblins", Place::slums_street, [](unsigned s) { return roaming(2, s, false); }},
-    {"guild goblins", Place::slums_guild, [](unsigned s) { return roaming(2, s, true); }},
-    {"street orcs", Place::slums_street, [](unsigned s) { return roaming(4, s, false); }},
-    {"guild orcs", Place::slums_guild, [](unsigned s) { return roaming(4, s, true); }},
-    {"street goblins", Place::slums_street, [](unsigned s) { return roaming(2, s, false); }},
-    {"guild orcs", Place::slums_guild, [](unsigned s) { return roaming(4, s, true); }},
-    {"guild orcs", Place::slums_guild, [](unsigned s) { return roaming(4, s, true); }},
-    {"plaza gnolls", Place::kutos_plaza, [](unsigned s) { return kutos_roaming(73, s); }},
-    {"sickly kobolds", Place::kutos_plaza,
+    {"street goblins", slums_street, [](unsigned s) { return roaming(2, s, false); }},
+    {"street orcs", slums_street, [](unsigned s) { return roaming(4, s, false); }},
+    {"guild kobolds", slums_guild, [](unsigned s) { return roaming(0, s, true); }},
+    {"street goblins", slums_street, [](unsigned s) { return roaming(2, s, false); }},
+    {"guild goblins", slums_guild, [](unsigned s) { return roaming(2, s, true); }},
+    {"street orcs", slums_street, [](unsigned s) { return roaming(4, s, false); }},
+    {"guild orcs", slums_guild, [](unsigned s) { return roaming(4, s, true); }},
+    {"street goblins", slums_street, [](unsigned s) { return roaming(2, s, false); }},
+    {"guild orcs", slums_guild, [](unsigned s) { return roaming(4, s, true); }},
+    {"guild orcs", slums_guild, [](unsigned s) { return roaming(4, s, true); }},
+    {"arguing hobgoblins", hobgoblin_room,
+     [](unsigned) { return std::vector<Group>{{creature(6), 5}}; }},
+    {"monster leaders", leaders_room,
+     [](unsigned) {
+         return std::vector<Group>{{creature(8), 1}, {creature(73), 2}, {creature(7), 2}};
+     }},
+    {"trolls and ogres", troll_room,
+     [](unsigned) { return std::vector<Group>{{creature(8), 2}, {creature(31), 4}}; }},
+    {"plaza gnolls", kutos_plaza, [](unsigned s) { return kutos_roaming(73, s); }},
+    {"sickly kobolds", kutos_plaza,
      [](unsigned) { return std::vector<Group>{{creature(0), 2}, {creature(1), 4}}; }},
-    {"plaza kobolds", Place::kutos_plaza, [](unsigned s) { return kutos_roaming(0, s); }},
-    {"well kobolds", Place::kutos_plaza,
+    {"plaza kobolds", kutos_plaza, [](unsigned s) { return kutos_roaming(0, s); }},
+    {"well kobolds", kutos_plaza,
      [](unsigned) { return std::vector<Group>{{creature(0), 6}, {creature(1), 3}}; }},
-    {"lizardman patrol", Place::kutos_plaza,
+    {"lizardman patrol", kutos_plaza,
      [](unsigned) { return std::vector<Group>{{creature(57), 1}, {creature(59), 4}}; }},
-    {"plaza lizardmen", Place::kutos_plaza, [](unsigned s) { return kutos_roaming(57, s); }},
-    {"catacomb volley", Place::kutos_catacombs, nullptr, 4},
-    {"dim archer", Place::kutos_catacombs, nullptr, 1},
-    {"Norris's band", Place::kutos_catacombs,
+    {"plaza lizardmen", kutos_plaza, [](unsigned s) { return kutos_roaming(57, s); }},
+    {"catacomb volley", kutos_catacombs, nullptr, 4},
+    {"dim archer", kutos_catacombs, nullptr, 1},
+    {"Norris's band", kutos_catacombs,
      [](unsigned) {
          return std::vector<Group>{{creature(32), 1}, {creature(57), 5}, {creature(1), 9}};
      }}};
 
 // The first Kuto's Well step; runs that reach it have cleared the Slums.
-const std::size_t kutos_well_start = 12;
+const std::size_t kutos_well_start = 15;
 
 // Spells the demo policy uses well, prepared on gaining a level when offered.
 const std::map<std::string, std::vector<std::string>> preferred_spells{
@@ -324,21 +357,12 @@ struct ArcMaps
     const por::GeoMap &slums, &kutos_plaza, &kutos_catacombs;
 };
 
-// Open squares the battlefields are cut around: a Slums street and the Old Rope
-// Guild, north of Kuto's Well and Norris's hall.
 por::DungeonBattlefield battlefield(const ArcMaps &maps, Place place)
 {
-    switch (place)
-    {
-    case Place::slums_street:
-        return por::dungeon_battlefield(maps.slums, 14, 7);
-    case Place::slums_guild:
-        return por::dungeon_battlefield(maps.slums, 6, 14);
-    case Place::kutos_plaza:
-        return por::dungeon_battlefield(maps.kutos_plaza, 7, 4);
-    default:
-        return por::dungeon_battlefield(maps.kutos_catacombs, 10, 3);
-    }
+    const auto &map = place.map == ArcMap::slums         ? maps.slums
+                      : place.map == ArcMap::kutos_plaza ? maps.kutos_plaza
+                      : maps.kutos_catacombs;
+    return por::dungeon_battlefield(map, place.x, place.y);
 }
 
 // Each arrow attacks a random conscious member as the campaign's DAMAGE volleys
