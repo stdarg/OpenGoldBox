@@ -99,6 +99,7 @@ func run_checks() -> void:
     surge.release_focus()
     await load_fixture("available")
     await choose("Action Surge")
+    require(current_scene.get_node("Prompt").text == "Selected: Action Surge. Press Space to use it.", "Action Surge, used on oneself, asks for Space rather than a click")
     await key(KEY_SPACE)
     require(current_scene.get_node("Log").get_parsed_text().contains("uses Action Surge"), "Existing keyboard action activates the feature")
     await choose("Dash")

@@ -125,6 +125,7 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("selected_character_id"), &CombatView::selected_character_id);
     ClassDB::bind_method(D_METHOD("selected_character_cell"), &CombatView::selected_character_cell);
     ClassDB::bind_method(D_METHOD("cell_pixels"), &CombatView::cell_pixels);
+    ClassDB::bind_method(D_METHOD("enemy_cells"), &CombatView::enemy_cells);
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
 }
@@ -132,6 +133,17 @@ void CombatView::_bind_methods()
 double CombatView::cell_pixels() const
 {
     return combat_zoom_ * base_tile_;
+}
+
+Array CombatView::enemy_cells() const
+{
+    Array cells;
+    if (!demo_ || !demo_->has_combat())
+        return cells;
+    for (const auto &a : demo_->combat().snapshot().combatants)
+        if (a.side != 0 && a.hit_points > 0)
+            cells.push_back(Vector2i(a.cell.x, a.cell.y));
+    return cells;
 }
 
 Vector2i CombatView::selected_character_cell() const
@@ -1035,7 +1047,7 @@ void CombatView::use_item()
     const auto offered = demo_->combat().legal_commands();
     const bool targeted = std::any_of(offered.begin(), offered.end(), [&](const auto & c)
     {
-        return c.verb == item_verb_ && c.target;
+        return c.verb == item_verb_ && c.target && c.target != c.actor;
     });
     if (targeted)
         select_mode(gs(item_verb_));
@@ -1834,7 +1846,9 @@ void CombatView::refresh()
             }
         }
     bool player = false;
-    String turn = i18n::text(demo_ ? demo_->status() : N_("Unable to load rules"));
+    String turn = !demo_                   ? i18n::text(N_("Unable to load rules"))
+                  : demo_->status().empty() ? String()
+                  : i18n::text(demo_->status());
     if (loaded && s.outcome == Outcome::ongoing)
         for (const auto &a : s.combatants)
             if (a.id == s.actor)
@@ -2247,14 +2261,15 @@ void CombatView::refresh()
             break;
         }
     // What the player does with the selected action: click a square to move, a
-    // creature it aims at, or Space for one without a target.
+    // creature it aims at, or Space for one without a target or only on oneself
+    // (Action Surge).
     const auto selected_prompt = [&](const std::vector<Command> &commands, const String &name)
     {
         if (mode_ == "move")
             return i18n::format("Selected: {action}. Click a highlighted square.", {{"action", name}});
         const bool targeted = std::any_of(commands.begin(), commands.end(), [&](const auto & c)
         {
-            return c.verb == mode_ && c.target;
+            return c.verb == mode_ && c.target && c.target != c.actor;
         });
         return targeted
                ? i18n::format("Selected: {action}. Click a highlighted creature.", {{"action", name}})
@@ -2263,7 +2278,8 @@ void CombatView::refresh()
     get_node<Label>("Prompt")->set_text(
         !error_.empty()             ? i18n::text(error_)
         : demo_ && demo_->waiting() ? i18n::text("Read the encounter text, then Continue.")
-        : loaded && s.outcome != Outcome::ongoing ? i18n::text(demo_->status())
+        : loaded && s.outcome != Outcome::ongoing
+        ? (demo_->status().empty() ? String() : i18n::text(demo_->status()))
         : s.reaction_pending && enabled("shield")
         ? (missile_shield ? i18n::text("Magic Missile is aimed at you. Cast Shield or decline.")
            : i18n::text("You are hit. Cast Shield (+5 AC) or decline."))
@@ -2280,8 +2296,9 @@ void CombatView::refresh()
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
         : player ? selected_prompt(offered, action)
     : i18n::text("Enemy turn"));
+    // On a party member's turn only: during an enemy's turn the prompt says so.
     if (error_.empty() && loaded && s.outcome == Outcome::ongoing && !s.reaction_pending &&
-            selected_ && selected_ != s.actor)
+            player && selected_ && selected_ != s.actor)
     {
         const auto selected = std::find_if(s.combatants.begin(), s.combatants.end(),
                                            [&](const auto & a)

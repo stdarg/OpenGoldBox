@@ -1383,9 +1383,12 @@ std::size_t party_items(const CampaignParty &party)
 
 // For the game play-test (tests/playtest_kutos_well.gd): the campaign saved at
 // `from`, walked to a square beside (x, y) and facing it, written to `fixture`.
+// With `bash_doors`, the party may stand at a locked door into the target and
+// bashes any locked door on the way, answering prompts with `answer`.
 void write_approach_fixture(const std::filesystem::path &from, unsigned x, unsigned y,
                             const std::filesystem::path &fixture,
-                            const std::filesystem::path &directory)
+                            const std::filesystem::path &directory, bool bash_doors = false,
+                            const Answer &answer = peaceful)
 {
     auto trip = load_expedition(from, directory);
     constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
@@ -1395,9 +1398,9 @@ void write_approach_fixture(const std::filesystem::path &from, unsigned x, unsig
         if (nx < 0 || ny < 0 || nx > 15 || ny > 15)
             continue;
         const auto &cell = trip.town.map().at(unsigned(nx), unsigned(ny));
-        if (cell.walls[facing] && cell.doors[facing] != 1)
+        if (cell.walls[facing] && cell.doors[facing] != 1 && !(bash_doors && cell.doors[facing] == 2))
             continue;
-        walk_to(trip.town, trip.party, unsigned(nx), unsigned(ny));
+                walk_to(trip.town, trip.party, unsigned(nx), unsigned(ny), answer, bash_doors, bash_doors);
         face(trip.town, trip.party, facing);
         write_campaign_file(fixture, encode_campaign(*trip.party, &trip.town,
                             campaign_asset_identity(directory)));
@@ -1542,6 +1545,45 @@ void slums_set_encounters(const std::filesystem::path &save, const std::filesyst
           "The trolls and ogres and their treasure reach combat");
 }
 
+// Saves for tests/playtest_slums.gd: the party in the Slums beside the
+// arguing hobgoblins, beside the monster leaders and south of the trolls' room.
+void write_slums_fixtures(const std::filesystem::path &save, const std::filesystem::path &folder,
+                          const std::filesystem::path &directory)
+{
+    std::filesystem::create_directories(folder);
+    const Answer bash = [](const por::TourSnapshot &s) -> std::size_t
+    {
+        for (std::size_t n = 0; n < s.choices.size(); ++n)
+            if (s.choices[n] == "Bash")
+                return n;
+        return peaceful(s);
+    };
+    auto trip = load_expedition(save, directory);
+    auto &[party, town] = trip;
+    if (town.snapshot().area_id == 0)
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+    }
+    const auto entry = folder / "slums-entry.ogs";
+    write_campaign_file(entry, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    write_approach_fixture(entry, 1, 5, folder / "leaders.ogs", directory, true, bash);
+    // The hobgoblins argue at (0, 2) and are met coming south from (0, 1).
+    {
+        auto hobgoblins = load_expedition(entry, directory);
+        walk_to(hobgoblins.town, hobgoblins.party, 0, 1, bash, true, true);
+        face(hobgoblins.town, hobgoblins.party, 2);
+        write_campaign_file(folder / "hobgoblins.ogs",
+                            encode_campaign(*hobgoblins.party, &hobgoblins.town,
+                                            campaign_asset_identity(directory)));
+    }
+    // The trolls' room at (0, 14) opens only to the south.
+    walk_to(town, party, 0, 15, bash, true, true);
+    face(town, party, 0);
+    write_campaign_file(folder / "trolls.ogs",
+                        encode_campaign(*party, &town, campaign_asset_identity(directory)));
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -1584,6 +1626,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
     hand_in_potion(trip);
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
     {
+        if (const auto *fixtures = std::getenv("OPENGOLD_SLUMS_FIXTURES"))
+            write_slums_fixtures(save, fixtures, directory);
         slums_set_encounters(save, directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);

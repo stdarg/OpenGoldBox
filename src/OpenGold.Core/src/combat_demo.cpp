@@ -251,7 +251,9 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     battlefield_tiles_ = std::move(encounter.field.tiles);
     terrain_art_ = std::move(encounter.terrain_art);
     art_ = std::move(encounter.art);
-    status_ = "Slums encounter / original dungeon geometry";
+    // A campaign fight has no demo status: when it ends, the turn line already
+    // says Victory or defeat.
+    status_.clear();
     dialogue_ = "The original script has requested combat.";
 }
 

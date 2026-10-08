@@ -94,6 +94,22 @@ HOME=/tmp/kuto/home OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGold
     --kuto-norris=/tmp/kuto/norris.ogs --playtest-out=/tmp/kuto/out
 ```
 
+`tests/playtest_slums.gd` play-tests the Slums' set encounters the same way.
+The expedition test writes its saves when `OPENGOLD_SLUMS_FIXTURES` names a
+folder: beside the arguing hobgoblins (met coming south from (0, 1)), beside
+the monster leaders and south of the trolls' room. The script walks into each
+fight and plays every party turn like a person: it cycles actions with A,
+clicks the enemies, otherwise walks toward the nearest one with the arrow keys,
+and ends the turn. Its report lists each distinct prompt and error with a
+screenshot of its first sight:
+
+```sh
+OPENGOLD_SLUMS_FIXTURES=/tmp/slums/fixtures OPENGOLD_GAME_DIR=/path/to/POOLRAD build/opengold_expedition_tests
+HOME=/tmp/slums/home OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
+    --script tests/playtest_slums.gd -- --slums-fixtures=/tmp/slums/fixtures \
+    --playtest-out=/tmp/slums/out
+```
+
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
 supported from commission to reward; see [QUESTS.md](QUESTS.md). The installed
 test plays it end to end.
