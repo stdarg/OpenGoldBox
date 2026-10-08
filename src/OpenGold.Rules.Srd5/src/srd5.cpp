@@ -2065,10 +2065,16 @@ class Session final : public CombatSession
     void update_outcome();
     void wake_resting_participants();
     void resolve_death_saves_after_victory();
-    // A downed creature with Regeneration that has not died yet: still in the fight.
+    // A creature with Regeneration that has not died: down at 0 HP, it may rise.
     bool may_rise(const Actor &a) const
     {
         return def(a).regeneration && !a.dead;
+    }
+    // As in the original game, a downed troll's square can be stood on, and a
+    // creature standing there keeps it from getting up.
+    bool downed_riser(const Actor &a) const
+    {
+        return may_rise(a) && a.hp == 0;
     }
     void regenerate(Actor &a);
     std::vector<EntityId> initiative_choices_;
@@ -2586,7 +2592,7 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
     {
         // Unconscious actors still occupy space; corpses do not. The mover's
         // current cell is the path origin, not an obstacle.
-        if (!other.dead && other.source.id != mover.source.id)
+        if (!other.dead && !downed_riser(other) && other.source.id != mover.source.id)
             occupants.push_back(
         {other.source.cell, other.source.side != mover.source.side, unconscious(other)});
     }
@@ -6698,7 +6704,7 @@ void Session::update_outcome()
 {
     bool party = false, enemies = false;
     for (const auto &a : actors_)
-        if ((a.hp > 0 && !a.dead) || may_rise(a))
+        if (a.hp > 0 && !a.dead)
             (a.source.side == 0 ? party : enemies) = true;
     if (!party || !enemies)
     {
@@ -6716,7 +6722,19 @@ void Session::update_outcome()
         reactor_index_ = 0;
         log(outcome_ == Outcome::victory ? "Victory." : "The party is incapacitated. Defeat.");
         if (outcome_ == Outcome::victory)
+        {
+            // The original game ends the fight once every enemy is down; a
+            // downed troll does not get up afterwards.
+            for (auto &a : actors_)
+                if (a.source.side == 1 && downed_riser(a))
+                {
+                    a.dead = true;
+                    a.recovery = {};
+                    log(a.source.name + " stays down.",
+                    {"{name} stays down.", {{"name", a.source.name}}});
+                }
             resolve_death_saves_after_victory();
+        }
     }
 }
 
@@ -6765,10 +6783,17 @@ void Session::resolve_death_saves_after_victory()
 }
 
 // Regeneration at the start of the creature's turn: Acid or Fire damage since its
-// last turn stops it, and a creature at 0 HP that cannot regenerate dies.
+// last turn stops it, as does a creature standing on it while it is down (the
+// original game's rule), and a creature at 0 HP that cannot regenerate dies.
 void Session::regenerate(Actor &a)
 {
-    const bool blocked = a.regeneration_blocked;
+    const bool stood_on = a.hp == 0 && std::any_of(actors_.begin(), actors_.end(),
+                          [&](const auto & other)
+    {
+        return other.source.id != a.source.id && conscious(other) &&
+               other.source.cell == a.source.cell;
+    });
+    const bool blocked = a.regeneration_blocked || stood_on;
     a.regeneration_blocked = false;
     if (blocked)
     {
@@ -8697,7 +8722,7 @@ void Session::validate_restored_state() const
             throw std::runtime_error("Invalid involuntary checkpoint overlap");
         if (actor.regeneration_blocked && !def(actor).regeneration)
             throw std::runtime_error("Regeneration blocked without Regeneration");
-        if ((actor.hp > 0 && !actor.dead) || may_rise(actor))
+        if (actor.hp > 0 && !actor.dead)
             (actor.source.side == 0 ? party : enemies) = true;
         if (actor.dead)
             continue;
@@ -8712,7 +8737,8 @@ void Session::validate_restored_state() const
                 (actor.source.id == mover.source.id || other.source.id == mover.source.id);
             if ((in_transit && (actor.source.side == other.source.side || unconscious(actor) ||
                                 unconscious(other))) ||
-                    actor.involuntary_overlap || other.involuntary_overlap)
+                    actor.involuntary_overlap || other.involuntary_overlap ||
+                    downed_riser(actor) || downed_riser(other))
                 continue;
             throw std::runtime_error("Invalid overlapping checkpoint actors");
         }
@@ -8739,7 +8765,7 @@ void Session::validate_pending_movement() const
         throw std::runtime_error("Invalid pending movement");
     std::vector<detail::Occupant> occupants;
     for (const auto &other : actors_)
-        if (!other.dead && other.source.id != mover.source.id)
+        if (!other.dead && !downed_riser(other) && other.source.id != mover.source.id)
             occupants.push_back({effect_reaction_origin_ && other.source.id == pending()
                                  ? effect_reaction_origin_->source
                                  : champion_move_ && other.source.id == champion_move_->actor
@@ -11192,7 +11218,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.133", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.134", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -34,7 +34,8 @@ Kuto's Well. It is used for facts only; nothing here is quoted from it.
   Slums' fixed lists now run without diagnostics, but no test yet wins the
   trolls' fight to see its treasure awarded. The expedition test
   fights the first two and brings the third to combat; the simulator plays all
-  three. A party without Acid or Fire cannot kill a troll (Regeneration).
+  three. Trolls are killed as in the original: the fight ends once every enemy
+  is down, and standing on a downed troll keeps it from getting up.
 
 ## Not done yet
 

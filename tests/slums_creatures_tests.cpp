@@ -118,26 +118,41 @@ void troll_attacks()
           "The Troll makes three Rend attacks");
 }
 
-// Felled by a weapon, the Troll stays in the fight, can still be attacked and
-// regenerates on its turn. The two slashers act before it (initiative +20).
+// A Troll (1) with a sturdy ally (4) far away, against two heroes who act first
+// (initiative +20): `first` beside the Troll and `second` beside it too.
+std::unique_ptr<CombatSession> troll_fight(const RulesModule &module, const std::string &first,
+        const std::string &second)
+{
+    return module.create({{10, 4, std::vector<std::uint8_t>(40)},
+        {   {1, "troll", "Monster", 1, {1, 1}}, {4, "target", "Ally", 1, {9, 3}},
+            {2, first, "Hero", 0, {2, 1}}, {3, second, "Friend", 0, {1, 2}}
+        }},
+    7);
+}
+
+// The hero acting now and the other one.
+std::pair<EntityId, EntityId> heroes(const CombatSession &c)
+{
+    const auto now = c.snapshot().actor;
+    check(now == 2 || now == 3, "A hero acts first");
+    return {now, now == 2 ? 3 : 2};
+}
+
+// Felled by a weapon while its side fights on, the Troll can still be attacked
+// and regenerates on its turn.
 void troll_regenerates()
 {
     const auto module = rules();
-    auto c = module->create({{10, 4, std::vector<std::uint8_t>(40)},
-        {   {1, "troll", "Monster", 1, {1, 1}}, {2, "slasher", "Hero", 0, {2, 1}},
-            {3, "slasher", "Ally", 0, {1, 2}}
-        }},
-    7);
-    const auto first = c->snapshot().actor, second = first == 2 ? EntityId{3} : EntityId{2};
-    check(first != 1, "A slasher acts first");
-    check(submit(*c, "melee", first, 1), "The slasher attacks the Troll");
+    auto c = troll_fight(*module, "slasher", "slasher");
+    const auto [first, second] = heroes(*c);
+    check(submit(*c, "melee", first, 1), "A hero attacks the Troll");
     check(unit(*c, 1).hit_points == 0 && !unit(*c, 1).dead &&
           c->snapshot().outcome == Outcome::ongoing,
-          "A Troll at 0 HP is not dead and the fight goes on");
+          "A downed Troll is not dead while its side fights on");
     check(submit(*c, "end", first) && c->snapshot().actor == second &&
           offered(*c, "melee", second, 1),
           "A downed Troll can still be attacked");
-    check(submit(*c, "end", second), "The ally ends its turn");
+    check(submit(*c, "end", second), "The other hero ends its turn");
     check(unit(*c, 1).hit_points == 15 && count_logged(*c, "Monster regenerates 15") == 1,
           "The Troll regains 15 HP at the start of its turn");
 }
@@ -146,17 +161,49 @@ void troll_regenerates()
 void troll_burns()
 {
     const auto module = rules();
-    auto c = fight(*module, "troll", "burner");
-    turn_of(*c, 2);
-    check(submit(*c, "melee", 2, 1) && unit(*c, 1).hit_points == 0, "Fire fells the Troll");
+    auto c = troll_fight(*module, "burner", "burner");
+    const auto [first, second] = heroes(*c);
+    check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "Fire fells the Troll");
     const auto checkpoint = c->save();
     check(checkpoint.starts_with("OGCOMBAT 41 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A blocked Regeneration survives a checkpoint");
-    check(submit(*restored, "end", 2), "The burner ends its turn");
-    check(unit(*restored, 1).dead && restored->snapshot().outcome == Outcome::victory &&
-          count_logged(*restored, "cannot regenerate and dies") == 1,
+    check(submit(*restored, "end", first) && submit(*restored, "end", second),
+          "The heroes end their turns");
+    check(unit(*restored, 1).dead && count_logged(*restored, "cannot regenerate and dies") == 1,
           "The Troll dies when it cannot regenerate");
+}
+
+// As in the original game, a hero standing on a downed Troll keeps it down.
+void troll_held_down()
+{
+    const auto module = rules();
+    auto c = troll_fight(*module, "slasher", "slasher");
+    const auto [first, second] = heroes(*c);
+    check(submit(*c, "melee", first, 1) && submit(*c, "end", first), "A hero fells the Troll");
+    bool moved = false;
+    for (const auto &command : c->legal_commands())
+        if (!moved && command.actor == second && command.verb == "move" &&
+                command.destination == Cell{1, 1})
+            moved = c->submit(command);
+    check(moved && unit(*c, second).cell == Cell{1, 1}, "A hero stands on the downed Troll");
+    const auto checkpoint = c->save();
+    check(module->restore(checkpoint)->save() == checkpoint,
+          "Standing on a downed Troll survives a checkpoint");
+    check(submit(*c, "end", second), "The hero ends its turn");
+    check(unit(*c, 1).dead, "A Troll with a hero on it cannot get up and dies");
+}
+
+// The fight ends once every enemy is down, and a downed Troll stays down.
+void troll_stays_down()
+{
+    const auto module = rules();
+    auto c = fight(*module, "troll", "slasher");
+    turn_of(*c, 2);
+    check(submit(*c, "melee", 2, 1), "The slasher fells the Troll");
+    check(c->snapshot().outcome == Outcome::victory && unit(*c, 1).dead &&
+          count_logged(*c, "Monster stays down.") == 1,
+          "With every enemy down the fight is won and the Troll stays down");
 }
 
 // A Hobgoblin Warrior's arrow adds 3d4 Poison damage.
@@ -193,6 +240,8 @@ int main()
         troll_attacks();
         troll_regenerates();
         troll_burns();
+        troll_held_down();
+        troll_stays_down();
         hobgoblin_arrows();
         std::cout << "Slums creature tests passed\n";
         return 0;

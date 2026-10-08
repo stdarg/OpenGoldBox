@@ -29,9 +29,12 @@ Rules 0.6.133 adds the Hobgoblin Warrior, Ogre and Troll and a level-3
 magic-user profile, with three creature rows: `reach`, `regeneration` and
 `ranged_extra_damage` (a ranged hit's second damage type). A creature with
 Regeneration regains its Hit Points at the start of each turn; Acid or Fire
-damage stops it for that turn. At 0 HP it makes no death saves and stays in the
-fight; it dies only if its turn starts at 0 HP without regenerating, and it can
-still be targeted while down. Combat checkpoints become `OGCOMBAT 41`.
+damage stops it for that turn. At 0 HP it makes no death saves and can still be
+targeted; it dies if its turn starts at 0 HP without regenerating. Combat
+checkpoints become `OGCOMBAT 41`. Rules 0.6.134 follows the original game for
+killing trolls: a fight ends once every enemy is down (downed trolls then stay
+dead), a downed troll's square can be stood on, and standing there keeps it
+from regenerating.
 
 ## Creature equipment
 

@@ -23,8 +23,9 @@ original ECL2:20 mix from the party's strength (as
 `tools/encounter_balance.cpp` documents it). Then the Slums' set encounters, each
 in its own room: the hobgoblins arguing over gold (5 hobgoblins), the monster
 leaders (an ogre, 2 gnolls, 2 hobgoblin leaders) and the trolls and ogres (2
-ogres, 4 trolls). A troll only stays down after Acid or Fire, so a party with
-neither cannot win that fight.
+ogres, 4 trolls). As in the original, a downed troll stays down once the fight
+is won, and during it gets up again unless Acid or Fire hit it or someone stands
+on it.
 
 Kuto's Well follows (its fights on `GEO8:29` and `GEO8:32`): plaza gnolls,
 the sickly kobolds (2 kobolds, 4 leaders), plaza kobolds, the well's kobolds
