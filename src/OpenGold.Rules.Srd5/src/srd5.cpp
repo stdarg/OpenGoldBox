@@ -253,7 +253,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 43;
+constexpr unsigned checkpoint_format = 44;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -8555,6 +8555,16 @@ std::string Session::save() const
                 << std::quoted(answer.verb);
     }
     out << '\n';
+    // What each actor carries in (a Torch or bow to draw, thrown gear), one line
+    // per actor in turn order.
+    for (const auto &a : actors_)
+    {
+        out << a.source.inventory.size();
+        for (const auto &item : a.source.inventory)
+            out << ' ' << item.inventory_id << ' ' << std::quoted(item.definition) << ' '
+                << item.quantity << ' ' << item.equipment_index;
+        out << '\n';
+    }
     return out.str();
 }
 
@@ -9391,6 +9401,17 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             prompt.answers.push_back(std::move(answer));
         }
         session->reaction_prompt_ = std::move(prompt);
+    }
+    for (auto &a : session->actors_)
+    {
+        std::size_t carried{};
+        input >> carried;
+        if (!input || carried > 64 || (carried && a.source.character_profile.empty()))
+            throw std::runtime_error("Invalid checkpoint inventory");
+        a.source.inventory.resize(carried);
+        for (auto &item : a.source.inventory)
+            input >> item.inventory_id >> std::quoted(item.definition) >> item.quantity >>
+                  item.equipment_index;
     }
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
@@ -11463,7 +11484,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.140", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.141", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

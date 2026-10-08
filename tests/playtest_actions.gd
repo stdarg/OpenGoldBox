@@ -62,7 +62,7 @@ func select(label: String) -> bool:
 
 func click(cell: Vector2i) -> void:
     var canvas: Control = combat().get_node("BattlefieldScroll/Canvas")
-    var tile := canvas.get_combined_minimum_size().x / 14.0
+    var tile: float = combat().cell_pixels()
     var point := canvas.get_global_transform_with_canvas() * ((Vector2(cell) + Vector2(0.5, 0.5)) * tile)
     for down in [true, false]:
         var event := InputEventMouseButton.new()

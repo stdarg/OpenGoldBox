@@ -44,6 +44,32 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
     --combat-demo-level=4 --playtest-out=/tmp/playtest
 ```
 
+Two more flags set up gear play-tests: `--combat-demo-enemies=troll,ogre`
+replaces the kobold ring with those combat definitions (in a row east of the
+party, with their original Slums icons), and
+`--combat-demo-gear=oil,alchemists_fire,acid` gives each member one of each.
+
+`tests/playtest_gear.gd` plays the gear added against trolls
+([GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party)):
+from the `gear-torch`, `gear-flasks` and `gear-bow` saves it strikes with a
+Torch, throws Oil, Alchemist's Fire and Acid, takes off a shield and shoots.
+With `--campaign` and the flags above it plays the real campaign screen
+instead, throws Alchemist's Fire at the troll and checks that hovering over the
+troll shows it Burning:
+
+```sh
+godot --path src/OpenGoldBox/godot --script tests/playtest_gear.gd -- \
+    --playtest-fixtures=build/playtest-fixtures --playtest-out=/tmp/playtest-gear
+OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
+    --script tests/playtest_gear.gd -- --combat-demo \
+    --combat-demo-party=fighter,fighter,wizard,cleric --combat-demo-level=4 \
+    --combat-demo-enemies=troll,ogre --combat-demo-gear=oil,alchemists_fire,acid \
+    --campaign --playtest-out=/tmp/playtest-gear-campaign
+```
+
+The hover panel lists a creature's conditions (Burning, Prone and the rest)
+under its weapon.
+
 `tests/playtest_actions.gd` plays aimed and targeted actions through the same
 controls, using saves that `opengold_playtest_fixtures` writes to
 `build/<preset>/playtest-fixtures`: Moonbeam (aim, cast, move), Spike Growth,

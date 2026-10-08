@@ -65,6 +65,28 @@ CharacterSheet caster(std::string klass, unsigned ability, std::vector<std::stri
     return sheet;
 }
 
+// A level-four Fighter for the gear scenarios.
+CharacterSheet fighter()
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "male";
+    d.character_class = "fighter";
+    d.background = "soldier";
+    d.alignment = "neutral_good";
+    d.name = "Fighter";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    d.rolls[0] = {{6, 6, 6, 1}, 3};
+    CampaignParty party(module_rules());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    party.award_experience(2700, "playtest-xp");
+    for (unsigned n = 1; n < 4; ++n)
+        party.advance(id, party.default_advancement(id));
+    return party.member(id).character.sheet();
+}
+
 CharacterSheet druid(unsigned level, std::string spell = {})
 {
     return caster("druid", 4, {"produce_flame", "shillelagh"},
@@ -96,11 +118,13 @@ void write(const RulesModule &module, const std::filesystem::path &directory,
 }
 
 Encounter battle(const RulesModule &module, const CharacterSheet &hero,
-                 std::vector<Participant> others, std::vector<std::string> gear = {})
+                 std::vector<Participant> others, std::vector<std::string> gear = {},
+                 std::vector<CarriedEquipment> carried = {})
 {
     const auto profile = module.character_profile(hero, gear).data;
     Encounter e{{14, 8, std::vector<std::uint8_t>(112)},
         {{1, "campaign-character", "Hero", 0, {1, 1}, profile}}};
+    e.participants.front().inventory = std::move(carried);
     e.participants.insert(e.participants.end(), others.begin(), others.end());
     return e;
 }
@@ -140,6 +164,22 @@ int main()
               battle(*module, caster("bard", 5, {"vicious_mockery", "starry_wisp"},
         {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person"}, 1),
         {ally, near}), "bardic_inspiration");
+        // Gear against a troll: a sword-and-shield Fighter carrying a Torch, a
+        // longbow and one flask of each kind.
+        const std::vector<std::string> sword_and_shield{"longsword", "shield", "chain_mail"};
+        const std::vector<CarriedEquipment> pack{{11, "torch", 1, -1}, {12, "longbow", 1, -1},
+            {13, "arrow", 20, -1}, {14, "oil", 1, -1}, {15, "alchemists_fire", 1, -1},
+            {16, "acid", 1, -1}
+        };
+        const Participant troll_beside{98, "troll", "Troll", 1, {2, 1}};
+        const Participant troll_near{98, "troll", "Troll", 1, {4, 1}};
+        const Participant troll_far{98, "troll", "Troll", 1, {11, 5}};
+        write(*module, directory, "gear-torch",
+              battle(*module, fighter(), {troll_beside}, sword_and_shield, pack), "torch");
+        write(*module, directory, "gear-flasks",
+              battle(*module, fighter(), {troll_near}, sword_and_shield, pack), "throw_oil");
+        write(*module, directory, "gear-bow",
+              battle(*module, fighter(), {troll_far}, sword_and_shield, pack), "doff_shield");
         std::cout << "Play-test fixtures written\n";
         return 0;
     }

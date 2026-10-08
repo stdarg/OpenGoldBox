@@ -1,3 +1,4 @@
+#include "opengold/authored_items.h"
 #include "opengold/combat_demo.h"
 #include "opengold/combat_body_catalog.h"
 #include "opengold/character_pool.h"
@@ -258,7 +259,9 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                                  const CharacterRules &characters,
                                  const std::filesystem::path &game_directory,
                                  const std::filesystem::path &body_catalog_file,
-                                 std::span<const std::string> classes, unsigned level)
+                                 std::span<const std::string> classes, unsigned level,
+                                 std::span<const std::string> enemies,
+                                 std::span<const std::string> gear)
 {
     if (!rules)
         throw std::runtime_error("Combat demo requires combat rules");
@@ -321,6 +324,16 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                 party->equip(id, party->member(id).character.inventory().items().back().id);
             }
 
+        for (const auto &key : gear)
+        {
+            Equipment flask;
+            flask.stored.type = key == "oil"    ? original_item::flask_of_oil
+                                : key == "acid" ? authored_item::acid
+                                : key == "alchemists_fire" ? authored_item::alchemists_fire
+                                : throw std::runtime_error("Unknown play-test gear: " + key);
+            flask.stored.stack_size = 1;
+            party->purchase(id, flask);
+        }
         auto appearance = found->appearance();
         std::string missing;
         if (body_catalog)
@@ -345,6 +358,25 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
     }
     result.encounter.positions.assign(positions.begin(),
                                       positions.begin() + std::ptrdiff_t(party->state().roster.size()));
+    if (!enemies.empty())
+    {
+        // In a row east of the party, with their original Slums icons.
+        for (std::size_t n = 0; n < enemies.size(); ++n)
+        {
+            const auto &definition = enemies[n];
+            const unsigned icon = definition == "troll" ? 31 : definition == "ogre" ? 8 : 0;
+            const auto picture = original_icon(game_directory, icon);
+            if (!picture)
+                throw std::runtime_error("Missing original combat icon for " + definition);
+            const auto id = static_cast<EntityId>(1000 + n);
+            const Cell cell{10, 4 + int(n)};
+            result.encounter.enemies.push_back({id, definition, definition + " " +
+                                                std::to_string(n + 1), 1, cell});
+            result.encounter.positions.push_back(cell);
+            result.encounter.art.push_back({id, *picture, original_icon(game_directory, icon + 128)});
+        }
+        return result;
+    }
     const auto kobold = original_icon(game_directory, 0);
     const auto kobold_action = original_icon(game_directory, 128);
     const auto leader = original_icon(game_directory, 1);

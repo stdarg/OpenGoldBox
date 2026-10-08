@@ -47,7 +47,9 @@ character draw a carried bow or crossbow to "Shoot" as part of the Attack
 action, and a shield-bearer "Take off shield" (an action) to free both hands
 for one; the shield stays off for the rest of the fight. Combat checkpoints
 become `OGCOMBAT 43`. Rules 0.6.140 shows Burning and Covered in oil as
-conditions and marks regenerating creatures in the combat snapshot.
+conditions and marks regenerating creatures in the combat snapshot. Rules
+0.6.141 saves what each character carries in combat checkpoints, so a carried
+Torch or bow can still be drawn after a saved fight is loaded (`OGCOMBAT 44`).
 
 ## Slums set-encounter creatures
 

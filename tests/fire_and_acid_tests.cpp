@@ -413,6 +413,21 @@ void torch_tactic()
     check(choose_demo_command(a.demo->combat()).verb == "torch",
           "The AI strikes a standing troll with its Torch");
 }
+// A saved combat keeps what each character carries, so a carried Torch and bow
+// can still be drawn after it is restored.
+void carried_gear_survives_checkpoint()
+{
+    constexpr std::uint8_t longbow = 41, arrows = 73;
+    auto a = arena({authored_item::torch, longbow, arrows}, {{"target", {3, 2}}, {"clumsy", {9, 4}}},
+                   2);
+    const auto fighter = EntityId(a.fighter);
+    turn_of(*a.demo, fighter);
+    const auto checkpoint = a.demo->combat().save();
+    const auto restored = srd5::parse_content(arena_rules())->restore(checkpoint);
+    check(restored->save() == checkpoint && offered(*restored, "torch", fighter, 1000) &&
+          offered(*restored, "shoot", fighter, 1001),
+          "A restored combat still offers the carried Torch and bow");
+}
 } // namespace
 
 int main()
@@ -428,6 +443,7 @@ int main()
         bows_drawn();
         burning_troll();
         torch_tactic();
+        carried_gear_survives_checkpoint();
         std::cout << "Fire and acid tests passed\n";
         return 0;
     }

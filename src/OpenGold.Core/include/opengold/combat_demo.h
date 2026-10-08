@@ -142,12 +142,16 @@ struct CombatDemoSetup
 };
 
 // The showcase party, or up to six pool characters of the given classes in their
-// starting kits, advanced to `level`, for play-testing.
+// starting kits, advanced to `level`, for play-testing. Play-testing can also
+// replace the kobolds with `enemies` (combat definitions such as "troll" and
+// "ogre") and give each member one of each `gear` item ("oil",
+// "alchemists_fire", "acid").
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,
         const rules::CharacterRules &characters,
         const std::filesystem::path &game_directory,
         const std::filesystem::path &body_catalog_file = {},
-        std::span<const std::string> classes = {}, unsigned level = 1);
+        std::span<const std::string> classes = {}, unsigned level = 1,
+        std::span<const std::string> enemies = {}, std::span<const std::string> gear = {});
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
 [[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session);
 } // namespace opengold

@@ -23,6 +23,8 @@ class CombatView : public godot::Control
     }
 
     [[nodiscard]] godot::Vector2i selected_character_cell() const;
+    // Pixels per battlefield square at the current zoom, for play-test clicks.
+    [[nodiscard]] double cell_pixels() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
     [[nodiscard]] godot::Ref<godot::Texture2D> sprite_texture(opengold::rules::EntityId id,
             bool action) const;

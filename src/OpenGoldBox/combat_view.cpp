@@ -124,8 +124,14 @@ void CombatView::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("selected_character_id"), &CombatView::selected_character_id);
     ClassDB::bind_method(D_METHOD("selected_character_cell"), &CombatView::selected_character_cell);
+    ClassDB::bind_method(D_METHOD("cell_pixels"), &CombatView::cell_pixels);
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
+}
+
+double CombatView::cell_pixels() const
+{
+    return combat_zoom_ * base_tile_;
 }
 
 Vector2i CombatView::selected_character_cell() const
@@ -190,13 +196,19 @@ void CombatView::prepare_combat()
         const auto directory = std::filesystem::u8path(settings::game_path().utf8().get_data());
         auto characters = srd5::character_rules();
         // Play-testing: --combat-demo-party=druid,warlock,... and --combat-demo-level=4.
-        std::vector<std::string> classes;
+        std::vector<std::string> classes, enemies, gear;
         unsigned level = 1;
         for (const auto &arg : OS::get_singleton()->get_cmdline_user_args())
         {
             if (arg.begins_with("--combat-demo-party="))
                 for (const auto &klass : arg.trim_prefix("--combat-demo-party=").split(","))
                     classes.emplace_back(klass.utf8().get_data());
+            if (arg.begins_with("--combat-demo-enemies="))
+                for (const auto &enemy : arg.trim_prefix("--combat-demo-enemies=").split(","))
+                    enemies.emplace_back(enemy.utf8().get_data());
+            if (arg.begins_with("--combat-demo-gear="))
+                for (const auto &item : arg.trim_prefix("--combat-demo-gear=").split(","))
+                    gear.emplace_back(item.utf8().get_data());
             if (arg.begins_with("--combat-demo-level="))
                 level = unsigned(std::clamp<std::int64_t>(
                                      arg.trim_prefix("--combat-demo-level=").to_int(), 1, 4));
@@ -204,7 +216,7 @@ void CombatView::prepare_combat()
         auto showcase = make_combat_demo(
                             srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data())), *characters,
                             directory, std::filesystem::u8path(game_combat_body_file().utf8().get_data()),
-                            classes, level);
+                            classes, level, enemies, gear);
         campaign_ = std::move(showcase.party);
         encounter_ = std::move(showcase.encounter);
     }
@@ -1732,15 +1744,18 @@ void CombatView::update_hover(const Vector2 &pointer)
                 }
             }
     }
-    get_node<Label>("HoverInfo/Details")
-    ->set_text(i18n::format("{type}\nAC {ac}  HP {hp}/{maximum}\nWeapon: {weapon}",
+    auto details = i18n::format("{type}\nAC {ac}  HP {hp}/{maximum}\nWeapon: {weapon}",
     {
         {"type", type},
         {"ac", found->armor_class},
         {"hp", found->hit_points},
         {"maximum", found->max_hit_points},
         {"weapon", weapon_name}
-    }));
+    });
+    // Conditions such as Burning or Prone, so a player can see them on an enemy.
+    if (!found->conditions.empty())
+        details += "\n" + i18n::render(found->conditions);
+    get_node<Label>("HoverInfo/Details")->set_text(details);
     const auto size = panel->get_size();
     panel->set_position(Vector2(
                             std::clamp(local.x + 18.0, 0.0, std::max(0.0, static_cast<double>(get_size().x - size.x))),
