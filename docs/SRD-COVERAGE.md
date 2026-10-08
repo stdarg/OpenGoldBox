@@ -50,6 +50,9 @@ become `OGCOMBAT 43`. Rules 0.6.140 shows Burning and Covered in oil as
 conditions and marks regenerating creatures in the combat snapshot. Rules
 0.6.141 saves what each character carries in combat checkpoints, so a carried
 Torch or bow can still be drawn after a saved fight is loaded (`OGCOMBAT 44`).
+Rules 0.6.142 names the weapons of the Troll, Ogre, Hobgoblin, Gnoll Warrior,
+Lizardfolk, Giant Lizard, Norris the Gray and the magic-user for the hover
+panel.
 
 ## Slums set-encounter creatures
 

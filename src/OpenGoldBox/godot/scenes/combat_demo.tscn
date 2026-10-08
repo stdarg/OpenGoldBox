@@ -271,6 +271,17 @@ visible = false
 visible = false
 text = "Throw"
 
+[node name="ItemActionLabel" type="Label" parent="."]
+visible = false
+text = "Items"
+
+[node name="ItemAction" type="OptionButton" parent="."]
+visible = false
+
+[node name="UseItemAction" type="Button" parent="."]
+visible = false
+text = "Use"
+
 [node name="TacticalMind" type="Window" parent="."]
 title = "Tactical Mind"
 visible = false

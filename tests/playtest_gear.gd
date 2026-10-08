@@ -74,6 +74,17 @@ func click(cell: Vector2i) -> void:
         root.push_input(event, true)
     await settle(6)
 
+# Picks a gear action from the Items row and presses Use, as a player would.
+func use_item(label: String) -> bool:
+    var items: OptionButton = combat().get_node("ItemAction")
+    if not items.visible: return false
+    for i in range(items.item_count):
+        if items.get_item_text(i).begins_with(label):
+            items.select(i); items.item_selected.emit(i); await settle(3)
+            combat().get_node("UseItemAction").pressed.emit(); await settle(3)
+            return prompt().contains("Selected: " + label + ".")
+    return false
+
 # Clicks squares until the log shows `text`: a target may have moved.
 func click_until(text: String) -> void:
     for y in range(8):
@@ -143,24 +154,32 @@ func campaign_phase() -> void:
         # Keep initiative and decline reactions, as a player might.
         while press(combat(), ["Keep initiative", "Decline reaction", "Keep current"]):
             await settle(10)
-        if await select("Throw Alchemist's Fire"):
-            await click_until("throws Alchemist's Fire")
-            await capture("campaign-1-fire")
-            expect("campaign", "throws Alchemist's Fire")
-            report.append("  burning: " + str(log_text().contains("starts burning")))
-            var seen := {}
-            for y in range(12):
-                for x in range(12):
-                    await hover(Vector2i(x, y))
-                    var info: Label = combat().get_node("HoverInfo/Details")
-                    if combat().get_node("HoverInfo").visible and not seen.has(info.text):
-                        seen[info.text] = true
-                        report.append("  hover (%d,%d): %s" % [x, y, info.text.replace("\n", " | ")])
-                        if info.text.contains("Burning"):
-                            await capture("campaign-2-hover")
-            if seen.is_empty():
-                report.append("  NO HOVER PANEL APPEARED")
-            return
+        if await use_item("Throw Alchemist's Fire"):
+            # A click on a party member drops the selection, so pick the flask
+            # from the Items row again before each square.
+            for y in range(8):
+                for x in range(14):
+                    if log_text().contains("throws Alchemist's Fire"): break
+                    await use_item("Throw Alchemist's Fire")
+                    await click(Vector2i(x, y))
+            # The flask may reach only party members; if so, try again next turn.
+            if log_text().contains("throws Alchemist's Fire"):
+                await capture("campaign-1-fire")
+                expect("campaign", "throws Alchemist's Fire")
+                report.append("  burning: " + str(log_text().contains("starts burning")))
+                var seen := {}
+                for y in range(12):
+                    for x in range(12):
+                        await hover(Vector2i(x, y))
+                        var info: Label = combat().get_node("HoverInfo/Details")
+                        if combat().get_node("HoverInfo").visible and not seen.has(info.text):
+                            seen[info.text] = true
+                            report.append("  hover (%d,%d): %s" % [x, y, info.text.replace("\n", " | ")])
+                            if info.text.contains("Burning"):
+                                await capture("campaign-2-hover")
+                if seen.is_empty():
+                    report.append("  NO HOVER PANEL APPEARED")
+                return
         combat().get_node("End").pressed.emit()
     report.append("  NO CHARACTER COULD THROW ALCHEMIST'S FIRE")
 

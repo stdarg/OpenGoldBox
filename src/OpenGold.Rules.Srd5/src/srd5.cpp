@@ -631,6 +631,23 @@ CombatDisplay combat_display(std::string_view definition)
         return {"Orc Leader", "Greataxe", "Longbow"};
     if (definition == "slums-bugbear")
         return {"Bugbear", "Grab", "Light hammer"};
+    // The Slums' set encounters and Kuto's Well: their SRD stat blocks' attacks.
+    if (definition == "slums-hobgoblin")
+        return {"Hobgoblin", "Longsword", "Longbow"};
+    if (definition == "ogre")
+        return {"Ogre", "Greatclub", "Javelin"};
+    if (definition == "troll")
+        return {"Troll", "Rend", nullptr};
+    if (definition == "slums-magic-user")
+        return {"Magic-User", "Dagger", nullptr};
+    if (definition == "gnoll-warrior")
+        return {"Gnoll Warrior", "Rend", "Bone bow"};
+    if (definition == "lizardfolk")
+        return {"Lizardfolk", "Bite", "Javelin"};
+    if (definition == "giant-lizard")
+        return {"Giant Lizard", "Bite", nullptr};
+    if (definition == "norris-the-gray")
+        return {"Norris the Gray", "Scimitar", nullptr};
     return {nullptr, nullptr, nullptr};
 }
 
@@ -11484,7 +11501,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.141", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.142", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

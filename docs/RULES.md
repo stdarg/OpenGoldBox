@@ -59,8 +59,9 @@ An opportunity reaction pauses combat until you choose Opportunity attack or
 Decline reaction above the log; movement and End turn wait for that choice.
 Hovering over a monster or NPC shows a tooltip beside the pointer with its
 type, current and maximum HP, AC, and the weapon it would use at its present
-distance from the party. When an encounter has no named weapon, it shows
-`Unspecified` rather than inventing one.
+distance from the party. Every Slums monster names its weapons (a Troll's
+Rend, an Ogre's Greatclub and Javelin); when an encounter has no named weapon,
+it shows `Unspecified` rather than inventing one.
 Melee, ranged, and damaging spell attacks spend the action and any required
 spell slot while preserving remaining movement and Bonus Actions. Move before
 or after attacking, use Second Wind if available, then choose **End turn** or

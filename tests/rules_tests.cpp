@@ -594,6 +594,21 @@ void mechanics_tests()
         check(!offers(*fight, "melee") && fight->submit(command(*fight, "ranged")),
               "A distant kobold throws its Dagger");
     }
+    // Every Slums monster names the weapons it fights with, so its hover panel
+    // never shows an unspecified weapon.
+    const std::vector<std::array<std::string_view, 3>> named_weapons{
+        {"troll", "Rend", ""}, {"ogre", "Greatclub", "Javelin"},
+        {"slums-hobgoblin", "Longsword", "Longbow"}, {"gnoll-warrior", "Rend", "Bone bow"},
+        {"lizardfolk", "Bite", "Javelin"}, {"giant-lizard", "Bite", ""},
+        {"norris-the-gray", "Scimitar", ""}, {"slums-magic-user", "Dagger", ""}};
+    for (const auto &[key, melee, ranged] : named_weapons)
+    {
+        auto encounter = duel();
+        encounter.participants[1].definition = std::string(key);
+        const auto monster = unit(*first_turn(*kobold_rules, encounter, 2), 2);
+        check(monster.melee_weapon == melee && monster.ranged_weapon == ranged,
+              "Every Slums monster names its weapons");
+    }
     CombatDemo training(srd5::load(pack()));
     training.training();
     for (unsigned i = 0; training.combat().snapshot().outcome == Outcome::ongoing; ++i)

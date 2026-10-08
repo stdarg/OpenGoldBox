@@ -153,6 +153,12 @@ class CombatView : public godot::Control
     bool matches_item(const opengold::rules::Command &command) const;
     void thrown_selected(std::int64_t index);
     void begin_throw();
+    // The Items row: gear actions (Torch attack, thrown flasks, Shoot, Take off
+    // shield) offered this turn, by verb, and the chosen one.
+    std::vector<std::string> item_verbs_;
+    std::string item_verb_;
+    void item_selected(std::int64_t index);
+    void use_item();
     unsigned effect_target_index_{};
     void initiative_input(const godot::Ref<godot::InputEvent> &event);
     void optional_effect_input(const godot::Ref<godot::InputEvent> &event);

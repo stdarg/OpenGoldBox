@@ -308,6 +308,9 @@ void CombatView::_ready()
     get_node<OptionButton>("ThrownWeapon")
     ->connect("item_selected", callable_mp(this, &CombatView::thrown_selected));
     get_node<Button>("Throw")->connect("pressed", callable_mp(this, &CombatView::begin_throw));
+    get_node<OptionButton>("ItemAction")
+    ->connect("item_selected", callable_mp(this, &CombatView::item_selected));
+    get_node<Button>("UseItemAction")->connect("pressed", callable_mp(this, &CombatView::use_item));
     get_node<Button>("UseCunningAction")
     ->connect("pressed", callable_mp(this, &CombatView::use_cunning_action));
     get_node<OptionButton>("CunningAction")
@@ -413,13 +416,14 @@ void CombatView::layout()
     const auto board = demo_ && demo_->has_combat() ? demo_->combat().snapshot().battlefield
                        : Battlefield{12, 9, {}};
     const double weapon_height = get_node<OptionButton>("Weapons")->is_visible() ? 44 : 0;
+    const double item_height = get_node<OptionButton>("ItemAction")->is_visible() ? 44 : 0;
     const double battlefield_height =
         std::min((height - 180) * .85, get_node<OptionButton>("ThrownWeapon")->is_visible()
                  ? height - 348
                  : get_node<Button>("StandUp")->is_visible()
                  ? height - 304
                  : (height - 180) * .85) -
-        weapon_height;
+        weapon_height - item_height;
     base_tile_ = std::max(left_width / board.width, battlefield_height / board.height);
     board_rect_ = Rect2(24, 16, left_width, battlefield_height);
     const double right = width - sidebar - 24;
@@ -522,12 +526,21 @@ void CombatView::layout_reaction_controls(bool show_controls)
     get_node<OptionButton>("ThrownWeapon")->set_size(Vector2(360, 36));
     get_node<Button>("Throw")->set_position(Vector2(604, top + weapon_height + 176));
     get_node<Button>("Throw")->set_size(Vector2(110, 36));
-    const double inset =
+    double inset =
         weapon_height + (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 220
                          : standing                                           ? 176
                          : (cunning || aid)
                          ? 132
                          : (show_controls ? 44 : 0) + ((rush || spells || surge) ? 44 : 0));
+    // The Items row takes the first free row, and the log moves below it.
+    get_node<Label>("ItemActionLabel")->set_position(Vector2(24, top + inset));
+    get_node<Label>("ItemActionLabel")->set_size(Vector2(200, 36));
+    get_node<OptionButton>("ItemAction")->set_position(Vector2(234, top + inset));
+    get_node<OptionButton>("ItemAction")->set_size(Vector2(360, 36));
+    get_node<Button>("UseItemAction")->set_position(Vector2(604, top + inset));
+    get_node<Button>("UseItemAction")->set_size(Vector2(110, 36));
+    if (get_node<OptionButton>("ItemAction")->is_visible())
+        inset += 44;
     get_node<Label>("CunningActionLabel")->set_position(Vector2(24, top + weapon_height + 88));
     get_node<Label>("CunningActionLabel")->set_size(Vector2(aid ? 150 : 180, 36));
     get_node<OptionButton>("CunningAction")
@@ -992,6 +1005,33 @@ void CombatView::thrown_selected(std::int64_t index)
     thrown_item_ = choices->get_item_id(index);
     mode_ = "move";
     refresh();
+}
+
+void CombatView::item_selected(std::int64_t index)
+{
+    if (index < 0 || index >= std::int64_t(item_verbs_.size()))
+        return;
+    item_verb_ = item_verbs_[std::size_t(index)];
+    mode_ = "move";
+    refresh();
+}
+
+// A gear action aimed at a creature is selected for a click on its target; one
+// with no target (Take off shield) is used at once.
+void CombatView::use_item()
+{
+    if (item_verb_.empty() || !demo_ || !demo_->has_combat())
+        return;
+    get_node<Button>("UseItemAction")->release_focus();
+    const auto offered = demo_->combat().legal_commands();
+    const bool targeted = std::any_of(offered.begin(), offered.end(), [&](const auto & c)
+    {
+        return c.verb == item_verb_ && c.target;
+    });
+    if (targeted)
+        select_mode(gs(item_verb_));
+    else
+        immediate(gs(item_verb_));
 }
 
 void CombatView::begin_throw()
@@ -2043,6 +2083,45 @@ void CombatView::refresh()
     });
     thrown->set_disabled(!enabled("throw"));
     get_node<Button>("Throw")->set_disabled(!can_throw);
+    // Items: the gear actions this character can take now (GEAR-1).
+    auto *items = get_node<OptionButton>("ItemAction");
+    items->set_block_signals(true);
+    items->set_fit_to_longest_item(false);
+    items->clear();
+    item_verbs_.clear();
+    if (player && throwing != s.combatants.end())
+        for (const std::string_view verb :
+                {"torch", "throw_oil", "throw_alchemists_fire", "throw_acid", "shoot", "doff_shield"})
+        {
+            const auto command = std::find_if(offered.begin(), offered.end(), [&](const auto & c)
+            {
+                return c.verb == verb;
+            });
+            if (command == offered.end())
+                continue;
+            auto label = i18n::text(command->label);
+            if (verb.starts_with("throw_"))
+                for (const auto &[gear, left] : throwing->thrown_gear_left)
+                    if (gear == verb.substr(6))
+                        label = i18n::format("{action} ({count} left)",
+                    {{"action", label}, {"count", int(left)}});
+            items->add_item(label, int(item_verbs_.size()));
+            item_verbs_.emplace_back(verb);
+        }
+    const auto chosen = std::find(item_verbs_.begin(), item_verbs_.end(), item_verb_);
+    item_verb_ = chosen != item_verbs_.end() ? *chosen
+                 : item_verbs_.empty()       ? std::string{}
+                 : item_verbs_.front();
+    if (!item_verbs_.empty())
+        items->select(int(std::find(item_verbs_.begin(), item_verbs_.end(), item_verb_) -
+                          item_verbs_.begin()));
+    items->set_block_signals(false);
+    const bool show_items = s.outcome == Outcome::ongoing && !item_verbs_.empty();
+    const bool items_layout_changed = items->is_visible() != show_items;
+    for (const char *name :
+            {"ItemActionLabel", "ItemAction", "UseItemAction"
+            })
+        get_node<Control>(name)->set_visible(show_items);
     for (const auto &[node, verb] : action_buttons)
         get_node<Button>(node)->set_disabled(!enabled(spell_verb(verb, spell_slot_)));
     const auto cunning_actor = std::find_if(s.combatants.begin(), s.combatants.end(),
@@ -2065,7 +2144,8 @@ void CombatView::refresh()
     const bool posture_layout_changed = get_node<Button>("StandUp")->is_visible() != show_standing;
     get_node<Button>("StandUp")->set_visible(show_standing);
     get_node<Button>("StandUp")->set_disabled(!enabled("stand_up"));
-    if (aid_layout_changed || posture_layout_changed || thrown_layout_changed)
+    if (aid_layout_changed || posture_layout_changed || thrown_layout_changed ||
+            items_layout_changed)
         layout();
     const auto *choice_actor = cunning_actor != s.combatants.end() && s.outcome == Outcome::ongoing
                                ? &*cunning_actor
@@ -2156,6 +2236,20 @@ void CombatView::refresh()
             action = i18n::text(command.label);
             break;
         }
+    // What the player does with the selected action: click a square to move, a
+    // creature it aims at, or Space for one without a target.
+    const auto selected_prompt = [&](const std::vector<Command> &commands, const String &name)
+    {
+        if (mode_ == "move")
+            return i18n::format("Selected: {action}. Click a highlighted square.", {{"action", name}});
+        const bool targeted = std::any_of(commands.begin(), commands.end(), [&](const auto & c)
+        {
+            return c.verb == mode_ && c.target;
+        });
+        return targeted
+               ? i18n::format("Selected: {action}. Click a highlighted creature.", {{"action", name}})
+               : i18n::format("Selected: {action}. Press Space to use it.", {{"action", name}});
+    };
     get_node<Label>("Prompt")->set_text(
         !error_.empty()             ? i18n::text(error_)
         : demo_ && demo_->waiting() ? i18n::text("Read the encounter text, then Continue.")
@@ -2174,8 +2268,7 @@ void CombatView::refresh()
         : s.reaction_pending && enabled("cutting")
         ? i18n::text("An enemy's attack hits. Use Cutting Words to subtract your Bardic Inspiration die, or decline.")
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
-        : player
-    ? i18n::format("Selected: {action}. Click a highlighted square.", {{"action", action}})
+        : player ? selected_prompt(offered, action)
     : i18n::text("Enemy turn"));
     if (error_.empty() && loaded && s.outcome == Outcome::ongoing && !s.reaction_pending &&
             selected_ && selected_ != s.actor)
