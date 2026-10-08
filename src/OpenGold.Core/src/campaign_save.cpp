@@ -12,7 +12,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 21;
+constexpr unsigned campaign_format = 22;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -485,6 +485,7 @@ struct SaveCodec
             std::string reward;
             bool items = true;
             std::array<unsigned, 7> wealth{};
+            unsigned area{};
             if (!reading)
             {
                 const auto &loot = v.pending_loot_[index];
@@ -492,8 +493,9 @@ struct SaveCodec
                 reward = loot.reward_id;
                 items = loot.include_items;
                 wealth = loot.wealth;
+                area = loot.area;
             }
-            fields(records, reward, items, wealth);
+            fields(records, reward, items, wealth, area);
             if (records.empty())
             {
                 // Script treasure has no creature records; its generated items are saved.
@@ -512,10 +514,8 @@ struct SaveCodec
             }
             else if (reading)
             {
-                require(v.town_->districts.contains(20),
-                        "Pending Slums loot requires original resources");
                 v.pending_loot_.push_back(
-                    v.slums_loot(std::move(records), std::move(reward), items));
+                    v.encounter_loot(area, std::move(records), std::move(reward), items));
                 require(v.pending_loot_.back().wealth == wealth,
                         "Saved loot does not match its original creatures");
             }

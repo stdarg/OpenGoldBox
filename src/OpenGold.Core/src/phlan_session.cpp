@@ -367,21 +367,19 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         ++snapshot_.revision;
         return true;
     }
-    const bool first = encounter_records_ == std::vector<unsigned> {13, 4, 4, 4};
+    const bool first =
+        current_area_ == 20 && encounter_records_ == std::vector<unsigned> {13, 4, 4, 4};
     const auto reward = first ? std::string("por:ECL2:20:search1:orcs:v1")
-                        : "por:ECL2:20:roaming:" + std::to_string(++next_ticket_);
+                        : "por:ECL" + std::to_string(area_resources().bank) + ":" +
+                        std::to_string(current_script_) + ":roaming:" +
+                        std::to_string(++next_ticket_);
     // Experience and loot stay the original encounter's, however many fought.
     unsigned experience = 0;
     for (auto record : encounter_records_)
-        experience += record == 63                                 ? 200
-                      : record == 0                                ? 25
-                      : record == 1 || record == 2 || record == 11 ? 50
-                      : record == 3 || record == 12                ? 100
-                      : record == 4 || record == 13                ? 75
-                      : 150;
+        experience += area_resources().conversions.at(record).award_xp;
     campaign_->award_experience(experience, reward);
-    pending_loot_.push_back(
-        slums_loot(encounter_records_, reward + ":loot", machine_.variable(0x6DE3) != 1));
+    pending_loot_.push_back(encounter_loot(current_area_, encounter_records_, reward + ":loot",
+                                           machine_.variable(0x6DE3) != 1));
     claim_loot();
     auto reply = character_reply(selected_character_);
     for (auto write : std::array<EclMemoryWrite, 7> {{{0x6DC7, 0},
@@ -413,18 +411,25 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     return true;
 }
 
-PendingLoot RolfTourSession::slums_loot(std::vector<unsigned> records, std::string reward,
-                                        bool items) const
+PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned> records,
+        std::string reward, bool items) const
 {
-    if (records.empty() || records.size() > 56 || reward.empty() || reward.size() > 160)
-        throw EclError("Invalid pending encounter loot");
+    const auto district = town_->districts.find(area);
+    if (district == town_->districts.end() || records.empty() || records.size() > 56 ||
+            reward.empty() || reward.size() > 160 ||
+            std::any_of(records.begin(), records.end(), [&](auto id)
+{
+    return !district->second->encounter_creatures.contains(id);
+    }))
+    throw EclError("Invalid pending encounter loot");
     PendingLoot loot;
     loot.reward_id = std::move(reward);
     loot.records = std::move(records);
     loot.include_items = items;
+    loot.area = area;
     for (auto id : loot.records)
     {
-        const auto &creature = town_->districts.at(20)->encounter_creatures.at(id);
+        const auto &creature = district->second->encounter_creatures.at(id);
         for (unsigned coin = 0; coin < 7; ++coin)
             loot.wealth[coin] += creature.stored.wealth[coin];
         if (items)
@@ -519,7 +524,8 @@ std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, un
 {
     const bool city_watch = interval == 1 && (chance == 100 || chance == 101);
     const bool slums_street = interval == 24 && chance == 24;
-    if (interval && chance && !city_watch && !slums_street)
+    const bool kutos_well_plaza = interval == 12 && chance == 12;
+    if (interval && chance && !city_watch && !slums_street && !kutos_well_plaza)
         throw EclError("Unsupported probabilistic camp interruption");
     if (!interval)
         return std::nullopt;
@@ -706,22 +712,6 @@ void RolfTourSession::show_encounter_menu()
     ++snapshot_.revision;
 }
 
-namespace
-{
-// Stat block XP (SRD 5.2.1; the Orc from SRD 5.1). Leaders are worth their base.
-unsigned stat_block_xp(std::string_view definition)
-{
-    if (definition.starts_with("slums-kobold"))
-        return 25;
-    if (definition.starts_with("slums-goblin"))
-        return 50;
-    if (definition.starts_with("slums-orc"))
-        return 100;
-    if (definition == "slums-bugbear")
-        return 200;
-    throw EclError("Encounter creature has no XP value");
-}
-} // namespace
 
 // Shrinks the staged original encounter to the party's SRD XP budget at the
 // encounter challenge and to one creature per living character, the size the
@@ -736,7 +726,7 @@ void RolfTourSession::fit_staged_encounter()
     for (std::size_t n = 0; n < staged_records_.size(); ++n)
     {
         if (n == 0 || staged_records_[n] != staged_records_[n - 1])
-            groups.push_back({stat_block_xp(staged_enemies_[n].definition), 0});
+            groups.push_back({area_resources().conversions.at(staged_records_[n]).fit_xp, 0});
         ++groups.back().count;
     }
     const auto budget = encounter_xp_budget(levels, encounter_challenge_);
@@ -1104,7 +1094,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 11:
     {
         const unsigned record = arg(0), count = arg(1);
-        if (current_area_ != 20 || !area_resources().encounter_creatures.contains(record) ||
+        if (!current_area_ || !area_resources().conversions.contains(record) ||
                 !count || staged_enemies_.size() + count > 56)
             throw EclError("Encounter needs an explicit supported creature conversion: record " +
                            std::to_string(record) + ", count " + std::to_string(count) + ", icon " +
@@ -1112,18 +1102,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const auto &creature = area_resources().encounter_creatures.at(record);
         auto icon = decode_ega_combat_icon(area_resources().combat_archive, arg(2), 0);
         if (!icon)
-            throw EclError("Invalid original Slums combat icon");
+            throw EclError("Invalid original combat icon");
         // A leader shoots a bow only when its art shows one: of the Slums
         // combat icons, only the orc leader's icon 5 does.
-        const auto definition = record == 63                  ? "slums-bugbear"
-                                : record == 0                 ? "slums-kobold"
-                                : record == 1                 ? "slums-kobold-leader"
-                                : record == 11                ? "slums-kobold-leader-sword"
-                                : record == 2                 ? "slums-goblin"
-                                : record == 3 || record == 12 ? "slums-goblin-leader"
-                                : record == 4 || record == 13 ? "slums-orc"
-                                : arg(2) == 5                 ? "slums-orc-leader-archer"
-                                : "slums-orc-leader";
+        auto definition = area_resources().conversions.at(record).definition;
+        if (definition == "slums-orc-leader" && arg(2) == 5)
+            definition = "slums-orc-leader-archer";
         for (unsigned i = 0; i < count; ++i)
         {
             const auto id = static_cast<rules::EntityId>(1000 + staged_enemies_.size());
@@ -1167,7 +1151,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 41:
-        if (current_area_ != 20 || arg(1) > 2)
+        if (!current_area_ || arg(1) > 2)
             throw EclError("Unsupported encounter menu context");
         encounter_menu_ = request;
         encounter_distance_ = arg(1);
@@ -1222,7 +1206,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 36:
         if (staged_treasure_ && !staged_enemies_.empty())
             throw EclError("Script treasure added to a fight is not supported");
-        if (current_area_ == 20 && !staged_enemies_.empty())
+        if (current_area_ && !staged_enemies_.empty())
         {
             read_character();
             encounter_records_ = staged_records_;

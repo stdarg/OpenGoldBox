@@ -1885,6 +1885,7 @@ void monster_picture_before_combat()
     auto district = std::make_shared<por::PhlanResources>();
     district->map = por::GeoMap{};
     district->encounter_creatures[4].stored.name = "Test orc";
+    district->conversions[4] = {"slums-orc", 100, 75};
     district->combat_archive = {9, 0, 4, 0, 0, 0, 0, 25, 0, 26, 0, 24};
     district->combat_archive.resize(37, 0);
     district->combat_archive[12] = 1;
@@ -1937,6 +1938,7 @@ void rejected_combat_handoff()
     auto district = std::make_shared<por::PhlanResources>();
     district->map = por::GeoMap{};
     district->encounter_creatures[4].stored.name = "Test orc";
+    district->conversions[4] = {"slums-orc", 100, 75};
     // One literal DAX record with an authored 16x1 combat icon, no original data.
     district->combat_archive = {9, 0, 4, 0, 0, 0, 0, 25, 0, 26, 0, 24};
     district->combat_archive.resize(37, 0);
@@ -2012,6 +2014,7 @@ void victory_beside_dead_member()
     auto district = std::make_shared<por::PhlanResources>();
     district->map = por::GeoMap{};
     district->encounter_creatures[4].stored.name = "Test orc";
+    district->conversions[4] = {"slums-orc", 100, 75};
     district->combat_archive = {9, 0, 4, 0, 0, 0, 0, 25, 0, 26, 0, 24};
     district->combat_archive.resize(37, 0);
     district->combat_archive[12] = 1;

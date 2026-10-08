@@ -21,7 +21,7 @@ of a campaign save; add completed characters to the party first.
 Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 21`.
+- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 22`.
 - The internal training-combat checkpoint: `OGCOMBAT 40`.
 - Records embedded by the SRD module: character profile recipe `PC42` (an
   explicit spell ID list), vital state `SRD11`, effect state `FX8` and

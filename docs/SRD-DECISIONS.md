@@ -383,6 +383,9 @@ the earlier authored Slums conversions.
 - **Stat blocks:** monsters are SRD stat blocks, unchanged. In the Slums: Kobold
   Warrior, Goblin Warrior and Bugbear Warrior (SRD 5.2.1). The 2024 SRD has no
   orc, so orcs are the SRD 5.1 Orc (the user: orcs are tougher than goblins).
+  In Kuto's Well (2026-10-08): Giant Lizard and Gnoll Warrior (SRD 5.2.1) and,
+  as the 2024 SRD has none, the SRD 5.1 Lizardfolk, unchanged at the user's
+  choice. Lizardfolk Multiattack is two melee attacks.
 - **Leaders** are their base stat block wearing the armor their original record
   readies. A leader shoots a bow only when its combat art shows one; otherwise
   its better gear is loot. Of the Slums icons only the orc leader's (CPIC2 5)
@@ -391,7 +394,8 @@ the earlier authored Slums conversions.
   Nimble Escape. The Bugbear's Grab hits an adjacent character for its damage
   with no grapple (consistent with [SCOPE-2](#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
   Aggressive adds the orc's speed as a bonus action; only monsters have it, so
-  "toward a hostile creature" is left to the monster's policy.
+  "toward a hostile creature" is left to the monster's policy. The Lizardfolk's
+  bite and club both deal piercing damage, and the Gnoll Warrior has no Rampage.
 - **Encounter size:** when an original encounter is too strong, it is scaled
   back. The `[combat] encounter_challenge` setting in `settings.cfg` (0–200,
   default 33) is a percentage of the SRD 5.2.1 Moderate XP budget (p. 202). An

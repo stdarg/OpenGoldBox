@@ -1298,6 +1298,12 @@ void enter_kutos_well(Expedition &trip, const std::filesystem::path &folder,
     const auto reloaded = load_expedition(save, directory);
     check(reloaded.town.snapshot().area_id == 29 && reloaded.town.snapshot().script_id == 29,
           "A save in Kuto's Well loads back there");
+    // North of the well, kobolds wait in ambush and more climb out behind them.
+    const auto lead = party->state().slots[0];
+    const auto experience = party->member(lead).experience;
+    walk_to(town, party, 7, 4, peaceful, false, true);
+    check(party->member(lead).experience > experience,
+          "The party wins Kuto's Well fights and earns their XP");
 }
 
 void installed_first_expedition(const std::filesystem::path &executable,
@@ -1369,7 +1375,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::filesystem::remove_all(folder);
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
               "returned, paid the inn with change, rested, delivered Ohlo's potion, finished "
-              "it again from each Slums save, reloaded, revisited and camped in the Slums.\n";
+              "it again from each Slums save, reloaded, revisited and camped in the Slums, and won "
+              "fights in Kuto's Well.\n";
 }
 
 } // namespace

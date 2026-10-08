@@ -96,6 +96,18 @@ campaign-arc simulator should get a Kuto's Well stage to measure it.
   stored but have no effect yet (meaning unverified). Fights, traps,
   robbery and fixed treasure still stop with a diagnostic.
 
+- **Increment 2 (done, 2026-10-08):** each area's creature conversions are
+  rows of the area table (definition, fitting XP and award XP), so `LOAD
+  MONSTER`, `ENCOUNTER MENU`, `COMBAT`, XP and loot work in any area; saved
+  loot records its area (campaign format 22). `combat.rules` adds the SRD 5.1
+  Lizardfolk (with a two-attack `multiattack` row), the Giant Lizard and the
+  Gnoll Warrior; Kuto's kobolds reuse the Slums profiles. Camping in the plaza
+  uses its interruption profile (12 five-minute steps, 12%). Exploring the
+  installed game, the plaza fights met (gnolls, sickly, waiting and climbing
+  kobolds, lizardmen) resolve; the giant-lizard patrol was not reached. In the
+  catacombs the first arrow volley stops
+  with "Host capability unavailable: DAMAGE".
+
 ## Suggested increments
 
 1. Data-driven area table; load Kuto's Well (both maps) and travel to and from

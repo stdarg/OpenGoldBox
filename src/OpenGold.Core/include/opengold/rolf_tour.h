@@ -52,6 +52,15 @@ struct PendingLoot
     std::string reward_id;
     std::vector<unsigned> records;
     bool include_items{true};
+    unsigned area{}; // the district whose original creature records these are
+};
+
+// What an original creature record fights as: its combat creature, the XP of
+// that stat block (which sizes encounters) and the experience it awards.
+struct EncounterConversion
+{
+    std::string definition;
+    unsigned fit_xp{}, award_xp{};
 };
 
 struct PhlanResources
@@ -71,6 +80,7 @@ struct PhlanResources
     std::optional<GeoMap> map;
     WallArtSet wall_art;
     std::map<unsigned, Creature> encounter_creatures;
+    std::map<unsigned, EncounterConversion> conversions;
     // A district's script, archive bank and LOAD PIECES wall banks; zero for the town.
     unsigned script{}, bank{};
     std::array<unsigned, 3> pieces{};
@@ -287,7 +297,9 @@ class RolfTourSession
     void show_locked_door();
     void try_locked_door(opengold::DoorMethod method);
     void search_destination();
-    [[nodiscard]] PendingLoot slums_loot(std::vector<unsigned> records, std::string reward,
+    // The coins and items of an encounter's original creature records.
+    [[nodiscard]] PendingLoot encounter_loot(unsigned area, std::vector<unsigned> records,
+            std::string reward,
                                          bool items) const;
     void show_encounter_menu();
     void fit_staged_encounter();

@@ -526,6 +526,8 @@ struct Definition
     bool shield{}, other_weapon{};
     // A monster's `equipment` row: it wears Medium or Heavy metal armor.
     bool metal_armor{};
+    // A monster's `multiattack` row: melee attacks its Attack action makes.
+    int multiattack{1};
     int hit_die{}, constitution{}, rushes{}, surges{}, arcane{};
     int lay_on_hands{}; // Paladin healing pool: five times Paladin level
     int free_smite{};   // Paladin's Smite: one Divine Smite without a slot per Long Rest
@@ -8036,7 +8038,11 @@ void Session::dispatch(const Command &command)
                 // default 1d10 fire arguments; it is now an explicit table row.
                 if (d.horde_breaker && !a.horde_origin)
                     a.horde_origin = command.target;
-                attack(a, actor(command.target), command.verb != "melee");
+                // Multiattack: a monster's melee attacks follow on the same
+                // target while it stands.
+                const int attacks = command.verb == "melee" ? d.multiattack : 1;
+                for (int n = 0; n < attacks && actor(command.target).hp > 0; ++n)
+                    attack(a, actor(command.target), command.verb != "melee");
                 if (qualifies)
                     qualify_light(a, token);
             }
@@ -11057,7 +11063,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.131", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.132", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -11163,6 +11169,20 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             row >> std::ws;
             if (!row.eof())
                 throw std::runtime_error("Unknown creature equipment fields: " + key);
+            continue;
+        }
+        if (tag == "multiattack")
+        {
+            const auto found = content.definitions.find(key);
+            int attacks{};
+            row >> attacks;
+            if (!row || found == content.definitions.end() || attacks < 2 || attacks > 4 ||
+                    !trait_rows.insert(tag + " " + key).second)
+                throw std::runtime_error("Invalid Multiattack: " + key);
+            found->second.multiattack = attacks;
+            row >> std::ws;
+            if (!row.eof())
+                throw std::runtime_error("Unknown Multiattack fields: " + key);
             continue;
         }
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage")

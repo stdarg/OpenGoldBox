@@ -175,15 +175,34 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         unsigned id;
         std::array<unsigned, 3> pieces;
     };
+    struct Conversion
+    {
+        std::uint8_t record;
+        const char *definition;
+        unsigned fit_xp, award_xp;
+    };
     struct AreaSource
     {
         unsigned script, bank;
         std::vector<DistrictMap> maps;
-        std::vector<std::uint8_t> creatures;
+        std::vector<Conversion> creatures;
     };
+    // Slums experience follows docs/EXPEDITION.md; Kuto's Well awards each
+    // conversion's stat-block XP (docs/audits/kutos-well.md).
     const std::array areas{
-        AreaSource{20, 2, {{20, {2, 4, 1}}}, {0, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 63}},
-        AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}}, {0, 1, 32, 57, 59, 73}}};
+        AreaSource{20, 2, {{20, {2, 4, 1}}},
+            {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
+                {11, "slums-kobold-leader-sword", 25, 50}, {2, "slums-goblin", 50, 50},
+                {3, "slums-goblin-leader", 50, 100}, {12, "slums-goblin-leader", 50, 100},
+                {4, "slums-orc", 100, 75}, {13, "slums-orc", 100, 75},
+                {5, "slums-orc-leader", 100, 150}, {14, "slums-orc-leader", 100, 150},
+                {15, "slums-orc-leader", 100, 150}, {63, "slums-bugbear", 200, 200}
+            }},
+        AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}},
+            {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
+                {57, "lizardfolk", 100, 100}, {59, "giant-lizard", 50, 50},
+                {73, "gnoll-warrior", 100, 100}
+            }}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -233,13 +252,17 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             }
             district->sprite_archive =
                 read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));
-            for (const auto id : area.creatures)
+            for (const auto &conversion : area.creatures)
             {
+                const auto id = conversion.record;
                 const auto creature = creatures.find({static_cast<std::uint8_t>(area.bank), id});
                 if (!creature)
                     throw EclError("Missing original creature MON" + bank + "CHA:" +
                                    std::to_string(id));
                 district->encounter_creatures.emplace(id, creature->get());
+                district->conversions.emplace(
+                    id, EncounterConversion{conversion.definition, conversion.fit_xp,
+                                            conversion.award_xp});
             }
             district->combat_archive =
                 read_archive(resolve_archive(directory, "CPIC" + bank + ".DAX"));

@@ -79,3 +79,20 @@ aggressive slums-orc-leader-archer
 equipment slums-goblin-leader metal_armor MON2CHA.DAX:3 scale_mail
 equipment slums-orc-leader metal_armor MON2CHA.DAX:5 chain_mail
 equipment slums-orc-leader-archer metal_armor MON2CHA.DAX:5 chain_mail
+# Kuto's Well (docs/audits/kutos-well.md): Lizardfolk (SRD 5.1: two melee
+# attacks a turn, a javelin at range), Giant Lizard and Gnoll Warrior (SRD 5.2.1;
+# the gnoll's once-a-day Rampage is not modeled).
+creature lizardfolk 15 22 0 30 4 1 6 2 4 1 6 2 30 120 0 0 0 1 0
+creature giant-lizard 12 19 1 40 4 1 8 2 0 0 0 0 0 0 0 0 0 1 0
+creature gnoll-warrior 15 27 1 30 4 1 6 2 3 1 10 1 150 600 0 0 0 1 0
+saves lizardfolk 2 0 1 -2 1 -2
+saves giant-lizard 2 3 1 -4 0 -3
+saves gnoll-warrior 2 1 0 -2 0 -2
+damage_types lizardfolk piercing piercing
+damage_types giant-lizard piercing piercing
+damage_types gnoll-warrior piercing piercing
+size giant-lizard large
+type giant-lizard beast
+type gnoll-warrior fiend
+# multiattack creature attacks: the Attack action's melee attacks a turn.
+multiattack lizardfolk 2
