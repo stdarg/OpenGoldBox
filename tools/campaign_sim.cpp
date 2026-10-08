@@ -1,8 +1,9 @@
-// Plays the Slums as a campaign arc many times to estimate how often a party
-// succeeds. A level-one party from the curated character pool, in its class
-// kits, fights the original roaming encounters and the four-orc search in a
-// fixed order, rests between fights and gains levels up to four. Both sides
-// use the automated demo policy. Each seed is one run; results go to CSV.
+// Plays the Slums and then Kuto's Well as a campaign arc many times to estimate
+// how often a party succeeds. A level-one party from the curated character
+// pool, in its class kits, fights the original encounters in a fixed order,
+// takes the catacombs' arrow volleys, rests between fights and gains levels up
+// to four. Both sides use the automated demo policy. Each seed is one run;
+// results go to CSV.
 #include "opengold/campaign_party.h"
 #include "opengold/character_art.h"
 #include "opengold/character_pool.h"
@@ -72,14 +73,25 @@ Creature creature(unsigned record)
         return {5, "slums-orc-leader-archer", 100};
     case 13:
         return {13, "slums-orc-leader", 100};
+    case 32:
+        return {32, "norris-the-gray", 450};
+    case 57:
+        return {57, "lizardfolk", 100};
+    case 59:
+        return {59, "giant-lizard", 50};
+    case 73:
+        return {73, "gnoll-warrior", 100};
     default:
         return {63, "slums-bugbear", 200};
     }
 }
 
 // Experience as the campaign awards it: the original encounter's, per member.
+// Kuto's Well records (32 and up) award their stat block's XP.
 unsigned original_xp(unsigned record)
 {
+    if (record >= 32 && record != 63)
+        return creature(record).fit_xp;
     return record == 63                                 ? 200
            : record == 0                                ? 25
            : record == 1 || record == 2 || record == 11 ? 50
@@ -109,22 +121,71 @@ std::vector<Group> roaming(unsigned record, unsigned strength, bool guild)
     return groups;
 }
 
-struct Fight
+// ECL8:29's roaming mix (its table at 0xAFA2): gnolls at a third of the
+// party's strength, kobolds at half with three kobold leaders, lizardmen at a
+// quarter; at least one.
+std::vector<Group> kutos_roaming(unsigned record, unsigned strength)
+{
+    const unsigned divisor = record == 73 ? 3 : record == 0 ? 2 : 4;
+    std::vector<Group> groups;
+    if (record == 0)
+        groups.push_back({creature(1), 3});
+    groups.push_back({creature(record), std::max(1u, strength / divisor)});
+    return groups;
+}
+
+// Where a fight happens: its map and a square the battlefield is cut around.
+enum class Place
+{
+    slums_street,
+    slums_guild,
+    kutos_plaza,
+    kutos_catacombs
+};
+
+struct Step
 {
     const char *label;
-    unsigned record; // 13: the four-orc search event
-    bool guild;
+    Place place;
+    std::vector<Group> (*groups)(unsigned strength);
+    unsigned arrows{}; // An arrow volley instead of a fight.
 };
 
 // The arc: the Slums' kobolds, goblins and orcs on the streets and in the Old
-// Rope Guild, with the four-orc search second.
-constexpr std::array arc{
-    Fight{"street kobolds", 0, false}, Fight{"four orcs", 13, false},
-    Fight{"street goblins", 2, false}, Fight{"street orcs", 4, false},
-    Fight{"guild kobolds", 0, true},   Fight{"street goblins", 2, false},
-    Fight{"guild goblins", 2, true},   Fight{"street orcs", 4, false},
-    Fight{"guild orcs", 4, true},      Fight{"street goblins", 2, false},
-    Fight{"guild orcs", 4, true},      Fight{"guild orcs", 4, true}};
+// Rope Guild, with the four-orc search second; then Kuto's Well's plaza, the
+// catacombs' arrow volleys and Norris the Gray's band.
+const std::vector<Step> arc{
+    {"street kobolds", Place::slums_street, [](unsigned s) { return roaming(0, s, false); }},
+    {"four orcs", Place::slums_street,
+     [](unsigned) { return std::vector<Group>{{creature(13), 1}, {creature(4), 3}}; }},
+    {"street goblins", Place::slums_street, [](unsigned s) { return roaming(2, s, false); }},
+    {"street orcs", Place::slums_street, [](unsigned s) { return roaming(4, s, false); }},
+    {"guild kobolds", Place::slums_guild, [](unsigned s) { return roaming(0, s, true); }},
+    {"street goblins", Place::slums_street, [](unsigned s) { return roaming(2, s, false); }},
+    {"guild goblins", Place::slums_guild, [](unsigned s) { return roaming(2, s, true); }},
+    {"street orcs", Place::slums_street, [](unsigned s) { return roaming(4, s, false); }},
+    {"guild orcs", Place::slums_guild, [](unsigned s) { return roaming(4, s, true); }},
+    {"street goblins", Place::slums_street, [](unsigned s) { return roaming(2, s, false); }},
+    {"guild orcs", Place::slums_guild, [](unsigned s) { return roaming(4, s, true); }},
+    {"guild orcs", Place::slums_guild, [](unsigned s) { return roaming(4, s, true); }},
+    {"plaza gnolls", Place::kutos_plaza, [](unsigned s) { return kutos_roaming(73, s); }},
+    {"sickly kobolds", Place::kutos_plaza,
+     [](unsigned) { return std::vector<Group>{{creature(0), 2}, {creature(1), 4}}; }},
+    {"plaza kobolds", Place::kutos_plaza, [](unsigned s) { return kutos_roaming(0, s); }},
+    {"well kobolds", Place::kutos_plaza,
+     [](unsigned) { return std::vector<Group>{{creature(0), 6}, {creature(1), 3}}; }},
+    {"lizardman patrol", Place::kutos_plaza,
+     [](unsigned) { return std::vector<Group>{{creature(57), 1}, {creature(59), 4}}; }},
+    {"plaza lizardmen", Place::kutos_plaza, [](unsigned s) { return kutos_roaming(57, s); }},
+    {"catacomb volley", Place::kutos_catacombs, nullptr, 4},
+    {"dim archer", Place::kutos_catacombs, nullptr, 1},
+    {"Norris's band", Place::kutos_catacombs,
+     [](unsigned) {
+         return std::vector<Group>{{creature(32), 1}, {creature(57), 5}, {creature(1), 9}};
+     }}};
+
+// The first Kuto's Well step; runs that reach it have cleared the Slums.
+const std::size_t kutos_well_start = 12;
 
 // Spells the demo policy uses well, prepared on gaining a level when offered.
 const std::map<std::string, std::vector<std::string>> preferred_spells{
@@ -176,6 +237,7 @@ struct RunResult
     std::string outcome; // "complete", "defeated" or "stalled"
     unsigned fights_won{}, deaths{}, short_rests{}, long_rests{};
     std::string lost_at;
+    bool cleared_slums{};
     std::vector<unsigned> levels;
     std::vector<std::string> dead; // the classes of members who died
 };
@@ -256,8 +318,44 @@ void long_rest(CampaignParty &party, RunResult &result)
     settle_rest_choices(party);
 }
 
-RunResult play(const std::vector<Character> &members, const por::GeoMap &slums,
-               std::uint64_t seed, Usage &usage)
+// The maps the arc's fights happen on.
+struct ArcMaps
+{
+    const por::GeoMap &slums, &kutos_plaza, &kutos_catacombs;
+};
+
+// Open squares the battlefields are cut around: a Slums street and the Old Rope
+// Guild, north of Kuto's Well and Norris's hall.
+por::DungeonBattlefield battlefield(const ArcMaps &maps, Place place)
+{
+    switch (place)
+    {
+    case Place::slums_street:
+        return por::dungeon_battlefield(maps.slums, 14, 7);
+    case Place::slums_guild:
+        return por::dungeon_battlefield(maps.slums, 6, 14);
+    case Place::kutos_plaza:
+        return por::dungeon_battlefield(maps.kutos_plaza, 7, 4);
+    default:
+        return por::dungeon_battlefield(maps.kutos_catacombs, 10, 3);
+    }
+}
+
+// Each arrow attacks a random conscious member as the campaign's DAMAGE volleys
+// do; returns false when nobody is left standing.
+bool take_arrows(CampaignParty &party, unsigned arrows)
+{
+    for (unsigned n = 0; n < arrows; ++n)
+        if (!party.hazard_attack({3, 1, 6, 0, "piercing"}))
+            return false;
+    for (const auto id : living(party))
+        if (party.member(id).vitals.hit_points > 0)
+            return true;
+    return false;
+}
+
+RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::uint64_t seed,
+               Usage &usage)
 {
     auto party = std::make_shared<CampaignParty>(module());
     for (const auto &member : members)
@@ -267,14 +365,22 @@ RunResult play(const std::vector<Character> &members, const por::GeoMap &slums,
     for (std::size_t n = 0; n < arc.size(); ++n)
     {
         const auto &step = arc[n];
-        std::vector<Group> groups =
-            step.record == 13 ? std::vector<Group> {{creature(13), 1}, {creature(4), 3}}
-            : roaming(step.record, party->strength(), step.guild);
+        if (step.arrows)
+        {
+            if (!take_arrows(*party, step.arrows))
+            {
+                result.outcome = "defeated";
+                result.lost_at = step.label;
+                break;
+            }
+            continue;
+        }
+        std::vector<Group> groups = step.groups(party->strength());
         unsigned experience = 0;
         for (const auto &group : groups)
             experience += group.count * original_xp(group.kind.record);
-        // The session fits every Slums encounter, the four-orc search too, to
-        // the XP budget and to one creature per living character.
+        // The session fits every encounter, the four-orc search too, to the XP
+        // budget and to one creature per living character.
         {
             std::vector<unsigned> levels;
             std::vector<EncounterGroup> sizes;
@@ -289,8 +395,7 @@ RunResult play(const std::vector<Character> &members, const por::GeoMap &slums,
                 groups[g].count = counts[g];
         }
         CampaignEncounter fight;
-        fight.field = step.guild ? por::dungeon_battlefield(slums, 6, 14)
-                      : por::dungeon_battlefield(slums, 14, 7);
+        fight.field = battlefield(maps, step.place);
         rules::EntityId next = 1000;
         for (const auto &group : groups)
             for (unsigned c = 0; c < group.count; ++c, ++next)
@@ -327,6 +432,7 @@ RunResult play(const std::vector<Character> &members, const por::GeoMap &slums,
             break;
         }
         ++result.fights_won;
+        result.cleared_slums |= n + 1 == kutos_well_start;
         party->award_experience(experience, "sim:" + std::to_string(n));
         // Dying members make their death saves; the Stable regain 1 HP in hours.
         party->advance_time(10);
@@ -374,20 +480,24 @@ int main(int argc, char **argv)
         const std::filesystem::path out = argc > 3 ? argv[3] : "user-data/campaign-sim";
         const std::string only = argc > 4 ? argv[4] : "";
         std::filesystem::create_directories(out);
-        const auto maps = por::MapCatalog::load(game);
-        const auto slums = maps.find({"GEO2.DAX", 20});
-        if (!slums)
-            throw std::runtime_error("Missing GEO2:20");
+        const auto catalog = por::MapCatalog::load(game);
+        const auto slums = catalog.find({"GEO2.DAX", 20});
+        const auto plaza = catalog.find({"GEO8.DAX", 29});
+        const auto catacombs = catalog.find({"GEO8.DAX", 32});
+        if (!slums || !plaza || !catacombs)
+            throw std::runtime_error("Missing GEO2:20, GEO8:29 or GEO8:32");
+        const ArcMaps maps{slums->get(), plaza->get(), catacombs->get()};
         const auto characters = srd5::character_rules();
         const auto pool = character_pool(*characters, por::CharacterArt::load(game));
         std::ofstream detail(out / "runs.csv"), summary(out / "summary.csv");
         std::ofstream usage_csv(out / "usage.csv");
         detail << "party,run,outcome,fights_won,lost_at,deaths,dead_classes,short_rests,"
                "long_rests,levels\n";
-        summary << "party,runs,success_pct,flawless_pct,avg_fights_won,avg_deaths,avg_level\n";
+        summary << "party,runs,slums_pct,success_pct,flawless_pct,avg_fights_won,avg_deaths,"
+                   "avg_level\n";
         usage_csv << "party,class,command,count\n";
-        std::printf("%-14s %5s %8s %9s %10s %7s %9s\n", "party", "runs", "success%", "flawless%",
-                    "fights_won", "deaths", "avg_level");
+        std::printf("%-14s %5s %7s %8s %9s %10s %7s %9s\n", "party", "runs", "slums%", "success%",
+                    "flawless%", "fights_won", "deaths", "avg_level");
         for (const auto &plan : party_plans(*characters))
         {
             if (!only.empty() && plan.name != only)
@@ -404,11 +514,13 @@ int main(int argc, char **argv)
                         of_class.push_back(&c);
                 members.push_back(*of_class.at(used[klass]++ % of_class.size()));
             }
-            unsigned complete = 0, flawless = 0, fights = 0, deaths = 0, levels = 0, people = 0;
+            unsigned cleared = 0, complete = 0, flawless = 0, fights = 0, deaths = 0, levels = 0,
+                     people = 0;
             Usage usage;
             for (unsigned run = 1; run <= runs; ++run)
             {
-                const auto r = play(members, slums->get(), run, usage);
+                const auto r = play(members, maps, run, usage);
+                cleared += r.cleared_slums;
                 complete += r.outcome == "complete";
                 flawless += r.outcome == "complete" && !r.deaths;
                 fights += r.fights_won;
@@ -430,12 +542,13 @@ int main(int argc, char **argv)
             for (const auto &[key, count] : usage)
                 usage_csv << plan.name << ',' << key.first << ',' << key.second << ',' << count << '\n';
             const double success = 100.0 * complete / runs;
-            summary << plan.name << ',' << runs << ',' << success << ','
+            const double slums_success = 100.0 * cleared / runs;
+            summary << plan.name << ',' << runs << ',' << slums_success << ',' << success << ','
                     << 100.0 * flawless / runs << ',' << double(fights) / runs << ','
                     << double(deaths) / runs << ',' << double(levels) / people << '\n';
-            std::printf("%-14s %5u %8.0f %9.0f %10.1f %7.2f %9.2f\n", plan.name.c_str(), runs,
-                        success, 100.0 * flawless / runs, double(fights) / runs,
-                        double(deaths) / runs, double(levels) / people);
+            std::printf("%-14s %5u %7.0f %8.0f %9.0f %10.1f %7.2f %9.2f\n", plan.name.c_str(),
+                        runs, slums_success, success, 100.0 * flawless / runs,
+                        double(fights) / runs, double(deaths) / runs, double(levels) / people);
             std::fflush(stdout);
         }
         return 0;

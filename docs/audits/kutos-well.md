@@ -124,6 +124,19 @@ campaign-arc simulator should get a Kuto's Well stage to measure it.
   "rain of arrows" need `0x6DCA` = 1, apparently the original Search mode (unverified), which the
   engine does not have, so they are not reached yet.
 
+- **Increment 4 (done, 2026-10-08):** `opengold_campaign_sim` continues its
+  Slums arc through Kuto's Well (see [CAMPAIGN-SIM.md](../CAMPAIGN-SIM.md)).
+  At 50 runs per party, 735 of the 750 runs cleared the Slums and 734 of those
+  also cleared Kuto's Well; the one loss there was a six-Warlock party to
+  Norris's band. Parties arrive at level 4 (the level cap), so with every
+  fight fitted to 33% of the Moderate budget, Kuto's Well is easy: success
+  equals the Slums rate for every party but six-Warlock (88% vs 86%), and
+  most deaths happen in the Slums. A level-3 measurement and Norris's fitting
+  are open questions. `tests/playtest_kutos_well.gd` played the area in the
+  game window: down the well, the volley report, Norris's portrait and his
+  fight all work. It found the area named "New Phlan" (fixed: "Kuto's Well")
+  and that a four-arrow report already scrolls the dialogue box.
+
 ## Suggested increments
 
 1. Data-driven area table; load Kuto's Well (both maps) and travel to and from

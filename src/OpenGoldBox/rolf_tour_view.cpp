@@ -48,10 +48,15 @@ const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0,
     Vector2(-1, 0)};
 const std::array<const char *, 4> direction_name{"North", "East", "South", "West"};
 
-// The session refuses to enter any area other than the town (0) and the Slums (20).
+// The areas the session can enter: the town (0), the Slums (20) and Kuto's
+// Well's plaza (29) and catacombs (32).
 [[nodiscard]] const char *district_name(unsigned area_id)
 {
-    return area_id == 20 ? N_("Slums") : N_("New Phlan");
+    if (area_id == 20)
+        return N_("Slums");
+    if (area_id == 29 || area_id == 32)
+        return N_("Kuto's Well");
+    return N_("New Phlan");
 }
 
 } // namespace

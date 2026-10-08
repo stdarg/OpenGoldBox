@@ -1340,6 +1340,31 @@ std::size_t party_items(const CampaignParty &party)
     return items;
 }
 
+// For the game play-test (tests/playtest_kutos_well.gd): the campaign saved at
+// `from`, walked to a square beside (x, y) and facing it, written to `fixture`.
+void write_approach_fixture(const std::filesystem::path &from, unsigned x, unsigned y,
+                            const std::filesystem::path &fixture,
+                            const std::filesystem::path &directory)
+{
+    auto trip = load_expedition(from, directory);
+    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    for (unsigned facing = 0; facing < 4; ++facing)
+    {
+        const int nx = int(x) - dx[facing], ny = int(y) - dy[facing];
+        if (nx < 0 || ny < 0 || nx > 15 || ny > 15)
+            continue;
+        const auto &cell = trip.town.map().at(unsigned(nx), unsigned(ny));
+        if (cell.walls[facing] && cell.doors[facing] != 1)
+            continue;
+        walk_to(trip.town, trip.party, unsigned(nx), unsigned(ny));
+        face(trip.town, trip.party, facing);
+        write_campaign_file(fixture, encode_campaign(*trip.party, &trip.town,
+                            campaign_asset_identity(directory)));
+        return;
+    }
+    throw std::runtime_error("No open square beside the play-test target");
+}
+
 // Below Kuto's Well: an arrow volley, Norris the Gray's band, his treasure and
 // the hideout where the party then rests undisturbed. From a save made before
 // Norris, surrendering instead costs the party its money and frees it above.
@@ -1347,6 +1372,12 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
                           const std::filesystem::path &directory)
 {
     auto &[party, town] = trip;
+    if (const auto *fixture = std::getenv("OPENGOLD_KUTO_WELL_FIXTURE"))
+    {
+        const auto plaza = folder / "kutos-plaza.ogs";
+        write_campaign_file(plaza, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+        write_approach_fixture(plaza, 7, 7, fixture, directory);
+    }
     walk_to(town, party, 7, 7, catacomb_answer("FIGHT"), false, true);
     check(town.snapshot().area_id == 32, "The well's rungs lead down to the catacombs");
     face(town, party, 2);
@@ -1367,6 +1398,8 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     // No camping here: until Norris falls, his band interrupts every rest.
     const auto save = folder / "before-norris.ogs";
     write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    if (const auto *fixture = std::getenv("OPENGOLD_KUTO_NORRIS_FIXTURE"))
+        write_approach_fixture(save, 10, 3, fixture, directory);
 
     const auto lead = party->state().slots[0];
     const auto experience = party->member(lead).experience;

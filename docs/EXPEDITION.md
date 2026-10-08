@@ -78,6 +78,22 @@ Norris the Gray's band (fought or surrendered to), his treasure and the hideout
 are supported; finds that seem to need the original Search mode are not, see the
 [Kuto's Well audit](audits/kutos-well.md).
 
+`tests/playtest_kutos_well.gd` play-tests the area in the game window. The
+expedition test writes its two campaign fixtures when asked: beside the well
+(`OPENGOLD_KUTO_WELL_FIXTURE`) and beside Norris's hall
+(`OPENGOLD_KUTO_NORRIS_FIXTURE`). The script loads each through Load game,
+climbs down into the arrow volley, meets Norris and starts his fight, and
+saves a screenshot at each step with a dialogue report. It is not a CTest
+check; run it with a window and a scratch `HOME`:
+
+```sh
+OPENGOLD_KUTO_WELL_FIXTURE=/tmp/kuto/well.ogs OPENGOLD_KUTO_NORRIS_FIXTURE=/tmp/kuto/norris.ogs \
+OPENGOLD_GAME_DIR=/path/to/POOLRAD build/opengold_expedition_tests
+HOME=/tmp/kuto/home OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
+    --script tests/playtest_kutos_well.gd -- --kuto-well=/tmp/kuto/well.ogs \
+    --kuto-norris=/tmp/kuto/norris.ogs --playtest-out=/tmp/kuto/out
+```
+
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
 supported from commission to reward; see [QUESTS.md](QUESTS.md). The installed
 test plays it end to end.
