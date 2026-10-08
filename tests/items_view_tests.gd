@@ -52,6 +52,14 @@ func use(label: String) -> void:
     items.select(index); items.item_selected.emit(index); await settle()
     current_scene.get_node("UseItemAction").pressed.emit(); await settle()
 
+func click(cell: Vector2i) -> void:
+    var canvas: Control = current_scene.get_node("BattlefieldScroll/Canvas")
+    var point: Vector2 = canvas.get_global_transform_with_canvas() * ((Vector2(cell) + Vector2(0.5, 0.5)) * current_scene.cell_pixels())
+    for down in [true, false]:
+        var event := InputEventMouseButton.new(); event.button_index = MOUSE_BUTTON_LEFT
+        event.position = point; event.pressed = down; root.push_input(event, true)
+    await settle()
+
 func run_checks() -> void:
     path = ProjectSettings.globalize_path("user://checks/combat.save")
     original = FileAccess.get_file_as_bytes(path) if FileAccess.file_exists(path) else null
@@ -82,6 +90,12 @@ func run_checks() -> void:
                 if prompt().contains(tr("Dodge")): break
                 await key(KEY_A)
             require(prompt() == tr("Selected: {action}. Press Space to use it.").format({"action": tr("Dodge")}), "An untargeted action asks for Space: " + prompt())
+            await load_fixture("gear-ally")
+            await click(Vector2i(1, 3))
+            require(prompt() == tr("It is not {name}'s turn.").format({"name": "Ally"}), "Clicking an ally shows it: " + prompt())
+            await use("Torch attack")
+            await click(Vector2i(2, 1))
+            require(current_scene.get_node("Log").get_parsed_text().contains("Hero -> Troll"), "After looking at an ally, a chosen action still strikes the clicked target")
             await load_fixture("gear-bow")
             require(item_index("Shoot") < 0, "A shield keeps the bow from being shot")
             await use("Take off shield")

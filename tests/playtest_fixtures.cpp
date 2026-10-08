@@ -176,6 +176,10 @@ int main()
         const Participant troll_far{98, "troll", "Troll", 1, {11, 5}};
         write(*module, directory, "gear-torch",
               battle(*module, fighter(), {troll_beside}, sword_and_shield, pack), "torch");
+        // The same with a party ally, to click on before acting.
+        write(*module, directory, "gear-ally",
+              battle(*module, fighter(), {{2, "healer", "Ally", 0, {1, 3}}, troll_beside},
+                     sword_and_shield, pack), "torch");
         write(*module, directory, "gear-flasks",
               battle(*module, fighter(), {troll_near}, sword_and_shield, pack), "throw_oil");
         write(*module, directory, "gear-bow",

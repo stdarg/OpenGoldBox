@@ -25,6 +25,8 @@ Items row above the log: Use on an action aimed at a creature selects it for a
 click, and Use on Take off shield acts at once. The prompt says what finishes
 the selected action: click a highlighted square to move, click a highlighted
 creature for an aimed action, or press Space for one without a target.
+Clicking another party member shows it ("It is not ...'s turn"); choosing an
+action returns to the character whose turn it is, so the next click acts.
 
 ## Play-testing a chosen party
 

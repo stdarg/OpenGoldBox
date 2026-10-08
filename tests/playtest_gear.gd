@@ -155,14 +155,8 @@ func campaign_phase() -> void:
         while press(combat(), ["Keep initiative", "Decline reaction", "Keep current"]):
             await settle(10)
         if await use_item("Throw Alchemist's Fire"):
-            # A click on a party member drops the selection, so pick the flask
-            # from the Items row again before each square.
-            for y in range(8):
-                for x in range(14):
-                    if log_text().contains("throws Alchemist's Fire"): break
-                    await use_item("Throw Alchemist's Fire")
-                    await click(Vector2i(x, y))
-            # The flask may reach only party members; if so, try again next turn.
+            await click_until("throws Alchemist's Fire")
+            # The sweep can miss a target that moved; if so, try again next turn.
             if log_text().contains("throws Alchemist's Fire"):
                 await capture("campaign-1-fire")
                 expect("campaign", "throws Alchemist's Fire")

@@ -920,9 +920,18 @@ void CombatView::load_game()
     }
 }
 
+// Only the acting character can take an action, so choosing one stops showing
+// another party member; otherwise a click on the target would be ignored.
+void CombatView::select_acting_character()
+{
+    if (demo_ && demo_->has_combat())
+        selected_ = demo_->combat().snapshot().actor;
+}
+
 void CombatView::select_mode(String verb)
 {
     error_.clear();
+    select_acting_character();
     mode_ = spell_verb(verb.utf8().get_data(), spell_slot_);
     if (mode_ == "dash" || mode_ == "dodge" || mode_ == "disengage")
     {
@@ -1487,6 +1496,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
                     actions.push_back(command.verb);
             if (!actions.empty())
             {
+                select_acting_character();
                 const auto current = std::find(actions.begin(), actions.end(), mode_);
                 mode_ =
                     actions[current == actions.end()

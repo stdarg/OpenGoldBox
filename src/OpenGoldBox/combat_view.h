@@ -141,6 +141,7 @@ class CombatView : public godot::Control
     [[nodiscard]] bool aims_area(std::string_view verb) const;
     void aim_area_at(opengold::rules::Cell cell);
     void select_party(opengold::rules::EntityId id);
+    void select_acting_character();
     void move_selected(opengold::rules::Cell direction);
     void use_cunning_action();
     void cunning_selected(std::int64_t);
