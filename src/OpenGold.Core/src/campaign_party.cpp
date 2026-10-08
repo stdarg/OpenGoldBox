@@ -298,6 +298,39 @@ void CampaignParty::select(unsigned slot)
     state_.selected = slot;
 }
 
+MemberId CampaignParty::leader() const
+{
+    if (state_.leader &&
+            std::find(state_.slots.begin(), state_.slots.end(), state_.leader) != state_.slots.end())
+        return state_.leader;
+    for (const auto id : state_.slots)
+        if (id)
+            return id;
+    return 0;
+}
+
+void CampaignParty::make_leader(MemberId id)
+{
+    if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end() || !id)
+        throw std::runtime_error("Member is not in party");
+    state_.leader = id;
+}
+
+MemberId CampaignParty::spokesman() const
+{
+    const auto conscious = [&](MemberId id)
+    {
+        const auto &vitals = member(id).vitals;
+        return id && !vitals.dead && vitals.hit_points > 0;
+    };
+    if (const auto first = leader(); first && conscious(first))
+        return first;
+    for (const auto id : state_.slots)
+        if (id && conscious(id))
+            return id;
+    return 0;
+}
+
 void CampaignParty::join(MemberId id, bool npc)
 {
     if (std::find(state_.slots.begin(), state_.slots.end(), id) != state_.slots.end())
@@ -379,6 +412,8 @@ void CampaignParty::remove(MemberId id)
     if (it == state_.slots.end())
         throw std::runtime_error("Member is not in party");
     *it = 0;
+    if (state_.leader == id)
+        state_.leader = 0;
     if (!selected())
         for (unsigned i = 0; i < 8; ++i)
             if (state_.slots[i])
@@ -1146,7 +1181,9 @@ void CampaignParty::validate(const PartyState &state)
 {
     if (state.roster.size() > 128 || state.selected >= 8 || !state.next_id ||
             state.claimed_rewards.size() > 1024 || state.subminute_milliseconds >= 60000 ||
-            !state.next_combat_scope || !state.next_rest_session)
+            !state.next_combat_scope || !state.next_rest_session ||
+            (state.leader &&
+             std::find(state.slots.begin(), state.slots.end(), state.leader) == state.slots.end()))
         throw std::runtime_error("Invalid party checkpoint");
     std::set<MemberId> ids, active;
     std::set<std::string> sources, creation_sources;

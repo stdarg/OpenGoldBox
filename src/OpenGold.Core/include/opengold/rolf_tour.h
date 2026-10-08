@@ -259,6 +259,10 @@ class RolfTourSession
     std::uint64_t damage_request_{};
     std::vector<opengold::MemberId> temple_targets_;
     std::vector<unsigned> who_slots_;
+    // How a pre-combat meeting ended without a fight, said when its event ends.
+    std::string encounter_outcome_;
+    // Whether this event's script asked which member acts (WHO).
+    bool member_chosen_{};
     std::vector<Equipment> treasure_;
     std::optional<Image> picture_;
     std::optional<EclMachine> checkpoint_;
@@ -305,6 +309,7 @@ class RolfTourSession
                                          bool items) const;
     void show_encounter_menu();
     void fit_staged_encounter();
+    void announce_spokesman();
     bool choose_encounter(std::size_t choice);
     [[nodiscard]] const PhlanResources &area_resources() const;
     void change_area(unsigned id);

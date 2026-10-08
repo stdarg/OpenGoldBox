@@ -56,6 +56,22 @@ func open_slot(slot: String) -> void:
     await press("SaveSlots/Action"); await press("SaveSlots/Action")
     require(not current_scene.get_node("SaveSlots").visible, "Save loaded: " + slot)
 
+# The first member leads until another is made leader from its sheet; the
+# exploration party list and the party roster both mark the leader with a star.
+func check_leader() -> void:
+    var first: Button = town().get_node("PartyList/Rows/Member0")
+    var second: Button = town().get_node("PartyList/Rows/Member1")
+    var roster: ItemList = current_scene.get_node("PartyPanel/Roster")
+    require(first.text.begins_with("★ ") and not second.text.begins_with("★"), "The first member leads: " + first.text)
+    second.pressed.emit(); await settle()
+    var sheet: Window = current_scene.get_node("TownSheet")
+    var make: Button = sheet.get_node("MakeLeader")
+    require(sheet.visible and not make.disabled, "A member's sheet offers Make leader")
+    make.pressed.emit(); await settle()
+    require(make.disabled and second.text.begins_with("★ ") and not first.text.begins_with("★"), "Make leader moves the star: " + second.text)
+    require(roster.get_item_text(1).begins_with("★ ") and not roster.get_item_text(0).begins_with("★"), "The party roster marks the new leader")
+    sheet.get_node("Close").pressed.emit(); await settle()
+
 # Steps into the trolls' room and reads its story until the close-up shows.
 func reach_close_up() -> void:
     await press("CampaignTown/Forward")
@@ -94,6 +110,7 @@ func run_checks() -> void:
     await press("PartyPanel/Explore")
     require(town().get_node("Title").text == "OPENGOLDBOX  /  Slums", "The title names the area: " + town().get_node("Title").text)
     require(not dialogue().contains("Rolf"), "Exploring the Slums does not follow Rolf: " + dialogue())
+    await check_leader()
     await reach_close_up()
     var continue_button: Button = town().get_node("Continue")
     require(not continue_button.disabled, "Continue can start the fight from the close-up")

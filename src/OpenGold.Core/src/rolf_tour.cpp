@@ -621,6 +621,8 @@ void RolfTourSession::advance(double seconds)
             {
                 if (request.vertical && !request.text.empty())
                     snapshot_.dialogue += "\n" + request.text;
+                if (request.instruction && request.instruction->opcode == 44)
+                    announce_spokesman();
                 snapshot_.choices = request.choices;
                 menu_request_ = request.id;
                 snapshot_.continue_ticket = ++next_ticket_;

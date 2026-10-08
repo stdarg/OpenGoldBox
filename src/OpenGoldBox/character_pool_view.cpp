@@ -49,6 +49,7 @@ void CharacterCreationView::pool_layout()
     place("PoolModal/Close", Rect2(w - 146, h - 58, 126, 36));
     place("TownSheet/Text", Rect2(24, 24, w - 48, h - 100));
     place("TownSheet/Close", Rect2(w - 154, h - 56, 130, 36));
+    place("TownSheet/MakeLeader", Rect2(w - 314, h - 56, 150, 36));
 }
 
 void CharacterCreationView::show_pool()
@@ -149,7 +150,9 @@ void CharacterCreationView::town_member_selected(std::int64_t slot)
     if (slot < 0 || slot >= 8 || !campaign_->state().slots[slot])
         return;
     const auto &m = campaign_->member(campaign_->state().slots[slot]);
+    town_sheet_member_ = m.id;
     get_node<RichTextLabel>("TownSheet/Text")->set_text(sheet_text(m.character, &m));
+    get_node<Button>("TownSheet/MakeLeader")->set_disabled(m.id == campaign_->leader());
     get_node<Window>("TownSheet")->popup_centered();
 }
 

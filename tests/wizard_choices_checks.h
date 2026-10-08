@@ -13,7 +13,7 @@ void wizard_choices_checks()
     const auto id = party.add_pc(Character(*creation_rules, draft, {}));
     party.award_experience(2700, "wizard-choice-xp");
     const auto original = saved(party);
-    check(original.starts_with("OPENGOLD-CAMPAIGN 23\n"),
+    check(original.starts_with("OPENGOLD-CAMPAIGN 24\n"),
           "Explicit independent creation uses the current campaign format");
     SpellChoices bad;
     bad.prepared = std::vector<std::string> {};

@@ -37,6 +37,9 @@ using namespace opengold;
 
 namespace
 {
+// The exploration screen's gold, which marks the leader in both lists.
+const Color leader_gold(215 / 255.f, 180 / 255.f, 121 / 255.f);
+
 String gs(std::string_view text)
 {
     return String::utf8(text.data(), text.size());
@@ -110,6 +113,10 @@ void CharacterCreationView::setup_party()
                   callable_mp(this, &CharacterCreationView::party_action).bind(actions[i]));
     get_node<ItemList>("PartyPanel/Roster")
     ->connect("item_selected", callable_mp(this, &CharacterCreationView::party_selected));
+    get_node<Button>("PartyPanel/MakeLeader")
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::make_roster_leader));
+    get_node<Button>("TownSheet/MakeLeader")
+    ->connect("pressed", callable_mp(this, &CharacterCreationView::make_town_sheet_leader));
     get_node<Button>("PartyPanel/Pool")
     ->connect("pressed", callable_mp(this, &CharacterCreationView::show_pool));
     get_node<ItemList>("PoolModal/List")
@@ -153,7 +160,8 @@ void CharacterCreationView::party_layout()
     place("AddParty", Rect2(218 + page_rect_.size.x - 190, h - 60, 190, 38));
     place("ReturnParty", Rect2(w - 218, 20, 190, 36));
     place("PartyPanel/Title", Rect2(24, 22, w - 48, 40));
-    place("PartyPanel/Roster", Rect2(24, 90, 300, h - 300));
+    place("PartyPanel/Roster", Rect2(24, 90, 300, h - 350));
+    place("PartyPanel/MakeLeader", Rect2(24, h - 252, 300, 36));
     place("PartyPanel/Sheet", Rect2(350, 90, w - 650, h - 380));
     place("PartyPanel/Portrait", Rect2(w - 284, 90, 264, 264));
     place("PartyPanel/ReadySprite", Rect2(w - 284, 364, 120, 120));
@@ -202,8 +210,11 @@ void CharacterCreationView::refresh_party()
     for (const auto &m : state.roster)
     {
         auto slot = std::find(state.slots.begin(), state.slots.end(), m.id);
-        list->add_item(gs(m.character.sheet().name) +
+        const bool leader = slot != state.slots.end() && m.id == campaign_->leader();
+        list->add_item((leader ? String::utf8("★ ") : String()) + gs(m.character.sheet().name) +
                        (slot == state.slots.end() ? i18n::text(" (Reserve)") : String()));
+        if (leader)
+            list->set_item_custom_fg_color(list->get_item_count() - 1, leader_gold);
     }
     auto *items = get_node<ItemList>("PartyPanel/Inventory");
     items->clear();
@@ -252,6 +263,37 @@ void CharacterCreationView::refresh_party()
             {"Remove", "Rejoin", "Equip", "Unequip", "Explore", "Combat", "Modifiers", "SavingThrows"
             })
         get_node<Button>(gs(std::string("PartyPanel/") + name))->set_disabled(state.roster.empty());
+    // Only an active member who is not already the leader can be made leader.
+    const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;
+    get_node<Button>("PartyPanel/MakeLeader")
+    ->set_disabled(!chosen || chosen == campaign_->leader() ||
+                   std::find(state.slots.begin(), state.slots.end(), chosen) == state.slots.end());
+}
+
+void CharacterCreationView::make_roster_leader()
+{
+    const auto &roster = campaign_->state().roster;
+    if (roster_index_ >= roster.size())
+        return;
+    campaign_->make_leader(roster[roster_index_].id);
+    show_leader_change();
+}
+
+void CharacterCreationView::make_town_sheet_leader()
+{
+    if (!town_sheet_member_)
+        return;
+    campaign_->make_leader(town_sheet_member_);
+    get_node<Button>("TownSheet/MakeLeader")->set_disabled(true);
+    show_leader_change();
+}
+
+// The roster and the exploration party list both mark the leader.
+void CharacterCreationView::show_leader_change()
+{
+    refresh_party();
+    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+        town->refresh();
 }
 
 // Original-data integration check, also runnable in the packaged executable.

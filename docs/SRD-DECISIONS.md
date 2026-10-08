@@ -615,3 +615,20 @@ catalog keeps the SRD's Reach property as data. This restores the original's
 tactic, which the cluebook recommends against trolls, of a front rank in melee
 with archers one square behind it. The Troll's `reach` row is removed.
 
+## LEADER-1 (2026-10-08): a party leader speaks for the party
+
+The original asks which character speaks each time the party parleys. The user
+chose a standing leader instead: the first member until another is made leader
+with **Make leader** on a character's sheet (exploration) or under the party
+roster. The leader's name shows with a gold star. The leader parleys: twice its
+Charisma goes into the scripts' reaction rolls (variable `0x6DCF`). The
+original's formula is unknown; plain Charisma left the scripts' better outcomes
+out of reach, New Phlan's own script doubles the value, and the user chose
+twice Charisma (Charisma 12 avoids a Slums kobold fight 30% of the time
+parleying Abusive, Charisma 18 70%). The leader is the
+first buyer in a shop unless the script has just asked which member acts. A
+leader who is down hands the parley to the next conscious member. As in the
+original, Parley replaces Advance once the monsters are adjacent, and a meeting
+that ends without a fight says so ("The monsters go on their way.", "You get
+away.").
+

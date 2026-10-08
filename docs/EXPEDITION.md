@@ -49,8 +49,11 @@ fills the 3D view, with "Press any key to fight.", until any key or Continue is
 pressed, then combat opens. See
 [close-up animations](graphics-format.md#close-up-animations).
 
-The pre-combat menu uses Fight, Wait, Flee, Advance and Parley with the script's
-response table. Pre-combat escape is separate from retreat during combat, which
+The pre-combat menu offers Fight, Wait, Flee and Advance with the script's
+response table; once the monsters are adjacent, Parley replaces Advance. The
+party's leader parleys ([LEADER-1](SRD-DECISIONS.md#leader-1-2026-10-08-a-party-leader-speaks-for-the-party)),
+and a meeting that ends without a fight says so. A successful Flee lets the
+script move the party, as the original's wild flight does. Pre-combat escape is separate from retreat during combat, which
 remains deferred. Supported modern profiles have no original party surprise
 modifiers. Surprise rolls share the checkpointed ECL random stream; the resulting
 surprise uses initiative disadvantage in the selected SRD module. Original

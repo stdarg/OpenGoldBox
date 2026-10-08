@@ -505,6 +505,9 @@ theme_override_font_sizes/normal_font_size = 17
 [node name="Close" type="Button" parent="TownSheet"]
 text = "Close"
 
+[node name="MakeLeader" type="Button" parent="TownSheet"]
+text = "Make leader"
+
 [node name="List" type="ItemList" parent="PoolModal"]
 theme_override_font_sizes/font_size = 16
 

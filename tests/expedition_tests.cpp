@@ -542,7 +542,7 @@ std::size_t peaceful(const por::TourSnapshot &s)
 {
     if (s.dialogue == "Choose a party member.")
         return 0;
-    if (s.choices.size() == 5 && s.choices[0] == "Fight")
+    if (s.choices.size() == 4 && s.choices[0] == "Fight")
         return 2;
     for (const auto *safe :
             {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"
@@ -787,6 +787,7 @@ void general_store_gear(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
     auto &[party, town] = trip;
+    party->make_leader(party->state().slots[2]);
     walk_to(town, party, 15, 8);
     face(town, party, 0);
     town.explore(por::ExplorationCommand::look);
@@ -795,6 +796,7 @@ void general_store_gear(const std::filesystem::path &directory)
         return s.dialogue.find("CAN I SHOW") != std::string::npos ? std::size_t{0} : peaceful(s);
     });
     check(town.snapshot().phase == por::TourPhase::shopping, "The general store opens");
+    check(party->selected() == party->leader(), "The leader deals with the shopkeeper");
     const auto &stock = town.shop_stock();
     std::set<std::string> sold;
     for (const auto &item : stock)
@@ -1152,7 +1154,7 @@ void revisit_ohlo(Expedition &trip)
 // Fights the monsters that interrupt a camp instead of fleeing them.
 std::size_t stand_and_fight(const por::TourSnapshot &s)
 {
-    return s.choices.size() == 5 && s.choices[0] == "Fight" ? 0 : peaceful(s);
+    return s.choices.size() == 4 && s.choices[0] == "Fight" ? 0 : peaceful(s);
 }
 
 // Camps on a Slums street, where the original script rolls for interruptions,
@@ -1584,6 +1586,88 @@ void write_slums_fixtures(const std::filesystem::path &save, const std::filesyst
                         encode_campaign(*party, &town, campaign_asset_identity(directory)));
 }
 
+// Camps on a Slums street until monsters interrupt with the encounter menu,
+// then answers it with `answer` until the event ends. Returns the menus shown.
+std::vector<por::TourSnapshot> meet_camp_monsters(Expedition &trip, const Answer &answer)
+{
+    auto &[party, town] = trip;
+    if (town.snapshot().area_id == 0)
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+    }
+    walk_to(town, party, 14, 4);
+    std::vector<por::TourSnapshot> shown;
+    for (unsigned tries = 0; tries < 80 && shown.empty(); ++tries)
+    {
+        check(town.camp(RestKind::short_rest), "Camp starts");
+        while (town.snapshot().phase == por::TourPhase::running ||
+                town.snapshot().phase == por::TourPhase::awaiting_continue)
+        {
+            const auto &s = town.snapshot();
+            if (s.phase == por::TourPhase::running)
+            {
+                town.advance(.5);
+                continue;
+            }
+            const bool menu =
+                !s.choices.empty() && (s.choices[0] == "Fight" || s.choices[0] == "HAUGHTY");
+            if (menu)
+                shown.push_back(s);
+            check(town.choose(s.continue_ticket, menu ? answer(s) : peaceful(s)),
+                  "Answer accepted");
+        }
+        if (shown.empty())
+            if (const auto &spending = party->state().short_rest)
+                party->finish_short_rest(spending->ticket);
+    }
+    check(!shown.empty(), "Monsters interrupt a camp on a Slums street");
+    return shown;
+}
+
+// The pre-combat menu offers Advance while the monsters are at a distance and
+// Parley once they are adjacent; the leader parleys with its Charisma, and a
+// meeting that ends without a fight says how.
+void slums_encounter_menu(const std::filesystem::path &save, const std::filesystem::path &directory)
+{
+    auto talkers = load_expedition(save, directory);
+    MemberId charming{};
+    for (const auto id : talkers.party->state().slots)
+        if (id && (!charming || talkers.party->member(id).character.sheet().scores[5] >
+                   talkers.party->member(charming).character.sheet().scores[5]))
+            charming = id;
+    talkers.party->make_leader(charming);
+    const auto &name = talkers.party->member(charming).character.sheet().name;
+    unsigned reaction_score = 0;
+    const auto menus = meet_camp_monsters(talkers, [&](const por::TourSnapshot & s) -> std::size_t
+    {
+        if (s.choices[0] != "HAUGHTY")
+            return 3; // Advance until Parley, then Abusive.
+        reaction_score = talkers.town.script_variable(0x6DCF);
+        return 4;
+    });
+    check(menus.front().choices == std::vector<std::string> {"Fight", "Wait", "Flee", "Advance"},
+          "Distant monsters can be advanced on, not parleyed with");
+    const auto parley = std::find_if(menus.begin(), menus.end(), [](const auto & s)
+    {
+        return s.choices[0] == "HAUGHTY";
+    });
+    check(parley != menus.end() && parley[-1].choices.back() == "Parley",
+          "Adjacent monsters can be parleyed with");
+    check(parley->dialogue.ends_with("\n" + name + " speaks for the party.") &&
+          reaction_score == 2u * talkers.party->member(charming).character.sheet().scores[5],
+          "The leader speaks for the party with twice its Charisma");
+
+    auto waiting = load_expedition(save, directory);
+    (void)meet_camp_monsters(waiting, [](const por::TourSnapshot &) -> std::size_t { return 1; });
+    check(waiting.town.snapshot().dialogue.find("The monsters go on their way.") != std::string::npos,
+          "Waiting monsters that leave say so");
+    auto fleeing = load_expedition(save, directory);
+    (void)meet_camp_monsters(fleeing, [](const por::TourSnapshot &) -> std::size_t { return 2; });
+    check(fleeing.town.snapshot().dialogue.starts_with("You get away."),
+          "A party that escapes says so");
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -1629,6 +1713,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         if (const auto *fixtures = std::getenv("OPENGOLD_SLUMS_FIXTURES"))
             write_slums_fixtures(save, fixtures, directory);
         slums_set_encounters(save, directory);
+        slums_encounter_menu(save, directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -1659,7 +1744,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
               "returned, paid the inn with change, rested, delivered Ohlo's potion, finished "
               "it again from each Slums save, reloaded, revisited and camped in the Slums, fought its "
-              "hobgoblins and monster leaders, met its trolls, won fights in Kuto's Well, "
+              "hobgoblins and monster leaders, advanced on, parleyed with, waited for and fled "
+              "from its street monsters, met its trolls, won fights in Kuto's Well, "
               "defeated Norris and surrendered to him from a save.\n";
 }
 

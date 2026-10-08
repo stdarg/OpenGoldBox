@@ -90,3 +90,6 @@ texture_filter = 1
 
 [node name="Pool" type="Button" parent="."]
 text = "Character Pool"
+
+[node name="MakeLeader" type="Button" parent="."]
+text = "Make leader"

@@ -11,6 +11,13 @@ Run from PowerShell:
 
 ## Preview flow
 
+The party's **leader** speaks for it in a parley and is the first buyer in a
+shop. The first member leads until **Make leader** on another member's sheet
+(click its row while exploring) or under the party roster is pressed; the
+leader's name shows with a gold star in both lists. See
+[LEADER-1](SRD-DECISIONS.md#leader-1-2026-10-08-a-party-leader-speaks-for-the-party).
+Campaign saves become format 24.
+
 Losing shared-party combat opens a defeat window with **Reload a Saved Game**
 and **Exit to OS**. Return to party is blocked; defeat does not revive anyone.
 Reload uses the existing named-save dialog. Cancelling or rejecting a damaged

@@ -265,6 +265,8 @@ void RolfTourSession::begin_event(unsigned slot)
     saved_selected_character_ = selected_character_;
     event_stage_ = slot == 0 ? 1 : slot == 2 ? 4 : 2;
     machine_.bind_variable(0x6DC9, 0);
+    encounter_outcome_.clear();
+    member_chosen_ = false;
     bool off_map = false;
     if (slot == 0 && pending_movement_)
     {
@@ -277,6 +279,14 @@ void RolfTourSession::begin_event(unsigned slot)
     }
     machine_.bind_variable(0x6DD5, off_map ? 1 : 0);
     machine_.bind_variable(0x6DCA, slot == 1 ? 2 : 0);
+    // The spokesman's reaction score (0x6DCF), which the scripts add to reaction
+    // rolls. The original's formula is unknown; twice Charisma, as New Phlan's
+    // own script doubles it, was chosen (LEADER-1).
+    if (campaign_)
+        if (const auto speaker = campaign_->spokesman())
+            machine_.bind_variable(
+                0x6DCF,
+                static_cast<std::uint16_t>(2 * campaign_->member(speaker).character.sheet().scores[5]));
     if (!machine_.start(slot))
     {
         fail("Unable to start town script");
@@ -514,6 +524,11 @@ void RolfTourSession::finish_event()
             synchronize_clock();
         }
     }
+    if (!encounter_outcome_.empty())
+    {
+        snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") + encounter_outcome_;
+        encounter_outcome_.clear();
+    }
     if (event_stage_ == 5)
         snapshot_.dialogue += "\nThe rest was interrupted. Rest again to recover.";
     checkpoint_.reset();
@@ -724,7 +739,8 @@ void RolfTourSession::show_encounter_menu()
     if (snapshot_.dialogue.empty())
         snapshot_.dialogue = args[9].text;
     announce_camp_attack();
-    snapshot_.choices = {"Fight", "Wait", "Flee", "Advance", "Parley"};
+    // As in the original, Parley replaces Advance once the monsters are adjacent.
+    snapshot_.choices = {"Fight", "Wait", "Flee", encounter_distance_ ? "Advance" : "Parley"};
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.continue_ticket = ++next_ticket_;
     ++snapshot_.revision;
@@ -783,10 +799,23 @@ void RolfTourSession::announce_camp_attack()
         snapshot_.dialogue = std::string(attack) + "\n" + snapshot_.dialogue;
 }
 
+// Names who parleys: the spokesman whose reaction score the event started with.
+void RolfTourSession::announce_spokesman()
+{
+    if (!campaign_)
+        return;
+    if (const auto speaker = campaign_->spokesman())
+        snapshot_.dialogue +=
+            "\n" + campaign_->member(speaker).character.sheet().name + " speaks for the party.";
+}
+
 bool RolfTourSession::choose_encounter(std::size_t choice)
 {
-    if (!encounter_menu_ || choice > 4)
+    if (!encounter_menu_ || choice > 3)
         return false;
+    // The fourth choice is Advance at a distance and Parley when adjacent.
+    if (choice == 3 && encounter_distance_ == 0)
+        choice = 4;
     const auto &request = *encounter_menu_;
     const auto &args = request.arguments;
     const auto response = args[4 + choice].value;
@@ -829,6 +858,11 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
     reply.writes = {{args[3].value, static_cast<std::uint16_t>(result)}};
     if (!machine_.resume_host(request.id, reply))
         return false;
+    // The script ends the meeting quietly (0) or moves a fleeing party (2) and
+    // clears the text; the event's end says what happened.
+    encounter_outcome_ = result == 0   ? "The monsters go on their way."
+                         : result == 2 ? "You get away."
+                         : "";
     encounter_menu_.reset();
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
@@ -899,6 +933,7 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
             return false;
         campaign_->select(slot);
         selected_character_ = slot;
+        member_chosen_ = true;
         who_request_ = 0;
         who_slots_.clear();
         snapshot_.phase = TourPhase::running;
@@ -1309,6 +1344,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         if (machine_.variable(0x6E6C) == 1)
         {
+            // The leader deals with shopkeepers unless the event already asked who;
+            // another buyer can still be chosen.
+            if (campaign_ && !member_chosen_)
+                for (unsigned slot = 0; slot < 8; ++slot)
+                    if (campaign_->state().slots[slot] && campaign_->state().slots[slot] == campaign_->leader())
+                        campaign_->select(slot);
             if (campaign_ && !campaign_->state().slots.at(campaign_->state().selected))
                 throw EclError("Shopping requires a selected party member");
             read_character();

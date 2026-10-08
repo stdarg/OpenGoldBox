@@ -94,6 +94,7 @@ struct PartyState
     std::array<MemberId, 8> slots{};
     MemberId next_id{1};
     unsigned selected{};
+    MemberId leader{}; // Speaks for the party and buys in shops; 0 means the first member.
     std::uint64_t time_minutes{}, random_state{42};
     std::vector<std::string> claimed_rewards;
     unsigned subminute_milliseconds{};
@@ -125,6 +126,12 @@ class CampaignParty
     }
 
     void select(unsigned slot);
+    // The designated leader, or the first member when none is designated.
+    [[nodiscard]] MemberId leader() const;
+    void make_leader(MemberId id);
+    // Who speaks for the party now: the leader, or the first conscious member
+    // when the leader is down. 0 when nobody can speak.
+    [[nodiscard]] MemberId spokesman() const;
     MemberId add_pc(Character character);
     MemberId recruit(std::string source, Character converted, unsigned morale = 100);
     void rejoin(MemberId id);

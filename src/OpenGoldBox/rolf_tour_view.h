@@ -83,6 +83,9 @@ class RolfTourView : public godot::Control
 
     bool check_expedition_step();
 
+    // Redraws from the session and party, e.g. after the leader changes.
+    void refresh();
+
   protected:
     static void _bind_methods();
     void _notification(int what);
@@ -119,7 +122,6 @@ class RolfTourView : public godot::Control
     std::set<std::pair<unsigned, unsigned>> check_refused_edges_;
     std::optional<std::pair<unsigned, unsigned>> check_pending_edge_;
     void layout();
-    void refresh();
     void check_district_labels(const opengold::por::TourSnapshot &s);
     void select_buyer(unsigned slot);
     [[nodiscard]] std::vector<unsigned> occupied_slots() const;

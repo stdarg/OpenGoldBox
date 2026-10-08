@@ -669,10 +669,19 @@ String rest_notice(const std::string &resource, const std::string &text)
             N_("Rest denied: no active member is eligible."),
             N_("The rest was interrupted. Rest again to recover."),
             N_("Your camp is attacked!"),
+            N_("The monsters go on their way."),
+            N_("You get away."),
             N_("Locked.")
         })
         result = result.replace(String::utf8(source), i18n::text(source));
-    return result;
+    // The parley's spokesman line carries a name.
+    const String speaks = " speaks for the party.";
+    auto lines = result.split("\n");
+    for (int n = 0; n < lines.size(); ++n)
+        if (lines[n].ends_with(speaks))
+            lines[n] = i18n::format(N_("{name} speaks for the party."),
+            {{"name", lines[n].substr(0, lines[n].length() - speaks.length())}});
+    return String("\n").join(lines);
 }
 
 // Choices the campaign host adds use the engine catalog; the rest are original.
@@ -1000,17 +1009,19 @@ void RolfTourView::refresh()
         button->set_visible(id != 0);
         if (!id)
             continue;
-        // While shopping, the buyer's row is drawn in gold.
+        // While shopping, the buyer's row is drawn in gold; otherwise the leader's.
+        const bool leader = id == campaign_->leader();
         for (const char *color : {"font_color", "font_hover_color", "font_focus_color"})
-            if (shopping && campaign_->state().selected == slot)
+            if (shopping ? campaign_->state().selected == slot : leader)
                 button->add_theme_color_override(color, gold);
             else
                 button->remove_theme_color_override(color);
         const auto &m = campaign_->member(id);
         const auto &cs = m.character.sheet();
+        const auto name = (leader ? String::utf8("★ ") : String()) + String::utf8(cs.name.c_str());
         const auto text = i18n::format("{name}\n{class} / AC {ac} / HP {current}/{maximum}",
         {
-            {"name", String::utf8(cs.name.c_str())},
+            {"name", name},
             {"class", i18n::text(cs.character_class)},
             {"ac", campaign_->profile(id).armor_class},
             {"current", m.vitals.hit_points},
@@ -1020,7 +1031,7 @@ void RolfTourView::refresh()
         button->set_tooltip_text(text);
         auto *arrow = button->get_node<Button>("Advance");
         const auto width = Vector2(button->get_theme_font("font")->call(
-                                       "get_string_size", String::utf8(cs.name.c_str()), 0, -1,
+                                       "get_string_size", name, 0, -1,
                                        button->get_theme_font_size("font_size")))
                            .x;
         arrow->set_position(Vector2(std::min(width + 16, button->get_size().x - 36), 2));

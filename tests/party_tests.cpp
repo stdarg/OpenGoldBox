@@ -724,6 +724,34 @@ void roster_and_equipment()
           "All classes can display an equipment profile outside combat");
 }
 
+// The leader speaks for the party: the first member until another is made
+// leader, the next conscious member while the leader is down, and saved.
+void party_leader()
+{
+    CampaignParty party(module());
+    const auto first = party.add_pc(character("fighter", "Ada"));
+    const auto second = party.add_pc(character("fighter", "Bea"));
+    check(party.leader() == first && party.spokesman() == first, "The first member leads at first");
+    party.make_leader(second);
+    check(party.leader() == second && party.spokesman() == second, "Another member can be made leader");
+    auto down = party.checkpoint();
+    for (auto &member : down.roster)
+        if (member.id == second)
+            member.vitals.hit_points = 0;
+    party.restore(down);
+    check(party.leader() == second && party.spokesman() == first,
+          "The next conscious member speaks while the leader is down");
+    const auto saved = encode_campaign(party, nullptr, "leader");
+    CampaignParty loaded(module());
+    loaded.restore(
+        decode_campaign(saved, *srd5::character_rules(), *module(), "leader", nullptr).party);
+    check(loaded.leader() == second, "The leader is saved");
+    party.remove(second);
+    check(party.leader() == first && encode_campaign(party, nullptr, "leader") != saved,
+          "A leader who leaves the party hands the lead back to the first member");
+    rejects([&] { party.make_leader(second); });
+}
+
 void class_weapon_proficiency()
 {
     auto rules = module();
@@ -2384,6 +2412,7 @@ int main()
         goliath_occupancy();
         original_loot();
         roster_and_equipment();
+        party_leader();
         class_weapon_proficiency();
         stabilization_handoff();
         remaining_turn_handoff();

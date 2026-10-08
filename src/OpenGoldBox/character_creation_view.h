@@ -123,6 +123,11 @@ class CharacterCreationView : public godot::Control
     void pool_layout();
     void town_member_selected(std::int64_t slot);
     void close_town_sheet();
+    // The leader speaks for the party and deals with shopkeepers.
+    void make_roster_leader();
+    void make_town_sheet_leader();
+    void show_leader_change();
+    opengold::MemberId town_sheet_member_{};
     bool open_equipment_choice(opengold::MemberId member, std::uint64_t item);
     void equipment_choice_selected(std::int64_t index);
     void apply_equipment_choice();
