@@ -174,14 +174,22 @@ struct Arena
 };
 
 Arena arena(const std::vector<std::uint8_t> &gear,
-            const std::vector<std::pair<std::string, rules::Cell>> &enemies, std::uint64_t seed)
+            const std::vector<std::pair<std::string, rules::Cell>> &enemies, std::uint64_t seed,
+            bool shield = false)
 {
     Arena result;
     result.party = std::make_shared<CampaignParty>(srd5::parse_content(arena_rules()));
     result.fighter = result.party->add_pc(torchbearer());
-    result.party->purchase(result.fighter, item(36));
-    result.party->equip(result.fighter,
-                        result.party->member(result.fighter).character.inventory().items().back().id);
+    const auto wield = [&](std::uint8_t type)
+    {
+        result.party->purchase(result.fighter, item(type));
+        result.party->equip(
+            result.fighter,
+            result.party->member(result.fighter).character.inventory().items().back().id);
+    };
+    wield(36);
+    if (shield)
+        wield(59);
     for (const auto type : gear)
         result.party->purchase(result.fighter, item(type));
     CampaignEncounter encounter;
@@ -333,6 +341,40 @@ void oil_then_torch()
     }
     check(false, "The Torch hits the oiled creature");
 }
+// A carried longbow and arrows: drawn to shoot an enemy out of melee reach.
+// A shield-bearer first takes off its shield (an action), which costs its AC.
+void bows_drawn()
+{
+    constexpr std::uint8_t longbow = 41, arrows = 73;
+    auto free_hand = arena({longbow, arrows}, {{"target", {8, 2}}}, 3);
+    const auto archer = EntityId(free_hand.fighter);
+    turn_of(*free_hand.demo, archer);
+    check(offered(free_hand.demo->combat(), "shoot", archer, 1000) &&
+          !offered(free_hand.demo->combat(), "melee", archer, 1000),
+          "A carried longbow is drawn to shoot an enemy out of reach");
+    check(use(*free_hand.demo, "shoot", archer, 1000) && logged(*free_hand.demo, "Torchbearer ->"),
+          "The arrow is shot");
+
+    auto shielded = arena({longbow, arrows}, {{"target", {8, 2}}}, 3, true);
+    const auto fighter = EntityId(shielded.fighter);
+    turn_of(*shielded.demo, fighter);
+    const auto armored = unit(*shielded.demo, fighter).armor_class;
+    check(!offered(shielded.demo->combat(), "shoot", fighter, 1000) &&
+          offered(shielded.demo->combat(), "doff_shield", fighter, 0),
+          "A shield-bearer must take off its shield to draw a two-handed bow");
+    check(use(*shielded.demo, "doff_shield", fighter) &&
+          unit(*shielded.demo, fighter).armor_class == armored - 2 &&
+          !offered(shielded.demo->combat(), "doff_shield", fighter, 0),
+          "Taking off the shield costs its AC");
+    const auto checkpoint = shielded.demo->combat().save();
+    check(srd5::parse_content(arena_rules())->restore(checkpoint)->save() == checkpoint,
+          "A removed shield survives a checkpoint");
+    check(use(*shielded.demo, "end", fighter), "The fighter ends its turn");
+    turn_of(*shielded.demo, fighter);
+    check(offered(shielded.demo->combat(), "shoot", fighter, 1000) &&
+          unit(*shielded.demo, fighter).armor_class == armored - 2,
+          "Without its shield the fighter can shoot, and the shield stays off");
+}
 } // namespace
 
 int main()
@@ -345,6 +387,7 @@ int main()
         acid_used_up();
         alchemists_fire_burns();
         oil_then_torch();
+        bows_drawn();
         std::cout << "Fire and acid tests passed\n";
         return 0;
     }

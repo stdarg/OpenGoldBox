@@ -40,6 +40,14 @@ roll on the ground, which leaves it Prone); Oil makes its next Fire damage withi
 ten rounds deal 5 more. In the combat screen these are reached with the A key.
 Combat checkpoints become `OGCOMBAT 42`.
 
+Rules 0.6.138 makes melee reach adjacent squares only, as in the original game
+([MELEE-1](SRD-DECISIONS.md#melee-1-2026-10-08-adjacent-only-melee)): the SRD's
+10-foot reach (polearms, the whip, the Troll) is not used. Rules 0.6.139 lets a
+character draw a carried bow or crossbow to "Shoot" as part of the Attack
+action, and a shield-bearer "Take off shield" (an action) to free both hands
+for one; the shield stays off for the rest of the fight. Combat checkpoints
+become `OGCOMBAT 43`.
+
 ## Slums set-encounter creatures
 
 Rules 0.6.133 adds the Hobgoblin Warrior, Ogre and Troll and a level-3

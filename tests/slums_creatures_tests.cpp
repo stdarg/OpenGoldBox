@@ -1,6 +1,6 @@
 // The Slums set encounters' creatures (docs/audits/cluebook-check.md): the
-// Hobgoblin Warrior's poisoned arrows, the Ogre, the Troll's reach, three Rends
-// and Regeneration, and the level-3 magic-user.
+// Hobgoblin Warrior's poisoned arrows, the Ogre, the Troll's three Rends and
+// Regeneration, and the level-3 magic-user.
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -107,13 +107,16 @@ void creatures_join()
               std::string(creature) + " joins a fight");
 }
 
-// The Troll reaches 10 feet and its Attack action makes three Rends.
+// As in the original game the Troll's melee reaches adjacent squares only
+// (MELEE-1), and its Attack action makes three Rends.
 void troll_attacks()
 {
     const auto module = rules();
-    auto c = fight(*module, "troll", "target", {1, 1}, {3, 1});
+    auto far = fight(*module, "troll", "target", {1, 1}, {3, 1});
+    turn_of(*far, 1);
+    check(!offered(*far, "melee", 1, 2), "The Troll cannot strike two squares away");
+    auto c = fight(*module, "troll", "target", {1, 1}, {2, 1});
     turn_of(*c, 1);
-    check(offered(*c, "melee", 1, 2), "The Troll attacks from 10 feet away");
     check(submit(*c, "melee", 1, 2) && count_logged(*c, "Monster -> Hero") == 3,
           "The Troll makes three Rend attacks");
 }
@@ -165,7 +168,7 @@ void troll_burns()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "Fire fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 42 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 43 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A blocked Regeneration survives a checkpoint");
     check(submit(*restored, "end", first) && submit(*restored, "end", second),

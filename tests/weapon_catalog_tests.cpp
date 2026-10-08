@@ -338,8 +338,9 @@ void boundaries()
         if (!e.ranged)
         {
             auto c = battle(*rules, h, e.key, 13, {3, 1});
-            check(has(*c, "melee") == e.has("reach"),
-                  "Reach weapons alone hit a target ten feet away");
+            // MELEE-1: as in the original game, melee reaches adjacent squares
+            // only, so even the SRD's reach weapons cannot hit ten feet away.
+            check(!has(*c, "melee"), "No melee weapon hits a target ten feet away");
         }
     }
     // No damage dice are rolled or doubled for Blowgun, even with Savage Attacker.

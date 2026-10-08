@@ -250,7 +250,8 @@ void run()
               "Loading allows distinct Action, Surge Action and Light Bonus Action");
         exact_restore(*c);
     }
-    // Selecting a different held reach during an actual reaction is free and cannot earn Light.
+    // A reaction made while another Light weapon is held cannot earn Light. With
+    // adjacent-only melee (MELEE-1), leaving the Whip's square provokes directly.
     {
         auto h = hero_for();
         h.inventory().add("whip", "Whip");
@@ -266,15 +267,12 @@ void run()
         for (const auto &command : c->legal_commands())
             if (command.verb == "move" && command.destination == Cell{3, 1})
             {
-                check(c->submit(command), "Move out of Dagger reach");
+                check(c->submit(command), "Move out of melee reach");
                 moved = true;
                 break;
             }
-        check(moved && c->snapshot().reaction_pending && !offered(*c, "opportunity") &&
-              offered(*c, "weapon_select", 2),
-              "Other held reach can provoke while selected Whip remains in reach");
-        exact_restore(*c);
-        act(*c, "weapon_select", 2);
+        check(moved && c->snapshot().reaction_pending && offered(*c, "opportunity"),
+              "Leaving the adjacent square provokes with the selected Whip");
         exact_restore(*c);
         act(*c, "opportunity");
         settle(*c);

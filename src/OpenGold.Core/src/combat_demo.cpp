@@ -919,10 +919,11 @@ Command choose_demo_command(const CombatSession &session)
                 return command;
         }
     // A downed enemy is still offered only when it may rise again (a troll's
-    // Regeneration): only Acid or Fire stops it, so finish it with one of those.
+    // Regeneration): only Acid or Fire stops it, so finish it with one of those,
+    // a spell or a Torch before a thrown flask that is used up.
     for (const auto verb :
             {"fire_bolt", "sorcerous_burst_fire", "scorching_ray", "acid_arrow", "hurl_flame",
-             "flame_blade_strike"
+             "flame_blade_strike", "torch", "throw_alchemists_fire", "throw_acid"
             })
         for (const auto &command : offered)
             if (command.verb == verb)
@@ -990,6 +991,31 @@ Command choose_demo_command(const CombatSession &session)
         }
     if (move)
         return *move;
+    // Unable to get any closer, a character draws a carried bow or crossbow and
+    // shoots the weakest enemy in range.
+    const Command *shot = nullptr;
+    int weakest = 100000;
+    for (const auto &command : offered)
+        if (command.verb == "shoot")
+        {
+            const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
+                                               [&](const auto & a)
+            {
+                return a.id == command.target;
+            });
+            if (target.hit_points > 0 && target.hit_points < weakest)
+            {
+                shot = &command;
+                weakest = target.hit_points;
+            }
+        }
+    if (shot)
+        return *shot;
+    // Stuck behind others with no enemy beside it, a shield-bearer carrying a
+    // bow takes its shield off to shoot on later turns.
+    if (!threatened)
+        if (const auto *command = offers("doff_shield"))
+            return *command;
     for (const auto &command : offered)
         if (command.verb == "end")
             return command;

@@ -61,7 +61,8 @@ void reactions_and_limits()
         auto r = rules("");
         auto e = encounter(*r, hero(key), key);
         e.participants.back().definition = "graze_target";
-        const int edge = std::string_view(key) == "glaive" ? 3 : 2;
+        // Melee reaches adjacent squares only (MELEE-1), the glaive's too.
+        const int edge = 2;
         e.participants.back().cell = {edge, 1};
         bool tested = false;
         for (unsigned seed = 1; seed < 128 && !tested; ++seed)
@@ -269,7 +270,7 @@ void run()
                             continue;
                         }
                         const auto pending = c->save();
-                        check(pending.starts_with("OGCOMBAT 42 "),
+                        check(pending.starts_with("OGCOMBAT 43 "),
                               "Graze uses the current checkpoint format");
                         check(r->restore(pending)->save() == pending,
                               "Pending Graze round trips exactly");

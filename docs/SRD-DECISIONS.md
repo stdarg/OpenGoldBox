@@ -593,5 +593,17 @@ troll (a rule kept from the original game that players cannot easily know).
   Each throw uses one up. Oil is the original's Flask of Oil; Acid and
   Alchemist's Fire are added to New Phlan's general store at SRD prices, and
   Torches are sold ten for 1 gp.
-- **Simulated parties** use them sensibly (a later step).
+- **Simulated parties** finish a downed troll with a Fire or Acid spell, a
+  Torch or a flask, in that order. A character who cannot get closer to an
+  enemy draws a carried bow or crossbow and shoots, taking off its shield
+  first (an action) when the bow needs both hands and no enemy is beside it.
+
+## MELEE-1 (2026-10-08): adjacent-only melee
+
+The user chose to keep melee as the original game had it: a melee attack
+reaches adjacent squares only. SRD 5.2.1's 10-foot reach (the Glaive, Halberd,
+Lance, Pike and Whip, and monsters such as the Troll) is not used; the weapon
+catalog keeps the SRD's Reach property as data. This restores the original's
+tactic, which the cluebook recommends against trolls, of a front rank in melee
+with archers one square behind it. The Troll's `reach` row is removed.
 

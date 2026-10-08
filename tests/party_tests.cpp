@@ -573,15 +573,14 @@ void all_weapon_equipment()
                 return c.verb == "ranged";
             }) == ranged,
             "Thrown and ranged weapons offer real ranged attacks");
-            const bool reach = type == 3 || type == 4 || type == 5 ||
-                               (type >= 10 && type <= 19 && type != 12) || type == 25 ||
-                               type == 27 || type == 29 || type == 32 || type == 40;
-            check(std::any_of(commands.begin(), commands.end(),
-                              [](const auto & c)
+            // MELEE-1: as in the original game, melee reaches adjacent squares
+            // only, so polearms cannot strike the enemy two squares away.
+            check(std::none_of(commands.begin(), commands.end(),
+                               [](const auto & c)
             {
                 return c.verb == "melee";
-            }) == reach,
-            "Polearms use their reach in actual combat");
+            }),
+            "Polearms strike adjacent squares only");
             check(rules->restore(combat->save())->save() == combat->save(),
                   "Every equipped weapon survives a combat checkpoint");
             const auto saved = encode_campaign(party, nullptr, "all-weapons");

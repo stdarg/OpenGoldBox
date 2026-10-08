@@ -188,7 +188,8 @@ void reactions()
                 p.advance(1, p.default_advancement(1));
             auto actors = p.participants();
             actors.front().cell = {1, 1};
-            const int edge = std::string_view(key) == "halberd" ? 3 : 2;
+            // Melee reaches adjacent squares only (MELEE-1), the halberd's too.
+            const int edge = 2;
             actors.push_back({99, "mastery_target", "Mover", 1, {edge, 1}});
             actors.push_back({98, "mastery_target", "Second", 1, {edge, 2}});
             bool tested = false;
@@ -480,9 +481,11 @@ void movement_enables_mastery()
         auto roster = p.participants();
         roster.front().cell = {1, 1};
         const bool cleave = std::string_view(key) == "halberd";
-        roster.push_back({99, "mastery_target", "First", 1, {cleave ? 3 : 2, 1}});
+        // Melee reaches adjacent squares only (MELEE-1): Cleave's second target
+        // beside the first is out of reach until the Champion steps to (2,2).
+        roster.push_back({99, "mastery_target", "First", 1, {2, 1}});
         if (cleave)
-            roster.push_back({98, "mastery_target", "Second", 1, {4, 1}});
+            roster.push_back({98, "mastery_target", "Second", 1, {3, 2}});
         Battlefield board{12, 8, std::vector<std::uint8_t>(96)};
         if (!cleave)
             board.terrain[15] = 1;
@@ -500,8 +503,7 @@ void movement_enables_mastery()
                   "Position-dependent effect retained while Champion can enable it");
             roundtrip(*r, *c);
             choose(*c, "effect_use", 2);
-            const Cell destination = cleave ? Cell{2, 1} :
-                                     Cell{2, 2};
+            const Cell destination{2, 2};
             bool moved = false;
             for (const auto &cmd : c->legal_commands())
                 if (cmd.verb == "move" && cmd.destination == destination)

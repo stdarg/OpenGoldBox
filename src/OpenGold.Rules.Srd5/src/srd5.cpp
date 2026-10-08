@@ -253,7 +253,10 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 42;
+constexpr unsigned checkpoint_format = 43;
+// MELEE-1: as in the original game, melee reaches adjacent squares only; the
+// SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
+constexpr int melee_reach = 5;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -672,6 +675,7 @@ struct Actor : detail::LifeState
     std::array<unsigned, 3> thrown_gear_left{};
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
+    bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
     EntityId horde_origin{};
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     // Wild Shape: the Beast form's statistics, derived from the wild_shape effect.
@@ -1182,7 +1186,7 @@ character_definition(std::string_view bytes,
                            item->fixed_damage ? item->fixed_damage : modifier
                           };
                 d.melee_type = item->type;
-                d.reach = item->reach;
+                d.reach = melee_reach;
                 d.melee_heavy_disadvantage = item->heavy_disadvantage(scores);
             }
             if (item->range)
@@ -1443,12 +1447,29 @@ bool same_command(const Command &a, const Command &b)
            a.verb == b.verb && a.destination == b.destination && a.item == b.item;
 }
 
+// A character's statistics after taking off its shield: the same equipment
+// without it.
+Definition without_shield(std::string_view profile, const Definition &d)
+{
+    std::vector<std::string> keys;
+    for (const auto &key : d.equipment_keys)
+        if (key != "shield")
+            keys.push_back(key);
+    return character_definition(profile, std::span<const std::string>(keys));
+}
+
+bool wears_shield(const Definition &d)
+{
+    return std::find(d.equipment_keys.begin(), d.equipment_keys.end(), "shield") !=
+           d.equipment_keys.end();
+}
+
 bool turns_to_attack(std::string_view verb)
 {
     // A caster turns toward a foe, not toward an ally being healed, so every
     // spell except the ally-targeted ones counts alongside weapon attacks.
     if (verb.starts_with("light_") || verb.starts_with("nick_") || verb.starts_with("throw") ||
-            verb == "melee" || verb == "ranged" || verb == "torch")
+            verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot")
         return true;
     const auto *spell = detail::find_spell(verb);
     return spell && spell->target != detail::SpellTarget::wounded_ally;
@@ -1739,6 +1760,12 @@ class Session final : public CombatSession
     // Whether a character carries an item it does not already wield.
     bool carries(const Actor &, std::string_view key) const;
     void torch_attack(Actor &, Actor &);
+    // A ranged weapon a character carries with its ammunition while wielding no
+    // ranged weapon, and has the hands for; empty when there is none.
+    std::string_view carried_ranged_weapon(const Actor &) const;
+    // Whether taking off its shield would free a character to draw a carried
+    // two-handed bow or crossbow.
+    bool shield_blocks_bow(const Actor &) const;
     void throw_gear(Actor &, Actor &, const detail::ThrownGear &);
     std::vector<HeldItemView> items_;
     void initialize_items();
@@ -2377,7 +2404,7 @@ bool Session::has_weapon_reaction(const Actor &a, Cell from, Cell to) const
     for (const auto &item : items_)
         if (item.holder == a.source.id && !item.stowed)
             if (const auto *w = detail::weapon(item.definition);
-                    w && reaches(w->ranged ? 5 : w->reach))
+                    w && reaches(melee_reach))
                 return true;
     return false;
 }
@@ -2507,7 +2534,8 @@ Definition Session::equipped_definition(const Actor &a,
             if (item.id == a.selected_weapon && item.holder == a.source.id && !item.stowed)
                 keys.push_back(item.definition);
     for (const auto &item : items)
-        if (item.holder == a.source.id && !item.stowed && item.id != a.selected_weapon)
+        if (item.holder == a.source.id && !item.stowed && item.id != a.selected_weapon &&
+                !(a.shield_off && item.definition == "shield"))
             keys.push_back(item.definition);
     return character_definition(a.source.character_profile, std::span<const std::string>(keys));
 }
@@ -2535,6 +2563,37 @@ bool Session::carries(const Actor &a, std::string_view key) const
     {
         return item.definition == key && item.quantity;
     });
+}
+
+std::string_view Session::carried_ranged_weapon(const Actor &a) const
+{
+    if (a.source.character_profile.empty() || def(a).range)
+        return {};
+    const auto has_ammunition = [&](detail::Ammunition type)
+    {
+        return type == detail::Ammunition::none ||
+               std::any_of(a.source.inventory.begin(), a.source.inventory.end(),
+                           [&](const auto & item)
+        {
+            const auto *ammunition = detail::ammunition(item.definition);
+            return ammunition && ammunition->type == type && item.quantity;
+        });
+    };
+    for (const auto &item : a.source.inventory)
+        if (const auto *w = detail::weapon(item.definition);
+                w && w->ranged && item.quantity && has_ammunition(w->ammunition) &&
+                (w->hands == 1 || !wears_shield(def(a))))
+            return w->key;
+    return {};
+}
+
+bool Session::shield_blocks_bow(const Actor &a) const
+{
+    if (a.shield_off || !wears_shield(def(a)) || !carried_ranged_weapon(a).empty())
+        return false;
+    auto unshielded = a;
+    unshielded.definition = without_shield(a.source.character_profile, a.definition);
+    return !carried_ranged_weapon(unshielded).empty();
 }
 
 // A carried Torch strikes as a Simple Melee weapon for 1 Fire damage.
@@ -4422,7 +4481,7 @@ std::vector<Command> Session::legal_commands() const
                             }
                         };
                         const int feet = distance(a.source.cell, other.source.cell);
-                        if (!item.stowed && !weapon->ranged && feet <= weapon->reach)
+                        if (!item.stowed && !weapon->ranged && feet <= melee_reach)
                             offer("light_melee", "nick_melee");
                         if (!item.stowed && weapon->ranged && feet <= weapon->long_range)
                             offer("light_ranged", "nick_ranged");
@@ -4456,6 +4515,8 @@ std::vector<Command> Session::legal_commands() const
                                             "Exhale (Dragon's Breath)", Cell{}, 0, true});
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
+        if (shield_blocks_bow(a))
+            add(id, "doff_shield", "Take off shield");
         if (a.burning)
             add(id, "extinguish", "Put out the fire");
         add(id, "disengage", "Disengage");
@@ -4474,6 +4535,10 @@ std::vector<Command> Session::legal_commands() const
                 // can be equipped with each attack of the Attack action).
                 if (feet <= 5 && carries(a, "torch"))
                     add(id, "torch", "Torch attack", other.source.id);
+                // A carried bow or crossbow is drawn as part of the attack, too.
+                if (const auto bow = carried_ranged_weapon(a);
+                        !bow.empty() && feet <= detail::weapon(bow)->long_range)
+                    add(id, "shoot", "Shoot", other.source.id);
                 for (const auto &gear : detail::thrown_gear_items)
                     if (feet <= detail::thrown_gear_range &&
                             a.thrown_gear_left[std::size_t(gear.effect)])
@@ -8216,6 +8281,15 @@ void Session::dispatch(const Command &command)
             ++a.dashes;
             log(a.source.name + " dashes.", {"{name} dashes.", {{"name", a.source.name}}});
         }
+        else if (command.verb == "doff_shield")
+        {
+            // Taking off a shield takes the Utilize action (SRD 5.2.1); it stays
+            // off for the rest of the fight.
+            a.shield_off = true;
+            a.definition = without_shield(a.source.character_profile, a.definition);
+            log(a.source.name + " takes off a shield to use a bow.",
+            {"{name} takes off a shield to use a bow.", {{"name", a.source.name}}});
+        }
         else if (command.verb == "extinguish")
         {
             // Rolling on the ground puts out the fire and leaves the creature Prone.
@@ -8226,6 +8300,12 @@ void Session::dispatch(const Command &command)
         }
         else if (command.verb == "torch")
             torch_attack(a, actor(command.target));
+        else if (command.verb == "shoot")
+        {
+            auto shooter = thrown_actor(a, carried_ranged_weapon(a));
+            attack(shooter, actor(command.target), true);
+            a.aim_ready = shooter.aim_ready;
+        }
         else if (const auto *gear = command.verb.starts_with("throw_")
                                     ? detail::thrown_gear(std::string_view(command.verb).substr(6))
                                     : nullptr)
@@ -8332,7 +8412,7 @@ std::string Session::save() const
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
             << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
             << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2]
-            << ' ' << a.burning << ' ' << a.oiled_until_round << ' ';
+            << ' ' << a.burning << ' ' << a.oiled_until_round << ' ' << a.shield_off << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -8489,7 +8569,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
           actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used >>
           actor.regeneration_blocked >> actor.thrown_gear_left[0] >> actor.thrown_gear_left[1] >>
-          actor.thrown_gear_left[2] >> actor.burning >> actor.oiled_until_round;
+          actor.thrown_gear_left[2] >> actor.burning >> actor.oiled_until_round >>
+          actor.shield_off;
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -8502,6 +8583,12 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     actor.definition = source.character_profile.empty()
                        ? content.definitions.at(source.definition)
                        : character_definition(source.character_profile);
+    if (actor.shield_off)
+    {
+        if (source.character_profile.empty() || !wears_shield(actor.definition))
+            throw std::runtime_error("Invalid shield removal");
+        actor.definition = without_shield(source.character_profile, actor.definition);
+    }
     const auto &definition = actor.definition;
     if (actor.cleave_used && std::none_of(definition.masteries.begin(), definition.masteries.end(),
                                           [](const auto & key)
@@ -11357,7 +11444,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.136", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.139", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -11465,21 +11552,19 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 throw std::runtime_error("Unknown creature equipment fields: " + key);
             continue;
         }
-        // reach: the creature's melee reach in feet; regeneration: Hit Points it
-        // regains at the start of each turn.
-        if (tag == "reach" || tag == "regeneration")
+        // regeneration: Hit Points the creature regains at the start of each turn.
+        if (tag == "regeneration")
         {
             const auto found = content.definitions.find(key);
             int value{};
             row >> value;
-            const bool valid = tag == "reach" ? value == 10 || value == 15 : value > 0 && value <= 50;
-            if (!row || found == content.definitions.end() || !valid ||
+            if (!row || found == content.definitions.end() || value <= 0 || value > 50 ||
                     !trait_rows.insert(tag + " " + key).second)
-                throw std::runtime_error("Invalid " + tag + ": " + key);
-            (tag == "reach" ? found->second.reach : found->second.regeneration) = value;
+                throw std::runtime_error("Invalid regeneration: " + key);
+            found->second.regeneration = value;
             row >> std::ws;
             if (!row.eof())
-                throw std::runtime_error("Unknown " + tag + " fields: " + key);
+                throw std::runtime_error("Unknown regeneration fields: " + key);
             continue;
         }
         // ranged_extra_damage creature count sides type: a ranged hit's added damage.
