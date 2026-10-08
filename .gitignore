@@ -11,6 +11,7 @@
 /src/OpenGoldBox/godot/export_presets.cfg
 /src/OpenGoldBox/godot/settings.cfg
 /src/OpenGoldBox/godot/settings.cfg.tmp
+/GameDocs/*
 
 # Godot generated state and imports
 demos/godot/.godot/
