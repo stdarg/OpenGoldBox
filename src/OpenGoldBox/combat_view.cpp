@@ -2347,18 +2347,13 @@ void CombatView::refresh()
             if (target != s.combatants.end())
                 get_node<Label>("Prompt")->set_text(i18n::format(
                                                         mode_.starts_with("nick_")
-                                                        ? N_("Nick attack: {name}\nLeft/Right: target | Space: use")
-                                                        : mode_ == "throw" ? N_("Throw: {name}\nLeft/Right: target | Space: use")
-                                                        : N_("Stabilize: {name}\nLeft/Right: target | Space: use"),
+                                                        ? N_("Selected: Nick attack on {name}. Left/Right: target | Space: use | Escape: cancel")
+                                                        : mode_ == "throw" ? N_("Selected: Throw at {name}. Left/Right: target | Space: use | Escape: cancel")
+                                                        : N_("Selected: Stabilize on {name}. Left/Right: target | Space: use | Escape: cancel"),
             {{"name", gs(target->name)}}));
         }
     }
-    get_node<Label>("Footer")->set_text(
-        player && (mode_ == "stabilize" || mode_ == "throw" ||
-                   (mode_.starts_with("light_") || mode_.starts_with("nick_")))
-        ? get_node<Label>("Prompt")->get_text().replace("\n", " | ") + " | " +
-        i18n::text("Escape: cancel")
-        : i18n::text(
+    get_node<Label>("Footer")->set_text(i18n::text(
             "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end"));
     if (player && s.free_movement)
         get_node<Label>("Footer")->set_text(i18n::format(
@@ -2389,9 +2384,12 @@ void CombatView::refresh()
     }
     // The prompt comes first: when other controls shrink the log, what the player
     // must do now (aim, react, choose) stays in view.
+    // Key hints only while there is a turn to take.
     String log = get_node<Label>("Prompt")->get_text() + "\n" + turn + "\n" +
-                 i18n::text("A: next action | Space: use | Z: spell slot | Enter: end turn") +
-                 "\n\n";
+                 (s.outcome == Outcome::ongoing
+                  ? i18n::text("A: next action | Space: use | Z: spell slot | Enter: end turn") + "\n"
+                  : String()) +
+                 "\n";
     if (demo_)
         log += i18n::campaign("por/combat/dialogue", demo_->dialogue()) + "\n\n";
     // Rebuild one startup notice per missing combination; refreshes never append duplicates.

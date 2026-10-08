@@ -84,7 +84,7 @@ func run_checks() -> void:
             button.grab_focus(); await key(root, KEY_SPACE)
             require("Patient" in current_scene.get_node("Prompt").text, "Keyboard targeting names the selected legal creature")
             if not demo:
-                require(current_scene.get_node("Footer").is_visible_in_tree() and "Patient" in current_scene.get_node("Footer").text, "Keyboard target and instructions are visible in the main game")
+                require(current_scene.get_node("Log").get_parsed_text().begins_with(current_scene.get_node("Prompt").text) and not "Patient" in current_scene.get_node("Footer").text, "Keyboard target and instructions head the log once, not again in the footer")
             await key(root, KEY_RIGHT); await key(root, KEY_LEFT)
             await capture("keyboard-" + locale + "-" + str(size.x), root)
             await key(root, KEY_SPACE)

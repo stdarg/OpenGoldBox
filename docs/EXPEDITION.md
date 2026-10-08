@@ -45,7 +45,8 @@ and four. Group counts start from the original script and are then scaled back t
 budget.
 
 When the script starts combat, the approached monster's animated close-up
-fills the 3D view until any key is pressed, then combat opens. See
+fills the 3D view, with "Press any key to fight.", until any key or Continue is
+pressed, then combat opens. See
 [close-up animations](graphics-format.md#close-up-animations).
 
 The pre-combat menu uses Fight, Wait, Flee, Advance and Parley with the script's

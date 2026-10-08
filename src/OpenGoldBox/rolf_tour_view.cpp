@@ -304,6 +304,12 @@ void RolfTourView::next()
 {
     if (!session_)
         return;
+    // Continue, like any key, leaves the monster close-up for combat.
+    if (shown_monster_picture_)
+    {
+        dismiss_monster_picture();
+        return;
+    }
     const auto &s = session_->snapshot();
     const auto selected = get_node<ItemList>("Choices")->get_selected_items();
     if (s.phase == TourPhase::shopping)
@@ -836,6 +842,10 @@ void RolfTourView::refresh()
     ->set_text(i18n::format("{district} / {direction} view",
     {{"district", district}, {"direction", i18n::text(direction_name[s.pose.facing])}}));
     get_node<Label>("MapTitle")->set_text(i18n::format("{district}    N ↑", {{"district", district}}));
+    // Rolf's welcome names the opening tour; afterwards the title names the area.
+    get_node<Label>("Title")->set_text(
+        s.tour_finished ? i18n::format("OPENGOLDBOX  /  {district}", {{"district", district}})
+        : i18n::text("OPENGOLDBOX  /  Rolf's welcome"));
     get_node<Label>("Coordinates")
     ->set_text(i18n::format("Party ({x}, {y})   {direction}",
     {
@@ -867,9 +877,11 @@ void RolfTourView::refresh()
         ? (loaded ? i18n::text(s.diagnostic) : error_) + "\n" +
         i18n::text(
             "Restart with --reset-game-path to choose your Pool of Radiance data folder.")
-        : s.dialogue.empty() ? i18n::text("Following Rolf...")
+        : shown_monster_picture_ ? i18n::text("Press any key to fight.")
+        : s.dialogue.empty() ? (s.tour_finished ? String() : i18n::text("Following Rolf..."))
         : event_dialogue(resource + "/dialogue", s));
-    get_node<Button>("Continue")->set_disabled(!waiting && !shopping && !answer);
+    get_node<Button>("Continue")
+    ->set_disabled(!waiting && !shopping && !answer && !shown_monster_picture_);
     get_node<Button>("Continue")
     ->set_text(i18n::text(shopping   ? N_("Buy [Enter]")
                           : multiple ? N_("Choose [Enter]")
@@ -1468,11 +1480,14 @@ void RolfTourView::check_district_labels(const TourSnapshot &s)
     const String map_title = get_node<Label>("MapTitle")->get_text();
     const String speaker = get_node<Label>("Speaker")->get_text();
     const bool speaker_shows_district = s.tour_finished && s.phase != TourPhase::shopping;
+    const String title = get_node<Label>("Title")->get_text();
     if (!location.begins_with(district + String(" / ")) ||
             map_title != i18n::format("{district}    N ↑", {{"district", district}}) ||
-            (speaker_shows_district && speaker != district))
+            (speaker_shows_district && speaker != district) ||
+            (s.tour_finished &&
+             title != i18n::format("OPENGOLDBOX  /  {district}", {{"district", district}})))
         throw std::runtime_error("District labels do not name area " + std::to_string(s.area_id) +
-                                 ": " + (location + String(" | ") + map_title + String(" | ") + speaker).utf8().get_data());
+                                 ": " + (title + String(" | ") + location + String(" | ") + map_title + String(" | ") + speaker).utf8().get_data());
     if (s.area_id == 20)
         slums_labels_checked_ = true;
 }

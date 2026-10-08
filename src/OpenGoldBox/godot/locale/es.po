@@ -209,7 +209,7 @@ msgstr "Un pueblo versátil y adaptable."
 msgid "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 msgstr "Un portador de magia divina. Característica principal: Sabiduría. Dado de golpe: d8."
 
-#: src/OpenGoldBox/combat_view.cpp:2393
+#: src/OpenGoldBox/combat_view.cpp:2390
 msgid "A: next action | Space: use | Z: spell slot | Enter: end turn"
 msgstr "A: siguiente acción | Espacio: usar | Z: espacio de conjuro | Intro: terminar turno"
 
@@ -377,7 +377,7 @@ msgstr "Descarga agonizante"
 msgid "Aid"
 msgstr "Ayuda"
 
-#: src/OpenGoldBox/combat_view.cpp:2373
+#: src/OpenGoldBox/combat_view.cpp:2368
 msgid "Aim the spell."
 msgstr "Apunta el conjuro."
 
@@ -502,11 +502,11 @@ msgstr "Flechas: avanzar / girar   •   L: mirar   •   Guiones y existencias 
 msgid "Arrow: party & facing\nGold: doors   Teal: visited"
 msgstr "Flecha: grupo y orientación\nDorado: puertas   Turquesa: visitado"
 
-#: src/OpenGoldBox/combat_view.cpp:2361 src/OpenGoldBox/combat_view.cpp:403
+#: src/OpenGoldBox/combat_view.cpp:2356 src/OpenGoldBox/combat_view.cpp:403
 msgid "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end"
 msgstr "Flechas/teclado numérico: mover | Mayús+flecha: diagonal | A: acción | Espacio: usar | Z: espacio | Intro: terminar"
 
-#: src/OpenGoldBox/combat_view.cpp:2370
+#: src/OpenGoldBox/combat_view.cpp:2365
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr "Flechas: elegir | Espacio: usar | Escape: omitir"
 
@@ -624,7 +624,7 @@ msgstr "Piel robliza"
 msgid "Base"
 msgstr "Base"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:677
+#: src/OpenGoldBox/rolf_tour_view.cpp:683
 msgid "Bash"
 msgstr "Forzar"
 
@@ -768,7 +768,7 @@ msgstr "Manos ardientes (espacio de nivel 2)"
 msgid "Burning acid (Acid Arrow)"
 msgstr "Ácido corrosivo (Flecha ácida)"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:874
+#: src/OpenGoldBox/rolf_tour_view.cpp:886
 msgid "Buy [Enter]"
 msgstr "Comprar [Enter]"
 
@@ -976,7 +976,7 @@ msgstr "Toque helado ({source}): no puede recuperar PG."
 msgid "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
 msgstr "Elige PG temporales\n\nActuales: {current} — {current_source}\nNuevos: {offered} — {offered_source}\n\nLas cantidades no se suman. La acción adicional y el uso ya se han gastado."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:875
+#: src/OpenGoldBox/rolf_tour_view.cpp:887
 msgid "Choose [Enter]"
 msgstr "Elegir [Enter]"
 
@@ -1068,7 +1068,7 @@ msgstr "Elige la carpeta que contiene START.EXE y los archivos DAX originales de
 msgid "Choose the required training options. Back preserves your selections."
 msgstr "Elige las opciones de entrenamiento requeridas. Atrás conserva tus selecciones."
 
-#: src/OpenGoldBox/combat_view.cpp:2383
+#: src/OpenGoldBox/combat_view.cpp:2378
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Choose up to {maximum} creatures. Chosen: {chosen}"
 msgstr "Elige hasta {maximum} criaturas. Elegidas: {chosen}"
@@ -1202,7 +1202,7 @@ msgstr "Clase de clérigo"
 msgid "Cleric skills"
 msgstr "Habilidades de clérigo"
 
-#: src/OpenGoldBox/combat_view.cpp:2388
+#: src/OpenGoldBox/combat_view.cpp:2383
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr "Clic: elegir o quitar | Espacio o Lanzar conjuro: lanzar | Escape: cancelar"
 
@@ -1331,7 +1331,7 @@ msgstr "Continuar"
 msgid "Continue  [Enter]"
 msgstr "Continuar  [Enter]"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:877
+#: src/OpenGoldBox/rolf_tour_view.cpp:889
 msgid "Continue [Enter]"
 msgstr "Continuar [Enter]"
 
@@ -1728,11 +1728,11 @@ msgstr "No puedes cambiar el equipo durante el combate"
 msgid "Equipped"
 msgstr "Equipado"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:384
+#: src/OpenGoldBox/rolf_tour_view.cpp:390
 msgid "Equipped / "
 msgstr "Equipado / "
 
-#: src/OpenGoldBox/party_preview.cpp:588 src/OpenGoldBox/rolf_tour_view.cpp:439
+#: src/OpenGoldBox/party_preview.cpp:588 src/OpenGoldBox/rolf_tour_view.cpp:445
 msgid "Equipped."
 msgstr "Equipado."
 
@@ -1744,10 +1744,6 @@ msgstr "Liberarse de las enredaderas"
 msgid "Escape the webs"
 msgstr "Escapar de las telarañas"
 
-#: src/OpenGoldBox/combat_view.cpp:2360
-msgid "Escape: cancel"
-msgstr "Escape: cancelar"
-
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Evoker: Potent Cantrip deals half damage when a cantrip misses or is saved against; Sculpt Spells spares up to 1 + the spell's level allies in your Evocation areas."
 msgstr "Evocador: Truco potente inflige la mitad del daño cuando un truco falla o se salva; Esculpir conjuros protege hasta 1 + el nivel del conjuro aliados en tus áreas de evocación."
@@ -1756,7 +1752,7 @@ msgstr "Evocador: Truco potente inflige la mitad del daño cuando un truco falla
 msgid "Exhale (Dragon's Breath)"
 msgstr "Exhalar (Aliento de dragón)"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:677
+#: src/OpenGoldBox/rolf_tour_view.cpp:683
 msgid "Exit"
 msgstr "Salir"
 
@@ -1780,7 +1776,7 @@ msgstr "Retirada expeditiva: correr"
 msgid "Expertise"
 msgstr "Pericia"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:887
+#: src/OpenGoldBox/rolf_tour_view.cpp:899
 msgid "Explore  /  arrow keys"
 msgstr "Explorar  /  flechas"
 
@@ -1850,7 +1846,7 @@ msgstr "Vigor infernal (Falsa vida)"
 msgid "Fighter"
 msgstr "Guerrero"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:959
+#: src/OpenGoldBox/rolf_tour_view.cpp:971
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr "Guerrero / Nivel 1 / PG {current}/{maximum}\n{gold} po / {items}"
@@ -1976,11 +1972,11 @@ msgstr "Puntos de concentración"
 msgid "Fog Cloud"
 msgstr "Nube de niebla"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:870
+#: src/OpenGoldBox/rolf_tour_view.cpp:881
 msgid "Following Rolf..."
 msgstr "Siguiendo a Rolf..."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:885
+#: src/OpenGoldBox/rolf_tour_view.cpp:897
 msgid "Following the guide"
 msgstr "Siguiendo al guía"
 
@@ -2008,7 +2004,7 @@ msgstr "Fuerza"
 msgid "Free move"
 msgstr "Movimiento gratis"
 
-#: src/OpenGoldBox/combat_view.cpp:2364
+#: src/OpenGoldBox/combat_view.cpp:2359
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Free move: {feet} ft | Arrows/click: move | Escape or Finish free move: finish"
 msgstr "Movimiento gratis: {feet} pies | Flechas/clic: mover | Escape o Finalizar mov. gratis: terminar"
@@ -2423,7 +2419,7 @@ msgstr "Selección de formación de nivel no válida"
 msgid "Inventory"
 msgstr "Inventario"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:393
+#: src/OpenGoldBox/rolf_tour_view.cpp:399
 msgid "Inventory is empty. Visit a shop to buy equipment."
 msgstr "El inventario está vacío. Visita una tienda para comprar equipo."
 
@@ -2444,7 +2440,7 @@ msgstr "Invisible"
 msgid "It is not {name}'s turn."
 msgstr "No es el turno de {name}."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:442
+#: src/OpenGoldBox/rolf_tour_view.cpp:448
 msgid "Item unequipped."
 msgstr "Objeto desequipado."
 
@@ -2468,7 +2464,7 @@ msgstr "Conservar prueba fallida"
 msgid "Keep initiative"
 msgstr "Conservar iniciativa"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:677
+#: src/OpenGoldBox/rolf_tour_view.cpp:683
 msgid "Knock"
 msgstr "Apertura"
 
@@ -2538,11 +2534,11 @@ msgstr "Abandonar la Forma salvaje"
 msgid "Leave shop"
 msgstr "Salir de la tienda"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:879
+#: src/OpenGoldBox/rolf_tour_view.cpp:891
 msgid "Leave temple [Enter]"
 msgstr "Salir del templo [Enter]"
 
-#: src/OpenGoldBox/combat_view.cpp:2374
+#: src/OpenGoldBox/combat_view.cpp:2369
 msgid "Left click or arrows: move | Right click, Space or Enter: cast | Escape: cancel"
 msgstr "Clic izquierdo o flechas: mover | Clic derecho, Espacio o Intro: lanzar | Escape: cancelar"
 
@@ -2697,7 +2693,7 @@ msgstr "Cargar partida"
 msgid "Load this save? Any unsaved campaign progress will be discarded."
 msgstr "¿Cargar esta partida? Se perderá todo el progreso de campaña sin guardar."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:666
+#: src/OpenGoldBox/rolf_tour_view.cpp:672
 msgid "Locked."
 msgstr "Cerrada con llave."
 
@@ -2709,7 +2705,7 @@ msgstr "Descanso largo"
 msgid "Long Rest cooldown remaining (minutes):"
 msgstr "Espera restante para un descanso largo (minutos):"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:662
+#: src/OpenGoldBox/rolf_tour_view.cpp:668
 msgid "Long rest complete: eight hours passed; eligible members recovered HP and supported resources."
 msgstr "Descanso largo completado: han pasado ocho horas; los miembros aptos recuperaron PG y los recursos disponibles."
 
@@ -2987,7 +2983,7 @@ msgstr "Mover Rayo de luna"
 msgid "Move up to {feet} feet without Opportunity Attacks or spending normal movement. Other pending effects wait."
 msgstr "Muévete hasta {feet} pies sin ataques de oportunidad ni gastar movimiento normal. Los demás efectos pendientes esperan."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:887
+#: src/OpenGoldBox/rolf_tour_view.cpp:899
 msgid "Movement paused"
 msgstr "Movimiento en pausa"
 
@@ -3052,11 +3048,6 @@ msgstr "Ataque con Mellar"
 msgid "Nick attack — {weapon} ({hand})"
 msgstr "Ataque con Mellar — {weapon} ({hand})"
 
-#: src/OpenGoldBox/combat_view.cpp:2350
-#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "Nick attack: {name}\nLeft/Right: target | Space: use"
-msgstr "Ataque con Mellar: {name}\nIzquierda/Derecha: objetivo | Espacio: usar"
-
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:2966
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Nick ranged attack — {weapon} ({hand})"
@@ -3071,7 +3062,7 @@ msgstr "Lanzamiento con Mellar — {weapon} ({hand})"
 msgid "No additional racial, item or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules."
 msgstr "Estas salvaciones no reciben otras bonificaciones de raza, objetos o conjuros. Los rasgos condicionales y efectos persistentes aún no están implementados.\n\nSalvaciones normales: un 1 o 20 natural no implica un fracaso o éxito automático. Las salvaciones contra muerte tienen reglas propias."
 
-#: src/OpenGoldBox/combat_view.cpp:2402
+#: src/OpenGoldBox/combat_view.cpp:2400
 msgid "No combat artwork assigned"
 msgstr "No se ha asignado una imagen de combate"
 
@@ -3124,9 +3115,14 @@ msgstr "Ausente"
 msgid "Not yet qualified. You may still plan for this class."
 msgstr "Aún no cumples los requisitos. Puedes mantener esta clase como objetivo."
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:22
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:22 src/OpenGoldBox/rolf_tour_view.cpp:848
 msgid "OPENGOLDBOX  /  Rolf's welcome"
 msgstr "OPENGOLDBOX  /  La bienvenida de Rolf"
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:1488 src/OpenGoldBox/rolf_tour_view.cpp:847
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "OPENGOLDBOX  /  {district}"
+msgstr "OPENGOLDBOX  /  {district}"
 
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:12
 msgid "OPENGOLDBOX / Create a character"
@@ -3271,7 +3267,7 @@ msgstr "Paralizado"
 msgid "Part"
 msgstr "Parte"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:840
+#: src/OpenGoldBox/rolf_tour_view.cpp:850
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Party ({x}, {y})   {direction}"
 msgstr "Grupo ({x}, {y})   {direction}"
@@ -3326,7 +3322,7 @@ msgstr "Interpretación"
 msgid "Persuasion"
 msgstr "Persuasión"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:677
+#: src/OpenGoldBox/rolf_tour_view.cpp:683
 msgid "Pick"
 msgstr "Abrir la cerradura"
 
@@ -3436,6 +3432,10 @@ msgstr "Conjuros preparados: {spells}"
 msgid "Preserve Life"
 msgstr "Preservar la vida"
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:880
+msgid "Press any key to fight."
+msgstr "Pulsa cualquier tecla para luchar."
+
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:72
 msgid "Previous matching portrait"
 msgstr "Retrato coincidente anterior"
@@ -3444,7 +3444,7 @@ msgstr "Retrato coincidente anterior"
 msgid "Previously selected training cannot be replaced"
 msgstr "No se puede reemplazar la formación seleccionada anteriormente"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:948
+#: src/OpenGoldBox/rolf_tour_view.cpp:960
 msgid "Prices are per listed item or bundle."
 msgstr "Los precios son por objeto o lote indicado."
 
@@ -3782,11 +3782,11 @@ msgstr "Recuperación de recursos"
 msgid "Rest"
 msgstr "Descanso"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:663
+#: src/OpenGoldBox/rolf_tour_view.cpp:669
 msgid "Rest denied: no active member is eligible."
 msgstr "Descanso denegado: ningún miembro activo puede descansar."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:660
+#: src/OpenGoldBox/rolf_tour_view.cpp:666
 msgid "Rest is not allowed here."
 msgstr "No se permite descansar aquí."
 
@@ -3806,7 +3806,7 @@ msgstr "Reiniciar"
 msgid "Restart test"
 msgstr "Prueba de reinicio"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:868
+#: src/OpenGoldBox/rolf_tour_view.cpp:878
 msgid "Restart with --reset-game-path to choose your Pool of Radiance data folder."
 msgstr "Reinicia con --reset-game-path para elegir la carpeta de datos de Pool of Radiance."
 
@@ -3850,7 +3850,7 @@ msgstr "Clase de pícaro"
 msgid "Rogue skills"
 msgstr "Habilidades de pícaro"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:850
+#: src/OpenGoldBox/rolf_tour_view.cpp:860
 msgid "Rolf  /  Council guide"
 msgstr "Rolf  /  Guía del consejo"
 
@@ -4075,6 +4075,21 @@ msgstr "Seleccionar arma"
 msgid "Selected"
 msgstr "Seleccionadas"
 
+#: src/OpenGoldBox/combat_view.cpp:2350
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Selected: Nick attack on {name}. Left/Right: target | Space: use | Escape: cancel"
+msgstr "Selección: ataque con Mellar a {name}. Izq./Der.: objetivo | Espacio: usar | Escape: cancelar"
+
+#: src/OpenGoldBox/combat_view.cpp:2352
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Selected: Stabilize on {name}. Left/Right: target | Space: use | Escape: cancel"
+msgstr "Selección: estabilizar a {name}. Izq./Der.: objetivo | Espacio: usar | Escape: cancelar"
+
+#: src/OpenGoldBox/combat_view.cpp:2351
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Selected: Throw at {name}. Left/Right: target | Space: use | Escape: cancel"
+msgstr "Selección: lanzar a {name}. Izq./Der.: objetivo | Espacio: usar | Escape: cancelar"
+
 #: src/OpenGoldBox/combat_view.cpp:2275
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Click a highlighted creature."
@@ -4127,12 +4142,12 @@ msgstr "Toque electrizante: no puede realizar ataques de oportunidad."
 msgid "Shoot"
 msgstr "Disparar"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:855
+#: src/OpenGoldBox/rolf_tour_view.cpp:865
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Shop / buying for {name}: {gold} gp, {count}/16 items"
 msgstr "Tienda / compra para {name}: {gold} po, {count}/16 objetos"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:847
+#: src/OpenGoldBox/rolf_tour_view.cpp:857
 msgid "Shop / select an item"
 msgstr "Tienda / elige un objeto"
 
@@ -4144,7 +4159,7 @@ msgstr "Descanso corto"
 msgid "Short Rest completed. Heal with Hit Dice spends dice until full HP or none remain."
 msgstr "Descanso corto completado. Curar con dados de golpe gasta dados hasta recuperar todos los PG o agotarlos."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:661
+#: src/OpenGoldBox/rolf_tour_view.cpp:667
 msgid "Short rest complete: one hour passed; eligible members can spend Hit Dice."
 msgstr "Descanso corto completado: ha pasado una hora; los miembros aptos pueden gastar dados de golpe."
 
@@ -4160,7 +4175,7 @@ msgstr "Espada corta"
 msgid "Show character sheet"
 msgstr "Ver hoja de personaje"
 
-#: src/OpenGoldBox/combat_view.cpp:2403
+#: src/OpenGoldBox/combat_view.cpp:2401
 msgid "Showing unarmed with the saved body."
 msgstr "Se muestra sin armas con el cuerpo guardado."
 
@@ -4476,11 +4491,6 @@ msgstr "Armadura de bandas"
 msgid "Stabilize"
 msgstr "Estabilizar"
 
-#: src/OpenGoldBox/combat_view.cpp:2352
-#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "Stabilize: {name}\nLeft/Right: target | Space: use"
-msgstr "Estabilizar: {name}\nIzq./Der.: objetivo | Espacio: usar"
-
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Stable, unconscious"
 msgstr "Estable, inconsciente"
@@ -4529,7 +4539,7 @@ msgstr "Paso del viento: carrera"
 msgid "Step of the Wind: Disengage and Dash (1 Focus)"
 msgstr "Paso del viento: retirada y carrera (1 de concentración)"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:882
+#: src/OpenGoldBox/rolf_tour_view.cpp:894
 msgid "Stopped"
 msgstr "Detenido"
 
@@ -4541,7 +4551,7 @@ msgstr "Fuerza"
 msgid "Studded Leather Armor"
 msgstr "Armadura de cuero tachonado"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:876
+#: src/OpenGoldBox/rolf_tour_view.cpp:888
 msgid "Submit [Enter]"
 msgstr "Aceptar [Enter]"
 
@@ -4573,7 +4583,7 @@ msgstr "Intercambia estos totales de Iniciativa o conserva tu Iniciativa. Aún n
 msgid "Switch the slot level used by Magic Missile, Cure Wounds and Healing Word."
 msgstr "Cambia el nivel de espacio usado por Proyectil mágico, Curar heridas y Palabra de curación."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:883
+#: src/OpenGoldBox/rolf_tour_view.cpp:895
 msgid "Tab or number keys: choose the buyer"
 msgstr "Tab o teclas numéricas: elige el comprador"
 
@@ -4660,11 +4670,11 @@ msgstr "Taumaturgo"
 msgid "The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline."
 msgstr "El ataque queda desviado por completo. Redirígelo al atacante por 1 punto de concentración, o declina."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:738
+#: src/OpenGoldBox/rolf_tour_view.cpp:744
 msgid "The door opens."
 msgstr "La puerta se abre."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:739
+#: src/OpenGoldBox/rolf_tour_view.cpp:745
 msgid "The door stays locked."
 msgstr "La puerta sigue cerrada."
 
@@ -4681,7 +4691,7 @@ msgstr "El guion original ha iniciado un combate."
 msgid "The party is incapacitated. Defeat."
 msgstr "El grupo está incapacitado. Derrota."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:664
+#: src/OpenGoldBox/rolf_tour_view.cpp:670
 msgid "The rest was interrupted. Rest again to recover."
 msgstr "El descanso se interrumpió. Descansa de nuevo para recuperarte."
 
@@ -4689,7 +4699,7 @@ msgstr "El descanso se interrumpió. Descansa de nuevo para recuperarte."
 msgid "The roll fails. Add your Bardic Inspiration die, or decline."
 msgstr "La tirada falla. Añade tu dado de Inspiración bárdica, o declina."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:543
+#: src/OpenGoldBox/rolf_tour_view.cpp:549
 msgid "The way is blocked"
 msgstr "El paso está bloqueado"
 
@@ -4728,11 +4738,6 @@ msgstr "Lanzar fuego de alquimista"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Throw Oil"
 msgstr "Lanzar aceite"
-
-#: src/OpenGoldBox/combat_view.cpp:2351
-#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "Throw: {name}\nLeft/Right: target | Space: use"
-msgstr "Lanzar: {name}\nIzq./Der.: objetivo | Espacio: usar"
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:265
 msgid "Thrown weapon"
@@ -4855,7 +4860,7 @@ msgstr "Dos espacios de conjuro de nivel 1"
 msgid "Two-Weapon Fighting"
 msgstr "Combate con dos armas"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:846
+#: src/OpenGoldBox/rolf_tour_view.cpp:856
 msgid "Unable to continue"
 msgstr "No se puede continuar"
 
@@ -5159,7 +5164,7 @@ msgstr "Te han impactado. Desvía el ataque (1d10 + Destreza + nivel de monje me
 msgid "You are hurt. Cast Hellish Rebuke at the attacker, or decline."
 msgstr "Estás herido. Lanza Reprensión infernal contra el atacante, o declina."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:665
+#: src/OpenGoldBox/rolf_tour_view.cpp:671
 msgid "Your camp is attacked!"
 msgstr "¡Atacan tu campamento!"
 
@@ -5324,22 +5329,22 @@ msgstr "Trasfondo {background}"
 msgid "{bonus} from {class} saving throw proficiency."
 msgstr "{bonus} por competencia de {class} en salvaciones."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:686
+#: src/OpenGoldBox/rolf_tour_view.cpp:692
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} cp"
 msgstr "{count} pc"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:687
+#: src/OpenGoldBox/rolf_tour_view.cpp:693
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} ep"
 msgstr "{count} pe"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:687
+#: src/OpenGoldBox/rolf_tour_view.cpp:693
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} gp"
 msgstr "{count} po"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:965 src/OpenGoldBox/rolf_tour_view.cpp:979
+#: src/OpenGoldBox/rolf_tour_view.cpp:977 src/OpenGoldBox/rolf_tour_view.cpp:991
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} item"
 msgid_plural "{count} items"
@@ -5353,12 +5358,12 @@ msgid_plural "{count} matching portraits."
 msgstr[0] "{count} retrato coincidente."
 msgstr[1] "{count} retratos coincidentes."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:687
+#: src/OpenGoldBox/rolf_tour_view.cpp:693
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} pp"
 msgstr "{count} ppt"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:686
+#: src/OpenGoldBox/rolf_tour_view.cpp:692
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} sp"
 msgstr "{count} pp"
@@ -5368,12 +5373,12 @@ msgstr "{count} pp"
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr "{die} (máximo de d{die}) {modifier} (Constitución) + {racial} (bonificación de raza) = {hp} PG"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1472 src/OpenGoldBox/rolf_tour_view.cpp:838
+#: src/OpenGoldBox/rolf_tour_view.cpp:1485 src/OpenGoldBox/rolf_tour_view.cpp:844
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district}    N ↑"
 msgstr "{district}    N ↑"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:836
+#: src/OpenGoldBox/rolf_tour_view.cpp:842
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district} / {direction} view"
 msgstr "{district} / vista hacia {direction}"
@@ -5383,27 +5388,27 @@ msgstr "{district} / vista hacia {direction}"
 msgid "{hand} — {weapon}"
 msgstr "{hand} — {weapon}"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:906
+#: src/OpenGoldBox/rolf_tour_view.cpp:918
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp"
 msgstr "{item} / {price} po"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:906
+#: src/OpenGoldBox/rolf_tour_view.cpp:918
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp / cannot be equipped"
 msgstr "{item} / {price} po / no se puede equipar"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:386
+#: src/OpenGoldBox/rolf_tour_view.cpp:392
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} x{quantity}"
 msgstr "{item} x{quantity}"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:999
+#: src/OpenGoldBox/rolf_tour_view.cpp:1011
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}\n{class} / AC {ac} / HP {current}/{maximum}"
 msgstr "{name}\n{class} / CA {ac} / PG {current}/{maximum}"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:972
+#: src/OpenGoldBox/rolf_tour_view.cpp:984
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr "{name} / PG {current}/{maximum}\n{gold} po / {items}"
@@ -5423,7 +5428,7 @@ msgstr "{name} / Modificadores"
 msgid "{name} / Saving Throws"
 msgstr "{name} / Salvaciones"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:375
+#: src/OpenGoldBox/rolf_tour_view.cpp:381
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / {class} / {gold} gp"
 msgstr "{name} / {class} / {gold} po"
@@ -5538,7 +5543,7 @@ msgstr "{name} lanza Reprensión infernal contra {target}."
 msgid "{name} casts Hunter's Mark (Favored Enemy)."
 msgstr "{name} lanza Marca del cazador (Enemigo predilecto)."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:718
+#: src/OpenGoldBox/rolf_tour_view.cpp:724
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} casts Knock, and the lock opens."
 msgstr "{name} lanza Apertura y la cerradura se abre."
@@ -5873,12 +5878,12 @@ msgstr "{name} mueve el Rayo de luna."
 msgid "{name} must obey {caster}'s Command: {option}."
 msgstr "{name} debe obedecer la orden imperiosa de {caster}: {option}."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:707
+#: src/OpenGoldBox/rolf_tour_view.cpp:713
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} pays {paid} for {owed} and receives {change} in change."
 msgstr "{name} paga {paid} por {owed} y recibe {change} de cambio."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:705
+#: src/OpenGoldBox/rolf_tour_view.cpp:711
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} pays {paid} for {owed}."
 msgstr "{name} paga {paid} por {owed}."
@@ -6048,12 +6053,12 @@ msgstr "{name} recibe {damage} de daño {type}."
 msgid "{name} throws {item} at {target}."
 msgstr "{name} lanza {item} a {target}."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:723
+#: src/OpenGoldBox/rolf_tour_view.cpp:729
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} tries to force the door: Strength (Athletics) {total} (d20 {die}) against DC {dc}."
 msgstr "{name} intenta forzar la puerta: Fuerza (Atletismo) {total} (d20 {die}) contra CD {dc}."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:720
+#: src/OpenGoldBox/rolf_tour_view.cpp:726
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} tries to pick the lock: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}."
 msgstr "{name} intenta abrir la cerradura: Destreza (Juego de manos) {total} (d20 {die}) contra CD {dc}."
