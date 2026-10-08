@@ -1271,6 +1271,35 @@ int run(const std::string &command)
 #endif
 }
 
+// Leaving the Slums by any edge but the east one enters Kuto's Well
+// (ECL2:20's NEW ECL 29): its plaza map 29, under script 29.
+void enter_kutos_well(Expedition &trip, const std::filesystem::path &folder,
+                      const std::filesystem::path &directory)
+{
+    auto &[party, town] = trip;
+    if (town.snapshot().area_id == 0)
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+    }
+    check(town.snapshot().area_id == 20, "The party is in the Slums");
+    // A doorway in the Slums' west edge.
+    unsigned edge = 16;
+    for (unsigned y = 0; y < 16 && edge == 16; ++y)
+        if (town.map().at(0, y).doors[3] == 1)
+            edge = y;
+    check(edge < 16, "The Slums have a west doorway");
+    walk_to(town, party, 0, edge, quest_answer, true, true);
+    step(town, party, 3, quest_answer);
+    const auto s = town.snapshot();
+    check(s.area_id == 29 && s.script_id == 29, "Leaving the Slums westward enters Kuto's Well");
+    const auto save = folder / "kutos-well.ogs";
+    write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    const auto reloaded = load_expedition(save, directory);
+    check(reloaded.town.snapshot().area_id == 29 && reloaded.town.snapshot().script_id == 29,
+          "A save in Kuto's Well loads back there");
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -1311,6 +1340,10 @@ void installed_first_expedition(const std::filesystem::path &executable,
         write_campaign_file(fixture, at_ohlo_door);
     hand_in_potion(trip);
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
+    {
+        auto explorer = load_expedition(save, directory);
+        enter_kutos_well(explorer, folder, directory);
+    }
 
     const auto program = "\"" + executable.string() + "\"";
     const auto resume = [&](std::string_view checkpoint)

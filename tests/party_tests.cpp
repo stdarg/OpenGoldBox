@@ -1902,6 +1902,8 @@ void monster_picture_before_combat()
         district->sprite_archive.insert(district->sprite_archive.end(), 4, 0x11);
     }
     district->animations[4] = {{17, {}}, {15, {}}};
+    district->script = 20; // the Slums script loads it
+    district->bank = 2;
     resources->districts[20] = district;
     auto party = std::make_shared<CampaignParty>(module());
     (void)party->add_pc(character("fighter"));
@@ -1941,6 +1943,8 @@ void rejected_combat_handoff()
     district->combat_archive[12] = 1;
     district->combat_archive[14] = 2;
     district->combat_archive[20] = 1;
+    district->script = 20; // the Slums script loads it
+    district->bank = 2;
     resources->districts[20] = district;
     for (const auto *klass :
             {"rogue", "fighter"
@@ -2013,6 +2017,8 @@ void victory_beside_dead_member()
     district->combat_archive[12] = 1;
     district->combat_archive[14] = 2;
     district->combat_archive[20] = 1;
+    district->script = 20; // the Slums script loads it
+    district->bank = 2;
     resources->districts[20] = district;
     auto party = std::make_shared<CampaignParty>(module());
     (void)party->add_pc(character("fighter"));

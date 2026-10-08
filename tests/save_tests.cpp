@@ -176,6 +176,8 @@ void fog_saves(const std::filesystem::path &directory)
     resources->programs[20] = travel_program(20, 0);
     auto district = std::make_shared<por::PhlanResources>();
     district->map = por::GeoMap{};
+    district->script = 20; // the Slums script loads it
+    district->bank = 2;
     resources->districts[20] = district;
     auto party = std::make_shared<CampaignParty>(module());
     party->add_pc(character("fighter"));

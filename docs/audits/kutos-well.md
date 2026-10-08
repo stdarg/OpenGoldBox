@@ -85,6 +85,17 @@ level 2-4. Norris (CR 2, 450 XP) alone exceeds a level-two party's trimmed
 budget, so his fight keeps Norris plus one of each other group. The
 campaign-arc simulator should get a Kuto's Well stage to measure it.
 
+## Status
+
+- **Increment 1 (done, 2026-10-08):** areas beyond New Phlan load from a table
+  (`rolf_tour.cpp`): the Slums and Kuto's Well, each map a district with its
+  script, archive bank and wall banks. Leaving the Slums by a west doorway
+  enters Kuto's Well, `LOAD FILES` switches between its plaza and catacombs,
+  saves made there load back, and `NEW ECL` writes the destination's archive
+  bank to `0x6E12`. The script's display cells `0xC059` and `0xC05F` are
+  stored but have no effect yet (meaning unverified). Fights, traps,
+  robbery and fixed treasure still stop with a diagnostic.
+
 ## Suggested increments
 
 1. Data-driven area table; load Kuto's Well (both maps) and travel to and from

@@ -93,6 +93,11 @@ void RolfTourSession::configure_town()
     machine_.bind_variable(0x49CA, 1);
     machine_.bind_variable(0x6E12, 3);
     machine_.bind_variable(0x6E3E, 1);
+    // Kuto's Well's setup writes these two engine cells (65 or 8, and a table
+    // value) when its plaza or catacombs load. Their meaning is unverified;
+    // they are stored for the script and have no effect yet.
+    machine_.bind_variable(0xC059, 0);
+    machine_.bind_variable(0xC05F, 0);
     if (campaign_)
         selected_character_ = campaign_->state().selected;
     for (const auto &w : character_reply(selected_character_).writes)
@@ -614,7 +619,7 @@ std::string RolfTourSession::treasure_identity(std::uint16_t address) const
     std::string hex;
     for (int shift = 12; shift >= 0; shift -= 4)
         hex += digits[(address >> shift) & 15];
-    const std::string archive = current_script_ == 20 ? "ECL2" : "ECL3";
+    const std::string archive = "ECL" + std::to_string(current_area_ ? area_resources().bank : 3);
     return "por:" + archive + ":" + std::to_string(current_script_) + ":treasure:" + hex + ":v1";
 }
 
@@ -1294,8 +1299,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (found == town_->programs.end())
             throw EclError("Travel outside New Phlan (script " + std::to_string(arg(0)) + ")");
         reply.next_program = found->second;
+        // 0x6E12 names the new script's archive bank: ECL3 for the town.
+        unsigned bank = 3;
+        for (const auto &[id, district] : town_->districts)
+            if (district->script == arg(0))
+                bank = district->bank;
         reply.writes = {{0x49F2, static_cast<std::uint16_t>(current_script_)},
-            {0x6E12, static_cast<std::uint16_t>(arg(0) == 20 ? 2 : 3)}
+            {0x6E12, static_cast<std::uint16_t>(bank)}
         };
         current_script_ = arg(0);
         snapshot_.script_id = current_script_;
@@ -1308,12 +1318,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // Original gate transition refresh before NEW ECL selects its district.
         if (arg(0) == 255 && arg(1) == 255 && arg(2) == 127)
             break;
-        if (arg(0) == 20 && arg(1) == 2 && arg(2) == 255 && current_script_ == 20)
-            change_area(20);
+        // A district's script loads its own maps: the Slums map 20, Kuto's
+        // Well its plaza (29) and catacombs (32).
+        const auto district = town_->districts.find(arg(0));
+        if (district != town_->districts.end() && district->second->script == current_script_ &&
+                (arg(1) == 2 || arg(1) == 255) && arg(2) == 255)
+            change_area(arg(0));
         else if (arg(0) == 0 && arg(1) == 0 && arg(2) == 0)
             change_area(0);
         else
-            throw EclError("Resources outside the town/Slums profiles");
+            throw EclError("Resources outside the supported areas (map " + std::to_string(arg(0)) + ")");
         const auto &cell = map_.at(machine_.variable(0xC04B), machine_.variable(0xC04C));
         const auto facing = machine_.variable(0xC04D);
         if (facing >= 4)
@@ -1322,10 +1336,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 55:
-        if (current_area_ == 20)
+        if (current_area_)
         {
-            if (arg(0) != 2 || arg(1) != 4 || arg(2) != 1)
-                throw EclError("Unverified Slums wall resource profile");
+            if (std::array<unsigned, 3> {arg(0), arg(1), arg(2)} != area_resources().pieces)
+                throw EclError("Unverified district wall resource profile");
         }
         else if (arg(0) != 127 || arg(1) != 127 || arg(2) != 127)
             throw EclError("Unverified town wall resource profile");

@@ -71,6 +71,9 @@ struct PhlanResources
     std::optional<GeoMap> map;
     WallArtSet wall_art;
     std::map<unsigned, Creature> encounter_creatures;
+    // A district's script, archive bank and LOAD PIECES wall banks; zero for the town.
+    unsigned script{}, bank{};
+    std::array<unsigned, 3> pieces{};
     std::vector<std::uint8_t> combat_archive;
     std::vector<Image> terrain_art;
 };

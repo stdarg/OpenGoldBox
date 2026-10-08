@@ -72,6 +72,10 @@ Additional class abilities are available only for Fighter, Cleric, and Wizard.
 A rejected training fight keeps the party screen
 open so the party can be edited and retried.
 
+Leaving the Slums through a west doorway enters Kuto's Well (`ECL8:29`, maps
+`GEO8:29` and `GEO8:32`); its fights and events are being added in increments,
+see the [Kuto's Well audit](audits/kutos-well.md).
+
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
 supported from commission to reward; see [QUESTS.md](QUESTS.md). The installed
 test plays it end to end.

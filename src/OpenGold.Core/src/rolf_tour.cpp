@@ -166,63 +166,93 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     pictures("PIC3.DAX", town->pictures);
     town->map = map->get();
     town->wall_art = *wall_art;
-    auto district = std::make_shared<PhlanResources>();
-    const auto slums_program = catalog.find({"ECL2.DAX", 20});
-    const auto slums_map = maps.find({"GEO2.DAX", 20});
-    if (!slums_program || !slums_map)
-        throw EclError("Slums requires ECL2:20 and GEO2:20");
-    town->programs.emplace(20, slums_program);
-    district->map = slums_map->get();
-    const auto slums_definitions = archive("WALLDEF2.DAX"), slums_tiles = archive("8X8D2.DAX");
-    // LOAD PIECES 2,4,1: three five-appearance banks, each with common tiles
-    // followed by its own 70 tiles. Decode independently before concatenating.
-    for (unsigned id :
-            {
-                2, 4, 1
-            })
+    // The districts beyond New Phlan, one row per area: its script, its archive
+    // bank (ECLn, GEOn, WALLDEFn, MONnCHA and so on), the maps its script loads
+    // with each map's three wall banks (`LOAD PIECES`), and the original
+    // creature records its encounters convert.
+    struct DistrictMap
     {
-        WallTiles bank(1);
-        auto common = decode_wall_tiles(find_record(shared, 203));
-        auto local_bank = decode_wall_tiles(find_record(slums_tiles, id));
-        if (!common || common->size() != 45 || !local_bank || local_bank->size() != 70)
-            throw EclError("Invalid Slums wall tile bank");
-        bank.insert(bank.end(), common->begin(), common->end());
-        bank.insert(bank.end(), local_bank->begin(), local_bank->end());
-        auto decoded = decode_wall_art(find_record(slums_definitions, id), bank);
-        if (!decoded || decoded->appearances.size() != 5)
-            throw EclError("Invalid Slums wall definition bank");
-        district->wall_art.appearances.insert(district->wall_art.appearances.end(),
-                                              decoded->appearances.begin(),
-                                              decoded->appearances.end());
-    }
-    district->sprite_archive = read_archive(resolve_archive(directory, "SPRIT2.DAX"));
+        unsigned id;
+        std::array<unsigned, 3> pieces;
+    };
+    struct AreaSource
+    {
+        unsigned script, bank;
+        std::vector<DistrictMap> maps;
+        std::vector<std::uint8_t> creatures;
+    };
+    const std::array areas{
+        AreaSource{20, 2, {{20, {2, 4, 1}}}, {0, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 63}},
+        AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}}, {0, 1, 32, 57, 59, 73}}};
     const auto creatures = CreatureCatalog::load(directory);
-    for (unsigned id :
-            {
-                0, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 63
-            })
-    {
-        const auto creature = creatures.find({2, static_cast<std::uint8_t>(id)});
-        if (!creature)
-            throw EclError("Missing original Slums creature");
-        district->encounter_creatures.emplace(id, creature->get());
-    }
-    district->combat_archive = read_archive(resolve_archive(directory, "CPIC2.DAX"));
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
+    std::vector<Image> terrain_art;
     for (unsigned tile = 0; tile < 25; ++tile)
     {
         auto image = decode_ega_combat_icon(dungeon, 1, tile);
         if (!image || image.image.width != 24 || image.image.height != 24)
             throw EclError("Invalid dungeon tactical tile");
-        district->terrain_art.push_back(std::move(image.image));
+        terrain_art.push_back(std::move(image.image));
     }
-    pictures("HEAD2.DAX", district->heads);
-    pictures("BODY2.DAX", district->bodies);
-    pictures("PIC2.DAX", district->pictures);
-    for (const auto &record : archive("PIC2.DAX").records)
-        if (auto animation = decode_ega_animation(record.bytes))
-            district->animations.emplace(record.id, std::move(animation.frames));
-    town->districts.emplace(20, std::move(district));
+    for (const auto &area : areas)
+    {
+        const auto bank = std::to_string(area.bank);
+        const auto program = catalog.find({"ECL" + bank + ".DAX", static_cast<std::uint8_t>(area.script)});
+        if (!program)
+            throw EclError("Missing area script ECL" + bank + ":" + std::to_string(area.script));
+        town->programs.emplace(area.script, program);
+        const auto definitions = archive(("WALLDEF" + bank + ".DAX").c_str()),
+                   tiles = archive(("8X8D" + bank + ".DAX").c_str());
+        for (const auto &geo : area.maps)
+        {
+            auto district = std::make_shared<PhlanResources>();
+            const auto map = maps.find({"GEO" + bank + ".DAX", static_cast<std::uint8_t>(geo.id)});
+            if (!map)
+                throw EclError("Missing area map GEO" + bank + ":" + std::to_string(geo.id));
+            district->map = map->get();
+            district->script = area.script;
+            district->bank = area.bank;
+            district->pieces = geo.pieces;
+            // Three five-appearance banks, each with the common tiles followed
+            // by its own 70 tiles. Decode independently before concatenating.
+            for (const auto id : geo.pieces)
+            {
+                WallTiles walls(1);
+                auto common = decode_wall_tiles(find_record(shared, 203));
+                auto local_bank = decode_wall_tiles(find_record(tiles, id));
+                if (!common || common->size() != 45 || !local_bank || local_bank->size() != 70)
+                    throw EclError("Invalid wall tile bank " + std::to_string(id));
+                walls.insert(walls.end(), common->begin(), common->end());
+                walls.insert(walls.end(), local_bank->begin(), local_bank->end());
+                auto decoded = decode_wall_art(find_record(definitions, id), walls);
+                if (!decoded || decoded->appearances.size() != 5)
+                    throw EclError("Invalid wall definition bank " + std::to_string(id));
+                district->wall_art.appearances.insert(district->wall_art.appearances.end(),
+                                                      decoded->appearances.begin(),
+                                                      decoded->appearances.end());
+            }
+            district->sprite_archive =
+                read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));
+            for (const auto id : area.creatures)
+            {
+                const auto creature = creatures.find({static_cast<std::uint8_t>(area.bank), id});
+                if (!creature)
+                    throw EclError("Missing original creature MON" + bank + "CHA:" +
+                                   std::to_string(id));
+                district->encounter_creatures.emplace(id, creature->get());
+            }
+            district->combat_archive =
+                read_archive(resolve_archive(directory, "CPIC" + bank + ".DAX"));
+            district->terrain_art = terrain_art;
+            pictures(("HEAD" + bank + ".DAX").c_str(), district->heads);
+            pictures(("BODY" + bank + ".DAX").c_str(), district->bodies);
+            pictures(("PIC" + bank + ".DAX").c_str(), district->pictures);
+            for (const auto &record : archive(("PIC" + bank + ".DAX").c_str()).records)
+                if (auto animation = decode_ega_animation(record.bytes))
+                    district->animations.emplace(record.id, std::move(animation.frames));
+            town->districts.emplace(geo.id, std::move(district));
+        }
+    }
     return RolfTourSession(map->get(), program, std::move(sprites), 0xB071, std::move(*wall_art),
                            std::move(town));
 }

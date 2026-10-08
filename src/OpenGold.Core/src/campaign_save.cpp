@@ -450,8 +450,13 @@ struct SaveCodec
         {
             require(v.town_ && (area == 0 || v.town_->districts.contains(area)),
                     "Unsupported saved district");
-            require((v.current_script_ == 20) == (area == 20),
-                    "Saved district and script disagree");
+            require(area == 0 ? !std::any_of(v.town_->districts.begin(), v.town_->districts.end(),
+                                             [&](const auto & d)
+            {
+                return d.second->script == v.current_script_;
+            })
+            : v.town_->districts.at(area)->script == v.current_script_,
+            "Saved district and script disagree");
             v.current_area_ = 0;
             v.snapshot_.area_id = 0;
             if (v.town_->map)
