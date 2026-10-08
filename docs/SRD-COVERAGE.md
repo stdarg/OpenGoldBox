@@ -28,7 +28,17 @@ describe those features are delivery history, not current behavior.
 Rules 0.6.135 adds the Torch to the weapon table (a Simple Melee weapon dealing
 1 Fire damage) and Acid, Alchemist's Fire and Oil as carried gear; see
 [GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
-Throwing the flasks in combat comes next.
+
+Rules 0.6.136 uses them in combat. A character carrying a Torch it does not
+wield can make a "Torch attack" (the SRD lets a weapon be equipped with each
+attack of the Attack action). Acid, Alchemist's Fire and Oil are thrown in place
+of an attack at a creature within 20 feet, which makes a Dexterity save against
+8 + the thrower's Dexterity modifier and Proficiency Bonus; each throw uses one,
+and the campaign removes it from the inventory. Alchemist's Fire sets the target
+Burning (1d4 Fire at the start of each of its turns until it uses its action to
+roll on the ground, which leaves it Prone); Oil makes its next Fire damage within
+ten rounds deal 5 more. In the combat screen these are reached with the A key.
+Combat checkpoints become `OGCOMBAT 42`.
 
 ## Slums set-encounter creatures
 

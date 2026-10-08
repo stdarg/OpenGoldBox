@@ -1161,7 +1161,10 @@ void checkpoint_validation_tests()
 
     auto invalid_overlap = lines[4];
     auto no_clocks = invalid_overlap;
-    for (unsigned n = 0; n < 6; ++n)
+    // Strip the twelve trailing fields: Horde Breaker's two, Smite's melee flag,
+    // Resistance's use, Regeneration's block, the thrown-gear state (five) and
+    // Concentration's two.
+    for (unsigned n = 0; n < 12; ++n)
         no_clocks.resize(no_clocks.find_last_of(' '));
     const auto grip_separator = no_clocks.rfind(' ', no_clocks.find_last_of(' ') - 1);
     invalid_overlap[grip_separator - 1] = '1';
@@ -1212,7 +1215,7 @@ void checkpoint_cutoff_tests()
         }
         return false;
     };
-    check(checkpoint.starts_with("OGCOMBAT 41 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 42 "), "Checkpoints use the current format");
     auto older_format = checkpoint;
     older_format.replace(9, 2, "26");
     check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");

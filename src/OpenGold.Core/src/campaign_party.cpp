@@ -99,6 +99,35 @@ AdndCombatValues adnd_combat_values(const PartyMember &m)
 }
 }
 
+namespace
+{
+// Removes the thrown gear (Acid, Alchemist's Fire, Oil) a fight used up, so the
+// member carries `left` of `definition`, taking from the newest stacks first.
+void keep_thrown_gear(PartyMember &member, const std::string &definition, unsigned left)
+{
+    std::vector<std::pair<std::uint64_t, std::uint32_t>> stacks;
+    unsigned carried = 0;
+    for (const auto &item : member.character.inventory().items())
+        if (item.definition_id == definition)
+        {
+            stacks.emplace_back(item.id, item.quantity);
+            carried += item.quantity;
+        }
+    if (left > carried)
+        throw std::runtime_error("Combat reported more thrown gear than was carried");
+    auto inventory = member.character.inventory();
+    for (auto stack = stacks.rbegin(); stack != stacks.rend() && carried > left; ++stack)
+    {
+        const auto used = std::min(stack->second, carried - left);
+        inventory.remove(stack->first, used);
+        carried -= used;
+        if (used == stack->second)
+            member.item_sources.erase(stack->first);
+    }
+    member.character.inventory() = std::move(inventory);
+}
+} // namespace
+
 std::string equipment_conversion(const por::Equipment &item)
 {
     const auto &raw = item.stored;
@@ -1389,6 +1418,8 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 gear.push_back(it->character.inventory().find(id)->get().definition_id);
             (void)rules_->character_profile(it->character.sheet(), gear);
             it->vitals = actor.persistent;
+            for (const auto &[definition, left] : actor.thrown_gear_left)
+                keep_thrown_gear(*it, definition, left);
         }
     next.short_rest.reset();
     if (!combat_registered_)

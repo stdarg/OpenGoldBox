@@ -253,7 +253,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 41;
+constexpr unsigned checkpoint_format = 42;
 
 // Which spells a class may legitimately have stored at a level. This replaces a
 // packed allow-mask, which could not express a spell beyond the 31st bit.
@@ -667,6 +667,11 @@ struct Actor : detail::LifeState
     bool colossus_used{}, horde_used{};
     bool resistance_used{}; // Resistance (the cantrip) reduces damage once per turn
     bool regeneration_blocked{}; // Took Acid or Fire damage since its last turn began
+    // Thrown gear (Acid, Alchemist's Fire, Oil, by ThrownGearEffect) still carried:
+    // counted from the inventory when combat begins and spent by each throw.
+    std::array<unsigned, 3> thrown_gear_left{};
+    bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
+    int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     EntityId horde_origin{};
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     // Wild Shape: the Beast form's statistics, derived from the wild_shape effect.
@@ -1442,8 +1447,8 @@ bool turns_to_attack(std::string_view verb)
 {
     // A caster turns toward a foe, not toward an ally being healed, so every
     // spell except the ally-targeted ones counts alongside weapon attacks.
-    if (verb.starts_with("light_") || verb.starts_with("nick_") || verb == "throw" ||
-            verb == "melee" || verb == "ranged")
+    if (verb.starts_with("light_") || verb.starts_with("nick_") || verb.starts_with("throw") ||
+            verb == "melee" || verb == "ranged" || verb == "torch")
         return true;
     const auto *spell = detail::find_spell(verb);
     return spell && spell->target != detail::SpellTarget::wounded_ally;
@@ -1531,6 +1536,11 @@ class Session final : public CombatSession
                             w && (w->thrown || w->light))
                         physical_inventory_ = true;
             }
+            // Thrown gear is counted once, from what each character carries in.
+            for (auto &a : actors_)
+                for (const auto &item : a.source.inventory)
+                    if (const auto *gear = detail::thrown_gear(item.definition))
+                        a.thrown_gear_left[std::size_t(gear->effect)] += item.quantity;
             for (const auto &a : actors_)
                 if (a.definition.other_weapon)
                     physical_inventory_ = true;
@@ -1726,6 +1736,10 @@ class Session final : public CombatSession
     void validate_light() const;
     Actor thrown_actor(const Actor &, std::string_view weapon) const;
     void throw_weapon(Actor &, Actor &, unsigned item, bool light = false);
+    // Whether a character carries an item it does not already wield.
+    bool carries(const Actor &, std::string_view key) const;
+    void torch_attack(Actor &, Actor &);
+    void throw_gear(Actor &, Actor &, const detail::ThrownGear &);
     std::vector<HeldItemView> items_;
     void initialize_items();
     Definition equipped_definition(const Actor &a, const std::vector<HeldItemView> &items) const;
@@ -2511,6 +2525,69 @@ Actor Session::thrown_actor(const Actor &a, std::string_view weapon) const
     return result;
 }
 
+bool Session::carries(const Actor &a, std::string_view key) const
+{
+    const auto &keys = def(a).equipment_keys;
+    return !a.source.character_profile.empty() &&
+           std::find(keys.begin(), keys.end(), key) == keys.end() &&
+           std::any_of(a.source.inventory.begin(), a.source.inventory.end(),
+                       [&](const auto & item)
+    {
+        return item.definition == key && item.quantity;
+    });
+}
+
+// A carried Torch strikes as a Simple Melee weapon for 1 Fire damage.
+void Session::torch_attack(Actor &a, Actor &target)
+{
+    auto striker = thrown_actor(a, "torch");
+    attack(striker, target, false);
+    a.aim_ready = striker.aim_ready;
+}
+
+// Acid, Alchemist's Fire or Oil thrown in place of an attack: the target makes
+// a Dexterity save against 8 + the thrower's Dexterity modifier and Proficiency
+// Bonus (SRD 5.2.1 adventuring gear).
+void Session::throw_gear(Actor &a, Actor &target, const detail::ThrownGear &gear)
+{
+    --a.thrown_gear_left[std::size_t(gear.effect)];
+    const auto &d = def(a);
+    const int dc = 8 + d.dexterity + 2 + (d.level - 1) / 4;
+    const auto label = std::string(gear.label);
+    log(a.source.name + " throws " + label + " at " + target.source.name + ".",
+    {
+        "{name} throws {item} at {target}.",
+        {{"name", a.source.name}, {"item", label, true}, {"target", target.source.name}}
+    });
+    if (saving_throw_succeeds(target, detail::Ability::dexterity, dc))
+        return;
+    if (gear.effect == detail::ThrownGearEffect::oil)
+    {
+        target.oiled_until_round = int(round_) + 10;
+        log(target.source.name + " is covered in oil.",
+        {"{name} is covered in oil.", {{"name", target.source.name}}});
+        return;
+    }
+    const bool acid = gear.effect == detail::ThrownGearEffect::acid;
+    const auto type = acid ? detail::DamageType::acid : detail::DamageType::fire;
+    const int amount = resolved_damage(target, type, acid ? roll(6) + roll(6) : roll(4));
+    log(target.source.name + " takes " + std::to_string(amount) + " " +
+        std::string(detail::damage_name(type)) + " damage.",
+    {
+        "{name} takes {damage} {type} damage.",
+        {   {"name", target.source.name}, {"damage", std::to_string(amount)},
+            {"type", std::string(detail::damage_name(type)), true}
+        }
+    });
+    damage(target, amount, false);
+    if (!acid && !target.dead)
+    {
+        target.burning = true;
+        log(target.source.name + " starts burning.",
+        {"{name} starts burning.", {{"name", target.source.name}}});
+    }
+}
+
 // Thrown weapons work like ammunition: the weapon stays where it was, held or
 // carried, so throwing never changes what the thrower holds.
 void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
@@ -2734,6 +2811,10 @@ Snapshot Session::snapshot() const
             a.reaction && conscious(a), conscious(a), a.dead, a.facing_left, status, vitals(a)});
         const auto display = combat_display(a.source.definition);
         auto &view = s.combatants.back();
+        for (const auto &gear : detail::thrown_gear_items)
+            if (a.source.side == 0 && !a.source.character_profile.empty())
+                view.thrown_gear_left.emplace_back(std::string(gear.key),
+                                                   a.thrown_gear_left[std::size_t(gear.effect)]);
         view.temporary_hp = a.temporary_hp;
         view.prone = a.effects.prone;
         if (physical_inventory_)
@@ -4375,6 +4456,8 @@ std::vector<Command> Session::legal_commands() const
                                             "Exhale (Dragon's Breath)", Cell{}, 0, true});
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
+        if (a.burning)
+            add(id, "extinguish", "Put out the fire");
         add(id, "disengage", "Disengage");
         for (const auto &other : actors_)
         {
@@ -4387,6 +4470,15 @@ std::vector<Command> Session::legal_commands() const
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, false);
             if (other.source.side != a.source.side && (other.hp > 0 || may_rise(other)))
             {
+                // A carried Torch is drawn as part of the attack (SRD 5.2.1: a weapon
+                // can be equipped with each attack of the Attack action).
+                if (feet <= 5 && carries(a, "torch"))
+                    add(id, "torch", "Torch attack", other.source.id);
+                for (const auto &gear : detail::thrown_gear_items)
+                    if (feet <= detail::thrown_gear_range &&
+                            a.thrown_gear_left[std::size_t(gear.effect)])
+                        add(id, "throw_" + std::string(gear.key), "Throw " + std::string(gear.label),
+                            other.source.id);
                 if (physical_inventory_)
                     for (const auto &item : items_)
                         if (item.holder == id)
@@ -4529,6 +4621,14 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
             "{name}'s Resistance reduces the damage by {amount}.",
             {{"name", target.source.name}, {"amount", std::to_string(reduced)}}
         });
+    }
+    // Oil: Fire damage on an oiled creature deals 5 more, once, from the burning oil.
+    if (type == detail::DamageType::fire && amount > 0 && target.oiled_until_round >= int(round_))
+    {
+        target.oiled_until_round = 0;
+        amount += 5;
+        log("The oil on " + target.source.name + " burns for 5 more damage.",
+        {"The oil on {name} burns for 5 more damage.", {{"name", target.source.name}}});
     }
     const std::array parts{detail::DamagePart{type, amount}};
     const auto result = detail::resolve_damage(parts, affinities(target));
@@ -6872,6 +6972,16 @@ bool Session::begin_turn()
                 effect.dc > a.temporary_hp.amount)
             detail::grant_temporary_hp(a, {effect.dc, "spell:heroism"},
                                        TemporaryHpChoice::use_new);
+    // Burning: 1d4 Fire damage at the start of each turn until put out.
+    if (a.burning && !a.dead)
+    {
+        const int amount = resolved_damage(a, detail::DamageType::fire, roll(4));
+        log(a.source.name + " burns for " + std::to_string(amount) + " Fire damage.",
+        {"{name} burns for {damage} Fire damage.", {{"name", a.source.name}, {"damage", std::to_string(amount)}}});
+        damage(a, amount, false);
+        if (a.dead)
+            a.burning = false;
+    }
     if (def(a).regeneration)
     {
         regenerate(a);
@@ -8106,6 +8216,20 @@ void Session::dispatch(const Command &command)
             ++a.dashes;
             log(a.source.name + " dashes.", {"{name} dashes.", {{"name", a.source.name}}});
         }
+        else if (command.verb == "extinguish")
+        {
+            // Rolling on the ground puts out the fire and leaves the creature Prone.
+            a.burning = false;
+            a.effects.prone = true;
+            log(a.source.name + " rolls on the ground and puts out the fire.",
+            {"{name} rolls on the ground and puts out the fire.", {{"name", a.source.name}}});
+        }
+        else if (command.verb == "torch")
+            torch_attack(a, actor(command.target));
+        else if (const auto *gear = command.verb.starts_with("throw_")
+                                    ? detail::thrown_gear(std::string_view(command.verb).substr(6))
+                                    : nullptr)
+            throw_gear(a, actor(command.target), *gear);
         else if (command.verb == "dodge")
         {
             a.dodge = true;
@@ -8206,7 +8330,9 @@ std::string Session::save() const
             out << ' ' << id;
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
-            << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' ';
+            << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
+            << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2]
+            << ' ' << a.burning << ' ' << a.oiled_until_round << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -8362,7 +8488,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
           actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used >>
-          actor.regeneration_blocked;
+          actor.regeneration_blocked >> actor.thrown_gear_left[0] >> actor.thrown_gear_left[1] >>
+          actor.thrown_gear_left[2] >> actor.burning >> actor.oiled_until_round;
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -8725,6 +8852,15 @@ void Session::validate_restored_state() const
             throw std::runtime_error("Invalid involuntary checkpoint overlap");
         if (actor.regeneration_blocked && !def(actor).regeneration)
             throw std::runtime_error("Regeneration blocked without Regeneration");
+        if ((actor.burning && actor.dead) || actor.oiled_until_round < 0 ||
+                actor.oiled_until_round > int(round_) + 10 ||
+                (actor.source.character_profile.empty() &&
+                 std::any_of(actor.thrown_gear_left.begin(), actor.thrown_gear_left.end(),
+                             [](auto left)
+    {
+        return left > 0;
+    })))
+        throw std::runtime_error("Invalid fire, oil or thrown gear state");
         if (actor.hp > 0 && !actor.dead)
             (actor.source.side == 0 ? party : enemies) = true;
         if (actor.dead)
@@ -11221,7 +11357,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.135", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.136", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

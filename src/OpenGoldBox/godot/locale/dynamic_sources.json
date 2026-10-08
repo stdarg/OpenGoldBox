@@ -627,5 +627,12 @@
   "Giant Lizard",
   "Giant Snake",
   "Bite",
-  "Gore"
+  "Gore",
+  "Torch attack",
+  "Throw Acid",
+  "Throw Alchemist's Fire",
+  "Throw Oil",
+  "Put out the fire",
+  "Alchemist's Fire",
+  "Oil"
 ]

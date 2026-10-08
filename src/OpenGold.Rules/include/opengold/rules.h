@@ -391,6 +391,9 @@ struct CombatantView
     std::vector<ItemAttackOption> light_attacks;
     bool nick_mastery{};
     std::vector<ItemAttackOption> nick_attacks;
+    // Thrown gear the combatant still carries, by item definition; the campaign
+    // trims its inventory to these counts.
+    std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
 };
 
 struct TemporaryHpOffer
