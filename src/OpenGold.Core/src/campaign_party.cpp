@@ -1118,7 +1118,10 @@ std::array<unsigned, 4> CampaignParty::query(unsigned address, unsigned effect) 
             total += move;
             ++count;
         }
-    return count ? std::array<unsigned, 4> {low, high, total / count, 0} :
+    // The fourth output is not recoverable from the scripts; the Slums' Run after
+    // a parley compares it with the monsters' speed, as the encounter menu's
+    // Flee compares the slowest member, so it is the slowest member too.
+    return count ? std::array<unsigned, 4> {low, high, total / count, low} :
            std::array<unsigned, 4> {};
 }
 

@@ -1637,7 +1637,8 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
                    talkers.party->member(charming).character.sheet().scores[5]))
             charming = id;
     talkers.party->make_leader(charming);
-    const auto &name = talkers.party->member(charming).character.sheet().name;
+    // A copy: the camp and fight below may rebuild the roster.
+    const auto name = talkers.party->member(charming).character.sheet().name;
     unsigned reaction_score = 0;
     const auto menus = meet_camp_monsters(talkers, [&](const por::TourSnapshot & s) -> std::size_t
     {
@@ -1666,6 +1667,158 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
     (void)meet_camp_monsters(fleeing, [](const por::TourSnapshot &) -> std::size_t { return 2; });
     check(fleeing.town.snapshot().dialogue.starts_with("You get away."),
           "A party that escapes says so");
+}
+
+// A parley with street monsters that reaches `outcome` (its first option, such
+// as "PAY" or "STAY") and answers it with `option` (and `amount` when gold is
+// asked for). The leader is the most charming member and parleys Abusive. Each
+// try first paces the street a different number of times, since steps roll
+// for wandering monsters and so change the dice the parley meets.
+struct ParleyResult
+{
+    Expedition trip;
+    std::uint64_t gold_before{};
+    std::vector<std::string> said;
+};
+
+std::uint64_t party_gold(const CampaignParty &party)
+{
+    std::uint64_t gold = 0;
+    for (const auto id : party.state().slots)
+        if (id)
+            gold += party.member(id).wealth[3];
+    return gold;
+}
+
+std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
+                                        const std::filesystem::path &directory, unsigned paces,
+                                        std::string_view outcome, std::string_view option,
+                                        std::string_view amount)
+{
+    ParleyResult result{load_expedition(save, directory)};
+    auto &[party, town] = result.trip;
+    MemberId charming{};
+    for (const auto id : party->state().slots)
+        if (id && (!charming || party->member(id).character.sheet().scores[5] >
+                   party->member(charming).character.sheet().scores[5]))
+            charming = id;
+    party->make_leader(charming);
+    if (town.snapshot().area_id == 0)
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+    }
+    walk_to(town, party, 14, 4);
+    for (unsigned pace = 0; pace < paces; ++pace)
+    {
+        walk_to(town, party, 14, 3);
+        walk_to(town, party, 14, 4);
+    }
+    result.gold_before = party_gold(*party);
+    bool parleyed = false, answered = false;
+    for (unsigned camps = 0; camps < 80; ++camps)
+    {
+        check(town.camp(RestKind::short_rest), "Camp starts");
+        for (unsigned n = 0; n < 2000 && (town.snapshot().phase == por::TourPhase::running ||
+                                          town.snapshot().phase == por::TourPhase::awaiting_continue ||
+                                          town.snapshot().phase == por::TourPhase::awaiting_input);
+                ++n)
+        {
+            const auto &s = town.snapshot();
+            if (s.phase == por::TourPhase::running)
+            {
+                town.advance(.5);
+                continue;
+            }
+            if (s.phase == por::TourPhase::awaiting_input)
+            {
+                check(town.input(s.continue_ticket, amount), "The offer is typed");
+                continue;
+            }
+            if (parleyed)
+                result.said.push_back(s.dialogue);
+            std::size_t pick = peaceful(s);
+            if (s.choices.size() == 4 && s.choices[0] == "Fight")
+                pick = 3; // Advance until Parley.
+            else if (s.choices.size() == 5 && s.choices[0] == "HAUGHTY")
+            {
+                pick = 4;
+                parleyed = true;
+            }
+            else if (parleyed && !answered && s.choices.size() > 1)
+            {
+                if (std::find(s.choices.begin(), s.choices.end(), outcome) == s.choices.end())
+                    return std::nullopt;
+                pick = std::size_t(std::find(s.choices.begin(), s.choices.end(), option) -
+                                   s.choices.begin());
+                answered = true;
+            }
+            check(town.choose(s.continue_ticket, pick), "Answer accepted");
+        }
+        if (parleyed)
+        {
+            if (!answered)
+                return std::nullopt;
+            result.said.push_back(town.snapshot().dialogue);
+            return result;
+        }
+        if (town.snapshot().phase == por::TourPhase::combat)
+            return std::nullopt;
+        if (const auto &spending = party->state().short_rest)
+            party->finish_short_rest(spending->ticket);
+    }
+    return std::nullopt;
+}
+
+ParleyResult parley(const std::filesystem::path &save, const std::filesystem::path &directory,
+                    std::string_view outcome, std::string_view option, std::string_view amount = "0")
+{
+    for (unsigned paces = 0; paces < 40; ++paces)
+        if (auto result = parley_once(save, directory, paces, outcome, option, amount))
+            return std::move(*result);
+    throw std::runtime_error("No parley reached the " + std::string(outcome) + " outcome");
+}
+
+bool said(const ParleyResult &result, std::string_view text)
+{
+    return std::any_of(result.said.begin(), result.said.end(), [&](const auto & line)
+    {
+        return line.find(text) != std::string::npos;
+    });
+}
+
+// A parley that goes well enough asks a toll or orders the party out; each
+// answer reaches the original script's outcome with real coins and moves.
+void slums_parley_outcomes(const std::filesystem::path &save, const std::filesystem::path &directory)
+{
+    const auto fought = [](const ParleyResult & r)
+    {
+        return r.trip.town.snapshot().phase == por::TourPhase::combat;
+    };
+    const auto moved = [](const ParleyResult & r)
+    {
+        const auto pose = r.trip.town.snapshot().pose;
+        return pose.x != 14 || pose.y != 4;
+    };
+    auto cheap = parley(save, directory, "PAY", "PAY", "1");
+    check(said(cheap, "CHEAPSKATES") && fought(cheap) && party_gold(*cheap.trip.party) == cheap.gold_before,
+          "Too small a toll starts a fight and costs nothing");
+    auto paid = parley(save, directory, "PAY", "PAY", "500");
+    check(said(paid, "PAW THROUGH YOUR COINS") && !fought(paid) && !moved(paid) &&
+          party_gold(*paid.trip.party) <= paid.gold_before / 2 + 6,
+          "A large enough toll costs half the party's coins");
+    auto surrendered = parley(save, directory, "PAY", "SURRENDER");
+    check(said(surrendered, "ROB AND BLINDFOLD") && moved(surrendered) &&
+          party_gold(*surrendered.trip.party) == 0 &&
+          !said(surrendered, "You get away."),
+          "Surrender costs every coin and sends the party elsewhere");
+    auto ran = parley(save, directory, "PAY", "RUN");
+    check(!fought(ran) && moved(ran) && said(ran, "You get away."),
+          "Running from a toll as fast as the monsters gets away");
+    auto left = parley(save, directory, "STAY", "LEAVE");
+    check(!fought(left) && !moved(left), "Leaving when ordered out ends the meeting");
+    auto stayed = parley(save, directory, "STAY", "STAY");
+    check(fought(stayed), "Staying when ordered out starts a fight");
 }
 
 void installed_first_expedition(const std::filesystem::path &executable,
@@ -1714,6 +1867,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
             write_slums_fixtures(save, fixtures, directory);
         slums_set_encounters(save, directory);
         slums_encounter_menu(save, directory);
+        slums_parley_outcomes(save, directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -1744,8 +1898,9 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
               "returned, paid the inn with change, rested, delivered Ohlo's potion, finished "
               "it again from each Slums save, reloaded, revisited and camped in the Slums, fought its "
-              "hobgoblins and monster leaders, advanced on, parleyed with, waited for and fled "
-              "from its street monsters, met its trolls, won fights in Kuto's Well, "
+              "hobgoblins and monster leaders, advanced on, parleyed with, paid, surrendered to, "
+              "waited for and fled from its street monsters, met its trolls, won fights in "
+              "Kuto's Well, "
               "defeated Norris and surrendered to him from a save.\n";
 }
 

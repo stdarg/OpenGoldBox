@@ -171,7 +171,7 @@ and state changes described here.
 | 0E | PICTURE | Display the selected picture/composite/animation, or restore the map view. |
 | 1C | CLEAR MONSTERS | Apply encounter-flag and treasure cleanup; do not assume this deletes every creature. |
 | 1D | PARTY STRENGTH | Calculate and write the party-strength result. |
-| 1E | CHECK PARTY | Query the requested attribute/effect and supply all four output values. |
+| 1E | CHECK PARTY | Query the requested attribute/effect and supply all four output values. For movement: lowest, highest, average and (an assumption; the Slums' Run after a parley reads it as the party's speed) lowest again. |
 | 20 | NEW ECL | Resolve and supply the replacement program, update resource context, and schedule its initial entry. |
 | 21 | LOAD FILES | Load the requested map/resources and refresh the view without implicitly replacing ECL. |
 | 22 | PARTY SURPRISE | Initialize party surprise modifiers from the real party. |

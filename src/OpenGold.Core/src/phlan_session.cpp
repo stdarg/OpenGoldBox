@@ -266,6 +266,8 @@ void RolfTourSession::begin_event(unsigned slot)
     event_stage_ = slot == 0 ? 1 : slot == 2 ? 4 : 2;
     machine_.bind_variable(0x6DC9, 0);
     encounter_outcome_.clear();
+    meeting_pose_.reset();
+    robbed_ = false;
     member_chosen_ = false;
     bool off_map = false;
     if (slot == 0 && pending_movement_)
@@ -524,13 +526,19 @@ void RolfTourSession::finish_event()
             synchronize_clock();
         }
     }
+    // A party the script moved away from a meeting (Flee, or Run after a
+    // parley) got away, unless it was robbed and sent off.
+    if (meeting_pose_ && encounter_outcome_.empty() && !robbed_ &&
+            (meeting_pose_->x != snapshot_.pose.x || meeting_pose_->y != snapshot_.pose.y))
+        encounter_outcome_ = "You get away.";
     if (!encounter_outcome_.empty())
-    {
         snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") + encounter_outcome_;
-        encounter_outcome_.clear();
-    }
+    encounter_outcome_.clear();
+    meeting_pose_.reset();
+    robbed_ = false;
     if (event_stage_ == 5)
-        snapshot_.dialogue += "\nThe rest was interrupted. Rest again to recover.";
+        snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
+                              std::string("The rest was interrupted. Rest again to recover.");
     checkpoint_.reset();
     snapshot_.phase = TourPhase::completed;
     snapshot_.choices.clear();
@@ -739,6 +747,8 @@ void RolfTourSession::show_encounter_menu()
     if (snapshot_.dialogue.empty())
         snapshot_.dialogue = args[9].text;
     announce_camp_attack();
+    if (!meeting_pose_)
+        meeting_pose_ = snapshot_.pose;
     // As in the original, Parley replaces Advance once the monsters are adjacent.
     snapshot_.choices = {"Fight", "Wait", "Flee", encounter_distance_ ? "Advance" : "Parley"};
     snapshot_.phase = TourPhase::awaiting_continue;
@@ -858,11 +868,8 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
     reply.writes = {{args[3].value, static_cast<std::uint16_t>(result)}};
     if (!machine_.resume_host(request.id, reply))
         return false;
-    // The script ends the meeting quietly (0) or moves a fleeing party (2) and
-    // clears the text; the event's end says what happened.
-    encounter_outcome_ = result == 0   ? "The monsters go on their way."
-                         : result == 2 ? "You get away."
-                         : "";
+    // The script ends the meeting quietly (0); the event's end says so.
+    encounter_outcome_ = result == 0 ? "The monsters go on their way." : "";
     encounter_menu_.reset();
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
@@ -1465,6 +1472,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                     coins = static_cast<std::uint16_t>(coins * (100 - arg(1)) / 100);
                 campaign_->set_wealth(id, wealth);
             }
+        robbed_ = true;
         reply = character_reply(selected_character_);
         break;
     }

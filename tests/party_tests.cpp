@@ -2302,8 +2302,8 @@ void script_handoff()
     check(town.script_variable(0x9810) == (first_hp + 5) / 10 + 1 &&
           town.script_variable(0x9811) == 12 &&
           town.script_variable(0x9812) == 12 && town.script_variable(0x9813) == 12 &&
-          town.script_variable(0x9814) == 0,
-          "ECL movement queries share encounter-menu conversion units");
+          town.script_variable(0x9814) == 12,
+          "ECL movement queries share encounter-menu conversion units; the fourth is the slowest");
     check(town.script_variable(0x9815) == 1,
           "FIND ITEM drives actual bytecode branch after purchase");
     check(party->state().slots[6] && party->member(party->state().slots[6]).morale == 70,

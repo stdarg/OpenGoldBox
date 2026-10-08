@@ -53,7 +53,13 @@ The pre-combat menu offers Fight, Wait, Flee and Advance with the script's
 response table; once the monsters are adjacent, Parley replaces Advance. The
 party's leader parleys ([LEADER-1](SRD-DECISIONS.md#leader-1-2026-10-08-a-party-leader-speaks-for-the-party)),
 and a meeting that ends without a fight says so. A successful Flee lets the
-script move the party, as the original's wild flight does. Pre-combat escape is separate from retreat during combat, which
+script move the party, as the original's wild flight does. A parley that goes well
+enough reaches the Slums script's other outcomes, each tested: a toll (Pay
+enough and the monsters take half the party's coins, too little and they
+attack; Surrender costs every coin and moves the party; Run escapes when the
+party is as fast as the monsters) or an order to leave (Leave ends the meeting,
+Stay or Fight starts one). The best outcome, the leader's advice, needs a
+reaction total over 95: Charisma 19 or more with an Abusive parley. Pre-combat escape is separate from retreat during combat, which
 remains deferred. Supported modern profiles have no original party surprise
 modifiers. Surprise rolls share the checkpointed ECL random stream; the resulting
 surprise uses initiative disadvantage in the selected SRD module. Original

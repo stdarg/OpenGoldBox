@@ -263,6 +263,9 @@ class RolfTourSession
     std::string encounter_outcome_;
     // Whether this event's script asked which member acts (WHO).
     bool member_chosen_{};
+    // Where the party met monsters this event, and whether it was robbed.
+    std::optional<PartyPose> meeting_pose_;
+    bool robbed_{};
     std::vector<Equipment> treasure_;
     std::optional<Image> picture_;
     std::optional<EclMachine> checkpoint_;
