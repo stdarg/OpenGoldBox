@@ -2870,6 +2870,9 @@ Snapshot Session::snapshot() const
             a.reaction && conscious(a), conscious(a), a.dead, a.facing_left, status, vitals(a)});
         const auto display = combat_display(a.source.definition);
         auto &view = s.combatants.back();
+        view.regenerates = def(a).regeneration > 0;
+        view.burning = a.burning;
+        view.oiled = a.oiled_until_round >= int(round_);
         for (const auto &gear : detail::thrown_gear_items)
             if (a.source.side == 0 && !a.source.character_profile.empty())
                 view.thrown_gear_left.emplace_back(std::string(gear.key),
@@ -3134,6 +3137,17 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::scorched, "Scorched (Heat Metal)"}
                 })
             if (detail::has_effect(a.effects, kind))
+            {
+                messages.push_back({label, {}});
+                s.combatants.back().status += std::string(" | ") + label;
+                s.combatants.back().conditions.push_back({label, {}});
+            }
+        for (const auto &[shown, label] :
+                {
+                    std::pair{a.burning, "Burning"},
+                    std::pair{a.oiled_until_round >= int(round_), "Covered in oil"}
+                })
+            if (shown)
             {
                 messages.push_back({label, {}});
                 s.combatants.back().status += std::string(" | ") + label;
@@ -6973,6 +6987,7 @@ void Session::regenerate(Actor &a)
         }
         a.dead = true;
         a.stable = false;
+        a.recovery = {};
         log(a.source.name + " cannot regenerate and dies.",
         {"{name} cannot regenerate and dies.", {{"name", a.source.name}}});
         clear_departed_overlaps();
@@ -11444,7 +11459,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.139", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.140", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

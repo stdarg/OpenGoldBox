@@ -375,6 +375,31 @@ void bows_drawn()
           unit(*shielded.demo, fighter).armor_class == armored - 2,
           "Without its shield the fighter can shoot, and the shield stays off");
 }
+// A troll set Burning while down cannot regenerate and dies cleanly on its turn,
+// and the combat AI throws Alchemist's Fire at a standing troll that is not
+// burning yet.
+void burning_troll()
+{
+    for (std::uint64_t seed = 1; seed < 30; ++seed)
+    {
+        auto a = arena({authored_item::alchemists_fire}, {{"weak-troll", {4, 2}},
+            {"target", {10, 4}}
+        }, seed);
+        const auto fighter = EntityId(a.fighter);
+        turn_of(*a.demo, fighter);
+        check(choose_demo_command(a.demo->combat()).verb == "throw_alchemists_fire",
+              "The AI sets a standing troll burning");
+        check(use(*a.demo, "throw_alchemists_fire", fighter, 1000), "Throw Alchemist's Fire");
+        if (!unit(*a.demo, 1000).burning)
+            continue;
+        check(unit(*a.demo, 1000).regenerates, "The snapshot shows a regenerating troll");
+        for (unsigned turns = 0; turns < 4 && !unit(*a.demo, 1000).dead; ++turns)
+            check(use(*a.demo, "end", a.demo->combat().snapshot().actor), "End the turn");
+        check(unit(*a.demo, 1000).dead, "A burning troll at 0 HP cannot regenerate and dies");
+        return;
+    }
+    check(false, "Alchemist's Fire sets the troll burning");
+}
 } // namespace
 
 int main()
@@ -388,6 +413,7 @@ int main()
         alchemists_fire_burns();
         oil_then_torch();
         bows_drawn();
+        burning_troll();
         std::cout << "Fire and acid tests passed\n";
         return 0;
     }

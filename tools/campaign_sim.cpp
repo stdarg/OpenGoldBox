@@ -4,6 +4,7 @@
 // takes the catacombs' arrow volleys, rests between fights and gains levels up
 // to four. Both sides use the automated demo policy. Each seed is one run;
 // results go to CSV.
+#include "opengold/authored_items.h"
 #include "opengold/campaign_party.h"
 #include "opengold/character_art.h"
 #include "opengold/character_pool.h"
@@ -378,6 +379,172 @@ bool take_arrows(CampaignParty &party, unsigned arrows)
     return false;
 }
 
+// Each class's pool characters in turn, so a party of six of one class has its
+// four variants.
+std::vector<Character> plan_members(const PartyPlan &plan, const std::vector<Character> &pool)
+{
+    std::vector<Character> members;
+    std::map<std::string, unsigned> used;
+    for (const auto &klass : plan.classes)
+    {
+        std::vector<const Character *> of_class;
+        for (const auto &c : pool)
+            if (c.creation_data().character_class == klass)
+                of_class.push_back(&c);
+        members.push_back(*of_class.at(used[klass]++ % of_class.size()));
+    }
+    return members;
+}
+
+// Troll arena: the Slums' trolls-and-ogres fight (2 ogres and 4 trolls, fitted
+// as the campaign fits it) on an open area of a given width, for a level-four
+// party carrying extra flasks.
+struct Loadout
+{
+    const char *name;
+    std::uint8_t oil, fire; // flasks per member, beyond the starting kit
+};
+
+constexpr std::array loadouts{Loadout{"kit", 0, 0}, Loadout{"oil", 2, 0},
+                              Loadout{"fire", 0, 2}, Loadout{"oil+fire", 2, 2}};
+constexpr std::array<unsigned, 5> arena_widths{1, 2, 4, 8, 16};
+
+std::shared_ptr<CampaignParty> level_four_party(const std::vector<Character> &members,
+        const Loadout &loadout)
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    for (const auto &member : members)
+    {
+        const auto id = party->add_pc(member);
+        outfit_pool_member(*party, id);
+        for (const auto &[type, count] : {std::pair{original_item::flask_of_oil, loadout.oil},
+                                          std::pair{authored_item::alchemists_fire, loadout.fire}
+                                         })
+            if (count)
+            {
+                por::Equipment flask;
+                flask.stored.type = type;
+                flask.stored.stack_size = count;
+                party->purchase(id, flask);
+            }
+    }
+    party->award_experience(party->rule_module().experience_for_level(4), "arena");
+    for (const auto id : living(*party))
+        while (party->can_advance(id))
+            party->advance(id, advancement(*party, id));
+    return party;
+}
+
+// An open area `width` squares wide between walls: the party at the west end,
+// the monsters 14 squares east (ogres in front of trolls in a one-square
+// corridor, side by side when there is room).
+CampaignEncounter arena_encounter(unsigned width, const std::vector<Group> &groups,
+                                  std::size_t members)
+{
+    const int length = 30, height = int(width) + 2;
+    CampaignEncounter fight;
+    fight.field.geometry = {length, height, std::vector<std::uint8_t>(std::size_t(length * height))};
+    for (int x = 0; x < length; ++x)
+        fight.field.geometry.terrain[std::size_t(x)] =
+            fight.field.geometry.terrain[std::size_t((height - 1) * length + x)] = 1;
+    fight.field.tiles.resize(std::size_t(length * height), 7);
+    const auto place = [&](std::size_t n, int front, int step)
+    {
+        return rules::Cell{front + step * int(n / width), 1 + int(n % width)};
+    };
+    for (std::size_t n = 0; n < members; ++n)
+        fight.positions.push_back(place(n, 6, -1));
+    rules::EntityId next = 1000;
+    std::size_t placed = 0;
+    for (const auto &group : groups)
+        for (unsigned c = 0; c < group.count; ++c, ++next)
+        {
+            fight.enemies.push_back({next, group.kind.definition,
+                                     std::string(group.kind.definition) + " " + std::to_string(next),
+                                     1, {}});
+            fight.positions.push_back(place(placed++, 20, 1));
+        }
+    return fight;
+}
+
+// Plays one arena fight; true on victory. Width 0 is the trolls' own room in the
+// Slums (`slums`), with the campaign's usual placement.
+bool arena_fight(const std::vector<Character> &members, const Loadout &loadout, unsigned width,
+                 const por::GeoMap &slums, std::uint64_t seed)
+{
+    auto party = level_four_party(members, loadout);
+    std::vector<Group> groups{{creature(8), 2}, {creature(31), 4}};
+    std::vector<unsigned> levels;
+    std::vector<EncounterGroup> sizes;
+    for (const auto id : living(*party))
+        levels.push_back(party->member(id).character.sheet().level);
+    for (const auto &group : groups)
+        sizes.push_back({group.kind.fit_xp, group.count});
+    const auto counts = fit_encounter_to_budget(
+                            sizes, encounter_xp_budget(levels, default_encounter_challenge),
+                            unsigned(levels.size()));
+    for (std::size_t g = 0; g < groups.size(); ++g)
+        groups[g].count = counts[g];
+    CombatDemo combat(module());
+    combat.campaign_party(party);
+    if (width)
+        combat.encounter(arena_encounter(width, groups, members.size()), seed);
+    else
+    {
+        CampaignEncounter room;
+        room.field = battlefield({slums, slums, slums}, troll_room);
+        rules::EntityId next = 1000;
+        for (const auto &group : groups)
+            for (unsigned c = 0; c < group.count; ++c, ++next)
+                room.enemies.push_back({next, group.kind.definition,
+                                        std::string(group.kind.definition) + " " +
+                                        std::to_string(next),
+                                        1, {}});
+        combat.encounter(std::move(room), seed);
+    }
+    for (unsigned commands = 0;
+            commands < 20000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
+            ++commands)
+        if (!combat.submit(choose_demo_command(combat.combat())))
+            throw std::runtime_error("Combat refused the demo command");
+    return combat.combat().snapshot().outcome == rules::Outcome::victory;
+}
+
+// Runs every party, loadout and width; writes arena.csv and prints a table.
+void troll_arena(const std::vector<PartyPlan> &plans, const std::vector<Character> &pool,
+                 const por::GeoMap &slums, unsigned runs, const std::filesystem::path &out,
+                 const std::string &only)
+{
+    std::ofstream csv(out / "arena.csv");
+    csv << "party,loadout,width,runs,wins\n";
+    std::printf("%-14s %-9s", "party", "loadout");
+    for (const auto width : arena_widths)
+        std::printf(" %5u", width);
+    std::printf("  room   (win%% by area width in squares; room: the Slums' own)\n");
+    for (const auto &plan : plans)
+    {
+        if (!only.empty() && plan.name != only)
+            continue;
+        const auto members = plan_members(plan, pool);
+        for (const auto &loadout : loadouts)
+        {
+            std::printf("%-14s %-9s", plan.name.c_str(), loadout.name);
+            for (const auto width : std::array{arena_widths[0], arena_widths[1], arena_widths[2],
+                                               arena_widths[3], arena_widths[4], 0u})
+            {
+                unsigned wins = 0;
+                for (unsigned run = 1; run <= runs; ++run)
+                    wins += arena_fight(members, loadout, width, slums, run);
+                csv << plan.name << ',' << loadout.name << ',' << width << ',' << runs << ','
+                    << wins << '\n';
+                std::printf(" %5.0f", 100.0 * wins / runs);
+                std::fflush(stdout);
+            }
+            std::printf("\n");
+        }
+    }
+}
+
 RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::uint64_t seed,
                Usage &usage)
 {
@@ -496,8 +663,20 @@ int main(int argc, char **argv)
     {
         if (argc < 2)
         {
-            std::cerr << "Usage: opengold_campaign_sim GAME_DIR [RUNS [OUT_DIR [PARTY]]]\n";
+            std::cerr << "Usage: opengold_campaign_sim [--troll-arena] GAME_DIR [RUNS [OUT_DIR "
+                         "[PARTY]]]\n";
             return 2;
+        }
+        const bool arena = std::string_view(argv[1]) == "--troll-arena";
+        if (arena && argc < 3)
+        {
+            std::cerr << "--troll-arena needs GAME_DIR\n";
+            return 2;
+        }
+        if (arena)
+        {
+            ++argv;
+            --argc;
         }
         const std::filesystem::path game = argv[1];
         const unsigned runs = argc > 2 ? unsigned(std::stoul(argv[2])) : 20;
@@ -513,6 +692,11 @@ int main(int argc, char **argv)
         const ArcMaps maps{slums->get(), plaza->get(), catacombs->get()};
         const auto characters = srd5::character_rules();
         const auto pool = character_pool(*characters, por::CharacterArt::load(game));
+        if (arena)
+        {
+            troll_arena(party_plans(*characters), pool, maps.slums, runs, out, only);
+            return 0;
+        }
         std::ofstream detail(out / "runs.csv"), summary(out / "summary.csv");
         std::ofstream usage_csv(out / "usage.csv");
         detail << "party,run,outcome,fights_won,lost_at,deaths,dead_classes,short_rests,"
@@ -526,18 +710,7 @@ int main(int argc, char **argv)
         {
             if (!only.empty() && plan.name != only)
                 continue;
-            // Each class's pool characters in turn, so a party of six of one
-            // class has its four variants.
-            std::vector<Character> members;
-            std::map<std::string, unsigned> used;
-            for (const auto &klass : plan.classes)
-            {
-                std::vector<const Character *> of_class;
-                for (const auto &c : pool)
-                    if (c.creation_data().character_class == klass)
-                        of_class.push_back(&c);
-                members.push_back(*of_class.at(used[klass]++ % of_class.size()));
-            }
+            const auto members = plan_members(plan, pool);
             unsigned cleared = 0, complete = 0, flawless = 0, fights = 0, deaths = 0, levels = 0,
                      people = 0;
             Usage usage;

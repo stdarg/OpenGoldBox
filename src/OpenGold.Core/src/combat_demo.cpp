@@ -936,6 +936,33 @@ Command choose_demo_command(const CombatSession &session)
                 if (target.side != active.side && target.hit_points == 0)
                     return command;
             }
+    // A standing regenerating enemy is set Burning with Alchemist's Fire: the fire
+    // at the start of each of its turns keeps it from regenerating. Oil goes on
+    // first when the thrower can follow with Alchemist's Fire for 5 more damage.
+    const auto target_of = [&](const Command &command) -> const CombatantView &
+    {
+        return *std::find_if(state.combatants.begin(), state.combatants.end(),
+                             [&](const auto & a)
+        {
+            return a.id == command.target;
+        });
+    };
+    for (const auto &command : offered)
+        if (command.verb == "throw_oil" && offers("throw_alchemists_fire"))
+        {
+            const auto &target = target_of(command);
+            if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
+                    !target.oiled && !target.burning)
+                return command;
+        }
+    for (const auto &command : offered)
+        if (command.verb == "throw_alchemists_fire")
+        {
+            const auto &target = target_of(command);
+            if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
+                    !target.burning)
+                return command;
+        }
     for (const auto verb :
             {"magic_missile", "magic_missile_2", "scorching_ray", "acid_arrow", "mind_spike",
              "inflict_wounds", "guiding_bolt", "dissonant_whispers", "eldritch_blast",

@@ -394,6 +394,9 @@ struct CombatantView
     // Thrown gear the combatant still carries, by item definition; the campaign
     // trims its inventory to these counts.
     std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
+    // Regenerates Hit Points each turn unless Acid or Fire stops it; burning;
+    // covered in oil (its next Fire damage deals 5 more).
+    bool regenerates{}, burning{}, oiled{};
 };
 
 struct TemporaryHpOffer

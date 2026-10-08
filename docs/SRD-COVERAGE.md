@@ -46,7 +46,8 @@ Rules 0.6.138 makes melee reach adjacent squares only, as in the original game
 character draw a carried bow or crossbow to "Shoot" as part of the Attack
 action, and a shield-bearer "Take off shield" (an action) to free both hands
 for one; the shield stays off for the rest of the fight. Combat checkpoints
-become `OGCOMBAT 43`.
+become `OGCOMBAT 43`. Rules 0.6.140 shows Burning and Covered in oil as
+conditions and marks regenerating creatures in the combat snapshot.
 
 ## Slums set-encounter creatures
 

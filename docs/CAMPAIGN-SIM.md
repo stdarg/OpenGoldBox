@@ -48,6 +48,16 @@ when anyone is below half Hit Points and a Long Rest every third fight or when
 still below half; rests are never interrupted. A defeat ends the run; dead
 members stay dead.
 
+## Troll arena
+
+`opengold_campaign_sim --troll-arena GAME_DIR [RUNS [OUT_DIR [PARTY]]]` plays
+only the Slums' trolls-and-ogres fight (2 ogres and 4 trolls, fitted as the
+campaign fits it) for each party at level four, rested, in open areas 1, 2, 4,
+8 and 16 squares wide (ogres in front of trolls in a one-square corridor) and in
+the trolls' own room in the Slums. Each party fights with four loadouts: the
+starting kit (with its torch and bow), and 2 Oil, 2 Alchemist's Fire, or both,
+per member. It prints win rates and writes `arena.csv`.
+
 ## Parties
 
 `classic` (two fighters, cleric, rogue, wizard, paladin), `martial`, `casters`,

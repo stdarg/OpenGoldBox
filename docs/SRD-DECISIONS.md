@@ -593,8 +593,10 @@ troll (a rule kept from the original game that players cannot easily know).
   Each throw uses one up. Oil is the original's Flask of Oil; Acid and
   Alchemist's Fire are added to New Phlan's general store at SRD prices, and
   Torches are sold ten for 1 gp.
-- **Simulated parties** finish a downed troll with a Fire or Acid spell, a
-  Torch or a flask, in that order. A character who cannot get closer to an
+- **Simulated parties** set a standing troll Burning with Alchemist's Fire
+  (its Fire each turn stops Regeneration), oiling it first when they can
+  follow with Alchemist's Fire, and finish a downed troll with a Fire or Acid
+  spell, a Torch or a flask, in that order. A character who cannot get closer to an
   enemy draws a carried bow or crossbow and shoots, taking off its shield
   first (an action) when the bow needs both hands and no enemy is beside it.
 
