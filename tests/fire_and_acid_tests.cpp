@@ -149,23 +149,25 @@ std::string arena_rules()
            "saves clumsy 0 -10 0 0 0 0\n";
 }
 
-Character torchbearer()
+Character torchbearer(std::string character_class = "fighter")
 {
     CharacterDraft d;
     d.race = "human";
     d.gender = "female";
-    d.character_class = "fighter";
+    d.character_class = character_class;
     d.background = "acolyte";
     d.alignment = "neutral_good";
     d.name = "Torchbearer";
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
+    if (character_class == "wizard")
+        d.cantrips = {"fire_bolt", "ray_of_frost", "shocking_grasp"};
     return Character(*srd5::character_rules(), d, {});
 }
 
-// A fighter wielding a longsword and carrying `gear`, against `enemies` placed
-// at `cells` (the fighter stands at (2,2)).
+// A fighter (or `hero`, at `level`) wielding a longsword and carrying `gear`,
+// against `enemies` placed at `cells` (the hero stands at (2,2)).
 struct Arena
 {
     std::shared_ptr<CampaignParty> party;
@@ -175,11 +177,15 @@ struct Arena
 
 Arena arena(const std::vector<std::uint8_t> &gear,
             const std::vector<std::pair<std::string, rules::Cell>> &enemies, std::uint64_t seed,
-            bool shield = false)
+            bool shield = false, Character hero = torchbearer(), unsigned level = 1)
 {
     Arena result;
     result.party = std::make_shared<CampaignParty>(srd5::parse_content(arena_rules()));
-    result.fighter = result.party->add_pc(torchbearer());
+    result.fighter = result.party->add_pc(std::move(hero));
+    result.party->award_experience(result.party->rule_module().experience_for_level(level),
+                                   "arena");
+    while (result.party->can_advance(result.fighter))
+        result.party->advance(result.fighter, result.party->default_advancement(result.fighter));
     const auto wield = [&](std::uint8_t type)
     {
         result.party->purchase(result.fighter, item(type));
@@ -413,6 +419,43 @@ void torch_tactic()
     check(choose_demo_command(a.demo->combat()).verb == "torch",
           "The AI strikes a standing troll with its Torch");
 }
+// A Wild Shape form cannot wield equipment: a Druid turned Wolf draws no
+// carried Torch or bow and throws no flask (SRD 5.2.1).
+void wild_shape_draws_nothing()
+{
+    constexpr std::uint8_t shortbow = 42, arrows = 73;
+    auto a = arena({authored_item::torch, shortbow, arrows, authored_item::alchemists_fire},
+    {{"target", {3, 2}}, {"clumsy", {6, 4}}}, 2, true, torchbearer("druid"), 2);
+    const auto druid = EntityId(a.fighter);
+    turn_of(*a.demo, druid);
+    check(offered(a.demo->combat(), "torch", druid, 1000) &&
+          offered(a.demo->combat(), "throw_alchemists_fire", druid, 1001),
+          "A Druid carrying gear can use it");
+    check(use(*a.demo, "wild_shape_wolf", druid), "The Druid turns into a Wolf");
+    const auto commands = a.demo->combat().legal_commands();
+    check(std::none_of(commands.begin(), commands.end(), [](const auto & command)
+    {
+        return command.verb == "torch" || command.verb == "shoot" ||
+               command.verb.starts_with("throw");
+    }) && offered(a.demo->combat(), "melee", druid, 1000),
+    "A Wolf bites but draws no Torch or bow and throws no flask");
+}
+
+// Against a troll whose Regeneration nothing has stopped, the combat AI casts
+// Fire Bolt rather than Magic Missile: the Fire stops 15 Hit Points of
+// regeneration.
+void fire_bolt_tactic()
+{
+    auto a = arena({}, {{"troll", {8, 2}}}, 4, false, torchbearer("wizard"));
+    const auto wizard = EntityId(a.fighter);
+    turn_of(*a.demo, wizard);
+    check(offered(a.demo->combat(), "magic_missile", wizard, 1000) &&
+          offered(a.demo->combat(), "fire_bolt", wizard, 1000),
+          "The wizard can cast Magic Missile or Fire Bolt at the troll");
+    check(choose_demo_command(a.demo->combat()).verb == "fire_bolt",
+          "The AI casts Fire Bolt at a troll whose Regeneration is not stopped");
+}
+
 // A saved combat keeps what each character carries, so a carried Torch and bow
 // can still be drawn after it is restored.
 void carried_gear_survives_checkpoint()
@@ -444,6 +487,8 @@ int main()
         burning_troll();
         torch_tactic();
         carried_gear_survives_checkpoint();
+        wild_shape_draws_nothing();
+        fire_bolt_tactic();
         std::cout << "Fire and acid tests passed\n";
         return 0;
     }

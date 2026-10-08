@@ -595,11 +595,14 @@ troll (a rule kept from the original game that players cannot easily know).
   Torches are sold ten for 1 gp.
 - **Simulated parties** set a standing troll Burning with Alchemist's Fire
   (its Fire each turn stops Regeneration), oiling it first when anyone on the
-  side can follow with Fire (a Torch, Alchemist's Fire, Fire Bolt or Produce
-  Flame). Beside a standing troll whose Regeneration nothing has stopped this
-  round, a character strikes with its Torch. They finish a downed troll with a
-  Fire or Acid spell, a Torch or a flask, in that order. A character that sees
-  no enemy steps to the nearest square with a clear line to one. A character who cannot get closer to an
+  side can follow with Alchemist's Fire (before a Fire spell or a Torch, an
+  action spent on Oil is worth less than a second attack). At a standing troll
+  whose Regeneration nothing has stopped this round, a character casts a Fire
+  spell (Fire Bolt rather than Magic Missile) or, beside it, strikes with its
+  Torch. They finish a downed troll with a Fire or Acid spell, a Torch or a
+  flask, in that order. A character that sees no enemy steps to the nearest
+  square with a clear line to one; one with a ranged attack cantrip does so
+  before walking up to the enemy. A Wild Shape form uses no gear. A character who cannot get closer to an
   enemy draws a carried bow or crossbow and shoots, taking off its shield
   first (an action) when the bow needs both hands and no enemy is beside it.
 

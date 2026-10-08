@@ -48,8 +48,11 @@ After a victory, dying members make their death saves and the Stable regain a
 Hit Point over four hours. Members level up with the default choices, with
 spells the policy uses well (Moonbeam, Spiritual Weapon, Hex, Healing Word and
 so on) swapped in where the rules accept them. The party takes a Short Rest
-when anyone is below half Hit Points and a Long Rest every third fight or when
-still below half; rests are never interrupted. A defeat ends the run; dead
+when anyone is below half Hit Points and a Long Rest every third fight, when
+still below half, or when fewer than half of the party's spell slots are left
+(as a player would rest before going on; without it six Bards reached the
+trolls with no slots and succeeded 28% of the time, with it 100%); rests are
+never interrupted. A defeat ends the run; dead
 members stay dead.
 
 ## Troll arena

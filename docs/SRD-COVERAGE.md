@@ -53,6 +53,8 @@ Torch or bow can still be drawn after a saved fight is loaded (`OGCOMBAT 44`).
 Rules 0.6.142 names the weapons of the Troll, Ogre, Hobgoblin, Gnoll Warrior,
 Lizardfolk, Giant Lizard, Norris the Gray and the magic-user for the hover
 panel.
+Rules 0.6.143 offers a Wild Shape form no Torch, bow or thrown item, since a
+form cannot wield its equipment.
 
 ## Slums set-encounter creatures
 

@@ -308,6 +308,21 @@ bool wounded(const CampaignParty &party, double fraction)
     return false;
 }
 
+// True when the party has fewer than `fraction` of its spell slots left. A party
+// with no spell slots never is.
+bool out_of_spells(const CampaignParty &party, double fraction)
+{
+    unsigned remaining = 0, capacity = 0;
+    for (const auto &info : party.rest_info(rules::RestKind::long_rest))
+        for (const auto &resource : info.recovery.resources)
+            if (resource.id.starts_with("spell_slot:"))
+            {
+                remaining += resource.remaining;
+                capacity += resource.capacity;
+            }
+    return remaining < fraction * capacity;
+}
+
 // Keeps every completed-rest choice as it is.
 void settle_rest_choices(CampaignParty &party)
 {
@@ -649,7 +664,8 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
                 party->advance(id, advancement(*party, id));
         if (wounded(*party, 0.5))
             short_rest(*party, result);
-        if (++since_long_rest >= 3 || wounded(*party, 0.5))
+        // A party low on spells rests too, as a player would before going on.
+        if (++since_long_rest >= 3 || wounded(*party, 0.5) || out_of_spells(*party, 0.5))
         {
             long_rest(*party, result);
             since_long_rest = 0;

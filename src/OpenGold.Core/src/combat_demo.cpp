@@ -970,7 +970,9 @@ Command choose_demo_command(const CombatSession &session)
             }
     // A standing regenerating enemy is set Burning with Alchemist's Fire: the fire
     // at the start of each of its turns keeps it from regenerating. Oil goes on
-    // first when anyone on the side can follow with Fire for 5 more damage.
+    // first when anyone on the side can follow with Alchemist's Fire for 5 more
+    // damage; before a Fire spell or a Torch, an action spent on Oil is worth
+    // less than a second attack.
     const auto target_of = [&](const Command &command) -> const CombatantView &
     {
         return *std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -979,22 +981,18 @@ Command choose_demo_command(const CombatSession &session)
             return a.id == command.target;
         });
     };
-    const bool fire_follows =
+    const bool alchemists_fire_follows =
         std::any_of(state.combatants.begin(), state.combatants.end(), [&](const auto & ally)
     {
-        const auto &cantrips = ally.known_cantrips;
         return ally.side == active.side && ally.conscious &&
-               (ally.has_torch ||
-                std::any_of(ally.thrown_gear_left.begin(), ally.thrown_gear_left.end(),
-                            [](const auto & gear)
+               std::any_of(ally.thrown_gear_left.begin(), ally.thrown_gear_left.end(),
+                           [](const auto & gear)
         {
             return gear.first == "alchemists_fire" && gear.second > 0;
-        }) ||
-        std::find(cantrips.begin(), cantrips.end(), "fire_bolt") != cantrips.end() ||
-        std::find(cantrips.begin(), cantrips.end(), "produce_flame") != cantrips.end());
+        });
     });
     for (const auto &command : offered)
-        if (command.verb == "throw_oil" && fire_follows)
+        if (command.verb == "throw_oil" && alchemists_fire_follows)
         {
             const auto &target = target_of(command);
             if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
@@ -1009,16 +1007,20 @@ Command choose_demo_command(const CombatSession &session)
                     !target.burning)
                 return command;
         }
-    // In melee, a Torch's Fire stops the regeneration that would undo more than
-    // a weapon's damage, unless something already stopped it this round.
-    for (const auto &command : offered)
-        if (command.verb == "torch")
-        {
-            const auto &target = target_of(command);
-            if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
-                    !target.burning && !target.regeneration_stopped)
-                return command;
-        }
+    // Fire stops the regeneration that would undo more than a spell's or a
+    // weapon's damage, unless something already stopped it this round: a Fire
+    // spell from afar, or a Torch in melee.
+    for (const auto verb : {"scorching_ray", "fire_bolt", "sorcerous_burst_fire", "hurl_flame",
+                            "flame_blade_strike", "torch"
+                           })
+        for (const auto &command : offered)
+            if (command.verb == verb)
+            {
+                const auto &target = target_of(command);
+                if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
+                        !target.burning && !target.regeneration_stopped)
+                    return command;
+            }
     for (const auto verb :
             {"magic_missile", "magic_missile_2", "scorching_ray", "acid_arrow", "mind_spike",
              "inflict_wounds", "guiding_bolt", "dissonant_whispers", "eldritch_blast",
@@ -1060,10 +1062,50 @@ Command choose_demo_command(const CombatSession &session)
         for (const auto &command : offered)
             if (command.verb == "end")
                 return command;
+    // The nearest square with a clear line to an enemy, when none is in view here.
+    const auto sees_enemy = [&](Cell from)
+    {
+        return std::any_of(state.combatants.begin(), state.combatants.end(), [&](const auto & a)
+        {
+            return a.side != active.side && a.hit_points > 0 &&
+                   rules::has_line_of_sight(board, from, a.cell);
+        });
+    };
+    const auto step_into_view = [&]() -> const Command *
+    {
+        if (sees_enemy(active.cell))
+            return nullptr;
+        const Command *step = nullptr;
+        int shortest = 1000;
+        for (const auto &command : offered)
+            if (command.verb == "move" && sees_enemy(command.destination))
+            {
+                const int steps = std::max(std::abs(command.destination.x - active.cell.x),
+                                           std::abs(command.destination.y - active.cell.y));
+                if (steps < shortest)
+                {
+                    step = &command;
+                    shortest = steps;
+                }
+            }
+        return step;
+    };
     // With nothing to attack yet, Aggressive covers more ground toward the enemy.
     for (const auto &command : offered)
         if (command.verb == "aggressive")
             return command;
+    // A character with a ranged attack cantrip that sees no enemy steps into
+    // view to cast from there rather than walking up to the enemy.
+    const auto &cantrips = active.known_cantrips;
+    const bool casts_from_afar = std::any_of(cantrips.begin(), cantrips.end(), [](const auto & id)
+    {
+        return id == "fire_bolt" || id == "eldritch_blast" || id == "ray_of_frost" ||
+               id == "sacred_flame" || id == "vicious_mockery" || id == "starry_wisp" ||
+               id == "produce_flame" || id == "sorcerous_burst";
+    });
+    if (casts_from_afar)
+        if (const auto *step = step_into_view())
+            return *step;
     const Command *move = nullptr;
     int closest = nearest(active.cell);
     for (const auto &command : offered)
@@ -1096,32 +1138,8 @@ Command choose_demo_command(const CombatSession &session)
         return *shot;
     // Seeing no enemy from here (behind a wall corner, say), a character steps to
     // the nearest square with a clear line to one, to shoot or cast from there.
-    const auto sees_enemy = [&](Cell from)
-    {
-        return std::any_of(state.combatants.begin(), state.combatants.end(), [&](const auto & a)
-        {
-            return a.side != active.side && a.hit_points > 0 &&
-                   rules::has_line_of_sight(board, from, a.cell);
-        });
-    };
-    if (!sees_enemy(active.cell))
-    {
-        const Command *step = nullptr;
-        int shortest = 1000;
-        for (const auto &command : offered)
-            if (command.verb == "move" && sees_enemy(command.destination))
-            {
-                const int steps = std::max(std::abs(command.destination.x - active.cell.x),
-                                           std::abs(command.destination.y - active.cell.y));
-                if (steps < shortest)
-                {
-                    step = &command;
-                    shortest = steps;
-                }
-            }
-        if (step)
-            return *step;
-    }
+    if (const auto *step = step_into_view())
+        return *step;
     // Stuck with no enemy it can strike in melee (and so none that can strike
     // it), a shield-bearer carrying a bow takes its shield off to shoot.
     if (!can_strike)

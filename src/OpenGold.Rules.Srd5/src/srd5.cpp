@@ -4566,20 +4566,23 @@ std::vector<Command> Session::legal_commands() const
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, false);
             if (other.source.side != a.source.side && (other.hp > 0 || may_rise(other)))
             {
+                // A Wild Shape form cannot wield its equipment (SRD 5.2.1), so it
+                // draws no Torch or bow and throws no flask.
+                const bool wields_equipment = !a.form;
                 // A carried Torch is drawn as part of the attack (SRD 5.2.1: a weapon
                 // can be equipped with each attack of the Attack action).
-                if (feet <= 5 && carries(a, "torch"))
+                if (wields_equipment && feet <= 5 && carries(a, "torch"))
                     add(id, "torch", "Torch attack", other.source.id);
                 // A carried bow or crossbow is drawn as part of the attack, too.
-                if (const auto bow = carried_ranged_weapon(a);
+                if (const auto bow = wields_equipment ? carried_ranged_weapon(a) : std::string_view{};
                         !bow.empty() && feet <= detail::weapon(bow)->long_range)
                     add(id, "shoot", "Shoot", other.source.id);
                 for (const auto &gear : detail::thrown_gear_items)
-                    if (feet <= detail::thrown_gear_range &&
+                    if (wields_equipment && feet <= detail::thrown_gear_range &&
                             a.thrown_gear_left[std::size_t(gear.effect)])
                         add(id, "throw_" + std::string(gear.key), "Throw " + std::string(gear.label),
                             other.source.id);
-                if (physical_inventory_)
+                if (wields_equipment && physical_inventory_)
                     for (const auto &item : items_)
                         if (item.holder == id)
                             if (const auto *w = detail::weapon(item.definition);
@@ -11501,7 +11504,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.142", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.143", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
