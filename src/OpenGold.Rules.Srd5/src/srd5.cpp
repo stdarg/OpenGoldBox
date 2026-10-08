@@ -2871,6 +2871,10 @@ Snapshot Session::snapshot() const
         const auto display = combat_display(a.source.definition);
         auto &view = s.combatants.back();
         view.regenerates = def(a).regeneration > 0;
+        view.regeneration_stopped = a.regeneration_blocked;
+        view.has_torch = carries(a, "torch") ||
+                         std::find(def(a).equipment_keys.begin(), def(a).equipment_keys.end(),
+                                   "torch") != def(a).equipment_keys.end();
         view.burning = a.burning;
         view.oiled = a.oiled_until_round >= int(round_);
         for (const auto &gear : detail::thrown_gear_items)

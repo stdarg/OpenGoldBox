@@ -400,6 +400,19 @@ void burning_troll()
     }
     check(false, "Alchemist's Fire sets the troll burning");
 }
+// Beside a standing troll, the combat AI strikes with its Torch: the Fire stops
+// regeneration worth more than a sword's damage.
+void torch_tactic()
+{
+    auto a = arena({authored_item::torch}, {{"troll", {3, 2}}}, 4);
+    const auto fighter = EntityId(a.fighter);
+    turn_of(*a.demo, fighter);
+    const auto troll = unit(*a.demo, 1000);
+    check(troll.regenerates && !troll.regeneration_stopped && troll.hit_points > 0,
+          "The snapshot shows a standing troll that can regenerate");
+    check(choose_demo_command(a.demo->combat()).verb == "torch",
+          "The AI strikes a standing troll with its Torch");
+}
 } // namespace
 
 int main()
@@ -414,6 +427,7 @@ int main()
         oil_then_torch();
         bows_drawn();
         burning_troll();
+        torch_tactic();
         std::cout << "Fire and acid tests passed\n";
         return 0;
     }

@@ -8,10 +8,7 @@ namespace opengold::srd5::detail
 
 void validate_battlefield(const rules::Battlefield &board);
 
-// Endpoints are cell centers. Touching either wall at a diagonal corner blocks
-// sight. Callers supply a validated battlefield; actors do not obstruct sight.
-[[nodiscard]] bool has_line_of_sight(const rules::Battlefield &board, rules::Cell from,
-                                     rules::Cell to);
+using rules::has_line_of_sight;
 
 struct Occupant
 {

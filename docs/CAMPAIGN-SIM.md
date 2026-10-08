@@ -40,6 +40,10 @@ search included, is fitted to the XP budget at the default encounter challenge
 and to one creature per living member, as the campaign session does. Each living member gains the original encounter's
 experience.
 
+Each member sets out with its class kit (a Torch included) and 2 Oil and 2
+Alchemist's Fire, as if bought at New Phlan's general store; the simulator does
+not track gold.
+
 After a victory, dying members make their death saves and the Stable regain a
 Hit Point over four hours. Members level up with the default choices, with
 spells the policy uses well (Moonbeam, Spiritual Weapon, Hex, Healing Word and

@@ -409,6 +409,22 @@ constexpr std::array loadouts{Loadout{"kit", 0, 0}, Loadout{"oil", 2, 0},
                               Loadout{"fire", 0, 2}, Loadout{"oil+fire", 2, 2}};
 constexpr std::array<unsigned, 5> arena_widths{1, 2, 4, 8, 16};
 
+// Gives a member flasks of Oil and Alchemist's Fire. The simulator does not
+// track gold, so they cost nothing here.
+void carry_flasks(CampaignParty &party, MemberId id, std::uint8_t oil, std::uint8_t fire)
+{
+    for (const auto &[type, count] : {std::pair{original_item::flask_of_oil, oil},
+                                      std::pair{authored_item::alchemists_fire, fire}
+                                     })
+        if (count)
+        {
+            por::Equipment flask;
+            flask.stored.type = type;
+            flask.stored.stack_size = count;
+            party.purchase(id, flask);
+        }
+}
+
 std::shared_ptr<CampaignParty> level_four_party(const std::vector<Character> &members,
         const Loadout &loadout)
 {
@@ -417,16 +433,7 @@ std::shared_ptr<CampaignParty> level_four_party(const std::vector<Character> &me
     {
         const auto id = party->add_pc(member);
         outfit_pool_member(*party, id);
-        for (const auto &[type, count] : {std::pair{original_item::flask_of_oil, loadout.oil},
-                                          std::pair{authored_item::alchemists_fire, loadout.fire}
-                                         })
-            if (count)
-            {
-                por::Equipment flask;
-                flask.stored.type = type;
-                flask.stored.stack_size = count;
-                party->purchase(id, flask);
-            }
+        carry_flasks(*party, id, loadout.oil, loadout.fire);
     }
     party->award_experience(party->rule_module().experience_for_level(4), "arena");
     for (const auto id : living(*party))
@@ -550,7 +557,12 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
 {
     auto party = std::make_shared<CampaignParty>(module());
     for (const auto &member : members)
-        outfit_pool_member(*party, party->add_pc(member));
+    {
+        const auto id = party->add_pc(member);
+        outfit_pool_member(*party, id);
+        // As if bought at New Phlan's general store before setting out.
+        carry_flasks(*party, id, 2, 2);
+    }
     RunResult result;
     unsigned since_long_rest = 0;
     for (std::size_t n = 0; n < arc.size(); ++n)

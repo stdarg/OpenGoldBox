@@ -285,6 +285,10 @@ struct Battlefield
     [[nodiscard]] unsigned at(Cell p) const noexcept;
 };
 
+// Endpoints are cell centers. Touching either wall at a diagonal corner blocks
+// sight. Callers supply a validated battlefield; creatures do not obstruct sight.
+[[nodiscard]] bool has_line_of_sight(const Battlefield &board, Cell from, Cell to);
+
 // Stable encounter item identity references the original participant and equipment
 // ordinal. Items never leave their holder: downed characters keep their gear and
 // a thrown weapon stays in inventory, like ammunition.
@@ -394,9 +398,10 @@ struct CombatantView
     // Thrown gear the combatant still carries, by item definition; the campaign
     // trims its inventory to these counts.
     std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
-    // Regenerates Hit Points each turn unless Acid or Fire stops it; burning;
-    // covered in oil (its next Fire damage deals 5 more).
-    bool regenerates{}, burning{}, oiled{};
+    // Regenerates Hit Points each turn unless Acid or Fire stops it (stopped: it
+    // already took Acid or Fire since its last turn); burning; covered in oil
+    // (its next Fire damage deals 5 more); carries or wields a Torch.
+    bool regenerates{}, regeneration_stopped{}, burning{}, oiled{}, has_torch{};
 };
 
 struct TemporaryHpOffer

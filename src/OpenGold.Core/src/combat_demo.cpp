@@ -938,7 +938,7 @@ Command choose_demo_command(const CombatSession &session)
             }
     // A standing regenerating enemy is set Burning with Alchemist's Fire: the fire
     // at the start of each of its turns keeps it from regenerating. Oil goes on
-    // first when the thrower can follow with Alchemist's Fire for 5 more damage.
+    // first when anyone on the side can follow with Fire for 5 more damage.
     const auto target_of = [&](const Command &command) -> const CombatantView &
     {
         return *std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -947,8 +947,22 @@ Command choose_demo_command(const CombatSession &session)
             return a.id == command.target;
         });
     };
+    const bool fire_follows =
+        std::any_of(state.combatants.begin(), state.combatants.end(), [&](const auto & ally)
+    {
+        const auto &cantrips = ally.known_cantrips;
+        return ally.side == active.side && ally.conscious &&
+               (ally.has_torch ||
+                std::any_of(ally.thrown_gear_left.begin(), ally.thrown_gear_left.end(),
+                            [](const auto & gear)
+        {
+            return gear.first == "alchemists_fire" && gear.second > 0;
+        }) ||
+        std::find(cantrips.begin(), cantrips.end(), "fire_bolt") != cantrips.end() ||
+        std::find(cantrips.begin(), cantrips.end(), "produce_flame") != cantrips.end());
+    });
     for (const auto &command : offered)
-        if (command.verb == "throw_oil" && offers("throw_alchemists_fire"))
+        if (command.verb == "throw_oil" && fire_follows)
         {
             const auto &target = target_of(command);
             if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
@@ -961,6 +975,16 @@ Command choose_demo_command(const CombatSession &session)
             const auto &target = target_of(command);
             if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
                     !target.burning)
+                return command;
+        }
+    // In melee, a Torch's Fire stops the regeneration that would undo more than
+    // a weapon's damage, unless something already stopped it this round.
+    for (const auto &command : offered)
+        if (command.verb == "torch")
+        {
+            const auto &target = target_of(command);
+            if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
+                    !target.burning && !target.regeneration_stopped)
                 return command;
         }
     for (const auto verb :
@@ -1038,9 +1062,37 @@ Command choose_demo_command(const CombatSession &session)
         }
     if (shot)
         return *shot;
-    // Stuck behind others with no enemy beside it, a shield-bearer carrying a
-    // bow takes its shield off to shoot on later turns.
-    if (!threatened)
+    // Seeing no enemy from here (behind a wall corner, say), a character steps to
+    // the nearest square with a clear line to one, to shoot or cast from there.
+    const auto sees_enemy = [&](Cell from)
+    {
+        return std::any_of(state.combatants.begin(), state.combatants.end(), [&](const auto & a)
+        {
+            return a.side != active.side && a.hit_points > 0 &&
+                   rules::has_line_of_sight(board, from, a.cell);
+        });
+    };
+    if (!sees_enemy(active.cell))
+    {
+        const Command *step = nullptr;
+        int shortest = 1000;
+        for (const auto &command : offered)
+            if (command.verb == "move" && sees_enemy(command.destination))
+            {
+                const int steps = std::max(std::abs(command.destination.x - active.cell.x),
+                                           std::abs(command.destination.y - active.cell.y));
+                if (steps < shortest)
+                {
+                    step = &command;
+                    shortest = steps;
+                }
+            }
+        if (step)
+            return *step;
+    }
+    // Stuck with no enemy it can strike in melee (and so none that can strike
+    // it), a shield-bearer carrying a bow takes its shield off to shoot.
+    if (!can_strike)
         if (const auto *command = offers("doff_shield"))
             return *command;
     for (const auto &command : offered)
