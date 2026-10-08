@@ -14,6 +14,7 @@
 #include "life_cycle.h"
 #include "recovery_timeline.h"
 #include "weapons.h"
+#include "thrown_gear.h"
 #include "armor.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -1168,11 +1169,13 @@ character_definition(std::string_view bytes,
             const int modifier = std::max(item->finesse ? std::max(str, dex) : item->ranged ? dex : str,
                                           pact ? ability_modifier(scores[5]) : -5);
             const int bonus = (trained(klass, grants, key) || pact ? 2 : 0) + modifier;
-            if (item->dice && !item->ranged)
+            if ((item->dice || item->fixed_damage) && !item->ranged)
             {
                 d.melee_ability = modifier;
                 d.melee_bonus = bonus;
-                d.melee = {item->dice, item->sides, modifier};
+                d.melee = {item->dice, item->sides,
+                           item->fixed_damage ? item->fixed_damage : modifier
+                          };
                 d.melee_type = item->type;
                 d.reach = item->reach;
                 d.melee_heavy_disadvantage = item->heavy_disadvantage(scores);
@@ -10583,7 +10586,7 @@ class Module final : public RulesModule
 
     EquipmentInfo equipment_info(std::string_view key) const override
     {
-        if (detail::ammunition(key))
+        if (detail::ammunition(key) || detail::thrown_gear(key))
             return {EquipmentSlot::carried, 0};
         if (const auto *item = detail::weapon(key))
             return {EquipmentSlot::weapon, item->hands};
@@ -11218,7 +11221,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.134", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.135", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

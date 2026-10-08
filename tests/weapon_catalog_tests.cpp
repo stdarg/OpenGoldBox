@@ -196,8 +196,8 @@ void definitions()
         {"slashing", catalog::DamageType::slashing}};
     const auto expected = expectations();
     std::set<std::string> keys;
-    check(expected.size() == 38 && catalog::weapons.size() == 39,
-          "All 38 SRD weapons plus the existing plain focus");
+    check(expected.size() == 38 && catalog::weapons.size() == 40,
+          "All 38 SRD weapons plus the existing plain focus and the Torch");
     for (const auto &e : expected)
     {
         const auto *w = catalog::weapon(e.key);

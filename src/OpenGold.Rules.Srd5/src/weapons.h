@@ -49,6 +49,17 @@ struct Weapon
 
 inline constexpr std::array weapons
 {
+    // SRD 5.2.1 adventuring gear: a Torch can be wielded as a Simple Melee weapon;
+    // a hit deals 1 Fire damage.
+    Weapon{
+        .key = "torch",
+        .dice = 0,
+        .sides = 0,
+        .type = DamageType::fire,
+        .fixed_damage = 1,
+        .weight_quarters = 4,
+        .cost_cp = 1,
+        .label = "Torch"},
     Weapon{
         .key = "club",
         .dice = 1,

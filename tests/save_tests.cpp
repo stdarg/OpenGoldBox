@@ -62,7 +62,7 @@ template <class F> std::string rejection_message(F f)
 }
 
 // The only campaign format this build reads and writes.
-constexpr unsigned current_campaign_format = 22;
+constexpr unsigned current_campaign_format = 23;
 
 // The checksum line covers only the body, so rewriting the header number
 // changes nothing but the claimed format.

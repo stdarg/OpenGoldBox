@@ -781,6 +781,42 @@ Expedition create_party(const std::filesystem::path &directory)
     return {party, std::move(town)};
 }
 
+// The general store at (15,8) sells the original's oil and the SRD gear the
+// game adds (Torch, Acid, Alchemist's Fire), all converting to SRD items.
+void general_store_gear(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    auto &[party, town] = trip;
+    walk_to(town, party, 15, 8);
+    face(town, party, 0);
+    town.explore(por::ExplorationCommand::look);
+    settle(town, party, [](const por::TourSnapshot & s)
+    {
+        return s.dialogue.find("CAN I SHOW") != std::string::npos ? std::size_t{0} : peaceful(s);
+    });
+    check(town.snapshot().phase == por::TourPhase::shopping, "The general store opens");
+    const auto &stock = town.shop_stock();
+    std::set<std::string> sold;
+    for (const auto &item : stock)
+        sold.insert(equipment_conversion(item));
+    check(sold.contains("oil") && sold.contains("torch") && sold.contains("acid") &&
+          sold.contains("alchemists_fire"),
+          "The general store sells Oil, Torches, Acid and Alchemist's Fire");
+    const auto acid = std::find_if(stock.begin(), stock.end(), [](const auto & item)
+    {
+        return equipment_conversion(item) == "acid";
+    });
+    check(acid->stored.value == 25 && town.buy(town.snapshot().continue_ticket,
+                                               std::size_t(acid - stock.begin())),
+          "A vial of Acid costs 25 gp");
+    const auto &items = party->member(party->selected()).character.inventory().items();
+    check(std::any_of(items.begin(), items.end(), [](const auto & item)
+    {
+        return item.definition_id == "acid";
+    }),
+    "The buyer carries the Acid");
+}
+
 void buy_and_equip(Expedition &trip)
 {
     auto &[party, town] = trip;
@@ -1524,6 +1560,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         walk_to(shopper.town, shopper.party, 8, 10);
         write_campaign_file(fixture, encode_campaign(*shopper.party, &shopper.town, assets));
     }
+    general_store_gear(directory);
     auto trip = create_party(directory);
     buy_and_equip(trip);
     defeat_four_orcs(trip);

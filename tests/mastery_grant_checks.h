@@ -39,7 +39,7 @@ void run()
         for (const auto &item : mastery::weapons)
         {
             const bool allowed =
-                item.key != "wand" && found != expected.end() &&
+                item.key != "wand" && item.key != "torch" && found != expected.end() &&
                 (klass.id != "barbarian" || !item.ranged) &&
                 (klass.id != "rogue" || !item.martial || item.finesse || item.light);
             const bool offered = std::any_of(options.options.begin(), options.options.end(),

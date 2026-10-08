@@ -327,6 +327,7 @@ void weapons_and_spells()
     const auto target = "creature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     const std::map<std::string_view, DamageType> expected_types
     {
+        {"torch", DamageType::fire},
         {"club", DamageType::bludgeoning},
         {"dagger", DamageType::piercing},
         {"handaxe", DamageType::slashing},

@@ -576,3 +576,22 @@ shield in hand never blocks casting, and Silence no longer stops spells (it
 still protects from Thunder damage). Subtle Spell, which only removed
 components, is no longer offered. Untrained armor, Rage and Wild Shape still
 prevent casting. See [spell components](SPELL-COMPONENTS.md).
+
+## GEAR-1 (2026-10-08): Fire and Acid for every party
+
+SRD trolls stay down only after Acid or Fire, and the user chose to give every
+party those rather than design the trolls fight around standing on a downed
+troll (a rule kept from the original game that players cannot easily know).
+
+- **Torch:** a Simple Melee weapon that can be equipped; a hit deals 1 Fire
+  damage (SRD 5.2.1 adventuring gear). Every starting kit carries one, as the
+  SRD's starting packs do.
+- **Acid, Alchemist's Fire and Oil:** thrown in place of one attack at a
+  creature within 20 feet, which makes a Dexterity save (DC 8 + Dexterity
+  modifier + Proficiency Bonus). Acid deals 2d6 Acid, Alchemist's Fire 1d4 Fire
+  and Burning, and Oil covers the target so its next Fire damage deals 5 more.
+  Each throw uses one up. Oil is the original's Flask of Oil; Acid and
+  Alchemist's Fire are added to New Phlan's general store at SRD prices, and
+  Torches are sold ten for 1 gp.
+- **Simulated parties** use them sensibly (a later step).
+

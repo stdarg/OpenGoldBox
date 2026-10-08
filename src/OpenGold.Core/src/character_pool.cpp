@@ -1,3 +1,4 @@
+#include "opengold/authored_items.h"
 #include "opengold/character_pool.h"
 #include <algorithm>
 #include <map>
@@ -254,5 +255,7 @@ void outfit_pool_member(CampaignParty &party, MemberId member)
     add(kit.shield ? item_type::shield : item_type::none, 1, true);
     add(kit.ranged, 1, false);
     add(kit.ammunition, 20, false);
+    // Every kit carries a torch, as the SRD's starting packs do.
+    add(authored_item::torch, 1, false);
 }
 } // namespace opengold

@@ -516,9 +516,10 @@ void pool_starting_gear()
               "Wear body armor unless the class relies on no armor");
         check(std::count(held.begin(), held.end(), "shield") == (no_shield.contains(klass) ? 0 : 1),
               "Carry a shield only when the class is trained with one");
-        check(carried.size() == 2 && count_in(carried, ranged) == 1 &&
-              count_in(carried, ammunition) == 1,
-              "Pack a bow or crossbow with its ammunition");
+        check(carried.size() == 3 && count_in(carried, ranged) == 1 &&
+              count_in(carried, ammunition) == 1 &&
+              std::count(carried.begin(), carried.end(), "torch") == 1,
+              "Pack a bow or crossbow with its ammunition, and a torch");
     }
 }
 

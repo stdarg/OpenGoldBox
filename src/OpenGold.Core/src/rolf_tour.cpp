@@ -1,3 +1,4 @@
+#include "opengold/authored_items.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/exploration_view.h"
 #include <algorithm>
@@ -9,6 +10,8 @@ namespace opengold::por
 {
 namespace
 {
+// The ITEM3.DAX list of New Phlan's general store, the shop that sells oil.
+constexpr unsigned general_store_list = 54;
 std::filesystem::path resolve_archive(const std::filesystem::path &directory, std::string_view name)
 {
     std::optional<std::filesystem::path> path;
@@ -157,6 +160,31 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         return lists;
     };
     town->treasure = item_lists("ITEM3.DAX");
+    // The general store, which sells the original's oil, also stocks the SRD
+    // gear OpenGoldBox adds: torches (sold by ten, as prices are whole gold),
+    // Acid and Alchemist's Fire at their SRD prices.
+    struct StockedGear
+    {
+        std::uint8_t type;
+        const char *name;
+        std::uint16_t price_gp;
+        std::uint8_t quantity;
+    };
+    constexpr std::array<StockedGear, 3> added_gear{
+        {   {authored_item::torch, "10 Torches", 1, 10}, {authored_item::acid, "Vial of Acid", 25, 1},
+            {authored_item::alchemists_fire, "Flask of Alchemist's Fire", 50, 1}
+        }};
+    auto &general_store = town->treasure[general_store_list];
+    for (const auto &gear : added_gear)
+    {
+        Equipment item;
+        item.index = general_store.size();
+        item.stored.type = gear.type;
+        item.stored.stored_name = gear.name;
+        item.stored.value = gear.price_gp;
+        item.stored.stack_size = gear.quantity;
+        general_store.push_back(std::move(item));
+    }
     town->item_templates = *templates;
     town->sprite_archive = bytes;
     const auto pictures = [&](const char *name, auto & destination)

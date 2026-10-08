@@ -87,7 +87,13 @@ Mail, Scale Mail, Splint Mail and Plate Mail (Silver Plate Mail too). SRD 5.2.1
 has no Banded Mail, so it becomes Splint, the SRD heavy armor with the same
 AD&D AC 4. Magic or cursed items keep their unsupported original record.
 
-Stock with no conversion (jewelry, holy symbols, mirrors, oil, holy water) is
+The general store at (15,8) sells the original's Flask of Oil, which converts
+to SRD Oil, and three items the game adds from the SRD's adventuring gear:
+Torches (ten for 1 gp, as prices are whole gold), a Vial of Acid (25 gp) and a
+Flask of Alchemist's Fire (50 gp); see [GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
+Every starting kit also carries a Torch.
+
+Stock with no conversion (jewelry, holy symbols, mirrors, holy water) is
 still for sale, and its entry reads "{item} / {price} gp / cannot be equipped"
 before anything is spent. It keeps its original record, as treasure does.
 `opengold_expedition_tests` checks the conversions, a Cleric buying and wearing

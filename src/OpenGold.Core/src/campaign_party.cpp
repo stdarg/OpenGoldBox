@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/authored_items.h"
 #include "opengold/dice.h"
 #include <algorithm>
 #include <limits>
@@ -207,6 +208,14 @@ std::string equipment_conversion(const por::Equipment &item)
         return "plate";
     case 59:
         return "shield";
+    case original_item::flask_of_oil:
+        return "oil";
+    case authored_item::torch:
+        return "torch";
+    case authored_item::acid:
+        return "acid";
+    case authored_item::alchemists_fire:
+        return "alchemists_fire";
     default:
         return "por:unsupported:" + std::to_string(raw.type);
     }

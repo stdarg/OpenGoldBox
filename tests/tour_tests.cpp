@@ -446,9 +446,11 @@ void installed_town(const RolfTourSession &finished)
         std::cout << "Town unsupported branch: " << d << '\n';
     check(events.size() >= 30 && scripts == std::set<unsigned> {0, 8, 11},
           "Walkable town includes City Hall and training scripts");
+    // The general store at (15,8) adds the game's Torches, Acid and Alchemist's
+    // Fire to its seven original items.
     for (const auto target : std::array<std::array<unsigned, 3>, 4>
 {
-    {{15, 8, 7}, {8, 10, 11}, {13, 8, 57}, {11, 10, 13}}
+    {{15, 8, 10}, {8, 10, 11}, {13, 8, 57}, {11, 10, 13}}
 })
     {
         auto town = finished;

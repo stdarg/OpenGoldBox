@@ -23,6 +23,13 @@ natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1); spells
 have no components and Subtle Spell is gone (CLASS-11). Entries below that
 describe those features are delivery history, not current behavior.
 
+## Torches, Acid, Alchemist's Fire and Oil
+
+Rules 0.6.135 adds the Torch to the weapon table (a Simple Melee weapon dealing
+1 Fire damage) and Acid, Alchemist's Fire and Oil as carried gear; see
+[GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
+Throwing the flasks in combat comes next.
+
 ## Slums set-encounter creatures
 
 Rules 0.6.133 adds the Hobgoblin Warrior, Ogre and Troll and a level-3
