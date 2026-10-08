@@ -22,7 +22,9 @@ current engine. Sources: `opengold_scripts --inspect GAME ECL8.DAX 29`,
   "may rest undisturbed". A rug hides a stash of arms and armor.
 - **Art:** `WALLDEF8`/`8X8D8` (wall banks `LOAD PIECES 3,20,1` and `18,17,1`),
   `SPRIT8`, `CPIC8`, `PIC8`, `HEAD8`, `BODY8`, `MON8CHA`, `ITEM8` are all
-  present in the installation.
+  present in the installation. Norris the Gray has a complete portrait
+  (`art/portraits/NPCs/norris-the-gray.png`) that fills the view while he
+  speaks; see [PORTRAITS.md](../PORTRAITS.md).
 
 ## Fights
 

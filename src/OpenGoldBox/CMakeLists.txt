@@ -67,13 +67,15 @@ foreach(source IN LISTS portrait_sources)
         DEPENDS "${source}" VERBATIM)
     list(APPEND portrait_outputs "${output}")
 endforeach()
-set(rolf_portrait_source "${PROJECT_SOURCE_DIR}/art/portraits/NPCs/rolf.png")
-set(rolf_portrait_output "${game_project}/bin/portraits/NPCs/rolf.png")
-add_custom_command(OUTPUT "${rolf_portrait_output}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_project}/bin/portraits/NPCs"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${rolf_portrait_source}" "${rolf_portrait_output}"
-    DEPENDS "${rolf_portrait_source}" VERBATIM)
-list(APPEND portrait_outputs "${rolf_portrait_output}")
+foreach(name rolf norris-the-gray)
+    set(source "${PROJECT_SOURCE_DIR}/art/portraits/NPCs/${name}.png")
+    set(output "${game_project}/bin/portraits/NPCs/${name}.png")
+    add_custom_command(OUTPUT "${output}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_project}/bin/portraits/NPCs"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${source}" "${output}"
+        DEPENDS "${source}" VERBATIM)
+    list(APPEND portrait_outputs "${output}")
+endforeach()
 set(splash_outputs)
 foreach(name OpenGoldBoxSplashBackground OpenGoldBoxEngineLettering OpenGoldBoxGameLettering
     OpenGoldBoxEngineLettering.es OpenGoldBoxGameLettering.es)

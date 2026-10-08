@@ -7,6 +7,7 @@
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/classes/audio_stream_wav.hpp>
+#include <map>
 #include <optional>
 #include <set>
 #include <functional>
@@ -91,7 +92,8 @@ class RolfTourView : public godot::Control
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::array<godot::Ref<godot::ImageTexture>, 3> sprites_;
     godot::Ref<godot::ImageTexture> wall_view_;
-    godot::Ref<godot::Texture2D> rolf_portrait_;
+    // Complete NPC portraits by file, loaded when first shown.
+    std::map<std::string, godot::Ref<godot::Texture2D>, std::less<>> npc_portraits_;
     // Monster close-up looping before combat; the pointer identifies the frames shown.
     const std::vector<opengold::AnimationFrame> *shown_monster_picture_{};
     std::vector<godot::Ref<godot::ImageTexture>> monster_frames_;
@@ -174,6 +176,7 @@ class RolfTourView : public godot::Control
     void close_sheet();
     void leave_shop();
     void movement(opengold::por::ExplorationCommand command);
+    godot::Ref<godot::Texture2D> npc_portrait(std::string_view file);
     void draw_scene();
     void draw_map();
     void check_run();

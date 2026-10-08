@@ -1,5 +1,6 @@
-// Kuto's Well (docs/audits/kutos-well.md): its creature conversions and the
-// rules they need.
+// Kuto's Well (docs/audits/kutos-well.md): its creature conversions, the
+// rules they need and Norris the Gray's portrait.
+#include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -89,6 +90,30 @@ void multiattack()
     }
     check(rejected, "A creature has one Multiattack row");
 }
+
+// Norris the Gray's portrait fills the view once he has walked up and speaks.
+void norris_portrait()
+{
+    por::TourSnapshot state;
+    state.tour_finished = true;
+    state.script_id = 29;
+    state.sprite_id = 16;
+    state.sprite_frame = 2;
+    state.dialogue = "YOU ARE SURROUNDED BY THE BANDIT BAND OF THE INFAMOUS NORRIS THE  GRAY.";
+    check(speaking_npc_portrait(state).empty(), "Norris's portrait waits until he is near");
+    state.sprite_frame = 0;
+    check(speaking_npc_portrait(state) == "NPCs/norris-the-gray.png",
+          "Norris's portrait shows while he speaks");
+    state.dialogue.clear();
+    check(speaking_npc_portrait(state).empty(), "Norris's portrait needs his words");
+    state.dialogue = "A Slums encounter";
+    state.script_id = 20;
+    check(speaking_npc_portrait(state).empty(), "Sprite 16 elsewhere is not Norris");
+    state.tour_finished = false;
+    check(speaking_npc_portrait(state) == "NPCs/rolf.png", "Rolf speaks during his tour");
+    check(std::filesystem::exists(root / "art/portraits/NPCs/norris-the-gray.png"),
+          "Norris's portrait is in the art folder");
+}
 } // namespace
 
 int main()
@@ -97,6 +122,7 @@ int main()
     {
         conversions();
         multiattack();
+        norris_portrait();
         std::cout << "Kuto's Well tests passed\n";
         return 0;
     }

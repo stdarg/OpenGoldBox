@@ -51,27 +51,31 @@ Image generators usually produce squares. When you generate one:
 
 ## Complete NPC portraits
 
-This kind of portrait is new to OpenGoldBox. Rolf's is the first.
+This kind of portrait is new to OpenGoldBox. Rolf and Norris the Gray have one.
 
 | Item | Location |
 | --- | --- |
-| Source | `art/portraits/NPCs/rolf.png` (1045x1254 RGB) |
+| Sources | `art/portraits/NPCs/rolf.png` (1045x1254 RGB), `art/portraits/NPCs/norris-the-gray.png` (1145x1374 RGB) |
 | Name-to-file map | `art/portraits/NPCs/portraits.json` (no code reads it yet) |
-| Generation prompts, style reference and crop | `art/portraits/NPCs/prompts.json` |
-| Install rule | `src/OpenGoldBox/CMakeLists.txt` copies the file to `godot/bin/portraits/NPCs/rolf.png` |
-| Loaded by | `RolfTourView::_ready()`, from `res://bin/portraits/NPCs/rolf.png` |
+| Generation prompts, style reference and crop | `art/portraits/NPCs/prompts.json` (Rolf only) |
+| Install rule | `src/OpenGoldBox/CMakeLists.txt` copies each listed file to `godot/bin/portraits/NPCs/` |
+| When each shows | `speaking_npc_portrait()` in `npc_portraits.h` |
+| Loaded by | `RolfTourView::npc_portrait()`, from `res://bin/portraits/`, on first use |
 
 `draw_scene()` draws the portrait over the whole view rectangle. It is not
 stretched 1.2 again, because the art is already made in the window's on-screen
 shape.
 
-The portrait appears when Rolf has walked up to the party and speaks. In
-tour-state terms, that is `sprite_frame == 0` (his nearest sprite pose) with
-dialogue showing and the tour not finished. At every other moment the small
-encounter sprite is drawn instead.
+A portrait appears when its NPC has walked up to the party and speaks, that is
+at `sprite_frame == 0` (the encounter sprite's nearest pose) with dialogue
+showing. At every other moment the small encounter sprite is drawn instead.
 
-For now each NPC portrait needs its own install rule and loading code. Add a
-general table only once a second NPC needs one.
+- **Rolf:** during his opening tour.
+- **Norris the Gray:** in Kuto's Well (`ECL8:29`) when sprite 16 is up, which
+  the script shows only for his "Surrender or die" ambush in the catacombs.
+
+To add one, put the 5:6 PNG in `art/portraits/NPCs/`, add its name to the
+install loop and its condition to `speaking_npc_portrait()`.
 
 ## Heads and bodies (legacy)
 

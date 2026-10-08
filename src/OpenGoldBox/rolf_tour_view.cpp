@@ -5,6 +5,7 @@
 #include "game_resources.h"
 #include "rolf_tour_view.h"
 #include "opengold/campaign_party.h"
+#include "opengold/npc_portraits.h"
 #include "vital_fixtures.h"
 #include "opengold/srd5.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
@@ -124,7 +125,6 @@ void RolfTourView::_ready()
         button->set_visible(embedded_party_);
         presentation::attach_child(*this, std::move(button));
     }
-    rolf_portrait_ = ResourceLoader::get_singleton()->load("res://bin/portraits/NPCs/rolf.png");
     ready_ = true;
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -1027,6 +1027,19 @@ void RolfTourView::_draw()
     draw_rect(map_rect_, line, false);
 }
 
+Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
+{
+    auto found = npc_portraits_.find(file);
+    if (found == npc_portraits_.end())
+    {
+        const auto path = "res://bin/portraits/" + std::string(file);
+        found = npc_portraits_
+                .emplace(file, ResourceLoader::get_singleton()->load(String::utf8(path.c_str())))
+                .first;
+    }
+    return found->second;
+}
+
 void RolfTourView::draw_scene()
 {
     draw_rect(scene_rect_, panel);
@@ -1045,13 +1058,12 @@ void RolfTourView::draw_scene()
         return;
     }
     const auto &state = session_->snapshot();
-    // Frame 0 is Rolf's nearest pose; once he has arrived and speaks, his
-    // portrait replaces the small encounter sprite. The portrait is cut to the
-    // view's 5:6 on-screen shape (see docs/PORTRAITS.md), so it fills the view.
-    const bool rolf_speaking =
-        !state.tour_finished && state.sprite_frame == 0 && !state.dialogue.empty();
-    if (rolf_speaking && rolf_portrait_.is_valid())
-        draw_texture_rect(rolf_portrait_, view, false);
+    // A speaking NPC's portrait replaces the small encounter sprite. It is cut to
+    // the view's 5:6 on-screen shape (see docs/PORTRAITS.md), so it fills the view.
+    const auto portrait_file = opengold::speaking_npc_portrait(state);
+    const auto portrait = portrait_file.empty() ? Ref<Texture2D>() : npc_portrait(portrait_file);
+    if (portrait.is_valid())
+        draw_texture_rect(portrait, view, false);
     else if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
     {
         const auto &source = session_->sprites()[state.sprite_frame];
