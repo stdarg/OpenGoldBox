@@ -991,7 +991,9 @@ void CharacterCreationView::update_party_navigation()
             {
                 if (!town || !town->resolve_combat(*outcome))
                     throw std::runtime_error("Exploration rejected the combat result");
-                if (outcome->outcome == rules::Outcome::victory)
+                // After a victory or a flight, exploration resumes.
+                if (outcome->outcome == rules::Outcome::victory ||
+                        outcome->outcome == rules::Outcome::fled)
                 {
                     remove_child(fight);
                     presentation::NodeOwner<Node> released(fight);

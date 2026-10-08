@@ -1821,6 +1821,111 @@ void slums_parley_outcomes(const std::filesystem::path &save, const std::filesys
     check(fought(stayed), "Staying when ordered out starts a fight");
 }
 
+// The party meets street monsters on a camp and runs for the field's edge:
+// those who get away rejoin it, those left on the field are lost, and the
+// original script hears that the party fled.
+void slums_flight(const std::filesystem::path &save, const std::filesystem::path &directory)
+{
+    auto trip = load_expedition(save, directory);
+    auto &[party, town] = trip;
+    if (town.snapshot().area_id == 0)
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+    }
+    walk_to(town, party, 14, 4);
+    for (unsigned camps = 0; camps < 80 && town.snapshot().phase != por::TourPhase::combat; ++camps)
+    {
+        check(town.camp(RestKind::short_rest), "Camp starts");
+        while (town.snapshot().phase == por::TourPhase::running ||
+                town.snapshot().phase == por::TourPhase::awaiting_continue)
+        {
+            const auto &s = town.snapshot();
+            if (s.phase == por::TourPhase::running)
+                town.advance(.5);
+            else
+                check(town.choose(s.continue_ticket, stand_and_fight(s)), "Answer accepted");
+        }
+        if (town.snapshot().phase != por::TourPhase::combat)
+            if (const auto &spending = party->state().short_rest)
+                party->finish_short_rest(spending->ticket);
+    }
+    check(town.snapshot().phase == por::TourPhase::combat, "Monsters attack the camp");
+    if (town.monster_picture())
+        check(town.start_encounter(), "The monster close-up is dismissed");
+    const auto experience = party->member(party->state().slots[0]).experience;
+    CombatDemo combat(module());
+    combat.campaign_party(party);
+    combat.encounter(*town.pending_encounter(), 42);
+    const auto board = combat.combat().snapshot().battlefield;
+    std::vector<rules::Cell> edges;
+    for (int y = 0; y < board.height; ++y)
+        for (int x = 0; x < board.width; ++x)
+            if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
+                    board.at({x, y}) != 1)
+                edges.push_back({x, y});
+    const auto to_edge = [&](rules::Cell from)
+    {
+        int best = 1000;
+        for (const auto edge : edges)
+            best = std::min(best, std::max(std::abs(edge.x - from.x), std::abs(edge.y - from.y)));
+        return best;
+    };
+    for (unsigned n = 0; n < 6000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing; ++n)
+    {
+        const auto s = combat.combat().snapshot();
+        const auto offered = combat.combat().legal_commands();
+        const auto mover = std::find_if(s.combatants.begin(), s.combatants.end(), [&](const auto & u)
+        {
+            return u.id == s.actor;
+        });
+        std::optional<rules::Command> pick;
+        if (mover != s.combatants.end() && mover->side == 0 && !s.reaction_pending)
+        {
+            for (const auto &c : offered)
+                if (c.verb == "flee")
+                    pick = c;
+            int closest = to_edge(mover->cell);
+            if (!pick)
+                for (const auto &c : offered)
+                    if (c.verb == "move" && to_edge(c.destination) < closest)
+                    {
+                        pick = c;
+                        closest = to_edge(c.destination);
+                    }
+            if (!pick)
+                for (const auto &c : offered)
+                    if (c.verb == "end")
+                        pick = c;
+        }
+        check(combat.submit(pick ? *pick : choose_demo_command(combat.combat())),
+              "Combat accepts the command");
+    }
+    const auto result = combat.combat().snapshot();
+    check(result.outcome == rules::Outcome::fled, "The party flees the fight");
+    check(town.resolve_combat(result), "Exploration accepts the flight");
+    check(town.snapshot().phase != por::TourPhase::faulted && town.script_variable(0x6DC7) == 128,
+          "The original script hears that the party fled");
+    bool someone_got_away = false;
+    for (const auto &unit : result.combatants)
+        if (unit.side == 0)
+        {
+            const auto &member = party->member(unit.id);
+            const bool in_party = std::find(party->state().slots.begin(), party->state().slots.end(),
+                                            unit.id) != party->state().slots.end();
+            if (unit.fled)
+            {
+                someone_got_away = true;
+                check(in_party && !member.vitals.dead && member.vitals.hit_points == unit.hit_points &&
+                      member.experience == experience,
+                      "One who got away rejoins with its wounds and no experience for no kills");
+            }
+            else
+                check(!in_party && member.vitals.dead, "One left on the field is lost for good");
+        }
+    check(someone_got_away, "Someone got away");
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -1868,6 +1973,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         slums_set_encounters(save, directory);
         slums_encounter_menu(save, directory);
         slums_parley_outcomes(save, directory);
+        slums_flight(save, directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);

@@ -129,6 +129,9 @@ class CampaignParty
     // The designated leader, or the first member when none is designated.
     [[nodiscard]] MemberId leader() const;
     void make_leader(MemberId id);
+    // A member left on the field when the party flees is lost for good: dead
+    // and out of the party (the original's rule).
+    void lose(MemberId id);
     // Who speaks for the party now: the leader, or the first conscious member
     // when the leader is down. 0 when nobody can speak.
     [[nodiscard]] MemberId spokesman() const;

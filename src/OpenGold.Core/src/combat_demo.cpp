@@ -610,7 +610,10 @@ void CombatDemo::finish_combat()
     EclHostReply reply;
     reply.writes =
     {
-        {0x6DC7, static_cast<std::uint16_t>(state.outcome == Outcome::victory ? 0 : 128)},
+        // The original's combat results: 0 won, 128 the party fled, 129 it fell.
+        {0x6DC7, static_cast<std::uint16_t>(state.outcome == Outcome::victory ? 0
+                                            : state.outcome == Outcome::fled ? 128
+                                            : 129)},
         {0x6DC8, static_cast<std::uint16_t>(defeated)},
         {0x6DCB, 0},
         {0x6DE3, 0},

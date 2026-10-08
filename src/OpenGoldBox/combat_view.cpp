@@ -1137,7 +1137,15 @@ void CombatView::move_selected(Cell direction)
     const auto offered = demo_->combat().legal_commands();
     if (!state.battlefield.contains(destination))
     {
-        explain("That square is outside the battlefield.");
+        // Moving off the edge flees the fight, as in the original.
+        const auto flee = std::find_if(offered.begin(), offered.end(), [&](const auto & c)
+        {
+            return c.verb == "flee" && c.destination == destination;
+        });
+        if (flee != offered.end())
+            act(*flee);
+        else
+            explain(N_("You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."));
         return;
     }
     const auto enemy =
@@ -1682,7 +1690,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
             mode_ != "poison_spray" && mode_ != "sacred_flame" &&
             mode_ != "shocking_grasp" && mode_ != "eldritch_blast" && mode_ != "ray_of_frost")
         for (const auto &a : s.combatants)
-            if (a.side == 0 && !a.dead && a.cell == cell)
+            if (a.side == 0 && !a.dead && !a.fled && a.cell == cell)
             {
                 select_party(a.id);
                 get_viewport()->set_input_as_handled();
@@ -1764,7 +1772,7 @@ void CombatView::update_hover(const Vector2 &pointer)
     const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
                                     [&](const auto & actor)
     {
-        return !actor.dead && actor.cell == cell &&
+        return !actor.dead && !actor.fled && actor.cell == cell &&
                (actor.side == 1 || npc(actor.id).has_value());
     });
     if (found == state.combatants.end())
@@ -1870,6 +1878,7 @@ void CombatView::refresh()
             }
     if (loaded && s.outcome != Outcome::ongoing)
         turn = i18n::text(s.outcome == Outcome::victory ? N_("Victory")
+                          : s.outcome == Outcome::fled ? N_("Your party flees the battle.")
                           : N_("Party incapacitated / defeat"));
     if (player && last_actor_ && last_actor_ != s.actor)
         selected_ = s.actor;
@@ -2604,6 +2613,9 @@ void CombatView::draw_battlefield()
     for (const auto index : presentation::combat_sprite_draw_order(s.combatants))
     {
         const auto &a = s.combatants[index];
+        // One who ran off the field is no longer on it.
+        if (a.fled)
+            continue;
         const auto center = Vector2((a.cell.x + .5) * tile, (a.cell.y + .5) * tile);
         if (a.dead)
         {
@@ -2723,7 +2735,9 @@ void CombatView::_process(double delta)
                 UtilityFunctions::print(
                     "Godot C++ combat check passed: ", check_slums_ ? "Slums" : "training",
                     ", commands ", check_steps_, ", outcome ",
-                    s.outcome == Outcome::victory ? "victory" : "defeat");
+                    s.outcome == Outcome::victory ? "victory"
+                    : s.outcome == Outcome::fled  ? "fled"
+                    : "defeat");
                 checking_ = false;
                 get_tree()->quit(0);
             }

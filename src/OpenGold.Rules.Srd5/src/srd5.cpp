@@ -253,7 +253,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 44;
+constexpr unsigned checkpoint_format = 45;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -693,6 +693,11 @@ struct Actor : detail::LifeState
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
+    // Tried to run off the field as fast as the fastest enemy and failed: it
+    // stays until the fight ends (the original's rule).
+    bool must_stay{};
+    // Ran off the field this turn; it leaves the fight when the turn ends.
+    bool fled{};
     EntityId horde_origin{};
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     // Wild Shape: the Beast form's statistics, derived from the wild_shape effect.
@@ -1503,7 +1508,10 @@ class Session final : public CombatSession
         if (!scope_)
             throw std::runtime_error("Invalid encounter scope");
         detail::validate_battlefield(board_);
-        if (encounter.participants.size() < 2 || encounter.participants.size() > 64)
+        // A restored fight may have one creature left on the field, the rest
+        // having run off it.
+        if (encounter.participants.size() < (restoring ? 1u : 2u) ||
+                encounter.participants.size() > 64)
             throw std::runtime_error("Invalid encounter size");
         std::set<EntityId> ids;
         std::set<Cell> cells;
@@ -1541,7 +1549,7 @@ class Session final : public CombatSession
             a.movement = d.speed;
             actors_.push_back(std::move(a));
         }
-        if (sides.size() != 2)
+        if (sides.size() != 2 && !restoring)
             throw std::runtime_error("Encounter needs both sides");
         // Fixed tie adjudication: descending initiative, then stable entity ID.
         std::stable_sort(actors_.begin(), actors_.end(),
@@ -1783,6 +1791,23 @@ class Session final : public CombatSession
     // Whether taking off its shield would free a character to draw a carried
     // two-handed bow or crossbow.
     bool shield_blocks_bow(const Actor &) const;
+    // Fleeing the fight (the original's rule): a party member runs off the edge
+    // of the field. Faster than every conscious enemy, it gets away; as fast as
+    // the fastest, it has an even chance; slower than any, it cannot leave.
+    [[nodiscard]] int current_speed(const Actor &) const;
+    [[nodiscard]] bool can_run_off(const Actor &) const;
+    [[nodiscard]] std::vector<Cell> off_field_steps(const Actor &) const;
+    void run_off_field(Actor &);
+    void remove_fled();
+    // A member who got away: out of the fight, back with the party after it.
+    struct Departed
+    {
+        Participant source;
+        int hp{}, max_hp{}, armor_class{};
+        VitalState vitals;
+        std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
+    };
+    std::vector<Departed> fled_;
     void throw_gear(Actor &, Actor &, const detail::ThrownGear &);
     std::vector<HeldItemView> items_;
     void initialize_items();
@@ -2613,6 +2638,77 @@ bool Session::shield_blocks_bow(const Actor &a) const
     return !carried_ranged_weapon(unshielded).empty();
 }
 
+int Session::current_speed(const Actor &a) const
+{
+    return std::max(0, def(a).speed - detail::speed_penalty(a.effects));
+}
+
+bool Session::can_run_off(const Actor &a) const
+{
+    if (a.source.side != 0 || !conscious(a) || a.must_stay || a.fled ||
+            actors_[turn_].source.id != a.source.id || outcome_ != Outcome::ongoing || pending() ||
+            temporary_offer_ || check_choice_ || graze_ || effect_waiting() || champion_move_ ||
+            movement_left(a) < 5 || off_field_steps(a).empty())
+        return false;
+    for (const auto &other : actors_)
+        if (other.source.side != a.source.side && conscious(other) &&
+                current_speed(other) > current_speed(a))
+            return false;
+    return true;
+}
+
+std::vector<Cell> Session::off_field_steps(const Actor &a) const
+{
+    std::vector<Cell> steps;
+    for (const auto step : {Cell{0, -1}, Cell{1, 0}, Cell{0, 1}, Cell{-1, 0}})
+        if (const Cell next{a.source.cell.x + step.x, a.source.cell.y + step.y};
+                !board_.contains(next))
+            steps.push_back(next);
+    return steps;
+}
+
+void Session::run_off_field(Actor &a)
+{
+    int fastest = 0;
+    for (const auto &other : actors_)
+        if (other.source.side != a.source.side && conscious(other))
+            fastest = std::max(fastest, current_speed(other));
+    if (current_speed(a) < fastest || (current_speed(a) == fastest && roll(2) == 1))
+    {
+        a.must_stay = true;
+        log(a.source.name + " cannot get away and must stay.",
+        {"{name} cannot get away and must stay.", {{"name", a.source.name}}});
+        return;
+    }
+    end_concentration(a);
+    a.fled = true;
+    log(a.source.name + " flees the battle.",
+    {"{name} flees the battle.", {{"name", a.source.name}}});
+}
+
+// Takes those who ran off the field out of the turn order; the turn index
+// keeps pointing at the same creature.
+void Session::remove_fled()
+{
+    for (std::size_t i = actors_.size(); i-- > 0;)
+    {
+        const auto &a = actors_[i];
+        if (!a.fled)
+            continue;
+        Departed gone{a.source, a.hp, max_hp(a), armor_class(a), vitals(a)};
+        if (!a.source.character_profile.empty())
+            for (const auto &gear : detail::thrown_gear_items)
+                gone.thrown_gear_left.emplace_back(std::string(gear.key),
+                                                   a.thrown_gear_left[std::size_t(gear.effect)]);
+        fled_.push_back(std::move(gone));
+        actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(i));
+        if (i < turn_)
+            --turn_;
+        else if (turn_ >= actors_.size())
+            turn_ = 0;
+    }
+}
+
 // A carried Torch strikes as a Simple Melee weapon for 1 Fire damage.
 void Session::torch_attack(Actor &a, Actor &target)
 {
@@ -3224,6 +3320,19 @@ Snapshot Session::snapshot() const
             s.combatants.back().status += " | Blinded";
             s.combatants.back().conditions.push_back({"Blinded", {}});
         }
+    }
+    // Members who ran off the field are reported with the vitals they left with.
+    for (const auto &gone : fled_)
+    {
+        CombatantView view{gone.source.id, gone.source.name, gone.source.definition,
+                           gone.source.side, gone.source.cell, gone.hp, gone.max_hp,
+                           gone.armor_class};
+        view.status = "Fled";
+        view.status_messages = {{"Fled", {}}};
+        view.persistent = gone.vitals;
+        view.thrown_gear_left = gone.thrown_gear_left;
+        view.fled = true;
+        s.combatants.push_back(std::move(view));
     }
     return s;
 }
@@ -4630,6 +4739,9 @@ std::vector<Command> Session::legal_commands() const
     }
     for (const auto cell : movement_reach(id))
         add(id, "move", "Move", 0, cell);
+    if (can_run_off(a))
+        for (const auto step : off_field_steps(a))
+            add(id, "flee", "Flee", 0, step);
     auto offered = filtered();
     obey_command(offered, a);
     flee_turning(offered, a);
@@ -6910,11 +7022,18 @@ void Session::update_outcome()
 {
     bool party = false, enemies = false;
     for (const auto &a : actors_)
-        if (a.hp > 0 && !a.dead)
+        if (a.hp > 0 && !a.dead && !a.fled)
             (a.source.side == 0 ? party : enemies) = true;
     if (!party || !enemies)
     {
-        outcome_ = !party ? Outcome::defeat : Outcome::victory;
+        // No member left on the field: it fled if anyone got away.
+        outcome_ = party ? Outcome::victory
+                   : !fled_.empty() || std::any_of(actors_.begin(), actors_.end(), [](const auto & a)
+        {
+            return a.fled;
+        })
+        ? Outcome::fled
+        : Outcome::defeat;
         // Concentration is tracked in combat only; it ends with the combat.
         for (auto &a : actors_)
             end_concentration(a);
@@ -7038,6 +7157,8 @@ void Session::regenerate(Actor &a)
 bool Session::begin_turn()
 {
     auto &a = actors_[turn_];
+    if (a.fled)
+        return false;
     std::erase_if(a.effects.active,
                   [](const auto & effect)
     {
@@ -7445,6 +7566,15 @@ void Session::progress_movement()
                     reactors_.push_back(other.source.id);
         if (pending())
             return;
+        if (!board_.contains(destination))
+        {
+            a.movement -= 5;
+            ++path_index_;
+            reactors_.clear();
+            reactor_index_ = 0;
+            run_off_field(a);
+            break;
+        }
         const auto cost = grid.step_cost(a.source.cell, destination);
         if (!cost || *cost > movement_left(a))
             throw std::logic_error("Invalid accepted movement path");
@@ -7498,6 +7628,11 @@ bool Session::submit(const Command &command)
     // Unsigned wrap is defined, but must skip that reserved value.
     if (++revision_ == 0)
         revision_ = 1;
+    update_outcome();
+    // One who ran off the field ends its turn and leaves the fight.
+    if (outcome_ == Outcome::ongoing && !pending() && !reaction_prompt_ && actors_[turn_].fled)
+        end_turn();
+    remove_fled();
     update_outcome();
     if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
             !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
@@ -8266,6 +8401,13 @@ void Session::dispatch(const Command &command)
         path_index_ = 0;
         progress_movement();
     }
+    else if (command.verb == "flee")
+    {
+        // One step off the field; leaving an enemy's reach provokes as any move.
+        path_ = {command.destination};
+        path_index_ = 0;
+        progress_movement();
+    }
     else if (command.verb == "end")
         end_turn();
     else if (command.verb == "second_wind")
@@ -8451,7 +8593,8 @@ std::string Session::save() const
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
             << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
             << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2]
-            << ' ' << a.burning << ' ' << a.oiled_until_round << ' ' << a.shield_off << ' ';
+            << ' ' << a.burning << ' ' << a.oiled_until_round << ' ' << a.shield_off << ' '
+            << a.must_stay << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -8585,6 +8728,21 @@ std::string Session::save() const
                 << item.quantity << ' ' << item.equipment_index;
         out << '\n';
     }
+    // Members who ran off the field, with the vitals and flasks they left with.
+    out << fled_.size() << '\n';
+    for (const auto &gone : fled_)
+    {
+        out << gone.source.id << ' ' << std::quoted(gone.source.definition) << ' '
+            << std::quoted(gone.source.name) << ' ' << gone.source.side << ' '
+            << gone.source.cell.x << ' ' << gone.source.cell.y << ' '
+            << std::quoted(gone.source.character_profile) << ' ' << gone.hp << ' ' << gone.max_hp
+            << ' ' << gone.armor_class << ' ' << gone.vitals.hit_points << ' ' << gone.vitals.dead
+            << ' ' << std::quoted(gone.vitals.resources) << ' '
+            << std::quoted(gone.vitals.description) << ' ' << gone.thrown_gear_left.size();
+        for (const auto &[gear, left] : gone.thrown_gear_left)
+            out << ' ' << std::quoted(gear) << ' ' << left;
+        out << '\n';
+    }
     return out.str();
 }
 
@@ -8619,7 +8777,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used >>
           actor.regeneration_blocked >> actor.thrown_gear_left[0] >> actor.thrown_gear_left[1] >>
           actor.thrown_gear_left[2] >> actor.burning >> actor.oiled_until_round >>
-          actor.shield_off;
+          actor.shield_off >> actor.must_stay;
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -9018,7 +9176,8 @@ void Session::validate_restored_state() const
             throw std::runtime_error("Invalid overlapping checkpoint actors");
         }
     }
-    const auto expected = !party ? Outcome::defeat : !enemies ? Outcome::victory : Outcome::ongoing;
+    const auto expected = !party ? (fled_.empty() ? Outcome::defeat : Outcome::fled)
+                          : !enemies ? Outcome::victory : Outcome::ongoing;
     if (outcome_ != expected || (initiative_choices_.empty() && expected == Outcome::ongoing &&
                                  mover.hp == 0 && !champion_move_ && !effect_waiting()))
         throw std::runtime_error("Invalid checkpoint outcome/turn");
@@ -9139,7 +9298,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     std::uint64_t rng{}, revision{};
     unsigned turn{}, round{}, outcome{}, count{};
     input >> rng >> revision >> turn >> round >> outcome >> count;
-    if (!input || count < 2 || count > 64 || turn >= count || round == 0 || outcome > 2 ||
+    if (!input || count < 1 || count > 64 || turn >= count || round == 0 || outcome > 3 ||
             !revision)
         throw std::runtime_error("Invalid checkpoint header");
     std::vector<Actor> actors;
@@ -9433,6 +9592,30 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             input >> item.inventory_id >> std::quoted(item.definition) >> item.quantity >>
                   item.equipment_index;
     }
+    std::size_t departed{};
+    input >> departed;
+    if (!input || departed > 8)
+        throw std::runtime_error("Invalid checkpoint flight");
+    for (std::size_t n = 0; n < departed; ++n)
+    {
+        Departed gone;
+        input >> gone.source.id >> std::quoted(gone.source.definition) >>
+              std::quoted(gone.source.name) >> gone.source.side >> gone.source.cell.x >>
+              gone.source.cell.y >> std::quoted(gone.source.character_profile) >> gone.hp >>
+              gone.max_hp >> gone.armor_class >> gone.vitals.hit_points >> gone.vitals.dead >>
+              std::quoted(gone.vitals.resources) >> std::quoted(gone.vitals.description);
+        std::size_t gear_count{};
+        input >> gear_count;
+        if (!input || gone.source.side != 0 || gone.hp <= 0 || gone.hp > gone.max_hp ||
+                gone.vitals.dead || gear_count > detail::thrown_gear_items.size())
+            throw std::runtime_error("Invalid checkpoint flight");
+        gone.thrown_gear_left.resize(gear_count);
+        for (auto &[gear, left] : gone.thrown_gear_left)
+            input >> std::quoted(gear) >> left;
+        session->fled_.push_back(std::move(gone));
+    }
+    if (session->actors_.size() + session->fled_.size() < 2)
+        throw std::runtime_error("Invalid checkpoint flight");
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
     for (auto &a : session->actors_)
@@ -11504,7 +11687,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.143", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.144", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

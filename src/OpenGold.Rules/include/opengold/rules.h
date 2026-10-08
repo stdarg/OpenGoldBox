@@ -349,7 +349,8 @@ enum class Outcome
 {
     ongoing,
     victory,
-    defeat
+    defeat,
+    fled // No party member is left on the field and at least one got away.
 };
 
 struct ThrownWeaponOption
@@ -402,6 +403,7 @@ struct CombatantView
     // already took Acid or Fire since its last turn); burning; covered in oil
     // (its next Fire damage deals 5 more); carries or wields a Torch.
     bool regenerates{}, regeneration_stopped{}, burning{}, oiled{}, has_torch{};
+    bool fled{}; // Ran off the field; it rejoins the party when the fight ends.
 };
 
 struct TemporaryHpOffer

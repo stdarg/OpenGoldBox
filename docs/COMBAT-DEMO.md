@@ -27,6 +27,9 @@ the selected action: click a highlighted square to move, click a highlighted
 creature for an aimed action, or press Space for one without a target.
 Clicking another party member shows it ("It is not ...'s turn"); choosing an
 action returns to the character whose turn it is, so the next click acts.
+Moving a party member off the edge of the field with an arrow key flees the
+fight, as in the original; whether it gets away depends on the enemies' speed
+([FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did)).
 
 ## Play-testing a chosen party
 

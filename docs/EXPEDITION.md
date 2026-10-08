@@ -59,8 +59,9 @@ enough and the monsters take half the party's coins, too little and they
 attack; Surrender costs every coin and moves the party; Run escapes when the
 party is as fast as the monsters) or an order to leave (Leave ends the meeting,
 Stay or Fight starts one). The best outcome, the leader's advice, needs a
-reaction total over 95: Charisma 19 or more with an Abusive parley. Pre-combat escape is separate from retreat during combat, which
-remains deferred. Supported modern profiles have no original party surprise
+reaction total over 95: Charisma 19 or more with an Abusive parley. Pre-combat escape is separate from fleeing during combat, which follows the
+original: move a member off the field's edge
+([FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did)). Supported modern profiles have no original party surprise
 modifiers. Surprise rolls share the checkpointed ECL random stream; the resulting
 surprise uses initiative disadvantage in the selected SRD module. Original
 movement thresholds use the explicit conversion 30 modern feet = 12 original

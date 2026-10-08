@@ -389,19 +389,45 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                         : "por:ECL" + std::to_string(area_resources().bank) + ":" +
                         std::to_string(current_script_) + ":roaming:" +
                         std::to_string(++next_ticket_);
-    // Experience and loot stay the original encounter's, however many fought.
-    unsigned experience = 0;
-    for (auto record : encounter_records_)
-        experience += area_resources().conversions.at(record).award_xp;
-    campaign_->award_experience(experience, reward);
-    pending_loot_.push_back(encounter_loot(current_area_, encounter_records_, reward + ":loot",
-                                           machine_.variable(0x6DE3) != 1));
-    claim_loot();
-    // Treasure the script added to the fight is won with it.
-    if (staged_treasure_)
-        award_staged_treasure();
+    const bool fled = result.outcome == rules::Outcome::fled;
+    if (fled)
+    {
+        // The party fled (the original's rule): members left on the field are
+        // lost for good, and only the monsters it killed are worth experience.
+        // The treasure stays with the monsters.
+        snapshot_.dialogue = "Your party flees the battle.";
+        for (const auto &unit : result.combatants)
+            if (unit.side == 0 && !unit.fled)
+            {
+                campaign_->lose(unit.id);
+                snapshot_.dialogue += "\n" + unit.name + " is left behind and lost.";
+            }
+        unsigned experience = 0;
+        for (const auto &unit : result.combatants)
+            if (unit.side == 1 && unit.hit_points == 0)
+                experience += area_resources()
+                              .conversions.at(staged_records_.at(unit.id - 1000))
+                              .award_xp;
+        if (experience)
+            campaign_->award_experience(experience, reward);
+    }
+    else
+    {
+        // Experience and loot stay the original encounter's, however many fought.
+        unsigned experience = 0;
+        for (auto record : encounter_records_)
+            experience += area_resources().conversions.at(record).award_xp;
+        campaign_->award_experience(experience, reward);
+        pending_loot_.push_back(encounter_loot(current_area_, encounter_records_, reward + ":loot",
+                                               machine_.variable(0x6DE3) != 1));
+        claim_loot();
+        // Treasure the script added to the fight is won with it.
+        if (staged_treasure_)
+            award_staged_treasure();
+    }
     auto reply = character_reply(selected_character_);
-    for (auto write : std::array<EclMemoryWrite, 7> {{{0x6DC7, 0},
+    // The original's combat results: 0 won, 128 the party fled.
+    for (auto write : std::array<EclMemoryWrite, 7> {{{0x6DC7, static_cast<std::uint16_t>(fled ? 128 : 0)},
         {0x6DC8, static_cast<std::uint16_t>(defeated)},
             {0x6DCB, 0},
             {0x6DE3, 0},

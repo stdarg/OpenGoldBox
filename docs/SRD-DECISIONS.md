@@ -632,3 +632,19 @@ original, Parley replaces Advance once the monsters are adjacent, and a meeting
 that ends without a fight says so ("The monsters go on their way.", "You get
 away.").
 
+## FLEE-1 (2026-10-08): fleeing a fight, as the original game did
+
+Fleeing follows the original manual. A party member flees by moving off the
+edge of the battlefield (an arrow key from an open edge square; there is no
+separate command). Faster than every conscious enemy, it gets away; as fast as
+the fastest enemy, it has an even chance, and on a failure it must stay until
+the fight ends; slower than any enemy, it cannot leave. Leaving an enemy's
+reach provokes an opportunity attack as any move does. One who got away is out
+of the fight and rejoins the party after it. When no party member is left on
+the field and someone got away, the party has fled: everyone left on the field
+is lost for good (dead and out of the party), the treasure stays, and the
+original script receives its "fled" result (128; a party wiped out is 129).
+Experience comes from the monsters the party killed (the user's ruling): a
+flight earns the experience of those it killed, and members who fled share
+the experience of a fight the rest went on to win.
+

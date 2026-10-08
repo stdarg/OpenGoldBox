@@ -316,6 +316,20 @@ void CampaignParty::make_leader(MemberId id)
     state_.leader = id;
 }
 
+void CampaignParty::lose(MemberId id)
+{
+    editable();
+    auto member = std::find_if(state_.roster.begin(), state_.roster.end(), [&](const auto & m)
+    {
+        return m.id == id;
+    });
+    if (member == state_.roster.end())
+        throw std::runtime_error("Unknown party member");
+    member->vitals.hit_points = 0;
+    member->vitals.dead = true;
+    remove(id);
+}
+
 MemberId CampaignParty::spokesman() const
 {
     const auto conscious = [&](MemberId id)

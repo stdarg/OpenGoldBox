@@ -671,16 +671,20 @@ String rest_notice(const std::string &resource, const std::string &text)
             N_("Your camp is attacked!"),
             N_("The monsters go on their way."),
             N_("You get away."),
+            N_("Your party flees the battle."),
             N_("Locked.")
         })
         result = result.replace(String::utf8(source), i18n::text(source));
-    // The parley's spokesman line carries a name.
-    const String speaks = " speaks for the party.";
+    // The parley's spokesman and the members lost in a flight are named.
+    const String speaks = " speaks for the party.", lost = " is left behind and lost.";
     auto lines = result.split("\n");
     for (int n = 0; n < lines.size(); ++n)
         if (lines[n].ends_with(speaks))
             lines[n] = i18n::format(N_("{name} speaks for the party."),
             {{"name", lines[n].substr(0, lines[n].length() - speaks.length())}});
+        else if (lines[n].ends_with(lost))
+            lines[n] = i18n::format(N_("{name} is left behind and lost."),
+            {{"name", lines[n].substr(0, lines[n].length() - lost.length())}});
     return String("\n").join(lines);
 }
 

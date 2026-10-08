@@ -174,6 +174,13 @@ int main()
         const Participant troll_beside{98, "troll", "Troll", 1, {2, 1}};
         const Participant troll_near{98, "troll", "Troll", 1, {4, 1}};
         const Participant troll_far{98, "troll", "Troll", 1, {11, 5}};
+        // The hero on the field's west edge, a same-speed enemy far away: a
+        // step west tries to flee.
+        {
+            auto edge = battle(*module, fighter(), {{98, "vanguard", "Enemy", 1, {12, 6}}});
+            edge.participants.front().cell = {0, 1};
+            write(*module, directory, "flee", std::move(edge), "flee");
+        }
         write(*module, directory, "gear-torch",
               battle(*module, fighter(), {troll_beside}, sword_and_shield, pack), "torch");
         // The same with a party ally, to click on before acting.
