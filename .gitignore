@@ -42,3 +42,6 @@ demos/godot/bin/
 
 # Claude Code agent worktrees
 /.claude/worktrees/
+
+# macOS Finder metadata
+.DS_Store
