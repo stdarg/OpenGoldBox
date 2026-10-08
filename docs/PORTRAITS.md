@@ -15,6 +15,36 @@ system. They are square 1254x1254 PNGs in `art/portraits/`, described in
 [CHARACTER-CREATION.md](CHARACTER-CREATION.md) and
 `art/portraits/README.md`.
 
+## Player portrait representation audit (2026-10-08)
+
+The player catalog has 324 portraits. This audit covers the 288 portraits other
+than Dragonborn: 96 each with Female, Male, and Nonbinary catalog metadata.
+The figures describe **intended real-world ancestry inspiration**, based on the
+recorded generation briefs and a visual review of contact sheets. They do not
+assign an actual ethnicity to a fictional character. The percentages in each
+gender column use 96 as the denominator; the overall column uses 288.
+
+| Ancestry inspiration | Female | Male | Nonbinary | Overall |
+| --- | ---: | ---: | ---: | ---: |
+| African / Black | 16 (16.7%) | 14 (14.6%) | 13 (13.5%) | 43 (14.9%) |
+| East Asian | 15 (15.6%) | 13 (13.5%) | 12 (12.5%) | 40 (13.9%) |
+| South Asian | 11 (11.5%) | 12 (12.5%) | 14 (14.6%) | 37 (12.8%) |
+| European / White | 13 (13.5%) | 11 (11.5%) | 10 (10.4%) | 34 (11.8%) |
+| Indigenous American | 11 (11.5%) | 10 (10.4%) | 10 (10.4%) | 31 (10.8%) |
+| Southeast Asian | 11 (11.5%) | 9 (9.4%) | 10 (10.4%) | 30 (10.4%) |
+| Middle Eastern / North African | 8 (8.3%) | 10 (10.4%) | 10 (10.4%) | 28 (9.7%) |
+| Latin American | 8 (8.3%) | 10 (10.4%) | 9 (9.4%) | 27 (9.4%) |
+| Unspecified or unclear | 3 (3.1%) | 7 (7.3%) | 8 (8.3%) | 18 (6.2%) |
+
+The briefs are in `art/portraits/prompts.json`, `roster-prompts.json`,
+`class-expansion-prompts.json`, and `full-coverage-prompts.json`; catalog
+gender and fantasy race are in `art/portraits/portraits.json`. The 18 portraits
+without a clear ancestry cue remain unspecified rather than being classified
+from skin tone or facial features alone. Orc, Goliath, and Tiefling colors make
+such visual judgments especially unreliable. The two NPC portraits are outside
+the player catalog: Rolf appears European-inspired, while Norris the Gray's
+green Orc portrait does not support a useful real-world classification.
+
 ## Size of the view window
 
 The original view is **88x88 EGA pixels**. DOS displayed those pixels 6/5 as
