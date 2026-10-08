@@ -389,8 +389,9 @@ the earlier authored Slums conversions.
   SRD 5.2.1 Bandit Captain at its own AC 15, matching his portrait's leather
   rather than his record's chain mail and shield (the user, 2026-10-08).
 - **Script hazards and robbery (Kuto's Well, the user, 2026-10-08):** an
-  original `DAMAGE` arrow volley is one SRD attack roll per arrow, at +3 (the
-  hidden archers are bandits, as the SRD Bandit), against a random conscious
+  original `DAMAGE` arrow volley is one SRD attack roll per arrow, at +4 (the
+  hidden archers are Norris's kobolds, as the SRD Kobold Warrior; corrected
+  from +3 for bandits after checking the original cluebook), against a random conscious
   member, for the original dice as Piercing damage. A member it drops rolls
   death saves at once, as after a victory. Surrendering to Norris (`ROB`) takes
   the money the script names but no items.

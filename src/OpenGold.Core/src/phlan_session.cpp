@@ -5,9 +5,9 @@
 
 namespace opengold::por
 {
-// Arrow volleys come from hidden archers, Norris the Gray's bandits: each arrow
-// is an attack roll with the SRD 5.2.1 Bandit's +3 bonus.
-constexpr int hidden_archer_attack_bonus = 3;
+// Arrow volleys come from Norris the Gray's hidden kobold archers: each arrow is
+// an attack roll with the SRD 5.2.1 Kobold Warrior's +4 ranged bonus.
+constexpr int hidden_archer_attack_bonus = 4;
 
 const PhlanResources &RolfTourSession::area_resources() const
 {

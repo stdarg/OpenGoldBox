@@ -112,7 +112,7 @@ campaign-arc simulator should get a Kuto's Well stage to measure it.
   with "Host capability unavailable: DAMAGE".
 
 - **Increment 3 (done, 2026-10-08):** `DAMAGE` arrow volleys are SRD attack
-  rolls (+3, the original 1d6 as Piercing) on random conscious members, reported
+  rolls (+4 as Norris's kobold archers, first +3 as bandits; the original 1d6 as Piercing) on random conscious members, reported
   with a Continue prompt; members they drop roll death saves at once. Norris
   the Gray is the Bandit Captain (AC 15, Scimitar, two attacks); his band is
   fitted like any fight, so a level-2 party meets Norris, a lizardfolk and two

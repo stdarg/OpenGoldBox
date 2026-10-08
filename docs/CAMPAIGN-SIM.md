@@ -29,7 +29,7 @@ plaza lizardmen, the catacombs' volley of 4 arrows and the dim archer's 1,
 then Norris the Gray's band (Norris, 5 lizardfolk, 9 kobold leaders). Roaming
 groups follow ECL8:29's table at `0xAFA2`: gnolls at a third of the party's
 strength, kobolds at half with three kobold leaders, lizardmen at a quarter.
-Arrows are the campaign's `DAMAGE` attacks (+3, 1d6 piercing on a random
+Arrows are the campaign's `DAMAGE` attacks (+4, 1d6 piercing on a random
 conscious member); a volley that leaves nobody standing is a defeat. Every encounter, the four-orc
 search included, is fitted to the XP budget at the default encounter challenge
 and to one creature per living member, as the campaign session does. Each living member gains the original encounter's

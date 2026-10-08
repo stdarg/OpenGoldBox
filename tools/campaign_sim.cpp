@@ -346,7 +346,7 @@ por::DungeonBattlefield battlefield(const ArcMaps &maps, Place place)
 bool take_arrows(CampaignParty &party, unsigned arrows)
 {
     for (unsigned n = 0; n < arrows; ++n)
-        if (!party.hazard_attack({3, 1, 6, 0, "piercing"}))
+        if (!party.hazard_attack({4, 1, 6, 0, "piercing"}))
             return false;
     for (const auto id : living(party))
         if (party.member(id).vitals.hit_points > 0)
