@@ -1306,6 +1306,91 @@ void enter_kutos_well(Expedition &trip, const std::filesystem::path &folder,
           "The party wins Kuto's Well fights and earns their XP");
 }
 
+// Answers "YES" to climbing down the well and to taking found treasure, picks
+// `stand` (FIGHT or SURRENDER) before Norris, and otherwise answers peacefully.
+Answer catacomb_answer(std::string stand)
+{
+    return [stand = std::move(stand)](const por::TourSnapshot &s) -> std::size_t
+    {
+        if (s.dialogue.find("CLIMB DOWN") != std::string::npos ||
+                s.dialogue.find("DO YOU TAKE IT?") != std::string::npos)
+            return 0;
+        for (std::size_t n = 0; n < s.choices.size(); ++n)
+            if (s.choices[n] == stand)
+                return n;
+        return peaceful(s);
+    };
+}
+
+unsigned party_coins(const CampaignParty &party)
+{
+    unsigned coins = 0;
+    for (const auto id : party.state().slots)
+        if (id)
+            for (const auto amount : party.member(id).wealth)
+                coins += amount;
+    return coins;
+}
+
+std::size_t party_items(const CampaignParty &party)
+{
+    std::size_t items = 0;
+    for (const auto &member : party.state().roster)
+        items += member.equipped.size() + member.item_sources.size();
+    return items;
+}
+
+// Below Kuto's Well: an arrow volley, Norris the Gray's band, his treasure and
+// the hideout where the party then rests undisturbed. From a save made before
+// Norris, surrendering instead costs the party its money and frees it above.
+void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
+                          const std::filesystem::path &directory)
+{
+    auto &[party, town] = trip;
+    walk_to(town, party, 7, 7, catacomb_answer("FIGHT"), false, true);
+    check(town.snapshot().area_id == 32, "The well's rungs lead down to the catacombs");
+    face(town, party, 2);
+    town.explore(por::ExplorationCommand::forward);
+    // Past the catacombs' description, the volley waits on its report.
+    for (unsigned n = 0; n < 200 && town.snapshot().dialogue.find("\nAn arrow ") == std::string::npos;
+            ++n)
+        if (town.snapshot().phase == por::TourPhase::awaiting_continue)
+            check(town.choose(town.snapshot().continue_ticket, 0), "The description continues");
+        else
+            town.advance(.5);
+    const auto &volley = town.snapshot();
+    check(volley.phase == por::TourPhase::awaiting_continue &&
+          volley.dialogue.find("VOLLEY OF ARROWS") != std::string::npos &&
+          volley.dialogue.find("\nAn arrow ") != std::string::npos,
+          "An arrow volley reports each arrow's attack roll before the story continues");
+    settle(town, party, catacomb_answer("FIGHT"));
+    // No camping here: until Norris falls, his band interrupts every rest.
+    const auto save = folder / "before-norris.ogs";
+    write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+
+    const auto lead = party->state().slots[0];
+    const auto experience = party->member(lead).experience;
+    walk_to(town, party, 10, 3, catacomb_answer("FIGHT"));
+    check(town.script_variable(0x4A24) == 255 && party->member(lead).experience > experience,
+          "The party defeats Norris the Gray's band and earns his XP");
+    const auto coins = party_coins(*party);
+    walk_to(town, party, 13, 1, catacomb_answer("FIGHT"), false, true);
+    check(party_coins(*party) > coins, "The bandits' treasure is taken");
+    check(town.camp(RestKind::short_rest), "Camp starts in the hideout");
+    settle(town, party);
+    check(town.snapshot().dialogue.find("Short rest complete") != std::string::npos,
+          "With Norris gone, the party rests undisturbed in his hideout");
+    party->finish_short_rest(party->state().short_rest->ticket);
+
+    auto captive = load_expedition(save, directory);
+    const auto items = party_items(*captive.party);
+    check(party_coins(*captive.party) > 0, "The party carries money before surrendering");
+    walk_to(captive.town, captive.party, 10, 3, catacomb_answer("SURRENDER"));
+    check(party_coins(*captive.party) == 0 && party_items(*captive.party) == items &&
+          captive.town.snapshot().area_id == 29,
+          "Surrendering to Norris costs all money, keeps items and frees the party above");
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -1349,6 +1434,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
     {
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
+        kutos_well_catacombs(explorer, folder, directory);
     }
 
     const auto program = "\"" + executable.string() + "\"";
@@ -1375,8 +1461,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::filesystem::remove_all(folder);
     std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
               "returned, paid the inn with change, rested, delivered Ohlo's potion, finished "
-              "it again from each Slums save, reloaded, revisited and camped in the Slums, and won "
-              "fights in Kuto's Well.\n";
+              "it again from each Slums save, reloaded, revisited and camped in the Slums, won "
+              "fights in Kuto's Well, defeated Norris and surrendered to him from a save.\n";
 }
 
 } // namespace

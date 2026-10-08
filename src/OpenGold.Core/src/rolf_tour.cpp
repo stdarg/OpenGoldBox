@@ -201,7 +201,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}},
             {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
                 {57, "lizardfolk", 100, 100}, {59, "giant-lizard", 50, 50},
-                {73, "gnoll-warrior", 100, 100}
+                {73, "gnoll-warrior", 100, 100}, {32, "norris-the-gray", 450, 450}
             }}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
@@ -326,7 +326,7 @@ void RolfTourSession::restart()
     staged_treasure_.reset();
     door_menu_ = pick_tried_ = false;
     door_choices_.clear();
-    who_request_ = temple_request_ = 0;
+    who_request_ = temple_request_ = damage_request_ = 0;
     who_slots_.clear();
     temple_targets_.clear();
     saved_campaign_.reset();
@@ -386,7 +386,7 @@ void RolfTourSession::fail(std::string diagnostic)
         }
         if (campaign_ && saved_campaign_)
             campaign_->restore(*saved_campaign_);
-        who_request_ = temple_request_ = 0;
+        who_request_ = temple_request_ = damage_request_ = 0;
         who_slots_.clear();
         temple_targets_.clear();
         selected_character_ = saved_selected_character_;

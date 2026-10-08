@@ -73,9 +73,10 @@ A rejected training fight keeps the party screen
 open so the party can be edited and retried.
 
 Leaving the Slums through a west doorway enters Kuto's Well (`ECL8:29`, maps
-`GEO8:29` and `GEO8:32`). The plaza's fights (kobolds, gnolls, lizardfolk and
-giant lizards) and camping are supported; the catacombs' arrow traps and Norris's
-band are still being added, see the [Kuto's Well audit](audits/kutos-well.md).
+`GEO8:29` and `GEO8:32`). Its fights, camping, the catacombs' arrow volleys,
+Norris the Gray's band (fought or surrendered to), his treasure and the hideout
+are supported; finds that seem to need the original Search mode are not, see the
+[Kuto's Well audit](audits/kutos-well.md).
 
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
 supported from commission to reward; see [QUESTS.md](QUESTS.md). The installed

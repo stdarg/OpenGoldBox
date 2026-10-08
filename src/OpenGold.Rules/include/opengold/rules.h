@@ -192,6 +192,24 @@ enum class RestKind
     long_rest
 };
 
+// An attack on a party member outside combat, such as an original arrow trap:
+// an attack roll against the member's AC, then the damage dice on a hit.
+struct HazardAttack
+{
+    int attack_bonus{};
+    unsigned dice{}, sides{};
+    int damage_bonus{};
+    std::string damage_type;
+};
+
+struct HazardAttackResult
+{
+    int natural{}, total{}, armor_class{}, damage{};
+    bool hit{}, critical{};
+    // With no turns outside combat, a member dropped to 0 HP rolls these at once.
+    std::vector<int> death_saves;
+};
+
 // A rest either completes or is interrupted; an interrupted rest grants nothing.
 struct RestPolicy
 {
@@ -616,6 +634,9 @@ class RulesModule
     virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const;
     virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,
                              std::uint64_t &random_state) const;
+    [[nodiscard]] virtual HazardAttackResult hazard_attack(VitalState &state,
+            const CharacterSheet &sheet, const HazardAttack &attack,
+            std::uint64_t &random_state) const;
     // The current Hit Point maximum, which a lasting effect such as Aid raises
     // above the sheet's.
     [[nodiscard]] virtual int hit_point_maximum(const CharacterSheet &, const VitalState &) const;

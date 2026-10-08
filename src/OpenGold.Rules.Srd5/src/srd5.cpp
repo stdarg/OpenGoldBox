@@ -669,6 +669,22 @@ struct Actor : detail::LifeState
     detail::EffectState effects;
 };
 
+// The actor's AC with its lasting effects. Mage Armor replaces an unarmored
+// base AC. Barkskin: an AC of 17 if it was lower. Shield of Faith: +2. Warding
+// Bond: +1. Shield: +5.
+int armor_class_of(const Actor &target)
+{
+    const auto &d = target.form ? *target.form : target.definition;
+    const int base = detail::has_effect(target.effects, detail::EffectKind::mage_armor)
+                     ? std::max(d.ac, d.mage_armor_ac)
+                     : d.ac;
+    return (detail::has_effect(target.effects, detail::EffectKind::barkskin) ? std::max(base, 17)
+            : base) +
+           (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0) +
+           (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
+           (detail::has_effect(target.effects, detail::EffectKind::shield) ? 5 : 0);
+}
+
 // Every class resource that presents as a pool. The member pointers say where
 // the spent and maximum values live, so a new resource feature is a row here
 // rather than a push_back repeated at each presentation site. Storage is still a
@@ -5644,16 +5660,7 @@ bool Session::fought_advantage(const detail::SpellDef &spell)
 
 int Session::armor_class(const Actor &target) const
 {
-    // Mage Armor replaces an unarmored base AC. Shield of Faith: +2. Warding Bond: +1.
-    const int base = detail::has_effect(target.effects, detail::EffectKind::mage_armor)
-                     ? std::max(def(target).ac, def(target).mage_armor_ac)
-                     : def(target).ac;
-    // Barkskin: an AC of 17 if it was lower.
-    return (detail::has_effect(target.effects, detail::EffectKind::barkskin) ? std::max(base, 17)
-            : base) +
-           (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0) +
-           (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
-           (detail::has_effect(target.effects, detail::EffectKind::shield) ? 5 : 0);
+    return armor_class_of(target);
 }
 
 std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) const
@@ -10166,6 +10173,40 @@ class Module final : public RulesModule
             return;
         detail::set_life_hit_points(actor, hp, max_hp(actor));
         state = vitals(actor);
+    }
+
+    HazardAttackResult hazard_attack(VitalState &state, const CharacterSheet &sheet,
+                                     const HazardAttack &attack,
+                                     std::uint64_t &random_state) const override
+    {
+        auto actor = camp_actor(sheet, state);
+        if (actor.dead || actor.hp < 1)
+            throw std::runtime_error("A hazard attacks a conscious member");
+        auto rng = random_state;
+        HazardAttackResult result;
+        result.natural = roll_die(rng, 20);
+        result.total = result.natural + attack.attack_bonus;
+        result.armor_class = armor_class_of(actor);
+        result.critical = result.natural == 20;
+        result.hit = result.critical || (result.natural != 1 && result.total >= result.armor_class);
+        if (result.hit)
+        {
+            int rolled = attack.damage_bonus;
+            for (unsigned n = 0; n < attack.dice * (result.critical ? 2 : 1); ++n)
+                rolled += roll_die(rng, int(attack.sides));
+            const detail::DamagePart part{detail::damage_type(attack.damage_type),
+                                          std::max(0, rolled)};
+            const auto &d = actor.form ? *actor.form : actor.definition;
+            result.damage = detail::resolve_damage({&part, 1}, d.affinities).total;
+            detail::damage_life(actor, result.damage, max_hp(actor));
+            // As after a victory, the dying member's saves are rolled at once.
+            while (actor.hp == 0 && !actor.dead && !actor.stable)
+                result.death_saves.push_back(
+                    detail::death_save(actor, rng, !detail::healing_blocked(actor.effects)));
+        }
+        state = vitals(actor);
+        random_state = rng;
+        return result;
     }
 
     // A character's actor outside combat, its resources read from `state`.

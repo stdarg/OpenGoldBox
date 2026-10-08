@@ -48,7 +48,7 @@ creature per living character (`encounter_challenge`).
 | MON8CHA 57 | Lizardman (HP 11, AC 4, 1d8) | **SRD 5.1 Lizardfolk** (CR 1/2) via Open5E: SRD 5.2.1 has no lizardfolk; precedent: the Slums Orc is SRD 5.1 |
 | MON8CHA 59 | Giant Lizard (HP 16, AC 5, 1d8) | SRD 5.2.1 Giant Lizard (CR 1/4) |
 | MON8CHA 73 | Gnoll | SRD 5.2.1 Gnoll Warrior (CR 1/2) |
-| MON8CHA 32 | Norris the Gray: long sword +1, shield, chain armor | SRD 5.2.1 **Bandit Captain** (CR 2) wearing his record's chain mail and shield, as Slums leaders wear theirs; an `equipment` metal-armor row |
+| MON8CHA 32 | Norris the Gray: long sword +1, shield, chain armor | SRD 5.2.1 **Bandit Captain** (CR 2) at its own AC 15, matching his portrait (the user chose this over chain mail and shield); no Pistol or Parry |
 
 ## Engine support
 
@@ -78,7 +78,8 @@ Missing:
    armor) are unsupported outside shops.
 7. **The hideout:** after Norris falls, the catacombs become a safe rest spot;
    the camp-interruption profile needs that rule.
-8. **Journal entry 50** must be recorded like the existing journal entries.
+8. **Journal entry 50:** the script names the entry; the engine has no journal
+   (the original's entries are in its paper journal), so only the text shows.
 
 ## Party level and balance
 
@@ -109,6 +110,19 @@ campaign-arc simulator should get a Kuto's Well stage to measure it.
   kobolds, lizardmen) resolve; the giant-lizard patrol was not reached. In the
   catacombs the first arrow volley stops
   with "Host capability unavailable: DAMAGE".
+
+- **Increment 3 (done, 2026-10-08):** `DAMAGE` arrow volleys are SRD attack
+  rolls (+3, the original 1d6 as Piercing) on random conscious members, reported
+  with a Continue prompt; members they drop roll death saves at once. Norris
+  the Gray is the Bandit Captain (AC 15, Scimitar, two attacks); his band is
+  fitted like any fight, so a level-2 party meets Norris, a lizardfolk and two
+  kobold leaders. Surrendering (`ROB 1, 100, 100`) takes all money, no items,
+  and frees the party in the plaza. His treasure (`TREASURE` with coins) is
+  taken, and once he falls the catacombs rest profile is undisturbed (the
+  hideout); until then, camping there brings his band. Journal entry 50 is
+  text only. The rug's arms and armor (`TREASURE` list 58) and the plaza's
+  "rain of arrows" need `0x6DCA` = 1, apparently the original Search mode (unverified), which the
+  engine does not have, so they are not reached yet.
 
 ## Suggested increments
 

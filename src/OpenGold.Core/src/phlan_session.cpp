@@ -5,6 +5,10 @@
 
 namespace opengold::por
 {
+// Arrow volleys come from hidden archers, Norris the Gray's bandits: each arrow
+// is an attack roll with the SRD 5.2.1 Bandit's +3 bonus.
+constexpr int hidden_archer_attack_bonus = 3;
+
 const PhlanResources &RolfTourSession::area_resources() const
 {
     return current_area_ ? *town_->districts.at(current_area_) : *town_;
@@ -43,7 +47,7 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
     if (campaign_)
         for (const std::uint8_t op :
                 {
-                    11, 29, 30, 34, 35, 41, 54
+                    11, 29, 30, 34, 35, 41, 46, 54
                 })
             machine_.enable_host(op);
 }
@@ -110,7 +114,7 @@ void RolfTourSession::configure_town()
     if (campaign_)
         for (const std::uint8_t op :
                 {
-                    11, 29, 30, 34, 35, 41, 54
+                    11, 29, 30, 34, 35, 41, 46, 54
                 })
             machine_.enable_host(op);
     synchronize_clock();
@@ -862,6 +866,13 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
             return false;
         }
     }
+    else if (damage_request_)
+    {
+        if (!machine_.resume_host(damage_request_, character_reply(selected_character_)))
+            return false;
+        damage_request_ = 0;
+        snapshot_.phase = TourPhase::running;
+    }
     else if (encounter_menu_)
     {
         return choose_encounter(choice);
@@ -985,6 +996,35 @@ bool RolfTourSession::leave_shop(std::uint64_t ticket)
     snapshot_.phase = TourPhase::running;
     ++snapshot_.revision;
     return true;
+}
+
+std::string RolfTourSession::shoot_arrows(unsigned arrows, const rules::HazardAttack &arrow)
+{
+    std::string report;
+    for (unsigned n = 0; n < arrows; ++n)
+    {
+        const auto hit = campaign_->hazard_attack(arrow);
+        if (!hit)
+            break;
+        const auto &result = hit->result;
+        const auto &member = campaign_->member(hit->target);
+        const auto &name = member.character.sheet().name;
+        const auto roll = " (" + std::to_string(result.total) + " vs AC " +
+                          std::to_string(result.armor_class) + ")";
+        if (!result.hit)
+        {
+            report += "\nAn arrow misses " + name + roll + ".";
+            continue;
+        }
+        report += "\nAn arrow " + std::string(result.critical ? "critically hits " : "hits ") +
+                  name + roll + " for " + std::to_string(result.damage) + " damage.";
+        if (member.vitals.dead)
+            report += " " + name + " dies.";
+        else if (!result.death_saves.empty())
+            report += " " + name + (member.vitals.hit_points ? " falls, then regains 1 HP."
+                                    : " falls unconscious and is stable.");
+    }
+    return report;
 }
 
 bool RolfTourSession::handle_town_host(const EclRequest &request)
@@ -1339,8 +1379,41 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         reply.conditions = EclConditions{found, !found, false, false, false, false};
         break;
     }
+    case 46:
+    {
+        // Arrow volleys: arg(0) arrows of arg(1)d arg(2) + arg(3). A high bit
+        // marks the original's other forms (every member, a saving throw).
+        if (!campaign_ || (arg(0) & 0x80) || (arg(4) & 0x80))
+            throw EclError("Unsupported DAMAGE form");
+        read_character();
+        snapshot_.dialogue += shoot_arrows(arg(0), {hidden_archer_attack_bonus, arg(1), arg(2),
+                                                    int(arg(3)), "piercing"});
+        damage_request_ = request.id;
+        snapshot_.phase = TourPhase::awaiting_continue;
+        snapshot_.choices = {"Continue"};
+        snapshot_.continue_ticket = ++next_ticket_;
+        ++snapshot_.revision;
+        return true;
+    }
     case 40:
-        throw EclError("Pickpocket money and item removal");
+    {
+        // Surrender (Kuto's Well): arg(0) 1 robs the whole party of arg(1)% of its
+        // coins. The original also takes arg(2)% of the items; by the user's choice
+        // only money is taken.
+        if (!campaign_ || arg(0) != 1 || arg(1) > 100)
+            throw EclError("Unsupported ROB form");
+        read_character();
+        for (const auto id : campaign_->state().slots)
+            if (id)
+            {
+                auto wealth = campaign_->member(id).wealth;
+                for (auto &coins : wealth)
+                    coins = static_cast<std::uint16_t>(coins * (100 - arg(1)) / 100);
+                campaign_->set_wealth(id, wealth);
+            }
+        reply = character_reply(selected_character_);
+        break;
+    }
     case 56:
         if (arg(0) != 9 || !campaign_)
             throw EclError("Training/camp service " + std::to_string(arg(0)));

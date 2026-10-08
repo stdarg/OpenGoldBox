@@ -385,7 +385,15 @@ the earlier authored Slums conversions.
   orc, so orcs are the SRD 5.1 Orc (the user: orcs are tougher than goblins).
   In Kuto's Well (2026-10-08): Giant Lizard and Gnoll Warrior (SRD 5.2.1) and,
   as the 2024 SRD has none, the SRD 5.1 Lizardfolk, unchanged at the user's
-  choice. Lizardfolk Multiattack is two melee attacks.
+  choice. Lizardfolk Multiattack is two melee attacks. Norris the Gray is the
+  SRD 5.2.1 Bandit Captain at its own AC 15, matching his portrait's leather
+  rather than his record's chain mail and shield (the user, 2026-10-08).
+- **Script hazards and robbery (Kuto's Well, the user, 2026-10-08):** an
+  original `DAMAGE` arrow volley is one SRD attack roll per arrow, at +3 (the
+  hidden archers are bandits, as the SRD Bandit), against a random conscious
+  member, for the original dice as Piercing damage. A member it drops rolls
+  death saves at once, as after a victory. Surrendering to Norris (`ROB`) takes
+  the money the script names but no items.
 - **Leaders** are their base stat block wearing the armor their original record
   readies. A leader shoots a bow only when its combat art shows one; otherwise
   its better gear is loot. Of the Slums icons only the orc leader's (CPIC2 5)
@@ -396,6 +404,7 @@ the earlier authored Slums conversions.
   Aggressive adds the orc's speed as a bonus action; only monsters have it, so
   "toward a hostile creature" is left to the monster's policy. The Lizardfolk's
   bite and club both deal piercing damage, and the Gnoll Warrior has no Rampage.
+  Norris has no Pistol (out of place in Phlan) and no Parry reaction.
 - **Encounter size:** when an original encounter is too strong, it is scaled
   back. The `[combat] encounter_challenge` setting in `settings.cfg` (0–200,
   default 33) is a percentage of the SRD 5.2.1 Moderate XP budget (p. 202). An

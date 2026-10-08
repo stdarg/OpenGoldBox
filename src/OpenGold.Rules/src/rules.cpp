@@ -118,6 +118,12 @@ void RulesModule::temple_heal(VitalState &, const CharacterSheet &, std::uint64_
     throw std::runtime_error("This rules module does not support temple healing");
 }
 
+HazardAttackResult RulesModule::hazard_attack(VitalState &, const CharacterSheet &,
+        const HazardAttack &, std::uint64_t &) const
+{
+    throw std::runtime_error("This rules module does not support hazard attacks");
+}
+
 int RulesModule::hit_point_maximum(const CharacterSheet &sheet, const VitalState &) const
 {
     return sheet.hit_points;

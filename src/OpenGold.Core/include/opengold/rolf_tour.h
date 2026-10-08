@@ -255,6 +255,8 @@ class RolfTourSession
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::optional<opengold::PartyState> saved_campaign_;
     std::uint64_t who_request_{}, temple_request_{};
+    // A DAMAGE volley waits here until its results are acknowledged.
+    std::uint64_t damage_request_{};
     std::vector<opengold::MemberId> temple_targets_;
     std::vector<unsigned> who_slots_;
     std::vector<Equipment> treasure_;
@@ -330,6 +332,8 @@ class RolfTourSession
     void bind_pose(PartyPose pose);
     bool move_party(ExplorationCommand command);
     void notice(std::string message);
+    // Each arrow attacks a random conscious active member; returns a report line for each.
+    [[nodiscard]] std::string shoot_arrows(unsigned arrows, const rules::HazardAttack &arrow);
     void publish_pose();
     void handle_host(const EclRequest &request);
     void fail(std::string diagnostic);

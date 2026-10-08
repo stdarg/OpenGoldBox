@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/dice.h"
 #include <algorithm>
 #include <limits>
 #include <set>
@@ -912,6 +913,28 @@ void CampaignParty::temple_heal(MemberId target)
         throw std::runtime_error("Party cannot afford temple service");
     rules_->temple_heal(healed.vitals, healed.character.sheet(), next.random_state);
     state_ = std::move(next);
+}
+
+std::optional<HazardHit> CampaignParty::hazard_attack(const rules::HazardAttack &attack)
+{
+    editable();
+    std::vector<MemberId> conscious;
+    for (const auto id : state_.slots)
+        if (id && member(id).vitals.hit_points > 0)
+            conscious.push_back(id);
+    if (conscious.empty())
+        return std::nullopt;
+    auto next = state_;
+    const auto target = conscious[roll_die(next.random_state, int(conscious.size())) - 1];
+    auto &struck = *std::find_if(next.roster.begin(), next.roster.end(),
+                                 [&](const auto & m)
+    {
+        return m.id == target;
+    });
+    HazardHit hit{target, rules_->hazard_attack(struck.vitals, struck.character.sheet(), attack,
+                  next.random_state)};
+    state_ = std::move(next);
+    return hit;
 }
 
 int CampaignParty::hit_point_maximum(MemberId id) const

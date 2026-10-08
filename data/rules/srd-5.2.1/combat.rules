@@ -94,5 +94,11 @@ damage_types gnoll-warrior piercing piercing
 size giant-lizard large
 type giant-lizard beast
 type gnoll-warrior fiend
+# Norris the Gray is the SRD 5.2.1 Bandit Captain in his studded leather (AC 15),
+# with his Scimitar; the stat block's Pistol and its Parry reaction are omitted.
+creature norris-the-gray 15 52 3 30 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves norris-the-gray 4 5 2 2 2 2
+damage_types norris-the-gray slashing piercing
 # multiattack creature attacks: the Attack action's melee attacks a turn.
 multiattack lizardfolk 2
+multiattack norris-the-gray 2

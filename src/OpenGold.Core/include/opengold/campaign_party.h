@@ -82,6 +82,12 @@ struct PartyMember
     std::string creation_source; // Stable pool candidate identity, empty for authored PCs.
 };
 
+struct HazardHit
+{
+    MemberId target{};
+    rules::HazardAttackResult result;
+};
+
 struct PartyState
 {
     std::vector<PartyMember> roster;
@@ -163,6 +169,9 @@ class CampaignParty
             std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
+    // An attack from outside combat, such as an arrow trap, on a random active
+    // conscious member; nothing when none is conscious.
+    std::optional<HazardHit> hazard_attack(const rules::HazardAttack &attack);
     // The member's current Hit Point maximum, raised by Aid.
     [[nodiscard]] int hit_point_maximum(MemberId id) const;
     // Spells and features an active member can use outside combat (CLASS-3).

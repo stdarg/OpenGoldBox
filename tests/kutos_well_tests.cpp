@@ -1,5 +1,5 @@
 // Kuto's Well (docs/audits/kutos-well.md): its creature conversions, the
-// rules they need and Norris the Gray's portrait.
+// rules they need, its arrow traps and Norris the Gray's portrait.
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -58,7 +58,7 @@ std::size_t count_logged(const CombatSession &c, std::string_view text)
 void conversions()
 {
     auto module = rules();
-    for (const auto *creature : {"lizardfolk", "giant-lizard", "gnoll-warrior"})
+    for (const auto *creature : {"lizardfolk", "giant-lizard", "gnoll-warrior", "norris-the-gray"})
     {
         auto c = module->create({{8, 4, std::vector<std::uint8_t>(32)},
             {{1, creature, "Monster", 1, {1, 1}}, {2, "target", "Target", 0, {2, 1}}}},
@@ -89,6 +89,74 @@ void multiattack()
         rejected = true;
     }
     check(rejected, "A creature has one Multiattack row");
+}
+
+// A created level-1 Fighter.
+CharacterSheet fighter()
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "fighter";
+    d.background = "acolyte";
+    d.alignment = "neutral_good";
+    d.name = "Arrow target";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    return Character(*srd5::character_rules(), d, {}).sheet();
+}
+
+// The DAMAGE arrows: an attack roll against AC, doubled dice on a 20, and death
+// saves rolled at once for a member an arrow drops.
+void arrow_traps()
+{
+    const auto module = rules();
+    const auto sheet = fighter();
+    const HazardAttack arrow{3, 1, 6, 0, "piercing"};
+    const int armor_class = module->character_profile(sheet, {}).armor_class;
+    bool missed = false, hit = false, critical = false;
+    for (std::uint64_t seed = 1; seed < 400; ++seed)
+    {
+        VitalState state{sheet.hit_points, false, {}};
+        auto random = seed;
+        const auto r = module->hazard_attack(state, sheet, arrow, random);
+        check(r.total == r.natural + 3 && r.armor_class == armor_class,
+              "An arrow rolls d20 + 3 against the member's AC");
+        check(r.hit == (r.natural == 20 || (r.natural != 1 && r.total >= r.armor_class)) &&
+              r.critical == (r.natural == 20), "An arrow hits by the SRD attack roll rules");
+        check(r.damage >= (r.hit ? (r.critical ? 2 : 1) : 0) &&
+              r.damage <= (r.hit ? (r.critical ? 12 : 6) : 0) &&
+              state.hit_points == sheet.hit_points - r.damage,
+              "A hit deals 1d6, or 2d6 on a 20");
+        missed |= !r.hit;
+        hit |= r.hit;
+        critical |= r.critical;
+    }
+    check(missed && hit && critical, "Arrows miss, hit and critically hit");
+
+    VitalState frail{1, false, {}};
+    std::uint64_t random = 1;
+    auto dropped = module->hazard_attack(frail, sheet, {100, 1, 1, 0, "piercing"}, random);
+    while (!dropped.hit)
+    {
+        frail = {1, false, {}};
+        dropped = module->hazard_attack(frail, sheet, {100, 1, 1, 0, "piercing"}, random);
+    }
+    check(!dropped.death_saves.empty() &&
+          (frail.dead || frail.hit_points == 1 || dropped.death_saves.back() >= 10),
+          "A dropped member's death saves are rolled until stable, revived or dead");
+    bool rejected = false;
+    try
+    {
+        VitalState down{0, false, frail.resources};
+        (void)module->hazard_attack(down, sheet, arrow, random);
+    }
+    catch (const std::exception &)
+    {
+        rejected = true;
+    }
+    check(rejected, "Arrows only target conscious members");
 }
 
 // Norris the Gray's portrait fills the view once he has walked up and speaks.
@@ -123,6 +191,7 @@ int main()
         conversions();
         multiattack();
         norris_portrait();
+        arrow_traps();
         std::cout << "Kuto's Well tests passed\n";
         return 0;
     }

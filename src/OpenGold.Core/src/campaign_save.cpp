@@ -599,7 +599,7 @@ struct SaveCodec
             v.who_slots_.clear();
             v.temple_targets_.clear();
             v.menu_request_ = v.delayed_request_ = v.who_request_ = v.temple_request_ =
-            v.shop_request_ = 0;
+            v.shop_request_ = v.damage_request_ = 0;
             v.remaining_delay_ = 0;
             v.transition_ = v.message_only_ = false;
             v.event_stage_ = 0;
