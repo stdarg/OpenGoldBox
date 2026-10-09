@@ -16,6 +16,9 @@ extends SceneTree
 #       --script tests/playtest_slums.gd -- --slums-fixtures=/tmp/slums/fixtures \
 #       --playtest-out=/tmp/slums/out
 var fixtures := ""
+# --strong plays each fight with the party at level four (NAME-strong.ogs),
+# to reach what follows a won fight.
+var strong := false
 var out := ""
 var report := PackedStringArray()
 var seen := {}
@@ -25,6 +28,7 @@ func _initialize() -> void:
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--slums-fixtures="): fixtures = arg.trim_prefix("--slums-fixtures=")
         if arg.begins_with("--playtest-out="): out = arg.trim_prefix("--playtest-out=")
+        if arg == "--strong": strong = true
     call_deferred("run")
 
 func finish(code: int) -> void:
@@ -73,7 +77,7 @@ func load_fixture(name: String) -> void:
     var path := slot_path(slot)
     DirAccess.make_dir_recursive_absolute(path.get_base_dir())
     var f := FileAccess.open(path, FileAccess.WRITE)
-    f.store_buffer(FileAccess.get_file_as_bytes(fixtures.path_join(name + ".ogs"))); f.close()
+    f.store_buffer(FileAccess.get_file_as_bytes(fixtures.path_join(name + ("-strong" if strong else "") + ".ogs"))); f.close()
     var load_button := "CampaignTown/LoadGame" if current_scene.has_node("CampaignTown") and town().visible else "PartyPanel/Load"
     await press(load_button)
     var list: ItemList = current_scene.get_node("SaveSlots/Slots")

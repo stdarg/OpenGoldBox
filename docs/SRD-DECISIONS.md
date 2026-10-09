@@ -673,7 +673,8 @@ Hit Points, in percent, than that morale; otherwise it holds while its side
 keeps at least 100 less the encounter's morale percent of its Hit Points
 (rounded down to 5). Broken, it flees in panic when no living opponent is
 faster: it runs for an edge away from the party and off the field by the same
-rule as the party (FLEE-1), and may rally on a later turn; cornered, it fights.
+rule as the party (FLEE-1), and may rally on a later turn; cornered (it failed
+to get away), it fights on.
 When an opponent is faster, a creature with Intelligence above 5 surrenders,
 leaving the fight counted as defeated; a witless one fights on. A monster that
 gets away is worth neither experience nor treasure; the fight is won when none

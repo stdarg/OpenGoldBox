@@ -69,6 +69,8 @@ original game did, instead of rolling their remaining death saves (SIMPLIFY-1).
 Rules 0.6.148 announces a fight's outcome once; "Victory." was logged again
 on each later outcome check.
 Rules 0.6.149 lists "Fleeing in panic" among a panicked creature's conditions.
+Rules 0.6.150 has a broken creature that failed to get away fight on, instead
+of running back to the edge between its attacks.
 
 ## Slums set-encounter creatures
 

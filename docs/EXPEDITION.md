@@ -119,7 +119,13 @@ FAILED line:
 
 ```sh
 python3 tools/playtest.py slums --game-dir /path/to/POOLRAD
+python3 tools/playtest.py slums --game-dir /path/to/POOLRAD -- --strong
 ```
+
+The expedition test also writes each save with the party at level four
+(`NAME-strong.ogs`); `--strong` plays those, to reach morale breaking in the
+real fights (the monster leaders' gnolls broke in the first such run) and
+what follows a won fight.
 
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
 supported from commission to reward; see [QUESTS.md](QUESTS.md). The installed

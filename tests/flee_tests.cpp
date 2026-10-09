@@ -222,6 +222,38 @@ MoraleFight morale_fight(const RulesModule &rules, std::string_view enemy, unsig
     throw std::runtime_error("The runner never hits");
 }
 
+// A broken creature as fast as its foe that fails to get away is cornered:
+// it fights on instead of running for the edge every turn.
+void cornered_monster_fights()
+{
+    const auto rules = module();
+    for (std::uint64_t seed = 1; seed < 80; ++seed)
+    {
+        Encounter e{{8, 4, std::vector<std::uint8_t>(32)},
+            {{1, "runner", "Runner", 0, {0, 1}}, {9, "even", "Enemy", 1, {1, 1}}}};
+        e.morale = 1;
+        auto c = rules->create(std::move(e), seed);
+        turn_of(*c, 1);
+        const auto melee = offered(*c, "melee", 1);
+        check(melee && c->submit(*melee), "The runner strikes");
+        if (unit(c->snapshot(), 9).hit_points == 30)
+            continue;
+        for (unsigned n = 0; n < 80 && c->snapshot().outcome == Outcome::ongoing; ++n)
+            check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
+        const auto log = c->snapshot().log;
+        const auto stayed = std::find(log.begin(), log.end(), "Enemy cannot get away and must stay.");
+        if (stayed == log.end())
+            continue;
+        check(std::any_of(stayed, log.end(), [](const auto & line)
+        {
+            return line.starts_with("Enemy -> Runner");
+        }), "Cornered, the broken creature attacks again");
+        check(!unit(c->snapshot(), 9).panicked, "Cornered, it is no longer fleeing in panic");
+        return;
+    }
+    throw std::runtime_error("No broken creature failed to get away");
+}
+
 void monsters_break()
 {
     const auto rules = module();
@@ -278,6 +310,7 @@ int main()
         leaving_reach_provokes();
         flee_policy();
         monsters_break();
+        cornered_monster_fights();
         std::cout << "Flee tests passed\n";
         return 0;
     }

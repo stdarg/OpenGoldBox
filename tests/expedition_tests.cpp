@@ -1552,6 +1552,24 @@ void slums_set_encounters(const std::filesystem::path &save, const std::filesyst
 
 // Saves for tests/playtest_slums.gd: the party in the Slums beside the
 // arguing hobgoblins, beside the monster leaders and south of the trolls' room.
+// The same save with every member advanced to level four, as the campaign
+// simulator's arena does, so a play-test can win the fight and see what
+// follows: monsters breaking, victory, treasure. Written beside it as
+// NAME-strong.ogs.
+void write_strong_fixture(const std::filesystem::path &save, const std::filesystem::path &directory)
+{
+    auto trip = load_expedition(save, directory);
+    auto &party = *trip.party;
+    party.award_experience(party.rule_module().experience_for_level(4), "play-test:strong");
+    for (const auto id : party.state().slots)
+        if (id)
+            while (party.can_advance(id))
+                party.advance(id, party.default_advancement(id));
+    auto strong = save;
+    strong.replace_filename(save.stem().string() + "-strong.ogs");
+    write_campaign_file(strong, encode_campaign(party, &trip.town, campaign_asset_identity(directory)));
+}
+
 void write_slums_fixtures(const std::filesystem::path &save, const std::filesystem::path &folder,
                           const std::filesystem::path &directory)
 {
@@ -1587,6 +1605,8 @@ void write_slums_fixtures(const std::filesystem::path &save, const std::filesyst
     face(town, party, 0);
     write_campaign_file(folder / "trolls.ogs",
                         encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    for (const auto *name : {"hobgoblins.ogs", "leaders.ogs", "trolls.ogs"})
+        write_strong_fixture(folder / name, directory);
 }
 
 // Camps on a Slums street until monsters interrupt with the encounter menu,

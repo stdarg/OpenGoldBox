@@ -2694,6 +2694,12 @@ void Session::check_morale(Actor &a)
         return other.source.side != a.source.side && other.hp > 0 && !other.dead && !other.fled &&
                current_speed(other) > current_speed(a);
     });
+    // One that already failed to get away is cornered and fights on.
+    if (!outpaced && a.must_stay)
+    {
+        a.panicked = false;
+        return;
+    }
     if (!outpaced)
     {
         if (!a.panicked)
@@ -11798,7 +11804,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.149", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.150", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
