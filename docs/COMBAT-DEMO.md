@@ -69,11 +69,17 @@ party, with their original Slums icons), and
 encounter morale breaks at the first wound flee in panic beside a Fighter and
 surrender beside a faster Monk, a dying ally is bandaged when the fight is won,
 and Flee hands the party to the AI. It reports the log lines and what hovering
-each enemy shows, with screenshots:
+each enemy shows, with screenshots.
+
+`tools/playtest.py` runs any of these play-tests (`actions`, `gear`, `morale`,
+`slums`) in the game window with saves freshly written by the game build and a
+scratch home folder, then prints the report. Saves carry the rules version; a
+play-test whose save does not load stops with a FAILED line rather than
+playing the demo's own fight. Arguments after `--` go to the script:
 
 ```sh
-godot --path src/OpenGoldBox/godot --script $PWD/tests/playtest_morale.gd -- \
-    --playtest-fixtures=$PWD/build/playtest-fixtures --playtest-out=/tmp/playtest-morale
+python3 tools/playtest.py morale
+python3 tools/playtest.py gear -- --campaign --combat-demo --combat-demo-party=fighter,wizard
 ```
 
 `tests/playtest_gear.gd` plays the gear added against trolls

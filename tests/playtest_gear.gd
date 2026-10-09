@@ -49,6 +49,16 @@ func load_fixture(name: String) -> void:
     file.store_buffer(bytes); file.close()
     combat().get_node("Load").pressed.emit()
     await settle(10)
+    # Every play-test save starts on the Hero's turn. Anything else means it
+    # did not load, usually a save older than the rules: stop and say so
+    # rather than play the demo's own fight (tools/playtest.py writes fresh ones).
+    if not combat().get_node("Turn").text.get_slice("\n", 0).ends_with("Hero turn"):
+        report.append("FAILED: play-test save " + name + " did not load: " + combat().get_node("Prompt").text)
+        var f := FileAccess.open(out.path_join("report.txt"), FileAccess.WRITE)
+        f.store_string("\n".join(report) + "\n"); f.close()
+        printerr("\n".join(report))
+        quit(1)
+        await create_timer(60).timeout
 
 func select(label: String) -> bool:
     for i in range(60):

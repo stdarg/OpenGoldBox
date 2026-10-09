@@ -81,7 +81,14 @@ func load_fixture(name: String) -> void:
         if list.get_item_text(i) == slot:
             list.select(i); list.item_selected.emit(i)
     await press("SaveSlots/Action"); await press("SaveSlots/Action")
-    if not town().visible: await press("PartyPanel/Explore")
+    if current_scene.has_node("CampaignTown") and not town().visible:
+        await press("PartyPanel/Explore")
+    # A save that did not load (one older than the rules, say) leaves no
+    # town: stop and say so (tools/playtest.py writes fresh ones).
+    if not current_scene.has_node("CampaignTown") or not town().visible:
+        report.append("FAILED: Slums save " + name + " did not load")
+        finish(1)
+        await create_timer(60).timeout
     report.append("Loaded " + name + ": " + town().get_node("Location").text + " / " + town().get_node("Coordinates").text)
 
 func in_combat() -> bool:
@@ -244,7 +251,7 @@ func play_fight(name: String) -> void:
             await approach()
             await try_attack()
         if party_turn(): await key(KEY_ENTER)
-    report.append("  fight over: " + ("still in combat" if in_combat() else "left combat"))
+    report.append("  fight over: " + (combat().get_node("Turn").text.get_slice("\n", 0) if in_combat() else "left combat"))
     await watch_log()
     await capture(name + "-end")
     if not in_combat(): await play_story([])
@@ -271,7 +278,7 @@ func flee_run() -> void:
             continue
         await create_timer(0.3).timeout
     await watch_log()
-    report.append("  fight over: " + ("still in combat" if in_combat() else "left combat"))
+    report.append("  fight over: " + (combat().get_node("Turn").text.get_slice("\n", 0) if in_combat() else "left combat"))
     await capture("flee-end")
     if not in_combat(): await play_story([])
 

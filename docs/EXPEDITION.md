@@ -112,13 +112,13 @@ the monster leaders and south of the trolls' room. The script walks into each
 fight and plays every party turn like a person: it cycles actions with A,
 clicks the enemies, otherwise walks toward the nearest one with the arrow keys,
 and ends the turn. Its report lists each distinct prompt and error with a
-screenshot of its first sight:
+screenshot of its first sight. `tools/playtest.py` writes fresh saves from the
+game build, runs it with a scratch home folder and prints the report; a save
+that does not load (one older than the rules) stops the play-test with a
+FAILED line:
 
 ```sh
-OPENGOLD_SLUMS_FIXTURES=/tmp/slums/fixtures OPENGOLD_GAME_DIR=/path/to/POOLRAD build/opengold_expedition_tests
-HOME=/tmp/slums/home OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
-    --script tests/playtest_slums.gd -- --slums-fixtures=/tmp/slums/fixtures \
-    --playtest-out=/tmp/slums/out
+python3 tools/playtest.py slums --game-dir /path/to/POOLRAD
 ```
 
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
