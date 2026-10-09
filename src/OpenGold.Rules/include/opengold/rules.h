@@ -236,7 +236,6 @@ struct CampAction
     std::string id;
     Message label;
     bool whole_party{}; // affects several members at once; no target is chosen
-    bool operator==(const CampAction &) const = default;
 };
 
 // A party member a whole-party camp action may affect.
