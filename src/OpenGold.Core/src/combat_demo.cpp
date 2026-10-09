@@ -244,7 +244,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         participants.push_back(std::move(enemy));
     }
     auto next = module_->create(
-    {encounter.field.geometry, std::move(participants), campaign_->state().next_combat_scope},
+    {encounter.field.geometry, std::move(participants), campaign_->state().next_combat_scope,
+     encounter.morale},
     seed);
     install_combat(std::move(next), {});
     seed_ = seed;
@@ -669,6 +670,13 @@ unsigned CombatDemo::script_variable(std::uint16_t address) const
     return vm_->variable(address);
 }
 
+namespace
+{
+std::optional<Command> run_for_edge(const CombatSession &session, const rules::Snapshot &state,
+                                    const std::vector<Command> &offered,
+                                    const rules::CombatantView &active);
+} // namespace
+
 Command choose_demo_command(const CombatSession &session)
 {
     const auto state = session.snapshot();
@@ -697,6 +705,10 @@ Command choose_demo_command(const CombatSession &session)
     for (const auto &command : offered)
         if (command.verb == "stand_up")
             return command;
+    // A creature whose morale broke runs for the edge; cornered, it fights on.
+    if (active.panicked && !state.reaction_pending)
+        if (const auto run = run_for_edge(session, state, offered, active))
+            return *run;
     // Rank offered destinations by a geometric route around obstacles. Straight
     // distance alone can strand both sides on opposite corners of a wall.
     // This is an AI heuristic; legal movement and its costs remain module-owned.
@@ -1156,6 +1168,105 @@ Command choose_demo_command(const CombatSession &session)
     return offered.front();
 }
 
+namespace
+{
+// Running off the field: the step toward an open edge of the field, around
+// walls, Dashing for more movement, then the flee itself. A party member runs
+// for the nearest edge; a panicked creature for the nearest edge square farther
+// from its opponents than from itself (the original sends it away from them).
+// Empty when no step gets it closer.
+std::optional<Command> run_for_edge(const CombatSession &session, const rules::Snapshot &state,
+                                    const std::vector<Command> &offered,
+                                    const rules::CombatantView &active)
+{
+    const auto offer = [&](std::string_view verb) -> const Command *
+    {
+        for (const auto &command : offered)
+            if (command.verb == verb && command.actor == active.id)
+                return &command;
+        return nullptr;
+    };
+    if (const auto *flee = offer("flee"))
+        return *flee;
+    const auto &board = state.battlefield;
+    const auto cells = std::size_t(board.width * board.height);
+    const auto index = [&](Cell p)
+    {
+        return std::size_t(p.y * board.width + p.x);
+    };
+    // Steps from the given squares to every open square, around walls.
+    const auto distances = [&](const std::vector<Cell> &sources)
+    {
+        std::vector<int> steps(cells, -1);
+        std::queue<Cell> frontier;
+        for (const auto source : sources)
+            if (board.contains(source) && steps[index(source)] < 0)
+            {
+                steps[index(source)] = 0;
+                frontier.push(source);
+            }
+        while (!frontier.empty())
+        {
+            const auto p = frontier.front();
+            frontier.pop();
+            for (int dy = -1; dy <= 1; ++dy)
+                for (int dx = -1; dx <= 1; ++dx)
+                    if (const Cell next{p.x + dx, p.y + dy};
+                            board.contains(next) && board.at(next) != 1 && steps[index(next)] < 0)
+                    {
+                        steps[index(next)] = steps[index(p)] + 1;
+                        frontier.push(next);
+                    }
+        }
+        return steps;
+    };
+    std::vector<Cell> edges;
+    for (int y = 0; y < board.height; ++y)
+        for (int x = 0; x < board.width; ++x)
+            if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
+                    board.at({x, y}) != 1)
+                edges.push_back({x, y});
+    if (active.side != 0)
+    {
+        std::vector<Cell> opponents;
+        for (const auto &other : state.combatants)
+            if (other.side != active.side && other.hit_points > 0 && !other.dead && !other.fled)
+                opponents.push_back(other.cell);
+        const auto mine = distances({active.cell}), theirs = distances(opponents);
+        std::vector<Cell> away;
+        for (const auto edge : edges)
+            if (mine[index(edge)] >= 0 &&
+                    (theirs[index(edge)] < 0 || theirs[index(edge)] > mine[index(edge)]))
+                away.push_back(edge);
+        if (!away.empty())
+            edges = std::move(away);
+    }
+    const auto to_edge = distances(edges);
+    const auto steps_to_edge = [&](Cell p)
+    {
+        const auto d = to_edge[index(p)];
+        return d < 0 ? 1 << 20 : d;
+    };
+    const Command *move = nullptr;
+    int closest = steps_to_edge(active.cell);
+    for (const auto &command : offered)
+        if (command.verb == "move" && command.actor == active.id &&
+                steps_to_edge(command.destination) < closest)
+        {
+            move = &command;
+            closest = steps_to_edge(command.destination);
+        }
+    if (move)
+        return *move;
+    // Out of movement short of the edge: Dash for more.
+    if (steps_to_edge(active.cell) > 0 && steps_to_edge(active.cell) < 1 << 20)
+        if (const auto *dash = offer("dash"))
+            return *dash;
+    (void)session;
+    return std::nullopt;
+}
+} // namespace
+
 Command choose_flee_command(const CombatSession &session)
 {
     const auto state = session.snapshot();
@@ -1165,68 +1276,16 @@ Command choose_flee_command(const CombatSession &session)
     {
         return a.id == state.actor;
     });
-    const auto offer = [&](std::string_view verb) -> const Command *
+    const auto end = std::find_if(offered.begin(), offered.end(), [&](const auto & c)
     {
-        for (const auto &command : offered)
-            if (command.verb == verb && command.actor == state.actor)
-                return &command;
-        return nullptr;
-    };
+        return c.verb == "end" && c.actor == state.actor;
+    });
     // Reactions, choices and those who cannot flee are left to the demo AI.
     if (active == state.combatants.end() || active->side != 0 || !active->can_flee ||
-            state.reaction_pending || !offer("end"))
+            state.reaction_pending || end == offered.end())
         return choose_demo_command(session);
-    if (const auto *flee = offer("flee"))
-        return *flee;
-    // Steps to the nearest open edge square, around walls.
-    const auto &board = state.battlefield;
-    const auto index = [&](Cell p)
-    {
-        return std::size_t(p.y * board.width + p.x);
-    };
-    std::vector<int> steps(std::size_t(board.width * board.height), -1);
-    std::queue<Cell> frontier;
-    for (int y = 0; y < board.height; ++y)
-        for (int x = 0; x < board.width; ++x)
-            if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
-                    board.at({x, y}) != 1)
-            {
-                steps[index({x, y})] = 0;
-                frontier.push({x, y});
-            }
-    while (!frontier.empty())
-    {
-        const auto p = frontier.front();
-        frontier.pop();
-        for (int dy = -1; dy <= 1; ++dy)
-            for (int dx = -1; dx <= 1; ++dx)
-                if (const Cell next{p.x + dx, p.y + dy};
-                        board.contains(next) && board.at(next) != 1 && steps[index(next)] < 0)
-                {
-                    steps[index(next)] = steps[index(p)] + 1;
-                    frontier.push(next);
-                }
-    }
-    const auto to_edge = [&](Cell p)
-    {
-        const auto d = steps[index(p)];
-        return d < 0 ? 1 << 20 : d;
-    };
-    const Command *move = nullptr;
-    int closest = to_edge(active->cell);
-    for (const auto &command : offered)
-        if (command.verb == "move" && command.actor == state.actor &&
-                to_edge(command.destination) < closest)
-        {
-            move = &command;
-            closest = to_edge(command.destination);
-        }
-    if (move)
-        return *move;
-    // Out of movement short of the edge: Dash for more.
-    if (to_edge(active->cell) > 0)
-        if (const auto *dash = offer("dash"))
-            return *dash;
-    return *offer("end");
+    if (const auto run = run_for_edge(session, state, offered, *active))
+        return *run;
+    return *end;
 }
 } // namespace opengold

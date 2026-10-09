@@ -5,7 +5,7 @@ var saved_files := {}
 # Checkpoint bodies in the current combat format for content creatures, which
 # carry no character profile. The header, with the current rules identity, is
 # taken from a checkpoint the game itself writes.
-const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 CN1 0"
+const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 10 CN1 0"
 # Each body adds one empty carried-inventory line per actor after it, then an
 # empty list of members who fled.
 const CONTINUATION_TAIL := "0\n0 0\n0\n0\n0\n0\n0 0\n0\n0\n0 \n0\n0\n0\n0\n0\n"
@@ -22,7 +22,7 @@ const MOVEMENT_BODY := "8 6\n" \
     + "1 0\n1 2 \n3 1\n3 4 2 \n4\n" \
     + "\"Combat begins. Each square is 5 feet.\"\n\"Round 1: Mover acts.\"\n" \
     + "\"Mover recovers 10 HP.\"\n\"Mover -> Target: d20 16 + 5 vs AC 17 hits for 4 damage.\"\n" \
-    + "1 0 4\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL + "0\n0\n0\n0\n0\n"
+    + "1 0 100 4\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL + "0\n0\n0\n0\n0\n"
 
 # A mover in a walled corridor with a Stable, Unconscious enemy between it and a guard.
 const TRANSIT_BODY := "6 3\n1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1 1 \n" \
@@ -31,7 +31,7 @@ const TRANSIT_BODY := "6 3\n1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1 1 \n" \
     + "3 \"bandit\" \"Guard\" 1 5 1 11 11 30 0 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
     + "2 \"bandit\" \"Unconscious enemy\" 1 2 1 0 3 30 0 0 0 0 1 1 1 0 0 1 0 \"\"" + ACTOR_TAIL + "\n" \
     + "0 0\n\n0 0\n\n2\n\"Combat begins. Each square is 5 feet.\"\n\"Round 1: Mover acts.\"\n" \
-    + "1 0 3\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL + "0\n0\n0\n0\n"
+    + "1 0 100 3\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL + "0\n0\n0\n0\n"
 
 func _initialize() -> void:
     call_deferred("run_checks")

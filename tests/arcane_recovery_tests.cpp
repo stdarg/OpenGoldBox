@@ -374,7 +374,7 @@ void combat_and_advancement()
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         const auto before = combat->save();
-        check(before.starts_with("OGCOMBAT 45 "),
+        check(before.starts_with("OGCOMBAT 46 "),
               "Spent recovery uses a versioned combat checkpoint");
         auto copy = rules->restore(before);
         check(copy->save() == before && copy->snapshot().physical_inventory == physical,

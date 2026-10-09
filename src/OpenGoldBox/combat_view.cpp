@@ -1789,7 +1789,7 @@ void CombatView::update_hover(const Vector2 &pointer)
     const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
                                     [&](const auto & actor)
     {
-        return !actor.dead && !actor.fled && actor.cell == cell &&
+        return !actor.dead && !actor.fled && !actor.surrendered && actor.cell == cell &&
                (actor.side == 1 || npc(actor.id).has_value());
     });
     if (found == state.combatants.end())
@@ -2638,8 +2638,8 @@ void CombatView::draw_battlefield()
     for (const auto index : presentation::combat_sprite_draw_order(s.combatants))
     {
         const auto &a = s.combatants[index];
-        // One who ran off the field is no longer on it.
-        if (a.fled)
+        // One who ran off the field, or surrendered, is no longer on it.
+        if (a.fled || a.surrendered)
             continue;
         const auto center = Vector2((a.cell.x + .5) * tile, (a.cell.y + .5) * tile);
         if (a.dead)

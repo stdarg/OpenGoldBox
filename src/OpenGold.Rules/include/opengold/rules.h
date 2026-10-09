@@ -326,6 +326,11 @@ struct Participant
     // decides how it starts (SRD: awake and Prone).
     bool resting{};
     std::vector<CarriedEquipment> inventory;
+    // Morale (the original's rule, for creatures the rules control): its own,
+    // 0-100, where 0 leaves it to the encounter's; and the Intelligence that
+    // decides whether a broken creature that cannot run surrenders.
+    unsigned morale{};
+    unsigned intelligence{10};
 };
 
 struct Encounter
@@ -333,6 +338,8 @@ struct Encounter
     Battlefield battlefield;
     std::vector<Participant> participants;
     std::uint64_t scope{1};
+    // The encounter's morale, 0-100, set by the original script; 100 never breaks.
+    unsigned morale{100};
 };
 
 struct Identity
@@ -407,6 +414,9 @@ struct CombatantView
     // A party member fast enough to run off the field (no conscious enemy is
     // faster) that has not failed a flight this fight.
     bool can_flee{};
+    // Its morale broke and it runs for the edge (it may rally); or it gave up
+    // and left the fight, counted as defeated.
+    bool panicked{}, surrendered{};
 };
 
 struct TemporaryHpOffer

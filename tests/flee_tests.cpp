@@ -188,6 +188,78 @@ void flee_policy()
           policy.destination == demo.destination,
           "A member too slow to flee fights on as the demo AI would");
 }
+// Monster morale, the original's rule: once its side has lost more of its Hit
+// Points than the encounter's morale allows, a creature flees in panic when no
+// opponent is faster, surrenders when one is and it is not witless, and fights
+// on otherwise. Its own morale, if any, holds it while its wounds stay within it.
+struct MoraleFight
+{
+    std::unique_ptr<CombatSession> combat;
+    bool wounded{};
+};
+
+MoraleFight morale_fight(const RulesModule &rules, std::string_view enemy, unsigned morale,
+                         unsigned own = 0, unsigned intelligence = 10)
+{
+    for (std::uint64_t seed = 1; seed < 60; ++seed)
+    {
+        Encounter e{{8, 4, std::vector<std::uint8_t>(32)},
+            {{1, "runner", "Runner", 0, {0, 1}}, {9, std::string(enemy), "Enemy", 1, {1, 1}}}};
+        e.participants[1].morale = own;
+        e.participants[1].intelligence = intelligence;
+        e.morale = morale;
+        auto c = rules.create(std::move(e), seed);
+        turn_of(*c, 1);
+        const auto melee = offered(*c, "melee", 1);
+        check(melee && c->submit(*melee), "The runner strikes");
+        if (unit(c->snapshot(), 9).hit_points < 30)
+        {
+            const auto end = offered(*c, "end", 1);
+            check(end && c->submit(*end), "The runner ends its turn");
+            return {std::move(c), true};
+        }
+    }
+    throw std::runtime_error("The runner never hits");
+}
+
+void monsters_break()
+{
+    const auto rules = module();
+    {
+        auto [c, wounded] = morale_fight(*rules, "fast", 1);
+        check(logged(*c, "Enemy flees in panic.") && unit(c->snapshot(), 9).panicked,
+              "A wounded side below its morale flees when no opponent is faster");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A panicked creature survives a checkpoint");
+        for (unsigned n = 0; n < 60 && c->snapshot().outcome == Outcome::ongoing; ++n)
+            check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
+        check(c->snapshot().outcome == Outcome::victory && unit(c->snapshot(), 9).fled,
+              "The panicked creature runs off the field and the fight is won");
+    }
+    {
+        auto [c, wounded] = morale_fight(*rules, "slow", 1);
+        const auto s = c->snapshot();
+        check(logged(*c, "Enemy surrenders.") && s.outcome == Outcome::victory &&
+              unit(s, 9).surrendered && unit(s, 9).hit_points == 0,
+              "Outpaced, a broken creature surrenders and counts as defeated");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A surrender survives a checkpoint");
+    }
+    {
+        auto [c, wounded] = morale_fight(*rules, "slow", 1, 0, 3);
+        check(!logged(*c, "surrenders") && !logged(*c, "panic") &&
+              c->snapshot().outcome == Outcome::ongoing,
+              "A witless creature that cannot run fights on");
+    }
+    {
+        auto [c, wounded] = morale_fight(*rules, "fast", 100);
+        check(!logged(*c, "panic"), "An encounter morale of 100 never breaks");
+    }
+    {
+        auto [c, wounded] = morale_fight(*rules, "fast", 1, 100);
+        check(!logged(*c, "panic"), "A creature's own morale holds it while its wounds stay within it");
+    }
+}
 } // namespace
 
 int main()
@@ -200,6 +272,7 @@ int main()
         fight_goes_on_without_one_who_fled();
         leaving_reach_provokes();
         flee_policy();
+        monsters_break();
         std::cout << "Flee tests passed\n";
         return 0;
     }

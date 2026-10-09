@@ -253,7 +253,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 45;
+constexpr unsigned checkpoint_format = 46;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -698,6 +698,10 @@ struct Actor : detail::LifeState
     bool must_stay{};
     // Ran off the field this turn; it leaves the fight when the turn ends.
     bool fled{};
+    // Its morale broke: it runs for the edge until it rallies.
+    bool panicked{};
+    // Gave up: it leaves the fight, counted as defeated.
+    bool surrendered{};
     EntityId horde_origin{};
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     // Wild Shape: the Beast form's statistics, derived from the wild_shape effect.
@@ -1503,10 +1507,16 @@ class Session final : public CombatSession
     Session(std::shared_ptr<const Content> content, Encounter encounter, std::uint64_t seed,
             bool restoring = false)
         : content_(std::move(content)), board_(std::move(encounter.battlefield)), rng_(seed),
-          scope_(encounter.scope)
+          scope_(encounter.scope), morale_(encounter.morale)
     {
         if (!scope_)
             throw std::runtime_error("Invalid encounter scope");
+        if (morale_ > 100 || std::any_of(encounter.participants.begin(),
+                                         encounter.participants.end(), [](const auto & p)
+    {
+        return p.morale > 100 || p.intelligence > 30;
+    }))
+        throw std::runtime_error("Invalid encounter morale");
         detail::validate_battlefield(board_);
         // A restored fight may have one creature left on the field, the rest
         // having run off it.
@@ -1806,8 +1816,13 @@ class Session final : public CombatSession
         int hp{}, max_hp{}, armor_class{};
         VitalState vitals;
         std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
+        bool surrendered{};
     };
     std::vector<Departed> fled_;
+    // Morale (the original's rule): checked at the start of each turn of a
+    // creature the rules control. The encounter's morale is set by its script.
+    unsigned morale_{100};
+    void check_morale(Actor &);
     void throw_gear(Actor &, Actor &, const detail::ThrownGear &);
     std::vector<HeldItemView> items_;
     void initialize_items();
@@ -2638,6 +2653,60 @@ bool Session::shield_blocks_bow(const Actor &a) const
     return !carried_ranged_weapon(unshielded).empty();
 }
 
+// The original's morale test. A creature with morale of its own holds while
+// it has lost no more of its Hit Points (in percent) than that morale; one
+// without, or one that loses it, holds while its side keeps at least 100 less
+// the encounter's morale percent of its Hit Points (in steps of 5). Broken, it
+// flees in panic when no opponent is faster; otherwise one with Intelligence
+// above 5 surrenders, and the rest fight on. It is tested again every turn.
+void Session::check_morale(Actor &a)
+{
+    const int lost = 100 - 100 * a.hp / std::max(1, max_hp(a));
+    bool holds = a.source.morale > 0 && int(a.source.morale) >= lost;
+    if (!holds)
+    {
+        int remaining = 0, total = 0;
+        for (const auto &other : actors_)
+            if (other.source.side == a.source.side)
+            {
+                total += max_hp(other);
+                if (!other.dead && !other.fled)
+                    remaining += other.hp;
+            }
+        for (const auto &gone : fled_)
+            if (gone.source.side == a.source.side)
+                total += gone.max_hp;
+        const int percent = total ? remaining * 100 / total / 5 * 5 : 0;
+        holds = percent > 0 && percent >= 100 - int(morale_);
+    }
+    if (holds)
+    {
+        a.panicked = false;
+        return;
+    }
+    const bool outpaced = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.source.side != a.source.side && other.hp > 0 && !other.dead && !other.fled &&
+               current_speed(other) > current_speed(a);
+    });
+    if (!outpaced)
+    {
+        if (!a.panicked)
+            log(a.source.name + " flees in panic.",
+            {"{name} flees in panic.", {{"name", a.source.name}}});
+        a.panicked = true;
+        return;
+    }
+    a.panicked = false;
+    if (a.source.intelligence > 5)
+    {
+        end_concentration(a);
+        a.surrendered = true;
+        a.fled = true;
+        log(a.source.name + " surrenders.", {"{name} surrenders.", {{"name", a.source.name}}});
+    }
+}
+
 int Session::current_speed(const Actor &a) const
 {
     return std::max(0, def(a).speed - detail::speed_penalty(a.effects));
@@ -2645,7 +2714,7 @@ int Session::current_speed(const Actor &a) const
 
 bool Session::can_run_off(const Actor &a) const
 {
-    if (a.source.side != 0 || !conscious(a) || a.must_stay || a.fled ||
+    if ((a.source.side != 0 && !a.panicked) || !conscious(a) || a.must_stay || a.fled ||
             actors_[turn_].source.id != a.source.id || outcome_ != Outcome::ongoing || pending() ||
             temporary_offer_ || check_choice_ || graze_ || effect_waiting() || champion_move_ ||
             movement_left(a) < 5 || off_field_steps(a).empty())
@@ -2695,7 +2764,8 @@ void Session::remove_fled()
         const auto &a = actors_[i];
         if (!a.fled)
             continue;
-        Departed gone{a.source, a.hp, max_hp(a), armor_class(a), vitals(a)};
+        Departed gone{a.source, a.surrendered ? 0 : a.hp, max_hp(a), armor_class(a), vitals(a)};
+        gone.surrendered = a.surrendered;
         if (!a.source.character_profile.empty())
             for (const auto &gear : detail::thrown_gear_items)
                 gone.thrown_gear_left.emplace_back(std::string(gear.key),
@@ -2990,6 +3060,7 @@ Snapshot Session::snapshot() const
                                    "torch") != def(a).equipment_keys.end();
         view.burning = a.burning;
         view.oiled = a.oiled_until_round >= int(round_);
+        view.panicked = a.panicked;
         view.can_flee = a.source.side == 0 && conscious(a) && !a.must_stay &&
                         std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
         {
@@ -3333,11 +3404,12 @@ Snapshot Session::snapshot() const
         CombatantView view{gone.source.id, gone.source.name, gone.source.definition,
                            gone.source.side, gone.source.cell, gone.hp, gone.max_hp,
                            gone.armor_class};
-        view.status = "Fled";
-        view.status_messages = {{"Fled", {}}};
+        view.status = gone.surrendered ? "Surrendered" : "Fled";
+        view.status_messages = {{view.status, {}}};
         view.persistent = gone.vitals;
         view.thrown_gear_left = gone.thrown_gear_left;
-        view.fled = true;
+        view.fled = !gone.surrendered;
+        view.surrendered = gone.surrendered;
         s.combatants.push_back(std::move(view));
     }
     return s;
@@ -7033,13 +7105,15 @@ void Session::update_outcome()
     if (!party || !enemies)
     {
         // No member left on the field: it fled if anyone got away.
-        outcome_ = party ? Outcome::victory
-                   : !fled_.empty() || std::any_of(actors_.begin(), actors_.end(), [](const auto & a)
+        const bool party_fled =
+            std::any_of(fled_.begin(), fled_.end(), [](const auto & gone)
         {
-            return a.fled;
-        })
-        ? Outcome::fled
-        : Outcome::defeat;
+            return gone.source.side == 0;
+        }) || std::any_of(actors_.begin(), actors_.end(), [](const auto & a)
+        {
+            return a.fled && a.source.side == 0;
+        });
+        outcome_ = party ? Outcome::victory : party_fled ? Outcome::fled : Outcome::defeat;
         // Concentration is tracked in combat only; it ends with the combat.
         for (auto &a : actors_)
             end_concentration(a);
@@ -7165,6 +7239,12 @@ bool Session::begin_turn()
     auto &a = actors_[turn_];
     if (a.fled)
         return false;
+    if (a.source.side != 0 && conscious(a))
+    {
+        check_morale(a);
+        if (a.fled)
+            return false;
+    }
     std::erase_if(a.effects.active,
                   [](const auto & effect)
     {
@@ -8600,7 +8680,8 @@ std::string Session::save() const
             << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
             << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2]
             << ' ' << a.burning << ' ' << a.oiled_until_round << ' ' << a.shield_off << ' '
-            << a.must_stay << ' ';
+            << a.must_stay << ' ' << a.panicked << ' ' << a.source.morale << ' '
+            << a.source.intelligence << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -8615,7 +8696,7 @@ std::string Session::save() const
     out << log_.size() << '\n';
     for (const auto &line : log_)
         out << std::quoted(line) << '\n';
-    out << scope_ << ' ' << elapsed_ms_ << ' ' << actors_.size() << '\n';
+    out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << actors_.size() << '\n';
     for (const auto &a : actors_)
     {
         detail::write_effects(out, a.effects);
@@ -8744,7 +8825,8 @@ std::string Session::save() const
             << std::quoted(gone.source.character_profile) << ' ' << gone.hp << ' ' << gone.max_hp
             << ' ' << gone.armor_class << ' ' << gone.vitals.hit_points << ' ' << gone.vitals.dead
             << ' ' << std::quoted(gone.vitals.resources) << ' '
-            << std::quoted(gone.vitals.description) << ' ' << gone.thrown_gear_left.size();
+            << std::quoted(gone.vitals.description) << ' ' << gone.surrendered << ' '
+            << gone.thrown_gear_left.size();
         for (const auto &[gear, left] : gone.thrown_gear_left)
             out << ' ' << std::quoted(gear) << ' ' << left;
         out << '\n';
@@ -8783,7 +8865,10 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used >>
           actor.regeneration_blocked >> actor.thrown_gear_left[0] >> actor.thrown_gear_left[1] >>
           actor.thrown_gear_left[2] >> actor.burning >> actor.oiled_until_round >>
-          actor.shield_off >> actor.must_stay;
+          actor.shield_off >> actor.must_stay >> actor.panicked >> actor.source.morale >>
+          actor.source.intelligence;
+    if (actor.source.morale > 100 || actor.source.intelligence > 30)
+        throw std::runtime_error("Invalid checkpoint morale");
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -9182,7 +9267,11 @@ void Session::validate_restored_state() const
             throw std::runtime_error("Invalid overlapping checkpoint actors");
         }
     }
-    const auto expected = !party ? (fled_.empty() ? Outcome::defeat : Outcome::fled)
+    const bool party_fled = std::any_of(fled_.begin(), fled_.end(), [](const auto & gone)
+    {
+        return gone.source.side == 0;
+    });
+    const auto expected = !party ? (party_fled ? Outcome::fled : Outcome::defeat)
                           : !enemies ? Outcome::victory : Outcome::ongoing;
     if (outcome_ != expected || (initiative_choices_.empty() && expected == Outcome::ongoing &&
                                  mover.hp == 0 && !champion_move_ && !effect_waiting()))
@@ -9328,7 +9417,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     session->restore_movement(input);
     session->restore_log(input);
     unsigned effects_count{};
-    input >> session->scope_ >> session->elapsed_ms_ >> effects_count;
+    input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >> effects_count;
+    if (session->morale_ > 100)
+        throw std::runtime_error("Invalid checkpoint morale");
     if (!input || !session->scope_ || effects_count != session->actors_.size())
         throw std::runtime_error("Invalid checkpoint effect header");
     for (auto &a : session->actors_)
@@ -9609,10 +9700,12 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
               std::quoted(gone.source.name) >> gone.source.side >> gone.source.cell.x >>
               gone.source.cell.y >> std::quoted(gone.source.character_profile) >> gone.hp >>
               gone.max_hp >> gone.armor_class >> gone.vitals.hit_points >> gone.vitals.dead >>
-              std::quoted(gone.vitals.resources) >> std::quoted(gone.vitals.description);
+              std::quoted(gone.vitals.resources) >> std::quoted(gone.vitals.description) >>
+              gone.surrendered;
         std::size_t gear_count{};
         input >> gear_count;
-        if (!input || gone.source.side != 0 || gone.hp <= 0 || gone.hp > gone.max_hp ||
+        if (!input || gone.source.side > 1 || gone.hp < (gone.surrendered ? 0 : 1) ||
+                gone.hp > gone.max_hp || (gone.surrendered && (gone.hp || gone.source.side == 0)) ||
                 gone.vitals.dead || gear_count > detail::thrown_gear_items.size())
             throw std::runtime_error("Invalid checkpoint flight");
         gone.thrown_gear_left.resize(gear_count);
@@ -11693,7 +11786,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.144", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.145", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

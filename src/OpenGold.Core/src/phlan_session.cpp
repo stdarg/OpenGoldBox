@@ -350,6 +350,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             result.identity != campaign_->identity())
         return false;
     unsigned defeated = 0;
+    // Monsters that ran off the field are worth neither experience nor treasure.
+    std::vector<unsigned> escaped_records;
     std::set<rules::EntityId> enemies, party_ids;
     std::set<rules::EntityId> expected_party;
     for (auto id : campaign_->state().slots)
@@ -364,6 +366,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 return false;
             if (unit.hit_points == 0)
                 ++defeated;
+            else if (unit.fled)
+                escaped_records.push_back(staged_records_.at(unit.id - 1000));
         }
         else if (unit.side != 0 || !expected_party.contains(unit.id) ||
                  !party_ids.insert(unit.id).second ||
@@ -375,7 +379,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         if (!party_ids.contains(id) && !campaign_->member(id).vitals.dead)
             return false;
     if (enemies.size() != staged_records_.size() ||
-            (result.outcome == rules::Outcome::victory && defeated != enemies.size()))
+            (result.outcome == rules::Outcome::victory &&
+             defeated + escaped_records.size() != enemies.size()))
         return false;
     if (result.outcome == rules::Outcome::defeat)
     {
@@ -413,12 +418,17 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     }
     else
     {
-        // Experience and loot stay the original encounter's, however many fought.
+        // Experience and loot stay the original encounter's, however many fought,
+        // less a record for each monster that got away.
+        auto paying = encounter_records_;
+        for (const auto record : escaped_records)
+            if (const auto it = std::find(paying.begin(), paying.end(), record); it != paying.end())
+                paying.erase(it);
         unsigned experience = 0;
-        for (auto record : encounter_records_)
+        for (auto record : paying)
             experience += area_resources().conversions.at(record).award_xp;
         campaign_->award_experience(experience, reward);
-        pending_loot_.push_back(encounter_loot(current_area_, encounter_records_, reward + ":loot",
+        pending_loot_.push_back(encounter_loot(current_area_, paying, reward + ":loot",
                                                machine_.variable(0x6DE3) != 1));
         claim_loot();
         // Treasure the script added to the fight is won with it.
@@ -1240,6 +1250,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 creature.stored.name + " " + std::to_string(staged_enemies_.size() + 1),
                 1,
                 {}});
+            // Morale is record byte 0x84: from 0x80 up a creature's own is
+            // (byte & 0x7F) * 2, and above 102 it has none (the encounter's
+            // decides). Most monsters have none; a few never break.
+            const auto byte = creature.stored.raw[0x84];
+            const unsigned own = byte >= 0x80 ? (byte & 0x7Fu) * 2 : 0;
+            staged_enemies_.back().morale = own > 102 ? 0 : std::min(own, 100u);
+            staged_enemies_.back().intelligence =
+                std::min<unsigned>(creature.stored.abilities.intelligence, 30);
             staged_art_.push_back({id, icon.image});
             staged_records_.push_back(record);
         }
@@ -1338,6 +1356,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 dungeon_battlefield(map_, p.x, p.y), staged_enemies_, staged_art_,
                 area_resources().terrain_art,        p.facing,        machine_.variable(0x6DCB)};
             encounter_->party_resting = event_stage_ == 5;
+            // The script sets the encounter's morale before COMBAT.
+            encounter_->morale = std::min<unsigned>(machine_.variable(0x6DC6), 100);
             announce_camp_attack();
             combat_request_ = request.id;
             // The original shows the approached monster's close-up until a key press.

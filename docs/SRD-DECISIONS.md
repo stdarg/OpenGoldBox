@@ -656,3 +656,24 @@ opportunity attacks it provokes, and steps off; the rest fight on as the AI
 would. Keys and clicks no longer act for the party; the prompt says "Your party
 is fleeing."
 
+## MORALE-1 (2026-10-09): monster morale, as the original game had it
+
+Monsters check morale at the start of each of their turns, following the Gold
+Box engine (read from the original data, the Curse of the Azure Bonds engine
+reimplementation as reference, and the original's own messages; no code
+copied). The encounter's morale is what the original script stores in `0x6DC6`
+before COMBAT (50 to 100 across the game; 100 never breaks). A creature's own
+morale is its record byte `0x84` (`(byte & 0x7F) * 2` from `0x80` up; above
+102 it has none): most Pool of Radiance monsters have none, and nine never
+break. A creature with its own morale holds while it has lost no more of its
+Hit Points, in percent, than that morale; otherwise it holds while its side
+keeps at least 100 less the encounter's morale percent of its Hit Points
+(rounded down to 5). Broken, it flees in panic when no living opponent is
+faster: it runs for an edge away from the party and off the field by the same
+rule as the party (FLEE-1), and may rally on a later turn; cornered, it fights.
+When an opponent is faster, a creature with Intelligence above 5 surrenders,
+leaving the fight counted as defeated; a witless one fights on. A monster that
+gets away is worth neither experience nor treasure; the fight is won when none
+is left on the field. Not adopted: Curse's Bless/Curse/charm morale modifiers
+(unconfirmed for Pool) and morale for allied NPCs (ours are player-controlled).
+

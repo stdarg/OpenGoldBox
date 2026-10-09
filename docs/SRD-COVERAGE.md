@@ -58,6 +58,9 @@ form cannot wield its equipment.
 Rules 0.6.144 lets a party member flee a fight by running off the field's edge
 ([FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did)),
 with a new "fled" outcome; combat checkpoints become `OGCOMBAT 45`.
+Rules 0.6.145 adds monster morale: broken creatures flee in panic or surrender
+([MORALE-1](SRD-DECISIONS.md#morale-1-2026-10-09-monster-morale-as-the-original-game-had-it));
+combat checkpoints become `OGCOMBAT 46`.
 
 ## Slums set-encounter creatures
 

@@ -214,7 +214,7 @@ not an automatic conversion of original AD&D values.
 Not yet implemented (as of 2026-10-02): full class features or equipment,
 additional saving-throw effects and conditions, partial cover, multiple sizes,
 concentration spells (the [foundation](CONCENTRATION.md) exists), most other
-spells, split-target Magic Missile/Scorching Ray, retreat, morale, or complete
+spells, split-target Magic Missile/Scorching Ray, or complete
 campaign encounter coverage. Weapon mastery, typed damage and resistance, and
 Prone are implemented; grappling was dropped
 ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)). The shared campaign now includes named saves,
