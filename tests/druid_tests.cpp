@@ -421,6 +421,32 @@ void wild_shape_checks()
           "A Bonus Action leaves the form");
 }
 
+// A creature that the Wolf's opportunity bite knocks Prone must crawl; when it
+// cannot crawl the rest of its route, it stops where it is and the fight goes on.
+void prone_mover_checks()
+{
+    auto module = rules();
+    bool covered = false;
+    for (std::uint64_t seed = 1; seed < 40 && !covered; ++seed)
+    {
+        auto c = battle(*module, druid(2).sheet(), {}, true, Cell{1, 5}, seed);
+        check(submit(*c, "wild_shape_wolf"), "Take the Wolf's form");
+        reach(*c, 98);
+        check(move_to(*c, Cell{8, 1}) && c->snapshot().reaction_pending,
+              "Moving away from the Wolf provokes its bite");
+        check(submit(*c, "opportunity"), "The Wolf bites");
+        if (!unit(*c, 98).prone)
+            continue;
+        covered = true;
+        const auto mover = unit(*c, 98);
+        check(mover.cell.x < 8 && c->snapshot().outcome == Outcome::ongoing &&
+              c->snapshot().actor == 98,
+              "Knocked Prone mid-route, the mover stops short and keeps its turn");
+        check(submit(*c, "end"), "The fight goes on");
+    }
+    check(covered, "A bite knocked the mover Prone");
+}
+
 void lands_aid_checks()
 {
     auto module = rules();
@@ -475,6 +501,7 @@ int main()
         heat_metal_checks();
         creature_equipment_checks();
         wild_shape_checks();
+        prone_mover_checks();
         lands_aid_checks();
         policy_checks();
         std::cout << "Druid tests passed\n";

@@ -1751,6 +1751,11 @@ class Session final : public CombatSession
     OptionalEffectChoice effect_choices() const;
     bool use_effect(const Command &);
     void finish_effects();
+    // Clears the rest of the mover's route when a reaction left it illegal: a
+    // creature now stands on it, or a bite knocked the mover Prone and it must
+    // crawl farther than its movement allows. The mover stops where it is,
+    // keeping the movement it has left. True when it stopped.
+    bool stop_illegal_route();
     void validate_mastery_state() const;
     void offer_mastery(const Actor &, const Actor &, int natural, bool ranged, int damage,
                        bool critical);
@@ -7091,7 +7096,7 @@ void Session::finish_reaction()
             reactors_.clear();
             reactor_index_ = 0;
         }
-        else if (!pending())
+        else if (!pending() && !stop_illegal_route())
             progress_movement();
     }
 }
@@ -9038,15 +9043,31 @@ void Session::finish_effects()
     effect_reaction_origin_.reset();
     if (!pending())
         return;
+    // The critical mover can now occupy the interrupted route; never walk
+    // through the newly occupied cell.
+    if (stop_illegal_route())
+        return;
+    finish_reaction();
+}
+
+bool Session::stop_illegal_route()
+{
+    if (path_index_ >= path_.size())
+        return false;
     const auto &mover = actors_[turn_];
-    // The critical mover can now occupy the interrupted route. Stop a route
-    // that is no longer legal; never walk through the newly occupied cell.
     const auto grid = movement_grid(mover);
     auto cell = mover.source.cell;
     int budget = movement_left(mover);
-    bool valid = true;
+    bool valid = true, leaves_field = false;
     for (auto i = path_index_; i < path_.size(); ++i)
     {
+        // A fleeing route ends with a 5-foot step off the field.
+        if (!board_.contains(path_[i]))
+        {
+            valid = budget >= 5;
+            leaves_field = true;
+            break;
+        }
         const auto cost = grid.step_cost(cell, path_[i]);
         if (!cost || *cost > budget)
         {
@@ -9056,15 +9077,13 @@ void Session::finish_effects()
         budget -= *cost;
         cell = path_[i];
     }
-    if (!valid || !grid.can_stop_at(cell))
-    {
-        path_.clear();
-        path_index_ = 0;
-        reactors_.clear();
-        reactor_index_ = 0;
-        return;
-    }
-    finish_reaction();
+    if (valid && (leaves_field || grid.can_stop_at(cell)))
+        return false;
+    path_.clear();
+    path_index_ = 0;
+    reactors_.clear();
+    reactor_index_ = 0;
+    return true;
 }
 
 void Session::validate_champion_move() const
@@ -11786,7 +11805,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.145", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.146", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

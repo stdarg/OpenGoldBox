@@ -54,6 +54,10 @@ struct Creature
     unsigned record;
     const char *definition;
     unsigned fit_xp; // the stat block's XP, which sizes the encounter
+    // The record's Intelligence: a broken monster that cannot outrun the party
+    // surrenders above 5 and fights on otherwise. None of these records has a
+    // morale of its own (byte 0x84 is 0xFF), so the encounter's decides.
+    unsigned intelligence;
 };
 
 Creature creature(unsigned record)
@@ -61,37 +65,37 @@ Creature creature(unsigned record)
     switch (record)
     {
     case 0:
-        return {0, "slums-kobold", 25};
+        return {0, "slums-kobold", 25, 6};
     case 1:
-        return {1, "slums-kobold-leader", 25};
+        return {1, "slums-kobold-leader", 25, 10};
     case 2:
-        return {2, "slums-goblin", 50};
+        return {2, "slums-goblin", 50, 10};
     case 3:
-        return {3, "slums-goblin-leader", 50};
+        return {3, "slums-goblin-leader", 50, 10};
     case 4:
-        return {4, "slums-orc", 100};
+        return {4, "slums-orc", 100, 6};
     case 5:
-        return {5, "slums-orc-leader-archer", 100};
+        return {5, "slums-orc-leader-archer", 100, 10};
     case 13:
-        return {13, "slums-orc-leader", 100};
+        return {13, "slums-orc-leader", 100, 6};
     case 6:
-        return {6, "slums-hobgoblin", 100};
+        return {6, "slums-hobgoblin", 100, 10};
     case 7:
-        return {7, "slums-hobgoblin", 100};
+        return {7, "slums-hobgoblin", 100, 10};
     case 8:
-        return {8, "ogre", 450};
+        return {8, "ogre", 450, 6};
     case 31:
-        return {31, "troll", 1800};
+        return {31, "troll", 1800, 10};
     case 32:
-        return {32, "norris-the-gray", 450};
+        return {32, "norris-the-gray", 450, 10};
     case 57:
-        return {57, "lizardfolk", 100};
+        return {57, "lizardfolk", 100, 3};
     case 59:
-        return {59, "giant-lizard", 50};
+        return {59, "giant-lizard", 50, 3};
     case 73:
-        return {73, "gnoll-warrior", 100};
+        return {73, "gnoll-warrior", 100, 10};
     default:
-        return {63, "slums-bugbear", 200};
+        return {63, "slums-bugbear", 200, 10};
     }
 }
 
@@ -118,32 +122,51 @@ struct Group
     unsigned count{};
 };
 
+// A fight's creatures and the encounter morale its script sets before COMBAT
+// (0x6DC6; 100 never breaks).
+struct Fight
+{
+    std::vector<Group> groups;
+    unsigned morale;
+};
+
 // ECL2:20's roaming mix (as tools/encounter_balance.cpp documents it): base
 // count from party strength, leaders from strength 8 (14 for orcs), a bugbear
-// above 18.
-std::vector<Group> roaming(unsigned record, unsigned strength, bool guild)
+// above 18. The script's morale depends on how the meeting opened, from 70
+// (the party surprised) to 30 (the monsters surprised); the simulator takes
+// the middle one, 50, when the groups bump into each other. Leaders add 5 and
+// a bugbear 15.
+Fight roaming(unsigned record, unsigned strength, bool guild)
 {
     const unsigned scaled = guild ? strength : strength / 3 * 2;
-    std::vector<Group> groups;
+    Fight fight{{}, 50};
     if (scaled >= (record == 4 ? 14u : 8u))
-        groups.push_back({creature(record + 1), record < 1 ? 3u : 4u});
+    {
+        fight.groups.push_back({creature(record + 1), record < 1 ? 3u : 4u});
+        fight.morale = 55;
+    }
     if (scaled > 18)
-        groups.push_back({creature(63), 1});
-    groups.push_back({creature(record), std::max(1u, scaled)});
-    return groups;
+    {
+        fight.groups.push_back({creature(63), 1});
+        fight.morale = 65;
+    }
+    fight.groups.push_back({creature(record), std::max(1u, scaled)});
+    return fight;
 }
 
 // ECL8:29's roaming mix (its table at 0xAFA2): gnolls at a third of the
 // party's strength, kobolds at half with three kobold leaders, lizardmen at a
-// quarter; at least one.
-std::vector<Group> kutos_roaming(unsigned record, unsigned strength)
+// quarter; at least one. Morale comes from the table at 0xAFB1 (gnolls 75,
+// kobolds 50, lizardmen 90); the script adjusts it by how the meeting opened,
+// from +9 to -20, and the simulator takes the unadjusted face-to-face one.
+Fight kutos_roaming(unsigned record, unsigned strength)
 {
     const unsigned divisor = record == 73 ? 3 : record == 0 ? 2 : 4;
-    std::vector<Group> groups;
+    Fight fight{{}, record == 73 ? 75u : record == 0 ? 50u : 90u};
     if (record == 0)
-        groups.push_back({creature(1), 3});
-    groups.push_back({creature(record), std::max(1u, strength / divisor)});
-    return groups;
+        fight.groups.push_back({creature(1), 3});
+    fight.groups.push_back({creature(record), std::max(1u, strength / divisor)});
+    return fight;
 }
 
 enum class ArcMap
@@ -171,19 +194,25 @@ struct Step
 {
     const char *label;
     Place place;
-    std::vector<Group> (*groups)(unsigned strength);
+    Fight (*fight)(unsigned strength);
     unsigned arrows{}; // An arrow volley instead of a fight.
 };
+
+// The Slums' trolls and ogres, the script's morale 75.
+Fight troll_fight()
+{
+    return {{{creature(8), 2}, {creature(31), 4}}, 75};
+}
 
 // The arc: the Slums' kobolds, goblins and orcs on the streets and in the Old
 // Rope Guild, with the four-orc search second and its set encounters (the
 // hobgoblins arguing over gold, the monster leaders and, last, the trolls and
 // ogres); then Kuto's Well's plaza, the catacombs' arrow volleys and Norris the
-// Gray's band.
+// Gray's band. Each fight has its script's morale.
 const std::vector<Step> arc{
     {"street kobolds", slums_street, [](unsigned s) { return roaming(0, s, false); }},
     {"four orcs", slums_street,
-     [](unsigned) { return std::vector<Group>{{creature(13), 1}, {creature(4), 3}}; }},
+     [](unsigned) { return Fight{{{creature(13), 1}, {creature(4), 3}}, 99}; }},
     {"street goblins", slums_street, [](unsigned s) { return roaming(2, s, false); }},
     {"street orcs", slums_street, [](unsigned s) { return roaming(4, s, false); }},
     {"guild kobolds", slums_guild, [](unsigned s) { return roaming(0, s, true); }},
@@ -195,27 +224,27 @@ const std::vector<Step> arc{
     {"guild orcs", slums_guild, [](unsigned s) { return roaming(4, s, true); }},
     {"guild orcs", slums_guild, [](unsigned s) { return roaming(4, s, true); }},
     {"arguing hobgoblins", hobgoblin_room,
-     [](unsigned) { return std::vector<Group>{{creature(6), 5}}; }},
+     [](unsigned) { return Fight{{{creature(6), 5}}, 75}; }},
     {"monster leaders", leaders_room,
      [](unsigned) {
-         return std::vector<Group>{{creature(8), 1}, {creature(73), 2}, {creature(7), 2}};
+         return Fight{{{creature(8), 1}, {creature(73), 2}, {creature(7), 2}}, 80};
      }},
     {"trolls and ogres", troll_room,
-     [](unsigned) { return std::vector<Group>{{creature(8), 2}, {creature(31), 4}}; }},
+     [](unsigned) { return troll_fight(); }},
     {"plaza gnolls", kutos_plaza, [](unsigned s) { return kutos_roaming(73, s); }},
     {"sickly kobolds", kutos_plaza,
-     [](unsigned) { return std::vector<Group>{{creature(0), 2}, {creature(1), 4}}; }},
+     [](unsigned) { return Fight{{{creature(0), 2}, {creature(1), 4}}, 25}; }},
     {"plaza kobolds", kutos_plaza, [](unsigned s) { return kutos_roaming(0, s); }},
     {"well kobolds", kutos_plaza,
-     [](unsigned) { return std::vector<Group>{{creature(0), 6}, {creature(1), 3}}; }},
+     [](unsigned) { return Fight{{{creature(0), 6}, {creature(1), 3}}, 67}; }},
     {"lizardman patrol", kutos_plaza,
-     [](unsigned) { return std::vector<Group>{{creature(57), 1}, {creature(59), 4}}; }},
+     [](unsigned) { return Fight{{{creature(57), 1}, {creature(59), 4}}, 75}; }},
     {"plaza lizardmen", kutos_plaza, [](unsigned s) { return kutos_roaming(57, s); }},
     {"catacomb volley", kutos_catacombs, nullptr, 4},
     {"dim archer", kutos_catacombs, nullptr, 1},
     {"Norris's band", kutos_catacombs,
      [](unsigned) {
-         return std::vector<Group>{{creature(32), 1}, {creature(57), 5}, {creature(1), 9}};
+         return Fight{{{creature(32), 1}, {creature(57), 5}, {creature(1), 9}}, 70};
      }}};
 
 // The first Kuto's Well step; runs that reach it have cleared the Slums.
@@ -270,6 +299,9 @@ struct RunResult
 {
     std::string outcome; // "complete", "defeated" or "stalled"
     unsigned fights_won{}, deaths{}, short_rests{}, long_rests{};
+    // Monsters whose morale broke: those that ran off the field and those that
+    // gave up.
+    unsigned escaped{}, surrendered{};
     std::string lost_at;
     bool cleared_slums{};
     std::vector<unsigned> levels;
@@ -457,36 +489,57 @@ std::shared_ptr<CampaignParty> level_four_party(const std::vector<Character> &me
     return party;
 }
 
+// Adds the fight's creatures, numbered from 1000 in group order, and its morale.
+void add_enemies(CampaignEncounter &encounter, const Fight &fight)
+{
+    rules::EntityId next = 1000;
+    for (const auto &group : fight.groups)
+        for (unsigned c = 0; c < group.count; ++c, ++next)
+        {
+            encounter.enemies.push_back({next, group.kind.definition,
+                                         std::string(group.kind.definition) + " " +
+                                         std::to_string(next),
+                                         1, {}});
+            encounter.enemies.back().intelligence = group.kind.intelligence;
+        }
+    encounter.morale = fight.morale;
+}
+
+// The original record of the creature `add_enemies` numbered `id`.
+unsigned enemy_record(const Fight &fight, rules::EntityId id)
+{
+    auto index = id - 1000;
+    for (const auto &group : fight.groups)
+    {
+        if (index < group.count)
+            return group.kind.record;
+        index -= group.count;
+    }
+    throw std::out_of_range("No such enemy");
+}
+
 // An open area `width` squares wide between walls: the party at the west end,
 // the monsters 14 squares east (ogres in front of trolls in a one-square
 // corridor, side by side when there is room).
-CampaignEncounter arena_encounter(unsigned width, const std::vector<Group> &groups,
-                                  std::size_t members)
+CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_t members)
 {
     const int length = 30, height = int(width) + 2;
-    CampaignEncounter fight;
-    fight.field.geometry = {length, height, std::vector<std::uint8_t>(std::size_t(length * height))};
+    CampaignEncounter arena;
+    arena.field.geometry = {length, height, std::vector<std::uint8_t>(std::size_t(length * height))};
     for (int x = 0; x < length; ++x)
-        fight.field.geometry.terrain[std::size_t(x)] =
-            fight.field.geometry.terrain[std::size_t((height - 1) * length + x)] = 1;
-    fight.field.tiles.resize(std::size_t(length * height), 7);
+        arena.field.geometry.terrain[std::size_t(x)] =
+            arena.field.geometry.terrain[std::size_t((height - 1) * length + x)] = 1;
+    arena.field.tiles.resize(std::size_t(length * height), 7);
     const auto place = [&](std::size_t n, int front, int step)
     {
         return rules::Cell{front + step * int(n / width), 1 + int(n % width)};
     };
     for (std::size_t n = 0; n < members; ++n)
-        fight.positions.push_back(place(n, 6, -1));
-    rules::EntityId next = 1000;
-    std::size_t placed = 0;
-    for (const auto &group : groups)
-        for (unsigned c = 0; c < group.count; ++c, ++next)
-        {
-            fight.enemies.push_back({next, group.kind.definition,
-                                     std::string(group.kind.definition) + " " + std::to_string(next),
-                                     1, {}});
-            fight.positions.push_back(place(placed++, 20, 1));
-        }
-    return fight;
+        arena.positions.push_back(place(n, 6, -1));
+    add_enemies(arena, fight);
+    for (std::size_t n = 0; n < arena.enemies.size(); ++n)
+        arena.positions.push_back(place(n, 20, 1));
+    return arena;
 }
 
 // Plays one arena fight; true on victory. Width 0 is the trolls' own room in the
@@ -495,33 +548,27 @@ bool arena_fight(const std::vector<Character> &members, const Loadout &loadout, 
                  const por::GeoMap &slums, std::uint64_t seed)
 {
     auto party = level_four_party(members, loadout);
-    std::vector<Group> groups{{creature(8), 2}, {creature(31), 4}};
+    auto fight = troll_fight();
     std::vector<unsigned> levels;
     std::vector<EncounterGroup> sizes;
     for (const auto id : living(*party))
         levels.push_back(party->member(id).character.sheet().level);
-    for (const auto &group : groups)
+    for (const auto &group : fight.groups)
         sizes.push_back({group.kind.fit_xp, group.count});
     const auto counts = fit_encounter_to_budget(
                             sizes, encounter_xp_budget(levels, default_encounter_challenge),
                             unsigned(levels.size()));
-    for (std::size_t g = 0; g < groups.size(); ++g)
-        groups[g].count = counts[g];
+    for (std::size_t g = 0; g < fight.groups.size(); ++g)
+        fight.groups[g].count = counts[g];
     CombatDemo combat(module());
     combat.campaign_party(party);
     if (width)
-        combat.encounter(arena_encounter(width, groups, members.size()), seed);
+        combat.encounter(arena_encounter(width, fight, members.size()), seed);
     else
     {
         CampaignEncounter room;
         room.field = battlefield({slums, slums, slums}, troll_room);
-        rules::EntityId next = 1000;
-        for (const auto &group : groups)
-            for (unsigned c = 0; c < group.count; ++c, ++next)
-                room.enemies.push_back({next, group.kind.definition,
-                                        std::string(group.kind.definition) + " " +
-                                        std::to_string(next),
-                                        1, {}});
+        add_enemies(room, fight);
         combat.encounter(std::move(room), seed);
     }
     for (unsigned commands = 0;
@@ -593,10 +640,11 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
             }
             continue;
         }
-        std::vector<Group> groups = step.groups(party->strength());
-        unsigned experience = 0;
-        for (const auto &group : groups)
-            experience += group.count * original_xp(group.kind.record);
+        auto fight = step.fight(party->strength());
+        // Experience is the original encounter's, however many fight.
+        std::vector<unsigned> paying;
+        for (const auto &group : fight.groups)
+            paying.insert(paying.end(), group.count, group.kind.record);
         // The session fits every encounter, the four-orc search too, to the XP
         // budget and to one creature per living character.
         {
@@ -604,28 +652,22 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
             std::vector<EncounterGroup> sizes;
             for (const auto id : living(*party))
                 levels.push_back(party->member(id).character.sheet().level);
-            for (const auto &group : groups)
+            for (const auto &group : fight.groups)
                 sizes.push_back({group.kind.fit_xp, group.count});
             const auto counts =
                 fit_encounter_to_budget(sizes, encounter_xp_budget(levels, default_encounter_challenge),
                                         unsigned(levels.size()));
-            for (std::size_t g = 0; g < groups.size(); ++g)
-                groups[g].count = counts[g];
+            for (std::size_t g = 0; g < fight.groups.size(); ++g)
+                fight.groups[g].count = counts[g];
         }
-        CampaignEncounter fight;
-        fight.field = battlefield(maps, step.place);
-        rules::EntityId next = 1000;
-        for (const auto &group : groups)
-            for (unsigned c = 0; c < group.count; ++c, ++next)
-                fight.enemies.push_back({next, group.kind.definition,
-                                         std::string(group.kind.definition) + " " +
-                                         std::to_string(next),
-                                         1, {}});
+        CampaignEncounter encounter;
+        encounter.field = battlefield(maps, step.place);
+        add_enemies(encounter, fight);
         rules::Outcome outcome{};
         {
             CombatDemo combat(module());
             combat.campaign_party(party);
-            combat.encounter(fight, seed * 100 + n);
+            combat.encounter(encounter, seed * 100 + n);
             unsigned commands = 0;
             for (; commands < 20000 &&
                     combat.combat().snapshot().outcome == rules::Outcome::ongoing;
@@ -641,7 +683,21 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
                 if (!combat.submit(command))
                     throw std::runtime_error("Combat refused the demo command");
             }
-            outcome = combat.combat().snapshot().outcome;
+            const auto result_snapshot = combat.combat().snapshot();
+            outcome = result_snapshot.outcome;
+            // As in the session, a monster that ran off the field takes its
+            // record's experience with it.
+            for (const auto &unit : result_snapshot.combatants)
+                if (unit.side == 1 && unit.fled && unit.hit_points > 0)
+                {
+                    const auto record = enemy_record(fight, unit.id);
+                    if (const auto it = std::find(paying.begin(), paying.end(), record);
+                            it != paying.end())
+                        paying.erase(it);
+                    ++result.escaped;
+                }
+                else if (unit.side == 1 && unit.surrendered)
+                    ++result.surrendered;
         }
         if (outcome != rules::Outcome::victory)
         {
@@ -651,6 +707,9 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
         }
         ++result.fights_won;
         result.cleared_slums |= n + 1 == kutos_well_start;
+        unsigned experience = 0;
+        for (const auto record : paying)
+            experience += original_xp(record);
         party->award_experience(experience, "sim:" + std::to_string(n));
         // Dying members make their death saves; the Stable regain 1 HP in hours.
         party->advance_time(10);
@@ -728,19 +787,20 @@ int main(int argc, char **argv)
         std::ofstream detail(out / "runs.csv"), summary(out / "summary.csv");
         std::ofstream usage_csv(out / "usage.csv");
         detail << "party,run,outcome,fights_won,lost_at,deaths,dead_classes,short_rests,"
-               "long_rests,levels\n";
+               "long_rests,levels,escaped,surrendered\n";
         summary << "party,runs,slums_pct,success_pct,flawless_pct,avg_fights_won,avg_deaths,"
-                   "avg_level\n";
+                   "avg_level,avg_escaped,avg_surrendered\n";
         usage_csv << "party,class,command,count\n";
-        std::printf("%-14s %5s %7s %8s %9s %10s %7s %9s\n", "party", "runs", "slums%", "success%",
-                    "flawless%", "fights_won", "deaths", "avg_level");
+        std::printf("%-14s %5s %7s %8s %9s %10s %7s %9s %7s %11s\n", "party", "runs", "slums%",
+                    "success%", "flawless%", "fights_won", "deaths", "avg_level", "escaped",
+                    "surrendered");
         for (const auto &plan : party_plans(*characters))
         {
             if (!only.empty() && plan.name != only)
                 continue;
             const auto members = plan_members(plan, pool);
             unsigned cleared = 0, complete = 0, flawless = 0, fights = 0, deaths = 0, levels = 0,
-                     people = 0;
+                     people = 0, escaped = 0, surrendered = 0;
             Usage usage;
             for (unsigned run = 1; run <= runs; ++run)
             {
@@ -750,6 +810,8 @@ int main(int argc, char **argv)
                 flawless += r.outcome == "complete" && !r.deaths;
                 fights += r.fights_won;
                 deaths += r.deaths;
+                escaped += r.escaped;
+                surrendered += r.surrendered;
                 std::string level_list;
                 for (const auto level : r.levels)
                 {
@@ -762,7 +824,8 @@ int main(int argc, char **argv)
                     dead_list += (dead_list.empty() ? "" : " ") + klass;
                 detail << plan.name << ',' << run << ',' << r.outcome << ',' << r.fights_won << ','
                        << r.lost_at << ',' << r.deaths << ',' << dead_list << ','
-                       << r.short_rests << ',' << r.long_rests << ',' << level_list << '\n';
+                       << r.short_rests << ',' << r.long_rests << ',' << level_list << ','
+                       << r.escaped << ',' << r.surrendered << '\n';
             }
             for (const auto &[key, count] : usage)
                 usage_csv << plan.name << ',' << key.first << ',' << key.second << ',' << count << '\n';
@@ -770,10 +833,12 @@ int main(int argc, char **argv)
             const double slums_success = 100.0 * cleared / runs;
             summary << plan.name << ',' << runs << ',' << slums_success << ',' << success << ','
                     << 100.0 * flawless / runs << ',' << double(fights) / runs << ','
-                    << double(deaths) / runs << ',' << double(levels) / people << '\n';
-            std::printf("%-14s %5u %7.0f %8.0f %9.0f %10.1f %7.2f %9.2f\n", plan.name.c_str(),
-                        runs, slums_success, success, 100.0 * flawless / runs,
-                        double(fights) / runs, double(deaths) / runs, double(levels) / people);
+                    << double(deaths) / runs << ',' << double(levels) / people << ','
+                    << double(escaped) / runs << ',' << double(surrendered) / runs << '\n';
+            std::printf("%-14s %5u %7.0f %8.0f %9.0f %10.1f %7.2f %9.2f %7.1f %11.1f\n",
+                        plan.name.c_str(), runs, slums_success, success, 100.0 * flawless / runs,
+                        double(fights) / runs, double(deaths) / runs, double(levels) / people,
+                        double(escaped) / runs, double(surrendered) / runs);
             std::fflush(stdout);
         }
         return 0;

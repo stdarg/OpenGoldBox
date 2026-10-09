@@ -61,6 +61,9 @@ with a new "fled" outcome; combat checkpoints become `OGCOMBAT 45`.
 Rules 0.6.145 adds monster morale: broken creatures flee in panic or surrender
 ([MORALE-1](SRD-DECISIONS.md#morale-1-2026-10-09-monster-morale-as-the-original-game-had-it));
 combat checkpoints become `OGCOMBAT 46`.
+Rules 0.6.146 stops a mover whose route a reaction made illegal, as a
+Champion's free move already did: a creature the Wolf's bite knocks Prone
+mid-route that cannot crawl the rest stops where it is, keeping its movement.
 
 ## Slums set-encounter creatures
 

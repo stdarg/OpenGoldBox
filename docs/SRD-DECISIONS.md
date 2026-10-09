@@ -662,7 +662,7 @@ Monsters check morale at the start of each of their turns, following the Gold
 Box engine (read from the original data, the Curse of the Azure Bonds engine
 reimplementation as reference, and the original's own messages; no code
 copied). The encounter's morale is what the original script stores in `0x6DC6`
-before COMBAT (50 to 100 across the game; 100 never breaks). A creature's own
+before COMBAT (0 to 101 across the game, mostly 50 to 100; 100 never breaks). A creature's own
 morale is its record byte `0x84` (`(byte & 0x7F) * 2` from `0x80` up; above
 102 it has none): most Pool of Radiance monsters have none, and nine never
 break. A creature with its own morale holds while it has lost no more of its
