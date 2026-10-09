@@ -59,6 +59,14 @@ func run_checks() -> void:
         else:
             await key(KEY_LEFT)
             require(current_scene.get_node("Prompt").text == tr("You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."), "A member who must stay is told why it cannot leave")
+        # A step past the hero's movement is refused; choosing another action
+        # with A replaces that error with the new selection.
+        await load_fixture("flee")
+        for step in range(7): await key(KEY_RIGHT)
+        var refused: String = current_scene.get_node("Prompt").text
+        require(not refused.is_empty(), "A step past the hero's movement is refused")
+        await key(KEY_A)
+        require(current_scene.get_node("Prompt").text != refused, "Choosing an action with A replaces the error")
         # The Flee button hands the party to the AI, which runs it off the field.
         await load_fixture("flee")
         var flee: Button = current_scene.get_node("Flee")

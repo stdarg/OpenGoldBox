@@ -7,7 +7,10 @@ extends SceneTree
 # every party turn through the real controls. On each turn it cycles actions
 # with A and clicks the enemies; when nothing can be attacked it walks toward
 # the nearest enemy with the arrow keys and ends the turn. The report lists
-# every distinct prompt and error with a screenshot of each first sight. Not a
+# every distinct prompt and error with a screenshot of each first sight, and
+# the first morale, fleeing and bandaging line of each kind with the enemies'
+# hover panels at that moment. A last run presses Flee in the hobgoblins'
+# fight. Not a
 # CTest check; run with a window (not --headless) and a scratch HOME:
 #   HOME=/tmp/slums/home OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
 #       --script tests/playtest_slums.gd -- --slums-fixtures=/tmp/slums/fixtures \
@@ -193,11 +196,38 @@ func approach() -> void:
             if not prompt().begins_with("Selected:"): await note("Error after moving", prompt())
             return
 
+# Log lines that show morale breaking, fleeing and the dying bandaged.
+const WATCHED := ["flees in panic", "surrenders", "flees the battle", "cannot get away",
+    "is bandaged and stable"]
+
+# Notes the first log line of each watched kind with a screenshot and, while
+# the fight goes on, what hovering each enemy shows.
+func watch_log() -> void:
+    for line in log_text().split("\n"):
+        for phrase in WATCHED:
+            if seen.has(phrase) or not line.contains(phrase): continue
+            seen[phrase] = true
+            report.append("  Log: " + line)
+            await capture("log")
+            if in_combat(): await hover_enemies()
+
+func hover_enemies() -> void:
+    var canvas: Control = combat().get_node("BattlefieldScroll/Canvas")
+    var tile: float = combat().cell_pixels()
+    for cell in combat().enemy_cells():
+        var event := InputEventMouseMotion.new()
+        event.position = canvas.get_global_transform_with_canvas() * ((Vector2(cell) + Vector2(0.5, 0.5)) * tile)
+        root.push_input(event, true)
+        await settle(4)
+        var details: Label = combat().get_node("HoverInfo/Details")
+        report.append("    hover " + str(cell) + ": " + details.text.replace("\n", " | "))
+
 func play_fight(name: String) -> void:
     await capture(name + "-start")
     for turn in range(400):
         if not in_combat(): break
         await settle(10)
+        await watch_log()
         if await press_any(combat(), ["Keep initiative", "Decline reaction", "Keep current", "Continue"]):
             continue
         if not party_turn():
@@ -210,7 +240,34 @@ func play_fight(name: String) -> void:
             await try_attack()
         if party_turn(): await key(KEY_ENTER)
     report.append("  fight over: " + ("still in combat" if in_combat() else "left combat"))
+    await watch_log()
     await capture(name + "-end")
+    if not in_combat(): await play_story([])
+
+# The hobgoblins' fight again, pressing Flee on the party's first turn: the
+# game runs every member for the edge.
+func flee_run() -> void:
+    report.append("== flee")
+    change_scene_to_file("res://scenes/character_creation.tscn"); await settle(20)
+    await press("Party")
+    await load_fixture("hobgoblins")
+    for steps in range(3):
+        await press("CampaignTown/Forward")
+        await settle(20)
+        if not (town().get_node("Continue") as Button).disabled or in_combat(): break
+    await play_story(["Fight", "FIGHT", "Bash", "BASH"])
+    if not in_combat():
+        report.append("  NO COMBAT"); return
+    for turn in range(400):
+        if not in_combat(): break
+        await settle(10)
+        await watch_log()
+        if await press_any(combat(), ["Keep initiative", "Decline reaction", "Keep current", "Continue", "Flee"]):
+            continue
+        await create_timer(0.3).timeout
+    await watch_log()
+    report.append("  fight over: " + ("still in combat" if in_combat() else "left combat"))
+    await capture("flee-end")
     if not in_combat(): await play_story([])
 
 func run() -> void:
@@ -236,5 +293,6 @@ func run() -> void:
         if not in_combat():
             report.append("  NO COMBAT"); await capture(name + "-no-combat"); continue
         await play_fight(name)
+    await flee_run()
     report.append("Slums play-test finished")
     finish(0)

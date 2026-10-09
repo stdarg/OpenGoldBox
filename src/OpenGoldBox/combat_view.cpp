@@ -1534,6 +1534,9 @@ void CombatView::_input(const Ref<InputEvent> &event)
             if (!actions.empty())
             {
                 select_acting_character();
+                // A new choice replaces an error about the last one, so the
+                // prompt shows the action now selected.
+                error_.clear();
                 const auto current = std::find(actions.begin(), actions.end(), mode_);
                 mode_ =
                     actions[current == actions.end()

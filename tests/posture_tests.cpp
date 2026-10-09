@@ -230,6 +230,7 @@ void bandaged_at_victory()
         {
             return line.starts_with("Fallen death save: ");
         }), "No death save is rolled after victory");
+        check(std::count(log.begin(), log.end(), "Victory.") == 1, "Victory is announced once");
         check(!fallen.prone && !unit(*c, 1).prone, "Prone does not outlast combat");
         check(rules->restore(c->save())->save() == c->save(), "Resolved victory round trips");
     }

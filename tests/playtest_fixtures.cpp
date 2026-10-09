@@ -87,6 +87,28 @@ CharacterSheet fighter()
     return party.member(id).character.sheet();
 }
 
+// A level-two Monk: Unarmored Movement makes it faster than any Slums monster.
+CharacterSheet monk()
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "monk";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = "Monk";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    d.rolls[1] = {{6, 6, 6, 1}, 3};
+    d.training = {{"class:monk", {"acrobatics", "stealth"}}};
+    CampaignParty party(module_rules());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    party.award_experience(2700, "playtest-xp");
+    party.advance(id, party.default_advancement(id));
+    return party.member(id).character.sheet();
+}
+
 CharacterSheet druid(unsigned level, std::string spell = {})
 {
     return caster("druid", 4, {"produce_flame", "shillelagh"},
@@ -180,6 +202,32 @@ int main()
             auto edge = battle(*module, fighter(), {{98, "vanguard", "Enemy", 1, {12, 6}}});
             edge.participants.front().cell = {0, 1};
             write(*module, directory, "flee", std::move(edge), "flee");
+        }
+        // Kobolds whose encounter morale breaks at the first wound to their
+        // side: beside a Fighter as fast as they are, they flee in panic;
+        // beside a faster Monk, they surrender.
+        const std::vector<Participant> kobolds{{98, "slums-kobold", "Kobold", 1, {2, 1}},
+            {97, "slums-kobold", "Kobold 2", 1, {6, 3}}, {96, "slums-kobold", "Kobold 3", 1, {7, 5}}
+        };
+        {
+            auto fight = battle(*module, fighter(), kobolds, sword_and_shield);
+            fight.morale = 1;
+            write(*module, directory, "morale-panic", std::move(fight), "melee");
+        }
+        {
+            auto fight = battle(*module, monk(), kobolds);
+            fight.morale = 1;
+            write(*module, directory, "morale-surrender", std::move(fight), "melee");
+        }
+        // A dying Fighter ally when the last enemy, a wounded Kobold, falls.
+        {
+            const auto ally = module->character_profile(fighter(), sword_and_shield).data;
+            write(*module, directory, "bandage",
+                  battle(*module, fighter(),
+            {   {2, "campaign-character", "Ally", 0, {1, 3}, ally,
+                    VitalState{0, false, "SRD11 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 1"}},
+                {98, "slums-kobold", "Kobold", 1, {2, 1}, {}, VitalState{1}}
+            }, sword_and_shield), "melee");
         }
         write(*module, directory, "gear-torch",
               battle(*module, fighter(), {troll_beside}, sword_and_shield, pack), "torch");

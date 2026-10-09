@@ -62,6 +62,18 @@ replaces the kobold ring with those combat definitions (in a row east of the
 party, with their original Slums icons), and
 `--combat-demo-gear=oil,alchemists_fire,acid` gives each member one of each.
 
+`tests/playtest_morale.gd` plays morale, fleeing and bandaging from the
+`morale-panic`, `morale-surrender`, `bandage` and `flee` saves: Kobolds whose
+encounter morale breaks at the first wound flee in panic beside a Fighter and
+surrender beside a faster Monk, a dying ally is bandaged when the fight is won,
+and Flee hands the party to the AI. It reports the log lines and what hovering
+each enemy shows, with screenshots:
+
+```sh
+godot --path src/OpenGoldBox/godot --script $PWD/tests/playtest_morale.gd -- \
+    --playtest-fixtures=$PWD/build/playtest-fixtures --playtest-out=/tmp/playtest-morale
+```
+
 `tests/playtest_gear.gd` plays the gear added against trolls
 ([GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party)):
 from the `gear-torch`, `gear-flasks` and `gear-bow` saves it strikes with a

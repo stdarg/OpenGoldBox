@@ -66,6 +66,8 @@ Champion's free move already did: a creature the Wolf's bite knocks Prone
 mid-route that cannot crawl the rest stops where it is, keeping its movement.
 Rules 0.6.147 bandages whoever is still dying when a fight is won, as the
 original game did, instead of rolling their remaining death saves (SIMPLIFY-1).
+Rules 0.6.148 announces a fight's outcome once; "Victory." was logged again
+on each later outcome check.
 
 ## Slums set-encounter creatures
 
