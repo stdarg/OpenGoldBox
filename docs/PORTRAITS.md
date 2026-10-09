@@ -81,13 +81,14 @@ Image generators usually produce squares. When you generate one:
 
 ## Complete NPC portraits
 
-This kind of portrait is new to OpenGoldBox. Rolf and Norris the Gray have one.
+This kind of portrait is new to OpenGoldBox. Rolf, Norris the Gray, and each of
+New Phlan's twelve mapped shopkeepers have one.
 
 | Item | Location |
 | --- | --- |
-| Sources | `art/portraits/NPCs/rolf.png` (1045x1254 RGB), `art/portraits/NPCs/norris-the-gray.png` (1145x1374 RGB) |
+| Sources | `art/portraits/NPCs/rolf.png` (1045x1254 RGB), `art/portraits/NPCs/norris-the-gray.png` and twelve `phlan-*.png` shopkeepers (1145x1374 RGB) |
 | Name-to-file map | `art/portraits/NPCs/portraits.json` (no code reads it yet) |
-| Generation prompts, style reference and crop | `art/portraits/NPCs/prompts.json` (Rolf only) |
+| Generation prompts, style reference and crop | `art/portraits/NPCs/prompts.json` (Rolf), `shopkeeper-prompts.json` (shopkeepers) |
 | Install rule | `src/OpenGoldBox/CMakeLists.txt` copies each listed file to `godot/bin/portraits/NPCs/` |
 | When each shows | `speaking_npc_portrait()` in `npc_portraits.h` |
 | Loaded by | `RolfTourView::npc_portrait()`, from `res://bin/portraits/`, on first use |
@@ -99,6 +100,14 @@ shape.
 A portrait appears when its NPC has walked up to the party and speaks, that is
 at `sprite_frame == 0` (the encounter sprite's nearest pose) with dialogue
 showing. At every other moment the small encounter sprite is drawn instead.
+New Phlan shopkeepers are the exception: their static portraits fill the view
+for the shop's greeting and entire shopping phase, regardless of the encounter
+sprite.
+The shop's map cell selects one of twelve original character designs; repeated
+merchandise lists do not make two shops share a portrait. Shop controls continue
+to operate normally, and leaving the shop restores the exploration view. See
+the [New Phlan shop map](PHLAN.md#original-merchandise-and-artwork) for the full
+location-to-file mapping.
 
 - **Rolf:** during his opening tour.
 - **Norris the Gray:** in Kuto's Well (`ECL8:29`) when sprite 16 is up, which

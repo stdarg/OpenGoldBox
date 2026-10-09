@@ -1,0 +1,116 @@
+{
+  "generator": "Built-in image generator",
+  "style_reference": "art/portraits/NPCs/rolf.png",
+  "shared_prompt_guidance": "Use case: stylized-concept. Asset type: one original New Phlan shopkeeper NPC portrait for a fantasy RPG. Match Rolf only for rendering style: crisp deliberate square pixel clusters, controlled rich color ramps, strong dark outlines, expressive face readable at 88x88, integrated chest-up anatomy, pure black background. Original individual; do not copy Rolf identity, scars, clothes or pose. 5:6 portrait orientation. Distinct clothing and visual identity from every other shopkeeper. No text, border, extra figures, photo texture, blur, smooth painterly gradients, logos or gore.",
+  "crop": "None; generated at 1145 x 1374 (5:6).",
+  "portraits": [
+    {
+      "shop": "arms",
+      "position": {
+        "x": 13,
+        "y": 8
+      },
+      "file": "art/portraits/NPCs/phlan-arms-13-08.png",
+      "subject_prompt": "A seasoned Black human woman armorer with rich dark-brown skin, close coiled hair streaked silver, sturdy build, composed direct gaze; oxblood leather smith apron over a charcoal padded tunic, one compact hammer held low beside a small polished steel pauldron."
+    },
+    {
+      "shop": "arms",
+      "position": {
+        "x": 8,
+        "y": 11
+      },
+      "file": "art/portraits/NPCs/phlan-arms-08-11.png",
+      "subject_prompt": "An older fair-skinned dwarf man weaponsmith with a short copper beard, weathered face, good-humored raised brow; deep indigo work coat over quilted tan shirt, leather tool belt, one plain sword hilt visible near shoulder."
+    },
+    {
+      "shop": "arms",
+      "position": {
+        "x": 11,
+        "y": 12
+      },
+      "file": "art/portraits/NPCs/phlan-arms-11-12.png",
+      "subject_prompt": "A South Asian-inspired androgynous human armorer with medium-brown skin, long dark hair tied back, focused expression; forest-green reinforced leather jacket over cream sleeves, small brass measuring calipers and a strip of chain mail held low."
+    },
+    {
+      "shop": "arms",
+      "position": {
+        "x": 9,
+        "y": 13
+      },
+      "file": "art/portraits/NPCs/phlan-arms-09-13.png",
+      "subject_prompt": "A dark-skinned male elf arms merchant with short silver curls, long pointed ears, confident reserved smile; rust-red gambeson with black leather cross strap and modest steel shoulder plate, a sheathed sword hilt low in frame."
+    },
+    {
+      "shop": "general",
+      "position": {
+        "x": 15,
+        "y": 8
+      },
+      "file": "art/portraits/NPCs/phlan-general-15-08.png",
+      "subject_prompt": "A Southeast Asian-inspired halfling woman in her forties, warm brown skin, straight dark hair pinned back, bright practical eyes; teal cloth shop apron over a rust-orange blouse, a sealed flask of lamp oil and a bundle of twine held low."
+    },
+    {
+      "shop": "general",
+      "position": {
+        "x": 9,
+        "y": 10
+      },
+      "file": "art/portraits/NPCs/phlan-general-09-10.png",
+      "subject_prompt": "A Middle Eastern-inspired human man in his fifties, olive skin, dark wavy hair with gray at the temples, neatly trimmed beard, welcoming but shrewd expression; cream shirt and striped maroon merchant vest, rolled inventory parchment low at chest."
+    },
+    {
+      "shop": "general",
+      "position": {
+        "x": 12,
+        "y": 10
+      },
+      "file": "art/portraits/NPCs/phlan-general-12-10.png",
+      "subject_prompt": "A Latin American-inspired human woman in her thirties, medium copper-brown skin, thick dark curls tied up, warm smile; ochre shawl over indigo work dress and brown apron, small trade ledger and quill held low."
+    },
+    {
+      "shop": "general",
+      "position": {
+        "x": 9,
+        "y": 11
+      },
+      "file": "art/portraits/NPCs/phlan-general-09-11.png",
+      "subject_prompt": "An elderly East Asian-inspired human woman with warm tan skin, silver hair in a neat low knot, fine laugh lines, calm alert eyes; deep blue coat with pale cuffs over practical linen, one tiny stoppered vial and folded cloth in her hands."
+    },
+    {
+      "shop": "general",
+      "position": {
+        "x": 11,
+        "y": 11
+      },
+      "file": "art/portraits/NPCs/phlan-general-11-11.png",
+      "subject_prompt": "An Indigenous American-inspired androgynous dwarf shopkeeper with warm copper-brown skin, straight dark braids, broad face and friendly wry expression; deep plum merchant tunic with a plain tan apron, holding a small polished hand mirror at chest. No ceremonial regalia or caricature."
+    },
+    {
+      "shop": "silver",
+      "position": {
+        "x": 11,
+        "y": 10
+      },
+      "file": "art/portraits/NPCs/phlan-silver-11-10.png",
+      "subject_prompt": "A North African-inspired human man silversmith in his sixties, warm olive-brown skin, salt-and-pepper short beard and closely cropped hair, keen dark eyes; navy work doublet with subtle silver fastening over cream shirt, a simple silver bracelet and polishing cloth held low."
+    },
+    {
+      "shop": "silver",
+      "position": {
+        "x": 10,
+        "y": 13
+      },
+      "file": "art/portraits/NPCs/phlan-silver-10-13.png",
+      "subject_prompt": "A Black halfling woman silver merchant in her thirties with deep umber skin, short tight curls, lively thoughtful eyes; plum tailored coat over pale gold shirt and gray leather apron, holding a silvered dagger hilt and a small dark velvet pad. Different silhouette from the other merchants."
+    },
+    {
+      "shop": "jeweler",
+      "position": {
+        "x": 8,
+        "y": 10
+      },
+      "file": "art/portraits/NPCs/phlan-jeweler-08-10.png",
+      "subject_prompt": "A South Asian-inspired androgynous elf jeweler with medium-deep brown skin, sharp expressive dark eyes, long black hair pinned in a low twist, fine pointed ears; elegant but practical violet fitted jacket over cream blouse, one jeweler loupe and a modest single gemstone held low. Refined, discerning expression, no crown or extravagant jewels."
+    }
+  ]
+}
