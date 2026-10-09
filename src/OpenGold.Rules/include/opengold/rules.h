@@ -404,6 +404,9 @@ struct CombatantView
     // (its next Fire damage deals 5 more); carries or wields a Torch.
     bool regenerates{}, regeneration_stopped{}, burning{}, oiled{}, has_torch{};
     bool fled{}; // Ran off the field; it rejoins the party when the fight ends.
+    // A party member fast enough to run off the field (no conscious enemy is
+    // faster) that has not failed a flight this fight.
+    bool can_flee{};
 };
 
 struct TemporaryHpOffer

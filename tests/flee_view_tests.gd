@@ -59,4 +59,17 @@ func run_checks() -> void:
         else:
             await key(KEY_LEFT)
             require(current_scene.get_node("Prompt").text == tr("You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."), "A member who must stay is told why it cannot leave")
+        # The Flee button hands the party to the AI, which runs it off the field.
+        await load_fixture("flee")
+        var flee: Button = current_scene.get_node("Flee")
+        require(flee.visible, "Flee is offered on the party's turn")
+        flee.pressed.emit(); await settle()
+        require(not flee.visible and current_scene.get_node("Prompt").text == tr("Your party is fleeing."), "While fleeing, the AI has the party")
+        current_scene.set_process(true)
+        for frame in range(240):
+            await process_frame
+            log = current_scene.get_node("Log").get_parsed_text()
+            if log.contains(tr("{name} flees the battle.").format({"name": "Hero"})) or log.contains(tr("{name} cannot get away and must stay.").format({"name": "Hero"})): break
+        current_scene.set_process(false)
+        require(log.contains(tr("{name} flees the battle.").format({"name": "Hero"})) or log.contains(tr("{name} cannot get away and must stay.").format({"name": "Hero"})), "The fleeing party tries to run off the field")
     cleanup(); print("Flee controls passed"); quit()

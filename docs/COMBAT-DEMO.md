@@ -30,6 +30,8 @@ action returns to the character whose turn it is, so the next click acts.
 Moving a party member off the edge of the field with an arrow key flees the
 fight, as in the original; whether it gets away depends on the enemies' speed
 ([FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did)).
+**Flee**, at the right of End turn's row, hands the whole party to the game AI:
+those who can run for the nearest edge and off it; the rest fight on.
 
 ## Play-testing a chosen party
 

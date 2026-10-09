@@ -74,6 +74,8 @@ text = "Dodge"
 text = "Disengage"
 [node name="End" type="Button" parent="."]
 text = "End turn"
+[node name="Flee" type="Button" parent="."]
+text = "Flee"
 [node name="Continue" type="Button" parent="."]
 text = "Continue"
 [node name="React" type="Button" parent="."]

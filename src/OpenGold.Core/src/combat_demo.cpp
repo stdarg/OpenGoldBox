@@ -1155,4 +1155,78 @@ Command choose_demo_command(const CombatSession &session)
             return command;
     return offered.front();
 }
+
+Command choose_flee_command(const CombatSession &session)
+{
+    const auto state = session.snapshot();
+    const auto offered = session.legal_commands();
+    const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                     [&](const auto & a)
+    {
+        return a.id == state.actor;
+    });
+    const auto offer = [&](std::string_view verb) -> const Command *
+    {
+        for (const auto &command : offered)
+            if (command.verb == verb && command.actor == state.actor)
+                return &command;
+        return nullptr;
+    };
+    // Reactions, choices and those who cannot flee are left to the demo AI.
+    if (active == state.combatants.end() || active->side != 0 || !active->can_flee ||
+            state.reaction_pending || !offer("end"))
+        return choose_demo_command(session);
+    if (const auto *flee = offer("flee"))
+        return *flee;
+    // Steps to the nearest open edge square, around walls.
+    const auto &board = state.battlefield;
+    const auto index = [&](Cell p)
+    {
+        return std::size_t(p.y * board.width + p.x);
+    };
+    std::vector<int> steps(std::size_t(board.width * board.height), -1);
+    std::queue<Cell> frontier;
+    for (int y = 0; y < board.height; ++y)
+        for (int x = 0; x < board.width; ++x)
+            if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
+                    board.at({x, y}) != 1)
+            {
+                steps[index({x, y})] = 0;
+                frontier.push({x, y});
+            }
+    while (!frontier.empty())
+    {
+        const auto p = frontier.front();
+        frontier.pop();
+        for (int dy = -1; dy <= 1; ++dy)
+            for (int dx = -1; dx <= 1; ++dx)
+                if (const Cell next{p.x + dx, p.y + dy};
+                        board.contains(next) && board.at(next) != 1 && steps[index(next)] < 0)
+                {
+                    steps[index(next)] = steps[index(p)] + 1;
+                    frontier.push(next);
+                }
+    }
+    const auto to_edge = [&](Cell p)
+    {
+        const auto d = steps[index(p)];
+        return d < 0 ? 1 << 20 : d;
+    };
+    const Command *move = nullptr;
+    int closest = to_edge(active->cell);
+    for (const auto &command : offered)
+        if (command.verb == "move" && command.actor == state.actor &&
+                to_edge(command.destination) < closest)
+        {
+            move = &command;
+            closest = to_edge(command.destination);
+        }
+    if (move)
+        return *move;
+    // Out of movement short of the edge: Dash for more.
+    if (to_edge(active->cell) > 0)
+        if (const auto *dash = offer("dash"))
+            return *dash;
+    return *offer("end");
+}
 } // namespace opengold

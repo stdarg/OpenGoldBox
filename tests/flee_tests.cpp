@@ -1,3 +1,4 @@
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -165,6 +166,28 @@ void leaving_reach_provokes()
     check(c->submit(*offered(*c, "flee", 1)) && c->snapshot().reaction_pending,
           "Running off beside an enemy provokes an opportunity attack");
 }
+// The Flee button's policy: a member fast enough runs for the nearest edge,
+// Dashing when it must, and steps off; a slower one fights on as the demo AI
+// would.
+void flee_policy()
+{
+    const auto rules = module();
+    {
+        Encounter e{{16, 4, std::vector<std::uint8_t>(64)},
+            {{1, "runner", "Runner", 0, {8, 1}}, {9, "slow", "Enemy", 1, {15, 3}}}};
+        auto c = rules->create(std::move(e), 1);
+        for (unsigned n = 0; n < 200 && c->snapshot().outcome == Outcome::ongoing; ++n)
+            check(c->submit(choose_flee_command(*c)), "The flee policy's command is legal");
+        check(c->snapshot().outcome == Outcome::fled && logged(*c, "Runner flees the battle."),
+              "A member fast enough runs to the edge and off the field");
+    }
+    auto c = fight(*rules, "fast", 1);
+    turn_of(*c, 1);
+    const auto policy = choose_flee_command(*c), demo = choose_demo_command(*c);
+    check(policy.verb == demo.verb && policy.target == demo.target &&
+          policy.destination == demo.destination,
+          "A member too slow to flee fights on as the demo AI would");
+}
 } // namespace
 
 int main()
@@ -176,6 +199,7 @@ int main()
         even_speed_is_a_coin_toss();
         fight_goes_on_without_one_who_fled();
         leaving_reach_provokes();
+        flee_policy();
         std::cout << "Flee tests passed\n";
         return 0;
     }

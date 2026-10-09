@@ -122,6 +122,10 @@ class CombatView : public godot::Control
     std::string mode_{"move"}, error_;
     opengold::rules::EntityId aid_target_{};
     double ai_delay_{};
+    // The Flee button hands every party member to the flee policy until the
+    // fight ends.
+    bool flee_mode_{};
+    void flee();
     bool ready_{}, checking_{}, capture_{}, captured_{}, check_slums_{}, checked_input_{};
     bool party_check_{}, defeat_check_{}, expedition_check_{};
     unsigned check_steps_{}, completion_frames_{};

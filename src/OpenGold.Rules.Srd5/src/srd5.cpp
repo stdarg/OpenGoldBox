@@ -2990,6 +2990,12 @@ Snapshot Session::snapshot() const
                                    "torch") != def(a).equipment_keys.end();
         view.burning = a.burning;
         view.oiled = a.oiled_until_round >= int(round_);
+        view.can_flee = a.source.side == 0 && conscious(a) && !a.must_stay &&
+                        std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
+        {
+            return other.source.side != a.source.side && conscious(other) &&
+                   current_speed(other) > current_speed(a);
+        });
         for (const auto &gear : detail::thrown_gear_items)
             if (a.source.side == 0 && !a.source.character_profile.empty())
                 view.thrown_gear_left.emplace_back(std::string(gear.key),

@@ -648,3 +648,11 @@ Experience comes from the monsters the party killed (the user's ruling): a
 flight earns the experience of those it killed, and members who fled share
 the experience of a fight the rest went on to win.
 
+The user added a **Flee** button beside End turn (not in the original): it
+hands every party member to the game AI until the fight ends. A member who can
+flee (no conscious enemy is faster and it has not failed a flight) runs for
+the nearest open edge, around walls and Dashing when it must, whatever
+opportunity attacks it provokes, and steps off; the rest fight on as the AI
+would. Keys and clicks no longer act for the party; the prompt says "Your party
+is fleeing."
+

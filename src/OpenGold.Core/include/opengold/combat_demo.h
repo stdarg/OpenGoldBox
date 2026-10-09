@@ -154,5 +154,9 @@ struct CombatDemoSetup
         std::span<const std::string> enemies = {}, std::span<const std::string> gear = {});
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
 [[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session);
+// The party's flee policy: a member fast enough to flee runs for the nearest
+// open edge of the field (Dashing when it must, whatever reactions it
+// provokes) and steps off it; everyone else acts as choose_demo_command does.
+[[nodiscard]] rules::Command choose_flee_command(const rules::CombatSession &session);
 } // namespace opengold
 #endif

@@ -196,8 +196,16 @@ Ref<Texture2D> CombatView::sprite_texture(EntityId id, bool action) const
     return action ? art->action : art->texture;
 }
 
+void CombatView::flee()
+{
+    flee_mode_ = true;
+    error_.clear();
+    refresh();
+}
+
 void CombatView::prepare_combat()
 {
+    flee_mode_ = false;
     if (demo_)
         return;
     auto next = std::make_unique<CombatDemo>(
@@ -345,6 +353,7 @@ void CombatView::_ready()
     ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String("second_wind")));
     get_node<Button>("End")->connect("pressed",
                                      callable_mp(this, &CombatView::immediate).bind(String("end")));
+    get_node<Button>("Flee")->connect("pressed", callable_mp(this, &CombatView::flee));
     get_node<Button>("React")->connect(
         "pressed", callable_mp(this, &CombatView::immediate).bind(String("opportunity")));
     get_node<Button>("Decline")->connect(
@@ -587,6 +596,9 @@ void CombatView::layout_reaction_controls(bool show_controls)
     get_node<Button>("Decline")->set_size(Vector2(button_width, 36));
     get_node<Button>("End")->set_position(Vector2(24, top));
     get_node<Button>("End")->set_size(Vector2(button_width, 36));
+    // Flee sits at the far end of End turn's row, clear of Nick.
+    get_node<Button>("Flee")->set_position(Vector2(24 + board_rect_.size.x - button_width, top));
+    get_node<Button>("Flee")->set_size(Vector2(button_width, 36));
 }
 
 void CombatView::layout_status()
@@ -1365,6 +1377,11 @@ void CombatView::_input(const Ref<InputEvent> &event)
     if (!is_visible_in_tree() || !demo_ || Engine::get_singleton()->is_editor_hint())
         return;
     const Ref<InputEventKey> key = event;
+    // While fleeing, the AI acts for the party; keys and clicks do not.
+    if (const Ref<InputEventMouseButton> click = event;
+            flee_mode_ &&
+            (key.is_valid() || (click.is_valid() && click->get_button_index() == MOUSE_BUTTON_LEFT)))
+        return;
     if (demo_->has_combat() && presentation::effect_target_input(
                 event, demo_->combat().snapshot(),
                 demo_->combat().legal_commands(), effect_target_index_,
@@ -2239,7 +2256,14 @@ void CombatView::refresh()
         const bool reaction =
             loaded && s.outcome == Outcome::ongoing && s.reaction_pending && player;
         layout_reaction_controls(party_turn);
-        get_node<Button>("End")->set_visible(party_turn && !reaction);
+        get_node<Button>("End")->set_visible(party_turn && !reaction && !flee_mode_);
+        // Flee is offered while any party member could still run off the field.
+        get_node<Button>("Flee")->set_visible(party_turn && !reaction && !flee_mode_ &&
+                                              std::any_of(s.combatants.begin(), s.combatants.end(),
+                                                      [](const auto & a)
+        {
+            return a.can_flee;
+        }));
         get_node<Button>("React")->set_visible(reaction);
         get_node<Button>("Decline")->set_visible(reaction);
         // React names the reaction asked about: Shield, Cutting Words and so on.
@@ -2303,6 +2327,7 @@ void CombatView::refresh()
         : s.reaction_pending && enabled("cutting")
         ? i18n::text("An enemy's attack hits. Use Cutting Words to subtract your Bardic Inspiration die, or decline.")
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
+        : player && flee_mode_ ? i18n::text("Your party is fleeing.")
         : player ? selected_prompt(offered, action)
     : i18n::text("Enemy turn"));
     // On a party member's turn only: during an enemy's turn the prompt says so.
@@ -2821,7 +2846,7 @@ void CombatView::_process(double delta)
                 return;
             }
         }
-        if (checking_ || party_check_ || defeat_check_ || active->side == 1)
+        if (checking_ || party_check_ || defeat_check_ || active->side == 1 || flee_mode_)
         {
             ai_delay_ += delta;
             if (!checking_ && !party_check_ && !defeat_check_ && ai_delay_ < .65)
@@ -2853,7 +2878,8 @@ void CombatView::_process(double delta)
                     details += "\n" + line;
                 throw std::runtime_error(details);
             }
-            act(choose_demo_command(demo_->combat()));
+            act(flee_mode_ ? choose_flee_command(demo_->combat())
+                : choose_demo_command(demo_->combat()));
         }
     }
     catch (const std::exception &e)
