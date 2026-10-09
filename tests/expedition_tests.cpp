@@ -5,6 +5,7 @@
 #include "opengold/combat_demo.h"
 #include "opengold/random_treasure.h"
 #include "opengold/rolf_tour.h"
+#include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <chrono>
@@ -1069,6 +1070,8 @@ void fetch_potion(Expedition &trip, const std::string &assets)
     check(town.script_variable(0x4A81) == 250 &&
           town.snapshot().dialogue.find("RETURNS WITH A PACKAGE") != std::string::npos,
           "Speaking Ohlo's name at the booth obtains the potion");
+    check(speaking_npc_portrait(town.snapshot()) == "NPCs/ohlos-potion-keeper.png",
+          "The real rope-guild booth shows its own portrait");
 }
 
 // Walks from the booth back to Ohlo's door.

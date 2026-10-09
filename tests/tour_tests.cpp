@@ -64,6 +64,45 @@ void animation_tests()
     check(!opengold::decode_ega_animation(resized), "Frames of different sizes rejected");
 }
 
+void cluebook_portrait_tests()
+{
+    struct PortraitCase
+    {
+        unsigned script;
+        std::string_view dialogue, portrait;
+    };
+    for (const auto &target : std::array{
+             PortraitCase{0, "THE HARBOR MASTER TELLS YOU BOATS LEAVE", "NPCs/harbor-master.png"},
+             PortraitCase{0, "YOU ARE USHERED INTO THE BISHOP'S STUDY. BISHOP BRACCIO SPEAKS", "NPCs/bishop-braccio.png"},
+             PortraitCase{0, "YOU ARE USHERED INTO THE STUDY WHERE DIRTEN WAITS", "NPCs/dirten.png"},
+             PortraitCase{8, "AT YOUR ENTRY, THE COUNCIL CLERK BEGINS", "NPCs/council-clerk.png"},
+             PortraitCase{8, "COUNCILMAN CADORNA CONFRONTS YOU", "NPCs/councilman-cadorna.png"},
+             PortraitCase{8, "IN THE COUNCIL CHAMBERS, THE ENTIRE CITY COUNCIL IS WAITING", "NPCs/mayor-ulrich-eberhard.png"},
+             PortraitCase{20, "'I MAY HAVE A USE FOR YOU,' THE MAN SAYS", "NPCs/ohlo.png"},
+             PortraitCase{20, "SEATED AT A TABLE IS A RAGGED OLD WOMAN", "NPCs/slums-fortune-teller.png"},
+             PortraitCase{20, "'WAIT A MOMENT,' THE MAN SAYS", "NPCs/ohlos-potion-keeper.png"},
+             PortraitCase{29, "A WIDE-EYED WOMAN IS SEATED ON A RUG", "NPCs/kutos-well-seer.png"},
+         })
+    {
+        TourSnapshot state;
+        state.tour_finished = true;
+        state.script_id = target.script;
+        state.sprite_frame = -1; // Original scene picture, not an approach sprite.
+        state.dialogue = target.dialogue;
+        check(opengold::speaking_npc_portrait(state) == target.portrait,
+              "Cluebook NPC dialogue selects its own portrait");
+        state.sprite_frame = 1;
+        check(opengold::speaking_npc_portrait(state).empty(),
+              "The approach sprite remains until the character reaches the party");
+        state.sprite_frame = 0;
+        check(opengold::speaking_npc_portrait(state) == target.portrait,
+              "The nearest encounter pose can show its NPC portrait");
+        ++state.script_id;
+        check(opengold::speaking_npc_portrait(state).empty(),
+              "A shared line or sprite in another script does not borrow the NPC portrait");
+    }
+}
+
 void wall_art_tests()
 {
     Bytes picture_record(17 + 8 * 4, 0);
@@ -644,6 +683,7 @@ int main()
     {
         wall_art_tests();
         animation_tests();
+        cluebook_portrait_tests();
         fog_visibility_tests();
         shopping_tests();
         synthetic();

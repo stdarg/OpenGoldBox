@@ -41,9 +41,8 @@ The briefs are in `art/portraits/prompts.json`, `roster-prompts.json`,
 gender and fantasy race are in `art/portraits/portraits.json`. The 18 portraits
 without a clear ancestry cue remain unspecified rather than being classified
 from skin tone or facial features alone. Orc, Goliath, and Tiefling colors make
-such visual judgments especially unreliable. The two NPC portraits are outside
-the player catalog: Rolf appears European-inspired, while Norris the Gray's
-green Orc portrait does not support a useful real-world classification.
+such visual judgments especially unreliable. NPC portraits are outside this
+player catalog and are not counted in the table.
 
 ## Size of the view window
 
@@ -81,15 +80,15 @@ Image generators usually produce squares. When you generate one:
 
 ## Complete NPC portraits
 
-This kind of portrait is new to OpenGoldBox. Rolf, Norris the Gray, and each of
-New Phlan's twelve mapped shopkeepers have one.
+Rolf, Norris the Gray, each of New Phlan's twelve mapped shopkeepers, and 39
+distinct cluebook NPCs have a complete portrait.
 
 | Item | Location |
 | --- | --- |
-| Sources | `art/portraits/NPCs/rolf.png` (1045x1254 RGB), `art/portraits/NPCs/norris-the-gray.png` and twelve `phlan-*.png` shopkeepers (1145x1374 RGB) |
+| Sources | `art/portraits/NPCs/*.png`; the 39 cluebook portraits are 1145x1374 RGB |
 | Name-to-file map | `art/portraits/NPCs/portraits.json` (no code reads it yet) |
-| Generation prompts, style reference and crop | `art/portraits/NPCs/prompts.json` (Rolf), `shopkeeper-prompts.json` (shopkeepers) |
-| Install rule | `src/OpenGoldBox/CMakeLists.txt` copies each listed file to `godot/bin/portraits/NPCs/` |
+| Cluebook source locations and art direction | `art/portraits/NPCs/cluebook-portraits.json`; earlier `prompts.json` and `shopkeeper-prompts.json` |
+| Install rule | `src/OpenGoldBox/CMakeLists.txt` copies NPC PNGs to `godot/bin/portraits/NPCs/` |
 | When each shows | `speaking_npc_portrait()` in `npc_portraits.h` |
 | Loaded by | `RolfTourView::npc_portrait()`, from `res://bin/portraits/`, on first use |
 
@@ -113,8 +112,31 @@ location-to-file mapping.
 - **Norris the Gray:** in Kuto's Well (`ECL8:29`) when sprite 16 is up, which
   the script shows only for his "Surrender or die" ambush in the catacombs.
 
-To add one, put the 5:6 PNG in `art/portraits/NPCs/`, add its name to the
-install loop and its condition to `speaking_npc_portrait()`.
+### Cluebook NPC roster
+
+`GameDocs/Cluebook.pdf` was read without using the existing portrait art as a
+reference. `cluebook-portraits.json` lists the 39 individually described
+speaking characters, their PDF pages, files, and area availability. Clothing,
+appearance, and other unspecified details are original designs. Generic guards,
+patrols, crowds, hirelings, and combat monsters are not distinct cluebook NPCs;
+the twelve shopkeepers were already created for the mapped stores.
+
+The game currently loads New Phlan (`ECL3:0,8,11`), the Slums (`ECL2:20`),
+and Kuto's Well (`ECL8:29`). Ten new portraits can be selected in those scripts:
+the council clerk, Bishop Braccio, Councilman Cadorna, Mayor Eberhard, Dirten,
+the harbor master, Ohlo, the Slums fortune teller, Ohlo's potion keeper, and
+the Kuto's Well seer. The script-specific dialogue opening selects the portrait
+only when no approach sprite is active or the encounter has reached its nearest
+sprite pose. Other scenes keep their original artwork. Some of those
+lines are gated by later quests and are not yet reachable in normal play.
+
+The other 29 portraits are cataloged and installed, but their areas have no
+runtime route yet. When those districts are implemented, identify their exact
+script cues and connect the corresponding portrait before marking that scene
+covered. `cluebook-portraits.json` keeps this distinction explicit.
+
+To add one, put the 5:6 PNG in `art/portraits/NPCs/`, catalog it, and add its
+condition to `speaking_npc_portrait()` when its area can be played.
 
 ## Heads and bodies (legacy)
 
