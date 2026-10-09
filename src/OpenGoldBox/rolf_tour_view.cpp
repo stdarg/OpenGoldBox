@@ -9,6 +9,7 @@
 #include "vital_fixtures.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -85,39 +86,39 @@ void RolfTourView::_ready()
     ready_ = false;
     set_texture_filter(CanvasItem::TEXTURE_FILTER_NEAREST);
     // Child nodes are scene-owned; these lookups are temporary non-owning views.
-    get_node<Button>("Continue")->connect("pressed", callable_mp(this, &RolfTourView::next));
-    get_node<Button>("Restart")->connect("pressed", callable_mp(this, &RolfTourView::restart));
-    get_node<Button>("Left")->connect("pressed", callable_mp(this, &RolfTourView::left));
-    get_node<Button>("Right")->connect("pressed", callable_mp(this, &RolfTourView::right));
-    get_node<Button>("Forward")->connect("pressed", callable_mp(this, &RolfTourView::forward));
-    get_node<Button>("Look")->connect("pressed", callable_mp(this, &RolfTourView::look));
-    get_node<Button>("Camp")->connect("pressed", callable_mp(this, &RolfTourView::camp));
-    get_node<Button>("Inventory")->connect("pressed", callable_mp(this, &RolfTourView::inventory));
+    get_node<Button>("Continue")->connect("pressed", presentation::guarded(this, &RolfTourView::next));
+    get_node<Button>("Restart")->connect("pressed", presentation::guarded(this, &RolfTourView::restart));
+    get_node<Button>("Left")->connect("pressed", presentation::guarded(this, &RolfTourView::left));
+    get_node<Button>("Right")->connect("pressed", presentation::guarded(this, &RolfTourView::right));
+    get_node<Button>("Forward")->connect("pressed", presentation::guarded(this, &RolfTourView::forward));
+    get_node<Button>("Look")->connect("pressed", presentation::guarded(this, &RolfTourView::look));
+    get_node<Button>("Camp")->connect("pressed", presentation::guarded(this, &RolfTourView::camp));
+    get_node<Button>("Inventory")->connect("pressed", presentation::guarded(this, &RolfTourView::inventory));
     get_node<Button>("InventoryPanel/Close")
-    ->connect("pressed", callable_mp(this, &RolfTourView::inventory));
+    ->connect("pressed", presentation::guarded(this, &RolfTourView::inventory));
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         auto *member = get_node<Button>(String("PartyList/Rows/Member") + String::num_uint64(slot));
-        member->connect("pressed", callable_mp(this, &RolfTourView::party_selected).bind(slot));
+        member->connect("pressed", presentation::guarded(this, &RolfTourView::party_selected).bind(slot));
         auto arrow = presentation::make_node<Button>();
         arrow->set_name("Advance");
         arrow->set_text(String::utf8("↑"));
         arrow->set_size(Vector2(30, 26));
         arrow->set_tooltip_text(i18n::text(N_("Level up")));
-        arrow->connect("pressed", callable_mp(this, &RolfTourView::level_up_requested).bind(slot));
+        arrow->connect("pressed", presentation::guarded(this, &RolfTourView::level_up_requested).bind(slot));
         presentation::attach_child(*member, std::move(arrow));
     }
     get_node<ItemList>("InventoryPanel/Items")
-    ->connect("item_selected", callable_mp(this, &RolfTourView::inventory_selected));
+    ->connect("item_selected", presentation::guarded(this, &RolfTourView::inventory_selected));
     get_node<Button>("InventoryPanel/Equip")
-    ->connect("pressed", callable_mp(this, &RolfTourView::equip_item).bind(true));
+    ->connect("pressed", presentation::guarded(this, &RolfTourView::equip_item).bind(true));
     get_node<Button>("InventoryPanel/Unequip")
-    ->connect("pressed", callable_mp(this, &RolfTourView::equip_item).bind(false));
+    ->connect("pressed", presentation::guarded(this, &RolfTourView::equip_item).bind(false));
     get_node<Button>("MemberSheet/Close")
-    ->connect("pressed", callable_mp(this, &RolfTourView::close_sheet));
+    ->connect("pressed", presentation::guarded(this, &RolfTourView::close_sheet));
     get_node<Window>("MemberSheet")
-    ->connect("close_requested", callable_mp(this, &RolfTourView::close_sheet));
-    get_node<Button>("LeaveShop")->connect("pressed", callable_mp(this, &RolfTourView::leave_shop));
+    ->connect("close_requested", presentation::guarded(this, &RolfTourView::close_sheet));
+    get_node<Button>("LeaveShop")->connect("pressed", presentation::guarded(this, &RolfTourView::leave_shop));
     get_window()->set_min_size(Vector2i(960, 720));
     for (bool saving :
             {
@@ -127,7 +128,7 @@ void RolfTourView::_ready()
         auto button = presentation::make_node<Button>();
         button->set_name(saving ? "SaveGame" : "LoadGame");
         button->set_text(i18n::text(saving ? N_("Save game") : N_("Load game")));
-        button->connect("pressed", callable_mp(this, &RolfTourView::request_save).bind(saving));
+        button->connect("pressed", presentation::guarded(this, &RolfTourView::request_save).bind(saving));
         button->set_visible(embedded_party_);
         presentation::attach_child(*this, std::move(button));
     }
@@ -552,6 +553,14 @@ void RolfTourView::movement(ExplorationCommand command)
 
 void RolfTourView::_input(const Ref<InputEvent> &event)
 {
+    presentation::run_guarded(*this, [&]
+    {
+        respond_to_input(event);
+    });
+}
+
+void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
+{
     if (get_node<Window>("RestDialog")->is_visible())
         return;
     const Ref<InputEventKey> key = event;
@@ -611,6 +620,14 @@ void RolfTourView::_input(const Ref<InputEvent> &event)
 }
 
 void RolfTourView::_process(double delta)
+{
+    presentation::run_guarded(*this, [&]
+    {
+        advance_frame(delta);
+    });
+}
+
+void RolfTourView::advance_frame(double delta)
 {
     if (Engine::get_singleton()->is_editor_hint())
         return;

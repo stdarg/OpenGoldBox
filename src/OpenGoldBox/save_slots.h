@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_SAVE_SLOTS_H
 #define OPENGOLD_SAVE_SLOTS_H
 #include <godot_cpp/classes/window.hpp>
+#include <exception>
 #include <filesystem>
 #include <functional>
 #include <vector>
@@ -12,6 +13,8 @@ class SaveSlots : public godot::Window
   public:
     void _ready() override;
     void open(bool saving);
+    // Shows a failed handler's error; called by presentation::run_guarded.
+    void report_failure(const std::exception &failure);
     std::function<void(const std::filesystem::path &)> save, load;
 
   protected:

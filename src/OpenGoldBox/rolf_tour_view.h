@@ -91,6 +91,8 @@ class RolfTourView : public godot::Control
     void _notification(int what);
 
   private:
+    void advance_frame(double delta);
+    void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     std::optional<opengold::por::RolfTourSession> session_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::array<godot::Ref<godot::ImageTexture>, 3> sprites_;

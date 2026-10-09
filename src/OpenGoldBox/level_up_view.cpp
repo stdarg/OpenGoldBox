@@ -23,6 +23,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
+#include "guarded_handlers.h"
 #include <algorithm>
 
 using namespace godot;
@@ -54,7 +55,7 @@ void CharacterCreationView::setup_advancement()
     auto *window = owned.get();
     presentation::attach_child(*this, std::move(owned));
     window->connect("close_requested",
-                    callable_mp(this, &CharacterCreationView::close_advancement));
+                    presentation::guarded(this, &CharacterCreationView::close_advancement));
     auto *spell_page = presentation::add_control<ScrollContainer>(*window, "SpellChoicesPage",
         Rect2(24, 70, 652, 475));
     spell_page->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
@@ -74,7 +75,7 @@ void CharacterCreationView::setup_advancement()
     auto *back = presentation::add_control<Button>(*window, "Back", Rect2(236, 610, 136, 40));
     back->set_text(i18n::text(N_("Back")));
     back->hide();
-    back->connect("pressed", callable_mp(this, &CharacterCreationView::advancement_back));
+    back->connect("pressed", presentation::guarded(this, &CharacterCreationView::advancement_back));
     auto *title = presentation::add_control<Label>(*window, "Title", Rect2(24, 20, 652, 40));
     title->add_theme_font_size_override("font_size", 24);
     title->set_clip_text(true);
@@ -82,7 +83,7 @@ void CharacterCreationView::setup_advancement()
     presentation::add_control<Label>(*window, "FeatLabel", Rect2(24, 122, 652, 28))
     ->set_text(i18n::text(N_("Feat or ability points")));
     auto *feat = presentation::add_control<OptionButton>(*window, "Feat", Rect2(24, 155, 652, 38));
-    feat->connect("item_selected", callable_mp(this, &CharacterCreationView::advancement_changed));
+    feat->connect("item_selected", presentation::guarded(this, &CharacterCreationView::advancement_changed));
     auto *training_label = presentation::add_control<Label>(*window, "AdvancementTrainingLabel",
         Rect2(24, 205, 652, 25));
     training_label->hide();
@@ -90,7 +91,7 @@ void CharacterCreationView::setup_advancement()
         Rect2(24, 236, 652, 36));
     training->hide();
     training->connect("item_selected",
-                      callable_mp(this, &CharacterCreationView::advancement_changed));
+                      presentation::guarded(this, &CharacterCreationView::advancement_changed));
     const std::array<const char *, 6> abilities{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
     for (unsigned i = 0; i < 6; ++i)
     {
@@ -102,21 +103,21 @@ void CharacterCreationView::setup_advancement()
         for (int n = 0; n <= 2; ++n)
             points->add_item(String("+") + String::num_int64(n));
         points->connect("item_selected",
-                        callable_mp(this, &CharacterCreationView::advancement_changed));
+                        presentation::guarded(this, &CharacterCreationView::advancement_changed));
     }
     presentation::add_control<Label>(*window, "SpellLabel", Rect2(24, 292, 652, 28))
     ->set_text(i18n::text(N_("Prepared spells")));
     auto *style =
         presentation::add_control<OptionButton>(*window, "FightingStyle", Rect2(24, 325, 652, 38));
     style->hide();
-    style->connect("item_selected", callable_mp(this, &CharacterCreationView::advancement_changed));
+    style->connect("item_selected", presentation::guarded(this, &CharacterCreationView::advancement_changed));
     for (int i = 0; i < 4; ++i)
     {
         auto *spell = presentation::add_control<CheckBox>(
                           *window, String("Spell") + String::num_int64(i), Rect2(24, 325 + i * 38, 652, 36));
         spell->connect(
             "toggled",
-            callable_mp(this, &CharacterCreationView::advancement_spell_changed).bind(i));
+            presentation::guarded(this, &CharacterCreationView::advancement_spell_changed).bind(i));
     }
     auto *note = presentation::add_control<Label>(*window, "Note", Rect2(24, 489, 652, 66));
     note->set_text(i18n::text(N_(
@@ -127,10 +128,10 @@ void CharacterCreationView::setup_advancement()
     error->add_theme_font_size_override("font_size", 15);
     auto *cancel = presentation::add_control<Button>(*window, "Cancel", Rect2(386, 610, 136, 40));
     cancel->set_text(i18n::text(N_("Cancel")));
-    cancel->connect("pressed", callable_mp(this, &CharacterCreationView::close_advancement));
+    cancel->connect("pressed", presentation::guarded(this, &CharacterCreationView::close_advancement));
     auto *confirm = presentation::add_control<Button>(*window, "Confirm", Rect2(536, 610, 140, 40));
     confirm->set_text(i18n::text(N_("Confirm")));
-    confirm->connect("pressed", callable_mp(this, &CharacterCreationView::confirm_advancement));
+    confirm->connect("pressed", presentation::guarded(this, &CharacterCreationView::confirm_advancement));
 }
 
 const opengold::rules::TrainingChoiceGroup *
@@ -254,7 +255,7 @@ void CharacterCreationView::advancement_pages()
     } // Invalid edits remain visible; final preview reports the error.
     presentation::refresh_spell_groups(
         *w->get_node<VBoxContainer>("SpellChoicesPage/Rows"), options, choices,
-        callable_mp(this, &CharacterCreationView::advancement_learning_toggled),
+        presentation::guarded(this, &CharacterCreationView::advancement_learning_toggled),
         [](std::string_view source)
     {
         return i18n::text(source);
@@ -291,7 +292,7 @@ void CharacterCreationView::refresh_advancement_skilled()
             owned->set_name(name);
             box = owned.get();
             presentation::style_choice(*box);
-            box->connect("toggled", callable_mp(this,
+            box->connect("toggled", presentation::guarded(this,
                                                 &CharacterCreationView::advancement_skilled_toggled)
                          .bind(presentation::training_string(option.id)));
             presentation::attach_child(rows, std::move(owned));
@@ -374,7 +375,7 @@ void CharacterCreationView::refresh_advancement_arrows()
             arrow->add_theme_font_size_override("font_size", 14);
             arrow->connect(
                 "pressed",
-                callable_mp(this, &CharacterCreationView::open_advancement).bind(member.id));
+                presentation::guarded(this, &CharacterCreationView::open_advancement).bind(member.id));
         }
         arrow->set_tooltip_text(
         i18n::format("Level up {name}", {{"name", gs(member.character.sheet().name)}}));
@@ -413,103 +414,104 @@ void CharacterCreationView::open_advancement(std::int64_t id)
     advancing_ = id;
     advancement_options_ = campaign_->advancement_options(id);
     advancement_choice_ = campaign_->default_advancement(id);
-    advancement_refreshing_ = true;
     auto *window = get_node<Window>("LevelUp");
-    for (const char *name :
-            {"HP", "FeatLabel", "Feat", "Note", "SpellLabel"
-            })
-        window->get_node<Control>(name)->show();
-    window->get_node<Label>("Title")->set_text(i18n::format(
-    "{name} / Level {level}", {{"name", gs(campaign_->member(id).character.sheet().name)},
-        {"level", advancement_options_.level}
-    }));
-    window->get_node<Label>("Note")->set_text(i18n::text(advancement_options_.description));
-    auto *feat = window->get_node<OptionButton>("Feat");
-    feat->clear();
-    if (advancement_options_.feats.empty())
-        feat->add_item(i18n::text(N_("No feat or ability increase at this level")));
-    for (unsigned i = 0; i < advancement_options_.feats.size(); ++i)
     {
-        const auto &option = advancement_options_.feats[i];
-        feat->add_item(i18n::text(option.label) +
-                       (option.available ? String() : i18n::text(" (Unavailable)")));
-        feat->set_item_disabled(i, !option.available);
-        feat->set_item_tooltip(i, i18n::text(option.description));
-        if (option.id == advancement_choice_.feat)
-            feat->select(i);
-    }
-    feat->set_disabled(advancement_options_.feats.empty());
-    const auto *dropdown = advancement_dropdown_group();
-    const bool has_training = dropdown != nullptr;
-    const bool supplemental_training = has_training && !advancement_options_.feats.empty();
-    auto *training = window->get_node<OptionButton>("AdvancementTraining");
-    training->clear();
-    training->set_visible(has_training);
-    window->get_node<Label>("AdvancementTrainingLabel")->set_visible(has_training);
-    window->get_node<Label>("AdvancementTrainingLabel")
-    ->set_position(Vector2(24, supplemental_training ? 374 : 205));
-    training->set_position(Vector2(24, supplemental_training ? 406 : 236));
-    for (unsigned i = 0; i < 6; ++i)
-    {
-        window->get_node<Control>(String("Ability") + String::num_uint64(i))
-        ->set_visible(!has_training || supplemental_training);
-        window->get_node<Control>(String("AbilityLabel") + String::num_uint64(i))
-        ->set_visible(!has_training || supplemental_training);
-    }
-    if (has_training)
-    {
-        const auto &group = *dropdown;
-        window->get_node<Label>("AdvancementTrainingLabel")->set_text(i18n::text(group.label));
-        training->add_item(i18n::text("Choose an option"));
-        for (const auto &option : group.options)
-            training->add_item(i18n::text(option.label) +
-                               (option.description.empty()
-                                ? String()
-                                : String(" / ") + i18n::text(option.description)));
-        training->select(0);
-        advancement_choice_.training.clear();
-    }
-    for (unsigned i = 0; i < 6; ++i)
-        window->get_node<OptionButton>(String("Ability") + String::num_uint64(i))
-        ->select(advancement_choice_.abilities[i]);
-    window->get_node<Label>("SpellLabel")
-    ->set_text(i18n::text(advancement_options_.spells.empty()
-                          ? N_("No spell choices for this class")
-                          : N_("Prepared spells: select at least one")));
-    for (unsigned i = 0; i < 4; ++i)
-    {
-        auto *spell = window->get_node<CheckBox>(String("Spell") + String::num_uint64(i));
-        spell->set_visible(i < advancement_options_.spells.size());
-        if (i >= advancement_options_.spells.size())
-            continue;
-        const auto &option = advancement_options_.spells[i];
-        spell->set_text(i18n::text(option.label) +
-                        (option.available ? String() : i18n::text(" (Unavailable)")));
-        spell->set_tooltip_text(i18n::text(option.description));
-        spell->set_disabled(!option.available);
-        spell->set_pressed_no_signal(std::find(advancement_choice_.spells.begin(),
-                                               advancement_choice_.spells.end(),
-                                               option.id) != advancement_choice_.spells.end());
-    }
-    auto *style = window->get_node<OptionButton>("FightingStyle");
-    style->clear();
-    style->set_visible(!advancement_options_.fighting_styles.empty());
-    if (!advancement_options_.fighting_styles.empty())
-    {
-        window->get_node<Label>("SpellLabel")->set_text(i18n::text("Fighting Style"));
-        for (const auto &option : advancement_options_.fighting_styles)
+        const presentation::ScopedFlag refreshing(advancement_refreshing_);
+        for (const char *name :
+                {"HP", "FeatLabel", "Feat", "Note", "SpellLabel"
+                })
+            window->get_node<Control>(name)->show();
+        window->get_node<Label>("Title")->set_text(i18n::format(
+        "{name} / Level {level}", {{"name", gs(campaign_->member(id).character.sheet().name)},
+            {"level", advancement_options_.level}
+        }));
+        window->get_node<Label>("Note")->set_text(i18n::text(advancement_options_.description));
+        auto *feat = window->get_node<OptionButton>("Feat");
+        feat->clear();
+        if (advancement_options_.feats.empty())
+            feat->add_item(i18n::text(N_("No feat or ability increase at this level")));
+        for (unsigned i = 0; i < advancement_options_.feats.size(); ++i)
         {
-            const int i = style->get_item_count();
-            style->add_item(i18n::text(option.label));
-            style->set_item_disabled(i, !option.available);
-            style->set_item_tooltip(i, i18n::text(option.description));
-            if ((advancement_choice_.fighting_style &&
-                    option.id == *advancement_choice_.fighting_style) ||
-                    (!advancement_choice_.fighting_style && option.id == "keep"))
-                style->select(i);
+            const auto &option = advancement_options_.feats[i];
+            feat->add_item(i18n::text(option.label) +
+                           (option.available ? String() : i18n::text(" (Unavailable)")));
+            feat->set_item_disabled(i, !option.available);
+            feat->set_item_tooltip(i, i18n::text(option.description));
+            if (option.id == advancement_choice_.feat)
+                feat->select(i);
+        }
+        feat->set_disabled(advancement_options_.feats.empty());
+        const auto *dropdown = advancement_dropdown_group();
+        const bool has_training = dropdown != nullptr;
+        const bool supplemental_training = has_training && !advancement_options_.feats.empty();
+        auto *training = window->get_node<OptionButton>("AdvancementTraining");
+        training->clear();
+        training->set_visible(has_training);
+        window->get_node<Label>("AdvancementTrainingLabel")->set_visible(has_training);
+        window->get_node<Label>("AdvancementTrainingLabel")
+        ->set_position(Vector2(24, supplemental_training ? 374 : 205));
+        training->set_position(Vector2(24, supplemental_training ? 406 : 236));
+        for (unsigned i = 0; i < 6; ++i)
+        {
+            window->get_node<Control>(String("Ability") + String::num_uint64(i))
+            ->set_visible(!has_training || supplemental_training);
+            window->get_node<Control>(String("AbilityLabel") + String::num_uint64(i))
+            ->set_visible(!has_training || supplemental_training);
+        }
+        if (has_training)
+        {
+            const auto &group = *dropdown;
+            window->get_node<Label>("AdvancementTrainingLabel")->set_text(i18n::text(group.label));
+            training->add_item(i18n::text("Choose an option"));
+            for (const auto &option : group.options)
+                training->add_item(i18n::text(option.label) +
+                                   (option.description.empty()
+                                    ? String()
+                                    : String(" / ") + i18n::text(option.description)));
+            training->select(0);
+            advancement_choice_.training.clear();
+        }
+        for (unsigned i = 0; i < 6; ++i)
+            window->get_node<OptionButton>(String("Ability") + String::num_uint64(i))
+            ->select(advancement_choice_.abilities[i]);
+        window->get_node<Label>("SpellLabel")
+        ->set_text(i18n::text(advancement_options_.spells.empty()
+                              ? N_("No spell choices for this class")
+                              : N_("Prepared spells: select at least one")));
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            auto *spell = window->get_node<CheckBox>(String("Spell") + String::num_uint64(i));
+            spell->set_visible(i < advancement_options_.spells.size());
+            if (i >= advancement_options_.spells.size())
+                continue;
+            const auto &option = advancement_options_.spells[i];
+            spell->set_text(i18n::text(option.label) +
+                            (option.available ? String() : i18n::text(" (Unavailable)")));
+            spell->set_tooltip_text(i18n::text(option.description));
+            spell->set_disabled(!option.available);
+            spell->set_pressed_no_signal(std::find(advancement_choice_.spells.begin(),
+                                                   advancement_choice_.spells.end(),
+                                                   option.id) != advancement_choice_.spells.end());
+        }
+        auto *style = window->get_node<OptionButton>("FightingStyle");
+        style->clear();
+        style->set_visible(!advancement_options_.fighting_styles.empty());
+        if (!advancement_options_.fighting_styles.empty())
+        {
+            window->get_node<Label>("SpellLabel")->set_text(i18n::text("Fighting Style"));
+            for (const auto &option : advancement_options_.fighting_styles)
+            {
+                const int i = style->get_item_count();
+                style->add_item(i18n::text(option.label));
+                style->set_item_disabled(i, !option.available);
+                style->set_item_tooltip(i, i18n::text(option.description));
+                if ((advancement_choice_.fighting_style &&
+                        option.id == *advancement_choice_.fighting_style) ||
+                        (!advancement_choice_.fighting_style && option.id == "keep"))
+                    style->select(i);
+            }
         }
     }
-    advancement_refreshing_ = false;
     advancement_pages();
     advancement_changed();
     window->popup_centered();

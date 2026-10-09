@@ -1,6 +1,7 @@
 #include "startup_view.h"
 #include "localization.h"
 #include "application_settings.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/line_edit.hpp>
 #include <godot_cpp/classes/file_dialog.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
@@ -46,25 +47,25 @@ void StartupView::choose_game_path()
     i18n::prepare_ui(*get_node<Window>("PathDialog"));
     i18n::prepare_ui(*get_node<Window>("ChecksumWarning"));
     auto *dialog = get_node<Window>("PathDialog"); // scene-owned
-    dialog->connect("close_requested", callable_mp(this, &StartupView::close_language));
+    dialog->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
     dialog->get_node<Button>("Cancel")->connect("pressed",
-            callable_mp(this, &StartupView::close_language));
+            presentation::guarded(this, &StartupView::close_language));
     dialog->get_node<Button>("Continue")
-    ->connect("pressed", callable_mp(this, &StartupView::accept_path));
+    ->connect("pressed", presentation::guarded(this, &StartupView::accept_path));
     dialog->get_node<Button>("Browse")->connect("pressed",
-            callable_mp(this, &StartupView::browse_path));
+            presentation::guarded(this, &StartupView::browse_path));
     dialog->get_node<LineEdit>("Path")->connect("text_submitted",
-            callable_mp(this, &StartupView::submitted_path));
+            presentation::guarded(this, &StartupView::submitted_path));
     dialog->get_node<LineEdit>("Path")->connect("text_changed",
-            callable_mp(this, &StartupView::path_edited));
+            presentation::guarded(this, &StartupView::path_edited));
     dialog->get_node<FileDialog>("BrowseDialog")
-    ->connect("dir_selected", callable_mp(this, &StartupView::picked_path));
+    ->connect("dir_selected", presentation::guarded(this, &StartupView::picked_path));
     auto *warning = get_node<Window>("ChecksumWarning");
-    warning->connect("close_requested", callable_mp(this, &StartupView::close_language));
+    warning->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
     warning->get_node<Button>("Quit")->connect("pressed",
-            callable_mp(this, &StartupView::close_language));
+            presentation::guarded(this, &StartupView::close_language));
     warning->get_node<Button>("Continue")
-    ->connect("pressed", callable_mp(this, &StartupView::continue_path));
+    ->connect("pressed", presentation::guarded(this, &StartupView::continue_path));
     const auto saved = settings::saved_game_path();
     pending_path_ = settings::game_path();
     if (pending_path_.is_empty())
@@ -86,22 +87,22 @@ void StartupView::choose_language()
         auto *dialog = get_node<Window>("LanguageDialog"); // scene-owned
         // Native language names remain stable; other text previews the selected locale.
         dialog->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-        dialog->connect("close_requested", callable_mp(this, &StartupView::close_language));
+        dialog->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
         auto *choices = dialog->get_node<ItemList>("Choices");
         choices->add_item("English");
         choices->set_item_metadata(0, "en");
         choices->add_item(String::utf8("Español"));
         choices->set_item_metadata(1, "es");
         choices->select(i18n::language() == "es" ? 1 : 0);
-        choices->connect("item_selected", callable_mp(this, &StartupView::preview_language));
+        choices->connect("item_selected", presentation::guarded(this, &StartupView::preview_language));
         preview_language(choices->get_selected_items()[0]);
-        choices->connect("item_activated", callable_mp(this, &StartupView::activate_language));
+        choices->connect("item_activated", presentation::guarded(this, &StartupView::activate_language));
         dialog->get_node<Button>("Continue")
-        ->connect("pressed", callable_mp(this, &StartupView::accept_language));
+        ->connect("pressed", presentation::guarded(this, &StartupView::accept_language));
         dialog->popup_centered();
         choices->grab_focus();
         dialog->get_node<Button>("Cancel")->connect(
-            "pressed", callable_mp(this, &StartupView::close_language));
+            "pressed", presentation::guarded(this, &StartupView::close_language));
         return;
     }
     choose_game_path();

@@ -5,6 +5,7 @@
 #include "opengold/combat_body_catalog.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
+#include <exception>
 #include <optional>
 #include <functional>
 
@@ -15,12 +16,15 @@ class CharacterCreationView : public godot::Control
     void _ready() override;
     void _draw() override;
     void _process(double delta) override;
+    // Shows a failed handler's error; called by presentation::run_guarded.
+    void report_failure(const std::exception &failure);
 
   protected:
     static void _bind_methods();
     void _notification(int what);
 
   private:
+    void draw_view();
     std::unique_ptr<opengold::CharacterCreator> creator_;
     std::optional<opengold::Character> completed_;
     std::optional<opengold::por::CharacterArt> art_;

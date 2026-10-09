@@ -9,6 +9,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -62,7 +63,7 @@ void CharacterCreationView::setup_saves()
         button->set_name(saving ? "Save" : "Load");
         button->set_text(i18n::text(saving ? N_("Save game") : N_("Load game")));
         button->connect("pressed",
-                        callable_mp(this, &CharacterCreationView::open_saves).bind(saving));
+                        presentation::guarded(this, &CharacterCreationView::open_saves).bind(saving));
         presentation::attach_child(*get_node<Control>("PartyPanel"), std::move(button));
     }
 }
@@ -121,10 +122,10 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
         town->hide();
         town->campaign_party(replacement);
         town->connect("party_member_selected",
-                      callable_mp(this, &CharacterCreationView::town_member_selected));
+                      presentation::guarded(this, &CharacterCreationView::town_member_selected));
         town->connect("level_up_requested",
-                      callable_mp(this, &CharacterCreationView::open_advancement));
-        town->connect("save_requested", callable_mp(this, &CharacterCreationView::open_saves));
+                      presentation::guarded(this, &CharacterCreationView::open_advancement));
+        town->connect("save_requested", presentation::guarded(this, &CharacterCreationView::open_saves));
         presentation::attach_child(*this, std::move(owned));
     }
     // All decoding, resource loading and character validation completed above.

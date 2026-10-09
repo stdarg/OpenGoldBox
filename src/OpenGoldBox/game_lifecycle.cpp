@@ -1,6 +1,7 @@
 #include "game_lifecycle.h"
 #include "localization.h"
 #include "screenshot_service.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -19,9 +20,10 @@ void GameLifecycle::_ready()
     set_process_mode(PROCESS_MODE_ALWAYS);
     auto *tree = get_tree(); // borrowed; SceneTree owns this autoload
     tree->set_auto_accept_quit(false);
-    tree->get_root()->connect("close_requested", callable_mp(this, &GameLifecycle::request_quit));
+    tree->get_root()->connect("close_requested", presentation::guarded(this,
+            &GameLifecycle::request_quit));
     watch_window(tree->get_root());
-    tree->connect("node_added", callable_mp(this, &GameLifecycle::watch_window));
+    tree->connect("node_added", presentation::guarded(this, &GameLifecycle::watch_window));
 }
 
 void GameLifecycle::watch_window(Node *node)
@@ -30,7 +32,7 @@ void GameLifecycle::watch_window(Node *node)
     if (auto *window = Object::cast_to<Window>(node))
     {
         window->connect("window_input",
-                        callable_mp(this, &GameLifecycle::window_input).bind(window));
+                        presentation::guarded(this, &GameLifecycle::window_input).bind(window));
     }
 }
 

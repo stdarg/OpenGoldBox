@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
+#include <exception>
 #include <map>
 #include <set>
 #include "opengold/sound_player.h"
@@ -17,6 +18,8 @@ class CombatView : public godot::Control
     void _process(double delta) override;
     void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
+    // Shows a failed handler's error; called by presentation::run_guarded.
+    void report_failure(const std::exception &failure);
 
     [[nodiscard]] std::int64_t selected_character_id() const
     {
@@ -83,6 +86,8 @@ class CombatView : public godot::Control
     void _notification(int what);
 
   private:
+    void respond_to_input(const godot::Ref<godot::InputEvent> &event);
+    void draw_view();
     std::unique_ptr<opengold::CombatDemo> demo_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::vector<opengold::CombatArt> campaign_art_;

@@ -1,6 +1,7 @@
 #include "screenshot_service.h"
 #include "godot_nodes.h"
 #include "localization.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/canvas_layer.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/display_server.hpp>
@@ -96,7 +97,7 @@ void ScreenshotService::_process(double delta)
         if (capture_wait_ > 5)
         {
             RenderingServer::get_singleton()->disconnect(
-                "frame_post_draw", callable_mp(this, &ScreenshotService::capture_frame));
+                "frame_post_draw", presentation::guarded(this, &ScreenshotService::capture_frame));
             complete({}, i18n::text("Cannot capture the current game frame."));
         }
     }
@@ -137,7 +138,7 @@ bool ScreenshotService::request_capture()
     }
     // Read back the next completed frame, after any preceding notice is hidden.
     const auto error = RenderingServer::get_singleton()->connect(
-                           "frame_post_draw", callable_mp(this, &ScreenshotService::capture_frame),
+                           "frame_post_draw", presentation::guarded(this, &ScreenshotService::capture_frame),
                            Object::CONNECT_ONE_SHOT);
     if (error != OK)
         complete({}, i18n::text("Cannot capture the current game frame."));

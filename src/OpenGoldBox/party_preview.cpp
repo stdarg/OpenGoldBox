@@ -12,6 +12,7 @@
 #include "opengold/combat_body_catalog.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
@@ -100,42 +101,42 @@ void CharacterCreationView::setup_party()
     presentation::attach_child(*this, std::move(panel));
     get_node<Control>("PartyPanel")->hide();
     get_node<Button>("Party")->connect(
-        "pressed", callable_mp(this, &CharacterCreationView::party_action).bind(0));
+        "pressed", presentation::guarded(this, &CharacterCreationView::party_action).bind(0));
     get_node<Button>("AddParty")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::party_action).bind(1));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::party_action).bind(1));
     get_node<Button>("ReturnParty")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::party_action).bind(9));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::party_action).bind(9));
     const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
             "Unequip", "Explore", "Combat", "Close"};
     const std::array<int, 9> actions{2, 3, 4, 5, 6, 10, 7, 8, 11};
     for (unsigned i = 0; i < buttons.size(); ++i)
         get_node<Button>(gs(std::string("PartyPanel/") + buttons[i]))
         ->connect("pressed",
-                  callable_mp(this, &CharacterCreationView::party_action).bind(actions[i]));
+                  presentation::guarded(this, &CharacterCreationView::party_action).bind(actions[i]));
     get_node<ItemList>("PartyPanel/Roster")
-    ->connect("item_selected", callable_mp(this, &CharacterCreationView::party_selected));
+    ->connect("item_selected", presentation::guarded(this, &CharacterCreationView::party_selected));
     get_node<Button>("PartyPanel/MakeLeader")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::make_roster_leader));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::make_roster_leader));
     get_node<Button>("TownSheet/MakeLeader")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::make_town_sheet_leader));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::make_town_sheet_leader));
     get_node<Button>("PartyPanel/Pool")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::show_pool));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::show_pool));
     get_node<ItemList>("PoolModal/List")
-    ->connect("item_selected", callable_mp(this, &CharacterCreationView::pool_selected));
+    ->connect("item_selected", presentation::guarded(this, &CharacterCreationView::pool_selected));
     get_node<Button>("PoolModal/Add")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::pool_add));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::pool_add));
     get_node<Button>("PoolModal/Close")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::close_pool));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::close_pool));
     get_node<Window>("PoolModal")
-    ->connect("close_requested", callable_mp(this, &CharacterCreationView::close_pool));
+    ->connect("close_requested", presentation::guarded(this, &CharacterCreationView::close_pool));
     get_node<Button>("TownSheet/Close")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::close_town_sheet));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::close_town_sheet));
     get_node<Window>("TownSheet")
-    ->connect("close_requested", callable_mp(this, &CharacterCreationView::close_town_sheet));
+    ->connect("close_requested", presentation::guarded(this, &CharacterCreationView::close_town_sheet));
     get_node<Button>("PartyPanel/Modifiers")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::show_modifiers));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modifiers));
     get_node<Button>("PartyPanel/SavingThrows")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::show_saving_throws));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::show_saving_throws));
     get_node<RichTextLabel>("PartyPanel/Sheet")->set_use_bbcode(true);
     setup_saves();
     setup_defeat();
@@ -665,11 +666,11 @@ void CharacterCreationView::party_action(int action)
                         save_checkpoint_check(name);
                     };
                     town->connect("save_requested",
-                                  callable_mp(this, &CharacterCreationView::open_saves));
+                                  presentation::guarded(this, &CharacterCreationView::open_saves));
                     town->connect("party_member_selected",
-                                  callable_mp(this, &CharacterCreationView::town_member_selected));
+                                  presentation::guarded(this, &CharacterCreationView::town_member_selected));
                     town->connect("level_up_requested",
-                                  callable_mp(this, &CharacterCreationView::open_advancement));
+                                  presentation::guarded(this, &CharacterCreationView::open_advancement));
                     presentation::attach_child(*this, std::move(owned));
                 }
                 town->show();
@@ -1144,14 +1145,14 @@ void CharacterCreationView::setup_defeat()
         button->set_position(Vector2(reload ? 24 : 308, 170));
         button->set_size(Vector2(reload ? 268 : 188, 44));
         button->connect("pressed",
-                        reload ? callable_mp(this, &CharacterCreationView::reload_after_defeat)
-                        : callable_mp(this, &CharacterCreationView::exit_after_defeat));
+                        reload ? presentation::guarded(this, &CharacterCreationView::reload_after_defeat)
+                        : presentation::guarded(this, &CharacterCreationView::exit_after_defeat));
         presentation::attach_child(*dialog, std::move(button));
     }
-    dialog->connect("close_requested", callable_mp(this, &CharacterCreationView::show_defeat));
+    dialog->connect("close_requested", presentation::guarded(this, &CharacterCreationView::show_defeat));
     get_node<SaveSlots>("SaveSlots")
     ->connect("visibility_changed",
-              callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
+              presentation::guarded(this, &CharacterCreationView::save_dialog_visibility_changed));
     defeat_check_ = OS::get_singleton()->get_cmdline_user_args().has("--defeat-check");
 }
 
@@ -1178,7 +1179,7 @@ void CharacterCreationView::reload_after_defeat()
 void CharacterCreationView::save_dialog_visibility_changed()
 {
     // Window releases its exclusive-child slot after emitting visibility_changed.
-    callable_mp(this, &CharacterCreationView::restore_defeat_dialog).call_deferred();
+    presentation::guarded(this, &CharacterCreationView::restore_defeat_dialog).call_deferred();
 }
 
 void CharacterCreationView::restore_defeat_dialog()

@@ -1,6 +1,7 @@
 // Shared approved hand-choice dialog. The rules module supplies legality and
 // outcomes; this adapter only selects a returned operation and commits it.
 #include "godot_nodes.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -46,9 +47,9 @@ bool CharacterCreationView::open_equipment_choice(opengold::MemberId member, std
         owned->hide();
         window = presentation::attach_child(*this, std::move(owned));
         window->connect("close_requested",
-                        callable_mp(this, &CharacterCreationView::close_equipment_choice));
+                        presentation::guarded(this, &CharacterCreationView::close_equipment_choice));
         window->connect("window_input",
-                        callable_mp(this, &CharacterCreationView::equipment_choice_input));
+                        presentation::guarded(this, &CharacterCreationView::equipment_choice_input));
         auto *name = presentation::add_control<Label>(*window, "Item", Rect2(24, 20, 612, 48));
         name->set("autowrap_mode", 3);
         auto *label =
@@ -57,7 +58,7 @@ bool CharacterCreationView::open_equipment_choice(opengold::MemberId member, std
         auto *selection =
             presentation::add_control<OptionButton>(*window, "Hand", Rect2(190, 80, 446, 38));
         selection->connect("item_selected",
-                           callable_mp(this, &CharacterCreationView::equipment_choice_selected));
+                           presentation::guarded(this, &CharacterCreationView::equipment_choice_selected));
         auto *note =
             presentation::add_control<Label>(*window, "Explanation", Rect2(24, 138, 612, 116));
         note->set("autowrap_mode", 3);
@@ -65,11 +66,11 @@ bool CharacterCreationView::open_equipment_choice(opengold::MemberId member, std
             presentation::add_control<Button>(*window, "Cancel", Rect2(316, 278, 150, 40));
         cancel->set_text(review_text(N_("Cancel")));
         cancel->connect("pressed",
-                        callable_mp(this, &CharacterCreationView::close_equipment_choice));
+                        presentation::guarded(this, &CharacterCreationView::close_equipment_choice));
         auto *apply = presentation::add_control<Button>(*window, "Equip", Rect2(478, 278, 158, 40));
         apply->set_text(review_text(N_("Equip")));
         apply->connect("pressed",
-                       callable_mp(this, &CharacterCreationView::apply_equipment_choice));
+                       presentation::guarded(this, &CharacterCreationView::apply_equipment_choice));
     }
     equipment_member_ = member;
     equipment_item_ = item;

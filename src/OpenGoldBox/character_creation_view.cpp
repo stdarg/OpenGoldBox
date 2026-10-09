@@ -7,6 +7,7 @@
 #include "character_text.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/check_box.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
@@ -145,34 +146,38 @@ void CharacterCreationView::_ready()
     get_window()->set_min_size(Vector2i(1120, 800));
     set_texture_filter(TEXTURE_FILTER_NEAREST);
     // All node pointers here and below are borrowed from the owning scene tree.
-    get_node<Button>("Next")->connect("pressed", callable_mp(this, &CharacterCreationView::next));
-    get_node<Button>("Back")->connect("pressed", callable_mp(this, &CharacterCreationView::back));
+    get_node<Button>("Next")->connect("pressed", presentation::guarded(this,
+            &CharacterCreationView::next));
+    get_node<Button>("Back")->connect("pressed", presentation::guarded(this,
+            &CharacterCreationView::back));
     get_node<Button>("Restart")->connect("pressed",
-                                         callable_mp(this, &CharacterCreationView::restart));
-    get_node<Button>("Roll")->connect("pressed", callable_mp(this, &CharacterCreationView::roll));
+                                         presentation::guarded(this, &CharacterCreationView::restart));
+    get_node<Button>("Roll")->connect("pressed", presentation::guarded(this,
+            &CharacterCreationView::roll));
     get_node<ItemList>("Choices")->connect(
-        "item_selected", callable_mp(this, &CharacterCreationView::choice_selected));
+        "item_selected", presentation::guarded(this, &CharacterCreationView::choice_selected));
     get_node<OptionButton>("Gender")->connect(
-        "item_selected", callable_mp(this, &CharacterCreationView::gender_selected));
+        "item_selected", presentation::guarded(this, &CharacterCreationView::gender_selected));
     get_node<OptionButton>("Background")
-    ->connect("item_selected", callable_mp(this, &CharacterCreationView::background_selected));
+    ->connect("item_selected", presentation::guarded(this,
+            &CharacterCreationView::background_selected));
     for (int i = 0; i < 12; ++i)
         get_node<CheckBox>(gs("Targets/Rows/Class" + std::to_string(i)))
-        ->connect("toggled", callable_mp(this, &CharacterCreationView::target_toggled).bind(i));
+        ->connect("toggled", presentation::guarded(this, &CharacterCreationView::target_toggled).bind(i));
     get_node<ScrollContainer>("Targets")->add_theme_stylebox_override(
         "panel", box(Color("10171c"), Color("687d88")));
     get_node<OptionButton>("Bonus")->connect(
-        "item_selected", callable_mp(this, &CharacterCreationView::bonus_selected));
+        "item_selected", presentation::guarded(this, &CharacterCreationView::bonus_selected));
     get_node<OptionButton>("PortraitSelect")
-    ->connect("item_selected", callable_mp(this, &CharacterCreationView::portrait_selected));
+    ->connect("item_selected", presentation::guarded(this, &CharacterCreationView::portrait_selected));
     get_node<LineEdit>("Name")->connect("text_changed",
-                                        callable_mp(this, &CharacterCreationView::name_changed));
+                                        presentation::guarded(this, &CharacterCreationView::name_changed));
     for (int i = 0; i < 6; ++i)
     {
         get_node<Button>(gs("Ability" + std::to_string(i)))
-        ->connect("pressed", callable_mp(this, &CharacterCreationView::score_selected).bind(i));
+        ->connect("pressed", presentation::guarded(this, &CharacterCreationView::score_selected).bind(i));
         get_node<Control>(gs("Dice" + std::to_string(i)))
-        ->set_drag_forwarding(callable_mp(this, &CharacterCreationView::drag_roll).bind(i),
+        ->set_drag_forwarding(presentation::guarded(this, &CharacterCreationView::drag_roll).bind(i),
                               Callable(), Callable());
         get_node<Control>(gs("Dice" + std::to_string(i)))
         ->set_default_cursor_shape(Control::CURSOR_DRAG);
@@ -184,32 +189,34 @@ void CharacterCreationView::_ready()
                 })
             get_node<Control>(gs(std::string(stem) + std::to_string(i)))
             ->set_drag_forwarding(
-                Callable(), callable_mp(this, &CharacterCreationView::can_drop_roll).bind(i),
-                callable_mp(this, &CharacterCreationView::drop_roll).bind(i));
+                Callable(), presentation::guarded(this, &CharacterCreationView::can_drop_roll).bind(i),
+                presentation::guarded(this, &CharacterCreationView::drop_roll).bind(i));
         auto *score = get_node<Button>(gs("Score" + std::to_string(i)));
-        score->set_drag_forwarding(callable_mp(this, &CharacterCreationView::drag_roll).bind(i + 6),
-                                   callable_mp(this, &CharacterCreationView::can_drop_roll).bind(i),
-                                   callable_mp(this, &CharacterCreationView::drop_roll).bind(i));
+        score->set_drag_forwarding(presentation::guarded(this,
+                &CharacterCreationView::drag_roll).bind(i + 6),
+                                   presentation::guarded(this, &CharacterCreationView::can_drop_roll).bind(i),
+                                   presentation::guarded(this, &CharacterCreationView::drop_roll).bind(i));
         score->set_default_cursor_shape(Control::CURSOR_DRAG);
         score->set_tooltip_text(
             i18n::text(N_("Drop a roll here. Drag a filled box onto another ability to swap.")));
         score->add_theme_stylebox_override("normal", box(Color("10171c"), Color("687d88")));
     }
     get_node<Button>("SavingThrows")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::show_saving_throws));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::show_saving_throws));
     get_node<Button>("SavingThrowsModal/Close")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::close_saving_throws));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::close_saving_throws));
     get_node<Window>("SavingThrowsModal")
     ->connect("close_requested",
-              callable_mp(this, &CharacterCreationView::close_saving_throws));
+              presentation::guarded(this, &CharacterCreationView::close_saving_throws));
     get_node<LineEdit>("SavingThrowsModal/DC")
-    ->connect("text_changed", callable_mp(this, &CharacterCreationView::update_saving_throws));
+    ->connect("text_changed", presentation::guarded(this,
+            &CharacterCreationView::update_saving_throws));
     get_node<Button>("Modifiers")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::show_modifiers));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modifiers));
     get_node<Button>("ModifiersModal/Close")
-    ->connect("pressed", callable_mp(this, &CharacterCreationView::close_modifiers));
+    ->connect("pressed", presentation::guarded(this, &CharacterCreationView::close_modifiers));
     get_node<Window>("ModifiersModal")
-    ->connect("close_requested", callable_mp(this, &CharacterCreationView::close_modifiers));
+    ->connect("close_requested", presentation::guarded(this, &CharacterCreationView::close_modifiers));
     for (int direction :
             {
                 -1, 1
@@ -218,27 +225,27 @@ void CharacterCreationView::_ready()
         const auto suffix = direction < 0 ? "Previous" : "Next";
         get_node<Button>(gs(std::string("Portrait") + suffix))
         ->connect("pressed",
-                  callable_mp(this, &CharacterCreationView::portrait_part).bind(direction));
+                  presentation::guarded(this, &CharacterCreationView::portrait_part).bind(direction));
         get_node<Button>(gs(std::string("CombatHead") + suffix))
         ->connect("pressed",
-                  callable_mp(this, &CharacterCreationView::combat_part).bind(0, direction));
+                  presentation::guarded(this, &CharacterCreationView::combat_part).bind(0, direction));
         get_node<Button>(gs(std::string("Weapon") + suffix))
         ->connect("pressed",
-                  callable_mp(this, &CharacterCreationView::combat_part).bind(1, direction));
+                  presentation::guarded(this, &CharacterCreationView::combat_part).bind(1, direction));
     }
     get_node<Button>("Size")->connect("pressed",
-                                      callable_mp(this, &CharacterCreationView::toggle_size));
+                                      presentation::guarded(this, &CharacterCreationView::toggle_size));
     for (int bank = 0; bank < 2; ++bank)
         for (int part = 0; part < 6; ++part)
             get_node<Button>(gs("Color" + std::to_string(bank) + "_" + std::to_string(part)))
             ->connect(
                 "pressed",
-                callable_mp(this, &CharacterCreationView::color_selected).bind(bank, part));
+                presentation::guarded(this, &CharacterCreationView::color_selected).bind(bank, part));
     for (int i = 0; i < 16; ++i)
     {
         auto *button = get_node<Button>(gs("Palette" + std::to_string(i)));
         button->connect("pressed",
-                        callable_mp(this, &CharacterCreationView::palette_selected).bind(i));
+                        presentation::guarded(this, &CharacterCreationView::palette_selected).bind(i));
         button->set_tooltip_text(i18n::text(colors[i]));
         button->add_theme_stylebox_override("normal", box(ega(i), Color("667680")));
         button->add_theme_stylebox_override("hover", box(ega(i), Color("e6c28a"), 3));
@@ -472,7 +479,7 @@ void CharacterCreationView::refresh()
 {
     if (!creator_)
         return;
-    refreshing_ = true;
+    const presentation::ScopedFlag refreshing(refreshing_);
     const auto step = creator_->step();
     const auto &d = creator_->draft();
     const auto &a = creator_->appearance();
@@ -721,8 +728,8 @@ void CharacterCreationView::refresh()
     if (step == CreationStep::training)
     {
         presentation::refresh_training_controls(
-            *this, *creator_, callable_mp(this, &CharacterCreationView::training_toggled),
-            callable_mp(this, &CharacterCreationView::training_selected),
+            *this, *creator_, presentation::guarded(this, &CharacterCreationView::training_toggled),
+            presentation::guarded(this, &CharacterCreationView::training_selected),
             [](std::string_view source)
         {
             return i18n::text(source);
@@ -732,7 +739,7 @@ void CharacterCreationView::refresh()
     if (step == CreationStep::spell_choices)
     {
         presentation::refresh_cantrip_controls(
-            *this, *creator_, callable_mp(this, &CharacterCreationView::cantrip_toggled),
+            *this, *creator_, presentation::guarded(this, &CharacterCreationView::cantrip_toggled),
             [](std::string_view source)
         {
             return i18n::text(source);
@@ -742,7 +749,7 @@ void CharacterCreationView::refresh()
         presentation::refresh_spell_groups(
             *book, creator_->rules().spell_choice_options(d),
             d.spells.value_or(opengold::rules::SpellChoices{}),
-            callable_mp(this, &CharacterCreationView::creation_spell_toggled),
+            presentation::guarded(this, &CharacterCreationView::creation_spell_toggled),
             [](std::string_view source)
         {
             return i18n::text(source);
@@ -844,10 +851,23 @@ void CharacterCreationView::refresh()
     refresh_art();
     layout();
     queue_redraw();
-    refreshing_ = false;
 }
 
 void CharacterCreationView::_draw()
+{
+    presentation::run_guarded(*this, [&]
+    {
+        draw_view();
+    });
+}
+
+void CharacterCreationView::report_failure(const std::exception &failure)
+{
+    error_ = i18n::text(failure.what());
+    get_node<Label>("Status")->set_text(error_);
+}
+
+void CharacterCreationView::draw_view()
 {
     draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
     for (const auto &rect :
@@ -894,7 +914,6 @@ void CharacterCreationView::perform(const std::function<void()> &action)
     catch (const std::exception &e)
     {
         error_ = i18n::text(e.what());
-        refreshing_ = false;
         get_node<Label>("Status")->set_text(error_);
     }
 }

@@ -1,5 +1,6 @@
 #include "character_creation_view.h"
 #include "localization.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -86,7 +87,7 @@ void CharacterCreationView::load_portraits()
             control->set_item_metadata(control->get_item_count() - 1, gs(value));
         }
         control->connect("item_selected",
-                         callable_mp(this, &CharacterCreationView::portrait_filter_selected));
+                         presentation::guarded(this, &CharacterCreationView::portrait_filter_selected));
     }
 }
 

@@ -17,6 +17,7 @@
 #include "opengold/formats.h"
 #include "opengold/save_file.h"
 #include "godot_path.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/font.hpp>
@@ -379,7 +380,7 @@ void CombatView::_ready()
     combat_zoom_ = settings::combat_zoom_percent() / 100.0;
     i18n::prepare_ui(*this);
     get_node<Control>("BattlefieldScroll/Canvas")
-    ->connect("draw", callable_mp(this, &CombatView::draw_battlefield));
+    ->connect("draw", presentation::guarded(this, &CombatView::draw_battlefield));
     auto *hover = get_node<PanelContainer>("HoverInfo");
     hover->set_custom_minimum_size(Vector2(260, 88));
     hover->set_size(Vector2(260, 88));
@@ -392,22 +393,22 @@ void CombatView::_ready()
     hover_style->set_content_margin_all(10);
     hover->add_theme_stylebox_override("panel", hover_style);
     presentation::setup_nick(
-        *this, i18n::text, callable_mp(this, &CombatView::begin_nick),
-        callable_mp(this, &CombatView::nick_selected), callable_mp(this, &CombatView::confirm_nick),
-        callable_mp(this, &CombatView::cancel_nick), callable_mp(this, &CombatView::nick_input));
+        *this, i18n::text, presentation::guarded(this, &CombatView::begin_nick),
+        presentation::guarded(this, &CombatView::nick_selected), presentation::guarded(this, &CombatView::confirm_nick),
+        presentation::guarded(this, &CombatView::cancel_nick), presentation::guarded(this, &CombatView::nick_input));
     presentation::setup_initiative(
-        *this, i18n::text, callable_mp(this, &CombatView::immediate).bind("initiative_swap"),
-        callable_mp(this, &CombatView::immediate).bind("initiative_keep"),
-        callable_mp(this, &CombatView::immediate).bind("uncanny_metabolism"),
-        callable_mp(this, &CombatView::initiative_input),
-        callable_mp(this, &CombatView::refresh).unbind(1));
+        *this, i18n::text, presentation::guarded(this, &CombatView::immediate).bind("initiative_swap"),
+        presentation::guarded(this, &CombatView::immediate).bind("initiative_keep"),
+        presentation::guarded(this, &CombatView::immediate).bind("uncanny_metabolism"),
+        presentation::guarded(this, &CombatView::initiative_input),
+        presentation::guarded(this, &CombatView::refresh).unbind(1));
     presentation::setup_optional_effect(
-        *this, i18n::text, callable_mp(this, &CombatView::immediate).bind("effect_use"),
-        callable_mp(this, &CombatView::immediate).bind("effect_skip"),
-        callable_mp(this, &CombatView::optional_effect_input),
-        callable_mp(this, &CombatView::refresh).unbind(1));
+        *this, i18n::text, presentation::guarded(this, &CombatView::immediate).bind("effect_use"),
+        presentation::guarded(this, &CombatView::immediate).bind("effect_skip"),
+        presentation::guarded(this, &CombatView::optional_effect_input),
+        presentation::guarded(this, &CombatView::refresh).unbind(1));
     presentation::setup_weapon_controls(*this, i18n::text,
-                                        callable_mp(this, &CombatView::weapon_selected));
+                                        presentation::guarded(this, &CombatView::weapon_selected));
     ready_ = true;
     get_window()->set_min_size(Vector2i(1120, 800));
     set_texture_filter(TEXTURE_FILTER_NEAREST);
@@ -416,71 +417,71 @@ void CombatView::_ready()
         return;
     for (const auto &[node, verb] : action_buttons)
         get_node<Button>(node)->connect(
-            "pressed", callable_mp(this, &CombatView::select_mode).bind(String(verb)));
+            "pressed", presentation::guarded(this, &CombatView::select_mode).bind(String(verb)));
     get_node<OptionButton>("Cantrip")->connect("item_selected",
-            callable_mp(this, &CombatView::cantrip_selected));
+            presentation::guarded(this, &CombatView::cantrip_selected));
     get_node<Button>("CastCantrip")
-    ->connect("pressed", callable_mp(this, &CombatView::cast_cantrip));
+    ->connect("pressed", presentation::guarded(this, &CombatView::cast_cantrip));
     get_node<Button>("Stabilize")
-    ->connect("pressed", callable_mp(this, &CombatView::select_mode).bind("stabilize"));
+    ->connect("pressed", presentation::guarded(this, &CombatView::select_mode).bind("stabilize"));
     get_node<Button>("TacticalMind/Use")
-    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("mind_use"));
+    ->connect("pressed", presentation::guarded(this, &CombatView::immediate).bind("mind_use"));
     get_node<Button>("TacticalMind/Skip")
-    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind("mind_skip"));
+    ->connect("pressed", presentation::guarded(this, &CombatView::immediate).bind("mind_skip"));
     get_node<Button>("StandUp")->connect(
-        "pressed", callable_mp(this, &CombatView::immediate).bind("stand_up"));
+        "pressed", presentation::guarded(this, &CombatView::immediate).bind("stand_up"));
     get_node<OptionButton>("ThrownWeapon")
-    ->connect("item_selected", callable_mp(this, &CombatView::thrown_selected));
-    get_node<Button>("Throw")->connect("pressed", callable_mp(this, &CombatView::begin_throw));
+    ->connect("item_selected", presentation::guarded(this, &CombatView::thrown_selected));
+    get_node<Button>("Throw")->connect("pressed", presentation::guarded(this, &CombatView::begin_throw));
     get_node<OptionButton>("ItemAction")
-    ->connect("item_selected", callable_mp(this, &CombatView::item_selected));
-    get_node<Button>("UseItemAction")->connect("pressed", callable_mp(this, &CombatView::use_item));
+    ->connect("item_selected", presentation::guarded(this, &CombatView::item_selected));
+    get_node<Button>("UseItemAction")->connect("pressed", presentation::guarded(this, &CombatView::use_item));
     get_node<Button>("UseCunningAction")
-    ->connect("pressed", callable_mp(this, &CombatView::use_cunning_action));
+    ->connect("pressed", presentation::guarded(this, &CombatView::use_cunning_action));
     get_node<OptionButton>("CunningAction")
-    ->connect("item_selected", callable_mp(this, &CombatView::cunning_selected));
+    ->connect("item_selected", presentation::guarded(this, &CombatView::cunning_selected));
     get_node<Button>("ActionSurge")
     ->connect("pressed",
-              callable_mp(this, &CombatView::immediate).bind(String("action_surge")));
+              presentation::guarded(this, &CombatView::immediate).bind(String("action_surge")));
     get_node<Button>("AdrenalineRush")
     ->connect("pressed",
-              callable_mp(this, &CombatView::immediate).bind(String("adrenaline_rush")));
+              presentation::guarded(this, &CombatView::immediate).bind(String("adrenaline_rush")));
     get_node<Button>("TemporaryHP/Keep")
     ->connect("pressed",
-              callable_mp(this, &CombatView::immediate).bind(String("temp_hp_keep")));
+              presentation::guarded(this, &CombatView::immediate).bind(String("temp_hp_keep")));
     get_node<Button>("TemporaryHP/Use")
-    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String("temp_hp_use")));
+    ->connect("pressed", presentation::guarded(this, &CombatView::immediate).bind(String("temp_hp_use")));
     get_node<Button>("Move")->connect(
-        "pressed", callable_mp(this, &CombatView::select_mode).bind(String("move")));
-    get_node<Button>("SpellSlot")->connect("pressed", callable_mp(this, &CombatView::spell_slot));
+        "pressed", presentation::guarded(this, &CombatView::select_mode).bind(String("move")));
+    get_node<Button>("SpellSlot")->connect("pressed", presentation::guarded(this, &CombatView::spell_slot));
     get_node<Button>("SecondWind")
-    ->connect("pressed", callable_mp(this, &CombatView::immediate).bind(String("second_wind")));
+    ->connect("pressed", presentation::guarded(this, &CombatView::immediate).bind(String("second_wind")));
     get_node<Button>("End")->connect("pressed",
-                                     callable_mp(this, &CombatView::immediate).bind(String("end")));
-    get_node<Button>("Flee")->connect("pressed", callable_mp(this, &CombatView::flee));
-    get_node<Button>("Quick")->connect("pressed", callable_mp(this, &CombatView::quick));
-    get_node<Button>("TakeControl")->connect("pressed", callable_mp(this, &CombatView::take_control));
+                                     presentation::guarded(this, &CombatView::immediate).bind(String("end")));
+    get_node<Button>("Flee")->connect("pressed", presentation::guarded(this, &CombatView::flee));
+    get_node<Button>("Quick")->connect("pressed", presentation::guarded(this, &CombatView::quick));
+    get_node<Button>("TakeControl")->connect("pressed", presentation::guarded(this, &CombatView::take_control));
     get_node<Button>("QuickMagic")
-    ->connect("pressed", callable_mp(this, &CombatView::toggle_quick_magic));
+    ->connect("pressed", presentation::guarded(this, &CombatView::toggle_quick_magic));
     get_node<Button>("React")->connect(
-        "pressed", callable_mp(this, &CombatView::immediate).bind(String("opportunity")));
+        "pressed", presentation::guarded(this, &CombatView::immediate).bind(String("opportunity")));
     get_node<Button>("Decline")->connect(
-        "pressed", callable_mp(this, &CombatView::immediate).bind(String("decline")));
-    get_node<Button>("Training")->connect("pressed", callable_mp(this, &CombatView::training));
-    get_node<Button>("Slums")->connect("pressed", callable_mp(this, &CombatView::slums));
-    get_node<Button>("Replay")->connect("pressed", callable_mp(this, &CombatView::replay));
-    get_node<Button>("Continue")->connect("pressed", callable_mp(this, &CombatView::next));
-    get_node<Button>("Revisit")->connect("pressed", callable_mp(this, &CombatView::revisit));
-    get_node<Button>("Save")->connect("pressed", callable_mp(this, &CombatView::save_game));
-    get_node<Button>("Load")->connect("pressed", callable_mp(this, &CombatView::load_game));
+        "pressed", presentation::guarded(this, &CombatView::immediate).bind(String("decline")));
+    get_node<Button>("Training")->connect("pressed", presentation::guarded(this, &CombatView::training));
+    get_node<Button>("Slums")->connect("pressed", presentation::guarded(this, &CombatView::slums));
+    get_node<Button>("Replay")->connect("pressed", presentation::guarded(this, &CombatView::replay));
+    get_node<Button>("Continue")->connect("pressed", presentation::guarded(this, &CombatView::next));
+    get_node<Button>("Revisit")->connect("pressed", presentation::guarded(this, &CombatView::revisit));
+    get_node<Button>("Save")->connect("pressed", presentation::guarded(this, &CombatView::save_game));
+    get_node<Button>("Load")->connect("pressed", presentation::guarded(this, &CombatView::load_game));
     get_node<Button>("ZoomOut100")
-    ->connect("pressed", callable_mp(this, &CombatView::adjust_zoom).bind(-100));
+    ->connect("pressed", presentation::guarded(this, &CombatView::adjust_zoom).bind(-100));
     get_node<Button>("ZoomOut10")
-    ->connect("pressed", callable_mp(this, &CombatView::adjust_zoom).bind(-10));
+    ->connect("pressed", presentation::guarded(this, &CombatView::adjust_zoom).bind(-10));
     get_node<Button>("ZoomIn10")
-    ->connect("pressed", callable_mp(this, &CombatView::adjust_zoom).bind(10));
+    ->connect("pressed", presentation::guarded(this, &CombatView::adjust_zoom).bind(10));
     get_node<Button>("ZoomIn100")
-    ->connect("pressed", callable_mp(this, &CombatView::adjust_zoom).bind(100));
+    ->connect("pressed", presentation::guarded(this, &CombatView::adjust_zoom).bind(100));
     const auto args = OS::get_singleton()->get_cmdline_user_args();
     checking_ = args.has("--combat-check");
     capture_ = args.has("--capture");
@@ -1515,6 +1516,14 @@ void CombatView::optional_effect_input(const Ref<InputEvent> &event)
 }
 
 void CombatView::_input(const Ref<InputEvent> &event)
+{
+    presentation::run_guarded(*this, [&]
+    {
+        respond_to_input(event);
+    });
+}
+
+void CombatView::respond_to_input(const Ref<InputEvent> &event)
 {
     if (get_node<Window>("InitiativeChoice")->is_visible())
         return;
@@ -2653,6 +2662,20 @@ void CombatView::center_on(Cell cell)
 }
 
 void CombatView::_draw()
+{
+    presentation::run_guarded(*this, [&]
+    {
+        draw_view();
+    });
+}
+
+void CombatView::report_failure(const std::exception &failure)
+{
+    error_ = failure.what();
+    refresh();
+}
+
+void CombatView::draw_view()
 {
     draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
     draw_rect(board_rect_, Color("202d33"));

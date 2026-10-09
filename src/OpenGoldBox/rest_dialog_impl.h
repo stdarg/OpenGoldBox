@@ -3,6 +3,7 @@
 #include "spell_choice_controls.h"
 #include "training_replacement_controls.h"
 #include "vital_fixtures.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
 #ifndef N_
@@ -11,22 +12,22 @@
 void RolfTourView::setup_rest()
 {
     auto *spells = presentation::setup_spell_dialog(
-                       *this, "RestSpells", callable_mp(this, &RolfTourView::rest_spell_keep),
-                       callable_mp(this, &RolfTourView::rest_spell_apply), rest_text);
+                       *this, "RestSpells", presentation::guarded(this, &RolfTourView::rest_spell_keep),
+                       presentation::guarded(this, &RolfTourView::rest_spell_apply), rest_text);
     spells->get_node<Button>("Cancel")->set_text(rest_text(N_("Keep current")));
     spells->get_node<OptionButton>("Replace")->connect(
-        "item_selected", callable_mp(this, &RolfTourView::rest_spell_replaced));
+        "item_selected", presentation::guarded(this, &RolfTourView::rest_spell_replaced));
     spells->get_node<OptionButton>("With")->connect(
-        "item_selected", callable_mp(this, &RolfTourView::rest_spell_replaced));
-    spells->connect("window_input", callable_mp(this, &RolfTourView::rest_spell_input));
+        "item_selected", presentation::guarded(this, &RolfTourView::rest_spell_replaced));
+    spells->connect("window_input", presentation::guarded(this, &RolfTourView::rest_spell_input));
     auto *training = presentation::setup_training_replacement(
-                         *this, callable_mp(this, &RolfTourView::rest_training_keep),
-                         callable_mp(this, &RolfTourView::rest_training_apply), rest_text);
-    training->connect("window_input", callable_mp(this, &RolfTourView::rest_training_input));
+                         *this, presentation::guarded(this, &RolfTourView::rest_training_keep),
+                         presentation::guarded(this, &RolfTourView::rest_training_apply), rest_text);
+    training->connect("window_input", presentation::guarded(this, &RolfTourView::rest_training_input));
     auto *training_save =
         presentation::add_control<Button>(*training, "Save", Rect2(24, 614, 234, 40));
     training_save->set_text(rest_text(N_("Save game")));
-    training_save->connect("pressed", callable_mp(this, &RolfTourView::rest_save));
+    training_save->connect("pressed", presentation::guarded(this, &RolfTourView::rest_save));
     auto owned = presentation::make_node<Window>();
     owned->set_name("RestDialog");
     owned->set_title(rest_text(N_("Rest")));
@@ -37,17 +38,17 @@ void RolfTourView::setup_rest()
     owned->set_exclusive(true);
     owned->hide();
     auto *w = presentation::attach_child(*this, std::move(owned));
-    w->connect("close_requested", callable_mp(this, &RolfTourView::rest_finish));
-    w->connect("window_input", callable_mp(this, &RolfTourView::rest_input));
+    w->connect("close_requested", presentation::guarded(this, &RolfTourView::rest_finish));
+    w->connect("window_input", presentation::guarded(this, &RolfTourView::rest_input));
     auto *label = presentation::add_control<Label>(*w, "KindLabel", Rect2(24, 18, 160, 34));
     label->set_text(rest_text(N_("Rest type")));
     auto *kind = presentation::add_control<OptionButton>(*w, "Kind", Rect2(190, 18, 506, 36));
     kind->add_item(rest_text(N_("Short Rest")), 0);
     kind->add_item(rest_text(N_("Long Rest")), 1);
     kind->select(1);
-    kind->connect("item_selected", callable_mp(this, &RolfTourView::rest_selected));
+    kind->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
     auto *list = presentation::add_control<ItemList>(*w, "Members", Rect2(24, 68, 672, 192));
-    list->connect("item_selected", callable_mp(this, &RolfTourView::rest_selected));
+    list->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
     auto *info = presentation::add_control<RichTextLabel>(*w, "Info", Rect2(24, 274, 672, 208));
     info->set_scroll_active(true);
     auto *result = presentation::add_control<Label>(*w, "Result", Rect2(24, 490, 672, 70));
@@ -60,27 +61,27 @@ void RolfTourView::setup_rest()
         return b;
     };
     button("Start", N_("Start"), Rect2(24, 580, 180, 40),
-           callable_mp(this, &RolfTourView::rest_start));
+           presentation::guarded(this, &RolfTourView::rest_start));
     button("Heal", N_("Heal with Hit Dice"), Rect2(24, 580, 220, 40),
-           callable_mp(this, &RolfTourView::rest_heal));
+           presentation::guarded(this, &RolfTourView::rest_heal));
     button("Save", N_("Save game"), Rect2(258, 580, 210, 40),
-           callable_mp(this, &RolfTourView::rest_save));
+           presentation::guarded(this, &RolfTourView::rest_save));
     button("Finish", N_("Cancel"), Rect2(482, 580, 214, 40),
-           callable_mp(this, &RolfTourView::rest_finish));
+           presentation::guarded(this, &RolfTourView::rest_finish));
     auto *recovery_label =
         presentation::add_control<Label>(*w, "RecoveryLabel", Rect2(24, 412, 672, 28));
     recovery_label->set_text(rest_text(N_("Arcane Recovery")));
     presentation::add_control<OptionButton>(*w, "RecoveryChoice", Rect2(24, 446, 442, 36));
     button("Recover", N_("Recover slots"), Rect2(482, 446, 214, 36),
-           callable_mp(this, &RolfTourView::rest_recover));
+           presentation::guarded(this, &RolfTourView::rest_recover));
     // Cast / Use (CLASS-3) shares the Arcane Recovery row: that row appears only
     // during a Short Rest, this one only before resting. The selected member acts.
     auto *use_label = presentation::add_control<Label>(*w, "UseLabel", Rect2(24, 412, 672, 28));
     use_label->set_text(rest_text(N_("Cast / Use")));
     presentation::add_control<OptionButton>(*w, "UseAction", Rect2(24, 446, 220, 36))
-    ->connect("item_selected", callable_mp(this, &RolfTourView::rest_selected));
+    ->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
     presentation::add_control<OptionButton>(*w, "UseTarget", Rect2(254, 446, 214, 36));
-    button("Use", N_("Use"), Rect2(482, 446, 214, 36), callable_mp(this, &RolfTourView::rest_use));
+    button("Use", N_("Use"), Rect2(482, 446, 214, 36), presentation::guarded(this, &RolfTourView::rest_use));
 }
 
 void RolfTourView::camp()
@@ -925,7 +926,7 @@ void RolfTourView::refresh_rest_spells()
         w->get_node<Control>(name)->set_visible(!options.replaceable.empty());
     presentation::refresh_spell_groups(
         *w->get_node<VBoxContainer>("Choices/Rows"), options, rest_spell_choice_,
-        callable_mp(this, &RolfTourView::rest_spell_toggled), rest_text);
+        presentation::guarded(this, &RolfTourView::rest_spell_toggled), rest_text);
     for (bool replacing :
             {
                 true, false
@@ -1050,7 +1051,7 @@ void RolfTourView::refresh_rest_training()
                                           rest_text(options->group.label));
     presentation::refresh_training_replacement(
         *w, *options, rest_training_choice_,
-        callable_mp(this, &RolfTourView::rest_training_toggled), rest_text);
+        presentation::guarded(this, &RolfTourView::rest_training_toggled), rest_text);
     try
     {
         (void)campaign_->preview_rest_training(rest.ticket, id, rest_training_choice_);

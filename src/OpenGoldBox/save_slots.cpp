@@ -2,6 +2,7 @@
 #include "localization.h"
 #include "save_slots.h"
 #include "godot_path.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -65,15 +66,22 @@ void SaveSlots::_ready()
     get_node<LineEdit>("Name")->set_placeholder(i18n::text(N_("Save name")));
     get_node<LineEdit>("Name")->set_max_length(60);
     get_node<ItemList>("Slots")->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-    get_node<ItemList>("Slots")->connect("item_selected", callable_mp(this, &SaveSlots::select));
-    get_node<LineEdit>("Name")->connect("text_changed", callable_mp(this, &SaveSlots::changed));
-    get_node<Button>("Action")->connect("pressed", callable_mp(this, &SaveSlots::act));
+    get_node<ItemList>("Slots")->connect("item_selected", presentation::guarded(this,
+            &SaveSlots::select));
+    get_node<LineEdit>("Name")->connect("text_changed", presentation::guarded(this,
+            &SaveSlots::changed));
+    get_node<Button>("Action")->connect("pressed", presentation::guarded(this, &SaveSlots::act));
     get_node<Button>("Cancel")->set_text(i18n::text(N_("Cancel")));
-    get_node<Button>("Cancel")->connect("pressed", callable_mp(this, &SaveSlots::close));
-    connect("close_requested", callable_mp(this, &SaveSlots::close));
+    get_node<Button>("Cancel")->connect("pressed", presentation::guarded(this, &SaveSlots::close));
+    connect("close_requested", presentation::guarded(this, &SaveSlots::close));
     hide();
     directory_ = presentation::path_from_godot(
                      ProjectSettings::get_singleton()->globalize_path("user://saves"));
+}
+
+void SaveSlots::report_failure(const std::exception &failure)
+{
+    get_node<Label>("Status")->set_text(i18n::text(failure.what()));
 }
 
 void SaveSlots::open(bool saving)
