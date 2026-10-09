@@ -7,10 +7,15 @@
 namespace opengold
 {
 // The cluebook marks twelve separate New Phlan shops. Their map cells, rather
-// than merchandise lists, identify the individual people who keep them.
+// than merchandise lists, identify the individual people who keep them. The
+// original shop offer has a two-choice "THE SHOP..." dialogue before the host
+// enters shopping; show the same person for that greeting and the entire shop.
 [[nodiscard]] inline std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state)
 {
-    if (state.area_id != 0 || state.phase != por::TourPhase::shopping)
+    const bool greeting = state.phase == por::TourPhase::awaiting_continue &&
+                          state.choices.size() == 2 && state.dialogue.starts_with("THE SHOP");
+    if (state.area_id != 0 || !state.tour_finished ||
+            (state.phase != por::TourPhase::shopping && !greeting))
         return {};
     struct Shop
     {
@@ -38,9 +43,9 @@ namespace opengold
 }
 
 // The complete NPC portrait (docs/PORTRAITS.md), relative to the installed
-// portraits folder. Shopkeepers remain visible throughout shopping; other NPCs
-// replace the view while nearby and speaking. Empty when none does. Frame 0 is
-// an encounter sprite's nearest pose.
+// portraits folder. Shopkeepers appear at their greeting and throughout
+// shopping; other NPCs replace the view while nearby and speaking. Empty when
+// none does. Frame 0 is an encounter sprite's nearest pose.
 [[nodiscard]] inline std::string_view speaking_npc_portrait(const por::TourSnapshot &state)
 {
     if (const auto shopkeeper = phlan_shopkeeper_portrait(state); !shopkeeper.empty())

@@ -334,10 +334,16 @@ void settle_town(RolfTourSession &town, unsigned shop_x = 16, unsigned shop_y = 
             return;
         check(s.phase != TourPhase::faulted, s.diagnostic.c_str());
         if (s.phase == TourPhase::awaiting_continue)
+        {
+            if (s.pose.x == shop_x && s.pose.y == shop_y &&
+                    s.dialogue.starts_with("THE SHOP"))
+                check(!opengold::phlan_shopkeeper_portrait(s).empty(),
+                      "The shopkeeper portrait appears for the greeting");
             town.choose(s.continue_ticket, s.pose.x == shop_x && s.pose.y == shop_y &&
                         s.dialogue.find("SHOP") != std::string::npos
                         ? 0
                         : peaceful_choice(s));
+        }
         else if (s.phase == TourPhase::awaiting_input)
             town.input(s.continue_ticket, "0");
         else if (s.phase == TourPhase::shopping)

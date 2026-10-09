@@ -101,7 +101,8 @@ A portrait appears when its NPC has walked up to the party and speaks, that is
 at `sprite_frame == 0` (the encounter sprite's nearest pose) with dialogue
 showing. At every other moment the small encounter sprite is drawn instead.
 New Phlan shopkeepers are the exception: their static portraits fill the view
-for the entire shopping phase, regardless of the encounter sprite or dialogue.
+for the shop's greeting and entire shopping phase, regardless of the encounter
+sprite.
 The shop's map cell selects one of twelve original character designs; repeated
 merchandise lists do not make two shops share a portrait. Shop controls continue
 to operate normally, and leaving the shop restores the exploration view. See

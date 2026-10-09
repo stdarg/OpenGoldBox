@@ -84,9 +84,10 @@ character designs.
 | Jewelry | (8,10) | 52 | 11 | `phlan-jeweler-08-10.png` |
 
 All portrait files are under `art/portraits/NPCs/`. The shopkeeper fills the
-existing view window throughout the shopping phase, including stock selection
-and purchases; leaving the shop restores the exploration view. Ordinary shop
-keys remain available while the portrait is shown.
+existing view window for the shop's greeting and throughout the shopping phase,
+including stock selection and purchases; leaving the shop restores the
+exploration view. Ordinary shop keys remain available while the portrait is
+shown.
 
 Original TREASURE instructions select these lists. The COMBAT command opens a
 shop when script register `6E6C` is set. Closing resets that flag and resumes the
