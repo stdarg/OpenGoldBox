@@ -82,7 +82,7 @@ func run_checks() -> void:
         surge.grab_focus()
         await key(KEY_ENTER)
         require(surge.visible and surge.disabled and surge.text.ends_with("(0/1)"), "Focused Enter spends exactly one use and retains the disabled button")
-        require(current_scene.get_node("Log").get_parsed_text().contains("Action Surge action ready" if locale == "en" else "Acción de Oleada de acción disponible"), "Focused Enter activates without ending the turn")
+        require(current_scene.get_node("LogHeader").text.contains("Action Surge action ready" if locale == "en" else "Acción de Oleada de acción disponible"), "Focused Enter activates without ending the turn")
     TranslationServer.set_locale("en")
     change_scene_to_file("res://scenes/combat_demo.tscn")
     await settle()
@@ -104,10 +104,10 @@ func run_checks() -> void:
     require(current_scene.get_node("Log").get_parsed_text().contains("uses Action Surge"), "Existing keyboard action activates the feature")
     await choose("Dash")
     await key(KEY_SPACE)
-    require(current_scene.get_node("Log").get_parsed_text().contains("Move 60 ft | Action ready"), "Extra Dash retains ordinary action")
+    require(current_scene.get_node("LogHeader").text.contains("Move 60 ft | Action ready"), "Extra Dash retains ordinary action")
     await choose("Dash")
     await key(KEY_SPACE)
-    require(current_scene.get_node("Log").get_parsed_text().contains("Move 90 ft | Action spent"), "Second Dash spends the ordinary action")
+    require(current_scene.get_node("LogHeader").text.contains("Move 90 ft | Action spent"), "Second Dash spends the ordinary action")
     var prompts := ""
     for i in range(18):
         await key(KEY_A)

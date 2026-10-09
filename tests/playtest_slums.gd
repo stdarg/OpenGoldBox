@@ -118,6 +118,11 @@ func play_story(wanted: Array) -> void:
         await press("CampaignTown/Continue")
         await settle(20)
 
+# A won or lost fight leaves the combat screen up (a defeat under its dialog);
+# its turn panel then no longer names a round.
+func fighting() -> bool:
+    return in_combat() and combat().get_node("Turn").text.begins_with("Round")
+
 func combat() -> Control:
     return current_scene.get_node("CampaignCombat")
 
@@ -225,7 +230,7 @@ func hover_enemies() -> void:
 func play_fight(name: String) -> void:
     await capture(name + "-start")
     for turn in range(400):
-        if not in_combat(): break
+        if not fighting(): break
         await settle(10)
         await watch_log()
         if await press_any(combat(), ["Keep initiative", "Decline reaction", "Keep current", "Continue"]):
@@ -259,7 +264,7 @@ func flee_run() -> void:
     if not in_combat():
         report.append("  NO COMBAT"); return
     for turn in range(400):
-        if not in_combat(): break
+        if not fighting(): break
         await settle(10)
         await watch_log()
         if await press_any(combat(), ["Keep initiative", "Decline reaction", "Keep current", "Continue", "Flee"]):

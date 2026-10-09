@@ -117,6 +117,8 @@ class CombatView : public godot::Control
     opengold::rules::EntityId selected_{};
     opengold::rules::EntityId last_actor_{};
     godot::Rect2 board_rect_;
+    // Where the log header and the log go, below the controls.
+    godot::Rect2 log_area_;
     double base_tile_{};
     double combat_zoom_{1.0};
     std::string mode_{"move"}, error_;
@@ -137,6 +139,7 @@ class CombatView : public godot::Control
     bool panning_{}, check_target_centered_{};
     void layout();
     void layout_status();
+    void layout_log();
     void layout_reaction_controls(bool reaction);
     void refresh();
     void sync_art(bool preserve_effects = false);

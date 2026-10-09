@@ -583,10 +583,9 @@ void CombatView::layout_reaction_controls(bool show_controls)
     get_node<Button>("CastCantrip")
     ->set_position(Vector2(474 + get_node<OptionButton>("Cantrip")->get_size().x, top + 44));
     get_node<Button>("CastCantrip")->set_size(Vector2(80, 36));
-    auto *log = get_node<RichTextLabel>("Log");
-    log->set_position(Vector2(24, top + inset));
-    log->set_size(Vector2(board_rect_.size.x,
-                          std::max(0.0, get_size().y - board_rect_.get_end().y - 64 - inset)));
+    log_area_ = Rect2(24, top + inset, board_rect_.size.x,
+                      std::max(0.0, get_size().y - board_rect_.get_end().y - 64 - inset));
+    layout_log();
     const double button_width = 174;
     get_node<Button>("React")->set_position(Vector2(24, top));
     get_node<Button>("React")->set_size(Vector2(button_width, 36));
@@ -599,6 +598,26 @@ void CombatView::layout_reaction_controls(bool show_controls)
     // Flee sits at the far end of End turn's row, clear of Nick.
     get_node<Button>("Flee")->set_position(Vector2(24 + board_rect_.size.x - button_width, top));
     get_node<Button>("Flee")->set_size(Vector2(button_width, 36));
+}
+
+// The header takes the lines it needs at the top of the log's area; the log
+// fills the rest.
+void CombatView::layout_log()
+{
+    auto *header = get_node<Label>("LogHeader");
+    header->set_position(log_area_.position);
+    // The header does not wrap (a line too long ends in an ellipsis), so its
+    // height is its line count times the font's line pitch.
+    const auto font = header->get_theme_font("font");
+    const double pitch = font->get_height(header->get_theme_font_size("font_size")) +
+                         header->get_theme_constant("line_spacing");
+    // A small gap keeps a log line scrolled half out of view apart from the header.
+    const double header_height =
+        std::min<double>((header->get_text().count("\n") + 1) * pitch + 8, log_area_.size.y);
+    header->set_size(Vector2(log_area_.size.x, header_height));
+    auto *log = get_node<RichTextLabel>("Log");
+    log->set_position(log_area_.position + Vector2(0, header_height));
+    log->set_size(Vector2(log_area_.size.x, std::max(0.0, log_area_.size.y - header_height)));
 }
 
 void CombatView::layout_status()
@@ -2419,14 +2438,13 @@ void CombatView::refresh()
         }) +
         "\n" + i18n::text("Click: choose or remove | Space or Cast spell: cast | Escape: cancel"));
     }
-    // The prompt comes first: when other controls shrink the log, what the player
-    // must do now (aim, react, choose) stays in view.
-    // Key hints only while there is a turn to take.
-    String log = get_node<Label>("Prompt")->get_text() + "\n" + turn + "\n" +
-                 (s.outcome == Outcome::ongoing
-                  ? i18n::text("A: next action | Space: use | Z: spell slot | Enter: end turn") + "\n"
-                  : String()) +
-                 "\n";
+    // The header stays above the log: what the player must do now (aim, react,
+    // choose) and whose turn it is stay in view while the log follows the
+    // newest lines. The turn's status shares one line to leave the log room;
+    // the footer already lists the keys.
+    get_node<Label>("LogHeader")->set_text(get_node<Label>("Prompt")->get_text() + "\n" +
+                                           turn.replace("\n", " | "));
+    String log;
     if (demo_)
         log += i18n::campaign("por/combat/dialogue", demo_->dialogue()) + "\n\n";
     // Rebuild one startup notice per missing combination; refreshes never append duplicates.
@@ -2444,16 +2462,22 @@ void CombatView::refresh()
             log += i18n::text(entry) + "\n";
     if (!error_.empty())
         log += "\n" + i18n::text(error_);
+    // The log follows its newest lines (scroll_following in the scene) unless
+    // the player has scrolled back, who keeps that place. Asking the content
+    // height lays out the text first, so the scroll bar is current.
     auto *log_view = get_node<RichTextLabel>("Log");
     auto *log_scroll = log_view->get_v_scroll_bar();
+    (void)log_view->get_content_height();
     const double previous_scroll = log_scroll->get_value();
-    const bool follow_bottom =
-        previous_scroll >= log_scroll->get_max() - log_scroll->get_page() - 2;
+    const bool scrolled_back =
+        previous_scroll < log_scroll->get_max() - log_scroll->get_page() - 2;
     log_view->set_text(log);
-    if (follow_bottom)
-        log_view->scroll_to_line(std::max(0, log_view->get_line_count() - 1));
-    else
+    layout_log();
+    if (scrolled_back)
+    {
+        (void)log_view->get_content_height();
         log_scroll->set_value(previous_scroll);
+    }
     get_node<Button>("Continue")->hide();
     if (!campaign_ && !s.free_movement && !s.effect_targeting)
         get_node<Button>("End")->hide();
@@ -2848,6 +2872,19 @@ void CombatView::_process(double delta)
                 UtilityFunctions::print("Orc campaign Adrenaline Rush button passed");
                 return;
             }
+        }
+        // Flee lasts while someone can still run off the field; once nobody
+        // can, the player takes the party back.
+        if (flee_mode_ && s.outcome == Outcome::ongoing &&
+                std::none_of(s.combatants.begin(), s.combatants.end(), [](const auto & a)
+    {
+        return a.can_flee;
+    }))
+        {
+            flee_mode_ = false;
+            error_ = N_("No one else can get away. Your party fights on.");
+            refresh();
+            return;
         }
         if (checking_ || party_check_ || defeat_check_ || active->side == 1 || flee_mode_)
         {

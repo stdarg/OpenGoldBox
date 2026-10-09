@@ -19,6 +19,9 @@ func cleanup() -> void:
 func require(ok: bool, message: String) -> void:
     if not ok:
         cleanup(); push_error(message); quit(1); assert(ok, message)
+# The log panel's height: its header (prompt and turn) and the log below.
+func panel_height() -> float:
+    return current_scene.get_node("Log").get_rect().end.y - current_scene.get_node("LogHeader").position.y
 func settle() -> void:
     for frame in range(4): await process_frame
 func key(window: Window, code: Key) -> void:
@@ -51,7 +54,7 @@ func run_checks() -> void:
             root.size = size; await settle(); await load_fixture("available")
             require(button.visible and not button.disabled, "Stabilize visible for legal target")
             require(button.text == ("Stabilize" if locale == "en" else "Estabilizar"), "Translated action label")
-            require(button.get_rect().end.x <= root.size.x - 300 and current_scene.get_node("Log").size.y >= 48, "New control fits without hiding the log")
+            require(button.get_rect().end.x <= root.size.x - 300 and panel_height() >= 48, "New control fits without hiding the log")
             await capture("row-" + locale + "-" + str(size.x), root)
             button.grab_focus(); await key(root, KEY_SPACE); await key(root, KEY_ESCAPE)
             require(not button.disabled, "Escape cancels targeting without spending Action")
@@ -84,7 +87,7 @@ func run_checks() -> void:
             button.grab_focus(); await key(root, KEY_SPACE)
             require("Patient" in current_scene.get_node("Prompt").text, "Keyboard targeting names the selected legal creature")
             if not demo:
-                require(current_scene.get_node("Log").get_parsed_text().begins_with(current_scene.get_node("Prompt").text) and not "Patient" in current_scene.get_node("Footer").text, "Keyboard target and instructions head the log once, not again in the footer")
+                require(current_scene.get_node("LogHeader").text.begins_with(current_scene.get_node("Prompt").text) and not "Patient" in current_scene.get_node("Footer").text, "Keyboard target and instructions head the log once, not again in the footer")
             await key(root, KEY_RIGHT); await key(root, KEY_LEFT)
             await capture("keyboard-" + locale + "-" + str(size.x), root)
             await key(root, KEY_SPACE)

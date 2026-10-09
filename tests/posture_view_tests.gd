@@ -47,8 +47,8 @@ func run_checks() -> void:
         require(stand.text == ("Stand up" if locale == "en" else "Levantarse"), "Stand translation")
         for size in [Vector2i(1120, 800), Vector2i(1920, 1080)]:
             root.size = size; await settle()
-            require(stand.get_rect().end.y <= current_scene.get_node("Log").position.y, "Stand up fits above the log")
-            require(current_scene.get_node("Log").size.y >= 48, "The posture row preserves readable log space")
+            require(stand.get_rect().end.y <= current_scene.get_node("LogHeader").position.y, "Stand up fits above the log")
+            require(current_scene.get_node("Log").get_rect().end.y - current_scene.get_node("LogHeader").position.y >= 48, "The posture row preserves readable log space")
             require(stand.focus_mode == Control.FOCUS_ALL, "Keyboard focus retained")
             if not captures.is_empty():
                 DirAccess.make_dir_recursive_absolute(captures)

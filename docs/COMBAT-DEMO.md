@@ -22,7 +22,9 @@ and the Bonus Action dropdown, and Space uses the selected action.
 Gear a character can use right now (Torch attack, thrown Oil, Alchemist's Fire
 and Acid with how many are left, Shoot, Take off shield) is also listed in an
 Items row above the log: Use on an action aimed at a creature selects it for a
-click, and Use on Take off shield acts at once. The prompt says what finishes
+click, and Use on Take off shield acts at once. Below the controls, the
+prompt and the turn's status head the log panel and stay in view; the log under
+them follows its newest lines unless the player scrolls back. The prompt says what finishes
 the selected action: click a highlighted square to move, click a highlighted
 creature for an aimed action, or press Space for one without a target.
 Clicking another party member shows it ("It is not ...'s turn"); choosing an

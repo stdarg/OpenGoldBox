@@ -3174,6 +3174,9 @@ Snapshot Session::snapshot() const
                 }
         if (a.effects.prone)
             view.conditions.push_back({"Prone", {}});
+        // Its morale broke: it runs for the edge (MORALE-1).
+        if (a.panicked)
+            view.conditions.push_back({"Fleeing in panic", {}});
         if (def(a).cunning)
             view.bonus_actions = {"cunning_dash", "cunning_disengage"};
         if (def(a).sneak_level >= 3)
@@ -11795,7 +11798,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.148", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.149", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

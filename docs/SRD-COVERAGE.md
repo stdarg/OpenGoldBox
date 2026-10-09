@@ -68,6 +68,7 @@ Rules 0.6.147 bandages whoever is still dying when a fight is won, as the
 original game did, instead of rolling their remaining death saves (SIMPLIFY-1).
 Rules 0.6.148 announces a fight's outcome once; "Victory." was logged again
 on each later outcome check.
+Rules 0.6.149 lists "Fleeing in panic" among a panicked creature's conditions.
 
 ## Slums set-encounter creatures
 

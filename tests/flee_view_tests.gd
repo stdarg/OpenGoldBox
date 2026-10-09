@@ -80,4 +80,22 @@ func run_checks() -> void:
             if log.contains(tr("{name} flees the battle.").format({"name": "Hero"})) or log.contains(tr("{name} cannot get away and must stay.").format({"name": "Hero"})): break
         current_scene.set_process(false)
         require(log.contains(tr("{name} flees the battle.").format({"name": "Hero"})) or log.contains(tr("{name} cannot get away and must stay.").format({"name": "Hero"})), "The fleeing party tries to run off the field")
+        # Once nobody can still run off, the player takes the party back.
+        if not log.contains(tr("{name} flees the battle.").format({"name": "Hero"})):
+            current_scene.set_process(true)
+            for frame in range(120):
+                await process_frame
+                if current_scene.get_node("Prompt").text == tr("No one else can get away. Your party fights on."): break
+            current_scene.set_process(false)
+            require(current_scene.get_node("Prompt").text == tr("No one else can get away. Your party fights on."), "With no one left who can flee, control returns to the player")
+        # The log follows its newest lines below the prompt and turn, once
+        # it has laid out its text.
+        await settle()
+        var bar: VScrollBar = current_scene.get_node("Log").get_v_scroll_bar()
+        require(bar.value >= bar.max_value - bar.page - 2, "The log shows its newest lines")
+        # Scrolled back, the player keeps that place while the view refreshes.
+        bar.value = 20; await settle()
+        await key(KEY_A); await settle()
+        require(bar.value == 20, "Scrolling back keeps the player's place in the log")
+        require(current_scene.get_node("LogHeader").text.begins_with(current_scene.get_node("Prompt").text), "The prompt heads the log panel")
     cleanup(); print("Flee controls passed"); quit()

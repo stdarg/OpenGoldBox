@@ -27,7 +27,7 @@ func check_demo() -> void:
         "Demo explains the combat keyboard controls")
     require(not combat.get_node("Roster").visible and not combat.get_node("Turn").visible,
         "The upper-right text window is removed")
-    require(combat.get_node("Log").text.contains("Dorian Nightwind turn"),
+    require(combat.get_node("LogHeader").text.contains("Dorian Nightwind turn"),
         "Turn text moved below the battlefield")
     require(combat.get_node("Log").text.contains("The original script has requested combat."),
         "Demo uses the campaign encounter log presentation")

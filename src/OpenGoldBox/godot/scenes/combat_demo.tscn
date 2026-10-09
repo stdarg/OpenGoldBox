@@ -95,9 +95,15 @@ theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 text = "Teal: party | Orange: enemies\nStone: obstacle | Brown: difficult terrain\nSaving is available in training combat."
 
+[node name="LogHeader" type="Label" parent="."]
+theme_override_font_sizes/font_size = 16
+clip_text = true
+text_overrun_behavior = 3
+
 [node name="Log" type="RichTextLabel" parent="."]
 theme_override_font_sizes/normal_font_size = 16
 scroll_active = true
+scroll_following = true
 
 [node name="Footer" type="Label" parent="."]
 theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)

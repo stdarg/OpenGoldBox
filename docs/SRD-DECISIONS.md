@@ -655,7 +655,9 @@ flee (no conscious enemy is faster and it has not failed a flight) runs for
 the nearest open edge, around walls and Dashing when it must, whatever
 opportunity attacks it provokes, and steps off; the rest fight on as the AI
 would. Keys and clicks no longer act for the party; the prompt says "Your party
-is fleeing."
+is fleeing." Once no member on the field can still flee (each has failed a
+flight or is outpaced), the player takes the party back and the prompt says
+"No one else can get away. Your party fights on." (the user, 2026-10-09).
 
 ## MORALE-1 (2026-10-09): monster morale, as the original game had it
 
@@ -675,6 +677,8 @@ rule as the party (FLEE-1), and may rally on a later turn; cornered, it fights.
 When an opponent is faster, a creature with Intelligence above 5 surrenders,
 leaving the fight counted as defeated; a witless one fights on. A monster that
 gets away is worth neither experience nor treasure; the fight is won when none
-is left on the field. Not adopted: Curse's Bless/Curse/charm morale modifiers
+is left on the field. Hovering a panicked monster lists "Fleeing in panic"
+among its conditions (the user, 2026-10-09). Not adopted: Curse's
+Bless/Curse/charm morale modifiers
 (unconfirmed for Pool) and morale for allied NPCs (ours are player-controlled).
 

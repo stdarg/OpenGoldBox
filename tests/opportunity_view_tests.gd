@@ -112,7 +112,7 @@ func run_checks() -> void:
             root.push_input(click)
         for frame in range(4): await process_frame
         require(combat.selected_character_cell() == (Vector2i(0, 1) if cell.x == 2 else cell), "Actual mouse input rejects occupied destination and crosses to free destination")
-    require(combat.get_node("Log").get_parsed_text().contains("Move 10 ft | Action ready"), "UI reports twenty feet spent and preserves the Action")
+    require(combat.get_node("LogHeader").text.contains("Move 10 ft | Action ready"), "UI reports twenty feet spent and preserves the Action")
     restore_files()
     print("Opportunity view checks passed: remaining movement, pending reaction, save/load, unconscious transit")
     quit(0)

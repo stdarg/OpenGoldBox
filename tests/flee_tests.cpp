@@ -229,6 +229,11 @@ void monsters_break()
         auto [c, wounded] = morale_fight(*rules, "fast", 1);
         check(logged(*c, "Enemy flees in panic.") && unit(c->snapshot(), 9).panicked,
               "A wounded side below its morale flees when no opponent is faster");
+        const auto conditions = unit(c->snapshot(), 9).conditions;
+        check(std::any_of(conditions.begin(), conditions.end(), [](const auto & condition)
+        {
+            return condition.source == "Fleeing in panic";
+        }), "A panicked creature shows it among its conditions");
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A panicked creature survives a checkpoint");
         for (unsigned n = 0; n < 60 && c->snapshot().outcome == Outcome::ongoing; ++n)
