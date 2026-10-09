@@ -71,6 +71,9 @@ on each later outcome check.
 Rules 0.6.149 lists "Fleeing in panic" among a panicked creature's conditions.
 Rules 0.6.150 has a broken creature that failed to get away fight on, instead
 of running back to the edge between its attacks.
+Rules 0.6.151 lists each creature's spells in the combat snapshot, so Quick
+combat can leave them out
+([QUICK-1](SRD-DECISIONS.md#quick-1-2026-10-09-quick-combat-as-the-original-game-had-it)).
 
 ## Slums set-encounter creatures
 

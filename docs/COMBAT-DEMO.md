@@ -29,6 +29,11 @@ the selected action: click a highlighted square to move, click a highlighted
 creature for an aimed action, or press Space for one without a target.
 Clicking another party member shows it ("It is not ...'s turn"); choosing an
 action returns to the character whose turn it is, so the next click acts.
+**Quick** (beside Flee) hands the member whose turn it is to the computer, as
+the original did, until **Take control** or Space; Q puts the whole party on
+Quick and M switches Quick magic (whether Quick members cast spells)
+([QUICK-1](SRD-DECISIONS.md#quick-1-2026-10-09-quick-combat-as-the-original-game-had-it)).
+`python3 tools/playtest.py quick` plays it on the campaign screen with screenshots.
 Moving a party member off the edge of the field with an arrow key flees the
 fight, as in the original; whether it gets away depends on the enemies' speed
 ([FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did)).

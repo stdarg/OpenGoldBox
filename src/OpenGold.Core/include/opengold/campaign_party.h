@@ -80,6 +80,7 @@ struct PartyMember
     unsigned last_rest_subminute_milliseconds{};
     std::map<std::uint64_t, por::Equipment> item_sources;
     std::string creation_source; // Stable pool candidate identity, empty for authored PCs.
+    bool quick{}; // The computer plays it in fights (Quick) until the player takes control.
 };
 
 struct HazardHit
@@ -95,6 +96,7 @@ struct PartyState
     MemberId next_id{1};
     unsigned selected{};
     MemberId leader{}; // Speaks for the party and buys in shops; 0 means the first member.
+    bool quick_magic{}; // Members on Quick may cast spells.
     std::uint64_t time_minutes{}, random_state{42};
     std::vector<std::string> claimed_rewards;
     unsigned subminute_milliseconds{};
@@ -129,6 +131,12 @@ class CampaignParty
     // The designated leader, or the first member when none is designated.
     [[nodiscard]] MemberId leader() const;
     void make_leader(MemberId id);
+    // Quick combat, as in the original: the computer plays a member on Quick
+    // in this fight and later ones until the player takes control of the
+    // party. Settings, so they change during a fight too.
+    void set_quick(MemberId id);
+    void take_control();
+    void set_quick_magic(bool on);
     // A member left on the field when the party flees is lost for good: dead
     // and out of the party (the original's rule).
     void lose(MemberId id);

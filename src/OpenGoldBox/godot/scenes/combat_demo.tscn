@@ -76,6 +76,12 @@ text = "Disengage"
 text = "End turn"
 [node name="Flee" type="Button" parent="."]
 text = "Flee"
+[node name="Quick" type="Button" parent="."]
+text = "Quick"
+[node name="TakeControl" type="Button" parent="."]
+text = "Take control"
+[node name="QuickMagic" type="Button" parent="."]
+text = "Quick magic: Off"
 [node name="Continue" type="Button" parent="."]
 text = "Continue"
 [node name="React" type="Button" parent="."]

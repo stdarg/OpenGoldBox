@@ -1267,6 +1267,65 @@ std::optional<Command> run_for_edge(const CombatSession &session, const rules::S
 }
 } // namespace
 
+namespace
+{
+// The fight as a Quick member with magic off sees it: every command but its
+// spells. Only for choosing; it submits nothing.
+class WithoutSpells final : public CombatSession
+{
+  public:
+    explicit WithoutSpells(const CombatSession &fight) : fight_(fight) {}
+
+    [[nodiscard]] Snapshot snapshot() const override
+    {
+        return fight_.snapshot();
+    }
+
+    [[nodiscard]] std::vector<Command> legal_commands() const override
+    {
+        const auto state = fight_.snapshot();
+        std::vector<std::string> spells;
+        for (const auto &a : state.combatants)
+            if (a.id == state.actor)
+                spells = a.spells;
+        auto commands = fight_.legal_commands();
+        std::erase_if(commands, [&](const auto & command)
+        {
+            return std::any_of(spells.begin(), spells.end(), [&](const auto & spell)
+            {
+                return command.verb == spell || command.verb.starts_with(spell + "_");
+            });
+        });
+        return commands;
+    }
+
+    [[nodiscard]] std::vector<Cell> movement_reach(EntityId actor) const override
+    {
+        return fight_.movement_reach(actor);
+    }
+
+    bool submit(const Command &) override
+    {
+        throw std::logic_error("A filtered view of the fight takes no commands");
+    }
+
+    [[nodiscard]] std::string save() const override
+    {
+        return fight_.save();
+    }
+
+  private:
+    const CombatSession &fight_;
+};
+} // namespace
+
+Command choose_quick_command(const CombatSession &session, bool magic)
+{
+    if (magic)
+        return choose_demo_command(session);
+    return choose_demo_command(WithoutSpells(session));
+}
+
 Command choose_flee_command(const CombatSession &session)
 {
     const auto state = session.snapshot();

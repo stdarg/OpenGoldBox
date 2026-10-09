@@ -196,6 +196,109 @@ Ref<Texture2D> CombatView::sprite_texture(EntityId id, bool action) const
     return action ? art->action : art->texture;
 }
 
+bool CombatView::is_quick(EntityId id) const
+{
+    if (!campaign_)
+        return quick_.contains(id);
+    const auto &slots = campaign_->state().slots;
+    return id && std::find(slots.begin(), slots.end(), id) != slots.end() &&
+           campaign_->member(id).quick;
+}
+
+bool CombatView::any_quick() const
+{
+    if (!campaign_)
+        return !quick_.empty();
+    const auto &slots = campaign_->state().slots;
+    return std::any_of(slots.begin(), slots.end(), [&](auto id)
+    {
+        return is_quick(id);
+    });
+}
+
+bool CombatView::quick_magic() const
+{
+    return campaign_ ? campaign_->state().quick_magic : quick_magic_;
+}
+
+// The active party member goes under computer control (Quick), and stays so
+// in later fights until the player takes control.
+void CombatView::quick()
+{
+    if (!demo_ || !demo_->has_combat())
+        return;
+    const auto actor = demo_->combat().snapshot().actor;
+    if (campaign_)
+        campaign_->set_quick(actor);
+    else
+        quick_.insert(actor);
+    error_.clear();
+    refresh();
+}
+
+// Every party member back under the player's control.
+void CombatView::take_control()
+{
+    if (campaign_)
+        campaign_->take_control();
+    quick_.clear();
+    ai_delay_ = 0;
+    error_.clear();
+    // The player goes on with the member whose turn it is.
+    select_acting_character();
+    refresh();
+}
+
+void CombatView::toggle_quick_magic()
+{
+    if (campaign_)
+        campaign_->set_quick_magic(!campaign_->state().quick_magic);
+    else
+        quick_magic_ = !quick_magic_;
+    refresh();
+}
+
+bool CombatView::quick_turn(const Snapshot &state) const
+{
+    return state.outcome == Outcome::ongoing && !flee_mode_ && is_quick(state.actor);
+}
+
+// Q puts the whole party on Quick, M switches Quick magic, and Space while
+// the computer plays a member takes the party back, as the original's keys.
+bool CombatView::quick_key(Key key)
+{
+    const auto state = demo_->combat().snapshot();
+    if (state.outcome != Outcome::ongoing)
+        return false;
+    if (key == Key::KEY_Q)
+    {
+        for (const auto &a : state.combatants)
+            if (a.side == 0 && !a.dead && !a.fled)
+            {
+                if (campaign_ && std::find(campaign_->state().slots.begin(),
+                                           campaign_->state().slots.end(),
+                                           a.id) != campaign_->state().slots.end())
+                    campaign_->set_quick(a.id);
+                else if (!campaign_)
+                    quick_.insert(a.id);
+            }
+        error_.clear();
+        refresh();
+        return true;
+    }
+    if (key == Key::KEY_M)
+    {
+        toggle_quick_magic();
+        return true;
+    }
+    if (key == Key::KEY_SPACE && quick_turn(state))
+    {
+        take_control();
+        return true;
+    }
+    return false;
+}
+
 void CombatView::flee()
 {
     flee_mode_ = true;
@@ -354,6 +457,10 @@ void CombatView::_ready()
     get_node<Button>("End")->connect("pressed",
                                      callable_mp(this, &CombatView::immediate).bind(String("end")));
     get_node<Button>("Flee")->connect("pressed", callable_mp(this, &CombatView::flee));
+    get_node<Button>("Quick")->connect("pressed", callable_mp(this, &CombatView::quick));
+    get_node<Button>("TakeControl")->connect("pressed", callable_mp(this, &CombatView::take_control));
+    get_node<Button>("QuickMagic")
+    ->connect("pressed", callable_mp(this, &CombatView::toggle_quick_magic));
     get_node<Button>("React")->connect(
         "pressed", callable_mp(this, &CombatView::immediate).bind(String("opportunity")));
     get_node<Button>("Decline")->connect(
@@ -609,6 +716,19 @@ void CombatView::layout_reaction_controls(bool show_controls)
     // Flee sits at the far end of End turn's row, clear of Nick.
     get_node<Button>("Flee")->set_position(Vector2(24 + board_rect_.size.x - button_width, top));
     get_node<Button>("Flee")->set_size(Vector2(button_width, 36));
+    // Quick and Flee both hand the party to the computer, so they sit together.
+    // Quick is narrower: in the smallest window End turn, Nick, Quick and Flee
+    // share the row. While the computer plays, Take control stands where End
+    // turn does and Quick magic where Flee does.
+    const double quick_width = 130;
+    get_node<Button>("Quick")->set_position(
+        Vector2(24 + board_rect_.size.x - button_width - 10 - quick_width, top));
+    get_node<Button>("Quick")->set_size(Vector2(quick_width, 36));
+    get_node<Button>("QuickMagic")->set_position(
+        Vector2(24 + board_rect_.size.x - button_width - 10, top));
+    get_node<Button>("QuickMagic")->set_size(Vector2(button_width + 10, 36));
+    get_node<Button>("TakeControl")->set_position(Vector2(24, top));
+    get_node<Button>("TakeControl")->set_size(Vector2(button_width, 36));
 }
 
 // The header takes the lines it needs at the top of the log's area; the log
@@ -1505,6 +1625,11 @@ void CombatView::_input(const Ref<InputEvent> &event)
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && !key->is_ctrl_pressed() &&
             demo_->has_combat())
     {
+        if (quick_key(key->get_keycode()))
+        {
+            get_viewport()->set_input_as_handled();
+            return;
+        }
         // Aiming an area spell (CLASS-5): arrows move the preview, Space or Enter
         // casts and Escape cancels. With an area spell selected, Space or Enter
         // starts aiming.
@@ -1904,6 +2029,8 @@ void CombatView::refresh()
             }
         }
     bool player = false;
+    // A Quick member's turn is the computer's: none of its controls show.
+    const bool computer = loaded && quick_turn(s);
     String turn = !demo_                   ? i18n::text(N_("Unable to load rules"))
                   : demo_->status().empty() ? String()
                   : i18n::text(demo_->status());
@@ -1911,7 +2038,7 @@ void CombatView::refresh()
         for (const auto &a : s.combatants)
             if (a.id == s.actor)
             {
-                player = a.side == 0;
+                player = a.side == 0 && !computer;
                 turn = i18n::format(
                            s.reaction_pending
                            ? N_("Round {round} / {name} reaction\nMove {feet} ft | {action}")
@@ -1933,6 +2060,9 @@ void CombatView::refresh()
     if (player && last_actor_ && last_actor_ != s.actor)
         selected_ = s.actor;
     if ((!selected_ || s.free_movement || s.effect_targeting) && player)
+        selected_ = s.actor;
+    // The highlight follows a member the computer plays, so the player sees who acts.
+    if (computer)
         selected_ = s.actor;
     if (loaded)
         last_actor_ = s.actor;
@@ -2290,11 +2420,19 @@ void CombatView::refresh()
             loaded && s.outcome == Outcome::ongoing && s.reaction_pending && player;
         // A row of controls appearing or going resizes the battlefield, so
         // the log keeps its room.
-        if (controls_height(party_turn) != laid_out_controls_height_)
+        // During a Quick member's turn its row holds Take control.
+        const bool controls_row = party_turn || computer;
+        if (controls_height(controls_row) != laid_out_controls_height_)
             layout();
         else
-            layout_reaction_controls(party_turn);
+            layout_reaction_controls(controls_row);
         get_node<Button>("End")->set_visible(party_turn && !reaction && !flee_mode_);
+        get_node<Button>("Quick")->set_visible(party_turn && !reaction && !flee_mode_);
+        get_node<Button>("TakeControl")->set_visible(computer);
+        // M switches it on any turn; the button shows while the computer plays.
+        get_node<Button>("QuickMagic")->set_visible(computer);
+        get_node<Button>("QuickMagic")->set_text(quick_magic() ? i18n::text(N_("Quick magic: On"))
+                                                 : i18n::text(N_("Quick magic: Off")));
         // Flee is offered while any party member could still run off the field.
         get_node<Button>("Flee")->set_visible(party_turn && !reaction && !flee_mode_ &&
                                               std::any_of(s.combatants.begin(), s.combatants.end(),
@@ -2351,6 +2489,9 @@ void CombatView::refresh()
         : demo_ && demo_->waiting() ? i18n::text("Read the encounter text, then Continue.")
         : loaded && s.outcome != Outcome::ongoing
         ? (demo_->status().empty() ? String() : i18n::text(demo_->status()))
+        : computer
+        ? i18n::format(N_("{name} fights under computer control (Quick). Space or Take control: play the party yourself."),
+    {{"name", gs(active->name)}})
         : s.reaction_pending && enabled("shield")
         ? (missile_shield ? i18n::text("Magic Missile is aimed at you. Cast Shield or decline.")
            : i18n::text("You are hit. Cast Shield (+5 AC) or decline."))
@@ -2426,7 +2567,7 @@ void CombatView::refresh()
         }
     }
     get_node<Label>("Footer")->set_text(i18n::text(
-            "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end"));
+            "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end | Q: party Quick | M: Quick magic"));
     if (player && s.free_movement)
         get_node<Label>("Footer")->set_text(i18n::format(
                                                 "Free move: {feet} ft | Arrows/click: move | Escape or Finish free move: finish",
@@ -2557,6 +2698,21 @@ void CombatView::_draw()
                     font->draw_char(get_canvas_item(), cursor, value.unicode_at(i), size, color);
         };
         line(gs(member.character.sheet().name), top + 27, 17, Color("e2edf0"));
+        // A gold tag marks a member the computer plays (Quick).
+        if (is_quick(id))
+        {
+            const Rect2 tag(right + 358 - 74, top + 8, 64, 22);
+            draw_rect(tag, Color("3a2f12"));
+            draw_rect(tag, Color("d8b24a"), false, 1);
+            const String text = i18n::text(N_("QUICK"));
+            double width = 0;
+            for (int i = 0; i < text.length(); ++i)
+                width += font->get_char_size(text.unicode_at(i), 12).x;
+            auto cursor = Vector2(tag.get_center().x - width / 2, top + 24);
+            for (int i = 0; i < text.length(); ++i)
+                cursor.x += font->draw_char(get_canvas_item(), cursor, text.unicode_at(i), 12,
+                                            Color("f0cf6a"));
+        }
         const auto &sheet = member.character.sheet();
         line(gs(sheet.character_class).capitalize() + " / " + gs(sheet.race).capitalize() + " / " +
              gs(sheet.gender).capitalize(),
@@ -2902,7 +3058,8 @@ void CombatView::_process(double delta)
             refresh();
             return;
         }
-        if (checking_ || party_check_ || defeat_check_ || active->side == 1 || flee_mode_)
+        if (checking_ || party_check_ || defeat_check_ || active->side == 1 || flee_mode_ ||
+                quick_turn(s))
         {
             ai_delay_ += delta;
             if (!checking_ && !party_check_ && !defeat_check_ && ai_delay_ < .65)
@@ -2935,6 +3092,7 @@ void CombatView::_process(double delta)
                 throw std::runtime_error(details);
             }
             act(flee_mode_ ? choose_flee_command(demo_->combat())
+                : quick_turn(s) ? choose_quick_command(demo_->combat(), quick_magic())
                 : choose_demo_command(demo_->combat()));
         }
     }

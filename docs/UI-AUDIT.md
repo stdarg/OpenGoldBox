@@ -25,12 +25,13 @@ covered, so a run that silently skipped one cannot pass unnoticed.
 ## Screens
 
 - Always: the startup screen and the combat screen, empty and in the play-test
-  fights (`gear-torch`, `gear-ally`, `bandage`, `morale-panic`, `flee`).
+  fights (`gear-torch`, `gear-ally`, `bandage`, `morale-panic`, `flee`), and
+  on a member's turn the computer plays (Quick).
 - With the original files (`OPENGOLD_GAME_DIR`): each character-creation page
   the audit can reach by taking the first choice (through Training), and the
   party.
 - With Slums saves (`--slums-fixtures` or `OPENGOLD_SLUMS_FIXTURES`): the town,
-  the hobgoblins' story choice and their fight on a party turn.
+  the hobgoblins' story choice and their fight on a party turn, then under Quick.
 
 ## Running
 

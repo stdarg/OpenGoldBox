@@ -26,7 +26,7 @@ set(ENV{OPENGOLD_LANG} en)
 execute_process(
     COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"
     "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/ui_audit.gd"
-    "-DEXPECTED=UI audit passed:.*creation-4.*party.*town.*story.*campaign-combat" -DTEST_TIMEOUT=240
+    "-DEXPECTED=UI audit passed:.*creation-4.*party.*town.*story.*campaign-combat.*campaign-combat-quick" -DTEST_TIMEOUT=240
     "-DARGS=--playtest-fixtures=${PLAYTEST_FIXTURES}"
     -P "${CMAKE_CURRENT_LIST_DIR}/run_godot_test.cmake"
     RESULT_VARIABLE result)

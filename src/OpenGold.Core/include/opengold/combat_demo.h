@@ -160,5 +160,8 @@ struct CombatDemoSetup
 // open edge of the field (Dashing when it must, whatever reactions it
 // provokes) and steps off it; everyone else acts as choose_demo_command does.
 [[nodiscard]] rules::Command choose_flee_command(const rules::CombatSession &session);
+// Quick combat, as in the original: the computer plays the active party
+// member as choose_demo_command does, casting no spells unless `magic`.
+[[nodiscard]] rules::Command choose_quick_command(const rules::CombatSession &session, bool magic);
 } // namespace opengold
 #endif

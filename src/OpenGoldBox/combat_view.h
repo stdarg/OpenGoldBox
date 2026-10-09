@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <map>
+#include <set>
 #include "opengold/sound_player.h"
 
 class CombatView : public godot::Control
@@ -130,6 +131,19 @@ class CombatView : public godot::Control
     // fight ends.
     bool flee_mode_{};
     void flee();
+    // Quick combat, as in the original: the computer plays party members on
+    // Quick until the player takes control. A campaign party keeps who is on
+    // Quick and Quick magic between fights; the standalone demo keeps them here.
+    std::set<opengold::rules::EntityId> quick_;
+    bool quick_magic_{};
+    [[nodiscard]] bool is_quick(opengold::rules::EntityId id) const;
+    [[nodiscard]] bool any_quick() const;
+    [[nodiscard]] bool quick_magic() const;
+    void quick();
+    void take_control();
+    void toggle_quick_magic();
+    [[nodiscard]] bool quick_turn(const opengold::rules::Snapshot &state) const;
+    bool quick_key(godot::Key key);
     bool ready_{}, checking_{}, capture_{}, captured_{}, check_slums_{}, checked_input_{};
     bool party_check_{}, defeat_check_{}, expedition_check_{};
     unsigned check_steps_{}, completion_frames_{};

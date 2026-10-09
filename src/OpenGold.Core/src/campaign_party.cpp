@@ -316,6 +316,24 @@ void CampaignParty::make_leader(MemberId id)
     state_.leader = id;
 }
 
+void CampaignParty::set_quick(MemberId id)
+{
+    if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end() || !id)
+        throw std::runtime_error("Member is not in party");
+    edit(id).quick = true;
+}
+
+void CampaignParty::take_control()
+{
+    for (auto &member : state_.roster)
+        member.quick = false;
+}
+
+void CampaignParty::set_quick_magic(bool on)
+{
+    state_.quick_magic = on;
+}
+
 void CampaignParty::lose(MemberId id)
 {
     editable();

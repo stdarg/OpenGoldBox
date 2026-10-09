@@ -134,6 +134,8 @@ func campaign() -> void:
         if (combat.get_node("End") as Button).is_visible_in_tree(): break
         await process_frame
     await audit("campaign-combat", combat)
+    (combat.get_node("Quick") as Button).pressed.emit()
+    await audit("campaign-combat-quick", combat)
 
 func drag(from: Vector2, to: Vector2) -> void:
     var down := InputEventMouseButton.new()
@@ -186,6 +188,10 @@ func screens() -> void:
     if fixtures.is_empty(): return
     for fixture in ["gear-torch", "gear-ally", "bandage", "morale-panic", "flee"]:
         if await load_fixture(fixture): await audit("combat-" + fixture)
+    # A member's turn played by the computer (Quick): Take control and Quick magic.
+    if await load_fixture("gear-ally"):
+        current_scene.get_node("Quick").pressed.emit()
+        await audit("combat-quick")
 
 func run() -> void:
     root.gui_embed_subwindows = true

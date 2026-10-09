@@ -3072,6 +3072,7 @@ Snapshot Session::snapshot() const
         view.burning = a.burning;
         view.oiled = a.oiled_until_round >= int(round_);
         view.panicked = a.panicked;
+        view.spells = def(a).spells;
         view.can_flee = a.source.side == 0 && conscious(a) && !a.must_stay &&
                         std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
         {
@@ -11804,7 +11805,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.150", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.151", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

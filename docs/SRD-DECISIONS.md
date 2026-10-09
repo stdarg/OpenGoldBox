@@ -683,3 +683,26 @@ among its conditions (the user, 2026-10-09). Not adopted: Curse's
 Bless/Curse/charm morale modifiers
 (unconfirmed for Pool) and morale for allied NPCs (ours are player-controlled).
 
+
+## QUICK-1 (2026-10-09): Quick combat, as the original game had it
+
+The original let the computer play any party member in combat (Quick), and
+kept playing it in later fights until the player took over; a key set the
+whole party to Quick, Space while the computer was moving a member returned
+every member to the player, and a Magic toggle decided whether Quick members
+cast spells (read from the original manual and cluebook; no text copied).
+OpenGold follows it, with the layout the user approved on 2026-10-09:
+
+- On a member's turn, **Quick** (beside Flee) hands it to the computer at once.
+  Q puts the whole party on Quick.
+- While the computer plays a member, its action controls are hidden, **Take
+  control** stands where End turn does and the prompt says so; Take control
+  or Space returns every member to the player. The highlight follows the
+  member acting. Each Quick member's card carries a gold QUICK tag.
+- **Quick magic** (Off unless switched on with M, as the original's Magic
+  appears to start) decides whether the computer casts spells, cantrips
+  included, for Quick members; the button shows while the computer plays,
+  where Flee stands, and M works on any turn.
+- The campaign party keeps who is on Quick and Quick magic between fights and
+  in saves (campaign format 25). The computer plays a Quick member as the
+  automated demo policy does.

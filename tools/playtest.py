@@ -10,8 +10,9 @@ prints its report.
     python3 tools/playtest.py slums --game-dir /path/to/POOLRAD
     python3 tools/playtest.py gear -- --campaign --combat-demo ...
 
-Play-tests: actions, gear, morale (the play-test fights) and slums (the Slums'
-set encounters, which needs the original files). Arguments after -- go to the
+Play-tests: actions, gear, morale (the play-test fights), quick (Quick combat on
+the campaign screen) and slums (the Slums' set encounters); quick and slums need
+the original files. Arguments after -- go to the
 play-test script. Build the game first (cmake --build --preset macos-universal).
 """
 import argparse
@@ -27,6 +28,7 @@ PLAYTESTS = {
     "actions": "playtest_actions.gd",
     "gear": "playtest_gear.gd",
     "morale": "playtest_morale.gd",
+    "quick": "playtest_quick.gd",
     "slums": "playtest_slums.gd",
 }
 
@@ -61,7 +63,15 @@ def main():
     home.mkdir(parents=True)
     script_args = list(args.script_args)
 
-    if args.playtest == "slums":
+    if args.playtest == "quick":
+        if not args.game_dir:
+            sys.exit("The Quick play-test needs the original files: --game-dir or OPENGOLD_GAME_DIR")
+        # A fighter, cleric, wizard and rogue at level four, unless the script
+        # arguments name another party.
+        if not any(arg.startswith("--combat-demo") for arg in script_args):
+            script_args += ["--combat-demo", "--combat-demo-party=fighter,cleric,wizard,rogue",
+                            "--combat-demo-level=4"]
+    elif args.playtest == "slums":
         if not args.game_dir:
             sys.exit("The Slums play-test needs the original files: --game-dir or OPENGOLD_GAME_DIR")
         fixtures = out / "slums-fixtures"
