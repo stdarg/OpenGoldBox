@@ -4,6 +4,7 @@
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -35,16 +36,14 @@ std::filesystem::path game_directory()
     auto dir = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
     if (dir.is_empty())
         dir = ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
-    return std::filesystem::u8path(dir.utf8().get_data());
+    return presentation::path_from_godot(dir);
 }
 
 auto rules_module()
 {
-    return srd5::load(std::filesystem::u8path(
+    return srd5::load(presentation::path_from_godot(
                           ProjectSettings::get_singleton()
-                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                          .utf8()
-                          .get_data()));
+                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")));
 }
 } // namespace
 
@@ -208,10 +207,8 @@ void RolfTourView::request_save(bool saving)
 void CharacterCreationView::save_checkpoint_check(const std::string &name)
 {
     auto directory =
-        std::filesystem::u8path(ProjectSettings::get_singleton()
-                                ->globalize_path("res://../../user-data/save-check")
-                                .utf8()
-                                .get_data());
+        presentation::path_from_godot(ProjectSettings::get_singleton()
+                                      ->globalize_path("res://../../user-data/save-check"));
     save_campaign(directory / (name + ".ogs"));
     error_ = "";
     if (name == "final")
@@ -232,10 +229,8 @@ void CharacterCreationView::save_checkpoint_check(const std::string &name)
 void CharacterCreationView::load_checkpoint_check()
 {
     auto directory =
-        std::filesystem::u8path(ProjectSettings::get_singleton()
-                                ->globalize_path("res://../../user-data/save-check")
-                                .utf8()
-                                .get_data());
+        presentation::path_from_godot(ProjectSettings::get_singleton()
+                                      ->globalize_path("res://../../user-data/save-check"));
     const auto assets = campaign_asset_identity(game_directory());
     for (const char *name :
             {"advancement", "interrupted-rest", "cancelled-service", "temple-payment", "inn-rest",

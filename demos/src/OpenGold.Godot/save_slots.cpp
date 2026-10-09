@@ -1,4 +1,5 @@
 #include "save_slots.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -85,8 +86,8 @@ void SaveSlots::_ready()
     get_node<Button>("Cancel")->connect("pressed", callable_mp(this, &SaveSlots::close));
     connect("close_requested", callable_mp(this, &SaveSlots::close));
     hide();
-    directory_ = std::filesystem::u8path(
-                     ProjectSettings::get_singleton()->globalize_path("user://saves").utf8().get_data());
+    directory_ = presentation::path_from_godot(
+                     ProjectSettings::get_singleton()->globalize_path("user://saves"));
 }
 
 void SaveSlots::open(bool saving)

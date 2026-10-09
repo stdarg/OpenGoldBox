@@ -2,6 +2,7 @@
 #include "../../../src/OpenGoldBox/godot_nodes.h"
 #include "../../../src/OpenGoldBox/godot_images.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
@@ -28,7 +29,7 @@ String gs(std::string_view s)
 
 std::filesystem::path path(const String &s)
 {
-    return std::filesystem::u8path(s.utf8().get_data());
+    return presentation::path_from_godot(s);
 }
 } // namespace
 

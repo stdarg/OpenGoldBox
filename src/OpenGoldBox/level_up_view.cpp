@@ -22,6 +22,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "godot_path.h"
 #include <algorithm>
 
 using namespace godot;
@@ -876,7 +877,7 @@ void CharacterCreationView::advancement_check()
                 "Racial section must show the attained Dwarven Toughness contribution");
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "bonus-ui-check");
             const auto module =
-                opengold::srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data()));
+                opengold::srd5::load(presentation::path_from_godot(game_rules_file()));
             auto restored = opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
                 *module, "bonus-ui-check", nullptr);
             campaign_->restore(std::move(restored.party));
@@ -952,7 +953,7 @@ void CharacterCreationView::advancement_check()
                 "Cleric selection must grant Savage Attacker with its source and chosen spells");
         const auto saved = opengold::encode_campaign(*campaign_, nullptr, "feat-ui-check");
         const auto module =
-            opengold::srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data()));
+            opengold::srd5::load(presentation::path_from_godot(game_rules_file()));
         auto restored = opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
             *module, "feat-ui-check", nullptr);
         campaign_->restore(std::move(restored.party));
@@ -991,7 +992,7 @@ void CharacterCreationView::advancement_check()
             throw std::runtime_error("Sheet must display translated Archery");
         const auto bytes = opengold::encode_campaign(*campaign_, nullptr, "archery-ui-check");
         const auto module =
-            opengold::srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data()));
+            opengold::srd5::load(presentation::path_from_godot(game_rules_file()));
         auto restored = opengold::decode_campaign(bytes, *opengold::srd5::character_rules(),
             *module, "archery-ui-check", nullptr);
         campaign_->restore(std::move(restored.party));

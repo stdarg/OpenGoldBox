@@ -1,6 +1,7 @@
 #include "rolf_tour_view.h"
 #include "opengold/exploration_view.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -241,7 +242,7 @@ void RolfTourView::restart()
             const auto pack = ProjectSettings::get_singleton()->globalize_path(
                                   "res://../../data/rules/srd-5.2.1/combat.rules");
             campaign_ = std::make_shared<opengold::CampaignParty>(
-                            opengold::srd5::load(std::filesystem::u8path(pack.utf8().get_data())));
+                            opengold::srd5::load(presentation::path_from_godot(pack)));
             opengold::rules::CharacterDraft d;
             d.race = "human";
             d.gender = "female";
@@ -268,7 +269,7 @@ void RolfTourView::restart()
                 directory =
                     ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
             session_.emplace(
-                RolfTourSession::load(std::filesystem::u8path(directory.utf8().get_data())));
+                RolfTourSession::load(presentation::path_from_godot(directory)));
             if (campaign_)
                 session_->campaign_party(campaign_);
             for (unsigned i = 0; i < sprites_.size(); ++i)
@@ -864,7 +865,7 @@ void RolfTourView::capture_frame(const String &name)
         return;
     const auto directory =
         ProjectSettings::get_singleton()->globalize_path("res://../../user-data");
-    std::filesystem::create_directories(std::filesystem::u8path(directory.utf8().get_data()));
+    std::filesystem::create_directories(presentation::path_from_godot(directory));
     const auto path = directory.path_join(name + String(".png"));
     const auto image = get_viewport()->get_texture()->get_image();
     if (image.is_null() || image->save_png(path) != OK)

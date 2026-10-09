@@ -16,6 +16,7 @@
 #include "opengold/combat_body_catalog.h"
 #include "opengold/formats.h"
 #include "opengold/save_file.h"
+#include "godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/font.hpp>
@@ -312,11 +313,11 @@ void CombatView::prepare_combat()
     if (demo_)
         return;
     auto next = std::make_unique<CombatDemo>(
-                    srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data())));
+                    srd5::load(presentation::path_from_godot(game_rules_file())));
     const bool demo_mode = settings::flag("--combat-demo");
     if (demo_mode)
     {
-        const auto directory = std::filesystem::u8path(settings::game_path().utf8().get_data());
+        const auto directory = presentation::path_from_godot(settings::game_path());
         auto characters = srd5::character_rules();
         // Play-testing: --combat-demo-party=druid,warlock,... and --combat-demo-level=4.
         std::vector<std::string> classes, enemies, gear;
@@ -337,8 +338,8 @@ void CombatView::prepare_combat()
                                      arg.trim_prefix("--combat-demo-level=").to_int(), 1, 4));
         }
         auto showcase = make_combat_demo(
-                            srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data())), *characters,
-                            directory, std::filesystem::u8path(game_combat_body_file().utf8().get_data()),
+                            srd5::load(presentation::path_from_godot(game_rules_file())), *characters,
+                            directory, presentation::path_from_godot(game_combat_body_file()),
                             classes, level, enemies, gear);
         campaign_ = std::move(showcase.party);
         encounter_ = std::move(showcase.encounter);
@@ -348,7 +349,7 @@ void CombatView::prepare_combat()
     if (encounter_)
         next->encounter(*encounter_, 42);
     else if (OS::get_singleton()->get_cmdline_user_args().has("--slums"))
-        next->slums(std::filesystem::u8path(settings::game_path().utf8().get_data()));
+        next->slums(presentation::path_from_godot(settings::game_path()));
     else
         next->training(settings::flag("--conditions") ? 3 : 42, settings::flag("--conditions"));
     demo_ = std::move(next);
@@ -369,8 +370,8 @@ void CombatView::_notification(int what)
 
 std::filesystem::path CombatView::local_path(const char *path) const
 {
-    return std::filesystem::u8path(
-               ProjectSettings::get_singleton()->globalize_path(path).utf8().get_data());
+    return presentation::path_from_godot(
+               ProjectSettings::get_singleton()->globalize_path(path));
 }
 
 void CombatView::_ready()
@@ -493,7 +494,7 @@ void CombatView::_ready()
         prepare_combat();
         layout();
         refresh();
-        const auto directory = std::filesystem::u8path(settings::game_path().utf8().get_data());
+        const auto directory = presentation::path_from_godot(settings::game_path());
         if (std::filesystem::is_directory(directory))
         {
             attack_sound_ = std::make_unique<por::SoundPlayer>(
@@ -788,7 +789,7 @@ void CombatView::slums()
     {
         error_.clear();
         const auto directory = settings::game_path();
-        demo_->slums(std::filesystem::u8path(directory.utf8().get_data()));
+        demo_->slums(presentation::path_from_godot(directory));
         mode_ = "move";
         sync_art();
         refresh();
@@ -856,7 +857,7 @@ void CombatView::sync_art(bool preserve_effects)
     action_seconds_.clear();
     if (!demo_)
         return;
-    const auto directory = std::filesystem::u8path(settings::game_path().utf8().get_data());
+    const auto directory = presentation::path_from_godot(settings::game_path());
     if (std::filesystem::is_directory(directory))
     {
         for (const auto &file : std::filesystem::directory_iterator(directory))
@@ -934,8 +935,8 @@ void CombatView::sync_art(bool preserve_effects)
     {
         const auto originals = por::CharacterArt::load(directory);
         const auto catalog = por::CombatBodyCatalog::load(
-                                 std::filesystem::u8path(game_combat_body_file().utf8().get_data()),
-                                 std::filesystem::u8path(game_combat_weapon_file().utf8().get_data()));
+                                 presentation::path_from_godot(game_combat_body_file()),
+                                 presentation::path_from_godot(game_combat_weapon_file()));
         campaign_art_.clear();
         for (const auto id : campaign_->state().slots)
             if (id)
@@ -1002,7 +1003,7 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
     if (campaign_)
     {
         auto legacy = por::CharacterArt::load(
-                                std::filesystem::u8path(settings::game_path().utf8().get_data()));
+                                presentation::path_from_godot(settings::game_path()));
         Ref<JSON> catalog_json;
         catalog_json.instantiate();
         Dictionary catalog;

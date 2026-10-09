@@ -11,6 +11,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/combat_body_catalog.h"
 #include "opengold/srd5.h"
+#include "godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
@@ -90,9 +91,9 @@ presentation::NodeOwner<> combat_scene(const std::shared_ptr<CampaignParty> &par
 void CharacterCreationView::setup_party()
 {
     body_catalog_ = por::CombatBodyCatalog::load(
-                        std::filesystem::u8path(game_combat_body_file().utf8().get_data()),
-                        std::filesystem::u8path(game_combat_weapon_file().utf8().get_data()));
-    const auto pack = std::filesystem::u8path(game_rules_file().utf8().get_data());
+                        presentation::path_from_godot(game_combat_body_file()),
+                        presentation::path_from_godot(game_combat_weapon_file()));
+    const auto pack = presentation::path_from_godot(game_rules_file());
     campaign_ = std::make_shared<CampaignParty>(srd5::load(pack));
     auto panel = presentation::instantiate_scene("res://scenes/party_panel.tscn");
     i18n::prepare_ui(*panel);
@@ -474,12 +475,10 @@ void CharacterCreationView::equipment_art_check()
                 std::error_code ignored;
                 std::filesystem::remove(path, ignored);
             }
-        } save{std::filesystem::u8path(
+        } save{presentation::path_from_godot(
                    ProjectSettings::get_singleton()
                    ->globalize_path("user://checks/equipment-art-" +
-                                    String::num_int64(OS::get_singleton()->get_process_id()) + ".ogs")
-                   .utf8()
-                   .get_data())};
+                                    String::num_int64(OS::get_singleton()->get_process_id()) + ".ogs"))};
 
         std::filesystem::create_directories(save.path.parent_path());
         save_campaign(save.path);
@@ -1084,7 +1083,7 @@ void CharacterCreationView::expedition_check()
     if (const auto *state = town->saved_session();
             state && state->can_leave() && state->snapshot().area_id == 20 && !expedition_saved_)
     {
-        const auto pack = std::filesystem::u8path(game_rules_file().utf8().get_data());
+        const auto pack = presentation::path_from_godot(game_rules_file());
         const auto saved = encode_campaign(*campaign_, state, "expedition-fixture");
         auto loaded = decode_campaign(saved, *srd5::character_rules(), *srd5::load(pack),
                                       "expedition-fixture", state);
@@ -1238,11 +1237,9 @@ void CharacterCreationView::defeat_check()
         if (!dialog->is_visible())
             throw std::runtime_error("Cancel bypassed defeat");
         auto *fight = get_node<CombatView>("CampaignCombat");
-        const auto broken = std::filesystem::u8path(
+        const auto broken = presentation::path_from_godot(
                                 ProjectSettings::get_singleton()
-                                ->globalize_path("user://checks/save-check/defeat-corrupt.ogs")
-                                .utf8()
-                                .get_data());
+                                ->globalize_path("user://checks/save-check/defeat-corrupt.ogs"));
         write_campaign_file(broken, "corrupt");
         const auto original = campaign_;
         bool rejected = false;

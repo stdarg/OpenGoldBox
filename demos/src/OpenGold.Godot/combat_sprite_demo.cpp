@@ -3,6 +3,7 @@
 #include "../../../src/OpenGoldBox/godot_images.h"
 #include "../../../src/OpenGoldBox/godot_nodes.h"
 #include "../../../src/OpenGoldBox/combat_sprite_layout.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/image.hpp>
@@ -243,7 +244,7 @@ void CombatSpriteDemo::load_art()
     auto configured = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
     if (configured.is_empty())
         configured = ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
-    const auto directory = std::filesystem::u8path(configured.utf8().get_data());
+    const auto directory = presentation::path_from_godot(configured);
     art_ = opengold::por::CharacterArt::load(directory);
     appearance_.combat_body = 4; // A weapon and shield expose all customization regions.
     const auto tiles = archive(directory, "DUNGCOM.DAX");

@@ -5,6 +5,7 @@
 #include "character_text.h"
 #include "character_creation_view.h"
 #include "opengold/srd5.h"
+#include "godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/line_edit.hpp>
@@ -246,7 +247,7 @@ void CharacterCreationView::show_modifiers()
     "[/b]\n" + i18n::render(s.background_messages).utf8().get_data();
     try
     {
-        const auto pack = std::filesystem::u8path(game_rules_file().utf8().get_data());
+        const auto pack = presentation::path_from_godot(game_rules_file());
         const auto profile =
             member ? campaign_->profile(member->id) : srd5::load(pack)->character_profile(s, {});
         text += "\n\n[b]" + i18n::utf8("Items") + "[/b]\n" +

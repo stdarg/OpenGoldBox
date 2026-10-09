@@ -6,6 +6,7 @@
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
@@ -72,11 +73,9 @@ Character preview_guard()
 
 void CharacterCreationView::setup_party()
 {
-    const auto pack = std::filesystem::u8path(
+    const auto pack = presentation::path_from_godot(
                           ProjectSettings::get_singleton()
-                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                          .utf8()
-                          .get_data());
+                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules"));
     campaign_ = std::make_shared<CampaignParty>(srd5::load(pack));
     auto panel = scene("res://scenes/party_panel.tscn");
     add_child(panel.get());
@@ -741,11 +740,9 @@ void CharacterCreationView::expedition_check()
     if (const auto *state = town->saved_session();
             state && state->can_leave() && state->snapshot().area_id == 20 && !expedition_saved_)
     {
-        const auto pack = std::filesystem::u8path(
+        const auto pack = presentation::path_from_godot(
                               ProjectSettings::get_singleton()
-                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                              .utf8()
-                              .get_data());
+                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules"));
         const auto saved = encode_campaign(*campaign_, state, "expedition-fixture");
         auto loaded = decode_campaign(saved, *srd5::character_rules(), *srd5::load(pack),
                                       "expedition-fixture", state);
@@ -903,11 +900,9 @@ void CharacterCreationView::defeat_check()
         if (!dialog->is_visible())
             throw std::runtime_error("Cancel bypassed defeat");
         auto *fight = get_node<CombatView>("CampaignCombat");
-        const auto broken = std::filesystem::u8path(
+        const auto broken = presentation::path_from_godot(
                                 ProjectSettings::get_singleton()
-                                ->globalize_path("res://../../user-data/save-check/defeat-corrupt.ogs")
-                                .utf8()
-                                .get_data());
+                                ->globalize_path("res://../../user-data/save-check/defeat-corrupt.ogs"));
         write_campaign_file(broken, "corrupt");
         const auto original = campaign_;
         bool rejected = false;

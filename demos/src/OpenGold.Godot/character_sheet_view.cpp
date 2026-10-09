@@ -1,6 +1,7 @@
 #include "../../../src/OpenGoldBox/training_control.h"
 #include "character_creation_view.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/line_edit.hpp>
@@ -229,11 +230,9 @@ void CharacterCreationView::show_modifiers()
     text += "\n\n[b]Background / " + s.background + "[/b]\n" + s.background_modifiers;
     try
     {
-        const auto pack = std::filesystem::u8path(
+        const auto pack = presentation::path_from_godot(
                               ProjectSettings::get_singleton()
-                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                              .utf8()
-                              .get_data());
+                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules"));
         const auto profile =
             member ? campaign_->profile(member->id) : srd5::load(pack)->character_profile(s, {});
         text += "\n\n[b]Items[/b]\n" + profile.item_modifiers + "\n\n[b]Spells[/b]\n" +

@@ -5,6 +5,7 @@
 #include "combat_view.h"
 #include "opengold/srd5.h"
 #include "opengold/combat_body_catalog.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
@@ -82,8 +83,8 @@ void CombatView::_notification(int what)
 
 std::filesystem::path CombatView::local_path(const char *path) const
 {
-    return std::filesystem::u8path(
-               ProjectSettings::get_singleton()->globalize_path(path).utf8().get_data());
+    return presentation::path_from_godot(
+               ProjectSettings::get_singleton()->globalize_path(path));
 }
 
 void CombatView::_ready()
@@ -297,7 +298,7 @@ void CombatView::slums()
         if (directory.is_empty())
             directory =
                 ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
-        demo_->slums(std::filesystem::u8path(directory.utf8().get_data()));
+        demo_->slums(presentation::path_from_godot(directory));
         mode_ = "move";
         sync_art();
         refresh();
@@ -379,7 +380,7 @@ void CombatView::sync_art()
             directory =
                 ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
         const auto originals =
-            por::CharacterArt::load(std::filesystem::u8path(directory.utf8().get_data()));
+            por::CharacterArt::load(presentation::path_from_godot(directory));
         const auto catalog = por::CombatBodyCatalog::load(
                                  local_path("res://../../data/art/combat-body-looks.tsv"),
                                  local_path("res://../../data/art/combat-weapon-options.tsv"));

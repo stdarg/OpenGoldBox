@@ -8,6 +8,7 @@
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -29,12 +30,12 @@ namespace
 std::filesystem::path game_directory()
 {
     const auto dir = settings::game_path();
-    return std::filesystem::u8path(dir.utf8().get_data());
+    return presentation::path_from_godot(dir);
 }
 
 auto rules_module()
 {
-    return srd5::load(std::filesystem::u8path(game_rules_file().utf8().get_data()));
+    return srd5::load(presentation::path_from_godot(game_rules_file()));
 }
 } // namespace
 
@@ -191,10 +192,8 @@ void RolfTourView::request_save(bool saving)
 
 void CharacterCreationView::save_checkpoint_check(const std::string &name)
 {
-    auto directory = std::filesystem::u8path(ProjectSettings::get_singleton()
-        ->globalize_path("user://checks/save-check")
-        .utf8()
-        .get_data());
+    auto directory = presentation::path_from_godot(ProjectSettings::get_singleton()
+        ->globalize_path("user://checks/save-check"));
     save_campaign(directory / (name + ".ogs"));
     error_ = "";
     if (name == "final")
@@ -214,10 +213,8 @@ void CharacterCreationView::save_checkpoint_check(const std::string &name)
 
 void CharacterCreationView::load_checkpoint_check()
 {
-    auto directory = std::filesystem::u8path(ProjectSettings::get_singleton()
-        ->globalize_path("user://checks/save-check")
-        .utf8()
-        .get_data());
+    auto directory = presentation::path_from_godot(ProjectSettings::get_singleton()
+        ->globalize_path("user://checks/save-check"));
     const auto assets = campaign_asset_identity(game_directory());
     for (const char *name :
             {"advancement", "interrupted-rest", "cancelled-service", "temple-payment", "inn-rest",

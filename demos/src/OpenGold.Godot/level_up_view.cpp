@@ -19,6 +19,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <algorithm>
 
 using namespace godot;
@@ -797,11 +798,9 @@ void CharacterCreationView::advancement_check()
                 throw std::runtime_error(
                     "Modifier dialog must separate background and level-four feat sources");
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "bonus-ui-check");
-            const auto module = opengold::srd5::load(std::filesystem::u8path(
+            const auto module = opengold::srd5::load(presentation::path_from_godot(
                     ProjectSettings::get_singleton()
-                    ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                    .utf8()
-                    .get_data()));
+                    ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")));
             auto restored = opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
                 *module, "bonus-ui-check", nullptr);
             campaign_->restore(std::move(restored.party));

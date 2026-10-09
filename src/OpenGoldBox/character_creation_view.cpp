@@ -6,6 +6,7 @@
 #include "character_creation_view.h"
 #include "character_text.h"
 #include "opengold/srd5.h"
+#include "godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/check_box.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
@@ -254,7 +255,7 @@ void CharacterCreationView::_ready()
     try
     {
         const auto directory = settings::game_path();
-        art_ = por::CharacterArt::load(std::filesystem::u8path(directory.utf8().get_data()));
+        art_ = por::CharacterArt::load(presentation::path_from_godot(directory));
         presentation::load_additional_portrait_heads(*art_);
         load_portraits();
         const auto seed =
@@ -1136,10 +1137,8 @@ void CharacterCreationView::capture(const char *name)
     if (!capture_)
         return;
     const auto path =
-        std::filesystem::u8path(ProjectSettings::get_singleton()
-                                ->globalize_path(gs(std::string("user://checks/") + name))
-                                .utf8()
-                                .get_data());
+        presentation::path_from_godot(ProjectSettings::get_singleton()
+                                      ->globalize_path(gs(std::string("user://checks/") + name)));
     std::filesystem::create_directories(path.parent_path());
     const auto image = get_viewport()->get_texture()->get_image();
     if (image.is_null() || image->save_png(gs(path.generic_string())) != OK)
