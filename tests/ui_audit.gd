@@ -5,9 +5,10 @@ extends SceneTree
 # startup screen and the combat screen in the play-test fights; with the
 # original files (OPENGOLD_GAME_DIR), character creation and the party; with
 # Slums saves (--slums-fixtures or OPENGOLD_SLUMS_FIXTURES, written by
-# opengold_expedition_tests), the town,
-# a story choice and a campaign fight. --audit-out=DIR also writes each
-# screen's control tree as JSON there.
+# opengold_expedition_tests), the town, a story choice and a campaign fight.
+# --audit-out=DIR also writes each screen's control tree as JSON there;
+# --capture=DIR, run in a window (not --headless), saves a screenshot of each
+# screen for tools/ui_snapshots.py to compare.
 #   godot --headless --path src/OpenGoldBox/godot --script $PWD/tests/ui_audit.gd -- \
 #       --playtest-fixtures=build/playtest-fixtures [--slums-fixtures=DIR] [--audit-out=DIR]
 const SIZES := [Vector2i(1120, 800), Vector2i(1600, 1000), Vector2i(1920, 1080)]
@@ -18,6 +19,7 @@ var locale := "en"
 var fixtures := ""
 var slums := ""
 var out := ""
+var capture := ""
 var findings := PackedStringArray()
 var audited := []
 var save_path := ""
@@ -27,6 +29,7 @@ func _initialize() -> void:
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--playtest-fixtures="): fixtures = arg.trim_prefix("--playtest-fixtures=")
         if arg.begins_with("--audit-out="): out = arg.trim_prefix("--audit-out=")
+        if arg.begins_with("--capture="): capture = arg.trim_prefix("--capture=")
         if arg.begins_with("--slums-fixtures="): slums = arg.trim_prefix("--slums-fixtures=")
     if slums.is_empty(): slums = OS.get_environment("OPENGOLD_SLUMS_FIXTURES")
     checks = load(get_script().resource_path.get_base_dir().path_join("ui_audit_checks.gd"))
@@ -45,9 +48,16 @@ func audit(label: String, screen: Node = null) -> void:
     var name := "%s@%dx%d/%s" % [label, root.size.x, root.size.y, TranslationServer.get_locale()]
     for finding in checks.audit(screen, Vector2(root.size)):
         findings.append(name + ": " + finding)
+    var file_name := name.replace("/", "-").replace("@", "-")
     if not out.is_empty():
-        var file := FileAccess.open(out.path_join(name.replace("/", "-").replace("@", "-") + ".json"), FileAccess.WRITE)
+        var file := FileAccess.open(out.path_join(file_name + ".json"), FileAccess.WRITE)
         file.store_string(JSON.stringify(checks.dump(screen), "  ")); file.close()
+    if not capture.is_empty():
+        RenderingServer.force_draw()
+        var image := root.get_texture().get_image()
+        if image == null:
+            findings.append("--capture needs a window, not --headless"); return
+        image.save_png(capture.path_join(file_name + ".png"))
 
 # The game sets its language from the settings as a scene loads; the audit's
 # language is set after.
@@ -183,6 +193,7 @@ func run() -> void:
     original = FileAccess.get_file_as_bytes(save_path) if FileAccess.file_exists(save_path) else null
     DirAccess.make_dir_recursive_absolute(save_path.get_base_dir())
     if not out.is_empty(): DirAccess.make_dir_recursive_absolute(out)
+    if not capture.is_empty(): DirAccess.make_dir_recursive_absolute(capture)
     for language in LOCALES:
         locale = language
         for size in SIZES:

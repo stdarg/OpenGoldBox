@@ -43,3 +43,22 @@ each screen's control tree written as JSON for inspection:
 godot --headless --path src/OpenGoldBox/godot --script $PWD/tests/ui_audit.gd -- \
     --playtest-fixtures=$PWD/build/playtest-fixtures --audit-out=/tmp/ui-audit
 ```
+
+## Screenshots before and after a change
+
+`tools/ui_snapshots.py` keeps a screenshot of every screen the audit covers and
+compares two sets, to catch visual changes nobody asked for:
+
+```sh
+python3 tools/ui_snapshots.py capture before --game-dir /path/to/POOLRAD
+# change the game and rebuild
+python3 tools/ui_snapshots.py capture after --game-dir /path/to/POOLRAD
+python3 tools/ui_snapshots.py compare before after
+```
+
+`capture` runs the audit in a window with fresh saves (character creation with
+`--fixed-seed`, so its rolls repeat). `compare` (`tests/ui_compare.gd`) lists
+each screen that changed and by how much, and any that appeared or went, and
+writes for each changed screen the new screenshot dimmed with the changed
+pixels in red. The screenshots show the original game's art, so they stay in
+`user-data/ui-snapshots` and never go in the repository.

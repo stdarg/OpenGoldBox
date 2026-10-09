@@ -258,7 +258,8 @@ void CharacterCreationView::_ready()
         presentation::load_additional_portrait_heads(*art_);
         load_portraits();
         const auto seed =
-            (checking_ || args.has("--party-check"))
+            // --fixed-seed repeats the same rolls, so screenshots compare.
+            (checking_ || args.has("--party-check") || args.has("--fixed-seed"))
             ? 42ULL
             : static_cast<std::uint64_t>(
                 std::chrono::high_resolution_clock::now().time_since_epoch().count());
