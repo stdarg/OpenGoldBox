@@ -2170,7 +2170,7 @@ class Session final : public CombatSession
     void burn_searing_smites(Actor &a);
     void update_outcome();
     void wake_resting_participants();
-    void resolve_death_saves_after_victory();
+    void bandage_after_victory();
     // A creature with Regeneration that has not died: down at 0 HP, it may rise.
     bool may_rise(const Actor &a) const
     {
@@ -7143,7 +7143,7 @@ void Session::update_outcome()
                     log(a.source.name + " stays down.",
                     {"{name} stays down.", {{"name", a.source.name}}});
                 }
-            resolve_death_saves_after_victory();
+            bandage_after_victory();
         }
     }
 }
@@ -7161,32 +7161,19 @@ void Session::wake_resting_participants()
         }
 }
 
-// Nothing is left to fight, so the remaining death saves are rolled at once
-// instead of on a six-second clock. Prone does not outlast combat: the party
-// is standing (or lying unconscious) when exploration resumes.
-void Session::resolve_death_saves_after_victory()
+// As in the original game, whoever is still dying when the fight is won has
+// its wounds bound afterward: it is Stable and recovers on the usual clock.
+// Prone does not outlast combat: the party is standing (or lying unconscious)
+// when exploration resumes.
+void Session::bandage_after_victory()
 {
     for (auto &a : actors_)
     {
         if (a.hp != 0 || a.dead || a.stable)
             continue;
-        do
-        {
-            const int roll = detail::death_save(a, rng_, !detail::healing_blocked(a.effects));
-            log(a.source.name + " death save: " + std::to_string(roll),
-            {
-                "{name} death save: {roll}",
-                {{"name", a.source.name}, {"roll", std::to_string(roll)}}
-            });
-        }
-        while (a.hp == 0 && !a.dead && !a.stable);
-        if (a.dead)
-            log(a.source.name + " dies.", {"{name} dies.", {{"name", a.source.name}}});
-        else if (a.hp > 0)
-            log(a.source.name + " regains 1 HP.",
-            {"{name} regains 1 HP.", {{"name", a.source.name}}});
-        else
-            log(a.source.name + " is stable.", {"{name} is stable.", {{"name", a.source.name}}});
+        detail::stabilize(a, rng_);
+        log(a.source.name + " is bandaged and stable.",
+        {"{name} is bandaged and stable.", {{"name", a.source.name}}});
     }
     for (auto &a : actors_)
         a.effects.prone = false;
@@ -11805,7 +11792,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.146", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.147", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

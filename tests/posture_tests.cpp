@@ -1,6 +1,7 @@
 // Posture, gear and dying rules after SIMPLIFY-1: a rest-interrupting encounter
 // finds sleepers awake but Prone, downed characters keep their gear, Prone ends
-// with combat, and death saves left at victory are rolled at once.
+// with combat, and whoever is still dying at victory is bandaged, as in the
+// original game.
 #include "opengold/campaign_party.h"
 #include "opengold/srd5.h"
 #include "combat_grid.h"
@@ -195,7 +196,7 @@ VitalState dying()
     return {0, false, "SRD11 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 1"};
 }
 
-void death_saves_at_victory()
+void bandaged_at_victory()
 {
     const auto rules = module();
     const auto person = hero();
@@ -217,23 +218,18 @@ void death_saves_at_victory()
             continue;
         const auto log = c->snapshot().log;
         const auto victory = std::find(log.begin(), log.end(), "Victory.");
-        const auto first_save = std::find_if(victory, log.end(),
-                                             [](const auto & line)
-        {
-            return line.starts_with("Fallen death save: ");
-        });
-        if (first_save == log.end())
+        const auto bandaged = std::find(victory, log.end(), "Fallen is bandaged and stable.");
+        if (bandaged == log.end())
             continue;
         witnessed = true;
         const auto fallen = unit(*c, 2);
-        check(fallen.dead || fallen.hit_points == 1 ||
+        check(!fallen.dead && fallen.hit_points == 0 &&
               fallen.persistent.description.find("Stable") != std::string::npos,
-              "Every remaining death save is rolled at once until the character is settled");
-        const auto outcome = fallen.dead ? "Fallen dies."
-                             : fallen.hit_points ? "Fallen regains 1 HP."
-                             : "Fallen is stable.";
-        check(std::find(first_save, log.end(), outcome) != log.end(),
-              "The combat log shows each roll and the outcome");
+              "A character still dying at victory is bandaged and Stable");
+        check(std::none_of(victory, log.end(), [](const auto & line)
+        {
+            return line.starts_with("Fallen death save: ");
+        }), "No death save is rolled after victory");
         check(!fallen.prone && !unit(*c, 1).prone, "Prone does not outlast combat");
         check(rules->restore(c->save())->save() == c->save(), "Resolved victory round trips");
     }
@@ -282,7 +278,7 @@ int main()
         codec();
         rest_ambush();
         downed_keeps_gear();
-        death_saves_at_victory();
+        bandaged_at_victory();
         campaign_death_saves();
         movement();
         std::cout << "Posture tests passed\n";

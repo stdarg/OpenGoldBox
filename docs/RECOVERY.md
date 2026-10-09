@@ -12,9 +12,9 @@ complete original campaign service coverage.
   restoration adds no roll, and campaign handoff preserves stabilization and
   spent resources. Stable status now records its one rolled recovery delay;
   combat time counts it down and restores 1 HP. [Recovery clocks](RECOVERY-CLOCKS.md)
-  also survive healing, damage and save/load. A won fight rolls every remaining
-  death save at once and logs each roll and outcome; outside combat a dying
-  member resolves the same way as soon as campaign time passes
+  also survive healing, damage and save/load. A won fight bandages whoever is
+  still dying, as the original game did; outside combat a dying member rolls
+  its remaining death saves at once as soon as campaign time passes
   ([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)).
   Campaign time advances Stable recovery for active members and reserves,
   interleaved with lasting effects; repeated combat snapshots cannot apply

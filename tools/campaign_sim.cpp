@@ -711,7 +711,7 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
         for (const auto record : paying)
             experience += original_xp(record);
         party->award_experience(experience, "sim:" + std::to_string(n));
-        // Dying members make their death saves; the Stable regain 1 HP in hours.
+        // The fight bandaged the dying; the Stable regain 1 HP in hours.
         party->advance_time(10);
         bool down = false;
         for (const auto id : living(*party))

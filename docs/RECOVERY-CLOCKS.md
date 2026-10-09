@@ -35,11 +35,10 @@ pointers and no Godot dependency.
 - A new encounter schedules death saves on its initiative slots. A restored
   encounter retains exact saved timing and adds no roll. After a death save,
   the next-turn countdown starts at six seconds and decrements with combat time.
-- When a fight is won, every creature still dying rolls its remaining death
-  saves at once until it is Stable or dead; a natural 20 restores 1 HP as usual.
-  The combat log lists each roll ("{name} death save: {roll}") and the outcome
-  ("{name} is stable.", "{name} dies." or "{name} regains 1 HP."). Everyone then
-  stands: Prone does not outlast combat. A defeat rolls nothing.
+- When a fight is won, every creature still dying is bandaged, as in the
+  original game: it becomes Stable and recovers on the usual Stable clock. The
+  combat log says "{name} is bandaged and stable." Everyone then stands: Prone
+  does not outlast combat. A defeat rolls nothing.
   ([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation))
 
 ## Campaign time
@@ -49,7 +48,7 @@ combat there is no six-second death-save timeline (F04c's scheduler is removed b
 SIMPLIFY-1): as soon as campaign time passes, an unstable living member rolls its
 remaining death saves at once, in entity order, before any other deadline. A
 member can be dying outside combat only through script damage, since a won fight
-already resolves its dying. Stable recovery heals exactly one HP at its saved
+bandages its dying. Stable recovery heals exactly one HP at its saved
 deadline and does not leave the character Prone. Simultaneous later events use
 entity ID, then effect application ID; death suppresses that creature's subsequent
 effect saving throws. Effect expiry still precedes an effect save at the same

@@ -293,11 +293,12 @@ Prone, Q38/Q39 and the rest of Q43 stand.
   the party rests again. The city watch's interruption says "The rest was
   interrupted. Rest again to recover." Camp and inn restrictions and the paid
   inn Long Rest are unchanged. See [Rest resources](REST-RESOURCES.md).
-- **Death saves outside combat:** when a fight is won, each dying character's
-  remaining death saves are rolled at once until it is Stable or dead (a
-  natural 20 restores 1 HP), and the combat log lists every roll and the
-  outcome. Outside combat a dying character is resolved the same way the moment
-  campaign time passes. Stable still recovers 1 HP after 1d4 hours. Combat
+- **Death saves outside combat:** when a fight is won, each character still
+  dying is bandaged and becomes Stable, as in the original game, where anyone
+  who survived a fight while dying was assumed bandaged afterward (the user,
+  2026-10-09, replacing the first rule, which rolled the remaining death saves
+  at once). Outside combat a dying character rolls its remaining death saves at
+  once the moment campaign time passes. Stable still recovers 1 HP after 1d4 hours. Combat
   death saves are unchanged. See [Recovery clocks](RECOVERY-CLOCKS.md).
 - **Thrown weapons work like ammunition:** throwing never removes or drops the
   weapon, which stays held or carried. There is no landing square, ground item,
@@ -402,7 +403,7 @@ the earlier authored Slums conversions.
   hidden archers are Norris's kobolds, as the SRD Kobold Warrior; corrected
   from +3 for bandits after checking the original cluebook), against a random conscious
   member, for the original dice as Piercing damage. A member it drops rolls
-  death saves at once, as after a victory. Surrendering to Norris (`ROB`) takes
+  death saves at once, as any dying member outside combat does. Surrendering to Norris (`ROB`) takes
   the money the script names but no items.
 - **Leaders** are their base stat block wearing the armor their original record
   readies. A leader shoots a bow only when its combat art shows one; otherwise

@@ -59,12 +59,20 @@ run, since a party nearly always has someone faster; parties as slow as their
 foes see them run instead (six Rogues: 3 escape a run, none surrender). Simulated
 parties never flee: with so few defeats, fleeing would change nothing measurable.
 
+Martial parties' remaining deaths (2026-10-09) were neither the fight areas nor
+their gear: shields taken off for bows preceded only 4 of 27 Fighter and
+Barbarian deaths, and the troll arena is won at every width. Three in four
+deaths came from rolling out the dying's death saves when a fight was won.
+Bandaging them instead, as the original game did, raised the flawless rate of
+six Fighters from 72% to 94%, six Monks from 76% to 96%, six Rogues from 64% to
+92% and six Wizards from 68% to 94%, with success unchanged.
+
 Each member sets out with its class kit (a Torch included) and 2 Oil and 2
 Alchemist's Fire, as if bought at New Phlan's general store; the simulator does
 not track gold.
 
-After a victory, dying members make their death saves and the Stable regain a
-Hit Point over four hours. Members level up with the default choices, with
+After a victory, dying members are bandaged (as in the game) and the Stable
+regain a Hit Point over four hours. Members level up with the default choices, with
 spells the policy uses well (Moonbeam, Spiritual Weapon, Hex, Healing Word and
 so on) swapped in where the rules accept them. The party takes a Short Rest
 when anyone is below half Hit Points and a Long Rest every third fight, when
