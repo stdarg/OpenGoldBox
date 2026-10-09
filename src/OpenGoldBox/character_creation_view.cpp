@@ -126,7 +126,8 @@ void CharacterCreationView::_bind_methods()
 
 void CharacterCreationView::_notification(int what)
 {
-    if (what == NOTIFICATION_RESIZED && ready_)
+    // Rows of buttons size to their labels, which change with the language.
+    if ((what == NOTIFICATION_RESIZED || what == NOTIFICATION_TRANSLATION_CHANGED) && ready_)
     {
         layout();
         queue_redraw();
@@ -338,24 +339,27 @@ void CharacterCreationView::layout()
         place("BonusLabel", Rect2(x + 20, y + 104, 106, 32));
         place("Bonus", Rect2(x + 126, y + 100, pw - 146, 36));
         place("Columns", Rect2(x + 20, y + 142, 110, 24));
-        place("DiceHeader", Rect2(x + 192, y + 142, 86, 24));
+        place("DiceHeader", Rect2(x + 206, y + 142, 76, 24));
         place("DiceHint", Rect2(x + 20, y + 166, 254, 30));
         get_node<Label>("DiceHint")->add_theme_font_size_override("font_size", 12);
         place("TargetsTitle", Rect2(x + 282, y + 142, pw - 302, 28));
-        place("Targets", Rect2(x + 282, y + 178, pw - 302, ph - 336));
-        place("TargetHint", Rect2(x + 282, y + ph - 150, pw - 302, 90));
+        // The hint wraps to several lines in a narrow window, longer in Spanish.
+        place("Targets", Rect2(x + 282, y + 178, pw - 302, ph - 364));
+        place("TargetHint", Rect2(x + 282, y + ph - 178, pw - 302, 118));
+        get_node<Label>("TargetHint")->add_theme_font_size_override("font_size", 13);
         for (int i = 0; i < 6; ++i)
         {
             const double row = y + 200 + i * 58;
-            place(gs("Ability" + std::to_string(i)), Rect2(x + 20, row, 98, 32));
+            // Wide enough for the longest name in any language ("Constitución").
+            place(gs("Ability" + std::to_string(i)), Rect2(x + 20, row, 112, 32));
             get_node<Button>(gs("Ability" + std::to_string(i)))
             ->add_theme_font_size_override("font_size", 13);
-            place(gs("Score" + std::to_string(i)), Rect2(x + 126, row, 60, 32));
-            place(gs("Dice" + std::to_string(i)), Rect2(x + 202, row, 44, 32));
+            place(gs("Score" + std::to_string(i)), Rect2(x + 140, row, 60, 32));
+            place(gs("Dice" + std::to_string(i)), Rect2(x + 216, row, 44, 32));
             place(gs("BonusScore" + std::to_string(i)), Rect2(x + 20, row + 34, 100, 24));
             get_node<Label>(gs("BonusScore" + std::to_string(i)))
             ->add_theme_font_size_override("font_size", 11);
-            place(gs("Warning" + std::to_string(i)), Rect2(x + 126, row + 32, 144, 26));
+            place(gs("Warning" + std::to_string(i)), Rect2(x + 140, row + 32, 130, 26));
             get_node<Label>(gs("Warning" + std::to_string(i)))
             ->add_theme_constant_override("line_spacing", -3);
         }
@@ -410,9 +414,10 @@ void CharacterCreationView::layout()
     place("ActionLabel", Rect2(px + 172, py + 488, 120, 28));
     get_node<Control>("PreviewSummary")->set_visible(ph >= 656);
     place("PreviewSummary", Rect2(px + 18, py + 596, 282, std::max(1.0, ph - 604)));
-    place("Back", Rect2(x, h - 60, 150, 38));
-    place("Next", Rect2(x + pw - 190, h - 60, 190, 38));
-    place("Status", Rect2(x + 160, h - 62, std::max(1.0, pw - 360), 44));
+    // Between the page (ending 76 px up) and the footer (25 px up).
+    place("Back", Rect2(x, h - 64, 150, 38));
+    place("Next", Rect2(x + pw - 190, h - 64, 190, 38));
+    place("Status", Rect2(x + 160, h - 66, std::max(1.0, pw - 360), 40));
     place("Footer", Rect2(24, h - 25, w - 48, 22));
     place("Modifiers", Rect2(x + 20, y + ph - 60, 150, 36));
     place("SavingThrows", Rect2(x + 180, y + ph - 60, 160, 36));

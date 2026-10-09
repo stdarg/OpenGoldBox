@@ -436,15 +436,24 @@ void CombatView::layout()
                  left_width = width - sidebar - 72;
     const auto board = demo_ && demo_->has_combat() ? demo_->combat().snapshot().battlefield
                        : Battlefield{12, 9, {}};
-    const double weapon_height = get_node<OptionButton>("Weapons")->is_visible() ? 44 : 0;
-    const double item_height = get_node<OptionButton>("ItemAction")->is_visible() ? 44 : 0;
+    bool party_controls = false;
+    if (demo_ && demo_->has_combat())
+    {
+        const auto state = demo_->combat().snapshot();
+        party_controls = state.outcome == Outcome::ongoing &&
+                         std::any_of(state.combatants.begin(), state.combatants.end(),
+                                     [&](const auto & actor)
+        {
+            return actor.id == state.actor && actor.side == 0;
+        });
+    }
+    // The battlefield takes what the controls and a readable log leave: the
+    // prompt and turn and two log lines.
+    const double minimum_log_height = 110;
+    laid_out_controls_height_ = controls_height(party_controls);
     const double battlefield_height =
-        std::min((height - 180) * .85, get_node<OptionButton>("ThrownWeapon")->is_visible()
-                 ? height - 348
-                 : get_node<Button>("StandUp")->is_visible()
-                 ? height - 304
-                 : (height - 180) * .85) -
-        weapon_height - item_height;
+        std::min((height - 180) * .85,
+                 height - 96 - laid_out_controls_height_ - minimum_log_height);
     base_tile_ = std::max(left_width / board.width, battlefield_height / board.height);
     board_rect_ = Rect2(24, 16, left_width, battlefield_height);
     const double right = width - sidebar - 24;
@@ -501,17 +510,6 @@ void CombatView::layout()
     place("Help", Rect2(right, 700, sidebar, height - 746));
     place("Log", Rect2(24, board_rect_.get_end().y + 16, left_width,
                        height - board_rect_.get_end().y - 64));
-    bool party_controls = false;
-    if (demo_ && demo_->has_combat())
-    {
-        const auto state = demo_->combat().snapshot();
-        party_controls = state.outcome == Outcome::ongoing &&
-                         std::any_of(state.combatants.begin(), state.combatants.end(),
-                                     [&](const auto & actor)
-        {
-            return actor.id == state.actor && actor.side == 0;
-        });
-    }
     layout_reaction_controls(party_controls);
     place("Footer", Rect2(24, height - 34, width - 48, 24));
     for (unsigned slot = 0; slot < 8; ++slot)
@@ -523,6 +521,28 @@ void CombatView::layout()
     layout_status();
 }
 
+// How far below the battlefield the log starts: the rows of controls showing.
+double CombatView::controls_height(bool show_controls) const
+{
+    const double weapon_height = get_node<OptionButton>("Weapons")->is_visible() ? 44 : 0;
+    const bool rush = get_node<Button>("AdrenalineRush")->is_visible();
+    const bool spells = get_node<OptionButton>("Cantrip")->is_visible();
+    const bool surge = get_node<Button>("ActionSurge")->is_visible();
+    const bool cunning = get_node<OptionButton>("CunningAction")->is_visible();
+    const bool aid = get_node<Button>("Stabilize")->is_visible();
+    const bool standing = get_node<Button>("StandUp")->is_visible();
+    double inset =
+        weapon_height + (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 220
+                         : standing                                           ? 176
+                         : (cunning || aid)
+                         ? 132
+                         : (show_controls ? 44 : 0) + ((rush || spells || surge) ? 44 : 0));
+    // The Items row takes the first free row, and the log moves below it.
+    if (get_node<OptionButton>("ItemAction")->is_visible())
+        inset += 44;
+    return inset;
+}
+
 void CombatView::layout_reaction_controls(bool show_controls)
 {
     const double top = board_rect_.get_end().y + 16;
@@ -531,12 +551,8 @@ void CombatView::layout_reaction_controls(bool show_controls)
     get_node<Label>("WeaponLabel")->set_size(Vector2(180, 36));
     get_node<OptionButton>("Weapons")->set_position(Vector2(214, top + 88));
     get_node<OptionButton>("Weapons")->set_size(Vector2(450, 36));
-    const bool rush = get_node<Button>("AdrenalineRush")->is_visible();
-    const bool spells = get_node<OptionButton>("Cantrip")->is_visible();
-    const bool surge = get_node<Button>("ActionSurge")->is_visible();
     const bool cunning = get_node<OptionButton>("CunningAction")->is_visible();
     const bool aid = get_node<Button>("Stabilize")->is_visible();
-    const bool standing = get_node<Button>("StandUp")->is_visible();
     get_node<Button>("Stabilize")->set_position(Vector2(704, top + weapon_height + 88));
     get_node<Button>("Stabilize")->set_size(Vector2(110, 36));
     get_node<Button>("StandUp")->set_position(Vector2(24, top + weapon_height + 132));
@@ -547,21 +563,16 @@ void CombatView::layout_reaction_controls(bool show_controls)
     get_node<OptionButton>("ThrownWeapon")->set_size(Vector2(360, 36));
     get_node<Button>("Throw")->set_position(Vector2(604, top + weapon_height + 176));
     get_node<Button>("Throw")->set_size(Vector2(110, 36));
-    double inset =
-        weapon_height + (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 220
-                         : standing                                           ? 176
-                         : (cunning || aid)
-                         ? 132
-                         : (show_controls ? 44 : 0) + ((rush || spells || surge) ? 44 : 0));
-    // The Items row takes the first free row, and the log moves below it.
-    get_node<Label>("ItemActionLabel")->set_position(Vector2(24, top + inset));
+    const double inset = controls_height(show_controls);
+    // The Items row takes the last row, right above the log.
+    const double items_row =
+        inset - (get_node<OptionButton>("ItemAction")->is_visible() ? 44 : 0);
+    get_node<Label>("ItemActionLabel")->set_position(Vector2(24, top + items_row));
     get_node<Label>("ItemActionLabel")->set_size(Vector2(200, 36));
-    get_node<OptionButton>("ItemAction")->set_position(Vector2(234, top + inset));
+    get_node<OptionButton>("ItemAction")->set_position(Vector2(234, top + items_row));
     get_node<OptionButton>("ItemAction")->set_size(Vector2(360, 36));
-    get_node<Button>("UseItemAction")->set_position(Vector2(604, top + inset));
+    get_node<Button>("UseItemAction")->set_position(Vector2(604, top + items_row));
     get_node<Button>("UseItemAction")->set_size(Vector2(110, 36));
-    if (get_node<OptionButton>("ItemAction")->is_visible())
-        inset += 44;
     get_node<Label>("CunningActionLabel")->set_position(Vector2(24, top + weapon_height + 88));
     get_node<Label>("CunningActionLabel")->set_size(Vector2(aid ? 150 : 180, 36));
     get_node<OptionButton>("CunningAction")
@@ -2277,7 +2288,12 @@ void CombatView::refresh()
         const bool party_turn = loaded && s.outcome == Outcome::ongoing && player;
         const bool reaction =
             loaded && s.outcome == Outcome::ongoing && s.reaction_pending && player;
-        layout_reaction_controls(party_turn);
+        // A row of controls appearing or going resizes the battlefield, so
+        // the log keeps its room.
+        if (controls_height(party_turn) != laid_out_controls_height_)
+            layout();
+        else
+            layout_reaction_controls(party_turn);
         get_node<Button>("End")->set_visible(party_turn && !reaction && !flee_mode_);
         // Flee is offered while any party member could still run off the field.
         get_node<Button>("Flee")->set_visible(party_turn && !reaction && !flee_mode_ &&

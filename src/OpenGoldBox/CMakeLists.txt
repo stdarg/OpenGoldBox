@@ -156,6 +156,8 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_items PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
     opengold_godot_test(flee flee_view_tests "Flee controls passed" "--playtest-fixtures=${PROJECT_BINARY_DIR}/playtest-fixtures")
     set_tests_properties(opengold_godot_flee PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
+    opengold_godot_test(ui_audit ui_audit "UI audit passed" "--playtest-fixtures=${PROJECT_BINARY_DIR}/playtest-fixtures")
+    set_tests_properties(opengold_godot_ui_audit PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
     opengold_godot_test(champion champion_view_tests "Champion controls passed" "--champion-fixtures=${PROJECT_BINARY_DIR}/champion-fixtures")
     set_tests_properties(opengold_godot_champion PROPERTIES FIXTURES_REQUIRED "godot_project;champion_fixtures")
     opengold_godot_test(shocking shocking_view_tests "Shocking Grasp view checks passed" "--shocking-fixtures=${PROJECT_BINARY_DIR}/shocking-fixtures")
@@ -215,6 +217,15 @@ if(OPENGOLD_BUILD_TESTS)
         "-DWORK=${CMAKE_BINARY_DIR}/slums-encounter"
         -P "${PROJECT_SOURCE_DIR}/tests/slums_encounter.cmake")
     set_tests_properties(opengold_godot_slums_encounter PROPERTIES FIXTURES_REQUIRED godot_project
+        TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    add_test(NAME opengold_godot_slums_ui_audit COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DPLAYTEST_FIXTURES=${PROJECT_BINARY_DIR}/playtest-fixtures"
+        "-DWORK=${CMAKE_BINARY_DIR}/slums-ui-audit"
+        -P "${PROJECT_SOURCE_DIR}/tests/ui_audit.cmake")
+    set_tests_properties(opengold_godot_slums_ui_audit PROPERTIES
+        FIXTURES_REQUIRED "godot_project;playtest_fixtures"
         TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
 endif()
 

@@ -169,20 +169,31 @@ void CharacterCreationView::party_layout()
     place("PartyPanel/ReadyLabel", Rect2(w - 284, 488, 120, 24));
     place("PartyPanel/ActionLabel", Rect2(w - 140, 488, 120, 24));
     place("PartyPanel/Inventory", Rect2(350, h - 280, w - 374, 96));
-    const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
-            "Unequip", "Explore", "Combat", "Close"};
-    const double bw = (w - 64) / 5;
-    for (unsigned i = 0; i < buttons.size(); ++i)
-        place((std::string("PartyPanel/") + buttons[i]).c_str(),
-              Rect2(24 + (i % 5) * (bw + 4), h - 125 + (i / 5) * 44, bw, 36));
+    // A row of buttons across the window: each as wide as its label needs
+    // (longer in some languages) plus an equal share of the room left.
+    const auto place_row = [&](std::initializer_list<const char *> names, double y)
+    {
+        double needed = 0;
+        for (const auto *name : names)
+            needed += get_node<Control>(gs("PartyPanel/") + name)->get_combined_minimum_size().x;
+        const double gap = 4, spare = std::max(0.0, w - 48 - needed - gap * (names.size() - 1));
+        double x = 24;
+        for (const auto *name : names)
+        {
+            auto *button = get_node<Control>(gs("PartyPanel/") + name);
+            const double width = button->get_combined_minimum_size().x + spare / names.size();
+            button->set_position(Vector2(x, y));
+            button->set_size(Vector2(width, 36));
+            x += width + gap;
+        }
+    };
+    place_row({"Create", "Remove", "Rejoin", "Recruit", "Equip"}, h - 125);
+    place_row({"Unequip", "Explore", "Combat", "Close", "Modifiers", "SavingThrows"}, h - 81);
     place("PartyPanel/Save", Rect2(w - 520, 24, 140, 36));
     place("PartyPanel/Load", Rect2(w - 370, 24, 140, 36));
     place("PartyPanel/Pool", Rect2(w - 220, 24, 196, 36));
     pool_layout();
     place("PartyPanel/Status", Rect2(24, h - 39, w - 48, 32));
-    place("PartyPanel/Modifiers", Rect2(24 + 4 * (bw + 4), h - 81, bw * 0.42f, 36));
-    place("PartyPanel/SavingThrows",
-          Rect2(28 + 4 * (bw + 4) + bw * 0.42f, h - 81, bw * 0.58f - 4, 36));
     for (const auto *name :
             {"CampaignTown", "CampaignCombat"
             })
