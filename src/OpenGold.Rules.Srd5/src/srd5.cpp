@@ -22,6 +22,7 @@
 #include <utility>
 #include <array>
 #include <cmath>
+#include <exception>
 #include <fstream>
 #include <iomanip>
 #include <limits>
@@ -1917,16 +1918,22 @@ class Session final : public CombatSession
       public:
         InvisibilityEnds(Session &session, const Actor &caster)
             : session_(session), id_(caster.source.id),
-              invisible_(detail::has_effect(caster.effects, detail::EffectKind::invisible))
+              invisible_(detail::has_effect(caster.effects, detail::EffectKind::invisible)),
+              exceptions_(std::uncaught_exceptions())
         {
         }
 
         InvisibilityEnds(const InvisibilityEnds &) = delete;
         InvisibilityEnds &operator=(const InvisibilityEnds &) = delete;
 
+        // Only an action that completes ends the Invisibility. While an
+        // exception unwinds the action (a ReactionQuestion undoes it to ask a
+        // reaction), the session is about to be restored, and a second
+        // exception from here would terminate the program (Effective C++
+        // Item 8).
         ~InvisibilityEnds()
         {
-            if (invisible_)
+            if (invisible_ && std::uncaught_exceptions() == exceptions_)
                 session_.end_invisibility(id_);
         }
 
@@ -1934,6 +1941,7 @@ class Session final : public CombatSession
         Session &session_;
         EntityId id_;
         bool invisible_;
+        int exceptions_;
     };
     void end_invisibility(EntityId id);
     // The Barbarian's Rage effect, if it is raging; borrowed from its effects.

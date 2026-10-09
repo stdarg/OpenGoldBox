@@ -782,6 +782,39 @@ void see_invisibility_checks()
     check(submit(*c, "magic_missile", 98), "See Invisibility reveals the foe");
 }
 
+// A reaction is asked mid-spell by undoing the spell and replaying it with the
+// answer. Invisibility ends with the replayed spell, once, not while the
+// spell is being undone.
+void invisible_caster_awaits_a_reaction()
+{
+    auto module = rules();
+    const auto hero = wizard(1, {"magic_missile", "shield"});
+    const auto foe = wizard(3, {"magic_missile"}, {"invisibility", "shatter"});
+    const auto profile = [&](const Character &who)
+    {
+        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+    };
+    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", 1, {8, 1}, profile(foe)}
+        }},
+    5);
+    reach(*c, 98);
+    check(submit(*c, "invisibility", 98), "The foe turns Invisible");
+    reach(*c, 1);
+    check(submit(*c, "end"), "The Wizard waits");
+    reach(*c, 98);
+    check(submit(*c, "magic_missile", 1) && c->snapshot().reaction_pending,
+          "The Invisible foe's Magic Missile asks the Wizard about Shield");
+    check(has_condition(*c, 98, "Invisible") && !logged(*c, "Foe is no longer Invisible."),
+          "While the Wizard decides, the foe is still Invisible");
+    check(submit(*c, "decline"), "The Wizard declines");
+    const auto log = c->snapshot().log;
+    check(std::count(log.begin(), log.end(), "Foe is no longer Invisible.") == 1 &&
+          !has_condition(*c, 98, "Invisible"),
+          "The replayed spell ends the Invisibility once");
+}
+
 void darkness_checks()
 {
     auto module = rules();
@@ -1017,6 +1050,7 @@ int main()
         color_spray_checks();
         grease_checks();
         grease_outlasts_its_fled_caster();
+        invisible_caster_awaits_a_reaction();
         web_checks();
         shield_checks();
         shield_missile_checks();
