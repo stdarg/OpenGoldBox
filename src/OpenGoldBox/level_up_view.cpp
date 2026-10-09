@@ -24,6 +24,7 @@
 #include "opengold/srd5.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
+#include "scoped_flag.h"
 #include <algorithm>
 
 using namespace godot;

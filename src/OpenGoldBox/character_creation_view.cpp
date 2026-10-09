@@ -8,6 +8,7 @@
 #include "opengold/srd5.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
+#include "scoped_flag.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/check_box.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
