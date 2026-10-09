@@ -447,8 +447,13 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         }
     })
     reply.writes.push_back(write);
+    // The party has already lost members and won rewards above; a rejected
+    // result rolls the whole event back rather than leaving those half applied.
     if (!machine_.resume_host(combat_request_, reply))
-        throw EclError("Combat result rejected by original script");
+    {
+        fail("Combat result rejected by original script");
+        return true;
+    }
     combat_request_ = 0;
     encounter_.reset();
     monster_picture_id_.reset();
