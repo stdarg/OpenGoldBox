@@ -109,6 +109,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_guarded_handler_tests "${PROJECT_SOURCE_DIR}/tests/guarded_handler_tests.cpp")
     target_compile_definitions(opengold_guarded_handler_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_guarded_handler_tests COMMAND opengold_guarded_handler_tests)
+    add_executable(opengold_monster_picture_tests "${PROJECT_SOURCE_DIR}/tests/monster_picture_tests.cpp")
+    target_compile_definitions(opengold_monster_picture_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_monster_picture_tests COMMAND opengold_monster_picture_tests)
     add_test(NAME opengold_screenshot_tool_tests
         COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tests/screenshot_tool_tests.py")
     # These checks use synthetic combat and first-run setup, without original

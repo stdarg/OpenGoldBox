@@ -100,8 +100,11 @@ class RolfTourView : public godot::Control
     // Complete NPC portraits by file, loaded when first shown.
     std::map<std::string, godot::Ref<godot::Texture2D>, std::less<>> npc_portraits_;
     // Monster close-up looping before combat; the pointer identifies the frames shown.
+    // Only compared with the session's current close-up, never read: the
+    // frames it points to go when the session is reset or replaced.
     const std::vector<opengold::AnimationFrame> *shown_monster_picture_{};
     std::vector<godot::Ref<godot::ImageTexture>> monster_frames_;
+    std::vector<std::uint32_t> monster_delays_;
     double monster_picture_seconds_{};
     unsigned monster_picture_check_frames_{};
     std::optional<opengold::por::PartyPose> rendered_pose_;
@@ -130,6 +133,7 @@ class RolfTourView : public godot::Control
     void buyer_key(godot::Key keycode);
     void sync_monster_picture();
     [[nodiscard]] std::size_t current_monster_frame() const;
+    void forget_monster_picture();
     void dismiss_monster_picture();
     void restart();
     void next();

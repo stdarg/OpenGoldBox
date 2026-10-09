@@ -10,6 +10,7 @@
 #include "opengold/srd5.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
+#include "monster_picture_timing.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -246,6 +247,7 @@ void RolfTourView::layout()
 
 void RolfTourView::restart()
 {
+    forget_monster_picture();
     try
     {
         error_ = "";
@@ -297,6 +299,7 @@ void RolfTourView::restart()
     catch (const std::exception &error)
     {
         session_.reset();
+        forget_monster_picture();
         error_ = String::utf8(error.what());
     }
     refresh();
@@ -783,35 +786,29 @@ void RolfTourView::sync_monster_picture()
     const auto *picture = session_ ? session_->monster_picture() : nullptr;
     if (picture == shown_monster_picture_)
         return;
+    forget_monster_picture();
     shown_monster_picture_ = picture;
-    monster_frames_.clear();
-    monster_picture_seconds_ = 0;
-    monster_picture_check_frames_ = 0;
     if (!picture)
         return;
     for (const auto &frame : *picture)
+    {
         monster_frames_.push_back(presentation::image_texture(frame.image));
+        monster_delays_.push_back(frame.delay);
+    }
+}
+
+void RolfTourView::forget_monster_picture()
+{
+    shown_monster_picture_ = nullptr;
+    monster_frames_.clear();
+    monster_delays_.clear();
+    monster_picture_seconds_ = 0;
+    monster_picture_check_frames_ = 0;
 }
 
 std::size_t RolfTourView::current_monster_frame() const
 {
-    // Frame delays count ticks of the PC's 18.2 Hz timer. Zero-tick frames are
-    // passed over, so records like the orc alternate between two held poses.
-    constexpr double tick_seconds = 1.0 / 18.2;
-    std::uint64_t total_ticks = 0;
-    for (const auto &frame : *shown_monster_picture_)
-        total_ticks += frame.delay;
-    if (!total_ticks)
-        return 0;
-    auto tick = static_cast<std::uint64_t>(monster_picture_seconds_ / tick_seconds) % total_ticks;
-    for (std::size_t n = 0; n < shown_monster_picture_->size(); ++n)
-    {
-        const auto delay = (*shown_monster_picture_)[n].delay;
-        if (tick < delay)
-            return n;
-        tick -= delay;
-    }
-    return 0;
+    return presentation::monster_frame_at(monster_delays_, monster_picture_seconds_);
 }
 
 void RolfTourView::dismiss_monster_picture()
@@ -853,6 +850,7 @@ void RolfTourView::refresh()
         catch (const std::exception &error)
         {
             session_.reset();
+            forget_monster_picture();
             error_ = String::utf8(error.what());
         }
     }
