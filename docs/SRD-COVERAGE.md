@@ -74,6 +74,9 @@ of running back to the edge between its attacks.
 Rules 0.6.151 lists each creature's spells in the combat snapshot, so Quick
 combat can leave them out
 ([QUICK-1](SRD-DECISIONS.md#quick-1-2026-10-09-quick-combat-as-the-original-game-had-it)).
+Rules 0.6.152 keeps a Grease's spell DC in the Grease itself, so the Grease
+lasts its minute after its caster flees the fight; combat checkpoints become
+`OGCOMBAT 47`.
 
 ## Slums set-encounter creatures
 

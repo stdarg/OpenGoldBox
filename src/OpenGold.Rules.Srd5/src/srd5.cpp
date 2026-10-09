@@ -253,7 +253,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 46;
+constexpr unsigned checkpoint_format = 47;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1681,6 +1681,9 @@ class Session final : public CombatSession
         ZoneKind kind{};
         std::vector<Cell> cells;
         std::uint64_t ends_ms{}; // combat time it vanishes; 0 while held by Concentration
+        // Grease outlasts a caster who runs off the field, so a zone keeps the
+        // DC its creatures save against rather than looking the caster up.
+        int save_dc{};
     };
     std::vector<Zone> zones_;
     std::vector<ChampionMove> champion_offers_;
@@ -1846,20 +1849,18 @@ class Session final : public CombatSession
 
     const Actor &actor(EntityId id) const
     {
-        return *std::find_if(actors_.begin(), actors_.end(),
-                             [&](const auto & a)
+        const auto found = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
         {
             return a.source.id == id;
         });
+        if (found == actors_.end())
+            throw std::logic_error("No combatant has id " + std::to_string(id));
+        return *found;
     }
 
     Actor &actor(EntityId id)
     {
-        return *std::find_if(actors_.begin(), actors_.end(),
-                             [&](const auto & a)
-        {
-            return a.source.id == id;
-        });
+        return const_cast<Actor &>(std::as_const(*this).actor(id));
     }
 
     int roll(int sides)
@@ -5593,9 +5594,7 @@ bool Session::spring_zone(const Zone &zone, Actor &creature)
              : detail::has_effect(creature.effects, detail::EffectKind::webbed) ||
              !detail::can_apply(creature.effects)))
         return false;
-    const auto &caster = actor(zone.caster);
-    const int dc = spell_dc(caster);
-    if (saving_throw_succeeds(creature, detail::Ability::dexterity, dc))
+    if (saving_throw_succeeds(creature, detail::Ability::dexterity, zone.save_dc))
         return false;
     if (grease)
     {
@@ -5604,8 +5603,10 @@ bool Session::spring_zone(const Zone &zone, Actor &creature)
         {"{name} slips and falls Prone.", {{"name", creature.source.name}}});
         return true;
     }
-    detail::apply_entangle(creature.effects, scope_, caster.source.id, caster.source.name, dc,
-                           detail::EffectKind::webbed);
+    // Web needs Concentration, so its caster is still on the field.
+    const auto &caster = actor(zone.caster);
+    detail::apply_entangle(creature.effects, scope_, caster.source.id, caster.source.name,
+                           zone.save_dc, detail::EffectKind::webbed);
     log(creature.source.name + " is Restrained by the webs.",
     {"{name} is Restrained by the webs.", {{"name", creature.source.name}}});
     return true;
@@ -5771,7 +5772,8 @@ void Session::cast_area()
                       : spell.rider == detail::Rider::web     ? ZoneKind::web
                       : spell.rider == detail::Rider::spike_growth ? ZoneKind::spikes
                       : ZoneKind::plants;
-    zones_.push_back({a.source.id, kind, cells, kind == ZoneKind::grease ? elapsed_ms_ + 60000 : 0});
+    zones_.push_back({a.source.id, kind, cells, kind == ZoneKind::grease ? elapsed_ms_ + 60000 : 0,
+                      spell_dc(a)});
     if (kind == ZoneKind::grease || kind == ZoneKind::web)
     {
         const auto zone = zones_.back();
@@ -8791,7 +8793,7 @@ std::string Session::save() const
     for (const auto &zone : zones_)
     {
         out << ' ' << zone.caster << ' ' << unsigned(zone.kind) << ' ' << zone.ends_ms << ' '
-            << zone.cells.size();
+            << zone.save_dc << ' ' << zone.cells.size();
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
     }
@@ -9647,9 +9649,11 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         Zone zone;
         std::size_t cells{};
         unsigned kind{};
-        input >> zone.caster >> kind >> zone.ends_ms >> cells;
+        input >> zone.caster >> kind >> zone.ends_ms >> zone.save_dc >> cells;
         // Only Grease keeps time; every other zone ends with Concentration.
-        if (!input || !known_actor(zone.caster) || kind > unsigned(ZoneKind::spikes) ||
+        // Grease outlasts a caster who has since run off the field.
+        if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
+                kind > unsigned(ZoneKind::spikes) ||
                 (kind == unsigned(ZoneKind::grease)) != (zone.ends_ms != 0) || !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
@@ -11805,7 +11809,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.151", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.152", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

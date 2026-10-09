@@ -168,7 +168,7 @@ void troll_burns()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "Fire fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 46 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 47 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A blocked Regeneration survives a checkpoint");
     check(submit(*restored, "end", first) && submit(*restored, "end", second),
