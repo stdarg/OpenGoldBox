@@ -15,6 +15,7 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <string_view>
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -814,7 +815,7 @@ void class_weapon_proficiency()
               "Rogue and Monk do not gain all martial weapons");
         // Martial Arts: a Monk swings the mace, a Monk weapon, with Dexterity.
         check(rules->character_profile(pc.sheet(), mace).melee_attack_bonus ==
-              (expected.klass == "monk" ? 5 : 4),
+              (std::string_view{expected.klass} == "monk" ? 5 : 4),
               "Every starting class retains simple weapon proficiency");
     }
     for (const std::string klass :

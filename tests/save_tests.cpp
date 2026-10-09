@@ -405,7 +405,7 @@ void roundtrip(const std::filesystem::path &directory)
     settle(town);
     town.explore(por::ExplorationCommand::look);
     settle(town);
-    auto path = directory / std::filesystem::u8path("named save ü.ogs");
+    auto path = directory / std::filesystem::path(u8"named save \u00FC.ogs");
     const auto saved = encode_campaign(*party, &town, "fixture-v1");
     write_campaign_file(path, saved);
     auto base = prototype();

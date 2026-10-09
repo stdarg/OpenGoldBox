@@ -81,6 +81,15 @@ than every change:
 .\build.cmd debug
 ```
 
+Pass `--werror` to either script, alone or beside a preset name, to make every
+compiler warning fail the build. The native build is warning-free with Apple
+Clang; leaving the flag off on a later run turns warnings back into warnings:
+
+```bash
+./build.sh --werror
+./build.sh --werror debug
+```
+
 When running these by hand, check the build output for errors before trusting
 `ctest`: a target that fails to relink leaves its previous binary in place, and
 `ctest` then reports a pass against stale code.

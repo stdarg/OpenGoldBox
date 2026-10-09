@@ -711,8 +711,8 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::area,
         .range = 30,
-        .rider = Rider::misty_step,
         .bonus_action = true,
+        .rider = Rider::misty_step,
         .area = 5},
     // SRD 5.2.1 p. 107: 4d4 Acid on a hit and 2d4 more at the end of the
     // target's next turn; half the initial damage on a miss.
@@ -738,9 +738,9 @@ inline constexpr std::array spell_table
         .range = 120,
         .requires_sight = true,
         .save = Ability::wisdom,
+        .half_on_success = true,
         .damage = DamageType::psychic,
         .dice = {3, 8, 0},
-        .half_on_success = true,
         .concentration = true},
     // SRD 5.2.1 p. 157: a failed Constitution save enfeebles the target; a
     // success gives Disadvantage on its next attack roll.
@@ -825,9 +825,9 @@ inline constexpr std::array spell_table
         .target = SpellTarget::area,
         .range = 60,
         .save = Ability::dexterity,
+        .half_on_success = true,
         .damage = DamageType::fire,
         .dice = {2, 6, 0},
-        .half_on_success = true,
         .rider = Rider::flaming_sphere,
         .concentration = true,
         .area = 5},
@@ -876,9 +876,9 @@ inline constexpr std::array spell_table
         .target = SpellTarget::area,
         .range = 15,
         .save = Ability::dexterity,
+        .half_on_success = true,
         .damage = DamageType::fire,
         .dice = {3, 6, 0},
-        .half_on_success = true,
         .cone = 15},
     // Land's Aid (SRD 5.2.1 p. 46), aimed by a Circle of the Land Druid as
     // "lands_aid" with a use of Wild Shape. No one learns it as a spell.
@@ -957,9 +957,9 @@ inline constexpr std::array spell_table
         .target = SpellTarget::enemy,
         .range = 60,
         .save = Ability::dexterity,
+        .half_on_success = true,
         .damage = DamageType::fire,
         .dice = {2, 10, 0},
-        .half_on_success = true,
         .upcast = {.extra_dice = 1}},
     // SRD 5.2.1 p. 171: a Wisdom save against 1d6 Psychic; a failure also
     // gives Disadvantage on the target's next attack roll.

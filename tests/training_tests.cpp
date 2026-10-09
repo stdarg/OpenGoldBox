@@ -610,12 +610,12 @@ void grants_and_checks()
     rejects(
         [&]
     {
-        creation->ability_check(sheet, 6, "stealth");
+        (void)creation->ability_check(sheet, 6, "stealth");
     });
     rejects(
         [&]
     {
-        creation->ability_check(sheet, 1, "unknown");
+        (void)creation->ability_check(sheet, 1, "unknown");
     });
     // Independent proficiency table boundaries. This query is shared math,
     // not a claim that Rogue advancement beyond level one is integrated.
