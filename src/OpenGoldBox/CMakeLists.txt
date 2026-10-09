@@ -67,7 +67,11 @@ foreach(source IN LISTS portrait_sources)
         DEPENDS "${source}" VERBATIM)
     list(APPEND portrait_outputs "${output}")
 endforeach()
-foreach(name rolf norris-the-gray)
+foreach(name rolf norris-the-gray
+    phlan-arms-13-08 phlan-arms-08-11 phlan-arms-11-12 phlan-arms-09-13
+    phlan-general-15-08 phlan-general-09-10 phlan-general-12-10
+    phlan-general-09-11 phlan-general-11-11
+    phlan-silver-11-10 phlan-silver-10-13 phlan-jeweler-08-10)
     set(source "${PROJECT_SOURCE_DIR}/art/portraits/NPCs/${name}.png")
     set(output "${game_project}/bin/portraits/NPCs/${name}.png")
     add_custom_command(OUTPUT "${output}"

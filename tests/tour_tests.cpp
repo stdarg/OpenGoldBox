@@ -1,5 +1,6 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/exploration_view.h"
+#include "opengold/npc_portraits.h"
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
@@ -7,6 +8,7 @@
 #include <iostream>
 #include <iterator>
 #include <queue>
+#include <string_view>
 
 using namespace opengold::por;
 
@@ -446,18 +448,36 @@ void installed_town(const RolfTourSession &finished)
         std::cout << "Town unsupported branch: " << d << '\n';
     check(events.size() >= 30 && scripts == std::set<unsigned> {0, 8, 11},
           "Walkable town includes City Hall and training scripts");
-    // The general store at (15,8) adds the game's Torches, Acid and Alchemist's
-    // Fire to its seven original items.
-    for (const auto target : std::array<std::array<unsigned, 3>, 4>
-{
-    {{15, 8, 10}, {8, 10, 11}, {13, 8, 57}, {11, 10, 13}}
-})
+    // The cluebook marks twelve distinct shops, even where stock lists repeat.
+    struct ShopCase
+    {
+        unsigned x, y, stock;
+        std::string_view portrait;
+    };
+    // Every general store adds Torches, Acid and Alchemist's Fire to its seven
+    // original items.
+    for (const auto target : std::array{
+             ShopCase{13, 8, 57, "NPCs/phlan-arms-13-08.png"},
+             ShopCase{8, 11, 57, "NPCs/phlan-arms-08-11.png"},
+             ShopCase{11, 12, 57, "NPCs/phlan-arms-11-12.png"},
+             ShopCase{9, 13, 57, "NPCs/phlan-arms-09-13.png"},
+             ShopCase{15, 8, 10, "NPCs/phlan-general-15-08.png"},
+             ShopCase{9, 10, 10, "NPCs/phlan-general-09-10.png"},
+             ShopCase{12, 10, 10, "NPCs/phlan-general-12-10.png"},
+             ShopCase{9, 11, 10, "NPCs/phlan-general-09-11.png"},
+             ShopCase{11, 11, 10, "NPCs/phlan-general-11-11.png"},
+             ShopCase{11, 10, 13, "NPCs/phlan-silver-11-10.png"},
+             ShopCase{10, 13, 13, "NPCs/phlan-silver-10-13.png"},
+             ShopCase{8, 10, 11, "NPCs/phlan-jeweler-08-10.png"},
+         })
     {
         auto town = finished;
-        check(walk_to(town, target[0], target[1], true), "Walk to original shop");
+        check(walk_to(town, target.x, target.y, true), "Walk to original shop");
         check(town.snapshot().phase == TourPhase::shopping,
               "Entering shop and answering Yes opens actual stock");
-        check(town.shop_stock().size() == target[2], "Original shop-specific stock count");
+        check(town.shop_stock().size() == target.stock, "Original shop-specific stock count");
+        check(opengold::speaking_npc_portrait(town.snapshot()) == target.portrait,
+              "Shopping shows this location's unique shopkeeper");
         const auto affordable = std::find_if(town.shop_stock().begin(), town.shop_stock().end(),
                                              [](const auto & item)
         {
@@ -472,6 +492,8 @@ void installed_town(const RolfTourSession &finished)
         check(town.party().wealth[3] == 9999 - price && town.party().inventory.size() == 1,
               "Actual price and inventory persist");
         check(town.leave_shop(ticket), "Exit original shop");
+        check(opengold::phlan_shopkeeper_portrait(town.snapshot()).empty(),
+              "Shopkeeper portrait ends when shopping ends");
         settle_town(town);
     }
 }

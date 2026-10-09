@@ -1,4 +1,16 @@
 {
   "Rolf": "art/portraits/NPCs/rolf.png",
-  "Norris the Gray": "art/portraits/NPCs/norris-the-gray.png"
+  "Norris the Gray": "art/portraits/NPCs/norris-the-gray.png",
+  "New Phlan Arms and armor (13,8)": "art/portraits/NPCs/phlan-arms-13-08.png",
+  "New Phlan Arms and armor (8,11)": "art/portraits/NPCs/phlan-arms-08-11.png",
+  "New Phlan Arms and armor (11,12)": "art/portraits/NPCs/phlan-arms-11-12.png",
+  "New Phlan Arms and armor (9,13)": "art/portraits/NPCs/phlan-arms-09-13.png",
+  "New Phlan General items (15,8)": "art/portraits/NPCs/phlan-general-15-08.png",
+  "New Phlan General items (9,10)": "art/portraits/NPCs/phlan-general-09-10.png",
+  "New Phlan General items (12,10)": "art/portraits/NPCs/phlan-general-12-10.png",
+  "New Phlan General items (9,11)": "art/portraits/NPCs/phlan-general-09-11.png",
+  "New Phlan General items (11,11)": "art/portraits/NPCs/phlan-general-11-11.png",
+  "New Phlan Silver (11,10)": "art/portraits/NPCs/phlan-silver-11-10.png",
+  "New Phlan Silver (10,13)": "art/portraits/NPCs/phlan-silver-10-13.png",
+  "New Phlan Jeweler (8,10)": "art/portraits/NPCs/phlan-jeweler-08-10.png"
 }

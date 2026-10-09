@@ -61,12 +61,32 @@ entry or move the party out of restricted rooms.
 
 ## Original merchandise and artwork
 
-| Shop | Example map position | `ITEM3.DAX` record | Stock entries |
-| --- | --- | --- | --- |
-| General supplies | (15,8) | 54 | 7 |
-| Jewelry | (8,10) | 52 | 11 |
-| Arms and armor | (13,8) | 53 | 57 |
-| Silver items | (11,10) | 55 | 13 |
+The [original cluebook's New Phlan map](https://www.mocagh.org/ssi/pool-hintbook.pdf)
+(printed page 3) marks twelve physical shops. Each has its own OpenGoldBox
+shopkeeper portrait, identified by map cell; shops of the same type still share
+the original merchandise list. The cluebook supplies shop types and locations,
+not the shopkeepers' identities or appearances, so these portraits are original
+character designs.
+
+| Shop | Map position | `ITEM3.DAX` record | Stock entries | Portrait basename |
+| --- | --- | ---: | ---: | --- |
+| Arms and armor | (13,8) | 53 | 57 | `phlan-arms-13-08.png` |
+| Arms and armor | (8,11) | 53 | 57 | `phlan-arms-08-11.png` |
+| Arms and armor | (11,12) | 53 | 57 | `phlan-arms-11-12.png` |
+| Arms and armor | (9,13) | 53 | 57 | `phlan-arms-09-13.png` |
+| General items | (15,8) | 54 | 10 | `phlan-general-15-08.png` |
+| General items | (9,10) | 54 | 10 | `phlan-general-09-10.png` |
+| General items | (12,10) | 54 | 10 | `phlan-general-12-10.png` |
+| General items | (9,11) | 54 | 10 | `phlan-general-09-11.png` |
+| General items | (11,11) | 54 | 10 | `phlan-general-11-11.png` |
+| Silver items | (11,10) | 55 | 13 | `phlan-silver-11-10.png` |
+| Silver items | (10,13) | 55 | 13 | `phlan-silver-10-13.png` |
+| Jewelry | (8,10) | 52 | 11 | `phlan-jeweler-08-10.png` |
+
+All portrait files are under `art/portraits/NPCs/`. The shopkeeper fills the
+existing view window throughout the shopping phase, including stock selection
+and purchases; leaving the shop restores the exploration view. Ordinary shop
+keys remain available while the portrait is shown.
 
 Original TREASURE instructions select these lists. The COMBAT command opens a
 shop when script register `6E6C` is set. Closing resets that flag and resumes the
