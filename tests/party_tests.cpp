@@ -751,6 +751,12 @@ void party_leader()
     check(party.leader() == first && encode_campaign(party, nullptr, "leader") != saved,
           "A leader who leaves the party hands the lead back to the first member");
     rejects([&] { party.make_leader(second); });
+    // Losing someone outside the party is refused and changes nothing.
+    const auto before = encode_campaign(party, nullptr, "leader");
+    rejects([&] { party.lose(second); });
+    check(!party.member(second).vitals.dead &&
+          encode_campaign(party, nullptr, "leader") == before,
+          "A refused loss leaves the member alive and the party unchanged");
 }
 
 void class_weapon_proficiency()

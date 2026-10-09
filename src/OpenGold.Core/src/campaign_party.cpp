@@ -343,9 +343,11 @@ void CampaignParty::lose(MemberId id)
     });
     if (member == state_.roster.end())
         throw std::runtime_error("Unknown party member");
+    // remove() refuses before changing anything, so the member is marked dead
+    // only once it has left the party (Effective C++ Item 29).
+    remove(id);
     member->vitals.hit_points = 0;
     member->vitals.dead = true;
-    remove(id);
 }
 
 MemberId CampaignParty::spokesman() const
