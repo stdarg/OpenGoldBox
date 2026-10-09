@@ -157,6 +157,23 @@ void arrow_traps()
         rejected = true;
     }
     check(rejected, "Arrows only target conscious members");
+    // The arrows' dice come from the original script, so bad data must be
+    // refused rather than divide by zero inside the dice roller.
+    rejected = false;
+    try
+    {
+        for (std::uint64_t seed = 1; seed < 40; ++seed)
+        {
+            VitalState target{sheet.hit_points, false, {}};
+            random = seed;
+            (void)module->hazard_attack(target, sheet, {100, 1, 0, 0, "piercing"}, random);
+        }
+    }
+    catch (const std::invalid_argument &)
+    {
+        rejected = true;
+    }
+    check(rejected, "An arrow whose die has no sides is refused");
 }
 
 // Norris the Gray's portrait fills the view once he has walked up and speaks.
