@@ -26,7 +26,7 @@ struct CampaignEncounter
     std::vector<rules::Participant> enemies;
     std::vector<CombatArt> art;
     std::vector<Image> terrain_art;
-    unsigned facing{};
+    por::MapDirection facing{por::MapDirection::north};
     unsigned surprise{};
     // The encounter interrupted the party's rest.
     bool party_resting{};

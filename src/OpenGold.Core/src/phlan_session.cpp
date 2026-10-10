@@ -55,7 +55,6 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
 
 namespace
 {
-constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
 
 // GEO door code 2. The original engine answers it with "Locked." and Bash/Pick/
 // Knock/Exit; code 3 (wizard locked) needs magic or exceptional AD&D Strength.
@@ -66,15 +65,18 @@ constexpr int locked_door_difficulty = 15;
 
 struct Edge
 {
-    unsigned x{}, y{}, side{}, next_x{}, next_y{}, other{};
+    unsigned x{}, y{};
+    MapDirection side{};
+    unsigned next_x{}, next_y{};
+    MapDirection other{};
 };
 
 Edge edge_ahead(PartyPose pose)
 {
-    const int x = static_cast<int>(pose.x) + dx[pose.facing],
-              y = static_cast<int>(pose.y) + dy[pose.facing];
+    const int x = static_cast<int>(pose.x) + step_x(pose.facing),
+              y = static_cast<int>(pose.y) + step_y(pose.facing);
     return {pose.x, pose.y, pose.facing, static_cast<unsigned>((x + 16) % 16),
-            static_cast<unsigned>((y + 16) % 16), (pose.facing + 2) % 4};
+            static_cast<unsigned>((y + 16) % 16), reversed(pose.facing)};
 }
 } // namespace
 
@@ -190,9 +192,9 @@ void RolfTourSession::bind_pose(PartyPose pose)
 {
     machine_.bind_variable(0xC04B, pose.x);
     machine_.bind_variable(0xC04C, pose.y);
-    machine_.bind_variable(0xC04D, pose.facing);
+    machine_.bind_variable(0xC04D, static_cast<std::uint16_t>(index(pose.facing)));
     const auto &cell = map_.at(pose.x, pose.y);
-    machine_.bind_variable(0xC04E, cell.walls[pose.facing]);
+    machine_.bind_variable(0xC04E, cell.walls[index(pose.facing)]);
     machine_.bind_variable(0xC04F, cell.event_raw);
     publish_pose();
 }
@@ -201,27 +203,27 @@ bool RolfTourSession::move_party(ExplorationCommand command)
 {
     auto pose = snapshot_.pose;
     if (command == ExplorationCommand::turn_left)
-        pose.facing = (pose.facing + 3) % 4;
+        pose.facing = turned_left(pose.facing);
     else if (command == ExplorationCommand::turn_right)
-        pose.facing = (pose.facing + 1) % 4;
+        pose.facing = turned_right(pose.facing);
     else if (command == ExplorationCommand::turn_around)
-        pose.facing = (pose.facing + 2) % 4;
+        pose.facing = reversed(pose.facing);
     else if (command == ExplorationCommand::forward)
     {
         if (machine_.variable(0x6DC9) == 255)
             return false;
-        const int x = static_cast<int>(pose.x) + dx[pose.facing],
-                  y = static_cast<int>(pose.y) + dy[pose.facing];
+        const int x = static_cast<int>(pose.x) + step_x(pose.facing),
+                  y = static_cast<int>(pose.y) + step_y(pose.facing);
         const auto wrapped_x = (x + 16) % 16, wrapped_y = (y + 16) % 16;
         const auto &a = map_.at(pose.x, pose.y);
         const auto &b = map_.at(wrapped_x, wrapped_y);
-        const auto side = pose.facing, other = (side + 2) % 4;
+        const auto side = pose.facing, other = reversed(side);
         // Ordinary doors are traversable. Locks retain their distinct codes.
         const auto blocked = [](unsigned wall, unsigned door)
         {
             return door > 1 || (wall && !door);
         };
-        if (blocked(a.walls[side], a.doors[side]) || blocked(b.walls[other], b.doors[other]))
+        if (blocked(a.walls[index(side)], a.doors[index(side)]) || blocked(b.walls[index(other)], b.doors[index(other)]))
             return false;
         machine_.bind_variable(0x49F0, pose.x);
         machine_.bind_variable(0x49F1, pose.y);
@@ -272,11 +274,11 @@ void RolfTourSession::begin_event(unsigned slot)
     if (slot == 0 && pending_movement_)
     {
         const auto p = snapshot_.pose;
-        const int x = static_cast<int>(p.x) + dx[p.facing],
-                  y = static_cast<int>(p.y) + dy[p.facing];
+        const int x = static_cast<int>(p.x) + step_x(p.facing),
+                  y = static_cast<int>(p.y) + step_y(p.facing);
         const auto &cell = map_.at(p.x, p.y);
-        off_map = (x < 0 || y < 0 || x >= 16 || y >= 16) && cell.doors[p.facing] <= 1 &&
-                  (!cell.walls[p.facing] || cell.doors[p.facing]);
+        off_map = (x < 0 || y < 0 || x >= 16 || y >= 16) && cell.doors[index(p.facing)] <= 1 &&
+                  (!cell.walls[index(p.facing)] || cell.doors[index(p.facing)]);
     }
     machine_.bind_variable(0x6DD5, off_map ? 1 : 0);
     machine_.bind_variable(0x6DCA, slot == 1 ? 2 : 0);
@@ -644,9 +646,9 @@ bool RolfTourSession::locked_door_ahead() const
     {
         return !wall || door == 1 || door == locked_door;
     };
-    return (from.doors[edge.side] == locked_door || to.doors[edge.other] == locked_door) &&
-           passable_or_locked(from.walls[edge.side], from.doors[edge.side]) &&
-           passable_or_locked(to.walls[edge.other], to.doors[edge.other]);
+    return (from.doors[index(edge.side)] == locked_door || to.doors[index(edge.other)] == locked_door) &&
+           passable_or_locked(from.walls[index(edge.side)], from.doors[index(edge.side)]) &&
+           passable_or_locked(to.walls[index(edge.other)], to.doors[index(edge.other)]);
 }
 
 void RolfTourSession::show_locked_door()
@@ -692,8 +694,8 @@ void RolfTourSession::try_locked_door(DoorMethod method)
         if (door == locked_door)
             door = 1;
     };
-    unlock(map_.cells[edge.y * 16 + edge.x].doors[edge.side]);
-    unlock(map_.cells[edge.next_y * 16 + edge.next_x].doors[edge.other]);
+    unlock(map_.cells[edge.y * 16 + edge.x].doors[index(edge.side)]);
+    unlock(map_.cells[edge.next_y * 16 + edge.next_x].doors[index(edge.other)]);
     if (!move_party(*pending_movement_))
         throw EclError("The opened door is still blocked");
 }

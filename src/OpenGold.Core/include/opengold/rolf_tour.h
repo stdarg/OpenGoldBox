@@ -20,7 +20,8 @@ namespace opengold::por
 {
 struct PartyPose
 {
-    unsigned x{}, y{}, facing{}; // GEO coordinates, 0=N, 1=E, 2=S, 3=W.
+    unsigned x{}, y{}; // GEO coordinates.
+    MapDirection facing{MapDirection::north};
     auto operator<=>(const PartyPose &) const = default;
 };
 enum class TourPhase

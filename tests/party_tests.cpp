@@ -1245,7 +1245,7 @@ void campaign_encounters()
             CombatDemo fight(std::make_unique<ObservedModule>(observed));
             fight.campaign_party(party);
             auto encounter = encounter_fixture();
-            encounter.facing = facing;
+            encounter.facing = por::MapDirection{facing};
             encounter.surprise = facing;
             fight.encounter(encounter, 1234);
             check(observed->seed == 1234, "Encounter forwards deterministic seed");
@@ -1303,9 +1303,6 @@ void campaign_encounters()
               "Failed encounter setup leaves party and combat ownership unchanged");
     };
     auto invalid = encounter_fixture();
-    invalid.facing = 4;
-    rejected(invalid);
-    invalid = encounter_fixture();
     invalid.surprise = 4;
     rejected(invalid);
     invalid = encounter_fixture();

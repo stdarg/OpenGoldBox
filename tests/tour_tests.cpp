@@ -156,24 +156,24 @@ void wall_art_tests()
     map.cells[8 * 16 + 8].walls[0] = 1;
     map.cells[7 * 16 + 8].walls[2] = 2;
     map.cells[7 * 16 + 8].walls[0] = 2;
-    auto view = compose_exploration_view(map, *art, 8, 8, 0);
+    auto view = compose_exploration_view(map, *art, 8, 8, MapDirection::north);
     check(view.width == 88 && view.height == 88 && view.rgba[(40 * 88 + 44) * 4] == 85,
           "Near face hides farther opaque artwork");
     check(view.rgba[(8 * 88 + 16) * 4] == 85 && view.rgba[(71 * 88 + 71) * 4] == 85,
           "Full near face fits inside the frame");
-    view = compose_exploration_view(map, *art, 8, 7, 2);
+    view = compose_exploration_view(map, *art, 8, 7, MapDirection::south);
     check(view.rgba[(40 * 88 + 44) * 4] == 0, "Opposite edge keeps its distinct artwork");
     for (unsigned facing = 0; facing < 4; ++facing)
     {
         GeoMap rotated;
         rotated.cells[8 * 16 + 8].walls[facing] = 1;
-        const auto image = compose_exploration_view(rotated, *art, 8, 8, facing);
+        const auto image = compose_exploration_view(rotated, *art, 8, 8, MapDirection{facing});
         check(image.rgba[(40 * 88 + 44) * 4] == 85, "Directional wall ID follows every facing");
     }
     GeoMap empty;
-    const auto background = compose_exploration_view(empty, *art, 0, 0, 3);
+    const auto background = compose_exploration_view(empty, *art, 0, 0, MapDirection::west);
     empty.cells[0].doors[3] = 1;
-    check(compose_exploration_view(empty, *art, 0, 0, 3).rgba == background.rgba,
+    check(compose_exploration_view(empty, *art, 0, 0, MapDirection::west).rgba == background.rgba,
           "Door interaction bits do not fabricate door artwork at map boundaries");
 }
 
@@ -189,19 +189,19 @@ void fog_visibility_tests()
         cell.walls.fill(1);
     corridor.cells[8 * 16 + 8].walls[0] = 0;
     corridor.cells[7 * 16 + 8].walls[0] = 0;
-    auto view = render_exploration_view(corridor, art, 8, 8, 0);
+    auto view = render_exploration_view(corridor, art, 8, 8, MapDirection::north);
     check(view.visible.count() == 3 && view.visible.test(8 * 16 + 8) &&
           view.visible.test(7 * 16 + 8) && view.visible.test(6 * 16 + 8),
           "The three rendered corridor cells are visible, without rooms behind side walls");
     corridor.cells[7 * 16 + 8].walls[0] = 1;
-    check(render_exploration_view(corridor, art, 8, 8, 0).visible.count() == 2,
+    check(render_exploration_view(corridor, art, 8, 8, MapDirection::north).visible.count() == 2,
           "Middle wall hides the far corridor cell");
     corridor.cells[8 * 16 + 8].walls[0] = 1;
-    view = render_exploration_view(corridor, art, 8, 8, 0);
+    view = render_exploration_view(corridor, art, 8, 8, MapDirection::north);
     check(view.visible.count() == 1 && view.visible.test(8 * 16 + 8),
           "A closed room reveals only the occupied cell");
     corridor.cells[8 * 16 + 8].doors[0] = 1;
-    check(render_exploration_view(corridor, art, 8, 8, 0).visible == view.visible,
+    check(render_exploration_view(corridor, art, 8, 8, MapDirection::north).visible == view.visible,
           "A traversable but opaque door does not reveal what is behind it");
 
     // Cut a window in the exact artwork being rendered. Its hole must expose
@@ -213,16 +213,16 @@ void fog_visibility_tests()
             front.rgba[(y * front.width + x) * 4 + 3] = 0;
     corridor.cells[8 * 16 + 8].walls[0] = 2;
     corridor.cells[7 * 16 + 8].walls[0] = 0;
-    check(render_exploration_view(corridor, art, 8, 8, 0).visible.count() == 3,
+    check(render_exploration_view(corridor, art, 8, 8, MapDirection::north).visible.count() == 3,
           "A transparent opening reveals the cells actually drawn through it");
 
-    const auto open = render_exploration_view({}, {}, 8, 8, 0);
+    const auto open = render_exploration_view({}, {}, 8, 8, MapDirection::north);
     check(open.visible.test(7 * 16 + 8) && open.visible.test(6 * 16 + 8) &&
           !open.visible.test(5 * 16 + 8) && !open.visible.test(9 * 16 + 8),
           "Open floor reveals the forward view, not distant or rear cells");
     for (unsigned facing = 0; facing < 4; ++facing)
     {
-        const auto rotated = render_exploration_view({}, {}, 8, 8, facing);
+        const auto rotated = render_exploration_view({}, {}, 8, 8, MapDirection{facing});
         std::bitset<256> expected;
         for (unsigned y = 0; y < 16; ++y)
             for (unsigned x = 0; x < 16; ++x)
@@ -249,7 +249,7 @@ void fog_visibility_tests()
                 })
             for (unsigned facing = 0; facing < 4; ++facing)
             {
-                const auto edge = render_exploration_view({}, {}, x, y, facing);
+                const auto edge = render_exploration_view({}, {}, x, y, MapDirection{facing});
                 check(edge.visible.test(y * 16 + x) && !edge.visible.test((15 - y) * 16 + (15 - x)),
                       "Viewport clipping never wraps visibility to the other map edge");
             }
@@ -443,7 +443,7 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
                                 : 0;
-        const bool forward = p.facing == facing;
+        const bool forward = index(p.facing) == facing;
         town.explore(forward ? ExplorationCommand::forward : ExplorationCommand::turn_right);
         bool reached = false;
         settle_town(town, shop ? tx : 16, shop ? ty : 16, tx, ty, &reached);
@@ -568,7 +568,7 @@ void synthetic()
     tour.advance(0);
     check(tour.snapshot().sprite_frame == 2, "Delay is nonblocking and not reissued");
     step_to_prompt(tour);
-    check(tour.snapshot().pose == PartyPose{3, 4, 1}, "Script controls party pose");
+    check(tour.snapshot().pose == PartyPose{3, 4, MapDirection::east}, "Script controls party pose");
     check(tour.snapshot().sprite_frame == 0 && tour.snapshot().dialogue == "ABC",
           "Near sprite and decoded text");
     const auto ticket = tour.snapshot().continue_ticket;
@@ -577,11 +577,11 @@ void synthetic()
     step_to_prompt(tour);
     check(tour.snapshot().phase == TourPhase::completed && tour.snapshot().sprite_frame == -1,
           "Tour completes and hides encounter");
-    check(tour.snapshot().pose == PartyPose{4, 4, 1}, "Later scripted redraw");
+    check(tour.snapshot().pose == PartyPose{4, 4, MapDirection::east}, "Later scripted redraw");
     const auto before_turn = tour.snapshot().pose;
     check(tour.explore(ExplorationCommand::turn_around), "Turn around succeeds");
     check(tour.snapshot().pose ==
-          PartyPose{before_turn.x, before_turn.y, (before_turn.facing + 2) % 4},
+          PartyPose{before_turn.x, before_turn.y, reversed(before_turn.facing)},
           "Turn around changes facing without moving");
     tour.explore(ExplorationCommand::turn_around);
     check(tour.snapshot().pose == before_turn, "Two half turns restore facing");
@@ -655,7 +655,7 @@ void installed(const char *directory)
         const auto &s = tour.snapshot();
         ++prompts;
         std::cout << "Prompt " << prompts << " at " << s.pose.x << ',' << s.pose.y << " facing "
-                  << s.pose.facing << '\n';
+                  << index(s.pose.facing) << '\n';
         // The view shows Rolf's portrait exactly when he is fully approached.
         check((s.sprite_frame == 0) == (prompts == 1),
               "Rolf is fully approached for his welcome only");

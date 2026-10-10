@@ -6,9 +6,9 @@
 namespace opengold::por
 {
 ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art, unsigned x,
-                                        unsigned y, unsigned facing)
+                                        unsigned y, MapDirection facing)
 {
-    if (x >= 16 || y >= 16 || facing >= 4)
+    if (x >= 16 || y >= 16)
         throw std::out_of_range("Invalid exploration view pose");
     ExplorationView view;
     auto &result = view.image;
@@ -29,11 +29,10 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         for (int column = 0; column < 88; ++column)
             std::copy(color.begin(), color.end(), result.rgba.begin() + (row * 88 + column) * 4);
     }
-    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     const auto cell_at = [&](int depth, int lateral) -> int
     {
-        const int cx = static_cast<int>(x) + dx[facing] * depth - dy[facing] * lateral;
-        const int cy = static_cast<int>(y) + dy[facing] * depth + dx[facing] * lateral;
+        const int cx = static_cast<int>(x) + step_x(facing) * depth - step_y(facing) * lateral;
+        const int cy = static_cast<int>(y) + step_y(facing) * depth + step_x(facing) * lateral;
         return cx < 0 || cy < 0 || cx >= 16 || cy >= 16 ? -1 : cy * 16 + cx;
     };
     // The authored perspective has three floor bands, below the far, middle,
@@ -66,11 +65,11 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
 
     // Read the face of the sampled cell seen by the party. Opposite faces may
     // deliberately have different art. Do not merge neighboring edge records.
-    const auto wall = [&](int depth, int lateral, unsigned side) -> WallSample
+    const auto wall = [&](int depth, int lateral, MapDirection side) -> WallSample
     {
         const int cell = cell_at(depth, lateral);
 return cell < 0 ? WallSample{} :
-        WallSample{map.cells[cell].walls[side], cell};
+        WallSample{map.cells[cell].walls[index(side)], cell};
     };
     const auto draw = [&](WallSample sample, WallView perspective, int left, int top)
     {
@@ -97,7 +96,7 @@ return cell < 0 ? WallSample{} :
             }
         }
     };
-    const unsigned left_side = (facing + 3) % 4, right_side = (facing + 1) % 4;
+    const auto left_side = turned_left(facing), right_side = turned_right(facing);
 
     // Paint far to near. Stored side silhouettes and transparent cutouts retain
     // their authored perspective; no flat textures or procedural doors are added.
@@ -141,7 +140,7 @@ return cell < 0 ? WallSample{} :
 }
 
 Image compose_exploration_view(const GeoMap &map, const WallArtSet &art, unsigned x, unsigned y,
-                               unsigned facing)
+                               MapDirection facing)
 {
     return render_exploration_view(map, art, x, y, facing).image;
 }

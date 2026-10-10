@@ -46,7 +46,6 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
     return data;
 }
 
-constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
 } // namespace
 
 RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
@@ -471,9 +470,10 @@ void RolfTourSession::fail(std::string diagnostic)
 
 void RolfTourSession::publish_pose()
 {
+    const auto facing = map_direction(machine_.variable(0xC04D));
     const PartyPose next{machine_.variable(0xC04B), machine_.variable(0xC04C),
-                         machine_.variable(0xC04D)};
-    if (next.x >= 16 || next.y >= 16 || next.facing >= 4)
+                         facing.value_or(MapDirection::north)};
+    if (next.x >= 16 || next.y >= 16 || !facing)
         throw EclError("Tour wrote an invalid party pose");
     snapshot_.pose = next;
     snapshot_.visited.set(next.y * 16 + next.x);
@@ -534,16 +534,17 @@ void RolfTourSession::handle_host(const EclRequest &request)
         const auto service = request.arguments[0].value;
         if (service == 0xC01E)
         {
+            const auto facing = map_direction(machine_.variable(0xC04D));
             PartyPose pose{machine_.variable(0xC04B), machine_.variable(0xC04C),
-                           machine_.variable(0xC04D)};
-            if (pose.x >= 16 || pose.y >= 16 || pose.facing >= 4)
+                           facing.value_or(MapDirection::north)};
+            if (pose.x >= 16 || pose.y >= 16 || !facing)
                 throw EclError("Invalid scripted movement pose");
-            pose.x = (static_cast<int>(pose.x) + dx[pose.facing] + 16) % 16;
-            pose.y = (static_cast<int>(pose.y) + dy[pose.facing] + 16) % 16;
+            pose.x = (static_cast<int>(pose.x) + step_x(pose.facing) + 16) % 16;
+            pose.y = (static_cast<int>(pose.y) + step_y(pose.facing) + 16) % 16;
             const auto &cell = map_.at(pose.x, pose.y);
             reply.writes = {{0xC04B, static_cast<std::uint16_t>(pose.x)},
                 {0xC04C, static_cast<std::uint16_t>(pose.y)},
-                {0xC04E, cell.walls[pose.facing]},
+                {0xC04E, cell.walls[index(pose.facing)]},
                 {0xC04F, cell.event_raw}
             };
         }
@@ -720,31 +721,31 @@ bool RolfTourSession::explore(ExplorationCommand command)
     }
     auto pose = snapshot_.pose;
     if (command == ExplorationCommand::turn_left)
-        pose.facing = (pose.facing + 3) % 4;
+        pose.facing = turned_left(pose.facing);
     else if (command == ExplorationCommand::turn_right)
-        pose.facing = (pose.facing + 1) % 4;
+        pose.facing = turned_right(pose.facing);
     else if (command == ExplorationCommand::turn_around)
-        pose.facing = (pose.facing + 2) % 4;
+        pose.facing = reversed(pose.facing);
     else
     {
         const auto &edge = map_.at(pose.x, pose.y);
-        const int x = static_cast<int>(pose.x) + dx[pose.facing],
-                  y = static_cast<int>(pose.y) + dy[pose.facing];
-        if (x < 0 || y < 0 || x >= 16 || y >= 16 || edge.walls[pose.facing] ||
-                edge.doors[pose.facing])
+        const int x = static_cast<int>(pose.x) + step_x(pose.facing),
+                  y = static_cast<int>(pose.y) + step_y(pose.facing);
+        if (x < 0 || y < 0 || x >= 16 || y >= 16 || edge.walls[index(pose.facing)] ||
+                edge.doors[index(pose.facing)])
             return false;
         const auto &other = map_.at(x, y);
-        const auto reverse = (pose.facing + 2) % 4;
-        if (other.walls[reverse] || other.doors[reverse])
+        const auto reverse = reversed(pose.facing);
+        if (other.walls[index(reverse)] || other.doors[index(reverse)])
             return false;
         pose.x = x;
         pose.y = y;
     }
     machine_.bind_variable(0xC04B, pose.x);
     machine_.bind_variable(0xC04C, pose.y);
-    machine_.bind_variable(0xC04D, pose.facing);
+    machine_.bind_variable(0xC04D, static_cast<std::uint16_t>(index(pose.facing)));
     const auto &cell = map_.at(pose.x, pose.y);
-    machine_.bind_variable(0xC04E, cell.walls[pose.facing]);
+    machine_.bind_variable(0xC04E, cell.walls[index(pose.facing)]);
     machine_.bind_variable(0xC04F, cell.event_raw);
     publish_pose();
     return true;

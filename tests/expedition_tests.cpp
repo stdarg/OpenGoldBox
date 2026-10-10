@@ -621,7 +621,7 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
 void face(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
           unsigned facing)
 {
-    while (town.snapshot().pose.facing != facing)
+    while (index(town.snapshot().pose.facing) != facing)
     {
         town.explore(por::ExplorationCommand::turn_right);
         settle(town, party);
@@ -1015,7 +1015,7 @@ PartyState enter_ohlo_room(Expedition &trip, std::uint16_t until_commission)
         step(town, party, 3, quest_answer);
     }
     const auto pose = town.snapshot().pose;
-    check(pose.x == 14 && pose.y == 10 && pose.facing == 1,
+    check(pose.x == 14 && pose.y == 10 && pose.facing == por::MapDirection::east,
           "Ohlo's script returns the party outside his door");
     return before;
 }

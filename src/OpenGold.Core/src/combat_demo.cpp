@@ -145,7 +145,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
 {
     if (!campaign_ || combat_)
         throw std::runtime_error("A new campaign combat owner is required");
-    if (campaign_->identity() != module_->identity() || encounter.facing >= 4)
+    if (campaign_->identity() != module_->identity())
         throw std::runtime_error("Invalid campaign encounter context");
     const auto &board = encounter.field.geometry;
     if (board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64 ||
@@ -234,7 +234,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         participant.surprised = encounter.surprise == 1;
     }
     constexpr std::array<Cell, 4> forward{{{-5, -5}, {6, 0}, {5, 5}, {-6, 0}}};
-    const auto offset = forward[encounter.facing];
+    const auto offset = forward[index(encounter.facing)];
     const Cell target{origin.x + offset.x, origin.y + offset.y};
     for (auto &enemy : encounter.enemies)
     {
