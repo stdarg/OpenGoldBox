@@ -1194,6 +1194,19 @@ class ObservedModule final : public test::ForwardingModule
     std::shared_ptr<EncounterObservation> observation_;
 };
 
+// Surprise sits among other small numbers filled by position, so a bare number
+// must not stand in for it. Its values are the original script's surprise bits.
+template <class Encounter>
+concept takes_bare_surprise = requires(Encounter &encounter, unsigned bits)
+{
+    encounter.surprise = bits;
+};
+
+static_assert(!takes_bare_surprise<CampaignEncounter>);
+static_assert(static_cast<unsigned>(Surprise::party) == 1 &&
+              static_cast<unsigned>(Surprise::monsters) == 2 &&
+              static_cast<unsigned>(Surprise::both) == 3);
+
 CampaignEncounter encounter_fixture()
 {
     CampaignEncounter encounter;
@@ -1232,7 +1245,7 @@ void campaign_encounters()
             fight.campaign_party(party);
             auto encounter = encounter_fixture();
             encounter.facing = por::MapDirection{facing};
-            encounter.surprise = facing;
+            encounter.surprise = static_cast<Surprise>(facing);
             fight.encounter(encounter, 1234);
             check(observed->seed == 1234, "Encounter forwards deterministic seed");
             const auto &handed = observed->encounter;
@@ -1291,7 +1304,7 @@ void campaign_encounters()
               "Failed encounter setup leaves party and combat ownership unchanged");
     };
     auto invalid = encounter_fixture();
-    invalid.surprise = 4;
+    invalid.surprise = static_cast<Surprise>(4);
     rejected(invalid);
     invalid = encounter_fixture();
     invalid.field.geometry.terrain.pop_back();

@@ -150,7 +150,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     const auto &board = encounter.field.geometry;
     if (board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64 ||
             board.terrain.size() != static_cast<std::size_t>(board.width * board.height) ||
-            encounter.surprise > 3)
+            encounter.surprise > Surprise::both)
         throw std::runtime_error("Invalid campaign battlefield");
     // Converted party formation stays inside one reachable component of the
     // original geometry. Never erase walls or silently omit a participant.
@@ -232,7 +232,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     {
         if (encounter.positions.empty())
             place(participant, origin);
-        participant.surprised = encounter.surprise == 1;
+        // Mutual surprise cancels out: Surprise::both marks neither side.
+        participant.surprised = encounter.surprise == Surprise::party;
     }
     constexpr std::array<Cell, 4> forward{{{-5, -5}, {6, 0}, {5, 5}, {-6, 0}}};
     const auto offset = forward[index(encounter.facing)];
@@ -241,7 +242,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     {
         if (encounter.positions.empty())
             place(enemy, target);
-        enemy.surprised = encounter.surprise == 2;
+        enemy.surprised = encounter.surprise == Surprise::monsters;
         participants.push_back(std::move(enemy));
     }
     auto next = module_->create(

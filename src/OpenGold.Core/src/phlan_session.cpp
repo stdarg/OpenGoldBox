@@ -78,6 +78,15 @@ Edge edge_ahead(PartyPose pose)
     return {pose.x, pose.y, pose.facing, static_cast<unsigned>((x + 16) % 16),
             static_cast<unsigned>((y + 16) % 16), reversed(pose.facing)};
 }
+
+// The script's surprise bits (0x6DCB). SURPRISE writes only 0 to 3, but a
+// script may store any number there.
+opengold::Surprise script_surprise(std::uint16_t bits)
+{
+    if (bits > static_cast<std::uint16_t>(opengold::Surprise::both))
+        throw EclError("Unsupported encounter surprise " + std::to_string(bits));
+    return static_cast<opengold::Surprise>(bits);
+}
 } // namespace
 
 void RolfTourSession::configure_town()
@@ -1381,7 +1390,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 dungeon_battlefield(map_, p.x, p.y), staged_enemies_, staged_art_,
                 area_resources().terrain_art,        p.facing,
-                machine_.variable(ecl_encounter_surprise)};
+                script_surprise(machine_.variable(ecl_encounter_surprise))};
             encounter_->party_resting = event_stage_ == 5;
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale = std::min<unsigned>(machine_.variable(ecl_encounter_morale), 100);

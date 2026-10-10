@@ -3,6 +3,7 @@
 #include "opengold/dungeon_battlefield.h"
 #include "opengold/formats.h"
 #include "opengold/rules.h"
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -20,6 +21,18 @@ struct CombatArt
     std::string missing_combination;
 };
 
+// Who an encounter caught unaware. The values are the original script's
+// surprise bits (1 the party, 2 the monsters), so a script value converts
+// directly and a swapped neighbouring number no longer compiles (Effective C++
+// Item 18).
+enum class Surprise : std::uint8_t
+{
+    none,
+    party,
+    monsters,
+    both
+};
+
 struct CampaignEncounter
 {
     por::DungeonBattlefield field;
@@ -27,7 +40,7 @@ struct CampaignEncounter
     std::vector<CombatArt> art;
     std::vector<Image> terrain_art;
     por::MapDirection facing{por::MapDirection::north};
-    unsigned surprise{};
+    Surprise surprise{Surprise::none};
     // The encounter interrupted the party's rest.
     bool party_resting{};
     // Optional authored formation. Empty means the usual campaign placement.
