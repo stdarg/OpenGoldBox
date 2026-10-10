@@ -10,6 +10,7 @@
 #include "opengold/srd5.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
+#include "scoped_flag.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -170,7 +171,9 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
 {
     rest_result_ = String();
     rest_member_ = 0;
-    rest_save_open_ = true;
+    // Keeps the Rest dialog from popping up while the restored party is shown,
+    // and is cleared however this ends (Effective C++ Item 13).
+    const presentation::ScopedFlag restoring(rest_save_open_);
     get_node<Window>("RestDialog")->hide();
     session.attach_restored_party(party);
     campaign_ = std::move(party);
@@ -183,7 +186,6 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     rendered_picture_revision_ = 0;
     played_footsteps_ = session_->snapshot().footsteps;
     refresh();
-    rest_save_open_ = false;
 }
 
 void RolfTourView::request_save(bool saving)
