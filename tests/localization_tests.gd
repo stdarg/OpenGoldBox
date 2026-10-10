@@ -119,14 +119,28 @@ func run_checks() -> void:
 	require(current_scene.get_node("PageTitle").text == "Elegir conjuros", "Cantrip step is translated")
 	current_scene.get_node("SpellChoices/Rows/fire_bolt").set_pressed(true)
 	await capture("spanish-cantrips")
-	# A Wizard must fill every cantrip slot and prepare a spellbook spell before Name.
+	# A Wizard must fill every cantrip slot, write six level-one spells in the
+	# spellbook and prepare four of them before Name.
 	for cantrip in ["ray_of_frost", "poison_spray"]:
 		current_scene.get_node("SpellChoices/Rows/" + cantrip).set_pressed(true)
 		await settle()
 	current_scene.get_node("SpellChoices/Rows/BookChoices/spellbook_1/magic_missile").set_pressed(true)
 	await settle()
+	var learned := 1
+	for entry in current_scene.get_node("SpellChoices/Rows/BookChoices/spellbook_1").get_children():
+		if entry is CheckBox and entry.visible and not entry.button_pressed and learned < 6:
+			entry.set_pressed(true)
+			await settle()
+			learned += 1
 	current_scene.get_node("SpellChoices/Rows/BookChoices/prepared/magic_missile").set_pressed(true)
 	await settle()
+	var ready := 1
+	for entry in current_scene.get_node("SpellChoices/Rows/BookChoices/prepared").get_children():
+		if (entry is CheckBox and entry.visible and not entry.disabled
+				and not entry.button_pressed and ready < 4):
+			entry.set_pressed(true)
+			await settle()
+			ready += 1
 	await press("Next")
 	var name: LineEdit = current_scene.get_node("Name")
 	name.text = "Fighter"
