@@ -1051,7 +1051,7 @@ void RolfTourView::check_town()
             "class:fighter:fighting_style"); // This untrained-shield fixture changes class.
         member.character = opengold::Character(*opengold::srd5::character_rules(), draft,
                                                member.character.appearance());
-        member.character.inventory() = std::move(inventory);
+        member.character.replace_inventory(std::move(inventory));
         member.equipped.clear();
         member.vitals = {member.character.sheet().hit_points, false, {}};
         campaign_->restore(changed);

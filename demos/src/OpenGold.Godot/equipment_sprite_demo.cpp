@@ -117,9 +117,12 @@ void EquipmentSpriteDemo::_ready()
             por::Equipment item;
             item.stored.type = type;
             item.stored.stack_size = 1;
-            character.inventory().add(equipment_conversion(item), name, 1, type);
+            character.add_item({.definition_id = equipment_conversion(item),
+                                .name = name,
+                                .quantity = 1,
+                                .original_type = type});
         };
-        for (const auto &option : catalog_.options)
+        for (const auto &option : catalog_.options())
             if (!option.id.ends_with("_shield"))
                 add(option.original_type, option.label);
         add(59, "Shield");
