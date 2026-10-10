@@ -1,4 +1,5 @@
 #include "feature_grants.h"
+#include "opengold/srd5.h"
 #include <algorithm>
 #include <iomanip>
 #include <istream>
@@ -25,15 +26,30 @@ std::string class_source(CharacterClass klass)
 {
     return "class:" + std::string(class_id(klass));
 }
+
+// The stable ID of the creation choice a sheet names by its label.
+std::string choice_id(rules::CreationField field, std::string_view label, const char *unknown)
+{
+    const auto choices = character_rules()->choices(field);
+    const auto found = std::find_if(choices.begin(), choices.end(),
+                                    [&](const rules::CreationChoice & choice)
+    {
+        return choice.label == label;
+    });
+    if (found == choices.end())
+        throw std::runtime_error(unknown);
+    return found->id;
+}
 } // namespace
 
-std::string grant_source_id(std::string_view label)
+std::string race_id(std::string_view label)
 {
-    std::string result(label);
-    for (auto &c : result)
-        if (c >= 'A' && c <= 'Z')
-            c += 32;
-    return result;
+    return choice_id(rules::CreationField::race, label, "Unknown race");
+}
+
+std::string background_id(std::string_view label)
+{
+    return choice_id(rules::CreationField::background, label, "Unknown background");
 }
 
 std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::string_view race,

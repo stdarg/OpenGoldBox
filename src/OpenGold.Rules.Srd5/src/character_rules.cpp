@@ -179,7 +179,7 @@ class CreatorRules final : public CharacterRules
                                        std::string_view skill) const override
     {
         return detail::ability_check(sheet.grants, detail::class_of(sheet),
-                                     detail::grant_source_id(sheet.background), sheet.level,
+                                     detail::background_id(sheet.background), sheet.level,
                                      sheet.scores, ability, skill);
     }
 };

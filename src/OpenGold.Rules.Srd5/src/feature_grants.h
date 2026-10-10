@@ -6,7 +6,11 @@
 
 namespace opengold::srd5::detail
 {
-std::string grant_source_id(std::string_view label);
+// A sheet stores its race's and background's labels; these recover the
+// stable IDs that grants are sourced from. Each throws for a label no choice
+// has, rather than deriving an ID from the label's spelling.
+std::string race_id(std::string_view label);
+std::string background_id(std::string_view label);
 std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::string_view race,
         std::string_view background);
 rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,

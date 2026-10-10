@@ -1324,7 +1324,7 @@ character_definition(std::string_view bytes,
         throw std::runtime_error("Character casting access disagrees with spell grants");
     const auto features_only = detail::without_spell_grants(detail::without_training(grants));
     const auto effects = detail::validate_grants(features_only, klass,
-                         detail::grant_source_id(race), background, level);
+                         detail::race_id(race), background, level);
     if (effects.feats != features)
         throw std::runtime_error("Character effects disagree with acquired grants");
     const int initial_con = ability_modifier(scores[2] - effects.abilities[2]);
@@ -10082,7 +10082,7 @@ class Module final : public RulesModule
         auto candidate = sheet;
         candidate.grants = detail::replace_masteries(sheet.grants, klass, sheet.level, selected);
         candidate.training = detail::training_profile(candidate.grants, klass,
-            detail::grant_source_id(candidate.background),
+            detail::background_id(candidate.background),
             candidate.level, candidate.scores);
         auto choices = detail::mastery_choices(candidate.grants, klass, candidate.level);
         (void)character_profile(candidate, {});
@@ -10684,7 +10684,7 @@ class Module final : public RulesModule
             throw std::runtime_error("Independent spell learning choices are required");
         next.training = detail::training_profile(
                             next.grants, klass,
-                            detail::grant_source_id(next.background), next.level, next.scores);
+                            detail::background_id(next.background), next.level, next.scores);
         next.hit_point_modifiers.push_back(next.modifiers[2]);
         next.hit_points =
             maximum_hit_points(next.hit_die, next.race == "Dwarf", next.hit_point_modifiers,
@@ -11442,15 +11442,15 @@ class Module final : public RulesModule
             throw std::runtime_error("Unsupported character rules identity or level");
         const auto klass = detail::class_of(sheet);
         (void)detail::training_profile(sheet.grants, klass,
-                                       detail::grant_source_id(sheet.background), sheet.level,
+                                       detail::background_id(sheet.background), sheet.level,
                                        sheet.scores);
         const auto features_only =
             detail::without_spell_grants(detail::without_training(sheet.grants));
         const auto access = spell_access(sheet);
         const auto effects =
             detail::validate_grants(features_only, klass,
-                                    detail::grant_source_id(sheet.race),
-                                    detail::grant_source_id(sheet.background), sheet.level);
+                                    detail::race_id(sheet.race),
+                                    detail::background_id(sheet.background), sheet.level);
         const unsigned features = effects.feats;
         if (std::cmp_not_equal(sheet.hit_point_modifiers.size(), sheet.level))
             throw std::runtime_error("HP history does not match character advancement");
@@ -11505,7 +11505,7 @@ class Module final : public RulesModule
         out << ' ' << gear.size();
         for (const auto &item : gear)
             out << ' ' << std::quoted(item);
-        out << ' ' << std::quoted(detail::grant_source_id(sheet.background));
+        out << ' ' << std::quoted(detail::background_id(sheet.background));
         detail::write_grants(out, sheet.grants);
         const auto data = out.str();
         const auto d = character_definition(data);

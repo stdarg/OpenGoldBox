@@ -1,6 +1,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
+#include "../src/OpenGold.Rules.Srd5/src/feature_grants.h"
 #include "../src/OpenGold.Rules.Srd5/src/weapon_mastery.h"
 #include <algorithm>
 #include <iostream>
@@ -274,6 +275,29 @@ void advancement()
         }
 }
 
+// A sheet stores race and background labels. Their grant sources are the
+// creation tables' stable IDs, looked up by label rather than spelt from it,
+// so a relabelled or translated choice keeps its grants and an unknown label
+// is rejected.
+void origin_ids()
+{
+    namespace detail = srd5::detail;
+    const auto rules = srd5::character_rules();
+    for (const auto &race : rules->choices(CreationField::race))
+        check(detail::race_id(race.label) == race.id, "Every race label names its ID");
+    for (const auto &background : rules->choices(CreationField::background))
+        check(detail::background_id(background.label) == background.id,
+              "Every background label names its ID");
+    rejects([]
+    {
+        (void)detail::race_id("Humann");
+    });
+    rejects([]
+    {
+        (void)detail::background_id("sage");
+    });
+}
+
 void profiles()
 {
     auto rules = module();
@@ -349,6 +373,7 @@ int main()
         creation();
         advancement();
         profiles();
+        origin_ids();
         std::cout << "Feature grant tests passed\n";
         return 0;
     }
