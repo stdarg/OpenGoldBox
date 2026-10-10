@@ -4,11 +4,18 @@
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/viewport.hpp>
+#include <exception>
 
 class GameLifecycle : public godot::Node
 {
     GDCLASS(GameLifecycle, godot::Node)
   public:
+    // A failed handler is already in the log, and this view has no status
+    // line to show it; called by presentation::run_guarded.
+    void report_failure(const std::exception &) noexcept
+    {
+    }
+
     void _ready() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
 

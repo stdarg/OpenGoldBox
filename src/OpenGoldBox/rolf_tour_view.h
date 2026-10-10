@@ -11,11 +11,18 @@
 #include <optional>
 #include <set>
 #include <functional>
+#include <exception>
 
 class RolfTourView : public godot::Control
 {
     GDCLASS(RolfTourView, godot::Control)
   public:
+    // A failed handler is already in the log, and this view has no status
+    // line to show it; called by presentation::run_guarded.
+    void report_failure(const std::exception &) noexcept
+    {
+    }
+
     void _ready() override;
     void _process(double delta) override;
     void _draw() override;

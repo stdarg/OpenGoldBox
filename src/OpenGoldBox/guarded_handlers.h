@@ -11,11 +11,20 @@
 
 namespace presentation
 {
+// Every guarded view says how it shows a failed handler, even if only by
+// leaving it to the log. Stated as a requirement, a misspelled or private
+// report_failure is a compile error rather than silently skipped (Effective
+// C++ Item 41).
+template <class View>
+concept ReportsFailures = requires(View &view, const std::exception &failure)
+{
+    view.report_failure(failure);
+};
+
 // Godot calls handlers from engine code that a C++ exception cannot unwind
 // through, so an escaping exception ends the game. run_guarded logs a failure
-// instead, and shows it through the view's public
-// report_failure(const std::exception &) when the view has one.
-template <class View, class Work> void run_guarded(View &view, Work &&work) noexcept
+// instead and passes it to the view's report_failure.
+template <ReportsFailures View, class Work> void run_guarded(View &view, Work &&work) noexcept
 {
     try
     {
@@ -24,23 +33,20 @@ template <class View, class Work> void run_guarded(View &view, Work &&work) noex
     catch (const std::exception &failure)
     {
         godot::UtilityFunctions::push_error(godot::String::utf8(failure.what()));
-        if constexpr (requires { view.report_failure(failure); })
+        try
         {
-            try
-            {
-                view.report_failure(failure);
-            }
-            catch (const std::exception &)
-            {
-                // Already logged above; the view could not show it.
-            }
+            view.report_failure(failure);
+        }
+        catch (const std::exception &)
+        {
+            // Already logged above; the view could not show it.
         }
     }
 }
 
 // callable_mp's method pointer with run_guarded around the call. A handler
 // that fails returns a default value.
-template <class T, class R, class... P>
+template <ReportsFailures T, class R, class... P>
 class GuardedMethodPointer final : public godot::CallableCustomMethodPointerBase
 {
   public:
@@ -97,7 +103,7 @@ class GuardedMethodPointer final : public godot::CallableCustomMethodPointerBase
 };
 
 // Use in place of callable_mp(instance, method) for a signal handler.
-template <class T, class R, class... P>
+template <ReportsFailures T, class R, class... P>
 [[nodiscard]] godot::Callable guarded(T *instance, R (T::*method)(P...))
 {
     using Pointer = GuardedMethodPointer<T, R, P...>;

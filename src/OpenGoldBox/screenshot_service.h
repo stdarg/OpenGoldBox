@@ -3,12 +3,19 @@
 
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/variant/array.hpp>
+#include <exception>
 
 // Presentation-only capture. The scene tree owns this autoload and its notice.
 class ScreenshotService : public godot::Node
 {
     GDCLASS(ScreenshotService, godot::Node)
   public:
+    // A failed handler is already in the log, and this view has no status
+    // line to show it; called by presentation::run_guarded.
+    void report_failure(const std::exception &) noexcept
+    {
+    }
+
     void _ready() override;
     void _process(double delta) override;
     bool request_capture();
