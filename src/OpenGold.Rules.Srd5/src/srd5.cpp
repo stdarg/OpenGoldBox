@@ -907,10 +907,13 @@ constexpr std::array arcane_allocations
 bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
 {
     const auto &d = actor.definition;
+    // Signed comparisons: an actor holding more slots than its definition grants
+    // (the room Font of Magic allows) has a negative spent count, which must
+    // refuse the choice rather than wrap to a huge unsigned room.
     return conscious(actor) && d.arcane && actor.arcane > 0 &&
-           choice.first + 2 * choice.second <= static_cast<unsigned>((d.level + 1) / 2) &&
-           choice.first <= static_cast<unsigned>(d.slots - actor.slots) &&
-           choice.second <= static_cast<unsigned>(d.slots2 - actor.slots2);
+           std::cmp_less_equal(choice.first + 2 * choice.second, (d.level + 1) / 2) &&
+           std::cmp_less_equal(choice.first, d.slots - actor.slots) &&
+           std::cmp_less_equal(choice.second, d.slots2 - actor.slots2);
 }
 
 int movement_left(const Actor &a)
