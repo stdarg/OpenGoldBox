@@ -434,11 +434,17 @@ void RolfTourView::equip_item(bool equip)
         if (selection.is_empty())
             throw std::runtime_error("Select an item first.");
         const auto id = campaign_->selected();
-        const auto &m = campaign_->member(id);
-        const auto items = m.character.inventory().items();
-        if (selection[0] < 0 || static_cast<std::size_t>(selection[0]) >= items.size())
-            throw std::runtime_error("Select an existing item.");
-        const auto item = items[selection[0]].id;
+        // Copies: equipping can replace the member's inventory, and with it
+        // anything still pointing into it (Effective C++ Item 28).
+        std::uint64_t item{};
+        std::string definition;
+        {
+            const auto items = campaign_->member(id).character.inventory().items();
+            if (selection[0] < 0 || static_cast<std::size_t>(selection[0]) >= items.size())
+                throw std::runtime_error("Select an existing item.");
+            item = items[selection[0]].id;
+            definition = items[selection[0]].definition_id;
+        }
         if (equip)
             campaign_->equip(id, item);
         else
@@ -449,7 +455,7 @@ void RolfTourView::equip_item(bool equip)
         get_node<Label>("InventoryPanel/Status")
         ->set_text(equip ? i18n::text("Equipped.") + " " +
                    i18n::text(opengold::srd5::equipment_note(
-                                  m.character.sheet(), items[selection[0]].definition_id))
+                                  campaign_->member(id).character.sheet(), definition))
                    : i18n::text("Item unequipped."));
     }
     catch (const std::exception &e)

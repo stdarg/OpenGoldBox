@@ -638,8 +638,13 @@ void CharacterCreationView::party_action(int action)
             const auto selection = get_node<ItemList>("PartyPanel/Inventory")->get_selected_items();
             if (selection.is_empty())
                 throw std::runtime_error("Select an inventory item first");
+            // Copies: equipping can replace the member's inventory, and with it
+            // anything still pointing into it (Effective C++ Item 28).
             const auto items = campaign_->member(id).character.inventory().items();
+            if (selection[0] < 0 || static_cast<std::size_t>(selection[0]) >= items.size())
+                throw std::runtime_error("Select an existing item");
             const auto selected = items[selection[0]].id;
+            const std::string definition = items[selection[0]].definition_id;
             if (action == 6)
             {
                 if (open_equipment_choice(id, selected))
@@ -648,7 +653,7 @@ void CharacterCreationView::party_action(int action)
                 equipment_notice =
                     i18n::text("Equipped.") + " " +
                     i18n::text(srd5::equipment_note(campaign_->member(id).character.sheet(),
-                                                    items[selection[0]].definition_id));
+                                                    definition));
             }
             else
                 campaign_->unequip(id, selected);
