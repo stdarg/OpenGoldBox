@@ -1,6 +1,7 @@
 // Kuto's Well (docs/audits/kutos-well.md): its creature conversions, the
 // rules they need, its arrow traps and Norris the Gray's portrait.
 #include "opengold/npc_portraits.h"
+#include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
