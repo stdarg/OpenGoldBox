@@ -280,7 +280,7 @@ rules::AdvancementChoice advancement(const CampaignParty &party, MemberId id)
             if (preferred)
                 continue;
             auto trial = choice;
-            trial.spells[std::size_t(choice.spells.rend() - slot - 1)] = spell;
+            trial.spells[static_cast<std::size_t>(choice.spells.rend() - slot - 1)] = spell;
             try
             {
                 (void)party.preview_advancement(id, trial);
@@ -525,16 +525,18 @@ unsigned enemy_record(const Fight &fight, rules::EntityId id)
 // corridor, side by side when there is room).
 CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_t members)
 {
-    const int length = 30, height = int(width) + 2;
+    const int length = 30, height = static_cast<int>(width) + 2;
     CampaignEncounter arena;
-    arena.field.geometry = {length, height, std::vector<std::uint8_t>(std::size_t(length * height))};
+    arena.field.geometry = {length, height,
+                            std::vector<std::uint8_t>(static_cast<std::size_t>(length * height))};
     for (int x = 0; x < length; ++x)
-        arena.field.geometry.terrain[std::size_t(x)] =
-            arena.field.geometry.terrain[std::size_t((height - 1) * length + x)] = 1;
-    arena.field.tiles.resize(std::size_t(length * height), 7);
+        arena.field.geometry.terrain[static_cast<std::size_t>(x)] =
+            arena.field.geometry.terrain[static_cast<std::size_t>((height - 1) * length + x)] = 1;
+    arena.field.tiles.resize(static_cast<std::size_t>(length * height), 7);
     const auto place = [&](std::size_t n, int front, int step)
     {
-        return rules::Cell{front + step * int(n / width), 1 + int(n % width)};
+        return rules::Cell{front + step * static_cast<int>(n / width),
+                           1 + static_cast<int>(n % width)};
     };
     for (std::size_t n = 0; n < members; ++n)
         arena.positions.push_back(place(n, 6, -1));
@@ -559,7 +561,7 @@ bool arena_fight(const std::vector<Character> &members, const Loadout &loadout, 
         sizes.push_back({group.kind.fit_xp, group.count});
     const auto counts = fit_encounter_to_budget(
                             sizes, encounter_xp_budget(levels, default_encounter_challenge),
-                            unsigned(levels.size()));
+                            static_cast<unsigned>(levels.size()));
     for (std::size_t g = 0; g < fight.groups.size(); ++g)
         fight.groups[g].count = counts[g];
     CombatDemo combat(module());
@@ -658,7 +660,7 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
                 sizes.push_back({group.kind.fit_xp, group.count});
             const auto counts =
                 fit_encounter_to_budget(sizes, encounter_xp_budget(levels, default_encounter_challenge),
-                                        unsigned(levels.size()));
+                                        static_cast<unsigned>(levels.size()));
             for (std::size_t g = 0; g < fight.groups.size(); ++g)
                 fight.groups[g].count = counts[g];
         }
@@ -768,7 +770,7 @@ int main(int argc, char **argv)
             --argc;
         }
         const std::filesystem::path game = argv[1];
-        const unsigned runs = argc > 2 ? unsigned(std::stoul(argv[2])) : 20;
+        const unsigned runs = argc > 2 ? static_cast<unsigned>(std::stoul(argv[2])) : 20;
         const std::filesystem::path out = argc > 3 ? argv[3] : "user-data/campaign-sim";
         const std::string only = argc > 4 ? argv[4] : "";
         std::filesystem::create_directories(out);
@@ -834,13 +836,18 @@ int main(int argc, char **argv)
             const double success = 100.0 * complete / runs;
             const double slums_success = 100.0 * cleared / runs;
             summary << plan.name << ',' << runs << ',' << slums_success << ',' << success << ','
-                    << 100.0 * flawless / runs << ',' << double(fights) / runs << ','
-                    << double(deaths) / runs << ',' << double(levels) / people << ','
-                    << double(escaped) / runs << ',' << double(surrendered) / runs << '\n';
+                    << 100.0 * flawless / runs << ','
+                    << static_cast<double>(fights) / runs << ','
+                    << static_cast<double>(deaths) / runs << ','
+                    << static_cast<double>(levels) / people << ','
+                    << static_cast<double>(escaped) / runs << ','
+                    << static_cast<double>(surrendered) / runs << '\n';
             std::printf("%-14s %5u %7.0f %8.0f %9.0f %10.1f %7.2f %9.2f %7.1f %11.1f\n",
                         plan.name.c_str(), runs, slums_success, success, 100.0 * flawless / runs,
-                        double(fights) / runs, double(deaths) / runs, double(levels) / people,
-                        double(escaped) / runs, double(surrendered) / runs);
+                        static_cast<double>(fights) / runs, static_cast<double>(deaths) / runs,
+                        static_cast<double>(levels) / people,
+                        static_cast<double>(escaped) / runs,
+                        static_cast<double>(surrendered) / runs);
             std::fflush(stdout);
         }
         return 0;

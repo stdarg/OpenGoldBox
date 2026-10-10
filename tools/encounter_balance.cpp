@@ -216,7 +216,7 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
                 hp += unit.hit_points;
                 max_hp += unit.max_hit_points;
             }
-        tally.hp_left += double(hp) / max_hp;
+        tally.hp_left += static_cast<double>(hp) / max_hp;
     }
     return tally;
 }
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
             std::cerr << "Usage: opengold_encounter_balance GAME_DIR [SEEDS [CONTENT_PACK]]\n";
             return 2;
         }
-        const unsigned seeds = argc > 2 ? unsigned(std::stoul(argv[2])) : 40;
+        const unsigned seeds = argc > 2 ? static_cast<unsigned>(std::stoul(argv[2])) : 40;
         if (argc > 3)
             content_pack = argv[3];
         const auto maps = MapCatalog::load(argv[1]);
@@ -264,8 +264,10 @@ int main(int argc, char **argv)
                                         level, mixed ? "mixed" : "fighters",
                                         rope_guild ? "guild" : "street",
                                         definition(record) + 6, challenge, strength, mix.c_str(),
-                                        100.0 * t.wins / t.fights, double(t.deaths) / t.fights,
-                                        double(t.down) / t.fights, 100.0 * t.hp_left / t.fights);
+                                        100.0 * t.wins / t.fights,
+                                        static_cast<double>(t.deaths) / t.fights,
+                                        static_cast<double>(t.down) / t.fights,
+                                        100.0 * t.hp_left / t.fights);
                             std::fflush(stdout);
                         }
             }

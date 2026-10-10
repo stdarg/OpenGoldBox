@@ -89,7 +89,8 @@ int inspect(const EclProgram &p)
                 if (a.tag == 128)
                     std::cout << " \"" << a.text << '"';
                 else
-                    std::cout << " {tag=" << unsigned(a.tag) << ",value=" << a.value << '}';
+                    std::cout << " {tag=" << static_cast<unsigned>(a.tag) << ",value=" << a.value
+                              << '}';
             }
             if (!spec.executable)
                 std::cout << " [execution unsupported]";

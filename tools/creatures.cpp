@@ -8,7 +8,7 @@ namespace
 {
 void dice(const opengold::por::DamageDice &d)
 {
-    std::cout << unsigned(d.count) << 'd' << unsigned(d.sides);
+    std::cout << static_cast<unsigned>(d.count) << 'd' << static_cast<unsigned>(d.sides);
     if (d.modifier != 0)
         std::cout << (d.modifier > 0 ? "+" : "") << d.modifier;
 }
@@ -26,14 +26,17 @@ void modifier(std::string_view label, const std::optional<int> &value)
 void print(const opengold::por::Creature &c)
 {
     const auto &s = c.stored;
-    std::cout << c.id.key() << "  " << s.name << "\n  HP " << unsigned(s.max_hit_points)
+    std::cout << c.id.key() << "  " << s.name << "\n  HP "
+              << static_cast<unsigned>(s.max_hit_points)
               << ", base AC " << s.base_armor_class << ", base THAC0 " << s.base_thac0
-              << ", movement " << unsigned(s.base_movement) << '\n';
-    std::cout << "  STR " << unsigned(s.abilities.strength) << '/'
-              << unsigned(s.abilities.exceptional_strength) << ", INT "
-              << unsigned(s.abilities.intelligence) << ", WIS " << unsigned(s.abilities.wisdom)
-              << ", DEX " << unsigned(s.abilities.dexterity) << ", CON "
-              << unsigned(s.abilities.constitution) << ", CHA " << unsigned(s.abilities.charisma)
+              << ", movement " << static_cast<unsigned>(s.base_movement) << '\n';
+    std::cout << "  STR " << static_cast<unsigned>(s.abilities.strength) << '/'
+              << static_cast<unsigned>(s.abilities.exceptional_strength) << ", INT "
+              << static_cast<unsigned>(s.abilities.intelligence) << ", WIS "
+              << static_cast<unsigned>(s.abilities.wisdom)
+              << ", DEX " << static_cast<unsigned>(s.abilities.dexterity) << ", CON "
+              << static_cast<unsigned>(s.abilities.constitution) << ", CHA "
+              << static_cast<unsigned>(s.abilities.charisma)
               << '\n';
     for (std::size_t i = 0; i < s.base_attacks.size(); ++i)
     {
@@ -43,10 +46,11 @@ void print(const opengold::por::Creature &c)
         std::cout << '\n';
     }
     std::cout << "  Saves (death, petrification, wand, breath, spell): "
-              << unsigned(s.saves.paralysis_poison_death) << ' '
-              << unsigned(s.saves.petrification_polymorph) << ' '
-              << unsigned(s.saves.rods_staves_wands) << ' ' << unsigned(s.saves.breath) << ' '
-              << unsigned(s.saves.spells) << '\n';
+              << static_cast<unsigned>(s.saves.paralysis_poison_death) << ' '
+              << static_cast<unsigned>(s.saves.petrification_polymorph) << ' '
+              << static_cast<unsigned>(s.saves.rods_staves_wands) << ' '
+              << static_cast<unsigned>(s.saves.breath) << ' '
+              << static_cast<unsigned>(s.saves.spells) << '\n';
     modifier("Reference STR to hit", c.abilities.strength_to_hit);
     modifier("Reference STR damage", c.abilities.strength_damage);
     modifier("Reference DEX missile to hit", c.abilities.dexterity_missile_to_hit);
@@ -80,14 +84,14 @@ void print(const opengold::por::Creature &c)
         {
             std::cout << "    Item activation/effect bytes (not SPC IDs):";
             for (auto code : item.stored.effect_codes)
-                std::cout << ' ' << unsigned(code);
+                std::cout << ' ' << static_cast<unsigned>(code);
             std::cout << '\n';
         }
     }
     for (const auto &effect : c.effects)
     {
         const auto &e = effect.definition;
-        std::cout << "  Effect " << unsigned(e.code) << ": " << e.name;
+        std::cout << "  Effect " << static_cast<unsigned>(e.code) << ": " << e.name;
         if (effect.stored.duration_raw == 0)
             std::cout << " [permanent]";
         else
