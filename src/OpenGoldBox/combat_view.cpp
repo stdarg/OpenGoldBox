@@ -391,8 +391,6 @@ void CombatView::_ready()
     required_node<Control>(*this, "BattlefieldScroll/Canvas")
     .connect("draw", presentation::guarded(this, &CombatView::draw_battlefield));
     auto *hover = &required_node<PanelContainer>(*this, "HoverInfo");
-    hover->set_custom_minimum_size(Vector2(260, 88));
-    hover->set_size(Vector2(260, 88));
     hover->set_theme_type_variation("CombatHover");
     presentation::setup_nick(
         *this, i18n::text, presentation::guarded(this, &CombatView::begin_nick),
@@ -412,7 +410,8 @@ void CombatView::_ready()
     presentation::setup_weapon_controls(*this, i18n::text,
                                         presentation::guarded(this, &CombatView::weapon_selected));
     ready_ = true;
-    get_window()->set_min_size(Vector2i(1120, 800));
+    get_window()->set_min_size(Vector2i(get_theme_constant("combat_min_width", "OpenGoldMetrics"),
+                                        get_theme_constant("combat_min_height", "OpenGoldMetrics")));
     set_texture_filter(TEXTURE_FILTER_NEAREST);
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -590,8 +589,8 @@ void CombatView::layout()
         if (auto *bar = Object::cast_to<ScrollBar>(scroll->get_child(i, true)))
             bar->set_focus_mode(FOCUS_ALL);
     }
-    scroll->set_position(board_rect_.position);
-    scroll->set_size(board_rect_.size);
+    presentation::place_scene_control(*scroll, board_rect_);
+    board_rect_ = Rect2(scroll->get_position(), scroll->get_size());
     required_node<Control>(*this, "BattlefieldScroll/Canvas")
     .set_custom_minimum_size(Vector2(base_tile_ * board.width, base_tile_ * board.height) *
                               combat_zoom_);
@@ -599,8 +598,7 @@ void CombatView::layout()
     const auto place = [&](const char *name, Rect2 rect)
     {
         auto *node = &required_node<Control>(*this, name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
+        presentation::place_scene_control(*node, rect);
     };
     place("Training", Rect2(right, 20, 112, 34));
     place("Slums", Rect2(right + 120, 20, 112, 34));
@@ -642,8 +640,9 @@ void CombatView::layout()
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         auto *label = &required_node<RichTextLabel>(*this, gs("PartyHP" + std::to_string(slot)));
-        label->set_position(Vector2(width - 300, 60 + slot * (height - 120) / 8.0 + 52));
-        label->set_size(Vector2(270, 28));
+        presentation::place_scene_control(*label,
+                                         Rect2(width - 300, 60 + slot * (height - 120) / 8.0 + 52,
+                                               270, 28));
     }
     layout_status();
 }
@@ -676,85 +675,119 @@ void CombatView::layout_reaction_controls(bool show_controls)
     const double top = board_rect_.get_end().y + 16;
     const double weapon_height =
         required_node<OptionButton>(*this, "Weapons").is_visible() ? 44 : 0;
-    required_node<Label>(*this, "WeaponLabel").set_position(Vector2(24, top + 88));
-    required_node<Label>(*this, "WeaponLabel").set_size(Vector2(180, 36));
-    required_node<OptionButton>(*this, "Weapons").set_position(Vector2(214, top + 88));
-    required_node<OptionButton>(*this, "Weapons").set_size(Vector2(450, 36));
+    presentation::position_scene_control(required_node<Label>(*this, "WeaponLabel"),
+                                         Vector2(24, top + 88));
+    presentation::size_scene_control(required_node<Label>(*this, "WeaponLabel"), Vector2(180, 36));
+    presentation::position_scene_control(required_node<OptionButton>(*this, "Weapons"),
+                                         Vector2(214, top + 88));
+    presentation::size_scene_control(required_node<OptionButton>(*this, "Weapons"),
+                                     Vector2(450, 36));
     const bool aid = required_node<Button>(*this, "Stabilize").is_visible();
-    required_node<Button>(*this, "Stabilize").set_position(Vector2(704, top + weapon_height + 88));
-    required_node<Button>(*this, "Stabilize").set_size(Vector2(110, 36));
-    required_node<Button>(*this, "StandUp").set_position(Vector2(24, top + weapon_height + 132));
-    required_node<Button>(*this, "StandUp").set_size(Vector2(180, 36));
-    required_node<Label>(*this, "ThrownWeaponLabel")
-    .set_position(Vector2(24, top + weapon_height + 176));
-    required_node<Label>(*this, "ThrownWeaponLabel").set_size(Vector2(200, 36));
-    required_node<OptionButton>(*this, "ThrownWeapon")
-    .set_position(Vector2(234, top + weapon_height + 176));
-    required_node<OptionButton>(*this, "ThrownWeapon").set_size(Vector2(360, 36));
-    required_node<Button>(*this, "Throw").set_position(Vector2(604, top + weapon_height + 176));
-    required_node<Button>(*this, "Throw").set_size(Vector2(110, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "Stabilize"),
+                                         Vector2(704, top + weapon_height + 88));
+    presentation::size_scene_control(required_node<Button>(*this, "Stabilize"), Vector2(110, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "StandUp"),
+                                         Vector2(24, top + weapon_height + 132));
+    presentation::size_scene_control(required_node<Button>(*this, "StandUp"), Vector2(180, 36));
+    presentation::position_scene_control(required_node<Label>(*this, "ThrownWeaponLabel"),
+                                         Vector2(24, top + weapon_height + 176));
+    presentation::size_scene_control(required_node<Label>(*this, "ThrownWeaponLabel"),
+                                     Vector2(200, 36));
+    presentation::position_scene_control(required_node<OptionButton>(*this, "ThrownWeapon"),
+                                         Vector2(234, top + weapon_height + 176));
+    presentation::size_scene_control(required_node<OptionButton>(*this, "ThrownWeapon"),
+                                     Vector2(360, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "Throw"),
+                                         Vector2(604, top + weapon_height + 176));
+    presentation::size_scene_control(required_node<Button>(*this, "Throw"), Vector2(110, 36));
     const double inset = controls_height(show_controls);
     // The Items row takes the last row, right above the log.
     const double items_row =
         inset - (required_node<OptionButton>(*this, "ItemAction").is_visible() ? 44 : 0);
-    required_node<Label>(*this, "ItemActionLabel").set_position(Vector2(24, top + items_row));
-    required_node<Label>(*this, "ItemActionLabel").set_size(Vector2(200, 36));
-    required_node<OptionButton>(*this, "ItemAction").set_position(Vector2(234, top + items_row));
-    required_node<OptionButton>(*this, "ItemAction").set_size(Vector2(360, 36));
-    required_node<Button>(*this, "UseItemAction").set_position(Vector2(604, top + items_row));
-    required_node<Button>(*this, "UseItemAction").set_size(Vector2(110, 36));
-    required_node<Label>(*this, "CunningActionLabel")
-    .set_position(Vector2(24, top + weapon_height + 88));
-    required_node<Label>(*this, "CunningActionLabel").set_size(Vector2(aid ? 150 : 180, 36));
-    required_node<OptionButton>(*this, "CunningAction")
-    .set_position(Vector2(aid ? 184 : 214, top + weapon_height + 88));
-    required_node<OptionButton>(*this, "CunningAction").set_size(Vector2(aid ? 160 : 200, 36));
-    required_node<Button>(*this, "UseCunningAction")
-    .set_position(Vector2(aid ? 354 : 424, top + weapon_height + 88));
-    required_node<Button>(*this, "UseCunningAction").set_size(Vector2(aid ? 180 : 330, 36));
-    required_node<Button>(*this, "Dash").set_position(Vector2(24, top + 44));
-    required_node<Button>(*this, "Dash").set_size(Vector2(90, 36));
-    required_node<Button>(*this, "AdrenalineRush").set_position(Vector2(124, top + 44));
-    required_node<Button>(*this, "AdrenalineRush").set_size(Vector2(260, 36));
-    required_node<Button>(*this, "ActionSurge").set_position(Vector2(394, top + 44));
-    required_node<Button>(*this, "ActionSurge").set_size(Vector2(260, 36));
-    required_node<Label>(*this, "CantripLabel").set_position(Vector2(394, top + 44));
-    required_node<Label>(*this, "CantripLabel").set_size(Vector2(64, 36));
-    required_node<OptionButton>(*this, "Cantrip").set_position(Vector2(464, top + 44));
-    required_node<OptionButton>(*this, "Cantrip").set_size(Vector2(200, 36));
-    required_node<Button>(*this, "CastCantrip")
-    .set_position(Vector2(474 + required_node<OptionButton>(*this, "Cantrip").get_size().x,
-                          top + 44));
-    required_node<Button>(*this, "CastCantrip").set_size(Vector2(80, 36));
+    presentation::position_scene_control(required_node<Label>(*this, "ItemActionLabel"),
+                                         Vector2(24, top + items_row));
+    presentation::size_scene_control(required_node<Label>(*this, "ItemActionLabel"),
+                                     Vector2(200, 36));
+    presentation::position_scene_control(required_node<OptionButton>(*this, "ItemAction"),
+                                         Vector2(234, top + items_row));
+    presentation::size_scene_control(required_node<OptionButton>(*this, "ItemAction"),
+                                     Vector2(360, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "UseItemAction"),
+                                         Vector2(604, top + items_row));
+    presentation::size_scene_control(required_node<Button>(*this, "UseItemAction"),
+                                     Vector2(110, 36));
+    presentation::position_scene_control(required_node<Label>(*this, "CunningActionLabel"),
+                                         Vector2(24, top + weapon_height + 88));
+    presentation::size_scene_control(required_node<Label>(*this, "CunningActionLabel"),
+                                     Vector2(aid ? 150 : 180, 36));
+    presentation::position_scene_control(required_node<OptionButton>(*this, "CunningAction"),
+                                         Vector2(aid ? 184 : 214, top + weapon_height + 88));
+    presentation::size_scene_control(required_node<OptionButton>(*this, "CunningAction"),
+                                     Vector2(aid ? 160 : 200, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "UseCunningAction"),
+                                         Vector2(aid ? 354 : 424, top + weapon_height + 88));
+    presentation::size_scene_control(required_node<Button>(*this, "UseCunningAction"),
+                                     Vector2(aid ? 180 : 330, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "Dash"),
+                                         Vector2(24, top + 44));
+    presentation::size_scene_control(required_node<Button>(*this, "Dash"), Vector2(90, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "AdrenalineRush"),
+                                         Vector2(124, top + 44));
+    presentation::size_scene_control(required_node<Button>(*this, "AdrenalineRush"),
+                                     Vector2(260, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "ActionSurge"),
+                                         Vector2(394, top + 44));
+    presentation::size_scene_control(required_node<Button>(*this, "ActionSurge"), Vector2(260, 36));
+    presentation::position_scene_control(required_node<Label>(*this, "CantripLabel"),
+                                         Vector2(394, top + 44));
+    presentation::size_scene_control(required_node<Label>(*this, "CantripLabel"), Vector2(64, 36));
+    presentation::position_scene_control(required_node<OptionButton>(*this, "Cantrip"),
+                                         Vector2(464, top + 44));
+    presentation::size_scene_control(required_node<OptionButton>(*this, "Cantrip"),
+                                     Vector2(200, 36));
+    presentation::position_scene_control(
+        required_node<Button>(*this, "CastCantrip"),
+        Vector2(474 + required_node<OptionButton>(*this, "Cantrip").get_size().x, top + 44));
+    presentation::size_scene_control(required_node<Button>(*this, "CastCantrip"), Vector2(80, 36));
     log_area_ = Rect2(24, top + inset, board_rect_.size.x,
                       std::max(0.0, get_size().y - board_rect_.get_end().y - 64 - inset));
     layout_log();
     const double button_width = 174;
-    required_node<Button>(*this, "React").set_position(Vector2(24, top));
-    required_node<Button>(*this, "React").set_size(Vector2(button_width, 36));
-    required_node<Button>(*this, "Decline").set_position(Vector2(24 + button_width + 10, top));
-    required_node<Button>(*this, "Nick").set_position(Vector2(208, top));
-    required_node<Button>(*this, "Nick").set_size(Vector2(174, 36));
-    required_node<Button>(*this, "Decline").set_size(Vector2(button_width, 36));
-    required_node<Button>(*this, "End").set_position(Vector2(24, top));
-    required_node<Button>(*this, "End").set_size(Vector2(button_width, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "React"), Vector2(24, top));
+    presentation::size_scene_control(required_node<Button>(*this, "React"),
+                                     Vector2(button_width, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "Decline"),
+                                         Vector2(24 + button_width + 10, top));
+    presentation::position_scene_control(required_node<Button>(*this, "Nick"), Vector2(208, top));
+    presentation::size_scene_control(required_node<Button>(*this, "Nick"), Vector2(174, 36));
+    presentation::size_scene_control(required_node<Button>(*this, "Decline"),
+                                     Vector2(button_width, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "End"), Vector2(24, top));
+    presentation::size_scene_control(required_node<Button>(*this, "End"),
+                                     Vector2(button_width, 36));
     // Flee sits at the far end of End turn's row, clear of Nick.
-    required_node<Button>(*this, "Flee")
-    .set_position(Vector2(24 + board_rect_.size.x - button_width, top));
-    required_node<Button>(*this, "Flee").set_size(Vector2(button_width, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "Flee"),
+                                         Vector2(24 + board_rect_.size.x - button_width, top));
+    presentation::size_scene_control(required_node<Button>(*this, "Flee"),
+                                     Vector2(button_width, 36));
     // Quick and Flee both hand the party to the computer, so they sit together.
     // Quick is narrower: in the smallest window End turn, Nick, Quick and Flee
     // share the row. While the computer plays, Take control stands where End
     // turn does and Quick magic where Flee does.
     const double quick_width = 130;
-    required_node<Button>(*this, "Quick").set_position(
+    presentation::position_scene_control(
+        required_node<Button>(*this, "Quick"),
         Vector2(24 + board_rect_.size.x - button_width - 10 - quick_width, top));
-    required_node<Button>(*this, "Quick").set_size(Vector2(quick_width, 36));
-    required_node<Button>(*this, "QuickMagic").set_position(
-        Vector2(24 + board_rect_.size.x - button_width - 10, top));
-    required_node<Button>(*this, "QuickMagic").set_size(Vector2(button_width + 10, 36));
-    required_node<Button>(*this, "TakeControl").set_position(Vector2(24, top));
-    required_node<Button>(*this, "TakeControl").set_size(Vector2(button_width, 36));
+    presentation::size_scene_control(required_node<Button>(*this, "Quick"),
+                                     Vector2(quick_width, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "QuickMagic"),
+                                         Vector2(24 + board_rect_.size.x - button_width - 10, top));
+    presentation::size_scene_control(required_node<Button>(*this, "QuickMagic"),
+                                     Vector2(button_width + 10, 36));
+    presentation::position_scene_control(required_node<Button>(*this, "TakeControl"),
+                                         Vector2(24, top));
+    presentation::size_scene_control(required_node<Button>(*this, "TakeControl"),
+                                     Vector2(button_width, 36));
 }
 
 // The header takes the lines it needs at the top of the log's area; the log
@@ -762,7 +795,7 @@ void CombatView::layout_reaction_controls(bool show_controls)
 void CombatView::layout_log()
 {
     auto *header = &required_node<Label>(*this, "LogHeader");
-    header->set_position(log_area_.position);
+    presentation::position_scene_control(*header, log_area_.position);
     // The header does not wrap (a line too long ends in an ellipsis), so its
     // height is its line count times the font's line pitch.
     const auto font = header->get_theme_font("font");
@@ -771,10 +804,11 @@ void CombatView::layout_log()
     // A small gap keeps a log line scrolled half out of view apart from the header.
     const double header_height =
         std::min<double>((header->get_text().count("\n") + 1) * pitch + 8, log_area_.size.y);
-    header->set_size(Vector2(log_area_.size.x, header_height));
+    presentation::size_scene_control(*header, Vector2(log_area_.size.x, header_height));
     auto *log = &required_node<RichTextLabel>(*this, "Log");
-    log->set_position(log_area_.position + Vector2(0, header_height));
-    log->set_size(Vector2(log_area_.size.x, std::max(0.0, log_area_.size.y - header_height)));
+    presentation::place_scene_control(
+        *log, Rect2(log_area_.position + Vector2(0, header_height),
+                    Vector2(log_area_.size.x, std::max(0.0, log_area_.size.y - header_height))));
 }
 
 void CombatView::layout_status()
@@ -782,12 +816,12 @@ void CombatView::layout_status()
     // Let the translated status summary determine its height. The roster keeps
     // the remaining space above the action prompt and scrolls when necessary.
     auto *turn = &required_node<Label>(*this, "Turn");
-    turn->set_size(Vector2(358, 0));
+    presentation::size_scene_control(*turn, Vector2(358, 0));
     auto *roster = &required_node<RichTextLabel>(*this, "Roster");
     const double top =
         std::max(148.0, static_cast<double>(turn->get_position().y + turn->get_size().y + 8));
-    roster->set_position(Vector2(turn->get_position().x, top));
-    roster->set_size(Vector2(358, std::max(0.0, 308 - top)));
+    presentation::place_scene_control(
+        *roster, Rect2(turn->get_position().x, top, 358, std::max(0.0, 308 - top)));
 }
 
 #include "nick_dialog_impl.h"
@@ -2064,9 +2098,11 @@ void CombatView::update_hover(const Vector2 &pointer)
         details += "\n" + i18n::render(found->conditions);
     required_node<Label>(*this, "HoverInfo/Details").set_text(details);
     const auto size = panel->get_size();
+    const double hover_x = panel->get_theme_constant("combat_hover_offset_x", "OpenGoldMetrics");
+    const double hover_y = panel->get_theme_constant("combat_hover_offset_y", "OpenGoldMetrics");
     panel->set_position(Vector2(
-                            std::clamp(local.x + 18.0, 0.0, std::max(0.0, static_cast<double>(get_size().x - size.x))),
-                            std::clamp(local.y + 18.0, 0.0,
+                            std::clamp(local.x + hover_x, 0.0, std::max(0.0, static_cast<double>(get_size().x - size.x))),
+                            std::clamp(local.y + hover_y, 0.0,
                                        std::max(0.0, static_cast<double>(get_size().y - size.y)))));
     panel->show();
 }
@@ -2160,9 +2196,10 @@ void CombatView::refresh()
             continue;
         }
         const auto &a = *found;
-        label->set_position(
-            Vector2(get_size().x - 300, 60 + slot * (get_size().y - 120) / 8.0 + 52));
-        label->set_size(Vector2(270, 28));
+        presentation::place_scene_control(*label,
+                                         Rect2(get_size().x - 300,
+                                               60 + slot * (get_size().y - 120) / 8.0 + 52,
+                                               270, 28));
         label->set_text(presentation::hp_text(a.hit_points, a.max_hit_points, a.dead,
                                               a.temporary_hp, a.hp_messages) +
         "  " + i18n::format("AC {ac}", {{"ac", a.armor_class}}));

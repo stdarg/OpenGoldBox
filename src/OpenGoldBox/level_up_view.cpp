@@ -81,7 +81,10 @@ void CharacterCreationView::refresh_advancement_arrows()
         auto *arrow = Object::cast_to<Button>(list->get_node_or_null(name));
         if (!arrow)
         {
-            arrow = presentation::add_control<Button>(*list, name, Rect2(0, 0, 30, 26));
+            arrow = presentation::add_control<Button>(*list, name,
+                    Rect2(0, 0,
+                          list->get_theme_constant("party_arrow_width", "OpenGoldMetrics"),
+                          list->get_theme_constant("party_arrow_height", "OpenGoldMetrics")));
             arrow->set_text(String::utf8("↑"));
             arrow->set_tooltip_text(
             i18n::format("Level up {name}", {{"name", gs(member.character.sheet().name)}}));
@@ -98,9 +101,13 @@ void CharacterCreationView::refresh_advancement_arrows()
         const float width = Vector2(font->call("get_string_size", gs(member.character.sheet().name),
                                                0, -1, list->get_theme_font_size("font_size")))
                             .x;
-        arrow->set_position(Vector2(std::min(width + 16, list->get_size().x - 52), y));
-        arrow->set_visible(campaign_->can_advance(member.id) && y >= 0 &&
-                           y + 26 <= list->get_size().y);
+        arrow->set_position(Vector2(std::min(width + list->get_theme_constant(
+                "party_arrow_gap", "OpenGoldMetrics"),
+                list->get_size().x - list->get_theme_constant(
+                    "party_arrow_right_inset", "OpenGoldMetrics")),
+                                    y + list->get_theme_constant("party_arrow_offset_y", "OpenGoldMetrics")));
+        arrow->set_visible(campaign_->can_advance(member.id) && arrow->get_position().y >= 0 &&
+                           arrow->get_position().y + arrow->get_size().y <= list->get_size().y);
     }
     for (int n = 0; n < list->get_child_count(); ++n)
         if (auto *arrow = Object::cast_to<Button>(list->get_child(n));

@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[node name="InitiativeChoice" type="Control"]
+offset_right = 640.0
+offset_bottom = 410.0
+
+[node name="ResolveLabel" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 154.0
+offset_bottom = 60.0
+
+[node name="Resolve" type="Control" parent="."]
+offset_left = 164.0
+offset_top = 24.0
+offset_right = 616.0
+offset_bottom = 64.0
+
+[node name="AllyLabel" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 82.0
+offset_right = 154.0
+offset_bottom = 118.0
+
+[node name="Ally" type="Control" parent="."]
+offset_left = 164.0
+offset_top = 82.0
+offset_right = 616.0
+offset_bottom = 122.0
+
+[node name="Text" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 140.0
+offset_right = 616.0
+offset_bottom = 278.0
+
+[node name="Keep" type="Control" parent="."]
+offset_left = 164.0
+offset_top = 296.0
+offset_right = 384.0
+offset_bottom = 336.0
+
+[node name="Swap" type="Control" parent="."]
+offset_left = 396.0
+offset_top = 296.0
+offset_right = 616.0
+offset_bottom = 336.0
+
+[node name="Metabolism" type="Control" parent="."]
+offset_left = 164.0
+offset_top = 346.0
+offset_right = 616.0
+offset_bottom = 386.0

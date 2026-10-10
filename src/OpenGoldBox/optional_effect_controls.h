@@ -20,8 +20,7 @@ void setup_optional_effect(godot::Node &root, Text text, const godot::Callable &
     using namespace godot;
     auto owned = make_node<Window>();
     owned->set_name("OptionalEffect");
-    owned->set_size(Vector2i(640, 300));
-    owned->set_min_size(Vector2i(640, 300));
+    set_dialog_window_size(*owned, Vector2i(640, 300));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
@@ -80,12 +79,26 @@ void refresh_optional_effect(godot::Node &root,
     const bool multiple = choice->options.size() > 1;
     options->set_visible(multiple);
     required_node<Label>(*w, "ResolveLabel").set_visible(multiple);
-    w->set_size(Vector2i(640, multiple ? 360 : 300));
+    const String group = multiple ? "OptionalEffectMultiple" : "OptionalEffect";
+    const auto window_size = dialog_layout_size_group(group, Vector2i(640, multiple ? 360 : 300));
+    w->set_min_size(window_size);
+    w->set_size(window_size);
     auto *label = &required_node<Label>(*w, "Text");
-    label->set_position(Vector2(24, multiple ? 76 : 18));
-    label->set_size(Vector2(592, multiple ? 198 : 194));
-    required_node<Button>(*w, "Use").set_position(Vector2(446, multiple ? 296 : 236));
-    required_node<Button>(*w, "Skip").set_position(Vector2(284, multiple ? 296 : 236));
+    const auto text_rect = dialog_layout_rect_group(group, "Text",
+                           Rect2(24, multiple ? 76 : 18, 592, multiple ? 198 : 194));
+    label->set_position(text_rect.position);
+    label->set_size(text_rect.size);
+    for (const char *name : {"Use", "Skip"})
+    {
+        auto &button = required_node<Button>(*w, name);
+        const bool use_button = String(name) == "Use";
+        const auto rect = dialog_layout_rect_group(group, name,
+                                            Rect2(use_button ? 446 : 284,
+                                                  multiple ? 296 : 236,
+                                                  use_button ? 170 : 150, 40));
+        button.set_position(rect.position);
+        button.set_size(rect.size);
+    }
     const auto *option = choice->options.empty() ? nullptr : &choice->options[selected];
     w->set_title(render(option ? option->title : choice->title));
     label->set_text(render(option ? option->description : choice->description));

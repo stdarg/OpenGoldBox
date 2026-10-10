@@ -52,8 +52,7 @@ std::string decoded(std::string_view stem)
 
 void SaveSlots::_ready()
 {
-    set_size(Vector2i(620, 470));
-    set_min_size(Vector2i(620, 470));
+    presentation::set_dialog_window_size(*this, Vector2i(620, 470));
     set_flag(Window::FLAG_RESIZE_DISABLED, true);
     set_exclusive(true);
     set_transient(true);

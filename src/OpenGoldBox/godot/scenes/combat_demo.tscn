@@ -9,117 +9,313 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Training" type="Button" parent="."]
+offset_left = 1538
+offset_top = 20
+offset_right = 1650
+offset_bottom = 54
+metadata/layout_reference = Rect2(1538, 20, 112, 34)
 text = "Training"
 [node name="Slums" type="Button" parent="."]
+offset_left = 1658
+offset_top = 20
+offset_right = 1770
+offset_bottom = 54
+metadata/layout_reference = Rect2(1658, 20, 112, 34)
 text = "Slums event"
 [node name="Replay" type="Button" parent="."]
+offset_left = 1778
+offset_top = 20
+offset_right = 1896
+offset_bottom = 54
+metadata/layout_reference = Rect2(1778, 20, 118, 34)
 text = "Restart"
 
 [node name="Turn" type="Label" parent="."]
+offset_left = 1538
+offset_top = 70
+offset_right = 1896
+offset_bottom = 154
+metadata/layout_reference = Rect2(1538, 70, 358, 84)
 theme_type_variation = &"LabelTealText18"
 autowrap_mode = 2
 [node name="Roster" type="RichTextLabel" parent="."]
+offset_left = 1538
+offset_top = 162
+offset_right = 1896
+offset_bottom = 308
+metadata/layout_reference = Rect2(1538, 162, 358, 146)
 theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = true
 [node name="Prompt" type="Label" parent="."]
+offset_left = 1538
+offset_top = 318
+offset_right = 1896
+offset_bottom = 364
+metadata/layout_reference = Rect2(1538, 318, 358, 46)
 theme_type_variation = &"LabelText16"
 autowrap_mode = 2
 
 [node name="Move" type="Button" parent="."]
+offset_left = 1538
+offset_top = 370
+offset_right = 1652
+offset_bottom = 406
+metadata/layout_reference = Rect2(1538, 370, 114, 36)
 text = "Move"
 [node name="Melee" type="Button" parent="."]
+offset_left = 1660
+offset_top = 370
+offset_right = 1774
+offset_bottom = 406
+metadata/layout_reference = Rect2(1660, 370, 114, 36)
 text = "Melee"
 [node name="Ranged" type="Button" parent="."]
+offset_left = 1782
+offset_top = 370
+offset_right = 1896
+offset_bottom = 406
+metadata/layout_reference = Rect2(1782, 370, 114, 36)
 text = "Ranged"
 [node name="CantripLabel" type="Label" parent="."]
+offset_left = 394
+offset_top = 841
+offset_right = 458
+offset_bottom = 877
+metadata/layout_reference = Rect2(394, 841, 64, 36)
 text = "Spell"
 visible = false
 vertical_alignment = 1
 [node name="Cantrip" type="OptionButton" parent="."]
+offset_left = 464
+offset_top = 841
+offset_right = 664
+offset_bottom = 877
+metadata/layout_reference = Rect2(464, 841, 200, 36)
 visible = false
 focus_mode = 2
 [node name="CastCantrip" type="Button" parent="."]
+offset_left = 674
+offset_top = 841
+offset_right = 754
+offset_bottom = 877
+metadata/layout_reference = Rect2(674, 841, 80, 36)
 text = "Cast"
 visible = false
 
 [node name="MagicMissile" type="Button" parent="."]
+offset_left = 1538
+offset_top = 409
+offset_right = 1653
+offset_bottom = 445
+metadata/layout_reference = Rect2(1538, 409, 115, 36)
 text = "Magic Missile"
 [node name="CureWounds" type="Button" parent="."]
+offset_left = 1660
+offset_top = 409
+offset_right = 1776
+offset_bottom = 445
+metadata/layout_reference = Rect2(1660, 409, 116, 36)
 text = "Cure Wounds"
 
 [node name="HealingWord" type="Button" parent="."]
+offset_left = 1782
+offset_top = 409
+offset_right = 1899
+offset_bottom = 445
+metadata/layout_reference = Rect2(1782, 409, 117, 36)
 text = "Healing Word"
 tooltip_text = "Bonus action: heal a visible ally within 60 feet. Uses the selected slot level."
 
 [node name="ScorchingRay" type="Button" parent="."]
+offset_left = 1538
+offset_top = 448
+offset_right = 1658
+offset_bottom = 484
+metadata/layout_reference = Rect2(1538, 448, 120, 36)
 text = "Scorching Ray"
 tooltip_text = "Action: three fire rays at one target within 120 feet. Uses a level 2 slot."
 
 [node name="Blindness" type="Button" parent="."]
+offset_left = 1660
+offset_top = 448
+offset_right = 1774
+offset_bottom = 484
+metadata/layout_reference = Rect2(1660, 448, 114, 36)
 text = "Blindness"
 tooltip_text = "Action: a visible enemy within 120 feet makes a Constitution save. Blindness lasts up to 1 minute, with a new save at the end of each turn. Uses a level 2 slot."
 
 [node name="SpellSlot" type="Button" parent="."]
+offset_left = 1782
+offset_top = 448
+offset_right = 1896
+offset_bottom = 484
+metadata/layout_reference = Rect2(1782, 448, 114, 36)
 text = "Slot level 1"
 tooltip_text = "Switch the slot level used by Magic Missile, Cure Wounds and Healing Word."
 [node name="SecondWind" type="Button" parent="."]
+offset_left = 1538
+offset_top = 487
+offset_right = 1652
+offset_bottom = 523
+metadata/layout_reference = Rect2(1538, 487, 114, 36)
 text = "Second Wind"
 [node name="Dash" type="Button" parent="."]
+offset_left = 24
+offset_top = 841
+offset_right = 114
+offset_bottom = 877
+metadata/layout_reference = Rect2(24, 841, 90, 36)
 text = "Dash"
 [node name="Dodge" type="Button" parent="."]
+offset_left = 1782
+offset_top = 487
+offset_right = 1896
+offset_bottom = 523
+metadata/layout_reference = Rect2(1782, 487, 114, 36)
 text = "Dodge"
 [node name="Disengage" type="Button" parent="."]
+offset_left = 1538
+offset_top = 526
+offset_right = 1652
+offset_bottom = 562
+metadata/layout_reference = Rect2(1538, 526, 114, 36)
 text = "Disengage"
 [node name="End" type="Button" parent="."]
+offset_left = 24
+offset_top = 797
+offset_right = 198
+offset_bottom = 833
+metadata/layout_reference = Rect2(24, 797, 174, 36)
 text = "End turn"
 [node name="Flee" type="Button" parent="."]
+offset_left = 1340
+offset_top = 797
+offset_right = 1514
+offset_bottom = 833
+metadata/layout_reference = Rect2(1340, 797, 174, 36)
 text = "Flee"
 [node name="Quick" type="Button" parent="."]
+offset_left = 1200
+offset_top = 797
+offset_right = 1330
+offset_bottom = 833
+metadata/layout_reference = Rect2(1200, 797, 130, 36)
 text = "Quick"
 [node name="TakeControl" type="Button" parent="."]
+offset_left = 24
+offset_top = 797
+offset_right = 198
+offset_bottom = 833
+metadata/layout_reference = Rect2(24, 797, 174, 36)
 text = "Take control"
 [node name="QuickMagic" type="Button" parent="."]
+offset_left = 1330
+offset_top = 797
+offset_right = 1514
+offset_bottom = 833
+metadata/layout_reference = Rect2(1330, 797, 184, 36)
 text = "Quick magic: Off"
 [node name="Continue" type="Button" parent="."]
+offset_left = 1782
+offset_top = 526
+offset_right = 1896
+offset_bottom = 562
+metadata/layout_reference = Rect2(1782, 526, 114, 36)
 text = "Continue"
 [node name="React" type="Button" parent="."]
+offset_left = 24
+offset_top = 797
+offset_right = 198
+offset_bottom = 833
+metadata/layout_reference = Rect2(24, 797, 174, 36)
 text = "Opportunity attack"
 [node name="Decline" type="Button" parent="."]
+offset_left = 208
+offset_top = 797
+offset_right = 382
+offset_bottom = 833
+metadata/layout_reference = Rect2(208, 797, 174, 36)
 text = "Decline reaction"
 [node name="Save" type="Button" parent="."]
+offset_left = 1538
+offset_top = 614
+offset_right = 1650
+offset_bottom = 648
+metadata/layout_reference = Rect2(1538, 614, 112, 34)
 text = "Save combat"
 [node name="Load" type="Button" parent="."]
+offset_left = 1660
+offset_top = 614
+offset_right = 1773
+offset_bottom = 648
+metadata/layout_reference = Rect2(1660, 614, 113, 34)
 text = "Load combat"
 [node name="Revisit" type="Button" parent="."]
+offset_left = 1782
+offset_top = 614
+offset_right = 1896
+offset_bottom = 648
+metadata/layout_reference = Rect2(1782, 614, 114, 34)
 text = "Revisit event"
 
 [node name="Help" type="Label" parent="."]
+offset_left = 1538
+offset_top = 700
+offset_right = 1896
+offset_bottom = 1088
+metadata/layout_reference = Rect2(1538, 700, 358, 334)
 theme_type_variation = &"LabelMutedText14"
 autowrap_mode = 2
 text = "Teal: party | Orange: enemies\nStone: obstacle | Brown: difficult terrain\nSaving is available in training combat."
 
 [node name="LogHeader" type="Label" parent="."]
+offset_left = 24
+offset_top = 841
+offset_right = 1514
+offset_bottom = 901
+metadata/layout_reference = Rect2(24, 841, 1490, 60)
 theme_type_variation = &"LabelText16"
 clip_text = true
 text_overrun_behavior = 3
 
 [node name="Log" type="RichTextLabel" parent="."]
+offset_left = 24
+offset_top = 901
+offset_right = 1514
+offset_bottom = 1032
+metadata/layout_reference = Rect2(24, 901, 1490, 131)
 theme_type_variation = &"RichTextLabelText16"
 scroll_active = true
 scroll_following = true
 
 [node name="Footer" type="Label" parent="."]
+offset_left = 24
+offset_top = 1046
+offset_right = 1896
+offset_bottom = 1070
+metadata/layout_reference = Rect2(24, 1046, 1872, 24)
 theme_type_variation = &"LabelMutedText14"
 text = "SRD 5.2.1 combat subset | Authored test arena | Original Slums dialogue and art load locally"
 
 [node name="BattlefieldScroll" type="ScrollContainer" parent="."]
+offset_left = 24
+offset_top = 16
+offset_right = 1514
+offset_bottom = 781
+metadata/layout_reference = Rect2(24, 16, 1490, 765)
 clip_contents = true
 focus_mode = 2
 horizontal_scroll_mode = 2
 vertical_scroll_mode = 2
 
 [node name="HoverInfo" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(260, 88)
+offset_left = 0
+offset_top = 0
+offset_right = 260
+offset_bottom = 88
+metadata/layout_reference = Rect2(0, 0, 260, 88)
 visible = false
 mouse_filter = 2
 z_index = 10
@@ -129,9 +325,19 @@ theme_type_variation = &"LabelText16"
 mouse_filter = 2
 
 [node name="Canvas" type="Control" parent="BattlefieldScroll"]
+offset_left = 0
+offset_top = 0
+offset_right = 1490
+offset_bottom = 1117.5
+metadata/layout_reference = Rect2(0, 0, 1490, 1117.5)
 mouse_filter = 2
 
 [node name="ZoomLevel" type="Label" parent="."]
+offset_left = 1538
+offset_top = 16
+offset_right = 1604
+offset_bottom = 50
+metadata/layout_reference = Rect2(1538, 16, 66, 34)
 theme_type_variation = &"LabelText17"
 vertical_alignment = 1
 text = "100%"
@@ -143,24 +349,54 @@ text = "100%"
 [node name="DeathAudio" type="AudioStreamPlayer" parent="."]
 
 [node name="ZoomOut100" type="Button" parent="."]
+offset_left = 1608
+offset_top = 16
+offset_right = 1676
+offset_bottom = 50
+metadata/layout_reference = Rect2(1608, 16, 68, 34)
 text = "-100%"
 tooltip_text = "Decrease battlefield zoom by 100 percentage points"
 [node name="ZoomOut10" type="Button" parent="."]
+offset_left = 1680
+offset_top = 16
+offset_right = 1748
+offset_bottom = 50
+metadata/layout_reference = Rect2(1680, 16, 68, 34)
 text = "-10%"
 tooltip_text = "Decrease battlefield zoom by 10 percentage points"
 [node name="ZoomIn10" type="Button" parent="."]
+offset_left = 1752
+offset_top = 16
+offset_right = 1820
+offset_bottom = 50
+metadata/layout_reference = Rect2(1752, 16, 68, 34)
 text = "+10%"
 tooltip_text = "Increase battlefield zoom by 10 percentage points"
 [node name="ZoomIn100" type="Button" parent="."]
+offset_left = 1824
+offset_top = 16
+offset_right = 1892
+offset_bottom = 50
+metadata/layout_reference = Rect2(1824, 16, 68, 34)
 text = "+100%"
 tooltip_text = "Increase battlefield zoom by 100 percentage points"
 
 [node name="AdrenalineRush" type="Button" parent="."]
+offset_left = 124
+offset_top = 841
+offset_right = 384
+offset_bottom = 877
+metadata/layout_reference = Rect2(124, 841, 260, 36)
 text = "Adrenaline Rush"
 visible = false
 tooltip_text = "Bonus Action: Dash and gain Temporary HP equal to proficiency bonus. All uses return after a Short or Long Rest."
 
 [node name="ActionSurge" type="Button" parent="."]
+offset_left = 394
+offset_top = 841
+offset_right = 654
+offset_bottom = 877
+metadata/layout_reference = Rect2(394, 841, 260, 36)
 text = "Action Surge"
 visible = false
 tooltip_text = "Action Surge: one additional action, except Magic, on your turn. One use per Short or Long Rest."
@@ -174,33 +410,44 @@ unresizable = true
 size = Vector2i(560, 290)
 
 [node name="Background" type="Panel" parent="TemporaryHP"]
+offset_left = 0
+offset_top = 0
+offset_right = 560
+offset_bottom = 290
+metadata/layout_reference = Rect2(0, 0, 560, 290)
 theme_type_variation = &"DialogSurface"
-offset_right = 560.0
-offset_bottom = 290.0
 
 [node name="Text" type="Label" parent="TemporaryHP"]
+offset_left = 24
+offset_top = 20
+offset_right = 536
+offset_bottom = 213
+metadata/layout_reference = Rect2(24, 20, 512, 193)
 theme_type_variation = &"LabelText18"
-offset_left = 24.0
-offset_top = 20.0
-offset_right = 536.0
-offset_bottom = 213.0
 autowrap_mode = 2
 
 [node name="Keep" type="Button" parent="TemporaryHP"]
-offset_left = 24.0
-offset_top = 230.0
-offset_right = 272.0
-offset_bottom = 270.0
+offset_left = 24
+offset_top = 230
+offset_right = 272
+offset_bottom = 270
+metadata/layout_reference = Rect2(24, 230, 248, 40)
 text = "Keep current"
 
 [node name="Use" type="Button" parent="TemporaryHP"]
-offset_left = 288.0
-offset_top = 230.0
-offset_right = 536.0
-offset_bottom = 270.0
+offset_left = 288
+offset_top = 230
+offset_right = 536
+offset_bottom = 270
+metadata/layout_reference = Rect2(288, 230, 248, 40)
 text = "Use new"
 
 [node name="PartyHP0" type="RichTextLabel" parent="."]
+offset_left = 1620
+offset_top = 112
+offset_right = 1890
+offset_bottom = 140
+metadata/layout_reference = Rect2(1620, 112, 270, 28)
 theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
@@ -208,6 +455,11 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP1" type="RichTextLabel" parent="."]
+offset_left = 1620
+offset_top = 232
+offset_right = 1890
+offset_bottom = 260
+metadata/layout_reference = Rect2(1620, 232, 270, 28)
 theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
@@ -215,6 +467,11 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP2" type="RichTextLabel" parent="."]
+offset_left = 1620
+offset_top = 352
+offset_right = 1890
+offset_bottom = 380
+metadata/layout_reference = Rect2(1620, 352, 270, 28)
 theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
@@ -222,6 +479,11 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP3" type="RichTextLabel" parent="."]
+offset_left = 1620
+offset_top = 472
+offset_right = 1890
+offset_bottom = 500
+metadata/layout_reference = Rect2(1620, 472, 270, 28)
 theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
@@ -229,6 +491,11 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP4" type="RichTextLabel" parent="."]
+offset_left = 1620
+offset_top = 592
+offset_right = 1890
+offset_bottom = 620
+metadata/layout_reference = Rect2(1620, 592, 270, 28)
 theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
@@ -236,6 +503,11 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP5" type="RichTextLabel" parent="."]
+offset_left = 1620
+offset_top = 712
+offset_right = 1890
+offset_bottom = 740
+metadata/layout_reference = Rect2(1620, 712, 270, 28)
 theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
@@ -243,6 +515,11 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP6" type="RichTextLabel" parent="."]
+offset_left = 1620
+offset_top = 832
+offset_right = 1890
+offset_bottom = 860
+metadata/layout_reference = Rect2(1620, 832, 270, 28)
 theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
@@ -250,6 +527,11 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP7" type="RichTextLabel" parent="."]
+offset_left = 1620
+offset_top = 952
+offset_right = 1890
+offset_bottom = 980
+metadata/layout_reference = Rect2(1620, 952, 270, 28)
 theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
@@ -257,39 +539,89 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="CunningActionLabel" type="Label" parent="."]
+offset_left = 24
+offset_top = 885
+offset_right = 204
+offset_bottom = 921
+metadata/layout_reference = Rect2(24, 885, 180, 36)
 visible = false
 text = "Cunning Action"
 
 [node name="CunningAction" type="OptionButton" parent="."]
+offset_left = 214
+offset_top = 885
+offset_right = 414
+offset_bottom = 921
+metadata/layout_reference = Rect2(214, 885, 200, 36)
 visible = false
 
 [node name="UseCunningAction" type="Button" parent="."]
+offset_left = 424
+offset_top = 885
+offset_right = 754
+offset_bottom = 921
+metadata/layout_reference = Rect2(424, 885, 330, 36)
 visible = false
 text = "Use Bonus Action"
 
 [node name="StandUp" type="Button" parent="."]
+offset_left = 24
+offset_top = 929
+offset_right = 204
+offset_bottom = 965
+metadata/layout_reference = Rect2(24, 929, 180, 36)
 visible = false
 text = "Stand up"
 
 [node name="ThrownWeaponLabel" type="Label" parent="."]
+offset_left = 24
+offset_top = 973
+offset_right = 224
+offset_bottom = 1009
+metadata/layout_reference = Rect2(24, 973, 200, 36)
 visible = false
 text = "Thrown weapon"
 
 [node name="ThrownWeapon" type="OptionButton" parent="."]
+offset_left = 234
+offset_top = 973
+offset_right = 594
+offset_bottom = 1009
+metadata/layout_reference = Rect2(234, 973, 360, 36)
 visible = false
 
 [node name="Throw" type="Button" parent="."]
+offset_left = 604
+offset_top = 973
+offset_right = 714
+offset_bottom = 1009
+metadata/layout_reference = Rect2(604, 973, 110, 36)
 visible = false
 text = "Throw"
 
 [node name="ItemActionLabel" type="Label" parent="."]
+offset_left = 24
+offset_top = 841
+offset_right = 224
+offset_bottom = 877
+metadata/layout_reference = Rect2(24, 841, 200, 36)
 visible = false
 text = "Items"
 
 [node name="ItemAction" type="OptionButton" parent="."]
+offset_left = 234
+offset_top = 841
+offset_right = 594
+offset_bottom = 877
+metadata/layout_reference = Rect2(234, 841, 360, 36)
 visible = false
 
 [node name="UseItemAction" type="Button" parent="."]
+offset_left = 604
+offset_top = 841
+offset_right = 714
+offset_bottom = 877
+metadata/layout_reference = Rect2(604, 841, 110, 36)
 visible = false
 text = "Use"
 
@@ -302,33 +634,72 @@ unresizable = true
 size = Vector2i(640, 340)
 
 [node name="Background" type="Panel" parent="TacticalMind"]
+offset_left = 0
+offset_top = 0
+offset_right = 640
+offset_bottom = 340
+metadata/layout_reference = Rect2(0, 0, 640, 340)
 theme_type_variation = &"DialogSurface"
-offset_right = 640.0
-offset_bottom = 340.0
 
 [node name="Text" type="Label" parent="TacticalMind"]
+offset_left = 24
+offset_top = 20
+offset_right = 616
+offset_bottom = 263
+metadata/layout_reference = Rect2(24, 20, 592, 243)
 theme_type_variation = &"LabelText18"
-offset_left = 24.0
-offset_top = 20.0
-offset_right = 616.0
-offset_bottom = 263.0
 autowrap_mode = 2
 
 [node name="Use" type="Button" parent="TacticalMind"]
-offset_left = 24.0
-offset_top = 280.0
-offset_right = 312.0
-offset_bottom = 320.0
+offset_left = 24
+offset_top = 280
+offset_right = 312
+offset_bottom = 320
+metadata/layout_reference = Rect2(24, 280, 288, 40)
 text = "Use Tactical Mind"
 
 [node name="Skip" type="Button" parent="TacticalMind"]
-offset_left = 328.0
-offset_top = 280.0
-offset_right = 616.0
-offset_bottom = 320.0
+offset_left = 328
+offset_top = 280
+offset_right = 616
+offset_bottom = 320
+metadata/layout_reference = Rect2(328, 280, 288, 40)
 text = "Keep failed check"
 
 
 [node name="Stabilize" type="Button" parent="."]
+offset_left = 704
+offset_top = 885
+offset_right = 814
+offset_bottom = 921
+metadata/layout_reference = Rect2(704, 885, 110, 36)
 visible = false
 text = "Stabilize"
+
+[node name="WeaponLabel" type="Label" parent="."]
+offset_left = 24
+offset_top = 885
+offset_right = 204
+offset_bottom = 921
+metadata/layout_reference = Rect2(24, 885, 180, 36)
+visible = false
+text = "Weapon"
+
+[node name="Weapons" type="OptionButton" parent="."]
+offset_left = 214
+offset_top = 885
+offset_right = 664
+offset_bottom = 921
+metadata/layout_reference = Rect2(214, 885, 450, 36)
+visible = false
+fit_to_longest_item = false
+clip_text = true
+
+[node name="Nick" type="Button" parent="."]
+offset_left = 208
+offset_top = 797
+offset_right = 382
+offset_bottom = 833
+metadata/layout_reference = Rect2(208, 797, 174, 36)
+visible = false
+text = "Nick attack"

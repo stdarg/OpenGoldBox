@@ -64,10 +64,9 @@ void CharacterPoolDialog::fit(Vector2 view_size)
     const auto place = [&](const char *path, Rect2 r)
     {
         auto *n = &required_node<Control>(*this, path);
-        n->set_position(r.position);
-        n->set_size(r.size);
+        presentation::place_scene_control(*n, r);
     };
-    set_size(Vector2i(w, h));
+    presentation::size_scene_window(*this, Vector2i(w, h));
     place("Background", Rect2(0, 0, w, h));
     place("Title", Rect2(20, 16, w - 40, 36));
     place("List", Rect2(20, 64, 260, h - 154));

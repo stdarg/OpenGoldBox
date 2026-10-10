@@ -111,7 +111,8 @@ void RolfTourView::_ready()
         auto arrow = presentation::make_node<Button>();
         arrow->set_name("Advance");
         arrow->set_text(String::utf8("↑"));
-        arrow->set_size(Vector2(30, 26));
+        arrow->set_size(Vector2(member->get_theme_constant("party_arrow_width", "OpenGoldMetrics"),
+                                member->get_theme_constant("party_arrow_height", "OpenGoldMetrics")));
         arrow->set_tooltip_text(i18n::text(N_("Level up")));
         arrow->connect("pressed", presentation::guarded(this, &RolfTourView::level_up_requested).bind(slot));
         presentation::attach_child(*member, std::move(arrow));
@@ -128,7 +129,8 @@ void RolfTourView::_ready()
     .connect("close_requested", presentation::guarded(this, &RolfTourView::close_sheet));
     required_node<Button>(*this, "LeaveShop")
     .connect("pressed", presentation::guarded(this, &RolfTourView::leave_shop));
-    get_window()->set_min_size(Vector2i(960, 720));
+    get_window()->set_min_size(Vector2i(get_theme_constant("tour_min_width", "OpenGoldMetrics"),
+                                        get_theme_constant("tour_min_height", "OpenGoldMetrics")));
     for (bool saving :
             {
                 true, false
@@ -188,11 +190,19 @@ void RolfTourView::layout()
     map_rect_ = Rect2(margin + main_width + gutter, 102, sidebar, sidebar);
     dialogue_rect_ = Rect2(margin, scene_rect_.get_end().y + 18, main_width,
                            height - scene_rect_.get_end().y - 76);
+    auto &scene_bounds = required_node<Control>(*this, "SceneBounds");
+    auto &map_bounds = required_node<Control>(*this, "MapBounds");
+    auto &dialogue_bounds = required_node<Control>(*this, "DialogueBounds");
+    presentation::place_scene_control(scene_bounds, scene_rect_);
+    presentation::place_scene_control(map_bounds, map_rect_);
+    presentation::place_scene_control(dialogue_bounds, dialogue_rect_);
+    scene_rect_ = Rect2(scene_bounds.get_position(), scene_bounds.get_size());
+    map_rect_ = Rect2(map_bounds.get_position(), map_bounds.get_size());
+    dialogue_rect_ = Rect2(dialogue_bounds.get_position(), dialogue_bounds.get_size());
     const auto place = [&](const char *name, Rect2 rect)
     {
         auto *node = &required_node<Control>(*this, name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
+        presentation::place_scene_control(*node, rect);
     };
     place("SaveGame", Rect2(width - 520, 20, 140, 36));
     place("LoadGame", Rect2(width - 370, 20, 140, 36));
@@ -233,22 +243,33 @@ void RolfTourView::layout()
     place("LeaveShop", Rect2(dialogue_rect_.get_end() - Vector2(332, 54), Vector2(140, 40)));
     place("InventoryPanel", Rect2(margin + 40, 90, width - 2 * margin - 80, height - 160));
     auto *inventory_panel = &required_node<Control>(*this, "InventoryPanel");
-    required_node<Control>(*this, "InventoryPanel/Items").set_position(Vector2(20, 70));
-    required_node<Control>(*this, "InventoryPanel/Items")
-    .set_size(inventory_panel->get_size() - Vector2(40, 254));
-    required_node<Control>(*this, "InventoryPanel/Close")
-    .set_position(Vector2(20, inventory_panel->get_size().y - 54));
-    required_node<Control>(*this, "InventoryPanel/Close").set_size(Vector2(180, 36));
+    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Items"),
+                                         Vector2(20, 70));
+    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Items"),
+                                     inventory_panel->get_size() - Vector2(40, 254));
+    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Close"),
+                                         Vector2(20, inventory_panel->get_size().y - 54));
+    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Close"),
+                                     Vector2(180, 36));
     const auto iw = inventory_panel->get_size().x, ih = inventory_panel->get_size().y;
-    required_node<Control>(*this, "InventoryPanel/Header").set_position(Vector2(20, 18));
-    required_node<Control>(*this, "InventoryPanel/Header").set_size(Vector2(iw - 40, 44));
-    required_node<Control>(*this, "InventoryPanel/Status").set_position(Vector2(20, ih - 132));
-    required_node<Control>(*this, "InventoryPanel/Status").set_size(Vector2(iw - 40, 68));
-    required_node<Control>(*this, "InventoryPanel/Equip").set_position(Vector2(220, ih - 54));
-    required_node<Control>(*this, "InventoryPanel/Equip").set_size(Vector2(150, 36));
-    required_node<Control>(*this, "InventoryPanel/Unequip").set_position(Vector2(390, ih - 54));
-    required_node<Control>(*this, "InventoryPanel/Unequip").set_size(Vector2(150, 36));
-    required_node<Window>(*this, "MemberSheet").set_size(Vector2i(width - 120, height - 120));
+    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Header"),
+                                         Vector2(20, 18));
+    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Header"),
+                                     Vector2(iw - 40, 44));
+    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Status"),
+                                         Vector2(20, ih - 132));
+    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Status"),
+                                     Vector2(iw - 40, 68));
+    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Equip"),
+                                         Vector2(220, ih - 54));
+    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Equip"),
+                                     Vector2(150, 36));
+    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Unequip"),
+                                         Vector2(390, ih - 54));
+    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Unequip"),
+                                     Vector2(150, 36));
+    presentation::size_scene_window(required_node<Window>(*this, "MemberSheet"),
+                                    Vector2i(width - 120, height - 120));
     place("MemberSheet/Text", Rect2(24, 24, width - 168, height - 220));
     place("MemberSheet/Close", Rect2(width - 290, height - 180, 130, 36));
 }
@@ -986,24 +1007,26 @@ void RolfTourView::refresh()
         }
         displayed_ticket_ = s.continue_ticket;
     }
-    required_node<RichTextLabel>(*this, "Dialogue")
-    .set_size(
+    presentation::size_scene_control(
+        required_node<RichTextLabel>(*this, "Dialogue"),
         Vector2(dialogue_rect_.size.x - 36,
                 (shopping || multiple) ? 36 : dialogue_rect_.size.y - (answer ? 160 : 112)));
     if (multiple)
     {
         const double text_height = std::min((dialogue_rect_.size.y - 122) * .55,
                                             std::max<double>(28.0, dialogue_rect_.size.y - 192));
-        required_node<RichTextLabel>(*this, "Dialogue")
-        .set_size(Vector2(dialogue_rect_.size.x - 36, text_height));
-        choices->set_position(dialogue_rect_.position + Vector2(18, 56 + text_height));
-        choices->set_size(
-            Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 120 - text_height));
+        presentation::size_scene_control(required_node<RichTextLabel>(*this, "Dialogue"),
+                                         Vector2(dialogue_rect_.size.x - 36, text_height));
+        presentation::place_scene_control(
+            *choices,
+            Rect2(dialogue_rect_.position + Vector2(18, 56 + text_height),
+                  Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 120 - text_height)));
     }
     else
     {
-        choices->set_position(dialogue_rect_.position + Vector2(18, 84));
-        choices->set_size(Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 148));
+        presentation::place_scene_control(
+            *choices, Rect2(dialogue_rect_.position + Vector2(18, 84),
+                            Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 148)));
     }
     if (shopping)
         required_node<RichTextLabel>(*this, "Dialogue")
@@ -1075,7 +1098,10 @@ void RolfTourView::refresh()
                                        "get_string_size", name, 0, -1,
                                        button->get_theme_font_size("font_size")))
                            .x;
-        arrow->set_position(Vector2(std::min(width + 16, button->get_size().x - 36), 2));
+        arrow->set_position(Vector2(std::min(width + get_theme_constant(
+                "party_arrow_gap", "OpenGoldMetrics"),
+                button->get_size().x - get_theme_constant("tour_arrow_right_inset", "OpenGoldMetrics")),
+            get_theme_constant("tour_arrow_top_inset", "OpenGoldMetrics")));
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());
     }
     queue_redraw();

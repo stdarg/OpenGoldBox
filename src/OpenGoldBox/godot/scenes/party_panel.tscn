@@ -15,80 +15,211 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 
 [node name="Title" type="Label" parent="."]
+offset_left = 24
+offset_top = 22
+offset_right = 1896
+offset_bottom = 62
+metadata/layout_reference = Rect2(24, 22, 1872, 40)
 theme_type_variation = &"LabelText28"
 text = "OPENGOLDBOX / Party roster"
 autowrap_mode = 2
 
 [node name="Roster" type="ItemList" parent="."]
+offset_left = 24
+offset_top = 90
+offset_right = 324
+offset_bottom = 820
+metadata/layout_reference = Rect2(24, 90, 300, 730)
 
 [node name="Sheet" type="RichTextLabel" parent="."]
+offset_left = 350
+offset_top = 90
+offset_right = 1620
+offset_bottom = 790
+metadata/layout_reference = Rect2(350, 90, 1270, 700)
 theme_type_variation = &"RichTextLabelTableGap16Text18"
 
 [node name="Inventory" type="ItemList" parent="."]
+offset_left = 350
+offset_top = 800
+offset_right = 1896
+offset_bottom = 896
+metadata/layout_reference = Rect2(350, 800, 1546, 96)
 
 [node name="Portrait" type="TextureRect" parent="."]
+offset_left = 1636
+offset_top = 90
+offset_right = 1900
+offset_bottom = 354
+metadata/layout_reference = Rect2(1636, 90, 264, 264)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="Status" type="Label" parent="."]
+offset_left = 24
+offset_top = 1041
+offset_right = 1896
+offset_bottom = 1073
+metadata/layout_reference = Rect2(24, 1041, 1872, 32)
 autowrap_mode = 2
 
 [node name="Create" type="Button" parent="."]
+offset_left = 24
+offset_top = 955
+offset_right = 397.2
+offset_bottom = 991
+metadata/layout_reference = Rect2(24, 955, 373.2, 36)
 text = "Create character"
 
 [node name="Remove" type="Button" parent="."]
+offset_left = 401.2
+offset_top = 955
+offset_right = 777.4
+offset_bottom = 991
+metadata/layout_reference = Rect2(401.2, 955, 376.2, 36)
 text = "Remove member"
 
 [node name="Rejoin" type="Button" parent="."]
+offset_left = 781.4
+offset_top = 955
+offset_right = 1118.6
+offset_bottom = 991
+metadata/layout_reference = Rect2(781.4, 955, 337.2, 36)
 text = "Rejoin party"
 
 [node name="Recruit" type="Button" parent="."]
+offset_left = 1122.6
+offset_top = 955
+offset_right = 1536.8
+offset_bottom = 991
+metadata/layout_reference = Rect2(1122.6, 955, 414.2, 36)
 text = "Recruit preview guard"
 
 [node name="Equip" type="Button" parent="."]
+offset_left = 1540.8
+offset_top = 955
+offset_right = 1896
+offset_bottom = 991
+metadata/layout_reference = Rect2(1540.8, 955, 355.2, 36)
 text = "Equip selected"
 
 [node name="Unequip" type="Button" parent="."]
+offset_left = 24
+offset_top = 999
+offset_right = 356.83333333333337
+offset_bottom = 1035
+metadata/layout_reference = Rect2(24, 999, 332.83333333333337, 36)
 text = "Unequip selected"
 
 [node name="Explore" type="Button" parent="."]
+offset_left = 360.83333333333337
+offset_top = 999
+offset_right = 704.6666666666667
+offset_bottom = 1035
+metadata/layout_reference = Rect2(360.83333333333337, 999, 343.83333333333337, 36)
 text = "Explore New Phlan"
 
 [node name="Combat" type="Button" parent="."]
+offset_left = 708.6666666666667
+offset_top = 999
+offset_right = 1010.5000000000001
+offset_bottom = 1035
+metadata/layout_reference = Rect2(708.6666666666667, 999, 301.83333333333337, 36)
 text = "Party combat"
 
 [node name="Close" type="Button" parent="."]
+offset_left = 1014.5000000000001
+offset_top = 999
+offset_right = 1330.3333333333335
+offset_bottom = 1035
+metadata/layout_reference = Rect2(1014.5000000000001, 999, 315.83333333333337, 36)
 text = "Back to creator"
 
 [node name="Modifiers" type="Button" parent="."]
+offset_left = 1334.3333333333335
+offset_top = 999
+offset_right = 1596.166666666667
+offset_bottom = 1035
+metadata/layout_reference = Rect2(1334.3333333333335, 999, 261.83333333333337, 36)
 theme_type_variation = &"ButtonText14"
 text = "Modifiers"
 
 [node name="SavingThrows" type="Button" parent="."]
+offset_left = 1600.166666666667
+offset_top = 999
+offset_right = 1896.0000000000005
+offset_bottom = 1035
+metadata/layout_reference = Rect2(1600.166666666667, 999, 295.83333333333337, 36)
 theme_type_variation = &"ButtonText14"
 text = "Saving Throws"
 
 [node name="ReadyLabel" type="Label" parent="."]
+offset_left = 1636
+offset_top = 488
+offset_right = 1756
+offset_bottom = 512
+metadata/layout_reference = Rect2(1636, 488, 120, 24)
 text = "Ready"
 horizontal_alignment = 1
 
 [node name="ActionLabel" type="Label" parent="."]
+offset_left = 1780
+offset_top = 488
+offset_right = 1900
+offset_bottom = 512
+metadata/layout_reference = Rect2(1780, 488, 120, 24)
 text = "Action"
 horizontal_alignment = 1
 
 [node name="ReadySprite" type="TextureRect" parent="."]
+offset_left = 1636
+offset_top = 364
+offset_right = 1756
+offset_bottom = 484
+metadata/layout_reference = Rect2(1636, 364, 120, 120)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="ActionSprite" type="TextureRect" parent="."]
+offset_left = 1780
+offset_top = 364
+offset_right = 1900
+offset_bottom = 484
+metadata/layout_reference = Rect2(1780, 364, 120, 120)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="Pool" type="Button" parent="."]
+offset_left = 1700
+offset_top = 24
+offset_right = 1896
+offset_bottom = 60
+metadata/layout_reference = Rect2(1700, 24, 196, 36)
 text = "Character Pool"
 
+[node name="Save" type="Button" parent="."]
+offset_left = 1400.0
+offset_top = 24.0
+offset_right = 1540.0
+offset_bottom = 60.0
+metadata/layout_reference = Rect2(1400, 24, 140, 36)
+text = "Save game"
+
+[node name="Load" type="Button" parent="."]
+offset_left = 1550.0
+offset_top = 24.0
+offset_right = 1690.0
+offset_bottom = 60.0
+metadata/layout_reference = Rect2(1550, 24, 140, 36)
+text = "Load game"
+
 [node name="MakeLeader" type="Button" parent="."]
+offset_left = 24
+offset_top = 828
+offset_right = 324
+offset_bottom = 864
+metadata/layout_reference = Rect2(24, 828, 300, 36)
 text = "Make leader"

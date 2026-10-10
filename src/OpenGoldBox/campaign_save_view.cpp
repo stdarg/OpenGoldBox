@@ -63,12 +63,10 @@ void CharacterCreationView::setup_saves()
                 true, false
             })
     {
-        auto button = presentation::make_node<Button>();
-        button->set_name(saving ? "Save" : "Load");
-        button->set_text(i18n::text(saving ? N_("Save game") : N_("Load game")));
-        button->connect("pressed",
-                        presentation::guarded(this, &CharacterCreationView::open_saves).bind(saving));
-        presentation::attach_child(required_node<Control>(*this, "PartyPanel"), std::move(button));
+        auto &button = required_node<Button>(*this, saving ? "PartyPanel/Save" : "PartyPanel/Load");
+        button.set_text(i18n::text(saving ? N_("Save game") : N_("Load game")));
+        button.connect("pressed",
+                       presentation::guarded(this, &CharacterCreationView::open_saves).bind(saving));
     }
 }
 

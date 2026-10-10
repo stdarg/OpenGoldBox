@@ -1,0 +1,41 @@
+[gd_scene format=3]
+
+[node name="SaveSlots" type="Control"]
+offset_right = 620.0
+offset_bottom = 470.0
+
+[node name="Help" type="Control" parent="."]
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 600.0
+offset_bottom = 58.0
+
+[node name="Slots" type="Control" parent="."]
+offset_left = 20.0
+offset_top = 66.0
+offset_right = 600.0
+offset_bottom = 296.0
+
+[node name="Name" type="Control" parent="."]
+offset_left = 20.0
+offset_top = 310.0
+offset_right = 600.0
+offset_bottom = 346.0
+
+[node name="Status" type="Control" parent="."]
+offset_left = 20.0
+offset_top = 354.0
+offset_right = 600.0
+offset_bottom = 412.0
+
+[node name="Action" type="Control" parent="."]
+offset_left = 300.0
+offset_top = 420.0
+offset_right = 445.0
+offset_bottom = 456.0
+
+[node name="Cancel" type="Control" parent="."]
+offset_left = 455.0
+offset_top = 420.0
+offset_right = 600.0
+offset_bottom = 456.0

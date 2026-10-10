@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[node name="OptionalEffect" type="Control"]
+offset_right = 640.0
+offset_bottom = 300.0
+
+[node name="ResolveLabel" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 154.0
+offset_bottom = 54.0
+
+[node name="Resolve" type="Control" parent="."]
+offset_left = 164.0
+offset_top = 18.0
+offset_right = 616.0
+offset_bottom = 58.0
+
+[node name="Text" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 616.0
+offset_bottom = 212.0
+
+[node name="Skip" type="Control" parent="."]
+offset_left = 284.0
+offset_top = 236.0
+offset_right = 434.0
+offset_bottom = 276.0
+
+[node name="Use" type="Control" parent="."]
+offset_left = 446.0
+offset_top = 236.0
+offset_right = 616.0
+offset_bottom = 276.0

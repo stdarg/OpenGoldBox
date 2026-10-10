@@ -41,10 +41,9 @@ void TownSheetDialog::fit(Vector2 view_size)
     const auto place = [&](const char *path, Rect2 r)
     {
         auto *n = &required_node<Control>(*this, path);
-        n->set_position(r.position);
-        n->set_size(r.size);
+        presentation::place_scene_control(*n, r);
     };
-    set_size(Vector2i(w, h));
+    presentation::size_scene_window(*this, Vector2i(w, h));
     place("Background", Rect2(0, 0, w, h));
     place("Text", Rect2(24, 24, w - 48, h - 100));
     place("Close", Rect2(w - 154, h - 56, 130, 36));

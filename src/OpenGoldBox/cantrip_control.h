@@ -63,7 +63,8 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
             owned->set_name(name);
             check = attach_child(*rows, std::move(owned));
             check->set_focus_mode(Control::FOCUS_ALL);
-            check->set_custom_minimum_size(Vector2(0, 40));
+            check->set_custom_minimum_size(Vector2(0, check->get_theme_constant(
+                    "cantrip_checkbox_height", "OpenGoldMetrics")));
             check->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
             style_choice(*check);
             check->connect("toggled", toggled.bind(name));

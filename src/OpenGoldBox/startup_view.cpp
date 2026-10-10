@@ -346,9 +346,14 @@ void StartupView::layout_text()
     const auto fitted = source * fit;
     const auto origin = (get_size() - fitted) * .5;
     // Keep the lettering proportions and comfortable margins from the reference.
-    const auto lettering_size = fitted * .8;
+    const double lettering_scale = get_theme_constant("startup_lettering_percent", "OpenGoldMetrics") / 100.0;
+    const double vertical_offset = get_theme_constant("startup_lettering_up_percent", "OpenGoldMetrics") / 100.0;
+    const Vector2 scene_offset(get_theme_constant("startup_lettering_offset_x", "OpenGoldMetrics"),
+                               get_theme_constant("startup_lettering_offset_y", "OpenGoldMetrics"));
+    const auto lettering_size = fitted * lettering_scale;
     auto *lettering = &required_node<TextureRect>(*this, "Text"); // scene-owned
-    lettering->set_position(origin + (fitted - lettering_size) * .5 - Vector2(0, fitted.y * .03));
+    lettering->set_position(origin + (fitted - lettering_size) * .5 -
+                            Vector2(0, fitted.y * vertical_offset) + scene_offset);
     lettering->set_size(lettering_size);
 }
 

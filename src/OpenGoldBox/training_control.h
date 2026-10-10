@@ -205,7 +205,8 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                 owned->set_name("Choice");
                 choice = attach_child(*box, std::move(owned));
                 choice->set_focus_mode(Control::FOCUS_ALL);
-                choice->set_custom_minimum_size(Vector2(0, 38));
+                choice->set_custom_minimum_size(Vector2(0, choice->get_theme_constant(
+                        "training_dropdown_height", "OpenGoldMetrics")));
                 choice->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
             }
             if (choice->has_meta("training_callback"))
@@ -258,7 +259,8 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                 owned->set_name(node_name);
                 check = attach_child(*box, std::move(owned));
                 check->set_focus_mode(Control::FOCUS_ALL);
-                check->set_custom_minimum_size(Vector2(0, 34));
+                check->set_custom_minimum_size(Vector2(0, check->get_theme_constant(
+                        "training_checkbox_height", "OpenGoldMetrics")));
                 check->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
                 style_choice(*check);
             }

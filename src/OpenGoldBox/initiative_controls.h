@@ -19,8 +19,7 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
     using namespace godot;
     auto owned = make_node<Window>();
     owned->set_name("InitiativeChoice");
-    owned->set_size(Vector2i(640, 410));
-    owned->set_min_size(Vector2i(640, 410));
+    set_dialog_window_size(*owned, Vector2i(640, 410));
     owned->set_title(text(N_("Initiative")));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);

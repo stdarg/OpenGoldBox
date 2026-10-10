@@ -180,12 +180,11 @@ void CharacterCreationView::show_pool()
 void CharacterCreationView::party_layout()
 {
     const auto w = get_size().x, h = get_size().y;
-    required_node<Control>(*this, "PartyPanel").set_size(get_size());
+    presentation::size_scene_control(required_node<Control>(*this, "PartyPanel"), get_size());
     const auto place = [&](const char *name, Rect2 rect)
     {
         auto *node = &required_node<Control>(*this, name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
+        presentation::place_scene_control(*node, rect);
     };
     place("Party", Rect2(24, h - 158, 166, 36));
     place("AddParty", Rect2(218 + page_rect_.size.x - 190, h - 60, 190, 38));
@@ -215,8 +214,7 @@ void CharacterCreationView::party_layout()
         {
             auto *button = &required_node<Control>(*this, gs("PartyPanel/") + name);
             const double width = button->get_combined_minimum_size().x + spare / names.size();
-            button->set_position(Vector2(x, y));
-            button->set_size(Vector2(width, 36));
+            presentation::place_scene_control(*button, Rect2(x, y, width, 36));
             x += width + gap;
         }
     };
@@ -1215,8 +1213,7 @@ void CharacterCreationView::setup_defeat()
     auto window = presentation::make_node<Window>();
     window->set_name("Defeat");
     window->set_title(i18n::text(N_("Defeat")));
-    window->set_size(Vector2i(520, 240));
-    window->set_min_size(Vector2i(520, 240));
+    presentation::set_dialog_window_size(*window, Vector2i(520, 240));
     window->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     window->set_transient(true);
     window->set_exclusive(true);
@@ -1226,14 +1223,17 @@ void CharacterCreationView::setup_defeat()
     auto title = presentation::make_node<Label>();
     title->set_name("Title");
     title->set_text(i18n::text(N_("Your party has been defeated.")));
-    title->set_position(Vector2(24, 30));
-    title->set_size(Vector2(472, 44));
+    const auto title_rect = presentation::dialog_layout_rect(*dialog, "Title", Rect2(24, 30, 472, 44));
+    title->set_position(title_rect.position);
+    title->set_size(title_rect.size);
     title->set_theme_type_variation("PartyPreviewTitle");
     presentation::attach_child(*dialog, std::move(title));
     auto body = presentation::make_node<Label>();
+    body->set_name("Body");
     body->set_text(i18n::text(N_("Load a saved game to continue.")));
-    body->set_position(Vector2(24, 90));
-    body->set_size(Vector2(472, 36));
+    const auto body_rect = presentation::dialog_layout_rect(*dialog, "Body", Rect2(24, 90, 472, 36));
+    body->set_position(body_rect.position);
+    body->set_size(body_rect.size);
     presentation::attach_child(*dialog, std::move(body));
     for (bool reload :
             {
@@ -1243,8 +1243,11 @@ void CharacterCreationView::setup_defeat()
         auto button = presentation::make_node<Button>();
         button->set_name(reload ? "Reload" : "Exit");
         button->set_text(i18n::text(reload ? N_("Reload a Saved Game") : N_("Exit to OS")));
-        button->set_position(Vector2(reload ? 24 : 308, 170));
-        button->set_size(Vector2(reload ? 268 : 188, 44));
+        const auto button_rect = presentation::dialog_layout_rect(
+                                     *dialog, reload ? "Reload" : "Exit",
+                                     Rect2(reload ? 24 : 308, 170, reload ? 268 : 188, 44));
+        button->set_position(button_rect.position);
+        button->set_size(button_rect.size);
         button->connect("pressed",
                         reload ? presentation::guarded(this, &CharacterCreationView::reload_after_defeat)
                         : presentation::guarded(this, &CharacterCreationView::exit_after_defeat));

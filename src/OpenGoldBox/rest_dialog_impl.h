@@ -32,8 +32,7 @@ void RolfTourView::setup_rest()
     auto owned = presentation::make_node<Window>();
     owned->set_name("RestDialog");
     owned->set_title(rest_text(N_("Rest")));
-    owned->set_size(Vector2i(720, 640));
-    owned->set_min_size(Vector2i(720, 640));
+    presentation::set_dialog_window_size(*owned, Vector2i(720, 640));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
@@ -210,8 +209,12 @@ void RolfTourView::refresh_rest()
     const bool use_visible = refresh_rest_use(infos, spending);
     presentation::required_node<RichTextLabel>(*w, "Info").set_text(details);
     presentation::required_node<Label>(*w, "Result").set_text(rest_result_);
-    presentation::required_node<RichTextLabel>(*w, "Info").set_size(
-        Vector2(672, recovery_visible || use_visible ? 132 : 208));
+    const auto info_rect = presentation::dialog_layout_rect_group(
+                               recovery_visible || use_visible ? "RestDialogOptions" : "RestDialog",
+                               "Info", Rect2(24, 274, 672, recovery_visible || use_visible ? 132 : 208));
+    auto &info_control = presentation::required_node<RichTextLabel>(*w, "Info");
+    info_control.set_position(info_rect.position);
+    info_control.set_size(info_rect.size);
     presentation::required_node<Label>(*w, "RecoveryLabel").set_visible(recovery_visible);
     recovery->set_visible(recovery_visible);
     recovery->set_disabled(recovery->get_item_count() == 0);

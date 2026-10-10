@@ -1,0 +1,65 @@
+[gd_scene format=3]
+
+[node name="RestSpells" type="Control"]
+offset_right = 700.0
+offset_bottom = 700.0
+
+[node name="Title" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 676.0
+offset_bottom = 52.0
+
+[node name="Known" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 58.0
+offset_right = 676.0
+offset_bottom = 184.0
+
+[node name="Choices" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 196.0
+offset_right = 676.0
+offset_bottom = 506.0
+
+[node name="ReplaceLabel" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 518.0
+offset_right = 342.0
+offset_bottom = 544.0
+
+[node name="WithLabel" type="Control" parent="."]
+offset_left = 358.0
+offset_top = 518.0
+offset_right = 676.0
+offset_bottom = 544.0
+
+[node name="Replace" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 550.0
+offset_right = 342.0
+offset_bottom = 586.0
+
+[node name="With" type="Control" parent="."]
+offset_left = 358.0
+offset_top = 550.0
+offset_right = 676.0
+offset_bottom = 586.0
+
+[node name="Error" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 595.0
+offset_right = 676.0
+offset_bottom = 635.0
+
+[node name="Cancel" type="Control" parent="."]
+offset_left = 280.0
+offset_top = 644.0
+offset_right = 430.0
+offset_bottom = 684.0
+
+[node name="Apply" type="Control" parent="."]
+offset_left = 442.0
+offset_top = 644.0
+offset_right = 676.0
+offset_bottom = 684.0

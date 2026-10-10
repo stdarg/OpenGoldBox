@@ -151,7 +151,8 @@ void CharacterCreationView::_ready()
     presentation::setup_training_controls(*this);
     presentation::setup_cantrip_controls(*this);
     ready_ = true;
-    get_window()->set_min_size(Vector2i(1120, 800));
+    get_window()->set_min_size(Vector2i(get_theme_constant("creation_min_width", "OpenGoldMetrics"),
+                                        get_theme_constant("creation_min_height", "OpenGoldMetrics")));
     set_texture_filter(TEXTURE_FILTER_NEAREST);
     // All node pointers here and below are borrowed from the owning scene tree.
     required_node<Button>(*this, "Next").connect("pressed", presentation::guarded(this,
@@ -309,11 +310,16 @@ void CharacterCreationView::layout()
     const double w = get_size().x, h = get_size().y;
     page_rect_ = Rect2(218, 112, w - 584, h - 188);
     preview_rect_ = Rect2(w - 342, 112, 318, h - 188);
+    auto &page_bounds = required_node<Control>(*this, "PageBounds");
+    auto &preview_bounds = required_node<Control>(*this, "PreviewBounds");
+    presentation::place_scene_control(page_bounds, page_rect_);
+    presentation::place_scene_control(preview_bounds, preview_rect_);
+    page_rect_ = Rect2(page_bounds.get_position(), page_bounds.get_size());
+    preview_rect_ = Rect2(preview_bounds.get_position(), preview_bounds.get_size());
     const auto place = [&](const String &name, Rect2 r)
     {
         auto *c = &required_node<Control>(*this, name);
-        c->set_position(r.position);
-        c->set_size(r.size);
+        presentation::place_scene_control(*c, r);
     };
     place("Title", Rect2(24, 20, w - 48, 36));
     place("Subtitle", Rect2(24, 64, w - 48, 26));
@@ -329,7 +335,13 @@ void CharacterCreationView::layout()
         place("Choices", Rect2(x + 20, y + 116, pw - 40, ph - 320));
     place("GenderLabel", Rect2(x + 20, y + ph - 196, 106, 36));
     place("Gender", Rect2(x + 126, y + ph - 196, pw - 146, 36));
-    required_node<ItemList>(*this, "Choices").set_fixed_column_width((pw - 160) / 2);
+    // The scene owns the design-width column size; resizing adds only the
+    // window-dependent difference.
+    auto &choices = required_node<ItemList>(*this, "Choices");
+    if (!choices.has_meta("_layout_column_width"))
+        choices.set_meta("_layout_column_width", choices.get_fixed_column_width());
+    choices.set_fixed_column_width(int(choices.get_meta("_layout_column_width")) +
+                                   static_cast<int>((pw - 160) / 2 - 588));
 
     place("BackgroundLabel", Rect2(x + 20, y + 118, 106, 32));
     place("Background", Rect2(x + 126, y + 114, pw - 146, 36));
@@ -380,10 +392,7 @@ void CharacterCreationView::layout()
     place("Training", Rect2(x + 20, y + 250, pw - 40, ph - 270));
     place("SpellChoices", Rect2(x + 20, y + 132, pw - 40, ph - 152));
     place("Name", Rect2(x + 20, y + 138, pw - 40, 46));
-    for (const auto &stem :
-            {
-                std::string("CombatHead"), std::string("Weapon")
-            })
+    for (const auto &stem : {std::string("CombatHead"), std::string("Weapon")})
     {
         const int row = stem == "CombatHead" ? 0 : 1;
         place(gs(stem + "Previous"), Rect2(x + 20, y + 126 + row * 48, 110, 36));
@@ -411,6 +420,9 @@ void CharacterCreationView::layout()
     place("PreviewTitle", Rect2(px + 18, py + 18, 282, 24));
     place("PreviewName", Rect2(px + 18, py + 50, 282, 36));
     portrait_rect_ = Rect2(px + 27, py + 100, 264, 264);
+    auto &portrait_bounds = required_node<Control>(*this, "PortraitBounds");
+    presentation::place_scene_control(portrait_bounds, portrait_rect_);
+    portrait_rect_ = Rect2(portrait_bounds.get_position(), portrait_bounds.get_size());
     place("PortraitPrevious", Rect2(px + 18, py + 374, 36, 32));
     place("PortraitSelect", Rect2(px + 60, py + 374, 198, 32));
     place("PortraitNext", Rect2(px + 264, py + 374, 36, 32));
@@ -420,6 +432,12 @@ void CharacterCreationView::layout()
     const double sprite = 72;
     ready_rect_ = Rect2(px + 50, py + 516, sprite, sprite);
     action_rect_ = Rect2(px + 196, py + 516, sprite, sprite);
+    auto &ready_bounds = required_node<Control>(*this, "ReadyBounds");
+    auto &action_bounds = required_node<Control>(*this, "ActionBounds");
+    presentation::place_scene_control(ready_bounds, ready_rect_);
+    presentation::place_scene_control(action_bounds, action_rect_);
+    ready_rect_ = Rect2(ready_bounds.get_position(), ready_bounds.get_size());
+    action_rect_ = Rect2(action_bounds.get_position(), action_bounds.get_size());
     place("ReadyLabel", Rect2(px + 26, py + 488, 120, 28));
     place("ActionLabel", Rect2(px + 172, py + 488, 120, 28));
     required_node<Control>(*this, "PreviewSummary").set_visible(ph >= 656);
@@ -432,12 +450,14 @@ void CharacterCreationView::layout()
     place("Modifiers", Rect2(x + 20, y + ph - 60, 150, 36));
     place("SavingThrows", Rect2(x + 180, y + ph - 60, 160, 36));
     const double mw = std::min(780.0, w - 100), mh = h - 120;
-    required_node<Window>(*this, "ModifiersModal").set_size(Vector2i(mw, mh));
+    presentation::size_scene_window(required_node<Window>(*this, "ModifiersModal"),
+                                    Vector2i(mw, mh));
     place("ModifiersModal/Background", Rect2(0, 0, mw, mh));
     place("ModifiersModal/Title", Rect2(24, 18, mw - 48, 36));
     place("ModifiersModal/Text", Rect2(24, 70, mw - 48, mh - 140));
     place("ModifiersModal/Close", Rect2(mw - 154, mh - 52, 130, 36));
-    required_node<Window>(*this, "SavingThrowsModal").set_size(Vector2i(mw, mh));
+    presentation::size_scene_window(required_node<Window>(*this, "SavingThrowsModal"),
+                                    Vector2i(mw, mh));
     place("SavingThrowsModal/Background", Rect2(0, 0, mw, mh));
     place("SavingThrowsModal/Title", Rect2(24, 18, mw - 48, 36));
     place("SavingThrowsModal/DCLabel", Rect2(24, 66, 110, 36));

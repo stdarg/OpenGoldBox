@@ -14,8 +14,7 @@ godot::Window *setup_training_replacement(godot::Node &parent, const godot::Call
     auto owned = make_node<Window>();
     owned->set_name("RestTraining");
     owned->set_title(tr(N_("Weapon Mastery")));
-    owned->set_size(Vector2i(700, 670));
-    owned->set_min_size(Vector2i(700, 670));
+    set_dialog_window_size(*owned, Vector2i(700, 670));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
@@ -82,7 +81,8 @@ void refresh_training_replacement(godot::Window &w,
         {
             auto owned = make_node<CheckBox>();
             owned->set_name(name);
-            owned->set_custom_minimum_size(Vector2(0, 40));
+            owned->set_custom_minimum_size(Vector2(0, rows->get_theme_constant(
+                    "training_replacement_height", "OpenGoldMetrics")));
             owned->set_focus_mode(Control::FOCUS_ALL);
             style_choice(*owned);
             box = attach_child(*rows, std::move(owned));

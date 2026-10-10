@@ -13,10 +13,10 @@ namespace presentation
 template <class Text>
 void setup_weapon_controls(godot::Node &root, Text text, const godot::Callable &selected)
 {
-    auto *label = add_control<godot::Label>(root, "WeaponLabel", {});
+    auto *label = &required_node<godot::Label>(root, "WeaponLabel");
     label->set_text(text("Weapon"));
     label->hide();
-    auto *choices = add_control<godot::OptionButton>(root, "Weapons", {});
+    auto *choices = &required_node<godot::OptionButton>(root, "Weapons");
     choices->hide();
     choices->set_fit_to_longest_item(false);
     choices->set_clip_text(true);

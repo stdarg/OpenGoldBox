@@ -32,8 +32,7 @@ presentation::NodeOwner<EquipmentChoiceDialog> EquipmentChoiceDialog::create()
     auto window = presentation::make_node<EquipmentChoiceDialog>();
     window->set_name("EquipmentChoice");
     window->set_title(i18n::text(N_("Choose weapon hand")));
-    window->set_size(Vector2i(660, 340));
-    window->set_min_size(Vector2i(660, 340));
+    presentation::set_dialog_window_size(*window, Vector2i(660, 340));
     window->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     window->set_transient(true);
     window->set_exclusive(true);

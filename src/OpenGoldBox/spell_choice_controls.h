@@ -142,8 +142,7 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     auto owned = make_node<Window>();
     owned->set_name(name);
     owned->set_title(tr(N_("Spellbook")));
-    owned->set_size(Vector2i(700, 700));
-    owned->set_min_size(Vector2i(700, 700));
+    set_dialog_window_size(*owned, Vector2i(700, 700));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);

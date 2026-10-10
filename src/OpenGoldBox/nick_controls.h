@@ -16,15 +16,14 @@ void setup_nick(godot::Node &root, Text text, const godot::Callable &open,
                 const godot::Callable &cancel, const godot::Callable &input)
 {
     using namespace godot;
-    auto *button = add_control<Button>(root, "Nick", {});
+    auto *button = &required_node<Button>(root, "Nick");
     button->set_text(text(N_("Nick attack")));
     button->hide();
     button->connect("pressed", open);
     auto owned = make_node<Window>();
     owned->set_name("NickAttack");
     owned->set_title(text(N_("Nick attack")));
-    owned->set_size(Vector2i(640, 300));
-    owned->set_min_size(Vector2i(640, 300));
+    set_dialog_window_size(*owned, Vector2i(640, 300));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);

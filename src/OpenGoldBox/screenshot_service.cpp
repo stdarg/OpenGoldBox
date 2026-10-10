@@ -49,15 +49,21 @@ void ScreenshotService::_ready()
         DirAccess::make_dir_recursive_absolute(directory_);
         UtilityFunctions::print("OpenGoldBox screenshots: ", directory_);
     }
-    auto layer = presentation::make_node<CanvasLayer>();
-    layer->set_name("NoticeLayer");
-    layer->set_layer(100);
-    auto *canvas = presentation::attach_child(*this, std::move(layer));
-    auto *panel = presentation::add_control<PanelContainer>(*canvas, "Notice", {});
-    panel->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-    panel->hide();
-    panel->set_theme_type_variation("ScreenshotNotice");
-    auto *label = presentation::add_control<Label>(*panel, "Text", {});
+    // The game autoload uses the editable scene. Directly instantiated service
+    // objects in the screenshot regression check still need a notice subtree.
+    if (!get_node_or_null("NoticeLayer"))
+    {
+        auto layer = presentation::make_node<CanvasLayer>();
+        layer->set_name("NoticeLayer");
+        layer->set_layer(100);
+        auto *canvas = presentation::attach_child(*this, std::move(layer));
+        auto *panel = presentation::add_control<PanelContainer>(*canvas, "Notice", {});
+        panel->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+        panel->hide();
+        panel->set_theme_type_variation("ScreenshotNotice");
+        presentation::add_control<Label>(*panel, "Text", {});
+    }
+    auto *label = &required_node<Label>(*this, "NoticeLayer/Notice/Text");
     label->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
     label->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
     label->set("autowrap_mode",
@@ -71,11 +77,13 @@ void ScreenshotService::_process(double delta)
     {
         notice_time_ -= delta;
         const auto size = get_tree()->get_root()->get_size();
-        const Vector2 minimum(std::max(1, std::min(800, size.x - 40)), 0);
+        const int margin = panel->get_theme_constant("screenshot_notice_margin", "OpenGoldMetrics");
+        const int max_width = panel->get_theme_constant("screenshot_notice_max_width", "OpenGoldMetrics");
+        const Vector2 minimum(std::max(1, std::min(max_width, size.x - 2 * margin)), 0);
         panel->set_custom_minimum_size(minimum);
         panel->set_size(minimum);
-        const double bottom = static_cast<double>(size.y - panel->get_size().y - 20);
-        panel->set_position(Vector2(20, std::max(0.0, bottom)));
+        const double bottom = static_cast<double>(size.y - panel->get_size().y - margin);
+        panel->set_position(Vector2(margin, std::max(0.0, bottom)));
         if (notice_time_ <= 0)
             panel->hide();
     }
