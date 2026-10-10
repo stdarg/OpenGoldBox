@@ -206,7 +206,7 @@ void CharacterCreator::spell_choice(std::string_view group, std::string_view opt
         }))
         next.spells->prepared->push_back(id);
     }
-    (void)rules_->evaluate(next, false);
+    (void)rules_->evaluate(next, NameRequirement::optional);
     draft_ = std::move(next);
 }
 
@@ -400,7 +400,9 @@ void CharacterCreator::appearance(por::CharacterAppearance value)
 
 CharacterSheet CharacterCreator::sheet() const
 {
-    return rules_->evaluate(draft_, step_ >= CreationStep::combat_icon);
+    return rules_->evaluate(draft_, step_ >= CreationStep::combat_icon
+                            ? rules::NameRequirement::required
+                            : rules::NameRequirement::optional);
 }
 
 Character CharacterCreator::create_character() const
@@ -423,7 +425,9 @@ void CharacterCreator::next()
     if (step_ >= CreationStep::training && !training_complete())
         throw std::runtime_error("Complete the required training choices.");
     if (step_ >= CreationStep::attributes)
-        (void)rules_->evaluate(draft_, step_ >= CreationStep::name);
+        (void)rules_->evaluate(draft_, step_ >= CreationStep::name
+                               ? rules::NameRequirement::required
+                               : rules::NameRequirement::optional);
     if (step_ >= CreationStep::character_class &&
             !rules_->class_eligible(draft_, draft_.character_class))
         throw std::runtime_error("Choose a qualified starting class. Requires " +

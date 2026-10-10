@@ -129,6 +129,15 @@ struct CharacterSheet
 
 // Creation is a separate optional capability: campaign and Godot code do not
 // embed edition-specific tables, rolling policies, or HP arithmetic.
+// Whether a draft must already be named: a finished character must be, a draft
+// still being created need not be. Named rather than a bool so a call site says
+// which (Effective C++ Item 18).
+enum class NameRequirement
+{
+    optional,
+    required
+};
+
 class CharacterRules
 {
   public:
@@ -151,7 +160,7 @@ class CharacterRules
     [[nodiscard]] bool class_eligible(const CharacterDraft &draft, std::string_view id) const;
     [[nodiscard]] std::array<bool, 6> unmet_targets(const CharacterDraft &draft) const;
     [[nodiscard]] virtual CharacterSheet evaluate(const CharacterDraft &draft,
-            bool require_name) const = 0;
+            NameRequirement name) const = 0;
 
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
     training_options(const CharacterDraft &) const

@@ -6,7 +6,7 @@ namespace opengold
 {
 Character::Character(const rules::CharacterRules &rules, rules::CharacterDraft creation,
                      por::CharacterAppearance appearance)
-    : creation_(std::move(creation)), sheet_(rules.evaluate(creation_, true))
+    : creation_(std::move(creation)), sheet_(rules.evaluate(creation_, rules::NameRequirement::required))
 {
     this->appearance(appearance);
 }

@@ -156,7 +156,7 @@ void turn_budget_tests()
     draft.rolled = true;
     for (auto &roll : draft.rolls)
         roll = {{6, 5, 4, 1}, 3};
-    auto sheet = srd5::character_rules()->evaluate(draft, true);
+    auto sheet = srd5::character_rules()->evaluate(draft, NameRequirement::required);
     VitalState unused;
     for (unsigned level = 2; level <= 3; ++level)
     {

@@ -32,12 +32,12 @@ void ranger_choices_checks()
     rejects(
         [&]
     {
-        (void)creation_rules->evaluate(ranger_draft({"hunters_mark"}), true);
+        (void)creation_rules->evaluate(ranger_draft({"hunters_mark"}), NameRequirement::required);
     });
     rejects(
         [&]
     {
-        (void)creation_rules->evaluate(ranger_draft({"bless"}), true);
+        (void)creation_rules->evaluate(ranger_draft({"bless"}), NameRequirement::required);
     });
     const auto messages = rules->character_profile(ranger.sheet(), {}).spell_messages;
     check(std::any_of(messages.begin(), messages.end(), [](const auto & m)

@@ -153,7 +153,7 @@ void access()
     auto creation = srd5::character_rules();
     auto rules = module();
     auto d = draft();
-    check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
+    check(rules->spell_access(creation->evaluate(d, NameRequirement::required)).cantrips.empty(),
           "Historical Cleric has no invented cantrips");
     auto h = hero();
     auto access = rules->spell_access(h.sheet());
@@ -180,7 +180,7 @@ void access()
         rejects(
             [&]
         {
-            (void)creation->evaluate(d, true);
+            (void)creation->evaluate(d, NameRequirement::required);
         });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
@@ -192,7 +192,7 @@ void access()
             rejects(
                 [&]
             {
-                (void)creation->evaluate(d, true);
+                (void)creation->evaluate(d, NameRequirement::required);
             });
         }
     const auto profile = rules->character_profile(h.sheet(), {}).data;

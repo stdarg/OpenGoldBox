@@ -32,7 +32,7 @@ void access()
         rejects(
             [&]
         {
-            (void)srd5::character_rules()->evaluate(d, true);
+            (void)srd5::character_rules()->evaluate(d, NameRequirement::required);
         });
     }
     auto bad = h.sheet();

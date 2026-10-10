@@ -170,7 +170,7 @@ void paladin_choices_checks()
     rejects(
         [&]
     {
-        (void)creation_rules->evaluate(paladin_draft(bad), true);
+        (void)creation_rules->evaluate(paladin_draft(bad), NameRequirement::required);
     });
     const auto messages = rules->character_profile(paladin.sheet(), {}).spell_messages;
     check(std::any_of(messages.begin(), messages.end(), [&](const auto & m)

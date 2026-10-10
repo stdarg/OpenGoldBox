@@ -172,7 +172,7 @@ void access()
     auto options = creation->cantrip_options(d);
     check(options.count == 4 && options.options.size() == 8,
           "Eight supported Sorcerer options, four choices");
-    check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
+    check(rules->spell_access(creation->evaluate(d, NameRequirement::required)).cantrips.empty(),
           "A draft without selections has no invented cantrips");
     const auto h = hero();
     auto access = rules->spell_access(h.sheet());
@@ -192,7 +192,7 @@ void access()
         rejects(
             [&]
         {
-            (void)creation->evaluate(d, true);
+            (void)creation->evaluate(d, NameRequirement::required);
         });
     }
     for (unsigned mode = 0; mode < 4; ++mode)

@@ -161,7 +161,7 @@ void access()
     check(options.count == 2 && options.options.size() == 4 &&
           options.options[0].id == "eldritch_blast",
           "Two Warlock choices, supported catalog is explicit");
-    check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
+    check(rules->spell_access(creation->evaluate(d, NameRequirement::required)).cantrips.empty(),
           "Missing choices stay pending");
     auto access = rules->spell_access(hero().sheet());
     check(access.cantrip_choices == 2 && access.cantrips.size() == 1 &&
@@ -176,7 +176,7 @@ void access()
         rejects(
             [&]
         {
-            (void)creation->evaluate(d, true);
+            (void)creation->evaluate(d, NameRequirement::required);
         });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
@@ -188,7 +188,7 @@ void access()
             rejects(
                 [&]
             {
-                (void)creation->evaluate(d, true);
+                (void)creation->evaluate(d, NameRequirement::required);
             });
         }
     auto invalid = hero().sheet();

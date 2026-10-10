@@ -82,7 +82,7 @@ void creation_tests()
         {{4, 4, 4, 1}, {3, 3, 3, 1}, {5, 5, 4, 1}, {1, 1, 1, 1}, {5, 5, 5, 1}, {6, 6, 6, 1}}};
     for (unsigned i = 0; i < 6; ++i)
         d.rolls[i] = {dice[i], 3};
-    auto s = module->evaluate(d, true);
+    auto s = module->evaluate(d, NameRequirement::required);
     check(s.scores[0] == 14 && s.scores[1] == 10 && s.scores[2] == 14 && s.hit_points == 12,
           "Fighter has maximum d10 plus Constitution");
     check(s.modifiers[3] == -4, "Odd negative ability modifiers round down");
@@ -96,7 +96,7 @@ void creation_tests()
     check(s.saving_throws == std::array<int, 6> {4, 0, 4, -4, 2, 4},
           "Fighter saves include proficiency only for Strength and Constitution");
     d.character_class = "wizard";
-    const auto wizard = module->evaluate(d, true);
+    const auto wizard = module->evaluate(d, NameRequirement::required);
     check(wizard.saving_throws == std::array<int, 6> {2, 0, 2, -2, 4, 4},
           "Wizard saves retain negative modifiers and add Intelligence/Wisdom proficiency");
     d.character_class = "fighter";
@@ -105,12 +105,12 @@ void creation_tests()
     for (unsigned i = 0; i < classes.size(); ++i)
     {
         d.character_class = classes[i].id;
-        check(module->evaluate(d, true).hit_points == hp[i],
+        check(module->evaluate(d, NameRequirement::required).hit_points == hp[i],
               "Starting HP is correct for each class");
     }
     d.character_class = "fighter";
     d.race = "dwarf";
-    check(module->evaluate(d, true).hit_points == 13, "Dwarven Toughness adds one HP");
+    check(module->evaluate(d, NameRequirement::required).hit_points == 13, "Dwarven Toughness adds one HP");
     for (const auto &bg : module->choices(CreationField::background))
     {
         d.background = bg.id;
@@ -119,7 +119,7 @@ void creation_tests()
         for (unsigned n = 0; n < adjustments.size(); ++n)
         {
             d.adjustment = n;
-            const auto evaluated = module->evaluate(d, true);
+            const auto evaluated = module->evaluate(d, NameRequirement::required);
             int bonus = 0;
             for (unsigned k = 0; k < 6; ++k)
             {
@@ -178,7 +178,7 @@ void creation_tests()
     rejects(
         [&]
     {
-        (void)module->evaluate(d, true);
+        (void)module->evaluate(d, NameRequirement::required);
     },
     "Duplicate roll assignments rejected");
     d.assignment[0] = 0;
@@ -186,7 +186,7 @@ void creation_tests()
     rejects(
         [&]
     {
-        (void)module->evaluate(d, true);
+        (void)module->evaluate(d, NameRequirement::required);
     },
     "Blank names rejected");
     d.name = "Mira";
@@ -194,7 +194,7 @@ void creation_tests()
     rejects(
         [&]
     {
-        (void)module->evaluate(d, true);
+        (void)module->evaluate(d, NameRequirement::required);
     },
     "Unknown class rejected");
     CharacterCreator creator(srd5::character_rules(), 42);

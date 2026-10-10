@@ -189,16 +189,16 @@ void access()
                   "Preset Wizards pre-generate independent book and preparation selections");
         }
     check(wizards > 0, "Preset Wizard path exercised");
-    const auto original = creation->evaluate(d, true);
+    const auto original = creation->evaluate(d, NameRequirement::required);
     check(rules->spell_access(original).cantrips.size() == 1 &&
           rules->spell_access(original).cantrips[0].id == "fire_bolt",
           "Missing draft choices retain legacy Fire Bolt only");
     d.cantrips.emplace();
-    auto sheet = creation->evaluate(d, true);
+    auto sheet = creation->evaluate(d, NameRequirement::required);
     check(rules->spell_access(sheet).cantrips.empty(),
           "Explicit empty selection remains pending without silently refilling");
     d.cantrips = std::vector<std::string> {"poison_spray"};
-    sheet = creation->evaluate(d, true);
+    sheet = creation->evaluate(d, NameRequirement::required);
     const auto access = rules->spell_access(sheet);
     check(access.cantrip_choices == 3 && access.cantrips.size() == 1 &&
           access.cantrips[0].id == "poison_spray" &&
@@ -217,7 +217,7 @@ void access()
         rejects(
             [&]
         {
-            (void)creation->evaluate(d, true);
+            (void)creation->evaluate(d, NameRequirement::required);
         });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
@@ -230,7 +230,7 @@ void access()
             rejects(
                 [&]
             {
-                (void)creation->evaluate(d, true);
+                (void)creation->evaluate(d, NameRequirement::required);
             });
         }
     for (unsigned level = 1; level <= 4; ++level)

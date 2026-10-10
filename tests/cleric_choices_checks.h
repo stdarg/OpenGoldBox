@@ -54,7 +54,7 @@ void cleric_creation_checks()
     rejects(
         [&]
     {
-        (void)creation_rules->evaluate(cleric_draft("protector", bad), true);
+        (void)creation_rules->evaluate(cleric_draft("protector", bad), NameRequirement::required);
     });
 
     // Without preparation a Cleric no longer silently knows Cure Wounds.

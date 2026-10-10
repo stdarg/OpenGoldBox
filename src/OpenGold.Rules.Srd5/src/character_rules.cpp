@@ -105,7 +105,7 @@ class CreatorRules final : public CharacterRules
     std::vector<ScoreAdjustment> adjustments(std::string_view background) const override;
     std::array<AbilityRoll, 6> roll(RandomState &state) const override;
     std::optional<int> ability_score(const CharacterDraft &draft, unsigned ability) const override;
-    CharacterSheet evaluate(const CharacterDraft &draft, bool require_name) const override;
+    CharacterSheet evaluate(const CharacterDraft &draft, NameRequirement name) const override;
 
     std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft) const override
     {
@@ -122,21 +122,21 @@ class CreatorRules final : public CharacterRules
             // These classes prepare from the class list; the selection never changes it.
             auto base = draft;
             base.spells = SpellChoices{};
-            return detail::spell_choice_options(evaluate(base, false),
+            return detail::spell_choice_options(evaluate(base, NameRequirement::optional),
                                                 SpellChoiceContext::advancement);
         }
         if (draft.character_class != "wizard")
             return {};
         auto base = draft;
         base.spells = SpellChoices{};
-        auto sheet = evaluate(base, false);
+        auto sheet = evaluate(base, NameRequirement::optional);
         auto options = detail::spell_choice_options(sheet, SpellChoiceContext::advancement);
         std::erase_if(options.learning,
                       [](const auto & g)
         {
             return g.id.starts_with("cantrips:");
         });
-        const auto selected = evaluate(draft, false);
+        const auto selected = evaluate(draft, NameRequirement::optional);
         options.preparation =
             detail::spell_choice_options(selected, SpellChoiceContext::advancement).preparation;
         return options;
@@ -316,7 +316,7 @@ std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, unsigned
     return score;
 }
 
-CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name) const
+CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement name) const
 {
     const auto label = [&](CreationField field, const std::string & id)
     {
@@ -341,7 +341,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
     s.grants = detail::starting_grants(d.character_class, d.race, d.background);
     const auto training = detail::training_grants(d.character_class, d.background, d.training);
     s.grants.insert(s.grants.end(), training.begin(), training.end());
-    if (require_name && (d.name.empty() || d.name.size() > 160 ||
+    if (name == NameRequirement::required && (d.name.empty() || d.name.size() > 160 ||
                          d.name.find_first_not_of(" \t\r\n") == std::string::npos ||
                          std::any_of(d.name.begin(), d.name.end(),
                                      [](unsigned char c)
