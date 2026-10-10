@@ -79,7 +79,7 @@ bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::st
     const bool protector = detail::has_grant(grants, "order:protector");
     const bool warden = detail::has_grant(grants, "order:warden");
     if (const auto *weapon = detail::weapon(key))
-        return detail::weapon_proficient(detail::class_id(klass), *weapon) ||
+        return detail::weapon_proficient(klass, *weapon) ||
                ((protector || warden) && weapon->martial);
     if (const auto *armor = detail::armor(key))
         return detail::armor_trained(klass, armor->category) ||
@@ -1277,7 +1277,7 @@ character_definition(std::string_view bytes,
         hands = hands - d.weapon_hands + 2;
         d.weapon_hands = 2;
     }
-    const auto training = detail::training_profile(grants, detail::class_id(klass),
+    const auto training = detail::training_profile(grants, klass,
                           background, level, scores);
     d.medicine = std::find_if(training.skills.begin(), training.skills.end(),
                               [](const auto & skill)
@@ -1322,7 +1322,7 @@ character_definition(std::string_view bytes,
             !same_spells(detail::casting_ids(access), stored_spells))
         throw std::runtime_error("Character casting access disagrees with spell grants");
     const auto features_only = detail::without_spell_grants(detail::without_training(grants));
-    const auto effects = detail::validate_grants(features_only, detail::class_id(klass),
+    const auto effects = detail::validate_grants(features_only, klass,
                          detail::grant_source_id(race), background, level);
     if (effects.feats != features)
         throw std::runtime_error("Character effects disagree with acquired grants");
@@ -10024,7 +10024,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::wizard && sheet.level >= 2)
             return {detail::scholar_options(sheet.grants)};
         if (klass == CharacterClass::fighter && sheet.level >= 4)
-            return {detail::mastery_options("fighter", 4, sheet.grants)};
+            return {detail::mastery_options(CharacterClass::fighter, 4, sheet.grants)};
         if (klass == CharacterClass::sorcerer && sheet.level >= 2)
             return {detail::metamagic_options()};
         if (klass == CharacterClass::bard && sheet.level >= 3)
@@ -10035,7 +10035,8 @@ class Module final : public RulesModule
         {
             std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
             if (sheet.level >= 4)
-                groups.push_back(detail::mastery_options("barbarian", 4, sheet.grants));
+                groups.push_back(
+                    detail::mastery_options(CharacterClass::barbarian, 4, sheet.grants));
             return groups;
         }
         return {};
@@ -10044,7 +10045,7 @@ class Module final : public RulesModule
     std::optional<TrainingReplacementOptions>
     rest_training_options(const CharacterSheet &sheet) const override
     {
-        const auto klass = detail::grant_source_id(sheet.character_class);
+        const auto klass = detail::class_of(sheet);
         auto group = detail::mastery_options(klass, 1);
         if (!group.count)
             return {};
@@ -10066,7 +10067,7 @@ class Module final : public RulesModule
     {
         if (!rest_training_options(sheet))
             throw std::runtime_error("No completed Weapon Mastery training to replace");
-        const auto klass = detail::grant_source_id(sheet.character_class);
+        const auto klass = detail::class_of(sheet);
         auto candidate = sheet;
         candidate.grants = detail::replace_masteries(sheet.grants, klass, sheet.level, selected);
         candidate.training = detail::training_profile(candidate.grants, klass,
@@ -10127,7 +10128,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::wizard && result.level == 2)
             result.training = {detail::scholar_options(sheet.grants)};
         if (klass == CharacterClass::fighter && result.level == 4)
-            result.training = {detail::mastery_options("fighter", 4, sheet.grants)};
+            result.training = {detail::mastery_options(CharacterClass::fighter, 4, sheet.grants)};
         if (klass == CharacterClass::barbarian && result.level == 3)
             result.training = {detail::primal_knowledge_options(sheet.grants)};
         if (klass == CharacterClass::sorcerer && result.level == 2)
@@ -10140,7 +10141,8 @@ class Module final : public RulesModule
             result.training = {detail::invocation_options(2, sheet.grants,
                                                           "class:warlock:invocations:2")};
         if (klass == CharacterClass::barbarian && result.level == 4)
-            result.training = {detail::mastery_options("barbarian", 4, sheet.grants)};
+            result.training = {
+                detail::mastery_options(CharacterClass::barbarian, 4, sheet.grants)};
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
         if (klass == CharacterClass::ranger && result.level == 3)
             result.training = {{
@@ -10657,8 +10659,7 @@ class Module final : public RulesModule
             next.ability_adjustments.push_back(std::move(adjustment));
         }
         if (!choice.feat.empty())
-            next.grants.push_back(detail::advancement_grant(
-                                      detail::class_id(klass), next.level, choice));
+            next.grants.push_back(detail::advancement_grant(klass, next.level, choice));
         next.prepared_spells = choice.spells;
         if (choice.spell_learning)
         {
@@ -10671,7 +10672,7 @@ class Module final : public RulesModule
         else if (detail::prepares_spells(klass))
             throw std::runtime_error("Independent spell learning choices are required");
         next.training = detail::training_profile(
-                            next.grants, detail::class_id(klass),
+                            next.grants, klass,
                             detail::grant_source_id(next.background), next.level, next.scores);
         next.hit_point_modifiers.push_back(next.modifiers[2]);
         next.hit_points =
@@ -11429,14 +11430,14 @@ class Module final : public RulesModule
         if (sheet.identity != character_rules()->identity() || sheet.level < 1 || sheet.level > 4)
             throw std::runtime_error("Unsupported character rules identity or level");
         const auto klass = detail::class_of(sheet);
-        (void)detail::training_profile(sheet.grants, detail::class_id(klass),
+        (void)detail::training_profile(sheet.grants, klass,
                                        detail::grant_source_id(sheet.background), sheet.level,
                                        sheet.scores);
         const auto features_only =
             detail::without_spell_grants(detail::without_training(sheet.grants));
         const auto access = spell_access(sheet);
         const auto effects =
-            detail::validate_grants(features_only, detail::class_id(klass),
+            detail::validate_grants(features_only, klass,
                                     detail::grant_source_id(sheet.race),
                                     detail::grant_source_id(sheet.background), sheet.level);
         const unsigned features = effects.feats;

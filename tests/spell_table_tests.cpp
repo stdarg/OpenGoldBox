@@ -262,7 +262,7 @@ constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
 // Discovered from the access API so new rows need no edit here.
 CharacterSheet widest(const RulesModule &rules, const Probe &probe)
 {
-    const auto group = starting_cantrip_options(probe.klass);
+    const auto group = starting_cantrip_options(class_from_id(probe.klass));
     std::vector<std::string> cantrips;
     for (const auto &option : group.options)
     {

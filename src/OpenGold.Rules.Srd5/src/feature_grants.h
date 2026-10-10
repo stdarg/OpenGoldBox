@@ -1,14 +1,15 @@
 #ifndef OPENGOLD_SRD5_FEATURE_GRANTS_H
 #define OPENGOLD_SRD5_FEATURE_GRANTS_H
+#include "character_class.h"
 #include "opengold/character_rules.h"
 #include <iosfwd>
 
 namespace opengold::srd5::detail
 {
 std::string grant_source_id(std::string_view label);
-std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::string_view race,
+std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::string_view race,
         std::string_view background);
-rules::FeatureGrant advancement_grant(std::string_view klass, unsigned level,
+rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
                                       const rules::AdvancementChoice &choice);
 std::vector<rules::AdvancementOption> fighting_styles();
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id);
@@ -20,7 +21,7 @@ struct GrantEffects
     std::array<int, 6> abilities{};
 };
 
-GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::string_view klass,
+GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, CharacterClass klass,
                              std::string_view race, std::string_view background, unsigned level);
 void write_grants(std::ostream &out, std::span<const rules::FeatureGrant> grants);
 std::vector<rules::FeatureGrant> read_grants(std::istream &in);

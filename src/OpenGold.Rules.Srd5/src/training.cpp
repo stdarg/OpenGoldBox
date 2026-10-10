@@ -199,11 +199,12 @@ void add_choices(std::vector<FeatureGrant> &grants, const TrainingChoices &choic
     }
 }
 
-std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_view background,
-        const TrainingChoices &choices)
+// A draft offers its background's choices before any class is chosen.
+std::vector<TrainingChoiceGroup> options(std::optional<CharacterClass> klass,
+        std::string_view background, const TrainingChoices &choices)
 {
     std::vector<TrainingChoiceGroup> result;
-    if (klass == "fighter")
+    if (klass == CharacterClass::fighter)
         result.push_back({"class:fighter:fighting_style",
                           "Fighting Style",
                           1,
@@ -211,23 +212,23 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
         {"archery", "Archery", "+2 to attack rolls with Ranged weapons."}
     },
     TrainingChoiceControl::single_selection});
-    if (klass == "fighter")
+    if (klass == CharacterClass::fighter)
         for (auto &group : result)
             if (group.id == "class:fighter:fighting_style")
                 group.options.push_back(
             {
                 "great_weapon_fighting", "Great Weapon Fighting",
                 "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands."});
-    if (klass == "fighter")
+    if (klass == CharacterClass::fighter)
         for (auto &group : result)
             if (group.id == "class:fighter:fighting_style")
                 group.options.push_back(
             {
                 "two_weapon_fighting", "Two-Weapon Fighting",
                 "Add your ability modifier to the extra attack granted by the Light property."});
-    if (klass == "warlock")
+    if (klass == CharacterClass::warlock)
         result.push_back(invocation_options(1, {}, "class:warlock:invocations"));
-    if (klass == "druid")
+    if (klass == CharacterClass::druid)
         result.push_back({"class:druid:primal_order",
                           "Primal Order",
                           1,
@@ -235,7 +236,7 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
         {"warden", "Warden", "Training with Martial weapons and Medium armor."}
     },
     TrainingChoiceControl::single_selection});
-    if (klass == "cleric")
+    if (klass == CharacterClass::cleric)
         result.push_back({std::string(divine_order),
                           "Divine Order",
                           1,
@@ -246,15 +247,15 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
         }
     },
     TrainingChoiceControl::single_selection});
-    if (!klass.empty())
+    if (klass)
     {
         const auto data = std::find_if(class_skills().begin(), class_skills().end(),
                                        [&](const auto & c)
         {
-            return c.id == klass;
+            return c.id == class_id(*klass);
         });
         require(data != class_skills().end());
-        TrainingChoiceGroup group{"class:" + std::string(klass),
+        TrainingChoiceGroup group{"class:" + std::string(class_id(*klass)),
                                   std::string(data->label),
                                   data->count,
                                   {},
@@ -266,7 +267,7 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
                 group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
         result.push_back(std::move(group));
     }
-    if (klass == "rogue")
+    if (klass == CharacterClass::rogue)
     {
         TrainingChoiceGroup group{std::string(expertise), "Rogue Expertise", 2, {}};
         const auto known = fixed(background);
@@ -277,9 +278,10 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
                 group.options.push_back({std::string(s.id), std::string(s.label), {}});
         result.push_back(std::move(group));
     }
+    if (klass)
     {
-        auto group = mastery_options(klass, 1);
-        const auto &later = selected(choices, mastery_options(klass, 4).id);
+        auto group = mastery_options(*klass, 1);
+        const auto &later = selected(choices, mastery_options(*klass, 4).id);
         std::erase_if(group.options,
                       [&](const auto & option)
         {
@@ -500,10 +502,10 @@ TrainingChoiceGroup skilled_options(std::span<const FeatureGrant> grants)
 
 std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft)
 {
-    return options(draft.character_class, draft.background, draft.training);
+    return options(draft_class(draft), draft.background, draft.training);
 }
 
-std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_view background,
+std::vector<FeatureGrant> training_grants(CharacterClass klass, std::string_view background,
         const TrainingChoices &choices)
 {
     auto result = fixed(background);
@@ -522,12 +524,12 @@ std::vector<FeatureGrant> training_grants(std::string_view klass, std::string_vi
             : group.id == "class:fighter:fighting_style" ? "feat:"
             : group.id == divine_order || group.id == "class:druid:primal_order" ? "order:"
             : group.id == "class:warlock:invocations"    ? "invocation:"
-            : group.id == "class:" + std::string(klass)  ? "skill:"
+            : group.id == "class:" + std::string(class_id(klass)) ? "skill:"
             : "expertise:");
     return result;
 }
 
-TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::string_view klass,
+TrainingChoices training_choices(std::span<const FeatureGrant> grants, CharacterClass klass,
                                  std::string_view background)
 {
     auto required = fixed(background);
@@ -563,7 +565,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             if (grant.source_id == "subclass:bard:lore")
             {
-                require(klass == "bard" && grant.level == 3 && grant.choices.empty());
+                require(klass == CharacterClass::bard && grant.level == 3 && grant.choices.empty());
                 const auto group = lore_options(grants);
                 require(std::any_of(group.options.begin(), group.options.end(),
                                     [&](const auto & option)
@@ -577,7 +579,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             if (grant.source_id == "subclass:druid:land")
             {
-                require(klass == "druid" && grant.level == 3 && grant.choices.empty());
+                require(klass == CharacterClass::druid && grant.level == 3 &&
+                        grant.choices.empty());
                 const auto group = land_options();
                 require(std::any_of(group.options.begin(), group.options.end(),
                                     [&](const auto & option)
@@ -591,7 +594,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             if (grant.source_id == "class:warlock:invocations:2")
             {
-                require(klass == "warlock" && grant.level == 2 && grant.choices.empty());
+                require(klass == CharacterClass::warlock && grant.level == 2 &&
+                        grant.choices.empty());
                 const auto group = invocation_options(2, grants, grant.source_id);
                 require(std::any_of(group.options.begin(), group.options.end(),
                                     [&](const auto & option)
@@ -605,7 +609,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             if (grant.source_id == "class:sorcerer:metamagic")
             {
-                require(klass == "sorcerer" && grant.level == 2 && grant.choices.empty());
+                require(klass == CharacterClass::sorcerer && grant.level == 2 &&
+                        grant.choices.empty());
                 // Subtle Spell, retired with spell components (CLASS-11), stays
                 // valid in older saves and does nothing.
                 const auto group = metamagic_options();
@@ -624,7 +629,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             if (grant.source_id == "class:barbarian:primal_knowledge")
             {
-                require(klass == "barbarian" && grant.level == 3 && grant.choices.empty());
+                require(klass == CharacterClass::barbarian && grant.level == 3 &&
+                        grant.choices.empty());
                 const auto group = primal_knowledge_options(grants);
                 require(std::any_of(group.options.begin(), group.options.end(),
                                     [&](const auto & option)
@@ -638,7 +644,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
             }
             if (grant.source_id == "class:wizard:scholar")
             {
-                require(klass == "wizard" &&
+                require(klass == CharacterClass::wizard &&
                         grant.level == 2 && grant.choices.empty());
                 const auto group = scholar_options(grants);
                 require(std::any_of(group.options.begin(), group.options.end(),
@@ -651,7 +657,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                 selected.push_back(grant.id.substr(10));
                 continue;
             }
-            const bool replacement = klass == "fighter" &&
+            const bool replacement = klass == CharacterClass::fighter &&
                                      grant.source_id == "class:fighter:fighting_style";
             require((grant.level == 1 || (replacement && grant.level <= 4)) &&
                     grant.choices.empty());
@@ -669,7 +675,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
                                 : grant.source_id == divine_order ||
                                   grant.source_id == "class:druid:primal_order" ? "order:"
                                 : grant.source_id == "class:warlock:invocations"    ? "invocation:"
-                                : grant.source_id == "class:" + std::string(klass)  ? "skill:"
+                                : grant.source_id == "class:" + std::string(class_id(klass))
+                                ? "skill:"
                                 : "expertise:";
             require(grant.id.starts_with(prefix));
             choices[grant.source_id].push_back(grant.id.substr(std::string_view(prefix).size()));
@@ -695,7 +702,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, std::stri
     return choices;
 }
 
-TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::string_view klass,
+TrainingProfile training_profile(std::span<const FeatureGrant> grants, CharacterClass klass,
                                  std::string_view background, unsigned level,
                                  const std::array<int, 6> &scores)
 {
@@ -725,21 +732,21 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
         result.complete &= picked.size() == 3;
     const auto &lore = selected(choices, "subclass:bard:lore");
     require(lore.empty() || level >= 3);
-    if (klass == "bard" && level >= 3)
+    if (klass == CharacterClass::bard && level >= 3)
         result.complete &= lore.size() == 3;
     const auto &invocations = selected(choices, "class:warlock:invocations:2");
     require(invocations.empty() || level >= 2);
     const auto &metamagic = selected(choices, "class:sorcerer:metamagic");
     require(metamagic.empty() || level >= 2);
-    if (klass == "sorcerer" && level >= 2)
+    if (klass == CharacterClass::sorcerer && level >= 2)
         result.complete &= metamagic.size() == 2;
     const auto &primal = selected(choices, "class:barbarian:primal_knowledge");
     require(primal.empty() || level >= 3);
-    if (klass == "barbarian" && level >= 3)
+    if (klass == CharacterClass::barbarian && level >= 3)
         result.complete &= primal.size() == 1;
     const auto &scholar = selected(choices, "class:wizard:scholar");
     require(scholar.empty() || level >= 2);
-    if (klass == "wizard" && level >= 2)
+    if (klass == CharacterClass::wizard && level >= 2)
         result.complete &= scholar.size() == 1;
     for (const auto &s : skills)
     {
@@ -751,7 +758,7 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
     return result;
 }
 
-AbilityCheckModifier ability_check(std::span<const FeatureGrant> grants, std::string_view klass,
+AbilityCheckModifier ability_check(std::span<const FeatureGrant> grants, CharacterClass klass,
                                    std::string_view background, unsigned level,
                                    const std::array<int, 6> &scores, Ability ability,
                                    std::string_view skill)

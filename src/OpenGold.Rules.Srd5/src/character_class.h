@@ -5,6 +5,7 @@
 
 namespace opengold::rules
 {
+struct CharacterDraft;
 struct CharacterSheet;
 } // namespace opengold::rules
 
@@ -36,6 +37,14 @@ enum class CharacterClass
 [[nodiscard]] std::string_view class_label(CharacterClass character_class);
 
 [[nodiscard]] std::optional<CharacterClass> class_from_label(std::string_view label);
+
+// The class a stable ID names. Throws for an ID no class has, so a misspelt
+// ID cannot quietly match no class's rules.
+[[nodiscard]] CharacterClass class_from_id(std::string_view id);
+
+// The class a draft selects, or none while the player has not chosen one yet.
+// Throws for an ID no class has.
+[[nodiscard]] std::optional<CharacterClass> draft_class(const rules::CharacterDraft &draft);
 
 // A sheet stores its class's label, as character profiles in combat
 // checkpoints do; this is where rules recover the class from it. Throws for a

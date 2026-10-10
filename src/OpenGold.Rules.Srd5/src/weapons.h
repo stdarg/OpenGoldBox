@@ -2,6 +2,7 @@
 #define OPENGOLD_SRD5_WEAPONS_H
 #include "damage.h"
 #include "ammunition.h"
+#include "character_class.h"
 #include <array>
 #include <string_view>
 
@@ -533,12 +534,14 @@ inline constexpr std::array weapons
     // A plain wand is a held focus, not a free spell or invented damage profile.
     Weapon{.key = "wand", .dice = 0, .sides = 0, .label = "Wand"}};
 
-// Starting class proficiency. The caller supplies the stable lowercase class ID.
-inline bool weapon_proficient(std::string_view klass, const Weapon &weapon)
+// Starting class proficiency.
+inline bool weapon_proficient(CharacterClass klass, const Weapon &weapon)
 {
-    return !weapon.martial || klass == "barbarian" || klass == "fighter" || klass == "paladin" ||
-           klass == "ranger" || (klass == "rogue" && (weapon.finesse || weapon.light)) ||
-           (klass == "monk" && weapon.light);
+    return !weapon.martial || klass == CharacterClass::barbarian ||
+           klass == CharacterClass::fighter || klass == CharacterClass::paladin ||
+           klass == CharacterClass::ranger ||
+           (klass == CharacterClass::rogue && (weapon.finesse || weapon.light)) ||
+           (klass == CharacterClass::monk && weapon.light);
 }
 
 inline const Weapon *weapon(std::string_view key)

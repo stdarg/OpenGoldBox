@@ -444,9 +444,9 @@ std::vector<FeatureGrant> without_spell_grants(std::span<const FeatureGrant> gra
     return result;
 }
 
-TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
+TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
 {
-    if (klass == "warlock")
+    if (klass == CharacterClass::warlock)
         return
     {
         "class:warlock:pact_magic",
@@ -466,7 +466,7 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
                 "Melee weapon attack using your spellcasting ability; Radiant or the weapon's damage type."
             }
         }};
-    if (klass == "druid")
+    if (klass == CharacterClass::druid)
         return {"class:druid:spellcasting",
                 "Druid cantrips",
                 2,
@@ -492,7 +492,7 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
             "Ranged spell attack: 1d8 Radiant damage, 60 feet; the target cannot be Invisible until the end of your next turn."
         }
     }};
-    if (klass == "bard")
+    if (klass == CharacterClass::bard)
         return {"class:bard:spellcasting",
                 "Bard cantrips",
                 2,
@@ -509,7 +509,7 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
             "Melee weapon attack using your spellcasting ability; Radiant or the weapon's damage type."
         }
     }};
-    if (klass == "cleric")
+    if (klass == CharacterClass::cleric)
         return {"class:cleric:spellcasting",
                 "Cleric cantrips",
                 3,
@@ -526,13 +526,13 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
             "Touch: once per turn the creature takes 1d4 less damage of a chosen type; Concentration."
         }
     }};
-    if (klass != "wizard" && klass != "sorcerer")
+    if (klass != CharacterClass::wizard && klass != CharacterClass::sorcerer)
         return {};
     TrainingChoiceGroup group
     {
-        klass == "sorcerer" ? "class:sorcerer:spellcasting" : std::string(source),
-        klass == "sorcerer" ? "Sorcerer cantrips" : "Wizard cantrips",
-        klass == "sorcerer" ? 4u : 3u,
+        klass == CharacterClass::sorcerer ? "class:sorcerer:spellcasting" : std::string(source),
+        klass == CharacterClass::sorcerer ? "Sorcerer cantrips" : "Wizard cantrips",
+        klass == CharacterClass::sorcerer ? 4u : 3u,
         {   {"fire_bolt", "Fire Bolt", "Ranged spell attack: 1d10 Fire damage, 120 feet."},
             {"poison_spray", "Poison Spray", "Ranged spell attack: 1d12 Poison damage, 30 feet."},
             {
@@ -556,7 +556,7 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
                 "Melee weapon attack using your spellcasting ability; Radiant or the weapon's damage type."
             }
         }};
-    if (klass == "sorcerer")
+    if (klass == CharacterClass::sorcerer)
         group.options.push_back(
         {
             "sorcerous_burst", "Sorcerous Burst",
@@ -566,14 +566,14 @@ TrainingChoiceGroup starting_cantrip_options(std::string_view klass)
 }
 
 std::vector<FeatureGrant>
-starting_spell_grants(std::string_view klass,
+starting_spell_grants(CharacterClass klass,
                       const std::optional<std::vector<std::string>> &cantrips)
 {
-    if (klass == "sorcerer")
+    if (klass == CharacterClass::sorcerer)
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
-        const auto offered = starting_cantrip_options("sorcerer").options;
+        const auto offered = starting_cantrip_options(CharacterClass::sorcerer).options;
         const auto chosen = cantrips.value_or(std::vector<std::string> {});
         require(chosen.size() <= 4);
         for (const auto &id : chosen)
@@ -586,11 +586,11 @@ starting_spell_grants(std::string_view klass,
         }
         return result;
     }
-    if (klass == "warlock")
+    if (klass == CharacterClass::warlock)
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
-        const auto offered = starting_cantrip_options("warlock").options;
+        const auto offered = starting_cantrip_options(CharacterClass::warlock).options;
         require(!cantrips || cantrips->size() <= 2);
         for (const auto &id : cantrips.value_or(std::vector<std::string> {}))
         {
@@ -602,11 +602,11 @@ starting_spell_grants(std::string_view klass,
         }
         return result;
     }
-    if (klass == "druid")
+    if (klass == CharacterClass::druid)
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
-        const auto offered = starting_cantrip_options("druid").options;
+        const auto offered = starting_cantrip_options(CharacterClass::druid).options;
         for (const auto &id : cantrips.value_or(std::vector<std::string> {}))
         {
             require(std::any_of(offered.begin(), offered.end(), [&](const auto & option)
@@ -617,11 +617,11 @@ starting_spell_grants(std::string_view klass,
         }
         return result;
     }
-    if (klass == "bard")
+    if (klass == CharacterClass::bard)
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
-        const auto offered = starting_cantrip_options("bard").options;
+        const auto offered = starting_cantrip_options(CharacterClass::bard).options;
         for (const auto &id : cantrips.value_or(std::vector<std::string> {}))
         {
             require(std::any_of(offered.begin(), offered.end(), [&](const auto & option)
@@ -632,11 +632,11 @@ starting_spell_grants(std::string_view klass,
         }
         return result;
     }
-    if (klass == "cleric")
+    if (klass == CharacterClass::cleric)
     {
         std::vector<FeatureGrant> result;
         std::set<std::string> unique;
-        const auto offered = starting_cantrip_options("cleric").options;
+        const auto offered = starting_cantrip_options(CharacterClass::cleric).options;
         for (const auto &id : cantrips.value_or(std::vector<std::string> {}))
         {
             require(std::any_of(offered.begin(), offered.end(), [&](const auto & option)
@@ -647,7 +647,7 @@ starting_spell_grants(std::string_view klass,
         }
         return result;
     }
-    if (klass != "wizard")
+    if (klass != CharacterClass::wizard)
     {
         require(!cantrips || cantrips->empty());
         return {};
@@ -803,7 +803,7 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
     {
         for (const auto &spell : access.cantrips)
             result.replaceable.push_back({spell.id, spell.label, {}});
-        for (const auto &choice : starting_cantrip_options("wizard").options)
+        for (const auto &choice : starting_cantrip_options(CharacterClass::wizard).options)
             if (!known(choice.id))
                 result.replacements.push_back(choice);
     }

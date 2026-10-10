@@ -211,6 +211,32 @@ void creation_tests()
         (void)module->evaluate(d, NameRequirement::required);
     },
     "Unknown class rejected");
+    // A misspelt class ID used to match none of the rules' class checks and so
+    // quietly offered nothing; now every rule that reads the class rejects it.
+    d.character_class = "clerik";
+    rejects(
+        [&]
+    {
+        (void)module->cantrip_options(d);
+    },
+    "Cantrip options reject an unknown class");
+    rejects(
+        [&]
+    {
+        (void)module->spell_choice_options(d);
+    },
+    "Spell choice options reject an unknown class");
+    rejects(
+        [&]
+    {
+        (void)module->preset_ability_priority("clerik", 0);
+    },
+    "Preset ability priority rejects an unknown class");
+    d.character_class.clear();
+    check(module->cantrip_options(d).options.empty() &&
+          module->spell_choice_options(d).learning.empty(),
+          "A draft with no class yet is offered no spells");
+    d.character_class = "invented";
     CharacterCreator creator(srd5::character_rules(), 42);
     rejects(
         [&]

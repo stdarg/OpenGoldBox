@@ -83,14 +83,19 @@ class CreatorRules final : public CharacterRules
     std::array<unsigned, 6> preset_ability_priority(std::string_view id,
             unsigned variant) const override
     {
+        using enum detail::CharacterClass;
+        const auto klass = detail::class_from_id(id);
         const unsigned primary =
-            id == "wizard"                                          ? 3
-            : (id == "cleric" || id == "druid")                     ? 4
-            : (id == "bard" || id == "sorcerer" || id == "warlock") ? 5
-            : (id == "monk" || id == "ranger" || id == "rogue" || (id == "fighter" && variant % 2))
+            klass == wizard                                            ? 3
+            : (klass == cleric || klass == druid)                      ? 4
+            : (klass == bard || klass == sorcerer || klass == warlock) ? 5
+            : (klass == monk || klass == ranger || klass == rogue ||
+               (klass == fighter && variant % 2))
             ? 1
             : 0;
-        const unsigned secondary = (id == "monk" || id == "ranger") ? 4 : id == "paladin" ? 5 : 2;
+        const unsigned secondary = (klass == monk || klass == ranger) ? 4
+                                   : klass == paladin                  ? 5
+                                   : 2;
         std::vector<unsigned> priority{primary, secondary};
         for (unsigned n :
                 {
@@ -123,10 +128,10 @@ class CreatorRules final : public CharacterRules
 
     SpellChoiceOptions spell_choice_options(const CharacterDraft &draft) const override
     {
-        if (draft.character_class == "cleric" || draft.character_class == "paladin" ||
-                draft.character_class == "ranger" || draft.character_class == "sorcerer" ||
-                draft.character_class == "warlock" || draft.character_class == "bard" ||
-                draft.character_class == "druid")
+        using enum detail::CharacterClass;
+        const auto klass = detail::draft_class(draft);
+        if (klass == cleric || klass == paladin || klass == ranger || klass == sorcerer ||
+                klass == warlock || klass == bard || klass == druid)
         {
             // These classes prepare from the class list; the selection never changes it.
             auto base = draft;
@@ -134,7 +139,7 @@ class CreatorRules final : public CharacterRules
             return detail::spell_choice_options(evaluate(base, NameRequirement::optional),
                                                 SpellChoiceContext::advancement);
         }
-        if (draft.character_class != "wizard")
+        if (klass != wizard)
             return {};
         auto base = draft;
         base.spells = SpellChoices{};
@@ -153,15 +158,18 @@ class CreatorRules final : public CharacterRules
 
     TrainingChoiceGroup cantrip_options(const CharacterDraft &draft) const override
     {
-        auto group = detail::starting_cantrip_options(draft.character_class);
+        const auto klass = detail::draft_class(draft);
+        if (!klass)
+            return {};
+        auto group = detail::starting_cantrip_options(*klass);
         // The Thaumaturge Divine Order adds one Cleric cantrip.
         const auto order = draft.training.find("class:cleric:divine_order");
-        if (draft.character_class == "cleric" && order != draft.training.end() &&
+        if (klass == detail::CharacterClass::cleric && order != draft.training.end() &&
                 order->second == std::vector<std::string> {"thaumaturge"})
             ++group.count;
         // So does the Druid's Magician Primal Order.
         const auto primal = draft.training.find("class:druid:primal_order");
-        if (draft.character_class == "druid" && primal != draft.training.end() &&
+        if (klass == detail::CharacterClass::druid && primal != draft.training.end() &&
                 primal->second == std::vector<std::string> {"magician"})
             ++group.count;
         return group;
@@ -170,7 +178,7 @@ class CreatorRules final : public CharacterRules
     AbilityCheckModifier ability_check(const CharacterSheet &sheet, Ability ability,
                                        std::string_view skill) const override
     {
-        return detail::ability_check(sheet.grants, detail::class_id(detail::class_of(sheet)),
+        return detail::ability_check(sheet.grants, detail::class_of(sheet),
                                      detail::grant_source_id(sheet.background), sheet.level,
                                      sheet.scores, ability, skill);
     }
@@ -291,7 +299,8 @@ ClassRequirements CreatorRules::class_requirements(std::string_view id) const
     });
     if (found == classes.end())
         throw std::runtime_error("Unknown class prerequisite");
-    ClassRequirements result{primary.at(found - classes.begin()), id == "fighter", 13, {}};
+    ClassRequirements result{primary.at(found - classes.begin()),
+                             found->character_class == detail::CharacterClass::fighter, 13, {}};
     for (auto ability : result.abilities)
     {
         if (!result.description.empty())
@@ -351,10 +360,11 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     s.race = label(CreationField::race, d.race);
     s.gender = label(CreationField::gender, d.gender);
     s.character_class = label(CreationField::character_class, d.character_class);
+    const auto klass = detail::class_from_id(d.character_class);
     s.alignment = label(CreationField::alignment, d.alignment);
     s.background = label(CreationField::background, d.background);
-    s.grants = detail::starting_grants(d.character_class, d.race, d.background);
-    const auto training = detail::training_grants(d.character_class, d.background, d.training);
+    s.grants = detail::starting_grants(klass, d.race, d.background);
+    const auto training = detail::training_grants(klass, d.background, d.training);
     s.grants.insert(s.grants.end(), training.begin(), training.end());
     if (name == NameRequirement::required && (d.name.empty() || d.name.size() > 160 ||
                          d.name.find_first_not_of(" \t\r\n") == std::string::npos ||
@@ -389,7 +399,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     const auto c = std::find_if(classes.begin(), classes.end(),
                                 [&](const auto & c)
     {
-        return detail::class_id(c.character_class) == d.character_class;
+        return c.character_class == klass;
     });
     s.hit_die = c->die;
     const int racial_hp = d.race == "dwarf" ? 1 : 0;
@@ -438,7 +448,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
             }
         }
     };
-    if (d.character_class == "rogue")
+    if (klass == detail::CharacterClass::rogue)
     {
         s.class_modifiers +=
             "\nSneak Attack: once per turn, extra weapon damage is added automatically to the first eligible hit; the combat log shows the dice.";
@@ -493,20 +503,19 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
                        (racial_hp ? " + 1 (Dwarven Toughness)" : "") + " = " +
                        std::to_string(s.hit_points) + " HP";
     s.training =
-        detail::training_profile(s.grants, d.character_class, d.background, s.level, s.scores);
-    const auto spells = detail::starting_spell_grants(d.character_class, d.cantrips);
+        detail::training_profile(s.grants, klass, d.background, s.level, s.scores);
+    const auto spells = detail::starting_spell_grants(klass, d.cantrips);
     s.grants.insert(s.grants.end(), spells.begin(), spells.end());
-    if (d.character_class == "wizard")
+    using enum detail::CharacterClass;
+    if (klass == wizard)
         s.prepared_spells = {"magic_missile"};
-    if (d.spells && (d.character_class == "cleric" || d.character_class == "paladin" ||
-                     d.character_class == "ranger" || d.character_class == "sorcerer" ||
-                     d.character_class == "warlock" || d.character_class == "bard" ||
-                     d.character_class == "druid"))
+    if (d.spells && (klass == cleric || klass == paladin || klass == ranger ||
+                     klass == sorcerer || klass == warlock || klass == bard || klass == druid))
         detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement,
                                     ChoiceCompleteness::partial);
     else if (d.spells)
     {
-        if (d.character_class != "wizard")
+        if (klass != wizard)
             throw std::runtime_error("Spell choices require a spellcasting class");
         std::erase_if(s.grants,
                       [](const auto & g)

@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_SRD5_TRAINING_H
 #define OPENGOLD_SRD5_TRAINING_H
+#include "character_class.h"
 #include "opengold/character_rules.h"
 
 namespace opengold::srd5::detail
@@ -14,17 +15,17 @@ rules::TrainingChoiceGroup invocation_options(unsigned level,
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);
 std::vector<rules::TrainingChoiceGroup> training_options(const rules::CharacterDraft &draft);
 std::vector<rules::FeatureGrant>
-training_grants(std::string_view klass, std::string_view background,
+training_grants(CharacterClass klass, std::string_view background,
                 const rules::TrainingChoices &choices);
 bool is_training_grant(const rules::FeatureGrant &grant);
 std::vector<rules::FeatureGrant> without_training(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoices training_choices(std::span<const rules::FeatureGrant> grants,
-                                        std::string_view klass, std::string_view background);
+                                        CharacterClass klass, std::string_view background);
 rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> grants,
-                                        std::string_view klass, std::string_view background,
+                                        CharacterClass klass, std::string_view background,
                                         unsigned level, const std::array<int, 6> &scores);
 rules::AbilityCheckModifier ability_check(std::span<const rules::FeatureGrant> grants,
-        std::string_view klass, std::string_view background,
+        CharacterClass klass, std::string_view background,
         unsigned level, const std::array<int, 6> &scores,
         rules::Ability ability, std::string_view skill);
 } // namespace opengold::srd5::detail

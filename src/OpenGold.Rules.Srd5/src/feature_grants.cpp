@@ -19,6 +19,12 @@ void require(bool value)
         throw std::runtime_error(
             "Invalid feature or feat grant provenance, choices or prerequisites");
 }
+
+// The grant source ID of a class's own features, such as "class:fighter".
+std::string class_source(CharacterClass klass)
+{
+    return "class:" + std::string(class_id(klass));
+}
 } // namespace
 
 std::string grant_source_id(std::string_view label)
@@ -30,7 +36,7 @@ std::string grant_source_id(std::string_view label)
     return result;
 }
 
-std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::string_view race,
+std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::string_view race,
         std::string_view background)
 {
     std::vector<rules::FeatureGrant> result;
@@ -38,27 +44,29 @@ std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::st
         result.push_back({"feat:alert", "background:criminal", 1, {}});
     if (background == "soldier")
         result.push_back({"feat:savage_attacker", "background:soldier", 1, {}});
-    if (klass == "fighter")
+    if (klass == CharacterClass::fighter)
     {
         // Entitlement already used by the existing Defense selection. Completing
         // the level-one style selector is a separate class increment.
         result.push_back({"feature:fighting_style", "class:fighter", 1, {}});
         result.push_back({"feature:second_wind", "class:fighter", 1, {}});
     }
-    if (klass == "barbarian" || klass == "monk")
-        result.push_back({"feature:unarmored_defense", "class:" + std::string(klass), 1, {}});
-    if (klass == "cleric" || klass == "wizard" || klass == "paladin" || klass == "ranger" ||
-            klass == "sorcerer" || klass == "bard" || klass == "druid")
-        result.push_back({"feature:spellcasting", "class:" + std::string(klass), 1, {}});
-    if (klass == "sorcerer")
+    if (klass == CharacterClass::barbarian || klass == CharacterClass::monk)
+        result.push_back({"feature:unarmored_defense", class_source(klass), 1, {}});
+    if (klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
+            klass == CharacterClass::paladin || klass == CharacterClass::ranger ||
+            klass == CharacterClass::sorcerer || klass == CharacterClass::bard ||
+            klass == CharacterClass::druid)
+        result.push_back({"feature:spellcasting", class_source(klass), 1, {}});
+    if (klass == CharacterClass::sorcerer)
         result.push_back({"feature:innate_sorcery", "class:sorcerer", 1, {}});
-    if (klass == "bard")
+    if (klass == CharacterClass::bard)
         result.push_back({"feature:bardic_inspiration", "class:bard", 1, {}});
-    if (klass == "warlock")
+    if (klass == CharacterClass::warlock)
         result.push_back({"feature:pact_magic", "class:warlock", 1, {}});
-    if (klass == "rogue")
+    if (klass == CharacterClass::rogue)
         result.push_back({"feature:sneak_attack", "class:rogue", 1, {}});
-    if (klass == "wizard")
+    if (klass == CharacterClass::wizard)
         result.push_back({"feature:arcane_recovery", "class:wizard", 1, {}});
     if (race == "dwarf")
     {
@@ -72,11 +80,11 @@ std::vector<rules::FeatureGrant> starting_grants(std::string_view klass, std::st
     return result;
 }
 
-rules::FeatureGrant advancement_grant(std::string_view klass, unsigned level,
+rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
                                       const rules::AdvancementChoice &choice)
 {
     rules::FeatureGrant result{"feat:" + choice.feat,
-                               "class:" + std::string(klass) + ":ability_score_improvement",
+                               class_source(klass) + ":ability_score_improvement",
                                level,
                                {}};
     for (unsigned i = 0; i < abilities.size(); ++i)
@@ -110,112 +118,112 @@ bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
     });
 }
 
-GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::string_view klass,
+GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, CharacterClass klass,
                              std::string_view race, std::string_view background, unsigned level)
 {
     require(level >= 1 && level <= 4 && grants.size() <= 32);
     require(background == "acolyte" || background == "criminal" || background == "sage" ||
             background == "soldier");
     auto required = starting_grants(klass, race, background);
-    if ((klass == "paladin" || klass == "ranger") && level >= 2)
-        required.push_back({"feature:fighting_style", "class:" + std::string(klass), 2, {}});
-    if (klass == "rogue" && level >= 3)
+    if ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) && level >= 2)
+        required.push_back({"feature:fighting_style", class_source(klass), 2, {}});
+    if (klass == CharacterClass::rogue && level >= 3)
     {
         required.push_back({"feature:steady_aim", "class:rogue", 3, {}});
         required.push_back({"subclass:thief", "class:rogue", 3, {}});
         required.push_back({"feature:fast_hands", "subclass:rogue:thief", 3, {}});
     }
-    if (klass == "cleric" && level >= 2)
+    if (klass == CharacterClass::cleric && level >= 2)
         required.push_back({"feature:channel_divinity", "class:cleric", 2, {}});
-    if (klass == "cleric" && level >= 3)
+    if (klass == CharacterClass::cleric && level >= 3)
     {
         required.push_back({"subclass:life", "class:cleric", 3, {}});
         required.push_back({"feature:disciple_of_life", "subclass:cleric:life", 3, {}});
         required.push_back({"feature:preserve_life", "subclass:cleric:life", 3, {}});
     }
-    if (klass == "wizard" && level >= 3)
+    if (klass == CharacterClass::wizard && level >= 3)
     {
         required.push_back({"subclass:evoker", "class:wizard", 3, {}});
         required.push_back({"feature:potent_cantrip", "subclass:wizard:evoker", 3, {}});
         required.push_back({"feature:sculpt_spells", "subclass:wizard:evoker", 3, {}});
     }
-    if (klass == "ranger" && level >= 3)
+    if (klass == CharacterClass::ranger && level >= 3)
     {
         required.push_back({"subclass:hunter", "class:ranger", 3, {}});
         required.push_back({"feature:hunters_lore", "subclass:ranger:hunter", 3, {}});
     }
-    if (klass == "paladin" && level >= 3)
+    if (klass == CharacterClass::paladin && level >= 3)
     {
         required.push_back({"feature:channel_divinity", "class:paladin", 3, {}});
         required.push_back({"subclass:devotion", "class:paladin", 3, {}});
         required.push_back({"feature:sacred_weapon", "subclass:paladin:devotion", 3, {}});
     }
-    if (klass == "rogue" && level >= 2)
+    if (klass == CharacterClass::rogue && level >= 2)
         required.push_back({"feature:cunning_action", "class:rogue", 2, {}});
-    if (klass == "sorcerer" && level >= 2)
+    if (klass == CharacterClass::sorcerer && level >= 2)
     {
         required.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
         required.push_back({"feature:metamagic", "class:sorcerer", 2, {}});
     }
-    if (klass == "bard" && level >= 2)
+    if (klass == CharacterClass::bard && level >= 2)
         required.push_back({"feature:jack_of_all_trades", "class:bard", 2, {}});
-    if (klass == "bard" && level >= 3)
+    if (klass == CharacterClass::bard && level >= 3)
     {
         required.push_back({"subclass:lore", "class:bard", 3, {}});
         required.push_back({"feature:bonus_proficiencies", "subclass:bard:lore", 3, {}});
         required.push_back({"feature:cutting_words", "subclass:bard:lore", 3, {}});
     }
-    if (klass == "druid" && level >= 2)
+    if (klass == CharacterClass::druid && level >= 2)
         required.push_back({"feature:wild_shape", "class:druid", 2, {}});
-    if (klass == "druid" && level >= 3)
+    if (klass == CharacterClass::druid && level >= 3)
     {
         required.push_back({"subclass:land", "class:druid", 3, {}});
         required.push_back({"feature:circle_spells", "subclass:druid:land", 3, {}});
         required.push_back({"feature:lands_aid", "subclass:druid:land", 3, {}});
     }
-    if (klass == "warlock" && level >= 2)
+    if (klass == CharacterClass::warlock && level >= 2)
         required.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
-    if (klass == "warlock" && level >= 3)
+    if (klass == CharacterClass::warlock && level >= 3)
     {
         required.push_back({"subclass:fiend", "class:warlock", 3, {}});
         required.push_back({"feature:dark_ones_blessing", "subclass:warlock:fiend", 3, {}});
         required.push_back({"feature:fiend_spells", "subclass:warlock:fiend", 3, {}});
     }
-    if (klass == "sorcerer" && level >= 3)
+    if (klass == CharacterClass::sorcerer && level >= 3)
     {
         required.push_back({"subclass:draconic", "class:sorcerer", 3, {}});
         required.push_back({"feature:draconic_resilience", "subclass:sorcerer:draconic", 3, {}});
         required.push_back({"feature:draconic_spells", "subclass:sorcerer:draconic", 3, {}});
     }
-    if (klass == "monk" && level >= 2)
+    if (klass == CharacterClass::monk && level >= 2)
     {
         required.push_back({"feature:monks_focus", "class:monk", 2, {}});
         required.push_back({"feature:unarmored_movement", "class:monk", 2, {}});
         required.push_back({"feature:uncanny_metabolism", "class:monk", 2, {}});
     }
-    if (klass == "monk" && level >= 3)
+    if (klass == CharacterClass::monk && level >= 3)
     {
         required.push_back({"feature:deflect_attacks", "class:monk", 3, {}});
         required.push_back({"subclass:open_hand", "class:monk", 3, {}});
         required.push_back({"feature:open_hand_technique", "subclass:monk:open_hand", 3, {}});
     }
-    if (klass == "barbarian" && level >= 2)
+    if (klass == CharacterClass::barbarian && level >= 2)
     {
         required.push_back({"feature:danger_sense", "class:barbarian", 2, {}});
         required.push_back({"feature:reckless_attack", "class:barbarian", 2, {}});
     }
-    if (klass == "barbarian" && level >= 3)
+    if (klass == CharacterClass::barbarian && level >= 3)
     {
         required.push_back({"subclass:berserker", "class:barbarian", 3, {}});
         required.push_back({"feature:frenzy", "subclass:barbarian:berserker", 3, {}});
         required.push_back({"feature:primal_knowledge", "class:barbarian", 3, {}});
     }
-    if (klass == "fighter" && level >= 2)
+    if (klass == CharacterClass::fighter && level >= 2)
     {
         required.push_back({"feature:action_surge", "class:fighter", 2, {}});
         required.push_back({"feature:tactical_mind", "class:fighter", 2, {}});
     }
-    if (klass == "fighter" && level >= 3)
+    if (klass == CharacterClass::fighter && level >= 3)
     {
         required.push_back({"subclass:champion", "class:fighter", 3, {}});
         required.push_back({"feature:improved_critical", "subclass:fighter:champion", 3, {}});
@@ -239,33 +247,29 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         else if (grant.source_id == "subclass:ranger:hunter")
         {
             // Hunter's Prey: one of its two options, chosen at level three.
-            require(klass == "ranger" && grant.level == 3 && grant.choices.empty() &&
+            require(klass == CharacterClass::ranger && grant.level == 3 && grant.choices.empty() &&
                     (grant.id == "prey:colossus_slayer" || grant.id == "prey:horde_breaker"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
-        else if (grant.source_id == "class:" + std::string(klass) + ":fighting_style")
+        else if (grant.source_id == class_source(klass) + ":fighting_style")
         {
             require(
-                (klass == "fighter" ||
-                 ((klass == "paladin" || klass == "ranger") && grant.level == 2)) &&
+                (klass == CharacterClass::fighter ||
+                 ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
+                  grant.level == 2)) &&
                 grant.choices.empty() &&
                 (grant.id == "feat:defense" || grant.id == "feat:archery" ||
                  grant.id == "feat:great_weapon_fighting" ||
                  grant.id == "feat:two_weapon_fighting" ||
-                 (klass == "paladin" && grant.id == "feature:blessed_warrior") ||
-                 (klass == "ranger" && grant.id == "feature:druidic_warrior")) &&
+                 (klass == CharacterClass::paladin && grant.id == "feature:blessed_warrior") ||
+                 (klass == CharacterClass::ranger && grant.id == "feature:druidic_warrior")) &&
                 has_grant(grants, "feature:fighting_style"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
         else
         {
-            require((klass == "fighter" || klass == "cleric" || klass == "wizard" ||
-                     klass == "barbarian" || klass == "monk" || klass == "sorcerer" ||
-                     klass == "warlock" || klass == "bard" || klass == "druid" ||
-                     klass == "rogue" || klass == "paladin" || klass == "ranger") &&
-                    grant.level == 4 &&
-                    grant.source_id ==
-                    "class:" + std::string(klass) + ":ability_score_improvement");
+            require(grant.level == 4 &&
+                    grant.source_id == class_source(klass) + ":ability_score_improvement");
             require(entitlements.emplace(grant.source_id, grant.level).second);
             ++advancement_count;
             if (grant.id == "feat:ability_score_improvement")
@@ -306,9 +310,9 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, std::s
         if (grant.id == "feat:two_weapon_fighting")
             effects.feats |= 16;
     }
-    if ((klass == "paladin" || klass == "ranger") && level >= 2)
-        require(entitlements.contains({"class:" + std::string(klass) + ":fighting_style", 0}));
-    if (klass == "ranger" && level >= 3)
+    if ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) && level >= 2)
+        require(entitlements.contains({class_source(klass) + ":fighting_style", 0}));
+    if (klass == CharacterClass::ranger && level >= 3)
         require(entitlements.contains({"subclass:ranger:hunter", 0}));
     require(required.empty() && advancement_count == (level == 4 ? 1u : 0u));
     return effects;

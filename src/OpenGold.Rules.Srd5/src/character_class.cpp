@@ -67,6 +67,25 @@ std::optional<CharacterClass> class_from_label(std::string_view label)
     return found->character_class;
 }
 
+CharacterClass class_from_id(std::string_view id)
+{
+    const auto found = std::find_if(class_names.begin(), class_names.end(),
+                                    [&](const ClassName & names)
+    {
+        return names.id == id;
+    });
+    if (found == class_names.end())
+        throw std::runtime_error("Unknown class");
+    return found->character_class;
+}
+
+std::optional<CharacterClass> draft_class(const rules::CharacterDraft &draft)
+{
+    if (draft.character_class.empty())
+        return std::nullopt;
+    return class_from_id(draft.character_class);
+}
+
 CharacterClass class_of(const rules::CharacterSheet &sheet)
 {
     const auto character_class = class_from_label(sheet.character_class);

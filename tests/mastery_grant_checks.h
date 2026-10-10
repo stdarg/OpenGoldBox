@@ -31,7 +31,8 @@ void run()
         {"barbarian", 2}, {"fighter", 3}, {"paladin", 2}, {"ranger", 2}, {"rogue", 2}};
     for (const auto &klass : srd5::character_rules()->choices(CreationField::character_class))
     {
-        const auto options = mastery::mastery_options(klass.id, 1);
+        const auto character_class = mastery::class_from_id(klass.id);
+        const auto options = mastery::mastery_options(character_class, 1);
         const auto found = expected.find(klass.id);
         check(options.count == (found == expected.end() ? 0 : found->second),
               "Independent starting mastery counts across all twelve classes");
@@ -87,7 +88,7 @@ void run()
         rejects(
             [&]
         {
-            (void)mastery::mastery_choices(duplicate, klass.id, 1);
+            (void)mastery::mastery_choices(duplicate, character_class, 1);
         });
         std::vector<std::string> selected;
         for (const auto &g : grants)
@@ -95,41 +96,41 @@ void run()
                 selected.push_back(g.id.substr(8));
         auto next = selected;
         next[0] = options.options.at(options.count).id;
-        const auto replaced = mastery::replace_masteries(grants, klass.id, 1, next);
+        const auto replaced = mastery::replace_masteries(grants, character_class, 1, next);
         check(grants == h.sheet().grants && replaced != grants,
               "Rest replacement produces a candidate without mutating original grants");
-        check(mastery::replace_masteries(grants, klass.id, 1, selected) == grants,
+        check(mastery::replace_masteries(grants, character_class, 1, selected) == grants,
               "Keeping selections is an exact no-op");
         next[1] = options.options.at(options.count + 1).id;
         if (klass.id == "fighter" || klass.id == "barbarian")
             rejects(
                 [&]
         {
-            (void)mastery::replace_masteries(grants, klass.id, 1, next);
+            (void)mastery::replace_masteries(grants, character_class, 1, next);
         });
         else
-            check(mastery::replace_masteries(grants, klass.id, 1, next) != grants,
+            check(mastery::replace_masteries(grants, character_class, 1, next) != grants,
                   "Paladin/Ranger/Rogue may replace both kinds");
         next = selected;
         next[0] = next[1];
         rejects(
             [&]
         {
-            (void)mastery::replace_masteries(grants, klass.id, 1, next);
+            (void)mastery::replace_masteries(grants, character_class, 1, next);
         });
         next = selected;
         next[0] = "wand";
         rejects(
             [&]
         {
-            (void)mastery::replace_masteries(grants, klass.id, 1, next);
+            (void)mastery::replace_masteries(grants, character_class, 1, next);
         });
         const auto original = grants;
         std::erase_if(grants, mastery::is_mastery_grant);
         rejects(
             [&]
         {
-            (void)mastery::replace_masteries(grants, klass.id, 1, selected);
+            (void)mastery::replace_masteries(grants, character_class, 1, selected);
         });
         if (klass.id == "barbarian")
             continue;
@@ -169,16 +170,16 @@ void run()
     // A fourth Fighter choice cannot repeat a first-level kind or be acquired early.
     auto h = chosen("fighter");
     auto grants = h.sheet().grants;
-    const auto extra = mastery::mastery_options("fighter", 4, grants);
+    const auto extra = mastery::mastery_options(mastery::CharacterClass::fighter, 4, grants);
     check(extra.count == 1 && extra.options.size() == 35,
           "Fourth Fighter choice excludes all three existing kinds");
     grants.push_back({"mastery:" + extra.options.front().id, extra.id, 4, {}});
     rejects(
         [&]
     {
-        (void)mastery::mastery_choices(grants, "fighter", 3);
+        (void)mastery::mastery_choices(grants, mastery::CharacterClass::fighter, 3);
     });
-    check(mastery::mastery_choices(grants, "fighter", 4).at(extra.id).size() == 1,
-          "Fourth kind validates at4");
+    const auto fourth = mastery::mastery_choices(grants, mastery::CharacterClass::fighter, 4);
+    check(fourth.at(extra.id).size() == 1, "Fourth kind validates at4");
 }
 } // namespace mastery_grant_checks
