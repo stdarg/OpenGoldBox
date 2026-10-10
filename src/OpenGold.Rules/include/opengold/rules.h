@@ -124,7 +124,7 @@ enum class EquipmentOperation
 
 struct EquipmentChoice
 {
-    EquipmentOperation operation;
+    EquipmentOperation operation{EquipmentOperation::equip};
     Message label, explanation;
     bool available{};
 };
