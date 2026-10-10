@@ -276,17 +276,12 @@ void CampaignParty::set_quick_magic(bool on)
 void CampaignParty::lose(MemberId id)
 {
     editable();
-    auto member = std::find_if(state_.roster.begin(), state_.roster.end(), [&](const auto & m)
-    {
-        return m.id == id;
-    });
-    if (member == state_.roster.end())
-        throw std::runtime_error("Unknown party member");
+    auto &member = member_in(state_, id);
     // remove() refuses before changing anything, so the member is marked dead
     // only once it has left the party (Effective C++ Item 29).
     remove(id);
-    member->vitals.hit_points = 0;
-    member->vitals.dead = true;
+    member.vitals.hit_points = 0;
+    member.vitals.dead = true;
 }
 
 MemberId CampaignParty::spokesman() const
@@ -555,13 +550,9 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
     for (auto id : next.slots)
         if (id)
         {
-            const auto found = std::find_if(next.roster.begin(), next.roster.end(),
-                                            [&](const auto & m)
-            {
-                return m.id == id;
-            });
-            if (!found->vitals.dead)
-                recipients.push_back(found - next.roster.begin());
+            const auto &member = member_in(next, id);
+            if (!member.vitals.dead)
+                recipients.push_back(static_cast<std::size_t>(&member - next.roster.data()));
         }
     if (recipients.empty())
         return false;
@@ -805,12 +796,7 @@ void CampaignParty::elapse(PartyState &state, std::chrono::milliseconds elapsed,
     }
     rules_->elapse(participants, elapsed, state.random_state);
     for (const auto &participant : participants)
-        std::find_if(state.roster.begin(), state.roster.end(),
-                     [&](const auto & m)
-    {
-        return m.id == participant.id;
-    })
-    ->vitals = *participant.state;
+        member_in(state, participant.id).vitals = *participant.state;
     state.time_minutes += minutes;
     state.subminute_milliseconds = static_cast<unsigned>(remainder % 60000);
 }
@@ -1056,12 +1042,7 @@ void CampaignParty::validate(const PartyState &state)
         {
             if (!ids.contains(id) || !active.insert(id).second)
                 throw std::runtime_error("Invalid active party checkpoint");
-            const auto it = std::find_if(state.roster.begin(), state.roster.end(),
-                                         [&](const auto & m)
-            {
-                return m.id == id;
-            });
-            if ((slot < 6) != it->npc_source.empty())
+            if ((slot < 6) != member_in(state, id).npc_source.empty())
                 throw std::runtime_error("Invalid PC/NPC checkpoint position");
         }
     if (!active.empty() && !state.slots[state.selected_slot.index])
