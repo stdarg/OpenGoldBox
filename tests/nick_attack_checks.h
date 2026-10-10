@@ -207,7 +207,7 @@ void pending_interactions()
         act(*c, "steady_aim");
         act(*c, "melee", 99);
         settle(*c);
-        if (!fx::vexed_by(state(*c, 99), 777, 1))
+        if (!fx::vexed_by(state(*c, 99), {.scope = 777, .actor = 1}))
             continue;
         check(logged(*c, "adds Sneak Attack"),
               "The first eligible hit applies Sneak Attack automatically");
@@ -218,7 +218,8 @@ void pending_interactions()
             return line.find("adds Sneak Attack") != std::string::npos;
         }) == 1, "Sneak Attack applies only once per turn");
         auto copy = p.rule_module().restore(c->save());
-        check(copy->save() == c->save() && !fx::vexed_by(state(*c, 99), 777, 1) &&
+        check(copy->save() == c->save() &&
+              !fx::vexed_by(state(*c, 99), {.scope = 777, .actor = 1}) &&
               !unit(*c, 1).bonus_action && !offers(*c, "nick_melee") &&
               !offers(*c, "light_melee"),
               "Nick consumes Vex and keeps the shared spent allowance and Steady Aim");

@@ -310,9 +310,9 @@ void multiple_casters()
 void effect_lifecycle()
 {
     fx::EffectState state;
-    fx::apply_ray_of_frost(state, 5, 1, "First", 2000);
-    fx::apply_ray_of_frost(state, 5, 2, "Second", 6000);
-    fx::apply_ray_of_frost(state, 6, 1, "Other encounter", 4000);
+    fx::apply_ray_of_frost(state, {.scope = 5, .actor = 1}, "First", 2000);
+    fx::apply_ray_of_frost(state, {.scope = 5, .actor = 2}, "Second", 6000);
+    fx::apply_ray_of_frost(state, {.scope = 6, .actor = 1}, "Other encounter", 4000);
     check(fx::speed_penalty(state) == 10, "Same spell from multiple sources does not stack");
     std::ostringstream out;
     fx::write_effects(out, state);

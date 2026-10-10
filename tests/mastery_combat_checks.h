@@ -87,15 +87,18 @@ Encounter encounter(const RulesModule &rules, const Character &hero, std::string
 void codec_and_lifecycle()
 {
     fx::EffectState attacker, target;
-    fx::apply_attack_mastery(attacker, fx::EffectKind::sap, 7, 2, "One", 6000);
-    fx::apply_attack_mastery(attacker, fx::EffectKind::sap, 8, 2, "Two", 4000);
-    fx::apply_attack_mastery(target, fx::EffectKind::vex, 7, 1, "Master", 9000);
-    fx::apply_attack_mastery(target, fx::EffectKind::vex, 8, 1, "Other encounter", 9000);
-    fx::apply_attack_mastery(target, fx::EffectKind::vex, 7, 3, "Other actor", 9000);
-    check(fx::sapped(attacker) && fx::vexed_by(target, 7, 1) && !fx::vexed_by(target, 9, 1),
+    fx::apply_attack_mastery(attacker, fx::EffectKind::sap, {.scope = 7, .actor = 2}, "One", 6000);
+    fx::apply_attack_mastery(attacker, fx::EffectKind::sap, {.scope = 8, .actor = 2}, "Two", 4000);
+    fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 7, .actor = 1}, "Master", 9000);
+    fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 8, .actor = 1},
+                             "Other encounter", 9000);
+    fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 7, .actor = 3}, "Other actor",
+                             9000);
+    check(fx::sapped(attacker) && fx::vexed_by(target, {.scope = 7, .actor = 1}) &&
+          !fx::vexed_by(target, {.scope = 9, .actor = 1}),
           "Source and scope distinguish Vex");
     const auto next = target.next_id;
-    fx::apply_attack_mastery(target, fx::EffectKind::vex, 7, 1, "Master", 8000);
+    fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 7, .actor = 1}, "Master", 8000);
     check(target.active.size() == 3 && target.next_id == next,
           "Reapplication refreshes instead of stacking");
     target.prone = true;
@@ -122,8 +125,9 @@ void codec_and_lifecycle()
         std::istringstream bytes(bad);
         (void)fx::read_effects(bytes);
     });
-    fx::consume_attack_masteries(attacker, target, 7, 1);
-    check(!fx::sapped(attacker) && !fx::vexed_by(target, 7, 1) && target.active.size() == 2,
+    fx::consume_attack_masteries(attacker, target, {.scope = 7, .actor = 1});
+    check(!fx::sapped(attacker) && !fx::vexed_by(target, {.scope = 7, .actor = 1}) &&
+          target.active.size() == 2,
           "One roll consumes all Sap and only matching Vex");
     std::uint64_t rng = 19;
     const auto before = rng;
@@ -134,11 +138,12 @@ void codec_and_lifecycle()
     check(target.active.empty() && rng == before, "Exact expiry needs no saving throw or RNG");
     fx::EffectState full;
     for (unsigned i = 0; i < fx::effect_limit; ++i)
-        fx::apply_attack_mastery(full, fx::EffectKind::sap, 7, i + 1, "Source", 6000);
-    check(!fx::can_apply_attack_mastery(full, fx::EffectKind::sap, 7, 999) &&
-          fx::can_apply_attack_mastery(full, fx::EffectKind::sap, 7, 1),
+        fx::apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = i + 1}, "Source",
+                                 6000);
+    check(!fx::can_apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 999}) &&
+          fx::can_apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 1}),
           "Full store permits same-source refresh only");
-    fx::apply_attack_mastery(full, fx::EffectKind::sap, 7, 1, "Source", 5000);
+    fx::apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 1}, "Source", 5000);
     check(full.active.size() == fx::effect_limit, "Refresh does not overflow");
 }
 
@@ -254,12 +259,14 @@ void timing_and_rolls()
             e = encounter(*r, hero("rapier", "fighter", background), "rapier");
             auto base = r->create(e, 89);
             fx::EffectState target;
-            fx::apply_attack_mastery(target, fx::EffectKind::vex, 777, 1, "Master", 9000);
+            fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 777, .actor = 1},
+                                     "Master", 9000);
             inject(e.participants[1], unit(*base, 99).persistent, target);
             if (sap)
             {
                 fx::EffectState own;
-                fx::apply_attack_mastery(own, fx::EffectKind::sap, 777, 99, "Target", 6000);
+                fx::apply_attack_mastery(own, fx::EffectKind::sap, {.scope = 777, .actor = 99},
+                                         "Target", 6000);
                 inject(e.participants[0], unit(*base, 1).persistent, own);
             }
             c = r->create(e, 89);
@@ -281,8 +288,10 @@ void timing_and_rolls()
     e = encounter(*r, wizard, "dagger", true);
     auto base = r->create(e, 89);
     fx::EffectState own, target;
-    fx::apply_attack_mastery(own, fx::EffectKind::sap, 777, 99, "Target", 6000);
-    fx::apply_attack_mastery(target, fx::EffectKind::vex, 777, 1, "Caster", 9000);
+    fx::apply_attack_mastery(own, fx::EffectKind::sap, {.scope = 777, .actor = 99}, "Target",
+                             6000);
+    fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 777, .actor = 1}, "Caster",
+                             9000);
     inject(e.participants[0], unit(*base, 1).persistent, own);
     inject(e.participants[1], unit(*base, 99).persistent, target);
     c = r->create(e, 89);
@@ -320,7 +329,7 @@ void physical_attacks_and_reactions()
             {{12, 8, std::vector<Terrain>(96)}, actors, 777}, 89);
             turn(*c, id);
             act(*c, "melee", 99);
-            check(fx::vexed_by(state(*c, 99), 777, id),
+            check(fx::vexed_by(state(*c, 99), {.scope = 777, .actor = id}),
                   "Physical first handaxe grants Vex for PC/NPC");
             const auto extra = command(*c, thrown ? "light_throw" : "light_melee", 99);
             check(extra.item == 2, "Second physical handaxe qualifies");
@@ -381,11 +390,15 @@ void capacity_and_identity()
             const auto ticket = command(*base, "melee", 99);
             fx::EffectState full;
             for (unsigned i = 0; i < fx::effect_limit; ++i)
+            {
+                const fx::EffectSource source{.scope = 777,
+                                              .actor = i == 0 && matching ? 1 : 500 + i};
                 fx::apply_attack_mastery(full,
                                          i == 0 && std::string_view(key) == "rapier"
                                          ? fx::EffectKind::vex
                                          : fx::EffectKind::sap,
-                                         777, i == 0 && matching ? 1 : 500 + i, "Source", 6000);
+                                         source, "Source", 6000);
+            }
             inject(e.participants[1], unit(*base, 99).persistent, full);
             auto c = r->create(e, 89);
             turn(*c, 1);
@@ -404,7 +417,8 @@ void capacity_and_identity()
     auto e = encounter(*r, character("fighter", "No grant"), "mace");
     auto base = r->create(e, 89);
     fx::EffectState effect;
-    fx::apply_attack_mastery(effect, fx::EffectKind::sap, 777, 1, "Master", 6000);
+    fx::apply_attack_mastery(effect, fx::EffectKind::sap, {.scope = 777, .actor = 1}, "Master",
+                             6000);
     inject(e.participants[1], unit(*base, 99).persistent, effect);
     auto c = r->create(e, 89);
     auto old = c->save();
@@ -473,7 +487,8 @@ void pending_interactions()
         auto e = encounter(*r, p.member(id).character, "rapier");
         auto base = r->create(e, 72);
         fx::EffectState target;
-        fx::apply_attack_mastery(target, fx::EffectKind::vex, 777, 1, "Master", 9000);
+        fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 777, .actor = 1}, "Master",
+                                 9000);
         inject(e.participants[1], unit(*base, 99).persistent, target);
         auto c = r->create(e, 72);
         turn(*c, 1);

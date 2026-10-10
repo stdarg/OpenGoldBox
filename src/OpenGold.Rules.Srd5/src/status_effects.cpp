@@ -21,6 +21,12 @@ template <class T> void unsigned_field(std::istream &input, T &value)
     if (!input || result.ec != std::errc{} || result.ptr != token.data() + token.size())
         throw std::runtime_error("Invalid unsigned effect field");
 }
+
+// Every effect records who imposed it, by scoped ID and by a name to show.
+bool recorded(EffectSource source, const std::string &name)
+{
+    return source.scope && source.actor && !name.empty() && name.size() <= 160;
+}
 } // namespace
 
 int d20(RollModifiers modifiers, std::uint64_t &rng)
@@ -70,27 +76,27 @@ bool healing_blocked(const EffectState &effects, std::uint64_t after_ms)
     });
 }
 
-void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_chill_touch(EffectState &effects, EffectSource source,
                        std::string name, unsigned duration_ms)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
+    if (!can_apply(effects) || !recorded(source, name) ||
             !duration_ms || duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid Chill Touch application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::chill_touch, 0, duration_ms, 0});
 }
 
-void apply_guiding_bolt(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_guiding_bolt(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
+    if (!can_apply(effects) || !recorded(source, name) ||
             !duration_ms || duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid Guiding Bolt application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::guiding_bolt, 0, duration_ms, 0});
 }
 
-void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_poisoned(EffectState &effects, EffectSource source,
                     std::string name, unsigned duration_ms, EffectKind kind)
 {
     if ((kind != EffectKind::poisoned && kind != EffectKind::dazzled &&
@@ -98,11 +104,11 @@ void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId c
             kind != EffectKind::raging && kind != EffectKind::reckless &&
             kind != EffectKind::addled && kind != EffectKind::lit &&
             kind != EffectKind::moonlit && kind != EffectKind::scorched) || !can_apply(effects) ||
-            !scope || !caster || name.empty() || name.size() > 160 || !duration_ms ||
+            !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name), kind, 0,
-                              duration_ms, 0});
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name), kind,
+                              0, duration_ms, 0});
 }
 
 bool opportunity_blocked(const EffectState &effects)
@@ -114,13 +120,13 @@ bool opportunity_blocked(const EffectState &effects)
     });
 }
 
-void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_shocking_grasp(EffectState &effects, EffectSource source,
                           std::string name, unsigned duration_ms)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
+    if (!can_apply(effects) || !recorded(source, name) ||
             !duration_ms || duration_ms > round_ms)
         throw std::runtime_error("Invalid Shocking Grasp application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::shocking_grasp, 0, duration_ms, 0});
 }
 
@@ -152,13 +158,13 @@ bool frosted(const EffectState &effects)
     });
 }
 
-void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_ray_of_frost(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
+    if (!can_apply(effects) || !recorded(source, name) ||
             !duration_ms || duration_ms > round_ms)
         throw std::runtime_error("Invalid Ray of Frost application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::ray_of_frost, 0, duration_ms, 0});
 }
 
@@ -171,13 +177,13 @@ bool sapped(const EffectState &effects)
     });
 }
 
-bool vexed_by(const EffectState &effects, std::uint64_t scope, rules::EntityId source)
+bool vexed_by(const EffectState &effects, EffectSource source)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [&](const auto & e)
     {
-        return e.kind == EffectKind::vex && e.source_scope == scope &&
-               e.source_actor == source;
+        return e.kind == EffectKind::vex && e.source_scope == source.scope &&
+               e.source_actor == source.actor;
     });
 }
 
@@ -191,8 +197,7 @@ bool has_attack_mastery(const EffectState &effects)
     });
 }
 
-bool can_apply_attack_mastery(const EffectState &effects, EffectKind kind, std::uint64_t scope,
-                              rules::EntityId source)
+bool can_apply_attack_mastery(const EffectState &effects, EffectKind kind, EffectSource source)
 {
     if (kind != EffectKind::sap && kind != EffectKind::vex && kind != EffectKind::slow)
         return false;
@@ -204,23 +209,23 @@ bool can_apply_attack_mastery(const EffectState &effects, EffectKind kind, std::
                 effects.active.begin(), effects.active.end(),
                 [&](const auto & e)
     {
-        return e.source_scope == scope && e.source_actor == source &&
+        return e.source_scope == source.scope && e.source_actor == source.actor &&
                (e.kind == kind || e.kind == EffectKind::vex);
     }));
 }
 
-void apply_attack_mastery(EffectState &effects, EffectKind kind, std::uint64_t scope,
-                          rules::EntityId source, std::string name, unsigned duration)
+void apply_attack_mastery(EffectState &effects, EffectKind kind, EffectSource source,
+                          std::string name, unsigned duration)
 {
     if ((kind != EffectKind::sap && kind != EffectKind::vex && kind != EffectKind::slow) ||
-            !scope || !source || name.empty() || name.size() > 160 || !duration ||
+            !recorded(source, name) || !duration ||
             duration > (kind == EffectKind::vex ? 2 * round_ms : round_ms))
         throw std::runtime_error("Invalid attack mastery effect");
     const auto existing = std::find_if(effects.active.begin(), effects.active.end(),
                                        [&](const auto & e)
     {
-        return e.kind == kind && e.source_scope == scope &&
-               e.source_actor == source;
+        return e.kind == kind && e.source_scope == source.scope &&
+               e.source_actor == source.actor;
     });
     if (existing != effects.active.end())
     {
@@ -231,11 +236,10 @@ void apply_attack_mastery(EffectState &effects, EffectKind kind, std::uint64_t s
     if (!can_apply(effects))
         throw std::runtime_error("Attack mastery effect storage exhausted");
     effects.active.push_back(
-    {effects.next_id++, scope, source, std::move(name), kind, 0, duration, 0});
+    {effects.next_id++, source.scope, source.actor, std::move(name), kind, 0, duration, 0});
 }
 
-void consume_attack_masteries(EffectState &attacker, EffectState &target, std::uint64_t scope,
-                              rules::EntityId source)
+void consume_attack_masteries(EffectState &attacker, EffectState &target, EffectSource source)
 {
     std::erase_if(attacker.active,
                   [](const auto & e)
@@ -245,8 +249,8 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, std::u
     std::erase_if(target.active,
                   [&](const auto & e)
     {
-        return e.kind == EffectKind::vex && e.source_scope == scope &&
-               e.source_actor == source;
+        return e.kind == EffectKind::vex && e.source_scope == source.scope &&
+               e.source_actor == source.actor;
     });
 }
 
@@ -261,40 +265,38 @@ bool incapacitated(const EffectState &effects)
            has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing);
 }
 
-void apply_repeating_condition(EffectState &effects, EffectKind kind, std::uint64_t scope,
-                               rules::EntityId caster, std::string name, int dc,
-                               unsigned first_save_ms)
+void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSource source,
+                               std::string name, RepeatingSave save)
 {
     if ((kind != EffectKind::drowsy && kind != EffectKind::laughing &&
             kind != EffectKind::enfeebled) || !can_apply(effects) ||
-            !scope || !caster || name.empty() || name.size() > 160 || dc < -2 || dc > 38 ||
-            !first_save_ms || first_save_ms > round_ms)
+            !recorded(source, name) || save.dc < -2 || save.dc > 38 || !save.first_save_ms ||
+            save.first_save_ms > round_ms)
         throw std::runtime_error("Invalid repeated condition");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name), kind, dc, 60000,
-                              first_save_ms});
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name), kind,
+                              save.dc, 60000, save.first_save_ms});
 }
 
-void apply_hold_person(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
-                       std::string name, int dc, unsigned first_save_ms)
+void apply_hold_person(EffectState &effects, EffectSource source,
+                       std::string name, RepeatingSave save)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
-            dc > 38 || !first_save_ms || first_save_ms > round_ms)
+    if (!can_apply(effects) || !recorded(source, name) || save.dc < -2 || save.dc > 38 ||
+            !save.first_save_ms || save.first_save_ms > round_ms)
         throw std::runtime_error("Invalid Hold Person application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
-                              EffectKind::hold_person, dc, 60000, first_save_ms});
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
+                              EffectKind::hold_person, save.dc, 60000, save.first_save_ms});
 }
 
-void apply_sanctuary(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_sanctuary(EffectState &effects, EffectSource source,
                      std::string name, int dc)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
-            dc > 38)
+    if (!can_apply(effects) || !recorded(source, name) || dc < -2 || dc > 38)
         throw std::runtime_error("Invalid Sanctuary application");
     std::erase_if(effects.active, [](const auto & e)
     {
         return e.kind == EffectKind::sanctuary;
     });
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::sanctuary, dc, 60000, 0});
 }
 
@@ -304,22 +306,22 @@ bool restrained(const EffectState &effects)
            has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed);
 }
 
-void apply_entangle(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_entangle(EffectState &effects, EffectSource source,
                     std::string name, int dc, EffectKind kind)
 {
     if ((kind != EffectKind::entangle && kind != EffectKind::webbed) || !can_apply(effects) ||
-            !scope || !caster || name.empty() || name.size() > 160 || dc < -2 || dc > 38)
+            !recorded(source, name) || dc < -2 || dc > 38)
         throw std::runtime_error("Invalid Entangle application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name), kind, dc, 60000, 0});
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name), kind,
+                              dc, 60000, 0});
 }
 
-void apply_ensnaring_strike(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_ensnaring_strike(EffectState &effects, EffectSource source,
                             std::string name, int dc)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
-            dc > 38)
+    if (!can_apply(effects) || !recorded(source, name) || dc < -2 || dc > 38)
         throw std::runtime_error("Invalid Ensnaring Strike application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::ensnaring_strike, dc, 60000, 0});
 }
 
@@ -338,23 +340,22 @@ bool can_apply(const EffectState &effects)
            effects.next_id < std::numeric_limits<std::uint64_t>::max();
 }
 
-void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
-                     std::string name, int dc, unsigned first_save_ms)
+void apply_blindness(EffectState &effects, EffectSource source,
+                     std::string name, RepeatingSave save)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
-            dc > 38 || !first_save_ms || first_save_ms > round_ms)
+    if (!can_apply(effects) || !recorded(source, name) || save.dc < -2 || save.dc > 38 ||
+            !save.first_save_ms || save.first_save_ms > round_ms)
         throw std::runtime_error("Invalid blindness application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
-                              EffectKind::blindness, dc, 60000, first_save_ms});
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
+                              EffectKind::blindness, save.dc, 60000, save.first_save_ms});
 }
 
-void apply_searing_smite(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_searing_smite(EffectState &effects, EffectSource source,
                          std::string name, int dc)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 || dc < -2 ||
-            dc > 38)
+    if (!can_apply(effects) || !recorded(source, name) || dc < -2 || dc > 38)
         throw std::runtime_error("Invalid Searing Smite application");
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::searing_smite, dc, 60000, 0});
 }
 
@@ -424,21 +425,21 @@ unsigned benefit_duration_ms(EffectKind kind)
     }
 }
 
-void apply_spell_benefit(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_spell_benefit(EffectState &effects, EffectSource source,
                          std::string name, EffectKind kind, int value)
 {
     const auto duration = benefit_duration_ms(kind);
-    if (!duration || !can_apply(effects) || !scope || !caster || name.empty() ||
-            name.size() > 160 || value < 0 || value > benefit_value_limit(kind))
+    if (!duration || !can_apply(effects) || !recorded(source, name) || value < 0 ||
+            value > benefit_value_limit(kind))
         throw std::runtime_error("Invalid spell benefit");
     effects.active.push_back(
-    {effects.next_id++, scope, caster, std::move(name), kind, value, duration, 0});
+    {effects.next_id++, source.scope, source.actor, std::move(name), kind, value, duration, 0});
 }
 
-void apply_command(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_command(EffectState &effects, EffectSource source,
                    std::string name, int option, unsigned duration_ms)
 {
-    if (!can_apply(effects) || !scope || !caster || name.empty() || name.size() > 160 ||
+    if (!can_apply(effects) || !recorded(source, name) ||
             option < 1 || option > 4 || !duration_ms || duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid Command application");
     // A newer Command replaces an earlier one.
@@ -446,7 +447,7 @@ void apply_command(EffectState &effects, std::uint64_t scope, rules::EntityId ca
     {
         return e.kind == EffectKind::command;
     });
-    effects.active.push_back({effects.next_id++, scope, caster, std::move(name),
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::command, option, duration_ms, 0});
 }
 

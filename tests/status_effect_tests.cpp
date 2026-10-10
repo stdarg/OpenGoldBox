@@ -39,6 +39,18 @@ template <class F> void rejects(F f)
     check(failed, "Invalid effect input accepted");
 }
 
+// An effect's scope and source, and a save's DC and first-save delay, are
+// integers of the same kind side by side, so they travel in named structs:
+// passed loose, in either order, they must not compile (Effective C++ Item 18).
+template <class... Arguments>
+concept AppliesBlindness = requires(fx::EffectState &effects, Arguments... arguments)
+{
+    fx::apply_blindness(effects, arguments...);
+};
+static_assert(AppliesBlindness<fx::EffectSource, std::string, fx::RepeatingSave>);
+static_assert(!AppliesBlindness<std::uint64_t, EntityId, std::string, int, unsigned>);
+static_assert(!AppliesBlindness<EntityId, std::uint64_t, std::string, unsigned, int>);
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
@@ -94,7 +106,8 @@ VitalState with_effects(VitalState state, const fx::EffectState &effects)
 fx::EffectState blind(int dc = 38, unsigned remaining = 60000)
 {
     fx::EffectState result;
-    fx::apply_blindness(result, 77, 99, "Source caster", dc, 6000);
+    fx::apply_blindness(result, {.scope = 77, .actor = 99}, "Source caster",
+                        {.dc = dc, .first_save_ms = 6000});
     result.active.front().remaining_ms = remaining;
     return result;
 }
@@ -196,7 +209,8 @@ void saving_throws()
 void lifecycle()
 {
     auto one = blind(), many = one;
-    fx::apply_blindness(one, 88, 99, "Another caster", 13, 3000);
+    fx::apply_blindness(one, {.scope = 88, .actor = 99}, "Another caster",
+                        {.dc = 13, .first_save_ms = 3000});
     many = one;
     one.active[0].remaining_ms = many.active[0].remaining_ms = 18000;
     std::uint64_t a = 25, b = 25;
@@ -537,7 +551,8 @@ void checkpoint_capacity()
     auto full = blind();
     full.active.front().source_name = std::string(160, '"');
     while (fx::can_apply(full))
-        fx::apply_blindness(full, 77, 99, std::string(160, '"'), 13, 6000);
+        fx::apply_blindness(full, {.scope = 77, .actor = 99}, std::string(160, '"'),
+                            {.dc = 13, .first_save_ms = 6000});
     check(full.active.size() == fx::effect_limit, "Application count is bounded");
     const auto bandit = unit(*rules->create(encounter(), 3), 2).persistent;
     Encounter e{{12, 9, std::vector<Terrain>(108)}, {}};

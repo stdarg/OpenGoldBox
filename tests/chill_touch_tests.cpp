@@ -434,9 +434,9 @@ void legality()
 void lifecycle()
 {
     fx::EffectState state;
-    fx::apply_chill_touch(state, 5, 1, "First", 2000);
-    fx::apply_chill_touch(state, 5, 2, "Second", 9000);
-    fx::apply_ray_of_frost(state, 6, 1, "Cold", 4000);
+    fx::apply_chill_touch(state, {.scope = 5, .actor = 1}, "First", 2000);
+    fx::apply_chill_touch(state, {.scope = 5, .actor = 2}, "Second", 9000);
+    fx::apply_ray_of_frost(state, {.scope = 6, .actor = 1}, "Cold", 4000);
     state.prone = true;
     std::ostringstream out;
     fx::write_effects(out, state);
@@ -758,10 +758,11 @@ void stable_timeline()
         {
             fx::LifeState life{0, 0, 0, true, false, {0, deadline}}, other{10};
             fx::EffectState effect, other_effect;
-            fx::apply_chill_touch(effect, 1, 99, "First", 1000);
-            fx::apply_chill_touch(effect, 1, 98, "Second", 3000);
-            fx::apply_blindness(effect, 1, 98, "Blind", 30, 1000);
-            fx::apply_blindness(other_effect, 1, 99, "Blind", 30, 1000);
+            fx::apply_chill_touch(effect, {.scope = 1, .actor = 99}, "First", 1000);
+            fx::apply_chill_touch(effect, {.scope = 1, .actor = 98}, "Second", 3000);
+            const fx::RepeatingSave blind_save{.dc = 30, .first_save_ms = 1000};
+            fx::apply_blindness(effect, {.scope = 1, .actor = 98}, "Blind", blind_save);
+            fx::apply_blindness(other_effect, {.scope = 1, .actor = 99}, "Blind", blind_save);
             auto pieces = life, other_pieces = other;
             auto piece_effect = effect, other_piece_effect = other_effect;
             std::vector<fx::RecoverySubject> whole{{{2, other_effect, {}}, other},

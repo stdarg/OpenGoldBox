@@ -315,7 +315,7 @@ void eligibility_and_effects()
     check(state.resources.starts_with("SRD11 "), "Spent use has a versioned vital record");
     // A lasting effect must still expire when its host resource record is SRD11.
     srd5::detail::EffectState effects;
-    srd5::detail::apply_ray_of_frost(effects, 1, 99, "Recovery test", 6000);
+    srd5::detail::apply_ray_of_frost(effects, {.scope = 1, .actor = 99}, "Recovery test", 6000);
     std::ostringstream encoded;
     srd5::detail::write_effects(encoded, effects);
     const auto at = state.resources.find("FX");

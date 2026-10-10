@@ -230,43 +230,58 @@ struct EffectEvent
 };
 
 using EffectObserver = std::function<void(const EffectEvent &)>;
+
+// Who imposes an effect: the encounter's scope and the creature's ID in it.
+// Passed apart, the two integers converted silently into each other's place
+// (Effective C++ Item 18).
+struct EffectSource
+{
+    std::uint64_t scope{};
+    rules::EntityId actor{};
+};
+
+// A condition's save DC and how far away its first repeated save is; an int
+// and an unsigned side by side were just as easy to swap.
+struct RepeatingSave
+{
+    int dc{};
+    unsigned first_save_ms{};
+};
+
 // At a future boundary, effects expiring at that boundary no longer prevent healing.
 [[nodiscard]] bool healing_blocked(const EffectState &effects, std::uint64_t after_ms = 0);
-void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_chill_touch(EffectState &effects, EffectSource source,
                        std::string name, unsigned duration_ms);
-void apply_guiding_bolt(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_guiding_bolt(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
 // Poisoned or Color Spray's Blinded, lasting `duration_ms` (to the end of the
 // caster's next turn).
-void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_poisoned(EffectState &effects, EffectSource source,
                     std::string name, unsigned duration_ms, EffectKind kind = EffectKind::poisoned);
 [[nodiscard]] bool opportunity_blocked(const EffectState &effects);
-void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_shocking_grasp(EffectState &effects, EffectSource source,
                           std::string name, unsigned duration_ms);
 // The net Speed reduction from effects; negative when Longstrider raises Speed,
 // and enough to bring any Speed to 0 while Restrained.
 [[nodiscard]] int speed_penalty(const EffectState &effects);
 [[nodiscard]] bool slowed(const EffectState &effects);
 [[nodiscard]] bool frosted(const EffectState &effects);
-void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_ray_of_frost(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
 [[nodiscard]] bool sapped(const EffectState &effects);
-[[nodiscard]] bool vexed_by(const EffectState &effects, std::uint64_t scope,
-                            rules::EntityId source);
+[[nodiscard]] bool vexed_by(const EffectState &effects, EffectSource source);
 [[nodiscard]] bool has_attack_mastery(const EffectState &effects);
-[[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, std::uint64_t scope,
-        rules::EntityId source);
-void apply_attack_mastery(EffectState &, EffectKind, std::uint64_t scope, rules::EntityId source,
+[[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, EffectSource source);
+void apply_attack_mastery(EffectState &, EffectKind, EffectSource source,
                           std::string name, unsigned duration_ms);
-void consume_attack_masteries(EffectState &attacker, EffectState &target, std::uint64_t scope,
-                              rules::EntityId source);
+void consume_attack_masteries(EffectState &attacker, EffectState &target, EffectSource source);
 [[nodiscard]] bool blinded(const EffectState &effects);
 [[nodiscard]] bool can_apply(const EffectState &effects);
-void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
-                     std::string name, int dc, unsigned first_save_ms);
-void apply_ensnaring_strike(EffectState &, std::uint64_t scope, rules::EntityId caster,
+void apply_blindness(EffectState &effects, EffectSource source,
+                     std::string name, RepeatingSave save);
+void apply_ensnaring_strike(EffectState &, EffectSource source,
                             std::string name, int dc);
-void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, std::string name,
+void apply_entangle(EffectState &, EffectSource source, std::string name,
                     int dc, EffectKind kind = EffectKind::entangle);
 // Restrained: Speed 0, attacks against it have Advantage, its attacks and
 // Dexterity saves have Disadvantage.
@@ -278,20 +293,19 @@ void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, 
 [[nodiscard]] bool incapacitated(const EffectState &effects);
 // A spell's repeated save condition with its first save `first_save_ms` away:
 // Sleep's drowsiness or Hideous Laughter.
-void apply_repeating_condition(EffectState &effects, EffectKind kind, std::uint64_t scope,
-                               rules::EntityId caster, std::string name, int dc,
-                               unsigned first_save_ms);
-void apply_hold_person(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
-                       std::string name, int dc, unsigned first_save_ms);
-void apply_sanctuary(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSource source,
+                               std::string name, RepeatingSave save);
+void apply_hold_person(EffectState &effects, EffectSource source,
+                       std::string name, RepeatingSave save);
+void apply_sanctuary(EffectState &effects, EffectSource source,
                      std::string name, int dc);
-void apply_searing_smite(EffectState &, std::uint64_t scope, rules::EntityId caster,
+void apply_searing_smite(EffectState &, EffectSource source,
                          std::string name, int dc);
 // Applies a spell benefit that has no save. `value` is kind-specific.
-void apply_spell_benefit(EffectState &, std::uint64_t scope, rules::EntityId caster,
+void apply_spell_benefit(EffectState &, EffectSource source,
                          std::string name, EffectKind kind, int value);
 // Lasts until the end of the target's next turn, `duration_ms` from now.
-void apply_command(EffectState &, std::uint64_t scope, rules::EntityId caster, std::string name,
+void apply_command(EffectState &, EffectSource source, std::string name,
                    int option, unsigned duration_ms);
 // The Command the target must obey, if any.
 [[nodiscard]] const Effect *command_effect(const EffectState &);

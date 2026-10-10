@@ -381,9 +381,9 @@ void reaction_and_armor()
 void lifecycle()
 {
     fx::EffectState state;
-    fx::apply_shocking_grasp(state, 5, 1, "First", 2000);
-    fx::apply_shocking_grasp(state, 5, 2, "Second", 6000);
-    fx::apply_ray_of_frost(state, 6, 1, "Cold", 4000);
+    fx::apply_shocking_grasp(state, {.scope = 5, .actor = 1}, "First", 2000);
+    fx::apply_shocking_grasp(state, {.scope = 5, .actor = 2}, "Second", 6000);
+    fx::apply_ray_of_frost(state, {.scope = 6, .actor = 1}, "Cold", 4000);
     std::ostringstream out;
     fx::write_effects(out, state);
     check(out.str().starts_with("FX8 "), "Effects are written in the only effect format");

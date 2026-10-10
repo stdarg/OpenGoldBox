@@ -6,19 +6,21 @@ using namespace mastery_combat_checks;
 fx::EffectState slow(bool frost = false)
 {
     fx::EffectState e;
-    fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 99, "Master", 6000);
+    fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 99}, "Master", 6000);
     if (frost)
-        fx::apply_ray_of_frost(e, 777, 98, "Caster", 4000);
+        fx::apply_ray_of_frost(e, {.scope = 777, .actor = 98}, "Caster", 4000);
     return e;
 }
 
 void lifecycle()
 {
     auto e = slow(true);
-    fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 98, "Other master", 5000);
-    fx::apply_ray_of_frost(e, 777, 99, "Other caster", 3000);
+    fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 98}, "Other master",
+                             5000);
+    fx::apply_ray_of_frost(e, {.scope = 777, .actor = 99}, "Other caster", 3000);
     const auto next = e.next_id;
-    fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 99, "Master refreshed", 6000);
+    fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 99},
+                             "Master refreshed", 6000);
     check(e.next_id == next && e.active.size() == 4 && fx::speed_penalty(e) == 20,
           "Slow refreshes its source; repeated Slow/Frost do not stack, distinct effects combine");
     std::ostringstream out;
@@ -52,12 +54,15 @@ void lifecycle()
           "Chunked Slow expiry is exact and consumes no RNG");
     auto full = slow();
     while (full.active.size() < fx::effect_limit)
-        fx::apply_attack_mastery(full, fx::EffectKind::slow, 777, static_cast<rules::EntityId>(full.active.size() + 100),
-                                 "Source", 6000);
-    check(!fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 999) &&
-          fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 99),
+        fx::apply_attack_mastery(
+            full, fx::EffectKind::slow,
+            {.scope = 777, .actor = static_cast<rules::EntityId>(full.active.size() + 100)},
+            "Source", 6000);
+    check(!fx::can_apply_attack_mastery(full, fx::EffectKind::slow, {.scope = 777, .actor = 999}) &&
+          fx::can_apply_attack_mastery(full, fx::EffectKind::slow, {.scope = 777, .actor = 99}),
           "Full store permits same-source Slow refresh only");
-    fx::apply_attack_mastery(full, fx::EffectKind::slow, 777, 99, "Master", 3000);
+    fx::apply_attack_mastery(full, fx::EffectKind::slow, {.scope = 777, .actor = 99}, "Master",
+                             3000);
     check(full.active.size() == fx::effect_limit, "Refresh does not consume storage");
     for (unsigned duration :
             {
@@ -68,7 +73,8 @@ void lifecycle()
         rejects(
             [&]
         {
-            fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 99, "Master", duration);
+            fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 99}, "Master",
+                                     duration);
         });
         check(e == before, "Malformed Slow duration rejects atomically");
     }

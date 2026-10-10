@@ -76,8 +76,8 @@ bool Session::mastery_available(const PendingMastery &m) const
     if (m.kind == detail::Mastery::topple)
         return !target.effects.prone;
     if (m.kind != detail::Mastery::slow ||
-            !detail::can_apply_attack_mastery(target.effects, detail::EffectKind::slow, scope_,
-                    m.actor))
+            !detail::can_apply_attack_mastery(target.effects, detail::EffectKind::slow,
+                    effect_source(source)))
         return false;
     const auto duration = next_turn_ms(source);
     if (std::any_of(target.effects.active.begin(), target.effects.active.end(),
@@ -88,15 +88,16 @@ bool Session::mastery_available(const PendingMastery &m) const
 }))
     return false;
     auto after = target.effects;
-    detail::apply_attack_mastery(after, detail::EffectKind::slow, scope_, m.actor,
+    detail::apply_attack_mastery(after, detail::EffectKind::slow, effect_source(source),
                                  source.source.name, next_turn_ms(source));
     return after != target.effects;
 }
 
-void Session::offer_mastery(const Actor &a, const Actor &target, int natural, bool ranged,
+void Session::offer_mastery(const Actor &a, const Actor &target, int natural, AttackRange range,
                             int damage, bool critical)
 {
-    const auto kind = weapon_mastery(a, ranged);
+    const bool ranged = range == AttackRange::ranged;
+    const auto kind = weapon_mastery(a, range);
     if (kind != detail::Mastery::slow && kind != detail::Mastery::topple &&
             kind != detail::Mastery::cleave && kind != detail::Mastery::push)
         return;
@@ -252,8 +253,9 @@ bool Session::use_effect(const Command &command)
             const auto &source = actor(m.actor);
             if (m.kind == detail::Mastery::slow)
             {
-                detail::apply_attack_mastery(target.effects, detail::EffectKind::slow, scope_,
-                                             m.actor, source.source.name, next_turn_ms(source));
+                detail::apply_attack_mastery(target.effects, detail::EffectKind::slow,
+                                             effect_source(source), source.source.name,
+                                             next_turn_ms(source));
                 log(target.source.name + " gains Slow from " + source.source.name + ".",
                 {
                     "{name} gains {mastery} from {source}.",
@@ -313,7 +315,8 @@ void Session::validate_mastery_state() const
             throw std::runtime_error("Invalid pending mastery source");
         const auto attacking = mastery_actor(m);
         const auto &d = def(attacking);
-        if (weapon_mastery(attacking, m.ranged) != m.kind ||
+        const auto range = m.ranged ? AttackRange::ranged : AttackRange::melee;
+        if (weapon_mastery(attacking, range) != m.kind ||
                 distance(m.origin, t->source.cell) > (m.ranged ? d.long_range : d.reach) ||
                 !line_of_sight(m.origin, t->source.cell) ||
                 (!(d.champion && m.natural == 19) &&

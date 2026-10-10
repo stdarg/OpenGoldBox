@@ -1545,6 +1545,20 @@ struct SpellAttack
     int bursts{}; // how many extra d8s an 8 may add (Sorcerous Burst)
 };
 
+// What attack() settled before apply_hit reports and applies it. Four ints and
+// three flags in a row were easy to pass out of order, so callers name each one.
+struct ResolvedAttack
+{
+    int natural{}; // the d20 as rolled
+    int bonus{};   // everything added to the d20
+    int mode{};    // below zero with Disadvantage, above zero with Advantage
+    int damage{};  // after every reduction; zero on a miss
+    detail::DamageType type{};
+    AttackRange range{AttackRange::melee};
+    bool spell{};
+    bool savage{}; // Savage Attacker rerolled the damage
+};
+
 class Session final : public CombatSession
 {
   public:
@@ -1805,7 +1819,7 @@ class Session final : public CombatSession
     // keeping the movement it has left. True when it stopped.
     bool stop_illegal_route();
     void validate_mastery_state() const;
-    void offer_mastery(const Actor &, const Actor &, int natural, bool ranged, int damage,
+    void offer_mastery(const Actor &, const Actor &, int natural, AttackRange range, int damage,
                        bool critical);
     void validate_graze() const;
 
@@ -2154,11 +2168,18 @@ class Session final : public CombatSession
         return 8 + def(caster).casting +
                (detail::has_effect(caster.effects, detail::EffectKind::innate_sorcery) ? 1 : 0);
     }
-    [[nodiscard]] bool strength_attack(const Actor &a, bool ranged) const;
+    // The source recorded on an effect that `a` imposes.
+    [[nodiscard]] detail::EffectSource effect_source(const Actor &a) const
+    {
+        return {.scope = scope_, .actor = a.source.id};
+    }
+
+    [[nodiscard]] bool strength_attack(const Actor &a, AttackRange range) const;
     void attack_recklessly(Actor &a);
     int frenzy_damage(Actor &berserker, bool critical);
-    int resized_damage(const Actor &a, bool weapon_hit, int amount);
-    int burst_damage(Dice dice, bool critical, int bursts);
+    // Enlarge or Reduce changes a weapon hit's damage.
+    int resized_damage(const Actor &a, int amount);
+    int burst_damage(const SpellAttack &spell, bool critical);
     [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
     // Whether `a` is Charmed by `other`, which it then cannot attack or target.
     [[nodiscard]] bool charmed_by(const Actor &a, EntityId other) const;
@@ -2167,16 +2188,14 @@ class Session final : public CombatSession
     // A weapon attack, or a spell attack when `spell` is given.
     bool attack(Actor &a, Actor &target, AttackRange range,
                 const std::optional<SpellAttack> &spell = std::nullopt);
-    detail::Mastery weapon_mastery(const Actor &, bool ranged) const;
-    bool mastery_capacity(const Actor &, const Actor &, bool ranged) const;
-    detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target, bool ranged,
+    detail::Mastery weapon_mastery(const Actor &, AttackRange range) const;
+    bool mastery_capacity(const Actor &, const Actor &, AttackRange range) const;
+    detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target, AttackRange range,
                                            bool spell) const;
-    Dice weapon_dice(const Actor &a, bool ranged) const;
-    detail::DamageDieRule weapon_die_rule(const Actor &a, bool ranged) const;
-    void apply_hit(Actor &a, Actor &target, int natural, int bonus, int mode, int amount,
-                   bool savage, detail::DamageType type, bool ranged, bool spell = false,
-                   bool optional_mastery = true);
-    bool sneak_eligible(const Actor &a, const Actor &target, bool ranged, int mode) const;
+    Dice weapon_dice(const Actor &a, AttackRange range) const;
+    detail::DamageDieRule weapon_die_rule(const Actor &a, AttackRange range) const;
+    void apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved);
+    bool sneak_eligible(const Actor &a, const Actor &target, AttackRange range, int mode) const;
     bool ally_beside(const Actor &a, const Actor &target) const;
     int roll_advantage_damage(const Actor &a, const Actor &target, int natural);
     [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural);
@@ -2327,7 +2346,7 @@ void Session::open_hand(const Actor &monk, Actor &target, std::string_view verb)
     // Topple (Dexterity save) knocks it Prone.
     if (verb == "flurry_addle")
     {
-        detail::apply_poisoned(target.effects, scope_, monk.source.id, monk.source.name,
+        detail::apply_poisoned(target.effects, effect_source(monk), monk.source.name,
                                next_turn_ms(target), detail::EffectKind::addled);
         log(target.source.name + " is addled.", {"{name} is addled.", {{"name", target.source.name}}});
     }
@@ -2367,7 +2386,7 @@ void Session::ready_metamagic(Actor &a, std::string_view choice)
                                  metamagic_ids.begin());
         label = metamagic_labels[static_cast<std::size_t>(value)];
     }
-    detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+    detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                 detail::EffectKind::metamagic, value);
     log(a.source.name + " readies " + label + ".",
     {"{name} readies {feature}.", {{"name", a.source.name}, {"feature", label, true}}});
@@ -3494,7 +3513,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         // Poisoned until the end of the caster's next turn.
         const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
-        detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
                                next_turn_ms(a) + slot);
         log(target.source.name + " is Poisoned.",
         {"{name} is Poisoned.", {{"name", target.source.name}}});
@@ -3503,7 +3522,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::resistance:
     {
         const auto type = *detail::resistance_type(verb);
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::resistance, static_cast<int>(type));
         const auto name = std::string(detail::damage_name(type));
         log(target.source.name + " gains Resistance against " + name + " damage.",
@@ -3514,7 +3533,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     }
     case detail::Rider::sanctuary:
-        detail::apply_sanctuary(target.effects, scope_, a.source.id, a.source.name, dc);
+        detail::apply_sanctuary(target.effects, effect_source(a), a.source.name, dc);
         log(target.source.name + " gains Sanctuary.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Sanctuary", true}}});
         return;
@@ -3528,7 +3547,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                    ((e.source_scope == scope_ && e.source_actor == a.source.id) ||
                     other.source.id == target.source.id);
         });
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::warding_bond, 0);
         log(target.source.name + " gains Warding Bond.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Warding Bond", true}}});
@@ -3539,7 +3558,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         {
             return e.kind == detail::EffectKind::poisoned;
         });
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::protection_from_poison, 0);
         log(target.source.name + " gains Protection from Poison.",
         {
@@ -3548,7 +3567,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         });
         return;
     case detail::Rider::mage_armor:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::mage_armor, 0);
         log(target.source.name + " gains Mage Armor.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Mage Armor", true}}});
@@ -3568,7 +3587,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     }
     case detail::Rider::expeditious_retreat:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::expeditious_retreat, 0);
         log(target.source.name + " gains Expeditious Retreat.",
         {
@@ -3579,9 +3598,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         ++target.dashes;
         return;
     case detail::Rider::hideous_laughter:
-        detail::apply_repeating_condition(target.effects, detail::EffectKind::laughing, scope_,
-                                          a.source.id, a.source.name, dc,
-                                          next_save_ms(target.source.id));
+        detail::apply_repeating_condition(
+            target.effects, detail::EffectKind::laughing, effect_source(a), a.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
         target.effects.prone = true;
         log(target.source.name + " falls Prone, laughing.",
         {"{name} falls Prone, laughing.", {{"name", target.source.name}}});
@@ -3593,13 +3612,13 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::misty_step:
         return; // Aimed areas, resolved by cast_area().
     case detail::Rider::invisibility:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::invisible, 0);
         log(target.source.name + " turns Invisible.",
         {"{name} turns Invisible.", {{"name", target.source.name}}});
         return;
     case detail::Rider::see_invisibility:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::see_invisibility, 0);
         log(target.source.name + " gains See Invisibility.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "See Invisibility", true}}});
@@ -3613,14 +3632,14 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::heat_metal:
         return; // Resolved by heat_metal().
     case detail::Rider::flame_blade:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::flame_blade, 0);
         log(target.source.name + " gains Flame Blade.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Flame Blade", true}}});
         return;
     case detail::Rider::vicious_mockery:
         // Disadvantage on its next attack roll before the end of its next turn.
-        detail::apply_attack_mastery(target.effects, detail::EffectKind::sap, scope_, a.source.id,
+        detail::apply_attack_mastery(target.effects, detail::EffectKind::sap, effect_source(a),
                                      a.source.name, next_save_ms(target.source.id));
         log(target.source.name + " has Disadvantage on its next attack roll.",
         {"{name} has Disadvantage on its next attack roll.", {{"name", target.source.name}}});
@@ -3638,7 +3657,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     {
         const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
-        detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
                                next_turn_ms(a) + slot, detail::EffectKind::lit);
         return;
     }
@@ -3654,24 +3673,24 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         {
             return e.kind == kind;
         });
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name, kind, 0);
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name, kind, 0);
         log(target.source.name + " gains " + std::string(spell.label) + ".",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
         return;
     }
     case detail::Rider::barkskin:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::barkskin, 0);
         log(target.source.name + " gains Barkskin.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Barkskin", true}}});
         return;
     case detail::Rider::hex:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::hex, 0);
         log(target.source.name + " is hexed.", {"{name} is hexed.", {{"name", target.source.name}}});
         return;
     case detail::Rider::charm_person:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::charmed, 0);
         log(target.source.name + " is Charmed by " + a.source.name + ".",
         {
@@ -3680,7 +3699,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         });
         return;
     case detail::Rider::dragons_breath:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::dragons_breath,
                                     static_cast<int>(*detail::dragon_type(verb)));
         log(target.source.name + " gains Dragon's Breath.",
@@ -3689,7 +3708,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::enlarge_reduce:
     {
         const bool enlarge = verb == "enlarge";
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     enlarge ? detail::EffectKind::enlarged
                                     : detail::EffectKind::reduced, 0);
         log(target.source.name + (enlarge ? " is enlarged." : " is reduced."),
@@ -3697,13 +3716,13 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     }
     case detail::Rider::blur:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::blur, 0);
         log(target.source.name + " gains Blur.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Blur", true}}});
         return;
     case detail::Rider::mirror_image:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::mirror_image, 3);
         log(target.source.name + " gains Mirror Image.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Mirror Image", true}}});
@@ -3716,25 +3735,26 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             return e.kind == detail::EffectKind::magic_weapon && e.source_actor == a.source.id &&
                    e.source_scope == scope_;
         });
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::magic_weapon, 1);
         log(target.source.name + " gains Magic Weapon.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Magic Weapon", true}}});
         return;
     case detail::Rider::acid_arrow:
-        detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
                                next_save_ms(target.source.id), detail::EffectKind::acid_arrow);
         return;
     case detail::Rider::ray_of_enfeeblement:
-        detail::apply_repeating_condition(target.effects, detail::EffectKind::enfeebled, scope_,
-                                          a.source.id, a.source.name, dc,
-                                          next_save_ms(target.source.id));
+        detail::apply_repeating_condition(
+            target.effects, detail::EffectKind::enfeebled, effect_source(a), a.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
         log(target.source.name + " is enfeebled.",
         {"{name} is enfeebled.", {{"name", target.source.name}}});
         return;
     case detail::Rider::hold_person:
-        detail::apply_hold_person(target.effects, scope_, a.source.id, a.source.name, dc,
-                                  next_save_ms(target.source.id));
+        detail::apply_hold_person(
+            target.effects, effect_source(a), a.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
         log(target.source.name + " is Paralyzed.",
         {"{name} is Paralyzed.", {{"name", target.source.name}}});
         return;
@@ -3743,14 +3763,14 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         // Until the end of the caster's next turn.
         const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
-        detail::apply_guiding_bolt(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_guiding_bolt(target.effects, effect_source(a), a.source.name,
                                    next_turn_ms(a) + slot);
         log(target.source.name + " is lit by Guiding Bolt.",
         {"{name} is lit by Guiding Bolt.", {{"name", target.source.name}}});
         return;
     }
     case detail::Rider::bane:
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::bane, 0);
         log(target.source.name + " is weakened by Bane.",
         {"{name} is weakened by Bane.", {{"name", target.source.name}}});
@@ -3761,7 +3781,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         if (detail::hit_point_bonus(target.effects) >= 5 || target.life.dead ||
                 !detail::can_apply(target.effects))
             return;
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::aid, 5);
         log(target.source.name + " gains Aid.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Aid", true}}});
@@ -3779,7 +3799,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::chill_touch:
     {
         const unsigned slot = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
-        detail::apply_chill_touch(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_chill_touch(target.effects, effect_source(a), a.source.name,
                                   detail::round_ms + slot);
         log(target.source.name + " cannot regain HP until the end of the caster's next turn.",
         {
@@ -3789,7 +3809,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     }
     case detail::Rider::shocking_grasp:
-        detail::apply_shocking_grasp(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_shocking_grasp(target.effects, effect_source(a), a.source.name,
                                      next_turn_ms(target));
         log(target.source.name + " cannot make Opportunity Attacks until its next turn.",
         {
@@ -3798,7 +3818,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         });
         return;
     case detail::Rider::ray_of_frost:
-        detail::apply_ray_of_frost(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_ray_of_frost(target.effects, effect_source(a), a.source.name,
                                    next_turn_ms(a));
         log(target.source.name + " is slowed by Ray of Frost.",
         {"{name} is slowed by Ray of Frost.", {{"name", target.source.name}}});
@@ -3814,7 +3834,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         // Heroism's Temporary HP equal the caster's spellcasting modifier.
         const int value =
             spell.rider == detail::Rider::heroism ? std::max(0, def(a).casting - 2) : 0;
-        detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     rider_effect(spell.rider), value);
         log(target.source.name + " gains " + std::string(spell.label) + ".",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
@@ -3827,7 +3847,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         const int option = detail::command_option(verb);
         const auto index = index_of(target.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
-        detail::apply_command(target.effects, scope_, a.source.id, a.source.name, option,
+        detail::apply_command(target.effects, effect_source(a), a.source.name, option,
                               next_turn_ms(target) + slot);
         log(target.source.name + " must obey " + a.source.name + "'s Command: " +
             command_label(option) + ".",
@@ -3841,8 +3861,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     }
     case detail::Rider::blindness:
-        detail::apply_blindness(target.effects, scope_, a.source.id, a.source.name, dc,
-                                next_save_ms(target.source.id));
+        detail::apply_blindness(
+            target.effects, effect_source(a), a.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
         log(target.source.name + " is Blinded.",
         {"{name} is Blinded.", {{"name", target.source.name}}});
         return;
@@ -4053,7 +4074,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                 return e.kind == detail::EffectKind::heated && e.source_actor == a.source.id;
             });
             if (detail::can_apply(target.effects))
-                detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
+                detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                             detail::EffectKind::heated, 1);
             heat_metal(a, target);
             return;
@@ -4066,8 +4087,8 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         {
             // A success still leaves Disadvantage on its next attack roll until
             // the start of the caster's next turn, as Sap does.
-            detail::apply_attack_mastery(target.effects, detail::EffectKind::sap, scope_,
-                                         a.source.id, a.source.name, next_turn_ms(a));
+            detail::apply_attack_mastery(target.effects, detail::EffectKind::sap, effect_source(a),
+                                         a.source.name, next_turn_ms(a));
             log(target.source.name + " has Disadvantage on its next attack roll.",
             {"{name} has Disadvantage on its next attack roll.", {{"name", target.source.name}}});
         }
@@ -4363,12 +4384,15 @@ std::vector<Command> Session::legal_commands() const
         std::erase_if(commands,
         [&](const auto & command)
         {
-            const bool ranged =
-            command.verb == "ranged" || command.verb == "throw" ||
-            command.verb == "light_ranged" || command.verb == "light_throw" ||
-            command.verb == "nick_ranged" || command.verb == "nick_throw";
-            if (!ranged && command.verb != "melee" && command.verb != "opportunity" &&
-                    command.verb != "light_melee" && command.verb != "nick_melee")
+            const auto range =
+                command.verb == "ranged" || command.verb == "throw" ||
+                command.verb == "light_ranged" || command.verb == "light_throw" ||
+                command.verb == "nick_ranged" || command.verb == "nick_throw"
+                ? AttackRange::ranged
+                : AttackRange::melee;
+            if (range == AttackRange::melee && command.verb != "melee" &&
+                    command.verb != "opportunity" && command.verb != "light_melee" &&
+                    command.verb != "nick_melee")
                 return false;
             auto attacking = actor(command.actor);
             if (command.item)
@@ -4381,7 +4405,7 @@ std::vector<Command> Session::legal_commands() const
                           command.verb.starts_with("nick_")))
                     attacking = item_actor(attacking, command.item);
             }
-            return !mastery_capacity(attacking, actor(command.target), ranged);
+            return !mastery_capacity(attacking, actor(command.target), range);
         });
         return commands;
     };
@@ -4864,7 +4888,7 @@ std::vector<Command> Session::legal_commands() const
                     add(id, "hurl_flame", "Hurl flame (Produce Flame)", other.source.id);
                 // Reckless Attack: chosen with the turn's first attack roll, which
                 // through level four is the Attack action's one attack.
-                if (feet <= d.reach && d.reckless && strength_attack(a, false))
+                if (feet <= d.reach && d.reckless && strength_attack(a, AttackRange::melee))
                     add(id, "reckless", "Reckless attack", other.source.id);
                 // True Strike: the cantrip's attack with the melee weapon in hand.
                 if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
@@ -5183,7 +5207,7 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     });
     damage(target, amount, false);
     if (searing && target.life.hp > 0 && detail::can_apply(target.effects))
-        detail::apply_searing_smite(target.effects, scope_, a.source.id, a.source.name,
+        detail::apply_searing_smite(target.effects, effect_source(a), a.source.name,
                                     spell_dc(a));
 }
 
@@ -5421,21 +5445,22 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
             continue;
         if (spell.rider == detail::Rider::faerie_fire)
         {
-            detail::apply_spell_benefit(other.effects, scope_, caster.source.id, caster.source.name,
+            detail::apply_spell_benefit(other.effects, effect_source(caster), caster.source.name,
                                         detail::EffectKind::outlined, 0);
             log(other.source.name + " is outlined.", {"{name} is outlined.", {{"name", other.source.name}}});
         }
         else if (sleep)
         {
-            detail::apply_repeating_condition(other.effects, detail::EffectKind::drowsy, scope_,
-                                              caster.source.id, caster.source.name, dc,
-                                              next_save_ms(other.source.id));
+            detail::apply_repeating_condition(
+                other.effects, detail::EffectKind::drowsy, effect_source(caster),
+                caster.source.name,
+                detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(other.source.id)});
             log(other.source.name + " grows drowsy.",
             {"{name} grows drowsy.", {{"name", other.source.name}}});
         }
         else
         {
-            detail::apply_poisoned(other.effects, scope_, caster.source.id, caster.source.name,
+            detail::apply_poisoned(other.effects, effect_source(caster), caster.source.name,
                                    next_turn_ms(caster) + slot, detail::EffectKind::dazzled);
             log(other.source.name + " is Blinded.",
             {"{name} is Blinded.", {{"name", other.source.name}}});
@@ -5568,7 +5593,7 @@ void Session::heat_metal(const Actor &caster, Actor &creature)
     if (creature.life.dead || creature.life.hp == 0 || !detail::can_apply(creature.effects) ||
             saving_throw_succeeds(creature, spell.save, spell_dc(caster)))
         return;
-    detail::apply_poisoned(creature.effects, scope_, caster.source.id, caster.source.name,
+    detail::apply_poisoned(creature.effects, effect_source(caster), caster.source.name,
                            next_turn_ms(caster), detail::EffectKind::scorched);
     log(creature.source.name + " has Disadvantage on attack rolls.",
     {"{name} has Disadvantage on attack rolls.", {{"name", creature.source.name}}});
@@ -5614,7 +5639,7 @@ void Session::moonbeam_burns(const Zone &beam, Actor &creature)
     const auto &caster = actor(beam.caster);
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(creature.effects))
-        detail::apply_poisoned(creature.effects, scope_, caster.source.id, caster.source.name,
+        detail::apply_poisoned(creature.effects, effect_source(caster), caster.source.name,
                                rest_of_turn, detail::EffectKind::moonlit);
     const auto &spell = *detail::find_spell("moonbeam");
     const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster));
@@ -5665,7 +5690,7 @@ bool Session::spring_zone(const Zone &zone, Actor &creature)
     }
     // Web needs Concentration, so its caster is still on the field.
     const auto &caster = actor(zone.caster);
-    detail::apply_entangle(creature.effects, scope_, caster.source.id, caster.source.name,
+    detail::apply_entangle(creature.effects, effect_source(caster), caster.source.name,
                            zone.save_dc, detail::EffectKind::webbed);
     log(creature.source.name + " is Restrained by the webs.",
     {"{name} is Restrained by the webs.", {{"name", creature.source.name}}});
@@ -5860,7 +5885,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                 !detail::can_apply(other.effects) ||
                 saving_throw_succeeds(other, spell.save, dc))
             continue;
-        detail::apply_entangle(other.effects, scope_, a.source.id, a.source.name, dc);
+        detail::apply_entangle(other.effects, effect_source(a), a.source.name, dc);
         log(other.source.name + " is Restrained.",
         {"{name} is Restrained.", {{"name", other.source.name}}});
     }
@@ -5945,7 +5970,7 @@ void Session::turn_undead(Actor &cleric)
                 detail::can_apply(other.effects) &&
                 !saving_throw_succeeds(other, detail::Ability::wisdom, spell_dc(cleric)))
         {
-            detail::apply_spell_benefit(other.effects, scope_, cleric.source.id,
+            detail::apply_spell_benefit(other.effects, effect_source(cleric),
                                         cleric.source.name, detail::EffectKind::turned, 0);
             log(other.source.name + " is turned.",
             {"{name} is turned.", {{"name", other.source.name}}});
@@ -6017,7 +6042,7 @@ void Session::resolve_ensnaring_strike(Actor &a)
             saving_throw_succeeds(target, detail::Ability::strength, dc, def(target).size >= 3))
         return;
     begin_concentration(a, spell);
-    detail::apply_ensnaring_strike(target.effects, scope_, a.source.id, a.source.name, dc);
+    detail::apply_ensnaring_strike(target.effects, effect_source(a), a.source.name, dc);
     log(target.source.name + " is Restrained.",
     {"{name} is Restrained.", {{"name", target.source.name}}});
 }
@@ -6292,7 +6317,7 @@ void Session::begin_concentration(Actor &caster, const detail::SpellDef &spell)
         detail::benefit_duration_ms(rider_effect(spell.rider)) * (extended ? 2 : 1)
     });
     if (extended)
-        detail::apply_spell_benefit(caster.effects, scope_, caster.source.id, caster.source.name,
+        detail::apply_spell_benefit(caster.effects, effect_source(caster), caster.source.name,
                                     detail::EffectKind::extended, 0);
 }
 
@@ -6342,10 +6367,10 @@ void Session::burn_searing_smites(Actor &a)
     });
 }
 
-detail::Mastery Session::weapon_mastery(const Actor &a, bool ranged) const
+detail::Mastery Session::weapon_mastery(const Actor &a, AttackRange range) const
 {
     const auto &d = def(a);
-    if (d.masteries.empty() || (!ranged && d.ranged_weapon))
+    if (d.masteries.empty() || (range == AttackRange::melee && d.ranged_weapon))
         return detail::Mastery::none;
     for (const auto &key : d.equipment_keys)
         if (const auto *weapon = detail::weapon(key))
@@ -6355,20 +6380,21 @@ detail::Mastery Session::weapon_mastery(const Actor &a, bool ranged) const
     return detail::Mastery::none;
 }
 
-bool Session::mastery_capacity(const Actor &a, const Actor &target, bool ranged) const
+bool Session::mastery_capacity(const Actor &a, const Actor &target, AttackRange range) const
 {
-    const auto kind = weapon_mastery(a, ranged);
+    const auto kind = weapon_mastery(a, range);
     if (kind != detail::Mastery::sap && kind != detail::Mastery::vex)
         return true;
     return detail::can_apply_attack_mastery(target.effects,
                                             kind == detail::Mastery::sap ? detail::EffectKind::sap
                                             : detail::EffectKind::vex,
-                                            scope_, a.source.id);
+                                            effect_source(a));
 }
 
-detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &target, bool ranged,
-        bool spell) const
+detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &target,
+        AttackRange range, bool spell) const
 {
+    const bool ranged = range == AttackRange::ranged;
     const auto &d = def(a);
     bool disadvantaged =
         !spell && (d.str_dex_disadvantage ||
@@ -6397,7 +6423,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     if (!spell && d.bloodied_fury && a.life.hp * 2 <= max_hp(a))
         result.advantage = true;
     if (helpless(target) || a.aim_ready || pack_tactics ||
-            detail::vexed_by(target.effects, scope_, a.source.id))
+            detail::vexed_by(target.effects, effect_source(a)))
         result.advantage = true;
     if (detail::sapped(a.effects) ||
             detail::has_effect(a.effects, detail::EffectKind::poisoned) ||
@@ -6410,7 +6436,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // Reckless Attack: Advantage on the attacker's Strength attack rolls and on
     // attack rolls against it.
     if ((!spell && detail::has_effect(a.effects, detail::EffectKind::reckless) &&
-            strength_attack(a, ranged)) ||
+            strength_attack(a, range)) ||
             detail::has_effect(target.effects, detail::EffectKind::reckless))
         result.advantage = true;
     // Faerie Fire: Advantage against an outlined creature the attacker sees.
@@ -6446,16 +6472,18 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     return result;
 }
 
-detail::DamageDieRule Session::weapon_die_rule(const Actor &a, bool ranged) const
+detail::DamageDieRule Session::weapon_die_rule(const Actor &a, AttackRange range) const
 {
     const auto &d = def(a);
-    return d.great_weapon_fighting && !ranged && !d.ranged_weapon && !d.weapon_label.empty() &&
-           d.weapon_hands == 2 ? detail::DamageDieRule::great_weapon_fighting
+    return d.great_weapon_fighting && range == AttackRange::melee && !d.ranged_weapon &&
+           !d.weapon_label.empty() && d.weapon_hands == 2
+           ? detail::DamageDieRule::great_weapon_fighting
            : detail::DamageDieRule::normal;
 }
 
-Dice Session::weapon_dice(const Actor &a, bool ranged) const
+Dice Session::weapon_dice(const Actor &a, AttackRange range) const
 {
+    const bool ranged = range == AttackRange::ranged;
     const auto &d = def(a);
     auto result = ranged ? d.ranged : d.melee;
     if (!ranged && d.versatile_sides && d.weapon_hands == 2)
@@ -6468,12 +6496,13 @@ Dice Session::weapon_dice(const Actor &a, bool ranged) const
     return result;
 }
 
-void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mode, int amount,
-                        bool savage, detail::DamageType type, bool ranged, bool spell,
-                        bool optional_mastery)
+void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
 {
-    detail::consume_attack_masteries(actor(a.source.id).effects, target.effects, scope_,
-                                     a.source.id);
+    const int natural = resolved.natural, bonus = resolved.bonus, mode = resolved.mode;
+    const bool spell = resolved.spell, savage = resolved.savage;
+    const auto range = resolved.range;
+    const bool ranged = range == AttackRange::ranged;
+    detail::consume_attack_masteries(actor(a.source.id).effects, target.effects, effect_source(a));
     const std::string modifier_label = mode < 0   ? " (disadvantage)"
                                        : mode > 0 ? " (advantage)"
                                        : "";
@@ -6494,7 +6523,8 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
             "{actor} -> {target}: d20 {roll} + {bonus} vs AC {ac}{disadvantage} misses.",
             arguments
         });
-        if (!spell && !ranged && weapon_mastery(a, false) == detail::Mastery::graze &&
+        if (!spell && !ranged &&
+                weapon_mastery(a, AttackRange::melee) == detail::Mastery::graze &&
                 graze_damage(a, target) > 0)
             graze_ = PendingGraze{a.source.id, target.source.id, natural};
         return;
@@ -6503,7 +6533,7 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
     const bool helpless = unconscious(target) && distance(a.source.cell, target.source.cell) <= 5;
     if (savage)
         message += " (Savage Attacker)";
-    amount = resolved_damage(target, type, amount);
+    const int amount = resolved_damage(target, resolved.type, resolved.damage);
     // The Versatile grip is chosen automatically, so the damage line names it.
     const std::string grip = spell || ranged || !def(a).versatile_sides ? ""
                              : def(a).weapon_hands == 2                 ? " (two-handed)"
@@ -6538,7 +6568,7 @@ damage(target, amount, critical);
     }
     if (!spell)
     {
-        const auto property = weapon_mastery(a, ranged);
+        const auto property = weapon_mastery(a, range);
         if (property == detail::Mastery::sap || (property == detail::Mastery::vex && amount > 0))
         {
             const auto &source = actor(a.source.id);
@@ -6546,7 +6576,7 @@ damage(target, amount, critical);
             const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
             const auto kind = property == detail::Mastery::sap ? detail::EffectKind::sap
                               : detail::EffectKind::vex;
-            detail::apply_attack_mastery(target.effects, kind, scope_, a.source.id, a.source.name,
+            detail::apply_attack_mastery(target.effects, kind, effect_source(a), a.source.name,
                                          next_turn_ms(source) +
                                          (kind == detail::EffectKind::vex ? slot : 0));
             const auto label = std::string(detail::mastery_name(property));
@@ -6560,8 +6590,8 @@ damage(target, amount, critical);
             });
         }
     }
-    if (!spell && optional_mastery)
-        offer_mastery(a, target, natural, ranged, amount, critical);
+    if (!spell)
+        offer_mastery(a, target, natural, range, amount, critical);
     if (critical && def(a).champion && conscious(a))
     {
         ChampionMove move
@@ -6591,7 +6621,8 @@ damage(target, amount, critical);
     }
 }
 
-bool Session::sneak_eligible(const Actor &a, const Actor &target, bool ranged, int mode) const
+bool Session::sneak_eligible(const Actor &a, const Actor &target, AttackRange range,
+                             int mode) const
 {
     const auto &d = def(a);
     if (!d.sneak_level || a.sneak_used)
@@ -6607,7 +6638,8 @@ bool Session::sneak_eligible(const Actor &a, const Actor &target, bool ranged, i
     // A ranged weapon's fallback melee attack is unarmed, not that weapon.
     return detail::sneak_attack_eligible(
     {
-        ranged ? d.range > 0 : !d.weapon_label.empty() && !d.ranged_weapon, d.finesse,
+        range == AttackRange::ranged ? d.range > 0 : !d.weapon_label.empty() && !d.ranged_weapon,
+        d.finesse,
         d.ranged_weapon, mode, ally});
 }
 
@@ -6679,13 +6711,12 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
 {
     const bool ranged = range == AttackRange::ranged;
     const bool spell = spell_attack.has_value();
-    const int bursts = spell ? spell_attack->bursts : 0;
     if (target.source.cell.x != a.source.cell.x)
         a.facing_left = target.source.cell.x < a.source.cell.x;
     if (sanctuary_stops(a, target))
         return false;
     const auto &d = def(a);
-    const auto modifiers = attack_modifiers(a, target, ranged, spell);
+    const auto modifiers = attack_modifiers(a, target, range, spell);
     a.aim_ready = false;
     // Guiding Bolt's Advantage is spent on this attack roll.
     std::erase_if(target.effects.active, [](const auto & e)
@@ -6702,7 +6733,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                  : ranged ? d.ranged_bonus
                  : d.melee_bonus) + blessing_die(a) +
                 (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
-    const auto damage_dice = spell ? spell_attack->dice : weapon_dice(a, ranged);
+    const auto damage_dice = spell ? spell_attack->dice : weapon_dice(a, range);
     // Seeking Spell: a missed spell attack rolls its d20 again, once.
     if (spell && casting_with(Metamagic::seeking) && natural != 20 &&
             !attack_hits(natural, bonus, armor_class(target)))
@@ -6737,21 +6768,22 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                      automatic);
     if (hit && strikes_duplicate(a, target))
         return false;
-    const bool sneak = hit && !spell && sneak_eligible(a, target, ranged, modifiers.mode());
+    const bool sneak = hit && !spell && sneak_eligible(a, target, range, modifiers.mode());
     const auto roll_damage = [&]
     {
         return !spell && (d.sneak_level || d.great_weapon_fighting || a.light_damage ||
                           a.cleave_damage)
                ? detail::roll_damage_component(rng_, damage_dice,
                                                critical_hit(a, target, natural),
-                                               weapon_die_rule(a, ranged))
+                                               weapon_die_rule(a, range))
                : spell ? this->spell_dice(a, damage_dice, critical_hit(a, target, natural, spell))
                : dice(damage_dice, critical_hit(a, target, natural, spell));
     };
-    int weapon_damage = hit ? (bursts ? burst_damage(damage_dice, critical_hit(a, target, natural,
-                                spell), bursts)
-                               : roll_damage())
-                        : 0;
+    const bool bursting = spell && spell_attack->bursts;
+    int weapon_damage =
+        hit ? (bursting ? burst_damage(*spell_attack, critical_hit(a, target, natural, spell))
+               : roll_damage())
+        : 0;
     // Sneak Attack and Savage Attacker have one right answer, so they apply
     // automatically and the log records what they added.
     const int sneak_damage = sneak ? roll_sneak_attack(a, target, natural) : 0;
@@ -6766,14 +6798,15 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (hit)
         weapon_damage += weapon_magic;
     // Rage Damage: Strength-based weapon and unarmed hits.
-    if (hit && !spell && rage_of(a) && strength_attack(a, ranged))
+    if (hit && !spell && rage_of(a) && strength_attack(a, range))
     {
         weapon_damage += d.rage_damage;
         log("Rage adds " + std::to_string(d.rage_damage) + " damage.",
         {"Rage adds {damage} damage.", {{"damage", std::to_string(d.rage_damage)}}});
         weapon_damage += frenzy_damage(actor(a.source.id), critical_hit(a, target, natural));
     }
-    weapon_damage = resized_damage(a, hit && !spell, weapon_damage);
+    if (hit && !spell)
+        weapon_damage = resized_damage(a, weapon_damage);
     // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
     if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.life.hp < max_hp(target))
     {
@@ -6795,8 +6828,15 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                         std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
                         damage_type, ranged)
         : 0;
-    apply_hit(a, target, natural, bonus, modifiers.mode(), amount, savage, damage_type, ranged,
-              spell);
+    apply_hit(a, target,
+              ResolvedAttack{.natural = natural,
+                             .bonus = bonus,
+                             .mode = modifiers.mode(),
+                             .damage = amount,
+                             .type = damage_type,
+                             .range = range,
+                             .spell = spell,
+                             .savage = savage});
     // A ranged hit's added damage of a second type (the Hobgoblin Warrior's poison).
     if (hit && !spell && ranged && d.ranged_extra.count && !target.life.dead)
     {
@@ -7045,26 +7085,25 @@ std::vector<EntityId> Session::careful_allies(const Actor &caster, const std::ve
     return spared;
 }
 
-int Session::burst_damage(Dice dice, bool critical, int bursts)
+int Session::burst_damage(const SpellAttack &spell, bool critical)
 {
     // Each die showing its maximum adds another, up to `bursts` extra dice.
+    const auto &dice = spell.dice;
     const int count = dice.count * (critical ? 2 : 1);
     int total = dice.bonus, extra = 0;
     for (int n = 0; n < count + extra; ++n)
     {
         const int rolled = roll(dice.sides);
         total += rolled;
-        if (rolled == dice.sides && extra < bursts)
+        if (rolled == dice.sides && extra < spell.bursts)
             ++extra;
     }
     return total;
 }
 
-int Session::resized_damage(const Actor &a, bool weapon_hit, int amount)
+int Session::resized_damage(const Actor &a, int amount)
 {
     // Enlarge: 1d4 more weapon damage. Reduce: 1d4 less, but not below 1.
-    if (!weapon_hit)
-        return amount;
     if (detail::has_effect(a.effects, detail::EffectKind::enlarged))
     {
         const int extra = roll(4);
@@ -7104,18 +7143,18 @@ void Session::attack_recklessly(Actor &a)
 {
     // Until the start of its next turn: Advantage on its Strength attack rolls,
     // and attack rolls against it have Advantage.
-    detail::apply_poisoned(a.effects, scope_, a.source.id, a.source.name, next_turn_ms(a),
+    detail::apply_poisoned(a.effects, effect_source(a), a.source.name, next_turn_ms(a),
                            detail::EffectKind::reckless);
     log(a.source.name + " attacks recklessly.",
     {"{name} attacks recklessly.", {{"name", a.source.name}}});
 }
 
-bool Session::strength_attack(const Actor &a, bool ranged) const
+bool Session::strength_attack(const Actor &a, AttackRange range) const
 {
     // A melee attack without a weapon is an Unarmed Strike, always Strength;
     // a ranged one is Strength only when thrown.
     const auto &d = def(a);
-    if (ranged)
+    if (range == AttackRange::ranged)
         return !d.ranged_weapon && d.ranged_ability == d.strength;
     return !d.melee.count || d.melee_ability == d.strength;
 }
@@ -8079,7 +8118,7 @@ void Session::answer_reaction(const Command &command)
             --defender.slots;
         else
             --defender.slots2;
-        detail::apply_poisoned(defender.effects, scope_, defender.source.id, defender.source.name,
+        detail::apply_poisoned(defender.effects, effect_source(defender), defender.source.name,
                                next_turn_ms(defender), detail::EffectKind::shield);
         log(defender.source.name + " casts Shield.",
         {"{name} casts {spell}.", {{"name", defender.source.name}, {"spell", "Shield", true}}});
@@ -8327,7 +8366,7 @@ void Session::dispatch(const Command &command)
         const bool was_invisible = invisible(a);
         if (command.verb == "armor_of_shadows")
         {
-            detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+            detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                         detail::EffectKind::mage_armor, 0);
             log(a.source.name + " gains Mage Armor.",
             {"{name} gains {spell}.", {{"name", a.source.name}, {"spell", "Mage Armor", true}}});
@@ -8365,7 +8404,7 @@ void Session::dispatch(const Command &command)
         {
             return e.kind == detail::EffectKind::wild_shape;
         });
-        detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::wild_shape,
                                     static_cast<int>(form - detail::beast_forms.data()) + 1);
         refresh_form(a);
@@ -8412,7 +8451,7 @@ void Session::dispatch(const Command &command)
         a.bonus = false;
         --a.arcane;
         auto &ally = actor(command.target);
-        detail::apply_spell_benefit(ally.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(ally.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::inspired, 6);
         log(a.source.name + " inspires " + ally.source.name + ".",
         {"{name} inspires {target}.", {{"name", a.source.name}, {"target", ally.source.name}}});
@@ -8421,7 +8460,7 @@ void Session::dispatch(const Command &command)
     {
         a.bonus = false;
         --a.free_casts;
-        detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::innate_sorcery, 0);
         log(a.source.name + " unleashes Innate Sorcery.",
         {"{name} unleashes Innate Sorcery.", {{"name", a.source.name}}});
@@ -8439,7 +8478,7 @@ void Session::dispatch(const Command &command)
         --a.channel_divinity;
         // A raging creature cannot keep Concentration.
         end_concentration(a);
-        detail::apply_poisoned(a.effects, scope_, a.source.id, a.source.name, rage_duration(a),
+        detail::apply_poisoned(a.effects, effect_source(a), a.source.name, rage_duration(a),
                                detail::EffectKind::raging);
         log(a.source.name + " enters a Rage.", {"{name} enters a Rage.", {{"name", a.source.name}}});
     }
@@ -8530,7 +8569,7 @@ void Session::dispatch(const Command &command)
                    e.source_actor == a.source.id;
         });
         auto &cursed = actor(command.target);
-        detail::apply_spell_benefit(cursed.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(cursed.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::hex, 0);
         log(a.source.name + " moves Hex to " + cursed.source.name + ".",
         {
@@ -8548,7 +8587,7 @@ void Session::dispatch(const Command &command)
                    e.source_actor == a.source.id;
         });
         auto &quarry = actor(command.target);
-        detail::apply_spell_benefit(quarry.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(quarry.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::hunters_mark, 0);
         log(a.source.name + " moves Hunter's Mark to " + quarry.source.name + ".",
         {
@@ -8560,7 +8599,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "sacred_weapon")
     {
         --a.channel_divinity;
-        detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::sacred_weapon,
                                     std::max(1, d.casting - 2));
         log(a.source.name + " uses Sacred Weapon.",
@@ -9291,7 +9330,8 @@ void Session::validate_graze() const
         return a.source.id == g.target;
     });
     if (a == actors_.end() || t == actors_.end() || a == t || !conscious(*a) || t->life.dead ||
-            weapon_mastery(*a, false) != detail::Mastery::graze || g.natural < 1 || g.natural > 20 ||
+            weapon_mastery(*a, AttackRange::melee) != detail::Mastery::graze ||
+            g.natural < 1 || g.natural > 20 ||
             attack_hits(g.natural, def(*a).melee_bonus, armor_class(*t)) ||
             (def(*a).champion && g.natural == 19) ||
             distance(a->source.cell, t->source.cell) > def(*a).reach ||
@@ -11210,7 +11250,8 @@ class Module final : public RulesModule
             (void)detail::heal_life(patient->life, std::max(0, amount), max_hp(*patient),
                                     !detail::healing_blocked(patient->effects));
             // Camp effects carry scope 1: there is no encounter to source them.
-            detail::apply_spell_benefit(patient->effects, 1, 1, user.name,
+            detail::apply_spell_benefit(patient->effects,
+                                        detail::EffectSource{.scope = 1, .actor = 1}, user.name,
                                         detail::EffectKind::prayer_of_healing, 0);
         }
         user_state = vitals(caster);
