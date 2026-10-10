@@ -265,9 +265,8 @@ class RolfTourSession
     std::uint64_t next_ticket_{}, menu_request_{}, delayed_request_{};
     double remaining_delay_{};
     std::shared_ptr<const PhlanResources> town_;
-    TownParty party_, saved_party_;
+    TownParty party_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
-    std::optional<opengold::PartyState> saved_campaign_;
     std::uint64_t who_request_{}, temple_request_{};
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};
@@ -282,15 +281,30 @@ class RolfTourSession
     bool robbed_{};
     std::vector<Equipment> treasure_;
     std::optional<Image> picture_;
-    std::optional<EclMachine> checkpoint_;
+    // Everything an event can change, saved when it begins so a failed event
+    // rolls back as a whole rather than member by hand-paired member
+    // (Effective C++ Item 29).
+    struct EventCheckpoint
+    {
+        EclMachine machine;
+        TownParty party;
+        std::optional<opengold::PartyState> campaign;
+        unsigned script{}, area{};
+        std::map<unsigned, std::bitset<256>> visited_areas, seen_areas;
+        unsigned rest_checks{};
+        GeoMap map;
+        std::vector<PendingLoot> pending_loot;
+        TourSnapshot snapshot;
+        unsigned selected_character{};
+    };
+    std::optional<EventCheckpoint> event_checkpoint_;
+    void roll_back_event();
     std::vector<std::string> diagnostics_;
     std::optional<ExplorationCommand> pending_movement_;
-    unsigned current_script_{}, saved_script_{}, selected_character_{};
-    unsigned current_area_{}, saved_area_{};
+    unsigned current_script_{}, selected_character_{};
+    unsigned current_area_{};
     std::map<unsigned, std::bitset<256>> visited_areas_;
-    std::map<unsigned, std::bitset<256>> saved_visited_areas_;
-    std::map<unsigned, std::bitset<256>> seen_areas_, saved_seen_areas_;
-    std::optional<TourSnapshot> saved_snapshot_;
+    std::map<unsigned, std::bitset<256>> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;
     std::vector<opengold::CombatArt> staged_art_;
     std::vector<unsigned> staged_records_;
@@ -303,11 +317,11 @@ class RolfTourSession
     unsigned encounter_challenge_{opengold::default_encounter_challenge};
     // The original encounter before fitting: its experience and loot are awarded.
     std::vector<unsigned> encounter_records_;
-    std::vector<PendingLoot> pending_loot_, saved_pending_loot_;
+    std::vector<PendingLoot> pending_loot_;
     // Money from a non-shop TREASURE, awarded by the COMBAT that follows it.
     std::optional<PendingLoot> staged_treasure_;
-    // Doors forced open stay open until the district map is reloaded.
-    GeoMap saved_map_;
+    // Doors forced open stay open until the district map is reloaded; the
+    // event checkpoint keeps the map as the event found it.
     bool door_menu_{};
     // As in the original, one Pick per lock until the party moves again.
     bool pick_tried_{};
@@ -330,13 +344,12 @@ class RolfTourSession
     bool choose_encounter(std::size_t choice);
     [[nodiscard]] const PhlanResources &area_resources() const;
     void change_area(unsigned id);
-    unsigned saved_selected_character_{};
     unsigned
     event_stage_{}; // 0 tour, 1 before step, 2 search, 3 area entry, 4 pre-camp, 5 interrupted.
     RestKind camp_kind_{RestKind::long_rest};
     // Five-minute rest steps since the last interruption check. Like the
     // original engine's counter, it carries over between rests; it is saved.
-    unsigned rest_checks_{}, saved_rest_checks_{};
+    unsigned rest_checks_{};
     [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
     void announce_camp_attack();
     bool transition_{}, message_only_{};

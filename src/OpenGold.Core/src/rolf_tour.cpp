@@ -367,7 +367,7 @@ void RolfTourSession::reset_run()
     party_ = {};
     treasure_.clear();
     picture_.reset();
-    checkpoint_.reset();
+    event_checkpoint_.reset();
     diagnostics_.clear();
     current_script_ = selected_character_ = event_stage_ = 0;
     camp_kind_ = RestKind::long_rest;
@@ -380,14 +380,12 @@ void RolfTourSession::reset_run()
     showing_monster_picture_ = false;
     combat_request_ = 0;
     pending_loot_.clear();
-    saved_pending_loot_.clear();
     staged_treasure_.reset();
     door_menu_ = pick_tried_ = false;
     door_choices_.clear();
     who_request_ = temple_request_ = damage_request_ = 0;
     who_slots_.clear();
     temple_targets_.clear();
-    saved_campaign_.reset();
     pending_movement_.reset();
     transition_ = message_only_ = false;
     shop_request_ = 0;
@@ -420,59 +418,73 @@ void RolfTourSession::reset_run()
 
 void RolfTourSession::fail(std::string diagnostic)
 {
-    if (snapshot_.tour_finished && checkpoint_)
+    if (snapshot_.tour_finished && event_checkpoint_)
     {
         diagnostics_.push_back(diagnostic);
-        machine_ = std::move(*checkpoint_);
-        checkpoint_.reset();
-        party_ = saved_party_;
-        current_script_ = saved_script_;
-        change_area(saved_area_);
-        map_ = saved_map_;
-        pending_loot_ = saved_pending_loot_;
-        staged_treasure_.reset();
-        door_menu_ = false;
-        door_choices_.clear();
-        visited_areas_ = saved_visited_areas_;
-        seen_areas_ = saved_seen_areas_;
-        rest_checks_ = saved_rest_checks_;
-        if (saved_snapshot_)
+        try
         {
-            const auto revision = snapshot_.revision + 1;
-            snapshot_ = *saved_snapshot_;
-            snapshot_.revision = revision;
+            roll_back_event();
+            notice("This event is not supported yet: " + diagnostic +
+                   "\nThe event's changes were rolled back. You can continue exploring.");
+            return;
         }
-        if (campaign_ && saved_campaign_)
-            campaign_->restore(*saved_campaign_);
-        who_request_ = temple_request_ = damage_request_ = 0;
-        who_slots_.clear();
-        temple_targets_.clear();
-        selected_character_ = saved_selected_character_;
-        pending_movement_.reset();
-        transition_ = false;
-        delayed_request_ = shop_request_ = 0;
-        treasure_.clear();
-        staged_enemies_.clear();
-        staged_art_.clear();
-        staged_records_.clear();
-        encounter_menu_.reset();
-        encounter_.reset();
-        monster_picture_id_.reset();
-        showing_monster_picture_ = false;
-        combat_request_ = 0;
-        snapshot_.sprite_frame = -1;
-        picture_.reset();
-        ++snapshot_.picture_revision;
-        publish_pose();
-        snapshot_.script_id = current_script_;
-        notice("This event is not supported yet: " + diagnostic +
-               "\nThe event's changes were rolled back. You can continue exploring.");
-        return;
+        catch (const std::exception &error)
+        {
+            // A rollback that cannot finish leaves the tour faulted rather than
+            // half restored.
+            diagnostic += "\nRolling the event back failed: " + std::string(error.what());
+        }
     }
     snapshot_.phase = TourPhase::faulted;
     snapshot_.diagnostic = std::move(diagnostic);
     snapshot_.continue_ticket = 0;
     ++snapshot_.revision;
+}
+
+void RolfTourSession::roll_back_event()
+{
+    auto saved = std::move(*event_checkpoint_);
+    event_checkpoint_.reset();
+    // The steps that can throw come first: the party's restore checks before
+    // it changes anything, and the area change needs the district's map.
+    if (campaign_ && saved.campaign)
+        campaign_->restore(std::move(*saved.campaign));
+    change_area(saved.area);
+    machine_ = std::move(saved.machine);
+    party_ = std::move(saved.party);
+    current_script_ = saved.script;
+    map_ = std::move(saved.map);
+    pending_loot_ = std::move(saved.pending_loot);
+    staged_treasure_.reset();
+    door_menu_ = false;
+    door_choices_.clear();
+    visited_areas_ = std::move(saved.visited_areas);
+    seen_areas_ = std::move(saved.seen_areas);
+    rest_checks_ = saved.rest_checks;
+    const auto revision = snapshot_.revision + 1;
+    snapshot_ = std::move(saved.snapshot);
+    snapshot_.revision = revision;
+    who_request_ = temple_request_ = damage_request_ = 0;
+    who_slots_.clear();
+    temple_targets_.clear();
+    selected_character_ = saved.selected_character;
+    pending_movement_.reset();
+    transition_ = false;
+    delayed_request_ = shop_request_ = 0;
+    treasure_.clear();
+    staged_enemies_.clear();
+    staged_art_.clear();
+    staged_records_.clear();
+    encounter_menu_.reset();
+    encounter_.reset();
+    monster_picture_id_.reset();
+    showing_monster_picture_ = false;
+    combat_request_ = 0;
+    snapshot_.sprite_frame = -1;
+    picture_.reset();
+    ++snapshot_.picture_revision;
+    publish_pose();
+    snapshot_.script_id = current_script_;
 }
 
 void RolfTourSession::publish_pose()

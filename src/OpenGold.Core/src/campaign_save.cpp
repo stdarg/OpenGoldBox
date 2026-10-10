@@ -443,7 +443,7 @@ struct SaveCodec
 
     void town(por::RolfTourSession &v)
     {
-        require(reading || (v.can_leave() && v.snapshot_.tour_finished && !v.checkpoint_ &&
+        require(reading || (v.can_leave() && v.snapshot_.tour_finished && !v.event_checkpoint_ &&
                             !v.pending_movement_),
                 "Save only during idle town exploration");
         fields(v.current_script_, v.selected_character_, v.next_ticket_, v.rest_checks_);
@@ -603,8 +603,7 @@ struct SaveCodec
             s.diagnostic.clear();
             ++s.picture_revision;
             v.picture_.reset();
-            v.checkpoint_.reset();
-            v.saved_campaign_.reset();
+            v.event_checkpoint_.reset();
             v.pending_movement_.reset();
             v.treasure_.clear();
             v.who_slots_.clear();

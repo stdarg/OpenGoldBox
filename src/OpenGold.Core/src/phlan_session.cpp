@@ -246,24 +246,26 @@ void RolfTourSession::begin_event(unsigned slot)
     snapshot_.payments.clear();
     snapshot_.door_checks.clear();
     snapshot_.door_opened = false;
+    std::optional<opengold::PartyState> campaign;
     if (campaign_)
     {
         selected_character_ = campaign_->state().selected;
         for (const auto &w : character_reply(selected_character_).writes)
             machine_.bind_variable(w.address, w.value);
-        saved_campaign_ = campaign_->checkpoint();
+        campaign = campaign_->checkpoint();
     }
-    checkpoint_ = machine_;
-    saved_party_ = party_;
-    saved_script_ = current_script_;
-    saved_area_ = current_area_;
-    saved_visited_areas_ = visited_areas_;
-    saved_seen_areas_ = seen_areas_;
-    saved_rest_checks_ = rest_checks_;
-    saved_map_ = map_;
-    saved_pending_loot_ = pending_loot_;
-    saved_snapshot_ = snapshot_;
-    saved_selected_character_ = selected_character_;
+    event_checkpoint_ = EventCheckpoint{.machine = machine_,
+                                        .party = party_,
+                                        .campaign = std::move(campaign),
+                                        .script = current_script_,
+                                        .area = current_area_,
+                                        .visited_areas = visited_areas_,
+                                        .seen_areas = seen_areas_,
+                                        .rest_checks = rest_checks_,
+                                        .map = map_,
+                                        .pending_loot = pending_loot_,
+                                        .snapshot = snapshot_,
+                                        .selected_character = selected_character_};
     event_stage_ = slot == 0 ? 1 : slot == 2 ? 4 : 2;
     machine_.bind_variable(0x6DC9, 0);
     encounter_outcome_.clear();
@@ -472,8 +474,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     staged_art_.clear();
     staged_records_.clear();
     // A later script fault must never restore pre-combat HP or erase a victory.
-    checkpoint_.reset();
-    saved_campaign_.reset();
+    event_checkpoint_.reset();
     snapshot_.phase = TourPhase::running;
     ++snapshot_.revision;
     if (!pending_loot_.empty())
@@ -591,7 +592,7 @@ void RolfTourSession::finish_event()
     if (event_stage_ == 5)
         snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
                               std::string("The rest was interrupted. Rest again to recover.");
-    checkpoint_.reset();
+    event_checkpoint_.reset();
     snapshot_.phase = TourPhase::completed;
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
