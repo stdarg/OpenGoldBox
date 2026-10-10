@@ -599,6 +599,42 @@ void EclMachine::execute(const EclInstruction &i)
     pc_ = i.next;
 }
 
+EclHostArgument::EclHostArgument(std::uint16_t number) noexcept
+    : kind_(EclArgumentKind::number), value_(number)
+{
+}
+
+EclHostArgument::EclHostArgument(EclAddress address) noexcept
+    : kind_(EclArgumentKind::address), value_(address.location)
+{
+}
+
+EclHostArgument::EclHostArgument(std::string text) noexcept
+    : kind_(EclArgumentKind::text), text_(std::move(text))
+{
+}
+
+std::uint16_t EclHostArgument::number() const
+{
+    if (kind_ != EclArgumentKind::number)
+        throw EclError("Host argument is not a number");
+    return value_;
+}
+
+EclAddress EclHostArgument::address() const
+{
+    if (kind_ != EclArgumentKind::address)
+        throw EclError("Host argument is not an address");
+    return EclAddress{value_};
+}
+
+const std::string &EclHostArgument::text() const
+{
+    if (kind_ != EclArgumentKind::text)
+        throw EclError("Host argument is not text");
+    return text_;
+}
+
 void EclMachine::request_host(const EclInstruction &i)
 {
     if (!host_opcodes_.contains(i.opcode))
@@ -615,27 +651,20 @@ void EclMachine::request_host(const EclInstruction &i)
         const bool address =
             output || (op == 30 && n == 0) || (op == 35 && n < 2) || op == 45 || op == 60;
         const bool is_text = op == 57 || (op == 41 && n >= 9 && n <= 11);
-        EclHostArgument arg;
         if (address)
-        {
-            arg.kind = EclArgumentKind::address;
-            arg.value = output ? destination(operand).location
-                        : (op == 60 && operand.tag == 129 ? operand.value
-                           : encoded_address(operand));
-        }
+            request.arguments.emplace_back(
+                output ? destination(operand)
+                : EclAddress{op == 60 && operand.tag == 129 ? operand.value
+                             : encoded_address(operand)});
         else if (is_text)
-        {
-            arg.kind = EclArgumentKind::text;
-            arg.text = text(operand);
-        }
+            request.arguments.emplace_back(text(operand));
         else
         {
-            arg.kind = EclArgumentKind::number;
-            arg.value = value(operand);
+            std::uint16_t number = value(operand);
             if (op != 39 || n == 7)
-                arg.value &= 255;
+                number &= 255;
+            request.arguments.emplace_back(number);
         }
-        request.arguments.push_back(std::move(arg));
     }
     request.id = next_request_++;
     pending_ = std::move(request);
@@ -788,7 +817,7 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         for (std::size_t n = 0; n < pending_->arguments.size(); ++n)
             if (((opcode == 29 && n == 0) || (opcode == 30 && n >= 2) || opcode == 34 ||
                     (opcode == 41 && n == 3)) &&
-                    !addresses.contains(EclAddress{pending_->arguments[n].value}))
+                    !addresses.contains(pending_->arguments[n].address()))
                 return false;
     }
     catch (const EclError &)

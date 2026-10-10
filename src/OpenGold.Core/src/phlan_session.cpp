@@ -731,12 +731,12 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
 {
     // Operands: copper, silver, electrum, gold, platinum, gems, jewelry, then an
     // item code: an ITEMn list below 128, 128 + n random items, or 255 for none.
-    const auto items = request.arguments.at(7).value;
+    const auto items = request.arguments.at(7).number();
     if (!campaign_)
         throw EclError("Treasure awards require a campaign party");
     PendingLoot loot;
     for (unsigned coin = 0; coin < 7; ++coin)
-        loot.wealth[coin] = request.arguments.at(coin).value;
+        loot.wealth[coin] = request.arguments.at(coin).number();
     loot.reward_id = treasure_identity(request.instruction->address);
     loot.include_items = false;
     if (items < 128)
@@ -804,16 +804,16 @@ void RolfTourSession::show_encounter_menu()
     const auto &args = encounter_menu_->arguments;
     for (unsigned frame = 0; frame < 3; ++frame)
     {
-        auto image = decode_ega_sprite(area_resources().sprite_archive, args[2].value, frame);
+        auto image = decode_ega_sprite(area_resources().sprite_archive, args[2].number(), frame);
         if (!image)
             throw EclError("Unsupported roaming encounter sprite");
         sprites_[frame] = std::move(image.image);
     }
-    snapshot_.sprite_id = args[2].value;
+    snapshot_.sprite_id = args[2].number();
     snapshot_.sprite_frame = encounter_distance_;
-    snapshot_.dialogue = args[9 + encounter_distance_].text;
+    snapshot_.dialogue = args[9 + encounter_distance_].text();
     if (snapshot_.dialogue.empty())
-        snapshot_.dialogue = args[9].text;
+        snapshot_.dialogue = args[9].text();
     announce_camp_attack();
     if (!meeting_pose_)
         meeting_pose_ = snapshot_.pose;
@@ -897,7 +897,7 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
         choice = 4;
     const auto &request = *encounter_menu_;
     const auto &args = request.arguments;
-    const auto response = args[4 + choice].value;
+    const auto response = args[4 + choice].number();
     if (response > 4)
         throw EclError("Invalid encounter response");
     int slowest = 1000, fastest = 0;
@@ -914,9 +914,9 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
             fastest = std::max(fastest, movement);
         }
     unsigned result = 1;
-    if (choice == 2 && slowest >= args[12].value)
+    if (choice == 2 && slowest >= args[12].number())
         result = 2;
-    else if (response == 2 && (choice != 0 || args[13].value > fastest))
+    else if (response == 2 && (choice != 0 || args[13].number() > fastest))
         result = 0;
     else if (response == 4)
         result = 3;
@@ -934,7 +934,7 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
         return true;
     }
     EclHostReply reply;
-    reply.writes = {{EclAddress{args[3].value}, static_cast<std::uint16_t>(result)}};
+    reply.writes = {{args[3].address(), static_cast<std::uint16_t>(result)}};
     if (!machine_.resume_host(request.id, reply))
         return false;
     // The script ends the meeting quietly (0); the event's end says so.
@@ -1156,9 +1156,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
 {
     const auto op = request.instruction->opcode;
     EclHostReply reply;
+    // Operand n as a number; address_arg reads the operands that name a script cell.
     const auto arg = [&](unsigned n)
     {
-        return request.arguments.at(n).value;
+        return request.arguments.at(n).number();
+    };
+    const auto address_arg = [&](unsigned n)
+    {
+        return request.arguments.at(n).address();
     };
     switch (op)
     {
@@ -1307,8 +1312,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         // Supported converted party profiles have no original surprise modifiers.
         std::map<EclAddress, std::uint16_t> outputs;
-        outputs[EclAddress{arg(0)}] = 0;
-        outputs[EclAddress{arg(1)}] = 0;
+        outputs[address_arg(0)] = 0;
+        outputs[address_arg(1)] = 0;
         for (auto [address, value] : outputs)
             reply.writes.push_back({address, value});
         break;
@@ -1316,9 +1321,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 35:
     {
         const int party_threshold =
-            2 + static_cast<int>(arg(3)) - static_cast<int>(machine_.variable(EclAddress{arg(0)}));
+            2 + static_cast<int>(arg(3)) - static_cast<int>(machine_.variable(address_arg(0)));
         const int monster_threshold =
-            2 + static_cast<int>(machine_.variable(EclAddress{arg(1)})) - static_cast<int>(arg(2));
+            2 + static_cast<int>(machine_.variable(address_arg(1))) - static_cast<int>(arg(2));
         const bool party =
             static_cast<int>(machine_.host_random(request.id, 6)) + 1 <= party_threshold;
         const bool monsters =
@@ -1337,17 +1342,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 29:
         read_character();
         reply = character_reply(selected_character_);
-        reply.writes.push_back({EclAddress{arg(0)},
+        reply.writes.push_back({address_arg(0),
                                 static_cast<std::uint16_t>(party_strength(*campaign_))});
         break;
     case 30:
     {
         read_character();
         reply = character_reply(selected_character_);
-        const auto values = check_party(*campaign_, EclAddress{arg(0)}, arg(1));
+        const auto values = check_party(*campaign_, address_arg(0), arg(1));
         std::map<EclAddress, std::uint16_t> outputs;
         for (unsigned n = 0; n < 4; ++n)
-            outputs[EclAddress{arg(n + 2)}] = values[n];
+            outputs[address_arg(n + 2)] = values[n];
         for (const auto &[address, value] : outputs)
             reply.writes.push_back({address, value});
         break;

@@ -547,13 +547,13 @@ void CombatDemo::pump()
                 const auto &a = request.arguments;
                 const bool first = enemies_.empty();
                 const unsigned record = first ? 13 : 4, count = first ? 1 : 3;
-                if (a.size() != 3 || a[0].value != record || a[1].value != count ||
-                        a[2].value != 4 || enemies_.size() > 1)
+                if (a.size() != 3 || a[0].number() != record || a[1].number() != count ||
+                        a[2].number() != 4 || enemies_.size() > 1)
                     throw std::runtime_error("Unrecognized Slums creature/count/icon profile");
                 const auto &creature =
                     creatures_->find({2, static_cast<std::uint8_t>(record)})->get();
-                const auto icon = original_icon(game_directory_, a[2].value);
-                const auto action = original_icon(game_directory_, a[2].value + 128);
+                const auto icon = original_icon(game_directory_, a[2].number());
+                const auto action = original_icon(game_directory_, a[2].number() + 128);
                 for (unsigned i = 0; i < count; ++i)
                 {
                     const auto id = static_cast<EntityId>(1000 + enemies_.size());

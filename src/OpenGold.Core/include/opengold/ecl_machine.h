@@ -63,11 +63,30 @@ enum class EclArgumentKind
     text
 };
 
-struct EclHostArgument
+// A resolved host operand: a number, the address of a script cell, or text.
+// The caller names the kind it expects, so an address is never read as a number
+// or a number as an address without saying so (Effective C++ Item 18). Reading
+// the wrong kind throws EclError.
+class EclHostArgument
 {
-    EclArgumentKind kind{};
-    std::uint16_t value{};
-    std::string text;
+  public:
+    explicit EclHostArgument(std::uint16_t number) noexcept;
+    explicit EclHostArgument(EclAddress address) noexcept;
+    explicit EclHostArgument(std::string text) noexcept;
+
+    [[nodiscard]] EclArgumentKind kind() const noexcept
+    {
+        return kind_;
+    }
+
+    [[nodiscard]] std::uint16_t number() const;
+    [[nodiscard]] EclAddress address() const;
+    [[nodiscard]] const std::string &text() const;
+
+  private:
+    EclArgumentKind kind_;
+    std::uint16_t value_{};
+    std::string text_;
 };
 
 using EclConditions = std::array<bool, 6>; // =, <>, <, >, <=, >=

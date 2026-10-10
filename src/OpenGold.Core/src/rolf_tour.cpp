@@ -528,8 +528,8 @@ void RolfTourSession::handle_host(const EclRequest &request)
     switch (opcode)
     {
     case 12:
-        if (request.arguments[0].value != 12 || request.arguments[1].value != 2 ||
-                request.arguments[2].value != 9)
+        if (request.arguments[0].number() != 12 || request.arguments[1].number() != 2 ||
+                request.arguments[2].number() != 9)
             throw EclError("Unsupported encounter setup in Rolf tour");
         snapshot_.sprite_frame = 2;
         break;
@@ -538,7 +538,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
             --snapshot_.sprite_frame;
         break;
     case 14:
-        if (request.arguments[0].value != 255)
+        if (request.arguments[0].number() != 255)
             throw EclError("Tour requested an unsupported picture");
         snapshot_.sprite_frame = -1;
         break;
@@ -552,8 +552,9 @@ void RolfTourSession::handle_host(const EclRequest &request)
         return;
     case 45:
     {
-        const auto service = request.arguments[0].value;
-        if (service == 0xC01E)
+        // The address of the original engine routine the script calls.
+        const auto service = request.arguments[0].address();
+        if (service == EclAddress{0xC01E})
         {
             const auto facing = map_direction(machine_.variable(ecl_party_facing));
             PartyPose pose{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
@@ -569,7 +570,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
                 {ecl_cell_event, cell.event_raw}
             };
         }
-        else if (service == 0x2C90 || service == 0xC018)
+        else if (service == EclAddress{0x2C90} || service == EclAddress{0xC018})
         {
             const auto x = machine_.variable(ecl_party_x), y = machine_.variable(ecl_party_y),
                        f = machine_.variable(ecl_party_facing);
@@ -579,14 +580,15 @@ void RolfTourSession::handle_host(const EclRequest &request)
             reply.writes = {{ecl_wall_ahead, cell.walls[f]}, {ecl_cell_event, cell.event_raw}};
             ++snapshot_.redraws;
         }
-        else if (service == 0xBA03)
+        else if (service == EclAddress{0xBA03})
         {
             if (machine_.variable(EclAddress{0x03DE}) != 8)
                 throw EclError("Unsupported tour sound selector");
             ++snapshot_.footsteps; // Presentation plays an original OpenGoldBox footstep cue.
         }
         else
-            throw EclError("Unsupported native service in tour: " + std::to_string(service));
+            throw EclError("Unsupported native service in tour: " +
+                           std::to_string(service.location));
         break;
     }
     default:
@@ -595,7 +597,8 @@ void RolfTourSession::handle_host(const EclRequest &request)
     if (!machine_.resume_host(request.id, reply))
         throw EclError("Tour host reply rejected");
     if (opcode == 45 &&
-            (request.arguments[0].value == 0x2C90 || request.arguments[0].value == 0xC01E))
+            (request.arguments[0].address() == EclAddress{0x2C90} ||
+             request.arguments[0].address() == EclAddress{0xC01E}))
         publish_pose();
     ++snapshot_.revision;
 }

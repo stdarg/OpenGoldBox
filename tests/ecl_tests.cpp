@@ -37,6 +37,16 @@ static_assert(BindsVariableAt<EclAddress> && !BindsVariableAt<std::uint16_t> &&
 static_assert(ReadsVariableAt<EclAddress> && !ReadsVariableAt<std::uint16_t>);
 static_assert(WritesMemoryAt<EclAddress> && !WritesMemoryAt<std::uint16_t>);
 
+// A host argument's raw value is hidden: callers read it through the accessor
+// for the kind they expect.
+template <class Argument>
+concept ExposesRawValue = requires(const Argument &argument)
+{
+    argument.value;
+};
+
+static_assert(!ExposesRawValue<EclHostArgument>);
+
 void check(bool condition, const char *message)
 {
     if (!condition)
@@ -467,6 +477,35 @@ void memory_and_input()
           "Map data uses byte width");
 }
 
+// Each kind of host argument reads only through its own accessor.
+void host_argument_kinds()
+{
+    const EclHostArgument number{std::uint16_t{12}};
+    const EclHostArgument address{EclAddress{0x6DCB}};
+    const EclHostArgument text{std::string("Fight")};
+    check(number.kind() == EclArgumentKind::number && number.number() == 12 &&
+          address.kind() == EclArgumentKind::address &&
+          address.address() == EclAddress{0x6DCB} && text.kind() == EclArgumentKind::text &&
+          text.text() == "Fight",
+          "Host arguments read back as their own kind");
+    rejects([&]
+    {
+        (void)number.address();
+    });
+    rejects([&]
+    {
+        (void)address.number();
+    });
+    rejects([&]
+    {
+        (void)text.number();
+    });
+    rejects([&]
+    {
+        (void)number.text();
+    });
+}
+
 void host_services()
 {
     EclMachine vm(program({29, 1, 0, 0x97, 50, 0, 7, 22, 9, 0, 99, 1, 0, 0x97, 0}));
@@ -476,8 +515,8 @@ void host_services()
     check(vm.start(0), "Host start");
     auto r = vm.run();
     check(r.request && r.request->kind == EclRequestKind::host &&
-          r.request->arguments[0].kind == EclArgumentKind::address &&
-          r.request->arguments[0].value == 0x9700,
+          r.request->arguments[0].kind() == EclArgumentKind::address &&
+          r.request->arguments[0].address() == EclAddress{0x9700},
           "Host output address not dereferenced");
     const auto id = r.request->id;
     check(!vm.resume(id) && !vm.resume_host(id, {}),
@@ -519,8 +558,8 @@ void host_services()
     query.enable_host(30);
     check(query.start(0), "CHECK PARTY start");
     r = query.run();
-    check(r.request->arguments[0].kind == EclArgumentKind::address &&
-          r.request->arguments[0].value == 0x6c1b,
+    check(r.request->arguments[0].kind() == EclArgumentKind::address &&
+          r.request->arguments[0].address() == EclAddress{0x6c1b},
           "CHECK PARTY passes attribute address without selecting/dereferencing a character");
     check(!query.resume_host(r.request->id, {{{EclAddress{0x9700}, 1}}}),
     "All four CHECK PARTY results required");
@@ -582,8 +621,8 @@ void installed_slums(const EclCatalog &catalog)
                 {
                     const auto &a = request.arguments;
                     const bool first = request.instruction->address == 0x9e5e;
-                    check(a[0].value == (first ? 13 : 4) && a[1].value == (first ? 1 : 3) &&
-                          a[2].value == 4,
+                    check(a[0].number() == (first ? 13 : 4) && a[1].number() == (first ? 1 : 3) &&
+                          a[2].number() == 4,
                           "Slums monster identities/counts/icons match published trace");
                 }
                 EclHostReply reply;
@@ -698,6 +737,7 @@ int main()
         suspension();
         por_operations();
         memory_and_input();
+        host_argument_kinds();
         host_services();
         catalogs();
         std::cout << "ECL tests passed.\n";
