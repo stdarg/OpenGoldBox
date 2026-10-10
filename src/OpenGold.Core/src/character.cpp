@@ -4,11 +4,22 @@
 
 namespace opengold
 {
+namespace
+{
+// Checked before the member is built, so a Character never holds an invalid look.
+por::CharacterAppearance validated(por::CharacterAppearance appearance)
+{
+    por::validate_character_appearance(appearance);
+    return appearance;
+}
+} // namespace
+
 Character::Character(const rules::CharacterRules &rules, rules::CharacterDraft creation,
                      por::CharacterAppearance appearance)
-    : creation_(std::move(creation)), sheet_(rules.evaluate(creation_, rules::NameRequirement::required))
+    : creation_(std::move(creation)),
+      sheet_(rules.evaluate(creation_, rules::NameRequirement::required)),
+      appearance_(validated(std::move(appearance)))
 {
-    this->appearance(appearance);
 }
 
 void Character::appearance(por::CharacterAppearance value)

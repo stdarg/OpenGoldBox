@@ -408,6 +408,16 @@ void creation_tests()
     const auto sheet = creator.sheet();
     check(finished.inventory().empty() && finished.appearance() == appearance,
           "Finished character owns appearance and an empty inventory");
+    check(Character(creator.rules(), retained, appearance).appearance() == appearance,
+          "The same draft builds a character with a valid appearance");
+    auto unknown_body = appearance;
+    unknown_body.combat_body = 35;
+    rejects(
+        [&]
+    {
+        (void)Character(creator.rules(), retained, unknown_body);
+    },
+    "A character is never built with an invalid appearance");
     rejects(
         [&]
     {

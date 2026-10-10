@@ -79,6 +79,15 @@ EclMachine machine(const Bytes &body)
     return vm;
 }
 
+void construction()
+{
+    // A machine is never built without a program to copy its image from.
+    rejects([]
+    {
+        EclMachine vm(nullptr);
+    });
+}
+
 void host_random_and_string_copy()
 {
     EclMachine strings(program({9, 129, 0, 0x97, 129, 0x20, 0x97, 0}));
@@ -681,6 +690,7 @@ int main()
 {
     try
     {
+        construction();
         host_random_and_string_copy();
         decoding();
         arithmetic();

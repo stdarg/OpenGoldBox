@@ -75,6 +75,15 @@ std::shared_ptr<const EclProgram> EclCatalog::find(const ScriptId &id) const
 
 namespace
 {
+// A machine runs nothing without a program, so a missing one is refused
+// before any member is built from it.
+std::shared_ptr<const EclProgram> required_program(std::shared_ptr<const EclProgram> program)
+{
+    if (!program)
+        throw EclError("EclMachine requires a program");
+    return program;
+}
+
 std::uint16_t encoded_address(const EclOperand &arg)
 {
     if (arg.tag >= 128)
@@ -117,11 +126,9 @@ void validate_string(EclAddress address, std::string_view value)
 }
 } // namespace
 
-EclMachine::EclMachine(std::shared_ptr<const EclProgram> program) : program_(std::move(program))
+EclMachine::EclMachine(std::shared_ptr<const EclProgram> program)
+    : program_(required_program(std::move(program))), image_(program_->raw())
 {
-    if (!program_)
-        throw EclError("EclMachine requires a program");
-    image_ = program_->raw();
 }
 
 void EclMachine::require_configurable() const
