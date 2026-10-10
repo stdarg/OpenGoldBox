@@ -158,13 +158,13 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, unsigned address
            std::array<unsigned, 4> {};
 }
 
-EclHostReply party_character_reply(const CampaignParty &party, unsigned slot)
+EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
 {
-    if (slot >= 8)
+    if (slot.index >= 8)
         throw std::runtime_error("Invalid ECL party position");
     std::array<std::uint16_t, 285> fields{};
     EclHostReply reply;
-    if (const auto id = party.state().slots[slot])
+    if (const auto id = party.state().slots[slot.index])
     {
         const auto &m = party.member(id);
         const auto &sheet = m.character.sheet();
@@ -180,8 +180,8 @@ EclHostReply party_character_reply(const CampaignParty &party, unsigned slot)
     }
     for (unsigned n = 0; n < fields.size(); ++n)
         reply.writes.push_back({static_cast<std::uint16_t>(0x6B00 + n), fields[n]});
-    reply.writes.push_back({0x6DB1, static_cast<std::uint16_t>(slot)});
-    reply.writes.push_back({0x6DB4, static_cast<std::uint16_t>(slot)});
+    reply.writes.push_back({0x6DB1, static_cast<std::uint16_t>(slot.index)});
+    reply.writes.push_back({0x6DB4, static_cast<std::uint16_t>(slot.index)});
     return reply;
 }
 } // namespace opengold::por

@@ -489,7 +489,7 @@ void RolfTourView::party_selected(std::int64_t index)
         return;
     }
     if (session_->can_select_member())
-        campaign_->select(slot);
+        campaign_->select(opengold::PartySlot{slot});
     if (embedded_party_)
         emit_signal("party_member_selected", slot);
     else
@@ -519,7 +519,7 @@ void RolfTourView::select_buyer(unsigned slot)
     if (!session_ || !campaign_ || !session_->can_select_member() || slot >= 8 ||
             !campaign_->state().slots[slot])
         return;
-    campaign_->select(slot);
+    campaign_->select(opengold::PartySlot{slot});
     refresh();
 }
 
@@ -540,7 +540,8 @@ void RolfTourView::buyer_key(Key keycode)
     if (keycode == Key::KEY_TAB)
     {
         // Cycle through the member rows in display order, wrapping at the end.
-        const auto current = std::find(slots.begin(), slots.end(), campaign_->state().selected);
+        const auto current =
+            std::find(slots.begin(), slots.end(), campaign_->state().selected_slot.index);
         const auto next = current == slots.end() || current + 1 == slots.end()
                           ? slots.begin()
                           : current + 1;
@@ -1055,7 +1056,7 @@ void RolfTourView::refresh()
         // While shopping, the buyer's row is drawn in gold; otherwise the leader's.
         const bool leader = id == campaign_->leader();
         for (const char *color : {"font_color", "font_hover_color", "font_focus_color"})
-            if (shopping ? campaign_->state().selected == slot : leader)
+            if (shopping ? campaign_->state().selected_slot.index == slot : leader)
                 button->add_theme_color_override(color, gold);
             else
                 button->remove_theme_color_override(color);

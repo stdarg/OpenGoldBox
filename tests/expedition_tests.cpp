@@ -282,7 +282,7 @@ void script_treasure_tests()
     town.campaign_party(party);
     settle_synthetic(town);
 
-    party->select(1);
+    party->select(PartySlot{1});
     const auto before = party->checkpoint();
     check(!look(town) && town.script_diagnostics().size() == 1,
           "A failure after the award reports and rolls back the event");
@@ -291,7 +291,7 @@ void script_treasure_tests()
           town.script_variable(0x4A04) == 0,
           "The rollback restores purses, claims and the quest flag together");
 
-    party->select(0);
+    party->select(PartySlot{0});
     check(look(town), "The retried event completes");
     const auto paid = party->checkpoint();
     check(paid.roster[0].wealth == Purse{0, 0, 0, 0, 150, 0, 1} &&
@@ -840,7 +840,7 @@ void buy_and_equip(Expedition &trip)
     "Every item the arms shop sells converts to SRD equipment");
     for (unsigned slot = 0; slot < 6; ++slot)
     {
-        party->select(slot);
+        party->select(PartySlot{slot});
         // Original long sword, chain mail and shield records.
         for (const unsigned type : {36u, 55u, 59u})
         {
@@ -853,7 +853,7 @@ void buy_and_equip(Expedition &trip)
                   "The party buys its gear");
         }
     }
-    party->select(0);
+    party->select(PartySlot{0});
     check(town.leave_shop(town.snapshot().continue_ticket), "The party leaves the shop");
     settle(town, party);
     for (const auto id : party->state().slots)

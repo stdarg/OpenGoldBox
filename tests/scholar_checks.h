@@ -233,7 +233,7 @@ void verify_ui(const char *path)
     expected.advance(1, expected.default_advancement(1));
     auto saved = decode_campaign(read_campaign_file(path), *creation, *rules, assets, nullptr);
     auto state = expected.checkpoint();
-    state.selected = saved.party.selected;
+    state.selected_slot = saved.party.selected_slot;
     expected.restore(std::move(state));
     CampaignParty actual(module());
     actual.restore(std::move(saved.party));

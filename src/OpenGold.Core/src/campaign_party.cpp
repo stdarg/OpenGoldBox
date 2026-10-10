@@ -215,12 +215,12 @@ PartyMember &CampaignParty::edit(MemberId id)
     return const_cast<PartyMember &>(std::as_const(*this).member(id));
 }
 
-void CampaignParty::select(unsigned slot)
+void CampaignParty::select(PartySlot slot)
 {
     outside_combat();
-    if (slot >= 8 || !state_.slots[slot])
+    if (slot.index >= 8 || !state_.slots[slot.index])
         throw std::runtime_error("Empty party position");
-    state_.selected = slot;
+    state_.selected_slot = slot;
 }
 
 MemberId CampaignParty::leader() const
@@ -300,7 +300,7 @@ void CampaignParty::join(MemberId id, bool npc)
         {
             state_.slots[i] = id;
             if (!selected())
-                state_.selected = i;
+                state_.selected_slot = PartySlot{static_cast<unsigned>(i)};
             return;
         }
     throw std::runtime_error(npc ? "Both NPC positions are occupied"
@@ -377,7 +377,7 @@ void CampaignParty::remove(MemberId id)
         for (unsigned i = 0; i < 8; ++i)
             if (state_.slots[i])
             {
-                state_.selected = i;
+                state_.selected_slot = PartySlot{i};
                 break;
             }
 }
@@ -998,17 +998,18 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
     state_ = std::move(next);
 }
 
-std::optional<CoinExchange> CampaignParty::read_character(unsigned slot,
+std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot,
         const por::EclMachine &vm)
 {
     outside_combat();
-    if (slot >= 8)
+    if (slot.index >= 8)
         throw std::runtime_error("Invalid ECL party position");
-    if (!state_.slots[slot])
+    const auto id = state_.slots[slot.index];
+    if (!id)
         return {};
-    const auto &current = member(state_.slots[slot]);
+    const auto &current = member(id);
     const auto hp = vm.variable(0x6C19);
-    if (hp > hit_point_maximum(state_.slots[slot]) || (current.vitals.dead && hp))
+    if (hp > hit_point_maximum(id) || (current.vitals.dead && hp))
         throw std::runtime_error("Unsupported script HP change");
     Purse after_script;
     for (unsigned n = 0; n < 7; ++n)
@@ -1018,7 +1019,7 @@ std::optional<CoinExchange> CampaignParty::read_character(unsigned slot,
     if (state_.short_rest)
         throw std::runtime_error("Finish Short Rest spending before changing the party");
     auto settled = settle_script_coins(current.wealth, after_script);
-    auto &m = edit(state_.slots[slot]);
+    auto &m = edit(id);
     auto vitals = m.vitals;
     rules_->set_hit_points(vitals, m.character.sheet(), hp);
     m.wealth = settled.purse;
@@ -1028,7 +1029,7 @@ std::optional<CoinExchange> CampaignParty::read_character(unsigned slot,
 
 void CampaignParty::validate(const PartyState &state)
 {
-    if (state.roster.size() > 128 || state.selected >= 8 || !state.next_id ||
+    if (state.roster.size() > 128 || state.selected_slot.index >= 8 || !state.next_id ||
             state.claimed_rewards.size() > 1024 || state.subminute_milliseconds >= 60000 ||
             !state.next_combat_scope || !state.next_rest_session ||
             (state.leader &&
@@ -1077,7 +1078,7 @@ void CampaignParty::validate(const PartyState &state)
             if ((slot < 6) != it->npc_source.empty())
                 throw std::runtime_error("Invalid PC/NPC checkpoint position");
         }
-    if (!active.empty() && !state.slots[state.selected])
+    if (!active.empty() && !state.slots[state.selected_slot.index])
         throw std::runtime_error("Invalid selected member checkpoint");
     if (state.spell_rest)
     {

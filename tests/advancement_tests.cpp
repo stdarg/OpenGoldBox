@@ -752,7 +752,7 @@ void verify_asi_ui(const char *klass, const char *file)
         decode_campaign(read_campaign_file(file), *srd5::character_rules(), *rules, assets, nullptr)
         .party);
     auto state = expected.checkpoint();
-    state.selected = actual.state().selected;
+    state.selected_slot = actual.state().selected_slot;
     expected.restore(state);
     check(
         encode_campaign(actual, nullptr, assets) == encode_campaign(expected, nullptr, assets),

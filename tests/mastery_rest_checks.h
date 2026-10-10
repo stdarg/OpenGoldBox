@@ -46,7 +46,7 @@ void script_reads_after_rest(CampaignParty &party, MemberId id)
     vm.bind_variable(0x6C19, static_cast<std::uint16_t>(party.member(id).vitals.hit_points));
     for (std::uint16_t coin = 0x6BBB; coin <= 0x6BC7; coin += 2)
         vm.bind_variable(coin, coin == 0x6BC1 ? 7 : 0); // Seven gold coins.
-    (void)party.read_character(0, vm);
+    (void)party.read_character(PartySlot{}, vm);
     check(party.member(id).wealth[3] == 7 && party.state().training_rest,
           "Script read after a Long Rest keeps the pending mastery choice");
 }

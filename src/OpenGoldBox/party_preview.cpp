@@ -214,7 +214,7 @@ void CharacterCreationView::party_selected(std::int64_t index)
     const auto id = campaign_->state().roster[index].id;
     for (unsigned slot = 0; slot < 8; ++slot)
         if (campaign_->state().slots[slot] == id)
-            campaign_->select(slot);
+            campaign_->select(PartySlot{slot});
     refresh_party();
 }
 

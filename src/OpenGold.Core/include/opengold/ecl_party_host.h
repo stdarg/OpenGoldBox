@@ -23,6 +23,6 @@ inline constexpr std::array<std::uint16_t, 7> ecl_coin_addresses{0x6BBB, 0x6BBD,
 [[nodiscard]] std::array<unsigned, 4> check_party(const CampaignParty &party, unsigned address,
         unsigned effect);
 // The script memory writes describing the member in a party slot.
-[[nodiscard]] EclHostReply party_character_reply(const CampaignParty &party, unsigned slot);
+[[nodiscard]] EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot);
 } // namespace opengold::por
 #endif

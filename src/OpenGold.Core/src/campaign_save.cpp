@@ -170,6 +170,11 @@ struct SaveCodec
             field(*value);
     }
 
+    void field(PartySlot &v)
+    {
+        field(v.index);
+    }
+
     void field(rules::Identity &v)
     {
         fields(v.module, v.version, v.content);
@@ -300,7 +305,7 @@ struct SaveCodec
 
     void field(PartyState &v)
     {
-        fields(v.slots, v.next_id, v.selected, v.leader, v.quick_magic, v.time_minutes,
+        fields(v.slots, v.next_id, v.selected_slot, v.leader, v.quick_magic, v.time_minutes,
                v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
         if (!reading)
@@ -534,7 +539,7 @@ struct SaveCodec
         if (reading)
         {
             require(v.town_ && v.town_->programs.contains(v.current_script_) &&
-                    v.selected_character_ < 8 && v.rest_checks_ < 24,
+                    v.selected_character_.index < 8 && v.rest_checks_ < 24,
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
             for (const std::uint8_t op :

@@ -369,7 +369,8 @@ void RolfTourSession::reset_run()
     picture_.reset();
     event_checkpoint_.reset();
     diagnostics_.clear();
-    current_script_ = selected_character_ = event_stage_ = 0;
+    current_script_ = event_stage_ = 0;
+    selected_character_ = {};
     camp_kind_ = RestKind::long_rest;
     staged_enemies_.clear();
     staged_art_.clear();

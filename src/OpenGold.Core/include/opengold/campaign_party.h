@@ -15,6 +15,17 @@ class EclMachine;
 namespace opengold
 {
 using MemberId = rules::EntityId;
+
+// A place in the party's marching order: 0-5 hold PCs and 6-7 hold NPCs. A slot
+// is not a MemberId, because the member in a slot changes as the party changes
+// (Effective C++ Item 18).
+struct PartySlot
+{
+    unsigned index{};
+
+    friend bool operator==(PartySlot, PartySlot) = default;
+};
+
 using RestKind = rules::RestKind;
 enum class RestDenial
 {
@@ -101,7 +112,7 @@ struct PartyState
     std::vector<PartyMember> roster;
     std::array<MemberId, 8> slots{};
     MemberId next_id{1};
-    unsigned selected{};
+    PartySlot selected_slot{};
     MemberId leader{}; // Speaks for the party and buys in shops; 0 means the first member.
     bool quick_magic{}; // Members on Quick may cast spells.
     std::uint64_t time_minutes{};
@@ -132,10 +143,10 @@ class CampaignParty
 
     [[nodiscard]] MemberId selected() const
     {
-        return state_.slots.at(state_.selected);
+        return state_.slots.at(state_.selected_slot.index);
     }
 
-    void select(unsigned slot);
+    void select(PartySlot slot);
     // The designated leader, or the first member when none is designated.
     [[nodiscard]] MemberId leader() const;
     void make_leader(MemberId id);
@@ -223,7 +234,7 @@ class CampaignParty
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
     // Applies the script's HP and coin changes. Coins are seen and settled as
     // script_coins() describes; the result reports any change the purse made.
-    [[nodiscard]] std::optional<CoinExchange> read_character(unsigned slot,
+    [[nodiscard]] std::optional<CoinExchange> read_character(PartySlot slot,
             const por::EclMachine &vm);
 
     [[nodiscard]] PartyState checkpoint() const

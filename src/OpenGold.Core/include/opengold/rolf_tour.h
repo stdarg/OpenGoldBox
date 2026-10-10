@@ -271,7 +271,7 @@ class RolfTourSession
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};
     std::vector<opengold::MemberId> temple_targets_;
-    std::vector<unsigned> who_slots_;
+    std::vector<PartySlot> who_slots_;
     // How a pre-combat meeting ended without a fight, said when its event ends.
     std::string encounter_outcome_;
     // Whether this event's script asked which member acts (WHO).
@@ -295,13 +295,14 @@ class RolfTourSession
         GeoMap map;
         std::vector<PendingLoot> pending_loot;
         TourSnapshot snapshot;
-        unsigned selected_character{};
+        PartySlot selected_character{};
     };
     std::optional<EventCheckpoint> event_checkpoint_;
     void roll_back_event();
     std::vector<std::string> diagnostics_;
     std::optional<ExplorationCommand> pending_movement_;
-    unsigned current_script_{}, selected_character_{};
+    unsigned current_script_{};
+    PartySlot selected_character_{};
     unsigned current_area_{};
     std::map<unsigned, std::bitset<256>> visited_areas_;
     std::map<unsigned, std::bitset<256>> seen_areas_;
@@ -363,7 +364,7 @@ class RolfTourSession
     // Scripts change coins relative to the view they were given, so the script
     // must receive a fresh character_reply after every read before it continues.
     void read_character();
-    [[nodiscard]] EclHostReply character_reply(unsigned index) const;
+    [[nodiscard]] EclHostReply character_reply(PartySlot slot) const;
     void bind_pose(PartyPose pose);
     bool move_party(ExplorationCommand command);
     void notice(std::string message);

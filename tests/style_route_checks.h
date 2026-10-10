@@ -461,7 +461,7 @@ void verify_ui(const char *klass, const char *file, bool light = false)
     actual.restore(
         decode_campaign(read_campaign_file(file), *creation, *rules, assets, nullptr).party);
     auto state = expected.checkpoint();
-    state.selected = actual.state().selected;
+    state.selected_slot = actual.state().selected_slot;
     expected.restore(std::move(state));
     check(encode_campaign(actual, nullptr, assets) == encode_campaign(expected, nullptr, assets),
           "Style UI advancement exactly matches native grants, HP, wounds, resources and history");

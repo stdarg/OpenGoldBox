@@ -76,7 +76,7 @@ void verify_hands_ui(const std::filesystem::path &path)
         decode_campaign(read_campaign_file(path), *srd5::character_rules(), *rules, assets, nullptr)
         .party);
     auto expected = p.checkpoint();
-    expected.selected = actual.state().selected;
+    expected.selected_slot = actual.state().selected_slot;
     p.restore(std::move(expected));
     check(encode_campaign(actual, nullptr, assets) == encode_campaign(p, nullptr, assets),
           "UI hand choices exactly match native equipment, inventory, wounds and resources");

@@ -451,7 +451,7 @@ void RolfTourView::party_selected(std::int64_t index)
         return;
     const auto slot = static_cast<unsigned>(index);
     if (session_->can_leave())
-        campaign_->select(slot);
+        campaign_->select(opengold::PartySlot{slot});
     if (embedded_party_)
         emit_signal("party_member_selected", slot);
     else

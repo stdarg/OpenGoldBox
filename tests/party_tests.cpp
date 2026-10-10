@@ -43,6 +43,16 @@ template <class F> void rejects(F f)
     check(rejected, "Operation should reject");
 }
 
+// A slot and a member ID are both small numbers, and the member in a slot changes
+// as the party changes, so selection must not take a MemberId (Effective C++ Item 18).
+template <class Slot>
+concept SelectsBy = requires(CampaignParty &party, Slot slot)
+{
+    party.select(slot);
+};
+static_assert(SelectsBy<PartySlot>);
+static_assert(!SelectsBy<MemberId>);
+
 void combat_body_assignments()
 {
     const auto folder = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art";
@@ -1464,7 +1474,7 @@ void combat_ownership()
     check(!invalid.has_combat() && !party->in_combat(),
           "Failed handoff releases its lock without installing combat");
     check(party->member(id).vitals == before, "Failed handoff preserves party vitals");
-    party->select(0);
+    party->select(PartySlot{0});
     {
         CombatDemo active(module());
         active.campaign_party(party);
@@ -1490,7 +1500,7 @@ void combat_ownership()
         check(party->in_combat(), "Rejected contender cannot release another session's lock");
     }
     check(!party->in_combat(), "Destroying an unfinished combat releases the edit lock");
-    party->select(0);
+    party->select(PartySlot{0});
 }
 
 void progression_and_services()
@@ -2269,7 +2279,7 @@ void shop_buyer_switch()
     settle(town);
     check(town.snapshot().phase == por::TourPhase::shopping && town.can_select_member(),
           "The buyer can change while shopping");
-    party->select(0);
+    party->select(PartySlot{0});
     check(town.buy(town.snapshot().continue_ticket, 0), "Buy for the newly chosen buyer");
     check(party->member(first).wealth[3] == 90 && party->member(second).wealth[3] == 200,
           "The purchase debits only the new buyer");

@@ -104,7 +104,7 @@ void RolfTourSession::configure_town()
     machine_.bind_variable(0xC059, 0);
     machine_.bind_variable(0xC05F, 0);
     if (campaign_)
-        selected_character_ = campaign_->state().selected;
+        selected_character_ = campaign_->state().selected_slot;
     for (const auto &w : character_reply(selected_character_).writes)
         machine_.bind_variable(w.address, w.value);
     for (const std::uint8_t op :
@@ -145,13 +145,13 @@ EclHostReply RolfTourSession::clock_reply() const
     return reply;
 }
 
-EclHostReply RolfTourSession::character_reply(unsigned index) const
+EclHostReply RolfTourSession::character_reply(PartySlot slot) const
 {
     if (campaign_)
-        return party_character_reply(*campaign_, index);
+        return party_character_reply(*campaign_, slot);
     EclHostReply reply;
     std::array<std::uint16_t, 285> fields{};
-    if (index == 0)
+    if (slot.index == 0)
     {
         for (std::size_t n = 0; n < party_.name.size() && n < 15; ++n)
             fields[n] = party_.name[n];
@@ -163,8 +163,8 @@ EclHostReply RolfTourSession::character_reply(unsigned index) const
     }
     for (unsigned n = 0; n < fields.size(); ++n)
         reply.writes.push_back({static_cast<std::uint16_t>(0x6B00 + n), fields[n]});
-    reply.writes.push_back({0x6DB1, static_cast<std::uint16_t>(index)});
-    reply.writes.push_back({0x6DB4, static_cast<std::uint16_t>(index)});
+    reply.writes.push_back({0x6DB1, static_cast<std::uint16_t>(slot.index)});
+    reply.writes.push_back({0x6DB4, static_cast<std::uint16_t>(slot.index)});
     return reply;
 }
 
@@ -175,13 +175,13 @@ void RolfTourSession::read_character()
         const auto exchange = campaign_->read_character(selected_character_, machine_);
         if (exchange)
         {
-            const auto payer = campaign_->state().slots[selected_character_];
+            const auto payer = campaign_->state().slots[selected_character_.index];
             const auto &name = campaign_->member(payer).character.sheet().name;
             snapshot_.payments.push_back({name, *exchange});
         }
         return;
     }
-    if (selected_character_ != 0)
+    if (selected_character_.index != 0)
         return;
     for (unsigned n = 0; n < ecl_coin_addresses.size(); ++n)
         party_.wealth[n] = machine_.variable(ecl_coin_addresses[n]);
@@ -249,7 +249,7 @@ void RolfTourSession::begin_event(unsigned slot)
     std::optional<opengold::PartyState> campaign;
     if (campaign_)
     {
-        selected_character_ = campaign_->state().selected;
+        selected_character_ = campaign_->state().selected_slot;
         for (const auto &w : character_reply(selected_character_).writes)
             machine_.bind_variable(w.address, w.value);
         campaign = campaign_->checkpoint();
@@ -1095,7 +1095,7 @@ bool RolfTourSession::leave_shop(std::uint64_t ticket)
 {
     if (snapshot_.phase != TourPhase::shopping || !ticket || ticket != snapshot_.continue_ticket)
         return false;
-    const auto selected = campaign_ ? campaign_->state().selected : 0;
+    const auto selected = campaign_ ? campaign_->state().selected_slot : PartySlot{};
     auto reply = character_reply(selected);
     reply.writes.push_back({0x6E6C, 0});
     if (!machine_.resume_host(shop_request_, reply))
@@ -1150,7 +1150,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 10:
         if (arg(0) >= 128)
         {
-            if ((arg(0) & 127) != selected_character_)
+            if ((arg(0) & 127) != selected_character_.index)
                 throw EclError("Selected character store mismatch");
             read_character();
             reply = character_reply(selected_character_);
@@ -1158,7 +1158,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         else
         {
             read_character();
-            selected_character_ = arg(0);
+            selected_character_ = PartySlot{arg(0)};
             reply = character_reply(selected_character_);
             // LOAD CHARACTER is also used to scan slots. WHO, not that VM
             // cursor, changes the player's chosen party member.
@@ -1173,7 +1173,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             for (unsigned slot = 0; slot < 8; ++slot)
                 if (auto id = campaign_->state().slots[slot])
                 {
-                    who_slots_.push_back(slot);
+                    who_slots_.push_back(PartySlot{slot});
                     snapshot_.choices.push_back(campaign_->member(id).character.sheet().name);
                 }
             if (who_slots_.empty())
@@ -1185,8 +1185,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             ++snapshot_.revision;
             return true;
         }
-        selected_character_ = 0;
-        reply = character_reply(0);
+        selected_character_ = {};
+        reply = character_reply(selected_character_);
         break;
     case 12:
     {
@@ -1424,8 +1424,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             if (campaign_ && !member_chosen_)
                 for (unsigned slot = 0; slot < 8; ++slot)
                     if (campaign_->state().slots[slot] && campaign_->state().slots[slot] == campaign_->leader())
-                        campaign_->select(slot);
-            if (campaign_ && !campaign_->state().slots.at(campaign_->state().selected))
+                        campaign_->select(PartySlot{slot});
+            if (campaign_ &&
+                    !campaign_->state().slots.at(campaign_->state().selected_slot.index))
                 throw EclError("Shopping requires a selected party member");
             read_character();
             shop_request_ = request.id;
