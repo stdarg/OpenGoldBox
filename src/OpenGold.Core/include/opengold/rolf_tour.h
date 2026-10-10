@@ -7,7 +7,7 @@
 #include "opengold/wall_art.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/campaign_party.h"
-#include "opengold/combat_demo.h"
+#include "opengold/campaign_encounter.h"
 #include "opengold/encounter_budget.h"
 #include <bitset>
 

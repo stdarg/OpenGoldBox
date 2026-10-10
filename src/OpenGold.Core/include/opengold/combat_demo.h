@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_COMBAT_DEMO_H
 #define OPENGOLD_COMBAT_DEMO_H
+#include "opengold/campaign_encounter.h"
 #include "opengold/rules.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/creature_catalog.h"
@@ -12,30 +13,6 @@
 
 namespace opengold
 {
-struct CombatArt
-{
-    rules::EntityId entity{};
-    Image image;
-    std::optional<Image> action;
-    std::string missing_combination;
-};
-
-struct CampaignEncounter
-{
-    por::DungeonBattlefield field;
-    std::vector<rules::Participant> enemies;
-    std::vector<CombatArt> art;
-    std::vector<Image> terrain_art;
-    por::MapDirection facing{por::MapDirection::north};
-    unsigned surprise{};
-    // The encounter interrupted the party's rest.
-    bool party_resting{};
-    // Optional authored formation. Empty means the usual campaign placement.
-    std::vector<rules::Cell> positions;
-    // The original script's encounter morale (100 never breaks).
-    unsigned morale{100};
-};
-
 // A bounded demonstration/campaign adapter. It depends on the rules interface,
 // never on a specific edition. The application supplies the selected module.
 class CombatDemo
