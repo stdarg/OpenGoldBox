@@ -96,6 +96,7 @@ void CombatView::_ready()
     presentation::setup_initiative(
         *this, gs, callable_mp(this, &CombatView::immediate).bind("initiative_swap"),
         callable_mp(this, &CombatView::immediate).bind("initiative_keep"),
+        callable_mp(this, &CombatView::immediate).bind("uncanny_metabolism"),
         callable_mp(this, &CombatView::initiative_input),
         callable_mp(this, &CombatView::refresh).unbind(1));
     presentation::setup_optional_effect(
@@ -1026,8 +1027,8 @@ void CombatView::refresh()
            : player ? "Selected: " + mode_ + ". Click a highlighted square."
            : "Enemy turn"));
     std::string log = demo_ ? demo_->dialogue() + "\n\n" : "";
-    for (const auto &entry : s.log)
-        log += entry + "\n";
+    for (const auto &entry : s.log_entries)
+        log += entry.english + "\n";
     if (!error_.empty())
         log += "\n" + error_;
     get_node<RichTextLabel>("Log")->set_text(gs(log));
@@ -1291,8 +1292,8 @@ void CombatView::_process(double delta)
             if (checking_ && ++check_steps_ > 1000)
             {
                 std::string details = "Combat check command limit exceeded";
-                for (const auto &line : s.log)
-                    details += "\n" + line;
+                for (const auto &entry : s.log_entries)
+                    details += "\n" + entry.english;
                 throw std::runtime_error(details);
             }
             act(choose_demo_command(demo_->combat()));
