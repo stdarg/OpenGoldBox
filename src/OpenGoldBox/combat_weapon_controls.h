@@ -68,7 +68,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
                 if (form[i] == '_')
                     form[i] = ' ';
                 else if (i == 0 || form[i - 1] == ' ')
-                    form[i] = char(std::toupper(static_cast<unsigned char>(form[i])));
+                    form[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(form[i])));
             return "Wild Shape: " + form;
         };
         // Metamagic and Wild Shape labels carry their option, cost or form, so
