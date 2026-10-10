@@ -251,16 +251,21 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_slums_ui_audit PROPERTIES
         FIXTURES_REQUIRED "godot_project;playtest_fixtures"
         TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
-    # Character-creation screens with original files; skipped without OPENGOLD_GAME_DIR.
-    # Each keeps its Godot user data under WORK (see original_view_check.cmake).
-    function(opengold_creation_check name expected)
-        add_test(NAME "opengold_godot_creation_${name}" COMMAND "${CMAKE_COMMAND}"
+    # Godot checks with original files; skipped without OPENGOLD_GAME_DIR. Each
+    # keeps its Godot user data under WORK (see original_view_check.cmake).
+    function(opengold_original_check name expected)
+        add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}" "-DEXPECTED=${expected}"
-            "-DWORK=${CMAKE_BINARY_DIR}/creation-checks/${name}" ${ARGN}
+            "-DWORK=${CMAKE_BINARY_DIR}/original-checks/${name}" ${ARGN}
             -P "${PROJECT_SOURCE_DIR}/tests/original_view_check.cmake")
-        set_tests_properties("opengold_godot_creation_${name}" PROPERTIES
+        set_tests_properties("opengold_godot_${name}" PROPERTIES
             FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot RESOURCE_LOCK godot_project
             SKIP_REGULAR_EXPRESSION "Skipped: ")
+    endfunction()
+    # Character-creation screens. Arguments holding an escaped ";" must call
+    # opengold_original_check directly: a second function call unescapes it.
+    function(opengold_creation_check name expected)
+        opengold_original_check("creation_${name}" "${expected}" ${ARGN})
     endfunction()
     opengold_creation_check(character "Godot C++ character check passed" -DCHECK_FLAG=--character-check)
     # The party check saves a campaign that the restart check then loads.
@@ -290,13 +295,13 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_creation_hands PROPERTIES
         FIXTURES_REQUIRED "godot_project;hands_fixtures")
     foreach(klass cleric fighter paladin ranger rogue wizard)
-        opengold_creation_check(asi_${klass} "ASI controls passed" -DSCRIPT=asi_view_tests
+        opengold_original_check(creation_asi_${klass} "ASI controls passed" -DSCRIPT=asi_view_tests
             "-DARGS=--style-class=${klass}\;--style-fixture=${PROJECT_BINARY_DIR}/asi-${klass}-ui.ogs")
         set_tests_properties(opengold_godot_creation_asi_${klass} PROPERTIES
             FIXTURES_REQUIRED "godot_project;asi_fixtures")
     endforeach()
     foreach(klass fighter wizard)
-        opengold_creation_check(skilled_${klass} "Skilled controls passed" -DSCRIPT=skilled_view_tests
+        opengold_original_check(creation_skilled_${klass} "Skilled controls passed" -DSCRIPT=skilled_view_tests
             "-DARGS=--style-class=${klass}\;--style-fixture=${PROJECT_BINARY_DIR}/asi-${klass}-ui.ogs")
         set_tests_properties(opengold_godot_creation_skilled_${klass} PROPERTIES
             FIXTURES_REQUIRED "godot_project;asi_fixtures")

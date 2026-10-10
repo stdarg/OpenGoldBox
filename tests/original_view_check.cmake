@@ -1,9 +1,9 @@
-# One character-creation screen check with original files; skipped when
+# One Godot check with original files; skipped when
 # OPENGOLD_GAME_DIR is not set. Godot's user data goes to WORK, so checks do
 # not share saves with each other or with the player's own game.
 #
-# CHECK_FLAG runs a check built into the character-creation scene; otherwise
-# SCRIPT names a tests/*.gd check. KEEP_WORK reuses the user data another check
+# CHECK_FLAG runs a check built into SCENE (the character-creation scene by
+# default); otherwise SCRIPT names a tests/*.gd check. KEEP_WORK reuses the user data another check
 # left in WORK, for a check that reads back what that one saved.
 if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
     message("Skipped: OPENGOLD_GAME_DIR is not set")
@@ -18,9 +18,12 @@ foreach(variable HOME APPDATA XDG_DATA_HOME)
 endforeach()
 set(ENV{OPENGOLD_LANG} en)
 
+if(NOT DEFINED SCENE)
+    set(SCENE res://scenes/character_creation.tscn)
+endif()
 if(DEFINED CHECK_FLAG)
     execute_process(
-        COMMAND "${GODOT}" --headless --path "${PROJECT}" res://scenes/character_creation.tscn
+        COMMAND "${GODOT}" --headless --path "${PROJECT}" "${SCENE}"
         -- ${CHECK_FLAG} ${ARGS}
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors TIMEOUT 300)
     message("${output}${errors}")
