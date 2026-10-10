@@ -467,9 +467,18 @@ void CharacterCreationView::equipment_art_check()
         party_selected(0);
         verify_preview(0, 34);
 
+        // Removes the check's save file however the check ends; one owner
+        // only, so copying is forbidden (Effective C++ Items 6 and 14).
         struct CheckSave
         {
             std::filesystem::path path;
+
+            explicit CheckSave(std::filesystem::path file) : path(std::move(file))
+            {
+            }
+
+            CheckSave(const CheckSave &) = delete;
+            CheckSave &operator=(const CheckSave &) = delete;
 
             ~CheckSave()
             {
