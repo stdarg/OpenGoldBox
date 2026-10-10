@@ -6233,7 +6233,7 @@ void Session::begin_concentration(Actor &caster, const detail::SpellDef &spell)
     // Extended Spell doubles it and gives Advantage on the saves to keep it.
     end_concentration(caster);
     const bool extended = casting_with(Metamagic::extended);
-    caster.concentration.begin(
+    caster.concentration.start(
     {   {scope_, 1, caster.source.id},
         detail::benefit_duration_ms(rider_effect(spell.rider)) * (extended ? 2 : 1)
     });
@@ -6244,7 +6244,7 @@ void Session::begin_concentration(Actor &caster, const detail::SpellDef &spell)
 
 void Session::end_concentration(Actor &caster)
 {
-    if (caster.concentration.end())
+    if (caster.concentration.stop())
         drop_concentration_effects(caster);
 }
 

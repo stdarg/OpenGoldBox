@@ -18,11 +18,11 @@ second{{7, 2, 9}, 600000}; // Silence's maximum duration.
 void lifecycle()
 {
     ConcentrationState state, other;
-    check(!state.begin(first), "First application replaces nothing");
-    check(state.begin(second) == first.source && state.active()->source == second.source,
+    check(!state.start(first), "First application replaces nothing");
+    check(state.start(second) == first.source && state.active()->source == second.source,
           "Recast retires precisely the previous application");
-    other.begin({{8, 1, 9}, 1000});
-    check(other.end() == ConcentrationSource{8, 1, 9} && state.active(),
+    other.start({{8, 1, 9}, 1000});
+    check(other.stop() == ConcentrationSource{8, 1, 9} && state.active(),
           "Separate encounter/owner state stays independent");
     for (auto invalid :
             {
@@ -34,7 +34,7 @@ Concentration{{7, 1, 0}, 1}, Concentration{{7, 1, 9}, 0}
         bool rejected = false;
         try
         {
-            state.begin(invalid);
+            state.start(invalid);
         }
         catch (const std::exception &)
         {
@@ -46,7 +46,7 @@ Concentration{{7, 1, 0}, 1}, Concentration{{7, 1, 9}, 0}
     bool rejected = false;
     try
     {
-        state.begin(first, true);
+        state.start(first, true);
     }
     catch (const std::exception &)
     {
@@ -58,12 +58,12 @@ Concentration{{7, 1, 0}, 1}, Concentration{{7, 1, 9}, 0}
           "Effect remains until exact deadline");
     check(state.elapse(1) == second.source && copy.elapse(600000) == second.source && state == copy,
           "Time partitioning ends the same source");
-    check(!state.end(), "Ending empty state is inert");
-    state.begin(first);
+    check(!state.stop(), "Ending empty state is inert");
+    state.start(first);
     check(state.incapacitate() == first.source && !state.active(),
           "Incapacitation immediately ends concentration");
-    state.begin(first);
-    check(state.end() == first.source && !state.active(),
+    state.start(first);
+    check(state.stop() == first.source && !state.active(),
           "Voluntary release returns cleanup identity");
 }
 
@@ -87,7 +87,7 @@ void persistence()
 {
     ConcentrationState state;
     check(encode(state) == "CN1 0" && decode("CN1 0") == state, "Canonical empty state");
-    state.begin(first);
+    state.start(first);
     state.elapse(1234);
     auto bytes = encode(state);
     check(bytes == "CN1 1 7 1 9 598766", "Independent canonical active record");
@@ -107,7 +107,7 @@ void persistence()
              "CN1 1 7 1 4294967296 1", "CN1 1 7 1 9 12junk", "CN1 0 trailing"
             })
     {
-        state.begin(first);
+        state.start(first);
         auto before = state;
         bool rejected = false;
         try
@@ -132,7 +132,7 @@ void damage()
             })
     {
         ConcentrationState state;
-        state.begin(first);
+        state.start(first);
         std::uint64_t random = 13;
         const auto result = state.damage(amount, 100, {}, false, random);
         const int expected = amount < 22 ? 10 : amount == 22 ? 11 : amount == 59 ? 29 : 30;
@@ -152,7 +152,7 @@ void damage()
                 })
         {
             ConcentrationState state;
-            state.begin(first);
+            state.start(first);
             std::uint64_t random = seed;
             auto result = state.damage(1, bonus, {}, false, random);
             one |= result.save->natural == 1;
@@ -170,7 +170,7 @@ void damage()
             })
     {
         ConcentrationState state;
-        state.begin(first);
+        state.start(first);
         std::uint64_t random = 13;
         auto result = state.damage(25, 100, modifiers, false, random);
         check(result.save->mode == modifiers.mode() &&
@@ -178,14 +178,14 @@ void damage()
               "Shared advantage/disadvantage cancellation and draw count");
     }
     ConcentrationState state;
-    state.begin(first);
+    state.start(first);
     std::uint64_t random = 13;
     auto result = state.damage(10, 0, {}, true, random);
     check(!result.save && result.ended == first.source && random == 13,
           "Lethal/incapacitating damage ends without save");
     check(!state.damage(10, 0, {}, false, random).save && random == 13,
           "No concentration means no save");
-    state.begin(first);
+    state.start(first);
     auto before = state;
     bool rejected = false;
     try

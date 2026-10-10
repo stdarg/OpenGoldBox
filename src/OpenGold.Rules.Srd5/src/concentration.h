@@ -35,18 +35,20 @@ class ConcentrationState
         return active_;
     }
 
-    std::optional<ConcentrationSource> end()
+    // Named start and stop, not begin and end, which read as iterators at a
+    // call site (Effective C++ Item 18).
+    std::optional<ConcentrationSource> stop()
     {
         auto old = std::exchange(active_, std::nullopt);
         return old ? std::optional(old->source) : std::nullopt;
     }
 
-    std::optional<ConcentrationSource> begin(Concentration next, bool incapacitated_or_dead = false)
+    std::optional<ConcentrationSource> start(Concentration next, bool incapacitated_or_dead = false)
     {
         if (!next.source.scope || !next.source.application || !next.source.caster ||
                 !next.remaining_ms || incapacitated_or_dead)
             throw std::runtime_error("Invalid concentration start");
-        auto old = end();
+        auto old = stop();
         active_ = next;
         return old;
     }
@@ -56,7 +58,7 @@ class ConcentrationState
         if (!active_)
             return std::nullopt;
         if (milliseconds >= active_->remaining_ms)
-            return end();
+            return stop();
         active_->remaining_ms -= milliseconds;
         return std::nullopt;
     }
@@ -77,17 +79,17 @@ class ConcentrationState
         if (!active_)
             return {};
         if (incapacitated_or_dead)
-            return {std::nullopt, end()};
+            return {std::nullopt, stop()};
         if (!damage_taken)
             return {};
         auto save = saving_throw(Ability::constitution, constitution_save,
                                  std::clamp(damage_taken / 2, 10, 30), modifiers, rng);
-        return {save, save.success ? std::nullopt : end()};
+        return {save, save.success ? std::nullopt : stop()};
     }
 
     std::optional<ConcentrationSource> incapacitate()
     {
-        return end();
+        return stop();
     }
 
     bool operator==(const ConcentrationState &) const = default;
@@ -131,7 +133,7 @@ inline ConcentrationState read_concentration(std::istream &in)
         number(value.source.application);
         number(value.source.caster);
         number(value.remaining_ms);
-        result.begin(value);
+        result.start(value);
     }
     return result;
 }
