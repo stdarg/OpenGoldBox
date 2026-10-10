@@ -3,12 +3,25 @@ extends SceneTree
 func _initialize() -> void:
     call_deferred("check")
 
+# The demo's Criminal heroes hold Alert, so each may swap Initiative before the
+# first turn; keeping it lets Dorian Nightwind act first, as this check expects.
+func keep_initiative(combat: Node) -> void:
+    var dialog: Window = combat.get_node("InitiativeChoice")
+    while dialog.visible:
+        dialog.get_node("Keep").pressed.emit()
+        for frame in range(4):
+            await process_frame
+
 func check() -> void:
     root.size = Vector2i(1920, 1080)
+    # A fresh checkout has no build/checks folder for the screenshots yet.
+    var checks := ProjectSettings.globalize_path("res://../../../build/checks")
+    DirAccess.make_dir_recursive_absolute(checks)
     change_scene_to_file("res://scenes/combat_demo.tscn")
     for frame in range(8):
         await process_frame
     var combat := current_scene
+    await keep_initiative(combat)
     var canvas := combat.get_node("BattlefieldScroll/Canvas")
     var tile: float = canvas.custom_minimum_size.x / 12.0
     combat.get_node("Melee").emit_signal("pressed")
@@ -17,7 +30,8 @@ func check() -> void:
     click.pressed = true
     click.position = canvas.get_global_transform_with_canvas() * Vector2(7.5 * tile, 4.5 * tile)
     root.push_input(click)
-    for frame in range(300):
+    # Merric acts eighth, after four Kobold turns of about 155 frames each.
+    for frame in range(2000):
         if combat.get_node("Turn").text.contains("Merric Mistvale turn"):
             break
         var end_key := InputEventKey.new()
@@ -26,7 +40,7 @@ func check() -> void:
         root.push_input(end_key)
         await process_frame
     if not combat.get_node("Turn").text.contains("Merric Mistvale turn"):
-        push_error("Merric did not receive a turn to finish the wounded Kobold")
+        push_error("Merric did not receive a turn to attack Kobold 3")
         quit(1)
         return
     combat.get_node("Melee").emit_signal("pressed")
@@ -53,7 +67,10 @@ func check() -> void:
     await RenderingServer.frame_post_draw
     var after := root.get_texture().get_image()
     sample = canvas.get_global_transform_with_canvas() * Vector2(7 * tile + 12, 4 * tile + 12)
-    if after.get_pixelv(Vector2i(sample)).r > 0.3:
+    # Merric can still move into the emptied square, so it is lit grey (red about 0.31)
+    # rather than dark; only a red-dominant pixel is the skull.
+    var cleared := after.get_pixelv(Vector2i(sample))
+    if cleared.r > 0.3 and cleared.r > cleared.g:
         push_error("The defeated Kobold's square did not clear after one second")
         quit(1)
         return

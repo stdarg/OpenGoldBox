@@ -393,6 +393,16 @@ if(OPENGOLD_BUILD_TESTS)
         "-DARGS=--style-fixture=${PROJECT_BINARY_DIR}/mastery-rest-pending.ogs")
     set_tests_properties(opengold_godot_mastery_rest_save PROPERTIES
         FIXTURES_REQUIRED "godot_project;mastery_rest_fixture")
+    # The combat demo's heroes and Kobolds use art decoded from the original
+    # files. These read rendered pixels, so they need a real window.
+    opengold_original_check(combat_demo_scene "Combat demo checks passed"
+        -DSCRIPT=combat_demo_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    opengold_original_check(combat_death_scene "Combat death presentation checks passed"
+        -DSCRIPT=combat_death_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    opengold_original_check(combat_hover_scene "Combat hover checks passed"
+        -DSCRIPT=combat_hover_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    opengold_original_check(combat_unconscious_scene "Unconscious combatant captured"
+        -DSCRIPT=combat_unconscious_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
 endif()
 
 # Godot exports the executable; the C++ game code is its GDExtension.

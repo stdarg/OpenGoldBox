@@ -3,10 +3,26 @@ extends SceneTree
 func _initialize() -> void:
     call_deferred("check")
 
+# The demo's Criminal heroes hold Alert, so each may swap Initiative before the
+# first turn; the choice is modal, so Enter cannot end turns until it is kept.
+func keep_initiative(combat: Node) -> void:
+    var dialog: Window = combat.get_node("InitiativeChoice")
+    while dialog.visible:
+        dialog.get_node("Keep").pressed.emit()
+        for frame in range(4):
+            await process_frame
+
 func check() -> void:
     root.size = Vector2i(1920, 1080)
+    # A fresh checkout has no build/checks folder for the screenshots yet.
+    var checks := ProjectSettings.globalize_path("res://../../../build/checks")
+    DirAccess.make_dir_recursive_absolute(checks)
     change_scene_to_file("res://scenes/combat_demo.tscn")
-    for frame in range(1500):
+    for frame in range(8):
+        await process_frame
+    await keep_initiative(current_scene)
+    # Each enemy command waits 0.65 seconds; the first hero drops after about 2700 frames.
+    for frame in range(4000):
         await process_frame
         var combat := current_scene
         if combat == null:

@@ -10,12 +10,25 @@ func require(ok: bool, message: String) -> void:
         push_error(message)
         failed = true
 
+# The demo's Criminal heroes hold Alert, so each may swap Initiative before the
+# first turn; keeping it lets Dorian Nightwind act first, as these checks expect.
+func keep_initiative(combat: Node) -> void:
+    var dialog: Window = combat.get_node("InitiativeChoice")
+    while dialog.visible:
+        dialog.get_node("Keep").pressed.emit()
+        for frame in range(4):
+            await process_frame
+
 func check_demo() -> void:
     root.size = Vector2i(1920, 1080)
+    # A fresh checkout has no build/checks folder for the screenshots yet.
+    var checks := ProjectSettings.globalize_path("res://../../../build/checks")
+    DirAccess.make_dir_recursive_absolute(checks)
     change_scene_to_file("res://scenes/combat_demo.tscn")
     for frame in range(8):
         await process_frame
     var combat := current_scene
+    await keep_initiative(combat)
     require(not combat.has_node("Title") and not combat.has_node("Subtitle"),
         "Demo uses the header-free campaign combat layout")
     require(combat.get_node("BattlefieldScroll").position.y == 16,
@@ -55,7 +68,7 @@ func check_demo() -> void:
         "Selected portrait row is visibly highlighted")
     require(other_selected.get_pixel(1050, 415).r < 0.25,
         "Off-turn portrait selection shows no movement highlights")
-    require(combat.get_node("Log").text.contains("It is not Liora Hallowgrove's turn."),
+    require(combat.get_node("LogHeader").text.contains("It is not Liora Hallowgrove's turn."),
         "Off-turn selection explains why movement is unavailable")
     var off_turn_key := InputEventKey.new()
     off_turn_key.keycode = KEY_RIGHT
@@ -81,7 +94,7 @@ func check_demo() -> void:
     active_key.keycode = KEY_RIGHT
     active_key.pressed = true
     root.push_input(active_key)
-    require(combat.get_node("Log").text.contains("reaction"),
+    require(combat.get_node("LogHeader").text.contains("reaction"),
         "Arrow key starts the selected character's legal move and handles enemy reactions")
     for frame in range(180):
         if combat.selected_character_cell() == Vector2i(8, 5):
@@ -134,6 +147,7 @@ func check_demo() -> void:
     for frame in range(8):
         await process_frame
     combat = current_scene
+    await keep_initiative(combat)
     require(combat.selected_character_id() == 3, "Reset demo begins with the Cleric's normal turn")
     var movement_pattern := RegEx.new()
     movement_pattern.compile("Move ([0-9]+) ft")
