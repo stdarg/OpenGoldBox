@@ -110,9 +110,11 @@ The expedition test writes its saves when `OPENGOLD_SLUMS_FIXTURES` names a
 folder: beside the arguing hobgoblins (met coming south from (0, 1)), beside
 the monster leaders and south of the trolls' room. The script walks into each
 fight and plays every party turn like a person: it cycles actions with A,
-clicks the enemies, otherwise walks toward the nearest one with the arrow keys,
-and ends the turn. Its report lists each distinct prompt and error with a
-screenshot of its first sight. `tools/playtest.py` writes fresh saves from the
+clicks the enemies, otherwise clicks the Move square nearest one, and ends the
+turn. (It first stepped with the arrow keys, which stall on the Slums'
+diagonal walls: its fighters lost fights without reaching the enemy.) Its
+report lists each distinct prompt and error with a screenshot of its first
+sight. `tools/playtest.py` writes fresh saves from the
 game build, runs it with a scratch home folder and prints the report; a save
 that does not load (one older than the rules) stops the play-test with a
 FAILED line:
@@ -126,6 +128,21 @@ The expedition test also writes each save with the party at level four
 (`NAME-strong.ogs`); `--strong` plays those, to reach morale breaking in the
 real fights (the monster leaders' gnolls broke in the first such run) and
 what follows a won fight.
+
+The play-test is not a difficulty measure. Its party is the expedition test's
+six created Fighters at level two, each with only
+the Long Sword, Chain Mail and Shield it bought: no Torch, Oil, Acid or
+Alchemist's Fire. Each fight starts from its own save at full Hit Points, and
+the session fits it as in the game (two hobgoblins at level two, five at four;
+an ogre, a gnoll and a hobgoblin leader; an ogre and a troll). On 2026-10-10
+the game's own combat AI (what Quick plays) won the hobgoblins and the leaders
+from these saves 30 times in 30 at both levels, and the trolls none in 30 at
+level two and 2 in 30 at level four: without Fire or Acid
+([GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party))
+the troll regenerates faster than the fighters can hurt it. With 2 Oil and 2
+Alchemist's Fire each, as the [campaign simulator](CAMPAIGN-SIM.md) carries
+(their packs emptied of loot to make room), the same party won it 17 times in
+30 at level two and 30 in 30 at four.
 
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
 supported from commission to reward; see [QUESTS.md](QUESTS.md). The installed

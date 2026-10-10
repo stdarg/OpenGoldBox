@@ -5,8 +5,8 @@ extends SceneTree
 # (OPENGOLD_SLUMS_FIXTURES: beside the arguing hobgoblins, beside the monster
 # leaders and south of the trolls' room), walks in, answers the story and plays
 # every party turn through the real controls. On each turn it cycles actions
-# with A and clicks the enemies; when nothing can be attacked it walks toward
-# the nearest enemy with the arrow keys and ends the turn. The report lists
+# with A and clicks the enemies; when nothing can be attacked it clicks the
+# square nearest an enemy in Move mode and ends the turn. The report lists
 # every distinct prompt and error with a screenshot of each first sight, and
 # the first morale, fleeing and bandaging line of each kind with the enemies'
 # hover panels at that moment. A last run presses Flee in the hobgoblins'
@@ -194,23 +194,40 @@ func try_attack() -> bool:
                 await note("Error after " + p, prompt())
     return false
 
-# Walks one square at a time toward the nearest enemy.
+# Squares between `cell` and the nearest of `enemies`.
+func enemy_distance(cell: Vector2i, enemies: Array) -> int:
+    var best := 1 << 30
+    for enemy in enemies:
+        best = min(best, max(abs(enemy.x - cell.x), abs(enemy.y - cell.y)))
+    return best
+
+# Moves toward the nearest enemy as a player does with the mouse: in Move mode
+# it clicks the highlighted square closest to that enemy, and the game finds
+# the way. (Stepping with the arrow keys stalled on the Slums' diagonal walls,
+# so the first play-tests lost fights without reaching the enemy.)
 func approach() -> void:
-    for step in range(8):
-        var me: Vector2i = combat().selected_character_cell()
-        var nearest := Vector2i(-1, -1)
-        var best := 1 << 30
-        for cell in combat().enemy_cells():
-            var d: int = max(abs(cell.x - me.x), abs(cell.y - me.y))
-            if d < best: best = d; nearest = cell
-        if nearest.x < 0 or best <= 1: return
-        var dx: int = sign(nearest.x - me.x)
-        var dy: int = sign(nearest.y - me.y)
-        var keyed: Key = KEY_RIGHT if dx > 0 else KEY_LEFT if dx < 0 else KEY_DOWN if dy > 0 else KEY_UP
-        await key(keyed)
-        if combat().selected_character_cell() == me:
-            if not prompt().begins_with("Selected:"): await note("Error after moving", prompt())
-            return
+    for i in range(30):
+        if prompt().contains("Click a highlighted square"): break
+        await key(KEY_A)
+    if not prompt().contains("Click a highlighted square"): return
+    var me: Vector2i = combat().selected_character_cell()
+    var enemies: Array = combat().enemy_cells()
+    var here := enemy_distance(me, enemies)
+    if enemies.is_empty() or here <= 1: return
+    var squares := []
+    for dx in range(-6, 7):
+        for dy in range(-6, 7):
+            var cell := me + Vector2i(dx, dy)
+            if enemy_distance(cell, enemies) < here: squares.append(cell)
+    squares.sort_custom(func(a, b): return enemy_distance(a, enemies) < enemy_distance(b, enemies))
+    var acting: int = combat().selected_character_id()
+    for cell in squares:
+        await click(cell)
+        # A click on another member selects it; select the one acting again.
+        if combat().selected_character_id() != acting:
+            await click(me)
+            continue
+        if combat().selected_character_cell() != me: return
 
 # Log lines that show morale breaking, fleeing and the dying bandaged.
 const WATCHED := ["flees in panic", "surrenders", "flees the battle", "cannot get away",
