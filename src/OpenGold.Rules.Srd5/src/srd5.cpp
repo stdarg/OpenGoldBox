@@ -7721,25 +7721,36 @@ bool Session::submit(const Command &command)
     return same_command(c, command);
     }))
     return false;
-    if (reaction_prompt_)
-        answer_reaction(command);
-    else
-        perform(command);
-    // Revisions are command tickets; zero is reserved for invalid commands.
-    // Unsigned wrap is defined, but must skip that reserved value.
-    if (++revision_ == 0)
-        revision_ = 1;
-    update_outcome();
-    // One who ran off the field ends its turn and leaves the fight.
-    if (outcome_ == Outcome::ongoing && !pending() && !reaction_prompt_ && actors_[turn_].fled)
-        end_turn();
-    remove_fled();
-    update_outcome();
-    if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
-            !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
-        end_turn();
-    if (outcome_ != Outcome::ongoing)
-        advance_turn_time();
+    // A command applies completely or not at all: an exception part way
+    // through restores the session as it was (Effective C++ Item 29).
+    const Session before = *this;
+    try
+    {
+        if (reaction_prompt_)
+            answer_reaction(command);
+        else
+            perform(command);
+        // Revisions are command tickets; zero is reserved for invalid commands.
+        // Unsigned wrap is defined, but must skip that reserved value.
+        if (++revision_ == 0)
+            revision_ = 1;
+        update_outcome();
+        // One who ran off the field ends its turn and leaves the fight.
+        if (outcome_ == Outcome::ongoing && !pending() && !reaction_prompt_ && actors_[turn_].fled)
+            end_turn();
+        remove_fled();
+        update_outcome();
+        if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
+                !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
+            end_turn();
+        if (outcome_ != Outcome::ongoing)
+            advance_turn_time();
+    }
+    catch (...)
+    {
+        *this = before;
+        throw;
+    }
     return true;
 }
 
