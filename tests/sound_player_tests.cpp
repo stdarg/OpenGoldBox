@@ -9,6 +9,10 @@
 
 using namespace opengold::por;
 
+// An output reference must not copy or assign only its empty base part
+// (Effective C++ Items 5 and 6).
+static_assert(!std::is_copy_constructible_v<SoundOutput> && !std::is_copy_assignable_v<SoundOutput>);
+
 namespace
 {
 void require(bool condition, const char *message)

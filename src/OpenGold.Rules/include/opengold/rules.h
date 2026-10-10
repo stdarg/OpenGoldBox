@@ -543,6 +543,16 @@ class CombatSession
 
     virtual bool submit(const Command &command) = 0;
     [[nodiscard]] virtual std::string save() const = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    CombatSession() = default;
+    CombatSession(const CombatSession &) = default;
+    CombatSession(CombatSession &&) = default;
+    CombatSession &operator=(const CombatSession &) = default;
+    CombatSession &operator=(CombatSession &&) = default;
 };
 
 class RulesModule
@@ -693,6 +703,16 @@ class RulesModule
     }
     virtual void cast_exploration_spell(const CharacterSheet &caster, VitalState &state,
                                         std::string_view spell) const;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    RulesModule() = default;
+    RulesModule(const RulesModule &) = default;
+    RulesModule(RulesModule &&) = default;
+    RulesModule &operator=(const RulesModule &) = default;
+    RulesModule &operator=(RulesModule &&) = default;
 };
 } // namespace opengold::rules
 #endif

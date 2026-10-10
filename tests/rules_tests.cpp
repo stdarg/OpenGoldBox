@@ -9,6 +9,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -1387,6 +1388,16 @@ requires(const RulesModule &rules, VitalState &vitals, const CharacterSheet &she
 };
 static_assert(rolls_dice_with<RandomState> && !rolls_dice_with<std::uint64_t>,
               "Only a RandomState can stand for the dice state");
+
+// Copying through an interface would copy only the empty base part of a
+// session or module, so the interfaces cannot be copied or assigned from
+// outside (Effective C++ Items 5 and 6).
+static_assert(!std::is_copy_constructible_v<CombatSession> &&
+              !std::is_copy_assignable_v<CombatSession>);
+static_assert(!std::is_copy_constructible_v<RulesModule> &&
+              !std::is_copy_assignable_v<RulesModule>);
+static_assert(!std::is_copy_constructible_v<CharacterRules> &&
+              !std::is_copy_assignable_v<CharacterRules>);
 
 void single_advancement_override_tests()
 {

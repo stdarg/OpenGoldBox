@@ -21,6 +21,16 @@ class SoundOutput
     virtual void stop() noexcept = 0;
     virtual void set_gain(double linear_gain) noexcept = 0;
     [[nodiscard]] virtual bool is_playing() const noexcept = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    SoundOutput() = default;
+    SoundOutput(const SoundOutput &) = default;
+    SoundOutput(SoundOutput &&) = default;
+    SoundOutput &operator=(const SoundOutput &) = default;
+    SoundOutput &operator=(SoundOutput &&) = default;
 };
 
 // Single-voice game playback. Owns its bank and injected output; there is no

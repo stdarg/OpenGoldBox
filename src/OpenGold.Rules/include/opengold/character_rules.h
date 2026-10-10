@@ -172,6 +172,16 @@ class CharacterRules
     [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
             unsigned ability,
             std::string_view skill = {}) const;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    CharacterRules() = default;
+    CharacterRules(const CharacterRules &) = default;
+    CharacterRules(CharacterRules &&) = default;
+    CharacterRules &operator=(const CharacterRules &) = default;
+    CharacterRules &operator=(CharacterRules &&) = default;
 };
 } // namespace opengold::rules
 #endif
