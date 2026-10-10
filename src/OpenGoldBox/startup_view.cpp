@@ -238,8 +238,31 @@ void StartupView::preview_language(std::int64_t index)
     auto *choices = dialog->get_node<ItemList>("Choices");
     if (index < 0 || index >= choices->get_item_count())
         return;
+    // Preview does not change the active or saved language until
+    // confirmation: the guard puts the locale back however this ends
+    // (Effective C++ Item 13).
+    class RestoreLocale
+    {
+      public:
+        explicit RestoreLocale(TranslationServer &translations)
+            : translations_(translations), previous_(translations.get_locale())
+        {
+        }
+
+        RestoreLocale(const RestoreLocale &) = delete;
+        RestoreLocale &operator=(const RestoreLocale &) = delete;
+
+        ~RestoreLocale()
+        {
+            translations_.set_locale(previous_);
+        }
+
+      private:
+        TranslationServer &translations_;
+        String previous_;
+    };
     auto *translations = TranslationServer::get_singleton();
-    const String previous = translations->get_locale();
+    const RestoreLocale restore(*translations);
     translations->set_locale(choices->get_item_metadata(static_cast<std::int32_t>(index)));
     dialog->set_title(i18n::text("Language"));
     dialog->get_node<Label>("Title")->set_text(i18n::text("Choose language"));
@@ -247,8 +270,6 @@ void StartupView::preview_language(std::int64_t index)
     dialog->get_node<Button>("Cancel")->set_text(i18n::text("Cancel"));
     dialog->get_node<Label>("Status")->set_text(
         language_save_failed_ ? i18n::text("Cannot save language.") : String());
-    // Preview does not change the active or saved language until confirmation.
-    translations->set_locale(previous);
 }
 
 void StartupView::close_language()
