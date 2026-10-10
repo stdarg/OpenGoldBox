@@ -109,14 +109,8 @@ class CharacterCreationView : public godot::Control
     void make_town_sheet_leader();
     void show_leader_change();
     opengold::MemberId town_sheet_member_{};
+    // Offers a choice of hands when the item has one; false when it has none.
     bool open_equipment_choice(opengold::MemberId member, std::uint64_t item);
-    void equipment_choice_selected(std::int64_t index);
-    void apply_equipment_choice();
-    void close_equipment_choice();
-    void equipment_choice_input(const godot::Ref<godot::InputEvent> &event);
-    opengold::MemberId equipment_member_{};
-    std::uint64_t equipment_item_{};
-    std::vector<opengold::rules::EquipmentChoice> equipment_choices_;
     void setup_party();
     void setup_advancement();
     void refresh_advancement_arrows();

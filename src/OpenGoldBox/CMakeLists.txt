@@ -51,7 +51,7 @@ endif()
 configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
-    portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice.cpp level_up_view.cpp level_up_dialog.cpp campaign_save_view.cpp save_slots.cpp
+    portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp campaign_save_view.cpp save_slots.cpp
     character_pool_view.cpp character_sheet_view.cpp godot_sound_output.cpp register_types.cpp startup_view.cpp game_lifecycle.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengoldbox_game PRIVATE cxx_std_20)

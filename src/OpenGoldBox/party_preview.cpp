@@ -5,6 +5,7 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "character_creation_view.h"
+#include "equipment_choice_dialog.h"
 #include "combat_view.h"
 #include "rolf_tour_view.h"
 #include "save_slots.h"
@@ -599,6 +600,41 @@ void CharacterCreationView::equipment_art_check()
         get_tree()->quit(0);
     }
     ++check_stage_;
+}
+
+bool CharacterCreationView::open_equipment_choice(MemberId member, std::uint64_t item)
+{
+    if (campaign_->in_combat())
+        throw std::runtime_error("Equipment cannot change during combat");
+    auto choices = campaign_->equipment_choices(member, item);
+    if (choices.empty())
+        return false;
+    // Made the first time an item offers a choice of hands, then kept.
+    auto *dialog = Object::cast_to<EquipmentChoiceDialog>(get_node_or_null("EquipmentChoice"));
+    if (!dialog)
+    {
+        auto owned = EquipmentChoiceDialog::create();
+        owned->connect_host([this]() -> CampaignParty &
+        {
+            return *campaign_;
+        },
+        [this]
+        {
+            required_node<Button>(*this, "PartyPanel/Equip").grab_focus();
+        },
+        [this]
+        {
+            error_ = String();
+            refresh_party();
+        },
+        [this](const std::exception & failure)
+        {
+            report_failure(failure);
+        });
+        dialog = presentation::attach_child(*this, std::move(owned));
+    }
+    dialog->open(member, item, std::move(choices));
+    return true;
 }
 
 void CharacterCreationView::connect_party_button(const char *path, PartyAction action)
