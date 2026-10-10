@@ -2,7 +2,7 @@
 #define OPENGOLD_CAMPAIGN_PARTY_H
 #include "opengold/character.h"
 #include "opengold/coin_purse.h"
-#include "opengold/creature_catalog.h"
+#include "opengold/equipment.h"
 
 namespace opengold::por
 {
