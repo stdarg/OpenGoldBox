@@ -101,10 +101,13 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     if (town && !town->can_leave() && !campaign_defeated_)
         throw std::runtime_error("Finish the current event before loading");
     const auto directory = game_directory();
-    auto prototype = por::RolfTourSession::load(directory);
     auto module = rules_module();
     auto saved = decode_campaign(read_campaign_file(path), *srd5::character_rules(), *module,
-                                 campaign_asset_identity(directory), &prototype);
+                                 campaign_asset_identity(directory),
+                                 std::function<por::RolfTourSession()>([&]
+    {
+        return por::RolfTourSession::load(directory);
+    }));
     auto replacement = std::make_shared<CampaignParty>(std::move(module));
     replacement->restore(std::move(saved.party));
     for (const auto &m : replacement->state().roster)

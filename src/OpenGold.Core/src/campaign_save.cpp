@@ -678,6 +678,19 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
                               const rules::RulesModule &module, std::string_view assets,
                               const por::RolfTourSession *town_template)
 {
+    std::function<por::RolfTourSession()> make_town;
+    if (town_template)
+        make_town = [town_template]
+    {
+        return *town_template;
+    };
+    return decode_campaign(bytes, creation, module, assets, make_town);
+}
+
+SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRules &creation,
+                              const rules::RulesModule &module, std::string_view assets,
+                              const std::function<por::RolfTourSession()> &make_town_template)
+{
     require(bytes.size() <= limit, "Campaign save too large");
     const auto header_end = bytes.find('\n');
     require(bytes.starts_with(campaign_magic) && header_end != bytes.npos,
@@ -711,8 +724,8 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     in.field(has_town);
     if (has_town)
     {
-        require(town_template != nullptr, "This save requires town resources");
-        result.town = *town_template;
+        require(static_cast<bool>(make_town_template), "This save requires town resources");
+        result.town = make_town_template();
         in.town(*result.town);
     }
     in.rest(result.party);
