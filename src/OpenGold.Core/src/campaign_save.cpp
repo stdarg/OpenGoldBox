@@ -640,7 +640,7 @@ template <bool Reading> struct SaveCodec
             v.shop_request_ = v.damage_request_ = 0;
             v.remaining_delay_ = 0;
             v.transition_ = v.message_only_ = false;
-            v.event_stage_ = 0;
+            v.event_stage_ = por::RolfTourSession::EventStage::none;
             v.publish_pose();
             v.campaign_.reset();
         }

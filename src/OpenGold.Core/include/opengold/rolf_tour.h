@@ -345,8 +345,20 @@ class RolfTourSession
     bool choose_encounter(std::size_t choice);
     [[nodiscard]] const PhlanResources &area_resources() const;
     void change_area(unsigned id);
-    unsigned
-    event_stage_{}; // 0 tour, 1 before step, 2 search, 3 area entry, 4 pre-camp, 5 interrupted.
+
+    // Which script of an exploration event is running, so finish_event knows
+    // what follows it.
+    enum class EventStage : std::uint8_t
+    {
+        none, // No event: the tour itself.
+        step, // Before the party steps forward.
+        search,
+        area_entry,
+        pre_camp,
+        camp_interrupted
+    };
+
+    EventStage event_stage_{EventStage::none};
     RestKind camp_kind_{RestKind::long_rest};
     // Five-minute rest steps since the last interruption check. Like the
     // original engine's counter, it carries over between rests; it is saved.
@@ -358,7 +370,17 @@ class RolfTourSession
     void configure_town();
     void synchronize_clock();
     [[nodiscard]] EclHostReply clock_reply() const;
-    void begin_event(unsigned slot);
+
+    // What the player did to start an event. Each value is the original script
+    // entry slot that runs it.
+    enum class EventTrigger : std::uint8_t
+    {
+        step = 0,
+        look = 1,
+        camp = 2
+    };
+
+    void begin_event(EventTrigger trigger);
     void finish_event();
     bool handle_town_host(const EclRequest &request);
     // Scripts change coins relative to the view they were given, so the script

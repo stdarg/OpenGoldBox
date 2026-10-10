@@ -250,7 +250,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
     return true;
 }
 
-void RolfTourSession::begin_event(unsigned slot)
+void RolfTourSession::begin_event(EventTrigger trigger)
 {
     claim_loot();
     synchronize_clock();
@@ -277,14 +277,16 @@ void RolfTourSession::begin_event(unsigned slot)
                                         .pending_loot = pending_loot_,
                                         .snapshot = snapshot_,
                                         .selected_character = selected_character_};
-    event_stage_ = slot == 0 ? 1 : slot == 2 ? 4 : 2;
+    event_stage_ = trigger == EventTrigger::step   ? EventStage::step
+                   : trigger == EventTrigger::camp ? EventStage::pre_camp
+                   : EventStage::search;
     machine_.bind_variable(EclAddress{0x6DC9}, 0);
     encounter_outcome_.clear();
     meeting_pose_.reset();
     robbed_ = false;
     member_chosen_ = false;
     bool off_map = false;
-    if (slot == 0 && pending_movement_)
+    if (trigger == EventTrigger::step && pending_movement_)
     {
         const auto p = snapshot_.pose;
         const int x = static_cast<int>(p.x) + step_x(p.facing),
@@ -294,7 +296,7 @@ void RolfTourSession::begin_event(unsigned slot)
                   (!cell.walls[index(p.facing)] || cell.doors[index(p.facing)]);
     }
     machine_.bind_variable(EclAddress{0x6DD5}, off_map ? 1 : 0);
-    machine_.bind_variable(EclAddress{0x6DCA}, slot == 1 ? 2 : 0);
+    machine_.bind_variable(EclAddress{0x6DCA}, trigger == EventTrigger::look ? 2 : 0);
     // The spokesman's reaction score (0x6DCF), which the scripts add to reaction
     // rolls. The original's formula is unknown; twice Charisma, as New Phlan's
     // own script doubles it, was chosen (LEADER-1).
@@ -303,7 +305,7 @@ void RolfTourSession::begin_event(unsigned slot)
             machine_.bind_variable(
                 EclAddress{0x6DCF},
                 static_cast<std::uint16_t>(2 * campaign_->member(speaker).character.sheet().scores[5]));
-    if (!machine_.start(slot))
+    if (!machine_.start(static_cast<std::size_t>(trigger)))
     {
         fail("Unable to start town script");
         return;
@@ -533,12 +535,12 @@ void RolfTourSession::finish_event()
     if (transition_)
     {
         transition_ = false;
-        event_stage_ = 3;
+        event_stage_ = EventStage::area_entry;
         if (!machine_.start(4))
             throw EclError("Cannot enter town building script");
         return;
     }
-    if (event_stage_ == 1)
+    if (event_stage_ == EventStage::step)
     {
         if (!move_party(*pending_movement_))
         {
@@ -552,14 +554,14 @@ void RolfTourSession::finish_event()
         search_destination();
         return;
     }
-    if (event_stage_ == 3)
+    if (event_stage_ == EventStage::area_entry)
     {
-        event_stage_ = 2;
+        event_stage_ = EventStage::search;
         if (!machine_.start(1))
             throw EclError("Cannot search building entrance");
         return;
     }
-    if (event_stage_ == 4)
+    if (event_stage_ == EventStage::pre_camp)
     {
         if (!campaign_)
             throw EclError("Rest requires campaign rules");
@@ -575,7 +577,7 @@ void RolfTourSession::finish_event()
             {
                 campaign_->advance_time(std::chrono::minutes{*rested});
                 synchronize_clock();
-                event_stage_ = 5;
+                event_stage_ = EventStage::camp_interrupted;
                 if (!machine_.start(3))
                     throw EclError("Cannot enter camp interruption script");
                 return;
@@ -602,7 +604,7 @@ void RolfTourSession::finish_event()
     encounter_outcome_.clear();
     meeting_pose_.reset();
     robbed_ = false;
-    if (event_stage_ == 5)
+    if (event_stage_ == EventStage::camp_interrupted)
         snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
                               std::string("The rest was interrupted. Rest again to recover.");
     event_checkpoint_.reset();
@@ -644,7 +646,7 @@ std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, un
 void RolfTourSession::search_destination()
 {
     pending_movement_.reset();
-    event_stage_ = 2;
+    event_stage_ = EventStage::search;
     if (!machine_.start(1))
         throw EclError("Cannot search destination");
 }
@@ -872,7 +874,7 @@ void RolfTourSession::fit_staged_encounter()
 void RolfTourSession::announce_camp_attack()
 {
     constexpr std::string_view attack = "Your camp is attacked!";
-    if (event_stage_ == 5 && !snapshot_.dialogue.starts_with(attack))
+    if (event_stage_ == EventStage::camp_interrupted && !snapshot_.dialogue.starts_with(attack))
         snapshot_.dialogue = std::string(attack) + "\n" + snapshot_.dialogue;
 }
 
@@ -1391,7 +1393,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 dungeon_battlefield(map_, p.x, p.y), staged_enemies_, staged_art_,
                 area_resources().terrain_art,        p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
-            encounter_->party_resting = event_stage_ == 5;
+            encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale = std::min<unsigned>(machine_.variable(ecl_encounter_morale), 100);
             announce_camp_attack();

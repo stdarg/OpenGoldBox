@@ -369,7 +369,8 @@ void RolfTourSession::reset_run()
     picture_.reset();
     event_checkpoint_.reset();
     diagnostics_.clear();
-    current_script_ = event_stage_ = 0;
+    current_script_ = 0;
+    event_stage_ = EventStage::none;
     selected_character_ = {};
     camp_kind_ = RestKind::long_rest;
     staged_enemies_.clear();
@@ -709,7 +710,7 @@ bool RolfTourSession::camp(RestKind kind)
             campaign_->state().training_rest)
         return false;
     camp_kind_ = kind;
-    begin_event(2);
+    begin_event(EventTrigger::camp);
     advance(0);
     return true;
 }
@@ -727,10 +728,10 @@ bool RolfTourSession::explore(ExplorationCommand command)
         if (command == ExplorationCommand::forward)
         {
             pending_movement_ = command;
-            begin_event(0);
+            begin_event(EventTrigger::step);
         }
         else if (command == ExplorationCommand::look)
-            begin_event(1);
+            begin_event(EventTrigger::look);
         else
         {
             move_party(command);
