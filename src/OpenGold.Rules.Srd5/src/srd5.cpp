@@ -1925,6 +1925,20 @@ class Session final : public CombatSession
         });
     }
 
+    // An actor's place in the turn order, found by id: a reference may be to a
+    // copy (thrown weapons attack with one), so its address says nothing
+    // (Effective C++ Item 27).
+    std::size_t index_of(EntityId id) const
+    {
+        const auto found = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+        {
+            return a.source.id == id;
+        });
+        if (found == actors_.end())
+            throw std::logic_error("No combatant has id " + std::to_string(id));
+        return static_cast<std::size_t>(found - actors_.begin());
+    }
+
     unsigned turn_end_ms(std::size_t index) const
     {
         return unsigned((index + 1) * detail::round_ms / actors_.size());
@@ -3429,7 +3443,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::ray_of_sickness:
     {
         // Poisoned until the end of the caster's next turn.
-        const auto index = static_cast<std::size_t>(&a - actors_.data());
+        const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
         detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
                                next_turn_ms(a) + slot);
@@ -3573,7 +3587,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     case detail::Rider::starry_wisp:
     {
-        const auto index = static_cast<std::size_t>(&a - actors_.data());
+        const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
         detail::apply_poisoned(target.effects, scope_, a.source.id, a.source.name,
                                next_turn_ms(a) + slot, detail::EffectKind::lit);
@@ -3678,7 +3692,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::guiding_bolt:
     {
         // Until the end of the caster's next turn.
-        const auto index = static_cast<std::size_t>(&a - actors_.data());
+        const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
         detail::apply_guiding_bolt(target.effects, scope_, a.source.id, a.source.name,
                                    next_turn_ms(a) + slot);
@@ -3762,7 +3776,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::command:
     {
         const int option = detail::command_option(verb);
-        const auto index = static_cast<std::size_t>(&target - actors_.data());
+        const auto index = index_of(target.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
         detail::apply_command(target.effects, scope_, a.source.id, a.source.name, option,
                               next_turn_ms(target) + slot);
@@ -5329,7 +5343,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     // creature in it.
     const bool sleep = spell.rider == detail::Rider::sleep;
     const int dc = spell_dc(caster);
-    const auto index = static_cast<std::size_t>(&caster - actors_.data());
+    const auto index = index_of(caster.source.id);
     const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
     const auto careful = careful_allies(caster, cells);
     for (auto &other : actors_)
@@ -6470,7 +6484,7 @@ damage(target, amount, critical);
         if (property == detail::Mastery::sap || (property == detail::Mastery::vex && amount > 0))
         {
             const auto &source = actor(a.source.id);
-            const auto index = static_cast<std::size_t>(&source - actors_.data());
+            const auto index = index_of(source.source.id);
             const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
             const auto kind = property == detail::Mastery::sap ? detail::EffectKind::sap
                               : detail::EffectKind::vex;
@@ -7398,7 +7412,7 @@ bool Session::begin_turn()
 
 unsigned Session::next_turn_ms(const Actor &target) const
 {
-    const auto index = static_cast<std::size_t>(&target - actors_.data());
+    const auto index = index_of(target.source.id);
     const unsigned start = index ? turn_end_ms(index - 1) : 0,
                    current = turn_ ? turn_end_ms(turn_ - 1) : 0;
     return start > current ? start - current : detail::round_ms - current + start;
@@ -7406,12 +7420,7 @@ unsigned Session::next_turn_ms(const Actor &target) const
 
 unsigned Session::next_save_ms(EntityId target) const
 {
-    const auto found = std::find_if(actors_.begin(), actors_.end(),
-                                    [&](const auto & a)
-    {
-        return a.source.id == target;
-    });
-    const auto end = turn_end_ms(found - actors_.begin());
+    const auto end = turn_end_ms(index_of(target));
     const auto start = turn_ ? turn_end_ms(turn_ - 1) : 0;
     return end > start ? end - start : detail::round_ms - start + end;
 }
