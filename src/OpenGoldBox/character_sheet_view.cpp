@@ -205,10 +205,7 @@ String CharacterCreationView::sheet_text(const Character &character,
         }
     }
     text += presentation::training_summary(s.training,
-                                           [](std::string_view source)
-    {
-        return i18n::text(source);
-    })
+                                           i18n::text)
     .utf8()
     .get_data();
     return gs(text);

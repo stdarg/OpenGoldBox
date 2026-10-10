@@ -731,30 +731,21 @@ void CharacterCreationView::refresh()
         presentation::refresh_training_controls(
             *this, *creator_, presentation::guarded(this, &CharacterCreationView::training_toggled),
             presentation::guarded(this, &CharacterCreationView::training_selected),
-            [](std::string_view source)
-        {
-            return i18n::text(source);
-        });
+            i18n::text);
         instructions = N_("Choose the required training options. Back preserves your selections.");
     }
     if (step == CreationStep::spell_choices)
     {
         presentation::refresh_cantrip_controls(
             *this, *creator_, presentation::guarded(this, &CharacterCreationView::cantrip_toggled),
-            [](std::string_view source)
-        {
-            return i18n::text(source);
-        });
+            i18n::text);
         auto *book =
             presentation::spell_rows(*get_node<VBoxContainer>("SpellChoices/Rows"), "BookChoices");
         presentation::refresh_spell_groups(
             *book, creator_->rules().spell_choice_options(d),
             d.spells.value_or(opengold::rules::SpellChoices{}),
             presentation::guarded(this, &CharacterCreationView::creation_spell_toggled),
-            [](std::string_view source)
-        {
-            return i18n::text(source);
-        });
+            i18n::text);
         instructions =
             d.spells && (d.character_class == "paladin" || d.character_class == "ranger")
             ? N_("Choose prepared spells. Unfilled choices remain pending; Back preserves your choices.")

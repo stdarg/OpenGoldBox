@@ -259,10 +259,7 @@ void CharacterCreationView::advancement_pages()
     presentation::refresh_spell_groups(
         *w->get_node<VBoxContainer>("SpellChoicesPage/Rows"), options, choices,
         presentation::guarded(this, &CharacterCreationView::advancement_learning_toggled),
-        [](std::string_view source)
-    {
-        return i18n::text(source);
-    });
+        i18n::text);
 }
 
 // One checkbox per offered proficiency, prefixed so the two catalogs stay
