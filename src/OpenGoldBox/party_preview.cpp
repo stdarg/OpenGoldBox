@@ -819,7 +819,8 @@ void CharacterCreationView::party_check()
                        : "Party check Dwarf fighter");
         for (unsigned i = 0; i < 6; ++i)
             creator_->assign_roll(i, i);
-        for (unsigned attempt = 0; !creator_->rules().class_eligible(creator_->draft(), "fighter");
+        for (unsigned attempt = 0;
+                !rules::class_eligible(creator_->rules(), creator_->draft(), "fighter");
                 ++attempt)
         {
             if (attempt == 100)

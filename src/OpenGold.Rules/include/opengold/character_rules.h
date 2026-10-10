@@ -157,8 +157,6 @@ class CharacterRules
     }
 
     [[nodiscard]] virtual ClassRequirements class_requirements(std::string_view id) const = 0;
-    [[nodiscard]] bool class_eligible(const CharacterDraft &draft, std::string_view id) const;
-    [[nodiscard]] std::array<bool, 6> unmet_targets(const CharacterDraft &draft) const;
     [[nodiscard]] virtual CharacterSheet evaluate(const CharacterDraft &draft,
             NameRequirement name) const = 0;
 
@@ -193,5 +191,12 @@ class CharacterRules
     CharacterRules &operator=(const CharacterRules &) = default;
     CharacterRules &operator=(CharacterRules &&) = default;
 };
+// Whether the draft's scores meet a class's requirements, and which target
+// scores the chosen class leaves unmet. They need only the public interface,
+// so they are not members (Effective C++ Item 23).
+[[nodiscard]] bool class_eligible(const CharacterRules &rules, const CharacterDraft &draft,
+                                  std::string_view id);
+[[nodiscard]] std::array<bool, 6> unmet_targets(const CharacterRules &rules,
+        const CharacterDraft &draft);
 } // namespace opengold::rules
 #endif

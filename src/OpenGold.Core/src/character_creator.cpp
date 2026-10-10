@@ -54,7 +54,7 @@ void CharacterCreator::select(CreationField field, std::string_view id)
 }))
     throw std::runtime_error("Unknown character choice");
     if (field == CreationField::character_class && step_ >= CreationStep::character_class &&
-            !rules_->class_eligible(draft_, id))
+            !rules::class_eligible(*rules_, draft_, id))
         throw std::runtime_error("This class requires " +
                                  rules_->class_requirements(id).description + ".");
     auto candidate = draft_;
@@ -411,7 +411,7 @@ Character CharacterCreator::create_character() const
         throw std::runtime_error("Finish character creation before exporting the character");
     if (!training_complete())
         throw std::runtime_error("Complete the required training choices.");
-    if (!rules_->class_eligible(draft_, draft_.character_class))
+    if (!rules::class_eligible(*rules_, draft_, draft_.character_class))
         throw std::runtime_error("Starting class prerequisites are not met.");
     return Character(*rules_, draft_, appearance_);
 }
@@ -429,7 +429,7 @@ void CharacterCreator::next()
                                ? rules::NameRequirement::required
                                : rules::NameRequirement::optional);
     if (step_ >= CreationStep::character_class &&
-            !rules_->class_eligible(draft_, draft_.character_class))
+            !rules::class_eligible(*rules_, draft_, draft_.character_class))
         throw std::runtime_error("Choose a qualified starting class. Requires " +
                                  rules_->class_requirements(draft_.character_class).description +
                                  ".");

@@ -339,7 +339,7 @@ void creation_controls()
         creator.roll();
         for (unsigned i = 0; i < 6; ++i)
             creator.assign_roll(i, i);
-        if (creator.rules().class_eligible(creator.draft(), "rogue"))
+        if (rules::class_eligible(creator.rules(), creator.draft(), "rogue"))
             break;
     }
     creator.next();

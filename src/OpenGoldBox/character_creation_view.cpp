@@ -510,7 +510,8 @@ void CharacterCreationView::refresh()
             })
         show(n, stats);
     for (unsigned i = 0; i < 6; ++i)
-        show(gs("Warning" + std::to_string(i)), stats && creator_->rules().unmet_targets(d)[i]);
+        show(gs("Warning" + std::to_string(i)),
+             stats && rules::unmet_targets(creator_->rules(), d)[i]);
     for (const auto *n :
             {"BaseHeader", "BonusHeader", "TotalHeader"
             })
@@ -575,7 +576,7 @@ void CharacterCreationView::refresh()
     get_node<Button>("Next")->set_disabled(
         (stats && !creator_->scores_assigned()) ||
         (step == CreationStep::character_class &&
-         !creator_->rules().class_eligible(d, d.character_class)) ||
+         !rules::class_eligible(creator_->rules(), d, d.character_class)) ||
         (step == CreationStep::training && !creator_->training_complete()) ||
         (step == CreationStep::spell_choices && !creator_->spell_choices_complete()) ||
         (step == CreationStep::name && d.name.empty()));
@@ -593,7 +594,8 @@ void CharacterCreationView::refresh()
             list->add_item(i18n::text(choices[i].label));
             if (step == CreationStep::character_class)
             {
-                list->set_item_disabled(i, !creator_->rules().class_eligible(d, choices[i].id));
+                list->set_item_disabled(
+                    i, !rules::class_eligible(creator_->rules(), d, choices[i].id));
                 list->set_item_tooltip(
                     i, i18n::format("Requires {requirements}",
                 {
@@ -645,7 +647,7 @@ void CharacterCreationView::refresh()
             check->set_text(i18n::text(targets[i].label) + "\n" + i18n::requirements(requirements));
             check->set_tooltip_text(
                 i18n::text(targets[i].description) + "\n" +
-                i18n::text(creator_->rules().class_eligible(d, targets[i].id)
+                i18n::text(rules::class_eligible(creator_->rules(), d, targets[i].id)
                            ? N_("Requirements met.")
                            : N_("Not yet qualified. You may still plan for this class.")));
             check->set_pressed_no_signal(std::find(d.target_classes.begin(), d.target_classes.end(),
@@ -693,7 +695,7 @@ void CharacterCreationView::refresh()
             const auto score = creator_->rules().ability_score(d, i);
             auto *score_box = get_node<Button>(gs("Score" + std::to_string(i)));
             score_box->set_text(score ? gs(std::to_string(*score)) : String());
-            const bool unmet = creator_->rules().unmet_targets(d)[i];
+            const bool unmet = rules::unmet_targets(creator_->rules(), d)[i];
             for (const auto *state :
                     {"normal", "hover", "pressed"
                     })
@@ -1627,7 +1629,7 @@ void CharacterCreationView::check_run()
     case 7:
         for (unsigned i = 0; i < 6; ++i)
         {
-            const bool unmet = creator_->rules().unmet_targets(creator_->draft())[i];
+            const bool unmet = rules::unmet_targets(creator_->rules(), creator_->draft())[i];
             if (get_node<Label>(gs("Warning" + std::to_string(i)))->is_visible() != unmet)
                 throw std::runtime_error("Target warnings did not follow score assignment");
             const Ref<StyleBoxFlat> style =

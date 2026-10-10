@@ -136,19 +136,23 @@ void creation_tests()
     }
     d.background = "soldier";
     d.adjustment = 0;
-    check(module->class_eligible(d, "fighter") && module->class_eligible(d, "paladin"),
+    check(rules::class_eligible(*module, d, "fighter") &&
+          rules::class_eligible(*module, d, "paladin"),
           "Bonuses count toward primary prerequisites");
-    check(!module->class_eligible(d, "monk") && !module->class_eligible(d, "wizard"),
+    check(!rules::class_eligible(*module, d, "monk") &&
+          !rules::class_eligible(*module, d, "wizard"),
           "Both Monk primaries and Wizard Intelligence required");
     d.target_classes = {"fighter", "monk", "wizard"};
-    check(module->unmet_targets(d) == std::array<bool, 6> {false, true, false, true, false, false},
+    check(rules::unmet_targets(*module, d) ==
+          std::array<bool, 6> {false, true, false, true, false, false},
           "Warnings flag only failing abilities of unmet targets");
     std::swap(d.assignment[0], d.assignment[1]);
-    check(module->class_eligible(d, "fighter") && !module->unmet_targets(d)[0],
+    check(rules::class_eligible(*module, d, "fighter") && !rules::unmet_targets(*module, d)[0],
           "Qualified Dexterity satisfies Fighter without a Strength warning");
     std::swap(d.assignment[0], d.assignment[1]);
     d.target_classes.clear();
-    check(module->unmet_targets(d) == std::array<bool, 6> {}, "Removing targets clears warnings");
+    check(rules::unmet_targets(*module, d) == std::array<bool, 6> {},
+          "Removing targets clears warnings");
     for (const auto &option : classes)
     {
         auto boundary = d;
@@ -165,11 +169,11 @@ void creation_tests()
             const int total = 13 - bonuses[ability];
             boundary.rolls[ability] = {{{total - 8, 4, 4, 1}}, 3};
         }
-        check(module->class_eligible(boundary, option.id),
+        check(rules::class_eligible(*module, boundary, option.id),
               "Every class accepts exactly 13 in its primary abilities");
         for (auto ability : req.abilities)
             --boundary.rolls[ability].dice[0];
-        check(!module->class_eligible(boundary, option.id),
+        check(!rules::class_eligible(*module, boundary, option.id),
               "Every class rejects primaries below 13");
     }
     d.background = "soldier";
@@ -296,7 +300,7 @@ void creation_tests()
     bool selected = false;
     for (const auto &option : classes)
     {
-        if (module->class_eligible(creator.draft(), option.id))
+        if (rules::class_eligible(*module, creator.draft(), option.id))
         {
             if (!selected)
             {
