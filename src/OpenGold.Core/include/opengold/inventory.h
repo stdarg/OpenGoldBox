@@ -9,7 +9,7 @@
 
 namespace opengold
 {
-struct SaveCodec;
+template <bool Reading> struct SaveCodec;
 }
 
 namespace opengold
@@ -55,7 +55,7 @@ class Inventory
     void remove(std::uint64_t id, std::uint32_t quantity = 1);
 
   private:
-    friend struct opengold::SaveCodec;
+    template <bool Reading> friend struct opengold::SaveCodec;
     std::vector<InventoryItem> items_;
     std::uint64_t next_id_{1};
 };

@@ -12,7 +12,7 @@
 
 namespace opengold
 {
-struct SaveCodec;
+template <bool Reading> struct SaveCodec;
 }
 
 namespace opengold::por
@@ -153,7 +153,7 @@ class EclMachine
     }
 
   private:
-    friend struct opengold::SaveCodec;
+    template <bool Reading> friend struct opengold::SaveCodec;
     std::shared_ptr<const EclProgram> program_;
     EclState state_{EclState::idle};
     std::uint32_t pc_{};

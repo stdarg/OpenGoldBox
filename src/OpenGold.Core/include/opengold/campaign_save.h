@@ -11,7 +11,7 @@ struct SavedCampaign
     PartyState party;
     std::optional<por::RolfTourSession> town;
 };
-struct SaveCodec;
+template <bool Reading> struct SaveCodec;
 [[nodiscard]] std::string campaign_asset_identity(const std::filesystem::path &directory);
 [[nodiscard]] std::string encode_campaign(const CampaignParty &, const por::RolfTourSession *,
         std::string_view assets);

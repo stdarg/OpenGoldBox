@@ -13,7 +13,7 @@
 
 namespace opengold
 {
-struct SaveCodec;
+template <bool Reading> struct SaveCodec;
 }
 
 namespace opengold::por
@@ -251,7 +251,7 @@ class RolfTourSession
   private:
     RolfTourSession(const RolfTourSession &) = default;
     RolfTourSession &operator=(const RolfTourSession &) = default;
-    friend struct opengold::SaveCodec;
+    template <bool Reading> friend struct opengold::SaveCodec;
     // Clears everything one run of the tour builds up; restart() also reloads
     // the town's map and a fresh script machine.
     void reset_run();
