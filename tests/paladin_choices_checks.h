@@ -67,7 +67,7 @@ void blessed_warrior_checks()
           access.cantrips.front().id == "sacred_flame",
           "The Paladin knows Sacred Flame and Spare the Dying");
     const auto profile = rules->character_profile(warrior, {}).data;
-    auto fight = rules->create({{8, 4, std::vector<std::uint8_t>(32)},
+    auto fight = rules->create({{8, 4, std::vector<Terrain>(32)},
         {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
             {99, "bandit", "Enemy", 1, {4, 1}}
         }},

@@ -136,7 +136,7 @@ std::vector<std::string> gear = {}, unsigned side = 1,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
-    auto c = rules.create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto c = rules.create({{10, 8, std::vector<Terrain>(80)},
         {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
@@ -203,7 +203,7 @@ void access()
         rejects(
             [&]
         {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            (void)rules->create({{8, 8, std::vector<Terrain>(64)},
                 {   {1, "campaign-character", "Forged", 0, {1, 1}, recipe},
                     {2, "vanguard", "Target", 1, {3, 1}}
                 }},
@@ -324,7 +324,7 @@ void targets()
             })
     {
         auto profile = rules->character_profile(h.sheet(), {});
-        auto c = rules->create({{16, 8, std::vector<std::uint8_t>(128)},
+        auto c = rules->create({{16, 8, std::vector<Terrain>(128)},
             {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
                 {2, "target", "Enemy", 1, {1 + feet / 5, 1}}
             }},
@@ -363,8 +363,8 @@ void targets()
     check(!has(*battle(*rules, hero(1, false)), "sacred_flame"),
           "Cantrip is not an unconditional class flag");
     auto profile = rules->character_profile(h.sheet(), {});
-    Battlefield board{10, 8, std::vector<std::uint8_t>(80)};
-    board.terrain[12] = 1;
+    Battlefield board{10, 8, std::vector<Terrain>(80)};
+    board.terrain[12] = Terrain::obstacle;
     auto blocked = rules->create({board,
         {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
             {2, "target", "Enemy", 1, {3, 1}}
@@ -395,7 +395,7 @@ void targets()
                     false, true
                 })
         {
-            auto c = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+            auto c = rules->create({{10, 8, std::vector<Terrain>(80)},
                 {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
                     {
                         2,
@@ -451,7 +451,7 @@ void modifiers()
     Character wizard(*srd5::character_rules(), d, {});
     auto target = rules->character_profile(wizard.sheet(), std::vector<std::string> {"plate"});
     auto caster = rules->character_profile(hero().sheet(), {});
-    auto armored = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto armored = rules->create({{10, 8, std::vector<Terrain>(80)},
         {   {1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
             {2, "campaign-character", "Armored", 1, {3, 1}, target.data}
         }},
@@ -465,7 +465,7 @@ void modifiers()
     bool checked = false;
     for (unsigned seed = 0; seed < 32 && !checked; ++seed)
     {
-        auto blinded = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+        auto blinded = rules->create({{10, 8, std::vector<Terrain>(80)},
             {   {1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
                 {2, "blindness-adept", "Enemy", 1, {3, 1}}
             }},
@@ -512,7 +512,7 @@ void campaign()
             auto actors = p.participants();
             actors[0].cell = {1, 1};
             actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 40);
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 40);
             const auto old = unit(*c, id).persistent;
             check(c->submit(command(*c, "sacred_flame", 99)), "Ordinary campaign Cleric casts");
             p.begin_combat();
@@ -545,7 +545,7 @@ void ui_fixtures()
                                      ? std::vector<std::string> {"plate"}
                                      : std::vector<std::string> {"quarterstaff"});
         auto c =
-        rules->create({{12, 9, std::vector<std::uint8_t>(108)},
+        rules->create({{12, 9, std::vector<Terrain>(108)},
             {   {1, "campaign-character", "Sacred Cleric", 0, {1, 1}, profile.data},
                 {2, "vanguard", "Ally", 0, {3, 1}},
                 {99, "vanguard", "Enemy", 1, {5, 1}}

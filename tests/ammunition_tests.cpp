@@ -102,7 +102,7 @@ void purchased_ammunition()
     actors.front().cell = {1, 1};
     actors.push_back({2, "vanguard", "Target", 1, {5, 1}});
     actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
-    auto combat = rules->create({{10, 8, std::vector<std::uint8_t>(80)}, actors}, 1);
+    auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 1);
     while (combat->snapshot().actor != id)
         act(*combat, "end");
     auto copy = rules->restore(combat->save());

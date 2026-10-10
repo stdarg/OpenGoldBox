@@ -19,12 +19,12 @@ namespace
 {
 Battlefield arena()
 {
-    Battlefield b{12, 9, std::vector<std::uint8_t>(108, 0)};
+    Battlefield b{12, 9, std::vector<Terrain>(108)};
     for (int y = 2; y <= 6; ++y)
         if (y != 4)
-            b.terrain[y * 12 + 6] = 1;
-    b.terrain[4 * 12 + 5] = 2;
-    b.terrain[4 * 12 + 6] = 2;
+            b.terrain[y * 12 + 6] = Terrain::obstacle;
+    b.terrain[4 * 12 + 5] = Terrain::difficult;
+    b.terrain[4 * 12 + 6] = Terrain::difficult;
     return b;
 }
 
@@ -157,7 +157,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     std::vector<Cell> cells;
     for (int y = 0; y < board.height; ++y)
         for (int x = 0; x < board.width; ++x)
-            if (board.at({x, y}) != 1)
+            if (board.at({x, y}) != Terrain::obstacle)
                 cells.push_back({x, y});
     const auto distance = [](Cell a, Cell b)
     {
@@ -185,9 +185,10 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
             for (int x = -1; x <= 1; ++x)
             {
                 const Cell next{p.x + x, p.y + y};
-                if ((!x && !y) || board.at(next) == 1)
+                if ((!x && !y) || board.at(next) == Terrain::obstacle)
                     continue;
-                if (x && y && (board.at({p.x + x, p.y}) == 1 || board.at({p.x, p.y + y}) == 1))
+                if (x && y && (board.at({p.x + x, p.y}) == Terrain::obstacle ||
+                               board.at({p.x, p.y + y}) == Terrain::obstacle))
                     continue;
                 const auto index = next.y * board.width + next.x;
                 if (seen[index])
@@ -209,7 +210,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         for (std::size_t i = 0; i < encounter.positions.size(); ++i)
         {
             const auto cell = encounter.positions[i];
-            if (board.at(cell) == 1 || !occupied.insert(cell).second)
+            if (board.at(cell) == Terrain::obstacle || !occupied.insert(cell).second)
                 throw std::runtime_error("Invalid authored combat position");
             if (i < participants.size())
                 participants[i].cell = cell;
@@ -280,7 +281,7 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                                                                };
     auto party = std::make_shared<CampaignParty>(std::move(rules));
     CombatDemoSetup result{party, {}};
-    result.encounter.field.geometry = {12, 12, std::vector<std::uint8_t>(144, 0)};
+    result.encounter.field.geometry = {12, 12, std::vector<Terrain>(144)};
     result.encounter.field.tiles = std::vector<std::uint8_t>(144, 0);
     const std::array<std::string_view, 6> showcase{"fighter", "paladin", "cleric",
             "ranger",  "rogue",   "bard"};
@@ -745,9 +746,10 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
             for (int x = -1; x <= 1; ++x)
             {
                 const Cell next{p.x + x, p.y + y};
-                if ((!x && !y) || board.at(next) == 1)
+                if ((!x && !y) || board.at(next) == Terrain::obstacle)
                     continue;
-                if (x && y && (board.at({p.x + x, p.y}) == 1 || board.at({p.x, p.y + y}) == 1))
+                if (x && y && (board.at({p.x + x, p.y}) == Terrain::obstacle ||
+                               board.at({p.x, p.y + y}) == Terrain::obstacle))
                     continue;
                 if (routes[index(next)] <= routes[index(p)] + 1)
                     continue;
@@ -1225,7 +1227,8 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
             for (int dy = -1; dy <= 1; ++dy)
                 for (int dx = -1; dx <= 1; ++dx)
                     if (const Cell next{p.x + dx, p.y + dy};
-                            board.contains(next) && board.at(next) != 1 && steps[index(next)] < 0)
+                            board.contains(next) && board.at(next) != Terrain::obstacle &&
+                            steps[index(next)] < 0)
                     {
                         steps[index(next)] = steps[index(p)] + 1;
                         frontier.push(next);
@@ -1237,7 +1240,7 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
     for (int y = 0; y < board.height; ++y)
         for (int x = 0; x < board.width; ++x)
             if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
-                    board.at({x, y}) != 1)
+                    board.at({x, y}) != Terrain::obstacle)
                 edges.push_back({x, y});
     if (active.side != 0)
     {

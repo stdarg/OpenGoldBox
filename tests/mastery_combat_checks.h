@@ -77,7 +77,7 @@ Encounter encounter(const RulesModule &rules, const Character &hero, std::string
                     bool ranged = false)
 {
     const auto profile = rules.character_profile(hero.sheet(), std::array<std::string, 1> {key});
-    return {{12, 8, std::vector<std::uint8_t>(96)},
+    return {{12, 8, std::vector<Terrain>(96)},
         {   {1, "campaign-character", "Master", 0, {1, 1}, profile.data},
             {99, "mastery_target", "Target", 1, {ranged ? 3 : 2, 1}}
         },
@@ -317,7 +317,7 @@ void physical_attacks_and_reactions()
             actors.front().cell = {1, 1};
             actors.push_back({99, "mastery_target", "Target", 1, {2, 1}});
             auto c = party.rule_module().create(
-            {{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, 89);
+            {{12, 8, std::vector<Terrain>(96)}, actors, 777}, 89);
             turn(*c, id);
             act(*c, "melee", 99);
             check(fx::vexed_by(state(*c, 99), 777, id),

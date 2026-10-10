@@ -101,7 +101,7 @@ Command command(const CombatSession &c, std::string_view verb)
 auto battle(const RulesModule &rules, const Character &h, const std::vector<std::string> &gear)
 {
     const auto p = rules.character_profile(h.sheet(), gear);
-    auto c = rules.create({{8, 8, std::vector<std::uint8_t>(64)},
+    auto c = rules.create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
@@ -218,7 +218,7 @@ auto campaign_battle(const RulesModule &rules, const CampaignParty &p)
     auto actors = p.participants();
     actors[0].cell = {1, 1};
     actors.push_back({99, "vanguard", "Enemy", 1, {3, 1}});
-    return rules.create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 2);
+    return rules.create({{8, 8, std::vector<Terrain>(64)}, actors}, 2);
 }
 
 void campaign()

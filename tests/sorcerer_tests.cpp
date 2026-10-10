@@ -149,7 +149,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
         {98, enemy, "Enemy", 1, {4, 1}}};
     if (ally)
         participants.push_back({2, "target", "Ally", 0, *ally});
-    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)}, participants}, 5);
+    auto c = module.create({{12, 6, std::vector<Terrain>(72)}, participants}, 5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Sorcerer's turn");
     check(c->snapshot().actor == 1, "The Sorcerer acts");

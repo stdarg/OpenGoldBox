@@ -21,7 +21,7 @@ void validate_battlefield(const Battlefield &board)
             std::any_of(board.terrain.begin(), board.terrain.end(),
                         [](auto tile)
 {
-    return tile > 2;
+    return tile > Terrain::difficult;
 }))
     throw std::runtime_error("Invalid battlefield");
 }
@@ -31,7 +31,7 @@ MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
     : board_(board), origin_(origin), crawling_(crawling)
 {
     validate_battlefield(board_);
-    if (board_.at(origin_) == 1)
+    if (board_.at(origin_) == Terrain::obstacle)
         throw std::runtime_error("Invalid movement origin");
     occupancy_.resize(board_.terrain.size(), Occupancy::empty);
     for (const auto &occupant : occupants)
@@ -56,23 +56,26 @@ int MovementGrid::index(Cell cell) const
 
 bool MovementGrid::can_stop_at(Cell destination) const
 {
-    return board_.at(destination) != 1 && destination != origin_ &&
+    return board_.at(destination) != Terrain::obstacle && destination != origin_ &&
            occupancy_[index(destination)] == Occupancy::empty;
 }
 
 std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
 {
-    if (board_.at(from) == 1 || board_.at(to) == 1)
+    if (board_.at(from) == Terrain::obstacle || board_.at(to) == Terrain::obstacle)
         return std::nullopt;
     const int dx = std::abs(to.x - from.x), dy = std::abs(to.y - from.y);
     if (std::max(dx, dy) != 1)
         return std::nullopt;
-    if (dx && dy && (board_.at({from.x, to.y}) == 1 || board_.at({to.x, from.y}) == 1))
+    if (dx && dy && (board_.at({from.x, to.y}) == Terrain::obstacle ||
+                     board_.at({to.x, from.y}) == Terrain::obstacle))
         return std::nullopt;
     const auto occupant = occupancy_[index(to)];
     if (occupant == Occupancy::enemy)
         return std::nullopt;
-    return (board_.at(to) == 2 || occupant == Occupancy::incapacitated_enemy ? 10 : 5) +
+    const bool difficult =
+        board_.at(to) == Terrain::difficult || occupant == Occupancy::incapacitated_enemy;
+    return (difficult ? 10 : 5) +
            (crawling_ ? 5 : 0);
 }
 

@@ -115,7 +115,7 @@ auto battle(const Character &h, std::vector<std::string> gear = {},
 std::optional<VitalState> state = {}, unsigned seed = 2)
 {
     auto rules = module();
-    auto c = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto c = rules->create({{10, 8, std::vector<Terrain>(80)},
         {   {
                 1,
                 "campaign-character",
@@ -192,7 +192,7 @@ void grants()
             rejects(
                 [&]
             {
-                (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+                (void)rules->create({{8, 8, std::vector<Terrain>(64)},
                     {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
                         {2, "vanguard", "Enemy", 1, {3, 1}}
                     }},
@@ -287,7 +287,7 @@ void actions()
     act(*copy, "decline");
     check(c->save() == copy->save() && unit(*c).action,
           "Pending reaction preserves both action allowances");
-    auto dead = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+    auto dead = rules->create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",

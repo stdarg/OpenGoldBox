@@ -2,9 +2,9 @@ namespace unconscious_transit
 {
 Encounter corridor()
 {
-    Battlefield board{6, 3, std::vector<std::uint8_t>(18, 1)};
+    Battlefield board{6, 3, std::vector<Terrain>(18, Terrain::obstacle)};
     for (int x = 0; x < 6; ++x)
-        board.terrain[6 + x] = 0;
+        board.terrain[6 + x] = Terrain::open;
     return
     {
         board,
@@ -39,7 +39,7 @@ void run()
                 if (allied)
                     e.participants[1].side = e.participants[0].side;
                 if (difficult)
-                    e.battlefield.terrain[8] = 2;
+                    e.battlefield.terrain[8] = Terrain::difficult;
                 auto session = hero_first(*module, e);
                 const auto before = unit(*session, 1);
                 auto saved = session->save();
@@ -90,7 +90,7 @@ void run()
     check(downed, "Exercise a live knockout rather than only a synthetic state");
     // Interrupt after the paid prefix while sharing the unconscious enemy's square.
     e = corridor();
-    e.battlefield.terrain[0] = e.battlefield.terrain[1] = e.battlefield.terrain[2] = 0;
+    e.battlefield.terrain[0] = e.battlefield.terrain[1] = e.battlefield.terrain[2] = Terrain::open;
     e.participants[2].cell = {1, 0};
     e.participants.push_back({4, "healer", "Friendly healer", 0, {0, 0}});
     e.participants.push_back({5, "bandit", "Upper guard", 1, {2, 0}});

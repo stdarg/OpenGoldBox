@@ -557,7 +557,7 @@ void all_weapon_equipment()
             for (unsigned seed = 0; seed < 100; ++seed)
             {
                 auto attempt =
-                rules->create({{8, 5, std::vector<std::uint8_t>(40)}, participants}, seed);
+                rules->create({{8, 5, std::vector<Terrain>(40)}, participants}, seed);
                 if (attempt->snapshot().actor == id)
                 {
                     combat = std::move(attempt);
@@ -607,7 +607,7 @@ void goliath_occupancy()
     std::unique_ptr<CombatSession> combat;
     for (unsigned seed = 0; seed < 100; ++seed)
     {
-        auto candidate = rules->create({{6, 6, std::vector<std::uint8_t>(36)}, participants}, seed);
+        auto candidate = rules->create({{6, 6, std::vector<Terrain>(36)}, participants}, seed);
         if (candidate->snapshot().actor == 1000)
         {
             combat = std::move(candidate);
@@ -859,7 +859,7 @@ void class_weapon_proficiency()
             for (unsigned seed = 0; seed < 100; ++seed)
             {
                 auto attempt =
-                rules->create({{4, 4, std::vector<std::uint8_t>(16)}, participants}, seed);
+                rules->create({{4, 4, std::vector<Terrain>(16)}, participants}, seed);
                 if (attempt->snapshot().actor == id)
                 {
                     combat = std::move(attempt);
@@ -910,7 +910,7 @@ void stabilization_handoff()
     std::unique_ptr<CombatSession> stable;
     for (unsigned seed = 0; seed < 200 && !stable; ++seed)
     {
-        auto candidate = rules->create({{8, 5, std::vector<std::uint8_t>(40)}, participants}, seed);
+        auto candidate = rules->create({{8, 5, std::vector<Terrain>(40)}, participants}, seed);
         for (unsigned turns = 0; turns < 4; ++turns)
         {
             const auto snapshot = candidate->snapshot();
@@ -966,7 +966,7 @@ void remaining_turn_handoff()
     std::unique_ptr<CombatSession> combat;
     for (unsigned seed = 0; seed < 100 && !combat; ++seed)
     {
-        auto candidate = rules->create({{8, 5, std::vector<std::uint8_t>(40)}, participants}, seed);
+        auto candidate = rules->create({{8, 5, std::vector<Terrain>(40)}, participants}, seed);
         if (candidate->snapshot().actor == hero)
             combat = std::move(candidate);
     }
@@ -1051,7 +1051,7 @@ void untrained_equipment()
     }
     Encounter e
     {
-        {4, 4, std::vector<std::uint8_t>(16)},
+        {4, 4, std::vector<Terrain>(16)},
         {{1, "campaign-character", "Mage", 0, {1, 1}, p.data}, {2, "bandit", "Bandit", 1, {2, 1}}}};
     bool tested = false;
     for (unsigned seed = 0; seed < 100 && !tested; ++seed)
@@ -1185,10 +1185,10 @@ class ObservedModule final : public test::ForwardingModule
 CampaignEncounter encounter_fixture()
 {
     CampaignEncounter encounter;
-    encounter.field.geometry = {40, 26, std::vector<std::uint8_t>(40 * 26)};
+    encounter.field.geometry = {40, 26, std::vector<Terrain>(40 * 26)};
     for (int y = 0; y < 26; ++y)
-        encounter.field.geometry.terrain[y * 40 + 10] = 1;
-    encounter.field.geometry.terrain[13 * 40 + 25] = 2;
+        encounter.field.geometry.terrain[y * 40 + 10] = Terrain::obstacle;
+    encounter.field.geometry.terrain[13 * 40 + 25] = Terrain::difficult;
     encounter.field.tiles.resize(40 * 26, 7);
     encounter.enemies = {{1000, "bandit", "First enemy", 1, {}},
         {1001, "bandit", "Second enemy", 1, {}}
@@ -1232,7 +1232,8 @@ void campaign_encounters()
             std::set<Cell> positions;
             for (const auto &participant : handed.participants)
             {
-                check(participant.cell.x > 10 && handed.battlefield.at(participant.cell) != 1,
+                check(participant.cell.x > 10 &&
+                      handed.battlefield.at(participant.cell) != Terrain::obstacle,
                       "All participants remain in the party's reachable component");
                 check(positions.insert(participant.cell).second,
                       "Combatants occupy distinct cells");
@@ -1286,11 +1287,13 @@ void campaign_encounters()
     invalid.field.geometry.width = 65;
     rejected(invalid);
     invalid = encounter_fixture();
-    std::fill(invalid.field.geometry.terrain.begin(), invalid.field.geometry.terrain.end(), 1);
+    std::fill(invalid.field.geometry.terrain.begin(), invalid.field.geometry.terrain.end(),
+              Terrain::obstacle);
     rejected(invalid);
     // Enough floor cells in total, but diagonal corner contact is not a passage.
     invalid = encounter_fixture();
-    invalid.field.geometry = {3, 3, {0, 1, 0, 1, 0, 1, 0, 1, 0}};
+    const auto open = Terrain::open, wall = Terrain::obstacle;
+    invalid.field.geometry = {3, 3, {open, wall, open, wall, open, wall, open, wall, open}};
     rejected(invalid);
     invalid = encounter_fixture();
     invalid.enemies[0].definition = "unsupported";
@@ -1335,9 +1338,9 @@ void allied_campaign_movement()
     party->add_pc(character("cleric", "Ally"));
     party->add_pc(character("wizard", "Second ally"));
     CampaignEncounter encounter;
-    encounter.field.geometry = {7, 3, std::vector<std::uint8_t>(21, 1)};
+    encounter.field.geometry = {7, 3, std::vector<Terrain>(21, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
-        encounter.field.geometry.terrain[7 + x] = 0;
+        encounter.field.geometry.terrain[7 + x] = Terrain::open;
     encounter.enemies = {{1000, "bandit", "Enemy", 1, {6, 1}}};
     encounter.positions = {{0, 1}, {1, 1}, {2, 1}, {6, 1}};
     std::unique_ptr<CombatDemo> fight;
@@ -1625,7 +1628,7 @@ void caster_advancement()
         auto participants = party.participants();
         participants.push_back({1000, "bandit", "Bandit", 1, {9, 4}});
         auto rules = module();
-        auto combat = rules->create({{12, 9, std::vector<std::uint8_t>(108)}, participants}, 42);
+        auto combat = rules->create({{12, 9, std::vector<Terrain>(108)}, participants}, 42);
         const auto saved = combat->save();
         check(rules->restore(saved)->save() == saved,
               "Advanced profile and resources round-trip through combat checkpoint");
@@ -1662,7 +1665,7 @@ void dynamic_checkpoint()
     auto rules = module();
     const auto c = character("wizard");
     const auto profile = rules->character_profile(c.sheet(), {});
-    Encounter e{{4, 4, std::vector<std::uint8_t>(16)},
+    Encounter e{{4, 4, std::vector<Terrain>(16)},
         {   {1, "campaign-character", "Mage", 0, {0, 0}, profile.data},
             {2, "bandit", "Bandit", 1, {3, 3}}
         }};
@@ -1689,7 +1692,7 @@ void dynamic_checkpoint()
         auto participants = party.participants();
         participants[0].cell = {0, 0};
         participants.push_back({1000, "bandit", "Bandit", 1, {3, 3}});
-        auto fight = rules->create({{4, 4, std::vector<std::uint8_t>(16)}, participants}, 42);
+        auto fight = rules->create({{4, 4, std::vector<Terrain>(16)}, participants}, 42);
         const auto snapshot = fight->snapshot();
         check(std::any_of(snapshot.combatants.begin(), snapshot.combatants.end(),
                           [&](const auto & actor)

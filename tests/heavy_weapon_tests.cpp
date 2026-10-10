@@ -125,7 +125,7 @@ bool blind_hero = false)
     const auto profile = rules.character_profile(h.sheet(), gear);
     const std::string effect = "SRD11 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 "
                                "FX8 2 1 1 1 77 99 \"Source caster\" 38 60000 6000 0";
-    Encounter e{{40, 8, std::vector<std::uint8_t>(320)},
+    Encounter e{{40, 8, std::vector<Terrain>(320)},
         {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
             {2, "target", "Target", 1, target}
         }};
@@ -375,7 +375,7 @@ void campaign()
     auto actors = copy.participants();
     actors[0].cell = {1, 1};
     actors.push_back({99, "target", "Target", 1, {2, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+    auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
     act(*c, "melee");
     check(argument(attack(*c), "roll") == "8" && argument(attack(*c), "disadvantage").empty(),
           "Next campaign encounter uses the advanced score");

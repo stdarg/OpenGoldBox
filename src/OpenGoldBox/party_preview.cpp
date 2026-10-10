@@ -517,7 +517,7 @@ void CharacterCreationView::equipment_art_check()
         // Freeing the fight releases the fixture's combat lock.
         presentation::detach_child(*this, *combat).reset();
         CampaignEncounter encounter;
-        encounter.field.geometry = {12, 9, std::vector<std::uint8_t>(108)};
+        encounter.field.geometry = {12, 9, std::vector<rules::Terrain>(108)};
         encounter.enemies.push_back({1000, "bandit", "Artwork fixture", 1, {9, 4}});
         // A distinguishable authored enemy texture must survive party-only resolution.
         opengold::Image enemy;

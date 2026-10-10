@@ -119,7 +119,7 @@ void damage_follows_other_hand()
                           "Rules report two hands only when the other hand is empty");
                     check(!shield || profile.armor_class == 14,
                           "One-handed grip keeps the trained shield's AC");
-                    Encounter e{{8, 8, std::vector<std::uint8_t>(64)},
+                    Encounter e{{8, 8, std::vector<Terrain>(64)},
                         {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
                             {2, "vanguard", "Target", 1, {thrown ? 3 : 2, 1}}
                         }};
@@ -166,7 +166,7 @@ void reaction_continuation()
     auto rules = module();
     const std::array<std::string, 1> gear{"longsword"};
     const auto profile = rules->character_profile(hero().sheet(), gear);
-    Encounter e{{8, 8, std::vector<std::uint8_t>(64)},
+    Encounter e{{8, 8, std::vector<Terrain>(64)},
         {   {1, "campaign-character", "Reactor", 0, {1, 1}, profile.data},
             {2, "vanguard", "Mover", 1, {2, 1}}
         }};

@@ -1086,8 +1086,8 @@ void CombatView::_draw()
             const Rect2 cell(board_rect_.position + Vector2(x * tile, y * tile),
                              Vector2(tile, tile));
             const auto terrain = s.battlefield.at({x, y});
-            draw_rect(cell, terrain == 1   ? Color("64716d")
-                      : terrain == 2 ? Color("665238")
+            draw_rect(cell, terrain == Terrain::obstacle ? Color("64716d")
+                      : terrain == Terrain::difficult ? Color("665238")
                       : ((x + y) % 2 ? Color("29373c") : Color("253137")));
             const auto index = y * s.battlefield.width + x;
             if (index < demo_->battlefield_tiles().size() &&

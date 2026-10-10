@@ -48,7 +48,7 @@ std::unique_ptr<CombatSession> fight(const RulesModule &rules, std::string_view 
                                      std::uint64_t seed, bool second_member = false,
                                      bool beside = false)
 {
-    Encounter e{{8, 4, std::vector<std::uint8_t>(32)},
+    Encounter e{{8, 4, std::vector<Terrain>(32)},
         {{1, "runner", "Runner", 0, {0, 1}}, {9, std::string(enemy), "Enemy", 1, {beside ? 1 : 7, 1}}}};
     if (second_member)
         e.participants.push_back({2, "runner", "Stayer", 0, {3, 3}});
@@ -173,7 +173,7 @@ void flee_policy()
 {
     const auto rules = module();
     {
-        Encounter e{{16, 4, std::vector<std::uint8_t>(64)},
+        Encounter e{{16, 4, std::vector<Terrain>(64)},
             {{1, "runner", "Runner", 0, {8, 1}}, {9, "slow", "Enemy", 1, {15, 3}}}};
         auto c = rules->create(std::move(e), 1);
         for (unsigned n = 0; n < 200 && c->snapshot().outcome == Outcome::ongoing; ++n)
@@ -203,7 +203,7 @@ MoraleFight morale_fight(const RulesModule &rules, std::string_view enemy, unsig
 {
     for (std::uint64_t seed = 1; seed < 60; ++seed)
     {
-        Encounter e{{8, 4, std::vector<std::uint8_t>(32)},
+        Encounter e{{8, 4, std::vector<Terrain>(32)},
             {{1, "runner", "Runner", 0, {0, 1}}, {9, std::string(enemy), "Enemy", 1, {1, 1}}}};
         e.participants[1].morale = own;
         e.participants[1].intelligence = intelligence;
@@ -229,7 +229,7 @@ void cornered_monster_fights()
     const auto rules = module();
     for (std::uint64_t seed = 1; seed < 80; ++seed)
     {
-        Encounter e{{8, 4, std::vector<std::uint8_t>(32)},
+        Encounter e{{8, 4, std::vector<Terrain>(32)},
             {{1, "runner", "Runner", 0, {0, 1}}, {9, "even", "Enemy", 1, {1, 1}}}};
         e.morale = 1;
         auto c = rules->create(std::move(e), seed);

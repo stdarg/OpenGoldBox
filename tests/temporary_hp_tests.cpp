@@ -270,7 +270,7 @@ void actual_combat()
     VitalState state{c.sheet().hit_points};
     rules->grant_temporary_hit_points(state, c.sheet(), {1, "spell:fixture"},
                                       TemporaryHpChoice::use_new);
-    Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
+    Encounter encounter{{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
@@ -387,7 +387,7 @@ void campaign()
     }
     auto actors = copy.participants();
     actors.push_back({99, "bandit", "Enemy", 1, {7, 7}});
-    auto battle = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);
+    auto battle = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
     copy.begin_combat();
     copy.apply_combat(battle->snapshot());
     copy.end_combat();

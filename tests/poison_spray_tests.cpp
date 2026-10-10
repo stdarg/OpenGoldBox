@@ -143,7 +143,7 @@ std::vector<std::string> gear = {}, unsigned side = 1,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
-    auto c = rules.create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto c = rules.create({{10, 8, std::vector<Terrain>(80)},
         {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
@@ -249,7 +249,7 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
                 {2, "vanguard", "Enemy", 1, {3, 1}}
             }},
@@ -374,8 +374,8 @@ void eligibility()
     auto unknown = battle(*rules, hero(1, false));
     check(!has(*unknown, "poison_spray"), "Unlearned cantrip is never auto-granted to Wizards");
     auto profile = rules->character_profile(h.sheet(), {});
-    Battlefield board{10, 8, std::vector<std::uint8_t>(80)};
-    board.terrain[1 * 10 + 2] = 1;
+    Battlefield board{10, 8, std::vector<Terrain>(80)};
+    board.terrain[1 * 10 + 2] = Terrain::obstacle;
     auto blocked = rules->create({board,
         {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
             {2, "target", "Enemy", 1, {3, 1}}
@@ -395,7 +395,7 @@ void eligibility()
     const auto hp = unit(*normal).hit_points;
     check(normal->submit(command(*normal, "poison_spray", 1)) && unit(*normal).hit_points == hp - 8,
           "Self-targeting resolves an actual spell attack and damage");
-    auto dead = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto dead = rules->create({{10, 8, std::vector<Terrain>(80)},
         {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
             {2, "target", "Dead", 1, {3, 1}, {}, VitalState{0, true, {}}},
             {3, "target", "Enemy", 1, {8, 1}}
@@ -422,7 +422,7 @@ void allies_and_unconscious()
                     false, true
                 })
         {
-            Encounter e{{10, 8, std::vector<std::uint8_t>(80)},
+            Encounter e{{10, 8, std::vector<Terrain>(80)},
                 {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
                     {
                         2,
@@ -484,7 +484,7 @@ void campaign()
             auto actors = p.participants();
             actors[0].cell = {1, 1};
             actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             const auto old = unit(*c, id).persistent;
             check(c->submit(command(*c, "poison_spray", 99)),
                   "Ordinary party grants produce actual casting commands");
@@ -524,7 +524,7 @@ void ui_fixtures()
                                      ? std::vector<std::string> {"plate"}
                                      : std::vector<std::string> {"quarterstaff"});
         const auto c =
-        rules->create({{12, 9, std::vector<std::uint8_t>(108)},
+        rules->create({{12, 9, std::vector<Terrain>(108)},
             {   {1, "campaign-character", "Poison Wizard", 0, {1, 1}, profile.data},
                 {2, "vanguard", "Ally", 0, {3, 1}},
                 {99, "vanguard", "Enemy", 1, {5, 1}}

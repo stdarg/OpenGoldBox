@@ -138,7 +138,7 @@ void medicine_combat()
     check(profile.starts_with("PC42 "), "Scholar combat uses the current profile version");
     auto encounter = [&](const std::string & data)
     {
-        return Encounter{{8, 8, std::vector<std::uint8_t>(64)},
+        return Encounter{{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Scholar", 0, {1, 1}, data},
                 {
                     2,

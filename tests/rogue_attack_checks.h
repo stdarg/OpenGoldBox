@@ -30,7 +30,7 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon = "
         gear.push_back(weapon);
     const Cell target = ranged ? Cell{5, 1} :
                         Cell{2, 1};
-    Encounter e{{12, 8, std::vector<std::uint8_t>(96)},
+    Encounter e{{12, 8, std::vector<Terrain>(96)},
         {   {
                 1,
                 "campaign-character",
@@ -219,7 +219,7 @@ void run()
         actors.front().cell = {1, 1};
         actors[1].cell = {2, 2};
         actors.push_back({99, "target", "Target", 1, {2, 1}});
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         while (c->snapshot().actor != id)
             act(*c, "end");
         const auto vitals = unit(*c, id).persistent;
@@ -350,7 +350,7 @@ void run()
         {
             Encounter e
             {
-                {8, 8, std::vector<std::uint8_t>(64)},
+                {8, 8, std::vector<Terrain>(64)},
                 {   {
                         1,
                         "campaign-character",
@@ -396,7 +396,7 @@ void run()
             actors.front().cell = {1, 1};
             actors.push_back({99, "target", "Target", 1, {5, 1}});
             actors.push_back({2, "vanguard", "Ally", 0, {5, 2}});
-            auto c = rules->create({{12, 8, std::vector<std::uint8_t>(96)}, actors}, seed);
+            auto c = rules->create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
             while (c->snapshot().actor != id)
                 act(*c, "end");
             act(*c, "throw");

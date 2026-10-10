@@ -22,7 +22,7 @@ std::string critical_before(std::string_view weapon)
     actors.push_back({99, "vanguard", "Target", 1, {ranged ? 3 : 2, 1}});
     for (unsigned seed = 1; seed <= 128; ++seed)
     {
-        auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
+        auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
         turn(*c, 1);
         const auto before = c->save();
         act(*c, ranged ? "ranged" : "melee", 99);

@@ -35,7 +35,7 @@ auto combat(const RulesModule &r, const Character &h, std::vector<std::string> g
             unsigned seed = 13, bool ranged = false)
 {
     auto profile = r.character_profile(h.sheet(), gear);
-    auto c = r.create({{12, 8, std::vector<std::uint8_t>(96)},
+    auto c = r.create({{12, 8, std::vector<Terrain>(96)},
         {   {1, "campaign-character", "Style tester", 0, {1, 1}, profile.data},
             {99, "target", "Target", 1, ranged ? Cell{5, 1} : Cell{2, 1}}
         }},
@@ -270,7 +270,7 @@ void run()
                 auto actors = p.participants();
                 actors.front().cell = {1, 1};
                 actors.push_back({99, "target", "Target", 1, {4, 1}});
-                auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, seed);
+                auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
                 while (c->snapshot().actor != 1)
                     act(*c, "end");
                 auto rng = random_state(*c);
@@ -372,7 +372,7 @@ void run()
                     auto actors = p.participants();
                     actors.front().cell = {1, 1};
                     actors.push_back({99, "target", "Target", 1, {2, 1}});
-                    auto fight = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+                    auto fight = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
                     while (fight->snapshot().actor != id)
                         act(*fight, "end");
                     act(*fight, "melee");

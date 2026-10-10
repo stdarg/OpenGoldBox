@@ -337,7 +337,7 @@ void persistence_and_advancement()
     auto members = party.participants();
     members[0].cell = {1, 1};
     members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     const auto checkpoint = combat->save();
     check(checkpoint.starts_with("OGCOMBAT 47 ") &&
           rules->restore(checkpoint)->save() == checkpoint,

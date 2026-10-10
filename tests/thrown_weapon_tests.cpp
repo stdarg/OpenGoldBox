@@ -113,7 +113,7 @@ void physical_inventory()
                 actors.push_back({2, "vanguard", "Target", 1, {2, 1}});
                 actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
                 auto rules = module();
-                auto combat = rules->create({{10, 8, std::vector<std::uint8_t>(80)}, actors}, 19);
+                auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 19);
                 party.begin_combat();
                 party.apply_combat(combat->snapshot());
                 while (combat->snapshot().actor != id)
@@ -174,7 +174,7 @@ void critical_stack()
         actors.front().cell = {1, 1};
         actors.push_back({2, "vanguard", "Target", 1, {5, 1}});
         actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
-        auto combat = rules->create({{10, 8, std::vector<std::uint8_t>(80)}, actors}, seed);
+        auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, seed);
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         while (combat->snapshot().actor != 1)
@@ -236,7 +236,7 @@ void large_stack()
     auto actors = party.participants();
     actors[0].cell = {1, 1};
     actors.push_back({99, "vanguard", "Target", 1, {3, 1}});
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 1);
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 1);
     party.begin_combat();
     party.apply_combat(combat->snapshot());
     while (combat->snapshot().actor != first)
@@ -278,7 +278,7 @@ void control_fixture()
     actors.push_back({2, "vanguard", "Target", 1, {2, 1}});
     actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
     auto rules = module();
-    auto combat = rules->create({{10, 8, std::vector<std::uint8_t>(80)}, actors}, 1);
+    auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 1);
     while (combat->snapshot().actor != id)
         act(*combat, "end");
     const auto folder = std::filesystem::path(OPENGOLD_BINARY_DIR) / "thrown-fixtures";

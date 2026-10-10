@@ -88,7 +88,7 @@ auto duel(const RulesModule &rules, const CampaignParty &party)
     auto participants = party.participants();
     participants[0].cell = {1, 1};
     participants.push_back({99, "vanguard", "Target", 1, {8, 1}});
-    Encounter encounter{{30, 9, std::vector<std::uint8_t>(270)}, participants};
+    Encounter encounter{{30, 9, std::vector<Terrain>(270)}, participants};
     for (unsigned seed = 0; seed < 100; ++seed)
     {
         auto combat = rules.create(encounter, seed);
@@ -805,7 +805,7 @@ void feats()
             auto participants = party.participants();
             participants[0].cell = {1, 1};
             participants.push_back({99, "vanguard", "Target", 1, {2, 1}});
-            Encounter e{{12, 9, std::vector<std::uint8_t>(108)}, participants};
+            Encounter e{{12, 9, std::vector<Terrain>(108)}, participants};
             bool hit = false;
             for (unsigned seed = 0; seed < 100 && !hit; ++seed)
             {

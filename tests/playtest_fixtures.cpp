@@ -144,7 +144,7 @@ Encounter battle(const RulesModule &module, const CharacterSheet &hero,
                  std::vector<CarriedEquipment> carried = {})
 {
     const auto profile = module.character_profile(hero, gear).data;
-    Encounter e{{14, 8, std::vector<std::uint8_t>(112)},
+    Encounter e{{14, 8, std::vector<Terrain>(112)},
         {{1, "campaign-character", "Hero", 0, {1, 1}, profile}}};
     e.participants.front().inventory = std::move(carried);
     e.participants.insert(e.participants.end(), others.begin(), others.end());

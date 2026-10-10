@@ -127,7 +127,7 @@ std::uint64_t rng(const CombatSession &c)
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
 std::vector<std::string> gear = {})
 {
-    auto c = rules.create({{20, 8, std::vector<std::uint8_t>(160)},
+    auto c = rules.create({{20, 8, std::vector<Terrain>(160)},
         {   {
                 1,
                 "campaign-character",
@@ -160,7 +160,7 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
                 {2, "vanguard", "Enemy", 1, {3, 1}}
             }},
@@ -271,7 +271,7 @@ void multiple_casters()
 {
     auto rules = custom();
     const auto profile = rules->character_profile(hero(3).sheet(), {}).data;
-    auto c = rules->create({{20, 8, std::vector<std::uint8_t>(160)},
+    auto c = rules->create({{20, 8, std::vector<Terrain>(160)},
         {   {1, "campaign-character", "First", 0, {1, 1}, profile},
             {2, "target", "Target", 1, {8, 1}},
             {3, "campaign-character", "Second", 0, {3, 1}, profile}
@@ -356,8 +356,8 @@ void legality()
     }
     auto c = battle(*rules, hero(), 13, {3, 1}, {"quarterstaff", "shield"});
     check(has(*c, "ray_of_frost"), "Full hands do not block casting (CLASS-11)");
-    auto board = Battlefield{20, 8, std::vector<std::uint8_t>(160)};
-    board.terrain[22] = 1;
+    auto board = Battlefield{20, 8, std::vector<Terrain>(160)};
+    board.terrain[22] = Terrain::obstacle;
     c = rules->create({board,
         {   {
                 1,
@@ -390,7 +390,7 @@ void campaign()
     auto actors = party.participants();
     actors[0].cell = {1, 1};
     actors.push_back({99, "vanguard", "Enemy", 1, {13, 1}});
-    auto c = rules->create({{20, 8, std::vector<std::uint8_t>(160)}, actors}, 13);
+    auto c = rules->create({{20, 8, std::vector<Terrain>(160)}, actors}, 13);
     while (c->snapshot().actor != id)
         act(*c, "end");
     act(*c, "ray_of_frost", id);
@@ -431,7 +431,7 @@ void fixtures()
     auto h = hero(3);
     auto profile =
         rules->character_profile(h.sheet(), std::vector<std::string> {"quarterstaff"}).data;
-    auto c = rules->create({{20, 8, std::vector<std::uint8_t>(160)},
+    auto c = rules->create({{20, 8, std::vector<Terrain>(160)},
         {   {1, "campaign-character", "Frost Wizard", 0, {1, 1}, profile},
             {2, "vanguard", "Ally", 0, {3, 1}},
             {99, "vanguard", "Enemy", 1, {8, 1}}

@@ -108,7 +108,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::uint64_t seed = 5)
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
-    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto c = module.create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Monk", 0, {1, 1}, profile},
             {98, "target", "Enemy", 1, {2, 1}}
         }},
@@ -220,7 +220,7 @@ std::unique_ptr<CombatSession> hurt_battle(const RulesModule &module, const Char
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
     Participant monk{1, "campaign-character", "Monk", 0, {1, 1}, profile};
     monk.state = VitalState{hero.sheet().hit_points - 5};
-    return module.create({{12, 6, std::vector<std::uint8_t>(72)},
+    return module.create({{12, 6, std::vector<Terrain>(72)},
         {monk, {98, "target", "Enemy", 1, {2, 1}}}},
     5);
 }

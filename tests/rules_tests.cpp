@@ -53,9 +53,9 @@ std::string creature_resources(int second_winds, int successes = 0, int failures
 
 Encounter duel(std::string profile = "vanguard")
 {
-    Battlefield b{12, 9, std::vector<std::uint8_t>(108, 0)};
-    b.terrain[4 * 12 + 4] = 1;
-    b.terrain[2 * 12 + 1] = 2;
+    Battlefield b{12, 9, std::vector<Terrain>(108)};
+    b.terrain[4 * 12 + 4] = Terrain::obstacle;
+    b.terrain[2 * 12 + 1] = Terrain::difficult;
     return {b, {{1, profile, "Hero", 0, {2, 2}}, {2, "bandit", "Bandit", 1, {3, 2}}}};
 }
 
@@ -371,7 +371,7 @@ void boundary_tests()
     }
     check(reduced, "Surprise affects initiative across deterministic seeds");
     auto wide = duel();
-    wide.battlefield = {50, 25, std::vector<std::uint8_t>(1250)};
+    wide.battlefield = {50, 25, std::vector<Terrain>(1250)};
     auto original = module->create(wide, 42);
     check(module->restore(original->save())->snapshot().battlefield.width == 50,
           "Original arena dimensions round trip");
@@ -639,12 +639,12 @@ void mechanics_tests()
 
     encounter = duel("adept");
     encounter.participants[1].cell = {6, 2};
-    encounter.battlefield.terrain[2 * 12 + 4] = 1;
+    encounter.battlefield.terrain[2 * 12 + 4] = Terrain::obstacle;
     session = hero_first(*module, encounter);
     check(!offers(*session, "ranged") && !offers(*session, "fire_bolt") &&
           !offers(*session, "magic_missile"),
           "Opaque obstacles block weapon and spell targeting");
-    encounter.battlefield.terrain[2 * 12 + 4] = 0;
+    encounter.battlefield.terrain[2 * 12 + 4] = Terrain::open;
     session = hero_first(*module, encounter);
     check(offers(*session, "ranged") && offers(*session, "magic_missile"),
           "Clear sight enables targeting");
@@ -881,9 +881,9 @@ void death_save_turn_entry_tests()
 void allied_transit_tests()
 {
     auto module = srd5::load(pack());
-    Battlefield corridor{7, 3, std::vector<std::uint8_t>(21, 1)};
+    Battlefield corridor{7, 3, std::vector<Terrain>(21, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
-        corridor.terrain[7 + x] = 0;
+        corridor.terrain[7 + x] = Terrain::open;
     for (const unsigned side :
             {
                 0u, 1u
@@ -900,7 +900,7 @@ void allied_transit_tests()
                     {4, "vanguard", "Second ally", side, {2, 1}}
                 }};
             if (difficult)
-                e.battlefield.terrain[8] = 2;
+                e.battlefield.terrain[8] = Terrain::difficult;
             auto session = hero_first(*module, e);
             const auto saved = session->save();
             const auto moves = session->movement_reach(1);
@@ -923,10 +923,10 @@ void allied_transit_tests()
                   "Completed allied transit round trips");
         }
     // Pause on an allied space after a travelled prefix, before leaving reach.
-    Battlefield board{5, 3, std::vector<std::uint8_t>(15, 1)};
+    Battlefield board{5, 3, std::vector<Terrain>(15, Terrain::obstacle)};
     for (int x = 0; x < 5; ++x)
-        board.terrain[5 + x] = 0;
-    board.terrain[1] = board.terrain[2] = 0;
+        board.terrain[5 + x] = Terrain::open;
+    board.terrain[1] = board.terrain[2] = Terrain::open;
     Encounter e{board,
         {   {1, "vanguard", "Mover", 0, {0, 1}},
             {2, "bandit", "Reactor", 1, {1, 0}},
@@ -1188,10 +1188,10 @@ void checkpoint_validation_tests()
 
     // A route pauses after spending 10 feet while leaving an enemy's reach.
     // Only its remaining movement may be charged when validating a restore.
-    Battlefield corridor{5, 3, std::vector<std::uint8_t>(15, 1)};
+    Battlefield corridor{5, 3, std::vector<Terrain>(15, Terrain::obstacle)};
     for (int x = 0; x < 5; ++x)
-        corridor.terrain[5 + x] = 0;
-    corridor.terrain[1] = corridor.terrain[2] = 0; // Clear sight from the reactor.
+        corridor.terrain[5 + x] = Terrain::open;
+    corridor.terrain[1] = corridor.terrain[2] = Terrain::open; // Clear sight from the reactor.
     Encounter encounter{corridor,
         {   {1, "vanguard", "Mover", 0, {0, 1}},
             {2, "bandit", "Reactor", 1, {1, 0}},
@@ -1370,6 +1370,13 @@ class CombatOnlyModule : public RulesModule
 };
 static_assert(std::is_abstract_v<CombatOnlyModule>,
               "A module must implement every campaign operation");
+
+// A square's terrain is named, not a bare number (Effective C++ Item 18); the
+// enumerators keep the combat checkpoint's encoding.
+static_assert(std::is_same_v<decltype(Battlefield{}.at(Cell{})), Terrain> &&
+              std::is_same_v<decltype(Battlefield::terrain)::value_type, Terrain>);
+static_assert(static_cast<int>(Terrain::open) == 0 && static_cast<int>(Terrain::obstacle) == 1 &&
+              static_cast<int>(Terrain::difficult) == 2);
 
 // advance_character has one overridable form; a second overload that delegated
 // to it in the opposite direction let a module recurse forever (Effective C++

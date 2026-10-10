@@ -420,7 +420,7 @@ void roundtrip(const std::filesystem::path &directory)
     check_campaign_format_cutoff(saved, *rules, base);
     const auto encounter = [](const CampaignParty & p)
     {
-        rules::Encounter e{{8, 8, std::vector<std::uint8_t>(64)}, p.participants()};
+        rules::Encounter e{{8, 8, std::vector<rules::Terrain>(64)}, p.participants()};
         e.participants.push_back({99, "bandit", "Bandit", 1, {6, 6}});
         return e;
     };

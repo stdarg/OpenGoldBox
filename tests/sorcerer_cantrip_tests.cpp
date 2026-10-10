@@ -133,7 +133,7 @@ std::vector<std::string> gear = {}, unsigned side = 1,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
-    auto c = rules.create({{28, 8, std::vector<std::uint8_t>(224)},
+    auto c = rules.create({{28, 8, std::vector<Terrain>(224)},
         {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
@@ -224,7 +224,7 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
                 {99, "vanguard", "Enemy", 1, {5, 1}}
             }},
@@ -405,7 +405,7 @@ void campaign()
             auto actors = party.participants();
             actors[0].cell = {1, 1};
             actors.push_back({99, "vanguard", "Enemy", 1, {2, 1}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             check(c->submit(command(*c, spell, 99)),
                   "Ordinary party profile provides Sorcerer cast");
             party.begin_combat();
@@ -457,7 +457,7 @@ void fixtures()
         auto profile = rules->character_profile(
                            h.sheet(), kind == "blocked" ? std::vector<std::string> {"plate"}
                            : std::vector<std::string> {});
-        auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
+        auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
             {   {1, "campaign-character", "Sorcerer", 0, {1, 1}, profile.data},
                 {2, "vanguard", "Ally", 0, {2, 1}},
                 {99, "vanguard", "Enemy", 1, {5, 1}}

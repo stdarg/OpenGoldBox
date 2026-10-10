@@ -202,7 +202,7 @@ void combat_and_campaign()
     // Only combat leaves a recovered character Prone.
     const std::string recovered = "SRD11 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0";
     const std::string recovered_prone = "SRD11 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 1";
-    Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
+    Encounter encounter{{8, 8, std::vector<Terrain>(64)},
         {   {1, "campaign-character", "Patient", 0, {0, 0}, profile.data, stable},
             {2, "vanguard", "Companion", 0, {2, 0}},
             {99, "vanguard", "Enemy", 1, {7, 7}}

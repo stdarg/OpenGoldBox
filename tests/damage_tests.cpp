@@ -288,7 +288,7 @@ void species_combat()
         const auto encounter = [&](const Character & h)
         {
             auto profile = rules->character_profile(h.sheet(), {});
-            return Encounter{{8, 8, std::vector<std::uint8_t>(64)},
+            return Encounter{{8, 8, std::vector<Terrain>(64)},
                 {   {1, "campaign-character", "Target", 0, {2, 2}, profile.data},
                     {2, "toxin", "Poison attacker", 1, {3, 2}}
                 }};
@@ -386,7 +386,7 @@ void weapons_and_spells()
         const std::array gear{std::string(weapon.key)};
         const auto profile = rules->character_profile(character.sheet(), gear);
         auto combat =
-        rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Armed fighter", 0, {2, 2}, profile.data},
                 {2, "target", "Target", 1, {3, 2}}
             }},
@@ -412,7 +412,7 @@ void weapons_and_spells()
         auto rules = srd5::parse_content(content() + attacker() + target +
                                          "affinity target shell immunity " + type + '\n');
         auto combat =
-        rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        rules->create({{8, 8, std::vector<Terrain>(64)},
             {{1, "toxin", "Caster", 0, {0, 0}}, {2, "target", "Target", 1, {7, 7}}}},
         42);
         turn(*combat, 1);
@@ -431,7 +431,7 @@ void weapons_and_spells()
     auto base = srd5::parse_content(content() + attacker() + target);
     auto protected_rules = srd5::parse_content(content() + attacker() + target +
         "affinity target ward resistance force\n");
-    Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
+    Encounter encounter{{8, 8, std::vector<Terrain>(64)},
         {{1, "toxin", "Caster", 0, {0, 0}}, {2, "target", "Target", 1, {7, 7}}}};
     auto raw = base->create(encounter, 42), resisted = protected_rules->create(encounter, 42);
     turn(*raw, 1);

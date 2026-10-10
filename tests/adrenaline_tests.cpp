@@ -95,7 +95,7 @@ auto battle(const Character &c, TemporaryHitPoints temporary = {})
     VitalState state{c.sheet().hit_points - 1};
     if (temporary.amount)
         rules->grant_temporary_hit_points(state, c.sheet(), temporary, TemporaryHpChoice::use_new);
-    Encounter e{{20, 20, std::vector<std::uint8_t>(400)},
+    Encounter e{{20, 20, std::vector<Terrain>(400)},
         {   {
                 1,
                 "campaign-character",
@@ -276,7 +276,7 @@ void movement()
 {
     auto rules = module();
     const auto c = hero();
-    Encounter e{{10, 10, std::vector<std::uint8_t>(100)},
+    Encounter e{{10, 10, std::vector<Terrain>(100)},
         {   {
                 1,
                 "campaign-character",
@@ -340,7 +340,7 @@ void campaign()
           "Level growth does not refill spent uses");
     auto actors = copy.participants();
     actors.push_back({99, "vanguard", "Opponent", 1, {18, 18}});
-    auto second = rules->create({{20, 20, std::vector<std::uint8_t>(400)}, actors}, 42);
+    auto second = rules->create({{20, 20, std::vector<Terrain>(400)}, actors}, 42);
     check(unit(*second).temporary_hp.amount == 2 &&
           pool(copy.member(id).character, unit(*second).persistent).remaining == 1,
           "Next encounter inherits buffer and expenditure");

@@ -61,7 +61,7 @@ void conversions()
     auto module = rules();
     for (const auto *creature : {"lizardfolk", "giant-lizard", "gnoll-warrior", "norris-the-gray"})
     {
-        auto c = module->create({{8, 4, std::vector<std::uint8_t>(32)},
+        auto c = module->create({{8, 4, std::vector<Terrain>(32)},
             {{1, creature, "Monster", 1, {1, 1}}, {2, "target", "Target", 0, {2, 1}}}},
         3);
         check(c->snapshot().combatants.size() == 2, std::string(creature) + " joins a fight");
@@ -72,7 +72,7 @@ void conversions()
 void multiattack()
 {
     auto module = rules();
-    auto c = module->create({{8, 4, std::vector<std::uint8_t>(32)},
+    auto c = module->create({{8, 4, std::vector<Terrain>(32)},
         {{1, "lizardfolk", "Lizardfolk", 1, {1, 1}}, {2, "target", "Target", 0, {2, 1}}}},
     3);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

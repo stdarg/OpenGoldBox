@@ -136,7 +136,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::vector<std::string> equipment = {})
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
-    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto c = module.create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
             {2, "target", "Ally", 0, ally},
             {98, enemy, "First", 1, first},
@@ -402,7 +402,7 @@ void color_spray_checks()
 
 bool difficult(const CombatSession &c, Cell cell)
 {
-    return c.snapshot().battlefield.at(cell) == 2;
+    return c.snapshot().battlefield.at(cell) == Terrain::difficult;
 }
 
 void grease_checks()
@@ -571,7 +571,7 @@ void shield_missile_checks()
     {
         return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
     };
-    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
             {98, "campaign-character", "Foe", 1, {6, 1}, profile(foe)}
         }},
@@ -766,7 +766,7 @@ void see_invisibility_checks()
     {
         return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
     };
-    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
             {98, "campaign-character", "Foe", 1, {8, 1}, profile(foe)}
         }},
@@ -794,7 +794,7 @@ void invisible_caster_awaits_a_reaction()
     {
         return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
     };
-    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
             {98, "campaign-character", "Foe", 1, {8, 1}, profile(foe)}
         }},

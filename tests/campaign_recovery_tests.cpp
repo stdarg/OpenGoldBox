@@ -286,7 +286,7 @@ void combat_handoff()
     party.restore(state);
     auto actors = party.participants();
     actors.push_back({999, "bandit", "Enemy", 1, {7, 7}});
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
     auto reloaded = rules->restore(combat->save()), twin = rules->restore(combat->save());
     check(reloaded->save() == combat->save(), "Recovery checkpoint reload is exact");
     check(reloaded->submit(end(*reloaded)) && twin->submit(end(*twin)) &&
@@ -343,7 +343,7 @@ void combat_handoff()
     party.restore(state);
     actors = party.participants();
     actors.push_back({999, "bandit", "Enemy", 1, {7, 7}});
-    combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);
+    combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
     party.begin_combat();
     party.apply_combat(combat->snapshot());
     party.end_combat();

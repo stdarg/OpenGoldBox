@@ -34,17 +34,18 @@ template <class Function> void rejects(Function function)
 // then relax all edges repeatedly (Bellman-Ford), without a priority queue.
 int reference_step(const Battlefield &board, const std::vector<int> &occupants, Cell from, Cell to)
 {
-    if (board.at(from) == 1 || board.at(to) == 1 || from == to)
+    if (board.at(from) == Terrain::obstacle || board.at(to) == Terrain::obstacle || from == to)
         return -1;
     if (std::abs(from.x - to.x) > 1 || std::abs(from.y - to.y) > 1)
         return -1;
     if (from.x != to.x && from.y != to.y &&
-            (board.at({from.x, to.y}) == 1 || board.at({to.x, from.y}) == 1))
+            (board.at({from.x, to.y}) == Terrain::obstacle ||
+             board.at({to.x, from.y}) == Terrain::obstacle))
         return -1;
     const int occupant = occupants[to.y * board.width + to.x];
     if (occupant == 2)
         return -1;
-    return board.at(to) == 2 || occupant == 3 ? 10 : 5;
+    return board.at(to) == Terrain::difficult || occupant == 3 ? 10 : 5;
 }
 
 std::vector<int> reference_costs(const Battlefield &board, const std::vector<int> &occupants,
@@ -122,7 +123,7 @@ void exhaustive_movement()
     // other than the origin: 6^5 = 7,776 boards, including disconnected maps.
     for (unsigned pattern = 0; pattern < 7776; ++pattern)
     {
-        Battlefield board{3, 2, std::vector<std::uint8_t>(6)};
+        Battlefield board{3, 2, std::vector<Terrain>(6)};
         std::vector<int> occupants(6);
         auto remaining = pattern;
         for (int cell = 1; cell < 6; ++cell)
@@ -130,7 +131,7 @@ void exhaustive_movement()
             const auto kind = remaining % 6;
             remaining /= 6;
             if (kind <= 2)
-                board.terrain[cell] = kind;
+                board.terrain[cell] = static_cast<Terrain>(kind);
             else
                 occupants[cell] = kind - 2;
         }
@@ -140,13 +141,13 @@ void exhaustive_movement()
     // routes in all eight directions, independently of occupancy fixtures.
     for (unsigned pattern = 0; pattern < 6561; ++pattern)
     {
-        Battlefield board{3, 3, std::vector<std::uint8_t>(9)};
+        Battlefield board{3, 3, std::vector<Terrain>(9)};
         auto remaining = pattern;
         for (int cell = 0; cell < 9; ++cell)
         {
             if (cell == 4)
                 continue;
-            board.terrain[cell] = remaining % 3;
+            board.terrain[cell] = static_cast<Terrain>(remaining % 3);
             remaining /= 3;
         }
         compare_routes(board, std::vector<int>(9), {1, 1});
@@ -181,9 +182,9 @@ void exhaustive_sight()
 {
     for (unsigned walls = 0; walls < 512; ++walls)
     {
-        Battlefield board{3, 3, std::vector<std::uint8_t>(9)};
+        Battlefield board{3, 3, std::vector<Terrain>(9)};
         for (int i = 0; i < 9; ++i)
-            board.terrain[i] = (walls >> i) & 1;
+            board.terrain[i] = (walls >> i) & 1 ? Terrain::obstacle : Terrain::open;
         for (int a = 0; a < 9; ++a)
         {
             for (int b = 0; b < 9; ++b)
@@ -191,7 +192,8 @@ void exhaustive_sight()
                 const Cell from{a % 3, a / 3}, to{b % 3, b / 3};
                 bool clear = true;
                 for (int wall = 0; wall < 9; ++wall)
-                    if (board.terrain[wall] && touches_wall(from, to, {wall % 3, wall / 3}))
+                    if (board.terrain[wall] == Terrain::obstacle &&
+                            touches_wall(from, to, {wall % 3, wall / 3}))
                         clear = false;
                 check(has_line_of_sight(board, from, to) == clear,
                       "Sight disagrees with segment/rectangle oracle");
@@ -204,9 +206,9 @@ void exhaustive_sight()
 
 void allied_transit()
 {
-    Battlefield corridor{7, 2, std::vector<std::uint8_t>(14, 1)};
+    Battlefield corridor{7, 2, std::vector<Terrain>(14, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
-        corridor.terrain[x] = 0;
+        corridor.terrain[x] = Terrain::open;
     const std::vector<Occupant> allies{{{1, 0}, false}, {{2, 0}, false}};
     MovementGrid grid(corridor, {0, 0}, allies);
     check(grid.reachable(15).path_to({3, 0}) == std::vector<Cell> {{1, 0}, {2, 0}, {3, 0}},
@@ -215,7 +217,7 @@ void allied_transit()
           "Only a fully affordable route to a free stopping point is offered");
     check(!grid.reachable(30).cost_to({1, 0}) && !grid.reachable(30).cost_to({2, 0}),
           "Allies remain transit cells, never destinations");
-    corridor.terrain[1] = 2;
+    corridor.terrain[1] = Terrain::difficult;
     grid = MovementGrid(corridor, {0, 0}, allies);
     check(grid.reachable(20).cost_to({3, 0}) == 20 && !grid.reachable(19).cost_to({3, 0}),
           "Difficult ground under an ally adds its normal five-foot surcharge once");
@@ -227,7 +229,7 @@ void allied_transit()
     grid = MovementGrid(corridor, {0, 0}, hostile);
     check(grid.reachable(25).cost_to({3, 0}) == 25 && !grid.reachable(24).cost_to({3, 0}),
           "Unconscious hostile square adds difficult terrain to the route");
-    corridor.terrain[2] = 2;
+    corridor.terrain[2] = Terrain::difficult;
     grid = MovementGrid(corridor, {0, 0}, hostile);
     check(grid.reachable(25).cost_to({3, 0}) == 25,
           "Enemy occupancy and difficult ground do not stack");
@@ -237,15 +239,15 @@ void allied_transit()
     grid = MovementGrid(corridor, {0, 0}, overlapping);
     check(!grid.reachable(60).cost_to({3, 0}),
           "Conscious enemy wins over overlapping incapacitated enemy");
-    corridor.terrain[1] = 1;
+    corridor.terrain[1] = Terrain::obstacle;
     grid = MovementGrid(corridor, {0, 0}, allies);
     check(!grid.reachable(60).cost_to({3, 0}), "Allied occupancy cannot bypass a wall");
 }
 
 void boundaries_and_ties()
 {
-    Battlefield board{3, 3, std::vector<std::uint8_t>(9)};
-    board.terrain[4] = 1;
+    Battlefield board{3, 3, std::vector<Terrain>(9)};
+    board.terrain[4] = Terrain::obstacle;
     MovementGrid grid(board, {0, 1}, {});
     check(grid.reachable(20).path_to({2, 1}) == std::vector<Cell> {{0, 0}, {1, 0}, {2, 0}, {2, 1}},
     "Equal-cost detours must keep their row-major tie order");
@@ -281,14 +283,14 @@ void boundaries_and_ties()
         (void)MovementGrid(invalid, {0, 0}, {});
     });
     invalid = board;
-    invalid.terrain[0] = 3;
+    invalid.terrain[0] = static_cast<Terrain>(3);
     rejects(
         [&]
     {
         (void)MovementGrid(invalid, {0, 0}, {});
     });
 
-    board.terrain[4] = 2;
+    board.terrain[4] = Terrain::difficult;
     const std::vector<Occupant> ally{{{1, 1}, false}};
     grid = MovementGrid(board, {0, 1}, ally);
     check(grid.step_cost({0, 1}, {1, 1}) == 10,
@@ -297,7 +299,7 @@ void boundaries_and_ties()
     const std::vector<Occupant> surrounded{{{0, 0}, false}, {{1, 0}, false}, {{2, 0}, false},
         {{0, 1}, false}, {{2, 1}, false}, {{0, 2}, false},
         {{1, 2}, false}, {{2, 2}, false}};
-    const MovementGrid trapped(Battlefield{3, 3, std::vector<std::uint8_t>(9)}, {1, 1}, surrounded);
+    const MovementGrid trapped(Battlefield{3, 3, std::vector<Terrain>(9)}, {1, 1}, surrounded);
     for (int y = 0; y < 3; ++y)
         for (int x = 0; x < 3; ++x)
             check(!trapped.reachable(30).cost_to({x, y}),
@@ -305,7 +307,7 @@ void boundaries_and_ties()
     // Search results and grids own their data; later caller mutations cannot
     // change either a previously computed path or a pending search's geometry.
     const auto reachable = grid.reachable(15);
-    board.terrain.assign(9, 1);
+    board.terrain.assign(9, Terrain::obstacle);
     check(reachable.cost_to({2, 1}) == 10 && grid.reachable(15).cost_to({2, 1}) == 10,
           "Grid snapshots retain independent value ownership");
 }

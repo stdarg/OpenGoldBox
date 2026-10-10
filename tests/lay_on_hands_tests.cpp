@@ -88,7 +88,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
         {99, "vanguard", "Enemy", 1, {10, 6}}};
     if (paladin_state)
         setup[0].state = *paladin_state;
-    auto c = rules.create({{12, 8, std::vector<std::uint8_t>(96)}, setup}, 7);
+    auto c = rules.create({{12, 8, std::vector<Terrain>(96)}, setup}, 7);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
     {
         bool ended = false;

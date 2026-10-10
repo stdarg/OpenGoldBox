@@ -195,7 +195,7 @@ void reactions()
             bool tested = false;
             for (unsigned seed = 1; seed < 128 && !tested; ++seed)
             {
-                auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
+                auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
                 turn(*c, 99);
                 Command move;
                 for (const auto &cmd : c->legal_commands())
@@ -262,7 +262,7 @@ void cleave_criticals()
     bool tested = false;
     for (unsigned seed = 1; seed < 1000 && !tested; ++seed)
     {
-        auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
+        auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
         turn(*c, 1);
         act(*c, "melee", 99);
         if (!critical(*c))
@@ -422,7 +422,7 @@ void boundaries()
     {
         auto e = encounter(*r, hero("warhammer"), "warhammer");
         if (blocked)
-            e.battlefield.terrain[1 * 12 + 3] = 1;
+            e.battlefield.terrain[1 * 12 + 3] = Terrain::obstacle;
         auto c = r->create(e, 11);
         turn(*c, 1);
         act(*c, "melee", 99);
@@ -486,9 +486,9 @@ void movement_enables_mastery()
         roster.push_back({99, "mastery_target", "First", 1, {2, 1}});
         if (cleave)
             roster.push_back({98, "mastery_target", "Second", 1, {3, 2}});
-        Battlefield board{12, 8, std::vector<std::uint8_t>(96)};
+        Battlefield board{12, 8, std::vector<Terrain>(96)};
         if (!cleave)
-            board.terrain[15] = 1;
+            board.terrain[15] = Terrain::obstacle;
         bool tested = false;
         for (unsigned seed = 1; seed < 128 && !tested; ++seed)
         {
@@ -539,13 +539,13 @@ void slain_reaction_mover()
     roster.front().cell = {1, 1};
     roster.push_back({99, "mastery_target", "Mover", 1, {2, 1}});
     roster.push_back({98, "mastery_target", "Second", 1, {2, 2}});
-    auto baseline = r->create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
+    auto baseline = r->create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, 1);
     roster[1].state = unit(*baseline, 99).persistent;
     roster[1].state->hit_points = 1;
     bool tested = false;
     for (unsigned seed = 1; seed < 64 && !tested; ++seed)
     {
-        auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, seed);
+        auto c = r->create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, seed);
         turn(*c, 99);
         for (const auto &cmd : c->legal_commands())
             if (cmd.verb == "move" && cmd.destination == Cell{3, 1})
@@ -590,7 +590,7 @@ void physical_and_damage()
             bool tested = false;
             for (unsigned seed = 1; seed < 32 && !tested; ++seed)
             {
-                auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, seed);
+                auto c = r->create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, seed);
                 turn(*c, 1);
                 act(*c, "throw", 99);
                 if (!c->snapshot().optional_effect_choice)

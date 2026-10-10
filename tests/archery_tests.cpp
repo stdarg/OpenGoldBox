@@ -115,7 +115,7 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon, Ce
 unsigned seed = 89)
 {
     const auto profile = rules.character_profile(h.sheet(), std::array<std::string, 1> {weapon});
-    auto c = rules.create({{40, 8, std::vector<std::uint8_t>(320)},
+    auto c = rules.create({{40, 8, std::vector<Terrain>(320)},
         {   {1, "campaign-character", "Archer", 0, {1, 1}, profile.data},
             {99, "target", "Target", 1, target}
         }},
@@ -300,7 +300,7 @@ void forged_profiles()
     auto rules = module();
     auto profile =
         rules->character_profile(leveled().sheet(), std::array<std::string, 1> {"shortbow"}).data;
-    auto encounter = Encounter{{8, 8, std::vector<std::uint8_t>(64)},
+    auto encounter = Encounter{{8, 8, std::vector<Terrain>(64)},
         {   {1, "campaign-character", "Archer", 0, {1, 1}, profile},
             {99, "vanguard", "Target", 1, {5, 1}}
         }};

@@ -528,10 +528,11 @@ CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_
     const int length = 30, height = static_cast<int>(width) + 2;
     CampaignEncounter arena;
     arena.field.geometry = {length, height,
-                            std::vector<std::uint8_t>(static_cast<std::size_t>(length * height))};
+                            std::vector<rules::Terrain>(static_cast<std::size_t>(length * height))};
     for (int x = 0; x < length; ++x)
         arena.field.geometry.terrain[static_cast<std::size_t>(x)] =
-            arena.field.geometry.terrain[static_cast<std::size_t>((height - 1) * length + x)] = 1;
+            arena.field.geometry.terrain[static_cast<std::size_t>((height - 1) * length + x)] =
+                rules::Terrain::obstacle;
     arena.field.tiles.resize(static_cast<std::size_t>(length * height), 7);
     const auto place = [&](std::size_t n, int front, int step)
     {

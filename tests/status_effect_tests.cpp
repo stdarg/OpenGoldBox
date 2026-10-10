@@ -101,7 +101,7 @@ fx::EffectState blind(int dc = 38, unsigned remaining = 60000)
 
 Encounter encounter()
 {
-    return {{12, 9, std::vector<std::uint8_t>(108)},
+    return {{12, 9, std::vector<Terrain>(108)},
         {{1, "blindness-adept", "Caster", 0, {2, 4}}, {2, "bandit", "Target", 1, {3, 4}}},
         123};
 }
@@ -421,7 +421,7 @@ void campaign()
     for (std::size_t i = 0; i < actors.size(); ++i)
         actors[i].cell = {int(i), 0};
     actors.push_back({999, "bandit", "Enemy", 1, {10, 0}});
-    auto session = rules->create({{12, 9, std::vector<std::uint8_t>(108)}, actors}, 3);
+    auto session = rules->create({{12, 9, std::vector<Terrain>(108)}, actors}, 3);
     auto state = party.checkpoint();
     for (auto &member : state.roster)
     {
@@ -461,7 +461,7 @@ void campaign()
     actors = restored.participants();
     actors.push_back({999, "bandit", "Enemy", 1, {10, 0}});
     session = rules->create(
-    {{12, 9, std::vector<std::uint8_t>(108)}, actors, restored.state().next_combat_scope}, 3);
+    {{12, 9, std::vector<Terrain>(108)}, actors, restored.state().next_combat_scope}, 3);
     check(effects(unit(*session, pc).persistent).active[0].source_scope == 77,
           "Original source identity survives a new encounter");
     restored.begin_combat();
@@ -517,7 +517,7 @@ void original_encounter_scope()
     CombatDemo demo(module());
     demo.campaign_party(party);
     CampaignEncounter encounter;
-    encounter.field.geometry = {40, 25, std::vector<std::uint8_t>(1000)};
+    encounter.field.geometry = {40, 25, std::vector<Terrain>(1000)};
     encounter.enemies = {{999, "bandit", "Original encounter target", 1, {}}};
     demo.encounter(std::move(encounter), 3);
     check(party->state().next_combat_scope == 12,
@@ -538,7 +538,7 @@ void checkpoint_capacity()
         fx::apply_blindness(full, 77, 99, std::string(160, '"'), 13, 6000);
     check(full.active.size() == fx::effect_limit, "Application count is bounded");
     const auto bandit = unit(*rules->create(encounter(), 3), 2).persistent;
-    Encounter e{{12, 9, std::vector<std::uint8_t>(108)}, {}};
+    Encounter e{{12, 9, std::vector<Terrain>(108)}, {}};
     for (unsigned n = 0; n < 64; ++n)
     {
         Participant p{n + 1, "bandit", "Crowded actor", n % 2, {int(n % 12), int(n / 12)}};

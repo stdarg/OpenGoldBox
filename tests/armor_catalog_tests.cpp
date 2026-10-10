@@ -226,7 +226,7 @@ void all_classes()
                     ((penalty && ability < 2) || (e.stealth && ability == 1)),
                     "Only applicable ability checks receive armor penalties; alternate-ability Stealth is distinct");
             }
-            auto c = rules->create({{4, 4, std::vector<std::uint8_t>(16)},
+            auto c = rules->create({{4, 4, std::vector<Terrain>(16)},
                 {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
                     {2, "target", "Target", 1, {2, 1}}
                 }},

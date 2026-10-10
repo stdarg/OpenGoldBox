@@ -97,7 +97,7 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 auto battle(const RulesModule &rules, const Character &h, unsigned seed,
 std::vector<std::string> gear = {"longsword"}, bool prone = false)
 {
-    auto c = rules.create({{8, 8, std::vector<std::uint8_t>(64)},
+    auto c = rules.create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
@@ -327,7 +327,7 @@ void reaction_continuation()
                 auto h = hero();
                 auto c = rules->create(
                 {
-                    {8, 8, std::vector<std::uint8_t>(64)},
+                    {8, 8, std::vector<Terrain>(64)},
                     {   {
                             1,
                             "campaign-character",
@@ -412,7 +412,7 @@ void campaign_and_cancellation()
             actors[0].cell = {2, 2};
             actors.push_back({2, "vanguard", "Enemy", 1, {3, 2}});
             actors.push_back({3, "vanguard", "Reserve", 1, {6, 6}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, seed);
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
             while (c->snapshot().actor != id)
                 act(*c, "end");
             act(*c, "second_wind");
@@ -459,7 +459,7 @@ void campaign_and_cancellation()
         std::uint64_t rng = seed;
         const int expected = srd5::roll_die(rng, 20) + h.sheet().modifiers[1];
         auto c = rules->create(
-        {{8, 8, std::vector<std::uint8_t>(64)}, {p, {2, "vanguard", "Enemy", 1, {6, 6}}}},
+        {{8, 8, std::vector<Terrain>(64)}, {p, {2, "vanguard", "Enemy", 1, {6, 6}}}},
         seed);
         check(unit(*c).initiative == expected,
               "Surprise Disadvantage cancels Champion Initiative Advantage without extra dice");
@@ -473,8 +473,8 @@ void repeated_criticals_and_terrain()
     for (unsigned seed = 0; seed < 1000 && !covered; ++seed)
     {
         auto h = hero();
-        Battlefield board{8, 8, std::vector<std::uint8_t>(64)};
-        board.terrain[2 * 8 + 1] = 2;
+        Battlefield board{8, 8, std::vector<Terrain>(64)};
+        board.terrain[2 * 8 + 1] = Terrain::difficult;
         auto c = rules->create(
         {
             board,
@@ -530,7 +530,7 @@ void fixtures()
         auto h = hero();
         auto c = rules->create(
         {
-            {8, 8, std::vector<std::uint8_t>(64)},
+            {8, 8, std::vector<Terrain>(64)},
             {   {
                     1,
                     "campaign-character",

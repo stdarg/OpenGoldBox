@@ -154,7 +154,7 @@ std::string snapshot()
         {
             const int column = 1 + feet / 5;
             auto c =
-            rules->create({{28, 4, std::vector<std::uint8_t>(28 * 4)},
+            rules->create({{28, 4, std::vector<Terrain>(28 * 4)},
                 {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
                     {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
                     {3, "target", "Enemy", 1, {column, 2}}
@@ -312,7 +312,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const CharacterS
 {
     const auto profile = rules.character_profile(sheet, gear);
     const int column = 1 + feet / 5;
-    auto c = rules.create({{34, 4, std::vector<std::uint8_t>(34 * 4)},
+    auto c = rules.create({{34, 4, std::vector<Terrain>(34 * 4)},
         {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
             {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
             {3, "target", "Enemy", 1, {column, 2}}
@@ -477,7 +477,7 @@ void profile_tags()
     {
         try
         {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            (void)rules->create({{8, 8, std::vector<Terrain>(64)},
                 {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
                     {2, "target", "Target", 1, {3, 1}}
                 }},

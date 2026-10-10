@@ -122,7 +122,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::uint64_t seed = 5)
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
-    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto c = module.create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Bard", 0, {1, 1}, profile},
             {2, "target", "Ally", 0, {3, 2}},
             {98, "target", "Enemy", 1, {4, 1}}

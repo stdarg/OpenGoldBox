@@ -113,7 +113,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
                                       std::vector<std::string> gear = {"longsword"})
 {
     const auto profile = rules.character_profile(hero.sheet(), gear).data;
-    auto c = rules.create({{8, 4, std::vector<std::uint8_t>(32)},
+    auto c = rules.create({{8, 4, std::vector<Terrain>(32)},
         {   {1, "campaign-character", "Smiter", 0, {1, 1}, profile},
             {99, "target", "Target", 1, {2, 1}}
         }},
@@ -227,7 +227,7 @@ void write_ui_fixture()
     const auto profile = rules->character_profile(paladin().sheet(), std::vector<std::string> {"longsword"}).data;
     for (std::uint64_t seed = 1; seed <= 64; ++seed)
     {
-        auto c = rules->create({{8, 4, std::vector<std::uint8_t>(32)},
+        auto c = rules->create({{8, 4, std::vector<Terrain>(32)},
             {   {1, "campaign-character", "Smiter", 0, {1, 1}, profile},
                 {99, "vanguard", "Target", 1, {2, 1}}
             }},

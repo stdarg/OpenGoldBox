@@ -290,13 +290,23 @@ struct Cell
     auto operator<=>(const Cell &) const = default;
 };
 
+// A square's geometry, named so a comparison cannot mistake one kind for
+// another (Effective C++ Item 18). The values are the combat checkpoint's
+// encoding and must not change.
+enum class Terrain : std::uint8_t
+{
+    open = 0,
+    obstacle = 1, // Opaque: blocks movement and sight.
+    difficult = 2
+};
+
 struct Battlefield
 {
     int width{}, height{};
-    // Geometry facts: 0=open, 1=opaque obstacle, 2=difficult terrain.
-    std::vector<std::uint8_t> terrain;
+    std::vector<Terrain> terrain;
     [[nodiscard]] bool contains(Cell p) const noexcept;
-    [[nodiscard]] unsigned at(Cell p) const noexcept;
+    // Outside the board, or past a short terrain list, is an obstacle.
+    [[nodiscard]] Terrain at(Cell p) const noexcept;
 };
 
 // Endpoints are cell centers. Touching either wall at a diagonal corner blocks

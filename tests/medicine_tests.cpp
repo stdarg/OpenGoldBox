@@ -122,7 +122,7 @@ unsigned side = 0)
 {
     auto c = rules.create(
     {
-        {8, 8, std::vector<std::uint8_t>(64)},
+        {8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
@@ -165,7 +165,7 @@ void grants()
             rejects(
                 [&]
             {
-                (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+                (void)rules->create({{8, 8, std::vector<Terrain>(64)},
                     {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
                         {2, "vanguard", "Enemy", 1, {5, 5}}
                     }},
@@ -369,7 +369,7 @@ void campaign_and_rest()
             actors[0].cell = {1, 1};
             actors[1].cell = {2, 1};
             actors.push_back({99, "vanguard", "Enemy", 1, {6, 6}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, seed);
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
             while (c->snapshot().actor != id)
                 act(*c, "end");
             if (!has(*c, "stabilize"))
@@ -451,7 +451,7 @@ void fixtures()
             },
             {99, "vanguard", "Enemy", 1, {6, 6}}
         };
-        auto ui = normal->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, seed);
+        auto ui = normal->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
         while (ui->snapshot().actor != 1)
             act(*ui, "end");
         if (unit(*ui, 2).hit_points > 0 || !has(*ui, "stabilize"))
@@ -470,7 +470,7 @@ void fixtures()
     done = false;
     for (unsigned seed = 0; seed < 100 && !done; ++seed)
     {
-        auto c = normal->create({{8, 8, std::vector<std::uint8_t>(64)},
+        auto c = normal->create({{8, 8, std::vector<Terrain>(64)},
             {   {
                     1,
                     "campaign-character",

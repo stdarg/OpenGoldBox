@@ -125,7 +125,7 @@ std::uint64_t rng(const CombatSession &c)
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {2, 1},
 std::vector<std::string> gear = {})
 {
-    auto c = rules.create({{20, 8, std::vector<std::uint8_t>(160)},
+    auto c = rules.create({{20, 8, std::vector<Terrain>(160)},
         {   {
                 1,
                 "campaign-character",
@@ -157,7 +157,7 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
                 {2, "vanguard", "Enemy", 1, {2, 1}}
             }},
@@ -274,7 +274,7 @@ void movement()
     auto rules = custom();
     auto profile = rules->character_profile(hero().sheet(), {}).data;
     // A second adjacent enemy remains able to interrupt; the shocked enemy is omitted.
-    auto c = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto c = rules->create({{10, 8, std::vector<Terrain>(80)},
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
             {2, "target", "Shocked", 1, {2, 1}},
             {3, "target", "Other", 1, {1, 2}}
@@ -350,7 +350,7 @@ void reaction_and_armor()
         check(fighter.advance(*rules, state), "Ordinary armored Fighter advancement");
     auto c = rules->create(
     {
-        {8, 8, std::vector<std::uint8_t>(64)},
+        {8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
@@ -478,7 +478,7 @@ void persistence_guards()
         (void)rules->restore(malformed);
     });
     check(c->save() == current, "Rejected restore preserves current session");
-    auto board = Battlefield{8, 8, std::vector<std::uint8_t>(64)};
+    auto board = Battlefield{8, 8, std::vector<Terrain>(64)};
     auto profile = rules->character_profile(hero().sheet(), {}).data;
     auto dead = rules->create({board,
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
@@ -510,7 +510,7 @@ void campaign()
             auto actors = party.participants();
             actors[0].cell = {1, 1};
             actors.push_back({99, "vanguard", "Enemy", 1, {6, 1}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             while (c->snapshot().actor != id)
                 act(*c, "end");
             act(*c, "shocking_grasp", id);
@@ -562,7 +562,7 @@ void fixtures()
     auto rules = module();
     auto h = hero(3);
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
+    auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
         {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
             {2, "vanguard", "Ally", 0, {2, 1}},
             {99, "vanguard", "Enemy", 1, {5, 1}}

@@ -85,7 +85,7 @@ void write_ui_fixture()
     auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     const std::vector<std::string> gear{"quarterstaff"};
     const auto profile = rules->character_profile(cleric(1), gear);
-    auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
+    auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
         {   {1, "campaign-character", "Inflict Cleric", 0, {1, 1}, profile.data},
             {99, "vanguard", "Enemy", 1, {2, 1}}
         }},
@@ -100,7 +100,7 @@ int damage(const RulesModule &rules, const CharacterSheet &sheet, std::string_vi
            int enemy_column = 2)
 {
     const auto profile = rules.character_profile(sheet, {});
-    auto c = rules.create({{8, 4, std::vector<std::uint8_t>(32)},
+    auto c = rules.create({{8, 4, std::vector<Terrain>(32)},
         {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile.data},
             {3, "target", "Enemy", 1, {enemy_column, 1}}
         }},

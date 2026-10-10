@@ -111,7 +111,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile =
         module.character_profile(hero.sheet(), std::vector<std::string> {"mace"}).data;
-    auto c = module.create({{12, 4, std::vector<std::uint8_t>(48)},
+    auto c = module.create({{12, 4, std::vector<Terrain>(48)},
         {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
             {2, "target", "Ally", 0, {1, 2}, {}, VitalState{3, false, std::move(ally_state)}},
             {99, std::move(enemy), "Enemy", 1, {3, 1}}
@@ -197,7 +197,7 @@ void write_ui_fixture()
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     const auto profile =
         module->character_profile(cleric(2).sheet(), std::vector<std::string> {"mace"}).data;
-    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
+    auto c = module->create({{12, 9, std::vector<Terrain>(108)},
         {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
             {2, "vanguard", "Ally", 0, {1, 2}, {}, VitalState{3, false, {}}},
             {99, "vanguard", "Enemy", 1, {6, 1}}
@@ -349,7 +349,7 @@ void spare_the_dying_checks()
     auto hero = cleric(1);
     const auto profile =
         module->character_profile(hero.sheet(), std::vector<std::string> {"mace"}).data;
-    auto c = module->create({{12, 4, std::vector<std::uint8_t>(48)},
+    auto c = module->create({{12, 4, std::vector<Terrain>(48)},
         {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
             {2, "target", "Ally", 0, {3, 1}, {}, VitalState{0, false, {}}},
             {99, "target", "Enemy", 1, {9, 1}}

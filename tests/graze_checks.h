@@ -171,7 +171,7 @@ void advancement_and_rejection()
             bool tested = false;
             for (unsigned seed = 1; seed < 64 && !tested; ++seed)
             {
-                auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
+                auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
                 turn(*c, 1);
                 if (offers(*c, "action_surge"))
                     act(*c, "action_surge");

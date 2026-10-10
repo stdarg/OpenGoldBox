@@ -1885,7 +1885,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     for (int y = 0; y < board.height; ++y)
         for (int x = 0; x < board.width; ++x)
             if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
-                    board.at({x, y}) != 1)
+                    board.at({x, y}) != rules::Terrain::obstacle)
                 edges.push_back({x, y});
     const auto to_edge = [&](rules::Cell from)
     {

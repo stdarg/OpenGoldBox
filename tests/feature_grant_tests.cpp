@@ -301,7 +301,7 @@ void profiles()
     });
     const auto encounter = [&](std::string profile)
     {
-        return Encounter{{8, 8, std::vector<std::uint8_t>(64)},
+        return Encounter{{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Hero", 0, {1, 1}, profile},
                 {2, "vanguard", "Target", 1, {2, 1}}
             }};

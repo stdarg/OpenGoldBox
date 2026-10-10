@@ -1394,7 +1394,7 @@ void CombatView::move_selected(Cell direction)
     return !a.dead && a.cell == destination;
 }))
     explain("That square is occupied.");
-    else if (state.battlefield.at(destination) == 1)
+    else if (state.battlefield.at(destination) == Terrain::obstacle)
         explain("That square is blocked by terrain.");
     else
         explain("That square is out of movement range. End the turn or use Dash if available.");
@@ -2814,8 +2814,8 @@ void CombatView::draw_battlefield()
         {
             const Rect2 cell(Vector2(x * tile, y * tile), Vector2(tile, tile));
             const auto terrain = s.battlefield.at({x, y});
-            canvas->draw_rect(cell, terrain == 1 ? Color("64716d")
-                              : terrain == 2
+            canvas->draw_rect(cell, terrain == Terrain::obstacle ? Color("64716d")
+                              : terrain == Terrain::difficult
                               ? Color("665238")
                               : ((x + y) % 2 ? Color("29373c") : Color("253137")));
             const auto index = y * s.battlefield.width + x;

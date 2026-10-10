@@ -24,7 +24,7 @@ std::unique_ptr<CombatSession> commanded(const RulesModule &module, const std::s
                          std::vector<std::string> {"longsword"}).data;
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = module.create({{12, 4, std::vector<std::uint8_t>(48)},
+        auto c = module.create({{12, 4, std::vector<Terrain>(48)},
             {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
                 {99, "target", "Enemy", 1, {1 + gap, 1}}
             }},
@@ -139,7 +139,7 @@ std::string cleric_profile(const RulesModule &module)
 void command_upcast_checks()
 {
     auto module = rules();
-    auto c = module->create({{8, 4, std::vector<std::uint8_t>(32)},
+    auto c = module->create({{8, 4, std::vector<Terrain>(32)},
         {   {1, "campaign-character", "Cleric", 0, {1, 1}, cleric_profile(*module)},
             {98, "target", "First", 1, {3, 1}},
             {99, "target", "Second", 1, {3, 2}}
@@ -171,7 +171,7 @@ void write_command_fixture()
                          std::vector<std::string> {"longsword"}).data;
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
+        auto c = module->create({{12, 9, std::vector<Terrain>(108)},
             {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
                 {99, "vanguard", "Enemy", 1, {6, 1}}
             }},

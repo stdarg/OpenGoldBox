@@ -1568,7 +1568,8 @@ class Session final : public CombatSession
         for (auto &p : encounter.participants)
         {
             if (!p.id || !ids.insert(p.id).second || (!cells.insert(p.cell).second && !restoring) ||
-                    board_.at(p.cell) == 1 || p.side > 1 || p.name.empty() || p.name.size() > 160 ||
+                    board_.at(p.cell) == Terrain::obstacle || p.side > 1 || p.name.empty() ||
+                    p.name.size() > 160 ||
                     (p.character_profile.empty() && !content_->definitions.contains(p.definition)))
                 throw std::runtime_error("Invalid participant or unsupported rules definition: " +
                                          p.definition);
@@ -2899,8 +2900,9 @@ Battlefield Session::zoned_board() const
                 zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust ||
                 zone.kind == ZoneKind::spikes)
             for (const auto cell : zone.cells)
-                if (board.at(cell) == 0)
-                    board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] = 2;
+                if (board.at(cell) == Terrain::open)
+                    board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
+                        Terrain::difficult;
     return board;
 }
 
@@ -2912,7 +2914,7 @@ Cell Session::spectral_cell(const Actor &target, Cell from) const
         for (int dx = -1; dx <= 1; ++dx)
         {
             const Cell cell{target.source.cell.x + dx, target.source.cell.y + dy};
-            if ((!dx && !dy) || !board_.contains(cell) || board_.at(cell) == 1 ||
+            if ((!dx && !dy) || !board_.contains(cell) || board_.at(cell) == Terrain::obstacle ||
                     std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
             {
                 return !other.life.dead && other.source.cell == cell;
@@ -5258,7 +5260,7 @@ std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, std::string
 bool Session::teleport_open(const Actor &caster, Cell cell) const
 {
     // Misty Step: an unoccupied space the caster can see.
-    return cell != caster.source.cell && board_.at(cell) != 1 &&
+    return cell != caster.source.cell && board_.at(cell) != Terrain::obstacle &&
            line_of_sight(caster.source.cell, cell) && !obscured(caster, cell) &&
            std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
@@ -5705,7 +5707,7 @@ void Session::push_away(const Actor &from, Actor &target, int squares)
     for (; moved < squares && (sx || sy); ++moved)
     {
         const Cell next{target.source.cell.x + sx, target.source.cell.y + sy};
-        if (!board_.contains(next) || board_.at(next) == 1 ||
+        if (!board_.contains(next) || board_.at(next) == Terrain::obstacle ||
                 std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
         {
             return !other.life.dead && other.source.cell == next;
@@ -9062,7 +9064,7 @@ Battlefield read_checkpoint_board(std::istream &input)
         input >> terrain;
         if (!input || terrain > 2)
             throw std::runtime_error("Invalid checkpoint terrain");
-        board.terrain.push_back(static_cast<std::uint8_t>(terrain));
+        board.terrain.push_back(static_cast<Terrain>(terrain));
     }
     return board;
 }
@@ -9077,7 +9079,7 @@ void Session::restore_movement(std::istream &input)
     {
         Cell cell;
         input >> cell.x >> cell.y;
-        if (!input || board_.at(cell) == 1)
+        if (!input || board_.at(cell) == Terrain::obstacle)
             throw std::runtime_error("Invalid checkpoint path cell");
         path_.push_back(cell);
     }
@@ -9202,13 +9204,16 @@ void Session::validate_champion_move() const
     if (who == actors_.end() || target == actors_.end() || c.actor == c.target ||
             !def(*who).champion || !conscious(*who) || c.natural < 2 || c.natural > 20 ||
             c.origin.x < 0 || c.origin.y < 0 || c.origin.x >= board_.width ||
-            c.origin.y >= board_.height || board_.at(c.origin) == 1 || check_choice_ ||
+            c.origin.y >= board_.height || board_.at(c.origin) == Terrain::obstacle ||
+            check_choice_ ||
             temporary_offer_ || outcome_ != Outcome::ongoing)
         throw std::runtime_error("Invalid Champion movement source");
     if (c.triggered)
     {
-        if (!board_.contains(c.trigger_origin) || board_.at(c.trigger_origin) == 1 ||
-                !board_.contains(c.target_origin) || board_.at(c.target_origin) == 1 ||
+        if (!board_.contains(c.trigger_origin) ||
+                board_.at(c.trigger_origin) == Terrain::obstacle ||
+                !board_.contains(c.target_origin) ||
+                board_.at(c.target_origin) == Terrain::obstacle ||
                 (c.cleave && !who->cleave_used) ||
                 (c.helpless && distance(c.trigger_origin, c.target_origin) > 5))
             throw std::runtime_error("Invalid Champion trigger positions");

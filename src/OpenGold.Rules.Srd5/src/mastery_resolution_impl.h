@@ -45,7 +45,7 @@ std::vector<Cell> Session::push_cells(const PendingMastery &m, std::optional<Cel
         if (!other.life.dead && other.source.id != target.source.id)
         {
             const auto cell = other.source.id == a.source.id ? origin : other.source.cell;
-            obstacles.terrain[cell.y * board_.width + cell.x] = 1;
+            obstacles.terrain[cell.y * board_.width + cell.x] = Terrain::obstacle;
         }
     for (int y = std::max(0, start.y - 2); y <= std::min(board_.height - 1, start.y + 2); ++y)
         for (int x = std::max(0, start.x - 2); x <= std::min(board_.width - 1, start.x + 2); ++x)
@@ -53,7 +53,7 @@ std::vector<Cell> Session::push_cells(const PendingMastery &m, std::optional<Cel
             const int step_x = x - start.x, step_y = y - start.y;
             const Cell cell{x, y};
             if (step_x * dy != step_y * dx || step_x * dx + step_y * dy <= 0 ||
-                    obstacles.at(cell) == 1)
+                    obstacles.at(cell) == Terrain::obstacle)
                 continue;
             if (detail::has_line_of_sight(obstacles, start, cell))
                 result.push_back(cell);
@@ -307,7 +307,8 @@ void Session::validate_mastery_state() const
                 (m.kind != detail::Mastery::slow && m.kind != detail::Mastery::topple &&
                  m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push) ||
                 m.natural < 2 || m.natural > 20 || m.origin.x < 0 || m.origin.y < 0 ||
-                m.origin.x >= board_.width || m.origin.y >= board_.height || board_.at(m.origin) == 1 ||
+                m.origin.x >= board_.width || m.origin.y >= board_.height ||
+                board_.at(m.origin) == Terrain::obstacle ||
                 (m.targeting && m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push))
             throw std::runtime_error("Invalid pending mastery source");
         const auto attacking = mastery_actor(m);
@@ -366,9 +367,11 @@ void Session::validate_mastery_state() const
         });
         if (!targets.insert(c.target).second ||
                 (c.cleave ? std::exchange(cleave, true) : std::exchange(ordinary, true)) ||
-                !board_.contains(c.origin) || board_.at(c.origin) == 1 ||
-                !board_.contains(c.trigger_origin) || board_.at(c.trigger_origin) == 1 ||
-                !board_.contains(c.target_origin) || board_.at(c.target_origin) == 1 ||
+                !board_.contains(c.origin) || board_.at(c.origin) == Terrain::obstacle ||
+                !board_.contains(c.trigger_origin) ||
+                board_.at(c.trigger_origin) == Terrain::obstacle ||
+                !board_.contains(c.target_origin) ||
+                board_.at(c.target_origin) == Terrain::obstacle ||
                 c.origin != c.trigger_origin || (champion_move_ && champion_move_->actor != c.actor) ||
                 who == actors_.end() || target == actors_.end() || !c.triggered ||
                 !def(*who).champion || !conscious(*who) || c.actor == c.target || c.natural < 2 ||
@@ -387,8 +390,9 @@ void Session::validate_mastery_state() const
     {
         const auto &r = *effect_reaction_origin_;
         const auto p = r.source;
-        if (!board_.contains(p) || board_.at(p) == 1 || !board_.contains(r.mover) ||
-                board_.at(r.mover) == 1 || r.movement < 0 || r.movement > actors_[turn_].movement ||
+        if (!board_.contains(p) || board_.at(p) == Terrain::obstacle || !board_.contains(r.mover) ||
+                board_.at(r.mover) == Terrain::obstacle || r.movement < 0 ||
+                r.movement > actors_[turn_].movement ||
                 r.actor == actors_[turn_].source.id || (pending() && pending() != r.actor) ||
                 (!pending() && actors_[turn_].life.hp > 0) ||
                 (!effect_waiting() && !champion_move_))

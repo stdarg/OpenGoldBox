@@ -40,7 +40,7 @@ auto battle(CampaignParty &p, unsigned seed = 37)
     actors[0].cell = {1, 1};
     actors[1].cell = {2, 1};
     actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
-    return p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, actors}, seed);
+    return p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
 }
 
 Command command(const CombatSession &c, std::string_view verb, unsigned owner, unsigned ally = 0)
@@ -227,7 +227,7 @@ void run()
     actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
     actors[1].state->hit_points = 0;
     auto helpless = module()->create(
-    { {12, 8, std::vector<std::uint8_t>(96)}, actors
+    { {12, 8, std::vector<Terrain>(96)}, actors
     }, 37);
     check(helpless->snapshot().initiative_choices == std::vector<EntityId> {1},
           "Incapacitated holder cannot swap");
@@ -245,7 +245,7 @@ void run()
     actors[1].cell = {8, 6};
     actors[1].side = 1;
     auto enemy = module()->create(
-    { {12, 8, std::vector<std::uint8_t>(96)}, actors
+    { {12, 8, std::vector<Terrain>(96)}, actors
     }, 37);
     check(enemy->snapshot().initiative_choices == std::vector<EntityId> {1},
           "Enemy holder keeps its roll automatically");
@@ -257,7 +257,7 @@ void run()
     actors[1].cell = {2, 1};
     actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
     auto surprised = module()->create(
-    { {12, 8, std::vector<std::uint8_t>(96)}, actors
+    { {12, 8, std::vector<Terrain>(96)}, actors
     }, 37);
     exact(*surprised);
     dice_state = 37;
@@ -274,7 +274,7 @@ void run()
     for (unsigned seed = 1; seed <= 32; ++seed)
     {
         auto pending = module()->create(
-        { {12, 8, std::vector<std::uint8_t>(96)}, actors
+        { {12, 8, std::vector<Terrain>(96)}, actors
         }, seed);
         exact(*pending);
         const auto state = pending->snapshot();

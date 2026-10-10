@@ -98,9 +98,9 @@ void consumers()
     {
         auto roster = actors;
         auto base =
-        p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
+        p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, 1);
         inject(roster[0], unit(*base, 1).persistent, e);
-        auto c = p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
+        auto c = p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, 1);
         turn(*c, 1);
         return c;
     };

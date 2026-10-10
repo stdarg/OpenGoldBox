@@ -143,7 +143,7 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
 {
     if (x >= 16 || y >= 16)
         throw std::out_of_range("Dungeon battlefield requires a valid exploration position");
-    DungeonBattlefield result{{50, 25, std::vector<std::uint8_t>(1250, 0)},
+    DungeonBattlefield result{{50, 25, std::vector<rules::Terrain>(1250)},
         std::vector<std::uint8_t>(1250, 22)};
     for (int row = -2; row <= 2; ++row)
         for (int column = -6; column <= 6; ++column)
@@ -164,7 +164,8 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
                         continue;
                     const auto index = cell.y * 50 + cell.x;
                     result.tiles[index] = tile - 1;
-                    result.geometry.terrain[index] = blocked(tile) ? 1 : 0;
+                    result.geometry.terrain[index] =
+                        blocked(tile) ? rules::Terrain::obstacle : rules::Terrain::open;
                 }
         }
     return result;

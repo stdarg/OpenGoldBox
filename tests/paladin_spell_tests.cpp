@@ -91,7 +91,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
     const auto profile =
         module.character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data;
     const auto ally = module.character_profile(paladin({}).sheet(), {}).data;
-    auto c = module.create({{8, 4, std::vector<std::uint8_t>(32)},
+    auto c = module.create({{8, 4, std::vector<Terrain>(32)},
         {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
             {2, "campaign-character", "Ally", 0, {1, 2}, ally},
             {99, std::move(enemy), "Enemy", 1, {2, 1}}
@@ -244,7 +244,7 @@ void write_ui_fixture()
     const auto profile =
         module->character_profile(paladin({"bless", "cure_wounds"}).sheet(), std::vector<std::string> {"longsword"}).data;
     const auto ally = module->character_profile(paladin({}).sheet(), {}).data;
-    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
+    auto c = module->create({{12, 9, std::vector<Terrain>(108)},
         {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
             {2, "campaign-character", "Ally", 0, {2, 1}, ally},
             {99, "vanguard", "Enemy", 1, {6, 1}}

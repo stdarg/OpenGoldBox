@@ -87,7 +87,7 @@ void magic_off_casts_nothing()
 {
     const auto rules = module();
     const auto profile = rules->character_profile(druid().sheet(), {}).data;
-    auto fight = rules->create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto fight = rules->create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Druid", 0, {1, 1}, profile},
             {98, "bandit", "Enemy", 1, {6, 1}}
         }},

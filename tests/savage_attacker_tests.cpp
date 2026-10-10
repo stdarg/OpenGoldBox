@@ -101,7 +101,7 @@ auto battle(const RulesModule &rules, const Character &h, std::string gear = "gr
     std::vector<std::string> equipment;
     if (!gear.empty())
         equipment.push_back(gear);
-    return rules.create({{8, 8, std::vector<std::uint8_t>(64)},
+    return rules.create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
@@ -243,7 +243,7 @@ void lethal_and_queues()
     {
         auto c = rules->create(
         {
-            {8, 8, std::vector<std::uint8_t>(64)},
+            {8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "First", 0, {1, 1}, profile},
                 {2, "campaign-character", "Second", 0, {2, 0}, profile},
                 {99, "target", "Target", 1, {2, 1}, "", VitalState{lethal ? 1 : 1000, false, {}}}
@@ -285,7 +285,7 @@ void defenses()
     const auto profile =
         rules->character_profile(h.sheet(), std::array<std::string, 1> {"greatsword"}).data;
     auto c =
-    rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+    rules->create({{8, 8, std::vector<Terrain>(64)},
         {   {1, "campaign-character", "Hero", 0, {1, 1}, profile},
             {
                 99,

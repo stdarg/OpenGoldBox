@@ -129,7 +129,7 @@ void rest_ambush()
     participants[0].resting = true;
     participants[1].cell = {2, 3};
     participants.push_back({3, "bandit", "Enemy", 1, {6, 2}});
-    auto s = rules->create({{9, 7, std::vector<std::uint8_t>(63)}, participants}, 37);
+    auto s = rules->create({{9, 7, std::vector<Terrain>(63)}, participants}, 37);
     const auto woken = unit(*s, sleeper);
     check(woken.prone && woken.conscious && !unit(*s, watcher).prone,
           "A rest-interrupting encounter starts the resting character awake and Prone");
@@ -162,7 +162,7 @@ void downed_keeps_gear()
     bool witnessed = false;
     for (unsigned seed = 1; seed < 100 && !witnessed; ++seed)
     {
-        auto hit = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        auto hit = rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {1, "bandit", "Attacker", 1, {2, 2}},
                 {2, "campaign-character", "Wounded", 0, {3, 2}, armed.data, VitalState{1}}
             }},
@@ -204,7 +204,7 @@ void bandaged_at_victory()
     bool witnessed = false;
     for (unsigned seed = 1; seed < 200 && !witnessed; ++seed)
     {
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Victor", 0, {2, 2}, profile},
                 {2, "campaign-character", "Fallen", 0, {1, 1}, profile, dying()},
                 {3, "bandit", "Enemy", 1, {3, 2}, {}, VitalState{1}}
@@ -261,8 +261,8 @@ void campaign_death_saves()
 
 void movement()
 {
-    Battlefield board{5, 5, std::vector<std::uint8_t>(25)};
-    board.terrain[2 * 5 + 3] = 2;
+    Battlefield board{5, 5, std::vector<Terrain>(25)};
+    board.terrain[2 * 5 + 3] = Terrain::difficult;
     fx::MovementGrid grid(board, {2, 2}, {}, true);
     check(grid.step_cost({2, 2}, {2, 3}) == 10 && grid.step_cost({2, 2}, {3, 2}) == 15,
           "Crawling and difficult terrain add independent movement costs");

@@ -752,7 +752,7 @@ void persistence()
     auto members = party.participants();
     members[0].cell = {1, 1};
     members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     const auto checkpoint = combat->save();
     check(checkpoint.find("expertise:stealth") != checkpoint.npos &&
           rules->restore(checkpoint)->save() == checkpoint,
@@ -856,7 +856,7 @@ void sage_training()
     auto members = party.participants();
     members[0].cell = {1, 1};
     members.push_back({99, "vanguard", "Enemy", 1, {6, 6}});
-    const auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
+    const auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     check(rules->restore(combat->save())->save() == combat->save(),
           "Sage recipe retains combat continuation");
     party.award_experience(1800, "sage-four");
@@ -962,7 +962,7 @@ void remaining_backgrounds()
     members[0].cell = {1, 1};
     members[1].cell = {2, 1};
     members.push_back({99, "vanguard", "Enemy", 1, {6, 6}});
-    const auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
+    const auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     check(rules->restore(combat->save())->save() == combat->save(),
           "Background recipes preserve combat continuation");
     for (MemberId id :
@@ -1033,7 +1033,7 @@ void starting_styles()
             });
             auto profile =
                 rules->character_profile(sheet, std::array<std::string, 1> {"shortbow"}).data;
-            Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
+            Encounter encounter{{8, 8, std::vector<Terrain>(64)},
                 {   {1, "campaign-character", "Starter", 0, {1, 1}, profile},
                     {99, "vanguard", "Enemy", 1, {5, 1}}
                 }};

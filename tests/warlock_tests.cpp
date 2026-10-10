@@ -138,7 +138,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::uint64_t seed = 5, std::string enemy = "target")
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
-    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto c = module.create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
             {98, enemy, "Enemy", 1, {2, 1}}
         }},
@@ -271,7 +271,7 @@ void invocation_checks()
         check(submit(*c, "fiendish_vigor", 1) && unit(*c, 1).temporary_hp.amount == 12,
               "Fiendish Vigor grants False Life's highest result");
         const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
-        auto start = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+        auto start = module->create({{12, 6, std::vector<Terrain>(72)},
             {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
                 {2, "target", "Ally", 0, {1, 2}},
                 {98, "target", "Enemy", 1, {2, 1}}
@@ -345,7 +345,7 @@ void policy_checks()
     // Eldritch Blast may target any creature; the policy still blasts the
     // enemy, not a weaker ally.
     const auto profile = module->character_profile(warlock().sheet(), std::vector<std::string> {}).data;
-    auto d = module->create({{12, 6, std::vector<std::uint8_t>(72)},
+    auto d = module->create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
             {2, "target", "Ally", 0, {1, 3}, {}, VitalState{3, false, {}}},
             {98, "target", "Enemy", 1, {4, 1}}

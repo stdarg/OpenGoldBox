@@ -127,7 +127,7 @@ void identities_and_sessions()
           "Changing mechanics changes rules identity");
     rules::Encounter encounter
     {
-        {4, 4, std::vector<std::uint8_t>(16)},
+        {4, 4, std::vector<rules::Terrain>(16)},
         {{1, "bandit", "Ally", 0, {0, 0}}, {2, "bandit", "Enemy", 1, {3, 3}}}};
     const auto checkpoint = module->create(encounter, 42)->save();
     check(windows->restore(checkpoint)->save() == checkpoint,

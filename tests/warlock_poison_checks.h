@@ -51,7 +51,7 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
                 {99, "vanguard", "Enemy", 1, {5, 1}}
             }},
@@ -166,7 +166,7 @@ void campaign()
         auto actors = party.participants();
         actors[0].cell = {1, 1};
         actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         const auto old = unit(*c, id).persistent;
         check(c->submit(command(*c, "poison_spray", 99)),
               "Ordinary party profile provides Warlock cast");
@@ -207,7 +207,7 @@ void fixtures()
 {
     auto rules = module();
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "eldritch-fixtures";
-    auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
+    auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
         {   {
                 1,
                 "campaign-character",

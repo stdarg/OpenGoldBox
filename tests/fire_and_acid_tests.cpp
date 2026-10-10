@@ -107,7 +107,7 @@ void torch_stops_regeneration()
     bool burned = false;
     for (std::uint64_t seed = 1; seed < 20 && !burned; ++seed)
     {
-        auto c = module->create({{10, 4, std::vector<std::uint8_t>(40)},
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
             {   {1, "campaign-character", "Torchbearer", 0, {2, 1}, profile.data},
                 {2, "weak-troll", "Troll", 1, {1, 1}}, {3, "target", "Guard", 1, {9, 3}}
             }},
@@ -199,7 +199,7 @@ Arena arena(const std::vector<std::uint8_t> &gear,
     for (const auto type : gear)
         result.party->purchase(result.fighter, item(type));
     CampaignEncounter encounter;
-    encounter.field.geometry = {12, 6, std::vector<std::uint8_t>(72)};
+    encounter.field.geometry = {12, 6, std::vector<Terrain>(72)};
     encounter.field.tiles.resize(72, 7);
     encounter.positions.push_back({2, 2});
     EntityId id = 1000;

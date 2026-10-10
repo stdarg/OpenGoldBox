@@ -358,8 +358,8 @@ void spending_and_continuation()
     auto other = restored.participants();
     other.push_back(actors.back());
     auto rules = module();
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);
-    auto continued = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, other}, 42);
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
+    auto continued = rules->create({{8, 8, std::vector<Terrain>(64)}, other}, 42);
     for (unsigned n = 0; n < 10; ++n)
     {
         const auto commands = combat->legal_commands();
@@ -434,7 +434,7 @@ void expiry_and_atomicity()
     auto actors = party.participants();
     actors.push_back({999, "bandit", "Enemy", 1, {6, 6}});
     const auto combat = module()->create(
-    { {8, 8, std::vector<std::uint8_t>(64)}, actors
+    { {8, 8, std::vector<Terrain>(64)}, actors
     }, 42);
     party.begin_combat();
     party.apply_combat(combat->snapshot());

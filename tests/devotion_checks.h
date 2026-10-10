@@ -59,7 +59,7 @@ void write_sacred_weapon_fixture()
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     const auto profile = module->character_profile(level_three_paladin().sheet(),
                          std::vector<std::string> {"longsword"}).data;
-    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
+    auto c = module->create({{12, 9, std::vector<Terrain>(108)},
         {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
             {99, "vanguard", "Enemy", 1, {6, 1}}
         }},

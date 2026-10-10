@@ -35,7 +35,7 @@ auto battle(const Character &h)
     auto rules = module();
     auto c = rules->create(
     {
-        {10, 8, std::vector<std::uint8_t>(80)},
+        {10, 8, std::vector<Terrain>(80)},
         {   {
                 1,
                 "campaign-character",
@@ -202,7 +202,7 @@ void run()
     auto wizard_draft = draft("wizard", "sage");
     wizard_draft.cantrips = std::vector<std::string> {"ray_of_frost"};
     auto wizard = hero(wizard_draft);
-    auto slow = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto slow = rules->create({{10, 8, std::vector<Terrain>(80)},
         {   {
                 1,
                 "campaign-character",
@@ -237,7 +237,7 @@ void run()
                 false, true
             })
     {
-        auto down = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        auto down = rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {
                     1,
                     "campaign-character",
