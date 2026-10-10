@@ -220,8 +220,6 @@ rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id
 void CampaignParty::finish_short_rest(RestTicket ticket)
 {
     require_rest_ticket(ticket);
-    auto next = state_;
-    next.short_rest.reset();
-    state_ = std::move(next);
+    state_.short_rest.reset();
 }
 } // namespace opengold

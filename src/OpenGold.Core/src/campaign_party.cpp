@@ -7,10 +7,14 @@
 #include <set>
 #include <stdexcept>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace opengold
 {
+// Commits that install a prepared member in place rely on this not throwing.
+static_assert(std::is_nothrow_move_assignable_v<PartyMember>);
+
 namespace
 {
 // Removes the thrown gear (Acid, Alchemist's Fire, Oil) a fight used up, so the
@@ -665,13 +669,9 @@ void CampaignParty::advance(MemberId id, const rules::AdvancementChoice &choice)
 {
     editable();
     auto member = preview_advancement(id, choice);
-    auto next = state_;
-    *std::find_if(next.roster.begin(), next.roster.end(),
-                  [&](const auto & m)
-    {
-        return m.id == id;
-    }) = std::move(member);
-    state_ = std::move(next);
+    // The preview did everything that can throw; installing it cannot, so
+    // the party is not copied to commit it (Effective C++ Item 29).
+    edit(id) = std::move(member);
 }
 
 rules::SpellChoiceOptions CampaignParty::spell_choice_options(MemberId id) const
@@ -700,16 +700,11 @@ PartyMember CampaignParty::preview_spell_choices(MemberId id,
 void CampaignParty::choose_spells(MemberId id, const rules::SpellChoices &choices)
 {
     auto candidate = preview_spell_choices(id, choices);
-    auto next = state_;
-    *std::find_if(next.roster.begin(), next.roster.end(),
-                  [&](const auto & m)
-    {
-        return m.id == id;
-    }) = std::move(candidate);
-    std::erase(next.spell_rest->members, id);
-    if (next.spell_rest->members.empty())
-        next.spell_rest.reset();
-    state_ = std::move(next);
+    // The preview did everything that can throw; what is left cannot.
+    edit(id) = std::move(candidate);
+    std::erase(state_.spell_rest->members, id);
+    if (state_.spell_rest->members.empty())
+        state_.spell_rest.reset();
 }
 
 void CampaignParty::keep_rest_spells(MemberId id)
@@ -719,11 +714,9 @@ void CampaignParty::keep_rest_spells(MemberId id)
             std::find(state_.spell_rest->members.begin(), state_.spell_rest->members.end(), id) ==
             state_.spell_rest->members.end())
         throw std::runtime_error("No Long Rest spell choice to decline");
-    auto next = state_;
-    std::erase(next.spell_rest->members, id);
-    if (next.spell_rest->members.empty())
-        next.spell_rest.reset();
-    state_ = std::move(next);
+    std::erase(state_.spell_rest->members, id);
+    if (state_.spell_rest->members.empty())
+        state_.spell_rest.reset();
 }
 
 PartyMember CampaignParty::preview_rest_training(RestTicket ticket, MemberId id,
@@ -746,16 +739,11 @@ void CampaignParty::replace_rest_training(RestTicket ticket, MemberId id,
         std::span<const std::string> selections)
 {
     auto candidate = preview_rest_training(ticket, id, selections);
-    auto next = state_;
-    *std::find_if(next.roster.begin(), next.roster.end(),
-                  [&](const auto & m)
-    {
-        return m.id == id;
-    }) = std::move(candidate);
-    std::erase(next.training_rest->members, id);
-    if (next.training_rest->members.empty())
-        next.training_rest.reset();
-    state_ = std::move(next);
+    // The preview did everything that can throw; what is left cannot.
+    edit(id) = std::move(candidate);
+    std::erase(state_.training_rest->members, id);
+    if (state_.training_rest->members.empty())
+        state_.training_rest.reset();
 }
 
 void CampaignParty::keep_rest_training(RestTicket ticket, MemberId id)
