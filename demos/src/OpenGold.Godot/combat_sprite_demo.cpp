@@ -311,7 +311,9 @@ void CombatSpriteDemo::refresh_players()
         for (unsigned pose = 0; pose < 2; ++pose)
         {
             auto &figure = figures_[variant];
-            figure.poses[pose] = presentation::image_texture(art_->icon(appearance, pose != 0));
+            const auto icon_pose =
+                pose != 0 ? opengold::por::IconPose::action : opengold::por::IconPose::ready;
+            figure.poses[pose] = presentation::image_texture(art_->icon(appearance, icon_pose));
             figure.visible_bounds[pose] = figure.poses[pose]->get_image()->get_used_rect();
         }
     }

@@ -213,7 +213,8 @@ void CharacterCreationView::refresh_party()
         ->set_texture(portrait_texture(m.character.appearance(), m.character.creation_data()));
         for (unsigned pose = 0; pose < 2; ++pose)
         {
-            const auto icon = art_->icon(m.character.appearance(), pose != 0);
+            const auto icon = art_->icon(m.character.appearance(),
+                                         pose != 0 ? por::IconPose::action : por::IconPose::ready);
             PackedByteArray rgba;
             rgba.resize(icon.rgba.size());
             std::copy(icon.rgba.begin(), icon.rgba.end(), rgba.ptrw());
@@ -343,7 +344,7 @@ void CharacterCreationView::party_action(int action)
                 {
                     participant.id,
                     art_->icon(campaign_->member(participant.id).character.appearance(),
-                    false)});
+                    por::IconPose::ready)});
                 auto owned = scene("res://scenes/combat_demo.tscn");
                 auto *combat = Object::cast_to<CombatView>(owned.get());
                 if (!combat)
@@ -638,7 +639,8 @@ void CharacterCreationView::update_party_navigation()
             images.push_back(
         {
             participant.id,
-            art_->icon(campaign_->member(participant.id).character.appearance(), false)});
+            art_->icon(campaign_->member(participant.id).character.appearance(),
+            por::IconPose::ready)});
         auto owned = scene("res://scenes/combat_demo.tscn");
         fight = Object::cast_to<CombatView>(owned.get());
         if (!fight)

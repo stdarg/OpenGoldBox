@@ -392,7 +392,8 @@ void CombatView::sync_art()
                     por::resolve_combat_appearance(campaign_->member(id), catalog);
                 campaign_art_.push_back(
                 {
-                    id, resolved.icon(originals, false), resolved.icon(originals, true),
+                    id, resolved.icon(originals, por::IconPose::ready),
+                    resolved.icon(originals, por::IconPose::action),
 resolved.selection.matched ? std::string{} : resolved.selection.label});
             }
     }

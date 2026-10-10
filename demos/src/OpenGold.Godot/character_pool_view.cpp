@@ -88,7 +88,8 @@ void CharacterCreationView::pool_selected(std::int64_t index)
     ->set_texture(portrait_texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)
     {
-        const auto source = art_->icon(character.appearance(), i == 2);
+        const auto source = art_->icon(character.appearance(),
+                                       i == 2 ? por::IconPose::action : por::IconPose::ready);
         PackedByteArray pixels;
         pixels.resize(source.rgba.size());
         std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());

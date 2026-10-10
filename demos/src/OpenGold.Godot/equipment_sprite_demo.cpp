@@ -259,8 +259,11 @@ void EquipmentSpriteDemo::refresh()
             {
                 false, true
             })
+    {
+        const auto pose = action ? por::IconPose::action : por::IconPose::ready;
         get_node<TextureRect>(action ? "Action" : "Ready")
-        ->set_texture(presentation::image_texture(resolved.icon(*art_, action)));
+        ->set_texture(presentation::image_texture(resolved.icon(*art_, pose)));
+    }
     set_meta("body", resolved.appearance.combat_body);
     set_meta("equipment_body", resolved.selection.body);
     get_node<Label>("Equipment")
