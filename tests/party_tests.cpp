@@ -1283,7 +1283,10 @@ void campaign_encounters()
         return state.hit_points == wounded.hit_points && state.dead == wounded.dead &&
                state.resources == wounded.resources;
     };
-    const std::array<Cell, 4> enemy_origins{{{20, 8}, {31, 13}, {30, 18}, {19, 13}}};
+    // At distance 0 both sides share the party's exploration square, each in
+    // the half at its back, facing the other.
+    const std::array<Cell, 4> party_origins{{{27, 13}, {26, 12}, {27, 12}, {28, 13}}};
+    const std::array<Cell, 4> enemy_origins{{{27, 12}, {28, 13}, {27, 13}, {26, 12}}};
     for (unsigned facing = 0; facing < 4; ++facing)
     {
         auto observed = std::make_shared<EncounterObservation>();
@@ -1313,7 +1316,7 @@ void campaign_encounters()
                       (participant.side == Side::party ? facing == 1 : facing == 2),
                       "Original surprise codes select the correct side");
             }
-            check(handed.participants[0].cell == Cell{25, 13} &&
+            check(handed.participants[0].cell == party_origins[facing] &&
                   handed.participants[2].cell == enemy_origins[facing],
                   "Party origin and enemy formation follow encounter facing");
             check(handed.participants[0].state && still_wounded(*handed.participants[0].state) &&
@@ -1355,6 +1358,9 @@ void campaign_encounters()
     rejected(invalid);
     invalid = encounter_fixture();
     invalid.field.geometry.terrain.pop_back();
+    rejected(invalid);
+    invalid = encounter_fixture();
+    invalid.distance = 3;
     rejected(invalid);
     invalid = encounter_fixture();
     invalid.field.geometry.width = 65;

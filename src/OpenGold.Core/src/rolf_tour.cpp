@@ -536,6 +536,8 @@ void RolfTourSession::handle_host(const EclRequest &request)
     case 13:
         if (snapshot_.sprite_frame > 0)
             --snapshot_.sprite_frame;
+        if (encounter_distance_ > 0)
+            --encounter_distance_;
         break;
     case 14:
         if (request.arguments[0].number() != 255)

@@ -79,6 +79,21 @@ Edge edge_ahead(PartyPose pose)
             static_cast<unsigned>((y + 16) % 16), reversed(pose.facing)};
 }
 
+// Squares the party sees ahead before a wall or door, at most two. As in the
+// original, the encounter distance never exceeds it in a 3D area.
+unsigned open_squares_ahead(const GeoMap &map, PartyPose pose)
+{
+    unsigned squares = 0;
+    while (squares < 2 && !map.at(pose.x, pose.y).walls[index(pose.facing)])
+    {
+        ++squares;
+        const auto ahead = edge_ahead(pose);
+        pose.x = ahead.next_x;
+        pose.y = ahead.next_y;
+    }
+    return squares;
+}
+
 // The script's surprise bits (0x6DCB). SURPRISE writes only 0 to 3, but a
 // script may store any number there.
 opengold::Surprise script_surprise(std::uint16_t bits)
@@ -1223,7 +1238,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             decoded[n] = std::move(image.image);
         }
         sprites_ = std::move(decoded);
-        snapshot_.sprite_frame = arg(1);
+        encounter_distance_ = std::min<unsigned>(arg(1), open_squares_ahead(map_, snapshot_.pose));
+        snapshot_.sprite_frame = static_cast<int>(encounter_distance_);
         snapshot_.sprite_id = arg(0);
         monster_picture_id_ = arg(2);
         picture_.reset();
@@ -1337,7 +1353,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (!current_area_ || arg(1) > 2)
             throw EclError("Unsupported encounter menu context");
         encounter_menu_ = request;
-        encounter_distance_ = arg(1);
+        encounter_distance_ = std::min<unsigned>(arg(1), open_squares_ahead(map_, snapshot_.pose));
         show_encounter_menu();
         return true;
     case 29:
@@ -1400,6 +1416,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 area_resources().terrain_art,        p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
             encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;
+            encounter_distance_ = std::min(encounter_distance_, open_squares_ahead(map_, p));
+            encounter_->distance = encounter_distance_;
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale = std::min<unsigned>(machine_.variable(ecl_encounter_morale), 100);
             announce_camp_attack();

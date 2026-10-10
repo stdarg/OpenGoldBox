@@ -41,6 +41,9 @@ struct CampaignEncounter
     std::vector<Image> terrain_art;
     por::MapDirection facing{por::MapDirection::north};
     Surprise surprise{Surprise::none};
+    // The original's encounter distance when the fight starts: exploration
+    // squares (0 to 2) between the party and the monsters.
+    unsigned distance{};
     // The encounter interrupted the party's rest.
     bool party_resting{};
     // Optional authored formation. Empty means the usual campaign placement.

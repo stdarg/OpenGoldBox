@@ -706,3 +706,34 @@ OpenGold follows it, with the layout the user approved on 2026-10-09:
 - The campaign party keeps who is on Quick and Quick magic between fights and
   in saves (campaign format 25). The computer plays a Quick member as the
   automated demo policy does.
+
+## PLACE-1 (2026-10-10): starting positions, as the original game had them
+
+The user chose (2026-10-10) to start every scripted fight with the monsters
+placed as the original Gold Box engine placed them, instead of the authored
+stand-in that always stood them one exploration square ahead of the party. The
+rules were read from the Curse of the Azure Bonds engine reimplementation (coab)
+as reference; Pool of Radiance's START.EXE carries the same placement tables. No
+code was copied.
+
+- The encounter distance is the script's. SETUP MONSTER and ENCOUNTER MENU set
+  it to their maximum, but no further than the party can see ahead (at most two
+  squares, stopping at a wall or door); APPROACH and Advance bring it one square
+  closer, and COMBAT caps it by the view ahead once more. The approaching
+  monster's picture and the menu follow the same distance.
+- Each side is one group facing the other, standing in the back half of its
+  exploration square: the party in its own square, the monsters in the square
+  that many squares ahead. At distance 0 they share the party's square and the
+  two front ranks touch.
+- A group forms ranks from its front centre backwards, each rank filling
+  outwards from the centre, alternately to the group's right and left. The first
+  rank holds half the group (rounded up); later ranks run to the square's edge.
+  A party facing east or west leaves the rank behind its first empty when it has
+  a square to spill into. Obstacles and taken squares are skipped.
+- A group too big for its square spills into the square behind it, then into
+  the squares to its sides, each filled from the edge it shares with the
+  group's square. A solid wall (a doorway is not one) closes a square off. The
+  groups never surround each other.
+- Where the original found no room at all, it left the creature out. OpenGold
+  never omits a combatant: that creature takes the nearest free square the
+  party can reach.

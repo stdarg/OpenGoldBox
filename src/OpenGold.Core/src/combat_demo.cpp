@@ -2,12 +2,14 @@
 #include "opengold/combat_demo.h"
 #include "opengold/combat_body_catalog.h"
 #include "opengold/character_pool.h"
+#include "opengold/encounter_formation.h"
 #include <algorithm>
 #include <array>
 #include <fstream>
 #include <limits>
 #include <queue>
 #include <set>
+#include <span>
 #include <stdexcept>
 
 namespace opengold
@@ -58,6 +60,51 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
         return std::move(decoded.image);
     }
     return std::nullopt;
+}
+
+// Stands the party and the enemies where the original engine did (PLACE-1).
+// Where it found no room, the free square of `reachable` nearest the side's
+// first member (or `centre`) keeps everyone in the fight; taken squares leave
+// `reachable`.
+void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &party,
+                       std::vector<Cell> &reachable, Cell centre)
+{
+    const auto formation = encounter_formation(encounter.field, encounter.facing,
+                           encounter.distance, party.size(),
+                           encounter.enemies.size());
+    const auto claim = [&](std::span<Participant> side,
+                           const std::vector<std::optional<Cell>> &starts)
+    {
+        for (std::size_t n = 0; n < side.size(); ++n)
+            if (starts[n])
+            {
+                side[n].cell = *starts[n];
+                std::erase(reachable, *starts[n]);
+            }
+    };
+    const auto fill_in = [&](std::span<Participant> side,
+                             const std::vector<std::optional<Cell>> &starts)
+    {
+        for (std::size_t n = 0; n < side.size(); ++n)
+        {
+            if (starts[n])
+                continue;
+            const auto target = starts.front().value_or(centre);
+            const auto nearest = std::min_element(reachable.begin(), reachable.end(),
+                                                  [&](Cell a, Cell b)
+            {
+                return std::abs(a.x - target.x) + std::abs(a.y - target.y) <
+                       std::abs(b.x - target.x) + std::abs(b.y - target.y);
+            });
+            side[n].cell = *nearest;
+            reachable.erase(nearest);
+        }
+    };
+    // Every original square is claimed before any member falls back.
+    claim(party, formation.party);
+    claim(encounter.enemies, formation.enemies);
+    fill_in(party, formation.party);
+    fill_in(encounter.enemies, formation.enemies);
 }
 } // namespace
 
@@ -150,10 +197,11 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     const auto &board = encounter.field.geometry;
     if (board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64 ||
             board.terrain.size() != static_cast<std::size_t>(board.width * board.height) ||
-            encounter.surprise > Surprise::both)
+            encounter.surprise > Surprise::both || encounter.distance > 2)
         throw std::runtime_error("Invalid campaign battlefield");
-    // Converted party formation stays inside one reachable component of the
-    // original geometry. Never erase walls or silently omit a participant.
+    // Anyone the original formation has no room for stands inside one
+    // reachable component of the original geometry. Never erase walls or
+    // silently omit a participant.
     std::vector<Cell> cells;
     for (int y = 0; y < board.height; ++y)
         for (int x = 0; x < board.width; ++x)
@@ -218,30 +266,13 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
                 encounter.enemies[i - participants.size()].cell = cell;
         }
     }
-    const auto place = [&](Participant & participant, Cell target)
-    {
-        const auto cell = std::min_element(cells.begin(), cells.end(),
-                                           [&](Cell a, Cell b)
-        {
-            return distance(a, target) < distance(b, target);
-        });
-        participant.cell = *cell;
-        cells.erase(cell);
-    };
+    if (encounter.positions.empty())
+        place_as_original(encounter, participants, cells, origin);
+    // Mutual surprise cancels out: Surprise::both marks neither side.
     for (auto &participant : participants)
-    {
-        if (encounter.positions.empty())
-            place(participant, origin);
-        // Mutual surprise cancels out: Surprise::both marks neither side.
         participant.surprised = encounter.surprise == Surprise::party;
-    }
-    constexpr std::array<Cell, 4> forward{{{-5, -5}, {6, 0}, {5, 5}, {-6, 0}}};
-    const auto offset = forward[index(encounter.facing)];
-    const Cell target{origin.x + offset.x, origin.y + offset.y};
     for (auto &enemy : encounter.enemies)
     {
-        if (encounter.positions.empty())
-            place(enemy, target);
         enemy.surprised = encounter.surprise == Surprise::monsters;
         participants.push_back(std::move(enemy));
     }

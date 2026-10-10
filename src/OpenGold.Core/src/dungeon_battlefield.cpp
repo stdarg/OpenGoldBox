@@ -149,6 +149,9 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
         for (int column = -6; column <= 6; ++column)
         {
             const int gx = static_cast<int>(x) + column, gy = static_cast<int>(y) + row;
+            for (unsigned direction = 0; direction < 4; ++direction)
+                result.walled[row + 2][column + 6][direction] =
+                    edge(map, gx, gy, direction, y) == wall;
             const auto stamp = cell_tiles(edge(map, gx, gy, 3, y), edge(map, gx, gy, 0, y),
                                           edge(map, gx, gy, 1, y), edge(map, gx, gy - 1, 3, y),
                                           edge(map, gx - 1, gy, 0, y), edge(map, gx, gy - 1, 1, y),

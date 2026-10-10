@@ -146,8 +146,11 @@ campaign-arc simulator should get a Kuto's Well stage to measure it.
   random for each arrow. Norris's band "surrounds" the party only in the
   script's words: that engine (`PlaceCombatants`) places the monsters as one
   group ahead of the party, at the encounter distance (two `APPROACH`es bring
-  it to 0 before he speaks), while the campaign always places them about one
-  square of exploration ahead ([EXPEDITION.md](../EXPEDITION.md)).
+  it to 0 before he speaks), as the campaign now does too (below).
+- **Starting positions (2026-10-10):** fights start as the original engine
+  placed them ([PLACE-1](../SRD-DECISIONS.md#place-1-2026-10-10-starting-positions-as-the-original-game-had-them)).
+  Norris's band, walked up from distance 2 to 0 (`ECL8:29 0x9D23-0x9D34`),
+  starts in the party's own square, Norris directly in front of its leader.
 
 ## Suggested increments
 

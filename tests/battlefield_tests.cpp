@@ -100,6 +100,9 @@ void collision_tests()
     check(solid.geometry.at({24, 10}) == Terrain::obstacle &&
           solid.geometry.at({24, 11}) == Terrain::open,
           "Wall face blocks but wall base remains passable");
+    check(solid.walled[2][6][0] && solid.walled[1][6][2] && !solid.walled[2][6][1] &&
+          !solid.walled[2][6][2],
+          "The party's square records its walled north side, seen from both squares");
     for (unsigned door = 1; door <= 3; ++door)
     {
         c.doors[0] = door;
@@ -110,6 +113,7 @@ void collision_tests()
         check(field.geometry.at({23, 10}) == Terrain::obstacle &&
               field.geometry.at({26, 10}) == Terrain::obstacle,
               "Door posts remain blocking");
+        check(!field.walled[2][6][0], "A doorway is not a solid side");
     }
     bool rejected = false;
     try

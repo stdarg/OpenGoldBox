@@ -7,10 +7,12 @@ automatically. Victory resumes the waiting script and exploration; defeat opens
 the saved-game reload / Exit to OS screen.
 
 The arena uses the verified 50 by 25 dungeon geometry and original DUNGCOM tiles
-described in [combat-geometry.md](combat-geometry.md). Party and enemy placement
-is an authored formation inside a shared reachable component of that geometry.
-Placement never removes obstacles or omits requested enemies. It is not a claim
-to reproduce the original game's formation algorithm.
+described in [combat-geometry.md](combat-geometry.md). The party and the enemies
+start where the original engine put them ([PLACE-1](SRD-DECISIONS.md#place-1-2026-10-10-starting-positions-as-the-original-game-had-them)):
+two groups facing each other, the enemies as many exploration squares ahead as
+the script's encounter distance, which never reaches past a wall ahead.
+Placement never removes obstacles or omits requested enemies: a creature the
+original had no room for takes the nearest free square the party can reach.
 
 ## Encounter conversion
 

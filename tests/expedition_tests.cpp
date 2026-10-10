@@ -561,6 +561,29 @@ std::size_t peaceful(const por::TourSnapshot &s)
 // Every combat definition fight() has faced, in order.
 std::vector<std::string> enemies_fought;
 
+// How each fight fight() played began: where the party stood, the encounter
+// distance and each combatant's starting square.
+struct FightStart
+{
+    por::PartyPose pose;
+    unsigned distance{};
+    std::map<rules::EntityId, rules::Cell> cells;
+};
+std::vector<FightStart> fights_started;
+
+// Squares the party sees ahead before a wall or door, at most two.
+unsigned open_squares_ahead(const por::GeoMap &map, por::PartyPose pose)
+{
+    unsigned squares = 0;
+    while (squares < 2 && !map.at(pose.x, pose.y).walls[index(pose.facing)])
+    {
+        ++squares;
+        pose.x = (pose.x + 16 + step_x(pose.facing)) % 16;
+        pose.y = (pose.y + 16 + step_y(pose.facing)) % 16;
+    }
+    return squares;
+}
+
 void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
 {
     if (town.monster_picture())
@@ -571,6 +594,12 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     CombatDemo combat(module());
     combat.campaign_party(party);
     combat.encounter(*town.pending_encounter(), 42);
+    FightStart start{town.snapshot().pose, town.pending_encounter()->distance, {}};
+    check(start.distance <= open_squares_ahead(town.map(), start.pose),
+          "The monsters are never further away than the party can see");
+    for (const auto &unit : combat.combat().snapshot().combatants)
+        start.cells[unit.id] = unit.cell;
+    fights_started.push_back(std::move(start));
     if (town.pending_encounter()->party_resting)
     {
         const auto log = combat.combat().snapshot().log();
@@ -924,6 +953,10 @@ std::vector<Purse> purses(const CampaignParty &party)
 void rest_at_inn(Expedition &trip)
 {
     auto &[party, town] = trip;
+    // The orcs start their fight in contact (PLACE-1) and may drop a fighter.
+    // Stable, it comes round within four hours (1d4 hours), so the whole party
+    // can take the inn's Long Rest.
+    party->advance_time(std::chrono::hours{4});
     walk_to(town, party, 4, 11);
     const auto leave_inn = [&]
     {
@@ -1462,6 +1495,13 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     const auto lead = party->state().slots[0];
     const auto experience = party->member(lead).experience;
     walk_to(town, party, 10, 3, catacomb_answer("FIGHT"));
+    // The script sets the meeting at distance 2 and walks the band up twice
+    // (ECL8:29 0x9D23-0x9D34): Norris stands right in front of the leader.
+    const auto &norris = fights_started.back();
+    check(norris.pose.facing == por::MapDirection::north && norris.distance == 0 &&
+          norris.cells.at(1000) == rules::Cell{27, 12} &&
+          norris.cells.at(lead) == rules::Cell{27, 13},
+          "Norris's band starts the fight directly in front of the party");
     check(town.script_variable(por::EclAddress{0x4A24}) == 255 &&
           party->member(lead).experience > experience,
           "The party defeats Norris the Gray's band and earns his XP");
@@ -1619,6 +1659,19 @@ void write_slums_fixtures(const std::filesystem::path &save, const std::filesyst
         write_strong_fixture(folder / name, directory);
 }
 
+// Monsters meet the party at a distance only where it can see that far: turns
+// the party the way with the longest view.
+void face_longest_view(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
+{
+    const auto pose = town.snapshot().pose;
+    unsigned longest = 0;
+    for (unsigned facing = 1; facing < 4; ++facing)
+        if (open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{facing}}) >
+                open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{longest}}))
+            longest = facing;
+    face(town, party, longest);
+}
+
 // Camps on a Slums street until monsters interrupt with the encounter menu,
 // then answers it with `answer` until the event ends. Returns the menus shown.
 std::vector<por::TourSnapshot> meet_camp_monsters(Expedition &trip, const Answer &answer)
@@ -1630,6 +1683,7 @@ std::vector<por::TourSnapshot> meet_camp_monsters(Expedition &trip, const Answer
         step(town, party, 3);
     }
     walk_to(town, party, 14, 4);
+    face_longest_view(town, party);
     std::vector<por::TourSnapshot> shown;
     for (unsigned tries = 0; tries < 80 && shown.empty(); ++tries)
     {
@@ -1871,6 +1925,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
         step(town, party, 3);
     }
     walk_to(town, party, 14, 4);
+    face_longest_view(town, party);
     for (unsigned camps = 0; camps < 80 && town.snapshot().phase != por::TourPhase::combat; ++camps)
     {
         check(town.camp(RestKind::short_rest), "Camp starts");
