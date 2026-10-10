@@ -522,7 +522,7 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     auto &m = edit(id);
     if (m.character.inventory().items().size() >= 16)
         throw std::runtime_error("Inventory is full (16 items)");
-    if (m.wealth[3] < item.stored.value)
+    if (coins(m.wealth, Coin::gold) < item.stored.value)
         throw std::runtime_error("Not enough gold");
     auto inventory = m.character.inventory();
     auto sources = m.item_sources;
@@ -534,10 +534,10 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
-    m.wealth[3] -= item.stored.value;
+    coins(m.wealth, Coin::gold) -= item.stored.value;
 }
 
-void CampaignParty::set_wealth(MemberId id, std::array<std::uint16_t, 7> wealth)
+void CampaignParty::set_wealth(MemberId id, Purse wealth)
 {
     editable();
     edit(id).wealth = wealth;
@@ -914,8 +914,8 @@ void CampaignParty::temple_heal(MemberId target)
         if (id)
         {
             auto &m = member_in(next, id);
-            const auto paid = std::min<unsigned>(m.wealth[3], remaining);
-            m.wealth[3] -= static_cast<std::uint16_t>(paid);
+            const auto paid = std::min<unsigned>(coins(m.wealth, Coin::gold), remaining);
+            coins(m.wealth, Coin::gold) -= static_cast<std::uint16_t>(paid);
             remaining -= paid;
         }
     if (remaining)

@@ -1074,7 +1074,7 @@ bool RolfTourSession::buy(std::uint64_t ticket, std::size_t item)
         return true;
     }
     const auto price = offered.stored.value;
-    if (party_.inventory.size() >= 16 || party_.wealth[3] < price)
+    if (party_.inventory.size() >= 16 || coins(party_.wealth, Coin::gold) < price)
     {
         snapshot_.diagnostic =
             party_.inventory.size() >= 16 ? "Inventory is full (16 items)." : "Not enough gold.";
@@ -1085,7 +1085,7 @@ bool RolfTourSession::buy(std::uint64_t ticket, std::size_t item)
     purchased.index = party_.inventory.size();
     purchased.stored.readied_raw = 0;
     party_.inventory.push_back(std::move(purchased)); // Allocate before charging.
-    party_.wealth[3] -= price;
+    coins(party_.wealth, Coin::gold) -= price;
     snapshot_.diagnostic = "Bought " + offered.label() + " for " + std::to_string(price) + " gp.";
     ++snapshot_.revision;
     return true;

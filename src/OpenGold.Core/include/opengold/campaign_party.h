@@ -79,7 +79,7 @@ struct PartyMember
     Character character;
     std::string npc_source; // Empty for PCs; explicit campaign conversion identity for NPCs.
     rules::VitalState vitals;
-    std::array<std::uint16_t, 7> wealth{};
+    Purse wealth{};
     std::vector<std::uint64_t> equipped;
     unsigned morale{100};
     unsigned experience{};
@@ -162,7 +162,7 @@ class CampaignParty
     void unequip(MemberId id, std::uint64_t item);
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
     void purchase(MemberId id, const por::Equipment &item);
-    void set_wealth(MemberId id, std::array<std::uint16_t, 7> wealth);
+    void set_wealth(MemberId id, Purse wealth);
     void award_experience(unsigned amount, std::string reward_id);
     [[nodiscard]] bool can_advance(MemberId id) const;
     [[nodiscard]] rules::AdvancementOptions

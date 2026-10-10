@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_COIN_PURSE_H
 #define OPENGOLD_COIN_PURSE_H
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 
@@ -10,6 +11,29 @@ namespace opengold
 using Purse = std::array<std::uint16_t, 7>;
 // Coin counts in the purse's first five denominations, copper through platinum.
 using Coins = std::array<std::uint16_t, 5>;
+
+// A purse entry by name rather than by position: wealth[3] meant gold
+// (Effective C++ Item 18).
+enum class Coin : std::size_t
+{
+    copper,
+    silver,
+    electrum,
+    gold,
+    platinum,
+    gems,
+    jewelry
+};
+
+[[nodiscard]] constexpr std::uint16_t &coins(Purse &purse, Coin coin) noexcept
+{
+    return purse[static_cast<std::size_t>(coin)];
+}
+
+[[nodiscard]] constexpr std::uint16_t coins(const Purse &purse, Coin coin) noexcept
+{
+    return purse[static_cast<std::size_t>(coin)];
+}
 
 // The purse made change because a script took coins the payer did not hold:
 // `owed` is what the purse lacked, `paid` the coins given for it, `change` the

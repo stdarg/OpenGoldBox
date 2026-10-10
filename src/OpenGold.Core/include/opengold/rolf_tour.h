@@ -40,7 +40,7 @@ struct TownParty
 {
     std::string name{"Fighter"};
     unsigned level{1}, hit_points{12}, max_hit_points{12};
-    std::array<std::uint16_t, 7> wealth{0, 0, 0, 9999, 0, 0, 0};
+    Purse wealth{0, 0, 0, 9999, 0, 0, 0};
     std::vector<Equipment> inventory;
 };
 

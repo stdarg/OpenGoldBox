@@ -134,7 +134,7 @@ String CharacterCreationView::sheet_text(const Character &character,
     text += i18n::formatted("   Hit Dice: {level}d{die}", {{"level", s.level}, {"die", s.hit_die}});
     if (member)
         text += i18n::formatted("   Gold {gold}   XP {xp}",
-    {{"gold", member->wealth[3]}, {"xp", member->experience}});
+    {{"gold", coins(member->wealth, Coin::gold)}, {"xp", member->experience}});
     if (member && member->vitals.dead)
         text += "   " + i18n::utf8("Dead");
     if (member && campaign_->can_advance(member->id))

@@ -40,6 +40,7 @@
 
 using namespace godot;
 using namespace opengold::por;
+using opengold::Coin;
 using presentation::required_node;
 
 namespace
@@ -398,7 +399,7 @@ void RolfTourView::refresh_inventory()
     {
         {"name", String::utf8(m.character.sheet().name.c_str())},
         {"class", i18n::text(m.character.sheet().character_class)},
-        {"gold", m.wealth[3]}
+        {"gold", coins(m.wealth, Coin::gold)}
     }));
     for (const auto &item : m.character.inventory().items())
         items->add_item(
@@ -914,7 +915,7 @@ void RolfTourView::refresh()
             i18n::format("Shop / buying for {name}: {gold} gp, {count}/16 items",
         {
             {"name", String::utf8(buyer.character.sheet().name.c_str())},
-            {"gold", buyer.wealth[3]},
+            {"gold", coins(buyer.wealth, Coin::gold)},
             {"count", static_cast<int64_t>(buyer.character.inventory().items().size())}
         }));
     }
@@ -1023,7 +1024,7 @@ void RolfTourView::refresh()
         {
             {"current", p.hit_points},
             {"maximum", p.max_hit_points},
-            {"gold", p.wealth[3]},
+            {"gold", coins(p.wealth, Coin::gold)},
             {"items", i18n::plural("{count} item", "{count} items", static_cast<int>(p.inventory.size()))}
         }));
     }
@@ -1036,7 +1037,7 @@ void RolfTourView::refresh()
             {"name", String::utf8(m.character.sheet().name.c_str())},
             {"current", m.vitals.hit_points},
             {"maximum", campaign_->hit_point_maximum(campaign_->selected())},
-            {"gold", m.wealth[3]},
+            {"gold", coins(m.wealth, Coin::gold)},
             {
                 "items", i18n::plural("{count} item", "{count} items",
                                       static_cast<int>(m.character.inventory().items().size()))
@@ -1336,8 +1337,9 @@ void RolfTourView::check_town()
     };
     const auto gold = [&]
     {
-        return campaign_ ? campaign_->member(campaign_->selected()).wealth[3]
-        : session_->party().wealth[3];
+        return campaign_
+               ? coins(campaign_->member(campaign_->selected()).wealth, Coin::gold)
+        : coins(session_->party().wealth, Coin::gold);
     };
     if (check_prompts_ != 8)
         throw std::runtime_error("Town started before the full tour");
@@ -1746,7 +1748,8 @@ void RolfTourView::check_recovery()
     }
     if (recovery_stage_ == 4)
     {
-        if (member.wealth[3] != recovery_before_->roster.at(0).wealth[3] - 100 ||
+        const auto gold_before = coins(recovery_before_->roster.at(0).wealth, Coin::gold);
+        if (coins(member.wealth, Coin::gold) != gold_before - 100 ||
                 member.vitals.hit_points <= 1 || session_->script_variable(0x6de2) != 0)
             throw std::runtime_error("Original temple must charge 100 gp, heal and resume ECL");
         if (save_check_)
@@ -1761,7 +1764,8 @@ void RolfTourView::check_recovery()
     {
         if (*member.last_rest_minutes < recovery_before_->time_minutes + 480 ||
                 member.vitals.hit_points != member.character.sheet().hit_points ||
-                member.wealth[3] != recovery_before_->roster.at(0).wealth[3] - 10)
+                coins(member.wealth, Coin::gold) !=
+                coins(recovery_before_->roster.at(0).wealth, Coin::gold) - 10)
             throw std::runtime_error("Original inn payment and full recovery must persist");
         const auto &payments = s.payments;
         const auto shown = required_node<RichTextLabel>(*this, "Dialogue").get_text();
