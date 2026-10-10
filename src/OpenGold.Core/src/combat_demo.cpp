@@ -30,10 +30,10 @@ Battlefield arena()
 
 std::vector<Participant> party()
 {
-    return {{1, "vanguard", "Vanguard", 0, {2, 2}},
-        {2, "scout", "Scout", 0, {2, 4}},
-        {3, "adept", "Adept", 0, {1, 3}},
-        {4, "healer", "Healer", 0, {1, 5}}};
+    return {{1, "vanguard", "Vanguard", Side::party, {2, 2}},
+        {2, "scout", "Scout", Side::party, {2, 4}},
+        {3, "adept", "Adept", Side::party, {1, 3}},
+        {4, "healer", "Healer", Side::party, {1, 5}}};
 }
 
 std::optional<Image> original_icon(const std::filesystem::path &directory, unsigned record)
@@ -378,7 +378,7 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             const auto id = static_cast<EntityId>(1000 + n);
             const Cell cell{10, 4 + static_cast<int>(n)};
             result.encounter.enemies.push_back({id, definition, definition + " " +
-                                                std::to_string(n + 1), 1, cell});
+                                                std::to_string(n + 1), Side::opposition, cell});
             result.encounter.positions.push_back(cell);
             result.encounter.art.push_back({id, *picture, original_icon(game_directory, icon + 128)});
         }
@@ -405,7 +405,8 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             result.encounter.enemies.push_back(
             {
                 id, is_leader ? "slums-kobold-leader" : "slums-kobold",
-                is_leader ? "Kobold Leader" : "Kobold " + std::to_string(++number), 1, cell});
+                is_leader ? "Kobold Leader" : "Kobold " + std::to_string(++number),
+                Side::opposition, cell});
             result.encounter.positions.push_back({x, y});
             result.encounter.art.push_back(
             {id, is_leader ? *leader : *kobold, is_leader ? leader_action : kobold_action});
@@ -425,7 +426,8 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
     if (campaign_)
     {
         seed_ = seed;
-        start_encounter({{1000, "bandit", "Bandit", 1, {9, 4}}}, "preview:bandit:v1");
+        start_encounter({{1000, "bandit", "Bandit", Side::opposition, {9, 4}}},
+                        "preview:bandit:v1");
         vm_.reset();
         art_.clear();
         dialogue_ = "Party combat preview. HP and spent resources carry back to the party.";
@@ -438,10 +440,10 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
                 1,
                 conditions ? "blindness-adept" : "vanguard",
                 conditions ? "Adept" : "Vanguard",
-                0,
+                Side::party,
                 {2, 4}
             },
-            {10, "bandit", "Bandit", 1, conditions ? Cell{3, 4} : Cell{9, 4}}
+            {10, "bandit", "Bandit", Side::opposition, conditions ? Cell{3, 4} : Cell{9, 4}}
         }},
     seed);
     combat_ = std::move(next);
@@ -558,7 +560,7 @@ void CombatDemo::pump()
                         id,
                         "slums-orc",
                         creature.stored.name + " " + std::to_string(enemies_.size() + 1),
-                        1,
+                        Side::opposition,
                         {9, 2 + static_cast<int>(enemies_.size())}});
                     if (icon)
                         art_.push_back({id, *icon, action});
@@ -610,7 +612,7 @@ void CombatDemo::finish_combat()
         return;
     unsigned defeated = 0;
     for (const auto &unit : state.combatants)
-        if (unit.side == 1 && unit.hit_points == 0)
+        if (unit.side == Side::opposition && unit.hit_points == 0)
             ++defeated;
     EclHostReply reply;
     reply.writes =
@@ -1242,7 +1244,7 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
             if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
                     board.at({x, y}) != Terrain::obstacle)
                 edges.push_back({x, y});
-    if (active.side != 0)
+    if (active.side != Side::party)
     {
         std::vector<Cell> opponents;
         for (const auto &other : state.combatants)
@@ -1325,7 +1327,7 @@ Command choose_flee_command(const CombatSession &session)
         return c.verb == "end" && c.actor == state.actor;
     });
     // Reactions, choices and those who cannot flee are left to the demo AI.
-    if (active == state.combatants.end() || active->side != 0 || !active->can_flee ||
+    if (active == state.combatants.end() || active->side != Side::party || !active->can_flee ||
             state.reaction_pending || end == offered.end())
         return choose_demo_command(session);
     if (const auto run = run_for_edge(state, offered, *active))

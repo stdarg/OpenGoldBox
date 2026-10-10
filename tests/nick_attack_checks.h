@@ -36,7 +36,7 @@ auto battle(CampaignParty &p, unsigned seed = 1)
 {
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "mastery_target", "Target", 1, {2, 1}});
+    actors.push_back({99, "mastery_target", "Target", Side::opposition, {2, 1}});
     auto c = p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
     turn(*c, 1);
     return c;
@@ -383,7 +383,7 @@ void ui_fixtures()
     p.restore(saved);
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "vanguard", "Target", 1, {2, 1}});
+    actors.push_back({99, "vanguard", "Target", Side::opposition, {2, 1}});
     auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, 1);
     turn(*c, id);
     write("before", *c);

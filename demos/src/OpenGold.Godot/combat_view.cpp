@@ -561,7 +561,7 @@ void CombatView::immediate(String verb)
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
                      [&](const auto & a)
 {
-    return a.id == state.actor && a.side == 0;
+    return a.id == state.actor && a.side == rules::Side::party;
 }))
     return;
     for (const auto &c : demo_->combat().legal_commands())
@@ -678,7 +678,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
             const auto actor = std::find_if(state.combatants.begin(), state.combatants.end(),
                                             [&](const auto & a)
             {
-                return a.id == state.actor && a.side == 0;
+                return a.id == state.actor && a.side == rules::Side::party;
             });
             if (actor != state.combatants.end())
                 for (const auto &command : demo_->combat().legal_commands())
@@ -711,7 +711,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
         const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
                                          [&](const auto & a)
         {
-            return a.id == state.actor && a.side == 0;
+            return a.id == state.actor && a.side == rules::Side::party;
         });
         std::vector<Command> targets;
         for (const auto &command : demo_->combat().legal_commands())
@@ -786,7 +786,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
     {
         return a.id == s.actor;
     });
-    if (current == s.combatants.end() || current->side != 0)
+    if (current == s.combatants.end() || current->side != rules::Side::party)
         return;
     const auto relative = (local - board_rect_.position) /
                           (board_rect_.size.x / demo_->combat().snapshot().battlefield.width);
@@ -830,7 +830,7 @@ void CombatView::refresh()
         for (const auto &a : s.combatants)
             if (a.id == s.actor)
             {
-                player = a.side == 0;
+                player = a.side == rules::Side::party;
                 turn = "Round " + std::to_string(s.round) + " / " + a.name +
                        (s.reaction_pending ? " reaction" : " turn") + "\nMove " +
                        std::to_string(a.movement_feet) + " ft | " +
@@ -896,7 +896,7 @@ void CombatView::refresh()
     const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
                                      [&](const auto & a)
     {
-        return a.id == s.actor && a.side == 0;
+        return a.id == s.actor && a.side == rules::Side::party;
     });
     const auto *choice_actor =
         active != s.combatants.end() && s.outcome == Outcome::ongoing ? &*active : nullptr;
@@ -939,7 +939,7 @@ void CombatView::refresh()
     const auto throwing = std::find_if(s.combatants.begin(), s.combatants.end(),
                                        [&](const auto & a)
     {
-        return a.id == s.actor && a.side == 0;
+        return a.id == s.actor && a.side == rules::Side::party;
     });
     if (throwing != s.combatants.end())
         for (const auto &option : throwing->thrown_weapons)
@@ -992,7 +992,7 @@ void CombatView::refresh()
                         [&](const auto & a)
     {
         return a.id == s.actor &&
-               a.side == 0 && a.prone;
+               a.side == rules::Side::party && a.prone;
     }));
     get_node<Button>("StandUp")->set_disabled(!enabled("stand_up"));
     layout();
@@ -1102,7 +1102,7 @@ void CombatView::_draw()
         return a.id == s.actor;
     });
     unsigned effect_index = 0;
-    if (active != s.combatants.end() && active->side == 0)
+    if (active != s.combatants.end() && active->side == rules::Side::party)
         for (const auto &c : demo_->combat().legal_commands())
             if (c.verb == mode_ && matches_item(c))
             {
@@ -1133,7 +1133,7 @@ void CombatView::_draw()
     {
         const auto center =
             board_rect_.position + Vector2((a.cell.x + .5) * tile, (a.cell.y + .5) * tile);
-        const auto color = a.side == 0 ? Color("79d6d4") : Color("dd9874");
+        const auto color = a.side == rules::Side::party ? Color("79d6d4") : Color("dd9874");
         draw_circle(center, tile * .34, a.conscious ? color : Color("51595b"));
         if (a.id == s.actor && s.outcome == Outcome::ongoing)
             draw_arc(center, tile * .42, 0, 6.283185, 32, Color("e6c28a"), 2);
@@ -1221,7 +1221,7 @@ void CombatView::_process(double delta)
         {
             return a.id == s.actor;
         });
-        if (checking_ && active->side == 1)
+        if (checking_ && active->side == rules::Side::opposition)
         {
             Ref<InputEventKey> key;
             key.instantiate();
@@ -1231,7 +1231,8 @@ void CombatView::_process(double delta)
             if (demo_->combat().snapshot().revision != s.revision)
                 throw std::runtime_error("Keyboard skipped enemy turn");
         }
-        if (checking_ && !checked_input_ && active->side == 0 && !s.reaction_pending)
+        if (checking_ && !checked_input_ && active->side == rules::Side::party &&
+                !s.reaction_pending)
         {
             const auto command = choose_demo_command(demo_->combat());
             if (command.target)
@@ -1261,7 +1262,7 @@ void CombatView::_process(double delta)
                         return;
                     }
         }
-        if (checking_ || party_check_ || defeat_check_ || active->side == 1)
+        if (checking_ || party_check_ || defeat_check_ || active->side == rules::Side::opposition)
         {
             ai_delay_ += delta;
             if (!checking_ && !party_check_ && !defeat_check_ && ai_delay_ < .65)
@@ -1271,7 +1272,7 @@ void CombatView::_process(double delta)
             {
                 if (++check_steps_ > 2000)
                     throw std::runtime_error("Defeat check command limit exceeded");
-                if (active->side == 0)
+                if (active->side == rules::Side::party)
                 {
                     const auto offered = demo_->combat().legal_commands();
                     const auto pass =

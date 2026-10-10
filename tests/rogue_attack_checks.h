@@ -35,14 +35,14 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon = "
                 1,
                 "campaign-character",
                 "Rogue",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), gear).data
             },
-            {99, enemy, "Target", 1, target}
+            {99, enemy, "Target", Side::opposition, target}
         }};
     if (ally)
-        e.participants.push_back({2, "vanguard", "Ally", 0, {target.x, 2}});
+        e.participants.push_back({2, "vanguard", "Ally", Side::party, {target.x, 2}});
     auto c = rules.create(std::move(e), seed);
     for (unsigned i = 0; c->snapshot().actor != 1 && i < 5; ++i)
         act(*c, "end");
@@ -218,7 +218,7 @@ void run()
         auto actors = recruited.participants();
         actors.front().cell = {1, 1};
         actors[1].cell = {2, 2};
-        actors.push_back({99, "target", "Target", 1, {2, 1}});
+        actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
         auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         while (c->snapshot().actor != id)
             act(*c, "end");
@@ -355,7 +355,7 @@ void run()
                         1,
                         "campaign-character",
                         "Rogue",
-                        0,
+                        Side::party,
                         {1, 1},
                         rules->character_profile(h.sheet(), std::array<std::string, 1>{"dagger"}).data
                     },
@@ -363,12 +363,12 @@ void run()
                         2,
                         "campaign-character",
                         "Unconscious ally",
-                        0,
+                        Side::party,
                         {2, 2},
                         rules->character_profile(h.sheet(), {}).data,
                         unconscious
                     },
-                    {99, "target", "Target", 1, {2, 1}}
+                    {99, "target", "Target", Side::opposition, {2, 1}}
                 }};
             auto c = rules->create(std::move(e), seed);
             while (c->snapshot().actor != 1)
@@ -394,8 +394,8 @@ void run()
             party.equip(id, token);
             auto actors = party.participants();
             actors.front().cell = {1, 1};
-            actors.push_back({99, "target", "Target", 1, {5, 1}});
-            actors.push_back({2, "vanguard", "Ally", 0, {5, 2}});
+            actors.push_back({99, "target", "Target", Side::opposition, {5, 1}});
+            actors.push_back({2, "vanguard", "Ally", Side::party, {5, 2}});
             auto c = rules->create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
             while (c->snapshot().actor != id)
                 act(*c, "end");

@@ -164,8 +164,8 @@ unsigned seed = 13, Cell target = {3, 1})
 {
     auto profile = rules.character_profile(h.sheet(), std::array{weapon});
     auto c = rules.create({{64, 4, std::vector<Terrain>(256)},
-        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-            {2, "target", "Target", 1, target}
+        {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
+            {2, "target", "Target", Side::opposition, target}
         }},
     seed);
     test::keep_initiative(*c);

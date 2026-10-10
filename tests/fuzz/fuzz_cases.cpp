@@ -284,7 +284,9 @@ std::vector<FuzzSeed> checkpoint_seeds()
         rules::Encounter encounter
         {
             {8, 8, std::vector<rules::Terrain>(64)},
-            {{1, "hero", "Hero", 0, {2, 2}}, {2, "enemy", "Enemy", 1, {3, 2}}}};
+            {   {1, "hero", "Hero", rules::Side::party, {2, 2}},
+                {2, "enemy", "Enemy", rules::Side::opposition, {3, 2}}
+            }};
         encounter.battlefield.terrain[2 * 8 + 1] = rules::Terrain::difficult;
         auto session = module().create(encounter, seed);
         seeds.push_back(text_seed("initial-" + std::to_string(seed), session->save()));
@@ -305,7 +307,9 @@ std::vector<FuzzSeed> checkpoint_seeds()
     rules::Encounter effects
     {
         {8, 8, std::vector<rules::Terrain>(64)},
-        {{1, "caster", "Caster", 0, {2, 2}}, {2, "enemy", "Target", 1, {3, 2}}}};
+        {   {1, "caster", "Caster", rules::Side::party, {2, 2}},
+            {2, "enemy", "Target", rules::Side::opposition, {3, 2}}
+        }};
     auto session = module().create(effects, 3);
     auto commands = session->legal_commands();
     auto cast = std::find_if(commands.begin(), commands.end(),

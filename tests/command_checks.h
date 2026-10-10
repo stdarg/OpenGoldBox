@@ -25,8 +25,8 @@ std::unique_ptr<CombatSession> commanded(const RulesModule &module, const std::s
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
         auto c = module.create({{12, 4, std::vector<Terrain>(48)},
-            {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-                {99, "target", "Enemy", 1, {1 + gap, 1}}
+            {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                {99, "target", "Enemy", Side::opposition, {1 + gap, 1}}
             }},
         seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -140,9 +140,9 @@ void command_upcast_checks()
 {
     auto module = rules();
     auto c = module->create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, cleric_profile(*module)},
-            {98, "target", "First", 1, {3, 1}},
-            {99, "target", "Second", 1, {3, 2}}
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, cleric_profile(*module)},
+            {98, "target", "First", Side::opposition, {3, 1}},
+            {99, "target", "Second", Side::opposition, {3, 2}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -172,8 +172,8 @@ void write_command_fixture()
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
         auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-                {99, "vanguard", "Enemy", 1, {6, 1}}
+            {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
             }},
         seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

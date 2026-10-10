@@ -81,11 +81,12 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
     const auto paladin_profile = rules.character_profile(paladin.sheet(), {}).data;
     const auto ally_profile = rules.character_profile(ally.sheet(), {}).data;
     std::vector<Participant> setup{
-        {1, "campaign-character", "Paladin", 0, {1, 1}, paladin_profile},
-        {2, "campaign-character", "Ally", 0, {2, 1}, ally_profile,
+        {1, "campaign-character", "Paladin", Side::party, {1, 1}, paladin_profile},
+        {2, "campaign-character", "Ally", Side::party, {2, 1}, ally_profile,
             VitalState{ally_hp, false, {}}},
-        {3, "campaign-character", "Distant", 0, {1, 3}, ally_profile, VitalState{1, false, {}}},
-        {99, "vanguard", "Enemy", 1, {10, 6}}};
+        {3, "campaign-character", "Distant", Side::party, {1, 3}, ally_profile,
+            VitalState{1, false, {}}},
+        {99, "vanguard", "Enemy", Side::opposition, {10, 6}}};
     if (paladin_state)
         setup[0].state = *paladin_state;
     auto c = rules.create({{12, 8, std::vector<Terrain>(96)}, setup}, 7);

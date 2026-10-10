@@ -120,8 +120,8 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Barbarian", 0, {1, 1}, profile},
-            {98, "target", "Enemy", 1, {2, 1}}
+        {   {1, "campaign-character", "Barbarian", Side::party, {1, 1}, profile},
+            {98, "target", "Enemy", Side::opposition, {2, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

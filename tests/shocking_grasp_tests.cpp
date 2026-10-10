@@ -130,11 +130,11 @@ std::vector<std::string> gear = {})
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), gear).data
             },
-            {2, "target", "Target", 1, target}
+            {2, "target", "Target", Side::opposition, target}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -158,8 +158,8 @@ void access()
         [&]
     {
         (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {2, "vanguard", "Enemy", 1, {2, 1}}
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {2, "vanguard", "Enemy", Side::opposition, {2, 1}}
             }},
         13);
     });
@@ -275,9 +275,9 @@ void movement()
     auto profile = rules->character_profile(hero().sheet(), {}).data;
     // A second adjacent enemy remains able to interrupt; the shocked enemy is omitted.
     auto c = rules->create({{10, 8, std::vector<Terrain>(80)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-            {2, "target", "Shocked", 1, {2, 1}},
-            {3, "target", "Other", 1, {1, 2}}
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+            {2, "target", "Shocked", Side::opposition, {2, 1}},
+            {3, "target", "Other", Side::opposition, {1, 2}}
         }},
     13);
     while (c->snapshot().actor != 1)
@@ -355,7 +355,7 @@ void reaction_and_armor()
                 1,
                 "campaign-character",
                 "Wizard",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(hero().sheet(), {}).data
             },
@@ -363,7 +363,7 @@ void reaction_and_armor()
                 2,
                 "campaign-character",
                 "Plate Fighter",
-                1,
+                Side::opposition,
                 {2, 1},
                 rules->character_profile(fighter.sheet(), std::vector<std::string>{"plate"}).data
             }
@@ -481,9 +481,9 @@ void persistence_guards()
     auto board = Battlefield{8, 8, std::vector<Terrain>(64)};
     auto profile = rules->character_profile(hero().sheet(), {}).data;
     auto dead = rules->create({board,
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-            {2, "target", "Dead", 1, {2, 1}, {}, VitalState{0, true, {}}},
-            {3, "target", "Enemy", 1, {6, 1}}
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+            {2, "target", "Dead", Side::opposition, {2, 1}, {}, VitalState{0, true, {}}},
+            {3, "target", "Enemy", Side::opposition, {6, 1}}
         }},
     13);
     while (dead->snapshot().actor != 1)
@@ -509,7 +509,7 @@ void campaign()
                 npc ? party.recruit("fixture:shocking", hero(level)) : party.add_pc(hero(level));
             auto actors = party.participants();
             actors[0].cell = {1, 1};
-            actors.push_back({99, "vanguard", "Enemy", 1, {6, 1}});
+            actors.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 1}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             while (c->snapshot().actor != id)
                 act(*c, "end");
@@ -563,9 +563,9 @@ void fixtures()
     auto h = hero(3);
     auto profile = rules->character_profile(h.sheet(), {}).data;
     auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-            {2, "vanguard", "Ally", 0, {2, 1}},
-            {99, "vanguard", "Enemy", 1, {5, 1}}
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+            {2, "vanguard", "Ally", Side::party, {2, 1}},
+            {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
         }},
     2);
     while (c->snapshot().actor != 1)

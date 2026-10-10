@@ -145,10 +145,10 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
     std::vector<Participant> participants{
-        {1, "campaign-character", "Sorcerer", 0, {1, 1}, profile},
-        {98, enemy, "Enemy", 1, {4, 1}}};
+        {1, "campaign-character", "Sorcerer", Side::party, {1, 1}, profile},
+        {98, enemy, "Enemy", Side::opposition, {4, 1}}};
     if (ally)
-        participants.push_back({2, "target", "Ally", 0, *ally});
+        participants.push_back({2, "target", "Ally", Side::party, *ally});
     auto c = module.create({{12, 6, std::vector<Terrain>(72)}, participants}, 5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Sorcerer's turn");

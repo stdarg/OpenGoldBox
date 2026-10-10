@@ -106,12 +106,12 @@ auto battle(const RulesModule &rules, const Character &h, const std::vector<std:
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 p.data,
                 VitalState{h.sheet().hit_points - 10, false, {}}
             },
-            {99, "vanguard", "Enemy", 1, {3, 1}}
+            {99, "vanguard", "Enemy", Side::opposition, {3, 1}}
         }},
     2);
     if (c->snapshot().actor != 1)
@@ -217,7 +217,7 @@ auto campaign_battle(const RulesModule &rules, const CampaignParty &p)
 {
     auto actors = p.participants();
     actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {3, 1}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {3, 1}});
     return rules.create({{8, 8, std::vector<Terrain>(64)}, actors}, 2);
 }
 

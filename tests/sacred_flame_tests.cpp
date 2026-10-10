@@ -132,12 +132,12 @@ auto custom(std::string affinity = {}, int dex = 0)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-std::vector<std::string> gear = {}, unsigned side = 1,
+std::vector<std::string> gear = {}, Side side = Side::opposition,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
     auto c = rules.create({{10, 8, std::vector<Terrain>(80)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
     seed);
@@ -204,8 +204,8 @@ void access()
             [&]
         {
             (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-                {   {1, "campaign-character", "Forged", 0, {1, 1}, recipe},
-                    {2, "vanguard", "Target", 1, {3, 1}}
+                {   {1, "campaign-character", "Forged", Side::party, {1, 1}, recipe},
+                    {2, "vanguard", "Target", Side::opposition, {3, 1}}
                 }},
             13);
         });
@@ -325,8 +325,8 @@ void targets()
     {
         auto profile = rules->character_profile(h.sheet(), {});
         auto c = rules->create({{16, 8, std::vector<Terrain>(128)},
-            {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                {2, "target", "Enemy", 1, {1 + feet / 5, 1}}
+            {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+                {2, "target", "Enemy", Side::opposition, {1 + feet / 5, 1}}
             }},
         40);
         check(has(*c, "sacred_flame", 2) == (feet <= 60), "Range includes 60 feet and excludes 65");
@@ -366,8 +366,8 @@ void targets()
     Battlefield board{10, 8, std::vector<Terrain>(80)};
     board.terrain[12] = Terrain::obstacle;
     auto blocked = rules->create({board,
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-            {2, "target", "Enemy", 1, {3, 1}}
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+            {2, "target", "Enemy", Side::opposition, {3, 1}}
         }},
     13);
     check(!has(*blocked, "sacred_flame", 2), "Total cover remains ineligible");
@@ -396,19 +396,19 @@ void targets()
                 })
         {
             auto c = rules->create({{10, 8, std::vector<Terrain>(80)},
-                {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+                {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
                     {
                         2,
                         "target",
                         "Ally",
-                        0,
+                        Side::party,
                         {2, 1},
                         {},
                         dead   ? std::optional<VitalState>{{0, true, {}}}
 : down ? std::optional<VitalState>{{0, false, {}}}
 : std::nullopt
                     },
-                    {3, "target", "Enemy", 1, {8, 1}}
+                    {3, "target", "Enemy", Side::opposition, {8, 1}}
                 }},
             13);
             check(has(*c, "sacred_flame", 2) == !dead,
@@ -452,8 +452,8 @@ void modifiers()
     auto target = rules->character_profile(wizard.sheet(), std::vector<std::string> {"plate"});
     auto caster = rules->character_profile(hero().sheet(), {});
     auto armored = rules->create({{10, 8, std::vector<Terrain>(80)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
-            {2, "campaign-character", "Armored", 1, {3, 1}, target.data}
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, caster.data},
+            {2, "campaign-character", "Armored", Side::opposition, {3, 1}, target.data}
         }},
     13);
     const auto random = rng(*armored);
@@ -466,8 +466,8 @@ void modifiers()
     for (unsigned seed = 0; seed < 32 && !checked; ++seed)
     {
         auto blinded = rules->create({{10, 8, std::vector<Terrain>(80)},
-            {   {1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
-                {2, "blindness-adept", "Enemy", 1, {3, 1}}
+            {   {1, "campaign-character", "Caster", Side::party, {1, 1}, caster.data},
+                {2, "blindness-adept", "Enemy", Side::opposition, {3, 1}}
             }},
         seed);
         if (blinded->snapshot().actor == 1)
@@ -511,7 +511,7 @@ void campaign()
             p.restore(std::move(state));
             auto actors = p.participants();
             actors[0].cell = {1, 1};
-            actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
+            actors.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 40);
             const auto old = unit(*c, id).persistent;
             check(c->submit(command(*c, "sacred_flame", 99)), "Ordinary campaign Cleric casts");
@@ -546,9 +546,9 @@ void ui_fixtures()
                                      : std::vector<std::string> {"quarterstaff"});
         auto c =
         rules->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Sacred Cleric", 0, {1, 1}, profile.data},
-                {2, "vanguard", "Ally", 0, {3, 1}},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+            {   {1, "campaign-character", "Sacred Cleric", Side::party, {1, 1}, profile.data},
+                {2, "vanguard", "Ally", Side::party, {3, 1}},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         2);
         // Untrained armor's initiative Disadvantage may put the caster later.

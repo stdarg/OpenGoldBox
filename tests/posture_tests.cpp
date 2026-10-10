@@ -128,7 +128,7 @@ void rest_ambush()
     participants[0].cell = {2, 2};
     participants[0].resting = true;
     participants[1].cell = {2, 3};
-    participants.push_back({3, "bandit", "Enemy", 1, {6, 2}});
+    participants.push_back({3, "bandit", "Enemy", Side::opposition, {6, 2}});
     auto s = rules->create({{9, 7, std::vector<Terrain>(63)}, participants}, 37);
     const auto woken = unit(*s, sleeper);
     check(woken.prone && woken.conscious && !unit(*s, watcher).prone,
@@ -163,8 +163,8 @@ void downed_keeps_gear()
     for (unsigned seed = 1; seed < 100 && !witnessed; ++seed)
     {
         auto hit = rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "bandit", "Attacker", 1, {2, 2}},
-                {2, "campaign-character", "Wounded", 0, {3, 2}, armed.data, VitalState{1}}
+            {   {1, "bandit", "Attacker", Side::opposition, {2, 2}},
+                {2, "campaign-character", "Wounded", Side::party, {3, 2}, armed.data, VitalState{1}}
             }},
         seed);
         if (hit->snapshot().actor != 1)
@@ -205,9 +205,9 @@ void bandaged_at_victory()
     for (unsigned seed = 1; seed < 200 && !witnessed; ++seed)
     {
         auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Victor", 0, {2, 2}, profile},
-                {2, "campaign-character", "Fallen", 0, {1, 1}, profile, dying()},
-                {3, "bandit", "Enemy", 1, {3, 2}, {}, VitalState{1}}
+            {   {1, "campaign-character", "Victor", Side::party, {2, 2}, profile},
+                {2, "campaign-character", "Fallen", Side::party, {1, 1}, profile, dying()},
+                {3, "bandit", "Enemy", Side::opposition, {3, 2}, {}, VitalState{1}}
             }},
         seed);
         for (unsigned n = 0; n < 20 && c->snapshot().outcome == Outcome::ongoing; ++n)

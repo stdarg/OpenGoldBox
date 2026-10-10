@@ -88,8 +88,8 @@ void magic_off_casts_nothing()
     const auto rules = module();
     const auto profile = rules->character_profile(druid().sheet(), {}).data;
     auto fight = rules->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", 0, {1, 1}, profile},
-            {98, "bandit", "Enemy", 1, {6, 1}}
+        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+            {98, "bandit", "Enemy", Side::opposition, {6, 1}}
         }},
     5);
     for (unsigned turns = 0; fight->snapshot().actor != 1 && turns < 4; ++turns)

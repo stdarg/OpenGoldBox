@@ -132,11 +132,11 @@ std::vector<std::string> gear = {})
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), gear).data
             },
-            {2, "target", "Target", 1, target}
+            {2, "target", "Target", Side::opposition, target}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -161,8 +161,8 @@ void access()
         [&]
     {
         (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {2, "vanguard", "Enemy", 1, {3, 1}}
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
             }},
         13);
     });
@@ -272,9 +272,9 @@ void multiple_casters()
     auto rules = custom();
     const auto profile = rules->character_profile(hero(3).sheet(), {}).data;
     auto c = rules->create({{20, 8, std::vector<Terrain>(160)},
-        {   {1, "campaign-character", "First", 0, {1, 1}, profile},
-            {2, "target", "Target", 1, {8, 1}},
-            {3, "campaign-character", "Second", 0, {3, 1}, profile}
+        {   {1, "campaign-character", "First", Side::party, {1, 1}, profile},
+            {2, "target", "Target", Side::opposition, {8, 1}},
+            {3, "campaign-character", "Second", Side::party, {3, 1}, profile}
         }},
     2);
     while (c->snapshot().actor != 1)
@@ -363,11 +363,11 @@ void legality()
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(hero().sheet(), {}).data
             },
-            {2, "target", "Target", 1, {3, 1}}
+            {2, "target", "Target", Side::opposition, {3, 1}}
         }},
     13);
     check(!has(*c, "ray_of_frost", 2), "Opaque terrain blocks casting");
@@ -389,7 +389,7 @@ void campaign()
     auto id = party.add_pc(hero(3));
     auto actors = party.participants();
     actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {13, 1}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {13, 1}});
     auto c = rules->create({{20, 8, std::vector<Terrain>(160)}, actors}, 13);
     while (c->snapshot().actor != id)
         act(*c, "end");
@@ -432,9 +432,9 @@ void fixtures()
     auto profile =
         rules->character_profile(h.sheet(), std::vector<std::string> {"quarterstaff"}).data;
     auto c = rules->create({{20, 8, std::vector<Terrain>(160)},
-        {   {1, "campaign-character", "Frost Wizard", 0, {1, 1}, profile},
-            {2, "vanguard", "Ally", 0, {3, 1}},
-            {99, "vanguard", "Enemy", 1, {8, 1}}
+        {   {1, "campaign-character", "Frost Wizard", Side::party, {1, 1}, profile},
+            {2, "vanguard", "Ally", Side::party, {3, 1}},
+            {99, "vanguard", "Enemy", Side::opposition, {8, 1}}
         }},
     2);
     while (c->snapshot().actor != 1)

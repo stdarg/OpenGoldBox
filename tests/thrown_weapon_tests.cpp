@@ -110,8 +110,8 @@ void physical_inventory()
                     party.advance(id, party.default_advancement(id));
                 auto actors = party.participants();
                 actors.front().cell = {1, 1};
-                actors.push_back({2, "vanguard", "Target", 1, {2, 1}});
-                actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
+                actors.push_back({2, "vanguard", "Target", Side::opposition, {2, 1}});
+                actors.push_back({3, "vanguard", "Reserve", Side::opposition, {7, 7}});
                 auto rules = module();
                 auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 19);
                 party.begin_combat();
@@ -172,8 +172,8 @@ void critical_stack()
         auto party = thrown_party();
         auto actors = party.participants();
         actors.front().cell = {1, 1};
-        actors.push_back({2, "vanguard", "Target", 1, {5, 1}});
-        actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
+        actors.push_back({2, "vanguard", "Target", Side::opposition, {5, 1}});
+        actors.push_back({3, "vanguard", "Reserve", Side::opposition, {7, 7}});
         auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, seed);
         party.begin_combat();
         party.apply_combat(combat->snapshot());
@@ -235,7 +235,7 @@ void large_stack()
     party.equip(first, sword);
     auto actors = party.participants();
     actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Target", 1, {3, 1}});
+    actors.push_back({99, "vanguard", "Target", Side::opposition, {3, 1}});
     auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 1);
     party.begin_combat();
     party.apply_combat(combat->snapshot());
@@ -275,8 +275,8 @@ void control_fixture()
     party.equip(id, shield);
     auto actors = party.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({2, "vanguard", "Target", 1, {2, 1}});
-    actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
+    actors.push_back({2, "vanguard", "Target", Side::opposition, {2, 1}});
+    actors.push_back({3, "vanguard", "Reserve", Side::opposition, {7, 7}});
     auto rules = module();
     auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 1);
     while (combat->snapshot().actor != id)

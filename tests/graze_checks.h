@@ -167,7 +167,7 @@ void advancement_and_rejection()
                 party.advance(id, party.default_advancement(id));
             auto actors = party.participants();
             actors.front().cell = {1, 1};
-            actors.push_back({99, "graze_target", "Target", 1, {2, 1}});
+            actors.push_back({99, "graze_target", "Target", Side::opposition, {2, 1}});
             bool tested = false;
             for (unsigned seed = 1; seed < 64 && !tested; ++seed)
             {
@@ -248,8 +248,8 @@ void run()
                     e.participants.back().definition = "graze_target";
                     if (npc)
                     {
-                        e.participants.front().side = 1;
-                        e.participants.back().side = 0;
+                        e.participants.front().side = Side::opposition;
+                        e.participants.back().side = Side::party;
                     }
                     bool tested = false;
                     for (unsigned seed = 1; seed < 64 && !tested; ++seed)

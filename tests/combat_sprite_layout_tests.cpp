@@ -60,7 +60,7 @@ void sizing()
 
 void ordering()
 {
-    const auto actor = [](EntityId id, unsigned side, Cell cell)
+    const auto actor = [](EntityId id, opengold::rules::Side side, Cell cell)
     {
         CombatantView value;
         value.id = id;
@@ -68,8 +68,10 @@ void ordering()
         value.cell = cell;
         return value;
     };
-    std::vector<CombatantView> actors{actor(11, 1, {4, 4}), actor(20, 0, {4, 5}),
-                                      actor(9, 1, {3, 7}), actor(12, 1, {2, 4})};
+    const auto party = opengold::rules::Side::party,
+          opposition = opengold::rules::Side::opposition;
+    std::vector<CombatantView> actors{actor(11, opposition, {4, 4}), actor(20, party, {4, 5}),
+                                      actor(9, opposition, {3, 7}), actor(12, opposition, {2, 4})};
     const auto original = actors;
     const auto ids = [&]
     {

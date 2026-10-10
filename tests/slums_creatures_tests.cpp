@@ -49,7 +49,8 @@ std::unique_ptr<CombatSession> fight(const RulesModule &module, const std::strin
                                      Cell hero_cell = {2, 1})
 {
     return module.create({{10, 4, std::vector<Terrain>(40)},
-        {{1, monster, "Monster", 1, monster_cell}, {2, hero, "Hero", 0, hero_cell}}},
+        {{1, monster, "Monster", Side::opposition, monster_cell},
+         {2, hero, "Hero", Side::party, hero_cell}}},
     7);
 }
 
@@ -127,8 +128,9 @@ std::unique_ptr<CombatSession> troll_fight(const RulesModule &module, const std:
         const std::string &second)
 {
     return module.create({{10, 4, std::vector<Terrain>(40)},
-        {   {1, "troll", "Monster", 1, {1, 1}}, {4, "target", "Ally", 1, {9, 3}},
-            {2, first, "Hero", 0, {2, 1}}, {3, second, "Friend", 0, {1, 2}}
+        {   {1, "troll", "Monster", Side::opposition, {1, 1}},
+            {4, "target", "Ally", Side::opposition, {9, 3}},
+            {2, first, "Hero", Side::party, {2, 1}}, {3, second, "Friend", Side::party, {1, 2}}
         }},
     7);
 }

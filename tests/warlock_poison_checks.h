@@ -52,8 +52,8 @@ void access()
         [&]
     {
         (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         13);
     });
@@ -165,7 +165,7 @@ void campaign()
         party.restore(state);
         auto actors = party.participants();
         actors[0].cell = {1, 1};
-        actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
+        actors.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
         auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         const auto old = unit(*c, id).persistent;
         check(c->submit(command(*c, "poison_spray", 99)),
@@ -212,12 +212,12 @@ void fixtures()
                 1,
                 "campaign-character",
                 "Warlock",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(selected(true).sheet(), {}).data
             },
-            {2, "vanguard", "Ally", 0, {3, 1}},
-            {99, "vanguard", "Enemy", 1, {5, 1}}
+            {2, "vanguard", "Ally", Side::party, {3, 1}},
+            {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
         }},
     2);
     write(path / "both.save", c->save());

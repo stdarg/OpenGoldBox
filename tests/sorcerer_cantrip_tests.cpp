@@ -129,12 +129,12 @@ auto custom(std::string affinity = {})
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-std::vector<std::string> gear = {}, unsigned side = 1,
+std::vector<std::string> gear = {}, Side side = Side::opposition,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
     auto c = rules.create({{28, 8, std::vector<Terrain>(224)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
     seed);
@@ -225,8 +225,8 @@ void access()
         [&]
     {
         (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         13);
     });
@@ -404,7 +404,7 @@ void campaign()
             party.restore(state);
             auto actors = party.participants();
             actors[0].cell = {1, 1};
-            actors.push_back({99, "vanguard", "Enemy", 1, {2, 1}});
+            actors.push_back({99, "vanguard", "Enemy", Side::opposition, {2, 1}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             check(c->submit(command(*c, spell, 99)),
                   "Ordinary party profile provides Sorcerer cast");
@@ -458,9 +458,9 @@ void fixtures()
                            h.sheet(), kind == "blocked" ? std::vector<std::string> {"plate"}
                            : std::vector<std::string> {});
         auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Sorcerer", 0, {1, 1}, profile.data},
-                {2, "vanguard", "Ally", 0, {2, 1}},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+            {   {1, "campaign-character", "Sorcerer", Side::party, {1, 1}, profile.data},
+                {2, "vanguard", "Ally", Side::party, {2, 1}},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         2);
         // Untrained armor's initiative Disadvantage may put the caster later.

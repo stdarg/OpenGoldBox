@@ -155,9 +155,9 @@ std::string snapshot()
             const int column = 1 + feet / 5;
             auto c =
             rules->create({{28, 4, std::vector<Terrain>(28 * 4)},
-                {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                    {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
-                    {3, "target", "Enemy", 1, {column, 2}}
+                {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+                    {2, "target", "Ally", Side::party, {column, 1}, {}, VitalState{3, false, {}}},
+                    {3, "target", "Enemy", Side::opposition, {column, 2}}
                 }},
             13);
             // Seed 13 does not always start the caster; advance to their turn.
@@ -313,9 +313,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const CharacterS
     const auto profile = rules.character_profile(sheet, gear);
     const int column = 1 + feet / 5;
     auto c = rules.create({{34, 4, std::vector<Terrain>(34 * 4)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-            {2, "target", "Ally", 0, {column, 1}, {}, VitalState{3, false, {}}},
-            {3, "target", "Enemy", 1, {column, 2}}
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+            {2, "target", "Ally", Side::party, {column, 1}, {}, VitalState{3, false, {}}},
+            {3, "target", "Enemy", Side::opposition, {column, 2}}
         }},
     13);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -478,8 +478,8 @@ void profile_tags()
         try
         {
             (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-                {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                    {2, "target", "Target", 1, {3, 1}}
+                {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                    {2, "target", "Target", Side::opposition, {3, 1}}
                 }},
             13);
             return true;

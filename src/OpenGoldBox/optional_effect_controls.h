@@ -119,7 +119,7 @@ bool effect_target_input(const godot::Ref<godot::InputEvent> &event,
     {
         return a.id == state.actor;
     });
-    if (actor == state.combatants.end() || actor->side != 0)
+    if (actor == state.combatants.end() || actor->side != opengold::rules::Side::party)
         return false;
     const Ref<InputEventKey> key = event;
     if (key.is_null() || !key->is_pressed() || key->is_echo())

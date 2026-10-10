@@ -40,11 +40,11 @@ auto battle(const Character &h)
                 1,
                 "campaign-character",
                 "Rogue",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), std::array<std::string, 1>{"dagger"}).data
             },
-            {99, "vanguard", "Enemy", 1, {2, 1}}
+            {99, "vanguard", "Enemy", Side::opposition, {2, 1}}
         }},
     2);
     test::keep_initiative(*c);
@@ -207,7 +207,7 @@ void run()
                 1,
                 "campaign-character",
                 "Rogue",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(rogue.sheet(), {}).data
             },
@@ -215,7 +215,7 @@ void run()
                 99,
                 "campaign-character",
                 "Wizard",
-                1,
+                Side::opposition,
                 {5, 1},
                 rules->character_profile(wizard.sheet(), {}).data
             }
@@ -242,12 +242,12 @@ void run()
                     1,
                     "campaign-character",
                     "Down Rogue",
-                    0,
+                    Side::party,
                     {1, 1},
                     rules->character_profile(rogue.sheet(), {}).data,
                     VitalState{0, dead, {}}
                 },
-                {99, "vanguard", "Enemy", 1, {5, 5}}
+                {99, "vanguard", "Enemy", Side::opposition, {5, 5}}
             }},
         2);
         check(!has(*down, "cunning_dash"), "Unconscious/dead actors cannot use Cunning Action");

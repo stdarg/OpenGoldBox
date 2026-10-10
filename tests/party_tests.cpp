@@ -551,7 +551,7 @@ void all_weapon_equipment()
             }
             auto participants = party.participants();
             participants[0].cell = {1, 1};
-            participants.push_back({1000, "bandit", "Target", 1, {3, 1}});
+            participants.push_back({1000, "bandit", "Target", Side::opposition, {3, 1}});
             auto rules = module();
             std::unique_ptr<CombatSession> combat;
             for (unsigned seed = 0; seed < 100; ++seed)
@@ -602,7 +602,7 @@ void goliath_occupancy()
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft, human.appearance()));
     auto participants = party.participants();
     participants[0].cell = {2, 2};
-    participants.push_back({1000, "bandit", "Above the Goliath", 1, {2, 0}});
+    participants.push_back({1000, "bandit", "Above the Goliath", Side::opposition, {2, 0}});
     auto rules = module();
     std::unique_ptr<CombatSession> combat;
     for (unsigned seed = 0; seed < 100; ++seed)
@@ -854,7 +854,7 @@ void class_weapon_proficiency()
                   "Proficient equipment round trips canonically");
             auto participants = loaded.participants();
             participants[0].cell = {1, 1};
-            participants.push_back({1000, "bandit", "Target", 1, {2, 1}});
+            participants.push_back({1000, "bandit", "Target", Side::opposition, {2, 1}});
             std::unique_ptr<CombatSession> combat;
             for (unsigned seed = 0; seed < 100; ++seed)
             {
@@ -905,7 +905,7 @@ void stabilization_handoff()
     auto participants = party.participants();
     participants[0].cell = {1, 1};
     participants[1].cell = {1, 3};
-    participants.push_back({1000, "bandit", "Enemy", 1, {5, 3}});
+    participants.push_back({1000, "bandit", "Enemy", Side::opposition, {5, 3}});
     auto rules = module();
     std::unique_ptr<CombatSession> stable;
     for (unsigned seed = 0; seed < 200 && !stable; ++seed)
@@ -961,7 +961,7 @@ void remaining_turn_handoff()
     party.restore(std::move(state));
     auto participants = party.participants();
     participants[0].cell = {1, 1};
-    participants.push_back({1000, "vanguard", "Enemy", 1, {2, 1}});
+    participants.push_back({1000, "vanguard", "Enemy", Side::opposition, {2, 1}});
     auto rules = module();
     std::unique_ptr<CombatSession> combat;
     for (unsigned seed = 0; seed < 100 && !combat; ++seed)
@@ -1052,7 +1052,8 @@ void untrained_equipment()
     Encounter e
     {
         {4, 4, std::vector<Terrain>(16)},
-        {{1, "campaign-character", "Mage", 0, {1, 1}, p.data}, {2, "bandit", "Bandit", 1, {2, 1}}}};
+        {{1, "campaign-character", "Mage", Side::party, {1, 1}, p.data},
+         {2, "bandit", "Bandit", Side::opposition, {2, 1}}}};
     bool tested = false;
     for (unsigned seed = 0; seed < 100 && !tested; ++seed)
     {
@@ -1121,7 +1122,7 @@ void combat_handoff()
     finish(fight);
     check(!party->in_combat(), "Combat releases party edits on finish");
     for (const auto &actor : fight.combat().snapshot().combatants)
-        if (actor.side == 0)
+        if (actor.side == Side::party)
         {
             const auto &member = party->member(actor.id);
             const auto growth = member.character.sheet().hit_points - actor.max_hit_points;
@@ -1190,8 +1191,8 @@ CampaignEncounter encounter_fixture()
         encounter.field.geometry.terrain[y * 40 + 10] = Terrain::obstacle;
     encounter.field.geometry.terrain[13 * 40 + 25] = Terrain::difficult;
     encounter.field.tiles.resize(40 * 26, 7);
-    encounter.enemies = {{1000, "bandit", "First enemy", 1, {}},
-        {1001, "bandit", "Second enemy", 1, {}}
+    encounter.enemies = {{1000, "bandit", "First enemy", Side::opposition, {}},
+        {1001, "bandit", "Second enemy", Side::opposition, {}}
     };
     return encounter;
 }
@@ -1237,7 +1238,8 @@ void campaign_encounters()
                       "All participants remain in the party's reachable component");
                 check(positions.insert(participant.cell).second,
                       "Combatants occupy distinct cells");
-                check(participant.surprised == (participant.side == 0 ? facing == 1 : facing == 2),
+                check(participant.surprised ==
+                      (participant.side == Side::party ? facing == 1 : facing == 2),
                       "Original surprise codes select the correct side");
             }
             check(handed.participants[0].cell == Cell{25, 13} &&
@@ -1320,7 +1322,7 @@ void camp_ambush_encounter()
     ambush.party_resting = true;
     fight.encounter(ambush, 1234);
     for (const auto &participant : observed->encounter.participants)
-        check(participant.resting == (participant.side == 0),
+        check(participant.resting == (participant.side == Side::party),
               "Every party member, and no enemy, starts the camp ambush resting");
     const auto log = fight.combat().snapshot().log();
     for (const auto *line :
@@ -1341,7 +1343,7 @@ void allied_campaign_movement()
     encounter.field.geometry = {7, 3, std::vector<Terrain>(21, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
         encounter.field.geometry.terrain[7 + x] = Terrain::open;
-    encounter.enemies = {{1000, "bandit", "Enemy", 1, {6, 1}}};
+    encounter.enemies = {{1000, "bandit", "Enemy", Side::opposition, {6, 1}}};
     encounter.positions = {{0, 1}, {1, 1}, {2, 1}, {6, 1}};
     std::unique_ptr<CombatDemo> fight;
     for (unsigned seed = 0; seed < 100 && !fight; ++seed)
@@ -1626,7 +1628,7 @@ void caster_advancement()
                : "SRD11 0 3 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 2 FX8 1 0 0"),
               "Level-two long rest restores three slots and safely stands the rested character");
         auto participants = party.participants();
-        participants.push_back({1000, "bandit", "Bandit", 1, {9, 4}});
+        participants.push_back({1000, "bandit", "Bandit", Side::opposition, {9, 4}});
         auto rules = module();
         auto combat = rules->create({{12, 9, std::vector<Terrain>(108)}, participants}, 42);
         const auto saved = combat->save();
@@ -1666,8 +1668,8 @@ void dynamic_checkpoint()
     const auto c = character("wizard");
     const auto profile = rules->character_profile(c.sheet(), {});
     Encounter e{{4, 4, std::vector<Terrain>(16)},
-        {   {1, "campaign-character", "Mage", 0, {0, 0}, profile.data},
-            {2, "bandit", "Bandit", 1, {3, 3}}
+        {   {1, "campaign-character", "Mage", Side::party, {0, 0}, profile.data},
+            {2, "bandit", "Bandit", Side::opposition, {3, 3}}
         }};
     auto session = rules->create(e, 42);
     const auto bytes = session->save();
@@ -1691,7 +1693,7 @@ void dynamic_checkpoint()
         const auto id = party.add_pc(pc);
         auto participants = party.participants();
         participants[0].cell = {0, 0};
-        participants.push_back({1000, "bandit", "Bandit", 1, {3, 3}});
+        participants.push_back({1000, "bandit", "Bandit", Side::opposition, {3, 3}});
         auto fight = rules->create({{4, 4, std::vector<Terrain>(16)}, participants}, 42);
         const auto snapshot = fight->snapshot();
         check(std::any_of(snapshot.combatants.begin(), snapshot.combatants.end(),
@@ -1802,7 +1804,7 @@ void combat_demo_fixture()
     {
         const auto &actor = scene.encounter.enemies[i];
         const bool leader = actor.definition == "slums-kobold-leader";
-        check((leader || actor.definition == "slums-kobold") && actor.side == 1,
+        check((leader || actor.definition == "slums-kobold") && actor.side == Side::opposition,
               "Surrounding enemies use Kobold rules");
         leaders += leader;
         kobolds.insert(scene.encounter.positions[i + 6]);
@@ -2073,7 +2075,7 @@ void victory_beside_dead_member()
     "The dead member does not fight");
     result.outcome = Outcome::victory;
     for (auto &unit : result.combatants)
-        if (unit.side == 1)
+        if (unit.side == Side::opposition)
             unit.hit_points = 0;
     check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
           "The victory resolves although a dead member sat it out");
@@ -2091,7 +2093,7 @@ void victory_when_every_monster_fled()
     const auto before = party->checkpoint();
     result.outcome = Outcome::victory;
     for (auto &unit : result.combatants)
-        if (unit.side == 1)
+        if (unit.side == Side::opposition)
             unit.fled = true;
     check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
           "A victory over monsters that all fled ends the fight");

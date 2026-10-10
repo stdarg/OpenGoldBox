@@ -78,8 +78,8 @@ Encounter encounter(const RulesModule &rules, const Character &hero, std::string
 {
     const auto profile = rules.character_profile(hero.sheet(), std::array<std::string, 1> {key});
     return {{12, 8, std::vector<Terrain>(96)},
-        {   {1, "campaign-character", "Master", 0, {1, 1}, profile.data},
-            {99, "mastery_target", "Target", 1, {ranged ? 3 : 2, 1}}
+        {   {1, "campaign-character", "Master", Side::party, {1, 1}, profile.data},
+            {99, "mastery_target", "Target", Side::opposition, {ranged ? 3 : 2, 1}}
         },
         777};
 }
@@ -315,7 +315,7 @@ void physical_attacks_and_reactions()
             party.advance(id, party.default_advancement(id));
             auto actors = party.participants();
             actors.front().cell = {1, 1};
-            actors.push_back({99, "mastery_target", "Target", 1, {2, 1}});
+            actors.push_back({99, "mastery_target", "Target", Side::opposition, {2, 1}});
             auto c = party.rule_module().create(
             {{12, 8, std::vector<Terrain>(96)}, actors, 777}, 89);
             turn(*c, id);

@@ -56,7 +56,8 @@ Encounter duel(std::string profile = "vanguard")
     Battlefield b{12, 9, std::vector<Terrain>(108)};
     b.terrain[4 * 12 + 4] = Terrain::obstacle;
     b.terrain[2 * 12 + 1] = Terrain::difficult;
-    return {b, {{1, profile, "Hero", 0, {2, 2}}, {2, "bandit", "Bandit", 1, {3, 2}}}};
+    return {b, {{1, profile, "Hero", Side::party, {2, 2}},
+                {2, "bandit", "Bandit", Side::opposition, {3, 2}}}};
 }
 
 Command command(const CombatSession &session, std::string_view verb, Cell cell = {})
@@ -179,7 +180,7 @@ void turn_budget_tests()
         {
             auto e = duel();
             e.participants[1].definition = "vanguard";
-            e.participants.push_back({3, "vanguard", "Reserve enemy", 1, {10, 7}});
+            e.participants.push_back({3, "vanguard", "Reserve enemy", Side::opposition, {10, 7}});
             const bool weapon =
                 std::string_view(verb) == "melee" || std::string_view(verb) == "ranged";
             if (weapon)
@@ -255,7 +256,7 @@ void turn_budget_tests()
         auto e = duel(std::string_view(verb) == "blindness" ? "blindness-adept" : "vanguard");
         e.participants[0].facing_left = true;
         e.participants[1].definition = "vanguard";
-        e.participants.push_back({3, "vanguard", "Behind attacker", 1, {1, 2}});
+        e.participants.push_back({3, "vanguard", "Behind attacker", Side::opposition, {1, 2}});
         if (std::string_view(verb) != "melee" && std::string_view(verb) != "ranged" &&
                 std::string_view(verb) != "blindness")
             e.participants[0].character_profile = module->character_profile(sheet, {}).data;
@@ -305,7 +306,7 @@ void turn_budget_tests()
     // Multiple leave-reach reactions resolve in order before the move resumes.
     e = duel();
     e.participants[1].definition = "vanguard";
-    e.participants.push_back({3, "bandit", "Other guard", 1, {3, 1}});
+    e.participants.push_back({3, "bandit", "Other guard", Side::opposition, {3, 1}});
     session = hero_first(*module, e);
     session->submit(command(*session, "melee"));
     check(session->submit(command(*session, "move", {1, 2})),
@@ -483,8 +484,8 @@ void boundary_tests()
 
     auto vulnerable = duel();
     vulnerable.participants[0].state = VitalState{1, false, creature_resources(1)};
-    vulnerable.participants.push_back({3, "vanguard", "Second reactor", 1, {3, 1}});
-    vulnerable.participants.push_back({4, "vanguard", "Conscious ally", 0, {8, 6}});
+    vulnerable.participants.push_back({3, "vanguard", "Second reactor", Side::opposition, {3, 1}});
+    vulnerable.participants.push_back({4, "vanguard", "Conscious ally", Side::party, {8, 6}});
     bool interrupted = false;
     for (unsigned seed = 0; seed < 100 && !interrupted; ++seed)
     {
@@ -507,7 +508,7 @@ void boundary_tests()
 
     auto flank = duel();
     flank.participants[1].cell = {1, 2};
-    flank.participants.push_back({3, "bandit", "Right Guard", 1, {3, 2}});
+    flank.participants.push_back({3, "bandit", "Right Guard", Side::opposition, {3, 2}});
     session = hero_first(*module, flank);
     const auto left_attack = [&](const CombatSession & combat, EntityId target)
     {
@@ -537,7 +538,7 @@ void boundary_tests()
 
     auto reverse = duel();
     reverse.participants[0].facing_left = true;
-    reverse.participants.push_back({3, "bandit", "Left Guard", 1, {1, 2}});
+    reverse.participants.push_back({3, "bandit", "Left Guard", Side::opposition, {1, 2}});
     session = hero_first(*module, reverse);
     check(session->submit(left_attack(*session, 2)),
           "Hero attacks to the right from a left-facing pose");
@@ -548,7 +549,7 @@ void boundary_tests()
     auto monster_flank = duel();
     monster_flank.participants[0].cell = {1, 2};
     monster_flank.participants[1].cell = {2, 2};
-    monster_flank.participants.push_back({3, "vanguard", "Right Hero", 0, {3, 2}});
+    monster_flank.participants.push_back({3, "vanguard", "Right Hero", Side::party, {3, 2}});
     session = actor_first(*module, monster_flank, 2);
     check(session->submit(left_attack(*session, 1)), "Monster attacks to the left");
     check(unit(*session, 2).facing_left && !session->snapshot().reaction_pending &&
@@ -620,8 +621,8 @@ void mechanics_tests()
     }
     auto module = srd5::load(pack());
     auto encounter = duel("adept");
-    encounter.participants[1] = {2, "vanguard", "Enemy", 1, {8, 2}};
-    encounter.participants.push_back({3, "vanguard", "Reserve", 1, {8, 6}});
+    encounter.participants[1] = {2, "vanguard", "Enemy", Side::opposition, {8, 2}};
+    encounter.participants.push_back({3, "vanguard", "Reserve", Side::opposition, {8, 6}});
     auto session = hero_first(*module, encounter);
     for (int cast = 0; cast < 2; ++cast)
     {
@@ -661,7 +662,7 @@ void mechanics_tests()
 
     // A critical can kill the adjacent bandit; its vacated cell is traversable
     // and a checkpoint may legitimately contain a living actor over a corpse.
-    encounter.participants.push_back({3, "bandit", "Reserve", 1, {10, 7}});
+    encounter.participants.push_back({3, "bandit", "Reserve", Side::opposition, {10, 7}});
     bool tested = false;
     for (unsigned seed = 0; seed < 500 && !tested; ++seed)
     {
@@ -693,7 +694,7 @@ void mechanics_tests()
             })
     {
         encounter = duel(profile);
-        encounter.participants[1] = {2, "adept", "Enemy caster", 1, {8, 2}};
+        encounter.participants[1] = {2, "adept", "Enemy caster", Side::opposition, {8, 2}};
         session = hero_first(*module, encounter);
         session->submit(command(*session, "end"));
         check(session->snapshot().actor == 2, "Enemy caster turn");
@@ -712,8 +713,8 @@ void mechanics_tests()
     }
 
     encounter = duel("bandit");
-    encounter.participants[1] = {2, "adept", "Enemy caster", 1, {8, 2}};
-    encounter.participants.push_back({3, "vanguard", "Ally", 0, {1, 5}});
+    encounter.participants[1] = {2, "adept", "Enemy caster", Side::opposition, {8, 2}};
+    encounter.participants.push_back({3, "vanguard", "Ally", Side::party, {1, 5}});
     tested = false;
     for (unsigned seed = 0; seed < 100 && !tested; ++seed)
     {
@@ -741,7 +742,7 @@ void mechanics_tests()
     check(tested, "Exercised player unconscious/death-save flow");
 
     encounter = duel("bandit");
-    encounter.participants[1] = {2, "adept", "Enemy caster", 1, {8, 2}};
+    encounter.participants[1] = {2, "adept", "Enemy caster", Side::opposition, {8, 2}};
     tested = false;
     for (unsigned seed = 0; seed < 500 && !tested; ++seed)
     {
@@ -764,7 +765,7 @@ void death_save_turn_entry_tests()
 {
     auto module = srd5::load(pack());
     auto encounter = duel();
-    encounter.participants.push_back({3, "vanguard", "Ally", 0, {1, 5}});
+    encounter.participants.push_back({3, "vanguard", "Ally", Side::party, {1, 5}});
     const auto death_rolls = [](const CombatSession & session)
     {
         std::vector<int> rolls;
@@ -884,18 +885,19 @@ void allied_transit_tests()
     Battlefield corridor{7, 3, std::vector<Terrain>(21, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
         corridor.terrain[7 + x] = Terrain::open;
-    for (const unsigned side :
+    for (const Side side :
             {
-                0u, 1u
+                Side::party, Side::opposition
             })
         for (const bool difficult :
                 {
                     false, true
                 })
         {
+            const auto other_side = side == Side::party ? Side::opposition : Side::party;
             Encounter e{corridor,
                 {   {1, "vanguard", "Mover", side, {0, 1}},
-                    {2, "bandit", "Enemy", 1 - side, {6, 1}},
+                    {2, "bandit", "Enemy", other_side, {6, 1}},
                     {3, "vanguard", "Ally", side, {1, 1}},
                     {4, "vanguard", "Second ally", side, {2, 1}}
                 }};
@@ -928,9 +930,9 @@ void allied_transit_tests()
         board.terrain[5 + x] = Terrain::open;
     board.terrain[1] = board.terrain[2] = Terrain::open;
     Encounter e{board,
-        {   {1, "vanguard", "Mover", 0, {0, 1}},
-            {2, "bandit", "Reactor", 1, {1, 0}},
-            {3, "healer", "Ally", 0, {2, 1}}
+        {   {1, "vanguard", "Mover", Side::party, {0, 1}},
+            {2, "bandit", "Reactor", Side::opposition, {1, 0}},
+            {3, "healer", "Ally", Side::party, {2, 1}}
         }};
     for (const auto response :
             {"decline", "opportunity"
@@ -1040,7 +1042,7 @@ void opportunity_reuse_tests()
 {
     auto module = srd5::load(pack());
     auto e = duel();
-    e.participants.push_back({3, "bandit", "Other guard", 1, {3, 1}});
+    e.participants.push_back({3, "bandit", "Other guard", Side::opposition, {3, 1}});
     auto session = hero_first(*module, e);
     check(session->submit(command(*session, "dash")), "Dash for repeated departures");
     check(session->submit(command(*session, "move", {1, 3})) &&
@@ -1193,9 +1195,9 @@ void checkpoint_validation_tests()
         corridor.terrain[5 + x] = Terrain::open;
     corridor.terrain[1] = corridor.terrain[2] = Terrain::open; // Clear sight from the reactor.
     Encounter encounter{corridor,
-        {   {1, "vanguard", "Mover", 0, {0, 1}},
-            {2, "bandit", "Reactor", 1, {1, 0}},
-            {3, "vanguard", "Ally", 0, {2, 1}}
+        {   {1, "vanguard", "Mover", Side::party, {0, 1}},
+            {2, "bandit", "Reactor", Side::opposition, {1, 0}},
+            {3, "vanguard", "Ally", Side::party, {2, 1}}
         }};
     session = hero_first(*module, encounter);
     check(session->submit(command(*session, "move", {4, 1})), "Clear corridor move accepted");
@@ -1301,7 +1303,7 @@ void monster_trait_tests()
     auto alone = first_turn(*rules, kobolds, 2);
     check(alone->submit(command(*alone, "melee")) && !logged(*alone, "(advantage)"),
           "A lone kobold attacks without Advantage");
-    kobolds.participants.push_back({3, "slums-kobold", "Second kobold", 1, {2, 3}});
+    kobolds.participants.push_back({3, "slums-kobold", "Second kobold", Side::opposition, {2, 3}});
     auto pair = first_turn(*rules, kobolds, 2);
     check(pair->submit(command(*pair, "melee")) && logged(*pair, "(advantage)"),
           "Pack Tactics: another kobold beside the target grants Advantage");
@@ -1377,6 +1379,11 @@ static_assert(std::is_same_v<decltype(Battlefield{}.at(Cell{})), Terrain> &&
               std::is_same_v<decltype(Battlefield::terrain)::value_type, Terrain>);
 static_assert(static_cast<int>(Terrain::open) == 0 && static_cast<int>(Terrain::obstacle) == 1 &&
               static_cast<int>(Terrain::difficult) == 2);
+
+// So is an encounter side; a checkpoint stores party as 0 and opposition as 1.
+static_assert(std::is_same_v<decltype(Participant::side), Side> &&
+              std::is_same_v<decltype(CombatantView::side), Side>);
+static_assert(static_cast<int>(Side::party) == 0 && static_cast<int>(Side::opposition) == 1);
 
 // advance_character has one overridable form; a second overload that delegated
 // to it in the opposite direction let a module recurse forever (Effective C++

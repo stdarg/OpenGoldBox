@@ -116,8 +116,8 @@ unsigned seed = 89)
 {
     const auto profile = rules.character_profile(h.sheet(), std::array<std::string, 1> {weapon});
     auto c = rules.create({{40, 8, std::vector<Terrain>(320)},
-        {   {1, "campaign-character", "Archer", 0, {1, 1}, profile.data},
-            {99, "target", "Target", 1, target}
+        {   {1, "campaign-character", "Archer", Side::party, {1, 1}, profile.data},
+            {99, "target", "Target", Side::opposition, target}
         }},
     seed);
     check(c->snapshot().actor == 1, "Independent initiative seed starts with archer");
@@ -301,8 +301,8 @@ void forged_profiles()
     auto profile =
         rules->character_profile(leveled().sheet(), std::array<std::string, 1> {"shortbow"}).data;
     auto encounter = Encounter{{8, 8, std::vector<Terrain>(64)},
-        {   {1, "campaign-character", "Archer", 0, {1, 1}, profile},
-            {99, "vanguard", "Target", 1, {5, 1}}
+        {   {1, "campaign-character", "Archer", Side::party, {1, 1}, profile},
+            {99, "vanguard", "Target", Side::opposition, {5, 1}}
         }};
     auto wrong_mask = profile;
     replace(wrong_mask, "PC42 4 4 ", "PC42 4 0 ");

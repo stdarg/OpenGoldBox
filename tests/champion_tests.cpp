@@ -102,7 +102,7 @@ std::vector<std::string> gear = {"longsword"}, bool prone = false)
                 1,
                 "campaign-character",
                 "Champion",
-                0,
+                Side::party,
                 {2, 2},
                 rules.character_profile(h.sheet(), gear).data,
                 prone ? std::optional<VitalState>{{
@@ -112,7 +112,7 @@ std::vector<std::string> gear = {"longsword"}, bool prone = false)
                 }
 : std::nullopt
             },
-            {2, "dummy", "Target", 1, {3, 2}}
+            {2, "dummy", "Target", Side::opposition, {3, 2}}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -332,7 +332,7 @@ void reaction_continuation()
                             1,
                             "campaign-character",
                             "Champion",
-                            0,
+                            Side::party,
                             {2, 2},
                             rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"})
                             .data
@@ -341,12 +341,12 @@ void reaction_continuation()
                             2,
                             "dummy",
                             "Mover",
-                            1,
+                            Side::opposition,
                             {3, 2},
                             {},
 lethal ? std::optional<VitalState>{{1, false, {}}} : std::nullopt
                         },
-                        {3, "dummy", "Reserve", 1, {7, 7}}
+                        {3, "dummy", "Reserve", Side::opposition, {7, 7}}
                     }},
                 seed);
                 while (c->snapshot().actor != 2)
@@ -410,8 +410,8 @@ void campaign_and_cancellation()
             party.restore(state);
             auto actors = party.participants();
             actors[0].cell = {2, 2};
-            actors.push_back({2, "vanguard", "Enemy", 1, {3, 2}});
-            actors.push_back({3, "vanguard", "Reserve", 1, {6, 6}});
+            actors.push_back({2, "vanguard", "Enemy", Side::opposition, {3, 2}});
+            actors.push_back({3, "vanguard", "Reserve", Side::opposition, {6, 6}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
             while (c->snapshot().actor != id)
                 act(*c, "end");
@@ -452,14 +452,14 @@ void campaign_and_cancellation()
         Participant p{1,
                       "campaign-character",
                       "Surprised Champion",
-                      0,
+                      Side::party,
         {1, 1},
         rules->character_profile(h.sheet(), {}).data};
         p.surprised = true;
         std::uint64_t rng = seed;
         const int expected = srd5::roll_die(rng, 20) + h.sheet().modifiers[1];
         auto c = rules->create(
-        {{8, 8, std::vector<Terrain>(64)}, {p, {2, "vanguard", "Enemy", 1, {6, 6}}}},
+        {{8, 8, std::vector<Terrain>(64)}, {p, {2, "vanguard", "Enemy", Side::opposition, {6, 6}}}},
         seed);
         check(unit(*c).initiative == expected,
               "Surprise Disadvantage cancels Champion Initiative Advantage without extra dice");
@@ -482,11 +482,11 @@ void repeated_criticals_and_terrain()
                     1,
                     "campaign-character",
                     "Champion",
-                    0,
+                    Side::party,
                     {2, 2},
                     rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data
                 },
-                {2, "dummy", "Target", 1, {3, 2}}
+                {2, "dummy", "Target", Side::opposition, {3, 2}}
             }},
         seed);
         while (c->snapshot().actor != 1)
@@ -535,12 +535,12 @@ void fixtures()
                     1,
                     "campaign-character",
                     "Champion",
-                    0,
+                    Side::party,
                     {2, 2},
                     rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data
                 },
-                {2, "vanguard", "Enemy", 1, {3, 2}},
-                {3, "vanguard", "Reserve", 1, {6, 6}}
+                {2, "vanguard", "Enemy", Side::opposition, {3, 2}},
+                {3, "vanguard", "Reserve", Side::opposition, {6, 6}}
             }},
         seed);
         while (c->snapshot().actor != 1)

@@ -118,7 +118,7 @@ bool stable(const CombatSession &c)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 0, Cell target = {2, 1},
-unsigned side = 0)
+Side side = Side::party)
 {
     auto c = rules.create(
     {
@@ -127,7 +127,7 @@ unsigned side = 0)
                 1,
                 "campaign-character",
                 "Medic",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), std::vector<std::string>{"quarterstaff"}).data
             },
@@ -140,7 +140,7 @@ unsigned side = 0)
                 {},
                 VitalState{0, false, "SRD11 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"}
             },
-            {99, "vanguard", "Enemy", 1, {6, 6}}
+            {99, "vanguard", "Enemy", Side::opposition, {6, 6}}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -166,8 +166,8 @@ void grants()
                 [&]
             {
                 (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-                    {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                        {2, "vanguard", "Enemy", 1, {5, 5}}
+                    {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                        {2, "vanguard", "Enemy", Side::opposition, {5, 5}}
                     }},
                 1);
             });
@@ -329,7 +329,7 @@ void legality_and_surge()
     auto h = hero();
     auto far = battle(*rules, h, 0, {3, 1});
     check(!has(*far, "stabilize"), "Stabilize requires adjacent target");
-    auto enemy = battle(*rules, h, 0, {2, 1}, 1);
+    auto enemy = battle(*rules, h, 0, {2, 1}, Side::opposition);
     check(has(*enemy, "stabilize"), "Dying enemies are legal targets");
     bool covered = false;
     for (unsigned seed = 0; seed < 100 && !covered; ++seed)
@@ -368,7 +368,7 @@ void campaign_and_rest()
             auto actors = party.participants();
             actors[0].cell = {1, 1};
             actors[1].cell = {2, 1};
-            actors.push_back({99, "vanguard", "Enemy", 1, {6, 6}});
+            actors.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 6}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
             while (c->snapshot().actor != id)
                 act(*c, "end");
@@ -436,7 +436,7 @@ void fixtures()
                 1,
                 "campaign-character",
                 "Medic",
-                0,
+                Side::party,
                 {1, 1},
                 normal->character_profile(h.sheet(), {}).data
             },
@@ -444,12 +444,12 @@ void fixtures()
                 2,
                 "vanguard",
                 "Patient",
-                0,
+                Side::party,
                 {2, 1},
                 {},
                 VitalState{0, false, "SRD11 2 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"}
             },
-            {99, "vanguard", "Enemy", 1, {6, 6}}
+            {99, "vanguard", "Enemy", Side::opposition, {6, 6}}
         };
         auto ui = normal->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
         while (ui->snapshot().actor != 1)
@@ -475,7 +475,7 @@ void fixtures()
                     1,
                     "campaign-character",
                     "Rogue medic",
-                    0,
+                    Side::party,
                     {1, 1},
                     normal->character_profile(rogue.sheet(), {}).data
                 },
@@ -483,12 +483,12 @@ void fixtures()
                     2,
                     "vanguard",
                     "Patient",
-                    0,
+                    Side::party,
                     {2, 1},
                     {},
                     VitalState{0, false, "SRD11 2 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"}
                 },
-                {99, "vanguard", "Enemy", 1, {6, 6}}
+                {99, "vanguard", "Enemy", Side::opposition, {6, 6}}
             }},
         seed);
         while (c->snapshot().actor != 1)

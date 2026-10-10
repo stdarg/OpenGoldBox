@@ -227,8 +227,8 @@ void all_classes()
                     "Only applicable ability checks receive armor penalties; alternate-ability Stealth is distinct");
             }
             auto c = rules->create({{4, 4, std::vector<Terrain>(16)},
-                {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-                    {2, "target", "Target", 1, {2, 1}}
+                {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
+                    {2, "target", "Target", Side::opposition, {2, 1}}
                 }},
             2);
             check(c->snapshot().actor == 1 && unit(*c).initiative == (penalty ? 10 : 14),

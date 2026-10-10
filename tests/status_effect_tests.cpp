@@ -102,7 +102,9 @@ fx::EffectState blind(int dc = 38, unsigned remaining = 60000)
 Encounter encounter()
 {
     return {{12, 9, std::vector<Terrain>(108)},
-        {{1, "blindness-adept", "Caster", 0, {2, 4}}, {2, "bandit", "Target", 1, {3, 4}}},
+        {   {1, "blindness-adept", "Caster", Side::party, {2, 4}},
+            {2, "bandit", "Target", Side::opposition, {3, 4}}
+        },
         123};
 }
 
@@ -366,7 +368,7 @@ void combat()
     // Non-divisor actor counts must still telescope to exactly six seconds.
     e = encounter();
     for (unsigned i = 3; i <= 7; ++i)
-        e.participants.push_back({i, "bandit", "Extra", 1, {int(i), 1}});
+        e.participants.push_back({i, "bandit", "Extra", Side::opposition, {int(i), 1}});
     s = rules->create(e, 3);
     for (unsigned i = 0; i < 7; ++i)
         s->submit(command(*s, "end"));
@@ -420,7 +422,7 @@ void campaign()
     check(actors.size() == 2, "PC and recruited NPC share participants");
     for (std::size_t i = 0; i < actors.size(); ++i)
         actors[i].cell = {int(i), 0};
-    actors.push_back({999, "bandit", "Enemy", 1, {10, 0}});
+    actors.push_back({999, "bandit", "Enemy", Side::opposition, {10, 0}});
     auto session = rules->create({{12, 9, std::vector<Terrain>(108)}, actors}, 3);
     auto state = party.checkpoint();
     for (auto &member : state.roster)
@@ -429,7 +431,7 @@ void campaign()
         if (member.id == reserve)
         {
             const auto p = party.profile(reserve);
-            Participant r{reserve, "campaign-character", "Reserve", 0, {1, 1},
+            Participant r{reserve, "campaign-character", "Reserve", Side::party, {1, 1},
                           p.data,  member.vitals};
             auto e = encounter();
             e.participants[0] = r;
@@ -459,7 +461,7 @@ void campaign()
     // Begin a later encounter without changing the persistent source provenance.
     restored.restore(loaded.party);
     actors = restored.participants();
-    actors.push_back({999, "bandit", "Enemy", 1, {10, 0}});
+    actors.push_back({999, "bandit", "Enemy", Side::opposition, {10, 0}});
     session = rules->create(
     {{12, 9, std::vector<Terrain>(108)}, actors, restored.state().next_combat_scope}, 3);
     check(effects(unit(*session, pc).persistent).active[0].source_scope == 77,
@@ -518,7 +520,7 @@ void original_encounter_scope()
     demo.campaign_party(party);
     CampaignEncounter encounter;
     encounter.field.geometry = {40, 25, std::vector<Terrain>(1000)};
-    encounter.enemies = {{999, "bandit", "Original encounter target", 1, {}}};
+    encounter.enemies = {{999, "bandit", "Original encounter target", Side::opposition, {}}};
     demo.encounter(std::move(encounter), 3);
     check(party->state().next_combat_scope == 12,
           "Original encounter reserves its unique campaign identity");
@@ -541,7 +543,8 @@ void checkpoint_capacity()
     Encounter e{{12, 9, std::vector<Terrain>(108)}, {}};
     for (unsigned n = 0; n < 64; ++n)
     {
-        Participant p{n + 1, "bandit", "Crowded actor", n % 2, {int(n % 12), int(n / 12)}};
+        const auto side = n % 2 ? Side::opposition : Side::party;
+        Participant p{n + 1, "bandit", "Crowded actor", side, {int(n % 12), int(n / 12)}};
         p.state = with_effects(bandit, full);
         e.participants.push_back(std::move(p));
     }

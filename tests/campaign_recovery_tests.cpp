@@ -86,7 +86,7 @@ Participant patient(EntityId id, VitalState state)
     return {id,
             "campaign-character",
             "Patient",
-            0,
+            Side::party,
             {},
             module()->character_profile(hero().sheet(), {}).data,
             std::move(state)};
@@ -285,7 +285,7 @@ void combat_handoff()
     state.roster[2].vitals = unstable();
     party.restore(state);
     auto actors = party.participants();
-    actors.push_back({999, "bandit", "Enemy", 1, {7, 7}});
+    actors.push_back({999, "bandit", "Enemy", Side::opposition, {7, 7}});
     auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
     auto reloaded = rules->restore(combat->save()), twin = rules->restore(combat->save());
     check(reloaded->save() == combat->save(), "Recovery checkpoint reload is exact");
@@ -342,7 +342,7 @@ void combat_handoff()
     state.roster[1].vitals = unstable(123);
     party.restore(state);
     actors = party.participants();
-    actors.push_back({999, "bandit", "Enemy", 1, {7, 7}});
+    actors.push_back({999, "bandit", "Enemy", Side::opposition, {7, 7}});
     combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
     party.begin_combat();
     party.apply_combat(combat->snapshot());

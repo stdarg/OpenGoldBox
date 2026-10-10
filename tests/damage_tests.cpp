@@ -289,8 +289,8 @@ void species_combat()
         {
             auto profile = rules->character_profile(h.sheet(), {});
             return Encounter{{8, 8, std::vector<Terrain>(64)},
-                {   {1, "campaign-character", "Target", 0, {2, 2}, profile.data},
-                    {2, "toxin", "Poison attacker", 1, {3, 2}}
+                {   {1, "campaign-character", "Target", Side::party, {2, 2}, profile.data},
+                    {2, "toxin", "Poison attacker", Side::opposition, {3, 2}}
                 }};
         };
         auto d = rules->create(encounter(dwarf), 42), h = rules->create(encounter(human), 42);
@@ -387,8 +387,8 @@ void weapons_and_spells()
         const auto profile = rules->character_profile(character.sheet(), gear);
         auto combat =
         rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Armed fighter", 0, {2, 2}, profile.data},
-                {2, "target", "Target", 1, {3, 2}}
+            {   {1, "campaign-character", "Armed fighter", Side::party, {2, 2}, profile.data},
+                {2, "target", "Target", Side::opposition, {3, 2}}
             }},
         42);
         turn(*combat, 1);
@@ -413,7 +413,9 @@ void weapons_and_spells()
                                          "affinity target shell immunity " + type + '\n');
         auto combat =
         rules->create({{8, 8, std::vector<Terrain>(64)},
-            {{1, "toxin", "Caster", 0, {0, 0}}, {2, "target", "Target", 1, {7, 7}}}},
+            {   {1, "toxin", "Caster", Side::party, {0, 0}},
+                {2, "target", "Target", Side::opposition, {7, 7}}
+            }},
         42);
         turn(*combat, 1);
         check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
@@ -432,7 +434,9 @@ void weapons_and_spells()
     auto protected_rules = srd5::parse_content(content() + attacker() + target +
         "affinity target ward resistance force\n");
     Encounter encounter{{8, 8, std::vector<Terrain>(64)},
-        {{1, "toxin", "Caster", 0, {0, 0}}, {2, "target", "Target", 1, {7, 7}}}};
+        {   {1, "toxin", "Caster", Side::party, {0, 0}},
+            {2, "target", "Target", Side::opposition, {7, 7}}
+        }};
     auto raw = base->create(encounter, 42), resisted = protected_rules->create(encounter, 42);
     turn(*raw, 1);
     turn(*resisted, 1);

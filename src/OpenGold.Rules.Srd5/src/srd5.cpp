@@ -1564,12 +1564,12 @@ class Session final : public CombatSession
             throw std::runtime_error("Invalid encounter size");
         std::set<EntityId> ids;
         std::set<Cell> cells;
-        std::set<unsigned> sides;
+        std::set<Side> sides;
         for (auto &p : encounter.participants)
         {
             if (!p.id || !ids.insert(p.id).second || (!cells.insert(p.cell).second && !restoring) ||
-                    board_.at(p.cell) == Terrain::obstacle || p.side > 1 || p.name.empty() ||
-                    p.name.size() > 160 ||
+                    board_.at(p.cell) == Terrain::obstacle || p.side > Side::opposition ||
+                    p.name.empty() || p.name.size() > 160 ||
                     (p.character_profile.empty() && !content_->definitions.contains(p.definition)))
                 throw std::runtime_error("Invalid participant or unsupported rules definition: " +
                                          p.definition);
@@ -1653,7 +1653,7 @@ class Session final : public CombatSession
         {
             if (outcome_ == Outcome::ongoing)
                 for (const auto &a : actors_)
-                    if (a.source.side == 0 && (def(a).alert || metabolism_ready(a)) &&
+                    if (a.source.side == Side::party && (def(a).alert || metabolism_ready(a)) &&
                             conscious(a))
                         initiative_choices_.push_back(a.source.id);
             if (initiative_choices_.empty())
@@ -2760,7 +2760,7 @@ int Session::current_speed(const Actor &a) const
 
 bool Session::can_run_off(const Actor &a) const
 {
-    if ((a.source.side != 0 && !a.panicked) || !conscious(a) || a.must_stay || a.fled ||
+    if ((a.source.side != Side::party && !a.panicked) || !conscious(a) || a.must_stay || a.fled ||
             actors_[turn_].source.id != a.source.id || outcome_ != Outcome::ongoing || pending() ||
             temporary_offer_ || check_choice_ || graze_ || effect_waiting() || champion_move_ ||
             movement_left(a) < 5 || off_field_steps(a).empty())
@@ -3057,7 +3057,8 @@ Snapshot Session::snapshot() const
         {
             s.optional_effect_choice = effect_choices();
             s.actor = s.optional_effect_choice->actor;
-            if (s.optional_effect_choice->options.size() > 1 && actors_[turn_].source.side == 0)
+            if (s.optional_effect_choice->options.size() > 1 &&
+                    actors_[turn_].source.side == Side::party)
                 s.actor = actors_[turn_].source.id;
         }
     }
@@ -3109,14 +3110,14 @@ Snapshot Session::snapshot() const
         view.oiled = a.oiled_until_round >= static_cast<int>(round_);
         view.panicked = a.panicked;
         view.spells = def(a).spells;
-        view.can_flee = a.source.side == 0 && conscious(a) && !a.must_stay &&
+        view.can_flee = a.source.side == Side::party && conscious(a) && !a.must_stay &&
                         std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
         {
             return other.source.side != a.source.side && conscious(other) &&
                    current_speed(other) > current_speed(a);
         });
         for (const auto &gear : detail::thrown_gear_items)
-            if (a.source.side == 0 && !a.source.character_profile.empty())
+            if (a.source.side == Side::party && !a.source.character_profile.empty())
                 view.thrown_gear_left.emplace_back(
                     std::string(gear.key),
                     a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
@@ -5018,7 +5019,7 @@ void Session::damage(Actor &target, int amount, bool critical)
     const bool standing = target.life.hp > 0;
     const detail::DamageOptions options{
         .critical = critical,
-        .dies_at_zero = target.source.side == 1 && !def(target).regeneration};
+        .dies_at_zero = target.source.side == Side::opposition && !def(target).regeneration};
     detail::damage_life(target.life, amount, max_hp(target), options);
     // Regeneration: damage never kills it and it makes no death saves; the start
     // of its next turn decides (regenerate).
@@ -7202,17 +7203,17 @@ void Session::update_outcome()
     bool party = false, enemies = false;
     for (const auto &a : actors_)
         if (a.life.hp > 0 && !a.life.dead && !a.fled)
-            (a.source.side == 0 ? party : enemies) = true;
+            (a.source.side == Side::party ? party : enemies) = true;
     if (!party || !enemies)
     {
         // No member left on the field: it fled if anyone got away.
         const bool party_fled =
             std::any_of(fled_.begin(), fled_.end(), [](const auto & gone)
         {
-            return gone.source.side == 0;
+            return gone.source.side == Side::party;
         }) || std::any_of(actors_.begin(), actors_.end(), [](const auto & a)
         {
-            return a.fled && a.source.side == 0;
+            return a.fled && a.source.side == Side::party;
         });
         outcome_ = party ? Outcome::victory : party_fled ? Outcome::fled : Outcome::defeat;
         // Concentration is tracked in combat only; it ends with the combat.
@@ -7232,7 +7233,7 @@ void Session::update_outcome()
             // The original game ends the fight once every enemy is down; a
             // downed troll does not get up afterwards.
             for (auto &a : actors_)
-                if (a.source.side == 1 && downed_riser(a))
+                if (a.source.side == Side::opposition && downed_riser(a))
                 {
                     a.life.dead = true;
                     a.life.recovery = {};
@@ -7327,7 +7328,7 @@ bool Session::begin_turn()
     auto &a = actors_[turn_];
     if (a.fled)
         return false;
-    if (a.source.side != 0 && conscious(a))
+    if (a.source.side != Side::party && conscious(a))
     {
         check_morale(a);
         if (a.fled)
@@ -8760,7 +8761,8 @@ std::string Session::save() const
     for (const auto &a : actors_)
     {
         out << a.source.id << ' ' << std::quoted(a.source.definition) << ' '
-            << std::quoted(a.source.name) << ' ' << a.source.side << ' ' << a.source.cell.x << ' '
+            << std::quoted(a.source.name) << ' ' << static_cast<unsigned>(a.source.side) << ' '
+            << a.source.cell.x << ' '
             << a.source.cell.y << ' ' << a.life.hp << ' ' << a.initiative << ' ' << a.movement << ' '
             << a.winds << ' ' << a.slots << ' ' << a.life.successes << ' ' << a.life.failures << ' '
             << a.actions.normal << ' ' << a.bonus << ' ' << a.reaction << ' ' << a.dodge << ' '
@@ -8925,7 +8927,8 @@ std::string Session::save() const
     for (const auto &gone : fled_)
     {
         out << gone.source.id << ' ' << std::quoted(gone.source.definition) << ' '
-            << std::quoted(gone.source.name) << ' ' << gone.source.side << ' '
+            << std::quoted(gone.source.name) << ' '
+            << static_cast<unsigned>(gone.source.side) << ' '
             << gone.source.cell.x << ' ' << gone.source.cell.y << ' '
             << std::quoted(gone.source.character_profile) << ' ' << gone.hp << ' ' << gone.max_hp
             << ' ' << gone.armor_class << ' ' << gone.vitals.hit_points << ' ' << gone.vitals.dead
@@ -8944,9 +8947,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
 {
     Actor actor;
     auto &source = actor.source;
-    unsigned light_count{};
+    unsigned side{}, light_count{};
     input >> source.id >> std::quoted(source.definition) >> std::quoted(source.name) >>
-          source.side >> source.cell.x >> source.cell.y >> actor.life.hp >> actor.initiative >>
+          side >> source.cell.x >> source.cell.y >> actor.life.hp >> actor.initiative >>
           actor.movement >> actor.winds >> actor.slots >> actor.life.successes >> actor.life.failures >>
           actor.actions.normal >> actor.bonus >> actor.reaction >> actor.dodge >> actor.disengaged >>
           actor.life.stable >> actor.life.dead >> std::quoted(source.character_profile) >> actor.slots2 >>
@@ -8960,6 +8963,10 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
         throw std::runtime_error("Invalid Light attack count");
+    // The checkpoint stores a side as its enumerator's value.
+    if (side > static_cast<unsigned>(Side::opposition))
+        throw std::runtime_error("Invalid checkpoint side");
+    source.side = static_cast<Side>(side);
     for (unsigned i = 0; i < light_count; ++i)
     {
         unsigned id{};
@@ -9301,7 +9308,7 @@ void Session::validate_initiative() const
     for (const auto id : initiative_choices_)
     {
         const auto &a = actor(id);
-        if (!seen.insert(id).second || a.source.side != 0 ||
+        if (!seen.insert(id).second || a.source.side != Side::party ||
                 (!def(a).alert && !metabolism_ready(a)) || !conscious(a))
             throw std::runtime_error("Invalid Initiative holder");
     }
@@ -9369,7 +9376,7 @@ void Session::validate_restored_state() const
     })))
         throw std::runtime_error("Invalid fire, oil or thrown gear state");
         if (actor.life.hp > 0 && !actor.life.dead)
-            (actor.source.side == 0 ? party : enemies) = true;
+            (actor.source.side == Side::party ? party : enemies) = true;
         if (actor.life.dead)
             continue;
         for (const auto &other : actors_)
@@ -9391,7 +9398,7 @@ void Session::validate_restored_state() const
     }
     const bool party_fled = std::any_of(fled_.begin(), fled_.end(), [](const auto & gone)
     {
-        return gone.source.side == 0;
+        return gone.source.side == Side::party;
     });
     const auto expected = !party ? (party_fled ? Outcome::fled : Outcome::defeat)
                           : !enemies ? Outcome::victory : Outcome::ongoing;
@@ -9822,16 +9829,20 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     for (std::size_t n = 0; n < departed; ++n)
     {
         Departed gone;
+        unsigned side{};
         input >> gone.source.id >> std::quoted(gone.source.definition) >>
-              std::quoted(gone.source.name) >> gone.source.side >> gone.source.cell.x >>
+              std::quoted(gone.source.name) >> side >> gone.source.cell.x >>
               gone.source.cell.y >> std::quoted(gone.source.character_profile) >> gone.hp >>
               gone.max_hp >> gone.armor_class >> gone.vitals.hit_points >> gone.vitals.dead >>
               std::quoted(gone.vitals.resources) >> std::quoted(gone.vitals.description) >>
               gone.surrendered;
         std::size_t gear_count{};
         input >> gear_count;
-        if (!input || gone.source.side > 1 || gone.hp < (gone.surrendered ? 0 : 1) ||
-                gone.hp > gone.max_hp || (gone.surrendered && (gone.hp || gone.source.side == 0)) ||
+        if (!input || side > static_cast<unsigned>(Side::opposition))
+            throw std::runtime_error("Invalid checkpoint flight");
+        gone.source.side = static_cast<Side>(side);
+        if (gone.hp < (gone.surrendered ? 0 : 1) || gone.hp > gone.max_hp ||
+                (gone.surrendered && (gone.hp || gone.source.side == Side::party)) ||
                 gone.vitals.dead || gear_count > detail::thrown_gear_items.size())
             throw std::runtime_error("Invalid checkpoint flight");
         gone.thrown_gear_left.resize(gear_count);

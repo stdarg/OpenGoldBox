@@ -36,8 +36,8 @@ auto combat(const RulesModule &r, const Character &h, std::vector<std::string> g
 {
     auto profile = r.character_profile(h.sheet(), gear);
     auto c = r.create({{12, 8, std::vector<Terrain>(96)},
-        {   {1, "campaign-character", "Style tester", 0, {1, 1}, profile.data},
-            {99, "target", "Target", 1, ranged ? Cell{5, 1} : Cell{2, 1}}
+        {   {1, "campaign-character", "Style tester", Side::party, {1, 1}, profile.data},
+            {99, "target", "Target", Side::opposition, ranged ? Cell{5, 1} : Cell{2, 1}}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -269,7 +269,7 @@ void run()
                 p.equip(1, 1);
                 auto actors = p.participants();
                 actors.front().cell = {1, 1};
-                actors.push_back({99, "target", "Target", 1, {4, 1}});
+                actors.push_back({99, "target", "Target", Side::opposition, {4, 1}});
                 auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
                 while (c->snapshot().actor != 1)
                     act(*c, "end");
@@ -371,7 +371,7 @@ void run()
                     p.advance(id, choice);
                     auto actors = p.participants();
                     actors.front().cell = {1, 1};
-                    actors.push_back({99, "target", "Target", 1, {2, 1}});
+                    actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
                     auto fight = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
                     while (fight->snapshot().actor != id)
                         act(*fight, "end");

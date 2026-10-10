@@ -39,7 +39,7 @@ auto battle(CampaignParty &p, unsigned seed = 37)
     auto actors = p.participants();
     actors[0].cell = {1, 1};
     actors[1].cell = {2, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     return p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
 }
 
@@ -224,7 +224,7 @@ void run()
     auto actors = p.participants();
     actors[0].cell = {1, 1};
     actors[1].cell = {2, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     actors[1].state->hit_points = 0;
     auto helpless = module()->create(
     { {12, 8, std::vector<Terrain>(96)}, actors
@@ -243,7 +243,7 @@ void run()
     actors = p.participants();
     actors[0].cell = {1, 1};
     actors[1].cell = {8, 6};
-    actors[1].side = 1;
+    actors[1].side = Side::opposition;
     auto enemy = module()->create(
     { {12, 8, std::vector<Terrain>(96)}, actors
     }, 37);
@@ -255,7 +255,7 @@ void run()
     actors[0].cell = {1, 1};
     actors[0].surprised = true;
     actors[1].cell = {2, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     auto surprised = module()->create(
     { {12, 8, std::vector<Terrain>(96)}, actors
     }, 37);
@@ -270,7 +270,7 @@ void run()
     actors[0].cell = {1, 1};
     actors[1].cell = {2, 1};
     actors[1].state->hit_points = 0;
-    actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     for (unsigned seed = 1; seed <= 32; ++seed)
     {
         auto pending = module()->create(

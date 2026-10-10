@@ -354,7 +354,7 @@ void spending_and_continuation()
     // Compare the next encounter before and after a save, including spent dice.
     auto restored = loaded(saved(copy));
     auto actors = copy.participants();
-    actors.push_back({999, "bandit", "Enemy", 1, {6, 6}});
+    actors.push_back({999, "bandit", "Enemy", Side::opposition, {6, 6}});
     auto other = restored.participants();
     other.push_back(actors.back());
     auto rules = module();
@@ -432,7 +432,7 @@ void expiry_and_atomicity()
     check(saved(party) == pending,
           "Failed combat initialization preserves the pending window and committed dice");
     auto actors = party.participants();
-    actors.push_back({999, "bandit", "Enemy", 1, {6, 6}});
+    actors.push_back({999, "bandit", "Enemy", Side::opposition, {6, 6}});
     const auto combat = module()->create(
     { {8, 8, std::vector<Terrain>(64)}, actors
     }, 42);

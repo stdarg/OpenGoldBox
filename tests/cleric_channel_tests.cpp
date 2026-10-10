@@ -112,9 +112,10 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
     const auto profile =
         module.character_profile(hero.sheet(), std::vector<std::string> {"mace"}).data;
     auto c = module.create({{12, 4, std::vector<Terrain>(48)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, {1, 2}, {}, VitalState{3, false, std::move(ally_state)}},
-            {99, std::move(enemy), "Enemy", 1, {3, 1}}
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, {1, 2},
+                                               {}, VitalState{3, false, std::move(ally_state)}},
+            {99, std::move(enemy), "Enemy", Side::opposition, {3, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -198,9 +199,9 @@ void write_ui_fixture()
     const auto profile =
         module->character_profile(cleric(2).sheet(), std::vector<std::string> {"mace"}).data;
     auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
-            {2, "vanguard", "Ally", 0, {1, 2}, {}, VitalState{3, false, {}}},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile},
+            {2, "vanguard", "Ally", Side::party, {1, 2}, {}, VitalState{3, false, {}}},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -350,9 +351,9 @@ void spare_the_dying_checks()
     const auto profile =
         module->character_profile(hero.sheet(), std::vector<std::string> {"mace"}).data;
     auto c = module->create({{12, 4, std::vector<Terrain>(48)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, {3, 1}, {}, VitalState{0, false, {}}},
-            {99, "target", "Enemy", 1, {9, 1}}
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, {3, 1}, {}, VitalState{0, false, {}}},
+            {99, "target", "Enemy", Side::opposition, {9, 1}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)

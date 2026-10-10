@@ -108,8 +108,9 @@ void torch_stops_regeneration()
     for (std::uint64_t seed = 1; seed < 20 && !burned; ++seed)
     {
         auto c = module->create({{10, 4, std::vector<Terrain>(40)},
-            {   {1, "campaign-character", "Torchbearer", 0, {2, 1}, profile.data},
-                {2, "weak-troll", "Troll", 1, {1, 1}}, {3, "target", "Guard", 1, {9, 3}}
+            {   {1, "campaign-character", "Torchbearer", Side::party, {2, 1}, profile.data},
+                {2, "weak-troll", "Troll", Side::opposition, {1, 1}},
+                {3, "target", "Guard", Side::opposition, {9, 3}}
             }},
         seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -205,7 +206,7 @@ Arena arena(const std::vector<std::uint8_t> &gear,
     EntityId id = 1000;
     for (const auto &[definition, cell] : enemies)
     {
-        encounter.enemies.push_back({id++, definition, definition, 1, {}});
+        encounter.enemies.push_back({id++, definition, definition, Side::opposition, {}});
         encounter.positions.push_back(cell);
     }
     result.demo = std::make_unique<CombatDemo>(srd5::parse_content(arena_rules()));

@@ -93,7 +93,7 @@ void consumers()
         p.advance(1, p.default_advancement(1));
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "mastery_target", "Target", 1, {5, 1}});
+    actors.push_back({99, "mastery_target", "Target", Side::opposition, {5, 1}});
     const auto make = [&](fx::EffectState e)
     {
         auto roster = actors;

@@ -100,12 +100,12 @@ auto battle(const Character &c, TemporaryHitPoints temporary = {})
                 1,
                 "campaign-character",
                 c.sheet().name,
-                 0,
+                 Side::party,
                 {2, 2},
                 rules->character_profile(c.sheet(), {}).data,
                 state
             },
-            {99, "vanguard", "Opponent", 1, {18, 18}}
+            {99, "vanguard", "Opponent", Side::opposition, {18, 18}}
         }};
     auto combat = rules->create(e, 42);
     while (combat->snapshot().actor != 1)
@@ -281,11 +281,11 @@ void movement()
                 1,
                 "campaign-character",
                 c.sheet().name,
-                 0,
+                 Side::party,
                 {2, 2},
                 rules->character_profile(c.sheet(), {}).data
             },
-            {99, "vanguard", "Opponent", 1, {3, 2}}
+            {99, "vanguard", "Opponent", Side::opposition, {3, 2}}
         }};
     auto combat = rules->create(e, 42);
     while (combat->snapshot().actor != 1)
@@ -339,7 +339,7 @@ void campaign()
     check(pool(copy.member(id).character, copy.member(id).vitals).remaining == 1,
           "Level growth does not refill spent uses");
     auto actors = copy.participants();
-    actors.push_back({99, "vanguard", "Opponent", 1, {18, 18}});
+    actors.push_back({99, "vanguard", "Opponent", Side::opposition, {18, 18}});
     auto second = rules->create({{20, 20, std::vector<Terrain>(400)}, actors}, 42);
     check(unit(*second).temporary_hp.amount == 2 &&
           pool(copy.member(id).character, unit(*second).persistent).remaining == 1,

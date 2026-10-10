@@ -120,13 +120,13 @@ std::optional<VitalState> state = {}, unsigned seed = 2)
                 1,
                 "campaign-character",
                 "Fighter",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), gear).data,
                 state
             },
-            {2, "vanguard", "Enemy", 1, {2, 1}},
-            {3, "vanguard", "Enemy 2", 1, {8, 1}}
+            {2, "vanguard", "Enemy", Side::opposition, {2, 1}},
+            {3, "vanguard", "Enemy 2", Side::opposition, {8, 1}}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -193,8 +193,8 @@ void grants()
                 [&]
             {
                 (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-                    {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                        {2, "vanguard", "Enemy", 1, {3, 1}}
+                    {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                        {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
                     }},
                 2);
             });
@@ -292,12 +292,12 @@ void actions()
                 1,
                 "campaign-character",
                 "Dead Fighter",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), {}).data,
                 VitalState{0, true, {}}
             },
-            {2, "vanguard", "Enemy", 1, {3, 1}}
+            {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
         }},
     2);
     check(!has(*dead, "action_surge"), "Dead character cannot activate");

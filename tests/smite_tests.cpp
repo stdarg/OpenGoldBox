@@ -114,8 +114,8 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
 {
     const auto profile = rules.character_profile(hero.sheet(), gear).data;
     auto c = rules.create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Smiter", 0, {1, 1}, profile},
-            {99, "target", "Target", 1, {2, 1}}
+        {   {1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
+            {99, "target", "Target", Side::opposition, {2, 1}}
         }},
     3);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -228,8 +228,8 @@ void write_ui_fixture()
     for (std::uint64_t seed = 1; seed <= 64; ++seed)
     {
         auto c = rules->create({{8, 4, std::vector<Terrain>(32)},
-            {   {1, "campaign-character", "Smiter", 0, {1, 1}, profile},
-                {99, "vanguard", "Target", 1, {2, 1}}
+            {   {1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
+                {99, "vanguard", "Target", Side::opposition, {2, 1}}
             }},
         seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

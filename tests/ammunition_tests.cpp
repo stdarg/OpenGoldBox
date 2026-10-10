@@ -100,8 +100,8 @@ void purchased_ammunition()
 
     auto actors = party.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({2, "vanguard", "Target", 1, {5, 1}});
-    actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
+    actors.push_back({2, "vanguard", "Target", Side::opposition, {5, 1}});
+    actors.push_back({3, "vanguard", "Reserve", Side::opposition, {7, 7}});
     auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 1);
     while (combat->snapshot().actor != id)
         act(*combat, "end");

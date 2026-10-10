@@ -362,7 +362,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             expected_party.insert(id);
     for (const auto &unit : result.combatants)
     {
-        if (unit.side == 1)
+        if (unit.side == rules::Side::opposition)
         {
             if (unit.id < 1000 || unit.id >= 1000 + staged_records_.size() ||
                     !enemies.insert(unit.id).second)
@@ -372,7 +372,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             else if (unit.fled)
                 escaped_records.push_back(staged_records_.at(unit.id - 1000));
         }
-        else if (unit.side != 0 || !expected_party.contains(unit.id) ||
+        else if (unit.side != rules::Side::party || !expected_party.contains(unit.id) ||
                  !party_ids.insert(unit.id).second ||
                  campaign_->member(unit.id).vitals != unit.persistent)
             return false;
@@ -410,14 +410,14 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             // The treasure stays with the monsters.
             snapshot_.dialogue = "Your party flees the battle.";
             for (const auto &unit : result.combatants)
-                if (unit.side == 0 && !unit.fled)
+                if (unit.side == rules::Side::party && !unit.fled)
                 {
                     campaign_->lose(unit.id);
                     snapshot_.dialogue += "\n" + unit.name + " is left behind and lost.";
                 }
             unsigned experience = 0;
             for (const auto &unit : result.combatants)
-                if (unit.side == 1 && unit.hit_points == 0)
+                if (unit.side == rules::Side::opposition && unit.hit_points == 0)
                     experience += area_resources()
                                   .conversions.at(staged_records_.at(unit.id - 1000))
                                   .award_xp;
@@ -1266,7 +1266,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 id,
                 definition,
                 creature.stored.name + " " + std::to_string(staged_enemies_.size() + 1),
-                1,
+                rules::Side::opposition,
                 {}});
             // Morale is record byte 0x84: from 0x80 up a creature's own is
             // (byte & 0x7F) * 2, and above 102 it has none (the encounter's

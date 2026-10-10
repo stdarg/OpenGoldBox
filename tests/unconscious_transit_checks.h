@@ -8,11 +8,11 @@ Encounter corridor()
     return
     {
         board,
-        {   {1, "vanguard", "Mover", 0, {0, 1}},
-            {   2, "bandit", "Unconscious enemy", 1, {2, 1}, {},
+        {   {1, "vanguard", "Mover", Side::party, {0, 1}},
+            {   2, "bandit", "Unconscious enemy", Side::opposition, {2, 1}, {},
                 VitalState{0, false, creature_resources(0, 0, 0, true)}
             },
-            {3, "bandit", "Guard", 1, {5, 1}}
+            {3, "bandit", "Guard", Side::opposition, {5, 1}}
         }};
 }
 
@@ -35,7 +35,7 @@ void run()
                 auto e = corridor();
                 if (reverse)
                     for (auto &p : e.participants)
-                        p.side = 1 - p.side;
+                        p.side = p.side == Side::party ? Side::opposition : Side::party;
                 if (allied)
                     e.participants[1].side = e.participants[0].side;
                 if (difficult)
@@ -70,7 +70,8 @@ void run()
     // Actual damage changes a block into traversable space without removing the creature.
     auto e = corridor();
     for (auto &participant : e.participants)
-        participant.side = 1 - participant.side;
+        participant.side =
+            participant.side == Side::party ? Side::opposition : Side::party;
     e.participants[0].cell = {1, 1};
     e.participants[1].state = VitalState{1};
     bool downed = false;
@@ -92,8 +93,8 @@ void run()
     e = corridor();
     e.battlefield.terrain[0] = e.battlefield.terrain[1] = e.battlefield.terrain[2] = Terrain::open;
     e.participants[2].cell = {1, 0};
-    e.participants.push_back({4, "healer", "Friendly healer", 0, {0, 0}});
-    e.participants.push_back({5, "bandit", "Upper guard", 1, {2, 0}});
+    e.participants.push_back({4, "healer", "Friendly healer", Side::party, {0, 0}});
+    e.participants.push_back({5, "bandit", "Upper guard", Side::opposition, {2, 0}});
     for (const auto response :
             {"decline", "opportunity"
             })

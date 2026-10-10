@@ -518,7 +518,8 @@ void CharacterCreationView::equipment_art_check()
         presentation::detach_child(*this, *combat).reset();
         CampaignEncounter encounter;
         encounter.field.geometry = {12, 9, std::vector<rules::Terrain>(108)};
-        encounter.enemies.push_back({1000, "bandit", "Artwork fixture", 1, {9, 4}});
+        encounter.enemies.push_back(
+            {1000, "bandit", "Artwork fixture", rules::Side::opposition, {9, 4}});
         // A distinguishable authored enemy texture must survive party-only resolution.
         opengold::Image enemy;
         enemy.width = enemy.height = 24;

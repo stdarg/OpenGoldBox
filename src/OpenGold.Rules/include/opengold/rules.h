@@ -336,11 +336,20 @@ struct CarriedEquipment
     int equipment_index{-1};
 };
 
+// Which side of an encounter a participant fights on, named so a comparison
+// cannot mistake one for the other (Effective C++ Item 18). The values are the
+// combat checkpoint's encoding and must not change.
+enum class Side : std::uint8_t
+{
+    party = 0,
+    opposition = 1
+};
+
 struct Participant
 {
     EntityId id{};
     std::string definition, name;
-    unsigned side{}; // 0=party, 1=opposition in this first encounter adapter.
+    Side side{Side::party};
     Cell cell;
     std::string character_profile;
     std::optional<VitalState> state;
@@ -403,7 +412,7 @@ struct CombatantView
 {
     EntityId id{};
     std::string name, definition;
-    unsigned side{};
+    Side side{Side::party};
     Cell cell;
     int hit_points{}, max_hit_points{}, armor_class{}, initiative{}, movement_feet{};
     bool action{}, bonus_action{}, reaction{}, conscious{}, dead{}, facing_left{};

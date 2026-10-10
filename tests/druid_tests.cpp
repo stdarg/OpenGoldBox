@@ -124,9 +124,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(sheet, gear).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, ally},
-            {98, "target", "Enemy", 1, {adjacent ? 2 : 4, 1}}
+        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, ally},
+            {98, "target", "Enemy", Side::opposition, {adjacent ? 2 : 4, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -320,10 +320,10 @@ void heat_metal_checks()
     const auto knight = module->character_profile(druid().sheet(),
                         std::vector<std::string> {"chain_mail"}).data;
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", 0, {1, 1}, caster},
-            {2, "target", "Ally", 0, {1, 2}},
-            {97, "campaign-character", "Knight", 1, {3, 1}, knight},
-            {98, "target", "Enemy", 1, {4, 1}}
+        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
+            {2, "target", "Ally", Side::party, {1, 2}},
+            {97, "campaign-character", "Knight", Side::opposition, {3, 1}, knight},
+            {98, "target", "Enemy", Side::opposition, {4, 1}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -354,9 +354,9 @@ void creature_equipment_checks()
     const auto caster = module->character_profile(preparing("heat_metal"),
                         std::vector<std::string> {}).data;
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", 0, {1, 1}, caster},
-            {96, "slums-orc-leader", "Orc Leader", 1, {5, 1}},
-            {95, "slums-orc", "Orc", 1, {5, 3}}
+        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
+            {96, "slums-orc-leader", "Orc Leader", Side::opposition, {5, 1}},
+            {95, "slums-orc", "Orc", Side::opposition, {5, 3}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -453,9 +453,9 @@ void lands_aid_checks()
     auto module = rules();
     const auto profile = module->character_profile(druid(3).sheet(), std::vector<std::string> {}).data;
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, {4, 2}, {}, VitalState{3, false, {}}},
-            {98, "target", "Enemy", 1, {4, 1}}
+        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, {4, 2}, {}, VitalState{3, false, {}}},
+            {98, "target", "Enemy", Side::opposition, {4, 1}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

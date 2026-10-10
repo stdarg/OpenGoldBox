@@ -146,7 +146,7 @@ Array CombatView::enemy_cells() const
     if (!demo_ || !demo_->has_combat())
         return cells;
     for (const auto &a : demo_.snapshot().combatants)
-        if (a.side != 0 && a.hit_points > 0)
+        if (a.side != rules::Side::party && a.hit_points > 0)
             cells.push_back(Vector2i(a.cell.x, a.cell.y));
     return cells;
 }
@@ -278,7 +278,7 @@ bool CombatView::quick_key(Key key)
     if (key == Key::KEY_Q)
     {
         for (const auto &a : state.combatants)
-            if (a.side == 0 && !a.dead && !a.fled)
+            if (a.side == rules::Side::party && !a.dead && !a.fled)
             {
                 if (campaign_ && std::find(campaign_->state().slots.begin(),
                                            campaign_->state().slots.end(),
@@ -578,7 +578,7 @@ void CombatView::layout()
                          std::any_of(state.combatants.begin(), state.combatants.end(),
                                      [&](const auto & actor)
         {
-            return actor.id == state.actor && actor.side == 0;
+            return actor.id == state.actor && actor.side == rules::Side::party;
         });
     }
     // The battlefield takes what the controls and a readable log leave: the
@@ -1304,7 +1304,7 @@ void CombatView::select_party(EntityId id)
     const auto selected = std::find_if(state.combatants.begin(), state.combatants.end(),
                                        [&](const auto & a)
     {
-        return a.id == id && a.side == 0;
+        return a.id == id && a.side == rules::Side::party;
     });
     if (selected == state.combatants.end())
         return;
@@ -1340,7 +1340,7 @@ void CombatView::move_selected(Cell direction)
     const auto selected = std::find_if(state.combatants.begin(), state.combatants.end(),
                                        [&](const auto & a)
     {
-        return a.id == selected_ && a.side == 0;
+        return a.id == selected_ && a.side == rules::Side::party;
     });
     if (selected == state.combatants.end())
         return;
@@ -1446,7 +1446,7 @@ void CombatView::immediate(String verb)
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
                      [&](const auto & a)
 {
-    return a.id == state.actor && a.side == 0;
+    return a.id == state.actor && a.side == rules::Side::party;
 }))
     return;
     for (const auto &c : demo_->combat().legal_commands())
@@ -1630,7 +1630,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
                                          [&](const auto & a)
         {
-            return a.id == state.actor && a.side == 0;
+            return a.id == state.actor && a.side == rules::Side::party;
         });
         std::vector<Command> targets;
         for (const auto &command : demo_->combat().legal_commands())
@@ -1929,7 +1929,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
             mode_ != "poison_spray" && mode_ != "sacred_flame" &&
             mode_ != "shocking_grasp" && mode_ != "eldritch_blast" && mode_ != "ray_of_frost")
         for (const auto &a : s.combatants)
-            if (a.side == 0 && !a.dead && !a.fled && a.cell == cell)
+            if (a.side == rules::Side::party && !a.dead && !a.fled && a.cell == cell)
             {
                 select_party(a.id);
                 get_viewport()->set_input_as_handled();
@@ -1940,7 +1940,8 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
     {
         return a.id == s.actor;
     });
-    if (current == s.combatants.end() || current->side != 0 || selected_ != s.actor)
+    if (current == s.combatants.end() || current->side != rules::Side::party ||
+            selected_ != s.actor)
         return;
     for (const auto &c : demo_->combat().legal_commands())
         if (c.verb == mode_ && matches_item(c))
@@ -2012,7 +2013,7 @@ void CombatView::update_hover(const Vector2 &pointer)
                                     [&](const auto & actor)
     {
         return !actor.dead && !actor.fled && !actor.surrendered && actor.cell == cell &&
-               (actor.side == 1 || npc(actor.id).has_value());
+               (actor.side == rules::Side::opposition || npc(actor.id).has_value());
     });
     if (found == state.combatants.end())
         return;
@@ -2022,7 +2023,7 @@ void CombatView::update_hover(const Vector2 &pointer)
     {
         const auto distance = [&](const CombatantView & target)
         {
-            if (target.side != 0 || !target.conscious)
+            if (target.side != rules::Side::party || !target.conscious)
                 return std::numeric_limits<int>::max();
             return std::max(std::abs(target.cell.x - cell.x),
                             std::abs(target.cell.y - cell.y));
@@ -2030,7 +2031,8 @@ void CombatView::update_hover(const Vector2 &pointer)
         return distance(a) < distance(b);
     });
     const bool adjacent =
-        closest != state.combatants.end() && closest->side == 0 && closest->conscious &&
+        closest != state.combatants.end() && closest->side == rules::Side::party &&
+        closest->conscious &&
         std::max(std::abs(closest->cell.x - cell.x), std::abs(closest->cell.y - cell.y)) <= 1;
     const auto &weapon =
         adjacent || !found->ranged_attack_available ? found->melee_weapon : found->ranged_weapon;
@@ -2102,7 +2104,7 @@ void CombatView::refresh()
         for (const auto &a : s.combatants)
             if (a.id == s.actor)
             {
-                player = a.side == 0 && !computer;
+                player = a.side == rules::Side::party && !computer;
                 turn = i18n::format(
                            s.reaction_pending
                            ? N_("Round {round} / {name} reaction\nMove {feet} ft | {action}")
@@ -2323,7 +2325,7 @@ void CombatView::refresh()
     const auto throwing = std::find_if(s.combatants.begin(), s.combatants.end(),
                                        [&](const auto & a)
     {
-        return a.id == s.actor && a.side == 0;
+        return a.id == s.actor && a.side == rules::Side::party;
     });
     if (throwing != s.combatants.end())
         for (const auto &option : throwing->thrown_weapons)
@@ -2585,7 +2587,7 @@ void CombatView::refresh()
         const auto selected = std::find_if(s.combatants.begin(), s.combatants.end(),
                                            [&](const auto & a)
         {
-            return a.id == selected_ && a.side == 0;
+            return a.id == selected_ && a.side == rules::Side::party;
         });
         if (selected != s.combatants.end())
             required_node<Label>(*this, "Prompt").set_text(
@@ -2834,7 +2836,7 @@ void CombatView::draw_battlefield()
     const auto selected = std::find_if(s.combatants.begin(), s.combatants.end(),
                                        [&](const auto & a)
     {
-        return a.id == selected_ && a.side == 0;
+        return a.id == selected_ && a.side == rules::Side::party;
     });
     if (selected != s.combatants.end() && !selected->dead)
     {
@@ -2847,7 +2849,7 @@ void CombatView::draw_battlefield()
                                 Vector2(tile - 2, tile - 2)),
                           Color("e7c484"), false, 2.0);
     }
-    if (active != s.combatants.end() && active->side == 0 && mode_ != "move")
+    if (active != s.combatants.end() && active->side == rules::Side::party && mode_ != "move")
         for (const auto &c : demo_->combat().legal_commands())
             if (c.verb == mode_ && matches_item(c) && c.target && !s.effect_targeting)
             {
@@ -2891,7 +2893,7 @@ void CombatView::draw_battlefield()
             canvas->draw_rect(Rect2(Vector2(cell.x * tile + 1, cell.y * tile + 1),
                                     Vector2(tile - 2, tile - 2)),
                               Color(.55, .8, .35, .38));
-    if (s.effect_targeting && active != s.combatants.end() && active->side == 0)
+    if (s.effect_targeting && active != s.combatants.end() && active->side == rules::Side::party)
     {
         unsigned index = 0;
         for (const auto &c : demo_->combat().legal_commands())
@@ -2955,7 +2957,8 @@ void CombatView::draw_battlefield()
             for (const char digit : number)
             {
                 canvas->draw_char(font, cursor, gs(std::string(1, digit)), 20,
-                                  a.side == 0 ? Color("79d6d4") : Color("dd9874"));
+                                  a.side == rules::Side::party ? Color("79d6d4")
+                                  : Color("dd9874"));
                 cursor.x += 11;
             }
         }
@@ -3052,7 +3055,7 @@ void CombatView::_process(double delta)
         {
             return a.id == s.actor;
         });
-        if (checking_ && active->side == 1)
+        if (checking_ && active->side == rules::Side::opposition)
         {
             Ref<InputEventKey> key;
             key.instantiate();
@@ -3062,7 +3065,8 @@ void CombatView::_process(double delta)
             if (demo_.snapshot().revision != s.revision)
                 throw std::runtime_error("Keyboard skipped enemy turn");
         }
-        if (checking_ && !checked_input_ && active->side == 0 && !s.reaction_pending)
+        if (checking_ && !checked_input_ && active->side == rules::Side::party &&
+                !s.reaction_pending)
         {
             const auto command = choose_demo_command(demo_->combat());
             if (command.target)
@@ -3100,7 +3104,8 @@ void CombatView::_process(double delta)
                         return;
                     }
         }
-        if (party_check_ && settings::flag("--adrenaline-check") && active->side == 0)
+        if (party_check_ && settings::flag("--adrenaline-check") &&
+                active->side == rules::Side::party)
         {
             if (s.temporary_hp_offer)
             {
@@ -3138,8 +3143,8 @@ void CombatView::_process(double delta)
             refresh();
             return;
         }
-        if (checking_ || party_check_ || defeat_check_ || active->side == 1 || flee_mode_ ||
-                quick_turn(s))
+        if (checking_ || party_check_ || defeat_check_ ||
+                active->side == rules::Side::opposition || flee_mode_ || quick_turn(s))
         {
             ai_delay_ += delta;
             if (!checking_ && !party_check_ && !defeat_check_ && ai_delay_ < .65)
@@ -3149,7 +3154,7 @@ void CombatView::_process(double delta)
             {
                 if (++check_steps_ > 2000)
                     throw std::runtime_error("Defeat check command limit exceeded");
-                if (active->side == 0)
+                if (active->side == rules::Side::party)
                 {
                     const auto offered = demo_->combat().legal_commands();
                     const auto pass =

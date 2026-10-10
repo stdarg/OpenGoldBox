@@ -421,7 +421,7 @@ void roundtrip(const std::filesystem::path &directory)
     const auto encounter = [](const CampaignParty & p)
     {
         rules::Encounter e{{8, 8, std::vector<rules::Terrain>(64)}, p.participants()};
-        e.participants.push_back({99, "bandit", "Bandit", 1, {6, 6}});
+        e.participants.push_back({99, "bandit", "Bandit", rules::Side::opposition, {6, 6}});
         return e;
     };
     auto combat_a = rules->create(encounter(*party), 42),

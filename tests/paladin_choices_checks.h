@@ -68,8 +68,8 @@ void blessed_warrior_checks()
           "The Paladin knows Sacred Flame and Spare the Dying");
     const auto profile = rules->character_profile(warrior, {}).data;
     auto fight = rules->create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-            {99, "bandit", "Enemy", 1, {4, 1}}
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+            {99, "bandit", "Enemy", Side::opposition, {4, 1}}
         }},
     5);
     bool offered = false;

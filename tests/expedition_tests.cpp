@@ -1903,7 +1903,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
             return u.id == s.actor;
         });
         std::optional<rules::Command> pick;
-        if (mover != s.combatants.end() && mover->side == 0 && !s.reaction_pending)
+        if (mover != s.combatants.end() && mover->side == rules::Side::party && !s.reaction_pending)
         {
             for (const auto &c : offered)
                 if (c.verb == "flee")
@@ -1931,7 +1931,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
           "The original script hears that the party fled");
     bool someone_got_away = false;
     for (const auto &unit : result.combatants)
-        if (unit.side == 0)
+        if (unit.side == rules::Side::party)
         {
             const auto &member = party->member(unit.id);
             const bool in_party = std::find(party->state().slots.begin(), party->state().slots.end(),

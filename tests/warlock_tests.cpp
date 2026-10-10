@@ -139,8 +139,8 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
-            {98, enemy, "Enemy", 1, {2, 1}}
+        {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+            {98, enemy, "Enemy", Side::opposition, {2, 1}}
         }},
     seed);
     if (!c->snapshot().initiative_choices.empty())
@@ -272,9 +272,9 @@ void invocation_checks()
               "Fiendish Vigor grants False Life's highest result");
         const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
         auto start = module->create({{12, 6, std::vector<Terrain>(72)},
-            {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
-                {2, "target", "Ally", 0, {1, 2}},
-                {98, "target", "Enemy", 1, {2, 1}}
+            {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+                {2, "target", "Ally", Side::party, {1, 2}},
+                {98, "target", "Enemy", Side::opposition, {2, 1}}
             }},
         5);
         check(start->snapshot().initiative_choices == std::vector<EntityId> {1},
@@ -346,9 +346,9 @@ void policy_checks()
     // enemy, not a weaker ally.
     const auto profile = module->character_profile(warlock().sheet(), std::vector<std::string> {}).data;
     auto d = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Warlock", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, {1, 3}, {}, VitalState{3, false, {}}},
-            {98, "target", "Enemy", 1, {4, 1}}
+        {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, {1, 3}, {}, VitalState{3, false, {}}},
+            {98, "target", "Enemy", Side::opposition, {4, 1}}
         }},
     5);
     for (unsigned turns = 0; d->snapshot().actor != 1 && turns < 4; ++turns)

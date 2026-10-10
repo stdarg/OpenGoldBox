@@ -19,7 +19,7 @@ std::string critical_before(std::string_view weapon)
     auto actors = p.participants();
     actors.front().cell = {1, 1};
     const bool ranged = weapon == "longbow";
-    actors.push_back({99, "vanguard", "Target", 1, {ranged ? 3 : 2, 1}});
+    actors.push_back({99, "vanguard", "Target", Side::opposition, {ranged ? 3 : 2, 1}});
     for (unsigned seed = 1; seed <= 128; ++seed)
     {
         auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);

@@ -751,7 +751,7 @@ void persistence()
     auto rules = module();
     auto members = party.participants();
     members[0].cell = {1, 1};
-    members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
+    members.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
     auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     const auto checkpoint = combat->save();
     check(checkpoint.find("expertise:stealth") != checkpoint.npos &&
@@ -855,7 +855,7 @@ void sage_training()
           "Current Sage campaign is canonical after reload");
     auto members = party.participants();
     members[0].cell = {1, 1};
-    members.push_back({99, "vanguard", "Enemy", 1, {6, 6}});
+    members.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 6}});
     const auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     check(rules->restore(combat->save())->save() == combat->save(),
           "Sage recipe retains combat continuation");
@@ -961,7 +961,7 @@ void remaining_backgrounds()
     auto members = party.participants();
     members[0].cell = {1, 1};
     members[1].cell = {2, 1};
-    members.push_back({99, "vanguard", "Enemy", 1, {6, 6}});
+    members.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 6}});
     const auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     check(rules->restore(combat->save())->save() == combat->save(),
           "Background recipes preserve combat continuation");
@@ -1034,8 +1034,8 @@ void starting_styles()
             auto profile =
                 rules->character_profile(sheet, std::array<std::string, 1> {"shortbow"}).data;
             Encounter encounter{{8, 8, std::vector<Terrain>(64)},
-                {   {1, "campaign-character", "Starter", 0, {1, 1}, profile},
-                    {99, "vanguard", "Enemy", 1, {5, 1}}
+                {   {1, "campaign-character", "Starter", Side::party, {1, 1}, profile},
+                    {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
                 }};
             auto battle = rules->create(encounter, 13);
             check(battle->snapshot().actor == 1, "Independent starting-style initiative seed");

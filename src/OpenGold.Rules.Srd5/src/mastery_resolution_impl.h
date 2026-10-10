@@ -117,7 +117,7 @@ void Session::offer_mastery(const Actor &a, const Actor &target, int natural, bo
     if (!mastery_available(m))
     {
         bool possible = false;
-        if (critical && def(a).champion && actors_[turn_].source.side == 0 &&
+        if (critical && def(a).champion && actors_[turn_].source.side == Side::party &&
                 (kind == detail::Mastery::cleave || kind == detail::Mastery::push))
         {
             const auto reachable =
@@ -175,7 +175,7 @@ OptionalEffectChoice Session::effect_choices() const
         choice.options.push_back({1, {label, {}}, description, mastery_available(m)});
     }
     // On an enemy turn, the predetermined order is mastery before movement.
-    if (!mastery_ || actors_[turn_].source.side == 0)
+    if (!mastery_ || actors_[turn_].source.side == Side::party)
         for (unsigned i = 0; i < champion_offers_.size(); ++i)
         {
             const auto &move = champion_offers_[i];

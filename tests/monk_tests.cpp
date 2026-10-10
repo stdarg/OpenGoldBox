@@ -109,8 +109,8 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Monk", 0, {1, 1}, profile},
-            {98, "target", "Enemy", 1, {2, 1}}
+        {   {1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
+            {98, "target", "Enemy", Side::opposition, {2, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -218,10 +218,10 @@ void focus_checks()
 std::unique_ptr<CombatSession> hurt_battle(const RulesModule &module, const Character &hero)
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
-    Participant monk{1, "campaign-character", "Monk", 0, {1, 1}, profile};
+    Participant monk{1, "campaign-character", "Monk", Side::party, {1, 1}, profile};
     monk.state = VitalState{hero.sheet().hit_points - 5};
     return module.create({{12, 6, std::vector<Terrain>(72)},
-        {monk, {98, "target", "Enemy", 1, {2, 1}}}},
+        {monk, {98, "target", "Enemy", Side::opposition, {2, 1}}}},
     5);
 }
 

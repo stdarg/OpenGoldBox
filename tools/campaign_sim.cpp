@@ -501,7 +501,7 @@ void add_enemies(CampaignEncounter &encounter, const Fight &fight)
             encounter.enemies.push_back({next, group.kind.definition,
                                          std::string(group.kind.definition) + " " +
                                          std::to_string(next),
-                                         1, {}});
+                                         rules::Side::opposition, {}});
             encounter.enemies.back().intelligence = group.kind.intelligence;
         }
     encounter.morale = fight.morale;
@@ -693,7 +693,7 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
             // As in the session, a monster that ran off the field takes its
             // record's experience with it.
             for (const auto &unit : result_snapshot.combatants)
-                if (unit.side == 1 && unit.fled && unit.hit_points > 0)
+                if (unit.side == rules::Side::opposition && unit.fled && unit.hit_points > 0)
                 {
                     const auto record = enemy_record(fight, unit.id);
                     if (const auto it = std::find(paying.begin(), paying.end(), record);
@@ -701,7 +701,7 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
                         paying.erase(it);
                     ++result.escaped;
                 }
-                else if (unit.side == 1 && unit.surrendered)
+                else if (unit.side == rules::Side::opposition && unit.surrendered)
                     ++result.surrendered;
         }
         if (outcome != rules::Outcome::victory)

@@ -137,10 +137,10 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, ally},
-            {98, enemy, "First", 1, first},
-            {99, "target", "Second", 1, second}
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, ally},
+            {98, enemy, "First", Side::opposition, first},
+            {99, "target", "Second", Side::opposition, second}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -572,8 +572,8 @@ void shield_missile_checks()
         return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
     };
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
-            {98, "campaign-character", "Foe", 1, {6, 1}, profile(foe)}
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile(foe)}
         }},
     5);
     reach(*c, 98);
@@ -767,8 +767,8 @@ void see_invisibility_checks()
         return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
     };
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
-            {98, "campaign-character", "Foe", 1, {8, 1}, profile(foe)}
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", Side::opposition, {8, 1}, profile(foe)}
         }},
     5);
     reach(*c, 98);
@@ -795,8 +795,8 @@ void invisible_caster_awaits_a_reaction()
         return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
     };
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
-            {98, "campaign-character", "Foe", 1, {8, 1}, profile(foe)}
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", Side::opposition, {8, 1}, profile(foe)}
         }},
     5);
     reach(*c, 98);

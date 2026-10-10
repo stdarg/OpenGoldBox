@@ -196,7 +196,8 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         for (const auto &group : groups)
             for (unsigned n = 0; n < group.count; ++n, ++next)
                 fight.enemies.push_back(
-                {next, group.definition, group.definition + " " + std::to_string(next), 1, {}});
+                {next, group.definition, group.definition + " " + std::to_string(next),
+                 rules::Side::opposition, {}});
         CombatDemo combat(module());
         combat.campaign_party(party);
         combat.encounter(fight, seed);
@@ -209,7 +210,7 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         tally.wins += result.outcome == rules::Outcome::victory;
         int hp = 0, max_hp = 0;
         for (const auto &unit : result.combatants)
-            if (unit.side == 0)
+            if (unit.side == rules::Side::party)
             {
                 tally.deaths += unit.dead;
                 tally.down += !unit.dead && unit.hit_points == 0;

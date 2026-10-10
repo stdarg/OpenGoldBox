@@ -145,7 +145,7 @@ Encounter battle(const RulesModule &module, const CharacterSheet &hero,
 {
     const auto profile = module.character_profile(hero, gear).data;
     Encounter e{{14, 8, std::vector<Terrain>(112)},
-        {{1, "campaign-character", "Hero", 0, {1, 1}, profile}}};
+        {{1, "campaign-character", "Hero", Side::party, {1, 1}, profile}}};
     e.participants.front().inventory = std::move(carried);
     e.participants.insert(e.participants.end(), others.begin(), others.end());
     return e;
@@ -159,9 +159,9 @@ int main()
         const auto directory = std::filesystem::path(OPENGOLD_BINARY_DIR) / "playtest-fixtures";
         std::filesystem::create_directories(directory);
         auto module = module_rules();
-        const Participant ally{2, "healer", "Ally", 0, {1, 4}};
-        const Participant near{98, "vanguard", "Enemy", 1, {6, 1}};
-        const Participant far{99, "vanguard", "Far enemy", 1, {9, 3}};
+        const Participant ally{2, "healer", "Ally", Side::party, {1, 4}};
+        const Participant near{98, "vanguard", "Enemy", Side::opposition, {6, 1}};
+        const Participant far{99, "vanguard", "Far enemy", Side::opposition, {9, 3}};
         // Scenarios that play a second round have no monster ally: the game
         // has none, and the demo waits for a party monster's turn.
         write(*module, directory, "moonbeam", battle(*module, druid(3, "moonbeam"), {near, far}),
@@ -169,7 +169,8 @@ int main()
         write(*module, directory, "spike-growth",
               battle(*module, druid(3, "spike_growth"), {near, far}), "spike_growth");
         write(*module, directory, "lands-aid",
-              battle(*module, druid(3), {{2, "healer", "Ally", 0, {6, 2}, {}, VitalState{3, false, {}}},
+              battle(*module, druid(3), {{2, "healer", "Ally", Side::party, {6, 2}, {},
+                                              VitalState{3, false, {}}},
                                           near
                                          }), "lands_aid");
         write(*module, directory, "produce-flame", battle(*module, druid(1), {ally, near}),
@@ -178,9 +179,10 @@ int main()
         const auto knight = module->character_profile(druid(4), std::vector<std::string> {"chain_mail"}).data;
         write(*module, directory, "heat-metal",
               battle(*module, druid(3, "heat_metal"),
-        {{97, "campaign-character", "Knight", 1, {4, 1}, knight}}), "heat_metal");
+        {{97, "campaign-character", "Knight", Side::opposition, {4, 1}, knight}}), "heat_metal");
         write(*module, directory, "flame-blade",
-              battle(*module, druid(3, "flame_blade"), {ally, {98, "vanguard", "Enemy", 1, {2, 1}}}),
+              battle(*module, druid(3, "flame_blade"),
+                     {ally, {98, "vanguard", "Enemy", Side::opposition, {2, 1}}}),
               "flame_blade");
         write(*module, directory, "bardic-inspiration",
               battle(*module, caster("bard", 5, {"vicious_mockery", "starry_wisp"},
@@ -193,21 +195,24 @@ int main()
             {13, "arrow", 20, -1}, {14, "oil", 1, -1}, {15, "alchemists_fire", 1, -1},
             {16, "acid", 1, -1}
         };
-        const Participant troll_beside{98, "troll", "Troll", 1, {2, 1}};
-        const Participant troll_near{98, "troll", "Troll", 1, {4, 1}};
-        const Participant troll_far{98, "troll", "Troll", 1, {11, 5}};
+        const Participant troll_beside{98, "troll", "Troll", Side::opposition, {2, 1}};
+        const Participant troll_near{98, "troll", "Troll", Side::opposition, {4, 1}};
+        const Participant troll_far{98, "troll", "Troll", Side::opposition, {11, 5}};
         // The hero on the field's west edge, a same-speed enemy far away: a
         // step west tries to flee.
         {
-            auto edge = battle(*module, fighter(), {{98, "vanguard", "Enemy", 1, {12, 6}}});
+            auto edge = battle(*module, fighter(),
+                               {{98, "vanguard", "Enemy", Side::opposition, {12, 6}}});
             edge.participants.front().cell = {0, 1};
             write(*module, directory, "flee", std::move(edge), "flee");
         }
         // Kobolds whose encounter morale breaks at the first wound to their
         // side: beside a Fighter as fast as they are, they flee in panic;
         // beside a faster Monk, they surrender.
-        const std::vector<Participant> kobolds{{98, "slums-kobold", "Kobold", 1, {2, 1}},
-            {97, "slums-kobold", "Kobold 2", 1, {6, 3}}, {96, "slums-kobold", "Kobold 3", 1, {7, 5}}
+        const std::vector<Participant> kobolds{
+            {98, "slums-kobold", "Kobold", Side::opposition, {2, 1}},
+            {97, "slums-kobold", "Kobold 2", Side::opposition, {6, 3}},
+            {96, "slums-kobold", "Kobold 3", Side::opposition, {7, 5}}
         };
         {
             auto fight = battle(*module, fighter(), kobolds, sword_and_shield);
@@ -224,16 +229,16 @@ int main()
             const auto ally = module->character_profile(fighter(), sword_and_shield).data;
             write(*module, directory, "bandage",
                   battle(*module, fighter(),
-            {   {2, "campaign-character", "Ally", 0, {1, 3}, ally,
+            {   {2, "campaign-character", "Ally", Side::party, {1, 3}, ally,
                     VitalState{0, false, "SRD11 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 1"}},
-                {98, "slums-kobold", "Kobold", 1, {2, 1}, {}, VitalState{1}}
+                {98, "slums-kobold", "Kobold", Side::opposition, {2, 1}, {}, VitalState{1}}
             }, sword_and_shield), "melee");
         }
         write(*module, directory, "gear-torch",
               battle(*module, fighter(), {troll_beside}, sword_and_shield, pack), "torch");
         // The same with a party ally, to click on before acting.
         write(*module, directory, "gear-ally",
-              battle(*module, fighter(), {{2, "healer", "Ally", 0, {1, 3}}, troll_beside},
+              battle(*module, fighter(), {{2, "healer", "Ally", Side::party, {1, 3}}, troll_beside},
                      sword_and_shield, pack), "torch");
         write(*module, directory, "gear-flasks",
               battle(*module, fighter(), {troll_near}, sword_and_shield, pack), "throw_oil");

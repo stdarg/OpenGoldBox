@@ -86,8 +86,8 @@ void write_ui_fixture()
     const std::vector<std::string> gear{"quarterstaff"};
     const auto profile = rules->character_profile(cleric(1), gear);
     auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Inflict Cleric", 0, {1, 1}, profile.data},
-            {99, "vanguard", "Enemy", 1, {2, 1}}
+        {   {1, "campaign-character", "Inflict Cleric", Side::party, {1, 1}, profile.data},
+            {99, "vanguard", "Enemy", Side::opposition, {2, 1}}
         }},
     2);
     std::ofstream out(path / "adjacent.save", std::ios::binary);
@@ -101,8 +101,8 @@ int damage(const RulesModule &rules, const CharacterSheet &sheet, std::string_vi
 {
     const auto profile = rules.character_profile(sheet, {});
     auto c = rules.create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile.data},
-            {3, "target", "Enemy", 1, {enemy_column, 1}}
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile.data},
+            {3, "target", "Enemy", Side::opposition, {enemy_column, 1}}
         }},
     13);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

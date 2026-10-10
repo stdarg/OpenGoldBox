@@ -120,8 +120,8 @@ void damage_follows_other_hand()
                     check(!shield || profile.armor_class == 14,
                           "One-handed grip keeps the trained shield's AC");
                     Encounter e{{8, 8, std::vector<Terrain>(64)},
-                        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-                            {2, "vanguard", "Target", 1, {thrown ? 3 : 2, 1}}
+                        {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
+                            {2, "vanguard", "Target", Side::opposition, {thrown ? 3 : 2, 1}}
                         }};
                     auto combat = rules->create(e, seed);
                     check(combat->snapshot().actor == 1, "Fixed seed starts the hero");
@@ -167,8 +167,8 @@ void reaction_continuation()
     const std::array<std::string, 1> gear{"longsword"};
     const auto profile = rules->character_profile(hero().sheet(), gear);
     Encounter e{{8, 8, std::vector<Terrain>(64)},
-        {   {1, "campaign-character", "Reactor", 0, {1, 1}, profile.data},
-            {2, "vanguard", "Mover", 1, {2, 1}}
+        {   {1, "campaign-character", "Reactor", Side::party, {1, 1}, profile.data},
+            {2, "vanguard", "Mover", Side::opposition, {2, 1}}
         }};
     std::unique_ptr<CombatSession> combat;
     for (unsigned seed = 0; seed < 100; ++seed)

@@ -63,7 +63,7 @@ void matrix()
                                                              };
             auto e = encounter(*r, Character(*srd5::character_rules(), draft, {}),
                                std::string(weapon.key), ranged);
-            e.participants.push_back({98, "mastery_target", "Second", 1, {2, 2}});
+            e.participants.push_back({98, "mastery_target", "Second", Side::opposition, {2, 2}});
             bool tested = false;
             for (unsigned seed = 1; seed < 32 && !tested; ++seed)
             {
@@ -190,8 +190,8 @@ void reactions()
             actors.front().cell = {1, 1};
             // Melee reaches adjacent squares only (MELEE-1), the halberd's too.
             const int edge = 2;
-            actors.push_back({99, "mastery_target", "Mover", 1, {edge, 1}});
-            actors.push_back({98, "mastery_target", "Second", 1, {edge, 2}});
+            actors.push_back({99, "mastery_target", "Mover", Side::opposition, {edge, 1}});
+            actors.push_back({98, "mastery_target", "Second", Side::opposition, {edge, 2}});
             bool tested = false;
             for (unsigned seed = 1; seed < 128 && !tested; ++seed)
             {
@@ -257,8 +257,8 @@ void cleave_criticals()
         p.advance(1, p.default_advancement(1));
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "mastery_target", "First", 1, {2, 1}});
-    actors.push_back({98, "mastery_target", "Second", 1, {2, 2}});
+    actors.push_back({99, "mastery_target", "First", Side::opposition, {2, 1}});
+    actors.push_back({98, "mastery_target", "Second", Side::opposition, {2, 2}});
     bool tested = false;
     for (unsigned seed = 1; seed < 1000 && !tested; ++seed)
     {
@@ -320,7 +320,10 @@ void ui_fixtures()
         auto e = encounter(*r, hero(key), key);
         e.participants.back().definition = "vanguard";
         e.participants.push_back(
-        {98, "vanguard", "Second", std::string_view(key) == "greataxe" ? 0u : 1u, {2, 2}});
+        {
+            98, "vanguard", "Second",
+            std::string_view(key) == "greataxe" ? Side::party : Side::opposition, {2, 2}
+        });
         bool written = false;
         for (unsigned seed = 1; seed < 64 && !written; ++seed)
         {
@@ -483,9 +486,9 @@ void movement_enables_mastery()
         const bool cleave = std::string_view(key) == "halberd";
         // Melee reaches adjacent squares only (MELEE-1): Cleave's second target
         // beside the first is out of reach until the Champion steps to (2,2).
-        roster.push_back({99, "mastery_target", "First", 1, {2, 1}});
+        roster.push_back({99, "mastery_target", "First", Side::opposition, {2, 1}});
         if (cleave)
-            roster.push_back({98, "mastery_target", "Second", 1, {3, 2}});
+            roster.push_back({98, "mastery_target", "Second", Side::opposition, {3, 2}});
         Battlefield board{12, 8, std::vector<Terrain>(96)};
         if (!cleave)
             board.terrain[15] = Terrain::obstacle;
@@ -537,8 +540,8 @@ void slain_reaction_mover()
     p.equip(1, 1);
     auto roster = p.participants();
     roster.front().cell = {1, 1};
-    roster.push_back({99, "mastery_target", "Mover", 1, {2, 1}});
-    roster.push_back({98, "mastery_target", "Second", 1, {2, 2}});
+    roster.push_back({99, "mastery_target", "Mover", Side::opposition, {2, 1}});
+    roster.push_back({98, "mastery_target", "Second", Side::opposition, {2, 2}});
     auto baseline = r->create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, 1);
     roster[1].state = unit(*baseline, 99).persistent;
     roster[1].state->hit_points = 1;
@@ -586,7 +589,7 @@ void physical_and_damage()
             p.equip(1, 1);
             auto roster = p.participants();
             roster.front().cell = {1, 1};
-            roster.push_back({99, "mastery_target", "Target", 1, {3, 1}});
+            roster.push_back({99, "mastery_target", "Target", Side::opposition, {3, 1}});
             bool tested = false;
             for (unsigned seed = 1; seed < 32 && !tested; ++seed)
             {
@@ -615,7 +618,7 @@ void physical_and_damage()
             roll = {{face, face, face, 1}, 3};
         Character h(*srd5::character_rules(), draft, {});
         auto e = encounter(*r, h, "greataxe");
-        e.participants.push_back({98, "mastery_target", "Ally", 0, {2, 2}});
+        e.participants.push_back({98, "mastery_target", "Ally", Side::party, {2, 2}});
         bool tested = false;
         for (unsigned seed = 1; seed < 64 && !tested; ++seed)
         {
@@ -691,7 +694,7 @@ void unconscious_cleave()
 {
     auto r = rules();
     auto e = encounter(*r, hero("greataxe", "fighter", "soldier"), "greataxe");
-    e.participants.push_back({98, "mastery_target", "Unconscious ally", 0, {2, 2}});
+    e.participants.push_back({98, "mastery_target", "Unconscious ally", Side::party, {2, 2}});
     e.participants.back().state =
         VitalState{0, false, "SRD11 0 0 0 0 0 1 0 0 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"};
     bool tested = false;

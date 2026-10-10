@@ -136,12 +136,12 @@ auto custom(std::string affinity = {})
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-std::vector<std::string> gear = {}, unsigned side = 1,
+std::vector<std::string> gear = {}, Side side = Side::opposition,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
     auto c = rules.create({{28, 8, std::vector<Terrain>(224)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
     seed);
@@ -208,8 +208,8 @@ void access()
         [&]
     {
         (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {2, "vanguard", "Enemy", 1, {3, 1}}
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
             }},
         13);
     });
@@ -345,8 +345,8 @@ void eligibility()
     Battlefield board{28, 8, std::vector<Terrain>(224)};
     board.terrain[1 * 28 + 2] = Terrain::obstacle;
     auto blocked = rules->create({board,
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-            {2, "target", "Enemy", 1, {3, 1}}
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+            {2, "target", "Enemy", Side::opposition, {3, 1}}
         }},
     13);
     check(!has(*blocked, "eldritch_blast", 2), "Opaque obstruction blocks the path");
@@ -366,9 +366,9 @@ void eligibility()
           unit(*normal).hit_points == hp - 8,
           "Self-targeting resolves an actual spell attack and damage");
     auto dead = rules->create({{28, 8, std::vector<Terrain>(224)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-            {2, "target", "Dead", 1, {3, 1}, {}, VitalState{0, true, {}}},
-            {3, "target", "Enemy", 1, {8, 1}}
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+            {2, "target", "Dead", Side::opposition, {3, 1}, {}, VitalState{0, true, {}}},
+            {3, "target", "Enemy", Side::opposition, {8, 1}}
         }},
     13);
     check(!has(*dead, "eldritch_blast", 2), "A corpse is not an eligible creature target");
@@ -393,18 +393,18 @@ void allies_and_unconscious()
                 })
         {
             Encounter e{{28, 8, std::vector<Terrain>(224)},
-                {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+                {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
                     {
                         2,
                         "target",
                         "Ally",
-                        0,
+                        Side::party,
                         {adjacent ? 2 : 3, 1},
                         {},
 unconscious ? std::optional<VitalState>{{0, false, {}}} :
                         std::nullopt
                     },
-                    {3, "target", "Enemy", 1, {8, 1}}
+                    {3, "target", "Enemy", Side::opposition, {8, 1}}
                 }};
             auto c = rules->create(e, 13);
             while (c->snapshot().actor != 1)
@@ -453,7 +453,7 @@ void campaign()
             p.restore(std::move(state));
             auto actors = p.participants();
             actors[0].cell = {1, 1};
-            actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
+            actors.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             const auto old = unit(*c, id).persistent;
             check(c->submit(command(*c, "eldritch_blast", 99)),
@@ -517,9 +517,9 @@ void ui_fixtures()
                                      : std::vector<std::string> {"quarterstaff"});
         const auto c =
         rules->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Eldritch Warlock", 0, {1, 1}, profile.data},
-                {2, "vanguard", "Ally", 0, {3, 1}},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+            {   {1, "campaign-character", "Eldritch Warlock", Side::party, {1, 1}, profile.data},
+                {2, "vanguard", "Ally", Side::party, {3, 1}},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         2);
         // Untrained armor's initiative Disadvantage may put the caster later.

@@ -50,7 +50,7 @@ auto battle(CampaignParty &p, unsigned seed = 13, Cell target = {2, 1}, int targ
 {
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "target", "Target", 1, target, {}, VitalState{target_hp}});
+    actors.push_back({99, "target", "Target", Side::opposition, target, {}, VitalState{target_hp}});
     auto c = p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
     for (unsigned n = 0; c->snapshot().actor != 1 && n < 5; ++n)
         cunning_checks::act(*c, "end");
@@ -121,7 +121,7 @@ void ui_fixtures()
     auto p = party(true);
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "vanguard", "Target", 1, {2, 1}});
+    actors.push_back({99, "vanguard", "Target", Side::opposition, {2, 1}});
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "light-fixtures";
     std::filesystem::create_directories(path);
     const auto write = [&](const char *name, const CombatSession & c)
@@ -303,8 +303,8 @@ void run()
         p.equip(1, 2, EquipmentOperation::equip_other);
         auto actors = p.participants();
         actors.front().cell = {1, 1};
-        actors.push_back({2, "vanguard", "Ally", 0, {2, 2}});
-        actors.push_back({99, "target", "Target", 1, {2, 1}});
+        actors.push_back({2, "vanguard", "Ally", Side::party, {2, 2}});
+        actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
         bool checked = false;
         for (unsigned seed = 1; seed <= 32 && !checked; ++seed)
         {

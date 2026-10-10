@@ -111,9 +111,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
     const auto profile =
         module.character_profile(hero.sheet(), std::vector<std::string> {std::move(weapon)}).data;
     auto c = module.create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
-            {98, "weakling", "Weakling", 1, {2, 1}},
-            {99, std::move(sturdy), "Target", 1, {2, 2}}
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+            {98, "weakling", "Weakling", Side::opposition, {2, 1}},
+            {99, std::move(sturdy), "Target", Side::opposition, {2, 2}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -202,8 +202,8 @@ void write_ui_fixture()
     const auto profile = module->character_profile(ranger({"cure_wounds", "longstrider"}).sheet(),
                          std::vector<std::string> {"longsword"}).data;
     auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -218,9 +218,9 @@ void write_ui_fixture()
     const auto hunter_profile = module->character_profile(hunter("horde_breaker").sheet(),
                                 std::vector<std::string> {"longsword"}).data;
     auto h = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Ranger", 0, {1, 1}, hunter_profile},
-            {98, "vanguard", "First", 1, {2, 1}},
-            {99, "vanguard", "Second", 1, {2, 2}}
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, hunter_profile},
+            {98, "vanguard", "First", Side::opposition, {2, 1}},
+            {99, "vanguard", "Second", Side::opposition, {2, 2}}
         }},
     2);
     for (unsigned turns = 0; h->snapshot().actor != 1 && turns < 4; ++turns)
@@ -236,8 +236,8 @@ void write_ui_fixture()
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
         auto e = module->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Ranger", 0, {1, 1}, ensnaring_profile},
-                {99, "vanguard", "Target", 1, {2, 1}}
+            {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, ensnaring_profile},
+                {99, "vanguard", "Target", Side::opposition, {2, 1}}
             }},
         seed);
         for (unsigned turns = 0; e->snapshot().actor != 1 && turns < 4; ++turns)
@@ -268,9 +268,9 @@ void write_entangle_fixture()
     const auto profile = module->character_profile(ranger({"cure_wounds", "entangle"}).sheet(),
                          std::vector<std::string> {"longsword"}).data;
     auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
-            {98, "vanguard", "First", 1, {6, 1}},
-            {99, "vanguard", "Second", 1, {6, 2}}
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+            {98, "vanguard", "First", Side::opposition, {6, 1}},
+            {99, "vanguard", "Second", Side::opposition, {6, 2}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

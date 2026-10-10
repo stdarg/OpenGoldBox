@@ -92,7 +92,7 @@ PartyState baseline(unsigned level)
 
     auto participants = party.participants();
     participants.front().cell = {1, 1};
-    participants.push_back({99, "recovery_target", "Target", 1, {5, 1}});
+    participants.push_back({99, "recovery_target", "Target", Side::opposition, {5, 1}});
     auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, participants}, 13);
     party.begin_combat();
     party.apply_combat(combat->snapshot());
@@ -370,7 +370,7 @@ void combat_and_advancement()
         }
         auto participants = party.participants();
         participants.front().cell = {1, 1};
-        participants.push_back({99, "recovery_target", "Target", 1, {5, 1}});
+        participants.push_back({99, "recovery_target", "Target", Side::opposition, {5, 1}});
         auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, participants}, 13);
         party.begin_combat();
         party.apply_combat(combat->snapshot());

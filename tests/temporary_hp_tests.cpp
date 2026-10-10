@@ -165,7 +165,7 @@ void rule_operations()
             1,
             "campaign-character",
             "Patient",
-            0,
+            Side::party,
             {0, 0},
             rules->character_profile(c.sheet(), {}).data,
             state
@@ -275,12 +275,12 @@ void actual_combat()
                 1,
                 "campaign-character",
                 "Dwarf",
-                0,
+                Side::party,
                 {2, 2},
                 rules->character_profile(c.sheet(), {}).data,
                 state
             },
-            {2, "toxin", "Poison attacker", 1, {3, 2}}
+            {2, "toxin", "Poison attacker", Side::opposition, {3, 2}}
         }};
     auto combat = rules->create(encounter, 42);
     while (combat->snapshot().actor != 2)
@@ -386,7 +386,7 @@ void campaign()
                                     copy.state().training_rest->members.front());
     }
     auto actors = copy.participants();
-    actors.push_back({99, "bandit", "Enemy", 1, {7, 7}});
+    actors.push_back({99, "bandit", "Enemy", Side::opposition, {7, 7}});
     auto battle = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
     copy.begin_combat();
     copy.apply_combat(battle->snapshot());

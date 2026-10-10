@@ -92,9 +92,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
         module.character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data;
     const auto ally = module.character_profile(paladin({}).sheet(), {}).data;
     auto c = module.create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-            {2, "campaign-character", "Ally", 0, {1, 2}, ally},
-            {99, std::move(enemy), "Enemy", 1, {2, 1}}
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+            {2, "campaign-character", "Ally", Side::party, {1, 2}, ally},
+            {99, std::move(enemy), "Enemy", Side::opposition, {2, 1}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -245,9 +245,9 @@ void write_ui_fixture()
         module->character_profile(paladin({"bless", "cure_wounds"}).sheet(), std::vector<std::string> {"longsword"}).data;
     const auto ally = module->character_profile(paladin({}).sheet(), {}).data;
     auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-            {2, "campaign-character", "Ally", 0, {2, 1}, ally},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+            {2, "campaign-character", "Ally", Side::party, {2, 1}, ally},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)

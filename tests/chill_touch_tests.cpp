@@ -139,11 +139,11 @@ std::vector<std::string> gear = {})
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), gear).data
             },
-            {2, "target", "Target", 1, target}
+            {2, "target", "Target", Side::opposition, target}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -188,8 +188,8 @@ void access()
             [&]
         {
             (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-                {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                    {2, "vanguard", "Enemy", 1, {2, 1}}
+                {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                    {2, "vanguard", "Enemy", Side::opposition, {2, 1}}
                 }},
             13);
         });
@@ -315,13 +315,13 @@ void skipped_caster()
                         1,
                         "campaign-character",
                         "Caster",
-                        0,
+                        Side::party,
                         {1, 1},
                         rules->character_profile(h.sheet(), {}).data,
                         VitalState{1, false, {}}
                     },
-                    {2, "reaper", "Enemy", 1, {2, 1}},
-                    {3, "vanguard", "Companion", 0, {6, 1}}
+                    {2, "reaper", "Enemy", Side::opposition, {2, 1}},
+                    {3, "vanguard", "Companion", Side::party, {6, 1}}
                 }},
             seed);
             while (c->snapshot().actor != 1)
@@ -368,7 +368,7 @@ void campaign_handoff()
         const auto id = npc ? party.recruit("fixture:chill", h) : party.add_pc(h);
         auto actors = party.participants();
         actors[0].cell = {1, 1};
-        actors.push_back({99, "vanguard", "Enemy", 1, {6, 1}});
+        actors.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 1}});
         auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         while (c->snapshot().actor != id)
             act(*c, "end");
@@ -519,8 +519,11 @@ void recovery()
     auto c = rules->create(
     {
         {8, 8, std::vector<Terrain>(64)},
-        {   {1, "campaign-character", "Fighter", 0, {1, 1}, target, blocked_state(*rules, h, 1)},
-            {2, "target", "Enemy", 1, {2, 1}}
+        {   {
+                1, "campaign-character", "Fighter", Side::party, {1, 1}, target,
+                blocked_state(*rules, h, 1)
+            },
+            {2, "target", "Enemy", Side::opposition, {2, 1}}
         }},
     13);
     while (c->snapshot().actor != 1)
@@ -544,7 +547,7 @@ void healing_spells()
                     1,
                     "campaign-character",
                     "Cleric",
-                    0,
+                    Side::party,
                     {1, 1},
                     rules->character_profile(cleric, {}).data
                 },
@@ -552,12 +555,12 @@ void healing_spells()
                     2,
                     "campaign-character",
                     "Fighter",
-                    0,
+                    Side::party,
                     {2, 1},
                     rules->character_profile(fighter.sheet(), {}).data,
                     blocked_state(*rules, fighter, 1)
                 },
-                {99, "target", "Enemy", 1, {5, 1}}
+                {99, "target", "Enemy", Side::opposition, {5, 1}}
             }},
         13);
         while (c->snapshot().actor != 1)
@@ -588,13 +591,13 @@ void combat_death_save()
                     1,
                     "campaign-character",
                     "Fighter",
-                    0,
+                    Side::party,
                     {1, 1},
                     rules->character_profile(h.sheet(), {}).data,
                     vitality
                 },
-                {2, "target", "Enemy", 1, {2, 1}},
-                {3, "vanguard", "Companion", 0, {6, 1}}
+                {2, "target", "Enemy", Side::opposition, {2, 1}},
+                {3, "vanguard", "Companion", Side::party, {6, 1}}
             }},
         seed);
         for (unsigned turns = 0; turns < 3 && !covered; ++turns)
@@ -835,13 +838,13 @@ void stable_continuation()
                 1,
                 "campaign-character",
                 "Patient",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), {}).data,
                 pending
             },
-            {2, "vanguard", "Companion", 0, {3, 1}},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+            {2, "vanguard", "Companion", Side::party, {3, 1}},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     13);
     check(unit(*c).hit_points == 0, "Combat retains due recovery while blocked");
@@ -866,7 +869,7 @@ void stable_actual_cast()
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), {}).data
             },
@@ -874,12 +877,12 @@ void stable_actual_cast()
                 2,
                 "target",
                 "Patient",
-                0,
+                Side::party,
                 {2, 1},
                 {},
                 VitalState{0, false, "SRD11 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"}
             },
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     13);
     while (c->snapshot().actor != 1)
@@ -920,9 +923,9 @@ void fixtures()
         auto h = hero(klass);
         auto profile = rules->character_profile(h.sheet(), {}).data;
         auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Caster", 0, {1, 1}, profile},
-                {2, "vanguard", "Ally", 0, {2, 1}},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+            {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile},
+                {2, "vanguard", "Ally", Side::party, {2, 1}},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         2);
         while (c->snapshot().actor != 1)

@@ -805,7 +805,7 @@ void CampaignParty::elapse(PartyState &state, std::chrono::milliseconds elapsed,
         participants.push_back({member.id,
                                 "campaign-character",
                                 member.character.sheet().name,
-                                0,
+                                rules::Side::party,
                                 {},
                                 profile.data,
                                 member.vitals});
@@ -1220,7 +1220,7 @@ std::vector<rules::Participant> CampaignParty::participants() const
             result.push_back({id,
                               "campaign-character",
                               m.character.sheet().name,
-                              0,
+                              rules::Side::party,
             {1 + static_cast<int>(slot / 4), 1 + static_cast<int>(slot % 4) * 2},
             p.data,
             m.vitals});
@@ -1261,7 +1261,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     auto next = state_;
     std::vector<MemberId> active;
     for (const auto &actor : snapshot.combatants)
-        if (actor.side == 0)
+        if (actor.side == rules::Side::party)
             active.push_back(actor.id);
     // Combat has already advanced active actors' effects and mortality. Only reserves
     // need campaign-side updates, preventing duplicate recovery rolls.
@@ -1271,7 +1271,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                        combat_elapsed_)},
            active);
     for (const auto &actor : snapshot.combatants)
-        if (actor.side == 0)
+        if (actor.side == rules::Side::party)
         {
             const auto it = std::find_if(next.roster.begin(), next.roster.end(),
                                          [&](const auto & m)

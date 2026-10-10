@@ -139,17 +139,17 @@ void medicine_combat()
     auto encounter = [&](const std::string & data)
     {
         return Encounter{{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Scholar", 0, {1, 1}, data},
+            {   {1, "campaign-character", "Scholar", Side::party, {1, 1}, data},
                 {
                     2,
                     "recovery_target",
                     "Patient",
-                    0,
+                    Side::party,
                     {2, 1},
                     {},
                     VitalState{0, false, "SRD11 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"}
                 },
-                {99, "vanguard", "Enemy", 1, {6, 6}}
+                {99, "vanguard", "Enemy", Side::opposition, {6, 6}}
             }};
     };
     bool success = false, failure = false;
