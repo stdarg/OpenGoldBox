@@ -53,7 +53,7 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
     auto history = spell_edits_;
     rules.apply_spell_choices(candidate, choices, rules::SpellChoiceContext::long_rest,
                               completeness);
-    history.push_back({unsigned(sheet_.level), rest_session, choices});
+    history.push_back({static_cast<unsigned>(sheet_.level), rest_session, choices});
     (void)rules.character_profile(candidate, {});
     sheet_ = std::move(candidate);
     spell_edits_ = std::move(history);
@@ -72,7 +72,8 @@ void Character::replace_rest_training(const rules::RulesModule &rules,
     auto candidate = sheet_;
     auto history = training_edits_;
     (void)rules.replace_rest_training(candidate, selections);
-    history.push_back({unsigned(sheet_.level), session, {selections.begin(), selections.end()}});
+    history.push_back({static_cast<unsigned>(sheet_.level), session,
+                       {selections.begin(), selections.end()}});
     (void)rules.character_profile(candidate, {});
     sheet_ = std::move(candidate);
     training_edits_ = std::move(history);

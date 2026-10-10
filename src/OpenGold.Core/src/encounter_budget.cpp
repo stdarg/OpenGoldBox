@@ -53,7 +53,8 @@ std::vector<unsigned> fit_encounter_to_budget(std::span<const EncounterGroup> gr
     for (const auto &group : groups)
         counts.push_back(numerator == denominator
                          ? group.count
-                         : std::max(1U, unsigned(group.count * numerator / denominator)));
+                         : std::max(1U, static_cast<unsigned>(group.count * numerator /
+                                                              denominator)));
     return counts;
 }
 } // namespace opengold

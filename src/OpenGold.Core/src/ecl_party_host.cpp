@@ -121,11 +121,14 @@ unsigned party_strength(const CampaignParty &party)
             const auto adnd = adnd_combat_values(m);
             const auto &sheet = m.character.sheet();
             const auto group = adnd_group(sheet.character_class);
-            const int cleric_levels = sheet.character_class == "Cleric" ? int(sheet.level) : 0;
-            const int magic_user_levels = group == AdndGroup::magic_user ? int(sheet.level) : 0;
-            result += unsigned(cleric_levels * 4 + m.vitals.hit_points +
-                               5 * std::max(0, -adnd.armor_class) +
-                               5 * std::max(0, 21 - adnd.thac0) + magic_user_levels * 8) /
+            const int cleric_levels =
+                sheet.character_class == "Cleric" ? static_cast<int>(sheet.level) : 0;
+            const int magic_user_levels =
+                group == AdndGroup::magic_user ? static_cast<int>(sheet.level) : 0;
+            result += static_cast<unsigned>(cleric_levels * 4 + m.vitals.hit_points +
+                                            5 * std::max(0, -adnd.armor_class) +
+                                            5 * std::max(0, 21 - adnd.thac0) +
+                                            magic_user_levels * 8) /
                       10;
         }
     return result & 255;

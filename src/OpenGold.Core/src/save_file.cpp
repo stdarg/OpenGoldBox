@@ -146,7 +146,7 @@ std::string read_save_file(const std::filesystem::path &path, std::size_t limit)
             size <= static_cast<std::uintmax_t>(std::numeric_limits<std::streamsize>::max()),
             "Save file too large");
     std::ifstream input(path, std::ios::binary);
-    require(bool(input), "Cannot open save file");
+    require(static_cast<bool>(input), "Cannot open save file");
     std::string bytes(static_cast<std::size_t>(size), '\0');
     input.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
     require(input && input.peek() == std::char_traits<char>::eof() && !input.bad(),

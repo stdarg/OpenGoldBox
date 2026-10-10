@@ -294,8 +294,9 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
         const std::string_view klass = custom ? std::string_view(classes[i]) : showcase[i];
         // A repeated class takes the class's next pool variant.
         const auto earlier =
-            custom ? unsigned(std::count(classes.begin(), classes.begin() + std::ptrdiff_t(i),
-                                         std::string(klass)))
+            custom ? static_cast<unsigned>(std::count(
+                         classes.begin(), classes.begin() + static_cast<std::ptrdiff_t>(i),
+                         std::string(klass)))
             : 0u;
         unsigned seen = 0;
         const auto found =
@@ -360,8 +361,9 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             while (id && party->can_advance(id))
                 party->advance(id, party->default_advancement(id));
     }
-    result.encounter.positions.assign(positions.begin(),
-                                      positions.begin() + std::ptrdiff_t(party->state().roster.size()));
+    result.encounter.positions.assign(
+        positions.begin(),
+        positions.begin() + static_cast<std::ptrdiff_t>(party->state().roster.size()));
     if (!enemies.empty())
     {
         // In a row east of the party, with their original Slums icons.
@@ -373,7 +375,7 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             if (!picture)
                 throw std::runtime_error("Missing original combat icon for " + definition);
             const auto id = static_cast<EntityId>(1000 + n);
-            const Cell cell{10, 4 + int(n)};
+            const Cell cell{10, 4 + static_cast<int>(n)};
             result.encounter.enemies.push_back({id, definition, definition + " " +
                                                 std::to_string(n + 1), 1, cell});
             result.encounter.positions.push_back(cell);
@@ -1200,10 +1202,10 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
     if (const auto *flee = offer("flee"))
         return *flee;
     const auto &board = state.battlefield;
-    const auto cells = std::size_t(board.width * board.height);
+    const auto cells = static_cast<std::size_t>(board.width * board.height);
     const auto index = [&](Cell p)
     {
-        return std::size_t(p.y * board.width + p.x);
+        return static_cast<std::size_t>(p.y * board.width + p.x);
     };
     // Steps from the given squares to every open square, around walls.
     const auto distances = [&](const std::vector<Cell> &sources)

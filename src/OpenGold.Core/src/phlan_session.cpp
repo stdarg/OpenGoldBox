@@ -826,7 +826,8 @@ void RolfTourSession::fit_staged_encounter()
         ++groups.back().count;
     }
     const auto budget = encounter_xp_budget(levels, encounter_challenge_);
-    const auto counts = fit_encounter_to_budget(groups, budget, unsigned(levels.size()));
+    const auto counts =
+        fit_encounter_to_budget(groups, budget, static_cast<unsigned>(levels.size()));
     std::vector<rules::Participant> enemies;
     std::vector<opengold::CombatArt> art;
     std::vector<unsigned> records;
@@ -1298,10 +1299,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 35:
     {
-        const int party_threshold = 2 + int(arg(3)) - int(machine_.variable(arg(0)));
-        const int monster_threshold = 2 + int(machine_.variable(arg(1))) - int(arg(2));
-        const bool party = int(machine_.host_random(request.id, 6)) + 1 <= party_threshold;
-        const bool monsters = int(machine_.host_random(request.id, 6)) + 1 <= monster_threshold;
+        const int party_threshold =
+            2 + static_cast<int>(arg(3)) - static_cast<int>(machine_.variable(arg(0)));
+        const int monster_threshold =
+            2 + static_cast<int>(machine_.variable(arg(1))) - static_cast<int>(arg(2));
+        const bool party =
+            static_cast<int>(machine_.host_random(request.id, 6)) + 1 <= party_threshold;
+        const bool monsters =
+            static_cast<int>(machine_.host_random(request.id, 6)) + 1 <= monster_threshold;
         reply.writes.push_back(
         {0x6DCB, static_cast<std::uint16_t>((party ? 1 : 0) | (monsters ? 2 : 0))});
         break;
@@ -1510,7 +1515,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             throw EclError("Unsupported DAMAGE form");
         read_character();
         snapshot_.dialogue += shoot_arrows(arg(0), {hidden_archer_attack_bonus, arg(1), arg(2),
-                                                    int(arg(3)), "piercing"});
+                                                    static_cast<int>(arg(3)), "piercing"});
         damage_request_ = request.id;
         snapshot_.phase = TourPhase::awaiting_continue;
         snapshot_.choices = {"Continue"};

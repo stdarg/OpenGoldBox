@@ -93,7 +93,7 @@ struct SaveCodec
             stream << static_cast<std::int64_t>(value) << ' ';
         else
             stream << static_cast<std::uint64_t>(value) << ' ';
-        require(bool(stream), "Truncated or invalid campaign save");
+        require(static_cast<bool>(stream), "Truncated or invalid campaign save");
     }
 
     void field(std::string &value)
@@ -102,7 +102,7 @@ struct SaveCodec
             stream >> std::quoted(value);
         else
             stream << std::quoted(value) << ' ';
-        require(bool(stream) && value.size() <= limit, "Invalid save string");
+        require(static_cast<bool>(stream) && value.size() <= limit, "Invalid save string");
     }
 
     template <class T, std::size_t N> void field(std::array<T, N> &values)
@@ -331,7 +331,8 @@ struct SaveCodec
                 std::uint64_t prior_session = 0;
                 for (const auto &edit : training)
                 {
-                    require(edit.level >= prior_level && edit.level <= unsigned(level) &&
+                    require(edit.level >= prior_level &&
+                            edit.level <= static_cast<unsigned>(level) &&
                             edit.rest_session > prior_session,
                             "Invalid training replacement history");
                     prior_level = edit.level;
@@ -341,7 +342,7 @@ struct SaveCodec
                 std::uint64_t rest = 0;
                 for (const auto &edit : edits)
                 {
-                    require(edit.level >= previous && edit.level <= unsigned(level),
+                    require(edit.level >= previous && edit.level <= static_cast<unsigned>(level),
                             "Invalid spell-choice history level");
                     require(edit.rest_session > rest, "Repeated spell-choice rest");
                     previous = edit.level;
@@ -354,11 +355,11 @@ struct SaveCodec
                 auto replay = [&]
                 {
                     for (const auto &edit : edits)
-                        if (edit.level == unsigned(character.sheet().level))
+                        if (edit.level == static_cast<unsigned>(character.sheet().level))
                             character.choose_spells(*module, edit.choices, edit.rest_session,
                                                     rules::ChoiceCompleteness::partial);
                     for (const auto &edit : training)
-                        if (edit.level == unsigned(character.sheet().level))
+                        if (edit.level == static_cast<unsigned>(character.sheet().level))
                             character.replace_rest_training(*module, edit.selections,
                                                             edit.rest_session);
                 };
@@ -427,7 +428,7 @@ struct SaveCodec
             std::istringstream in(rng);
             in.imbue(std::locale::classic());
             in >> v.random_;
-            require(bool(in), "Invalid saved script RNG");
+            require(static_cast<bool>(in), "Invalid saved script RNG");
             in >> std::ws;
             require(in.eof(), "Trailing script RNG data");
             v.state_ = por::EclState::completed;

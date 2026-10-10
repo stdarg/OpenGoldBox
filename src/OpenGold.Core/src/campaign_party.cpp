@@ -529,7 +529,7 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     const auto key =
         inventory.add({.definition_id = equipment_conversion(item),
                        .name = item.label(),
-                       .quantity = std::max(1u, unsigned(item.stored.stack_size)),
+                       .quantity = std::max(1u, static_cast<unsigned>(item.stored.stack_size)),
                        .original_type = item.stored.type});
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
@@ -575,7 +575,7 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         for (auto index : recipients)
         {
             auto &purse = next.roster[index].wealth[coin];
-            const auto amount = std::min(remaining, unsigned(65535 - purse));
+            const auto amount = std::min(remaining, static_cast<unsigned>(65535 - purse));
             purse += amount;
             remaining -= amount;
         }
@@ -597,7 +597,7 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         {
             .definition_id = equipment_conversion(item),
             .name = item.label(),
-            .quantity = std::max(1u, unsigned(item.stored.stack_size)),
+            .quantity = std::max(1u, static_cast<unsigned>(item.stored.stack_size)),
             .original_type = item.stored.type
         });
         m.item_sources.emplace(id, item);
@@ -934,7 +934,8 @@ std::optional<HazardHit> CampaignParty::hazard_attack(const rules::HazardAttack 
     if (conscious.empty())
         return std::nullopt;
     auto next = state_;
-    const auto target = conscious[roll_die(next.random_state, int(conscious.size())) - 1];
+    const auto target =
+        conscious[roll_die(next.random_state, static_cast<int>(conscious.size())) - 1];
     auto &struck = member_in(next, target);
     HazardHit hit{target, rules_->hazard_attack(struck.vitals, struck.character.sheet(), attack,
                   next.random_state)};
@@ -1220,7 +1221,7 @@ std::vector<rules::Participant> CampaignParty::participants() const
                               "campaign-character",
                               m.character.sheet().name,
                               0,
-            {1 + int(slot / 4), 1 + int(slot % 4) * 2},
+            {1 + static_cast<int>(slot / 4), 1 + static_cast<int>(slot % 4) * 2},
             p.data,
             m.vitals});
             for (const auto &item : m.character.inventory().items())

@@ -55,14 +55,15 @@ Image fit_neck(const Image &head, const Image &body, const AdditionalPortraitHea
     }
     const double source_center = (placement.neck_left + placement.neck_right) / 2.0;
     const double target_center = (left + right) / 2.0;
-    const double neck_scale = double(right - left) / (placement.neck_right - placement.neck_left);
+    const double neck_scale =
+        static_cast<double>(right - left) / (placement.neck_right - placement.neck_left);
     Image result = head;
     for (unsigned y = 0; y < 40; ++y)
         for (unsigned x = 0; x < 88; ++x)
         {
             // Translate the face intact. Only the lowest five rows gradually widen
             // or narrow to the body's opening; never stretch the face or horns.
-            const double blend = y <= 34 ? 0.0 : double(y - 34) / 5.0;
+            const double blend = y <= 34 ? 0.0 : static_cast<double>(y - 34) / 5.0;
             const double scale = 1.0 + (neck_scale - 1.0) * blend;
             const int from_x =
                 static_cast<int>(std::floor(source_center + (x + 0.5 - target_center) / scale));
@@ -174,7 +175,7 @@ Image prepare_portrait_head(const Image &source, unsigned head_id)
     unsigned bottom = source.height;
     const auto visible = [&](unsigned x, unsigned y)
     {
-        const auto p = (std::size_t(y) * source.width + x) * 4;
+        const auto p = (static_cast<std::size_t>(y) * source.width + x) * 4;
         return source.rgba[p + 3] > 127 &&
                std::max({source.rgba[p], source.rgba[p + 1], source.rgba[p + 2]}) > 24;
     };
@@ -200,12 +201,14 @@ Image prepare_portrait_head(const Image &source, unsigned head_id)
     for (unsigned y = 0; y < 40; ++y)
         for (unsigned x = 0; x < 88; ++x)
         {
-            const auto source_y = std::size_t(2 * y + 1) * bottom * placement.retained_rows / 3200;
+            const auto source_y =
+                static_cast<std::size_t>(2 * y + 1) * bottom * placement.retained_rows / 3200;
             const auto from = (source_y * source.width + (2 * x + 1) * source.width / 176) * 4;
             const auto to = (y * 88 + x) * 4;
             // Composite alpha on the original portrait's black background.
             for (unsigned c = 0; c < 3; ++c)
-                result.rgba[to + c] = unsigned(source.rgba[from + c]) * source.rgba[from + 3] / 255;
+                result.rgba[to + c] =
+                    static_cast<unsigned>(source.rgba[from + c]) * source.rgba[from + 3] / 255;
             result.rgba[to + 3] = 255;
         }
     return result;

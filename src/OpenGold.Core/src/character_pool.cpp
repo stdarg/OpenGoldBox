@@ -29,7 +29,7 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
                 int error = 0;
                 for (unsigned k = 0; k < 3; ++k)
                 {
-                    const int delta = int(rgb[k]) - image.rgba[p + k];
+                    const int delta = static_cast<int>(rgb[k]) - image.rgba[p + k];
                     error += delta * delta;
                 }
                 if (error < distance)
@@ -99,7 +99,7 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             const auto primary = priority[0], secondary = priority[1];
             for (unsigned rank = 0; rank < 6; ++rank)
             {
-                const int score = 18 - int(rank) - (variant == 3 && rank == 0 ? 1 : 0);
+                const int score = 18 - static_cast<int>(rank) - (variant == 3 && rank == 0 ? 1 : 0);
                 // Authored, valid 4d6-drop-lowest provenance for each strong score.
                 d.rolls[priority[rank]] =
                 {
