@@ -1262,29 +1262,22 @@ inline constexpr std::array spell_table
         .concentration = true}};
 
 // Accepts the "_2" upcast verb form, so callers can pass a command verb directly.
-// Command's options, in the order the effect stores them (1-based).
+// Command's options, in CommandOption order.
 inline constexpr std::array<std::string_view, 4> command_options{"approach", "flee", "grovel",
     "halt"};
-enum class CommandOption : int
-{
-    approach = 1,
-    flee,
-    grovel,
-    halt
-};
 
-// The option a Command verb names, 1-based; 0 when the verb is not one.
-inline int command_option(std::string_view verb)
+// The option a Command verb names, if it is one.
+inline std::optional<CommandOption> command_option(std::string_view verb)
 {
     if (verb.ends_with("_2"))
         verb.remove_suffix(2);
     if (!verb.starts_with("command_"))
-        return 0;
+        return std::nullopt;
     verb.remove_prefix(8);
     const auto found = std::find(command_options.begin(), command_options.end(), verb);
-    return found == command_options.end()
-           ? 0
-           : static_cast<int>(found - command_options.begin()) + 1;
+    if (found == command_options.end())
+        return std::nullopt;
+    return static_cast<CommandOption>(found - command_options.begin() + 1);
 }
 
 // Chromatic Orb's damage types, each offered as "chromatic_orb_<type>".

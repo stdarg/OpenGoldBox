@@ -33,8 +33,7 @@ enum class EffectKind : unsigned
     // Protection from Evil and Good: Aberrations, Celestials, Elementals, Fey,
     // Fiends and Undead have Disadvantage on attack rolls against the target.
     protection_from_evil_and_good = 13,
-    // Command: the target obeys on its next turn; `dc` holds the option, an
-    // index into command_options plus one.
+    // Command: the target obeys on its next turn; `dc` holds its CommandOption.
     command = 14,
     // Sacred Weapon: `dc` (the Charisma modifier, at least 1) is added to
     // attack rolls with Melee weapons; they may deal Radiant damage.
@@ -231,6 +230,15 @@ struct EffectEvent
 
 using EffectObserver = std::function<void(const EffectEvent &)>;
 
+// Command's options, numbered as a Command effect stores them in its `dc`.
+enum class CommandOption : int
+{
+    approach = 1,
+    flee,
+    grovel,
+    halt
+};
+
 // Who imposes an effect: the encounter's scope and the creature's ID in it.
 // Passed apart, the two integers converted silently into each other's place
 // (Effective C++ Item 18).
@@ -306,7 +314,7 @@ void apply_spell_benefit(EffectState &, EffectSource source,
                          std::string name, EffectKind kind, int value);
 // Lasts until the end of the target's next turn, `duration_ms` from now.
 void apply_command(EffectState &, EffectSource source, std::string name,
-                   int option, unsigned duration_ms);
+                   CommandOption option, unsigned duration_ms);
 // The Command the target must obey, if any.
 [[nodiscard]] const Effect *command_effect(const EffectState &);
 bool has_effect(const EffectState &, EffectKind);

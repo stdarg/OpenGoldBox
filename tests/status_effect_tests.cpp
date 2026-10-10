@@ -51,6 +51,17 @@ static_assert(AppliesBlindness<fx::EffectSource, std::string, fx::RepeatingSave>
 static_assert(!AppliesBlindness<std::uint64_t, EntityId, std::string, int, unsigned>);
 static_assert(!AppliesBlindness<EntityId, std::uint64_t, std::string, unsigned, int>);
 
+// Command's option is a CommandOption, so its stored number cannot be passed
+// where the duration goes, or the other way round.
+template <class Option, class Duration>
+concept AppliesCommand = requires(fx::EffectState &effects, Option option, Duration duration)
+{
+    fx::apply_command(effects, fx::EffectSource{}, "Caster", option, duration);
+};
+static_assert(AppliesCommand<fx::CommandOption, unsigned>);
+static_assert(!AppliesCommand<int, unsigned>);
+static_assert(!AppliesCommand<unsigned, fx::CommandOption>);
+
 auto module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /

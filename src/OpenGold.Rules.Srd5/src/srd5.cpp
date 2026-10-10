@@ -192,10 +192,11 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated;
 }
 
-// Command's option as players read it, "Approach" for 1.
-std::string command_label(int option)
+// Command's option as players read it, such as "Approach".
+std::string command_label(detail::CommandOption option)
 {
-    auto label = std::string(detail::command_options.at(static_cast<std::size_t>(option - 1)));
+    const auto index = static_cast<std::size_t>(option) - 1;
+    auto label = std::string(detail::command_options.at(index));
     label[0] = static_cast<char>(label[0] - 'a' + 'A');
     return label;
 }
@@ -3851,7 +3852,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     }
     case detail::Rider::command:
     {
-        const int option = detail::command_option(verb);
+        const auto option = detail::command_option(verb).value();
         const auto index = index_of(target.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
         detail::apply_command(target.effects, effect_source(a), a.source.name, option,
@@ -4269,7 +4270,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             for (const auto option : detail::command_options)
             {
                 const auto verb = "command_" + std::string(option);
-                const auto label = "Command: " + command_label(detail::command_option(verb));
+                const auto label =
+                    "Command: " + command_label(detail::command_option(verb).value());
                 if (a.slots > 0)
                     offer(verb, label);
                 if (a.slots2 > 0)

@@ -437,10 +437,11 @@ void apply_spell_benefit(EffectState &effects, EffectSource source,
 }
 
 void apply_command(EffectState &effects, EffectSource source,
-                   std::string name, int option, unsigned duration_ms)
+                   std::string name, CommandOption option, unsigned duration_ms)
 {
+    const int stored = static_cast<int>(option);
     if (!can_apply(effects) || !recorded(source, name) ||
-            option < 1 || option > 4 || !duration_ms || duration_ms > 2 * round_ms)
+            stored < 1 || stored > 4 || !duration_ms || duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid Command application");
     // A newer Command replaces an earlier one.
     std::erase_if(effects.active, [](const auto & e)
@@ -448,7 +449,7 @@ void apply_command(EffectState &effects, EffectSource source,
         return e.kind == EffectKind::command;
     });
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
-                              EffectKind::command, option, duration_ms, 0});
+                              EffectKind::command, stored, duration_ms, 0});
 }
 
 const Effect *command_effect(const EffectState &effects)
