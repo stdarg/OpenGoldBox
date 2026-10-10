@@ -181,7 +181,11 @@ void saving_throws()
                             false, true
                         })
                 {
-                    const auto actual = fx::attack_modifiers(a, t, dodge, other);
+                    const auto actual = fx::attack_modifiers(fx::AttackConditions{
+                        .attacker_blind = a,
+                        .target_blind = t,
+                        .target_dodging = dodge,
+                        .other_disadvantage = other});
                     check(actual.mode() == int(t) - int(a || (dodge && !t) || other),
                           "Complete attack modifier truth table");
                 }

@@ -136,7 +136,7 @@ struct SpellDef
     SpellTarget target{};
     int range{}; // feet
     bool bonus_action{};
-    bool melee{};                    // passes ranged=false to attack()
+    bool melee{};                    // a melee spell attack, not a ranged one
     bool requires_sight{};           // gated on can_see()
     bool requires_effect_capacity{}; // gated on can_apply()
     Ability save{Ability::strength}; // save patterns only

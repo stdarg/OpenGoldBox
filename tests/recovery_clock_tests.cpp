@@ -110,7 +110,7 @@ void golden_transitions()
     check(!state.stable && !state.dead && state.failures == 1 &&
           state.recovery == life::RecoveryClock{6000, 0},
           "Damage at zero HP ends Stable, adds a failure and cancels natural recovery");
-    life::damage_life(state, 1, 20, true);
+    life::damage_life(state, 1, 20, {.critical = true});
     check(state.dead && state.failures == 3 && state.recovery == life::RecoveryClock{},
           "A critical hit at zero HP adds two failures");
     const auto dead = state;

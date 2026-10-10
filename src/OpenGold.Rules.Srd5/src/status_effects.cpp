@@ -489,9 +489,11 @@ RollModifiers saving_modifiers(Ability ability, bool armor, bool dodge)
             armor && (ability == Ability::strength || ability == Ability::dexterity)};
 }
 
-RollModifiers attack_modifiers(bool attacker_blind, bool target_blind, bool dodging, bool other)
+RollModifiers attack_modifiers(const AttackConditions &conditions)
 {
-    return {target_blind, attacker_blind || (dodging && !target_blind) || other};
+    return {conditions.target_blind,
+            conditions.attacker_blind || (conditions.target_dodging && !conditions.target_blind) ||
+            conditions.other_disadvantage};
 }
 
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,

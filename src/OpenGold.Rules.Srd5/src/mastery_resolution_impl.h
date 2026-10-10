@@ -212,7 +212,7 @@ bool Session::use_effect(const Command &command)
         source.cleave_used = true;
         auto attacking = source;
         attacking.cleave_damage = true;
-        attack(attacking, actor(command.target), false);
+        attack(attacking, actor(command.target), AttackRange::melee);
         source.facing_left = attacking.facing_left;
     }
     else if (command.verb == "effect_push")

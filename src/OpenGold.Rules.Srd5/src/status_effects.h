@@ -306,8 +306,16 @@ bool has_effect(const EffectState &, EffectKind);
 // Aid's increase to the Hit Point maximum; Aid does not stack with itself.
 [[nodiscard]] int hit_point_bonus(const EffectState &);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);
-[[nodiscard]] RollModifiers attack_modifiers(bool attacker_blind, bool target_blind,
-        bool target_dodging, bool other_disadvantage);
+// What decides an attack roll's Advantage and Disadvantage. Four flags in a row
+// are easy to pass in the wrong order, so callers name each one.
+struct AttackConditions
+{
+    bool attacker_blind{};
+    bool target_blind{};
+    bool target_dodging{};
+    bool other_disadvantage{};
+};
+[[nodiscard]] RollModifiers attack_modifiers(const AttackConditions &conditions);
 // All subjects share one chronological event queue. Advancing 12 seconds once
 // must consume exactly the same rolls as advancing 1 second twelve times.
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,

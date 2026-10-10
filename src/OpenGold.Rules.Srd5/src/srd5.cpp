@@ -1524,6 +1524,22 @@ bool turns_to_attack(std::string_view verb)
     return spell && spell->target != detail::SpellTarget::wounded_ally;
 }
 
+// Named rather than a bool so a melee/ranged argument cannot be confused with
+// the other flags beside it at a call site.
+enum class AttackRange
+{
+    melee,
+    ranged
+};
+
+// What a spell attack deals; a weapon attack takes its damage from the weapon.
+struct SpellAttack
+{
+    Dice dice;
+    detail::DamageType type{};
+    int bursts{}; // how many extra d8s an 8 may add (Sorcerous Burst)
+};
+
 class Session final : public CombatSession
 {
   public:
@@ -2142,10 +2158,9 @@ class Session final : public CombatSession
     [[nodiscard]] bool charmed_by(const Actor &a, EntityId other) const;
     void strike_true(Actor &a, Actor &target, bool radiant);
     bool strikes_duplicate(const Actor &attacker, Actor &target);
-    // `bursts` is how many extra d8s an 8 may add (Sorcerous Burst).
-    bool attack(Actor &a, Actor &target, bool ranged, bool spell = false,
-                Dice spell_dice = {1, 10, 0},
-                detail::DamageType spell_type = detail::DamageType::fire, int bursts = 0);
+    // A weapon attack, or a spell attack when `spell` is given.
+    bool attack(Actor &a, Actor &target, AttackRange range,
+                const std::optional<SpellAttack> &spell = std::nullopt);
     detail::Mastery weapon_mastery(const Actor &, bool ranged) const;
     bool mastery_capacity(const Actor &, const Actor &, bool ranged) const;
     detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target, bool ranged,
@@ -2814,7 +2829,7 @@ void Session::remove_fled()
 void Session::torch_attack(Actor &a, Actor &target)
 {
     auto striker = thrown_actor(a, "torch");
-    attack(striker, target, false);
+    attack(striker, target, AttackRange::melee);
     a.aim_ready = striker.aim_ready;
 }
 
@@ -2867,7 +2882,7 @@ void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
 {
     auto attacker = thrown_actor(a, items_.at(token - 1).definition);
     attacker.light_damage = light;
-    attack(attacker, target, true, false);
+    attack(attacker, target, AttackRange::ranged);
     a.aim_ready = attacker.aim_ready;
     if (mastery_)
         mastery_->thrown_item = token;
@@ -3912,7 +3927,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         // Agonizing Blast adds the Charisma modifier to Eldritch Blast's damage.
         if (blast && d.agonizing_blast)
             rolled.bonus += d.casting - 2;
-        const bool struck = attack(a, target, !spell.melee, true, rolled, type, bursts);
+        const bool struck =
+            attack(a, target, spell.melee ? AttackRange::melee : AttackRange::ranged,
+                   SpellAttack{.dice = rolled, .type = type, .bursts = bursts});
         // Repelling Blast pushes a Large or smaller creature 10 feet away.
         if (struck && blast && d.repelling_blast && !target.life.dead && def(target).size <= 3)
             push_away(a, target, 2);
@@ -3940,7 +3957,8 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     case detail::SpellPattern::repeat_attack:
         // Re-read the target each pass: it may drop before the later rays.
         for (unsigned ray = 0; ray < instances && actor(target_id).life.hp > 0; ++ray)
-            attack(a, actor(target_id), !spell.melee, true, rolled, cast_damage_type(spell.damage));
+            attack(a, actor(target_id), spell.melee ? AttackRange::melee : AttackRange::ranged,
+                   SpellAttack{.dice = rolled, .type = cast_damage_type(spell.damage)});
         return;
     case detail::SpellPattern::auto_damage:
     {
@@ -4996,8 +5014,10 @@ void Session::damage(Actor &target, int amount, bool critical)
     if (!amount || target.life.dead)
         return;
     const bool standing = target.life.hp > 0;
-    detail::damage_life(target.life, amount, max_hp(target), critical,
-                        target.source.side == 1 && !def(target).regeneration);
+    const detail::DamageOptions options{
+        .critical = critical,
+        .dies_at_zero = target.source.side == 1 && !def(target).regeneration};
+    detail::damage_life(target.life, amount, max_hp(target), options);
     // Regeneration: damage never kills it and it makes no death saves; the start
     // of its next turn decides (regenerate).
     if (def(target).regeneration && target.life.hp == 0)
@@ -6357,11 +6377,11 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // Fog hides either creature from the other, as Blinded would.
     const bool attacker_fogged = obscured(a, a.source.cell) || obscured(a, target.source.cell);
     const bool target_fogged = obscured(target, a.source.cell) || obscured(target, target.source.cell);
-    auto result = detail::attack_modifiers(detail::blinded(a.effects) || attacker_fogged ||
-                                           unseen(a, target),
-                                           detail::blinded(target.effects) || target_fogged ||
-                                           unseen(target, a),
-                                           target.dodge, disadvantaged || a.effects.prone);
+    auto result = detail::attack_modifiers(detail::AttackConditions{
+        .attacker_blind = detail::blinded(a.effects) || attacker_fogged || unseen(a, target),
+        .target_blind = detail::blinded(target.effects) || target_fogged || unseen(target, a),
+        .target_dodging = target.dodge,
+        .other_disadvantage = disadvantaged || a.effects.prone});
     // At zero HP the creature is Unconscious and Prone (SRD pp.187,191).
     // At longer range their opposing attack modifiers cancel, not stack.
     const bool pack_tactics = !spell && d.pack_tactics && ally_beside(a, target);
@@ -6646,9 +6666,12 @@ int Session::keep_higher_savage_roll(Actor &a, int first, int second)
     return kept;
 }
 
-bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spell_dice,
-                     detail::DamageType spell_type, int bursts)
+bool Session::attack(Actor &a, Actor &target, AttackRange range,
+                     const std::optional<SpellAttack> &spell_attack)
 {
+    const bool ranged = range == AttackRange::ranged;
+    const bool spell = spell_attack.has_value();
+    const int bursts = spell ? spell_attack->bursts : 0;
     if (target.source.cell.x != a.source.cell.x)
         a.facing_left = target.source.cell.x < a.source.cell.x;
     if (sanctuary_stops(a, target))
@@ -6671,7 +6694,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
                  : ranged ? d.ranged_bonus
                  : d.melee_bonus) + blessing_die(a) +
                 (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
-    const auto damage_dice = spell ? spell_dice : weapon_dice(a, ranged);
+    const auto damage_dice = spell ? spell_attack->dice : weapon_dice(a, ranged);
     // Seeking Spell: a missed spell attack rolls its d20 again, once.
     if (spell && casting_with(Metamagic::seeking) && natural != 20 &&
             !attack_hits(natural, bonus, armor_class(target)))
@@ -6693,7 +6716,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         bonus -= cutting_words(a);
         hit = attack_hits(natural, bonus, armor_class(target));
     }
-    const auto damage_type = spell    ? spell_type
+    const auto damage_type = spell    ? spell_attack->type
                              : ranged ? d.ranged_type
                              : sacred_damage_type(a, target);
     // Shield cannot turn a critical hit into a miss, but Deflect Attacks can
@@ -6717,7 +6740,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
                : spell ? this->spell_dice(a, damage_dice, critical_hit(a, target, natural, spell))
                : dice(damage_dice, critical_hit(a, target, natural, spell));
     };
-    int weapon_damage = hit ? (bursts ? burst_damage(spell_dice, critical_hit(a, target, natural,
+    int weapon_damage = hit ? (bursts ? burst_damage(damage_dice, critical_hit(a, target, natural,
                                 spell), bursts)
                                : roll_damage())
                         : 0;
@@ -6917,7 +6940,7 @@ void Session::strike_true(Actor &a, Actor &target, bool radiant)
         d.melee_type = detail::DamageType::radiant;
     log(a.source.name + " casts True Strike.",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", "True Strike", true}}});
-    attack(striker, target, false);
+    attack(striker, target, AttackRange::melee);
     a.aim_ready = striker.aim_ready;
 }
 
@@ -8185,7 +8208,9 @@ void Session::dispatch(const Command &command)
             auto attacker = item_actor(a, command.item);
             attacker.light_damage = true;
             attack(attacker, actor(command.target),
-                   command.verb == "light_ranged" || command.verb == "nick_ranged");
+                   command.verb == "light_ranged" || command.verb == "nick_ranged"
+                   ? AttackRange::ranged
+                   : AttackRange::melee);
             a.aim_ready = attacker.aim_ready;
         }
     }
@@ -8271,7 +8296,7 @@ void Session::dispatch(const Command &command)
         for (int strike = 0; strike < 2 && actor(command.target).life.hp > 0; ++strike)
         {
             auto striker = unarmed_actor(a);
-            const bool hit = attack(striker, actor(command.target), false);
+            const bool hit = attack(striker, actor(command.target), AttackRange::melee);
             a.aim_ready = striker.aim_ready;
             if (hit && actor(command.target).life.hp > 0)
                 open_hand(a, actor(command.target), command.verb);
@@ -8317,8 +8342,9 @@ void Session::dispatch(const Command &command)
         a.nick_origin = 0;
         (void)a.actions.spend(true);
         end_sanctuary(a);
-        (void)attack(a, actor(command.target), false, true, {3, 6, def(a).casting - 2},
-                     detail::DamageType::fire);
+        (void)attack(a, actor(command.target), AttackRange::melee,
+                     SpellAttack{.dice = {3, 6, def(a).casting - 2},
+                                 .type = detail::DamageType::fire});
     }
     else if (command.verb.starts_with("wild_shape_"))
     {
@@ -8368,7 +8394,8 @@ void Session::dispatch(const Command &command)
         end_sanctuary(a);
         log(a.source.name + " hurls Produce Flame.",
         {"{name} hurls {spell}.", {{"name", a.source.name}, {"spell", "Produce Flame", true}}});
-        (void)attack(a, actor(command.target), true, true, {1, 8, 0}, detail::DamageType::fire);
+        (void)attack(a, actor(command.target), AttackRange::ranged,
+                     SpellAttack{.dice = {1, 8, 0}, .type = detail::DamageType::fire});
     }
     else if (command.verb == "bardic_inspiration")
     {
@@ -8393,7 +8420,7 @@ void Session::dispatch(const Command &command)
     {
         a.bonus = false;
         auto striker = unarmed_actor(a);
-        attack(striker, actor(command.target), false);
+        attack(striker, actor(command.target), AttackRange::melee);
         a.aim_ready = striker.aim_ready;
     }
     else if (command.verb == "rage")
@@ -8461,7 +8488,8 @@ void Session::dispatch(const Command &command)
         force.cells.front() = spectral_cell(target, force.cells.front());
         log(a.source.name + "'s Spiritual Weapon strikes.",
         {"{name}'s Spiritual Weapon strikes.", {{"name", a.source.name}}});
-        attack(a, target, false, true, {1, 8, d.casting - 2}, detail::DamageType::force);
+        attack(a, target, AttackRange::melee,
+               SpellAttack{.dice = {1, 8, d.casting - 2}, .type = detail::DamageType::force});
     }
     else if (command.verb == "horde_breaker")
     {
@@ -8469,7 +8497,8 @@ void Session::dispatch(const Command &command)
         auto &target = actor(command.target);
         log(a.source.name + " uses Horde Breaker.",
         {"{name} uses Horde Breaker.", {{"name", a.source.name}}});
-        attack(a, target, distance(a.source.cell, target.source.cell) > d.reach);
+        const bool beyond_reach = distance(a.source.cell, target.source.cell) > d.reach;
+        attack(a, target, beyond_reach ? AttackRange::ranged : AttackRange::melee);
     }
     else if (command.verb == "hunters_mark_free")
     {
@@ -8547,7 +8576,7 @@ void Session::dispatch(const Command &command)
         if (command.verb == "opportunity")
         {
             a.reaction = false;
-            attack(a, actor(command.target), false);
+            attack(a, actor(command.target), AttackRange::melee);
         }
         if (!champion_move_ && !graze_ && !effect_waiting())
             finish_reaction();
@@ -8641,7 +8670,7 @@ void Session::dispatch(const Command &command)
         else if (command.verb == "shoot")
         {
             auto shooter = thrown_actor(a, carried_ranged_weapon(a));
-            attack(shooter, actor(command.target), true);
+            attack(shooter, actor(command.target), AttackRange::ranged);
             a.aim_ready = shooter.aim_ready;
         }
         else if (const auto *gear = command.verb.starts_with("throw_")
@@ -8704,7 +8733,8 @@ void Session::dispatch(const Command &command)
                 // target while it stands.
                 const int attacks = command.verb == "melee" ? d.multiattack : 1;
                 for (int n = 0; n < attacks && actor(command.target).life.hp > 0; ++n)
-                    attack(a, actor(command.target), command.verb != "melee");
+                    attack(a, actor(command.target),
+                           command.verb == "melee" ? AttackRange::melee : AttackRange::ranged);
                 if (qualifies)
                     qualify_light(a, token);
             }

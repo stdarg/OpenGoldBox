@@ -213,7 +213,8 @@ void arithmetic()
     });
     damage::LifeState state{0, 0, 0, true, false, {0, 7200000}};
     const auto before = state;
-    damage::damage_life(state, resolve({{DamageType::fire, 1}}, {resist}).total, 20, true);
+    damage::damage_life(state, resolve({{DamageType::fire, 1}}, {resist}).total, 20,
+                        {.critical = true});
     check(state == before,
           "Damage reduced to zero neither ends Stable nor adds a critical death failure");
     state = {5, 0, 0, false, false, {}};

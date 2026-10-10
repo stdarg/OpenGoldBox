@@ -104,8 +104,8 @@ int death_save(LifeState &state, std::uint64_t &rng, bool can_heal)
 
 namespace
 {
-void apply_damage(LifeState &state, int damage, int hp_loss, int maximum_hp, bool critical,
-                  bool dies_at_zero)
+void apply_damage(LifeState &state, int damage, int hp_loss, int maximum_hp,
+                  DamageOptions options)
 {
     const bool was_zero = state.hp == 0;
     // A buffer prevents HP loss, not taking damage. At zero HP the original
@@ -117,10 +117,10 @@ void apply_damage(LifeState &state, int damage, int hp_loss, int maximum_hp, boo
     state.stable = false;
     state.recovery = {death_turn_ms, 0};
     if (was_zero)
-        state.failures += critical ? 2 : 1;
+        state.failures += options.critical ? 2 : 1;
     else
         state.successes = state.failures = 0;
-    if (dies_at_zero || remaining >= maximum_hp || state.failures >= 3)
+    if (options.dies_at_zero || remaining >= maximum_hp || state.failures >= 3)
     {
         state.dead = true;
         state.recovery = {};
@@ -128,7 +128,7 @@ void apply_damage(LifeState &state, int damage, int hp_loss, int maximum_hp, boo
 }
 } // namespace
 
-void damage_life(LifeState &state, int amount, int maximum_hp, bool critical, bool dies_at_zero)
+void damage_life(LifeState &state, int amount, int maximum_hp, DamageOptions options)
 {
     if (amount < 0 || maximum_hp < 1 || state.hp < 0 || state.hp > maximum_hp)
         throw std::runtime_error("Invalid damage");
@@ -139,7 +139,7 @@ void damage_life(LifeState &state, int amount, int maximum_hp, bool critical, bo
     state.temporary_hp.amount -= absorbed;
     if (!state.temporary_hp.amount)
         state.temporary_hp.source_id.clear();
-    apply_damage(state, amount, amount - absorbed, maximum_hp, critical, dies_at_zero);
+    apply_damage(state, amount, amount - absorbed, maximum_hp, options);
 }
 
 void set_life_hit_points(LifeState &state, int hp, int maximum_hp)
@@ -152,7 +152,7 @@ void set_life_hit_points(LifeState &state, int hp, int maximum_hp)
     if (hp > state.hp)
         (void)heal_life(state, hp - state.hp, maximum_hp);
     else
-        apply_damage(state, state.hp - hp, state.hp - hp, maximum_hp, false, false);
+        apply_damage(state, state.hp - hp, state.hp - hp, maximum_hp, {});
 }
 
 int heal_life(LifeState &state, int amount, int maximum_hp, bool can_heal)

@@ -103,7 +103,7 @@ void golden_life()
     }
     life::LifeState s{0, 0, 0, true, false, {0, 7200000}, {20, "trait:adrenaline_rush"}};
     const auto stable = s;
-    life::damage_life(s, 0, 10, true);
+    life::damage_life(s, 0, 10, {.critical = true});
     check(s == stable, "Zero resolved damage leaves pool, Stable and timer untouched");
     life::damage_life(s, 1, 10);
     check(
@@ -111,7 +111,7 @@ void golden_life()
         s.recovery.death_save_in_ms == 6000,
         "Taking damage at zero HP still ends Stable and causes a failure even when the buffer absorbs it");
     s = stable;
-    life::damage_life(s, 1, 10, true);
+    life::damage_life(s, 1, 10, {.critical = true});
     check(s.failures == 2 && s.temporary_hp.amount == 19,
           "A buffered critical at zero HP causes two failures");
     s = stable;
