@@ -246,6 +246,56 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_slums_ui_audit PROPERTIES
         FIXTURES_REQUIRED "godot_project;playtest_fixtures"
         TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # Character-creation screens with original files; skipped without OPENGOLD_GAME_DIR.
+    # Each keeps its Godot user data under WORK (see original_view_check.cmake).
+    function(opengold_creation_check name expected)
+        add_test(NAME "opengold_godot_creation_${name}" COMMAND "${CMAKE_COMMAND}"
+            "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}" "-DEXPECTED=${expected}"
+            "-DWORK=${CMAKE_BINARY_DIR}/creation-checks/${name}" ${ARGN}
+            -P "${PROJECT_SOURCE_DIR}/tests/original_view_check.cmake")
+        set_tests_properties("opengold_godot_creation_${name}" PROPERTIES
+            FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot RESOURCE_LOCK godot_project
+            SKIP_REGULAR_EXPRESSION "Skipped: ")
+    endfunction()
+    opengold_creation_check(character "Godot C++ character check passed" -DCHECK_FLAG=--character-check)
+    # The party check saves a campaign that the restart check then loads.
+    opengold_creation_check(party "Godot party check passed"
+        -DCHECK_FLAG=--party-check "-DARGS=--save-check-write"
+        "-DWORK=${CMAKE_BINARY_DIR}/creation-checks/saves")
+    set_tests_properties(opengold_godot_creation_party PROPERTIES FIXTURES_SETUP creation_save)
+    opengold_creation_check(save_read "Godot campaign restart check passed"
+        -DCHECK_FLAG=--save-check-read -DKEEP_WORK=ON
+        "-DWORK=${CMAKE_BINARY_DIR}/creation-checks/saves")
+    set_tests_properties(opengold_godot_creation_save_read PROPERTIES
+        FIXTURES_REQUIRED "godot_project;creation_save")
+    opengold_creation_check(advancement "Godot advancement passed" -DCHECK_FLAG=--advancement-check)
+    opengold_creation_check(equipment_art "Equipment artwork checks passed"
+        -DCHECK_FLAG=--equipment-art-check)
+    opengold_creation_check(defeat "Godot defeat check passed" -DCHECK_FLAG=--defeat-check)
+    opengold_creation_check(expedition "Godot expedition passed" -DCHECK_FLAG=--expedition-check)
+    opengold_creation_check(training "Training UI checks passed" -DSCRIPT=training_view_tests)
+    opengold_creation_check(portrait_fallback "Portrait fallback checks passed"
+        -DSCRIPT=portrait_fallback_tests)
+    opengold_creation_check(handoff "Combat handoff checks passed" -DSCRIPT=combat_handoff_tests)
+    # Reads rendered pixels, so it needs a real window rather than --headless.
+    opengold_creation_check(goliath "Goliath game rendering checks passed"
+        -DSCRIPT=goliath_render_tests -DGRAPHICAL=ON)
+    opengold_creation_check(hands "Equipment hand view checks passed"
+        -DSCRIPT=equipment_hand_view_tests "-DARGS=--hands-fixture=${PROJECT_BINARY_DIR}/hands-ui.ogs")
+    set_tests_properties(opengold_godot_creation_hands PROPERTIES
+        FIXTURES_REQUIRED "godot_project;hands_fixtures")
+    foreach(klass cleric fighter paladin ranger rogue wizard)
+        opengold_creation_check(asi_${klass} "ASI controls passed" -DSCRIPT=asi_view_tests
+            "-DARGS=--style-class=${klass}\;--style-fixture=${PROJECT_BINARY_DIR}/asi-${klass}-ui.ogs")
+        set_tests_properties(opengold_godot_creation_asi_${klass} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;asi_fixtures")
+    endforeach()
+    foreach(klass fighter wizard)
+        opengold_creation_check(skilled_${klass} "Skilled controls passed" -DSCRIPT=skilled_view_tests
+            "-DARGS=--style-class=${klass}\;--style-fixture=${PROJECT_BINARY_DIR}/asi-${klass}-ui.ogs")
+        set_tests_properties(opengold_godot_creation_skilled_${klass} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;asi_fixtures")
+    endforeach()
 endif()
 
 # Godot exports the executable; the C++ game code is its GDExtension.
