@@ -673,15 +673,24 @@ unsigned CombatDemo::script_variable(std::uint16_t address) const
 
 namespace
 {
-std::optional<Command> run_for_edge(const CombatSession &session, const rules::Snapshot &state,
+std::optional<Command> run_for_edge(const rules::Snapshot &state,
                                     const std::vector<Command> &offered,
                                     const rules::CombatantView &active);
+// The demonstration AI's choice from what it reads of a fight: its state and
+// the commands open to it. It submits nothing, so it takes no session
+// (Effective C++ Item 32).
+Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered);
 } // namespace
 
 Command choose_demo_command(const CombatSession &session)
 {
-    const auto state = session.snapshot();
-    const auto offered = session.legal_commands();
+    return choose_from(session.snapshot(), session.legal_commands());
+}
+
+namespace
+{
+Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered)
+{
     if (offered.empty())
         throw std::runtime_error("No legal combat command");
     const auto &active = *std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -708,7 +717,7 @@ Command choose_demo_command(const CombatSession &session)
             return command;
     // A creature whose morale broke runs for the edge; cornered, it fights on.
     if (active.panicked && !state.reaction_pending)
-        if (const auto run = run_for_edge(session, state, offered, active))
+        if (const auto run = run_for_edge(state, offered, active))
             return *run;
     // Rank offered destinations by a geometric route around obstacles. Straight
     // distance alone can strand both sides on opposite corners of a wall.
@@ -1168,6 +1177,7 @@ Command choose_demo_command(const CombatSession &session)
             return command;
     return offered.front();
 }
+} // namespace
 
 namespace
 {
@@ -1176,7 +1186,7 @@ namespace
 // for the nearest edge; a panicked creature for the nearest edge square farther
 // from its opponents than from itself (the original sends it away from them).
 // Empty when no step gets it closer.
-std::optional<Command> run_for_edge(const CombatSession &session, const rules::Snapshot &state,
+std::optional<Command> run_for_edge(const rules::Snapshot &state,
                                     const std::vector<Command> &offered,
                                     const rules::CombatantView &active)
 {
@@ -1263,68 +1273,37 @@ std::optional<Command> run_for_edge(const CombatSession &session, const rules::S
     if (steps_to_edge(active.cell) > 0 && steps_to_edge(active.cell) < 1 << 20)
         if (const auto *dash = offer("dash"))
             return *dash;
-    (void)session;
     return std::nullopt;
 }
 } // namespace
 
 namespace
 {
-// The fight as a Quick member with magic off sees it: every command but its
-// spells. Only for choosing; it submits nothing.
-class WithoutSpells final : public CombatSession
+// The commands a Quick member with magic off chooses from: all but the active
+// creature's spells.
+std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Command> commands)
 {
-  public:
-    explicit WithoutSpells(const CombatSession &fight) : fight_(fight) {}
-
-    [[nodiscard]] Snapshot snapshot() const override
+    std::vector<std::string> spells;
+    for (const auto &a : state.combatants)
+        if (a.id == state.actor)
+            spells = a.spells;
+    std::erase_if(commands, [&](const auto & command)
     {
-        return fight_.snapshot();
-    }
-
-    [[nodiscard]] std::vector<Command> legal_commands() const override
-    {
-        const auto state = fight_.snapshot();
-        std::vector<std::string> spells;
-        for (const auto &a : state.combatants)
-            if (a.id == state.actor)
-                spells = a.spells;
-        auto commands = fight_.legal_commands();
-        std::erase_if(commands, [&](const auto & command)
+        return std::any_of(spells.begin(), spells.end(), [&](const auto & spell)
         {
-            return std::any_of(spells.begin(), spells.end(), [&](const auto & spell)
-            {
-                return command.verb == spell || command.verb.starts_with(spell + "_");
-            });
+            return command.verb == spell || command.verb.starts_with(spell + "_");
         });
-        return commands;
-    }
-
-    [[nodiscard]] std::vector<Cell> movement_reach(EntityId actor) const override
-    {
-        return fight_.movement_reach(actor);
-    }
-
-    bool submit(const Command &) override
-    {
-        throw std::logic_error("A filtered view of the fight takes no commands");
-    }
-
-    [[nodiscard]] std::string save() const override
-    {
-        return fight_.save();
-    }
-
-  private:
-    const CombatSession &fight_;
-};
+    });
+    return commands;
+}
 } // namespace
 
 Command choose_quick_command(const CombatSession &session, bool magic)
 {
     if (magic)
         return choose_demo_command(session);
-    return choose_demo_command(WithoutSpells(session));
+    const auto state = session.snapshot();
+    return choose_from(state, without_spells(state, session.legal_commands()));
 }
 
 Command choose_flee_command(const CombatSession &session)
@@ -1344,7 +1323,7 @@ Command choose_flee_command(const CombatSession &session)
     if (active == state.combatants.end() || active->side != 0 || !active->can_flee ||
             state.reaction_pending || end == offered.end())
         return choose_demo_command(session);
-    if (const auto run = run_for_edge(session, state, offered, *active))
+    if (const auto run = run_for_edge(state, offered, *active))
         return *run;
     return *end;
 }
