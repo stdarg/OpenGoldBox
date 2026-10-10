@@ -348,6 +348,12 @@ if(OPENGOLD_BUILD_TESTS)
             "-DARGS=--style-class=${klass}\;--style-fixture=${fixture}")
         set_tests_properties(opengold_godot_creation_style_${klass} PROPERTIES
             FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
+        # The same route with a Light weapon in hand.
+        opengold_original_check(creation_style_light_${klass}
+            "Fighting Style advancement UI checks passed" -DSCRIPT=style_advancement_view_tests
+            "-DARGS=--style-class=${klass}\;--style-fixture=${fixture}\;--style-light")
+        set_tests_properties(opengold_godot_creation_style_light_${klass} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
     endforeach()
 endif()
 
