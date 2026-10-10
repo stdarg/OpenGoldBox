@@ -1,5 +1,9 @@
 #ifndef OPENGOLD_RULES_H
 #define OPENGOLD_RULES_H
+// One header on purpose. RulesModule is the interface class that keeps rule
+// sets apart from their callers (Effective C++ Item 31), and it needs both the
+// combat and the character types, so splitting them would spare only about 10
+// of the 106 files that include this one (measured 2026-10-10).
 #include "opengold/message.h"
 #include "opengold/random_state.h"
 #include <chrono>
