@@ -16,15 +16,14 @@ text = "Slums event"
 text = "Restart"
 
 [node name="Turn" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.475, 0.839, 0.831, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"LabelTealText18"
 autowrap_mode = 2
 [node name="Roster" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
-theme_override_font_sizes/normal_font_size = 16
 scroll_active = true
 [node name="Prompt" type="Label" parent="."]
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"LabelText16"
 autowrap_mode = 2
 
 [node name="Move" type="Button" parent="."]
@@ -96,24 +95,22 @@ text = "Load combat"
 text = "Revisit event"
 
 [node name="Help" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"LabelMutedText14"
 autowrap_mode = 2
 text = "Teal: party | Orange: enemies\nStone: obstacle | Brown: difficult terrain\nSaving is available in training combat."
 
 [node name="LogHeader" type="Label" parent="."]
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"LabelText16"
 clip_text = true
 text_overrun_behavior = 3
 
 [node name="Log" type="RichTextLabel" parent="."]
-theme_override_font_sizes/normal_font_size = 16
+theme_type_variation = &"RichTextLabelText16"
 scroll_active = true
 scroll_following = true
 
 [node name="Footer" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"LabelMutedText14"
 text = "SRD 5.2.1 combat subset | Authored test arena | Original Slums dialogue and art load locally"
 
 [node name="BattlefieldScroll" type="ScrollContainer" parent="."]
@@ -128,14 +125,14 @@ mouse_filter = 2
 z_index = 10
 
 [node name="Details" type="Label" parent="HoverInfo"]
+theme_type_variation = &"LabelText16"
 mouse_filter = 2
-theme_override_font_sizes/font_size = 16
 
 [node name="Canvas" type="Control" parent="BattlefieldScroll"]
 mouse_filter = 2
 
 [node name="ZoomLevel" type="Label" parent="."]
-theme_override_font_sizes/font_size = 17
+theme_type_variation = &"LabelText17"
 vertical_alignment = 1
 text = "100%"
 
@@ -176,18 +173,18 @@ exclusive = true
 unresizable = true
 size = Vector2i(560, 290)
 
-[node name="Background" type="ColorRect" parent="TemporaryHP"]
+[node name="Background" type="Panel" parent="TemporaryHP"]
+theme_type_variation = &"DialogSurface"
 offset_right = 560.0
 offset_bottom = 290.0
-color = Color(0.07, 0.1, 0.125, 1)
 
 [node name="Text" type="Label" parent="TemporaryHP"]
+theme_type_variation = &"LabelText18"
 offset_left = 24.0
 offset_top = 20.0
 offset_right = 536.0
 offset_bottom = 213.0
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 18
 
 [node name="Keep" type="Button" parent="TemporaryHP"]
 offset_left = 24.0
@@ -204,60 +201,60 @@ offset_bottom = 270.0
 text = "Use new"
 
 [node name="PartyHP0" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
 scroll_active = false
 mouse_filter = 1
-theme_override_font_sizes/normal_font_size = 14
 
 [node name="PartyHP1" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
 scroll_active = false
 mouse_filter = 1
-theme_override_font_sizes/normal_font_size = 14
 
 [node name="PartyHP2" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
 scroll_active = false
 mouse_filter = 1
-theme_override_font_sizes/normal_font_size = 14
 
 [node name="PartyHP3" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
 scroll_active = false
 mouse_filter = 1
-theme_override_font_sizes/normal_font_size = 14
 
 [node name="PartyHP4" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
 scroll_active = false
 mouse_filter = 1
-theme_override_font_sizes/normal_font_size = 14
 
 [node name="PartyHP5" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
 scroll_active = false
 mouse_filter = 1
-theme_override_font_sizes/normal_font_size = 14
 
 [node name="PartyHP6" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
 scroll_active = false
 mouse_filter = 1
-theme_override_font_sizes/normal_font_size = 14
 
 [node name="PartyHP7" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText14"
 visible = false
 bbcode_enabled = true
 scroll_active = false
 mouse_filter = 1
-theme_override_font_sizes/normal_font_size = 14
 
 [node name="CunningActionLabel" type="Label" parent="."]
 visible = false
@@ -304,18 +301,18 @@ exclusive = true
 unresizable = true
 size = Vector2i(640, 340)
 
-[node name="Background" type="ColorRect" parent="TacticalMind"]
+[node name="Background" type="Panel" parent="TacticalMind"]
+theme_type_variation = &"DialogSurface"
 offset_right = 640.0
 offset_bottom = 340.0
-color = Color(0.07, 0.1, 0.125, 1)
 
 [node name="Text" type="Label" parent="TacticalMind"]
+theme_type_variation = &"LabelText18"
 offset_left = 24.0
 offset_top = 20.0
 offset_right = 616.0
 offset_bottom = 263.0
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 18
 
 [node name="Use" type="Button" parent="TacticalMind"]
 offset_left = 24.0

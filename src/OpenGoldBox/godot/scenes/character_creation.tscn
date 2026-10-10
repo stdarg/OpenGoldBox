@@ -9,33 +9,31 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Title" type="Label" parent="."]
+theme_type_variation = &"LabelText28Gold"
 text = "OPENGOLDBOX / Create a character"
-theme_override_font_sizes/font_size = 28
-theme_override_colors/font_color = Color(0.843, 0.706, 0.475, 1)
 
 [node name="Subtitle" type="Label" parent="."]
+theme_type_variation = &"LabelText17"
 text = "SRD 5.2.1 / Level 1"
-theme_override_font_sizes/font_size = 17
 
 [node name="Steps" type="Label" parent="."]
-theme_override_font_sizes/font_size = 17
+theme_type_variation = &"LabelText17"
 
 [node name="PageTitle" type="Label" parent="."]
-theme_override_font_sizes/font_size = 25
+theme_type_variation = &"LabelText25"
 
 [node name="Instructions" type="Label" parent="."]
+theme_type_variation = &"LabelText16"
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 16
 
 [node name="Choices" type="ItemList" parent="."]
+theme_type_variation = &"CreationChoices"
 max_columns = 2
 same_column_width = true
-theme_override_font_sizes/font_size = 20
 
 [node name="Description" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelTableGap16Text18"
 bbcode_enabled = true
-theme_override_constants/table_h_separation = 16
-theme_override_font_sizes/normal_font_size = 18
 
 [node name="GenderLabel" type="Label" parent="."]
 text = "Gender"
@@ -61,6 +59,7 @@ text = "Attribute"
 text = "Roll all six"
 
 [node name="SwapHint" type="Label" parent="."]
+theme_type_variation = &"CreationTargetHint"
 autowrap_mode = 2
 
 [node name="Name" type="LineEdit" parent="."]
@@ -135,11 +134,11 @@ text = "Start over"
 autowrap_mode = 2
 
 [node name="PreviewTitle" type="Label" parent="."]
+theme_type_variation = &"LabelText16"
 text = "CHARACTER PREVIEW"
-theme_override_font_sizes/font_size = 16
 
 [node name="PreviewName" type="Label" parent="."]
-theme_override_font_sizes/font_size = 22
+theme_type_variation = &"LabelText22"
 text_overrun_behavior = 3
 
 [node name="ReadyLabel" type="Label" parent="."]
@@ -151,132 +150,138 @@ text = "Action"
 horizontal_alignment = 1
 
 [node name="PreviewSummary" type="Label" parent="."]
+theme_type_variation = &"LabelText16"
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 16
 
 [node name="Footer" type="Label" parent="."]
+theme_type_variation = &"LabelText14"
 text = "Original game art + OpenGoldBox portraits / SRD 5.2.1"
-theme_override_font_sizes/font_size = 14
 
 [node name="Ability0" type="Button" parent="."]
+theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice0" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
-theme_override_font_sizes/normal_font_size = 16
 
 [node name="Score0" type="Button" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"ScoreNormal"
 
 [node name="Ability1" type="Button" parent="."]
+theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice1" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
-theme_override_font_sizes/normal_font_size = 16
 
 [node name="Score1" type="Button" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"ScoreNormal"
 
 [node name="Ability2" type="Button" parent="."]
+theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice2" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
-theme_override_font_sizes/normal_font_size = 16
 
 [node name="Score2" type="Button" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"ScoreNormal"
 
 [node name="Ability3" type="Button" parent="."]
+theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice3" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
-theme_override_font_sizes/normal_font_size = 16
 
 [node name="Score3" type="Button" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"ScoreNormal"
 
 [node name="Ability4" type="Button" parent="."]
+theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice4" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
-theme_override_font_sizes/normal_font_size = 16
 
 [node name="Score4" type="Button" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"ScoreNormal"
 
 [node name="Ability5" type="Button" parent="."]
+theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice5" type="RichTextLabel" parent="."]
+theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
-theme_override_font_sizes/normal_font_size = 16
 
 [node name="Score5" type="Button" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"ScoreNormal"
 
 [node name="Part0" type="Label" parent="."]
 text = "Weapon"
 
 [node name="Color0_0" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Color1_0" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Part1" type="Label" parent="."]
 text = "Body"
 
 [node name="Color0_1" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Color1_1" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Part2" type="Label" parent="."]
 text = "Hair / Face"
 
 [node name="Color0_2" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Color1_2" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Part3" type="Label" parent="."]
 text = "Shield"
 
 [node name="Color0_3" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Color1_3" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Part4" type="Label" parent="."]
 text = "Arms"
 
 [node name="Color0_4" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Color1_4" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Part5" type="Label" parent="."]
 text = "Legs"
 
 [node name="Color0_5" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Color1_5" type="Button" parent="."]
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ButtonText14"
 
 [node name="Palette0" type="Button" parent="."]
 
@@ -330,9 +335,9 @@ text = "Dice Rolls"
 horizontal_alignment = 0
 
 [node name="DiceHint" type="Label" parent="."]
+theme_type_variation = &"CreationHint"
 text = "Drag to the ability score of your choice."
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 
 [node name="BaseHeader" type="Label" parent="."]
 text = "Base"
@@ -355,52 +360,52 @@ text = "Color-2"
 horizontal_alignment = 1
 
 [node name="BonusScore0" type="Label" parent="."]
+theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 
 [node name="TotalScore0" type="Label" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"LabelText19"
 
 [node name="BonusScore1" type="Label" parent="."]
+theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 
 [node name="TotalScore1" type="Label" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"LabelText19"
 
 [node name="BonusScore2" type="Label" parent="."]
+theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 
 [node name="TotalScore2" type="Label" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"LabelText19"
 
 [node name="BonusScore3" type="Label" parent="."]
+theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 
 [node name="TotalScore3" type="Label" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"LabelText19"
 
 [node name="BonusScore4" type="Label" parent="."]
+theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 
 [node name="TotalScore4" type="Label" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"LabelText19"
 
 [node name="BonusScore5" type="Label" parent="."]
+theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 
 [node name="TotalScore5" type="Label" parent="."]
-theme_override_font_sizes/font_size = 19
+theme_type_variation = &"LabelText19"
 
 [node name="Party" type="Button" parent="."]
 text = "View party"
@@ -425,15 +430,15 @@ exclusive = true
 unresizable = true
 size = Vector2i(780, 680)
 
-[node name="Background" type="ColorRect" parent="ModifiersModal"]
-color = Color(0.07, 0.1, 0.125, 1)
+[node name="Background" type="Panel" parent="ModifiersModal"]
+theme_type_variation = &"DialogSurface"
 
 [node name="Title" type="Label" parent="ModifiersModal"]
-theme_override_font_sizes/font_size = 24
+theme_type_variation = &"LabelText24"
 
 [node name="Text" type="RichTextLabel" parent="ModifiersModal"]
+theme_type_variation = &"RichTextLabelText18"
 bbcode_enabled = true
-theme_override_font_sizes/normal_font_size = 18
 
 [node name="Close" type="Button" parent="ModifiersModal"]
 text = "Close"
@@ -450,11 +455,11 @@ exclusive = true
 unresizable = true
 size = Vector2i(780, 680)
 
-[node name="Background" type="ColorRect" parent="SavingThrowsModal"]
-color = Color(0.07, 0.1, 0.125, 1)
+[node name="Background" type="Panel" parent="SavingThrowsModal"]
+theme_type_variation = &"DialogSurface"
 
 [node name="Title" type="Label" parent="SavingThrowsModal"]
-theme_override_font_sizes/font_size = 24
+theme_type_variation = &"LabelText24"
 
 [node name="DCLabel" type="Label" parent="SavingThrowsModal"]
 text = "Target DC"
@@ -465,8 +470,8 @@ max_length = 3
 select_all_on_focus = true
 
 [node name="Text" type="RichTextLabel" parent="SavingThrowsModal"]
+theme_type_variation = &"RichTextLabelText18"
 bbcode_enabled = true
-theme_override_font_sizes/normal_font_size = 18
 
 [node name="Close" type="Button" parent="SavingThrowsModal"]
 text = "Close"
@@ -478,12 +483,12 @@ exclusive = true
 unresizable = true
 size = Vector2i(1000, 680)
 
-[node name="Background" type="ColorRect" parent="PoolModal"]
-color = Color(0.07, 0.1, 0.125, 1)
+[node name="Background" type="Panel" parent="PoolModal"]
+theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="PoolModal"]
+theme_type_variation = &"RichTextLabelText17"
 bbcode_enabled = true
-theme_override_font_sizes/normal_font_size = 17
 
 [node name="Close" type="Button" parent="PoolModal"]
 text = "Close"
@@ -495,12 +500,12 @@ exclusive = true
 unresizable = true
 size = Vector2i(1000, 680)
 
-[node name="Background" type="ColorRect" parent="TownSheet"]
-color = Color(0.07, 0.1, 0.125, 1)
+[node name="Background" type="Panel" parent="TownSheet"]
+theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="TownSheet"]
+theme_type_variation = &"RichTextLabelText17"
 bbcode_enabled = true
-theme_override_font_sizes/normal_font_size = 17
 
 [node name="Close" type="Button" parent="TownSheet"]
 text = "Close"
@@ -509,11 +514,11 @@ text = "Close"
 text = "Make leader"
 
 [node name="List" type="ItemList" parent="PoolModal"]
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"ItemListText16"
 
 [node name="Title" type="Label" parent="PoolModal"]
+theme_type_variation = &"LabelText23"
 text = "Character Pool / 48 level-one characters"
-theme_override_font_sizes/font_size = 23
 
 [node name="Add" type="Button" parent="PoolModal"]
 text = "Add to party"
@@ -537,10 +542,11 @@ stretch_mode = 5
 texture_filter = 1
 
 [node name="TargetsTitle" type="Label" parent="."]
+theme_type_variation = &"LabelText16"
 text = "Target class(es)"
-theme_override_font_sizes/font_size = 16
 
 [node name="Targets" type="ScrollContainer" parent="."]
+theme_type_variation = &"TargetPanel"
 horizontal_scroll_mode = 0
 follow_focus = true
 
@@ -549,90 +555,90 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="TargetHint" type="Label" parent="."]
+theme_type_variation = &"CreationTargetHint"
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 13
 text = "Future goals only. Choose one starting class next. Later Ability Score Improvements can raise scores to help you qualify."
 
 [node name="Class0" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class1" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class2" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class3" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class4" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class5" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class6" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class7" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class8" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class9" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class10" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Class11" type="CheckBox" parent="Targets/Rows"]
+theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 
 [node name="Warning0" type="Label" parent="."]
+theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 11
 text = "Does not meet targeted class requirements"
 
 [node name="Warning1" type="Label" parent="."]
+theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 11
 text = "Does not meet targeted class requirements"
 
 [node name="Warning2" type="Label" parent="."]
+theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 11
 text = "Does not meet targeted class requirements"
 
 [node name="Warning3" type="Label" parent="."]
+theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 11
 text = "Does not meet targeted class requirements"
 
 [node name="Warning4" type="Label" parent="."]
+theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 11
 text = "Does not meet targeted class requirements"
 
 [node name="Warning5" type="Label" parent="."]
+theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 11
 text = "Does not meet targeted class requirements"

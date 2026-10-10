@@ -1228,7 +1228,7 @@ void CharacterCreationView::setup_defeat()
     title->set_text(i18n::text(N_("Your party has been defeated.")));
     title->set_position(Vector2(24, 30));
     title->set_size(Vector2(472, 44));
-    title->add_theme_font_size_override("font_size", 24);
+    title->set_theme_type_variation("PartyPreviewTitle");
     presentation::attach_child(*dialog, std::move(title));
     auto body = presentation::make_node<Label>();
     body->set_text(i18n::text(N_("Load a saved game to continue.")));

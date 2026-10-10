@@ -14,7 +14,6 @@
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
-#include <godot_cpp/classes/style_box_flat.hpp>
 #include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -57,19 +56,7 @@ void ScreenshotService::_ready()
     auto *panel = presentation::add_control<PanelContainer>(*canvas, "Notice", {});
     panel->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
     panel->hide();
-    Ref<StyleBoxFlat> style;
-    style.instantiate();
-    style->set_bg_color(Color(.04, .05, .08, .96));
-    for (auto side :
-            {
-                SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM
-            })
-    {
-        style->set_content_margin(side, 14);
-        style->set_border_width(side, 1);
-    }
-    style->set_border_color(Color(.7, .6, .4));
-    panel->add_theme_stylebox_override("panel", style);
+    panel->set_theme_type_variation("ScreenshotNotice");
     auto *label = presentation::add_control<Label>(*panel, "Text", {});
     label->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
     label->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);

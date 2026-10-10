@@ -9,12 +9,11 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Title" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.843, 0.706, 0.475, 1)
-theme_override_font_sizes/font_size = 27
+theme_type_variation = &"LabelGoldText27"
 text = "OPENGOLDBOX / Turn-based combat"
 
 [node name="Subtitle" type="Label" parent="."]
-theme_override_font_sizes/font_size = 17
+theme_type_variation = &"LabelText17"
 text = "SRD 5.2.1 / Fixed combat profiles\nChoose an action, then click its target. Enter ends your turn."
 
 [node name="Training" type="Button" parent="."]
@@ -25,14 +24,13 @@ text = "Slums event"
 text = "Restart"
 
 [node name="Turn" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.475, 0.839, 0.831, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"LabelTealText18"
 autowrap_mode = 2
 [node name="Roster" type="RichTextLabel" parent="."]
-theme_override_font_sizes/normal_font_size = 16
+theme_type_variation = &"RichTextLabelText16"
 scroll_active = true
 [node name="Prompt" type="Label" parent="."]
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"LabelText16"
 autowrap_mode = 2
 
 [node name="Move" type="Button" parent="."]
@@ -83,18 +81,16 @@ text = "Load combat"
 text = "Revisit event"
 
 [node name="Help" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"LabelMutedText14"
 autowrap_mode = 2
 text = "Teal: party | Orange: enemies\nStone: obstacle | Brown: difficult terrain\nSaving is available in training combat."
 
 [node name="Log" type="RichTextLabel" parent="."]
-theme_override_font_sizes/normal_font_size = 16
+theme_type_variation = &"RichTextLabelText16"
 scroll_active = true
 
 [node name="Footer" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"LabelMutedText14"
 text = "SRD 5.2.1 combat subset | Authored test arena | Original Slums dialogue and art load locally"
 
 [node name="CunningActionLabel" type="Label" parent="."]
@@ -131,18 +127,18 @@ exclusive = true
 unresizable = true
 size = Vector2i(640, 340)
 
-[node name="Background" type="ColorRect" parent="TacticalMind"]
+[node name="Background" type="Panel" parent="TacticalMind"]
+theme_type_variation = &"DialogSurface"
 offset_right = 640.0
 offset_bottom = 340.0
-color = Color(0.07, 0.1, 0.125, 1)
 
 [node name="Text" type="Label" parent="TacticalMind"]
+theme_type_variation = &"LabelText18"
 offset_left = 24.0
 offset_top = 20.0
 offset_right = 616.0
 offset_bottom = 263.0
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 18
 
 [node name="Use" type="Button" parent="TacticalMind"]
 offset_left = 24.0

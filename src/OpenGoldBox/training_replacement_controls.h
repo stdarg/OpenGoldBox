@@ -32,11 +32,11 @@ godot::Window *setup_training_replacement(godot::Node &parent, const godot::Call
     auto rows = make_node<VBoxContainer>();
     rows->set_name("Rows");
     rows->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-    rows->add_theme_constant_override("separation", 8);
+    rows->set_theme_type_variation("TrainingReplacementRows");
     attach_child(*scroll, std::move(rows));
     auto *error = add_control<Label>(*w, "Error", Rect2(24, 548, 652, 55));
     error->set("autowrap_mode", 3);
-    error->add_theme_font_size_override("font_size", 14);
+    error->set_theme_type_variation("TrainingPending");
     auto *cancel = add_control<Button>(*w, "Cancel", Rect2(280, 614, 150, 40));
     cancel->set_text(tr(N_("Keep current")));
     cancel->connect("pressed", keep);

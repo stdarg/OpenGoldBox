@@ -393,14 +393,7 @@ void CombatView::_ready()
     auto *hover = &required_node<PanelContainer>(*this, "HoverInfo");
     hover->set_custom_minimum_size(Vector2(260, 88));
     hover->set_size(Vector2(260, 88));
-    Ref<StyleBoxFlat> hover_style;
-    hover_style.instantiate();
-    hover_style->set_bg_color(Color(.06, .09, .12, .97));
-    hover_style->set_border_color(Color(.48, .66, .68));
-    hover_style->set_border_width_all(1);
-    hover_style->set_corner_radius_all(4);
-    hover_style->set_content_margin_all(10);
-    hover->add_theme_stylebox_override("panel", hover_style);
+    hover->set_theme_type_variation("CombatHover");
     presentation::setup_nick(
         *this, i18n::text, presentation::guarded(this, &CombatView::begin_nick),
         presentation::guarded(this, &CombatView::nick_selected), presentation::guarded(this, &CombatView::confirm_nick),
@@ -2740,19 +2733,22 @@ void CombatView::report_failure(const std::exception &failure)
 
 void CombatView::draw_view()
 {
-    draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
-    draw_rect(board_rect_, Color("202d33"));
+    draw_rect(Rect2(Vector2(), get_size()), get_theme_color("background", "OpenGoldPalette"));
+    draw_rect(board_rect_, get_theme_color("combat_board", "OpenGoldPalette"));
     if (!campaign_ || !demo_ || !demo_->has_combat())
         return;
     const auto &snapshot = demo_.snapshot();
     const auto font = get_theme_default_font();
+    const int name_size = get_theme_constant("combat_name_font_size", "OpenGoldMetrics");
+    const int detail_size = get_theme_constant("combat_detail_font_size", "OpenGoldMetrics");
+    const int quick_size = get_theme_constant("combat_quick_font_size", "OpenGoldMetrics");
     const double right = get_size().x - 382, row_height = (get_size().y - 120) / 8.0;
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         const auto id = campaign_->state().slots[slot];
         const double top = 60 + slot * row_height;
         const Rect2 row(right, top, 358, row_height - 4);
-        draw_rect(row, id && id == selected_ ? Color("344950") : Color("1b282e"));
+        draw_rect(row, id && id == selected_ ? get_theme_color("combat_row_selected", "OpenGoldPalette") : get_theme_color("combat_row", "OpenGoldPalette"));
         if (!id)
             continue;
         const auto &member = campaign_->member(id);
@@ -2767,17 +2763,19 @@ void CombatView::draw_view()
                             : found->max_hit_points;
         const double size = std::min(64.0, row_height - 18), portrait_y = top + 4;
         const Rect2 image_rect(right + 5, portrait_y, size, size);
-        draw_rect(image_rect, Color("10171c"));
+        draw_rect(image_rect, get_theme_color("creation_field", "OpenGoldPalette"));
         if (const auto portrait = portraits_.find(id); portrait != portraits_.end())
             draw_texture_rect(portrait->second, image_rect, false);
         else if (const auto sprite = art_.find(id); sprite != art_.end())
             draw_texture_rect(sprite->second.texture, image_rect, false);
-        draw_rect(Rect2(right + 5, portrait_y + size + 2, size, 5), Color("37191d"));
+        draw_rect(Rect2(right + 5, portrait_y + size + 2, size, 5), get_theme_color("combat_hp_track", "OpenGoldPalette"));
         draw_rect(Rect2(right + 5, portrait_y + size + 2,
                         size * std::clamp(static_cast<double>(hp) / std::max(1, maximum),
                                           0.0, 1.0),
                         5),
-                  Color(presentation::hp_color(hp, maximum)));
+                  get_theme_color(hp <= 0 || static_cast<std::int64_t>(hp) * 5 <= maximum
+                                      ? "score_negative" : hp < maximum ? "score_positive" : "hp_full",
+                                  "OpenGoldPalette"));
         const double text_x = right + 82;
         const auto line = [&](String value, double y, int size, Color color)
         {
@@ -2786,26 +2784,27 @@ void CombatView::draw_view()
                 cursor.x +=
                     font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(value.unicode_at(i)), size, color);
         };
-        line(gs(member.character.sheet().name), top + 27, 17, Color("e2edf0"));
+        line(gs(member.character.sheet().name), top + 27, name_size,
+             get_theme_color("combat_name", "OpenGoldPalette"));
         // A gold tag marks a member the computer plays (Quick).
         if (is_quick(id))
         {
             const Rect2 tag(right + 358 - 74, top + 8, 64, 22);
-            draw_rect(tag, Color("3a2f12"));
-            draw_rect(tag, Color("d8b24a"), false, 1);
+            draw_rect(tag, get_theme_color("combat_quick_bg", "OpenGoldPalette"));
+            draw_rect(tag, get_theme_color("combat_quick_border", "OpenGoldPalette"), false, 1);
             const String text = i18n::text(N_("QUICK"));
             double width = 0;
             for (int i = 0; i < text.length(); ++i)
-                width += font->get_char_size(static_cast<char32_t>(text.unicode_at(i)), 12).x;
+                width += font->get_char_size(static_cast<char32_t>(text.unicode_at(i)), quick_size).x;
             auto cursor = Vector2(tag.get_center().x - width / 2, top + 24);
             for (int i = 0; i < text.length(); ++i)
-                cursor.x += font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(text.unicode_at(i)), 12,
-                                            Color("f0cf6a"));
+                cursor.x += font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(text.unicode_at(i)), quick_size,
+                                            get_theme_color("combat_quick_text", "OpenGoldPalette"));
         }
         const auto &sheet = member.character.sheet();
         line(gs(sheet.character_class).capitalize() + " / " + gs(sheet.race).capitalize() + " / " +
              gs(sheet.gender).capitalize(),
-             top + 49, 13, Color("a8c1c7"));
+             top + 49, detail_size, get_theme_color("combat_detail", "OpenGoldPalette"));
     }
 }
 
@@ -2818,22 +2817,30 @@ void CombatView::draw_battlefield()
     const auto &s = demo_.snapshot();
     const double tile = base_tile_;
     const auto font = get_theme_default_font();
+    const int marker_size = get_theme_constant("combat_marker_font_size", "OpenGoldMetrics");
+    const int marker_advance = get_theme_constant("combat_marker_digit_advance", "OpenGoldMetrics");
+    const auto tint = [this](const char *name, float alpha)
+    {
+        auto color = get_theme_color(name, "OpenGoldPalette");
+        color.a = alpha;
+        return color;
+    };
     for (int y = 0; y < s.battlefield.height; ++y)
         for (int x = 0; x < s.battlefield.width; ++x)
         {
             const Rect2 cell(Vector2(x * tile, y * tile), Vector2(tile, tile));
             const auto terrain = s.battlefield.at({x, y});
-            canvas->draw_rect(cell, terrain == Terrain::obstacle ? Color("64716d")
+            canvas->draw_rect(cell, terrain == Terrain::obstacle ? get_theme_color("terrain_obstacle", "OpenGoldPalette")
                               : terrain == Terrain::difficult
-                              ? Color("665238")
-                              : ((x + y) % 2 ? Color("29373c") : Color("253137")));
+                              ? get_theme_color("terrain_difficult", "OpenGoldPalette")
+                              : ((x + y) % 2 ? get_theme_color("terrain_odd", "OpenGoldPalette") : get_theme_color("terrain_even", "OpenGoldPalette")));
             const auto index = y * s.battlefield.width + x;
             if (std::cmp_less(index, demo_->battlefield_tiles().size()) &&
                     demo_->battlefield_tiles()[index] < terrain_art_.size())
                 canvas->draw_texture_rect(terrain_art_[demo_->battlefield_tiles()[index]], cell,
                                           false);
             else
-                canvas->draw_rect(cell, Color("172228"), false);
+                canvas->draw_rect(cell, get_theme_color("terrain_missing", "OpenGoldPalette"), false);
         }
     const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
                                      [&](const auto & a)
@@ -2851,10 +2858,10 @@ void CombatView::draw_battlefield()
             for (const auto p : demo_->combat().movement_reach(selected_))
                 canvas->draw_rect(
                     Rect2(Vector2(p.x * tile + 1, p.y * tile + 1), Vector2(tile - 2, tile - 2)),
-                    Color(1, 1, 1, .18));
+                    tint("combat_reachable", .18));
         canvas->draw_rect(Rect2(Vector2(selected->cell.x * tile + 1, selected->cell.y * tile + 1),
                                 Vector2(tile - 2, tile - 2)),
-                          Color("e7c484"), false, 2.0);
+                          get_theme_color("combat_selected", "OpenGoldPalette"), false, 2.0);
     }
     if (active != s.combatants.end() && active->side == rules::Side::party && mode_ != "move")
         for (const auto &c : demo_->combat().legal_commands())
@@ -2869,7 +2876,7 @@ void CombatView::draw_battlefield()
                     canvas->draw_rect(
                         Rect2(Vector2(target->cell.x * tile + 1, target->cell.y * tile + 1),
                               Vector2(tile - 2, tile - 2)),
-                        Color(.4, .8, .75,
+                        tint("combat_target",
                               (mode_ == "stabilize" || mode_ == "throw" ||
                                (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
                               c.target == aid_target_
@@ -2879,27 +2886,27 @@ void CombatView::draw_battlefield()
     // Silence's squares, then Heavily Obscured ones such as Fog Cloud's.
     for (const auto cell : s.silenced)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          Color(.45, .5, .85, .25));
+                          tint("combat_silence", .25));
     // Spiritual Weapon's spectral force.
     for (const auto cell : s.spiritual_weapons)
         canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .3,
-                            Color(.95, .85, .4, .7));
+                            tint("combat_spiritual", .7));
     // Flaming Sphere's ball of fire.
     for (const auto cell : s.flaming_spheres)
         canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .4,
-                            Color(1, .45, .1, .8));
+                            tint("combat_flame", .8));
     // Moonbeam's pale light.
     for (const auto cell : s.moonbeams)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          Color(.85, .9, 1, .3));
+                          tint("combat_moonbeam", .3));
     for (const auto cell : s.obscured)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          Color(.78, .8, .82, .35));
+                          tint("combat_obscured", .35));
     if (s.area_targeting)
         for (const auto cell : s.area_targeting->cells)
             canvas->draw_rect(Rect2(Vector2(cell.x * tile + 1, cell.y * tile + 1),
                                     Vector2(tile - 2, tile - 2)),
-                              Color(.55, .8, .35, .38));
+                              tint("combat_area", .38));
     if (s.effect_targeting && active != s.combatants.end() && active->side == rules::Side::party)
     {
         unsigned index = 0;
@@ -2920,7 +2927,7 @@ void CombatView::draw_battlefield()
                 }
                 canvas->draw_rect(Rect2(Vector2(cell.x * tile + 1, cell.y * tile + 1),
                                         Vector2(tile - 2, tile - 2)),
-                                  Color(.4, .8, .75, index++ == effect_target_index_ ? .65 : .23));
+                                  tint("combat_target", index++ == effect_target_index_ ? .65 : .23));
             }
     }
     for (const auto index : presentation::combat_sprite_draw_order(s.combatants))
@@ -2955,18 +2962,19 @@ void CombatView::draw_battlefield()
                                   Rect2(Vector2(a.cell.x * tile, a.cell.y * tile), Vector2(tile, tile)),
                                   art.goliath && !unconscious);
             canvas->draw_texture_rect(texture, rect, false,
-                                      !a.conscious ? Color(.65, .65, .65) : Color(1, 1, 1));
+                                      !a.conscious ? get_theme_color("combat_unconscious", "OpenGoldPalette")
+                                      : get_theme_color("combat_reachable", "OpenGoldPalette"));
         }
         else
         {
             const auto number = std::to_string(a.id);
-            auto cursor = center + Vector2(-5.5 * number.size(), 7);
+            auto cursor = center + Vector2(-marker_advance * .5 * number.size(), 7);
             for (const char digit : number)
             {
-                canvas->draw_char(font, cursor, gs(std::string(1, digit)), 20,
-                                  a.side == rules::Side::party ? Color("79d6d4")
-                                  : Color("dd9874"));
-                cursor.x += 11;
+                canvas->draw_char(font, cursor, gs(std::string(1, digit)), marker_size,
+                                  a.side == rules::Side::party ? get_theme_color("combat_party", "OpenGoldPalette")
+                                  : get_theme_color("combat_enemy", "OpenGoldPalette"));
+                cursor.x += marker_advance;
             }
         }
     }

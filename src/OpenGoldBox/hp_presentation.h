@@ -1,15 +1,16 @@
 #ifndef OPENGOLD_HP_PRESENTATION_H
 #define OPENGOLD_HP_PRESENTATION_H
 #include "localization.h"
+#include "ui_palette.h"
 #include "opengold/rules.h"
 
 namespace presentation
 {
 inline godot::String hp_color(int hp, int maximum)
 {
-    return hp <= 0 || static_cast<std::int64_t>(hp) * 5 <= maximum ? "#f08080"
-           : hp < maximum                             ? "#f3d55b"
-           : "#80d99a";
+    const auto name = hp <= 0 || static_cast<std::int64_t>(hp) * 5 <= maximum
+                      ? "score_negative" : hp < maximum ? "score_positive" : "hp_full";
+    return "#" + palette_color(name).to_html(false);
 }
 
 inline godot::String bbcode_literal(const godot::String &value)
@@ -70,7 +71,7 @@ inline godot::String hp_text(int hp, int maximum, bool dead,
                               "Temporary HP from {source}. Absorbs damage before ordinary HP; does not heal or stack.",
         {{"source", temporary_hp_source(pool)}});
         text += "   " +
-                hp_hint_tag(hint, "[color=#80d99a]" +
+                hp_hint_tag(hint, "[color=#" + palette_color("hp_full").to_html(false) + "]" +
         i18n::format("Temp HP {amount}", {{"amount", pool.amount}}) +
         "[/color]");
     }

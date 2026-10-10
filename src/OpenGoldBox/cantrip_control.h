@@ -12,7 +12,7 @@ inline void setup_cantrip_controls(godot::Node &parent)
     auto box = make_node<godot::VBoxContainer>();
     box->set_name("Rows");
     box->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    box->add_theme_constant_override("separation", 12);
+    box->set_theme_type_variation("CantripRows");
     auto *rows = attach_child(*scroll, std::move(box));
     for (const char *name :
             {"Count", "Pending"

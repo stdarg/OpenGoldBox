@@ -9,7 +9,6 @@
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
-#include <godot_cpp/classes/style_box_flat.hpp>
 #include <algorithm>
 
 namespace presentation
@@ -121,28 +120,7 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
 
 inline void style_choice(godot::CheckBox &control)
 {
-    using namespace godot;
-    auto *check = &control;
-    for (const char *state :
-            {"normal", "hover", "pressed", "hover_pressed", "disabled", "focus"
-            })
-    {
-        Ref<StyleBoxFlat> style;
-        style.instantiate();
-        style->set_bg_color(
-            Color(state == std::string_view("pressed") || state == std::string_view("hover_pressed")
-                  ? "304851"
-                  : "19262e"));
-        style->set_border_color(Color(state == std::string_view("focus")   ? "ebcb80"
-                                      : state == std::string_view("hover") ? "b0c5cc"
-                                      : "506570"));
-        style->set_border_width_all(state == std::string_view("focus") ? 2 : 1);
-        style->set_corner_radius_all(3);
-        style->set_content_margin_all(7);
-        if (state == std::string_view("focus"))
-            style->set_draw_center(false);
-        check->add_theme_stylebox_override(state, style);
-    }
+    control.set_theme_type_variation("LevelUpChoice");
 }
 
 inline void setup_training_controls(godot::Node &parent)
@@ -150,14 +128,14 @@ inline void setup_training_controls(godot::Node &parent)
     auto *fixed = add_control<godot::RichTextLabel>(parent, "TrainingFixed", {});
     fixed->set_use_bbcode(true);
     fixed->set_auto_translate_mode(godot::Node::AUTO_TRANSLATE_MODE_DISABLED);
-    fixed->add_theme_font_size_override("normal_font_size", 14);
+    fixed->set_theme_type_variation("TrainingFixed");
     auto *scroll = add_control<godot::ScrollContainer>(parent, "Training", {});
     scroll->set_horizontal_scroll_mode(godot::ScrollContainer::SCROLL_MODE_DISABLED);
     scroll->set_follow_focus(true);
     auto owned = make_node<godot::VBoxContainer>();
     owned->set_name("Rows");
     owned->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    owned->add_theme_constant_override("separation", 12);
+    owned->set_theme_type_variation("TrainingRows");
     attach_child(*scroll, std::move(owned));
 }
 
@@ -193,7 +171,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             auto owned = make_node<VBoxContainer>();
             owned->set_name(name);
             box = attach_child(*rows, std::move(owned));
-            box->add_theme_constant_override("separation", 5);
+            box->set_theme_type_variation("TrainingGroup");
             auto label = make_node<Label>();
             label->set_name("Title");
             attach_child(*box, std::move(label));

@@ -45,10 +45,6 @@ using presentation::required_node;
 
 namespace
 {
-// Numeric constructors are safe before Godot initializes the extension interface.
-const Color background(18 / 255.f, 26 / 255.f, 32 / 255.f),
-      panel(28 / 255.f, 39 / 255.f, 46 / 255.f), line(65 / 255.f, 80 / 255.f, 88 / 255.f),
-      gold(215 / 255.f, 180 / 255.f, 121 / 255.f), party_color(121 / 255.f, 214 / 255.f, 212 / 255.f);
 const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0, 1),
     Vector2(-1, 0)};
 const std::array<const char *, 4> direction_name{"North", "East", "South", "West"};
@@ -1058,11 +1054,9 @@ void RolfTourView::refresh()
             continue;
         // While shopping, the buyer's row is drawn in gold; otherwise the leader's.
         const bool leader = id == campaign_->leader();
-        for (const char *color : {"font_color", "font_hover_color", "font_focus_color"})
-            if (shopping ? campaign_->state().selected_slot.index == slot : leader)
-                button->add_theme_color_override(color, gold);
-            else
-                button->remove_theme_color_override(color);
+        button->set_theme_type_variation(
+            (shopping ? campaign_->state().selected_slot.index == slot : leader)
+            ? "BuyerRow" : "ButtonText16");
         const auto &m = campaign_->member(id);
         const auto &cs = m.character.sheet();
         const auto name = (leader ? String::utf8("★ ") : String()) + String::utf8(cs.name.c_str());
@@ -1092,17 +1086,18 @@ void RolfTourView::refresh()
 
 void RolfTourView::_draw()
 {
-    draw_rect(Rect2(Vector2(), get_size()), background);
-    draw_line(Vector2(24, 57), Vector2(get_size().x - 24, 57), line);
-    draw_rect(dialogue_rect_, panel);
-    draw_rect(dialogue_rect_, line, false);
+    draw_rect(Rect2(Vector2(), get_size()), get_theme_color("background", "OpenGoldPalette"));
+    draw_line(Vector2(24, 57), Vector2(get_size().x - 24, 57),
+              get_theme_color("line", "OpenGoldPalette"));
+    draw_rect(dialogue_rect_, get_theme_color("panel", "OpenGoldPalette"));
+    draw_rect(dialogue_rect_, get_theme_color("line", "OpenGoldPalette"), false);
     draw_line(dialogue_rect_.position, dialogue_rect_.position + Vector2(dialogue_rect_.size.x, 0),
-              gold, 2);
-    draw_rect(map_rect_, Color(0, 0, 0));
+              get_theme_color("gold", "OpenGoldPalette"), 2);
+    draw_rect(map_rect_, get_theme_color("map_black", "OpenGoldPalette"));
     draw_scene();
     draw_map();
-    draw_rect(scene_rect_, line, false);
-    draw_rect(map_rect_, line, false);
+    draw_rect(scene_rect_, get_theme_color("line", "OpenGoldPalette"), false);
+    draw_rect(map_rect_, get_theme_color("line", "OpenGoldPalette"), false);
 }
 
 Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
@@ -1120,7 +1115,7 @@ Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
 
 void RolfTourView::draw_scene()
 {
-    draw_rect(scene_rect_, panel);
+    draw_rect(scene_rect_, get_theme_color("panel", "OpenGoldPalette"));
     if (!session_ || session_->snapshot().visited.none() || wall_view_.is_null())
         return;
     // Fit the complete original 88x88 view. DOS EGA pixels were displayed 6/5
@@ -1171,8 +1166,10 @@ void RolfTourView::draw_map()
             if (!no_fog_ && !s.seen.test(y * 16 + x))
                 continue;
             draw_rect(Rect2(origin, Vector2(cell, cell)),
-                      s.visited.test(y * 16 + x) ? Color("304747") : Color("253038"));
-            draw_rect(Rect2(origin, Vector2(cell, cell)), Color("1b252b"), false);
+                      get_theme_color(s.visited.test(y * 16 + x) ? "map_visited" : "map_seen",
+                                      "OpenGoldPalette"));
+            draw_rect(Rect2(origin, Vector2(cell, cell)),
+                      get_theme_color("map_grid", "OpenGoldPalette"), false);
             const auto &c = session_->map().at(x, y);
             const double inset = 1.3;
             const std::array<Vector2, 4> corners{origin + Vector2(inset, inset),
@@ -1182,10 +1179,12 @@ void RolfTourView::draw_map()
             for (unsigned d = 0; d < 4; ++d)
             {
                 if (c.walls[d])
-                    draw_line(corners[d], corners[(d + 1) % 4], Color("9ca8a7"), 1.5);
+                    draw_line(corners[d], corners[(d + 1) % 4],
+                              get_theme_color("map_wall", "OpenGoldPalette"), 1.5);
                 if (c.doors[d])
                     draw_line(corners[d].lerp(corners[(d + 1) % 4], .27),
-                              corners[d].lerp(corners[(d + 1) % 4], .73), gold, 3);
+                              corners[d].lerp(corners[(d + 1) % 4], .73),
+                              get_theme_color("gold", "OpenGoldPalette"), 3);
             }
         }
     const auto center =
@@ -1196,8 +1195,8 @@ void RolfTourView::draw_map()
     arrow.push_back(center - forward * cell * .3 + right * cell * .32);
     arrow.push_back(center - forward * cell * .16);
     arrow.push_back(center - forward * cell * .3 - right * cell * .32);
-    draw_circle(center, cell * .45, background);
-    draw_colored_polygon(arrow, party_color);
+    draw_circle(center, cell * .45, get_theme_color("background", "OpenGoldPalette"));
+    draw_colored_polygon(arrow, get_theme_color("party", "OpenGoldPalette"));
 }
 
 void RolfTourView::capture_frame(const String &name)
@@ -1222,9 +1221,10 @@ void RolfTourView::capture_frame(const String &name)
                     continue; // Party arrow covers its cell.
                 const auto center = get_global_transform_with_canvas().xform(
                                         map_rect_.position + Vector2((x + .5) * cell, (y + .5) * cell));
-                const auto expected = !no_fog_ && !state.seen.test(y * 16 + x) ? Color(0, 0, 0)
-                                      : state.visited.test(y * 16 + x)         ? Color("304747")
-                                      : Color("253038");
+                const auto expected = get_theme_color(
+                    !no_fog_ && !state.seen.test(y * 16 + x) ? "map_black"
+                    : state.visited.test(y * 16 + x) ? "map_visited" : "map_seen",
+                    "OpenGoldPalette");
                 if (!image->get_pixel(center.x, center.y).is_equal_approx(expected))
                     throw std::runtime_error("Overhead fog pixel mismatch at " + std::to_string(x) +
                                              "," + std::to_string(y));

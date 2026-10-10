@@ -309,7 +309,9 @@ void StartupView::show_screen()
     }
     auto *text = &required_node<TextureRect>(*this, "Text"); // scene-owned
     text->set_texture(lettering);
-    text->set_self_modulate(Color(1, 1, 1, 0));
+    auto tint = get_theme_color("startup_fade_tint", "OpenGoldPalette");
+    tint.a = 0;
+    text->set_self_modulate(tint);
     fade_elapsed_ = 0;
     set_process(true);
     layout_text();
@@ -320,8 +322,9 @@ void StartupView::_process(double delta)
     if (finishing_)
         return;
     fade_elapsed_ = std::min(text_fade_seconds, fade_elapsed_ + std::max(0.0, delta));
-    required_node<TextureRect>(*this, "Text").set_self_modulate(
-        Color(1, 1, 1, fade_elapsed_ / text_fade_seconds));
+    auto tint = get_theme_color("startup_fade_tint", "OpenGoldPalette");
+    tint.a = fade_elapsed_ / text_fade_seconds;
+    required_node<TextureRect>(*this, "Text").set_self_modulate(tint);
     if (fade_elapsed_ >= text_fade_seconds)
         set_process(false);
 }

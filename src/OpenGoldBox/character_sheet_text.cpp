@@ -37,8 +37,9 @@ String formatted_sheet(const Character &character, const PartyMember *member,
 {
     const auto &s = character.sheet();
     std::string text = i18n::formatted(
-                           "[font_size=24]{name}[/font_size]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n",
+                           "[font_size={title_size}]{name}[/font_size]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n",
     {
+        {"title_size", presentation::palette_metric("sheet_title_font_size")},
         {"name", gs(literal(s.name))},
         {"level", s.level},
         {"race", i18n::text(s.race)},
@@ -101,7 +102,8 @@ String formatted_sheet(const Character &character, const PartyMember *member,
             spells += gs(display(spell)) + "  ";
         text += "\n" + i18n::formatted("Prepared spells: {spells}", {{"spells", spells}});
     }
-    text += "\n[font_size=14]" + std::string(i18n::render(s.hp_messages).utf8().get_data()) +
+    text += "\n[font_size=" + std::to_string(presentation::palette_metric("sheet_note_font_size")) + "]" +
+            std::string(i18n::render(s.hp_messages).utf8().get_data()) +
             "[/font_size]";
     text += i18n::utf8(
                 "\n\n[table=3][cell][b]Attribute     [/b][/cell][cell][b]Score     [/b][/cell][cell][b]Saving throw[/b][/cell]");
@@ -112,7 +114,9 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         const auto colored =
             s.modifiers[ability] == 0
             ? score
-            : "[color=" + std::string(s.modifiers[ability] > 0 ? "#f3d55b" : "#f08080") + "]" +
+            : "[color=#" + std::string(presentation::palette_color(
+                s.modifiers[ability] > 0 ? "score_positive" : "score_negative")
+                .to_html(false).utf8().get_data()) + "]" +
             score + "[/color]";
         text += "[cell]" + i18n::utf8(i18n::ability_names[i]) + "[/cell][cell]" + colored +
                 "[/cell][cell]" + number(s.saving_throws[ability]) +

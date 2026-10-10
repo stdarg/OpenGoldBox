@@ -14,7 +14,7 @@ inline godot::VBoxContainer *spell_rows(godot::Node &parent, const godot::String
         auto owned = make_node<godot::VBoxContainer>();
         owned->set_name(name);
         owned->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-        owned->add_theme_constant_override("separation", 10);
+        owned->set_theme_type_variation("SpellRows");
         rows = attach_child(parent, std::move(owned));
     }
     return rows;
@@ -42,7 +42,6 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         if (level_up_theme)
         {
             section->set_theme_type_variation("LevelUpSpellSection");
-            section->remove_theme_constant_override("separation");
         }
         rows.move_child(section, position++);
         section->show();
@@ -72,7 +71,7 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
             if (level_up_theme)
                 pending->set_theme_type_variation("LevelUpPending");
             else
-                pending->add_theme_font_size_override("font_size", 14);
+                pending->set_theme_type_variation("TrainingPending");
         }
         pending->set_text(tr(N_("Unsupported choices remain pending.")));
         pending->set_visible(group.options.size() < group.count);
@@ -96,8 +95,9 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                 }
                 else
                 {
-                    box->set_custom_minimum_size(Vector2(0, 40));
                     style_choice(*box);
+                    box->set_custom_minimum_size(
+                        Vector2(0, box->get_theme_constant("row_height")));
                 }
                 box->set_focus_mode(Control::FOCUS_ALL);
                 box->connect("toggled",
@@ -164,7 +164,7 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     add_control<OptionButton>(*w, "With", Rect2(358, 550, 318, 36));
     auto *error = add_control<Label>(*w, "Error", Rect2(24, 595, 652, 40));
     error->set("autowrap_mode", 3);
-    error->add_theme_font_size_override("font_size", 14);
+    error->set_theme_type_variation("TrainingPending");
     auto *back = add_control<Button>(*w, "Cancel", Rect2(280, 644, 150, 40));
     back->set_text(tr(N_("Cancel")));
     back->connect("pressed", cancel);

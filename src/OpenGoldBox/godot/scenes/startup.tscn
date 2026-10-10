@@ -8,7 +8,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
+theme_type_variation = &"BlackSurface"
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -16,7 +17,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0, 0, 0, 1)
 
 [node name="Image" type="TextureRect" parent="."]
 layout_mode = 1
@@ -40,36 +40,34 @@ transient = true
 exclusive = true
 auto_translate_mode = 2
 
-[node name="Background" type="ColorRect" parent="LanguageDialog"]
+[node name="Background" type="Panel" parent="LanguageDialog"]
+theme_type_variation = &"StartupDialogSurface"
 offset_right = 560.0
 offset_bottom = 330.0
 mouse_filter = 2
-color = Color(0.0706, 0.102, 0.1255, 1)
 
 [node name="Title" type="Label" parent="LanguageDialog"]
+theme_type_variation = &"LabelHighlightText24"
 offset_left = 24.0
 offset_top = 18.0
 offset_right = 536.0
 offset_bottom = 56.0
-theme_override_colors/font_color = Color(0.9059, 0.7686, 0.4667, 1)
-theme_override_font_sizes/font_size = 24
 text = "Choose language"
 
 [node name="Choices" type="ItemList" parent="LanguageDialog"]
+theme_type_variation = &"ItemListText22RowGap18"
 offset_left = 24.0
 offset_top = 76.0
 offset_right = 536.0
 offset_bottom = 192.0
-theme_override_font_sizes/font_size = 22
-theme_override_constants/v_separation = 18
 allow_reselect = true
 
 [node name="Status" type="Label" parent="LanguageDialog"]
+theme_type_variation = &"LabelText15"
 offset_left = 24.0
 offset_top = 202.0
 offset_right = 536.0
 offset_bottom = 244.0
-theme_override_font_sizes/font_size = 15
 autowrap_mode = 3
 
 [node name="Continue" type="Button" parent="LanguageDialog"]
@@ -102,19 +100,19 @@ transient = true
 exclusive = true
 auto_translate_mode = 2
 
-[node name="Background" type="ColorRect" parent="PathDialog"]
+[node name="Background" type="Panel" parent="PathDialog"]
+theme_type_variation = &"StartupDialogSurface"
 offset_right = 760.0
 offset_bottom = 330.0
 mouse_filter = 2
-color = Color(0.0706, 0.102, 0.1255, 1)
 
 [node name="Title" type="Label" parent="PathDialog"]
+theme_type_variation = &"LabelText24"
 offset_left = 24.0
 offset_top = 16.0
 offset_right = 736.0
 offset_bottom = 58.0
 text = "Pool of Radiance game files"
-theme_override_font_sizes/font_size = 24
 
 [node name="Instructions" type="Label" parent="PathDialog"]
 offset_left = 24.0
@@ -140,12 +138,12 @@ text = "Browse..."
 
 
 [node name="Status" type="Label" parent="PathDialog"]
+theme_type_variation = &"LabelText16"
 offset_left = 24.0
 offset_top = 182.0
 offset_right = 736.0
 offset_bottom = 248.0
 autowrap_mode = 3
-theme_override_font_sizes/font_size = 16
 
 [node name="Cancel" type="Button" parent="PathDialog"]
 offset_left = 24.0
@@ -183,19 +181,19 @@ transient = true
 exclusive = true
 auto_translate_mode = 2
 
-[node name="Background" type="ColorRect" parent="ChecksumWarning"]
+[node name="Background" type="Panel" parent="ChecksumWarning"]
+theme_type_variation = &"StartupDialogSurface"
 offset_right = 760.0
 offset_bottom = 530.0
 mouse_filter = 2
-color = Color(0.0706, 0.102, 0.1255, 1)
 
 [node name="Title" type="Label" parent="ChecksumWarning"]
+theme_type_variation = &"LabelText24"
 offset_left = 24.0
 offset_top = 16.0
 offset_right = 736.0
 offset_bottom = 60.0
 text = "Game file warning"
-theme_override_font_sizes/font_size = 24
 
 [node name="Instructions" type="Label" parent="ChecksumWarning"]
 offset_left = 24.0

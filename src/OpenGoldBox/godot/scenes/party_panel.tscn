@@ -8,22 +8,21 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
+theme_type_variation = &"DialogSurface"
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.07, 0.1, 0.125, 1)
 
 [node name="Title" type="Label" parent="."]
+theme_type_variation = &"LabelText28"
 text = "OPENGOLDBOX / Party roster"
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 28
 
 [node name="Roster" type="ItemList" parent="."]
 
 [node name="Sheet" type="RichTextLabel" parent="."]
-theme_override_constants/table_h_separation = 16
-theme_override_font_sizes/normal_font_size = 18
+theme_type_variation = &"RichTextLabelTableGap16Text18"
 
 [node name="Inventory" type="ItemList" parent="."]
 
@@ -63,12 +62,12 @@ text = "Party combat"
 text = "Back to creator"
 
 [node name="Modifiers" type="Button" parent="."]
+theme_type_variation = &"ButtonText14"
 text = "Modifiers"
-theme_override_font_sizes/font_size = 14
 
 [node name="SavingThrows" type="Button" parent="."]
+theme_type_variation = &"ButtonText14"
 text = "Saving Throws"
-theme_override_font_sizes/font_size = 14
 
 [node name="ReadyLabel" type="Label" parent="."]
 text = "Ready"

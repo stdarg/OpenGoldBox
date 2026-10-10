@@ -20,8 +20,8 @@ horizontal_scroll_mode = 0
 follow_focus = true
 
 [node name="Rows" type="VBoxContainer" parent="SpellChoicesPage"]
+theme_type_variation = &"VBoxContainerGap10"
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
 
 [node name="SkilledCount" type="Label" parent="."]
 offset_left = 24.0
@@ -40,8 +40,8 @@ horizontal_scroll_mode = 0
 follow_focus = true
 
 [node name="Rows" type="VBoxContainer" parent="SkilledPage"]
+theme_type_variation = &"VBoxContainerGap10"
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
 
 [node name="Back" type="Button" parent="."]
 offset_left = 236.0
@@ -52,12 +52,12 @@ visible = false
 text = "Back"
 
 [node name="Title" type="Label" parent="."]
+theme_type_variation = &"LabelText24"
 offset_left = 24.0
 offset_top = 20.0
 offset_right = 676.0
 offset_bottom = 60.0
 clip_text = true
-theme_override_font_sizes/font_size = 24
 
 [node name="HP" type="Label" parent="."]
 offset_left = 24.0
@@ -203,19 +203,19 @@ offset_right = 676.0
 offset_bottom = 475.0
 
 [node name="Note" type="Label" parent="."]
+theme_type_variation = &"LabelText14"
 offset_left = 24.0
 offset_top = 489.0
 offset_right = 676.0
 offset_bottom = 555.0
-theme_override_font_sizes/font_size = 14
 autowrap_mode = 3
 
 [node name="Error" type="Label" parent="."]
+theme_type_variation = &"LabelText15"
 offset_left = 24.0
 offset_top = 560.0
 offset_right = 676.0
 offset_bottom = 594.0
-theme_override_font_sizes/font_size = 15
 
 [node name="Cancel" type="Button" parent="."]
 offset_left = 386.0

@@ -43,7 +43,7 @@ String gs(std::string_view s)
 void CharacterCreationView::setup_advancement()
 {
     required_node<ItemList>(*this, "PartyPanel/Roster")
-    .add_theme_constant_override("v_separation", 8);
+    .set_theme_type_variation("LevelUpRoster");
     const auto args = OS::get_singleton()->get_cmdline_user_args();
     advancement_check_ = args.has("--advancement-check") || args.has("--champion-creator");
     advancement_review_ = args.has("--level-up-review");
@@ -85,7 +85,7 @@ void CharacterCreationView::refresh_advancement_arrows()
             arrow->set_text(String::utf8("↑"));
             arrow->set_tooltip_text(
             i18n::format("Level up {name}", {{"name", gs(member.character.sheet().name)}}));
-            arrow->add_theme_font_size_override("font_size", 14);
+            arrow->set_theme_type_variation("PartyAdvance");
             arrow->connect(
                 "pressed",
                 presentation::guarded(this, &CharacterCreationView::open_advancement).bind(member.id));
