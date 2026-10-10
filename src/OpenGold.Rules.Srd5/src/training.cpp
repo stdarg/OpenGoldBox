@@ -294,7 +294,7 @@ std::vector<TrainingChoiceGroup> options(std::optional<CharacterClass> klass,
 }
 
 AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
-                                    const std::array<int, 6> &scores, unsigned level,
+                                    const AbilityArray<int> &scores, unsigned level,
                                     Ability ability, std::string_view skill)
 {
     require(ability_index(ability) < scores.size() && std::all_of(
@@ -313,7 +313,7 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
                expert_id = "expertise:" + std::string(skill);
     const bool trained_skill = !skill.empty() && source(grants, skill_id);
     AbilityCheckModifier result;
-    result.ability_modifier = modifier(scores[ability_index(ability)]);
+    result.ability_modifier = modifier(scores[ability]);
     result.expertise = trained_skill && source(grants, expert_id);
     result.proficiency = result.expertise ? pb * 2 : trained_skill ? pb : 0;
     result.total = result.ability_modifier + result.proficiency;
@@ -332,7 +332,7 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
         for (const auto &g : grants)
             if (g.id == "order:thaumaturge" && g.source_id == divine_order)
             {
-                result.total += std::max(1, modifier(scores[4]));
+                result.total += std::max(1, modifier(scores[Ability::wisdom]));
                 result.sources.push_back(g);
             }
     return result;
@@ -704,7 +704,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
 
 TrainingProfile training_profile(std::span<const FeatureGrant> grants, CharacterClass klass,
                                  std::string_view background, unsigned level,
-                                 const std::array<int, 6> &scores)
+                                 const AbilityArray<int> &scores)
 {
     const auto choices = training_choices(grants, klass, background);
     const auto groups = options(klass, background, choices);
@@ -760,7 +760,7 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
 
 AbilityCheckModifier ability_check(std::span<const FeatureGrant> grants, CharacterClass klass,
                                    std::string_view background, unsigned level,
-                                   const std::array<int, 6> &scores, Ability ability,
+                                   const AbilityArray<int> &scores, Ability ability,
                                    std::string_view skill)
 {
     (void)training_profile(grants, klass, background, level, scores);

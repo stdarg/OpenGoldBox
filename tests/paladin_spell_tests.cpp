@@ -131,7 +131,7 @@ void heroism_checks()
     check(submit(*c, "heroism", 2), "Heroism touches the ally");
     while (c->snapshot().actor != 2)
         check(submit(*c, "end"), "Reach the ally's turn");
-    const int charisma = hero.sheet().modifiers[5];
+    const int charisma = hero.sheet().modifiers[Ability::charisma];
     check(unit(*c, 2).temporary_hp.amount == std::max(0, charisma),
           "Heroism grants Temporary HP equal to the caster's spellcasting modifier");
 }

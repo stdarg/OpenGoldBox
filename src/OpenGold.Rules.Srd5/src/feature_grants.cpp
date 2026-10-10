@@ -11,8 +11,8 @@ namespace opengold::srd5::detail
 {
 namespace
 {
-constexpr std::array<std::string_view, 6> abilities{"strength",     "dexterity", "constitution",
-    "intelligence", "wisdom",    "charisma"};
+constexpr rules::AbilityArray<std::string_view> ability_ids{"strength", "dexterity",
+    "constitution", "intelligence", "wisdom", "charisma"};
 
 void require(bool value)
 {
@@ -103,9 +103,9 @@ rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
                                class_source(klass) + ":ability_score_improvement",
                                level,
                                {}};
-    for (unsigned i = 0; i < abilities.size(); ++i)
-        if (choice.abilities[i])
-            result.choices.emplace(abilities[i], std::to_string(choice.abilities[i]));
+    for (const auto ability : rules::all_abilities)
+        if (choice.abilities[ability])
+            result.choices.emplace(ability_ids[ability], std::to_string(choice.abilities[ability]));
     return result;
 }
 
@@ -293,10 +293,10 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                 unsigned points = 0;
                 for (const auto &[key, value] : grant.choices)
                 {
-                    const auto found = std::find(abilities.begin(), abilities.end(), key);
-                    require(found != abilities.end() && (value == "1" || value == "2"));
+                    const auto found = std::find(ability_ids.begin(), ability_ids.end(), key);
+                    require(found != ability_ids.end() && (value == "1" || value == "2"));
                     const auto amount = value == "1" ? 1 : 2;
-                    effects.abilities[found - abilities.begin()] += amount;
+                    effects.abilities[rules::all_abilities[found - ability_ids.begin()]] += amount;
                     points += amount;
                 }
                 require(points == 2);

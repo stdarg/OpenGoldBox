@@ -22,6 +22,86 @@ struct CharacterSheet;
 struct AbilityCheckModifier;
 struct FeatureGrant;
 
+// The six abilities, in the order of a sheet's score arrays, named so an
+// ability cannot be confused with a score, a count or an array position
+// (Effective C++ Item 18).
+enum class Ability : unsigned
+{
+    strength,
+    dexterity,
+    constitution,
+    intelligence,
+    wisdom,
+    charisma
+};
+
+// The position of an ability in a sheet's six-element arrays.
+[[nodiscard]] constexpr std::size_t ability_index(Ability ability) noexcept
+{
+    return static_cast<std::size_t>(ability);
+}
+
+// Every ability, in order, for loops that need to know which one they are on.
+inline constexpr std::array<Ability, 6> all_abilities
+{
+    Ability::strength,     Ability::dexterity, Ability::constitution,
+    Ability::intelligence, Ability::wisdom,    Ability::charisma};
+
+// One value per ability, reachable only by naming the Ability, so code such
+// as scores[2] cannot silently mean Constitution (Effective C++ Item 18).
+// Iteration still visits the abilities in order, as saves write them.
+template <class T> class AbilityArray
+{
+  public:
+    constexpr AbilityArray() = default;
+
+    constexpr AbilityArray(T strength, T dexterity, T constitution, T intelligence, T wisdom,
+                           T charisma)
+        : values_{strength, dexterity, constitution, intelligence, wisdom, charisma}
+    {
+    }
+
+    [[nodiscard]] constexpr T &operator[](Ability ability)
+    {
+        return values_[ability_index(ability)];
+    }
+
+    [[nodiscard]] constexpr const T &operator[](Ability ability) const
+    {
+        return values_[ability_index(ability)];
+    }
+
+    [[nodiscard]] constexpr auto begin()
+    {
+        return values_.begin();
+    }
+
+    [[nodiscard]] constexpr auto end()
+    {
+        return values_.end();
+    }
+
+    [[nodiscard]] constexpr auto begin() const
+    {
+        return values_.begin();
+    }
+
+    [[nodiscard]] constexpr auto end() const
+    {
+        return values_.end();
+    }
+
+    [[nodiscard]] static constexpr std::size_t size() noexcept
+    {
+        return 6;
+    }
+
+    bool operator==(const AbilityArray &) const = default;
+
+  private:
+    std::array<T, 6> values_{};
+};
+
 struct CreationChoice
 {
     std::string id, label, description;
@@ -85,7 +165,7 @@ struct SpellChoiceOptions
 struct AdvancementChoice
 {
     std::string feat;
-    std::array<unsigned, 6> abilities{};
+    AbilityArray<unsigned> abilities{}; // Ability Score Improvement points per ability
     std::vector<std::string> spells;
     TrainingChoices training;
     std::optional<std::string>
@@ -276,25 +356,6 @@ struct HitDieResult
     int roll{}, modifier{}, healing{};
     unsigned remaining{};
 };
-
-// The six abilities, in the order of a sheet's score arrays, named so an
-// ability cannot be confused with a score, a count or an array position
-// (Effective C++ Item 18).
-enum class Ability : unsigned
-{
-    strength,
-    dexterity,
-    constitution,
-    intelligence,
-    wisdom,
-    charisma
-};
-
-// The position of an ability in a sheet's six-element arrays.
-[[nodiscard]] constexpr std::size_t ability_index(Ability ability) noexcept
-{
-    return static_cast<std::size_t>(ability);
-}
 
 // One rolled d20 ability check: the kept die and the check total.
 struct AbilityCheckRoll

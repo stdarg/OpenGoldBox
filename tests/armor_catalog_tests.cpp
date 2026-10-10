@@ -198,15 +198,16 @@ void all_classes()
     for (const auto &[klass, trained] : training)
     {
         const auto h = hero(klass);
-        check(h.sheet().modifiers[1] == 3, "Fixed Dexterity +3 oracle");
+        check(h.sheet().modifiers[Ability::dexterity] == 3, "Fixed Dexterity +3 oracle");
         for (const auto &e : expectations())
         {
             const bool proficient = trained.find(e.category) != std::string::npos,
                   shield = e.category == "shield", penalty = !shield && !proficient;
             const std::array<std::string, 2> gear{e.key, "dagger"};
             const auto profile = rules->character_profile(h.sheet(), gear);
-            const int ac = shield ? 13 + (klass == "barbarian" ? h.sheet().modifiers[2] : 0) +
-                           (proficient ? 2 : 0)
+            const int unarmored_con =
+                klass == "barbarian" ? h.sheet().modifiers[Ability::constitution] : 0;
+            const int ac = shield ? 13 + unarmored_con + (proficient ? 2 : 0)
                            : e.ac + (e.category == "light"    ? 3
                                      : e.category == "medium" ? 2
                                      : 0);
@@ -274,7 +275,8 @@ void boundaries()
             {
                 const auto h = hero("fighter", 15, dex);
                 const int modifier = dex == 3 ? -4 : dex == 10 ? 0 : dex == 14 ? 2 : 4;
-                check(h.sheet().modifiers[1] == modifier, "Dexterity boundary fixture");
+                check(h.sheet().modifiers[Ability::dexterity] == modifier,
+                      "Dexterity boundary fixture");
                 const int added = e.category == "light"    ? modifier
                                   : e.category == "medium" ? std::min(2, modifier)
                                   : 0;

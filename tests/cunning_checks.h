@@ -82,7 +82,8 @@ void run()
         VitalState state{hp - 2};
         check(h.advance(*rules, state), "Normal Rogue advancement reaches level two");
         check(h.sheet().level == 2 && h.sheet().hit_die == 8 &&
-              h.sheet().hit_points == hp + 5 + h.sheet().modifiers[2] + (d.race == "dwarf") &&
+              h.sheet().hit_points == hp + 5 + h.sheet().modifiers[Ability::constitution] +
+                  (d.race == "dwarf") &&
               state.hit_points == h.sheet().hit_points - 2,
               "Independent d8 fixed-average growth preserves wounds");
         check(h.sheet().training.complete && h.sheet().hit_point_modifiers.size() == 2 &&

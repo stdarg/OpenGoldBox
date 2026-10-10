@@ -238,7 +238,7 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
             "Untrained armor: disadvantage on Strength/Dexterity attacks, checks (including initiative), and saves; cannot cast spells.";
     else
         text = "Untrained weapon: no proficiency bonus on attack rolls (no +2 at level 1).";
-    if (item == "chain_mail" && sheet.scores[0] < 13)
+    if (item == "chain_mail" && sheet.scores[Ability::strength] < 13)
         text += " Chain mail requires Strength 13: speed reduced by 10 feet.";
     if (item == "wand")
         text += " Plain focus only; no charged wand spell is granted.";
@@ -1002,7 +1002,7 @@ character_definition(std::string_view bytes,
         throw std::runtime_error("Character profile exceeds limit");
     std::istringstream in{std::string(bytes)};
     std::string magic, class_label, race;
-    std::array<int, 6> scores{};
+    AbilityArray<int> scores{};
     unsigned count{}, level{}, features{}, listed{};
     in >> magic >> level >> features >> listed;
     // Untrusted input: bound the list and require every id to be a supported
@@ -1039,8 +1039,9 @@ character_definition(std::string_view bytes,
     return r.label == race;
 }))
     throw std::runtime_error("Unknown species");
-    const int str = ability_modifier(scores[0]), dex = ability_modifier(scores[1]),
-              con = ability_modifier(scores[2]);
+    const int str = ability_modifier(scores[Ability::strength]),
+              dex = ability_modifier(scores[Ability::dexterity]),
+              con = ability_modifier(scores[Ability::constitution]);
     std::vector<int> hp_modifiers(level, con);
     for (auto &modifier : hp_modifiers)
         in >> modifier;
@@ -1075,20 +1076,22 @@ character_definition(std::string_view bytes,
     d.pact_magic = klass == CharacterClass::warlock;
     d.magical_cunning = klass == CharacterClass::warlock && level >= 2 ? 1 : 0;
     d.bardic_inspiration =
-        klass == CharacterClass::bard ? std::max(1, ability_modifier(scores[5])) : 0;
+        klass == CharacterClass::bard ? std::max(1, ability_modifier(scores[Ability::charisma]))
+        : 0;
     d.cutting_words = klass == CharacterClass::bard && level >= 3;
     d.dark_ones_blessing =
         klass == CharacterClass::warlock && level >= 3
-        ? std::max(1, ability_modifier(scores[5]) + static_cast<int>(level))
+        ? std::max(1, ability_modifier(scores[Ability::charisma]) + static_cast<int>(level))
         : 0;
     d.deflect = d.open_hand = klass == CharacterClass::monk && level >= 3;
-    d.focus_dc = 8 + 2 + ability_modifier(scores[4]);
+    d.focus_dc = 8 + 2 + ability_modifier(scores[Ability::wisdom]);
     d.dexterity = dex;
     d.rushes = race == "Orc" ? 2 + (level - 1) / 4 : 0;
     const auto trained_saves = detail::class_save_proficiencies(klass);
-    for (unsigned i = 0; i < 6; ++i)
-        d.saves[i] = ability_modifier(scores[i]) +
-                     ((i == trained_saves[0] || i == trained_saves[1]) ? 2 : 0);
+    for (const auto ability : all_abilities)
+        d.saves[ability_index(ability)] =
+            ability_modifier(scores[ability]) +
+            ((ability == trained_saves[0] || ability == trained_saves[1]) ? 2 : 0);
     d.alert = (features & 32) != 0;
     d.ac = 10 + dex;
     // Jack of All Trades adds half the Proficiency Bonus to Initiative, as
@@ -1111,7 +1114,7 @@ character_definition(std::string_view bytes,
     d.evoker = klass == CharacterClass::wizard && level >= 3;
     d.free_smite = klass == CharacterClass::paladin && level >= 2 ? 1 : 0;
     d.favored_enemy = klass == CharacterClass::ranger ? 2 : 0;
-    d.medicine = ability_modifier(scores[4]);
+    d.medicine = ability_modifier(scores[Ability::wisdom]);
     d.tactical_mind = klass == CharacterClass::fighter && level >= 2;
     d.cunning = klass == CharacterClass::rogue && level >= 2;
     d.sneak_level = klass == CharacterClass::rogue ? level : 0;
@@ -1135,12 +1138,12 @@ character_definition(std::string_view bytes,
                level >= 3
                ? (level == 3 ? 2 : 3)
                : 0;
-    const unsigned casting_ability =
+    const Ability casting_ability =
         (klass == CharacterClass::cleric || klass == CharacterClass::ranger ||
-         klass == CharacterClass::druid) ? 4
+         klass == CharacterClass::druid) ? Ability::wisdom
         : (klass == CharacterClass::warlock || klass == CharacterClass::sorcerer ||
-           klass == CharacterClass::paladin || klass == CharacterClass::bard) ? 5
-        : 3;
+           klass == CharacterClass::paladin || klass == CharacterClass::bard) ? Ability::charisma
+        : Ability::intelligence;
     d.casting = 2 + ability_modifier(scores[casting_ability]);
     const auto allowed = allowed_spells(klass, level);
     const bool eligible = std::all_of(stored_spells.begin(), stored_spells.end(),
@@ -1217,7 +1220,7 @@ character_definition(std::string_view bytes,
             // with proficiency.
             const bool pact = d.pact_of_the_blade && !item->ranged;
             const int modifier = std::max(item->finesse ? std::max(str, dex) : item->ranged ? dex : str,
-                                          pact ? ability_modifier(scores[5]) : -5);
+                                          pact ? ability_modifier(scores[Ability::charisma]) : -5);
             const int bonus = (trained(klass, grants, key) || pact ? 2 : 0) + modifier;
             if ((item->dice || item->fixed_damage) && !item->ranged)
             {
@@ -1257,7 +1260,7 @@ character_definition(std::string_view bytes,
             d.heavy_armor = item->category == detail::ArmorCategory::heavy;
             d.ac = item->base_ac + item->dexterity_contribution(dex);
             d.stealth_disadvantage = item->stealth_disadvantage;
-            if (scores[0] < item->strength)
+            if (scores[Ability::strength] < item->strength)
                 d.speed -= 10;
         }
         else if (key == "shield")
@@ -1327,7 +1330,8 @@ character_definition(std::string_view bytes,
                          detail::race_id(race), background, level);
     if (effects.feats != features)
         throw std::runtime_error("Character effects disagree with acquired grants");
-    const int initial_con = ability_modifier(scores[2] - effects.abilities[2]);
+    const int initial_con = ability_modifier(scores[Ability::constitution] -
+                                             effects.abilities[Ability::constitution]);
     for (unsigned i = 0; i < level; ++i)
         if (hp_modifiers[i] != (i == 3 ? con : initial_con))
             throw std::runtime_error("HP history disagrees with acquired ability choices");
@@ -1341,9 +1345,9 @@ character_definition(std::string_view bytes,
         d.ac = std::max(d.ac, 10 + dex + con);
     // Draconic Resilience: dragon-like scales.
     if (!armor && klass == CharacterClass::sorcerer && level >= 3)
-        d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[5]));
+        d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[Ability::charisma]));
     if (!armor && !shield && klass == CharacterClass::monk)
-        d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[4]));
+        d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[Ability::wisdom]));
     // Martial Arts: the better of Strength and Dexterity for attack and damage
     // rolls, and the Martial Arts die (a d6 through level four) when larger.
     d.martial_arts = klass == CharacterClass::monk && !armor && !shield && monk_weapons;
@@ -10386,20 +10390,27 @@ class Module final : public RulesModule
         if (options.level == 4)
         {
             choice.feat = "ability_score_improvement";
-            const unsigned primary =
-                (klass == CharacterClass::fighter || klass == CharacterClass::paladin) ? 0
-                : (klass == CharacterClass::cleric || klass == CharacterClass::druid) ? 4
-                : (klass == CharacterClass::rogue || klass == CharacterClass::ranger)  ? 1
+            const Ability primary =
+                (klass == CharacterClass::fighter || klass == CharacterClass::paladin)
+                ? Ability::strength
+                : (klass == CharacterClass::cleric || klass == CharacterClass::druid)
+                ? Ability::wisdom
+                : (klass == CharacterClass::rogue || klass == CharacterClass::ranger)
+                ? Ability::dexterity
                 : (klass == CharacterClass::sorcerer || klass == CharacterClass::warlock ||
-                   klass == CharacterClass::bard) ? 5
-                : 3;
+                   klass == CharacterClass::bard)
+                ? Ability::charisma
+                : Ability::intelligence;
+            // Two points, from the primary ability onwards in sheet order,
+            // wrapping past Charisma, never above 20.
             unsigned remaining = 2;
-            for (unsigned n = 0; n < 6 && remaining; ++n)
+            for (std::size_t n = 0; n < all_abilities.size() && remaining; ++n)
             {
-                const auto index = (primary + n) % 6;
-                choice.abilities[index] =
-                    std::min(remaining, unsigned(std::max(0, 20 - sheet.scores[index])));
-                remaining -= choice.abilities[index];
+                const auto ability =
+                    all_abilities[(ability_index(primary) + n) % all_abilities.size()];
+                choice.abilities[ability] =
+                    std::min(remaining, unsigned(std::max(0, 20 - sheet.scores[ability])));
+                remaining -= choice.abilities[ability];
             }
         }
         return choice;
@@ -10647,14 +10658,15 @@ class Module final : public RulesModule
             next.grants.push_back(
             {"feature:remarkable_athlete", "subclass:fighter:champion", 3, {}});
         }
-        for (unsigned n = 0; n < 6; ++n)
+        for (const auto ability : all_abilities)
         {
-            next.scores[n] += choice.abilities[n];
-            next.bonuses[n] += choice.abilities[n];
-            if (next.scores[n] > 20)
+            next.scores[ability] += choice.abilities[ability];
+            next.bonuses[ability] += choice.abilities[ability];
+            if (next.scores[ability] > 20)
                 throw std::runtime_error("Ability scores cannot exceed 20");
-            next.modifiers[n] = ability_modifier(next.scores[n]);
-            next.saving_throws[n] = next.modifiers[n] + (next.save_proficiencies[n] ? 2 : 0);
+            next.modifiers[ability] = ability_modifier(next.scores[ability]);
+            next.saving_throws[ability] =
+                next.modifiers[ability] + (next.save_proficiencies[ability] ? 2 : 0);
         }
         if (points)
         {
@@ -10662,8 +10674,8 @@ class Module final : public RulesModule
                                          "Level " + std::to_string(next.level) +
                                          " Ability Score Improvement",
                                          unsigned(next.level)};
-            for (unsigned n = 0; n < 6; ++n)
-                adjustment.bonuses[n] = int(choice.abilities[n]);
+            for (const auto ability : all_abilities)
+                adjustment.bonuses[ability] = int(choice.abilities[ability]);
             adjustment.label_message = {"Level {level} Ability Score Improvement",
                 {{"level", std::to_string(next.level)}}
             };
@@ -10685,7 +10697,7 @@ class Module final : public RulesModule
         next.training = detail::training_profile(
                             next.grants, klass,
                             detail::background_id(next.background), next.level, next.scores);
-        next.hit_point_modifiers.push_back(next.modifiers[2]);
+        next.hit_point_modifiers.push_back(next.modifiers[Ability::constitution]);
         next.hit_points =
             maximum_hit_points(next.hit_die, next.race == "Dwarf", next.hit_point_modifiers,
                                klass == CharacterClass::sorcerer);
@@ -11464,11 +11476,12 @@ class Module final : public RulesModule
                     adjustment.bonuses != effects.abilities)
                 throw std::runtime_error("Ability sources disagree with acquired choices");
         }
-        for (unsigned i = 0; i < 6; ++i)
+        for (const auto ability : all_abilities)
         {
             const auto bonuses =
-                sheet.ability_adjustments.front().bonuses[i] + effects.abilities[i];
-            if (sheet.bonuses[i] != bonuses || sheet.scores[i] != sheet.base[i] + bonuses)
+                sheet.ability_adjustments.front().bonuses[ability] + effects.abilities[ability];
+            if (sheet.bonuses[ability] != bonuses ||
+                    sheet.scores[ability] != sheet.base[ability] + bonuses)
                 throw std::runtime_error("Ability totals disagree with acquired choices");
         }
         auto spells =
@@ -11546,22 +11559,24 @@ class Module final : public RulesModule
                                          : "Source: equipped Shield: +0 AC (untrained).\n";
             else if (key == "leather")
                 result.item_modifiers += "Source: equipped Leather armor and Dexterity score " +
-                                         std::to_string(sheet.scores[1]) +
+                                         std::to_string(sheet.scores[Ability::dexterity]) +
                                          ". AC becomes 11 + Dexterity modifier (" +
-                                         std::to_string(sheet.modifiers[1]) + ").\n";
+                                         std::to_string(sheet.modifiers[Ability::dexterity]) +
+                                         ").\n";
             else if (key == "chain_mail")
                 result.item_modifiers +=
                     "Source: equipped Chain mail. AC becomes 16; speed -10 feet below Strength 13 (current Strength " +
-                    std::to_string(sheet.scores[0]) + ").\n";
+                    std::to_string(sheet.scores[Ability::strength]) + ").\n";
             else if (const auto *item = detail::armor(key))
                 result.item_modifiers +=
                     "Source: equipped " + std::string(item->label) + " (" +
                     std::string(detail::armor_category_label(item->category)) + "). Base AC " +
                     std::to_string(item->base_ac) + "; applied Dexterity modifier " +
-                    std::to_string(item->dexterity_contribution(sheet.modifiers[1])) +
+                    std::to_string(item->dexterity_contribution(
+                                       sheet.modifiers[Ability::dexterity])) +
                     "; armor AC " +
-                    std::to_string(item->base_ac +
-                                   item->dexterity_contribution(sheet.modifiers[1])) +
+                    std::to_string(item->base_ac + item->dexterity_contribution(
+                                       sheet.modifiers[Ability::dexterity])) +
                     ".\n";
             else if (key == "wand")
                 result.item_modifiers +=
@@ -11599,20 +11614,21 @@ class Module final : public RulesModule
         if (gear.empty())
             result.item_modifiers =
                 "No equipment modifiers. Source: unarmed strike rules and Strength score " +
-                std::to_string(sheet.scores[0]) +
+                std::to_string(sheet.scores[Ability::strength]) +
                 ". Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0).";
         result.spell_modifiers = "Active conditions are shown in the character status.";
         if (klass == CharacterClass::wizard)
             result.spell_modifiers =
                 "Source: Fire Bolt and Wizard spellcasting, Intelligence score " +
-                std::to_string(sheet.scores[3]) +
+                std::to_string(sheet.scores[Ability::intelligence]) +
                 ". Attack: Intelligence modifier +2 level-one proficiency = " +
                 std::to_string(d.casting) + ". Magic Missile has no ability modifier to damage.\n" +
                 result.spell_modifiers;
         if (klass == CharacterClass::cleric)
             result.spell_modifiers =
                 "Source: Cure Wounds and Cleric spellcasting, Wisdom score " +
-                std::to_string(sheet.scores[4]) + ". Healing: 2d8 + Wisdom modifier (" +
+                std::to_string(sheet.scores[Ability::wisdom]) +
+                ". Healing: 2d8 + Wisdom modifier (" +
                 std::to_string(d.casting - 2) + ").\n" + result.spell_modifiers;
         if (d.str_dex_disadvantage)
             result.spell_modifiers =
@@ -11629,14 +11645,14 @@ class Module final : public RulesModule
                 result.item_messages.push_back(
             {
                 "Source: equipped Leather armor and Dexterity score {score}. AC becomes 11 + Dexterity modifier ({modifier}).",
-                {   {"score", std::to_string(sheet.scores[1])},
-                    {"modifier", std::to_string(sheet.modifiers[1])}
+                {   {"score", std::to_string(sheet.scores[Ability::dexterity])},
+                    {"modifier", std::to_string(sheet.modifiers[Ability::dexterity])}
                 }});
             else if (key == "chain_mail")
                 result.item_messages.push_back(
             {
                 "Source: equipped Chain mail. AC becomes 16; speed -10 feet below Strength 13 (current Strength {score}).",
-                {{"score", std::to_string(sheet.scores[0])}}});
+                {{"score", std::to_string(sheet.scores[Ability::strength])}}});
             else if (const auto *item = detail::armor(key))
                 result.item_messages.push_back(
             {
@@ -11646,11 +11662,12 @@ class Module final : public RulesModule
                     {"base", std::to_string(item->base_ac)},
                     {
                         "dexterity",
-                        std::to_string(item->dexterity_contribution(sheet.modifiers[1]))
+                        std::to_string(
+                            item->dexterity_contribution(sheet.modifiers[Ability::dexterity]))
                     },
                     {
-                        "ac", std::to_string(item->base_ac +
-                                             item->dexterity_contribution(sheet.modifiers[1]))
+                        "ac", std::to_string(item->base_ac + item->dexterity_contribution(
+                                                 sheet.modifiers[Ability::dexterity]))
                     }
                 }});
             else if (key == "wand")
@@ -11701,11 +11718,11 @@ class Module final : public RulesModule
                     note("This armor imposes Disadvantage on Dexterity (Stealth) checks.");
                 if (item->strength && key != "chain_mail")
                 {
-                    const bool penalty = sheet.scores[0] < item->strength;
+                    const bool penalty = sheet.scores[Ability::strength] < item->strength;
                     result.item_modifiers +=
                         "Source: equipped " + std::string(item->label) + ". Requires Strength " +
                         std::to_string(item->strength) + "; current score " +
-                        std::to_string(sheet.scores[0]) + ". " +
+                        std::to_string(sheet.scores[Ability::strength]) + ". " +
                         (penalty ? "Speed reduced by 10 feet." : "Requirement met.") + "\n";
                     result.item_messages.push_back(
                     {
@@ -11714,14 +11731,15 @@ class Module final : public RulesModule
                         : "Source: equipped {item}. Requires Strength {required}; current score {score}. Requirement met.",
                         {   {"item", std::string(item->label), true},
                             {"required", std::to_string(item->strength)},
-                            {"score", std::to_string(sheet.scores[0])}
+                            {"score", std::to_string(sheet.scores[Ability::strength])}
                         }});
                 }
             }
             if (const auto *item = detail::weapon(key); item && item->heavy)
             {
                 const std::string ability = item->ranged ? "Dexterity" : "Strength";
-                const auto score = std::to_string(sheet.scores[item->ranged ? 1 : 0]);
+                const auto governing = item->ranged ? Ability::dexterity : Ability::strength;
+                const auto score = std::to_string(sheet.scores[governing]);
                 const bool penalty = item->heavy_disadvantage(sheet.scores);
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + " (Heavy). Requires " + ability +
@@ -11760,7 +11778,7 @@ class Module final : public RulesModule
             result.item_messages.push_back(
         {
             "No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0).",
-            {{"score", std::to_string(sheet.scores[0])}}});
+            {{"score", std::to_string(sheet.scores[Ability::strength])}}});
         if (d.str_dex_disadvantage)
             result.spell_messages.push_back(
         {"Cannot cast spells while wearing untrained armor.", {}});
@@ -11768,14 +11786,14 @@ class Module final : public RulesModule
             result.spell_messages.push_back(
         {
             "Source: Fire Bolt and Wizard spellcasting, Intelligence score {score}. Attack: Intelligence modifier +2 level-one proficiency = {attack}. Magic Missile has no ability modifier to damage.",
-            {   {"score", std::to_string(sheet.scores[3])},
+            {   {"score", std::to_string(sheet.scores[Ability::intelligence])},
                 {"attack", std::to_string(d.casting)}
             }});
         if (klass == CharacterClass::cleric)
             result.spell_messages.push_back(
         {
             "Source: Cure Wounds and Cleric spellcasting, Wisdom score {score}. Healing: 2d8 + Wisdom modifier ({modifier}).",
-            {   {"score", std::to_string(sheet.scores[4])},
+            {   {"score", std::to_string(sheet.scores[Ability::wisdom])},
                 {"modifier", std::to_string(d.casting - 2)}
             }});
         if (access.cantrip_choices)
@@ -11790,13 +11808,14 @@ class Module final : public RulesModule
         if (klass == CharacterClass::sorcerer)
         {
             result.spell_modifiers +=
-                "\nSorcerer cantrips: Charisma score " + std::to_string(sheet.scores[5]) +
+                "\nSorcerer cantrips: Charisma score " +
+                    std::to_string(sheet.scores[Ability::charisma]) +
                 "; spell attack bonus " + std::to_string(d.casting) + "; pending choices " +
                 std::to_string(access.cantrip_choices - access.cantrips.size()) + ".";
             result.spell_messages.push_back(
             {
                 "Sorcerer cantrips: Charisma score {score}; spell attack bonus {attack}; pending choices {cantrips}.",
-                {   {"score", std::to_string(sheet.scores[5])},
+                {   {"score", std::to_string(sheet.scores[Ability::charisma])},
                     {"attack", std::to_string(d.casting)},
                     {"cantrips", std::to_string(access.cantrip_choices - access.cantrips.size())}
                 }});
@@ -11804,13 +11823,14 @@ class Module final : public RulesModule
         if (klass == CharacterClass::warlock)
         {
             result.spell_modifiers +=
-                "\nPact Magic cantrips: Charisma score " + std::to_string(sheet.scores[5]) +
+                "\nPact Magic cantrips: Charisma score " +
+                    std::to_string(sheet.scores[Ability::charisma]) +
                 "; spell attack bonus " + std::to_string(d.casting) + "; pending choices " +
                 std::to_string(access.cantrip_choices - access.cantrips.size()) + ".";
             result.spell_messages.push_back(
             {
                 "Pact Magic cantrips: Charisma score {score}; spell attack bonus {attack}; pending choices {cantrips}.",
-                {   {"score", std::to_string(sheet.scores[5])},
+                {   {"score", std::to_string(sheet.scores[Ability::charisma])},
                     {"attack", std::to_string(d.casting)},
                     {"cantrips", std::to_string(access.cantrip_choices - access.cantrips.size())}
                 }});
@@ -11832,26 +11852,28 @@ class Module final : public RulesModule
         if (klass == CharacterClass::ranger)
         {
             result.spell_modifiers +=
-                "\nRanger spellcasting: Wisdom score " + std::to_string(sheet.scores[4]) +
+                "\nRanger spellcasting: Wisdom score " +
+                    std::to_string(sheet.scores[Ability::wisdom]) +
                 "; pending prepared spells: " +
                 std::to_string(access.prepared_choices - access.prepared.size()) + ".";
             result.spell_messages.push_back(
             {
                 "Ranger spellcasting: Wisdom score {score}; pending prepared spells: {prepared}.",
-                {   {"score", std::to_string(sheet.scores[4])},
+                {   {"score", std::to_string(sheet.scores[Ability::wisdom])},
                     {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
                 }});
         }
         if (klass == CharacterClass::paladin)
         {
             result.spell_modifiers +=
-                "\nPaladin spellcasting: Charisma score " + std::to_string(sheet.scores[5]) +
+                "\nPaladin spellcasting: Charisma score " +
+                    std::to_string(sheet.scores[Ability::charisma]) +
                 "; pending prepared spells: " +
                 std::to_string(access.prepared_choices - access.prepared.size()) + ".";
             result.spell_messages.push_back(
             {
                 "Paladin spellcasting: Charisma score {score}; pending prepared spells: {prepared}.",
-                {   {"score", std::to_string(sheet.scores[5])},
+                {   {"score", std::to_string(sheet.scores[Ability::charisma])},
                     {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
                 }});
         }

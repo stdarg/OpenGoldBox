@@ -172,7 +172,7 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
         const auto &name = sheet.name;
         for (std::size_t n = 0; n < name.size() && n < 15; ++n)
             fields[n] = static_cast<unsigned char>(name[n]);
-        fields[0x18] = sheet.scores[2];
+        fields[0x18] = sheet.scores[rules::Ability::constitution];
         fields[0x100] = m.vitals.dead ? 0 : 1;
         fields[0x119] = m.vitals.hit_points;
         const auto coins = script_coins(m.wealth);

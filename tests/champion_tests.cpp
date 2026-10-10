@@ -193,7 +193,8 @@ void grants_and_checks()
             const int first = srd5::roll_die(rng, 20);
             const int second = champion ? srd5::roll_die(rng, 20) : first;
             auto c = battle(*custom(), h, seed);
-            check(unit(*c).initiative == std::max(first, second) + h.sheet().modifiers[1],
+            check(unit(*c).initiative == std::max(first, second) +
+                  h.sheet().modifiers[Ability::dexterity],
                   "Independent maximum-of-two initiative expectation");
         }
     }
@@ -232,10 +233,10 @@ void critical_and_movement()
                 if (critical)
                 {
                     // The longsword has an empty other hand, so it is wielded as a d10.
-                    const int expected_damage = unarmed ? 1 + h.sheet().modifiers[0]
+                    const int expected_damage = unarmed ? 1 + h.sheet().modifiers[Ability::strength]
                                                 : srd5::roll_die(expected_rng, 10) +
                                                 srd5::roll_die(expected_rng, 10) +
-                                                h.sheet().modifiers[0];
+                                                h.sheet().modifiers[Ability::strength];
                     check(
                         unit(*c, 2).hit_points == 1000 - expected_damage &&
                         random_state(*c) == expected_rng,
@@ -458,7 +459,7 @@ void campaign_and_cancellation()
         rules->character_profile(h.sheet(), {}).data};
         p.surprised = true;
         std::uint64_t rng = seed;
-        const int expected = srd5::roll_die(rng, 20) + h.sheet().modifiers[1];
+        const int expected = srd5::roll_die(rng, 20) + h.sheet().modifiers[Ability::dexterity];
         auto c = rules->create(
         {{8, 8, std::vector<Terrain>(64)}, {p, {2, "vanguard", "Enemy", Side::opposition, {6, 6}}}},
         seed);

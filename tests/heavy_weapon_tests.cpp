@@ -174,7 +174,7 @@ void thresholds()
                 const auto requirements = srd5::character_rules()->class_requirements(klass.id);
                 const auto qualifies = [&](Ability ability)
                 {
-                    return h.sheet().scores[ability_index(ability)] >= 13;
+                    return h.sheet().scores[ability] >= 13;
                 };
                 if (requirements.any ? !std::any_of(requirements.abilities.begin(),
                                                     requirements.abilities.end(), qualifies)
@@ -211,7 +211,8 @@ void thresholds()
                         })
                 {
                     auto c = battle(*rules, h, {w.key}, seed, w.ranged ? Cell{3, 1} : Cell{2, 1});
-                    check(unit(*c).initiative == (seed == 40 ? 19 : 16) + h.sheet().modifiers[1],
+                    check(unit(*c).initiative == (seed == 40 ? 19 : 16) +
+                          h.sheet().modifiers[Ability::dexterity],
                           "Heavy never consumes a second initiative roll");
                     auto copy = rules->restore(c->save());
                     const auto before = unit(*c);
@@ -359,12 +360,12 @@ void campaign()
         if (level == 4)
         {
             choice.abilities = {};
-            choice.abilities[0] = 1;
-            choice.abilities[4] = 1;
+            choice.abilities[Ability::strength] = 1;
+            choice.abilities[Ability::wisdom] = 1;
         }
         party.advance(id, choice);
     }
-    check(party.member(id).character.sheet().scores[0] == 13 &&
+    check(party.member(id).character.sheet().scores[Ability::strength] == 13 &&
           party.profile(id).item_modifiers.find("Requirement met.") != std::string::npos,
           "Level-four ASI crossing 13 removes the penalty without changing the +1 modifier");
     const auto bytes = encode_campaign(party, nullptr, "heavy");

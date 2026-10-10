@@ -81,7 +81,7 @@ void damage_follows_other_hand()
 {
     auto rules = module();
     const auto sheet = hero().sheet();
-    check(sheet.modifiers[0] == 2 && sheet.modifiers[1] == 2,
+    check(sheet.modifiers[Ability::strength] == 2 && sheet.modifiers[Ability::dexterity] == 2,
           "Fixed damage fixture has +2 Strength/Dexterity");
     // Fixed SplitMix64 seed oracles: two initiative rolls, then attack/damage.
     // Seed 0: critical 20; seed 13: ordinary 17; seed 40: natural 1.

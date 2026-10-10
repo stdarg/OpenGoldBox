@@ -22,7 +22,7 @@ struct GrantEffects
 {
     unsigned
     feats{}; // Internal combat mask: Defense, Savage Attacker, Archery, Great Weapon Fighting.
-    std::array<int, 6> abilities{};
+    rules::AbilityArray<int> abilities{};
 };
 
 GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, CharacterClass klass,

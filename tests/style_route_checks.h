@@ -115,7 +115,7 @@ void run()
                             if (a.name == "bonus")
                             {
                                 check(std::stoi(a.value) ==
-                                      h.sheet().modifiers[1] + 2 +
+                                      h.sheet().modifiers[Ability::dexterity] + 2 +
                                       (entitled && std::string_view(style) == "archery"
                                        ? 2
                                        : 0),
@@ -186,8 +186,9 @@ void run()
                     }
                     const int modifier =
                         (std::string_view(w.id) == "dagger" || std::string_view(w.id) == "dart")
-                        ? std::max(h.sheet().modifiers[0], h.sheet().modifiers[1])
-                        : h.sheet().modifiers[w.ranged ? 1 : 0];
+                        ? std::max(h.sheet().modifiers[Ability::strength],
+                            h.sheet().modifiers[Ability::dexterity])
+                        : h.sheet().modifiers[w.ranged ? Ability::dexterity : Ability::strength];
                     const auto roll = [&]
                     {
                         int total = modifier;
@@ -249,7 +250,7 @@ void run()
                 act(*c, "opportunity");
                 if (natural != 1)
                 {
-                    int expected = h.sheet().modifiers[0];
+                    int expected = h.sheet().modifiers[Ability::strength];
                     for (int i = 0; i < (natural == 20 ? 4 : 2); ++i)
                         expected += std::max(3, die(rng, 6));
                     check(test::logged(*c, "(Savage Attacker): " + std::to_string(expected) + " and "),
@@ -278,7 +279,7 @@ void run()
                 act(*c, "throw");
                 if (natural != 1)
                 {
-                    int expected = h.sheet().modifiers[0];
+                    int expected = h.sheet().modifiers[Ability::strength];
                     for (int i = 0; i < (natural == 20 ? 2 : 1); ++i)
                         expected += die(rng, 6);
                     check(test::logged(*c, "(Savage Attacker): " + std::to_string(expected) + " and "),

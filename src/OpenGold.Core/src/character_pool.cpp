@@ -101,14 +101,14 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             {
                 const int score = 18 - static_cast<int>(rank) - (variant == 3 && rank == 0 ? 1 : 0);
                 // Authored, valid 4d6-drop-lowest provenance for each strong score.
-                d.rolls[priority[rank]] =
+                d.rolls[d.assignment[priority[rank]]] =
                 {
                     {6, score >= 17 ? 6 : 5, score - 6 - (score >= 17 ? 6 : 5), 1}, 3
                 };
             }
-            d.background = primary == 0   ? "soldier"
-                           : primary == 1 ? "criminal"
-                           : primary == 3 ? "sage"
+            d.background = primary == Ability::strength       ? "soldier"
+                           : primary == Ability::dexterity    ? "criminal"
+                           : primary == Ability::intelligence ? "sage"
                            : "acolyte";
             const auto bonuses = rules.adjustments(d.background);
             for (unsigned a = 0; a < bonuses.size(); ++a)

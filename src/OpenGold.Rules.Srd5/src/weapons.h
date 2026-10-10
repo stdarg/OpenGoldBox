@@ -3,6 +3,7 @@
 #include "damage.h"
 #include "ammunition.h"
 #include "character_class.h"
+#include "opengold/rules.h"
 #include <array>
 #include <string_view>
 
@@ -42,9 +43,9 @@ struct Weapon
              cost_cp{};          // Exact quarter-pounds and copper pieces; dash weight is zero.
     std::string_view label; // Human-readable source label, separate from the saved key.
 
-    bool heavy_disadvantage(const std::array<int, 6> &scores) const
+    bool heavy_disadvantage(const rules::AbilityArray<int> &scores) const
     {
-        return heavy && scores[ranged ? 1 : 0] < 13;
+        return heavy && scores[ranged ? rules::Ability::dexterity : rules::Ability::strength] < 13;
     } // SRD 5.2.1 p.89: weapon category determines the ability.
 };
 

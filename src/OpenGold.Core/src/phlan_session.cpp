@@ -304,7 +304,8 @@ void RolfTourSession::begin_event(EventTrigger trigger)
         if (const auto speaker = campaign_->spokesman())
             machine_.bind_variable(
                 EclAddress{0x6DCF},
-                static_cast<std::uint16_t>(2 * campaign_->member(speaker).character.sheet().scores[5]));
+                static_cast<std::uint16_t>(2 *
+                    campaign_->member(speaker).character.sheet().scores[rules::Ability::charisma]));
     if (!machine_.start(static_cast<std::size_t>(trigger)))
     {
         fail("Unable to start town script");

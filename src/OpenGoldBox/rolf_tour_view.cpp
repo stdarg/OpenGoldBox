@@ -505,8 +505,11 @@ void RolfTourView::party_selected(std::int64_t index)
         const std::array<const char *, 6> names{"Strength",     "Dexterity", "Constitution",
                                                 "Intelligence", "Wisdom",    "Charisma"};
         for (unsigned i = 0; i < 6; ++i)
-            text += std::string(names[i]) + ": " + std::to_string(s.scores[i]) + " / Save " +
-                    std::to_string(s.saving_throws[i]) + "\n";
+        {
+            const auto ability = opengold::rules::all_abilities[i];
+            text += std::string(names[i]) + ": " + std::to_string(s.scores[ability]) + " / Save " +
+                    std::to_string(s.saving_throws[ability]) + "\n";
+        }
         required_node<RichTextLabel>(*this, "MemberSheet/Text")
         .set_text(String::utf8(text.c_str()));
         required_node<Window>(*this, "MemberSheet").popup_centered();

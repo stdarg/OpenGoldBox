@@ -192,7 +192,7 @@ void draconic_checks()
           "Level three brings Draconic Sorcery");
     // d6 + Constitution at level one and 4 + Constitution per later level, plus 3
     // from Draconic Resilience.
-    const int con = third.sheet().modifiers[2];
+    const int con = third.sheet().modifiers[Ability::constitution];
     check(third.sheet().hit_points == (6 + con) + 2 * (4 + con) + 3,
           "Draconic Resilience adds 3 Hit Points");
     check(fourth.sheet().hit_points == third.sheet().hit_points + 4 + con + 1,

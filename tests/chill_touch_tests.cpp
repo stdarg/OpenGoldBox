@@ -174,7 +174,8 @@ void access()
             for (const auto &arg : message.arguments)
                 if (arg.name == "bonus")
                 {
-                    const auto ability = std::string(klass) == "wizard" ? 3 : 5;
+                    const auto ability = std::string(klass) == "wizard" ? Ability::intelligence
+                                         : Ability::charisma;
                     check(arg.value == std::to_string(2 + (h.sheet().scores[ability] - 10) / 2),
                           "Class Intelligence/Charisma casting bonus");
                     checked = true;

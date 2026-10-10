@@ -159,7 +159,7 @@ void selection()
             continue;
         }
         auto invalid = choice;
-        invalid.abilities[0] = 1;
+        invalid.abilities[Ability::strength] = 1;
         rejects(
             [&]
         {

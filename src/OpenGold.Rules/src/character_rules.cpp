@@ -16,9 +16,9 @@ bool class_eligible(const CharacterRules &rules, const CharacterDraft &d, std::s
            : std::all_of(r.abilities.begin(), r.abilities.end(), meets);
 }
 
-std::array<bool, 6> unmet_targets(const CharacterRules &rules, const CharacterDraft &d)
+AbilityArray<bool> unmet_targets(const CharacterRules &rules, const CharacterDraft &d)
 {
-    std::array<bool, 6> result{};
+    AbilityArray<bool> result{};
     for (const auto &id : d.target_classes)
     {
         if (class_eligible(rules, d, id))
@@ -26,7 +26,7 @@ std::array<bool, 6> unmet_targets(const CharacterRules &rules, const CharacterDr
         const auto r = rules.class_requirements(id);
         for (auto ability : r.abilities)
             if (rules.ability_score(d, ability).value_or(0) < r.minimum)
-                result.at(ability_index(ability)) = true;
+                result[ability] = true;
     }
     return result;
 }

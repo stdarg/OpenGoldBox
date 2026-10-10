@@ -238,7 +238,8 @@ void all_classes()
     {
         ++classes;
         const auto h = hero(klass.id);
-        check(h.sheet().modifiers[0] == 2 && h.sheet().modifiers[1] == 3,
+        check(h.sheet().modifiers[Ability::strength] == 2 &&
+              h.sheet().modifiers[Ability::dexterity] == 3,
               "Asymmetric ability oracle");
         for (const auto &e : expectations())
             for (unsigned seed :
@@ -367,7 +368,8 @@ void boundaries()
 dexterity == 20 ? AbilityRoll{{6, 6, 6, 1}, 3} :
         AbilityRoll{{1, 1, 1, 1}, 3};
         Character extreme(*srd5::character_rules(), draft, {});
-        check(extreme.sheet().scores[1] == dexterity, "Fixed damage extreme ability fixture");
+        check(extreme.sheet().scores[Ability::dexterity] ==
+              dexterity, "Fixed damage extreme ability fixture");
         auto c = battle(*rules, extreme, "blowgun");
         act(*c, "ranged");
         check(unit(*c, 2).hit_points == 999,

@@ -46,7 +46,9 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
             !creator_->draft().rolled || index < 0 || index >= 12)
         return {};
     const auto &d = creator_->draft();
-    const unsigned roll = index < 6 ? index : d.assignment[index - 6];
+    // Indices 0-5 are the dice boxes, 6-11 the score boxes of each ability.
+    const unsigned roll =
+        index < 6 ? index : d.assignment[static_cast<rules::Ability>(index - 6)];
     if (roll >= 6 || (index < 6 && std::find(d.assignment.begin(), d.assignment.end(), roll) !=
                       d.assignment.end()))
         return {};
@@ -100,19 +102,20 @@ void CharacterCreationView::show_modifiers()
     std::string text = "[b]" + i18n::utf8("Ability score adjustments") + "[/b]\n";
     for (unsigned i = 0; i < 6; ++i)
     {
-        if (s.bonuses[i] == 0)
+        const auto ability = rules::all_abilities[i];
+        if (s.bonuses[ability] == 0)
             continue;
         text += "[b]" + i18n::utf8(names[i]) + "[/b]\n" +
-        i18n::formatted("Rolled score: {score}", {{"score", s.base[i]}}) + "\n";
+        i18n::formatted("Rolled score: {score}", {{"score", s.base[ability]}}) + "\n";
         for (const auto &source : s.ability_adjustments)
-            if (source.bonuses[i])
+            if (source.bonuses[ability])
                 text += i18n::formatted("{source} ({bonus})",
             {
                 {"source", i18n::render(source.label_message)},
-                {"bonus", gs(number(source.bonuses[i]))}
+                {"bonus", gs(number(source.bonuses[ability]))}
             }) +
         "\n";
-        text += i18n::formatted("Final score: {score}", {{"score", s.scores[i]}}) + "\n\n";
+        text += i18n::formatted("Final score: {score}", {{"score", s.scores[ability]}}) + "\n\n";
     }
     text += "\n[b]" + i18n::formatted("Race / {race}", {{"race", i18n::text(s.race)}}) + "[/b]\n" +
     i18n::render(s.racial_messages).utf8().get_data();
@@ -189,7 +192,8 @@ void CharacterCreationView::update_saving_throws(String value)
     {{"dc", dc}});
     for (unsigned i = 0; i < 6; ++i)
     {
-        const int needed = srd5::minimum_save_roll(dc, s.saving_throws[i]);
+        const auto ability = rules::all_abilities[i];
+        const int needed = srd5::minimum_save_roll(dc, s.saving_throws[ability]);
         const auto target = needed > 20 ? i18n::text("Cannot reach this DC on a d20")
                             : needed == 1
                             ? i18n::text("Any d20 roll saves")
@@ -198,15 +202,15 @@ void CharacterCreationView::update_saving_throws(String value)
                     "[b]{ability} save: {bonus} | {target}[/b]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n",
         {
             {"ability", i18n::text(names[i])},
-            {"bonus", gs(number(s.saving_throws[i]))},
+            {"bonus", gs(number(s.saving_throws[ability]))},
             {"target", target},
-            {"modifier", gs(number(s.modifiers[i]))},
-            {"score", s.scores[i]}
+            {"modifier", gs(number(s.modifiers[ability]))},
+            {"score", s.scores[ability]}
         });
-        text += s.save_proficiencies[i]
+        text += s.save_proficiencies[ability]
                 ? i18n::formatted("{bonus} from {class} saving throw proficiency.",
         {
-            {"bonus", gs(number(s.saving_throws[i] - s.modifiers[i]))},
+            {"bonus", gs(number(s.saving_throws[ability] - s.modifiers[ability]))},
             {"class", i18n::text(s.character_class)}
         })
             : i18n::formatted(

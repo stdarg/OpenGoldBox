@@ -63,7 +63,7 @@ void choices_and_sources()
             const auto &trained = skill(sheet, name);
             const auto check_result = rules->ability_check(sheet, {}, trained.ability, name);
             check(trained.expertise && check_result.expertise && check_result.proficiency == 4 &&
-                  trained.bonus == sheet.modifiers[ability_index(trained.ability)] + 4,
+                  trained.bonus == sheet.modifiers[trained.ability] + 4,
                   "Expertise doubles proficiency exactly once at every supported level");
             check(std::any_of(trained.sources.begin(), trained.sources.end(),
                               [](const auto & grant)
@@ -194,7 +194,7 @@ void medicine_combat()
             }
             if (roll >= 0 && total >= 0)
             {
-                check(total - roll == character.sheet().modifiers[4] + 4,
+                check(total - roll == character.sheet().modifiers[Ability::wisdom] + 4,
                       "Actual Medicine roll uses Scholar Expertise");
                 observed = true;
                 success |= total >= 10;

@@ -47,6 +47,26 @@ concept AssignsRoll = requires(CharacterCreator &creator, Roll roll, Target targ
 static_assert(AssignsRoll<unsigned, rules::Ability>);
 static_assert(!AssignsRoll<unsigned, unsigned>);
 
+// Ability arrays are reached by naming the Ability, so a bare position such as
+// scores[2], which silently meant Constitution, no longer compiles.
+template <class Index>
+concept IndexesAbilities = requires(rules::CharacterSheet sheet, rules::CharacterDraft draft,
+                                    rules::AdvancementChoice choice, Index index)
+{
+    sheet.scores[index];
+    sheet.save_proficiencies[index];
+    draft.assignment[index];
+    choice.abilities[index];
+};
+static_assert(IndexesAbilities<rules::Ability>);
+static_assert(!IndexesAbilities<unsigned> && !IndexesAbilities<int>);
+template <class Ability>
+concept SwapsScores = requires(CharacterCreator &creator, Ability first, Ability second)
+{
+    creator.swap_scores(first, second);
+};
+static_assert(SwapsScores<rules::Ability> && !SwapsScores<unsigned>);
+
 void creation_tests()
 {
     using namespace rules;
@@ -93,9 +113,10 @@ void creation_tests()
     for (unsigned i = 0; i < 6; ++i)
         d.rolls[i] = {dice[i], 3};
     auto s = module->evaluate(d, NameRequirement::required);
-    check(s.scores[0] == 14 && s.scores[1] == 10 && s.scores[2] == 14 && s.hit_points == 12,
+    check(s.scores[Ability::strength] == 14 && s.scores[Ability::dexterity] == 10 &&
+          s.scores[Ability::constitution] == 14 && s.hit_points == 12,
           "Fighter has maximum d10 plus Constitution");
-    check(s.modifiers[3] == -4, "Odd negative ability modifiers round down");
+    check(s.modifiers[Ability::intelligence] == -4, "Odd negative ability modifiers round down");
     check(srd5::minimum_save_roll(15, srd5::ability_modifier(20)) == 10,
           "Strength 20 needs 10 to meet DC 15 without proficiency");
     check(srd5::minimum_save_roll(15, -4) == 19, "Negative save bonuses raise the required roll");
@@ -103,11 +124,11 @@ void creation_tests()
           "Natural 20 does not automatically save");
     check(srd5::minimum_save_roll(5, 4) == 1 && srd5::minimum_save_roll(5, 8) == 1,
           "Natural 1 can save when its total meets DC");
-    check(s.saving_throws == std::array<int, 6> {4, 0, 4, -4, 2, 4},
+    check(s.saving_throws == AbilityArray<int> {4, 0, 4, -4, 2, 4},
           "Fighter saves include proficiency only for Strength and Constitution");
     d.character_class = "wizard";
     const auto wizard = module->evaluate(d, NameRequirement::required);
-    check(wizard.saving_throws == std::array<int, 6> {2, 0, 2, -2, 4, 4},
+    check(wizard.saving_throws == AbilityArray<int> {2, 0, 2, -2, 4, 4},
           "Wizard saves retain negative modifiers and add Intelligence/Wisdom proficiency");
     d.character_class = "fighter";
     const std::array<int, 12> hp{14, 10, 10, 10, 12, 10, 12, 12, 10, 8, 10, 8};
@@ -131,10 +152,10 @@ void creation_tests()
             d.adjustment = n;
             const auto evaluated = module->evaluate(d, NameRequirement::required);
             int bonus = 0;
-            for (unsigned k = 0; k < 6; ++k)
+            for (const auto ability : all_abilities)
             {
-                bonus += evaluated.bonuses[k];
-                check(evaluated.scores[k] <= 20, "Background bonuses cap at twenty");
+                bonus += evaluated.bonuses[ability];
+                check(evaluated.scores[ability] <= 20, "Background bonuses cap at twenty");
             }
             check(evaluated.ability_adjustments.size() == 1 &&
                   evaluated.ability_adjustments[0].source_id == "background:" + bg.id &&
@@ -154,14 +175,15 @@ void creation_tests()
           "Both Monk primaries and Wizard Intelligence required");
     d.target_classes = {"fighter", "monk", "wizard"};
     check(rules::unmet_targets(*module, d) ==
-          std::array<bool, 6> {false, true, false, true, false, false},
+          AbilityArray<bool> {false, true, false, true, false, false},
           "Warnings flag only failing abilities of unmet targets");
-    std::swap(d.assignment[0], d.assignment[1]);
-    check(rules::class_eligible(*module, d, "fighter") && !rules::unmet_targets(*module, d)[0],
+    std::swap(d.assignment[Ability::strength], d.assignment[Ability::dexterity]);
+    check(rules::class_eligible(*module, d, "fighter") &&
+          !rules::unmet_targets(*module, d)[Ability::strength],
           "Qualified Dexterity satisfies Fighter without a Strength warning");
-    std::swap(d.assignment[0], d.assignment[1]);
+    std::swap(d.assignment[Ability::strength], d.assignment[Ability::dexterity]);
     d.target_classes.clear();
-    check(rules::unmet_targets(*module, d) == std::array<bool, 6> {},
+    check(rules::unmet_targets(*module, d) == AbilityArray<bool> {},
           "Removing targets clears warnings");
     for (const auto &option : classes)
     {
@@ -176,7 +198,7 @@ void creation_tests()
         {
             const auto bonuses =
                 module->adjustments(boundary.background)[boundary.adjustment].bonuses;
-            const int total = 13 - bonuses[ability_index(ability)];
+            const int total = 13 - bonuses[ability];
             boundary.rolls[ability_index(ability)] = {{{total - 8, 4, 4, 1}}, 3};
         }
         check(rules::class_eligible(*module, boundary, option.id),
@@ -188,14 +210,14 @@ void creation_tests()
     }
     d.background = "soldier";
     d.adjustment = 0;
-    d.assignment[0] = 1;
+    d.assignment[Ability::strength] = 1;
     rejects(
         [&]
     {
         (void)module->evaluate(d, NameRequirement::required);
     },
     "Duplicate roll assignments rejected");
-    d.assignment[0] = 0;
+    d.assignment[Ability::strength] = 0;
     d.name = "  ";
     rejects(
         [&]
@@ -293,7 +315,8 @@ void creation_tests()
     creator.select(CreationField::background, "acolyte");
     creator.assign_roll(1, Ability::dexterity);
     creator.assign_roll(0, Ability::dexterity);
-    check(creator.draft().assignment[1] == 0 && creator.draft().assignment[3] == 1,
+    check(creator.draft().assignment[Ability::dexterity] == 0 &&
+          creator.draft().assignment[Ability::intelligence] == 1,
           "Assigned results swap when dropped on another ability");
     creator.assign_roll(2, Ability::dexterity);
     check(std::find(creator.draft().assignment.begin(), creator.draft().assignment.end(), 0) ==
@@ -314,19 +337,20 @@ void creation_tests()
     for (unsigned i = 0; i < 6; ++i)
         creator.assign_roll(i, static_cast<Ability>(i));
     check(creator.scores_assigned(), "All six assignments permit review");
-    creator.swap_scores(0, 2);
-    check(creator.sheet().base[0] == original[2].total() && creator.draft().rolls == original,
+    creator.swap_scores(Ability::strength, Ability::constitution);
+    check(creator.sheet().base[Ability::strength] == original[2].total() &&
+          creator.draft().rolls == original,
           "Swaps preserve dice provenance");
     const auto assignment = creator.draft().assignment;
     rejects(
         [&]
     {
-        creator.swap_scores(0, 6);
+        creator.swap_scores(Ability::strength, static_cast<Ability>(6));
     },
     "Invalid swap rejected");
     check(creator.draft().assignment == assignment, "Rejected swap is atomic");
     creator.roll();
-    check(creator.draft().rolls != original && creator.draft().assignment[0] == 6,
+    check(creator.draft().rolls != original && creator.draft().assignment[Ability::strength] == 6,
           "Full reroll replaces all rolls and empties assignments");
     for (unsigned i = 0; i < 6; ++i)
         creator.assign_roll(i, static_cast<Ability>(i));
@@ -462,7 +486,7 @@ void creation_tests()
     check(creator.step() == CreationStep::attributes, "Back navigation reaches attributes");
     creator.select(CreationField::race, "dwarf");
     creator.select(CreationField::character_class, "barbarian");
-    check(creator.sheet().hit_points == 13 + creator.sheet().modifiers[2],
+    check(creator.sheet().hit_points == 13 + creator.sheet().modifiers[Ability::constitution],
           "HP recalculates after earlier edits");
     creator.restart();
     check(!creator.draft().rolled && creator.draft().name.empty() &&

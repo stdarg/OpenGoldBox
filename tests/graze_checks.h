@@ -116,7 +116,7 @@ void reactions_and_limits()
             auto c = r->create(e, seed);
             turn(*c, 1);
             act(*c, "melee", 99);
-            if (h.sheet().modifiers[0] <= 0)
+            if (h.sheet().modifiers[Ability::strength] <= 0)
             {
                 if (!result(*c).source.ends_with("misses."))
                     continue;
@@ -129,7 +129,8 @@ void reactions_and_limits()
                 continue;
             const int hp = unit(*c, 99).hit_points;
             act(*c, "effect_use");
-            check(unit(*c, 99).hit_points == hp - h.sheet().modifiers[0], "Graze omits style dice");
+            check(unit(*c, 99).hit_points == hp - h.sheet().modifiers[Ability::strength],
+                  "Graze omits style dice");
             tested = true;
         }
         check(tested, "Each ability modifier actually missed");
@@ -185,7 +186,7 @@ void advancement_and_rejection()
                 const int hp = unit(*c, 99).hit_points;
                 act(*c, "effect_use");
                 check(hp - unit(*c, 99).hit_points ==
-                      std::max(0, party.member(id).character.sheet().modifiers[0]),
+                      std::max(0, party.member(id).character.sheet().modifiers[Ability::strength]),
                       "Advancement changes actual attack ability damage");
                 const auto after = c->save();
                 check(!c->submit(stale) && c->save() == after,
@@ -286,7 +287,7 @@ void run()
                         act(*skipped, "effect_skip");
                         check(unit(*skipped, 99).hit_points == hp, "Skip leaves damage unchanged");
                         check(!offers(*skipped, "melee"), "Skip does not refund the Action");
-                        const int modifier = h.sheet().modifiers[0];
+                        const int modifier = h.sheet().modifiers[Ability::strength];
                         const int expected = std::string_view(defense) == "immunity" ? 0
                                              : std::string_view(defense).starts_with("resistance")
                                              ? std::max(0, modifier) / 2

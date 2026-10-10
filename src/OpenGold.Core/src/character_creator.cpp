@@ -355,7 +355,7 @@ void CharacterCreator::roll()
     require_editable();
     draft_.rolls = rules_->roll(random_);
     draft_.rolled = true;
-    draft_.assignment.fill(6);
+    draft_.assignment = {6, 6, 6, 6, 6, 6}; // Every rolled result starts unassigned.
 }
 
 bool CharacterCreator::scores_assigned() const
@@ -370,21 +370,21 @@ bool CharacterCreator::scores_assigned() const
 void CharacterCreator::assign_roll(unsigned roll, rules::Ability ability)
 {
     require_editable();
-    const auto target = rules::ability_index(ability);
     // The game converts a box index from the UI, so an ability can still be out of range.
-    if (!draft_.rolled || roll >= 6 || target >= 6)
+    if (!draft_.rolled || roll >= 6 || rules::ability_index(ability) >= 6)
         throw std::runtime_error("Invalid roll assignment");
     const auto source = std::find(draft_.assignment.begin(), draft_.assignment.end(), roll);
     if (source != draft_.assignment.end())
-        std::swap(*source, draft_.assignment[target]);
+        std::swap(*source, draft_.assignment[ability]);
     else
-        draft_.assignment[target] = roll; // A displaced result returns to the unassigned rolls.
+        draft_.assignment[ability] = roll; // A displaced result returns to the unassigned rolls.
 }
 
-void CharacterCreator::swap_scores(unsigned first, unsigned second)
+void CharacterCreator::swap_scores(rules::Ability first, rules::Ability second)
 {
     require_editable();
-    if (!draft_.rolled || first >= 6 || second >= 6)
+    // As in assign_roll, an ability converted from a UI index may be out of range.
+    if (!draft_.rolled || rules::ability_index(first) >= 6 || rules::ability_index(second) >= 6)
         throw std::runtime_error("Invalid score swap");
     std::swap(draft_.assignment[first], draft_.assignment[second]);
 }

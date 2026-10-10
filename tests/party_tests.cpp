@@ -851,7 +851,8 @@ void class_weapon_proficiency()
     for (const auto &expected : expectations)
     {
         const auto pc = make_character(expected.klass);
-        check(pc.sheet().scores[0] == 14 && pc.sheet().scores[1] == 16,
+        check(pc.sheet().scores[Ability::strength] == 14 &&
+              pc.sheet().scores[Ability::dexterity] == 16,
               "Weapon fixture has independent Strength and Dexterity modifiers");
         for (const std::string weapon :
                 {"shortsword", "scimitar"
@@ -1077,12 +1078,14 @@ void untrained_equipment()
     const auto &s = mage.sheet();
     const std::array<std::string, 1> sword{"longsword"}, mace{"mace"}, armor{"leather"},
     shield{"shield"};
-    check(rules->character_profile(s, sword).melee_attack_bonus == s.modifiers[0],
+    check(rules->character_profile(s, sword).melee_attack_bonus == s.modifiers[Ability::strength],
           "Untrained longsword omits proficiency");
-    check(rules->character_profile(s, mace).melee_attack_bonus == s.modifiers[0] + 2,
+    check(rules->character_profile(s, mace).melee_attack_bonus == s.modifiers[Ability::strength] +
+          2,
           "SRD wizard is proficient in simple weapons including mace");
     const auto p = rules->character_profile(s, armor);
-    check(p.strength_dexterity_disadvantage && p.armor_class == 11 + s.modifiers[1],
+    check(p.strength_dexterity_disadvantage &&
+          p.armor_class == 11 + s.modifiers[Ability::dexterity],
           "Untrained armor keeps AC with disadvantage");
     check(p.item_modifiers.find("cannot cast spells") != std::string::npos,
           "Untrained penalty has an equipment source");
@@ -1098,8 +1101,9 @@ void untrained_equipment()
         const bool shield_training = c.id == "barbarian" || c.id == "cleric" || c.id == "druid" ||
                                      c.id == "fighter" || c.id == "paladin" || c.id == "ranger";
         const auto guarded = rules->character_profile(pc.sheet(), shield);
-        const int base = 10 + pc.sheet().modifiers[1] +
-                         (c.id == "barbarian" ? std::max(0, pc.sheet().modifiers[2]) : 0);
+        const int base = 10 + pc.sheet().modifiers[Ability::dexterity] +
+                         (c.id == "barbarian" ? std::max(0,
+                             pc.sheet().modifiers[Ability::constitution]) : 0);
         check(guarded.armor_class == base + (shield_training ? 2 : 0),
               "Shield training and Monk unarmored restriction match SRD");
     }
@@ -1680,7 +1684,8 @@ void caster_advancement()
         party.award_experience(1, "threshold");
         party.advance(pc, party.default_advancement(pc));
         const auto &m = party.member(pc);
-        const auto growth = std::max(1, c.sheet().hit_die / 2 + 1 + c.sheet().modifiers[2]) + 1;
+        const auto growth = std::max(1, c.sheet().hit_die / 2 + 1 +
+            c.sheet().modifiers[Ability::constitution]) + 1;
         check(m.character.sheet().hit_points == c.sheet().hit_points + growth &&
               m.vitals.hit_points == m.character.sheet().hit_points - 2,
               "Dwarven growth preserves HP deficit");
@@ -1749,11 +1754,11 @@ void dynamic_checkpoint()
     {
         const auto pc = character(c.id);
         const auto p = rules->character_profile(pc.sheet(), {});
-        const int expected = 10 + pc.sheet().modifiers[1] +
-                             (c.id == "monk"        ? pc.sheet().modifiers[4]
-                              : c.id == "barbarian" ? pc.sheet().modifiers[2]
+        const int expected = 10 + pc.sheet().modifiers[Ability::dexterity] +
+                             (c.id == "monk"        ? pc.sheet().modifiers[Ability::wisdom]
+                              : c.id == "barbarian" ? pc.sheet().modifiers[Ability::constitution]
                               : 0);
-        check(p.armor_class == std::max(expected, 10 + pc.sheet().modifiers[1]) &&
+        check(p.armor_class == std::max(expected, 10 + pc.sheet().modifiers[Ability::dexterity]) &&
               p.hit_points == pc.sheet().hit_points,
               "All twelve classes have correct unarmored AC and HP profiles");
         CampaignParty party(module());
@@ -2453,7 +2458,7 @@ void script_handoff()
           "ADD NPC uses explicit conversion and requested morale");
     party->equip(second, 1);
     check(party->profile(second).armor_class ==
-          12 + party->member(second).character.sheet().modifiers[1],
+          12 + party->member(second).character.sheet().modifiers[Ability::dexterity],
           "Cleric equips purchased shield");
     // A supported store followed by an unsupported query must roll the party back.
     const auto hp = party->member(second).vitals.hit_points;

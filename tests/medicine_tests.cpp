@@ -203,7 +203,7 @@ void outcomes()
                 failure = true;
                 check(level >= 2 && c->legal_commands().size() == 2 && c->movement_reach(1).empty(),
                       "Only check decisions legal while pending");
-                check(check_choice->modifier == (h.sheet().scores[4] - 10) / 2 &&
+                check(check_choice->modifier == (h.sheet().scores[Ability::wisdom] - 10) / 2 &&
                       check_choice->difficulty == 10,
                       "Actual Wisdom and fixed DC");
                 auto saved = c->save();
@@ -315,7 +315,8 @@ void all_classes()
             for (const auto &a : m.arguments)
                 if (a.name == "modifier")
                 {
-                    check(a.value == std::to_string(2 + (h.sheet().scores[4] - 10) / 2),
+                    const int wisdom = h.sheet().scores[Ability::wisdom];
+                    check(a.value == std::to_string(2 + (wisdom - 10) / 2),
                           "Medicine proficiency is used");
                     saw = true;
                 }

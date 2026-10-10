@@ -30,13 +30,14 @@ inline godot::String requirements(const opengold::rules::ClassRequirements &requ
 inline godot::String adjustment(const opengold::rules::ScoreAdjustment &adjustment)
 {
     godot::String result;
-    for (unsigned i = 0; i < 6; ++i)
-        if (adjustment.bonuses[i])
+    for (const auto ability : opengold::rules::all_abilities)
+        if (adjustment.bonuses[ability])
         {
             if (!result.is_empty())
                 result += ", ";
-            result += i18n::format("{ability} +{bonus}", {{"ability", text(ability_short[i])},
-                {"bonus", adjustment.bonuses[i]}
+            const auto name = text(ability_short.at(opengold::rules::ability_index(ability)));
+            result += i18n::format("{ability} +{bonus}", {{"ability", name},
+                {"bonus", adjustment.bonuses[ability]}
             });
         }
     return result;

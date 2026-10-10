@@ -159,7 +159,7 @@ void rejections()
         p.advance(1, bare);
     });
     auto paid = pick(p, {"skill:arcana", "skill:nature", "skill:medicine"});
-    paid.abilities[0] = 2;
+    paid.abilities[Ability::strength] = 2;
     rejects([&]
     {
         p.advance(1, paid);

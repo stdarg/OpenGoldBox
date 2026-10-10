@@ -107,15 +107,16 @@ String formatted_sheet(const Character &character, const PartyMember *member,
                 "\n\n[table=3][cell][b]Attribute     [/b][/cell][cell][b]Score     [/b][/cell][cell][b]Saving throw[/b][/cell]");
     for (unsigned i = 0; i < 6; ++i)
     {
-        const auto score = std::to_string(s.scores[i]);
+        const auto ability = opengold::rules::all_abilities[i];
+        const auto score = std::to_string(s.scores[ability]);
         const auto colored =
-            s.modifiers[i] == 0
+            s.modifiers[ability] == 0
             ? score
-            : "[color=" + std::string(s.modifiers[i] > 0 ? "#f3d55b" : "#f08080") + "]" +
+            : "[color=" + std::string(s.modifiers[ability] > 0 ? "#f3d55b" : "#f08080") + "]" +
             score + "[/color]";
         text += "[cell]" + i18n::utf8(i18n::ability_names[i]) + "[/cell][cell]" + colored +
-                "[/cell][cell]" + number(s.saving_throws[i]) +
-                (s.save_proficiencies[i] ? " *" : "") + "[/cell]";
+                "[/cell][cell]" + number(s.saving_throws[ability]) +
+                (s.save_proficiencies[ability] ? " *" : "") + "[/cell]";
     }
     text += "[/table]\n" + i18n::utf8("* Proficient saving throw");
     if (member)

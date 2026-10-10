@@ -516,7 +516,7 @@ void CharacterCreationView::refresh()
         show(n, stats);
     for (unsigned i = 0; i < 6; ++i)
         show(gs("Warning" + std::to_string(i)),
-             stats && rules::unmet_targets(creator_->rules(), d)[i]);
+             stats && rules::unmet_targets(creator_->rules(), d)[rules::all_abilities[i]]);
     for (const auto *n :
             {"BaseHeader", "BonusHeader", "TotalHeader"
             })
@@ -691,6 +691,7 @@ void CharacterCreationView::refresh()
     if (stats)
         for (unsigned i = 0; i < 6; ++i)
         {
+            const auto ability = rules::all_abilities[i];
             auto *b = &required_node<Button>(*this, gs("Ability" + std::to_string(i)));
             b->set_text(String(std::cmp_equal(selected_score_, i) ? "> " : "") + i18n::text(full_abilities[i]));
             b->set_disabled(!d.rolled);
@@ -705,7 +706,7 @@ void CharacterCreationView::refresh()
             const auto score = creator_->rules().ability_score(d, static_cast<rules::Ability>(i));
             auto *score_box = &required_node<Button>(*this, gs("Score" + std::to_string(i)));
             score_box->set_text(score ? gs(std::to_string(*score)) : String());
-            const bool unmet = rules::unmet_targets(creator_->rules(), d)[i];
+            const bool unmet = rules::unmet_targets(creator_->rules(), d)[ability];
             for (const auto *state :
                     {"normal", "hover", "pressed"
                     })
@@ -715,7 +716,8 @@ void CharacterCreationView::refresh()
                 style->set_content_margin_all(4);
                 score_box->add_theme_stylebox_override(state, style);
             }
-            const int change = score ? *score - d.rolls[d.assignment[i]].total() : 0;
+            const int change =
+                score ? *score - d.rolls[d.assignment[ability]].total() : 0;
             const auto color = change > 0   ? Color("f3d55b")
                                : change < 0 ? Color("f08080")
                                : Color("e0e0e0");
@@ -737,7 +739,7 @@ void CharacterCreationView::refresh()
             required_node<Label>(*this, gs("BonusScore" + std::to_string(i)))
             .set_text(gs(modifier));
             required_node<Label>(*this, gs("TotalScore" + std::to_string(i)))
-            .set_text(s ? gs(std::to_string(s->scores[i])) : String("--"));
+            .set_text(s ? gs(std::to_string(s->scores[ability])) : String("--"));
         }
     if (step == CreationStep::training)
     {
@@ -1106,7 +1108,8 @@ void CharacterCreationView::score_selected(int index)
         selected_score_ = index;
         else
         {
-            creator_->swap_scores(selected_score_, index);
+            creator_->swap_scores(static_cast<rules::Ability>(selected_score_),
+                                  static_cast<rules::Ability>(index));
                 selected_score_ = -1;
             }
     });
@@ -1353,7 +1356,8 @@ void CharacterCreationView::check_run()
         else
         {
             const auto &assigned = creator_->draft().assignment;
-            if (group == 0 && (assigned[3] != 0 || assigned[0] != 6))
+            if (group == 0 &&
+                    (assigned[Ability::intelligence] != 0 || assigned[Ability::strength] != 6))
                 throw std::runtime_error("Mouse drag did not fill only the target ability box");
             if (group == 0)
             {
@@ -1372,9 +1376,10 @@ void CharacterCreationView::check_run()
                 required_node<OptionButton>(*this, "Background").emit_signal("item_selected", 3);
                 required_node<OptionButton>(*this, "Bonus").emit_signal("item_selected", 1);
             }
-            if (group == 1 && assigned[1] != 1)
+            if (group == 1 && assigned[Ability::dexterity] != 1)
                 throw std::runtime_error("Second dice assignment failed");
-            if (group == 2 && (assigned[1] != 0 || assigned[3] != 1))
+            if (group == 2 &&
+                    (assigned[Ability::dexterity] != 0 || assigned[Ability::intelligence] != 1))
                 throw std::runtime_error("Dragging between filled boxes failed to swap scores");
             if (can_drop_roll({}, String("invalid"), 0))
                 throw std::runtime_error("Invalid drag data accepted");
@@ -1410,16 +1415,19 @@ void CharacterCreationView::check_run()
             for (unsigned i = 0; i < 6; ++i)
             {
                 const auto &s = completed_->sheet();
+                const auto ability = rules::all_abilities[i];
                 const auto heading = "[b]" + std::string(full_abilities[i]) + "[/b]\n";
-                if (s.bonuses[i] == 0)
+                if (s.bonuses[ability] == 0)
                 {
                     if (text.contains(gs(heading)))
                         throw std::runtime_error("Unadjusted ability shown in modifiers");
                 }
-                else if (!text.contains(gs(heading + "Rolled score: " + std::to_string(s.base[i]) +
-                                           "\n" + s.background + " background (" +
-                                           signed_number(s.bonuses[i]) +
-                                           ")\nFinal score: " + std::to_string(s.scores[i]))))
+                else if (!text.contains(gs(heading + "Rolled score: " +
+                                           std::to_string(s.base[ability]) + "\n" +
+                                           s.background + " background (" +
+                                           signed_number(s.bonuses[ability]) +
+                                           ")\nFinal score: " +
+                                           std::to_string(s.scores[ability]))))
                     throw std::runtime_error("Adjustment lines do not match approved format");
             }
         }
@@ -1473,7 +1481,8 @@ void CharacterCreationView::check_run()
                     !edit("abc").contains("Enter a whole-number") ||
                     !edit("0").contains("Enter a whole-number"))
                 throw std::runtime_error("Saving throw DC changes failed");
-            const int needed = srd5::minimum_save_roll(15, completed_->sheet().saving_throws[0]);
+            const int needed =
+                srd5::minimum_save_roll(15, completed_->sheet().saving_throws[Ability::strength]);
             if (!edit("15").contains(gs("Roll " + std::to_string(needed) + " or higher")))
                 throw std::runtime_error("Saving throw DC did not restore");
         }
@@ -1651,14 +1660,16 @@ void CharacterCreationView::check_run()
         const auto old = creator_->draft().assignment;
         press("Ability0");
         press("Ability2");
-        if (creator_->draft().assignment[0] != old[2])
+        if (creator_->draft().assignment[Ability::strength] != old[Ability::constitution])
             throw std::runtime_error("UI swap failed");
         break;
     }
     case 7:
         for (unsigned i = 0; i < 6; ++i)
         {
-            const bool unmet = rules::unmet_targets(creator_->rules(), creator_->draft())[i];
+            const auto ability = rules::all_abilities[i];
+            const bool unmet =
+                rules::unmet_targets(creator_->rules(), creator_->draft())[ability];
             if (required_node<Label>(*this, gs("Warning" + std::to_string(i))).is_visible() !=
                     unmet)
                 throw std::runtime_error("Target warnings did not follow score assignment");
@@ -1674,7 +1685,7 @@ void CharacterCreationView::check_run()
         required_node<CheckBox>(*this, "Targets/Rows/Class11").set_pressed(true);
         for (unsigned i = 0; i < 6; ++i)
             if (required_node<Button>(*this, gs("Score" + std::to_string(i))).get_text() !=
-                    gs(std::to_string(creator_->sheet().scores[i])))
+                    gs(std::to_string(creator_->sheet().scores[rules::all_abilities[i]])))
                 throw std::runtime_error(
                     "Displayed ability score differs from the character sheet");
         capture("character-attributes.png");

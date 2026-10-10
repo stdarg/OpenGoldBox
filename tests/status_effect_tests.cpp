@@ -413,7 +413,8 @@ void combat()
         check(s->snapshot().actor == 1, "Save-bonus fixture initiative");
         s->submit(command(*s, "blindness"));
         const auto log = s->snapshot().log();
-        const auto expected = " + " + std::to_string(person.sheet().saving_throws[2]) + " vs DC 13";
+        const auto expected = " + " +
+            std::to_string(person.sheet().saving_throws[Ability::constitution]) + " vs DC 13";
         check(std::any_of(log.begin(), log.end(),
                           [&](const auto & line)
         {

@@ -1666,8 +1666,10 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
     auto talkers = load_expedition(save, directory);
     MemberId charming{};
     for (const auto id : talkers.party->state().slots)
-        if (id && (!charming || talkers.party->member(id).character.sheet().scores[5] >
-                   talkers.party->member(charming).character.sheet().scores[5]))
+        if (id && (!charming ||
+                   talkers.party->member(id).character.sheet().scores[rules::Ability::charisma] >
+                   talkers.party->member(charming).character.sheet()
+                   .scores[rules::Ability::charisma]))
             charming = id;
     talkers.party->make_leader(charming);
     // A copy: the camp and fight below may rebuild the roster.
@@ -1689,7 +1691,8 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
     check(parley != menus.end() && parley[-1].choices.back() == "Parley",
           "Adjacent monsters can be parleyed with");
     check(parley->dialogue.ends_with("\n" + name + " speaks for the party.") &&
-          reaction_score == 2u * talkers.party->member(charming).character.sheet().scores[5],
+          reaction_score == 2u *
+              talkers.party->member(charming).character.sheet().scores[rules::Ability::charisma],
           "The leader speaks for the party with twice its Charisma");
 
     auto waiting = load_expedition(save, directory);
@@ -1732,8 +1735,9 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
     auto &[party, town] = result.trip;
     MemberId charming{};
     for (const auto id : party->state().slots)
-        if (id && (!charming || party->member(id).character.sheet().scores[5] >
-                   party->member(charming).character.sheet().scores[5]))
+        if (id && (!charming ||
+                   party->member(id).character.sheet().scores[rules::Ability::charisma] >
+                   party->member(charming).character.sheet().scores[rules::Ability::charisma]))
             charming = id;
     party->make_leader(charming);
     if (town.snapshot().area_id == 0)

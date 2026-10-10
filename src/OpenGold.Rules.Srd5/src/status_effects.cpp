@@ -48,21 +48,22 @@ SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifi
             static_cast<std::int64_t>(natural) + bonus >= dc};
 }
 
-std::array<unsigned, 2> class_save_proficiencies(CharacterClass character_class)
+std::array<Ability, 2> class_save_proficiencies(CharacterClass character_class)
 {
+    using enum Ability;
     // Indexed by CharacterClass.
-    constexpr std::array<std::array<unsigned, 2>, 12> saves{{{0, 2},
-            {1, 5},
-            {4, 5},
-            {3, 4},
-            {0, 2},
-            {0, 1},
-            {4, 5},
-            {0, 1},
-            {1, 3},
-            {2, 5},
-            {4, 5},
-            {3, 4}
+    constexpr std::array<std::array<Ability, 2>, 12> saves{{{strength, constitution},
+            {dexterity, charisma},
+            {wisdom, charisma},
+            {intelligence, wisdom},
+            {strength, constitution},
+            {strength, dexterity},
+            {wisdom, charisma},
+            {strength, dexterity},
+            {dexterity, intelligence},
+            {constitution, charisma},
+            {wisdom, charisma},
+            {intelligence, wisdom}
         }};
     return saves.at(static_cast<std::size_t>(character_class));
 }

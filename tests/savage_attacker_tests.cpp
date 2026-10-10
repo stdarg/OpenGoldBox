@@ -143,7 +143,8 @@ void automatic_higher_roll()
     {
         ++count;
         const auto h = hero(klass.id);
-        check(h.sheet().modifiers[0] == 3 && h.sheet().modifiers[1] == 3,
+        check(h.sheet().modifiers[Ability::strength] == 3 &&
+              h.sheet().modifiers[Ability::dexterity] == 3,
               "Independent Soldier ability oracle");
         auto c = battle(*rules, h);
         const auto before = unit(*c);

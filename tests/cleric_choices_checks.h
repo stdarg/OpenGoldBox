@@ -90,7 +90,7 @@ void divine_order_checks()
           srd5::equipment_note(thaumaturge.sheet(), "longsword") != trained &&
           srd5::equipment_note(thaumaturge.sheet(), "scale_mail") == trained,
           "Other Clerics keep their Medium armor and Simple weapon training");
-    const auto wisdom = std::max(1, thaumaturge.sheet().modifiers[4]);
+    const auto wisdom = std::max(1, thaumaturge.sheet().modifiers[Ability::wisdom]);
     for (const auto *skill :
             {"arcana", "religion"
             })

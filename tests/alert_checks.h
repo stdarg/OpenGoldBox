@@ -167,8 +167,10 @@ void run()
     const int champion_first = style_route_checks::die(dice_state, 20);
     const int champion_roll = std::max(champion_first, style_route_checks::die(dice_state, 20));
     const int rogue_roll = style_route_checks::die(dice_state, 20);
-    const int fighter_total = champion_roll + p.member(1).character.sheet().modifiers[1] + 2;
-    const int rogue_total = rogue_roll + p.member(2).character.sheet().modifiers[1] + 2;
+    const int fighter_total = champion_roll +
+        p.member(1).character.sheet().modifiers[Ability::dexterity] + 2;
+    const int rogue_total = rogue_roll +
+        p.member(2).character.sheet().modifiers[Ability::dexterity] + 2;
     check(unit(*c, 1).initiative == fighter_total && unit(*c, 2).initiative == rogue_total,
           "Actual proficiency adds once, including Champion Advantage");
     check(before.initiative_choices.size() == 2 && before.elapsed_milliseconds == 0,
@@ -262,7 +264,8 @@ void run()
     exact(*surprised);
     dice_state = 37;
     const int roll = style_route_checks::die(dice_state, 20);
-    check(unit(*surprised, 1).initiative == roll + p.member(1).character.sheet().modifiers[1] + 2,
+    check(unit(*surprised, 1).initiative == roll +
+          p.member(1).character.sheet().modifiers[Ability::dexterity] + 2,
           "Advantage and Disadvantage cancel before adding Alert once");
     decline(*surprised);
     bool down_first = false;

@@ -23,10 +23,10 @@ rules::TrainingChoices training_choices(std::span<const rules::FeatureGrant> gra
                                         CharacterClass klass, std::string_view background);
 rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> grants,
                                         CharacterClass klass, std::string_view background,
-                                        unsigned level, const std::array<int, 6> &scores);
+                                        unsigned level, const rules::AbilityArray<int> &scores);
 rules::AbilityCheckModifier ability_check(std::span<const rules::FeatureGrant> grants,
         CharacterClass klass, std::string_view background,
-        unsigned level, const std::array<int, 6> &scores,
+        unsigned level, const rules::AbilityArray<int> &scores,
         rules::Ability ability, std::string_view skill);
 } // namespace opengold::srd5::detail
 #endif

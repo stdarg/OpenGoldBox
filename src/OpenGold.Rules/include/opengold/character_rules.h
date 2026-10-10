@@ -27,7 +27,7 @@ struct AbilityRoll
 struct ScoreAdjustment
 {
     std::string label;
-    std::array<int, 6> bonuses{};
+    AbilityArray<int> bonuses{};
 };
 
 // Derived from creation and advancement choices, with stable source identity.
@@ -36,7 +36,7 @@ struct AbilityAdjustment
 {
     std::string source_id, label;
     unsigned level{};
-    std::array<int, 6> bonuses{};
+    AbilityArray<int> bonuses{};
     Message label_message;
 };
 
@@ -95,7 +95,7 @@ struct CharacterDraft
     std::vector<std::string> target_classes; // Future intentions, not acquired class levels.
     std::array<AbilityRoll, 6> rolls{};
     // Each assigned ability owns a unique result; 6 means not yet assigned.
-    std::array<unsigned, 6> assignment{0, 1, 2, 3, 4, 5};
+    AbilityArray<unsigned> assignment{0, 1, 2, 3, 4, 5};
     unsigned adjustment{};
     bool rolled{};
     TrainingChoices training;
@@ -109,12 +109,12 @@ struct CharacterSheet
 {
     Identity identity;
     std::string name, race, gender, character_class, alignment, background;
-    std::array<int, 6> base{}, bonuses{}, scores{},
-        modifiers{}; // bonuses is the sum of all sources.
+    AbilityArray<int> base{}, bonuses{}, scores{},
+                 modifiers{}; // bonuses is the sum of all sources.
     int level{1}, hit_die{}, hit_points{};
     std::string hp_explanation;
-    std::array<int, 6> saving_throws{};
-    std::array<bool, 6> save_proficiencies{};
+    AbilityArray<int> saving_throws{};
+    AbilityArray<bool> save_proficiencies{};
     std::string racial_modifiers, class_modifiers, background_modifiers;
     // Derived presentation messages; not character identity or save-file keys.
     std::vector<Message> hp_messages, racial_messages, class_messages, background_messages;
@@ -152,7 +152,7 @@ class CharacterRules
     [[nodiscard]] virtual std::optional<int> ability_score(const CharacterDraft &draft,
             Ability ability) const = 0;
 
-    [[nodiscard]] virtual std::array<unsigned, 6> preset_ability_priority(std::string_view,
+    [[nodiscard]] virtual std::array<Ability, 6> preset_ability_priority(std::string_view,
             unsigned) const = 0;
     [[nodiscard]] virtual ClassRequirements class_requirements(std::string_view id) const = 0;
     [[nodiscard]] virtual CharacterSheet evaluate(const CharacterDraft &draft,
@@ -181,7 +181,7 @@ class CharacterRules
 // so they are not members (Effective C++ Item 23).
 [[nodiscard]] bool class_eligible(const CharacterRules &rules, const CharacterDraft &draft,
                                   std::string_view id);
-[[nodiscard]] std::array<bool, 6> unmet_targets(const CharacterRules &rules,
+[[nodiscard]] AbilityArray<bool> unmet_targets(const CharacterRules &rules,
         const CharacterDraft &draft);
 } // namespace opengold::rules
 #endif

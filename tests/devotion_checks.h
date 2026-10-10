@@ -14,7 +14,7 @@ Character level_three_paladin()
 
 int charisma_bonus(const Character &hero)
 {
-    return std::max(1, hero.sheet().modifiers[5]);
+    return std::max(1, hero.sheet().modifiers[Ability::charisma]);
 }
 
 void sacred_weapon_checks()

@@ -36,8 +36,11 @@ std::uint64_t fingerprint(std::string_view data)
 }
 
 // The containers the codec visits, const or not: the writer sees const values.
-template <class T> constexpr bool is_std_array = false;
-template <class T, std::size_t N> constexpr bool is_std_array<std::array<T, N>> = true;
+// Arrays of a fixed size are written element by element, in order. An
+// AbilityArray is one: its six values go out from Strength to Charisma.
+template <class T> constexpr bool is_fixed_array = false;
+template <class T, std::size_t N> constexpr bool is_fixed_array<std::array<T, N>> = true;
+template <class T> constexpr bool is_fixed_array<rules::AbilityArray<T>> = true;
 template <class T> constexpr bool is_std_vector = false;
 template <class T> constexpr bool is_std_vector<std::vector<T>> = true;
 template <class T> constexpr bool is_std_map = false;
@@ -121,7 +124,7 @@ template <bool Reading> struct SaveCodec
     }
 
     template <class Array>
-    requires is_std_array<std::remove_const_t<Array>>
+    requires is_fixed_array<std::remove_const_t<Array>>
     void field(Array &values)
     {
         for (auto &v : values)

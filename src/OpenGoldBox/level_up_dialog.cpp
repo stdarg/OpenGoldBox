@@ -430,7 +430,7 @@ void LevelUpDialog::open(opengold::MemberId id)
         }
         for (unsigned i = 0; i < 6; ++i)
             required_node<OptionButton>(*this, String("Ability") + String::num_uint64(i))
-            .select(advancement_choice_.abilities[i]);
+            .select(advancement_choice_.abilities[opengold::rules::all_abilities[i]]);
         required_node<Label>(*this, "SpellLabel")
         .set_text(i18n::text(advancement_options_.spells.empty()
                              ? N_("No spell choices for this class")
@@ -562,13 +562,14 @@ void LevelUpDialog::advancement_changed(std::int64_t)
         points->set_disabled(!ability);
         if (!ability)
             points->select(0);
-        advancement_choice_.abilities[i] = ability ? points->get_selected() : 0;
-        const auto value = campaign().member(advancing_).character.sheet().scores[i];
+        const auto shown = opengold::rules::all_abilities[i];
+        advancement_choice_.abilities[shown] = ability ? points->get_selected() : 0;
+        const auto value = campaign().member(advancing_).character.sheet().scores[shown];
         const std::array<const char *, 6> labels{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
         required_node<Label>(*this, String("AbilityLabel") + String::num_uint64(i))
         .set_text(i18n::text(labels[i]) + " " + String::num_int64(value) +
                   String::utf8(" → ") +
-                  String::num_int64(value + advancement_choice_.abilities[i]));
+                  String::num_int64(value + advancement_choice_.abilities[shown]));
     }
     if (!advancement_choice_.spell_learning)
     {

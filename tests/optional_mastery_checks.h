@@ -456,7 +456,8 @@ void boundaries()
         if (!c->snapshot().optional_effect_choice)
             continue;
         const auto description = c->snapshot().optional_effect_choice->description;
-        check(arg(description, "dc") == std::to_string(10 + hero("maul").sheet().modifiers[0]),
+        check(arg(description, "dc") == std::to_string(10 +
+              hero("maul").sheet().modifiers[Ability::strength]),
               "Topple DC uses actual Strength and proficiency");
         const auto before = c->save();
         choose(*c, "effect_use", 1);
@@ -633,7 +634,7 @@ void physical_and_damage()
             act(*c, "effect_attack", 98);
             if (!hit(*c))
                 continue;
-            check(greataxe_damage_within(*c, std::min(0, h.sheet().modifiers[0])),
+            check(greataxe_damage_within(*c, std::min(0, h.sheet().modifiers[Ability::strength])),
                   "Cleave retains negative ability modifiers and omits positive ones");
             roundtrip(*r, *c);
             tested = true;

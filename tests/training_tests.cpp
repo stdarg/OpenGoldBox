@@ -231,7 +231,7 @@ void all_class_skills()
                                     FeatureGrant{"skill:" + id, "class:" + klass.id, 1, {}}) !=
                           h.sheet().grants.end(),
                           "Class skill has exact level-one provenance");
-                    check(item.bonus == h.sheet().modifiers[ability_index(item.ability)] +
+                    check(item.bonus == h.sheet().modifiers[item.ability] +
                           (item.expertise ? 4 : 2),
                           "Overlapping background and class grants add proficiency once");
                 }
@@ -772,7 +772,7 @@ void persistence()
         growing.advance(f, growing.default_advancement(f));
     auto choice = growing.default_advancement(f);
     choice.abilities = {};
-    choice.abilities[1] = 2;
+    choice.abilities[Ability::dexterity] = 2;
     growing.advance(f, choice);
     check(skill(growing.member(f).character.sheet(), "stealth").bonus == 6,
           "Level-up rebuilds skill totals after an ability modifier changes");
@@ -787,13 +787,13 @@ void sage_training()
         auto d = draft(klass.id, "sage");
         const auto adjustments = creation->adjustments("sage");
         for (unsigned i = 0; i < adjustments.size(); ++i)
-            if (adjustments[i].bonuses[3] == 0)
+            if (adjustments[i].bonuses[Ability::intelligence] == 0)
             {
                 d.adjustment = i;
                 break;
             }
         auto sheet = hero(d).sheet();
-        check(sheet.scores[3] == 15, "Authored Intelligence stays 15");
+        check(sheet.scores[Ability::intelligence] == 15, "Authored Intelligence stays 15");
         for (const auto id :
                 {"arcana", "history"
                 })
@@ -862,9 +862,9 @@ void sage_training()
     party.award_experience(1800, "sage-four");
     auto choice = party.default_advancement(id);
     choice.abilities = {};
-    choice.abilities[3] = 2;
+    choice.abilities[Ability::intelligence] = 2;
     party.advance(id, choice);
-    check(party.member(id).character.sheet().scores[3] == 18 &&
+    check(party.member(id).character.sheet().scores[Ability::intelligence] == 18 &&
           skill(party.member(id).character.sheet(), "history").bonus == 6,
           "Intelligence ASI recomputes Sage skill bonus at level four");
     rejects(
@@ -972,7 +972,7 @@ void remaining_backgrounds()
     {
         auto choice = party.default_advancement(id);
         choice.abilities = {};
-        choice.abilities[id == 1 ? 4 : 0] = 2;
+        choice.abilities[id == 1 ? Ability::wisdom : Ability::strength] = 2;
         party.advance(id, choice);
     }
     check(skill(party.member(1).character.sheet(), "insight").bonus == 6 &&
@@ -1078,9 +1078,9 @@ void starting_styles()
                   "Duplicate style cannot consume a level-four entitlement");
             choice = p.default_advancement(id);
             choice.abilities = {};
-            choice.abilities[2] = 2;
+            choice.abilities[Ability::constitution] = 2;
             p.advance(id, choice);
-            check(p.member(id).character.sheet().scores[2] == 19,
+            check(p.member(id).character.sheet().scores[Ability::constitution] == 19,
                   "Starting style coexists with a Constitution ASI");
             const auto bytes = encode_campaign(p, nullptr, "starting-style");
             CampaignParty again(module());

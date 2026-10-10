@@ -119,7 +119,7 @@ void dwarf_class_sources()
         draft.rolls[2] = {{6, 4, 4, 1}, 3};
         const auto adjustments = srd5::character_rules()->adjustments("sage");
         for (unsigned i = 0; i < adjustments.size(); ++i)
-            if (adjustments[i].bonuses[2] == 0)
+            if (adjustments[i].bonuses[Ability::constitution] == 0)
             {
                 draft.adjustment = i;
                 break;
@@ -137,7 +137,7 @@ void dwarf_class_sources()
                 if (level == 4)
                 {
                     choice.abilities = {};
-                    choice.abilities[2] = 2;
+                    choice.abilities[Ability::constitution] = 2;
                 }
                 party.advance(id, choice);
             }
@@ -222,7 +222,7 @@ void progression()
             if (level == 4)
             {
                 choice.abilities = {};
-                choice.abilities[2] = 2;
+                choice.abilities[Ability::constitution] = 2;
             }
             auto bad = choice;
             bad.spells.push_back("unimplemented");
@@ -235,7 +235,7 @@ void progression()
             if (level == 4)
             {
                 bad = choice;
-                bad.abilities[2] = 1;
+                bad.abilities[Ability::constitution] = 1;
                 rejects(
                     [&]
                 {
@@ -255,10 +255,12 @@ void progression()
                   "Each confirmed choice is retained");
             if (level == 4)
             {
-                check(now.character.sheet().modifiers[2] == old.character.sheet().modifiers[2] + 1,
+                check(now.character.sheet().modifiers[Ability::constitution] ==
+                      old.character.sheet().modifiers[Ability::constitution] + 1,
                       "Constitution ability points update modifier");
                 const int expected =
-                    old.character.sheet().hit_die / 2 + 1 + old.character.sheet().modifiers[2] + 4;
+                    old.character.sheet().hit_die / 2 + 1 +
+                        old.character.sheet().modifiers[Ability::constitution] + 4;
                 check(now.character.sheet().hit_points - old.character.sheet().hit_points ==
                       expected,
                       "Constitution growth applies retroactively to all four levels");
@@ -291,7 +293,7 @@ void progression()
         capped.advance(cap, capped.default_advancement(cap));
     auto invalid = capped.default_advancement(cap);
     invalid.abilities = {};
-    invalid.abilities[2] = 2;
+    invalid.abilities[Ability::constitution] = 2;
     const auto unchanged = saved(capped);
     rejects(
         [&]
@@ -336,7 +338,7 @@ void hp_history()
                 AbilityRoll{{example.constitution - 2, 1, 1, 1}, 3};
                 const auto adjustments = srd5::character_rules()->adjustments("sage");
                 for (unsigned i = 0; i < adjustments.size(); ++i)
-                    if (adjustments[i].bonuses[2] == 0)
+                    if (adjustments[i].bonuses[Ability::constitution] == 0)
                     {
                         draft.adjustment = i;
                         break;
@@ -361,8 +363,8 @@ void hp_history()
                                 : "SRD11 0 1 1 0 0 0 3 0 0 0 \"\" 0 0 1 0 0 0 FX8 1 0 0";
                             party.restore(std::move(state));
                             choice.abilities = {};
-                            choice.abilities[2] = example.increase;
-                            choice.abilities[3] = 2 - example.increase;
+                            choice.abilities[Ability::constitution] = example.increase;
+                            choice.abilities[Ability::intelligence] = 2 - example.increase;
                         }
                         party.advance(id, choice);
                     }
@@ -452,9 +454,9 @@ void hp_history()
 
 void ability_sources()
 {
-    for (const unsigned ability :
+    for (const Ability ability :
             {
-                0u, 4u
+                Ability::strength, Ability::wisdom
             })
     {
         auto draft = character("fighter").creation_data();
@@ -469,12 +471,12 @@ void ability_sources()
             check(background.source_id == "background:soldier" && background.level == 1 &&
                   background.label == "Soldier background",
                   "Background source has its own stable identity and acquisition level");
-            check(background.bonuses == std::array<int, 6> {2, 1, 0, 0, 0, 0},
+            check(background.bonuses == AbilityArray<int> {2, 1, 0, 0, 0, 0},
                   "Soldier bonuses remain the original +2 Strength and +1 Dexterity");
             if (count == 2)
             {
                 const auto &feat = sheet.ability_adjustments.back();
-                std::array<int, 6> expected{};
+                AbilityArray<int> expected{};
                 expected[ability] = 2;
                 check(
                     feat.source_id == "feat:ability_score_improvement" && feat.level == 4 &&
@@ -484,12 +486,13 @@ void ability_sources()
                       feat.label_message.source == "Level {level} Ability Score Improvement",
                       "The feat explanation identifies its acquisition level");
             }
-            for (unsigned i = 0; i < 6; ++i)
+            for (const auto each : all_abilities)
             {
                 int total = 0;
                 for (const auto &source : sheet.ability_adjustments)
-                    total += source.bonuses[i];
-                check(total == sheet.bonuses[i] && sheet.base[i] + total == sheet.scores[i],
+                    total += source.bonuses[each];
+                check(total == sheet.bonuses[each] &&
+                      sheet.base[each] + total == sheet.scores[each],
                       "Separate sources sum exactly to the displayed final scores");
             }
         };
@@ -533,8 +536,8 @@ void ability_sources()
 void asi_conformance()
 {
     const auto rules = module();
-    constexpr std::array names{"strength",     "dexterity", "constitution",
-                               "intelligence", "wisdom",    "charisma"};
+    constexpr AbilityArray<const char *> names{"strength",     "dexterity", "constitution",
+                                               "intelligence", "wisdom",    "charisma"};
     for (const char *klass :
             {"barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin",
              "ranger", "rogue", "sorcerer", "warlock", "wizard"
@@ -555,15 +558,19 @@ void asi_conformance()
         check(saved(early) == before,
               "All twelve classes reject a level-one ASI entitlement atomically");
     }
-    for (unsigned ability = 0; ability < 6; ++ability)
+    for (const auto ability : all_abilities)
         for (unsigned bonus :
                 {
                     1u, 2u
                 })
         {
             auto d = character("fighter").creation_data();
-            d.background = ability < 2 ? "soldier" : ability < 5 ? "sage" : "acolyte";
-            d.rolls[ability] = {{6, 6, 6, 1}, 3};
+            d.background = ability_index(ability) < 2 ? "soldier"
+                           : ability_index(ability) < 5 ? "sage"
+                           : "acolyte";
+            d.rolls[d.assignment[ability]] = {{6, 6, 6, 1}, 3};
+            // The next ability in sheet order, wrapping past Charisma.
+            const auto next = all_abilities[(ability_index(ability) + 1) % all_abilities.size()];
             const auto adjustments = srd5::character_rules()->adjustments(d.background);
             bool found = false;
             for (unsigned i = 0; i < adjustments.size(); ++i)
@@ -584,7 +591,7 @@ void asi_conformance()
             auto choice = capped.default_advancement(id);
             choice.abilities = {};
             choice.abilities[ability] = bonus == 1 ? 2 : 1;
-            choice.abilities[(ability + 1) % 6] = bonus == 1 ? 0 : 1;
+            choice.abilities[next] = bonus == 1 ? 0 : 1;
             const auto before = saved(capped);
             rejects(
                 [&]
@@ -595,7 +602,7 @@ void asi_conformance()
             if (bonus == 1)
             {
                 choice.abilities[ability] = 1;
-                choice.abilities[(ability + 1) % 6] = 1;
+                choice.abilities[next] = 1;
                 capped.advance(id, choice);
                 check(capped.member(id).character.sheet().scores[ability] == 20 &&
                       capped.member(id).character.sheet().modifiers[ability] == 5,
@@ -630,9 +637,11 @@ void asi_conformance()
                         std::filesystem::path(OPENGOLD_BINARY_DIR) /
                         ("asi-" + std::string(klass) + "-ui.ogs"),
                         encode_campaign(baseline, nullptr, campaign_asset_identity(dir)));
-            for (unsigned first = 0; first < 6; ++first)
-                for (unsigned second = first; second < 6; ++second)
+            for (std::size_t first_index = 0; first_index < 6; ++first_index)
+                for (std::size_t second_index = first_index; second_index < 6; ++second_index)
                 {
+                    const auto first = all_abilities[first_index];
+                    const auto second = all_abilities[second_index];
                     CampaignParty p(module());
                     p.restore(baseline.checkpoint());
                     auto choice = p.default_advancement(id);
@@ -664,25 +673,27 @@ void asi_conformance()
                     const auto &sheet = member.character.sheet();
                     check(sheet.level == 4 && member.vitals == preview.vitals,
                           "Every allocation commits exactly its preview");
-                    for (unsigned i = 0; i < 6; ++i)
+                    for (const auto ability : all_abilities)
                     {
-                        const int score =
-                            original.character.sheet().scores[i] + int(choice.abilities[i]);
+                        const int score = original.character.sheet().scores[ability] +
+                                          int(choice.abilities[ability]);
                         const int modifier = score / 2 - 5;
                         check(
-                            sheet.scores[i] == score && sheet.modifiers[i] == modifier &&
-                            sheet.saving_throws[i] ==
-                            modifier + (sheet.save_proficiencies[i] ? 2 : 0),
+                            sheet.scores[ability] == score &&
+                                sheet.modifiers[ability] == modifier &&
+                            sheet.saving_throws[ability] ==
+                            modifier + (sheet.save_proficiencies[ability] ? 2 : 0),
                             "ASI updates each score, modifier and trained/untrained saving throw exactly once");
                     }
                     for (const auto &skill : sheet.training.skills)
-                        check(skill.bonus == sheet.scores[ability_index(skill.ability)] / 2 - 5 +
+                        check(skill.bonus == sheet.scores[skill.ability] / 2 - 5 +
                               (skill.expertise    ? 4
                                : skill.proficient ? 2
                                : 0),
                               "Skill totals use final ability and unchanged training");
-                    const int old_con = original.character.sheet().scores[2] / 2 - 5,
-                              new_con = sheet.scores[2] / 2 - 5;
+                    const int old_con =
+                        original.character.sheet().scores[Ability::constitution] / 2 - 5;
+                    const int new_con = sheet.scores[Ability::constitution] / 2 - 5;
                     const int maximum = original.character.sheet().hit_points +
                                         std::max(1, sheet.hit_die / 2 + 1 + old_con) +
                                         4 * (new_con - old_con);
@@ -693,9 +704,9 @@ void asi_conformance()
                           original.character.inventory().items().size(),
                           "Advancement preserves physical equipment");
                     std::map<std::string, std::string> selections;
-                    for (unsigned i = 0; i < 6; ++i)
-                        if (choice.abilities[i])
-                            selections[names[i]] = std::to_string(choice.abilities[i]);
+                    for (const auto ability : all_abilities)
+                        if (choice.abilities[ability])
+                            selections[names[ability]] = std::to_string(choice.abilities[ability]);
                     const FeatureGrant expected{"feat:ability_score_improvement",
                                                 "class:" + std::string(klass) +
                                                 ":ability_score_improvement",
@@ -721,8 +732,8 @@ void asi_conformance()
                     const auto profile = p.profile(id);
                     check(
                         profile.hit_points == maximum &&
-                        profile.melee_attack_bonus == sheet.scores[0] / 2 - 5 + 2 &&
-                        profile.armor_class == 10 + sheet.scores[1] / 2 - 5,
+                        profile.melee_attack_bonus == sheet.scores[Ability::strength] / 2 - 5 + 2 &&
+                        profile.armor_class == 10 + sheet.scores[Ability::dexterity] / 2 - 5,
                         "Actual combat profile uses advanced HP, Strength attack and Dexterity AC");
                     auto c = duel(*rules, p);
                     check(unit(*c, id).max_hit_points == maximum &&
@@ -737,7 +748,7 @@ void asi_conformance()
                                      .party);
                     check(saved(restored) == bytes,
                           "All allocation/class/ownership histories reconstruct canonically");
-                    if (first == 2 && second == 2)
+                    if (first == Ability::constitution && second == Ability::constitution)
                     {
                         check(bool(restored.rest(RestKind::short_rest)),
                               "Advanced character can Short Rest");
@@ -814,7 +825,7 @@ void feats()
             check(party.profile(id).armor_class == ac + 1, "Defense adds AC in armor");
             party.unequip(id, 2);
             check(party.profile(id).armor_class ==
-                  10 + party.member(id).character.sheet().modifiers[1],
+                  10 + party.member(id).character.sheet().modifiers[Ability::dexterity],
                   "Defense does not grant unarmored AC");
         }
         else

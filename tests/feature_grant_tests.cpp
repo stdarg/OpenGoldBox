@@ -214,8 +214,8 @@ void advancement()
             }
             choice = party.default_advancement(id);
             choice.abilities = {};
-            choice.abilities[2] = 1;
-            choice.abilities[4] = 1;
+            choice.abilities[Ability::constitution] = 1;
+            choice.abilities[Ability::wisdom] = 1;
             const auto preview = party.preview_advancement(id, choice);
             const FeatureGrant expected{"feat:ability_score_improvement",
                                         std::string("class:") + klass +
@@ -308,7 +308,7 @@ void profiles()
         party.advance(id, party.default_advancement(id));
     auto choice = party.default_advancement(id);
     choice.abilities = {};
-    choice.abilities[2] = 2;
+    choice.abilities[Ability::constitution] = 2;
     party.advance(id, choice);
     const auto bytes = saved(party);
     for (const auto &bad :

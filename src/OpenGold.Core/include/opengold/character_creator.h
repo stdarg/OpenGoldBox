@@ -66,7 +66,7 @@ class CharacterCreator
     void roll();
     void assign_roll(unsigned roll, rules::Ability ability);
     [[nodiscard]] bool scores_assigned() const;
-    void swap_scores(unsigned first, unsigned second);
+    void swap_scores(rules::Ability first, rules::Ability second);
     void name(std::string text);
     void appearance(por::CharacterAppearance value);
     void next();
