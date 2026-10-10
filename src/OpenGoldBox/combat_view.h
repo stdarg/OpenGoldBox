@@ -108,6 +108,19 @@ class CombatView : public godot::Control
         bool goliath{};
     };
 
+    // Everything sync_art() installs, built off to the side first.
+    struct ArtSet
+    {
+        std::map<opengold::rules::EntityId, std::string> missing;
+        std::map<opengold::rules::EntityId, SpriteArt> sprites;
+        std::map<std::string, SpriteArt> forms;
+        std::map<opengold::rules::EntityId, godot::Ref<godot::Texture2D>> portraits;
+        std::vector<godot::Ref<godot::ImageTexture>> terrain;
+        godot::Ref<godot::ImageTexture> skull;
+        std::vector<opengold::CombatArt> campaign;
+    };
+    [[nodiscard]] ArtSet build_art() const;
+
     std::map<opengold::rules::EntityId, SpriteArt> art_;
     // Wild Shape's Beast forms, by form key, from the original combat icons.
     std::map<std::string, SpriteArt> form_art_;

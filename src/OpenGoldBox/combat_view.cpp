@@ -850,20 +850,38 @@ void CombatView::revisit()
 
 void CombatView::sync_art(bool preserve_effects)
 {
-    auto prior_dead = std::move(known_dead_);
-    auto prior_skulls = std::move(skull_seconds_);
-    auto prior_actions = std::move(action_seconds_);
-    missing_art_.clear();
-    art_.clear();
-    form_art_.clear();
-    portraits_.clear();
-    terrain_art_.clear();
-    skull_art_.unref();
-    known_dead_.clear();
-    skull_seconds_.clear();
-    action_seconds_.clear();
+    // The art is built off to the side and moved in at the end, so a missing
+    // or corrupt art file leaves the previous art in place rather than an
+    // empty or half-built battlefield (Effective C++ Item 29).
+    auto built = demo_ ? build_art() : ArtSet{};
     if (!demo_)
-        return;
+        built.campaign = campaign_art_;
+    missing_art_ = std::move(built.missing);
+    art_ = std::move(built.sprites);
+    form_art_ = std::move(built.forms);
+    portraits_ = std::move(built.portraits);
+    terrain_art_ = std::move(built.terrain);
+    skull_art_ = std::move(built.skull);
+    campaign_art_ = std::move(built.campaign);
+    if (!preserve_effects)
+    {
+        known_dead_.clear();
+        skull_seconds_.clear();
+        action_seconds_.clear();
+    }
+}
+
+CombatView::ArtSet CombatView::build_art() const
+{
+    ArtSet result;
+    result.campaign = campaign_art_;
+    auto &missing_art = result.missing;
+    auto &art = result.sprites;
+    auto &form_art = result.forms;
+    auto &portraits = result.portraits;
+    auto &terrain_art = result.terrain;
+    auto &skull_art = result.skull;
+    auto &campaign_art = result.campaign;
     const auto directory = presentation::path_from_godot(settings::game_path());
     if (std::filesystem::is_directory(directory))
     {
@@ -884,15 +902,15 @@ void CombatView::sync_art(bool preserve_effects)
             auto decoded = decode_ega_combat_icon(bytes, 11, 0);
             if (!decoded)
                 throw std::runtime_error("Cannot decode original skull combat effect");
-            skull_art_ = ImageTexture::create_from_image(presentation::rgba_image(decoded.image));
+            skull_art = ImageTexture::create_from_image(presentation::rgba_image(decoded.image));
             break;
         }
-        if (skull_art_.is_null())
+        if (skull_art.is_null())
             throw std::runtime_error("Original skull combat effect is missing");
     }
     for (const auto &source : demo_->terrain_art())
     {
-        terrain_art_.push_back(presentation::image_texture(source));
+        terrain_art.push_back(presentation::image_texture(source));
     }
     const auto build = [](const CombatArt & source, bool goliath)
     {
@@ -931,10 +949,10 @@ void CombatView::sync_art(bool preserve_effects)
     };
     const auto install = [&](const CombatArt & source, bool goliath)
     {
-        missing_art_.erase(source.entity);
+        missing_art.erase(source.entity);
         if (!source.missing_combination.empty())
-            missing_art_[source.entity] = source.missing_combination;
-        art_[source.entity] = build(source, goliath);
+            missing_art[source.entity] = source.missing_combination;
+        art[source.entity] = build(source, goliath);
     };
     for (const auto &source : demo_->art())
         install(source, false);
@@ -944,20 +962,20 @@ void CombatView::sync_art(bool preserve_effects)
         const auto catalog = por::CombatBodyCatalog::load(
                                  presentation::path_from_godot(game_combat_body_file()),
                                  presentation::path_from_godot(game_combat_weapon_file()));
-        campaign_art_.clear();
+        campaign_art.clear();
         for (const auto id : campaign_->state().slots)
             if (id)
             {
                 const auto resolved =
                     por::resolve_combat_appearance(campaign_->member(id), catalog);
-                campaign_art_.push_back(
+                campaign_art.push_back(
                 {
                     id, resolved.icon(originals, por::IconPose::ready),
                     resolved.icon(originals, por::IconPose::action),
 resolved.selection.matched ? std::string{} : resolved.selection.label});
             }
     }
-    for (const auto &source : campaign_art_)
+    for (const auto &source : campaign_art)
     {
         bool goliath = false;
         if (campaign_)
@@ -1005,7 +1023,7 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
                 CombatArt source{0, std::move(ready.image), {}, {}};
                 if (action)
                     source.action = std::move(action.image);
-                form_art_[entry.form] = build(source, false);
+                form_art[entry.form] = build(source, false);
             }
         }
     if (campaign_)
@@ -1050,7 +1068,7 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
                                                         gs("res://bin/portraits/" + filename));
                     if (portrait.is_valid())
                     {
-                        portraits_.emplace(id, portrait);
+                        portraits.emplace(id, portrait);
                         continue;
                     }
                 }
@@ -1059,15 +1077,10 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
                         !legacy.heads().contains(appearance.portrait_head))
                     presentation::load_additional_portrait_heads(legacy);
                 const auto image = presentation::rgba_image(legacy.portrait(appearance));
-                portraits_.emplace(id, ImageTexture::create_from_image(image));
+                portraits.emplace(id, ImageTexture::create_from_image(image));
             }
     }
-    if (preserve_effects)
-    {
-        known_dead_ = std::move(prior_dead);
-        skull_seconds_ = std::move(prior_skulls);
-        action_seconds_ = std::move(prior_actions);
-    }
+    return result;
 }
 
 void CombatView::save_game()
