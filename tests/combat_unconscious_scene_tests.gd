@@ -14,6 +14,9 @@ func keep_initiative(combat: Node) -> void:
 
 func check() -> void:
     root.size = Vector2i(1920, 1080)
+    # This window takes the keyboard focus when it opens, so keys and clicks meant
+    # for another app would reach it. Only the check's own pushed input drives it.
+    DisplayServer.window_set_input_event_callback(func(_event: InputEvent) -> void: pass)
     # A fresh checkout has no build/checks folder for the screenshots yet.
     var checks := ProjectSettings.globalize_path("res://../../../build/checks")
     DirAccess.make_dir_recursive_absolute(checks)
