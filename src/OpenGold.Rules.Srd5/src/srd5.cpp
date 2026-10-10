@@ -2183,7 +2183,14 @@ class Session final : public CombatSession
     [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
     // Whether `a` is Charmed by `other`, which it then cannot attack or target.
     [[nodiscard]] bool charmed_by(const Actor &a, EntityId other) const;
-    void strike_true(Actor &a, Actor &target, bool radiant);
+    // True Strike deals Radiant damage or the weapon's own type, as the caster chooses.
+    enum class TrueStrikeDamage
+    {
+        weapon,
+        radiant
+    };
+
+    void strike_true(Actor &a, Actor &target, TrueStrikeDamage choice);
     bool strikes_duplicate(const Actor &attacker, Actor &target);
     // A weapon attack, or a spell attack when `spell` is given.
     bool attack(Actor &a, Actor &target, AttackRange range,
@@ -6974,7 +6981,7 @@ bool Session::mark_can_move(const Actor &caster) const
     return marked;
 }
 
-void Session::strike_true(Actor &a, Actor &target, bool radiant)
+void Session::strike_true(Actor &a, Actor &target, TrueStrikeDamage choice)
 {
     // The attack uses the spellcasting modifier for its attack and damage
     // rolls; `casting` is that modifier plus the +2 Proficiency Bonus.
@@ -6984,7 +6991,7 @@ void Session::strike_true(Actor &a, Actor &target, bool radiant)
     d.melee_bonus += modifier - d.melee_ability;
     d.melee_ability = modifier;
     d.melee.bonus = modifier;
-    if (radiant)
+    if (choice == TrueStrikeDamage::radiant)
         d.melee_type = detail::DamageType::radiant;
     log(a.source.name + " casts True Strike.",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", "True Strike", true}}});
@@ -8737,7 +8744,9 @@ void Session::dispatch(const Command &command)
             log(a.source.name + " disengages.", {"{name} disengages.", {{"name", a.source.name}}});
         }
         else if (command.verb == "true_strike" || command.verb == "true_strike_radiant")
-            strike_true(a, actor(command.target), command.verb == "true_strike_radiant");
+            strike_true(a, actor(command.target), command.verb == "true_strike_radiant"
+                        ? TrueStrikeDamage::radiant
+                        : TrueStrikeDamage::weapon);
         else if (const auto *spell = detail::find_spell(command.verb))
             resolve_spell(*spell, command.verb, a, command.target);
         else if (command.verb == "throw")
