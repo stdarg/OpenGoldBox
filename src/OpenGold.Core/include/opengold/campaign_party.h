@@ -269,6 +269,10 @@ class CampaignParty
     std::uint64_t combat_elapsed_{};
     void elapse(PartyState &state, std::chrono::milliseconds elapsed,
                 std::span<const MemberId> in_combat = {}) const;
+    // A member of `state`, which may be a working copy of state_. Throws for a
+    // missing id rather than dereferencing the end of the roster.
+    [[nodiscard]] static const PartyMember &member_in(const PartyState &state, MemberId id);
+    [[nodiscard]] static PartyMember &member_in(PartyState &state, MemberId id);
     void editable() const;
     void outside_combat() const;
     void require_rest_ticket(RestTicket ticket) const;

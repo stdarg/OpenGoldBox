@@ -191,14 +191,23 @@ void CampaignParty::editable() const
 
 const PartyMember &CampaignParty::member(MemberId id) const
 {
-    const auto it = std::find_if(state_.roster.begin(), state_.roster.end(),
-                                 [&](const auto & m)
+    return member_in(state_, id);
+}
+
+const PartyMember &CampaignParty::member_in(const PartyState &state, MemberId id)
+{
+    const auto found = std::find_if(state.roster.begin(), state.roster.end(), [&](const auto & m)
     {
         return m.id == id;
     });
-    if (it == state_.roster.end())
+    if (found == state.roster.end())
         throw std::runtime_error("Unknown party member");
-    return *it;
+    return *found;
+}
+
+PartyMember &CampaignParty::member_in(PartyState &state, MemberId id)
+{
+    return const_cast<PartyMember &>(member_in(std::as_const(state), id));
 }
 
 PartyMember &CampaignParty::edit(MemberId id)
@@ -613,11 +622,7 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id)
     for (auto id : next.slots)
         if (id)
         {
-            auto &member = *std::find_if(next.roster.begin(), next.roster.end(),
-                                         [&](const auto & m)
-            {
-                return m.id == id;
-            });
+            auto &member = member_in(next, id);
             if (member.vitals.dead)
                 continue;
             if (amount > std::numeric_limits<unsigned>::max() - member.experience)
@@ -884,10 +889,7 @@ std::vector<DoorAttempt> CampaignParty::cast_knock(int difficulty)
     {
         if (!id)
             continue;
-        auto &caster = *std::find_if(next.roster.begin(), next.roster.end(), [&](const auto & m)
-        {
-            return m.id == id;
-        });
+        auto &caster = member_in(next, id);
         if (!rules_->can_cast_exploration_spell(caster.character.sheet(), caster.vitals, "knock"))
             continue;
         rules_->cast_exploration_spell(caster.character.sheet(), caster.vitals, "knock");
@@ -906,20 +908,12 @@ void CampaignParty::temple_heal(MemberId target)
     if (current.vitals.dead || current.vitals.hit_points >= hit_point_maximum(target))
         throw std::runtime_error("Cure Wounds requires a wounded living member");
     auto next = state_;
-    auto &healed = *std::find_if(next.roster.begin(), next.roster.end(),
-                                 [&](const auto & m)
-    {
-        return m.id == target;
-    });
+    auto &healed = member_in(next, target);
     unsigned remaining = 100;
     for (auto id : next.slots)
         if (id)
         {
-            auto &m = *std::find_if(next.roster.begin(), next.roster.end(),
-                                    [&](const auto & x)
-            {
-                return x.id == id;
-            });
+            auto &m = member_in(next, id);
             const auto paid = std::min<unsigned>(m.wealth[3], remaining);
             m.wealth[3] -= static_cast<std::uint16_t>(paid);
             remaining -= paid;
@@ -941,11 +935,7 @@ std::optional<HazardHit> CampaignParty::hazard_attack(const rules::HazardAttack 
         return std::nullopt;
     auto next = state_;
     const auto target = conscious[roll_die(next.random_state, int(conscious.size())) - 1];
-    auto &struck = *std::find_if(next.roster.begin(), next.roster.end(),
-                                 [&](const auto & m)
-    {
-        return m.id == target;
-    });
+    auto &struck = member_in(next, target);
     HazardHit hit{target, rules_->hazard_attack(struck.vitals, struck.character.sheet(), attack,
                   next.random_state)};
     state_ = std::move(next);
@@ -975,10 +965,7 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
     auto next = state_;
     const auto find = [&](MemberId id) -> PartyMember &
     {
-        return *std::find_if(next.roster.begin(), next.roster.end(), [&](const auto & m)
-        {
-            return m.id == id;
-        });
+        return member_in(next, id);
     };
     auto &caster = find(user);
     const auto actions = camp_actions(user);
@@ -1104,11 +1091,7 @@ void CampaignParty::validate(const PartyState &state)
         {
             if (!active.contains(id) || !members.insert(id).second)
                 throw std::runtime_error("Invalid spell-choice rest member");
-            const auto &m = *std::find_if(state.roster.begin(), state.roster.end(),
-                                          [&](const auto & m)
-            {
-                return m.id == id;
-            });
+            const auto &m = member_in(state, id);
             if (!m.last_rest_minutes || *m.last_rest_minutes != rest.completed_minutes ||
                     m.last_rest_subminute_milliseconds != rest.completed_subminute_milliseconds ||
                     std::any_of(m.character.spell_edits().begin(), m.character.spell_edits().end(),
@@ -1135,11 +1118,7 @@ void CampaignParty::validate(const PartyState &state)
         {
             if (!active.contains(id) || !members.insert(id).second)
                 throw std::runtime_error("Invalid training-choice rest member");
-            const auto &m = *std::find_if(state.roster.begin(), state.roster.end(),
-                                          [&](const auto & m)
-            {
-                return m.id == id;
-            });
+            const auto &m = member_in(state, id);
             if (!m.last_rest_minutes || *m.last_rest_minutes != rest.completed_minutes ||
                     m.last_rest_subminute_milliseconds != rest.completed_subminute_milliseconds ||
                     std::any_of(m.character.training_edits().begin(),
@@ -1186,11 +1165,7 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
     if (state.training_rest)
         for (auto id : state.training_rest->members)
         {
-            const auto &m = *std::find_if(state.roster.begin(), state.roster.end(),
-                                          [&](const auto & m)
-            {
-                return m.id == id;
-            });
+            const auto &m = member_in(state, id);
             if (!rules.recovery_info(m.character.sheet(), m.vitals).can_rest ||
                     !rules.rest_training_options(m.character.sheet()))
                 throw std::runtime_error("Invalid Long Rest training eligibility");
@@ -1198,11 +1173,7 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
     if (state.spell_rest)
         for (auto id : state.spell_rest->members)
         {
-            const auto &m = *std::find_if(state.roster.begin(), state.roster.end(),
-                                          [&](const auto & m)
-            {
-                return m.id == id;
-            });
+            const auto &m = member_in(state, id);
             const auto options = rules.spell_choice_options(m.character.sheet(),
                 rules::SpellChoiceContext::long_rest);
             if (!rules.recovery_info(m.character.sheet(), m.vitals).can_rest ||
@@ -1212,11 +1183,7 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
     if (state.short_rest)
         for (auto id : state.short_rest->members)
         {
-            const auto &m = *std::find_if(state.roster.begin(), state.roster.end(),
-                                          [&](const auto & member)
-            {
-                return member.id == id;
-            });
+            const auto &m = member_in(state, id);
             if (!rules.recovery_info(m.character.sheet(), m.vitals).can_rest)
                 throw std::runtime_error("Invalid Short Rest vitality");
         }

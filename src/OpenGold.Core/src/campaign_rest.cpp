@@ -106,11 +106,7 @@ void CampaignParty::short_rest_benefits(PartyState &state,
     std::vector<MemberId> eligible;
     for (auto id : members)
     {
-        auto &member = *std::find_if(state.roster.begin(), state.roster.end(),
-                                     [&](const auto & m)
-        {
-            return m.id == id;
-        });
+        auto &member = member_in(state, id);
         if (!rules_->recovery_info(member.character.sheet(), member.vitals).can_rest)
             continue;
         rules_->recover_short_rest(member.vitals, member.character.sheet());
@@ -126,11 +122,7 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
 {
     for (auto id : members)
     {
-        auto &member = *std::find_if(state.roster.begin(), state.roster.end(),
-                                     [&](const auto & m)
-        {
-            return m.id == id;
-        });
+        auto &member = member_in(state, id);
         if (!rules_->recovery_info(member.character.sheet(), member.vitals).can_rest)
             continue;
         rules_->recover(member.vitals, member.character.sheet());
@@ -174,11 +166,7 @@ std::vector<rules::HitDieResult> CampaignParty::heal_with_hit_dice(RestTicket ti
     if (ticket.revision == std::numeric_limits<std::uint64_t>::max())
         throw std::runtime_error("Rest revision exhausted");
     auto next = state_;
-    auto &m = *std::find_if(next.roster.begin(), next.roster.end(),
-                            [&](const auto & value)
-    {
-        return value.id == id;
-    });
+    auto &m = member_in(next, id);
     // Spending until full or out of dice is the only sensible choice, so one
     // request spends them all; a die is never spent at full HP.
     std::vector<rules::HitDieResult> result;
@@ -206,11 +194,7 @@ rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id
     if (ticket.revision == std::numeric_limits<std::uint64_t>::max())
         throw std::runtime_error("Rest revision exhausted");
     auto next = state_;
-    auto &member = *std::find_if(next.roster.begin(), next.roster.end(),
-                                 [&](const auto & value)
-    {
-        return value.id == id;
-    });
+    auto &member = member_in(next, id);
     auto result = rules_->recover_rest_choice(member.vitals, member.character.sheet(), choice);
     ++next.short_rest->ticket.revision;
     state_ = std::move(next);
