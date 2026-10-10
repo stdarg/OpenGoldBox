@@ -3,6 +3,7 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "character_creation_view.h"
+#include "character_pool_dialog.h"
 #include "rolf_tour_view.h"
 #include "combat_view.h"
 #include "save_slots.h"
@@ -152,11 +153,7 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     {
         presentation::detach_child(*this, *town).reset();
     }
-    pool_added_.clear();
-    for (unsigned i = 0; i < 48; ++i)
-        for (const auto &m : campaign_->state().roster)
-            if (m.creation_source == "pool:v1:" + std::to_string(i))
-                pool_added_.push_back(i);
+    required_node<CharacterPoolDialog>(*this, "PoolModal").mark_added(*campaign_);
     completed_.reset();
     added_to_party_ = false;
     roster_index_ = 0;

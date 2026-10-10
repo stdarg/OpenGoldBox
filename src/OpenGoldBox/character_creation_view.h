@@ -92,13 +92,8 @@ class CharacterCreationView : public godot::Control
     bool equipment_art_check_{};
     void equipment_art_check();
     unsigned party_check_stage_{};
-    std::vector<opengold::Character> pool_;
-    std::vector<unsigned> pool_added_;
-    unsigned pool_index_{}, pool_check_stage_{};
+    unsigned pool_check_stage_{};
     void show_pool();
-    void pool_selected(std::int64_t index);
-    void pool_add();
-    void close_pool();
     void pool_layout();
     void town_member_selected(std::int64_t slot);
     void close_town_sheet();

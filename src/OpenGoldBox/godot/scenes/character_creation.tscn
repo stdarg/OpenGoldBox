@@ -471,7 +471,7 @@ theme_override_font_sizes/normal_font_size = 18
 [node name="Close" type="Button" parent="SavingThrowsModal"]
 text = "Close"
 
-[node name="PoolModal" type="Window" parent="."]
+[node name="PoolModal" type="CharacterPoolDialog" parent="."]
 visible = false
 transient = true
 exclusive = true

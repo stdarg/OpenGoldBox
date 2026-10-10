@@ -5,6 +5,7 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "character_creation_view.h"
+#include "character_pool_dialog.h"
 #include "character_sheet_text.h"
 #include "equipment_choice_dialog.h"
 #include "combat_view.h"
@@ -124,14 +125,20 @@ void CharacterCreationView::setup_party()
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::make_town_sheet_leader));
     required_node<Button>(*this, "PartyPanel/Pool")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_pool));
-    required_node<ItemList>(*this, "PoolModal/List")
-    .connect("item_selected", presentation::guarded(this, &CharacterCreationView::pool_selected));
-    required_node<Button>(*this, "PoolModal/Add")
-    .connect("pressed", presentation::guarded(this, &CharacterCreationView::pool_add));
-    required_node<Button>(*this, "PoolModal/Close")
-    .connect("pressed", presentation::guarded(this, &CharacterCreationView::close_pool));
-    required_node<Window>(*this, "PoolModal")
-    .connect("close_requested", presentation::guarded(this, &CharacterCreationView::close_pool));
+    required_node<CharacterPoolDialog>(*this, "PoolModal")
+    .connect_host(creator_->rules(), *art_, *portraits_, [this]() -> CampaignParty &
+    {
+        return *campaign_;
+    },
+    [this]
+    {
+        roster_index_ = campaign_->state().roster.size() - 1;
+        refresh_party();
+    },
+    [this](const std::exception & failure)
+    {
+        report_failure(failure);
+    });
     required_node<Button>(*this, "TownSheet/Close")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::close_town_sheet));
     required_node<Window>(*this, "TownSheet")
@@ -149,6 +156,18 @@ void CharacterCreationView::setup_party()
     equipment_art_check_ =
         OS::get_singleton()->get_cmdline_user_args().has("--equipment-art-check");
     expedition_check_ = OS::get_singleton()->get_cmdline_user_args().has("--expedition-check");
+}
+
+void CharacterCreationView::show_pool()
+{
+    try
+    {
+        required_node<CharacterPoolDialog>(*this, "PoolModal").open();
+    }
+    catch (const std::exception &e)
+    {
+        required_node<Label>(*this, "PartyPanel/Status").set_text(i18n::text(e.what()));
+    }
 }
 
 void CharacterCreationView::party_layout()
@@ -808,21 +827,22 @@ void CharacterCreationView::party_check()
         if (!error_.is_empty())
             throw std::runtime_error(error_.utf8().get_data());
     };
+    auto *pool = &required_node<CharacterPoolDialog>(*this, "PoolModal");
     if (pool_check_stage_ < 3)
     {
         if (pool_check_stage_ == 0)
         {
             show_pool();
-            if (pool_.size() != 48)
+            if (pool->characters().size() != 48)
                 throw std::runtime_error("Pool must contain four characters per class");
         }
         else if (pool_check_stage_ == 1)
         {
             std::map<std::string, unsigned> classes;
             std::set<std::string> names;
-            for (unsigned i = 0; i < pool_.size(); ++i)
+            for (unsigned i = 0; i < pool->characters().size(); ++i)
             {
-                const auto &c = pool_[i];
+                const auto &c = pool->characters()[i];
                 const auto &s = c.sheet();
                 ++classes[s.character_class];
                 names.insert(s.name);
@@ -832,7 +852,7 @@ void CharacterCreationView::party_check()
                 if (!s.training.complete)
                     throw std::runtime_error("Preset training must be complete");
                 art_->validate(c.appearance());
-                pool_selected(i);
+                pool->select(i);
             }
             if (names.size() != 48 || classes.size() != 12 ||
                     std::any_of(classes.begin(), classes.end(),
@@ -841,7 +861,7 @@ void CharacterCreationView::party_check()
             return c.second != 4;
         }))
             throw std::runtime_error("Pool class counts or names invalid");
-            pool_selected(19);
+            pool->select(19);
             required_node<ItemList>(*this, "PoolModal/List").select(19);
         }
         else
@@ -855,14 +875,14 @@ void CharacterCreationView::party_check()
                                         "user://checks/character-pool.png"));
             }
             const auto state = campaign_->checkpoint();
-            pool_add();
-            pool_add();
+            pool->add();
+            pool->add();
             if (campaign_->state().roster.size() != state.roster.size() + 1)
                 throw std::runtime_error("Pool add or duplicate guard failed");
             campaign_->restore(state);
-            pool_added_.clear();
+            pool->mark_added(*campaign_);
             roster_index_ = 0;
-            close_pool();
+            pool->close();
         }
         ++pool_check_stage_;
         return;
