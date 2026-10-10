@@ -1083,7 +1083,7 @@ void RolfTourView::check_town()
             selection = 0;
         if (campaign_ && s.dialogue == "Choose a party member.")
             selection = 0;
-        get_node<ItemList>("Choices")->select(selection);
+        get_node<ItemList>("Choices")->select(static_cast<std::int32_t>(selection));
         get_node<Button>("Continue")->emit_signal("pressed");
         return;
     }
@@ -1229,7 +1229,7 @@ void RolfTourView::check_recovery()
         throw std::runtime_error("Recovery route fault: " + session_->script_diagnostics().back());
     const auto choose = [&](std::size_t choice)
     {
-        get_node<ItemList>("Choices")->select(choice);
+        get_node<ItemList>("Choices")->select(static_cast<std::int32_t>(choice));
         get_node<Button>("Continue")->emit_signal("pressed");
     };
     if (s.phase == TourPhase::awaiting_continue)

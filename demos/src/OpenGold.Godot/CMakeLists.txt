@@ -15,6 +15,9 @@ FetchContent_Declare(godot_cpp
     GIT_TAG e83fd0904c13356ed1d4c3d09f8bb9132bdc6b77
 )
 FetchContent_MakeAvailable(godot_cpp)
+# godot-cpp's headers are third-party; keep their warnings out of the project's.
+get_target_property(godot_cpp_includes godot-cpp INTERFACE_INCLUDE_DIRECTORIES)
+set_target_properties(godot-cpp PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${godot_cpp_includes}")
 # Keep the approved source PNGs authoritative, and ship build copies inside
 # the Godot project. Asset changes refresh even when the DLL needs no relink.
 set(portrait_outputs)
@@ -101,3 +104,6 @@ if(OPENGOLD_BUILD_TESTS)
             RESOURCE_LOCK demo_project)
     endif()
 endif()
+
+# Build the demo at the project's warning level, as the game does.
+opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

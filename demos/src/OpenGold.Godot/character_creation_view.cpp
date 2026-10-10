@@ -31,6 +31,7 @@
 #include <chrono>
 #include <cmath>
 #include <stdexcept>
+#include <utility>
 
 using namespace godot;
 using namespace opengold;
@@ -62,7 +63,6 @@ CreationField choice_field(CreationStep step)
     }
 }
 
-const std::array<const char *, 6> abilities{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
 const std::array<const char *, 6> full_abilities{"Strength",     "Dexterity", "Constitution",
     "Intelligence", "Wisdom",    "Charisma"};
 const auto &colors = presentation::character_colors;
@@ -670,7 +670,8 @@ void CharacterCreationView::refresh()
         {
             const auto ability = rules::all_abilities[i];
             auto *b = get_node<Button>(gs("Ability" + std::to_string(i)));
-            b->set_text(gs(std::string(selected_score_ == i ? "> " : "") + full_abilities[i]));
+            b->set_text(gs(std::string(std::cmp_equal(selected_score_, i) ? "> " : "") +
+                           full_abilities[i]));
             b->set_disabled(!d.rolled);
             std::string dice;
             if (d.rolled &&
@@ -966,10 +967,13 @@ void CharacterCreationView::next()
         [&]
     {
         creator_->next();
+        // Braced, so formatters cannot indent the reset as if the if owned it.
         if (creator_->step() == CreationStep::sheet)
+        {
             completed_ = creator_->create_character();
-            selected_score_ = -1;
-        });
+        }
+        selected_score_ = -1;
+    });
 }
 
 void CharacterCreationView::back()

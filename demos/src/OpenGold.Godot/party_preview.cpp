@@ -196,7 +196,7 @@ void CharacterCreationView::refresh_party()
     if (!state.roster.empty())
     {
         roster_index_ = std::min(roster_index_, state.roster.size() - 1);
-        list->select(roster_index_);
+        list->select(static_cast<std::int32_t>(roster_index_));
         const auto &m = state.roster[roster_index_];
         sheet = sheet_text(m.character, &m).utf8().get_data();
         const auto profile = campaign_->profile(m.id);

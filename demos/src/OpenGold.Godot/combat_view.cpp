@@ -27,6 +27,7 @@
 #include <array>
 #include <cmath>
 #include <fstream>
+#include <utility>
 using namespace godot;
 using namespace opengold;
 using namespace opengold::rules;
@@ -490,7 +491,7 @@ void CombatView::thrown_selected(std::int64_t index)
     auto *choices = get_node<OptionButton>("ThrownWeapon");
     if (index < 0 || index >= choices->get_item_count())
         return;
-    thrown_item_ = choices->get_item_id(index);
+    thrown_item_ = choices->get_item_id(static_cast<std::int32_t>(index));
     mode_ = "move";
     refresh();
 }
@@ -521,7 +522,9 @@ void CombatView::weapon_selected(std::int64_t index)
     if (!demo_ || !demo_->has_combat() || index < 0 || index >= choices->get_item_count())
         return;
     for (const auto &c : demo_->combat().legal_commands())
-        if (c.verb == "weapon_select" && c.item == unsigned(choices->get_item_id(index)))
+        if (c.verb == "weapon_select" &&
+                c.item == static_cast<unsigned>(
+                    choices->get_item_id(static_cast<std::int32_t>(index))))
         {
             act(c);
             return;
@@ -537,7 +540,7 @@ void CombatView::use_bonus_action()
     const String verb = key.get_slice("#", 0);
     if (verb.begins_with("light_"))
     {
-        light_item_ = key.get_slice("#", 1).to_int();
+        light_item_ = static_cast<unsigned>(key.get_slice("#", 1).to_int());
         get_node<Button>("UseCunningAction")->release_focus();
         select_mode(verb);
     }
@@ -968,7 +971,6 @@ void CombatView::refresh()
     thrown->set_block_signals(false);
     thrown->set_tooltip_text(throw_index >= 0 ? thrown->get_item_text(throw_index) : String());
     const bool show_thrown = s.outcome == Outcome::ongoing && thrown->get_item_count() > 0;
-    const bool thrown_layout_changed = thrown->is_visible() != show_thrown;
     for (const char *name :
             {"ThrownWeaponLabel", "ThrownWeapon", "Throw"
             })
@@ -1092,7 +1094,7 @@ void CombatView::_draw()
                       : terrain == Terrain::difficult ? Color("665238")
                       : ((x + y) % 2 ? Color("29373c") : Color("253137")));
             const auto index = y * s.battlefield.width + x;
-            if (index < demo_->battlefield_tiles().size() &&
+            if (std::cmp_less(index, demo_->battlefield_tiles().size()) &&
                     demo_->battlefield_tiles()[index] < terrain_art_.size())
                 draw_texture_rect(terrain_art_[demo_->battlefield_tiles()[index]], cell, false);
             else
