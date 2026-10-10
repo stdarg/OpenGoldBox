@@ -246,7 +246,7 @@ void access()
 
 Message save_message(const CombatSession &c)
 {
-    for (const auto &m : c.snapshot().log_messages)
+    for (const auto &m : c.snapshot().log_messages())
         if (m.source.starts_with("{name} Dexterity save:"))
             return m;
     throw std::runtime_error("Missing Dexterity save");

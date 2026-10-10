@@ -1030,7 +1030,7 @@ void starting_styles()
             check(attack != actions.end() && battle->submit(*attack),
                   "Starting style participates in ordinary attack");
             bool checked = false;
-            for (const auto &m : battle->snapshot().log_messages)
+            for (const auto &m : battle->snapshot().log_messages())
                 if (m.source.starts_with("{actor} -> {target}: d20"))
                     for (const auto &arg : m.arguments)
                         if (arg.name == "bonus")

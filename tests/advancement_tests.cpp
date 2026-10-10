@@ -813,7 +813,7 @@ void feats()
                 if (combat->snapshot().actor != id)
                     continue;
                 combat->submit(command(*combat, "melee"));
-                for (const auto &log : combat->snapshot().log)
+                for (const auto &log : combat->snapshot().log())
                     hit |= log.find("Savage Attacker") != std::string::npos;
                 if (hit)
                     check(rules->restore(combat->save())->save() == combat->save(),

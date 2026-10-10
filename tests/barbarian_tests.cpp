@@ -89,7 +89,7 @@ bool offered(const CombatSession &c, std::string_view verb)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -215,9 +215,9 @@ void reckless_checks()
           !unit(*c, 1).action,
           "A Reckless attack is the Attack action's attack, with Advantage");
     reach(*c, 98);
-    const auto before = c->snapshot().log.size();
+    const auto before = c->snapshot().log().size();
     check(submit(*c, "melee", 1), "The enemy attacks");
-    const auto log = c->snapshot().log;
+    const auto log = c->snapshot().log();
     check(std::any_of(log.begin() + std::ptrdiff_t(before), log.end(), [](const auto & line)
     {
         return line.find("Enemy -> Barbarian") != std::string::npos &&

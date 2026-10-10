@@ -77,7 +77,7 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 
 bool logged(const CombatSession &c, std::string_view prefix)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(prefix) != std::string::npos;
@@ -186,7 +186,7 @@ void protection_from_evil_and_good_checks()
 // The attack bonus a log line shows: "... d20 N + B vs AC ...".
 int logged_bonus(const CombatSession &c)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
         if (const auto at = line->find(" + "); at != std::string::npos && line->find(" vs AC ") != std::string::npos)
             return std::stoi(line->substr(at + 3));

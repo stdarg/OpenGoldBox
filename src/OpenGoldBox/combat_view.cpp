@@ -2627,12 +2627,8 @@ void CombatView::refresh()
     for (const auto &combination : missing_combinations)
         log += i18n::text("No combat artwork assigned") + ": " + gs(combination) + ". " +
                i18n::text("Showing unarmed with the saved body.") + "\n";
-    if (s.log_messages.size() == s.log.size())
-        for (const auto &entry : s.log_messages)
-            log += i18n::render(entry) + "\n";
-    else
-        for (const auto &entry : s.log)
-            log += i18n::text(entry) + "\n";
+    for (const auto &entry : s.log_entries)
+        log += i18n::render(entry.message) + "\n";
     if (!error_.empty())
         log += "\n" + i18n::text(error_);
     // The log follows its newest lines (scroll_following in the scene) unless
@@ -3117,8 +3113,8 @@ void CombatView::_process(double delta)
             if (checking_ && ++check_steps_ > 1000)
             {
                 std::string details = "Combat check command limit exceeded";
-                for (const auto &line : s.log)
-                    details += "\n" + line;
+                for (const auto &entry : s.log_entries)
+                    details += "\n" + entry.english;
                 throw std::runtime_error(details);
             }
             act(flee_mode_ ? choose_flee_command(demo_->combat())

@@ -94,7 +94,7 @@ void turn(CombatSession &s, EntityId id)
 
 std::size_t log_count(const CombatSession &s, std::string_view line)
 {
-    const auto log = s.snapshot().log;
+    const auto log = s.snapshot().log();
     return std::size_t(std::count(log.begin(), log.end(), std::string(line)));
 }
 
@@ -216,7 +216,7 @@ void bandaged_at_victory()
                   "Victory fixture command");
         if (c->snapshot().outcome != Outcome::victory)
             continue;
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         const auto victory = std::find(log.begin(), log.end(), "Victory.");
         const auto bandaged = std::find(victory, log.end(), "Fallen is bandaged and stable.");
         if (bandaged == log.end())

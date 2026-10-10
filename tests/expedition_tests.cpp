@@ -569,7 +569,7 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     combat.encounter(*town.pending_encounter(), 42);
     if (town.pending_encounter()->party_resting)
     {
-        const auto log = combat.combat().snapshot().log;
+        const auto log = combat.combat().snapshot().log();
         for (const auto id : party->state().slots)
             if (id && party->member(id).vitals.hit_points > 0)
             {

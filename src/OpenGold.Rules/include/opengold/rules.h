@@ -483,6 +483,15 @@ struct FreeMovement
     int remaining_feet{};
 };
 
+// One line of the combat log: the English text and the message the game
+// translates, kept together so a module cannot let them drift apart
+// (Effective C++ Item 18).
+struct LogEntry
+{
+    std::string english;
+    Message message;
+};
+
 struct Snapshot
 {
     Identity identity;
@@ -492,8 +501,7 @@ struct Snapshot
     Outcome outcome{};
     Battlefield battlefield;
     std::vector<CombatantView> combatants; // Initiative order.
-    std::vector<std::string> log;
-    std::vector<Message> log_messages;
+    std::vector<LogEntry> log_entries; // Oldest first.
     bool reaction_pending{};
     std::uint64_t elapsed_milliseconds{};
     std::optional<TemporaryHpOffer> temporary_hp_offer;
@@ -517,6 +525,26 @@ struct Snapshot
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;
     bool physical_inventory{};
+
+    // The log's English lines, oldest first.
+    [[nodiscard]] std::vector<std::string> log() const
+    {
+        std::vector<std::string> lines;
+        lines.reserve(log_entries.size());
+        for (const auto &entry : log_entries)
+            lines.push_back(entry.english);
+        return lines;
+    }
+
+    // The log's messages, oldest first.
+    [[nodiscard]] std::vector<Message> log_messages() const
+    {
+        std::vector<Message> messages;
+        messages.reserve(log_entries.size());
+        for (const auto &entry : log_entries)
+            messages.push_back(entry.message);
+        return messages;
+    }
 };
 
 // Verbs are owned by a module, not an enumeration of edition-specific rules.

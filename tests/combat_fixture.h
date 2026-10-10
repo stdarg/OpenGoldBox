@@ -26,7 +26,7 @@ inline void keep_initiative(rules::CombatSession &session)
 // Automatic combat results (Sneak Attack, Savage Attacker) are visible only in the log.
 inline bool logged(const rules::CombatSession &session, std::string_view text)
 {
-    const auto log = session.snapshot().log;
+    const auto log = session.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;

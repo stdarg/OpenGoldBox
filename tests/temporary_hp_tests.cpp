@@ -290,7 +290,7 @@ void actual_combat()
     check(combat->submit(attack) && copy->submit(attack) && combat->save() == copy->save(),
           "Sourced buffer survives checkpoint and deterministic damage continuation");
     int raw = 0, resisted = 0;
-    for (const auto &m : combat->snapshot().log_messages)
+    for (const auto &m : combat->snapshot().log_messages())
         if (m.source == "{name}: {type} damage {before} -> {after}.")
             for (const auto &a : m.arguments)
             {

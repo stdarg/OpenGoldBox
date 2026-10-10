@@ -308,8 +308,8 @@ void species_combat()
               "A created Dwarf halves actual poison damage independently of class");
         check(!unit(*d, 1).dead && unit(*d, 2).action == false,
               "Resistance preserves normal action expenditure and vitality");
-        const auto snapshot = d->snapshot();
-        check(std::any_of(snapshot.log_messages.begin(), snapshot.log_messages.end(),
+        const auto messages = d->snapshot().log_messages();
+        check(std::any_of(messages.begin(), messages.end(),
                           [](const auto & m)
         {
             return m.source == "{name}: {type} damage {before} -> {after}.";
@@ -395,7 +395,7 @@ void weapons_and_spells()
         check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
               "Weapon damage uses its SRD type before HP loss");
         check(unit(*combat, 2).hit_points == 1000, "Selected damage remains immune");
-        const auto logs = combat->snapshot().log_messages;
+        const auto logs = combat->snapshot().log_messages();
         check(std::any_of(logs.begin(), logs.end(),
                           [](const auto & m)
         {
@@ -418,7 +418,7 @@ void weapons_and_spells()
         check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
               "Fire Bolt, Scorching Ray and Magic Missile respect typed immunity");
         check(unit(*combat, 2).hit_points == 1000, "Selected damage remains immune");
-        const auto logs = combat->snapshot().log_messages;
+        const auto logs = combat->snapshot().log_messages();
         check(std::any_of(logs.begin(), logs.end(),
                           [](const auto & m)
         {
@@ -441,7 +441,7 @@ void weapons_and_spells()
     check(rng(*raw) == rng(*resisted),
           "Dart resistance preserves the established per-dart RNG sequence");
     int expected = 0, instances = 0;
-    for (const auto &m : resisted->snapshot().log_messages)
+    for (const auto &m : resisted->snapshot().log_messages())
         if (m.source == "{name}: {type} damage {before} -> {after}.")
         {
             for (const auto &a : m.arguments)

@@ -191,7 +191,7 @@ void searing_smite_checks()
         check(first >= 1 && first <= 6, "Searing Smite adds 1d6 Fire damage to the hit");
         check(submit(*c, "end"), "End the Paladin's turn");
         // The target's turn began: it burned, then saved.
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         check(std::any_of(log.begin(), log.end(), [](const auto & line)
         {
             return line.starts_with("Target burns for ");
@@ -201,7 +201,7 @@ void searing_smite_checks()
               "The burning effect survives a checkpoint");
         while (c->snapshot().actor != 1)
             check(submit(*c, "end"), "Return to the Paladin");
-        const auto so_far = c->snapshot().log;
+        const auto so_far = c->snapshot().log();
         const auto burned_again = std::count_if(so_far.begin(), so_far.end(), [](const auto & line)
         {
             return line.starts_with("Target burns for ");
@@ -209,7 +209,7 @@ void searing_smite_checks()
         check(burned_again == 1, "One burn per target turn so far");
         while (c->snapshot().actor != 99)
             check(submit(*c, "end"), "Reach the target's next turn");
-        const auto later = c->snapshot().log;
+        const auto later = c->snapshot().log();
         const auto burns = std::count_if(later.begin(), later.end(), [](const auto & line)
         {
             return line.starts_with("Target burns for ");

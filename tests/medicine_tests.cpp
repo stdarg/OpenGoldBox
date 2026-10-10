@@ -261,7 +261,7 @@ void outcomes()
                 check(random(*c) == rng + increment * (stable(*c) ? 2 : 1),
                       "Unboosted check rolls recovery only on success");
             }
-            for (const auto &message : c->snapshot().log_messages)
+            for (const auto &message : c->snapshot().log_messages())
                 for (const auto &arg : message.arguments)
                     if (arg.name == "roll")
                     {
@@ -311,7 +311,7 @@ void all_classes()
         auto c = battle(*rules, h);
         act(*c, "stabilize", 2);
         bool saw = false;
-        for (const auto &m : c->snapshot().log_messages)
+        for (const auto &m : c->snapshot().log_messages())
             for (const auto &a : m.arguments)
                 if (a.name == "modifier")
                 {

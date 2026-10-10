@@ -156,7 +156,7 @@ void command_upcast_checks()
           !unit(*c, 1).action,
           "The second creature casts Command");
     unsigned saves = 0;
-    for (const auto &line : c->snapshot().log)
+    for (const auto &line : c->snapshot().log())
         saves += line.find("Wisdom save") != std::string::npos;
     check(saves == 2, "Each chosen creature makes its own Wisdom save");
 }

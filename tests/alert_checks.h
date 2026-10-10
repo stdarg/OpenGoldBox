@@ -282,7 +282,7 @@ void run()
         {
             down_first = true;
             check(unit(*pending, 2).hit_points == 0, "No recovery before opening choice");
-            for (const auto &line : state.log)
+            for (const auto &line : state.log())
                 check(line.find("death save") == line.npos,
                       "First-turn processing waits for choice");
         }

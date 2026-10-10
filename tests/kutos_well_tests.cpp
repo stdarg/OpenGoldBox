@@ -47,7 +47,7 @@ bool submit(CombatSession &c, std::string_view verb, EntityId actor, EntityId ta
 
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::count_if(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;

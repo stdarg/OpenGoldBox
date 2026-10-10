@@ -76,7 +76,7 @@ void turn_of(CombatSession &c, EntityId id)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -240,7 +240,7 @@ void cornered_monster_fights()
             continue;
         for (unsigned n = 0; n < 80 && c->snapshot().outcome == Outcome::ongoing; ++n)
             check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         const auto stayed = std::find(log.begin(), log.end(), "Enemy cannot get away and must stay.");
         if (stayed == log.end())
             continue;

@@ -109,7 +109,7 @@ void run()
                 auto c = combat(*rules, h, {"shortbow"}, 13, true);
                 act(*c, "ranged");
                 bool attack = false;
-                for (const auto &m : c->snapshot().log_messages)
+                for (const auto &m : c->snapshot().log_messages())
                     if (m.source.starts_with("{actor} -> {target}: d20"))
                         for (const auto &a : m.arguments)
                             if (a.name == "bonus")
@@ -206,7 +206,7 @@ void run()
                             (rogue_attack_checks::last_hit(*c) == "CRITICAL") != critical)
                         std::cerr << klass << " level=" << level << " weapon=" << w.id
                                   << " seed=" << seed << " natural=" << natural
-                                  << " expected=" << savage << " log=" << c->snapshot().log.back()
+                                  << " expected=" << savage << " log=" << c->snapshot().log().back()
                                   << "\n";
                     check(test::logged(*c, savage) &&
                           (rogue_attack_checks::last_hit(*c) == "CRITICAL") == critical,

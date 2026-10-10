@@ -95,7 +95,7 @@ bool dagger_damage_within(const CombatSession &c, int modifier)
 {
     const auto hit = rogue_attack_checks::last_hit(c);
     const int count = hit == "CRITICAL" ? 2 : 1;
-    const auto messages = c.snapshot().log_messages;
+    const auto messages = c.snapshot().log_messages();
     for (auto m = messages.rbegin(); m != messages.rend(); ++m)
         if (m->source.starts_with("{actor} -> {target}: d20"))
             for (const auto &a : m->arguments)

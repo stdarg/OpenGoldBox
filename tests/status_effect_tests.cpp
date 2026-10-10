@@ -325,7 +325,7 @@ void combat()
     check(!offers(*s, "blindness") && !offers(*s, "magic_missile") && offers(*s, "fire_bolt"),
           "Blindness blocks sight-required spells; attack spells remain possible");
     s->submit(command(*s, "fire_bolt"));
-    const auto logs = s->snapshot().log;
+    const auto logs = s->snapshot().log();
     check(std::any_of(logs.begin(), logs.end(),
                       [](const auto & l)
     {
@@ -345,7 +345,7 @@ void combat()
     // Attacks against blinded targets gain advantage; their Dodge cannot see us.
     s = rules->create(e, 3);
     s->submit(command(*s, "melee"));
-    const auto advantage_log = s->snapshot().log;
+    const auto advantage_log = s->snapshot().log();
     check(std::any_of(advantage_log.begin(), advantage_log.end(),
                       [](const auto & l)
     {
@@ -381,7 +381,7 @@ void combat()
         s = rules->create(e, 3);
         check(s->snapshot().actor == 1, "Save-bonus fixture initiative");
         s->submit(command(*s, "blindness"));
-        const auto log = s->snapshot().log;
+        const auto log = s->snapshot().log();
         const auto expected = " + " + std::to_string(person.sheet().saving_throws[2]) + " vs DC 13";
         check(std::any_of(log.begin(), log.end(),
                           [&](const auto & line)

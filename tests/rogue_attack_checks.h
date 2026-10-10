@@ -70,7 +70,7 @@ void move(CombatSession &c, Cell to)
 std::vector<std::string> sneak_lines(const CombatSession &c)
 {
     std::vector<std::string> lines;
-    for (const auto &line : c.snapshot().log)
+    for (const auto &line : c.snapshot().log())
         if (line.find(" adds Sneak Attack: ") != std::string::npos)
             lines.push_back(line);
     return lines;
@@ -84,7 +84,7 @@ bool sneaked(const CombatSession &c)
 // "hits", "CRITICAL", or empty for a miss, from the latest attack roll.
 std::string last_hit(const CombatSession &c)
 {
-    const auto messages = c.snapshot().log_messages;
+    const auto messages = c.snapshot().log_messages();
     for (auto m = messages.rbegin(); m != messages.rend(); ++m)
         if (m->source.starts_with("{actor} -> {target}: d20"))
         {
@@ -99,7 +99,7 @@ std::string last_hit(const CombatSession &c)
 // Reads the number that follows `before` in the last log line containing `marker`.
 int logged_number(const CombatSession &c, std::string_view marker, std::string_view before)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
         if (line->find(marker) != std::string::npos)
             return std::stoi(line->substr(line->find(before) + before.size()));

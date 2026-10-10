@@ -123,7 +123,7 @@ void roundtrip(const RulesModule &r, const CombatSession &c)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -159,7 +159,7 @@ void automatic_higher_roll()
         check(rng(*c) == random + 5 * 0x9e3779b97f4a7c15ULL &&
               c->snapshot().elapsed_milliseconds == 0,
               "Attack roll, both weapon dice sets and nothing else consume RNG");
-        const auto &message = c->snapshot().log_messages;
+        const auto &message = c->snapshot().log_messages();
         check(std::any_of(message.begin(), message.end(), [](const auto & m)
         {
             return m.source ==
@@ -212,14 +212,14 @@ void exceptions_and_turns()
     act(*c, "melee");
     check(logged(*c, "(Savage Attacker): 11 and "),
           "A Versatile weapon with an empty other hand rerolls its two-handed die");
-    const auto first_turn = c->snapshot().log.size();
+    const auto first_turn = c->snapshot().log().size();
     act(*c, "end");
     auto move = command(*c, "move");
     move.destination = {3, 1};
     check(c->submit(move) && c->snapshot().reaction_pending,
           "Enemy movement triggers next-turn reaction");
     act(*c, "opportunity");
-    const auto log = c->snapshot().log;
+    const auto log = c->snapshot().log();
     check(std::any_of(log.begin() + first_turn, log.end(), [](const auto & line)
     {
         return line.find("(Savage Attacker)") != std::string::npos;

@@ -90,7 +90,7 @@ bool offered(const CombatSession &c, std::string_view verb)
 std::vector<std::string> attack_lines(const CombatSession &c)
 {
     std::vector<std::string> lines;
-    for (const auto &line : c.snapshot().log)
+    for (const auto &line : c.snapshot().log())
         if (line.starts_with("Monk -> Enemy: d20 "))
             lines.push_back(line);
     return lines;
@@ -147,7 +147,7 @@ void martial_arts_checks()
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;

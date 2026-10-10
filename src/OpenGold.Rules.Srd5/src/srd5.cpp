@@ -1835,8 +1835,7 @@ class Session final : public CombatSession
     std::vector<HeldItemView> items_;
     void initialize_items();
     Definition equipped_definition(const Actor &a, const std::vector<HeldItemView> &items) const;
-    std::vector<std::string> log_;
-    std::vector<Message> log_messages_;
+    std::vector<LogEntry> log_;
     std::vector<Cell> path_;
     std::size_t path_index_{};
     std::vector<EntityId> reactors_;
@@ -1878,12 +1877,8 @@ class Session final : public CombatSession
         if (message.source.empty())
             message.source = english;
         if (log_.size() == 80)
-        {
             log_.erase(log_.begin());
-            log_messages_.erase(log_messages_.begin());
-        }
-        log_.push_back(std::move(english));
-        log_messages_.push_back(std::move(message));
+        log_.push_back({std::move(english), std::move(message)});
     }
 
     bool line_of_sight(Cell a, Cell b) const
@@ -2955,8 +2950,7 @@ Snapshot Session::snapshot() const
             s.flaming_spheres.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::moonbeam)
             s.moonbeams.insert(s.moonbeams.end(), zone.cells.begin(), zone.cells.end());
-    s.log = log_;
-    s.log_messages = log_messages_;
+    s.log_entries = log_;
     if (!initiative_choices_.empty())
         s.actor = initiative_choices_.front();
     if (graze_)
@@ -8729,8 +8723,8 @@ std::string Session::save() const
         out << id << ' ';
     out << '\n';
     out << log_.size() << '\n';
-    for (const auto &line : log_)
-        out << std::quoted(line) << '\n';
+    for (const auto &entry : log_)
+        out << std::quoted(entry.english) << '\n';
     out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << actors_.size() << '\n';
     for (const auto &a : actors_)
     {
@@ -9410,15 +9404,14 @@ void Session::restore_log(std::istream &input)
     if (!input || count > 80)
         throw std::runtime_error("Invalid checkpoint log");
     log_.clear();
-    log_messages_.clear();
     for (std::size_t i = 0; i < count; ++i)
     {
         std::string line;
         input >> std::quoted(line);
         if (!input || line.size() > 1000)
             throw std::runtime_error("Invalid checkpoint log line");
-        log_messages_.push_back({line, {}});
-        log_.push_back(std::move(line));
+        Message message{line, {}};
+        log_.push_back({std::move(line), std::move(message)});
     }
 }
 

@@ -170,7 +170,7 @@ void access()
         auto c = battle(*custom(), h);
         act(*c, "chill_touch", 2);
         bool checked = false;
-        for (const auto &message : c->snapshot().log_messages)
+        for (const auto &message : c->snapshot().log_messages())
             for (const auto &arg : message.arguments)
                 if (arg.name == "bonus")
                 {
@@ -599,7 +599,7 @@ void combat_death_save()
         seed);
         for (unsigned turns = 0; turns < 3 && !covered; ++turns)
         {
-            for (const auto &message : c->snapshot().log_messages)
+            for (const auto &message : c->snapshot().log_messages())
                 if (message.source == "{name} death save: {roll}")
                 {
                     bool fighter = false, natural20 = false;

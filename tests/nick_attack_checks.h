@@ -212,7 +212,7 @@ void pending_interactions()
         check(logged(*c, "adds Sneak Attack"),
               "The first eligible hit applies Sneak Attack automatically");
         act(*c, "nick_melee", 99);
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         check(std::count_if(log.begin(), log.end(), [](const auto & line)
         {
             return line.find("adds Sneak Attack") != std::string::npos;

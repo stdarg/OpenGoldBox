@@ -132,7 +132,7 @@ void damage_follows_other_hand()
                     const int sides = thrown || shield ? weapon.one : weapon.two;
                     check(unit(*combat, 2).hit_points == 28 - damage(seed, sides),
                           "Melee/thrown/critical damage matches fixed SRD dice oracle");
-                    const auto log = combat->snapshot().log;
+                    const auto log = combat->snapshot().log();
                     const std::string grip = thrown ? " damage." : shield ? " damage (one-handed)."
                                              : " damage (two-handed).";
                     check(seed == 40 || log.back().ends_with(grip),

@@ -877,8 +877,8 @@ void class_weapon_proficiency()
                   "Original and restored actors can attack");
             check(combat->save() == restored->save(),
                   "Proficient attacks resume deterministically from checkpoints");
-            const auto snapshot = combat->snapshot();
-            check(std::any_of(snapshot.log_messages.begin(), snapshot.log_messages.end(),
+            const auto messages = combat->snapshot().log_messages();
+            check(std::any_of(messages.begin(), messages.end(),
                               [](const auto & message)
             {
                 return message.source.starts_with("{actor} -> {target}: d20") &&
@@ -1071,7 +1071,7 @@ void untrained_equipment()
             return c.verb == "melee";
         });
         check(hit != commands.end() && combat->submit(*hit), "Untrained armored attack is allowed");
-        const auto log = combat->snapshot().log;
+        const auto log = combat->snapshot().log();
         check(std::any_of(log.begin(), log.end(),
                           [](const auto & line)
         {
@@ -1337,7 +1337,7 @@ void camp_ambush_encounter()
     for (const auto &participant : observed->encounter.participants)
         check(participant.resting == (participant.side == 0),
               "Every party member, and no enemy, starts the camp ambush resting");
-    const auto log = fight.combat().snapshot().log;
+    const auto log = fight.combat().snapshot().log();
     for (const auto *line :
             {
                 "Sleeping mage wakes up prone.", "Sleeping guard wakes up prone."

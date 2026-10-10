@@ -651,7 +651,7 @@ void mechanics_tests()
     encounter = duel();
     session = hero_first(*module, encounter);
     session->submit(command(*session, "ranged"));
-    const auto ranged_log = session->snapshot().log;
+    const auto ranged_log = session->snapshot().log();
     check(std::any_of(ranged_log.begin(), ranged_log.end(),
                       [](const auto & line)
     {
@@ -673,7 +673,7 @@ void mechanics_tests()
             continue;
         check(session->snapshot().actor == 1,
               "Lethal attack preserves the actor's turn while other enemies remain");
-        const auto log = session->snapshot().log;
+        const auto log = session->snapshot().log();
         if (std::none_of(log.begin(), log.end(),
                          [](const auto & line)
     {
@@ -729,7 +729,7 @@ void mechanics_tests()
               "Zero HP incapacitates player while ally can fight");
         for (int i = 0; i < 3; ++i)
             session->submit(command(*session, "end"));
-        const auto log = session->snapshot().log;
+        const auto log = session->snapshot().log();
         check(std::any_of(log.begin(), log.end(),
                           [](const auto & line)
         {
@@ -768,7 +768,7 @@ void death_save_turn_entry_tests()
     const auto death_rolls = [](const CombatSession & session)
     {
         std::vector<int> rolls;
-        for (const auto &line : session.snapshot().log)
+        for (const auto &line : session.snapshot().log())
             if (line.starts_with("Hero death save: "))
                 rolls.push_back(std::stoi(line.substr(17)));
         return rolls;
@@ -1289,7 +1289,7 @@ void monster_trait_tests()
     auto rules = srd5::load(pack());
     const auto logged = [](const CombatSession &session, std::string_view text)
     {
-        const auto log = session.snapshot().log;
+        const auto log = session.snapshot().log();
         return std::any_of(log.begin(), log.end(), [&](const auto & line)
         {
             return line.find(text) != std::string::npos;

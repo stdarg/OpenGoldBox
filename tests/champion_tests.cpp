@@ -122,8 +122,8 @@ std::vector<std::string> gear = {"longsword"}, bool prone = false)
 
 int attack_roll(const CombatSession &c)
 {
-    const auto state = c.snapshot();
-    for (auto it = state.log_messages.rbegin(); it != state.log_messages.rend(); ++it)
+    const auto messages = c.snapshot().log_messages();
+    for (auto it = messages.rbegin(); it != messages.rend(); ++it)
         if (it->source.starts_with("{actor} ->"))
             for (const auto &a : it->arguments)
                 if (a.name == "roll")
@@ -292,7 +292,7 @@ void savage_and_prone()
         act(*c, "melee", 2);
         if (!c->snapshot().free_movement)
             continue;
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         check(std::any_of(log.begin(), log.end(), [](const auto & line)
         {
             return line.find("(Savage Attacker)") != std::string::npos;

@@ -18,7 +18,7 @@ void inject(Participant &p, const VitalState &vitals, const fx::EffectState &eff
 
 Message result(const CombatSession &c)
 {
-    const auto messages = c.snapshot().log_messages;
+    const auto messages = c.snapshot().log_messages();
     for (auto i = messages.rbegin(); i != messages.rend(); ++i)
         if (i->source.starts_with("{actor} -> {target}: d20"))
             return *i;

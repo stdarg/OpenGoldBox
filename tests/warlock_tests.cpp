@@ -113,7 +113,7 @@ bool offered(const CombatSession &c, std::string_view verb)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -258,7 +258,7 @@ void invocation_checks()
         auto c = battle(*module, hero);
         check(submit(*c, "eldritch_blast", 98) && logged(*c, "Enemy is pushed 10 feet."),
               "Repelling Blast pushes the creature Eldritch Blast hits");
-        for (const auto &line : c->snapshot().log)
+        for (const auto &line : c->snapshot().log())
             if (line.starts_with("Warlock -> Enemy") && line.find(" hits for ") != std::string::npos)
             {
                 const int damage = std::stoi(line.substr(line.find(" hits for ") + 10));

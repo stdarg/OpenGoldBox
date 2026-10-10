@@ -107,7 +107,7 @@ bool aim(CombatSession &c, Cell cell)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -513,7 +513,7 @@ bool offered(const CombatSession &c, std::string_view verb)
 
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::count_if(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -717,7 +717,7 @@ void mirror_image_checks()
 // The attack bonus in the Wizard's first "d20 N + B vs" log line.
 int logged_attack_bonus(const CombatSession &c)
 {
-    for (const auto &line : c.snapshot().log)
+    for (const auto &line : c.snapshot().log())
         if (line.starts_with("Wizard -> First: d20 "))
         {
             const auto plus = line.find(" + ");
@@ -809,7 +809,7 @@ void invisible_caster_awaits_a_reaction()
     check(has_condition(*c, 98, "Invisible") && !logged(*c, "Foe is no longer Invisible."),
           "While the Wizard decides, the foe is still Invisible");
     check(submit(*c, "decline"), "The Wizard declines");
-    const auto log = c->snapshot().log;
+    const auto log = c->snapshot().log();
     check(std::count(log.begin(), log.end(), "Foe is no longer Invisible.") == 1 &&
           !has_condition(*c, 98, "Invisible"),
           "The replayed spell ends the Invisibility once");

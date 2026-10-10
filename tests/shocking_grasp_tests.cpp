@@ -199,7 +199,7 @@ void damage()
                 // Independent SplitMix64: seed 0 natural 20, d8 5+4; seed 13 natural 17, d8 4; seed
                 // 40 natural 1.
                 bool logged = false;
-                for (const auto &message : c->snapshot().log_messages)
+                for (const auto &message : c->snapshot().log_messages())
                     if (message.source.starts_with("{actor} -> {target}: d20"))
                         for (const auto &arg : message.arguments)
                             if (arg.name == "bonus")

@@ -182,7 +182,7 @@ void medicine_combat()
         check(combat->save() == copy->save(),
               "Scholar combat continuation preserves roll and recovery RNG");
         bool observed = false;
-        for (const auto &message : combat->snapshot().log_messages)
+        for (const auto &message : combat->snapshot().log_messages())
         {
             int roll = -1, total = -1;
             for (const auto &arg : message.arguments)
