@@ -4,6 +4,7 @@
 #include "godot_images.h"
 #include "application_settings.h"
 #include "character_creation_view.h"
+#include "character_sheet_text.h"
 #include "character_text.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
@@ -832,7 +833,8 @@ void CharacterCreationView::refresh()
     {
         instructions = N_(
                            "Review your character and use the portrait controls to choose a complete portrait before adding it to the party.");
-        required_node<RichTextLabel>(*this, "Description").set_text(sheet_text(*completed_));
+        required_node<RichTextLabel>(*this, "Description")
+        .set_text(presentation::sheet_text(*completed_));
     }
     required_node<Label>(*this, "Instructions").set_text(i18n::text(instructions));
     required_node<Label>(*this, "PreviewTitle")

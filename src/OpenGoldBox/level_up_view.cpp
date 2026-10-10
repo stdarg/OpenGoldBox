@@ -2,6 +2,7 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "character_creation_view.h"
+#include "character_sheet_text.h"
 #include "level_up_dialog.h"
 #include "rolf_tour_view.h"
 #include <godot_cpp/classes/button.hpp>
@@ -328,7 +329,7 @@ void CharacterCreationView::advancement_check()
                 !has({"feat:savage_attacker", "background:soldier", 1, {}}))
             throw std::runtime_error(
                 "Fighter must retain separate creation and advancement grants");
-        const auto text = sheet_text(fighter);
+        const auto text = presentation::sheet_text(fighter);
         if (!text.contains(i18n::text("savage attacker")) || !text.contains(i18n::text("defense")))
             throw std::runtime_error("Sheet must display both acquired feats");
     }
@@ -394,7 +395,8 @@ void CharacterCreationView::advancement_check()
         "feat:archery", "class:fighter:ability_score_improvement", 4, {}}) ==
     sheet.grants.end())
         throw std::runtime_error("Confirmed Archery lacks its entitlement grant");
-        if (!sheet_text(campaign_->member(archer).character).contains(i18n::text("archery")))
+        if (!presentation::sheet_text(campaign_->member(archer).character)
+                .contains(i18n::text("archery")))
             throw std::runtime_error("Sheet must display translated Archery");
         const auto bytes = opengold::encode_campaign(*campaign_, nullptr, "archery-ui-check");
         const auto module =

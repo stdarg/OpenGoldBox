@@ -1,6 +1,7 @@
 #include "godot_images.h"
 #include "localization.h"
 #include "character_creation_view.h"
+#include "character_sheet_text.h"
 #include "rolf_tour_view.h"
 #include "opengold/character_pool.h"
 #include "opengold/srd5.h"
@@ -89,7 +90,8 @@ void CharacterCreationView::pool_selected(std::int64_t index)
         return;
     pool_index_ = static_cast<unsigned>(index);
     const auto &character = pool_[pool_index_];
-    required_node<RichTextLabel>(*this, "PoolModal/Text").set_text(sheet_text(character));
+    required_node<RichTextLabel>(*this, "PoolModal/Text")
+    .set_text(presentation::sheet_text(character));
     required_node<TextureRect>(*this, "PoolModal/Portrait")
     .set_texture(portraits_->texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)
@@ -149,7 +151,8 @@ void CharacterCreationView::town_member_selected(std::int64_t slot)
         return;
     const auto &m = campaign_->member(campaign_->state().slots[slot]);
     town_sheet_member_ = m.id;
-    required_node<RichTextLabel>(*this, "TownSheet/Text").set_text(sheet_text(m.character, &m));
+    required_node<RichTextLabel>(*this, "TownSheet/Text")
+    .set_text(presentation::sheet_text(*campaign_, m));
     required_node<Button>(*this, "TownSheet/MakeLeader").set_disabled(m.id == campaign_->leader());
     required_node<Window>(*this, "TownSheet").popup_centered();
 }

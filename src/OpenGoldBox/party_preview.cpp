@@ -5,6 +5,7 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "character_creation_view.h"
+#include "character_sheet_text.h"
 #include "equipment_choice_dialog.h"
 #include "combat_view.h"
 #include "rolf_tour_view.h"
@@ -242,7 +243,7 @@ void CharacterCreationView::refresh_party()
         roster_index_ = std::min(roster_index_, state.roster.size() - 1);
         list->select(static_cast<std::int32_t>(roster_index_));
         const auto &m = state.roster[roster_index_];
-        sheet = sheet_text(m.character, &m).utf8().get_data();
+        sheet = presentation::sheet_text(*campaign_, m).utf8().get_data();
         const auto profile = campaign_->profile(m.id);
         for (const auto &item : m.character.inventory().items())
         {

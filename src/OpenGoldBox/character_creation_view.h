@@ -72,8 +72,6 @@ class CharacterCreationView : public godot::Control
     godot::Variant drag_roll(godot::Vector2 position, int index);
     bool can_drop_roll(godot::Vector2 position, const godot::Variant &data, int index);
     void drop_roll(godot::Vector2 position, const godot::Variant &data, int index);
-    godot::String sheet_text(const opengold::Character &character,
-                             const opengold::PartyMember *member = nullptr) const;
     void show_modifiers();
     void close_modifiers();
     void show_saving_throws();
