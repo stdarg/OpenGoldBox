@@ -13,7 +13,7 @@ extends SceneTree
 # fight. Not a
 # CTest check; run with a window (not --headless) and a scratch HOME:
 #   HOME=/tmp/slums/home OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
-#       --script tests/playtest_slums.gd -- --slums-fixtures=/tmp/slums/fixtures \
+#       --script ../../../tests/playtest_slums.gd -- --slums-fixtures=/tmp/slums/fixtures \
 #       --playtest-out=/tmp/slums/out
 var fixtures := ""
 # --strong plays each fight with the party at level four (NAME-strong.ogs),

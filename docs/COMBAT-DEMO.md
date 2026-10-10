@@ -59,7 +59,7 @@ Druid's Wolf form and screenshots the first reaction prompt. It needs a window
 
 ```sh
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
-    --script tests/playtest_capture.gd -- --combat-demo \
+    --script ../../../tests/playtest_capture.gd -- --combat-demo \
     --combat-demo-party=wizard,cleric,paladin,ranger,fighter,rogue \
     --combat-demo-level=4 --playtest-out=/tmp/playtest
 ```
@@ -96,10 +96,11 @@ instead, throws Alchemist's Fire at the troll and checks that hovering over the
 troll shows it Burning:
 
 ```sh
-godot --path src/OpenGoldBox/godot --script tests/playtest_gear.gd -- \
-    --playtest-fixtures=build/playtest-fixtures --playtest-out=/tmp/playtest-gear
+godot --path src/OpenGoldBox/godot --script ../../../tests/playtest_gear.gd -- \
+    --playtest-fixtures=$PWD/build/macos-universal/playtest-fixtures \
+    --playtest-out=/tmp/playtest-gear
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
-    --script tests/playtest_gear.gd -- --combat-demo \
+    --script ../../../tests/playtest_gear.gd -- --combat-demo \
     --combat-demo-party=fighter,fighter,wizard,cleric --combat-demo-level=4 \
     --combat-demo-enemies=troll,ogre --combat-demo-gear=oil,alchemists_fire,acid \
     --campaign --playtest-out=/tmp/playtest-gear-campaign
@@ -116,6 +117,7 @@ repeat, and Bardic Inspiration from the Bonus Action dropdown. It screenshots
 each step and reports what the combat log shows:
 
 ```sh
-godot --path src/OpenGoldBox/godot --script tests/playtest_actions.gd -- \
-    --playtest-fixtures=build/default/playtest-fixtures --playtest-out=/tmp/playtest-actions
+godot --path src/OpenGoldBox/godot --script ../../../tests/playtest_actions.gd -- \
+    --playtest-fixtures=$PWD/build/macos-universal/playtest-fixtures \
+    --playtest-out=/tmp/playtest-actions
 ```

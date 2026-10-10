@@ -101,7 +101,7 @@ check; run it with a window and a scratch `HOME`:
 OPENGOLD_KUTO_WELL_FIXTURE=/tmp/kuto/well.ogs OPENGOLD_KUTO_NORRIS_FIXTURE=/tmp/kuto/norris.ogs \
 OPENGOLD_GAME_DIR=/path/to/POOLRAD build/opengold_expedition_tests
 HOME=/tmp/kuto/home OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
-    --script tests/playtest_kutos_well.gd -- --kuto-well=/tmp/kuto/well.ogs \
+    --script ../../../tests/playtest_kutos_well.gd -- --kuto-well=/tmp/kuto/well.ogs \
     --kuto-norris=/tmp/kuto/norris.ogs --playtest-out=/tmp/kuto/out
 ```
 

@@ -7,7 +7,7 @@ extends SceneTree
 # screenshot at each step and a report of the dialogue. Not a CTest check; run
 # with a window (not --headless) and HOME pointed at a scratch folder so the
 # player's saves are untouched:
-#   godot --path src/OpenGoldBox/godot --script tests/playtest_kutos_well.gd -- \
+#   godot --path src/OpenGoldBox/godot --script ../../../tests/playtest_kutos_well.gd -- \
 #       --kuto-well=/tmp/well.ogs --kuto-norris=/tmp/norris.ogs --playtest-out=/tmp/kuto
 var well := ""
 var norris := ""

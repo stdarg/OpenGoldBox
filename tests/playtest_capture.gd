@@ -3,7 +3,7 @@ extends SceneTree
 # Play-test capture: runs the combat demo with a chosen party and, on each party
 # member's first turn, saves a screenshot and lists the Bonus Action dropdown and
 # the A-key action cycle. Not a CTest check; see docs/COMBAT-DEMO.md.
-#   godot --path src/OpenGoldBox/godot --script tests/playtest_capture.gd -- \
+#   godot --path src/OpenGoldBox/godot --script ../../../tests/playtest_capture.gd -- \
 #       --combat-demo --combat-demo-party=druid,warlock --combat-demo-level=4 \
 #       --playtest-out=/tmp/playtest
 var out := ""
