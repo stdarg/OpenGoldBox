@@ -1782,8 +1782,8 @@ void combat_demo_fixture()
         {
             const auto resolved =
                 por::resolve_combat_appearance(mapped.party->member(image.entity), looks);
-            check(image.image.rgba == resolved.icon(character_art, false).rgba && image.action &&
-                  image.action->rgba == resolved.icon(character_art, true).rgba,
+            check(image.image.rgba == resolved.icon(character_art, por::IconPose::ready).rgba && image.action &&
+                  image.action->rgba == resolved.icon(character_art, por::IconPose::action).rgba,
                   "Showcase uses the shared equipment appearance in both poses");
         }
         else

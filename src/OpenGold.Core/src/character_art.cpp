@@ -462,10 +462,10 @@ Image CharacterArt::portrait(const CharacterAppearance &a) const
     return result;
 }
 
-Image CharacterArt::icon(const CharacterAppearance &a, bool action) const
+Image CharacterArt::icon(const CharacterAppearance &a, IconPose pose) const
 {
     validate_character_appearance(a);
-    const unsigned bank = (a.tall ? 64u : 0u) + (action ? 128u : 0u);
+    const unsigned bank = (a.tall ? 64u : 0u) + (pose == IconPose::action ? 128u : 0u);
     return compose_character_icon(combat_heads_.at(bank + a.combat_head),
                                   combat_bodies_.at(bank + a.combat_body), a);
 }

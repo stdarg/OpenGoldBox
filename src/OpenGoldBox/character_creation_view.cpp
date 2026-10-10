@@ -465,8 +465,8 @@ void CharacterCreationView::refresh_art()
     if (!creator_ || !art_ || rendered_ == creator_->appearance())
         return;
     const auto &a = creator_->appearance();
-    const std::array<opengold::Image, 3> images{opengold::Image{}, art_->icon(a, false),
-            art_->icon(a, true)};
+    const std::array<opengold::Image, 3> images{opengold::Image{}, art_->icon(a, por::IconPose::ready),
+            art_->icon(a, por::IconPose::action)};
     images_[0] = portrait_texture(a, creator_->draft());
     for (unsigned i = 1; i < images.size(); ++i)
     {
@@ -1742,7 +1742,9 @@ void CharacterCreationView::check_run()
                 for (unsigned pose = 0; pose < 2; ++pose)
                 {
                     const auto pixels = images_[pose + 1]->get_image()->get_data();
-                    const auto expected = art_->icon(creator_->appearance(), pose != 0);
+                    const auto expected = art_->icon(creator_->appearance(),
+                                                              pose != 0 ? por::IconPose::action
+                                                              : por::IconPose::ready);
                     if (std::cmp_not_equal(pixels.size(), expected.rgba.size()) ||
                             !std::equal(expected.rgba.begin(), expected.rgba.end(), pixels.ptr()))
                         throw std::runtime_error("Preview texture is stale after palette input");

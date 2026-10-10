@@ -135,10 +135,10 @@ ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
     return {std::move(appearance), std::move(selection)};
 }
 
-Image ResolvedCombatAppearance::icon(const CharacterArt &art, bool action) const
+Image ResolvedCombatAppearance::icon(const CharacterArt &art, IconPose pose) const
 {
     // Missing artwork must not falsely show the weapon baked into the saved body.
-    return art.equipped_icon(appearance, selection.matched ? selection.body : 0, action);
+    return art.equipped_icon(appearance, selection.matched ? selection.body : 0, pose);
 }
 
 CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> equipped,

@@ -12,6 +12,11 @@ using namespace opengold::test;
 
 namespace
 {
+IconPose pose_of(bool action)
+{
+    return action ? IconPose::action : IconPose::ready;
+}
+
 using Bytes = std::vector<std::uint8_t>;
 
 void check(bool condition, const char *message)
@@ -228,7 +233,7 @@ void composition_tests(const CharacterArt &art)
                     appearance.tall = tall;
                     appearance.combat_head = head;
                     appearance.combat_body = body;
-                    const auto icon = art.icon(appearance, action);
+                    const auto icon = art.icon(appearance, pose_of(action));
                     check(icon.width == 24 && icon.height == 24 && icon.rgba.size() == 576 * 4,
                           "Every synthetic head/body/size/pose composes");
                 }
@@ -250,7 +255,7 @@ void composition_tests(const CharacterArt &art)
             const unsigned source_bank = (tall ? 64 : 0) + (action ? 128 : 0);
             const auto &head = art.combat_heads().at(source_bank);
             const auto &body = art.combat_bodies().at(source_bank);
-            const auto before = art.icon(appearance, action);
+            const auto before = art.icon(appearance, pose_of(action));
             for (unsigned bank = 0; bank < 2; ++bank)
                 for (unsigned part = 0; part < 6; ++part)
                 {
@@ -259,7 +264,7 @@ void composition_tests(const CharacterArt &art)
                     {
                         auto changed = appearance;
                         changed.colors[bank][part] = color;
-                        const auto after = art.icon(changed, action);
+                        const auto after = art.icon(changed, pose_of(action));
                         targeted = 0;
                         for (unsigned p = 0; p < 576; ++p)
                         {
@@ -282,7 +287,7 @@ void composition_tests(const CharacterArt &art)
                           (usage.ready[bank][part] + usage.action[bank][part] > 0),
                           "A control is relevant if either pose uses its region");
                 }
-            check(art.icon(appearance, action).rgba == before.rgba,
+            check(art.icon(appearance, pose_of(action)).rgba == before.rgba,
                   "Recoloring never mutates cached components");
         }
     }
@@ -301,9 +306,9 @@ void composition_tests(const CharacterArt &art)
     // Combat icons never draw the portrait head. A newer race's head is only
     // registered where portraits are shown, so combat must not require it.
     appearance.portrait_head = 260;
-    check(art.icon(appearance, false).width == 24 &&
-          art.equipped_icon(appearance, 0, true).width == 24 &&
-          art.combat_anatomy(appearance, false).width == 24,
+    check(art.icon(appearance, IconPose::ready).width == 24 &&
+          art.equipped_icon(appearance, 0, IconPose::action).width == 24 &&
+          art.combat_anatomy(appearance, IconPose::ready).width == 24,
           "Combat icons do not require the portrait head to be loaded");
     (void)art.color_usage(appearance);
     rejects(
@@ -336,6 +341,15 @@ void composition_tests(const CharacterArt &art)
     "Invalid character icon components");
 }
 } // namespace
+
+// A sprite is asked for by pose, not by a bool that could be swapped
+// (Effective C++ Item 18).
+template <class Pose>
+concept draws_icon_for = requires(const CharacterArt &art, const CharacterAppearance &a, Pose pose)
+{
+    art.icon(a, pose);
+};
+static_assert(draws_icon_for<IconPose> && !draws_icon_for<bool>);
 
 // The art's parts are private, so a part of the wrong size cannot be stored
 // where composition would read past it (Effective C++ Item 22).
@@ -421,9 +435,9 @@ int main()
                 CharacterAppearance a;
                 a.tall = tall;
                 a.combat_body = 24;
-                const auto before = art.icon(a, action);
-                const auto axe = art.equipped_icon(a, 6, action),
-                           staff = art.equipped_icon(a, 28, action);
+                const auto before = art.icon(a, pose_of(action));
+                const auto axe = art.equipped_icon(a, 6, pose_of(action)),
+                           staff = art.equipped_icon(a, 28, pose_of(action));
                 const auto pixel_equal = [](const Image & first, const Image & second, unsigned p)
                 {
                     return std::equal(first.rgba.begin() + 4 * p, first.rgba.begin() + 4 * p + 4,
@@ -438,7 +452,7 @@ int main()
                         "Equipment preserves saved head, torso, legs and boots in both sizes and poses");
                 check(!pixel_equal(axe, staff, 245) && !pixel_equal(axe, staff, 101),
                       "Only wielding arms and equipment change with the donor");
-                check(art.icon(a, action).rgba == before.rgba,
+                check(art.icon(a, pose_of(action)).rgba == before.rgba,
                       "Layered rendering never mutates original decoded art");
             }
         std::cout << "Synthetic art loading and recolor properties passed\n";

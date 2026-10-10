@@ -33,7 +33,7 @@ class CombatView : public godot::Control
     [[nodiscard]] godot::Array enemy_cells() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
     [[nodiscard]] godot::Ref<godot::Texture2D> sprite_texture(opengold::rules::EntityId id,
-            bool action) const;
+            opengold::por::IconPose pose) const;
 
     [[nodiscard]] bool attack_pose_active(std::int64_t id) const
     {

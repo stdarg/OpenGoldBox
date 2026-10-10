@@ -51,7 +51,7 @@ struct ResolvedCombatAppearance
 {
     CharacterAppearance appearance;
     CombatBodySelection selection;
-    [[nodiscard]] Image icon(const CharacterArt &art, bool action) const;
+    [[nodiscard]] Image icon(const CharacterArt &art, IconPose pose) const;
 };
 
 // Saved anatomy remains unchanged. The selection supplies wielding arms and

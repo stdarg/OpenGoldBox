@@ -73,7 +73,8 @@ presentation::NodeOwner<> combat_scene(const std::shared_ptr<CampaignParty> &par
     {
         const auto resolved =
             por::resolve_combat_appearance(party->member(participant.id), catalog);
-        images.push_back({participant.id, resolved.icon(art, false), resolved.icon(art, true),
+        images.push_back({participant.id, resolved.icon(art, por::IconPose::ready),
+                           resolved.icon(art, por::IconPose::action),
                           resolved.selection.matched ? std::string{} : resolved.selection.label});
     }
     auto owned = presentation::instantiate_scene("res://scenes/combat_demo.tscn");
@@ -256,7 +257,7 @@ void CharacterCreationView::refresh_party()
         const auto resolved = por::resolve_combat_appearance(m, *body_catalog_);
         for (unsigned pose = 0; pose < 2; ++pose)
         {
-            const auto icon = resolved.icon(*art_, pose != 0);
+            const auto icon = resolved.icon(*art_, pose != 0 ? por::IconPose::action : por::IconPose::ready);
             get_node<TextureRect>(pose ? "PartyPanel/ActionSprite" : "PartyPanel/ReadySprite")
             ->set_texture(presentation::image_texture(icon));
         }
@@ -340,7 +341,8 @@ void CharacterCreationView::equipment_art_check()
     const auto expected = [&](unsigned member, unsigned body, bool action)
     {
         const auto a = campaign_->state().roster.at(member).character.appearance();
-        return presentation::rgba_image(art_->equipped_icon(a, body, action))->get_data();
+        return presentation::rgba_image(art_->equipped_icon(
+                   a, body, action ? por::IconPose::action : por::IconPose::ready))->get_data();
     };
     const auto verify_preview = [&](unsigned member, unsigned body)
     {
@@ -366,7 +368,8 @@ void CharacterCreationView::equipment_art_check()
             for (bool action : {false, true})
         {
             const auto texture =
-            combat->sprite_texture(campaign_->state().roster.at(member).id, action);
+            combat->sprite_texture(campaign_->state().roster.at(member).id,
+                                   action ? por::IconPose::action : por::IconPose::ready);
             require(texture.is_valid() &&
                     texture->get_image()->get_data() == expected(member, 34, action),
                     "Combat textures differ from the equipment shown in party previews");
@@ -525,7 +528,8 @@ void CharacterCreationView::equipment_art_check()
                 })
         {
             const auto texture =
-                get_node<CombatView>("CampaignCombat")->sprite_texture(1000, action);
+                get_node<CombatView>("CampaignCombat")
+                ->sprite_texture(1000, action ? por::IconPose::action : por::IconPose::ready);
             require(texture.is_valid() && texture->get_image()->get_data() ==
                     presentation::rgba_image(enemy)->get_data(),
                     "Party equipment changed an encounter creature's texture");
@@ -571,7 +575,7 @@ void CharacterCreationView::equipment_art_check()
                         ->get_texture()
                         ->get_image()
                         ->get_data() ==
-                        presentation::rgba_image(resolved.icon(*art_, action))->get_data(),
+                        presentation::rgba_image(resolved.icon(*art_, action ? por::IconPose::action : por::IconPose::ready))->get_data(),
                                                        "Game preview differs from shared compositor");
         }
         require(inventory.size() == 48, "Game integration fixture missed reviewer weapons");

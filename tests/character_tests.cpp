@@ -12,6 +12,11 @@ using namespace opengold::por;
 
 namespace
 {
+IconPose pose_of(bool action)
+{
+    return action ? IconPose::action : IconPose::ready;
+}
+
 void check(bool ok, const char *message)
 {
     if (!ok)
@@ -798,13 +803,13 @@ void art_tests()
                 for (unsigned p = 0; p < head_pixels.size(); ++p)
                     if (head_pixels[p])
                         source[p] = head_pixels[p];
-                const auto original = art.icon(a, action);
+                const auto original = art.icon(a, pose_of(action));
                 for (unsigned color_bank = 0; color_bank < 2; ++color_bank)
                     for (unsigned part = 0; part < 6; ++part)
                     {
                         auto changed = a;
                         changed.colors[color_bank][part] = (a.colors[color_bank][part] + 3) % 16;
-                        const auto recolored = art.icon(changed, action);
+                        const auto recolored = art.icon(changed, pose_of(action));
                         unsigned count = 0;
                         for (unsigned p = 0; p < source.size(); ++p)
                         {
@@ -855,8 +860,8 @@ void art_tests()
                     a.tall = tall;
                     a.combat_head = h;
                     a.combat_body = b;
-                    check(art.icon(a, false).rgba.size() == 576 * 4 &&
-                          art.icon(a, true).rgba.size() == 576 * 4,
+                    check(art.icon(a, IconPose::ready).rgba.size() == 576 * 4 &&
+                          art.icon(a, IconPose::action).rgba.size() == 576 * 4,
                           "Every original head/body combination has both poses");
                 }
         std::cout << "Original character art: " << art.heads().size() << " portrait heads, "

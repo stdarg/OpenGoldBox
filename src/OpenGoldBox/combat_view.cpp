@@ -185,7 +185,7 @@ const CombatView::SpriteArt *CombatView::combatant_art(const CombatantView &a) c
     return found == art_.end() ? nullptr : &found->second;
 }
 
-Ref<Texture2D> CombatView::sprite_texture(EntityId id, bool action) const
+Ref<Texture2D> CombatView::sprite_texture(EntityId id, por::IconPose pose) const
 {
     CombatantView combatant;
     combatant.id = id;
@@ -196,7 +196,7 @@ Ref<Texture2D> CombatView::sprite_texture(EntityId id, bool action) const
     const auto *art = combatant_art(combatant);
     if (!art)
         return {};
-    return action ? art->action : art->texture;
+    return pose == por::IconPose::action ? art->action : art->texture;
 }
 
 bool CombatView::is_quick(EntityId id) const
@@ -952,7 +952,8 @@ void CombatView::sync_art(bool preserve_effects)
                     por::resolve_combat_appearance(campaign_->member(id), catalog);
                 campaign_art_.push_back(
                 {
-                    id, resolved.icon(originals, false), resolved.icon(originals, true),
+                    id, resolved.icon(originals, por::IconPose::ready),
+                    resolved.icon(originals, por::IconPose::action),
 resolved.selection.matched ? std::string{} : resolved.selection.label});
             }
     }

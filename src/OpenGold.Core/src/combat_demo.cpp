@@ -346,11 +346,11 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             if (!resolved.selection.matched)
                 missing = resolved.selection.label;
             result.encounter.art.push_back(
-            {id, resolved.icon(art, false), resolved.icon(art, true), missing});
+            {id, resolved.icon(art, IconPose::ready), resolved.icon(art, IconPose::action), missing});
         }
         else
             result.encounter.art.push_back(
-        {id, art.icon(appearance, false), art.icon(appearance, true), missing});
+        {id, art.icon(appearance, IconPose::ready), art.icon(appearance, IconPose::action), missing});
     }
     // Every member gains the experience for `level` and takes default choices.
     if (level > 1)

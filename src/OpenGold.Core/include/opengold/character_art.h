@@ -52,6 +52,15 @@ struct AdditionalPortraitHead
 // neck placement is fitted to the selected original body during composition.
 [[nodiscard]] Image prepare_portrait_head(const Image &source, unsigned head_id);
 
+// Which of a combatant's two sprites: standing ready, or striking. A named
+// pose rather than a bool, so the two cannot be swapped at a call site
+// (Effective C++ Item 18).
+enum class IconPose
+{
+    ready,
+    action
+};
+
 struct IndexedIcon
 {
     unsigned width{}, height{};
@@ -106,12 +115,12 @@ class CharacterArt
     }
 
     [[nodiscard]] Image portrait(const CharacterAppearance &) const;
-    [[nodiscard]] Image icon(const CharacterAppearance &, bool action) const;
+    [[nodiscard]] Image icon(const CharacterAppearance &, IconPose pose) const;
     // Stable anatomy from the saved body; only the wielding arms and equipment
     // come from the catalog pose. Original archives are decoded in memory.
-    [[nodiscard]] IndexedIcon combat_anatomy(const CharacterAppearance &, bool action) const;
+    [[nodiscard]] IndexedIcon combat_anatomy(const CharacterAppearance &, IconPose pose) const;
     [[nodiscard]] Image equipped_icon(const CharacterAppearance &, unsigned equipment_body,
-                                      bool action) const;
+                                      IconPose pose) const;
     [[nodiscard]] CharacterColorUsage color_usage(const CharacterAppearance &) const;
     void validate(const CharacterAppearance &) const;
 
