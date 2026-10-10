@@ -76,7 +76,7 @@ func run_checks() -> void:
         change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
         await press("Party"); await load_slot()
         var list: ItemList = current_scene.get_node("PartyPanel/Roster")
-        require(list.item_count == 3, "Fixture includes three Wizards")
+        require(list.item_count == 1, "Fixture holds the one Scholar Wizard")
         await press("PartyPanel/Roster/Advance1")
         await choose_scholar()
         await press("LevelUp/Cancel")
@@ -95,7 +95,7 @@ func run_checks() -> void:
         if not output.is_empty():
             file = FileAccess.open(output, FileAccess.WRITE); file.store_buffer(FileAccess.get_file_as_bytes(slot)); file.close()
         await load_slot()
-        require(list.item_count == 3, "Reload preserves the Scholar party")
+        require(list.item_count == 1, "Reload preserves the Scholar party")
     restore_files()
     print("Scholar view checks passed")
     quit(0)
