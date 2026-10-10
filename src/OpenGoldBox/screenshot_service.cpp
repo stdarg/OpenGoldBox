@@ -57,11 +57,15 @@ void ScreenshotService::_ready()
         layer->set_name("NoticeLayer");
         layer->set_layer(100);
         auto *canvas = presentation::attach_child(*this, std::move(layer));
-        auto *panel = presentation::add_control<PanelContainer>(*canvas, "Notice", {});
+        auto owned_panel = presentation::make_node<PanelContainer>();
+        owned_panel->set_name("Notice");
+        auto *panel = presentation::attach_child(*canvas, std::move(owned_panel));
         panel->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
         panel->hide();
         panel->set_theme_type_variation("ScreenshotNotice");
-        presentation::add_control<Label>(*panel, "Text", {});
+        auto owned_text = presentation::make_node<Label>();
+        owned_text->set_name("Text");
+        presentation::attach_child(*panel, std::move(owned_text));
     }
     auto *label = &required_node<Label>(*this, "NoticeLayer/Notice/Text");
     label->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);

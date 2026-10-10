@@ -5,6 +5,9 @@
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/window.hpp>
+#include <godot_cpp/variant/packed_float64_array.hpp>
+#include <algorithm>
+#include <initializer_list>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -63,42 +66,45 @@ template <class T>
     return *node;
 }
 
-// A scene owns the editable rectangle at the design size. Existing view
-// calculations supply only the change caused by window size or live state.
-// layout_reference is the view's rectangle at the design size; editing the
-// control's offsets in the scene therefore needs no native rebuild.
-[[nodiscard]] inline godot::Rect2 scene_layout_rect(godot::Control &node,
-                                                    const godot::Rect2 &calculated)
+// Restore a scene-authored rectangle after a state-specific layout has moved
+// a control. Cache offsets, not pixels, so Godot's anchors remain authoritative
+// when the parent changes size.
+inline void restore_scene_control(godot::Control &node)
 {
-    const godot::StringName reference_key("layout_reference");
-    if (!node.has_meta(reference_key))
-        return calculated;
-    const godot::StringName initial_key("_layout_initial_rect");
-    if (!node.has_meta(initial_key))
-        node.set_meta(initial_key, godot::Rect2(node.get_position(), node.get_size()));
-    const godot::Rect2 reference = node.get_meta(reference_key);
-    const godot::Rect2 initial = node.get_meta(initial_key);
-    return godot::Rect2(initial.position + calculated.position - reference.position,
-                        initial.size + calculated.size - reference.size);
-}
-
-inline void place_scene_control(godot::Control &node, const godot::Rect2 &calculated)
-{
-    const auto rect = scene_layout_rect(node, calculated);
-    node.set_position(rect.position);
-    node.set_size(rect.size);
-}
-
-inline void position_scene_control(godot::Control &node, const godot::Vector2 &calculated)
-{
-    const auto rect = scene_layout_rect(node, godot::Rect2(calculated, node.get_size()));
-    node.set_position(rect.position);
-}
-
-inline void size_scene_control(godot::Control &node, const godot::Vector2 &calculated)
-{
-    const auto rect = scene_layout_rect(node, godot::Rect2(node.get_position(), calculated));
-    node.set_size(rect.size);
+    const godot::StringName key("_scene_offsets");
+    if (!node.has_meta(key))
+    {
+        godot::PackedFloat64Array offsets;
+        for (auto side : {godot::SIDE_LEFT, godot::SIDE_TOP, godot::SIDE_RIGHT, godot::SIDE_BOTTOM})
+            offsets.push_back(node.get_offset(side));
+        node.set_meta(key, offsets);
+    }
+    const godot::PackedFloat64Array offsets = node.get_meta(key);
+    godot::Vector2 parent_size;
+    if (auto *parent = godot::Object::cast_to<godot::Control>(node.get_parent()))
+        parent_size = parent->get_size();
+    else if (auto *parent = godot::Object::cast_to<godot::Window>(node.get_parent()))
+        parent_size = parent->get_size();
+    else
+        throw std::runtime_error("Scene control has no layout parent");
+    godot::Vector2 start(node.get_anchor(godot::SIDE_LEFT) * parent_size.x + offsets[0],
+                         node.get_anchor(godot::SIDE_TOP) * parent_size.y + offsets[1]);
+    godot::Vector2 end(node.get_anchor(godot::SIDE_RIGHT) * parent_size.x + offsets[2],
+                       node.get_anchor(godot::SIDE_BOTTOM) * parent_size.y + offsets[3]);
+    if (node.has_meta("layout_middle_delta"))
+    {
+        const double small = node.get_theme_constant("layout_small_width", "OpenGoldMetrics");
+        const double middle = node.get_theme_constant("layout_middle_width", "OpenGoldMetrics");
+        const double design = node.get_theme_constant("layout_design_width", "OpenGoldMetrics");
+        const double factor = parent_size.x <= middle
+                              ? std::clamp((parent_size.x - small) / (middle - small), 0.0, 1.0)
+                              : std::clamp((design - parent_size.x) / (design - middle), 0.0, 1.0);
+        const godot::Rect2 delta = node.get_meta("layout_middle_delta");
+        start += delta.position * factor;
+        end += (delta.position + delta.size) * factor;
+    }
+    node.set_position(start);
+    node.set_size(end - start);
 }
 
 inline void size_scene_window(godot::Window &window, const godot::Vector2i &calculated)
@@ -137,14 +143,8 @@ inline void size_scene_window(godot::Window &window, const godot::Vector2i &calc
     const bool exists = godot::ResourceLoader::get_singleton()->exists(path);
     if (!exists)
     {
-        for (const char *required : {"Defeat", "EquipmentChoice", "InitiativeChoice",
-                                     "NickAttack", "OptionalEffect", "OptionalEffectMultiple",
-                                     "RestDialog", "RestDialogOptions", "RestSpells",
-                                     "RestTraining", "SaveSlots"})
-            if (group == godot::String(required))
-                throw std::runtime_error("Missing dialog layout scene: " +
-                                         std::string(path.utf8().get_data()));
-        return {};
+        throw std::runtime_error("Missing dialog layout scene: " +
+                                 std::string(path.utf8().get_data()));
     }
     godot::Ref<godot::PackedScene> packed = godot::ResourceLoader::get_singleton()->load(path);
     if (packed.is_null())
@@ -154,57 +154,52 @@ inline void size_scene_window(godot::Window &window, const godot::Vector2i &calc
 }
 
 [[nodiscard]] inline godot::Rect2 dialog_layout_rect_group(const godot::String &group,
-                                                           const godot::String &name,
-                                                           const godot::Rect2 &fallback)
+                                                           const godot::String &name)
 {
     auto guides = dialog_layout_scene(group);
     if (!guides)
-        return fallback;
-    auto *guide = godot::Object::cast_to<godot::Control>(guides->get_node_or_null(name));
-    if (!guide)
-        throw std::runtime_error(
-            "Missing dialog layout control: " + std::string(group.utf8().get_data()) + "/" +
-            std::string(name.utf8().get_data()));
-    return godot::Rect2(guide->get_position(), guide->get_size());
+        throw std::runtime_error("Missing dialog layout scene: " +
+                                 std::string(group.utf8().get_data()));
+    auto &guide = required_node<godot::Control>(*guides, godot::NodePath(name));
+    return {guide.get_position(), guide.get_size()};
 }
 
 [[nodiscard]] inline godot::Rect2 dialog_layout_rect(const godot::Node &parent,
-                                                     const godot::String &name,
-                                                     const godot::Rect2 &fallback)
+                                                     const godot::String &name)
 {
-    return dialog_layout_rect_group(godot::String(parent.get_name()), name, fallback);
+    return dialog_layout_rect_group(godot::String(parent.get_name()), name);
 }
 
-[[nodiscard]] inline godot::Vector2i dialog_layout_size_group(const godot::String &group,
-                                                              const godot::Vector2i &fallback)
+[[nodiscard]] inline godot::Vector2i dialog_layout_size_group(const godot::String &group)
 {
     auto guides = dialog_layout_scene(group);
-    auto *guide = guides ? godot::Object::cast_to<godot::Control>(guides.get()) : nullptr;
-    return guide ? godot::Vector2i(guide->get_size()) : fallback;
+    if (!guides)
+        throw std::runtime_error("Missing dialog layout scene: " +
+                                 std::string(group.utf8().get_data()));
+    auto *guide = godot::Object::cast_to<godot::Control>(guides.get());
+    if (!guide)
+        throw std::runtime_error("Invalid dialog layout root: " +
+                                 std::string(group.utf8().get_data()));
+    return godot::Vector2i(guide->get_size());
 }
 
-[[nodiscard]] inline godot::Vector2i dialog_layout_size(const godot::Node &window,
-                                                        const godot::Vector2i &fallback)
+inline void set_dialog_window_size(godot::Window &window)
 {
-    return dialog_layout_size_group(godot::String(window.get_name()), fallback);
-}
-
-inline void set_dialog_window_size(godot::Window &window, const godot::Vector2i &fallback)
-{
-    const auto configured = dialog_layout_size(window, fallback);
+    const auto configured = dialog_layout_size_group(godot::String(window.get_name()));
     window.set_size(configured);
     window.set_min_size(configured);
 }
 
-template <class T> T *add_control(godot::Node &parent, const godot::String &name, godot::Rect2 rect)
+template <class T> T *add_control(godot::Node &parent, const godot::String &name)
 {
+    const auto rect = dialog_layout_rect(parent, name);
     auto child = make_node<T>();
     child->set_name(name);
-    const auto configured = dialog_layout_rect(parent, name, rect);
-    child->set_position(configured.position);
-    child->set_size(configured.size);
+    child->set_position(rect.position);
+    child->set_size(rect.size);
     return attach_child(parent, std::move(child));
 }
+
 // Blocks an object's signals while a control is refilled, and restores them
 // at unblock() or, if an exception skips that, when the scope ends, so a
 // failure cannot leave a dropdown silent (Effective C++ Item 13).

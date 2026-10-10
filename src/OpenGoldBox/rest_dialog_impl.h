@@ -26,13 +26,13 @@ void RolfTourView::setup_rest()
                          presentation::guarded(this, &RolfTourView::rest_training_apply), rest_text);
     training->connect("window_input", presentation::guarded(this, &RolfTourView::rest_training_input));
     auto *training_save =
-        presentation::add_control<Button>(*training, "Save", Rect2(24, 614, 234, 40));
+        presentation::add_control<Button>(*training, "Save");
     training_save->set_text(rest_text(N_("Save game")));
     training_save->connect("pressed", presentation::guarded(this, &RolfTourView::rest_save));
     auto owned = presentation::make_node<Window>();
     owned->set_name("RestDialog");
     owned->set_title(rest_text(N_("Rest")));
-    presentation::set_dialog_window_size(*owned, Vector2i(720, 640));
+    presentation::set_dialog_window_size(*owned);
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
@@ -40,48 +40,48 @@ void RolfTourView::setup_rest()
     auto *w = presentation::attach_child(*this, std::move(owned));
     w->connect("close_requested", presentation::guarded(this, &RolfTourView::rest_finish));
     w->connect("window_input", presentation::guarded(this, &RolfTourView::rest_input));
-    auto *label = presentation::add_control<Label>(*w, "KindLabel", Rect2(24, 18, 160, 34));
+    auto *label = presentation::add_control<Label>(*w, "KindLabel");
     label->set_text(rest_text(N_("Rest type")));
-    auto *kind = presentation::add_control<OptionButton>(*w, "Kind", Rect2(190, 18, 506, 36));
+    auto *kind = presentation::add_control<OptionButton>(*w, "Kind");
     kind->add_item(rest_text(N_("Short Rest")), 0);
     kind->add_item(rest_text(N_("Long Rest")), 1);
     kind->select(1);
     kind->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
-    auto *list = presentation::add_control<ItemList>(*w, "Members", Rect2(24, 68, 672, 192));
+    auto *list = presentation::add_control<ItemList>(*w, "Members");
     list->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
-    auto *info = presentation::add_control<RichTextLabel>(*w, "Info", Rect2(24, 274, 672, 208));
+    auto *info = presentation::add_control<RichTextLabel>(*w, "Info");
     info->set_scroll_active(true);
-    auto *result = presentation::add_control<Label>(*w, "Result", Rect2(24, 490, 672, 70));
+    auto *result = presentation::add_control<Label>(*w, "Result");
     result->set("autowrap_mode", 3);
-    auto button = [&](const char *name, const char *text, Rect2 rect, Callable callback)
+    auto button = [&](const char *name, const char *text, Callable callback)
     {
-        auto *b = presentation::add_control<Button>(*w, name, rect);
+        auto *b = presentation::add_control<Button>(*w, name);
         b->set_text(rest_text(text));
         b->connect("pressed", callback);
         return b;
     };
-    button("Start", N_("Start"), Rect2(24, 580, 180, 40),
+    button("Start", N_("Start"),
            presentation::guarded(this, &RolfTourView::rest_start));
-    button("Heal", N_("Heal with Hit Dice"), Rect2(24, 580, 220, 40),
+    button("Heal", N_("Heal with Hit Dice"),
            presentation::guarded(this, &RolfTourView::rest_heal));
-    button("Save", N_("Save game"), Rect2(258, 580, 210, 40),
+    button("Save", N_("Save game"),
            presentation::guarded(this, &RolfTourView::rest_save));
-    button("Finish", N_("Cancel"), Rect2(482, 580, 214, 40),
+    button("Finish", N_("Cancel"),
            presentation::guarded(this, &RolfTourView::rest_finish));
     auto *recovery_label =
-        presentation::add_control<Label>(*w, "RecoveryLabel", Rect2(24, 412, 672, 28));
+        presentation::add_control<Label>(*w, "RecoveryLabel");
     recovery_label->set_text(rest_text(N_("Arcane Recovery")));
-    presentation::add_control<OptionButton>(*w, "RecoveryChoice", Rect2(24, 446, 442, 36));
-    button("Recover", N_("Recover slots"), Rect2(482, 446, 214, 36),
+    presentation::add_control<OptionButton>(*w, "RecoveryChoice");
+    button("Recover", N_("Recover slots"),
            presentation::guarded(this, &RolfTourView::rest_recover));
     // Cast / Use (CLASS-3) shares the Arcane Recovery row: that row appears only
     // during a Short Rest, this one only before resting. The selected member acts.
-    auto *use_label = presentation::add_control<Label>(*w, "UseLabel", Rect2(24, 412, 672, 28));
+    auto *use_label = presentation::add_control<Label>(*w, "UseLabel");
     use_label->set_text(rest_text(N_("Cast / Use")));
-    presentation::add_control<OptionButton>(*w, "UseAction", Rect2(24, 446, 220, 36))
+    presentation::add_control<OptionButton>(*w, "UseAction")
     ->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
-    presentation::add_control<OptionButton>(*w, "UseTarget", Rect2(254, 446, 214, 36));
-    button("Use", N_("Use"), Rect2(482, 446, 214, 36), presentation::guarded(this, &RolfTourView::rest_use));
+    presentation::add_control<OptionButton>(*w, "UseTarget");
+    button("Use", N_("Use"), presentation::guarded(this, &RolfTourView::rest_use));
 }
 
 void RolfTourView::camp()
@@ -211,7 +211,7 @@ void RolfTourView::refresh_rest()
     presentation::required_node<Label>(*w, "Result").set_text(rest_result_);
     const auto info_rect = presentation::dialog_layout_rect_group(
                                recovery_visible || use_visible ? "RestDialogOptions" : "RestDialog",
-                               "Info", Rect2(24, 274, 672, recovery_visible || use_visible ? 132 : 208));
+                               "Info");
     auto &info_control = presentation::required_node<RichTextLabel>(*w, "Info");
     info_control.set_position(info_rect.position);
     info_control.set_size(info_rect.size);

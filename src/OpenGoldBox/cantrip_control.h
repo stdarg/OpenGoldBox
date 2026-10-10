@@ -4,28 +4,6 @@
 
 namespace presentation
 {
-inline void setup_cantrip_controls(godot::Node &parent)
-{
-    auto *scroll = add_control<godot::ScrollContainer>(parent, "SpellChoices", {});
-    scroll->set_horizontal_scroll_mode(godot::ScrollContainer::SCROLL_MODE_DISABLED);
-    scroll->set_follow_focus(true);
-    auto box = make_node<godot::VBoxContainer>();
-    box->set_name("Rows");
-    box->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    box->set_theme_type_variation("CantripRows");
-    auto *rows = attach_child(*scroll, std::move(box));
-    for (const char *name :
-            {"Count", "Pending"
-            })
-    {
-        auto label = make_node<godot::Label>();
-        label->set_name(name);
-        label->set_auto_translate_mode(godot::Node::AUTO_TRANSLATE_MODE_DISABLED);
-        label->set("autowrap_mode", 2);
-        attach_child(*rows, std::move(label));
-    }
-}
-
 template <class Translate>
 void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCreator &creator,
                               const godot::Callable &toggled, const Translate &tr)

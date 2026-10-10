@@ -123,22 +123,6 @@ inline void style_choice(godot::CheckBox &control)
     control.set_theme_type_variation("LevelUpChoice");
 }
 
-inline void setup_training_controls(godot::Node &parent)
-{
-    auto *fixed = add_control<godot::RichTextLabel>(parent, "TrainingFixed", {});
-    fixed->set_use_bbcode(true);
-    fixed->set_auto_translate_mode(godot::Node::AUTO_TRANSLATE_MODE_DISABLED);
-    fixed->set_theme_type_variation("TrainingFixed");
-    auto *scroll = add_control<godot::ScrollContainer>(parent, "Training", {});
-    scroll->set_horizontal_scroll_mode(godot::ScrollContainer::SCROLL_MODE_DISABLED);
-    scroll->set_follow_focus(true);
-    auto owned = make_node<godot::VBoxContainer>();
-    owned->set_name("Rows");
-    owned->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    owned->set_theme_type_variation("TrainingRows");
-    attach_child(*scroll, std::move(owned));
-}
-
 // The scene owns every node. Reuse controls across refreshes so toggling does
 // not destroy the focused checkbox or its keyboard navigation position.
 template <class Translate>

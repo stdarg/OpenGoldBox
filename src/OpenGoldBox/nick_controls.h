@@ -23,7 +23,7 @@ void setup_nick(godot::Node &root, Text text, const godot::Callable &open,
     auto owned = make_node<Window>();
     owned->set_name("NickAttack");
     owned->set_title(text(N_("Nick attack")));
-    set_dialog_window_size(*owned, Vector2i(640, 300));
+    set_dialog_window_size(*owned);
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
@@ -31,20 +31,20 @@ void setup_nick(godot::Node &root, Text text, const godot::Callable &open,
     auto *dialog = attach_child(root, std::move(owned));
     dialog->connect("close_requested", cancel);
     dialog->connect("window_input", input);
-    auto *explanation = add_control<Label>(*dialog, "Text", Rect2(24, 18, 592, 84));
+    auto *explanation = add_control<Label>(*dialog, "Text");
     explanation->set_text(text(N_(
                                    "Choose a Nick weapon and attack. This uses the Light extra attack for this turn and does not spend your Bonus Action.")));
     explanation->set("autowrap_mode", 3);
-    auto *label = add_control<Label>(*dialog, "Label", Rect2(24, 112, 592, 28));
+    auto *label = add_control<Label>(*dialog, "Label");
     label->set_text(text(N_("Weapon and attack")));
-    auto *choices = add_control<OptionButton>(*dialog, "Choices", Rect2(24, 148, 592, 40));
+    auto *choices = add_control<OptionButton>(*dialog, "Choices");
     choices->set_fit_to_longest_item(false);
     choices->set_clip_text(true);
     choices->connect("item_selected", chosen);
-    auto *no = add_control<Button>(*dialog, "Cancel", Rect2(284, 236, 150, 40));
+    auto *no = add_control<Button>(*dialog, "Cancel");
     no->set_text(text(N_("Cancel")));
     no->connect("pressed", cancel);
-    auto *yes = add_control<Button>(*dialog, "Target", Rect2(446, 236, 170, 40));
+    auto *yes = add_control<Button>(*dialog, "Target");
     yes->set_text(text(N_("Target")));
     yes->connect("pressed", target);
 }

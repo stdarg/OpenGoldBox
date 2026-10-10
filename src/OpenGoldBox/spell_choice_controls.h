@@ -48,7 +48,9 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         auto *label = Object::cast_to<Label>(section->get_node_or_null("Count"));
         if (!label)
         {
-            label = add_control<Label>(*section, "Count", {});
+            auto owned = make_node<Label>();
+            owned->set_name("Count");
+            label = attach_child(*section, std::move(owned));
             label->set("autowrap_mode", 3);
         }
         const auto it = choices.learning.find(group.id);
@@ -66,7 +68,9 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         auto *pending = Object::cast_to<Label>(section->get_node_or_null("Pending"));
         if (!pending)
         {
-            pending = add_control<Label>(*section, "Pending", {});
+            auto owned = make_node<Label>();
+            owned->set_name("Pending");
+            pending = attach_child(*section, std::move(owned));
             pending->set("autowrap_mode", 3);
             if (level_up_theme)
                 pending->set_theme_type_variation("LevelUpPending");
@@ -142,32 +146,32 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     auto owned = make_node<Window>();
     owned->set_name(name);
     owned->set_title(tr(N_("Spellbook")));
-    set_dialog_window_size(*owned, Vector2i(700, 700));
+    set_dialog_window_size(*owned);
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
     owned->hide();
     auto *w = attach_child(parent, std::move(owned));
     w->connect("close_requested", cancel);
-    add_control<Label>(*w, "Title", Rect2(24, 18, 652, 34));
-    auto *known = add_control<RichTextLabel>(*w, "Known", Rect2(24, 58, 652, 126));
+    add_control<Label>(*w, "Title");
+    auto *known = add_control<RichTextLabel>(*w, "Known");
     known->set_scroll_active(true);
-    auto *scroll = add_control<ScrollContainer>(*w, "Choices", Rect2(24, 196, 652, 310));
+    auto *scroll = add_control<ScrollContainer>(*w, "Choices");
     scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
     scroll->set_follow_focus(true);
     spell_rows(*scroll, "Rows");
-    add_control<Label>(*w, "ReplaceLabel", Rect2(24, 518, 318, 26))
+    add_control<Label>(*w, "ReplaceLabel")
     ->set_text(tr(N_("Replace cantrip")));
-    add_control<Label>(*w, "WithLabel", Rect2(358, 518, 318, 26))->set_text(tr(N_("With")));
-    add_control<OptionButton>(*w, "Replace", Rect2(24, 550, 318, 36));
-    add_control<OptionButton>(*w, "With", Rect2(358, 550, 318, 36));
-    auto *error = add_control<Label>(*w, "Error", Rect2(24, 595, 652, 40));
+    add_control<Label>(*w, "WithLabel")->set_text(tr(N_("With")));
+    add_control<OptionButton>(*w, "Replace");
+    add_control<OptionButton>(*w, "With");
+    auto *error = add_control<Label>(*w, "Error");
     error->set("autowrap_mode", 3);
     error->set_theme_type_variation("TrainingPending");
-    auto *back = add_control<Button>(*w, "Cancel", Rect2(280, 644, 150, 40));
+    auto *back = add_control<Button>(*w, "Cancel");
     back->set_text(tr(N_("Cancel")));
     back->connect("pressed", cancel);
-    auto *ok = add_control<Button>(*w, "Apply", Rect2(442, 644, 234, 40));
+    auto *ok = add_control<Button>(*w, "Apply");
     ok->set_text(tr(N_("Apply spell choices")));
     ok->connect("pressed", apply);
     return w;

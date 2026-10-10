@@ -8,196 +8,301 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="HeaderRule" type="Control" parent="."]
+visible = false
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 57.0
+offset_right = -24.0
+offset_bottom = 57.0
+
 [node name="Title" type="Label" parent="."]
+anchor_right = 0.8825
 offset_left = 24
+offset_right = -252.4
 offset_top = 20
-offset_right = 1442
 offset_bottom = 57
 metadata/layout_reference = Rect2(24, 20, 1418, 37)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 theme_type_variation = &"LabelGoldText27"
 text = "OPENGOLDBOX  /  Rolf's welcome"
 
 [node name="Location" type="Label" parent="."]
+anchor_right = 0.8825
 offset_left = 24
+offset_right = -252.4
 offset_top = 68
-offset_right = 1442
 offset_bottom = 95
 metadata/layout_reference = Rect2(24, 68, 1418, 27)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 theme_type_variation = &"LabelText19"
 
 [node name="MapTitle" type="Label" parent="."]
-offset_left = 1466
+anchor_left = 0.8825
+anchor_right = 1
+offset_left = -228.4
+offset_right = -24
 offset_top = 68
-offset_right = 1896
 offset_bottom = 95
 metadata/layout_reference = Rect2(1466, 68, 430, 27)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 37.6, 0)
 theme_type_variation = &"LabelText19"
 
 [node name="Coordinates" type="Label" parent="."]
-offset_left = 1466
-offset_top = 544
-offset_right = 1896
-offset_bottom = 572
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 0.335714286
+anchor_bottom = 0.335714286
+offset_left = -228.4
+offset_right = -24
+offset_top = 181.428571
+offset_bottom = 209.428571
 metadata/layout_reference = Rect2(1466, 544, 430, 28)
+metadata/layout_middle_delta = Rect2(-37.6, 26.857143, 37.6, 0)
 theme_type_variation = &"LabelTealText18"
 
 [node name="Legend" type="Label" parent="."]
-offset_left = 1466
-offset_top = 580
-offset_right = 1896
-offset_bottom = 630
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 0.335714286
+anchor_bottom = 0.335714286
+offset_left = -228.4
+offset_right = -24
+offset_top = 217.428571
+offset_bottom = 267.428571
 metadata/layout_reference = Rect2(1466, 580, 430, 50)
+metadata/layout_middle_delta = Rect2(-37.6, 26.857143, 37.6, 0)
 theme_type_variation = &"LabelMuted"
 text = "Arrow: party & facing\nGold: doors   Teal: visited"
 
 [node name="Speaker" type="Label" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 42
-offset_top = 802
-offset_right = 1424
-offset_bottom = 829
+offset_right = -270.4
+offset_top = -278
+offset_bottom = -251
 metadata/layout_reference = Rect2(42, 802, 1382, 27)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 theme_type_variation = &"LabelGoldText19"
 
 [node name="Dialogue" type="RichTextLabel" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 42
-offset_top = 836
-offset_right = 1424
-offset_bottom = 956
+offset_right = -270.4
+offset_top = -244
+offset_bottom = -124
 metadata/layout_reference = Rect2(42, 836, 1382, 120)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 theme_type_variation = &"RichTextLabelDialogueText18"
 bbcode_enabled = false
 scroll_active = true
 
 [node name="Continue" type="Button" parent="."]
-offset_left = 1260
-offset_top = 968
-offset_right = 1424
-offset_bottom = 1008
+anchor_left = 0.8825
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -434.4
+offset_right = -270.4
+offset_top = -112
+offset_bottom = -72
 metadata/layout_reference = Rect2(1260, 968, 164, 40)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 1.13686838e-13, 0)
 text = "Continue  [Enter]"
 
 [node name="Progress" type="Label" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 42
-offset_top = 974
-offset_right = 1240
-offset_bottom = 1004
+offset_right = -454.4
+offset_top = -106
+offset_bottom = -76
 metadata/layout_reference = Rect2(42, 974, 1198, 30)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 theme_type_variation = &"LabelMuted"
 
 [node name="Movement" type="Label" parent="."]
-offset_left = 1466
-offset_top = 902
-offset_right = 1896
-offset_bottom = 928
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -24
+offset_top = -178
+offset_bottom = -152
 metadata/layout_reference = Rect2(1466, 902, 430, 26)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 37.6, 0)
 theme_type_variation = &"LabelMuted"
 
 [node name="Left" type="Button" parent="."]
-offset_left = 1466
-offset_top = 940
-offset_right = 1605.3334
-offset_bottom = 980
-metadata/layout_reference = Rect2(1466, 940, 139.3334, 40)
+anchor_left = 0.8825
+anchor_right = 0.921666565
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -164.266553
+offset_top = -140
+offset_bottom = -100
+metadata/layout_reference = Rect2(1466, 940, 139.333252, 40)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 12.533301, 0)
 text = "← Turn"
 
 [node name="Forward" type="Button" parent="."]
-offset_left = 1611.333
-offset_top = 940
-offset_right = 1750.6664
-offset_bottom = 980
-metadata/layout_reference = Rect2(1611.333, 940, 139.3334, 40)
+anchor_left = 0.92166687
+anchor_right = 0.960833435
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -158.266895
+offset_right = -94.1334473
+offset_top = -140
+offset_bottom = -100
+metadata/layout_reference = Rect2(1611.3335, 940, 139.333252, 40)
+metadata/layout_middle_delta = Rect2(-25.0666009, 0, 12.5333003, 0)
 text = "↑ Step"
 
 [node name="Right" type="Button" parent="."]
-offset_left = 1756.667
-offset_top = 940
-offset_right = 1896.0004
-offset_bottom = 980
-metadata/layout_reference = Rect2(1756.667, 940, 139.3334, 40)
+anchor_left = 0.96083313
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -88.1331055
+offset_right = -24.0002441
+offset_top = -140
+offset_bottom = -100
+metadata/layout_reference = Rect2(1756.6665, 940, 139.333252, 40)
+metadata/layout_middle_delta = Rect2(-12.5333986, 0, 12.5333986, 0)
 text = "Turn →"
 
 [node name="Restart" type="Button" parent="."]
-offset_left = 1466
-offset_top = 992
-offset_right = 1896
-offset_bottom = 1026
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -24
+offset_top = -88
+offset_bottom = -54
 metadata/layout_reference = Rect2(1466, 992, 430, 34)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 37.6, 0)
 text = "Replay tour"
 
 [node name="Footer" type="Label" parent="."]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 24
-offset_top = 1044
-offset_right = 1896
-offset_bottom = 1070
+offset_right = -24
+offset_top = -36
+offset_bottom = -10
 metadata/layout_reference = Rect2(24, 1044, 1872, 26)
 theme_type_variation = &"LabelMutedText14"
 text = "Arrow keys: move / turn   •   L: look   •   Original New Phlan scripts and shop stock"
 
 [node name="Choices" type="ItemList" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 42
-offset_top = 874
-offset_right = 1424
-offset_bottom = 958
+offset_right = -270.4
+offset_top = -206
+offset_bottom = -122
 metadata/layout_reference = Rect2(42, 874, 1382, 84)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 theme_type_variation = &"ItemListText17"
 visible = false
 
 [node name="Answer" type="LineEdit" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 42
-offset_top = 922
-offset_right = 1424
-offset_bottom = 958
+offset_right = -270.4
+offset_top = -158
+offset_bottom = -122
 metadata/layout_reference = Rect2(42, 922, 1382, 36)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 visible = false
 max_length = 40
 
 [node name="LeaveShop" type="Button" parent="."]
-offset_left = 1110
-offset_top = 968
-offset_right = 1250
-offset_bottom = 1008
+anchor_left = 0.8825
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -584.4
+offset_right = -444.4
+offset_top = -112
+offset_bottom = -72
 metadata/layout_reference = Rect2(1110, 968, 140, 40)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 0, 0)
 visible = false
 text = "Leave shop"
 
 [node name="Look" type="Button" parent="."]
-offset_left = 1466
-offset_top = 854
-offset_right = 1605.3334
-offset_bottom = 888
-metadata/layout_reference = Rect2(1466, 854, 139.3334, 34)
+anchor_left = 0.8825
+anchor_right = 0.921666565
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -164.266553
+offset_top = -226
+offset_bottom = -192
+metadata/layout_reference = Rect2(1466, 854, 139.333252, 34)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 12.533301, 0)
 text = "Look [L]"
 
 [node name="Camp" type="Button" parent="."]
-offset_left = 1611.333
-offset_top = 854
-offset_right = 1750.6664
-offset_bottom = 888
-metadata/layout_reference = Rect2(1611.333, 854, 139.3334, 34)
+anchor_left = 0.92166687
+anchor_right = 0.960833435
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -158.266895
+offset_right = -94.1334473
+offset_top = -226
+offset_bottom = -192
+metadata/layout_reference = Rect2(1611.3335, 854, 139.333252, 34)
+metadata/layout_middle_delta = Rect2(-25.0666009, 0, 12.5333003, 0)
 text = "Camp [C]"
 tooltip_text = "Run the area's pre-camp check and attempt an eight-hour long rest."
 
 [node name="Inventory" type="Button" parent="."]
-offset_left = 1756.667
-offset_top = 854
-offset_right = 1896.0004
-offset_bottom = 888
-metadata/layout_reference = Rect2(1756.667, 854, 139.3334, 34)
+anchor_left = 0.96083313
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -88.1331055
+offset_right = -24.0002441
+offset_top = -226
+offset_bottom = -192
+metadata/layout_reference = Rect2(1756.6665, 854, 139.333252, 34)
+metadata/layout_middle_delta = Rect2(-12.5333986, 0, 12.5333986, 0)
 text = "Inventory"
 
 [node name="Party" type="Label" parent="."]
-offset_left = 1466
-offset_top = 578
-offset_right = 1896
-offset_bottom = 628
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 0.335714286
+anchor_bottom = 0.335714286
+offset_left = -228.4
+offset_right = -24
+offset_top = 215.428571
+offset_bottom = 265.428571
 metadata/layout_reference = Rect2(1466, 578, 430, 50)
+metadata/layout_middle_delta = Rect2(-37.6, 26.857143, 37.6, 0)
 theme_type_variation = &"LabelGoldText16"
 
 [node name="InventoryPanel" type="Panel" parent="."]
+anchor_right = 1
+anchor_bottom = 1
 offset_left = 64
+offset_right = -64
 offset_top = 90
-offset_right = 1856
-offset_bottom = 1010
+offset_bottom = -70
 metadata/layout_reference = Rect2(64, 90, 1792, 920)
 theme_type_variation = &"PanelInventory"
 visible = false
@@ -205,18 +310,22 @@ z_index = 2
 mouse_filter = 0
 
 [node name="Items" type="ItemList" parent="InventoryPanel"]
+anchor_right = 1
+anchor_bottom = 1
 offset_left = 20
+offset_right = -20
 offset_top = 70
-offset_right = 1772
-offset_bottom = 736
+offset_bottom = -184
 metadata/layout_reference = Rect2(20, 70, 1752, 666)
 theme_type_variation = &"ItemListText18"
 
 [node name="Close" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 20
-offset_top = 866
 offset_right = 200
-offset_bottom = 902
+offset_top = -54
+offset_bottom = -18
 metadata/layout_reference = Rect2(20, 866, 180, 36)
 text = "Close inventory"
 
@@ -224,11 +333,15 @@ text = "Close inventory"
 volume_db = -12.0
 
 [node name="PartyList" type="ScrollContainer" parent="."]
-offset_left = 598.3333
+anchor_left = 0.291666641
+anchor_right = 0.882499924
+anchor_bottom = 1
+offset_left = 38.3333618
+offset_right = -252.399854
 offset_top = 102
-offset_right = 1442
-offset_bottom = 772
-metadata/layout_reference = Rect2(598.3333, 102, 843.6667, 670)
+offset_bottom = -308
+metadata/layout_reference = Rect2(598.333313, 102, 843.666687, 670)
+metadata/layout_middle_delta = Rect2(26.6666996, 0, -64.266724, 0)
 horizontal_scroll_mode = 0
 
 [node name="Rows" type="VBoxContainer" parent="PartyList"]
@@ -241,34 +354,42 @@ theme_type_variation = &"VBoxContainerGap8"
 size_flags_horizontal = 3
 
 [node name="Header" type="Label" parent="InventoryPanel"]
+anchor_right = 1
 offset_left = 20
+offset_right = -20
 offset_top = 18
-offset_right = 1772
 offset_bottom = 62
 metadata/layout_reference = Rect2(20, 18, 1752, 44)
 theme_type_variation = &"LabelText20"
 
 [node name="Status" type="Label" parent="InventoryPanel"]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 20
-offset_top = 788
-offset_right = 1772
-offset_bottom = 856
+offset_right = -20
+offset_top = -132
+offset_bottom = -64
 metadata/layout_reference = Rect2(20, 788, 1752, 68)
 autowrap_mode = 2
 
 [node name="Equip" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 220
-offset_top = 866
 offset_right = 370
-offset_bottom = 902
+offset_top = -54
+offset_bottom = -18
 metadata/layout_reference = Rect2(220, 866, 150, 36)
 text = "Equip"
 
 [node name="Unequip" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 390
-offset_top = 866
 offset_right = 540
-offset_bottom = 902
+offset_top = -54
+offset_bottom = -18
 metadata/layout_reference = Rect2(390, 866, 150, 36)
 text = "Unequip"
 
@@ -282,18 +403,24 @@ unresizable = true
 title = "Character Sheet"
 
 [node name="Text" type="RichTextLabel" parent="MemberSheet"]
+anchor_right = 1
+anchor_bottom = 1
 offset_left = 24
+offset_right = -24
 offset_top = 24
-offset_right = 1776
-offset_bottom = 884
+offset_bottom = -76
 metadata/layout_reference = Rect2(24, 24, 1752, 860)
 theme_type_variation = &"RichTextLabelText18"
 
 [node name="Close" type="Button" parent="MemberSheet"]
-offset_left = 1630
-offset_top = 900
-offset_right = 1760
-offset_bottom = 936
+anchor_left = 1
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -170
+offset_right = -40
+offset_top = -60
+offset_bottom = -24
 metadata/layout_reference = Rect2(1630, 900, 130, 36)
 text = "Close"
 
@@ -394,28 +521,165 @@ alignment = 0
 clip_text = true
 
 [node name="SceneBounds" type="Control" parent="."]
+anchor_right = 0.291666641
+anchor_bottom = 1
 offset_left = 24
+offset_right = 22.3333618
 offset_top = 102
-offset_right = 582.3333333333334
-offset_bottom = 772
-metadata/layout_reference = Rect2(24, 102, 558.3333333333334, 670)
+offset_bottom = -308
+metadata/layout_reference = Rect2(24, 102, 558.333313, 670)
+metadata/layout_middle_delta = Rect2(0, 0, 26.6666996, 0)
 visible = false
 mouse_filter = 2
 
 [node name="MapBounds" type="Control" parent="."]
-offset_left = 1466
+anchor_left = 0.8825
+anchor_right = 1
+anchor_bottom = 0.335714286
+offset_left = -228.4
+offset_right = -24
 offset_top = 102
-offset_right = 1896
-offset_bottom = 532
+offset_bottom = 169.428571
 metadata/layout_reference = Rect2(1466, 102, 430, 430)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 37.6, 26.857143)
 visible = false
 mouse_filter = 2
 
 [node name="DialogueBounds" type="Control" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 24
-offset_top = 790
-offset_right = 1442
-offset_bottom = 1022
+offset_right = -252.4
+offset_top = -290
+offset_bottom = -58
 metadata/layout_reference = Rect2(24, 790, 1418, 232)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 visible = false
 mouse_filter = 2
+
+[node name="SaveGame" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -520
+offset_top = 20
+offset_right = -380
+offset_bottom = 56
+metadata/layout_reference = Rect2(1400, 20, 140, 36)
+text = "Save game"
+
+[node name="LoadGame" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -370
+offset_top = 20
+offset_right = -230
+offset_bottom = 56
+metadata/layout_reference = Rect2(1550, 20, 140, 36)
+text = "Load game"
+
+[node name="ShoppingLayout" type="Control" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="SceneBounds" type="Control" parent="ShoppingLayout"]
+anchor_right = 0.291666667
+anchor_bottom = 1
+offset_left = 24
+offset_right = -44.3333333
+offset_top = 102
+offset_bottom = -388
+
+metadata/layout_middle_delta = Rect2(0, 0, 26.6666661, 0)
+[node name="DialogueBounds" type="Control" parent="ShoppingLayout"]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 24
+offset_right = -252.4
+offset_top = -370
+offset_bottom = -58
+
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+[node name="PartyList" type="Control" parent="ShoppingLayout"]
+anchor_left = 0.291666667
+anchor_right = 0.8825
+anchor_bottom = 1
+offset_left = -28.3333333
+offset_right = -252.4
+offset_top = 102
+offset_bottom = -388
+
+metadata/layout_middle_delta = Rect2(26.6666661, 0, -64.2666661, 0)
+[node name="Speaker" type="Control" parent="ShoppingLayout"]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -270.4
+offset_top = -358
+offset_bottom = -332
+
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+[node name="Dialogue" type="Control" parent="ShoppingLayout"]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -270.4
+offset_top = -324
+offset_bottom = -124
+
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+[node name="Continue" type="Control" parent="ShoppingLayout"]
+anchor_left = 0.8825
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -434.4
+offset_right = -270.4
+offset_top = -112
+offset_bottom = -72
+
+metadata/layout_middle_delta = Rect2(-37.6, 0, 1.13686838e-13, 0)
+[node name="Progress" type="Control" parent="ShoppingLayout"]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -454.4
+offset_top = -106
+offset_bottom = -76
+
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+[node name="Choices" type="Control" parent="ShoppingLayout"]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -270.4
+offset_top = -286
+offset_bottom = -122
+
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+[node name="Answer" type="Control" parent="ShoppingLayout"]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -270.4
+offset_top = -158
+offset_bottom = -122
+
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+[node name="LeaveShop" type="Control" parent="ShoppingLayout"]
+anchor_left = 0.8825
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -584.4
+offset_right = -444.4
+offset_top = -112
+offset_bottom = -72
+metadata/layout_middle_delta = Rect2(-37.6, 0, 0, 0)

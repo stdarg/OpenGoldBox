@@ -19,7 +19,7 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
     using namespace godot;
     auto owned = make_node<Window>();
     owned->set_name("InitiativeChoice");
-    set_dialog_window_size(*owned, Vector2i(640, 410));
+    set_dialog_window_size(*owned);
     owned->set_title(text(N_("Initiative")));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
@@ -28,26 +28,26 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
     auto *w = attach_child(root, std::move(owned));
     w->connect("close_requested", keep);
     w->connect("window_input", input);
-    auto *who = add_control<Label>(*w, "ResolveLabel", Rect2(24, 24, 130, 36));
+    auto *who = add_control<Label>(*w, "ResolveLabel");
     who->set_text(text(N_("Resolve next")));
-    auto *owners = add_control<OptionButton>(*w, "Resolve", Rect2(164, 24, 452, 40));
+    auto *owners = add_control<OptionButton>(*w, "Resolve");
     owners->set_fit_to_longest_item(false);
     owners->connect("item_selected", select);
-    auto *label = add_control<Label>(*w, "AllyLabel", Rect2(24, 82, 130, 36));
+    auto *label = add_control<Label>(*w, "AllyLabel");
     label->set_text(text(N_("Ally")));
-    auto *allies = add_control<OptionButton>(*w, "Ally", Rect2(164, 82, 452, 40));
+    auto *allies = add_control<OptionButton>(*w, "Ally");
     allies->set_fit_to_longest_item(false);
     allies->connect("item_selected", select);
-    auto *description = add_control<Label>(*w, "Text", Rect2(24, 140, 592, 138));
+    auto *description = add_control<Label>(*w, "Text");
     description->set("autowrap_mode", 3);
-    auto *no = add_control<Button>(*w, "Keep", Rect2(164, 296, 220, 40));
+    auto *no = add_control<Button>(*w, "Keep");
     no->set_text(text(N_("Keep initiative")));
     no->connect("pressed", keep);
-    auto *yes = add_control<Button>(*w, "Swap", Rect2(396, 296, 220, 40));
+    auto *yes = add_control<Button>(*w, "Swap");
     yes->set_text(text(N_("Swap initiative")));
     yes->connect("pressed", swap);
     // A Monk's Uncanny Metabolism, used when Initiative is rolled.
-    auto *restore = add_control<Button>(*w, "Metabolism", Rect2(164, 346, 452, 40));
+    auto *restore = add_control<Button>(*w, "Metabolism");
     restore->set_text(text(N_("Uncanny Metabolism")));
     restore->connect("pressed", metabolism);
 }

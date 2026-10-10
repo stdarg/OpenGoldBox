@@ -60,23 +60,10 @@ void CharacterPoolDialog::report_failure(const std::exception &failure)
 
 void CharacterPoolDialog::fit(Vector2 view_size)
 {
-    const double w = std::min(1000.0, static_cast<double>(view_size.x) - 64), h = view_size.y - 120;
-    const auto place = [&](const char *path, Rect2 r)
-    {
-        auto *n = &required_node<Control>(*this, path);
-        presentation::place_scene_control(*n, r);
-    };
+    const double w = std::min<double>(get_theme_constant("sheet_max_width", "OpenGoldMetrics"),
+                         view_size.x - get_theme_constant("sheet_horizontal_margin", "OpenGoldMetrics"));
+    const double h = view_size.y - get_theme_constant("sheet_vertical_margin", "OpenGoldMetrics");
     presentation::size_scene_window(*this, Vector2i(w, h));
-    place("Background", Rect2(0, 0, w, h));
-    place("Title", Rect2(20, 16, w - 40, 36));
-    place("List", Rect2(20, 64, 260, h - 154));
-    place("Portrait", Rect2(300, 64, 188, 188));
-    place("Ready", Rect2(300, 270, 88, 88));
-    place("Action", Rect2(400, 270, 88, 88));
-    place("Text", Rect2(508, 64, w - 528, h - 154));
-    place("Status", Rect2(20, h - 82, w - 350, 62));
-    place("Add", Rect2(w - 310, h - 58, 150, 36));
-    place("Close", Rect2(w - 146, h - 58, 126, 36));
 }
 
 void CharacterPoolDialog::open()

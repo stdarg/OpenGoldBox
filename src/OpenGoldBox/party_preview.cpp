@@ -179,53 +179,34 @@ void CharacterCreationView::show_pool()
 
 void CharacterCreationView::party_layout()
 {
-    const auto w = get_size().x, h = get_size().y;
-    presentation::size_scene_control(required_node<Control>(*this, "PartyPanel"), get_size());
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = &required_node<Control>(*this, name);
-        presentation::place_scene_control(*node, rect);
-    };
-    place("Party", Rect2(24, h - 158, 166, 36));
-    place("AddParty", Rect2(218 + page_rect_.size.x - 190, h - 60, 190, 38));
-    place("ReturnParty", Rect2(w - 218, 20, 190, 36));
-    place("PartyPanel/Title", Rect2(24, 22, w - 48, 40));
-    place("PartyPanel/Roster", Rect2(24, 90, 300, h - 350));
-    place("PartyPanel/MakeLeader", Rect2(24, h - 252, 300, 36));
-    place("PartyPanel/Sheet", Rect2(350, 90, w - 650, h - 380));
-    place("PartyPanel/Portrait", Rect2(w - 284, 90, 264, 264));
-    place("PartyPanel/ReadySprite", Rect2(w - 284, 364, 120, 120));
-    place("PartyPanel/ActionSprite", Rect2(w - 140, 364, 120, 120));
-    place("PartyPanel/ReadyLabel", Rect2(w - 284, 488, 120, 24));
-    place("PartyPanel/ActionLabel", Rect2(w - 140, 488, 120, 24));
-    place("PartyPanel/Inventory", Rect2(350, h - 280, w - 374, 96));
     // A row of buttons across the window: each as wide as its label needs
     // (longer in some languages) plus an equal share of the room left.
-    const auto place_row = [&](std::initializer_list<const char *> names, double y)
+    const auto place_row = [&](std::initializer_list<const char *> names)
     {
         double needed = 0;
         for (const auto *name : names)
             needed += required_node<Control>(*this, gs("PartyPanel/") + name)
                       .get_combined_minimum_size()
                       .x;
-        const double gap = 4, spare = std::max(0.0, w - 48 - needed - gap * (names.size() - 1));
-        double x = 24;
+        const double gap = get_theme_constant("party_action_gap", "OpenGoldMetrics");
+        const auto &first = required_node<Control>(*this, gs("PartyPanel/") + *names.begin());
+        const double spare = std::max(0.0, get_size().x - first.get_position().x -
+                                     get_theme_constant("party_action_right_margin", "OpenGoldMetrics") -
+                                     needed - gap * (names.size() - 1));
+        double x = first.get_position().x;
         for (const auto *name : names)
         {
             auto *button = &required_node<Control>(*this, gs("PartyPanel/") + name);
             const double width = button->get_combined_minimum_size().x + spare / names.size();
-            presentation::place_scene_control(*button, Rect2(x, y, width, 36));
+            button->set_position(Vector2(x, button->get_position().y));
+            button->set_size(Vector2(width, button->get_size().y));
             x += width + gap;
         }
     };
-    place_row({"Create", "Remove", "Rejoin", "Recruit", "Equip"}, h - 125);
-    place_row({"Unequip", "Explore", "Combat", "Close", "Modifiers", "SavingThrows"}, h - 81);
-    place("PartyPanel/Save", Rect2(w - 520, 24, 140, 36));
-    place("PartyPanel/Load", Rect2(w - 370, 24, 140, 36));
-    place("PartyPanel/Pool", Rect2(w - 220, 24, 196, 36));
+    place_row({"Create", "Remove", "Rejoin", "Recruit", "Equip"});
+    place_row({"Unequip", "Explore", "Combat", "Close", "Modifiers", "SavingThrows"});
     required_node<CharacterPoolDialog>(*this, "PoolModal").fit(get_size());
     required_node<TownSheetDialog>(*this, "TownSheet").fit(get_size());
-    place("PartyPanel/Status", Rect2(24, h - 39, w - 48, 32));
     for (const auto *name :
             {"CampaignTown", "CampaignCombat"
             })
@@ -1213,7 +1194,7 @@ void CharacterCreationView::setup_defeat()
     auto window = presentation::make_node<Window>();
     window->set_name("Defeat");
     window->set_title(i18n::text(N_("Defeat")));
-    presentation::set_dialog_window_size(*window, Vector2i(520, 240));
+    presentation::set_dialog_window_size(*window);
     window->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     window->set_transient(true);
     window->set_exclusive(true);
@@ -1223,7 +1204,7 @@ void CharacterCreationView::setup_defeat()
     auto title = presentation::make_node<Label>();
     title->set_name("Title");
     title->set_text(i18n::text(N_("Your party has been defeated.")));
-    const auto title_rect = presentation::dialog_layout_rect(*dialog, "Title", Rect2(24, 30, 472, 44));
+    const auto title_rect = presentation::dialog_layout_rect(*dialog, "Title");
     title->set_position(title_rect.position);
     title->set_size(title_rect.size);
     title->set_theme_type_variation("PartyPreviewTitle");
@@ -1231,7 +1212,7 @@ void CharacterCreationView::setup_defeat()
     auto body = presentation::make_node<Label>();
     body->set_name("Body");
     body->set_text(i18n::text(N_("Load a saved game to continue.")));
-    const auto body_rect = presentation::dialog_layout_rect(*dialog, "Body", Rect2(24, 90, 472, 36));
+    const auto body_rect = presentation::dialog_layout_rect(*dialog, "Body");
     body->set_position(body_rect.position);
     body->set_size(body_rect.size);
     presentation::attach_child(*dialog, std::move(body));
@@ -1244,8 +1225,7 @@ void CharacterCreationView::setup_defeat()
         button->set_name(reload ? "Reload" : "Exit");
         button->set_text(i18n::text(reload ? N_("Reload a Saved Game") : N_("Exit to OS")));
         const auto button_rect = presentation::dialog_layout_rect(
-                                     *dialog, reload ? "Reload" : "Exit",
-                                     Rect2(reload ? 24 : 308, 170, reload ? 268 : 188, 44));
+                                     *dialog, reload ? "Reload" : "Exit");
         button->set_position(button_rect.position);
         button->set_size(button_rect.size);
         button->connect("pressed",

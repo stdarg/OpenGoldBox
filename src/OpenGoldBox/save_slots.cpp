@@ -52,16 +52,16 @@ std::string decoded(std::string_view stem)
 
 void SaveSlots::_ready()
 {
-    presentation::set_dialog_window_size(*this, Vector2i(620, 470));
+    presentation::set_dialog_window_size(*this);
     set_flag(Window::FLAG_RESIZE_DISABLED, true);
     set_exclusive(true);
     set_transient(true);
-    presentation::add_control<Label>(*this, "Help", Rect2(20, 16, 580, 42));
-    presentation::add_control<ItemList>(*this, "Slots", Rect2(20, 66, 580, 230));
-    presentation::add_control<LineEdit>(*this, "Name", Rect2(20, 310, 580, 36));
-    presentation::add_control<Label>(*this, "Status", Rect2(20, 354, 580, 58));
-    presentation::add_control<Button>(*this, "Action", Rect2(300, 420, 145, 36));
-    presentation::add_control<Button>(*this, "Cancel", Rect2(455, 420, 145, 36));
+    presentation::add_control<Label>(*this, "Help");
+    presentation::add_control<ItemList>(*this, "Slots");
+    presentation::add_control<LineEdit>(*this, "Name");
+    presentation::add_control<Label>(*this, "Status");
+    presentation::add_control<Button>(*this, "Action");
+    presentation::add_control<Button>(*this, "Cancel");
     required_node<Label>(*this, "Help").set("autowrap_mode", 3);
     required_node<Label>(*this, "Status").set("autowrap_mode", 3);
     required_node<LineEdit>(*this, "Name").set_placeholder(i18n::text(N_("Save name")));

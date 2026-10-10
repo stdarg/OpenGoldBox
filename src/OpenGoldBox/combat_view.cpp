@@ -558,8 +558,11 @@ void CombatView::_ready()
 void CombatView::layout()
 {
     followed_.reset();
-    const double width = get_size().x, height = get_size().y, sidebar = 358,
-                 left_width = width - sidebar - 72;
+    // Authored control rectangles and anchors live in combat_demo.tscn.
+    for (int i = 0; i < get_child_count(); ++i)
+        if (auto *control = Object::cast_to<Control>(get_child(i));
+                control && control->has_meta("layout_reference"))
+            presentation::restore_scene_control(*control);
     const auto board = demo_ && demo_->has_combat() ? demo_.snapshot().battlefield
                        : Battlefield{12, 9, {}};
     bool party_controls = false;
@@ -568,226 +571,113 @@ void CombatView::layout()
         const auto state = demo_.snapshot();
         party_controls = state.outcome == Outcome::ongoing &&
                          std::any_of(state.combatants.begin(), state.combatants.end(),
-                                     [&](const auto & actor)
+                                     [&](const auto &actor)
         {
             return actor.id == state.actor && actor.side == rules::Side::party;
         });
     }
-    // The battlefield takes what the controls and a readable log leave: the
-    // prompt and turn and two log lines.
-    const double minimum_log_height = 110;
     laid_out_controls_height_ = controls_height(party_controls);
-    const double battlefield_height =
-        std::min((height - 180) * .85,
-                 height - 96 - laid_out_controls_height_ - minimum_log_height);
-    base_tile_ = std::max(left_width / board.width, battlefield_height / board.height);
-    board_rect_ = Rect2(24, 16, left_width, battlefield_height);
-    const double right = width - sidebar - 24;
-    auto *scroll = &required_node<ScrollContainer>(*this, "BattlefieldScroll");
-    for (int i = 0; i < scroll->get_child_count(true); ++i)
-    {
-        if (auto *bar = Object::cast_to<ScrollBar>(scroll->get_child(i, true)))
+    auto &scroll = required_node<ScrollContainer>(*this, "BattlefieldScroll");
+    const double battlefield_height = std::min<double>(
+        scroll.get_size().y,
+        get_size().y - get_theme_constant("combat_board_bottom_reserve", "OpenGoldMetrics") -
+        laid_out_controls_height_ - get_theme_constant("combat_min_log_height", "OpenGoldMetrics"));
+    scroll.set_size(Vector2(scroll.get_size().x, battlefield_height));
+    board_rect_ = Rect2(scroll.get_position(), scroll.get_size());
+    for (int i = 0; i < scroll.get_child_count(true); ++i)
+        if (auto *bar = Object::cast_to<ScrollBar>(scroll.get_child(i, true)))
             bar->set_focus_mode(FOCUS_ALL);
-    }
-    presentation::place_scene_control(*scroll, board_rect_);
-    board_rect_ = Rect2(scroll->get_position(), scroll->get_size());
-    required_node<Control>(*this, "BattlefieldScroll/Canvas")
-    .set_custom_minimum_size(Vector2(base_tile_ * board.width, base_tile_ * board.height) *
-                              combat_zoom_);
-    required_node<Control>(*this, "BattlefieldScroll/Canvas").queue_redraw();
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = &required_node<Control>(*this, name);
-        presentation::place_scene_control(*node, rect);
-    };
-    place("Training", Rect2(right, 20, 112, 34));
-    place("Slums", Rect2(right + 120, 20, 112, 34));
-    place("Replay", Rect2(right + 240, 20, 118, 34));
-    place("Turn", Rect2(right, 70, sidebar, 70));
-    place("Roster", Rect2(right, 148, sidebar, 160));
-    place("Prompt", Rect2(right, 318, sidebar, 46));
-    unsigned index = 0;
-    for (const char *name :
-            {"Move", "Melee", "Ranged", "MagicMissile", "CureWounds", "HealingWord", "ScorchingRay",
-             "Blindness", "SpellSlot", "SecondWind", "Dash", "Dodge", "Disengage", "End"
-            })
-    {
-        const unsigned row = index / 3, column = index % 3;
-        place(name, Rect2(right + column * 122, 370 + row * 39, 114, 36));
-        ++index;
-    }
-    place("Continue", Rect2(right + 244, 526, 114, 36));
-    place("React", Rect2(right, 570, 174, 36));
-    place("Decline", Rect2(right + 184, 570, 174, 36));
-    place("Save", Rect2(right, 614, 112, 34));
-    place("Load", Rect2(right + 122, 614, 112, 34));
-    place("Revisit", Rect2(right + 244, 614, 114, 34));
-    place("ZoomLevel", Rect2(right, 16, 66, 34));
-    for (unsigned i = 0; i < 4; ++i)
-        place(std::array<const char *, 4> {"ZoomOut100", "ZoomOut10", "ZoomIn10", "ZoomIn100"} [i],
-              Rect2(right + 70 + i * 72, 16, 68, 34));
+    base_tile_ = std::max(board_rect_.size.x / board.width, board_rect_.size.y / board.height);
+    auto &canvas = required_node<Control>(*this, "BattlefieldScroll/Canvas");
+    canvas.set_custom_minimum_size(Vector2(base_tile_ * board.width, base_tile_ * board.height) *
+                                   combat_zoom_);
+    canvas.queue_redraw();
     const int zoom_percent = static_cast<int>(std::lround(combat_zoom_ * 100));
     required_node<Label>(*this, "ZoomLevel").set_text(String::num_int64(zoom_percent) + "%");
     required_node<Button>(*this, "ZoomOut100").set_disabled(zoom_percent <= 10);
     required_node<Button>(*this, "ZoomOut10").set_disabled(zoom_percent <= 10);
     required_node<Button>(*this, "ZoomIn10").set_disabled(zoom_percent >= 1000);
     required_node<Button>(*this, "ZoomIn100").set_disabled(zoom_percent >= 1000);
-    place("Help", Rect2(right, 700, sidebar, height - 746));
-    place("Log", Rect2(24, board_rect_.get_end().y + 16, left_width,
-                       height - board_rect_.get_end().y - 64));
     layout_reaction_controls(party_controls);
-    place("Footer", Rect2(24, height - 34, width - 48, 24));
-    for (unsigned slot = 0; slot < 8; ++slot)
-    {
-        auto *label = &required_node<RichTextLabel>(*this, gs("PartyHP" + std::to_string(slot)));
-        presentation::place_scene_control(*label,
-                                         Rect2(width - 300, 60 + slot * (height - 120) / 8.0 + 52,
-                                               270, 28));
-    }
     layout_status();
 }
 
 // How far below the battlefield the log starts: the rows of controls showing.
 double CombatView::controls_height(bool show_controls) const
 {
+    const double row = get_theme_constant("combat_action_row_step", "OpenGoldMetrics");
     const double weapon_height =
-        required_node<OptionButton>(*this, "Weapons").is_visible() ? 44 : 0;
+        required_node<OptionButton>(*this, "Weapons").is_visible() ? row : 0;
     const bool rush = required_node<Button>(*this, "AdrenalineRush").is_visible();
     const bool spells = required_node<OptionButton>(*this, "Cantrip").is_visible();
     const bool surge = required_node<Button>(*this, "ActionSurge").is_visible();
     const bool cunning = required_node<OptionButton>(*this, "CunningAction").is_visible();
     const bool aid = required_node<Button>(*this, "Stabilize").is_visible();
     const bool standing = required_node<Button>(*this, "StandUp").is_visible();
-    double inset =
-        weapon_height + (required_node<OptionButton>(*this, "ThrownWeapon").is_visible() ? 220
-                         : standing                                           ? 176
-                         : (cunning || aid)
-                         ? 132
-                         : (show_controls ? 44 : 0) + ((rush || spells || surge) ? 44 : 0));
-    // The Items row takes the first free row, and the log moves below it.
+    double inset = weapon_height +
+        (required_node<OptionButton>(*this, "ThrownWeapon").is_visible() ? 5 * row
+         : standing ? 4 * row
+         : (cunning || aid) ? 3 * row
+         : (show_controls ? row : 0) + ((rush || spells || surge) ? row : 0));
     if (required_node<OptionButton>(*this, "ItemAction").is_visible())
-        inset += 44;
+        inset += row;
     return inset;
 }
 
 void CombatView::layout_reaction_controls(bool show_controls)
 {
-    const double top = board_rect_.get_end().y + 16;
-    const double weapon_height =
-        required_node<OptionButton>(*this, "Weapons").is_visible() ? 44 : 0;
-    presentation::position_scene_control(required_node<Label>(*this, "WeaponLabel"),
-                                         Vector2(24, top + 88));
-    presentation::size_scene_control(required_node<Label>(*this, "WeaponLabel"), Vector2(180, 36));
-    presentation::position_scene_control(required_node<OptionButton>(*this, "Weapons"),
-                                         Vector2(214, top + 88));
-    presentation::size_scene_control(required_node<OptionButton>(*this, "Weapons"),
-                                     Vector2(450, 36));
-    const bool aid = required_node<Button>(*this, "Stabilize").is_visible();
-    presentation::position_scene_control(required_node<Button>(*this, "Stabilize"),
-                                         Vector2(704, top + weapon_height + 88));
-    presentation::size_scene_control(required_node<Button>(*this, "Stabilize"), Vector2(110, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "StandUp"),
-                                         Vector2(24, top + weapon_height + 132));
-    presentation::size_scene_control(required_node<Button>(*this, "StandUp"), Vector2(180, 36));
-    presentation::position_scene_control(required_node<Label>(*this, "ThrownWeaponLabel"),
-                                         Vector2(24, top + weapon_height + 176));
-    presentation::size_scene_control(required_node<Label>(*this, "ThrownWeaponLabel"),
-                                     Vector2(200, 36));
-    presentation::position_scene_control(required_node<OptionButton>(*this, "ThrownWeapon"),
-                                         Vector2(234, top + weapon_height + 176));
-    presentation::size_scene_control(required_node<OptionButton>(*this, "ThrownWeapon"),
-                                     Vector2(360, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "Throw"),
-                                         Vector2(604, top + weapon_height + 176));
-    presentation::size_scene_control(required_node<Button>(*this, "Throw"), Vector2(110, 36));
+    const double row = get_theme_constant("combat_action_row_step", "OpenGoldMetrics");
+    const double top = board_rect_.get_end().y +
+                       get_theme_constant("combat_action_top_gap", "OpenGoldMetrics");
+    for (int i = 0; i < get_child_count(); ++i)
+        if (auto *control = Object::cast_to<Control>(get_child(i));
+                control && control->has_meta("action_row"))
+            presentation::restore_scene_control(*control);
+    const double authored_top = required_node<Button>(*this, "React").get_position().y;
+    const double weapon_height = required_node<OptionButton>(*this, "Weapons").is_visible() ? row : 0;
+    for (int i = 0; i < get_child_count(); ++i)
+    {
+        auto *control = Object::cast_to<Control>(get_child(i));
+        if (!control || !control->has_meta("action_row"))
+            continue;
+        const double extra = control->has_meta("action_after_weapon") ? weapon_height : 0;
+        control->set_position(Vector2(control->get_position().x,
+                                      control->get_position().y + top - authored_top + extra));
+    }
     const double inset = controls_height(show_controls);
-    // The Items row takes the last row, right above the log.
-    const double items_row =
-        inset - (required_node<OptionButton>(*this, "ItemAction").is_visible() ? 44 : 0);
-    presentation::position_scene_control(required_node<Label>(*this, "ItemActionLabel"),
-                                         Vector2(24, top + items_row));
-    presentation::size_scene_control(required_node<Label>(*this, "ItemActionLabel"),
-                                     Vector2(200, 36));
-    presentation::position_scene_control(required_node<OptionButton>(*this, "ItemAction"),
-                                         Vector2(234, top + items_row));
-    presentation::size_scene_control(required_node<OptionButton>(*this, "ItemAction"),
-                                     Vector2(360, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "UseItemAction"),
-                                         Vector2(604, top + items_row));
-    presentation::size_scene_control(required_node<Button>(*this, "UseItemAction"),
-                                     Vector2(110, 36));
-    presentation::position_scene_control(required_node<Label>(*this, "CunningActionLabel"),
-                                         Vector2(24, top + weapon_height + 88));
-    presentation::size_scene_control(required_node<Label>(*this, "CunningActionLabel"),
-                                     Vector2(aid ? 150 : 180, 36));
-    presentation::position_scene_control(required_node<OptionButton>(*this, "CunningAction"),
-                                         Vector2(aid ? 184 : 214, top + weapon_height + 88));
-    presentation::size_scene_control(required_node<OptionButton>(*this, "CunningAction"),
-                                     Vector2(aid ? 160 : 200, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "UseCunningAction"),
-                                         Vector2(aid ? 354 : 424, top + weapon_height + 88));
-    presentation::size_scene_control(required_node<Button>(*this, "UseCunningAction"),
-                                     Vector2(aid ? 180 : 330, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "Dash"),
-                                         Vector2(24, top + 44));
-    presentation::size_scene_control(required_node<Button>(*this, "Dash"), Vector2(90, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "AdrenalineRush"),
-                                         Vector2(124, top + 44));
-    presentation::size_scene_control(required_node<Button>(*this, "AdrenalineRush"),
-                                     Vector2(260, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "ActionSurge"),
-                                         Vector2(394, top + 44));
-    presentation::size_scene_control(required_node<Button>(*this, "ActionSurge"), Vector2(260, 36));
-    presentation::position_scene_control(required_node<Label>(*this, "CantripLabel"),
-                                         Vector2(394, top + 44));
-    presentation::size_scene_control(required_node<Label>(*this, "CantripLabel"), Vector2(64, 36));
-    presentation::position_scene_control(required_node<OptionButton>(*this, "Cantrip"),
-                                         Vector2(464, top + 44));
-    presentation::size_scene_control(required_node<OptionButton>(*this, "Cantrip"),
-                                     Vector2(200, 36));
-    presentation::position_scene_control(
-        required_node<Button>(*this, "CastCantrip"),
-        Vector2(474 + required_node<OptionButton>(*this, "Cantrip").get_size().x, top + 44));
-    presentation::size_scene_control(required_node<Button>(*this, "CastCantrip"), Vector2(80, 36));
-    log_area_ = Rect2(24, top + inset, board_rect_.size.x,
-                      std::max(0.0, get_size().y - board_rect_.get_end().y - 64 - inset));
+    const double item_y = top + inset -
+        (required_node<OptionButton>(*this, "ItemAction").is_visible() ? row : 0);
+    for (int i = 0; i < get_child_count(); ++i)
+        if (auto *control = Object::cast_to<Control>(get_child(i));
+                control && control->has_meta("action_items"))
+            control->set_position(Vector2(control->get_position().x, item_y));
+    if (required_node<Button>(*this, "Stabilize").is_visible())
+        for (const char *name : {"CunningActionLabel", "CunningAction", "UseCunningAction"})
+        {
+            auto &control = required_node<Control>(*this, name);
+            const Rect2 aid = control.get_meta("aid_layout");
+            control.set_position(Vector2(aid.position.x, control.get_position().y));
+            control.set_size(Vector2(aid.size.x, control.get_size().y));
+        }
+    auto &cantrip = required_node<OptionButton>(*this, "Cantrip");
+    auto &cast = required_node<Button>(*this, "CastCantrip");
+    cast.set_position(Vector2(cantrip.get_position().x + cantrip.get_size().x +
+                              get_theme_constant("combat_cantrip_button_gap", "OpenGoldMetrics"),
+                              cast.get_position().y));
+    auto &flee = required_node<Button>(*this, "Flee");
+    flee.set_position(Vector2(board_rect_.get_end().x - flee.get_size().x, flee.get_position().y));
+    const double quick_gap = get_theme_constant("combat_quick_gap", "OpenGoldMetrics");
+    auto &quick = required_node<Button>(*this, "Quick");
+    quick.set_position(Vector2(flee.get_position().x - quick_gap - quick.get_size().x,
+                               quick.get_position().y));
+    auto &quick_magic = required_node<Button>(*this, "QuickMagic");
+    quick_magic.set_position(Vector2(flee.get_position().x - quick_gap, quick_magic.get_position().y));
+    quick_magic.set_size(Vector2(flee.get_size().x + quick_gap, quick_magic.get_size().y));
+    log_area_ = Rect2(board_rect_.position.x, top + inset, board_rect_.size.x,
+                      std::max(0.0, get_size().y -
+                               get_theme_constant("combat_log_bottom_margin", "OpenGoldMetrics") -
+                               top - inset));
     layout_log();
-    const double button_width = 174;
-    presentation::position_scene_control(required_node<Button>(*this, "React"), Vector2(24, top));
-    presentation::size_scene_control(required_node<Button>(*this, "React"),
-                                     Vector2(button_width, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "Decline"),
-                                         Vector2(24 + button_width + 10, top));
-    presentation::position_scene_control(required_node<Button>(*this, "Nick"), Vector2(208, top));
-    presentation::size_scene_control(required_node<Button>(*this, "Nick"), Vector2(174, 36));
-    presentation::size_scene_control(required_node<Button>(*this, "Decline"),
-                                     Vector2(button_width, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "End"), Vector2(24, top));
-    presentation::size_scene_control(required_node<Button>(*this, "End"),
-                                     Vector2(button_width, 36));
-    // Flee sits at the far end of End turn's row, clear of Nick.
-    presentation::position_scene_control(required_node<Button>(*this, "Flee"),
-                                         Vector2(24 + board_rect_.size.x - button_width, top));
-    presentation::size_scene_control(required_node<Button>(*this, "Flee"),
-                                     Vector2(button_width, 36));
-    // Quick and Flee both hand the party to the computer, so they sit together.
-    // Quick is narrower: in the smallest window End turn, Nick, Quick and Flee
-    // share the row. While the computer plays, Take control stands where End
-    // turn does and Quick magic where Flee does.
-    const double quick_width = 130;
-    presentation::position_scene_control(
-        required_node<Button>(*this, "Quick"),
-        Vector2(24 + board_rect_.size.x - button_width - 10 - quick_width, top));
-    presentation::size_scene_control(required_node<Button>(*this, "Quick"),
-                                     Vector2(quick_width, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "QuickMagic"),
-                                         Vector2(24 + board_rect_.size.x - button_width - 10, top));
-    presentation::size_scene_control(required_node<Button>(*this, "QuickMagic"),
-                                     Vector2(button_width + 10, 36));
-    presentation::position_scene_control(required_node<Button>(*this, "TakeControl"),
-                                         Vector2(24, top));
-    presentation::size_scene_control(required_node<Button>(*this, "TakeControl"),
-                                     Vector2(button_width, 36));
 }
 
 // The header takes the lines it needs at the top of the log's area; the log
@@ -795,7 +685,7 @@ void CombatView::layout_reaction_controls(bool show_controls)
 void CombatView::layout_log()
 {
     auto *header = &required_node<Label>(*this, "LogHeader");
-    presentation::position_scene_control(*header, log_area_.position);
+    header->set_position(log_area_.position);
     // The header does not wrap (a line too long ends in an ellipsis), so its
     // height is its line count times the font's line pitch.
     const auto font = header->get_theme_font("font");
@@ -803,12 +693,13 @@ void CombatView::layout_log()
                          header->get_theme_constant("line_spacing");
     // A small gap keeps a log line scrolled half out of view apart from the header.
     const double header_height =
-        std::min<double>((header->get_text().count("\n") + 1) * pitch + 8, log_area_.size.y);
-    presentation::size_scene_control(*header, Vector2(log_area_.size.x, header_height));
+        std::min<double>((header->get_text().count("\n") + 1) * pitch +
+                         get_theme_constant("combat_log_header_gap", "OpenGoldMetrics"),
+                         log_area_.size.y);
+    header->set_size(Vector2(log_area_.size.x, header_height));
     auto *log = &required_node<RichTextLabel>(*this, "Log");
-    presentation::place_scene_control(
-        *log, Rect2(log_area_.position + Vector2(0, header_height),
-                    Vector2(log_area_.size.x, std::max(0.0, log_area_.size.y - header_height))));
+    log->set_position(log_area_.position + Vector2(0, header_height));
+    log->set_size(Vector2(log_area_.size.x, std::max(0.0, log_area_.size.y - header_height)));
 }
 
 void CombatView::layout_status()
@@ -816,12 +707,18 @@ void CombatView::layout_status()
     // Let the translated status summary determine its height. The roster keeps
     // the remaining space above the action prompt and scrolls when necessary.
     auto *turn = &required_node<Label>(*this, "Turn");
-    presentation::size_scene_control(*turn, Vector2(358, 0));
+    turn->set_size(Vector2(turn->get_size().x, 0));
     auto *roster = &required_node<RichTextLabel>(*this, "Roster");
+    presentation::restore_scene_control(*roster);
     const double top =
-        std::max(148.0, static_cast<double>(turn->get_position().y + turn->get_size().y + 8));
-    presentation::place_scene_control(
-        *roster, Rect2(turn->get_position().x, top, 358, std::max(0.0, 308 - top)));
+        std::max<double>(roster->get_position().y,
+                         turn->get_position().y + turn->get_size().y +
+                         get_theme_constant("combat_status_gap", "OpenGoldMetrics"));
+    roster->set_position(Vector2(turn->get_position().x, top));
+    const auto &prompt = required_node<Control>(*this, "Prompt");
+    roster->set_size(Vector2(roster->get_size().x,
+                     std::max(0.0, prompt.get_position().y -
+                              get_theme_constant("combat_roster_bottom_gap", "OpenGoldMetrics") - top)));
 }
 
 #include "nick_dialog_impl.h"
@@ -1880,11 +1777,11 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
     if (mouse->is_pressed() && mouse->get_button_index() == MouseButton::MOUSE_BUTTON_LEFT &&
             campaign_)
     {
-        const double right = get_size().x - 382, row_height = (get_size().y - 120) / 8.0;
-        if (local.x >= right && local.x < right + 358 && local.y >= 60 &&
-                local.y < 60 + 8 * row_height)
+        const auto bounds = required_node<Control>(*this, "PartyRowsBounds").get_rect();
+        const double row_height = bounds.size.y / campaign_->state().slots.size();
+        if (bounds.has_point(local))
         {
-            const auto slot = static_cast<unsigned>((local.y - 60) / row_height);
+            const auto slot = static_cast<unsigned>((local.y - bounds.position.y) / row_height);
             if (const auto id = campaign_->state().slots[slot])
                 select_party(id);
             get_viewport()->set_input_as_handled();
@@ -2196,10 +2093,6 @@ void CombatView::refresh()
             continue;
         }
         const auto &a = *found;
-        presentation::place_scene_control(*label,
-                                         Rect2(get_size().x - 300,
-                                               60 + slot * (get_size().y - 120) / 8.0 + 52,
-                                               270, 28));
         label->set_text(presentation::hp_text(a.hit_points, a.max_hit_points, a.dead,
                                               a.temporary_hp, a.hp_messages) +
         "  " + i18n::format("AC {ac}", {{"ac", a.armor_class}}));
@@ -2779,12 +2672,18 @@ void CombatView::draw_view()
     const int name_size = get_theme_constant("combat_name_font_size", "OpenGoldMetrics");
     const int detail_size = get_theme_constant("combat_detail_font_size", "OpenGoldMetrics");
     const int quick_size = get_theme_constant("combat_quick_font_size", "OpenGoldMetrics");
-    const double right = get_size().x - 382, row_height = (get_size().y - 120) / 8.0;
+    const auto rows = required_node<Control>(*this, "PartyRowsBounds").get_rect();
+    const auto metric = [this](const char *name)
+    {
+        return get_theme_constant(name, "OpenGoldMetrics");
+    };
+    const double row_height = rows.size.y / campaign_->state().slots.size();
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         const auto id = campaign_->state().slots[slot];
-        const double top = 60 + slot * row_height;
-        const Rect2 row(right, top, 358, row_height - 4);
+        const double top = rows.position.y + slot * row_height;
+        const Rect2 row(rows.position.x, top, rows.size.x,
+                        row_height - metric("combat_party_row_gap"));
         draw_rect(row, id && id == selected_ ? get_theme_color("combat_row_selected", "OpenGoldPalette") : get_theme_color("combat_row", "OpenGoldPalette"));
         if (!id)
             continue;
@@ -2798,22 +2697,29 @@ void CombatView::draw_view()
             found == snapshot.combatants.end() ? member.vitals.hit_points : found->hit_points;
         const int maximum = found == snapshot.combatants.end() ? campaign_->hit_point_maximum(id)
                             : found->max_hit_points;
-        const double size = std::min(64.0, row_height - 18), portrait_y = top + 4;
-        const Rect2 image_rect(right + 5, portrait_y, size, size);
+        const double size = std::min(static_cast<double>(metric("combat_party_portrait_max")),
+                                     row_height - metric("combat_party_portrait_height_reserve"));
+        const double portrait_y = top + metric("combat_party_portrait_top");
+        const Rect2 image_rect(rows.position.x + metric("combat_party_portrait_left"),
+                               portrait_y, size, size);
         draw_rect(image_rect, get_theme_color("creation_field", "OpenGoldPalette"));
         if (const auto portrait = portraits_.find(id); portrait != portraits_.end())
             draw_texture_rect(portrait->second, image_rect, false);
         else if (const auto sprite = art_.find(id); sprite != art_.end())
             draw_texture_rect(sprite->second.texture, image_rect, false);
-        draw_rect(Rect2(right + 5, portrait_y + size + 2, size, 5), get_theme_color("combat_hp_track", "OpenGoldPalette"));
-        draw_rect(Rect2(right + 5, portrait_y + size + 2,
+        const double hp_y = portrait_y + size + metric("combat_party_hp_gap");
+        draw_rect(Rect2(image_rect.position.x, hp_y, size,
+                        metric("combat_party_hp_height")),
+                  get_theme_color("combat_hp_track", "OpenGoldPalette"));
+        draw_rect(Rect2(image_rect.position.x, hp_y,
                         size * std::clamp(static_cast<double>(hp) / std::max(1, maximum),
                                           0.0, 1.0),
-                        5),
-                  get_theme_color(hp <= 0 || static_cast<std::int64_t>(hp) * 5 <= maximum
+                        metric("combat_party_hp_height")),
+                  get_theme_color(hp <= 0 || static_cast<std::int64_t>(hp) *
+                                  metric("combat_party_hp_height") <= maximum
                                       ? "score_negative" : hp < maximum ? "score_positive" : "hp_full",
                                   "OpenGoldPalette"));
-        const double text_x = right + 82;
+        const double text_x = rows.position.x + metric("combat_party_text_left");
         const auto line = [&](String value, double y, int size, Color color)
         {
             auto cursor = Vector2(text_x, y);
@@ -2821,19 +2727,25 @@ void CombatView::draw_view()
                 cursor.x +=
                     font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(value.unicode_at(i)), size, color);
         };
-        line(gs(member.character.sheet().name), top + 27, name_size,
+        line(gs(member.character.sheet().name), top + metric("combat_party_name_baseline"), name_size,
              get_theme_color("combat_name", "OpenGoldPalette"));
         // A gold tag marks a member the computer plays (Quick).
         if (is_quick(id))
         {
-            const Rect2 tag(right + 358 - 74, top + 8, 64, 22);
+            const Rect2 tag(rows.get_end().x - metric("combat_party_quick_right") -
+                            metric("combat_party_quick_width"),
+                            top + metric("combat_party_quick_top"),
+                            metric("combat_party_quick_width"),
+                            metric("combat_party_quick_height"));
             draw_rect(tag, get_theme_color("combat_quick_bg", "OpenGoldPalette"));
-            draw_rect(tag, get_theme_color("combat_quick_border", "OpenGoldPalette"), false, 1);
+            draw_rect(tag, get_theme_color("combat_quick_border", "OpenGoldPalette"), false,
+                      metric("combat_party_quick_border_width"));
             const String text = i18n::text(N_("QUICK"));
             double width = 0;
             for (int i = 0; i < text.length(); ++i)
                 width += font->get_char_size(static_cast<char32_t>(text.unicode_at(i)), quick_size).x;
-            auto cursor = Vector2(tag.get_center().x - width / 2, top + 24);
+            auto cursor = Vector2(tag.get_center().x - width / 2,
+                                  top + metric("combat_party_quick_text_baseline"));
             for (int i = 0; i < text.length(); ++i)
                 cursor.x += font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(text.unicode_at(i)), quick_size,
                                             get_theme_color("combat_quick_text", "OpenGoldPalette"));
@@ -2841,7 +2753,8 @@ void CombatView::draw_view()
         const auto &sheet = member.character.sheet();
         line(gs(sheet.character_class).capitalize() + " / " + gs(sheet.race).capitalize() + " / " +
              gs(sheet.gender).capitalize(),
-             top + 49, detail_size, get_theme_color("combat_detail", "OpenGoldPalette"));
+             top + metric("combat_party_detail_baseline"), detail_size,
+             get_theme_color("combat_detail", "OpenGoldPalette"));
     }
 }
 
@@ -2856,12 +2769,7 @@ void CombatView::draw_battlefield()
     const auto font = get_theme_default_font();
     const int marker_size = get_theme_constant("combat_marker_font_size", "OpenGoldMetrics");
     const int marker_advance = get_theme_constant("combat_marker_digit_advance", "OpenGoldMetrics");
-    const auto tint = [this](const char *name, float alpha)
-    {
-        auto color = get_theme_color(name, "OpenGoldPalette");
-        color.a = alpha;
-        return color;
-    };
+    const double inset = get_theme_constant("combat_tile_inset", "OpenGoldMetrics");
     for (int y = 0; y < s.battlefield.height; ++y)
         for (int x = 0; x < s.battlefield.width; ++x)
         {
@@ -2894,11 +2802,14 @@ void CombatView::draw_battlefield()
         if (selected_ == s.actor)
             for (const auto p : demo_->combat().movement_reach(selected_))
                 canvas->draw_rect(
-                    Rect2(Vector2(p.x * tile + 1, p.y * tile + 1), Vector2(tile - 2, tile - 2)),
-                    tint("combat_reachable", .18));
-        canvas->draw_rect(Rect2(Vector2(selected->cell.x * tile + 1, selected->cell.y * tile + 1),
-                                Vector2(tile - 2, tile - 2)),
-                          get_theme_color("combat_selected", "OpenGoldPalette"), false, 2.0);
+                    Rect2(Vector2(p.x * tile + inset, p.y * tile + inset),
+                          Vector2(tile - 2 * inset, tile - 2 * inset)),
+                    get_theme_color("combat_reachable_overlay", "OpenGoldPalette"));
+        canvas->draw_rect(Rect2(Vector2(selected->cell.x * tile + inset,
+                                        selected->cell.y * tile + inset),
+                                Vector2(tile - 2 * inset, tile - 2 * inset)),
+                          get_theme_color("combat_selected", "OpenGoldPalette"), false,
+                          get_theme_constant("combat_selected_border_width", "OpenGoldMetrics"));
     }
     if (active != s.combatants.end() && active->side == rules::Side::party && mode_ != "move")
         for (const auto &c : demo_->combat().legal_commands())
@@ -2911,39 +2822,40 @@ void CombatView::draw_battlefield()
                 });
                 if (target != s.combatants.end())
                     canvas->draw_rect(
-                        Rect2(Vector2(target->cell.x * tile + 1, target->cell.y * tile + 1),
-                              Vector2(tile - 2, tile - 2)),
-                        tint("combat_target",
-                              (mode_ == "stabilize" || mode_ == "throw" ||
-                               (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
-                              c.target == aid_target_
-                              ? .6
-                              : .23));
+                        Rect2(Vector2(target->cell.x * tile + inset,
+                                      target->cell.y * tile + inset),
+                              Vector2(tile - 2 * inset, tile - 2 * inset)),
+                        get_theme_color(
+                            (mode_ == "stabilize" || mode_ == "throw" ||
+                             mode_.starts_with("light_") || mode_.starts_with("nick_")) &&
+                            c.target == aid_target_
+                            ? "combat_target_focus_overlay" : "combat_target_overlay",
+                            "OpenGoldPalette"));
             }
     // Silence's squares, then Heavily Obscured ones such as Fog Cloud's.
     for (const auto cell : s.silenced)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          tint("combat_silence", .25));
+                          get_theme_color("combat_silence_overlay", "OpenGoldPalette"));
     // Spiritual Weapon's spectral force.
     for (const auto cell : s.spiritual_weapons)
         canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .3,
-                            tint("combat_spiritual", .7));
+                            get_theme_color("combat_spiritual_overlay", "OpenGoldPalette"));
     // Flaming Sphere's ball of fire.
     for (const auto cell : s.flaming_spheres)
         canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .4,
-                            tint("combat_flame", .8));
+                            get_theme_color("combat_flame_overlay", "OpenGoldPalette"));
     // Moonbeam's pale light.
     for (const auto cell : s.moonbeams)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          tint("combat_moonbeam", .3));
+                          get_theme_color("combat_moonbeam_overlay", "OpenGoldPalette"));
     for (const auto cell : s.obscured)
         canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          tint("combat_obscured", .35));
+                          get_theme_color("combat_obscured_overlay", "OpenGoldPalette"));
     if (s.area_targeting)
         for (const auto cell : s.area_targeting->cells)
-            canvas->draw_rect(Rect2(Vector2(cell.x * tile + 1, cell.y * tile + 1),
-                                    Vector2(tile - 2, tile - 2)),
-                              tint("combat_area", .38));
+            canvas->draw_rect(Rect2(Vector2(cell.x * tile + inset, cell.y * tile + inset),
+                                    Vector2(tile - 2 * inset, tile - 2 * inset)),
+                              get_theme_color("combat_area_overlay", "OpenGoldPalette"));
     if (s.effect_targeting && active != s.combatants.end() && active->side == rules::Side::party)
     {
         unsigned index = 0;
@@ -2962,9 +2874,11 @@ void CombatView::draw_battlefield()
                         continue;
                     cell = target->cell;
                 }
-                canvas->draw_rect(Rect2(Vector2(cell.x * tile + 1, cell.y * tile + 1),
-                                        Vector2(tile - 2, tile - 2)),
-                                  tint("combat_target", index++ == effect_target_index_ ? .65 : .23));
+                canvas->draw_rect(Rect2(Vector2(cell.x * tile + inset, cell.y * tile + inset),
+                                        Vector2(tile - 2 * inset, tile - 2 * inset)),
+                                  get_theme_color(index++ == effect_target_index_
+                                                  ? "combat_effect_focus_overlay"
+                                                  : "combat_target_overlay", "OpenGoldPalette"));
             }
     }
     for (const auto index : presentation::combat_sprite_draw_order(s.combatants))
@@ -3005,7 +2919,8 @@ void CombatView::draw_battlefield()
         else
         {
             const auto number = std::to_string(a.id);
-            auto cursor = center + Vector2(-marker_advance * .5 * number.size(), 7);
+            auto cursor = center + Vector2(-marker_advance * .5 * number.size(),
+                                           get_theme_constant("combat_marker_baseline", "OpenGoldMetrics"));
             for (const char digit : number)
             {
                 canvas->draw_char(font, cursor, gs(std::string(1, digit)), marker_size,

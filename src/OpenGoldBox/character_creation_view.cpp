@@ -148,8 +148,6 @@ void CharacterCreationView::_ready()
     i18n::prepare_ui(*this);
     required_node<Label>(*this, "PreviewName").set_auto_translate_mode(
         Node::AUTO_TRANSLATE_MODE_DISABLED);
-    presentation::setup_training_controls(*this);
-    presentation::setup_cantrip_controls(*this);
     ready_ = true;
     get_window()->set_min_size(Vector2i(get_theme_constant("creation_min_width", "OpenGoldMetrics"),
                                         get_theme_constant("creation_min_height", "OpenGoldMetrics")));
@@ -307,167 +305,66 @@ void CharacterCreationView::_ready()
 
 void CharacterCreationView::layout()
 {
-    const double w = get_size().x, h = get_size().y;
-    page_rect_ = Rect2(218, 112, w - 584, h - 188);
-    preview_rect_ = Rect2(w - 342, 112, 318, h - 188);
-    auto &page_bounds = required_node<Control>(*this, "PageBounds");
-    auto &preview_bounds = required_node<Control>(*this, "PreviewBounds");
-    presentation::place_scene_control(page_bounds, page_rect_);
-    presentation::place_scene_control(preview_bounds, preview_rect_);
-    page_rect_ = Rect2(page_bounds.get_position(), page_bounds.get_size());
-    preview_rect_ = Rect2(preview_bounds.get_position(), preview_bounds.get_size());
-    const auto place = [&](const String &name, Rect2 r)
+    // Godot anchors and offsets own the default rectangles. Restore them when
+    // leaving a step whose scene-authored variant moved shared controls.
+    for (int i = 0; i < get_child_count(); ++i)
+        if (auto *control = Object::cast_to<Control>(get_child(i));
+                control && control->has_meta("layout_reference"))
+            presentation::restore_scene_control(*control);
+
+    const auto rect = [&](const char *name)
     {
-        auto *c = &required_node<Control>(*this, name);
-        presentation::place_scene_control(*c, r);
+        auto &control = required_node<Control>(*this, name);
+        return Rect2(control.get_position(), control.get_size());
     };
-    place("Title", Rect2(24, 20, w - 48, 36));
-    place("Subtitle", Rect2(24, 64, w - 48, 26));
-    place("Steps", Rect2(24, 128, 180, h - 252));
-    place("Restart", Rect2(24, h - 110, 166, 36));
-    const double x = page_rect_.position.x, y = page_rect_.position.y, pw = page_rect_.size.x,
-                 ph = page_rect_.size.y;
-    place("PageTitle", Rect2(x + 20, y + 18, pw - 40, 36));
-    place("Instructions", Rect2(x + 20, y + 60, pw - 40, 48));
-    place("Choices", Rect2(x + 20, y + 116, pw - 40, ph - 272));
-    place("Description", Rect2(x + 20, y + ph - 140, pw - 40, 120));
-    if (creator_ && creator_->step() == CreationStep::race)
-        place("Choices", Rect2(x + 20, y + 116, pw - 40, ph - 320));
-    place("GenderLabel", Rect2(x + 20, y + ph - 196, 106, 36));
-    place("Gender", Rect2(x + 126, y + ph - 196, pw - 146, 36));
-    // The scene owns the design-width column size; resizing adds only the
-    // window-dependent difference.
+    page_rect_ = rect("PageBounds");
+    preview_rect_ = rect("PreviewBounds");
+    portrait_rect_ = rect("PortraitBounds");
+    ready_rect_ = rect("ReadyBounds");
+    action_rect_ = rect("ActionBounds");
+
+    const auto apply_variant = [&](const char *group)
+    {
+        auto &guides = required_node<Control>(*this, group);
+        for (int i = 0; i < guides.get_child_count(); ++i)
+        {
+            auto *guide = Object::cast_to<Control>(guides.get_child(i));
+            if (!guide)
+                continue;
+            auto &target = required_node<Control>(*this, NodePath(guide->get_name()));
+            target.set_position(guide->get_position());
+            target.set_size(guide->get_size());
+        }
+    };
+    if (creator_)
+    {
+        if (creator_->step() == CreationStep::race)
+            apply_variant("RaceLayout");
+        else if (creator_->step() == CreationStep::attributes)
+            apply_variant("AttributeLayout");
+        else if (creator_->step() == CreationStep::sheet)
+            apply_variant("SheetLayout");
+    }
+
+    // Each choice column grows by half the change in the page width.
     auto &choices = required_node<ItemList>(*this, "Choices");
     if (!choices.has_meta("_layout_column_width"))
         choices.set_meta("_layout_column_width", choices.get_fixed_column_width());
+    const Rect2 page_design = required_node<Control>(*this, "PageBounds").get_meta("layout_reference");
     choices.set_fixed_column_width(int(choices.get_meta("_layout_column_width")) +
-                                   static_cast<int>((pw - 160) / 2 - 588));
+                                   static_cast<int>((page_rect_.size.x - page_design.size.x) / 2));
+    required_node<Control>(*this, "PreviewSummary").set_visible(
+        page_rect_.size.y >= get_theme_constant("preview_summary_min_height", "OpenGoldMetrics"));
 
-    place("BackgroundLabel", Rect2(x + 20, y + 118, 106, 32));
-    place("Background", Rect2(x + 126, y + 114, pw - 146, 36));
-    place("BonusLabel", Rect2(x + 20, y + 164, 106, 32));
-    place("Bonus", Rect2(x + 126, y + 160, pw - 146, 36));
-    place("Columns", Rect2(x + 20, y + 208, pw - 40, 24));
-    place("DiceHeader", Rect2(x + 152, y + 208, 86, 32));
-    place("DiceHint", Rect2(x + 246, y + 208, pw - 266, 34));
-    place("BaseHeader", Rect2(x + 144, y + 208, 50, 24));
-    place("BonusHeader", Rect2(x + 198, y + 208, 48, 24));
-    place("TotalHeader", Rect2(x + 250, y + 208, 50, 24));
-    for (int i = 0; i < 6; ++i)
-    {
-        place(gs("Ability" + std::to_string(i)), Rect2(x + 20, y + 244 + i * 47, 116, 37));
-        place(gs("Dice" + std::to_string(i)), Rect2(x + pw - 72, y + 244 + i * 47, 52, 37));
-        place(gs("Score" + std::to_string(i)), Rect2(x + 144, y + 244 + i * 47, 64, 37));
-        place(gs("BonusScore" + std::to_string(i)), Rect2(x + 220, y + 244 + i * 47, pw - 304, 37));
-        place(gs("TotalScore" + std::to_string(i)), Rect2(x + 250, y + 248 + i * 47, 50, 37));
-    }
-    place("Roll", Rect2(x + 20, y + ph - 58, 170, 36));
-    place("SwapHint", Rect2(x + 202, y + ph - 62, pw - 222, 46));
-    if (creator_ && creator_->step() == CreationStep::attributes)
-    {
-        place("BackgroundLabel", Rect2(x + 20, y + 62, 106, 32));
-        place("Background", Rect2(x + 126, y + 58, pw - 146, 36));
-        place("BonusLabel", Rect2(x + 20, y + 104, 106, 32));
-        place("Bonus", Rect2(x + 126, y + 100, pw - 146, 36));
-        place("Columns", Rect2(x + 20, y + 142, 110, 24));
-        place("DiceHeader", Rect2(x + 206, y + 142, 76, 24));
-        place("DiceHint", Rect2(x + 20, y + 166, 254, 30));
-        place("TargetsTitle", Rect2(x + 282, y + 142, pw - 302, 28));
-        // The hint wraps to several lines in a narrow window, longer in Spanish.
-        place("Targets", Rect2(x + 282, y + 178, pw - 302, ph - 364));
-        place("TargetHint", Rect2(x + 282, y + ph - 178, pw - 302, 118));
-        for (int i = 0; i < 6; ++i)
-        {
-            const double row = y + 200 + i * 58;
-            // Wide enough for the longest name in any language ("Constitución").
-            place(gs("Ability" + std::to_string(i)), Rect2(x + 20, row, 112, 32));
-            place(gs("Score" + std::to_string(i)), Rect2(x + 140, row, 60, 32));
-            place(gs("Dice" + std::to_string(i)), Rect2(x + 216, row, 44, 32));
-            place(gs("BonusScore" + std::to_string(i)), Rect2(x + 20, row + 34, 100, 24));
-            place(gs("Warning" + std::to_string(i)), Rect2(x + 140, row + 32, 130, 26));
-        }
-        place("SwapHint", Rect2(x + 202, y + ph - 56, pw - 222, 42));
-    }
-    place("TrainingFixed", Rect2(x + 20, y + 116, pw - 40, 126));
-    place("Training", Rect2(x + 20, y + 250, pw - 40, ph - 270));
-    place("SpellChoices", Rect2(x + 20, y + 132, pw - 40, ph - 152));
-    place("Name", Rect2(x + 20, y + 138, pw - 40, 46));
-    for (const auto &stem : {std::string("CombatHead"), std::string("Weapon")})
-    {
-        const int row = stem == "CombatHead" ? 0 : 1;
-        place(gs(stem + "Previous"), Rect2(x + 20, y + 126 + row * 48, 110, 36));
-        place(gs(stem + "Label"), Rect2(x + 144, y + 130 + row * 48, pw - 290, 30));
-        place(gs(stem + "Next"), Rect2(x + pw - 130, y + 126 + row * 48, 110, 36));
-    }
-    place("Size", Rect2(x + 20, y + 222, 150, 34));
-    place("ColorTitle", Rect2(x + 20, y + 264, pw - 40, 26));
-    const double colorw = (pw - 166) / 2;
-    place("Color1Title", Rect2(x + 130, y + 264, colorw, 26));
-    place("Color2Title", Rect2(x + 138 + colorw, y + 264, colorw, 26));
-    for (int part = 0; part < 6; ++part)
-    {
-        place(gs("Part" + std::to_string(part)), Rect2(x + 20, y + 300 + part * 35, 105, 28));
-        for (int bank = 0; bank < 2; ++bank)
-            place(gs("Color" + std::to_string(bank) + "_" + std::to_string(part)),
-                  Rect2(x + 130 + bank * (colorw + 8), y + 294 + part * 35, colorw, 30));
-    }
-    place("PaletteHint", Rect2(x + 20, y + ph - 106, pw - 40, 24));
-    const double swatch = (pw - 40 - 7 * 6) / 8;
-    for (int i = 0; i < 16; ++i)
-        place(gs("Palette" + std::to_string(i)),
-              Rect2(x + 20 + (i % 8) * (swatch + 6), y + ph - 76 + (i / 8) * 30, swatch, 25));
-    const double px = preview_rect_.position.x, py = preview_rect_.position.y;
-    place("PreviewTitle", Rect2(px + 18, py + 18, 282, 24));
-    place("PreviewName", Rect2(px + 18, py + 50, 282, 36));
-    portrait_rect_ = Rect2(px + 27, py + 100, 264, 264);
-    auto &portrait_bounds = required_node<Control>(*this, "PortraitBounds");
-    presentation::place_scene_control(portrait_bounds, portrait_rect_);
-    portrait_rect_ = Rect2(portrait_bounds.get_position(), portrait_bounds.get_size());
-    place("PortraitPrevious", Rect2(px + 18, py + 374, 36, 32));
-    place("PortraitSelect", Rect2(px + 60, py + 374, 198, 32));
-    place("PortraitNext", Rect2(px + 264, py + 374, 36, 32));
-    place("PortraitGender", Rect2(px + 18, py + 414, 136, 32));
-    place("PortraitClass", Rect2(px + 164, py + 414, 136, 32));
-    place("PortraitRace", Rect2(px + 18, py + 454, 282, 32));
-    const double sprite = 72;
-    ready_rect_ = Rect2(px + 50, py + 516, sprite, sprite);
-    action_rect_ = Rect2(px + 196, py + 516, sprite, sprite);
-    auto &ready_bounds = required_node<Control>(*this, "ReadyBounds");
-    auto &action_bounds = required_node<Control>(*this, "ActionBounds");
-    presentation::place_scene_control(ready_bounds, ready_rect_);
-    presentation::place_scene_control(action_bounds, action_rect_);
-    ready_rect_ = Rect2(ready_bounds.get_position(), ready_bounds.get_size());
-    action_rect_ = Rect2(action_bounds.get_position(), action_bounds.get_size());
-    place("ReadyLabel", Rect2(px + 26, py + 488, 120, 28));
-    place("ActionLabel", Rect2(px + 172, py + 488, 120, 28));
-    required_node<Control>(*this, "PreviewSummary").set_visible(ph >= 656);
-    place("PreviewSummary", Rect2(px + 18, py + 596, 282, std::max(1.0, ph - 604)));
-    // Between the page (ending 76 px up) and the footer (25 px up).
-    place("Back", Rect2(x, h - 64, 150, 38));
-    place("Next", Rect2(x + pw - 190, h - 64, 190, 38));
-    place("Status", Rect2(x + 160, h - 66, std::max(1.0, pw - 360), 40));
-    place("Footer", Rect2(24, h - 25, w - 48, 22));
-    place("Modifiers", Rect2(x + 20, y + ph - 60, 150, 36));
-    place("SavingThrows", Rect2(x + 180, y + ph - 60, 160, 36));
-    const double mw = std::min(780.0, w - 100), mh = h - 120;
-    presentation::size_scene_window(required_node<Window>(*this, "ModifiersModal"),
-                                    Vector2i(mw, mh));
-    place("ModifiersModal/Background", Rect2(0, 0, mw, mh));
-    place("ModifiersModal/Title", Rect2(24, 18, mw - 48, 36));
-    place("ModifiersModal/Text", Rect2(24, 70, mw - 48, mh - 140));
-    place("ModifiersModal/Close", Rect2(mw - 154, mh - 52, 130, 36));
-    presentation::size_scene_window(required_node<Window>(*this, "SavingThrowsModal"),
-                                    Vector2i(mw, mh));
-    place("SavingThrowsModal/Background", Rect2(0, 0, mw, mh));
-    place("SavingThrowsModal/Title", Rect2(24, 18, mw - 48, 36));
-    place("SavingThrowsModal/DCLabel", Rect2(24, 66, 110, 36));
-    place("SavingThrowsModal/DC", Rect2(144, 66, 90, 36));
-    place("SavingThrowsModal/Text", Rect2(24, 118, mw - 48, mh - 188));
-    place("SavingThrowsModal/Close", Rect2(mw - 154, mh - 52, 130, 36));
+    const double max_width = get_theme_constant("creation_modal_max_width", "OpenGoldMetrics");
+    const double horizontal_margin = get_theme_constant("creation_modal_horizontal_margin", "OpenGoldMetrics");
+    const double vertical_margin = get_theme_constant("creation_modal_vertical_margin", "OpenGoldMetrics");
+    const Vector2i modal_size(std::min(max_width, get_size().x - horizontal_margin),
+                              get_size().y - vertical_margin);
+    presentation::size_scene_window(required_node<Window>(*this, "ModifiersModal"), modal_size);
+    presentation::size_scene_window(required_node<Window>(*this, "SavingThrowsModal"), modal_size);
     if (campaign_)
         party_layout();
-    if (creator_ && creator_->step() == CreationStep::sheet)
-        place("Description", Rect2(x + 20, y + 124, pw - 40, ph - 194));
 }
 
 void CharacterCreationView::recommend_portrait()

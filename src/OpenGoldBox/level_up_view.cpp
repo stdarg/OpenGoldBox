@@ -81,10 +81,11 @@ void CharacterCreationView::refresh_advancement_arrows()
         auto *arrow = Object::cast_to<Button>(list->get_node_or_null(name));
         if (!arrow)
         {
-            arrow = presentation::add_control<Button>(*list, name,
-                    Rect2(0, 0,
-                          list->get_theme_constant("party_arrow_width", "OpenGoldMetrics"),
-                          list->get_theme_constant("party_arrow_height", "OpenGoldMetrics")));
+            auto owned = presentation::make_node<Button>();
+            owned->set_name(name);
+            arrow = presentation::attach_child(*list, std::move(owned));
+            arrow->set_size(Vector2(list->get_theme_constant("party_arrow_width", "OpenGoldMetrics"),
+                                    list->get_theme_constant("party_arrow_height", "OpenGoldMetrics")));
             arrow->set_text(String::utf8("↑"));
             arrow->set_tooltip_text(
             i18n::format("Level up {name}", {{"name", gs(member.character.sheet().name)}}));

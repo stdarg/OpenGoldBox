@@ -136,12 +136,10 @@ void RolfTourView::_ready()
                 true, false
             })
     {
-        auto button = presentation::make_node<Button>();
-        button->set_name(saving ? "SaveGame" : "LoadGame");
-        button->set_text(i18n::text(saving ? N_("Save game") : N_("Load game")));
-        button->connect("pressed", presentation::guarded(this, &RolfTourView::request_save).bind(saving));
-        button->set_visible(embedded_party_);
-        presentation::attach_child(*this, std::move(button));
+        auto &button = required_node<Button>(*this, saving ? "SaveGame" : "LoadGame");
+        button.set_text(i18n::text(saving ? N_("Save game") : N_("Load game")));
+        button.connect("pressed", presentation::guarded(this, &RolfTourView::request_save).bind(saving));
+        button.set_visible(embedded_party_);
     }
     ready_ = true;
     layout();
@@ -180,98 +178,39 @@ void RolfTourView::_ready()
 
 void RolfTourView::layout()
 {
-    const auto width = get_size().x, height = get_size().y;
-    const double margin = 24, gutter = 24,
-                 sidebar = std::min(std::clamp(width * .30, 270.0, 430.0), height - 380.0);
-    const double main_width = width - margin * 2 - gutter - sidebar;
+    // The scene owns the normal town layout. Restore authored anchors before
+    // applying the shopping variant to the controls that change with state.
+    for (int i = 0; i < get_child_count(); ++i)
+        if (auto *control = Object::cast_to<Control>(get_child(i));
+                control && control->has_meta("layout_reference"))
+            presentation::restore_scene_control(*control);
     const bool shopping = session_ && session_->snapshot().phase == TourPhase::shopping;
-    const double view_height = std::min(main_width * .625, height - (shopping ? 490.0 : 410.0));
-    scene_rect_ = Rect2(margin, 102, view_height / 1.2, view_height);
-    map_rect_ = Rect2(margin + main_width + gutter, 102, sidebar, sidebar);
-    dialogue_rect_ = Rect2(margin, scene_rect_.get_end().y + 18, main_width,
-                           height - scene_rect_.get_end().y - 76);
-    auto &scene_bounds = required_node<Control>(*this, "SceneBounds");
-    auto &map_bounds = required_node<Control>(*this, "MapBounds");
-    auto &dialogue_bounds = required_node<Control>(*this, "DialogueBounds");
-    presentation::place_scene_control(scene_bounds, scene_rect_);
-    presentation::place_scene_control(map_bounds, map_rect_);
-    presentation::place_scene_control(dialogue_bounds, dialogue_rect_);
-    scene_rect_ = Rect2(scene_bounds.get_position(), scene_bounds.get_size());
-    map_rect_ = Rect2(map_bounds.get_position(), map_bounds.get_size());
-    dialogue_rect_ = Rect2(dialogue_bounds.get_position(), dialogue_bounds.get_size());
-    const auto place = [&](const char *name, Rect2 rect)
+    if (shopping)
     {
-        auto *node = &required_node<Control>(*this, name);
-        presentation::place_scene_control(*node, rect);
+        auto &guides = required_node<Control>(*this, "ShoppingLayout");
+        for (int i = 0; i < guides.get_child_count(); ++i)
+        {
+            auto *guide = Object::cast_to<Control>(guides.get_child(i));
+            if (!guide)
+                continue;
+            presentation::restore_scene_control(*guide);
+            auto &target = required_node<Control>(*this, NodePath(guide->get_name()));
+            target.set_position(guide->get_position());
+            target.set_size(guide->get_size());
+        }
+    }
+    const auto bounds = [&](const char *name)
+    {
+        auto &control = required_node<Control>(*this, name);
+        return Rect2(control.get_position(), control.get_size());
     };
-    place("SaveGame", Rect2(width - 520, 20, 140, 36));
-    place("LoadGame", Rect2(width - 370, 20, 140, 36));
-    place("Title", Rect2(margin, 20, main_width, 34));
-    place("PartyList", Rect2(scene_rect_.get_end().x + 16, 102,
-                             main_width - scene_rect_.size.x - 16, view_height));
-    place("Location", Rect2(margin, 68, main_width, 26));
-    place("MapTitle", Rect2(map_rect_.position.x, 68, sidebar, 26));
-    place("Coordinates", Rect2(map_rect_.position.x, map_rect_.get_end().y + 12, sidebar, 28));
-    place("Legend", Rect2(map_rect_.position.x, map_rect_.get_end().y + 48, sidebar, 50));
-    place("Speaker",
-          Rect2(dialogue_rect_.position + Vector2(18, 12), Vector2(main_width - 36, 26)));
-    place("Dialogue", Rect2(dialogue_rect_.position + Vector2(18, 46),
-                            Vector2(main_width - 36, dialogue_rect_.size.y - 112)));
-    place("Continue", Rect2(dialogue_rect_.get_end() - Vector2(182, 54), Vector2(164, 40)));
-    place("Progress", Rect2(dialogue_rect_.position + Vector2(18, dialogue_rect_.size.y - 48),
-                            Vector2(main_width - 220, 30)));
-    place("Movement", Rect2(map_rect_.position.x, height - 178, sidebar, 26));
-    const double button_width = (sidebar - 12) / 3;
-    place("Left", Rect2(map_rect_.position.x, height - 140, button_width, 40));
-    place("Forward",
-          Rect2(map_rect_.position.x + button_width + 6, height - 140, button_width, 40));
-    place("Right",
-          Rect2(map_rect_.position.x + (button_width + 6) * 2, height - 140, button_width, 40));
-    place("Restart", Rect2(map_rect_.position.x, height - 88, sidebar, 34));
-    place("Footer", Rect2(margin, height - 36, width - 2 * margin, 26));
-    place("Party", Rect2(map_rect_.position.x, map_rect_.get_end().y + 46, sidebar, 50));
+    scene_rect_ = bounds("SceneBounds");
+    map_rect_ = bounds("MapBounds");
+    dialogue_rect_ = bounds("DialogueBounds");
     required_node<Label>(*this, "Legend").hide();
-    const double utility_width = (sidebar - 12) / 3;
-    place("Look", Rect2(map_rect_.position.x, height - 226, utility_width, 34));
-    place("Camp", Rect2(map_rect_.position.x + utility_width + 6, height - 226, utility_width, 34));
-    place("Inventory",
-          Rect2(map_rect_.position.x + 2 * (utility_width + 6), height - 226, utility_width, 34));
-    place("Choices", Rect2(dialogue_rect_.position + Vector2(18, 84),
-                           Vector2(main_width - 36, dialogue_rect_.size.y - 148)));
-    place("Answer", Rect2(dialogue_rect_.position + Vector2(18, dialogue_rect_.size.y - 100),
-                          Vector2(main_width - 36, 36)));
-    place("LeaveShop", Rect2(dialogue_rect_.get_end() - Vector2(332, 54), Vector2(140, 40)));
-    place("InventoryPanel", Rect2(margin + 40, 90, width - 2 * margin - 80, height - 160));
-    auto *inventory_panel = &required_node<Control>(*this, "InventoryPanel");
-    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Items"),
-                                         Vector2(20, 70));
-    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Items"),
-                                     inventory_panel->get_size() - Vector2(40, 254));
-    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Close"),
-                                         Vector2(20, inventory_panel->get_size().y - 54));
-    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Close"),
-                                     Vector2(180, 36));
-    const auto iw = inventory_panel->get_size().x, ih = inventory_panel->get_size().y;
-    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Header"),
-                                         Vector2(20, 18));
-    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Header"),
-                                     Vector2(iw - 40, 44));
-    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Status"),
-                                         Vector2(20, ih - 132));
-    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Status"),
-                                     Vector2(iw - 40, 68));
-    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Equip"),
-                                         Vector2(220, ih - 54));
-    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Equip"),
-                                     Vector2(150, 36));
-    presentation::position_scene_control(required_node<Control>(*this, "InventoryPanel/Unequip"),
-                                         Vector2(390, ih - 54));
-    presentation::size_scene_control(required_node<Control>(*this, "InventoryPanel/Unequip"),
-                                     Vector2(150, 36));
+    const int sheet_margin = get_theme_constant("tour_sheet_margin", "OpenGoldMetrics");
     presentation::size_scene_window(required_node<Window>(*this, "MemberSheet"),
-                                    Vector2i(width - 120, height - 120));
-    place("MemberSheet/Text", Rect2(24, 24, width - 168, height - 220));
-    place("MemberSheet/Close", Rect2(width - 290, height - 180, 130, 36));
+                                    Vector2i(get_size()) - Vector2i(sheet_margin, sheet_margin));
 }
 
 void RolfTourView::restart()
@@ -1007,26 +946,30 @@ void RolfTourView::refresh()
         }
         displayed_ticket_ = s.continue_ticket;
     }
-    presentation::size_scene_control(
-        required_node<RichTextLabel>(*this, "Dialogue"),
-        Vector2(dialogue_rect_.size.x - 36,
-                (shopping || multiple) ? 36 : dialogue_rect_.size.y - (answer ? 160 : 112)));
+    auto &dialogue = required_node<RichTextLabel>(*this, "Dialogue");
+    if (shopping || multiple)
+        dialogue.set_size(Vector2(dialogue.get_size().x,
+                         get_theme_constant("tour_dialogue_short_height", "OpenGoldMetrics")));
+    else if (answer)
+        dialogue.set_size(Vector2(dialogue.get_size().x,
+                         dialogue_rect_.size.y - get_theme_constant(
+                             "tour_dialogue_answer_reserve", "OpenGoldMetrics")));
     if (multiple)
     {
-        const double text_height = std::min((dialogue_rect_.size.y - 122) * .55,
-                                            std::max<double>(28.0, dialogue_rect_.size.y - 192));
-        presentation::size_scene_control(required_node<RichTextLabel>(*this, "Dialogue"),
-                                         Vector2(dialogue_rect_.size.x - 36, text_height));
-        presentation::place_scene_control(
-            *choices,
-            Rect2(dialogue_rect_.position + Vector2(18, 56 + text_height),
-                  Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 120 - text_height)));
-    }
-    else
-    {
-        presentation::place_scene_control(
-            *choices, Rect2(dialogue_rect_.position + Vector2(18, 84),
-                            Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 148)));
+        const double text_height = std::min(
+            (dialogue_rect_.size.y - get_theme_constant("tour_dialogue_text_reserve", "OpenGoldMetrics")) *
+                get_theme_constant("tour_dialogue_text_percent", "OpenGoldMetrics") / 100.0,
+            std::max<double>(get_theme_constant("tour_dialogue_text_min", "OpenGoldMetrics"),
+                             dialogue_rect_.size.y - get_theme_constant(
+                                 "tour_dialogue_text_max_reserve", "OpenGoldMetrics")));
+        dialogue.set_size(Vector2(dialogue.get_size().x, text_height));
+        const double left = choices->get_position().x;
+        choices->set_position(Vector2(left, dialogue_rect_.position.y +
+                              get_theme_constant("tour_multiple_choices_top", "OpenGoldMetrics") +
+                              text_height));
+        choices->set_size(Vector2(choices->get_size().x,
+                         dialogue_rect_.size.y - get_theme_constant(
+                             "tour_multiple_choices_reserve", "OpenGoldMetrics") - text_height));
     }
     if (shopping)
         required_node<RichTextLabel>(*this, "Dialogue")
@@ -1113,12 +1056,14 @@ void RolfTourView::refresh()
 void RolfTourView::_draw()
 {
     draw_rect(Rect2(Vector2(), get_size()), get_theme_color("background", "OpenGoldPalette"));
-    draw_line(Vector2(24, 57), Vector2(get_size().x - 24, 57),
-              get_theme_color("line", "OpenGoldPalette"));
+    const auto header = required_node<Control>(*this, "HeaderRule").get_rect();
+    draw_line(header.position, header.get_end(), get_theme_color("line", "OpenGoldPalette"),
+              get_theme_constant("tour_header_line_width", "OpenGoldMetrics"));
     draw_rect(dialogue_rect_, get_theme_color("panel", "OpenGoldPalette"));
     draw_rect(dialogue_rect_, get_theme_color("line", "OpenGoldPalette"), false);
     draw_line(dialogue_rect_.position, dialogue_rect_.position + Vector2(dialogue_rect_.size.x, 0),
-              get_theme_color("gold", "OpenGoldPalette"), 2);
+              get_theme_color("gold", "OpenGoldPalette"),
+              get_theme_constant("tour_dialogue_line_width", "OpenGoldMetrics"));
     draw_rect(map_rect_, get_theme_color("map_black", "OpenGoldPalette"));
     draw_scene();
     draw_map();
@@ -1197,7 +1142,7 @@ void RolfTourView::draw_map()
             draw_rect(Rect2(origin, Vector2(cell, cell)),
                       get_theme_color("map_grid", "OpenGoldPalette"), false);
             const auto &c = session_->map().at(x, y);
-            const double inset = 1.3;
+            const double inset = get_theme_constant("tour_map_grid_inset_tenths", "OpenGoldMetrics") / 10.0;
             const std::array<Vector2, 4> corners{origin + Vector2(inset, inset),
                                                  origin + Vector2(cell - inset, inset),
                                                  origin + Vector2(cell - inset, cell - inset),
@@ -1206,22 +1151,33 @@ void RolfTourView::draw_map()
             {
                 if (c.walls[d])
                     draw_line(corners[d], corners[(d + 1) % 4],
-                              get_theme_color("map_wall", "OpenGoldPalette"), 1.5);
+                              get_theme_color("map_wall", "OpenGoldPalette"),
+                              get_theme_constant("tour_map_wall_width_tenths", "OpenGoldMetrics") / 10.0);
                 if (c.doors[d])
-                    draw_line(corners[d].lerp(corners[(d + 1) % 4], .27),
-                              corners[d].lerp(corners[(d + 1) % 4], .73),
-                              get_theme_color("gold", "OpenGoldPalette"), 3);
+                    draw_line(corners[d].lerp(corners[(d + 1) % 4],
+                                              get_theme_constant("tour_map_door_start_percent", "OpenGoldMetrics") / 100.0),
+                              corners[d].lerp(corners[(d + 1) % 4],
+                                              get_theme_constant("tour_map_door_end_percent", "OpenGoldMetrics") / 100.0),
+                              get_theme_color("gold", "OpenGoldPalette"),
+                              get_theme_constant("tour_map_door_width", "OpenGoldMetrics"));
             }
         }
     const auto center =
         map_rect_.position + Vector2((s.pose.x + .5) * cell, (s.pose.y + .5) * cell);
     const auto forward = direction[index(s.pose.facing)], right = Vector2(-forward.y, forward.x);
     PackedVector2Array arrow;
-    arrow.push_back(center + forward * cell * .43);
-    arrow.push_back(center - forward * cell * .3 + right * cell * .32);
-    arrow.push_back(center - forward * cell * .16);
-    arrow.push_back(center - forward * cell * .3 - right * cell * .32);
-    draw_circle(center, cell * .45, get_theme_color("background", "OpenGoldPalette"));
+    const auto fraction = [this](const char *name)
+    {
+        return get_theme_constant(name, "OpenGoldMetrics") / 100.0;
+    };
+    arrow.push_back(center + forward * cell * fraction("tour_map_arrow_tip_percent"));
+    arrow.push_back(center - forward * cell * fraction("tour_map_arrow_back_percent") +
+                    right * cell * fraction("tour_map_arrow_side_percent"));
+    arrow.push_back(center - forward * cell * fraction("tour_map_arrow_notch_percent"));
+    arrow.push_back(center - forward * cell * fraction("tour_map_arrow_back_percent") -
+                    right * cell * fraction("tour_map_arrow_side_percent"));
+    draw_circle(center, cell * fraction("tour_map_arrow_disc_percent"),
+                get_theme_color("background", "OpenGoldPalette"));
     draw_colored_polygon(arrow, get_theme_color("party", "OpenGoldPalette"));
 }
 

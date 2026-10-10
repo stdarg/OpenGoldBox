@@ -9,171 +9,201 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Title" type="Label" parent="."]
+anchor_right = 1
 offset_left = 24
+offset_right = -24
 offset_top = 20
-offset_right = 1896
 offset_bottom = 59
 metadata/layout_reference = Rect2(24, 20, 1872, 39)
 theme_type_variation = &"LabelText28Gold"
 text = "OPENGOLDBOX / Create a character"
 
 [node name="Subtitle" type="Label" parent="."]
+anchor_right = 1
 offset_left = 24
+offset_right = -24
 offset_top = 64
-offset_right = 1896
 offset_bottom = 90
 metadata/layout_reference = Rect2(24, 64, 1872, 26)
 theme_type_variation = &"LabelText17"
 text = "SRD 5.2.1 / Level 1"
 
 [node name="Steps" type="Label" parent="."]
+anchor_bottom = 1
 offset_left = 24
-offset_top = 128
 offset_right = 204
-offset_bottom = 956
+offset_top = 128
+offset_bottom = -124
 metadata/layout_reference = Rect2(24, 128, 180, 828)
 theme_type_variation = &"LabelText17"
 
 [node name="PageTitle" type="Label" parent="."]
+anchor_right = 1
 offset_left = 238
+offset_right = -386
 offset_top = 130
-offset_right = 1534
 offset_bottom = 166
 metadata/layout_reference = Rect2(238, 130, 1296, 36)
 theme_type_variation = &"LabelText25"
 
 [node name="Instructions" type="Label" parent="."]
+anchor_right = 1
 offset_left = 238
+offset_right = -386
 offset_top = 172
-offset_right = 1534
 offset_bottom = 220
 metadata/layout_reference = Rect2(238, 172, 1296, 48)
 theme_type_variation = &"LabelText16"
 autowrap_mode = 2
 
 [node name="Choices" type="ItemList" parent="."]
-fixed_column_width = 588
+anchor_right = 1
+anchor_bottom = 1
 offset_left = 238
+offset_right = -386
 offset_top = 228
-offset_right = 1534
-offset_bottom = 848
+offset_bottom = -232
 metadata/layout_reference = Rect2(238, 228, 1296, 620)
+fixed_column_width = 588
 theme_type_variation = &"CreationChoices"
 max_columns = 2
 same_column_width = true
 
 [node name="Description" type="RichTextLabel" parent="."]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 238
-offset_top = 864
-offset_right = 1534
-offset_bottom = 984
+offset_right = -386
+offset_top = -216
+offset_bottom = -96
 metadata/layout_reference = Rect2(238, 864, 1296, 120)
 theme_type_variation = &"RichTextLabelTableGap16Text18"
 bbcode_enabled = true
 
 [node name="GenderLabel" type="Label" parent="."]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 238
-offset_top = 808
 offset_right = 344
-offset_bottom = 844
+offset_top = -272
+offset_bottom = -236
 metadata/layout_reference = Rect2(238, 808, 106, 36)
 text = "Gender"
 
 [node name="Gender" type="OptionButton" parent="."]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 344
-offset_top = 808
-offset_right = 1534
-offset_bottom = 844
+offset_right = -386
+offset_top = -272
+offset_bottom = -236
 metadata/layout_reference = Rect2(344, 808, 1190, 36)
 
 [node name="BackgroundLabel" type="Label" parent="."]
 offset_left = 238
-offset_top = 230
 offset_right = 344
+offset_top = 230
 offset_bottom = 262
 metadata/layout_reference = Rect2(238, 230, 106, 32)
 text = "Background"
 
 [node name="Background" type="OptionButton" parent="."]
+anchor_right = 1
 offset_left = 344
+offset_right = -386
 offset_top = 226
-offset_right = 1534
 offset_bottom = 262
 metadata/layout_reference = Rect2(344, 226, 1190, 36)
 
 
 [node name="BonusLabel" type="Label" parent="."]
 offset_left = 238
-offset_top = 276
 offset_right = 344
+offset_top = 276
 offset_bottom = 308
 metadata/layout_reference = Rect2(238, 276, 106, 32)
 text = "Bonuses"
 
 [node name="Bonus" type="OptionButton" parent="."]
+anchor_right = 1
 offset_left = 344
+offset_right = -386
 offset_top = 272
-offset_right = 1534
 offset_bottom = 308
 metadata/layout_reference = Rect2(344, 272, 1190, 36)
 
 
 [node name="Columns" type="Label" parent="."]
+anchor_right = 1
 offset_left = 238
+offset_right = -386
 offset_top = 320
-offset_right = 1534
 offset_bottom = 344
 metadata/layout_reference = Rect2(238, 320, 1296, 24)
 text = "Attribute"
 
 [node name="Roll" type="Button" parent="."]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 238
-offset_top = 946
 offset_right = 408
-offset_bottom = 982
+offset_top = -134
+offset_bottom = -98
 metadata/layout_reference = Rect2(238, 946, 170, 36)
 text = "Roll all six"
 
 [node name="SwapHint" type="Label" parent="."]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 420
-offset_top = 942
-offset_right = 1534
-offset_bottom = 988
+offset_right = -386
+offset_top = -138
+offset_bottom = -92
 metadata/layout_reference = Rect2(420, 942, 1114, 46)
 theme_type_variation = &"CreationTargetHint"
 autowrap_mode = 2
 
 [node name="Name" type="LineEdit" parent="."]
+anchor_right = 1
 offset_left = 238
+offset_right = -386
 offset_top = 250
-offset_right = 1534
 offset_bottom = 296
 metadata/layout_reference = Rect2(238, 250, 1296, 46)
 placeholder_text = "Enter a character name"
 max_length = 40
 
 [node name="PortraitPrevious" type="Button" parent="."]
-offset_left = 1596
+anchor_left = 1
+anchor_right = 1
+offset_left = -324
+offset_right = -288
 offset_top = 486
-offset_right = 1632
 offset_bottom = 518
 metadata/layout_reference = Rect2(1596, 486, 36, 32)
 text = "<"
 tooltip_text = "Previous matching portrait"
 
 [node name="PortraitNext" type="Button" parent="."]
-offset_left = 1842
+anchor_left = 1
+anchor_right = 1
+offset_left = -78
+offset_right = -42
 offset_top = 486
-offset_right = 1878
 offset_bottom = 518
 metadata/layout_reference = Rect2(1842, 486, 36, 32)
 text = ">"
 tooltip_text = "Next matching portrait"
 
 [node name="PortraitSelect" type="OptionButton" parent="."]
-offset_left = 1638
+anchor_left = 1
+anchor_right = 1
+offset_left = -282
+offset_right = -84
 offset_top = 486
-offset_right = 1836
 offset_bottom = 518
 metadata/layout_reference = Rect2(1638, 486, 198, 32)
 fit_to_longest_item = false
@@ -181,9 +211,11 @@ clip_text = true
 tooltip_text = "Portrait select"
 
 [node name="PortraitGender" type="OptionButton" parent="."]
-offset_left = 1596
+anchor_left = 1
+anchor_right = 1
+offset_left = -324
+offset_right = -188
 offset_top = 526
-offset_right = 1732
 offset_bottom = 558
 metadata/layout_reference = Rect2(1596, 526, 136, 32)
 fit_to_longest_item = false
@@ -191,9 +223,11 @@ clip_text = true
 tooltip_text = "Portrait gender"
 
 [node name="PortraitClass" type="OptionButton" parent="."]
-offset_left = 1742
+anchor_left = 1
+anchor_right = 1
+offset_left = -178
+offset_right = -42
 offset_top = 526
-offset_right = 1878
 offset_bottom = 558
 metadata/layout_reference = Rect2(1742, 526, 136, 32)
 fit_to_longest_item = false
@@ -201,9 +235,11 @@ clip_text = true
 tooltip_text = "Portrait class"
 
 [node name="PortraitRace" type="OptionButton" parent="."]
-offset_left = 1596
+anchor_left = 1
+anchor_right = 1
+offset_left = -324
+offset_right = -42
 offset_top = 566
-offset_right = 1878
 offset_bottom = 598
 metadata/layout_reference = Rect2(1596, 566, 282, 32)
 fit_to_longest_item = false
@@ -212,175 +248,212 @@ tooltip_text = "Portrait race"
 
 [node name="CombatHeadPrevious" type="Button" parent="."]
 offset_left = 238
-offset_top = 238
 offset_right = 348
+offset_top = 238
 offset_bottom = 274
 metadata/layout_reference = Rect2(238, 238, 110, 36)
 text = "< Head"
 
 [node name="CombatHeadNext" type="Button" parent="."]
-offset_left = 1424
+anchor_left = 1
+anchor_right = 1
+offset_left = -496
+offset_right = -386
 offset_top = 238
-offset_right = 1534
 offset_bottom = 274
 metadata/layout_reference = Rect2(1424, 238, 110, 36)
 text = "Head >"
 
 [node name="CombatHeadLabel" type="Label" parent="."]
+anchor_right = 1
 offset_left = 362
+offset_right = -512
 offset_top = 242
-offset_right = 1408
 offset_bottom = 272
 metadata/layout_reference = Rect2(362, 242, 1046, 30)
 
 
 [node name="WeaponPrevious" type="Button" parent="."]
 offset_left = 238
-offset_top = 286
 offset_right = 348
+offset_top = 286
 offset_bottom = 322
 metadata/layout_reference = Rect2(238, 286, 110, 36)
 text = "< Weapon"
 
 [node name="WeaponNext" type="Button" parent="."]
-offset_left = 1424
+anchor_left = 1
+anchor_right = 1
+offset_left = -496
+offset_right = -386
 offset_top = 286
-offset_right = 1534
 offset_bottom = 322
 metadata/layout_reference = Rect2(1424, 286, 110, 36)
 text = "Weapon >"
 
 [node name="WeaponLabel" type="Label" parent="."]
+anchor_right = 1
 offset_left = 362
+offset_right = -512
 offset_top = 290
-offset_right = 1408
 offset_bottom = 320
 metadata/layout_reference = Rect2(362, 290, 1046, 30)
 
 
 [node name="Size" type="Button" parent="."]
 offset_left = 238
-offset_top = 334
 offset_right = 388
+offset_top = 334
 offset_bottom = 368
 metadata/layout_reference = Rect2(238, 334, 150, 34)
 text = "Size: Tall"
 
 [node name="ColorTitle" type="Label" parent="."]
+anchor_right = 1
 offset_left = 238
+offset_right = -386
 offset_top = 376
-offset_right = 1534
 offset_bottom = 402
 metadata/layout_reference = Rect2(238, 376, 1296, 26)
 text = "Part"
 
 [node name="PaletteHint" type="Label" parent="."]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 238
-offset_top = 898
-offset_right = 1534
-offset_bottom = 922
+offset_right = -386
+offset_top = -182
+offset_bottom = -158
 metadata/layout_reference = Rect2(238, 898, 1296, 24)
 
 
 [node name="Back" type="Button" parent="."]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 218
-offset_top = 1016
 offset_right = 368
-offset_bottom = 1054
+offset_top = -64
+offset_bottom = -26
 metadata/layout_reference = Rect2(218, 1016, 150, 38)
 text = "Back"
 
 [node name="Next" type="Button" parent="."]
-offset_left = 1364
-offset_top = 1016
-offset_right = 1554
-offset_bottom = 1054
+anchor_left = 1
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -556
+offset_right = -366
+offset_top = -64
+offset_bottom = -26
 metadata/layout_reference = Rect2(1364, 1016, 190, 38)
 text = "Next"
 
 [node name="Restart" type="Button" parent="."]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 24
-offset_top = 970
 offset_right = 190
-offset_bottom = 1006
+offset_top = -110
+offset_bottom = -74
 metadata/layout_reference = Rect2(24, 970, 166, 36)
 text = "Start over"
 
 [node name="Status" type="Label" parent="."]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1.0
 offset_left = 378
-offset_top = 1014
-offset_right = 1354
-offset_bottom = 1054
+offset_right = -566
+offset_top = -66
+offset_bottom = -26
 metadata/layout_reference = Rect2(378, 1014, 976, 40)
 autowrap_mode = 2
 
 [node name="PreviewTitle" type="Label" parent="."]
-offset_left = 1596
+anchor_left = 1
+anchor_right = 1
+offset_left = -324
+offset_right = -42
 offset_top = 130
-offset_right = 1878
 offset_bottom = 154
 metadata/layout_reference = Rect2(1596, 130, 282, 24)
 theme_type_variation = &"LabelText16"
 text = "CHARACTER PREVIEW"
 
 [node name="PreviewName" type="Label" parent="."]
-offset_left = 1596
+anchor_left = 1
+anchor_right = 1
+offset_left = -324
+offset_right = -42
 offset_top = 162
-offset_right = 1878
 offset_bottom = 198
 metadata/layout_reference = Rect2(1596, 162, 282, 36)
 theme_type_variation = &"LabelText22"
 text_overrun_behavior = 3
 
 [node name="ReadyLabel" type="Label" parent="."]
-offset_left = 1604
+anchor_left = 1
+anchor_right = 1
+offset_left = -316
+offset_right = -196
 offset_top = 600
-offset_right = 1724
 offset_bottom = 628
 metadata/layout_reference = Rect2(1604, 600, 120, 28)
 text = "Ready"
 horizontal_alignment = 1
 
 [node name="ActionLabel" type="Label" parent="."]
-offset_left = 1750
+anchor_left = 1
+anchor_right = 1
+offset_left = -170
+offset_right = -50
 offset_top = 600
-offset_right = 1870
 offset_bottom = 628
 metadata/layout_reference = Rect2(1750, 600, 120, 28)
 text = "Action"
 horizontal_alignment = 1
 
 [node name="PreviewSummary" type="Label" parent="."]
-offset_left = 1596
+anchor_left = 1
+anchor_right = 1
+anchor_bottom = 1.0
+offset_left = -324
+offset_right = -42
 offset_top = 708
-offset_right = 1878
-offset_bottom = 996
+offset_bottom = -84
 metadata/layout_reference = Rect2(1596, 708, 282, 288)
 theme_type_variation = &"LabelText16"
 autowrap_mode = 2
 
 [node name="Footer" type="Label" parent="."]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 24
-offset_top = 1055
-offset_right = 1896
-offset_bottom = 1077
+offset_right = -24
+offset_top = -25
+offset_bottom = -3
 metadata/layout_reference = Rect2(24, 1055, 1872, 22)
 theme_type_variation = &"LabelText14"
 text = "Original game art + OpenGoldBox portraits / SRD 5.2.1"
 
 [node name="Ability0" type="Button" parent="."]
 offset_left = 238
-offset_top = 356
 offset_right = 354
+offset_top = 356
 offset_bottom = 393
 metadata/layout_reference = Rect2(238, 356, 116, 37)
 theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice0" type="RichTextLabel" parent="."]
-offset_left = 1482
+anchor_left = 1
+anchor_right = 1
+offset_left = -438
+offset_right = -386
 offset_top = 356
-offset_right = 1534
 offset_bottom = 393
 metadata/layout_reference = Rect2(1482, 356, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
@@ -389,25 +462,27 @@ scroll_active = false
 
 [node name="Score0" type="Button" parent="."]
 offset_left = 362
-offset_top = 356
 offset_right = 426
+offset_top = 356
 offset_bottom = 393
 metadata/layout_reference = Rect2(362, 356, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability1" type="Button" parent="."]
 offset_left = 238
-offset_top = 403
 offset_right = 354
+offset_top = 403
 offset_bottom = 440
 metadata/layout_reference = Rect2(238, 403, 116, 37)
 theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice1" type="RichTextLabel" parent="."]
-offset_left = 1482
+anchor_left = 1
+anchor_right = 1
+offset_left = -438
+offset_right = -386
 offset_top = 403
-offset_right = 1534
 offset_bottom = 440
 metadata/layout_reference = Rect2(1482, 403, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
@@ -416,25 +491,27 @@ scroll_active = false
 
 [node name="Score1" type="Button" parent="."]
 offset_left = 362
-offset_top = 403
 offset_right = 426
+offset_top = 403
 offset_bottom = 440
 metadata/layout_reference = Rect2(362, 403, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability2" type="Button" parent="."]
 offset_left = 238
-offset_top = 450
 offset_right = 354
+offset_top = 450
 offset_bottom = 487
 metadata/layout_reference = Rect2(238, 450, 116, 37)
 theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice2" type="RichTextLabel" parent="."]
-offset_left = 1482
+anchor_left = 1
+anchor_right = 1
+offset_left = -438
+offset_right = -386
 offset_top = 450
-offset_right = 1534
 offset_bottom = 487
 metadata/layout_reference = Rect2(1482, 450, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
@@ -443,25 +520,27 @@ scroll_active = false
 
 [node name="Score2" type="Button" parent="."]
 offset_left = 362
-offset_top = 450
 offset_right = 426
+offset_top = 450
 offset_bottom = 487
 metadata/layout_reference = Rect2(362, 450, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability3" type="Button" parent="."]
 offset_left = 238
-offset_top = 497
 offset_right = 354
+offset_top = 497
 offset_bottom = 534
 metadata/layout_reference = Rect2(238, 497, 116, 37)
 theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice3" type="RichTextLabel" parent="."]
-offset_left = 1482
+anchor_left = 1
+anchor_right = 1
+offset_left = -438
+offset_right = -386
 offset_top = 497
-offset_right = 1534
 offset_bottom = 534
 metadata/layout_reference = Rect2(1482, 497, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
@@ -470,25 +549,27 @@ scroll_active = false
 
 [node name="Score3" type="Button" parent="."]
 offset_left = 362
-offset_top = 497
 offset_right = 426
+offset_top = 497
 offset_bottom = 534
 metadata/layout_reference = Rect2(362, 497, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability4" type="Button" parent="."]
 offset_left = 238
-offset_top = 544
 offset_right = 354
+offset_top = 544
 offset_bottom = 581
 metadata/layout_reference = Rect2(238, 544, 116, 37)
 theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice4" type="RichTextLabel" parent="."]
-offset_left = 1482
+anchor_left = 1
+anchor_right = 1
+offset_left = -438
+offset_right = -386
 offset_top = 544
-offset_right = 1534
 offset_bottom = 581
 metadata/layout_reference = Rect2(1482, 544, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
@@ -497,25 +578,27 @@ scroll_active = false
 
 [node name="Score4" type="Button" parent="."]
 offset_left = 362
-offset_top = 544
 offset_right = 426
+offset_top = 544
 offset_bottom = 581
 metadata/layout_reference = Rect2(362, 544, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability5" type="Button" parent="."]
 offset_left = 238
-offset_top = 591
 offset_right = 354
+offset_top = 591
 offset_bottom = 628
 metadata/layout_reference = Rect2(238, 591, 116, 37)
 theme_type_variation = &"CreationAbility"
 
 
 [node name="Dice5" type="RichTextLabel" parent="."]
-offset_left = 1482
+anchor_left = 1
+anchor_right = 1
+offset_left = -438
+offset_right = -386
 offset_top = 591
-offset_right = 1534
 offset_bottom = 628
 metadata/layout_reference = Rect2(1482, 591, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
@@ -524,306 +607,387 @@ scroll_active = false
 
 [node name="Score5" type="Button" parent="."]
 offset_left = 362
-offset_top = 591
 offset_right = 426
+offset_top = 591
 offset_bottom = 628
 metadata/layout_reference = Rect2(362, 591, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Part0" type="Label" parent="."]
 offset_left = 238
-offset_top = 412
 offset_right = 343
+offset_top = 412
 offset_bottom = 440
 metadata/layout_reference = Rect2(238, 412, 105, 28)
 text = "Weapon"
 
 [node name="Color0_0" type="Button" parent="."]
+anchor_right = 0.5
 offset_left = 348
+offset_right = -27
 offset_top = 406
-offset_right = 933
 offset_bottom = 436
 metadata/layout_reference = Rect2(348, 406, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_0" type="Button" parent="."]
-offset_left = 941
+anchor_left = 0.5
+anchor_right = 1
+offset_left = -19
+offset_right = -394
 offset_top = 406
-offset_right = 1526
 offset_bottom = 436
 metadata/layout_reference = Rect2(941, 406, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part1" type="Label" parent="."]
 offset_left = 238
-offset_top = 447
 offset_right = 343
+offset_top = 447
 offset_bottom = 475
 metadata/layout_reference = Rect2(238, 447, 105, 28)
 text = "Body"
 
 [node name="Color0_1" type="Button" parent="."]
+anchor_right = 0.5
 offset_left = 348
+offset_right = -27
 offset_top = 441
-offset_right = 933
 offset_bottom = 471
 metadata/layout_reference = Rect2(348, 441, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_1" type="Button" parent="."]
-offset_left = 941
+anchor_left = 0.5
+anchor_right = 1
+offset_left = -19
+offset_right = -394
 offset_top = 441
-offset_right = 1526
 offset_bottom = 471
 metadata/layout_reference = Rect2(941, 441, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part2" type="Label" parent="."]
 offset_left = 238
-offset_top = 482
 offset_right = 343
+offset_top = 482
 offset_bottom = 510
 metadata/layout_reference = Rect2(238, 482, 105, 28)
 text = "Hair / Face"
 
 [node name="Color0_2" type="Button" parent="."]
+anchor_right = 0.5
 offset_left = 348
+offset_right = -27
 offset_top = 476
-offset_right = 933
 offset_bottom = 506
 metadata/layout_reference = Rect2(348, 476, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_2" type="Button" parent="."]
-offset_left = 941
+anchor_left = 0.5
+anchor_right = 1
+offset_left = -19
+offset_right = -394
 offset_top = 476
-offset_right = 1526
 offset_bottom = 506
 metadata/layout_reference = Rect2(941, 476, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part3" type="Label" parent="."]
 offset_left = 238
-offset_top = 517
 offset_right = 343
+offset_top = 517
 offset_bottom = 545
 metadata/layout_reference = Rect2(238, 517, 105, 28)
 text = "Shield"
 
 [node name="Color0_3" type="Button" parent="."]
+anchor_right = 0.5
 offset_left = 348
+offset_right = -27
 offset_top = 511
-offset_right = 933
 offset_bottom = 541
 metadata/layout_reference = Rect2(348, 511, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_3" type="Button" parent="."]
-offset_left = 941
+anchor_left = 0.5
+anchor_right = 1
+offset_left = -19
+offset_right = -394
 offset_top = 511
-offset_right = 1526
 offset_bottom = 541
 metadata/layout_reference = Rect2(941, 511, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part4" type="Label" parent="."]
 offset_left = 238
-offset_top = 552
 offset_right = 343
+offset_top = 552
 offset_bottom = 580
 metadata/layout_reference = Rect2(238, 552, 105, 28)
 text = "Arms"
 
 [node name="Color0_4" type="Button" parent="."]
+anchor_right = 0.5
 offset_left = 348
+offset_right = -27
 offset_top = 546
-offset_right = 933
 offset_bottom = 576
 metadata/layout_reference = Rect2(348, 546, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_4" type="Button" parent="."]
-offset_left = 941
+anchor_left = 0.5
+anchor_right = 1
+offset_left = -19
+offset_right = -394
 offset_top = 546
-offset_right = 1526
 offset_bottom = 576
 metadata/layout_reference = Rect2(941, 546, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part5" type="Label" parent="."]
 offset_left = 238
-offset_top = 587
 offset_right = 343
+offset_top = 587
 offset_bottom = 615
 metadata/layout_reference = Rect2(238, 587, 105, 28)
 text = "Legs"
 
 [node name="Color0_5" type="Button" parent="."]
+anchor_right = 0.5
 offset_left = 348
+offset_right = -27
 offset_top = 581
-offset_right = 933
 offset_bottom = 611
 metadata/layout_reference = Rect2(348, 581, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_5" type="Button" parent="."]
-offset_left = 941
+anchor_left = 0.5
+anchor_right = 1
+offset_left = -19
+offset_right = -394
 offset_top = 581
-offset_right = 1526
 offset_bottom = 611
 metadata/layout_reference = Rect2(941, 581, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Palette0" type="Button" parent="."]
+anchor_right = 0.125
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 238
-offset_top = 928
-offset_right = 394.75
-offset_bottom = 953
+offset_right = 154.75
+offset_top = -152
+offset_bottom = -127
 metadata/layout_reference = Rect2(238, 928, 156.75, 25)
 
 
 [node name="Palette1" type="Button" parent="."]
-offset_left = 400.75
-offset_top = 928
-offset_right = 557.5
-offset_bottom = 953
+anchor_left = 0.125
+anchor_right = 0.25
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 160.75
+offset_right = 77.5
+offset_top = -152
+offset_bottom = -127
 metadata/layout_reference = Rect2(400.75, 928, 156.75, 25)
 
 
 [node name="Palette2" type="Button" parent="."]
-offset_left = 563.5
-offset_top = 928
-offset_right = 720.25
-offset_bottom = 953
+anchor_left = 0.25
+anchor_right = 0.375
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 83.5
+offset_right = 0.25
+offset_top = -152
+offset_bottom = -127
 metadata/layout_reference = Rect2(563.5, 928, 156.75, 25)
 
 
 [node name="Palette3" type="Button" parent="."]
-offset_left = 726.25
-offset_top = 928
-offset_right = 883
-offset_bottom = 953
+anchor_left = 0.375
+anchor_right = 0.5
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 6.25
+offset_right = -77
+offset_top = -152
+offset_bottom = -127
 metadata/layout_reference = Rect2(726.25, 928, 156.75, 25)
 
 
 [node name="Palette4" type="Button" parent="."]
-offset_left = 889
-offset_top = 928
-offset_right = 1045.75
-offset_bottom = 953
+anchor_left = 0.5
+anchor_right = 0.625
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -71
+offset_right = -154.25
+offset_top = -152
+offset_bottom = -127
 metadata/layout_reference = Rect2(889, 928, 156.75, 25)
 
 
 [node name="Palette5" type="Button" parent="."]
-offset_left = 1051.75
-offset_top = 928
-offset_right = 1208.5
-offset_bottom = 953
+anchor_left = 0.625
+anchor_right = 0.75
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -148.25
+offset_right = -231.5
+offset_top = -152
+offset_bottom = -127
 metadata/layout_reference = Rect2(1051.75, 928, 156.75, 25)
 
 
 [node name="Palette6" type="Button" parent="."]
-offset_left = 1214.5
-offset_top = 928
-offset_right = 1371.25
-offset_bottom = 953
+anchor_left = 0.75
+anchor_right = 0.875
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -225.5
+offset_right = -308.75
+offset_top = -152
+offset_bottom = -127
 metadata/layout_reference = Rect2(1214.5, 928, 156.75, 25)
 
 
 [node name="Palette7" type="Button" parent="."]
-offset_left = 1377.25
-offset_top = 928
-offset_right = 1534
-offset_bottom = 953
+anchor_left = 0.875
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -302.75
+offset_right = -386
+offset_top = -152
+offset_bottom = -127
 metadata/layout_reference = Rect2(1377.25, 928, 156.75, 25)
 
 
 [node name="Palette8" type="Button" parent="."]
+anchor_right = 0.125
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 238
-offset_top = 958
-offset_right = 394.75
-offset_bottom = 983
+offset_right = 154.75
+offset_top = -122
+offset_bottom = -97
 metadata/layout_reference = Rect2(238, 958, 156.75, 25)
 
 
 [node name="Palette9" type="Button" parent="."]
-offset_left = 400.75
-offset_top = 958
-offset_right = 557.5
-offset_bottom = 983
+anchor_left = 0.125
+anchor_right = 0.25
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 160.75
+offset_right = 77.5
+offset_top = -122
+offset_bottom = -97
 metadata/layout_reference = Rect2(400.75, 958, 156.75, 25)
 
 
 [node name="Palette10" type="Button" parent="."]
-offset_left = 563.5
-offset_top = 958
-offset_right = 720.25
-offset_bottom = 983
+anchor_left = 0.25
+anchor_right = 0.375
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 83.5
+offset_right = 0.25
+offset_top = -122
+offset_bottom = -97
 metadata/layout_reference = Rect2(563.5, 958, 156.75, 25)
 
 
 [node name="Palette11" type="Button" parent="."]
-offset_left = 726.25
-offset_top = 958
-offset_right = 883
-offset_bottom = 983
+anchor_left = 0.375
+anchor_right = 0.5
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 6.25
+offset_right = -77
+offset_top = -122
+offset_bottom = -97
 metadata/layout_reference = Rect2(726.25, 958, 156.75, 25)
 
 
 [node name="Palette12" type="Button" parent="."]
-offset_left = 889
-offset_top = 958
-offset_right = 1045.75
-offset_bottom = 983
+anchor_left = 0.5
+anchor_right = 0.625
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -71
+offset_right = -154.25
+offset_top = -122
+offset_bottom = -97
 metadata/layout_reference = Rect2(889, 958, 156.75, 25)
 
 
 [node name="Palette13" type="Button" parent="."]
-offset_left = 1051.75
-offset_top = 958
-offset_right = 1208.5
-offset_bottom = 983
+anchor_left = 0.625
+anchor_right = 0.75
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -148.25
+offset_right = -231.5
+offset_top = -122
+offset_bottom = -97
 metadata/layout_reference = Rect2(1051.75, 958, 156.75, 25)
 
 
 [node name="Palette14" type="Button" parent="."]
-offset_left = 1214.5
-offset_top = 958
-offset_right = 1371.25
-offset_bottom = 983
+anchor_left = 0.75
+anchor_right = 0.875
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -225.5
+offset_right = -308.75
+offset_top = -122
+offset_bottom = -97
 metadata/layout_reference = Rect2(1214.5, 958, 156.75, 25)
 
 
 [node name="Palette15" type="Button" parent="."]
-offset_left = 1377.25
-offset_top = 958
-offset_right = 1534
-offset_bottom = 983
+anchor_left = 0.875
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -302.75
+offset_right = -386
+offset_top = -122
+offset_bottom = -97
 metadata/layout_reference = Rect2(1377.25, 958, 156.75, 25)
 
 [node name="DiceHeader" type="Label" parent="."]
 offset_left = 370
-offset_top = 320
 offset_right = 456
+offset_top = 320
 offset_bottom = 352
 metadata/layout_reference = Rect2(370, 320, 86, 32)
 text = "Dice Rolls"
 horizontal_alignment = 0
 
 [node name="DiceHint" type="Label" parent="."]
+anchor_right = 1
 offset_left = 464
+offset_right = -386
 offset_top = 320
-offset_right = 1534
 offset_bottom = 477
-metadata/layout_reference = Rect2(464, 320, 1070, 34)
+metadata/layout_reference = Rect2(464, 320, 1070, 157)
 theme_type_variation = &"CreationHint"
 text = "Drag to the ability score of your choice."
 autowrap_mode = 2
 
 [node name="BaseHeader" type="Label" parent="."]
 offset_left = 362
-offset_top = 320
 offset_right = 412
+offset_top = 320
 offset_bottom = 344
 metadata/layout_reference = Rect2(362, 320, 50, 24)
 text = "Base"
@@ -831,8 +995,8 @@ horizontal_alignment = 0
 
 [node name="BonusHeader" type="Label" parent="."]
 offset_left = 416
-offset_top = 320
 offset_right = 465
+offset_top = 320
 offset_bottom = 344
 metadata/layout_reference = Rect2(416, 320, 49, 24)
 text = "Bonus"
@@ -840,35 +1004,39 @@ horizontal_alignment = 0
 
 [node name="TotalHeader" type="Label" parent="."]
 offset_left = 468
-offset_top = 320
 offset_right = 518
+offset_top = 320
 offset_bottom = 344
 metadata/layout_reference = Rect2(468, 320, 50, 24)
 text = "Total"
 horizontal_alignment = 0
 
 [node name="Color1Title" type="Label" parent="."]
+anchor_right = 0.5
 offset_left = 348
+offset_right = -27
 offset_top = 376
-offset_right = 933
 offset_bottom = 402
 metadata/layout_reference = Rect2(348, 376, 585, 26)
 text = "Color-1"
 horizontal_alignment = 1
 
 [node name="Color2Title" type="Label" parent="."]
-offset_left = 941
+anchor_left = 0.5
+anchor_right = 1
+offset_left = -19
+offset_right = -394
 offset_top = 376
-offset_right = 1526
 offset_bottom = 402
 metadata/layout_reference = Rect2(941, 376, 585, 26)
 text = "Color-2"
 horizontal_alignment = 1
 
 [node name="BonusScore0" type="Label" parent="."]
+anchor_right = 1
 offset_left = 438
+offset_right = -450
 offset_top = 356
-offset_right = 1470
 offset_bottom = 393
 metadata/layout_reference = Rect2(438, 356, 1032, 37)
 theme_type_variation = &"LabelText11"
@@ -877,16 +1045,17 @@ autowrap_mode = 2
 
 [node name="TotalScore0" type="Label" parent="."]
 offset_left = 468
-offset_top = 360
 offset_right = 518
+offset_top = 360
 offset_bottom = 397
 metadata/layout_reference = Rect2(468, 360, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore1" type="Label" parent="."]
+anchor_right = 1
 offset_left = 438
+offset_right = -450
 offset_top = 403
-offset_right = 1470
 offset_bottom = 440
 metadata/layout_reference = Rect2(438, 403, 1032, 37)
 theme_type_variation = &"LabelText11"
@@ -895,16 +1064,17 @@ autowrap_mode = 2
 
 [node name="TotalScore1" type="Label" parent="."]
 offset_left = 468
-offset_top = 407
 offset_right = 518
+offset_top = 407
 offset_bottom = 444
 metadata/layout_reference = Rect2(468, 407, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore2" type="Label" parent="."]
+anchor_right = 1
 offset_left = 438
+offset_right = -450
 offset_top = 450
-offset_right = 1470
 offset_bottom = 487
 metadata/layout_reference = Rect2(438, 450, 1032, 37)
 theme_type_variation = &"LabelText11"
@@ -913,16 +1083,17 @@ autowrap_mode = 2
 
 [node name="TotalScore2" type="Label" parent="."]
 offset_left = 468
-offset_top = 454
 offset_right = 518
+offset_top = 454
 offset_bottom = 491
 metadata/layout_reference = Rect2(468, 454, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore3" type="Label" parent="."]
+anchor_right = 1
 offset_left = 438
+offset_right = -450
 offset_top = 497
-offset_right = 1470
 offset_bottom = 534
 metadata/layout_reference = Rect2(438, 497, 1032, 37)
 theme_type_variation = &"LabelText11"
@@ -931,16 +1102,17 @@ autowrap_mode = 2
 
 [node name="TotalScore3" type="Label" parent="."]
 offset_left = 468
-offset_top = 501
 offset_right = 518
+offset_top = 501
 offset_bottom = 538
 metadata/layout_reference = Rect2(468, 501, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore4" type="Label" parent="."]
+anchor_right = 1
 offset_left = 438
+offset_right = -450
 offset_top = 544
-offset_right = 1470
 offset_bottom = 581
 metadata/layout_reference = Rect2(438, 544, 1032, 37)
 theme_type_variation = &"LabelText11"
@@ -949,16 +1121,17 @@ autowrap_mode = 2
 
 [node name="TotalScore4" type="Label" parent="."]
 offset_left = 468
-offset_top = 548
 offset_right = 518
+offset_top = 548
 offset_bottom = 585
 metadata/layout_reference = Rect2(468, 548, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore5" type="Label" parent="."]
+anchor_right = 1
 offset_left = 438
+offset_right = -450
 offset_top = 591
-offset_right = 1470
 offset_bottom = 628
 metadata/layout_reference = Rect2(438, 591, 1032, 37)
 theme_type_variation = &"LabelText11"
@@ -967,43 +1140,53 @@ autowrap_mode = 2
 
 [node name="TotalScore5" type="Label" parent="."]
 offset_left = 468
-offset_top = 595
 offset_right = 518
+offset_top = 595
 offset_bottom = 632
 metadata/layout_reference = Rect2(468, 595, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="Party" type="Button" parent="."]
-offset_left = 0
-offset_top = 0
-offset_right = 94
-offset_bottom = 31
-metadata/layout_reference = Rect2(0, 0, 94, 31)
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 24
+offset_right = 190
+offset_top = -158
+offset_bottom = -122
+metadata/layout_reference = Rect2(24, 922, 166, 36)
 text = "View party"
 
 [node name="AddParty" type="Button" parent="."]
-offset_left = 0
-offset_top = 0
-offset_right = 108
-offset_bottom = 31
-metadata/layout_reference = Rect2(0, 0, 108, 31)
+anchor_left = 1
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -556
+offset_right = -366
+offset_top = -60
+offset_bottom = -22
+metadata/layout_reference = Rect2(1364, 1020, 190, 38)
 visible = false
 text = "Add to party"
 
 [node name="ReturnParty" type="Button" parent="."]
-offset_left = 0
-offset_top = 0
-offset_right = 131
-offset_bottom = 31
-metadata/layout_reference = Rect2(0, 0, 131, 31)
+anchor_left = 1
+anchor_right = 1
+offset_left = -218
+offset_right = -28
+offset_top = 20
+offset_bottom = 56
+metadata/layout_reference = Rect2(1702, 20, 190, 36)
 visible = false
 text = "Return to party"
 
 [node name="Modifiers" type="Button" parent="."]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 238
-offset_top = 944
 offset_right = 388
-offset_bottom = 980
+offset_top = -136
+offset_bottom = -100
 metadata/layout_reference = Rect2(238, 944, 150, 36)
 visible = false
 text = "Modifiers"
@@ -1018,43 +1201,54 @@ size = Vector2i(780, 960)
 metadata/layout_reference_size = Vector2i(780, 960)
 
 [node name="Background" type="Panel" parent="ModifiersModal"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 0
 offset_top = 0
-offset_right = 780
-offset_bottom = 960
+offset_right = 0
+offset_bottom = 0
 metadata/layout_reference = Rect2(0, 0, 780, 960)
 theme_type_variation = &"DialogSurface"
 
 [node name="Title" type="Label" parent="ModifiersModal"]
+anchor_right = 1.0
 offset_left = 24
 offset_top = 18
-offset_right = 756
+offset_right = -24
 offset_bottom = 54
 metadata/layout_reference = Rect2(24, 18, 732, 36)
 theme_type_variation = &"LabelText24"
 
 [node name="Text" type="RichTextLabel" parent="ModifiersModal"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 24
 offset_top = 70
-offset_right = 756
-offset_bottom = 890
+offset_right = -24
+offset_bottom = -70
 metadata/layout_reference = Rect2(24, 70, 732, 820)
 theme_type_variation = &"RichTextLabelText18"
 bbcode_enabled = true
 
 [node name="Close" type="Button" parent="ModifiersModal"]
-offset_left = 626
-offset_top = 908
-offset_right = 756
-offset_bottom = 944
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -154
+offset_top = -52
+offset_right = -24
+offset_bottom = -16
 metadata/layout_reference = Rect2(626, 908, 130, 36)
 text = "Close"
 
 [node name="SavingThrows" type="Button" parent="."]
+anchor_top = 1
+anchor_bottom = 1
 offset_left = 398
-offset_top = 944
 offset_right = 558
-offset_bottom = 980
+offset_top = -136
+offset_bottom = -100
 metadata/layout_reference = Rect2(398, 944, 160, 36)
 visible = false
 text = "Saving Throws"
@@ -1069,17 +1263,20 @@ size = Vector2i(780, 960)
 metadata/layout_reference_size = Vector2i(780, 960)
 
 [node name="Background" type="Panel" parent="SavingThrowsModal"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 0
 offset_top = 0
-offset_right = 780
-offset_bottom = 960
+offset_right = 0
+offset_bottom = 0
 metadata/layout_reference = Rect2(0, 0, 780, 960)
 theme_type_variation = &"DialogSurface"
 
 [node name="Title" type="Label" parent="SavingThrowsModal"]
+anchor_right = 1.0
 offset_left = 24
 offset_top = 18
-offset_right = 756
+offset_right = -24
 offset_bottom = 54
 metadata/layout_reference = Rect2(24, 18, 732, 36)
 theme_type_variation = &"LabelText24"
@@ -1103,19 +1300,25 @@ max_length = 3
 select_all_on_focus = true
 
 [node name="Text" type="RichTextLabel" parent="SavingThrowsModal"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 24
 offset_top = 118
-offset_right = 756
-offset_bottom = 890
+offset_right = -24
+offset_bottom = -70
 metadata/layout_reference = Rect2(24, 118, 732, 772)
 theme_type_variation = &"RichTextLabelText18"
 bbcode_enabled = true
 
 [node name="Close" type="Button" parent="SavingThrowsModal"]
-offset_left = 626
-offset_top = 908
-offset_right = 756
-offset_bottom = 944
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -154
+offset_top = -52
+offset_right = -24
+offset_bottom = -16
 metadata/layout_reference = Rect2(626, 908, 130, 36)
 text = "Close"
 
@@ -1128,27 +1331,35 @@ size = Vector2i(1000, 960)
 metadata/layout_reference_size = Vector2i(1000, 960)
 
 [node name="Background" type="Panel" parent="PoolModal"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 0
 offset_top = 0
-offset_right = 1000
-offset_bottom = 960
+offset_right = 0
+offset_bottom = 0
 metadata/layout_reference = Rect2(0, 0, 1000, 960)
 theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="PoolModal"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 508
 offset_top = 64
-offset_right = 980
-offset_bottom = 870
+offset_right = -20
+offset_bottom = -90
 metadata/layout_reference = Rect2(508, 64, 472, 806)
 theme_type_variation = &"RichTextLabelText17"
 bbcode_enabled = true
 
 [node name="Close" type="Button" parent="PoolModal"]
-offset_left = 854
-offset_top = 902
-offset_right = 980
-offset_bottom = 938
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -146
+offset_top = -58
+offset_right = -20
+offset_bottom = -22
 metadata/layout_reference = Rect2(854, 902, 126, 36)
 text = "Close"
 
@@ -1161,68 +1372,89 @@ size = Vector2i(1000, 960)
 metadata/layout_reference_size = Vector2i(1000, 960)
 
 [node name="Background" type="Panel" parent="TownSheet"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 0
 offset_top = 0
-offset_right = 1000
-offset_bottom = 960
+offset_right = 0
+offset_bottom = 0
 metadata/layout_reference = Rect2(0, 0, 1000, 960)
 theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="TownSheet"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 24
 offset_top = 24
-offset_right = 976
-offset_bottom = 884
+offset_right = -24
+offset_bottom = -76
 metadata/layout_reference = Rect2(24, 24, 952, 860)
 theme_type_variation = &"RichTextLabelText17"
 bbcode_enabled = true
 
 [node name="Close" type="Button" parent="TownSheet"]
-offset_left = 846
-offset_top = 904
-offset_right = 976
-offset_bottom = 940
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -154
+offset_top = -56
+offset_right = -24
+offset_bottom = -20
 metadata/layout_reference = Rect2(846, 904, 130, 36)
 text = "Close"
 
 [node name="MakeLeader" type="Button" parent="TownSheet"]
-offset_left = 686
-offset_top = 904
-offset_right = 836
-offset_bottom = 940
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -314
+offset_top = -56
+offset_right = -164
+offset_bottom = -20
 metadata/layout_reference = Rect2(686, 904, 150, 36)
 text = "Make leader"
 
 [node name="List" type="ItemList" parent="PoolModal"]
+anchor_bottom = 1.0
 offset_left = 20
 offset_top = 64
 offset_right = 280
-offset_bottom = 870
+offset_bottom = -90
 metadata/layout_reference = Rect2(20, 64, 260, 806)
 theme_type_variation = &"ItemListText16"
 
 [node name="Title" type="Label" parent="PoolModal"]
+anchor_right = 1.0
 offset_left = 20
 offset_top = 16
-offset_right = 980
+offset_right = -20
 offset_bottom = 52
 metadata/layout_reference = Rect2(20, 16, 960, 36)
 theme_type_variation = &"LabelText23"
 text = "Character Pool / 48 level-one characters"
 
 [node name="Add" type="Button" parent="PoolModal"]
-offset_left = 690
-offset_top = 902
-offset_right = 840
-offset_bottom = 938
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -310
+offset_top = -58
+offset_right = -160
+offset_bottom = -22
 metadata/layout_reference = Rect2(690, 902, 150, 36)
 text = "Add to party"
 
 [node name="Status" type="Label" parent="PoolModal"]
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
 offset_left = 20
-offset_top = 878
-offset_right = 670
-offset_bottom = 940
+offset_top = -82
+offset_right = -330
+offset_bottom = -20
 metadata/layout_reference = Rect2(20, 878, 650, 62)
 autowrap_mode = 2
 
@@ -1258,8 +1490,8 @@ texture_filter = 1
 
 [node name="TargetsTitle" type="Label" parent="."]
 offset_left = 0
-offset_top = 0
 offset_right = 119
+offset_top = 0
 offset_bottom = 23
 metadata/layout_reference = Rect2(0, 0, 119, 23)
 theme_type_variation = &"LabelText16"
@@ -1267,8 +1499,8 @@ text = "Target class(es)"
 
 [node name="Targets" type="ScrollContainer" parent="."]
 offset_left = 0
-offset_top = 0
 offset_right = 56
+offset_top = 0
 offset_bottom = 16
 metadata/layout_reference = Rect2(0, 0, 56, 16)
 theme_type_variation = &"TargetPanel"
@@ -1286,8 +1518,8 @@ size_flags_horizontal = 3
 
 [node name="TargetHint" type="Label" parent="."]
 offset_left = 500
-offset_top = 826
 offset_right = 1534
+offset_top = 826
 offset_bottom = 944
 metadata/layout_reference = Rect2(500, 826, 1034, 118)
 theme_type_variation = &"CreationTargetHint"
@@ -1404,10 +1636,10 @@ layout_mode = 2
 
 [node name="Warning0" type="Label" parent="."]
 offset_left = 358
-offset_top = 344
 offset_right = 488
-offset_bottom = 370
-metadata/layout_reference = Rect2(358, 344, 130, 26)
+offset_top = 344
+offset_bottom = 373
+metadata/layout_reference = Rect2(358, 344, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
@@ -1415,10 +1647,10 @@ text = "Does not meet targeted class requirements"
 
 [node name="Warning1" type="Label" parent="."]
 offset_left = 358
-offset_top = 402
 offset_right = 488
-offset_bottom = 428
-metadata/layout_reference = Rect2(358, 402, 130, 26)
+offset_top = 402
+offset_bottom = 431
+metadata/layout_reference = Rect2(358, 402, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
@@ -1426,10 +1658,10 @@ text = "Does not meet targeted class requirements"
 
 [node name="Warning2" type="Label" parent="."]
 offset_left = 358
-offset_top = 460
 offset_right = 488
-offset_bottom = 486
-metadata/layout_reference = Rect2(358, 460, 130, 26)
+offset_top = 460
+offset_bottom = 489
+metadata/layout_reference = Rect2(358, 460, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
@@ -1437,10 +1669,10 @@ text = "Does not meet targeted class requirements"
 
 [node name="Warning3" type="Label" parent="."]
 offset_left = 358
-offset_top = 518
 offset_right = 488
-offset_bottom = 544
-metadata/layout_reference = Rect2(358, 518, 130, 26)
+offset_top = 518
+offset_bottom = 547
+metadata/layout_reference = Rect2(358, 518, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
@@ -1448,10 +1680,10 @@ text = "Does not meet targeted class requirements"
 
 [node name="Warning4" type="Label" parent="."]
 offset_left = 358
-offset_top = 576
 offset_right = 488
-offset_bottom = 602
-metadata/layout_reference = Rect2(358, 576, 130, 26)
+offset_top = 576
+offset_bottom = 605
+metadata/layout_reference = Rect2(358, 576, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
@@ -1459,56 +1691,407 @@ text = "Does not meet targeted class requirements"
 
 [node name="Warning5" type="Label" parent="."]
 offset_left = 358
-offset_top = 634
 offset_right = 488
-offset_bottom = 660
-metadata/layout_reference = Rect2(358, 634, 130, 26)
+offset_top = 634
+offset_bottom = 663
+metadata/layout_reference = Rect2(358, 634, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
 text = "Does not meet targeted class requirements"
 
 [node name="PageBounds" type="Control" parent="."]
+anchor_right = 1
+anchor_bottom = 1
 offset_left = 218
+offset_right = -366
 offset_top = 112
-offset_right = 1554
-offset_bottom = 1004
+offset_bottom = -76
 metadata/layout_reference = Rect2(218, 112, 1336, 892)
 visible = false
 mouse_filter = 2
 
 [node name="PreviewBounds" type="Control" parent="."]
-offset_left = 1578
+anchor_left = 1
+anchor_right = 1
+anchor_bottom = 1
+offset_left = -342
+offset_right = -24
 offset_top = 112
-offset_right = 1896
-offset_bottom = 1004
+offset_bottom = -76
 metadata/layout_reference = Rect2(1578, 112, 318, 892)
 visible = false
 mouse_filter = 2
 
 [node name="PortraitBounds" type="Control" parent="."]
-offset_left = 1605
+anchor_left = 1
+anchor_right = 1
+offset_left = -315
+offset_right = -51
 offset_top = 212
-offset_right = 1869
 offset_bottom = 476
 metadata/layout_reference = Rect2(1605, 212, 264, 264)
 visible = false
 mouse_filter = 2
 
 [node name="ReadyBounds" type="Control" parent="."]
-offset_left = 1628
+anchor_left = 1
+anchor_right = 1
+offset_left = -292
+offset_right = -220
 offset_top = 628
-offset_right = 1700
 offset_bottom = 700
 metadata/layout_reference = Rect2(1628, 628, 72, 72)
 visible = false
 mouse_filter = 2
 
 [node name="ActionBounds" type="Control" parent="."]
-offset_left = 1774
+anchor_left = 1
+anchor_right = 1
+offset_left = -146
+offset_right = -74
 offset_top = 628
-offset_right = 1846
 offset_bottom = 700
 metadata/layout_reference = Rect2(1774, 628, 72, 72)
 visible = false
 mouse_filter = 2
+
+[node name="RaceLayout" type="Control" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Choices" type="Control" parent="RaceLayout"]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 238
+offset_right = -386
+offset_top = 228
+offset_bottom = -280
+
+[node name="AttributeLayout" type="Control" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="BackgroundLabel" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 344
+offset_top = 174
+offset_bottom = 206
+
+[node name="Background" type="Control" parent="AttributeLayout"]
+anchor_right = 1
+offset_left = 344
+offset_right = -386
+offset_top = 170
+offset_bottom = 206
+
+[node name="BonusLabel" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 344
+offset_top = 216
+offset_bottom = 248
+
+[node name="Bonus" type="Control" parent="AttributeLayout"]
+anchor_right = 1
+offset_left = 344
+offset_right = -386
+offset_top = 212
+offset_bottom = 248
+
+[node name="Columns" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 348
+offset_top = 254
+offset_bottom = 278
+
+[node name="DiceHeader" type="Control" parent="AttributeLayout"]
+offset_left = 424
+offset_right = 500
+offset_top = 254
+offset_bottom = 278
+
+[node name="DiceHint" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 492
+offset_top = 278
+offset_bottom = 308
+
+[node name="TargetsTitle" type="Control" parent="AttributeLayout"]
+anchor_right = 1
+offset_left = 500
+offset_right = -386
+offset_top = 254
+offset_bottom = 282
+
+[node name="Targets" type="Control" parent="AttributeLayout"]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 500
+offset_right = -386
+offset_top = 290
+offset_bottom = -262
+
+[node name="TargetHint" type="Control" parent="AttributeLayout"]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 500
+offset_right = -386
+offset_top = -254
+offset_bottom = -136
+
+[node name="SwapHint" type="Control" parent="AttributeLayout"]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 420
+offset_right = -386
+offset_top = -132
+offset_bottom = -90
+
+[node name="Ability0" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 350
+offset_top = 312
+offset_bottom = 344
+
+[node name="Score0" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 418
+offset_top = 312
+offset_bottom = 344
+
+[node name="Dice0" type="Control" parent="AttributeLayout"]
+offset_left = 434
+offset_right = 478
+offset_top = 312
+offset_bottom = 344
+
+[node name="BonusScore0" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 338
+offset_top = 346
+offset_bottom = 370
+
+[node name="Warning0" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 488
+offset_top = 344
+offset_bottom = 370
+
+[node name="Ability1" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 350
+offset_top = 370
+offset_bottom = 402
+
+[node name="Score1" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 418
+offset_top = 370
+offset_bottom = 402
+
+[node name="Dice1" type="Control" parent="AttributeLayout"]
+offset_left = 434
+offset_right = 478
+offset_top = 370
+offset_bottom = 402
+
+[node name="BonusScore1" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 338
+offset_top = 404
+offset_bottom = 428
+
+[node name="Warning1" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 488
+offset_top = 402
+offset_bottom = 428
+
+[node name="Ability2" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 350
+offset_top = 428
+offset_bottom = 460
+
+[node name="Score2" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 418
+offset_top = 428
+offset_bottom = 460
+
+[node name="Dice2" type="Control" parent="AttributeLayout"]
+offset_left = 434
+offset_right = 478
+offset_top = 428
+offset_bottom = 460
+
+[node name="BonusScore2" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 338
+offset_top = 462
+offset_bottom = 486
+
+[node name="Warning2" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 488
+offset_top = 460
+offset_bottom = 486
+
+[node name="Ability3" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 350
+offset_top = 486
+offset_bottom = 518
+
+[node name="Score3" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 418
+offset_top = 486
+offset_bottom = 518
+
+[node name="Dice3" type="Control" parent="AttributeLayout"]
+offset_left = 434
+offset_right = 478
+offset_top = 486
+offset_bottom = 518
+
+[node name="BonusScore3" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 338
+offset_top = 520
+offset_bottom = 544
+
+[node name="Warning3" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 488
+offset_top = 518
+offset_bottom = 544
+
+[node name="Ability4" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 350
+offset_top = 544
+offset_bottom = 576
+
+[node name="Score4" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 418
+offset_top = 544
+offset_bottom = 576
+
+[node name="Dice4" type="Control" parent="AttributeLayout"]
+offset_left = 434
+offset_right = 478
+offset_top = 544
+offset_bottom = 576
+
+[node name="BonusScore4" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 338
+offset_top = 578
+offset_bottom = 602
+
+[node name="Warning4" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 488
+offset_top = 576
+offset_bottom = 602
+
+[node name="Ability5" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 350
+offset_top = 602
+offset_bottom = 634
+
+[node name="Score5" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 418
+offset_top = 602
+offset_bottom = 634
+
+[node name="Dice5" type="Control" parent="AttributeLayout"]
+offset_left = 434
+offset_right = 478
+offset_top = 602
+offset_bottom = 634
+
+[node name="BonusScore5" type="Control" parent="AttributeLayout"]
+offset_left = 238
+offset_right = 338
+offset_top = 636
+offset_bottom = 660
+
+[node name="Warning5" type="Control" parent="AttributeLayout"]
+offset_left = 358
+offset_right = 488
+offset_top = 634
+offset_bottom = 660
+
+[node name="SheetLayout" type="Control" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Description" type="Control" parent="SheetLayout"]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 238
+offset_right = -386
+offset_top = 236
+offset_bottom = -146
+
+[node name="TrainingFixed" type="RichTextLabel" parent="."]
+anchor_right = 1.0
+offset_left = 238
+offset_top = 228
+offset_right = -386
+offset_bottom = 354
+metadata/layout_reference = Rect2(238, 228, 1296, 126)
+visible = false
+theme_type_variation = &"TrainingFixed"
+bbcode_enabled = true
+auto_translate_mode = 2
+
+[node name="Training" type="ScrollContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 238
+offset_top = 362
+offset_right = -386
+offset_bottom = -96
+metadata/layout_reference = Rect2(238, 362, 1296, 622)
+visible = false
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Rows" type="VBoxContainer" parent="Training"]
+size_flags_horizontal = 3
+theme_type_variation = &"TrainingRows"
+
+[node name="SpellChoices" type="ScrollContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 238
+offset_top = 244
+offset_right = -386
+offset_bottom = -96
+metadata/layout_reference = Rect2(238, 244, 1296, 740)
+visible = false
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Rows" type="VBoxContainer" parent="SpellChoices"]
+size_flags_horizontal = 3
+theme_type_variation = &"CantripRows"
+
+[node name="Count" type="Label" parent="SpellChoices/Rows"]
+auto_translate_mode = 2
+autowrap_mode = 2
+
+[node name="Pending" type="Label" parent="SpellChoices/Rows"]
+auto_translate_mode = 2
+autowrap_mode = 2
