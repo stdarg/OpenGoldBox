@@ -1542,6 +1542,13 @@ enum class AttackRange
     ranged
 };
 
+// Whether an attack roll is a weapon's or a spell's; several modifiers apply to only one.
+enum class AttackSource
+{
+    weapon,
+    spell
+};
+
 // What a spell attack deals; a weapon attack takes its damage from the weapon.
 struct SpellAttack
 {
@@ -2203,7 +2210,7 @@ class Session final : public CombatSession
     detail::Mastery weapon_mastery(const Actor &, AttackRange range) const;
     bool mastery_capacity(const Actor &, const Actor &, AttackRange range) const;
     detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target, AttackRange range,
-                                           bool spell) const;
+                                           AttackSource source) const;
     Dice weapon_dice(const Actor &a, AttackRange range) const;
     detail::DamageDieRule weapon_die_rule(const Actor &a, AttackRange range) const;
     void apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved);
@@ -6405,9 +6412,10 @@ bool Session::mastery_capacity(const Actor &a, const Actor &target, AttackRange 
 }
 
 detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &target,
-        AttackRange range, bool spell) const
+        AttackRange range, AttackSource source) const
 {
     const bool ranged = range == AttackRange::ranged;
+    const bool spell = source == AttackSource::spell;
     const auto &d = def(a);
     bool disadvantaged =
         !spell && (d.str_dex_disadvantage ||
@@ -6729,7 +6737,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (sanctuary_stops(a, target))
         return false;
     const auto &d = def(a);
-    const auto modifiers = attack_modifiers(a, target, range, spell);
+    const auto modifiers =
+        attack_modifiers(a, target, range, spell ? AttackSource::spell : AttackSource::weapon);
     a.aim_ready = false;
     // Guiding Bolt's Advantage is spent on this attack roll.
     std::erase_if(target.effects.active, [](const auto & e)
