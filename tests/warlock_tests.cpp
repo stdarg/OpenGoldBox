@@ -213,7 +213,7 @@ void advancement_checks()
     "Magical Cunning is offered at camp with a slot spent");
     auto vitals = unit(*c, 1).persistent;
     std::vector<CampTarget> party{{&second.sheet(), &vitals}};
-    std::uint64_t random = 7;
+    RandomState random{7};
     // Reaching level 3 with a slot spent: the Pact slots become level 2 and
     // the spent one stays spent.
     auto spent = unit(*c, 1).persistent;

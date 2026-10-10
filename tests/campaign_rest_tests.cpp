@@ -190,7 +190,7 @@ void individual_eligibility()
     auto state = party.checkpoint();
     state.time_minutes = 1000;
     state.subminute_milliseconds = 3000;
-    state.random_state = 29;
+    state.random_state.value = 29;
     for (auto &m : state.roster)
         m.vitals = {1, false, spent_resources(m.character.sheet().character_class)};
     state.roster[1].last_rest_minutes = 41;
@@ -212,7 +212,7 @@ void individual_eligibility()
           result->duration_minutes == 480,
           "Only eligible active PCs and NPCs complete the Long Rest");
     check(party.state().time_minutes == 1480 && party.state().subminute_milliseconds == 3000 &&
-          party.state().random_state == 11400714819323198514ULL,
+          party.state().random_state.value == 11400714819323198514ULL,
           "One group rest advances eight hours once, including the known natural-one death save");
     check(party.member(f).last_rest_minutes == 1480 &&
           party.member(f).last_rest_subminute_milliseconds == 3000 &&
@@ -331,7 +331,7 @@ void spending_and_continuation()
     check((rolls.back().remaining == 0 ||
            healed.vitals.hit_points == healed.character.sheet().hit_points) &&
           healed.vitals.hit_points == 1 + healing &&
-          party.state().random_state ==
+          party.state().random_state.value ==
           11400714819323198527ULL + (rolls.size() - 1) * 0x9e3779b97f4a7c15ULL,
           "One action heals until full HP or out of dice, with one RNG draw per die");
     const auto after_heal = saved(party);
@@ -650,7 +650,7 @@ void campaign_services()
                 !party->state().short_rest &&
                 party->member(id).vitals.hit_points == state.roster[0].vitals.hit_points &&
                 party->member(id).vitals.resources == state.roster[0].vitals.resources &&
-                party->state().random_state == 42 &&
+                party->state().random_state.value == 42 &&
                 party->state().time_minutes == ((chance == 100 || chance == 101) ? 5 : 0),
                 "Forbidden, unsupported and five-minute interrupted camps grant neither resources nor spending rights");
             if (chance != 255 && chance != 100 && chance != 101)
@@ -723,7 +723,7 @@ void watch_interruption_and_rollback()
         check(member.equipped == std::vector<std::uint64_t> {sword},
               "An interrupted rest leaves equipment untouched");
         check(member.vitals.hit_points == 1 && winds(member) == 0 &&
-              party->state().random_state == 42,
+              party->state().random_state.value == 42,
               "An interrupted rest grants no recovery and draws no RNG");
     }
 }

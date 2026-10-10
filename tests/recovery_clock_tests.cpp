@@ -253,7 +253,7 @@ void combat_and_campaign()
           "SRD11 1 0 0 0 0 1 2 0 1000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0",
           "Advancement adds only its new Hit Die and retains the exact Stable deadline");
     auto healed = stable;
-    auto rng = std::uint64_t{42};
+    RandomState rng{42};
     rules->temple_heal(healed, character.sheet(), rng);
     check(healed.hit_points > 0 && healed.resources == recovered,
           "Temple healing cancels the recovery clock without replenishing pools");

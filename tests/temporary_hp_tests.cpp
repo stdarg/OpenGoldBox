@@ -149,7 +149,7 @@ void rule_operations()
     check(state.resources ==
           "SRD11 1 0 0 0 0 0 1 0 0 8 \"spell:false_life\" 0 1 0 0 0 0 FX8 1 0 0",
           "Vital state independently records dice, clocks and sourced buffer");
-    auto rng = std::uint64_t{42};
+    RandomState rng{42};
     const auto die = rules->spend_hit_die(state, c.sheet(), rng);
     check(die.roll == 4 && die.healing == 6 && state.hit_points == 10 && pool(c, state).amount == 8,
           "Hit Die healing preserves buffer and spends its own die/RNG");

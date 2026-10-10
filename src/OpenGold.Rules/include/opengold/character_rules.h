@@ -137,7 +137,7 @@ class CharacterRules
     [[nodiscard]] virtual std::vector<CreationChoice> choices(CreationField field) const = 0;
     [[nodiscard]] virtual std::vector<ScoreAdjustment>
     adjustments(std::string_view background) const = 0;
-    [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(std::uint64_t &random_state) const = 0;
+    [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(RandomState &random_state) const = 0;
     [[nodiscard]] virtual std::optional<int> ability_score(const CharacterDraft &draft,
             unsigned ability) const = 0;
 

@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_DICE_H
 #define OPENGOLD_DICE_H
 
+#include "opengold/random_state.h"
 #include <cstdint>
 #include <stdexcept>
 
@@ -26,6 +27,11 @@ inline int roll_die(std::uint64_t &state, int sides)
     }
     while (value < threshold);
     return static_cast<int>(value % count) + 1;
+}
+
+inline int roll_die(RandomState &state, int sides)
+{
+    return roll_die(state.value, sides);
 }
 } // namespace opengold
 #endif

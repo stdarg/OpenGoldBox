@@ -119,7 +119,7 @@ void arrow_traps()
     for (std::uint64_t seed = 1; seed < 400; ++seed)
     {
         VitalState state{sheet.hit_points, false, {}};
-        auto random = seed;
+        RandomState random{seed};
         const auto r = module->hazard_attack(state, sheet, arrow, random);
         check(r.total == r.natural + 3 && r.armor_class == armor_class,
               "An arrow rolls d20 + 3 against the member's AC");
@@ -136,7 +136,7 @@ void arrow_traps()
     check(missed && hit && critical, "Arrows miss, hit and critically hit");
 
     VitalState frail{1, false, {}};
-    std::uint64_t random = 1;
+    RandomState random{1};
     auto dropped = module->hazard_attack(frail, sheet, {100, 1, 1, 0, "piercing"}, random);
     while (!dropped.hit)
     {
@@ -165,7 +165,7 @@ void arrow_traps()
         for (std::uint64_t seed = 1; seed < 40; ++seed)
         {
             VitalState target{sheet.hit_points, false, {}};
-            random = seed;
+            random = RandomState{seed};
             (void)module->hazard_attack(target, sheet, {100, 1, 0, 0, "piercing"}, random);
         }
     }

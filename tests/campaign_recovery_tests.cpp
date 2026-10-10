@@ -96,13 +96,13 @@ void golden_events()
 {
     auto rules = module();
     std::vector<Participant> people{patient(1, unstable())};
-    auto rng = std::uint64_t{17};
+    RandomState rng{17};
     rules->elapse(people, 0, rng);
-    check(people[0].state == unstable() && rng == 17, "Zero elapsed time rolls nothing");
+    check(people[0].state == unstable() && rng.value == 17, "Zero elapsed time rolls nothing");
     rules->elapse(people, 1, rng);
     check(people[0].state->hit_points == 1 &&
           people[0].state->resources == "SRD11 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0" &&
-          rng == 11400714819323198502ULL,
+          rng.value == 11400714819323198502ULL,
           "Outside combat the remaining death saves resolve at once; a natural 20 restores one HP "
           "without replenishing spent pools");
     // Death saves resolve first in entity order: entity 1 stabilizes (10) and
@@ -112,33 +112,33 @@ void golden_events()
     a.resources = "SRD11 0 0 0 2 1 0 1 6000 0 0 \"\" 0 1 0 0 0 0 "
                   "FX8 2 1 1 1 77 99 \"Caster\" 13 60000 6000 0";
     people = {patient(2, unstable()), patient(1, a)};
-    rng = 34;
+    rng.value = 34;
     rules->elapse(people, 6000, rng);
     check(
         people[1].state->resources == "SRD11 0 0 0 0 0 1 1 0 7194000 0 \"\" 0 1 0 0 0 0 FX8 2 0 0" &&
         people[0].state->resources == "SRD11 0 0 0 0 0 1 1 0 14394000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0" &&
-        rng == 1663341875487337611ULL,
+        rng.value == 1663341875487337611ULL,
         "Death saves resolve in entity order before simultaneous effect saves");
     rules->elapse(people, 7193999, rng);
     check(people[1].state->hit_points == 0, "Stable recovery waits until its exact deadline");
     rules->elapse(people, 1, rng);
     check(people[1].state->hit_points == 1 && people[0].state->hit_points == 0 &&
-          rng == 1663341875487337611ULL,
+          rng.value == 1663341875487337611ULL,
           "Natural recovery adds no second duration roll");
     // Death suppresses an effect saving throw at the same instant; expiry does not roll.
     a.resources = "SRD11 0 0 0 2 1 0 1 6000 0 0 \"\" 0 1 0 0 0 0 "
                   "FX8 2 1 1 1 77 99 \"Caster\" 38 60000 6000 0";
     people = {patient(1, a)};
-    rng = 29;
+    rng.value = 29;
     rules->elapse(people, 60000, rng);
     check(people[0].state->dead &&
           people[0].state->resources == "SRD11 0 0 0 2 3 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 2 0 0" &&
-          rng == 11400714819323198514ULL,
+          rng.value == 11400714819323198514ULL,
           "A natural-one death ends mortality rolls and skips saves on lingering effects");
     people = {patient(1, stable(7200000))};
-    rng = 42;
+    rng.value = 42;
     rules->elapse(people, std::numeric_limits<std::uint64_t>::max(), rng);
-    check(people[0].state->hit_points == 1 && rng == 42,
+    check(people[0].state->hit_points == 1 && rng.value == 42,
           "Very large elapsed time finishes without overflow or redundant rolls");
 }
 
@@ -154,7 +154,7 @@ void partitions_and_rejection()
     {
         auto whole = initial, split = initial;
         std::reverse(split.begin(), split.end());
-        auto big_rng = seed, small_rng = seed;
+        RandomState big_rng{seed}, small_rng{seed};
         rules->elapse(whole, 14406001, big_rng);
         std::uint64_t remaining = 14406001;
         for (const auto amount :
@@ -175,14 +175,14 @@ void partitions_and_rejection()
     }
     auto bad = initial;
     bad.back().state->resources = "bad";
-    auto rng = std::uint64_t{34};
+    RandomState rng{34};
     const auto first = *bad.front().state;
     rejects(
         [&]
     {
         rules->elapse(bad, 60000, rng);
     });
-    check(*bad.front().state == first && rng == 34,
+    check(*bad.front().state == first && rng.value == 34,
           "Malformed late member cannot partly advance earlier members or RNG");
     bad = initial;
     bad.back().id = bad.front().id;
@@ -191,7 +191,7 @@ void partitions_and_rejection()
     {
         rules->elapse(bad, 60000, rng);
     });
-    check(*bad.front().state == first && rng == 34,
+    check(*bad.front().state == first && rng.value == 34,
           "Ambiguous participant ordering rejects atomically");
 }
 
@@ -202,7 +202,7 @@ void campaign_continuation()
                reserve = party.add_pc(hero());
     party.remove(reserve);
     auto state = party.checkpoint();
-    state.random_state = 34;
+    state.random_state.value = 34;
     state.roster[0].vitals = unstable();
     state.roster[1].vitals = stable(6001);
     state.roster[2].vitals = unstable(6000);
@@ -271,7 +271,7 @@ void combat_handoff()
                reserve = party.add_pc(hero());
     party.remove(reserve);
     auto state = party.checkpoint();
-    state.random_state = 17;
+    state.random_state.value = 17;
     state.roster[1].vitals = stable(10000);
     state.roster[2].vitals = unstable();
     party.restore(state);
@@ -372,7 +372,7 @@ void event_rollback()
     const auto reserve = party->add_pc(hero());
     party->remove(reserve);
     auto state = party->checkpoint();
-    state.random_state = 17;
+    state.random_state.value = 17;
     state.roster[1].vitals = unstable();
     party->restore(state);
     auto resources = std::make_shared<por::PhlanResources>();
@@ -394,7 +394,7 @@ void event_rollback()
     check(travel.explore(por::ExplorationCommand::forward), "Ordinary exploration starts");
     settle(travel);
     check(party->member(reserve).vitals.hit_points == 1 &&
-          party->state().random_state == 11400714819323198502ULL,
+          party->state().random_state.value == 11400714819323198502ULL,
           "Ordinary exploration advances reserve death saves through the original host");
 }
 } // namespace

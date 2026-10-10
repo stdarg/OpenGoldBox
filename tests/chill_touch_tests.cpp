@@ -483,9 +483,9 @@ void recovery()
     auto h = hero("fighter", 2);
     auto state = blocked_state(*rules, h, 1);
     const auto hp = state.hit_points;
-    std::uint64_t random = 13;
+    RandomState random{13};
     rules->temple_heal(state, h.sheet(), random);
-    check(state.hit_points == hp && random != 13, "Temple cast consumes rolls but cannot heal");
+    check(state.hit_points == hp && random.value != 13, "Temple cast consumes rolls but cannot heal");
     rules->set_hit_points(state, h.sheet(), h.sheet().hit_points);
     check(state.hit_points == hp, "Positive script HP assignment is blocked");
     const auto spent = rules->spend_hit_die(state, h.sheet(), random);
@@ -643,7 +643,7 @@ void death_saves_outside_combat()
     const auto id = whole.add_pc(h);
     auto state = whole.checkpoint();
     state.roster[0].vitals = vitality;
-    state.random_state = 17;
+    state.random_state.value = 17;
     state.next_combat_scope = 6;
     whole.restore(state);
     CampaignParty pieces(module());
@@ -666,7 +666,7 @@ void death_saves_outside_combat()
     check(settled_vitals.hit_points == 0 &&
           (settled_vitals.dead ||
            settled_vitals.description.find("Stable") != std::string::npos) &&
-          whole.state().random_state != 17 + 0x9e3779b97f4a7c15ULL,
+          whole.state().random_state.value != 17 + 0x9e3779b97f4a7c15ULL,
           "While Chill Touch prevents healing, a natural 20 is a success, not 1 HP");
 }
 
@@ -690,11 +690,11 @@ void persistence()
         check(encode_campaign(copy, nullptr, "chill") == bytes,
               "Campaign grant and effect round trip");
         auto actors = copy.participants();
-        std::uint64_t random = 17;
+        RandomState random{17};
         rules->elapse(actors, 8999, random);
         check(fx::healing_blocked(effects(*actors[0].state)), "Campaign expiry not early");
         rules->elapse(actors, 1, random);
-        check(!fx::healing_blocked(effects(*actors[0].state)) && random == 17,
+        check(!fx::healing_blocked(effects(*actors[0].state)) && random.value == 17,
               "Exact outside combat expiry, no RNG");
         (void)id;
     }
@@ -800,13 +800,13 @@ void stable_continuation()
     const auto id = party.add_pc(h);
     auto stage = party.checkpoint();
     stage.roster[0].vitals = stable_blocked();
-    stage.random_state = 17;
+    stage.random_state.value = 17;
     stage.next_combat_scope = 6;
     party.restore(stage);
     party.advance_time_milliseconds(1000);
     const auto pending = party.member(id).vitals;
     check(pending.hit_points == 0 && pending.resources.find("14400001") != pending.resources.npos &&
-          party.state().random_state == 17,
+          party.state().random_state.value == 17,
           "Earned recovery stored without additional d4 draw");
     auto bytes = encode_campaign(party, nullptr, "earned-recovery");
     CampaignParty loaded(module());
@@ -822,11 +822,11 @@ void stable_continuation()
         rules->validate_character_state(h.sheet(), no_block);
     });
     loaded.advance_time_milliseconds(7999);
-    check(loaded.member(id).vitals.hit_points == 0 && loaded.state().random_state == 17,
+    check(loaded.member(id).vitals.hit_points == 0 && loaded.state().random_state.value == 17,
           "Deferred recovery waits without reroll");
     loaded.advance_time_milliseconds(1);
     party.advance_time_milliseconds(8000);
-    check(loaded.member(id).vitals.hit_points == 1 && loaded.state().random_state == 17 &&
+    check(loaded.member(id).vitals.hit_points == 1 && loaded.state().random_state.value == 17 &&
           encode_campaign(loaded, nullptr, "earned-recovery") ==
           encode_campaign(party, nullptr, "earned-recovery"),
           "Saved earned recovery resumes at exact expiry");

@@ -1377,6 +1377,17 @@ requires(const Rules &rules, CharacterSheet &sheet, VitalState &state)
 static_assert(!advances_without_a_choice<RulesModule>,
               "advance_character has a single overridable form, taking the choice");
 
+// The dice state has its own type, so the campaign clock or another counter
+// cannot be handed to the rules in its place (Effective C++ Item 18).
+template <class State>
+concept rolls_dice_with =
+requires(const RulesModule &rules, VitalState &vitals, const CharacterSheet &sheet, State &state)
+{
+    rules.spend_hit_die(vitals, sheet, state);
+};
+static_assert(rolls_dice_with<RandomState> && !rolls_dice_with<std::uint64_t>,
+              "Only a RandomState can stand for the dice state");
+
 void single_advancement_override_tests()
 {
     const NoAdvancementModule rules;

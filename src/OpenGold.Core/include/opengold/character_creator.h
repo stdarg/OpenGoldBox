@@ -66,7 +66,7 @@ class CharacterCreator
 
   private:
     std::unique_ptr<rules::CharacterRules> rules_;
-    std::uint64_t random_;
+    RandomState random_;
     rules::CharacterDraft draft_;
     por::CharacterAppearance appearance_;
     CreationStep step_{CreationStep::race};

@@ -1591,7 +1591,7 @@ void RolfTourView::start_recovery_check()
     campaign_->remove(reserve);
     auto state = campaign_->checkpoint();
     auto &member = state.roster.at(0);
-    state.random_state = 17;
+    state.random_state.value = 17;
     const auto stable = presentation::srd_vitals(
                             state.roster.at(1).character.sheet(),
     {.stable = true, .hit_dice = 1, .stable_recovery_ms = 2000});
@@ -1704,7 +1704,7 @@ void RolfTourView::check_recovery()
                 "Original city-watch interruption must consume five minutes without recovery");
         if (campaign_->state().roster.at(1).vitals.hit_points != 1 ||
                 campaign_->state().roster.back().vitals.hit_points != 1 ||
-                campaign_->state().random_state != 11400714819323198502ULL ||
+                campaign_->state().random_state.value != 11400714819323198502ULL ||
                 campaign_->state().roster.back().vitals.resources !=
                 presentation::srd_vitals(campaign_->state().roster.back().character.sheet(),
     {.hit_dice = 1}))

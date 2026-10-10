@@ -103,7 +103,7 @@ class CreatorRules final : public CharacterRules
 
     std::vector<CreationChoice> choices(CreationField field) const override;
     std::vector<ScoreAdjustment> adjustments(std::string_view background) const override;
-    std::array<AbilityRoll, 6> roll(std::uint64_t &state) const override;
+    std::array<AbilityRoll, 6> roll(RandomState &state) const override;
     std::optional<int> ability_score(const CharacterDraft &draft, unsigned ability) const override;
     CharacterSheet evaluate(const CharacterDraft &draft, bool require_name) const override;
 
@@ -287,7 +287,7 @@ ClassRequirements CreatorRules::class_requirements(std::string_view id) const
     return result;
 }
 
-std::array<AbilityRoll, 6> CreatorRules::roll(std::uint64_t &state) const
+std::array<AbilityRoll, 6> CreatorRules::roll(RandomState &state) const
 {
     std::array<AbilityRoll, 6> result;
     for (auto &r : result)

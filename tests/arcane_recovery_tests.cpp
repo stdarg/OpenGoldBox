@@ -324,11 +324,11 @@ void eligibility_and_effects()
     rules->validate_character_state(sheet, state);
     auto participants = party.participants();
     participants.front().state = state;
-    std::uint64_t rng = 123;
+    RandomState rng{123};
     rules->elapse(participants, 6000, rng);
     const auto &elapsed = *participants.front().state;
     std::istringstream decoded(elapsed.resources.substr(elapsed.resources.find("FX")));
-    check(srd5::detail::read_effects(decoded).active.empty() && rng == 123 &&
+    check(srd5::detail::read_effects(decoded).active.empty() && rng.value == 123 &&
           remaining(rules->recovery_info(sheet, elapsed), "arcane_recovery") == 0,
           "Campaign time expires effects without refreshing the spent feature or consuming RNG");
     auto invalid = sheet;

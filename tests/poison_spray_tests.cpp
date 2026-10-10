@@ -478,7 +478,7 @@ void campaign()
             p.equip(id, 1);
             auto state = p.checkpoint();
             state.roster[0].vitals.hit_points -= 3;
-            state.random_state = 123;
+            state.random_state.value = 123;
             state.roster[0].wealth[3] = 37;
             p.restore(std::move(state));
             auto actors = p.participants();

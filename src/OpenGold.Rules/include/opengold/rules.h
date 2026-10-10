@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_RULES_H
 #define OPENGOLD_RULES_H
 #include "opengold/message.h"
+#include "opengold/random_state.h"
 #include <compare>
 #include <array>
 #include <cstdint>
@@ -591,7 +592,7 @@ class RulesModule
     // Rolls that check outside combat, advancing the campaign service random state.
     [[nodiscard]] virtual AbilityCheckRoll
     roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
-                       std::string_view skill, std::uint64_t &random_state) const;
+                       std::string_view skill, RandomState &random_state) const;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const;
 
     [[nodiscard]] virtual std::optional<TrainingReplacementOptions>
@@ -648,10 +649,10 @@ class RulesModule
     virtual void recover_short_rest(VitalState &, const CharacterSheet &) const;
     [[nodiscard]] virtual Message recover_rest_choice(VitalState &, const CharacterSheet &,
             std::string_view) const;
-    virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &, std::uint64_t &) const;
+    virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &, RandomState &) const;
 
     // Advances module-owned lasting effects for a group in deterministic order.
-    virtual void elapse(std::span<Participant>, std::uint64_t, std::uint64_t &) const
+    virtual void elapse(std::span<Participant>, std::uint64_t, RandomState &) const
     {
     }
 
@@ -662,10 +663,10 @@ class RulesModule
 
     virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const;
     virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,
-                             std::uint64_t &random_state) const;
+                             RandomState &random_state) const;
     [[nodiscard]] virtual HazardAttackResult hazard_attack(VitalState &state,
             const CharacterSheet &sheet, const HazardAttack &attack,
-            std::uint64_t &random_state) const;
+            RandomState &random_state) const;
     // The current Hit Point maximum, which a lasting effect such as Aid raises
     // above the sheet's.
     [[nodiscard]] virtual int hit_point_maximum(const CharacterSheet &, const VitalState &) const;
@@ -678,12 +679,12 @@ class RulesModule
     // passes the same VitalState as both user and target.
     virtual void use_camp_action(const CharacterSheet &user, VitalState &user_state,
                                  const CharacterSheet &target, VitalState &target_state,
-                                 std::string_view action, std::uint64_t &random_state) const;
+                                 std::string_view action, RandomState &random_state) const;
     // Uses a whole_party camp action on the members it chooses among `party`,
     // which may include the user's own state.
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
                                        std::span<const CampTarget> party, std::string_view action,
-                                       std::uint64_t &random_state) const;
+                                       RandomState &random_state) const;
     // A spell cast while exploring, such as Knock on a locked door.
     [[nodiscard]] virtual bool can_cast_exploration_spell(const CharacterSheet &,
             const VitalState &, std::string_view) const

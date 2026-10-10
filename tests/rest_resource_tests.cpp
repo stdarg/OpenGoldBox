@@ -100,12 +100,12 @@ void class_dice_and_recharge()
         check(state == initial && info.can_rest && info.hit_die == die && info.hit_dice == 1 &&
               info.hit_dice_max == 1,
               "Each starting class has its correct unspent Hit Die and a pure resource query");
-        std::uint64_t rng = 0;
+        RandomState rng{0};
         const auto spent = rules->spend_hit_die(state, sheet, rng);
         check(spent.die == die && spent.roll == first_roll.at(die) && spent.modifier == 2 &&
               spent.healing == first_healing.at(die) && spent.remaining == 0,
               "Golden first rolls heal by the class die plus Constitution, capped at maximum HP");
-        check(state.hit_points == 1 + spent.healing && rng == 11400714819323198485ULL,
+        check(state.hit_points == 1 + spent.healing && rng.value == 11400714819323198485ULL,
               "One spend consumes exactly one known RNG draw");
         check(state.resources.starts_with("SRD11 ") &&
               rules->recovery_info(sheet, state).hit_dice == 0,
@@ -143,7 +143,7 @@ void class_dice_and_recharge()
     check(pool(rules->recovery_info(sheet, state), "second_wind").remaining == 3,
           "Repeated completed rests never exceed capacity");
     state = {1, false, "SRD11 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0"};
-    std::uint64_t rng = 2;
+    RandomState rng{2};
     rules->spend_hit_die(state, sheet, rng);
     rules->spend_hit_die(state, sheet, rng);
     rules->recover(state, sheet);
@@ -174,7 +174,7 @@ void minimum_caps_and_rejection()
     auto rules = module();
     auto character = hero("fighter", 1, 3);
     VitalState state{1, false, {}};
-    std::uint64_t rng = 2;
+    RandomState rng{2};
     const auto result = rules->spend_hit_die(state, character.sheet(), rng);
     check(result.roll == 1 && result.modifier == -4 && result.healing == 1 && state.hit_points == 2,
           "A low roll with negative Constitution still restores one HP");
@@ -182,17 +182,17 @@ void minimum_caps_and_rejection()
     dwarf.race = "dwarf";
     const Character dwarven(*srd5::character_rules(), dwarf, {});
     state = {1, false, {}};
-    rng = 42;
+    rng.value = 42;
     check(rules->spend_hit_die(state, dwarven.sheet(), rng).healing == 6,
           "Dwarven Toughness affects maximum HP without adding to a Hit Die healing roll");
     character = hero();
     state = {character.sheet().hit_points - 1, false, {}};
-    rng = 0;
+    rng.value = 0;
     check(rules->spend_hit_die(state, character.sheet(), rng).healing == 1 &&
           state.hit_points == character.sheet().hit_points,
           "Hit Die healing stops at maximum HP");
     state = {character.sheet().hit_points, false, {}};
-    rng = 0;
+    rng.value = 0;
     check(rules->spend_hit_die(state, character.sheet(), rng).healing == 0 &&
           rules->recovery_info(character.sheet(), state).hit_dice == 0,
           "A voluntarily spent die is consumed even if no HP is missing");
@@ -206,7 +206,7 @@ void minimum_caps_and_rejection()
                  : "SRD11 0 0 0 1 2 0 1 0 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"
                 };
         const auto before = state;
-        rng = 42;
+        rng.value = 42;
         check(!rules->recovery_info(character.sheet(), state).can_rest,
               "Unconscious and dead characters cannot start a rest");
         rejects(
@@ -224,7 +224,7 @@ void minimum_caps_and_rejection()
         {
             rules->recover(state, character.sheet());
         });
-        check(state == before && rng == 42,
+        check(state == before && rng.value == 42,
               "Rejected recovery never wakes, stabilizes or revives a character");
     }
     for (const auto malformed :
@@ -237,7 +237,7 @@ void minimum_caps_and_rejection()
     {
         state = {1, false, malformed};
         const auto before = state;
-        rng = 42;
+        rng.value = 42;
         rejects(
             [&]
         {
@@ -258,7 +258,7 @@ void minimum_caps_and_rejection()
         {
             rules->recover(state, character.sheet());
         });
-        check(state == before && rng == 42,
+        check(state == before && rng.value == 42,
               "Malformed counts, effects and resource pools reject without mutation");
     }
 }
@@ -322,7 +322,7 @@ void persistence_and_advancement()
     rules->spend_hit_die(second, next_load.party.roster[0].character.sheet(), second_rng);
     check(
         next_die.roll == 2 && first == second && first_rng == second_rng &&
-        first_rng == 4354685564936845396ULL,
+        first_rng.value == 4354685564936845396ULL,
         "The next chosen die after save/reload consumes the known second RNG draw and gives the same healing");
     party.advance_time_milliseconds(1000);
     check(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)

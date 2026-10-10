@@ -10676,7 +10676,7 @@ class Module final : public RulesModule
     }
 
     void elapse(std::span<Participant> participants, std::uint64_t milliseconds,
-                std::uint64_t &random_state) const override
+                RandomState &random_state) const override
     {
         // Work on owned candidates so malformed state cannot partly advance a
         // party or consume its RNG. No Godot or campaign data enters the rules.
@@ -10704,7 +10704,7 @@ class Module final : public RulesModule
                 a.definition.str_dex_disadvantage, false
             },
             a});
-        auto rng = random_state;
+        auto rng = random_state.value;
         detail::elapse_recovery(subjects, milliseconds, rng);
         // An ended Aid lowers the maximum, and Hit Points above it with it.
         for (auto &a : actors)
@@ -10721,7 +10721,7 @@ class Module final : public RulesModule
                     ((participants[i].state->hit_points == 0 && !participants[i].state->dead) ||
                      !participants[i].state->resources.empty()))
                 participants[i].state = std::move(next[i]);
-        random_state = rng;
+        random_state.value = rng;
     }
 
     void recover(VitalState &state, const CharacterSheet &sheet) const override
@@ -10853,7 +10853,7 @@ class Module final : public RulesModule
     }
 
     HitDieResult spend_hit_die(VitalState &state, const CharacterSheet &sheet,
-                               std::uint64_t &random_state) const override
+                               RandomState &random_state) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
         Actor actor;
@@ -10864,7 +10864,7 @@ class Module final : public RulesModule
         restore_vitals(actor, state);
         if (actor.dead || actor.hp < 1 || actor.hit_dice < 1)
             throw std::runtime_error("No Hit Die can be spent by this character");
-        auto rng = random_state;
+        auto rng = random_state.value;
         const int rolled = roll_die(rng, d.hit_die);
         const int healing = detail::heal_life(actor, std::max(1, rolled + d.constitution), max_hp(actor),
                                               !detail::healing_blocked(actor.effects));
@@ -10873,7 +10873,7 @@ class Module final : public RulesModule
                             unsigned(actor.hit_dice)};
         auto next = vitals(actor);
         state = std::move(next);
-        random_state = rng;
+        random_state.value = rng;
         return result;
     }
 
@@ -10896,12 +10896,12 @@ class Module final : public RulesModule
 
     HazardAttackResult hazard_attack(VitalState &state, const CharacterSheet &sheet,
                                      const HazardAttack &attack,
-                                     std::uint64_t &random_state) const override
+                                     RandomState &random_state) const override
     {
         auto actor = camp_actor(sheet, state);
         if (actor.dead || actor.hp < 1)
             throw std::runtime_error("A hazard attacks a conscious member");
-        auto rng = random_state;
+        auto rng = random_state.value;
         HazardAttackResult result;
         result.natural = roll_die(rng, 20);
         result.total = result.natural + attack.attack_bonus;
@@ -10924,7 +10924,7 @@ class Module final : public RulesModule
                     detail::death_save(actor, rng, !detail::healing_blocked(actor.effects)));
         }
         state = vitals(actor);
-        random_state = rng;
+        random_state.value = rng;
         return result;
     }
 
@@ -10941,7 +10941,7 @@ class Module final : public RulesModule
     }
 
     void temple_heal(VitalState &state, const CharacterSheet &sheet,
-                     std::uint64_t &random_state) const override
+                     RandomState &random_state) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
         Actor actor;
@@ -10953,14 +10953,14 @@ class Module final : public RulesModule
         if (actor.dead || actor.hp >= max_hp(actor))
             throw std::runtime_error("Cure Wounds requires a wounded living member");
         // Authored temple caster: Cure Wounds, Wisdom +3. Same SplitMix64 as combat.
-        auto rng = random_state;
+        auto rng = random_state.value;
         int amount = 3;
         for (int i = 0; i < 2; ++i)
             amount += roll_die(rng, 8);
         (void)detail::heal_life(actor, amount, max_hp(actor), !detail::healing_blocked(actor.effects));
         auto next = vitals(actor);
         state = std::move(next);
-        random_state = rng;
+        random_state.value = rng;
     }
 
     int hit_point_maximum(const CharacterSheet &sheet, const VitalState &state) const override
@@ -11021,7 +11021,7 @@ class Module final : public RulesModule
 
     void use_camp_action(const CharacterSheet &user, VitalState &user_state,
                          const CharacterSheet &target, VitalState &target_state,
-                         std::string_view action, std::uint64_t &random_state) const override
+                         std::string_view action, RandomState &random_state) const override
     {
         const auto offered = camp_actions(user, user_state);
         if (std::none_of(offered.begin(), offered.end(), [&](const auto & a)
@@ -11037,7 +11037,7 @@ class Module final : public RulesModule
         if (patient.dead || patient.hp >= maximum)
             throw std::runtime_error("Healing requires a wounded living member");
         const bool can_heal = !detail::healing_blocked(patient.effects);
-        auto rng = random_state;
+        auto rng = random_state.value;
         if (action == "lay_on_hands")
         {
             // Only the Hit Points actually restored are spent from the pool.
@@ -11069,7 +11069,7 @@ class Module final : public RulesModule
         user_state = vitals(caster);
         if (!self)
             target_state = vitals(healed);
-        random_state = rng;
+        random_state.value = rng;
     }
 
     bool can_cast_exploration_spell(const CharacterSheet &sheet, const VitalState &state,
@@ -11100,7 +11100,7 @@ class Module final : public RulesModule
     // their last Long Rest each regain 2d8 + the spellcasting modifier.
     void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
                                std::span<const CampTarget> party, std::string_view action,
-                               std::uint64_t &random_state) const override
+                               RandomState &random_state) const override
     {
         const auto offered = camp_actions(user, user_state);
         if (std::none_of(offered.begin(), offered.end(), [&](const auto & a)
@@ -11148,7 +11148,7 @@ class Module final : public RulesModule
             chosen.resize(5);
         const auto &spell = *detail::find_spell(action);
         --caster.slots2;
-        auto rng = random_state;
+        auto rng = random_state.value;
         for (auto *patient : chosen)
         {
             // Disciple of Life adds 2 + the slot's level.
@@ -11165,7 +11165,7 @@ class Module final : public RulesModule
         user_state = vitals(caster);
         for (auto &[actor, state] : members)
             *state = vitals(actor);
-        random_state = rng;
+        random_state.value = rng;
     }
 
     SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet,
@@ -11312,10 +11312,10 @@ class Module final : public RulesModule
     AbilityCheckRoll roll_ability_check(const CharacterSheet &sheet,
                                         std::span<const std::string> gear, unsigned ability,
                                         std::string_view skill,
-                                        std::uint64_t &random_state) const override
+                                        RandomState &random_state) const override
     {
         const auto modifier = ability_check(sheet, gear, ability, skill);
-        auto rng = random_state;
+        auto rng = random_state.value;
         int die = roll_die(rng, 20);
         // Advantage and Disadvantage cancel; either alone rolls a second d20.
         if (modifier.advantage != modifier.disadvantage)
@@ -11323,7 +11323,7 @@ class Module final : public RulesModule
             const int second = roll_die(rng, 20);
             die = modifier.advantage ? std::max(die, second) : std::min(die, second);
         }
-        random_state = rng;
+        random_state.value = rng;
         return {die, die + modifier.total};
     }
 

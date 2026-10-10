@@ -25,7 +25,7 @@ AbilityCheckModifier RulesModule::ability_check(const CharacterSheet &,
 
 AbilityCheckRoll RulesModule::roll_ability_check(const CharacterSheet &,
         std::span<const std::string>, unsigned, std::string_view,
-        std::uint64_t &) const
+        RandomState &) const
 {
     throw std::runtime_error("This rules module does not support rolled ability checks");
 }
@@ -98,7 +98,7 @@ Message RulesModule::recover_rest_choice(VitalState &, const CharacterSheet &,
     throw std::runtime_error("This rules module does not support optional rest recovery");
 }
 
-HitDieResult RulesModule::spend_hit_die(VitalState &, const CharacterSheet &, std::uint64_t &) const
+HitDieResult RulesModule::spend_hit_die(VitalState &, const CharacterSheet &, RandomState &) const
 {
     throw std::runtime_error("This rules module does not support Hit Dice");
 }
@@ -108,13 +108,13 @@ void RulesModule::set_hit_points(VitalState &, const CharacterSheet &, int) cons
     throw std::runtime_error("This rules module does not support script HP changes");
 }
 
-void RulesModule::temple_heal(VitalState &, const CharacterSheet &, std::uint64_t &) const
+void RulesModule::temple_heal(VitalState &, const CharacterSheet &, RandomState &) const
 {
     throw std::runtime_error("This rules module does not support temple healing");
 }
 
 HazardAttackResult RulesModule::hazard_attack(VitalState &, const CharacterSheet &,
-        const HazardAttack &, std::uint64_t &) const
+        const HazardAttack &, RandomState &) const
 {
     throw std::runtime_error("This rules module does not support hazard attacks");
 }
@@ -125,14 +125,14 @@ int RulesModule::hit_point_maximum(const CharacterSheet &sheet, const VitalState
 }
 
 void RulesModule::use_camp_action(const CharacterSheet &, VitalState &, const CharacterSheet &,
-                                  VitalState &, std::string_view, std::uint64_t &) const
+                                  VitalState &, std::string_view, RandomState &) const
 {
     throw std::runtime_error("This rules module has no camp actions");
 }
 
 void RulesModule::use_party_camp_action(const CharacterSheet &, VitalState &,
                                         std::span<const CampTarget>, std::string_view,
-                                        std::uint64_t &) const
+                                        RandomState &) const
 {
     throw std::runtime_error("This rules module has no camp actions");
 }

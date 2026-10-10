@@ -97,7 +97,8 @@ struct PartyState
     unsigned selected{};
     MemberId leader{}; // Speaks for the party and buys in shops; 0 means the first member.
     bool quick_magic{}; // Members on Quick may cast spells.
-    std::uint64_t time_minutes{}, random_state{42};
+    std::uint64_t time_minutes{};
+    RandomState random_state{42};
     std::vector<std::string> claimed_rewards;
     unsigned subminute_milliseconds{};
     std::uint64_t next_combat_scope{1};

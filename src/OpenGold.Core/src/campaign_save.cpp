@@ -298,7 +298,7 @@ struct SaveCodec
     void field(PartyState &v)
     {
         fields(v.slots, v.next_id, v.selected, v.leader, v.quick_magic, v.time_minutes,
-               v.random_state, v.claimed_rewards);
+               v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
         if (!reading)
             for (const auto &member : v.roster)

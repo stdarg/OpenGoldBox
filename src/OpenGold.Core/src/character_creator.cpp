@@ -7,7 +7,7 @@ namespace opengold
 using namespace rules;
 
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::uint64_t seed)
-    : rules_(std::move(rules)), random_(seed)
+    : rules_(std::move(rules)), random_{seed}
 {
     if (!rules_)
         throw std::runtime_error("Character creator requires a rules module");

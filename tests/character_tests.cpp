@@ -40,7 +40,7 @@ void creation_tests()
     check(module->choices(CreationField::race).size() == 9 &&
           module->choices(CreationField::character_class).size() == 12,
           "SRD species and all twelve classes available");
-    std::uint64_t seed = 123, again = 123;
+    RandomState seed{123}, again{123};
     check(module->roll(seed) == module->roll(again) && seed == again,
           "Seeded rolls reproduce across sessions");
     std::set<int> totals;
