@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/audio_stream_wav.hpp>
+#include <exception>
 #include <optional>
 #include <set>
 #include <functional>
@@ -18,6 +19,12 @@ class RolfTourView : public godot::Control
     void _process(double delta) override;
     void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
+
+    // The shared rest dialog's handlers are guarded. A failed handler is
+    // already in the log, and this view has no status line to show it.
+    void report_failure(const std::exception &) noexcept
+    {
+    }
 
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party)
     {
@@ -118,6 +125,8 @@ class RolfTourView : public godot::Control
     void rest_start();
     void rest_heal();
     void rest_recover();
+    void rest_use();
+    bool refresh_rest_use(const std::vector<opengold::MemberRestInfo> &infos, bool spending);
     void refresh_rest_spells();
     void rest_spell_toggled(bool selected, godot::String group, godot::String option);
     void rest_spell_replaced(std::int64_t index);
