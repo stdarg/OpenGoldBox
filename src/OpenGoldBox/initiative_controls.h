@@ -98,7 +98,7 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
             N_("{name}: Initiative {total}"),
             {{"name", a->name}, {"total", std::to_string(a->initiative)}}});
     };
-    owners->set_block_signals(true);
+    SignalsBlocked owners_quiet(*owners);
     owners->clear();
     int selected = 0;
     for (auto id : state.initiative_choices)
@@ -108,12 +108,12 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
             selected = owners->get_item_count() - 1;
     }
     owners->select(selected);
-    owners->set_block_signals(false);
+    owners_quiet.unblock();
     const auto owner = owners->get_selected_id();
     const bool multiple = state.initiative_choices.size() > 1;
     owners->set_visible(multiple);
     w->get_node<Label>("ResolveLabel")->set_visible(multiple);
-    allies->set_block_signals(true);
+    SignalsBlocked allies_quiet(*allies);
     allies->clear();
     allies->add_item(text(N_("Choose an ally")), 0);
     selected = 0;
@@ -125,7 +125,7 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
                 selected = allies->get_item_count() - 1;
         }
     allies->select(selected);
-    allies->set_block_signals(false);
+    allies_quiet.unblock();
     // Alert offers the swap; a Monk's Uncanny Metabolism its own button.
     const bool swaps = allies->get_item_count() > 1;
     const bool metabolism = std::any_of(commands.begin(), commands.end(), [&](const auto & c)

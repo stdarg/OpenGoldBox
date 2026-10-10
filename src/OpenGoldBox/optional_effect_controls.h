@@ -65,7 +65,7 @@ void refresh_optional_effect(godot::Node &root,
     }
     auto *options = w->get_node<OptionButton>("Resolve");
     const int prior = w->is_visible() ? options->get_selected_id() : -1;
-    options->set_block_signals(true);
+    SignalsBlocked options_quiet(*options);
     options->clear();
     int selected = 0;
     for (const auto &option : choice->options)
@@ -76,7 +76,7 @@ void refresh_optional_effect(godot::Node &root,
     }
     if (!choice->options.empty())
         options->select(selected);
-    options->set_block_signals(false);
+    options_quiet.unblock();
     const bool multiple = choice->options.size() > 1;
     options->set_visible(multiple);
     w->get_node<Label>("ResolveLabel")->set_visible(multiple);

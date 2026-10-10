@@ -56,5 +56,37 @@ template <class T> T *add_control(godot::Node &parent, const godot::String &name
         throw std::runtime_error(std::string("Cannot instantiate scene: ") + path);
     return scene;
 }
+// Blocks an object's signals while a control is refilled, and restores them
+// at unblock() or, if an exception skips that, when the scope ends, so a
+// failure cannot leave a dropdown silent (Effective C++ Item 13).
+class SignalsBlocked
+{
+  public:
+    explicit SignalsBlocked(godot::Object &object)
+        : object_(&object), previous_(object.is_blocking_signals())
+    {
+        object.set_block_signals(true);
+    }
+
+    SignalsBlocked(const SignalsBlocked &) = delete;
+    SignalsBlocked &operator=(const SignalsBlocked &) = delete;
+
+    ~SignalsBlocked()
+    {
+        unblock();
+    }
+
+    void unblock() noexcept
+    {
+        if (!object_)
+            return;
+        object_->set_block_signals(previous_);
+        object_ = nullptr;
+    }
+
+  private:
+    godot::Object *object_;
+    bool previous_;
+};
 } // namespace presentation
 #endif

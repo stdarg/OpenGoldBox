@@ -2262,7 +2262,7 @@ void CombatView::refresh()
         });
     };
     auto *thrown = get_node<OptionButton>("ThrownWeapon");
-    thrown->set_block_signals(true);
+    presentation::SignalsBlocked thrown_quiet(*thrown);
     thrown->set_fit_to_longest_item(false);
     thrown->clear();
     const auto throwing = std::find_if(s.combatants.begin(), s.combatants.end(),
@@ -2290,7 +2290,7 @@ void CombatView::refresh()
     }
     else
         thrown_item_ = 0;
-    thrown->set_block_signals(false);
+    thrown_quiet.unblock();
     thrown->set_tooltip_text(throw_index >= 0 ? thrown->get_item_text(throw_index) : String());
     const bool show_thrown = s.outcome == Outcome::ongoing && thrown->get_item_count() > 0;
     const bool thrown_layout_changed = thrown->is_visible() != show_thrown;
@@ -2308,7 +2308,7 @@ void CombatView::refresh()
     get_node<Button>("Throw")->set_disabled(!can_throw);
     // Items: the gear actions this character can take now (GEAR-1).
     auto *items = get_node<OptionButton>("ItemAction");
-    items->set_block_signals(true);
+    presentation::SignalsBlocked items_quiet(*items);
     items->set_fit_to_longest_item(false);
     items->clear();
     item_verbs_.clear();
@@ -2338,7 +2338,7 @@ void CombatView::refresh()
     if (!item_verbs_.empty())
         items->select(int(std::find(item_verbs_.begin(), item_verbs_.end(), item_verb_) -
                           item_verbs_.begin()));
-    items->set_block_signals(false);
+    items_quiet.unblock();
     const bool show_items = s.outcome == Outcome::ongoing && !item_verbs_.empty();
     const bool items_layout_changed = items->is_visible() != show_items;
     for (const char *name :
