@@ -169,7 +169,7 @@ Image prepare_portrait_head(const Image &source, unsigned head_id)
 {
     const auto &placement = additional_head(head_id);
     if (!source.width || !source.height || source.width > 8192 || source.height > 8192 ||
-            source.rgba.size() != std::size_t(source.width) * source.height * 4)
+            !consistent(source))
         throw std::runtime_error("Invalid portrait source image");
     unsigned bottom = source.height;
     const auto visible = [&](unsigned x, unsigned y)
@@ -403,7 +403,7 @@ void CharacterArt::add_portrait_head(unsigned id, Image image)
         return head.id == id;
     });
     if (entry == additional_heads.end() || image.width != 88 || image.height != 40 ||
-            image.rgba.size() != 88 * 40 * 4)
+            !consistent(image))
         throw std::runtime_error("Invalid additional portrait head");
     if (!heads_
             .emplace(id, PortraitPart{std::string(entry->filename), std::move(image),
@@ -414,16 +414,14 @@ void CharacterArt::add_portrait_head(unsigned id, Image image)
 
 void CharacterArt::set_original_head(unsigned id, PortraitPart part)
 {
-    if (part.image.width != 88 || part.image.height != 40 ||
-            part.image.rgba.size() != 88 * 40 * 4)
+    if (part.image.width != 88 || part.image.height != 40 || !consistent(part.image))
         throw std::runtime_error("A portrait head is 88x40");
     heads_.insert_or_assign(id, std::move(part));
 }
 
 void CharacterArt::set_original_body(unsigned id, PortraitPart part)
 {
-    if (part.image.width != 88 || part.image.height != 48 ||
-            part.image.rgba.size() != 88 * 48 * 4)
+    if (part.image.width != 88 || part.image.height != 48 || !consistent(part.image))
         throw std::runtime_error("A portrait body is 88x48");
     bodies_.insert_or_assign(id, std::move(part));
 }

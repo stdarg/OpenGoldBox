@@ -79,7 +79,7 @@ return cell < 0 ? WallSample{} :
         if (sample.id > art.appearances.size())
             throw std::runtime_error("Missing map wall appearance");
         const auto &piece = art.appearances[sample.id - 1][static_cast<unsigned>(perspective)];
-        if (piece.rgba.size() != static_cast<std::size_t>(piece.width) * piece.height * 4)
+        if (!consistent(piece))
             throw std::runtime_error("Invalid wall image");
         const int x0 = std::max(0, left), y0 = std::max(0, top);
         const int x1 = std::min(88, left + piece.width), y1 = std::min(88, top + piece.height);
