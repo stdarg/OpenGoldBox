@@ -658,7 +658,7 @@ void asi_conformance()
                             "ASI updates each score, modifier and trained/untrained saving throw exactly once");
                     }
                     for (const auto &skill : sheet.training.skills)
-                        check(skill.bonus == sheet.scores[skill.ability] / 2 - 5 +
+                        check(skill.bonus == sheet.scores[ability_index(skill.ability)] / 2 - 5 +
                               (skill.expertise    ? 4
                                : skill.proficient ? 2
                                : 0),

@@ -53,7 +53,7 @@ struct FeatureGrant
 struct SkillTraining
 {
     std::string id, label;
-    unsigned ability{};
+    Ability ability{};
     int bonus{};
     bool proficient{}, expertise{};
     std::vector<FeatureGrant> sources;
@@ -83,7 +83,7 @@ struct AbilityCheckModifier
 
 struct ClassRequirements
 {
-    std::vector<unsigned> abilities;
+    std::vector<Ability> abilities;
     bool any{};
     int minimum{13};
     std::string description;
@@ -150,7 +150,7 @@ class CharacterRules
     adjustments(std::string_view background) const = 0;
     [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(RandomState &random_state) const = 0;
     [[nodiscard]] virtual std::optional<int> ability_score(const CharacterDraft &draft,
-            unsigned ability) const = 0;
+            Ability ability) const = 0;
 
     [[nodiscard]] virtual std::array<unsigned, 6> preset_ability_priority(std::string_view,
             unsigned) const = 0;
@@ -164,7 +164,7 @@ class CharacterRules
     // An empty skill is a plain ability check. No default: an override cannot
     // redefine one (Effective C++ Item 37).
     [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
-            unsigned ability, std::string_view skill) const = 0;
+            Ability ability, std::string_view skill) const = 0;
 
   protected:
     // Implementations may copy themselves (a session's rollback does), but an

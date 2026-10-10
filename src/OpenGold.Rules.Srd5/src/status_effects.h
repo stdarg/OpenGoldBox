@@ -7,15 +7,7 @@
 
 namespace opengold::srd5::detail
 {
-enum class Ability : unsigned
-{
-    strength,
-    dexterity,
-    constitution,
-    intelligence,
-    wisdom,
-    charisma
-};
+using rules::Ability;
 enum class EffectKind : unsigned
 {
     blindness = 1,

@@ -216,14 +216,16 @@ void all_classes()
             check(rules->equipment_info(e.key).slot ==
                   (shield ? EquipmentSlot::shield : EquipmentSlot::armor),
                   "All entries equip through the shared equipment contract");
-            for (unsigned ability = 0; ability < 6; ++ability)
+            for (unsigned index = 0; index < 6; ++index)
             {
+                const auto ability = static_cast<Ability>(index);
                 const auto plain = rules->ability_check(h.sheet(), gear, ability, ""),
                            stealth = rules->ability_check(h.sheet(), gear, ability, "stealth");
+                const bool physical = ability == Ability::strength || ability == Ability::dexterity;
                 check(
-                    plain.disadvantage == (penalty && ability < 2) &&
+                    plain.disadvantage == (penalty && physical) &&
                     stealth.disadvantage ==
-                    ((penalty && ability < 2) || (e.stealth && ability == 1)),
+                    ((penalty && physical) || (e.stealth && ability == Ability::dexterity)),
                     "Only applicable ability checks receive armor penalties; alternate-ability Stealth is distinct");
             }
             auto c = rules->create({{4, 4, std::vector<Terrain>(16)},
@@ -327,16 +329,16 @@ void boundaries()
     rejects(
         [&]
     {
-        (void)rules->ability_check(h.sheet(), {}, 6, "");
+        (void)rules->ability_check(h.sheet(), {}, static_cast<Ability>(6), "");
     });
     rejects(
         [&]
     {
-        (void)rules->ability_check(h.sheet(), {}, 1, "unknown");
+        (void)rules->ability_check(h.sheet(), {}, Ability::dexterity, "unknown");
     });
     const auto rogue = hero("rogue", 15, 16, "human", "criminal");
-    const auto both = rules->ability_check(rogue.sheet(), std::array<std::string, 1> {"padded"}, 1,
-                                           "stealth");
+    const auto both = rules->ability_check(rogue.sheet(), std::array<std::string, 1> {"padded"},
+                                           Ability::dexterity, "stealth");
     check(both.proficiency == 2 && both.disadvantage,
           "Skill proficiency and armor Disadvantage remain independent");
     // Existing saving throw engine consumes the same profile penalty as live combat.
@@ -384,10 +386,10 @@ void campaign()
               restored.participants()[0].character_profile ==
               party.participants()[0].character_profile,
               "All thirteen entries survive campaign reconstruction and next encounter adaptation");
-        check(restored.ability_check(id, 1, "stealth").disadvantage == e.stealth,
+        check(restored.ability_check(id, Ability::dexterity, "stealth").disadvantage == e.stealth,
               "Campaign check query incorporates equipped armor after reload");
         restored.unequip(id, item);
-        check(!restored.ability_check(id, 1, "stealth").disadvantage &&
+        check(!restored.ability_check(id, Ability::dexterity, "stealth").disadvantage &&
               restored.member(id).vitals == party.member(id).vitals,
               "Unequipping removes penalties without restoring resources");
     }

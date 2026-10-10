@@ -218,7 +218,7 @@ class CampaignParty
     }
 
     [[nodiscard]] rules::CharacterProfile profile(MemberId id) const;
-    [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, unsigned ability,
+    [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, rules::Ability ability,
             std::string_view skill = {}) const;
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
     // Applies the script's HP and coin changes. Coins are seen and settled as

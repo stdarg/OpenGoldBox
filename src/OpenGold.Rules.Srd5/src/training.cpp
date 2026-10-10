@@ -15,29 +15,29 @@ namespace
 struct Skill
 {
     std::string_view id, label;
-    unsigned ability;
+    Ability ability;
 };
 
 // SRD 5.2.1 p. 9. The query also accepts another governing ability when a rule
 // calls for it; these are the ordinary character-sheet associations.
-constexpr std::array skills{Skill{"acrobatics", "Acrobatics", 1},
-    Skill{"animal_handling", "Animal Handling", 4},
-    Skill{"arcana", "Arcana", 3},
-    Skill{"athletics", "Athletics", 0},
-    Skill{"deception", "Deception", 5},
-    Skill{"history", "History", 3},
-    Skill{"insight", "Insight", 4},
-    Skill{"intimidation", "Intimidation", 5},
-    Skill{"investigation", "Investigation", 3},
-    Skill{"medicine", "Medicine", 4},
-    Skill{"nature", "Nature", 3},
-    Skill{"perception", "Perception", 4},
-    Skill{"performance", "Performance", 5},
-    Skill{"persuasion", "Persuasion", 5},
-    Skill{"religion", "Religion", 3},
-    Skill{"sleight_of_hand", "Sleight of Hand", 1},
-    Skill{"stealth", "Stealth", 1},
-    Skill{"survival", "Survival", 4}};
+constexpr std::array skills{Skill{"acrobatics", "Acrobatics", Ability::dexterity},
+    Skill{"animal_handling", "Animal Handling", Ability::wisdom},
+    Skill{"arcana", "Arcana", Ability::intelligence},
+    Skill{"athletics", "Athletics", Ability::strength},
+    Skill{"deception", "Deception", Ability::charisma},
+    Skill{"history", "History", Ability::intelligence},
+    Skill{"insight", "Insight", Ability::wisdom},
+    Skill{"intimidation", "Intimidation", Ability::charisma},
+    Skill{"investigation", "Investigation", Ability::intelligence},
+    Skill{"medicine", "Medicine", Ability::wisdom},
+    Skill{"nature", "Nature", Ability::intelligence},
+    Skill{"perception", "Perception", Ability::wisdom},
+    Skill{"performance", "Performance", Ability::charisma},
+    Skill{"persuasion", "Persuasion", Ability::charisma},
+    Skill{"religion", "Religion", Ability::intelligence},
+    Skill{"sleight_of_hand", "Sleight of Hand", Ability::dexterity},
+    Skill{"stealth", "Stealth", Ability::dexterity},
+    Skill{"survival", "Survival", Ability::wisdom}};
 
 struct ClassSkills
 {
@@ -293,9 +293,9 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
 
 AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
                                     const std::array<int, 6> &scores, unsigned level,
-                                    unsigned ability, std::string_view skill)
+                                    Ability ability, std::string_view skill)
 {
-    require(ability < 6 && std::all_of(
+    require(ability_index(ability) < scores.size() && std::all_of(
                 scores.begin(), scores.end(),
                 [](int score)
     {
@@ -311,11 +311,11 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
                expert_id = "expertise:" + std::string(skill);
     const bool trained_skill = !skill.empty() && source(grants, skill_id);
     AbilityCheckModifier result;
-    result.ability_modifier = modifier(scores[ability]);
+    result.ability_modifier = modifier(scores[ability_index(ability)]);
     result.expertise = trained_skill && source(grants, expert_id);
     result.proficiency = result.expertise ? pb * 2 : trained_skill ? pb : 0;
     result.total = result.ability_modifier + result.proficiency;
-    if (ability == 0 && skill == "athletics")
+    if (ability == Ability::strength && skill == "athletics")
         for (const auto &g : grants)
             if (g.id == "feature:remarkable_athlete" &&
                     g.source_id == "subclass:fighter:champion" && g.level == 3 && level >= 3)
@@ -326,7 +326,7 @@ AbilityCheckModifier check_modifier(std::span<const FeatureGrant> grants,
     for (const auto &g : grants)
         if (!skill.empty() && (g.id == skill_id || g.id == expert_id))
             result.sources.push_back(g);
-    if (ability == 3 && (skill == "arcana" || skill == "religion"))
+    if (ability == Ability::intelligence && (skill == "arcana" || skill == "religion"))
         for (const auto &g : grants)
             if (g.id == "order:thaumaturge" && g.source_id == divine_order)
             {
@@ -753,7 +753,7 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
 
 AbilityCheckModifier ability_check(std::span<const FeatureGrant> grants, std::string_view klass,
                                    std::string_view background, unsigned level,
-                                   const std::array<int, 6> &scores, unsigned ability,
+                                   const std::array<int, 6> &scores, Ability ability,
                                    std::string_view skill)
 {
     (void)training_profile(grants, klass, background, level, scores);

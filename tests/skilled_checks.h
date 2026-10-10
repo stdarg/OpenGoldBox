@@ -40,7 +40,7 @@ const FeatureGrant *grant(const CharacterSheet &sheet, std::string_view id)
     return found == sheet.grants.end() ? nullptr : &*found;
 }
 
-AbilityCheckModifier probe(const CharacterSheet &sheet, unsigned ability, std::string_view skill)
+AbilityCheckModifier probe(const CharacterSheet &sheet, Ability ability, std::string_view skill)
 {
     return srd5::character_rules()->ability_check(sheet, ability, skill);
 }
@@ -103,19 +103,19 @@ void check_effects()
 {
     auto p = ready("fighter", "criminal");
     const auto before = p.member(1).character.sheet();
-    const auto cold = probe(before, 3, "nature");
+    const auto cold = probe(before, Ability::intelligence, "nature");
     p.advance(1, pick(p, {"skill:nature", "skill:arcana", "skill:medicine"}));
     const auto after = p.member(1).character.sheet();
-    const auto warm = probe(after, 3, "nature");
+    const auto warm = probe(after, Ability::intelligence, "nature");
     check(warm.proficiency > cold.proficiency && warm.total > cold.total,
           "A Skilled skill pick changes the real check result");
-    const auto stealth_before = probe(before, 1, "stealth");
-    const auto stealth_after = probe(after, 1, "stealth");
+    const auto stealth_before = probe(before, Ability::dexterity, "stealth");
+    const auto stealth_after = probe(after, Ability::dexterity, "stealth");
     check(stealth_after.total == stealth_before.total &&
           stealth_after.expertise == stealth_before.expertise,
           "Existing proficiencies and Expertise are unchanged");
-    check(probe(after, 3, "nature").sources.size() == 1 &&
-          probe(after, 3, "nature").sources.front().source_id == "feat:skilled",
+    check(probe(after, Ability::intelligence, "nature").sources.size() == 1 &&
+          probe(after, Ability::intelligence, "nature").sources.front().source_id == "feat:skilled",
           "The new proficiency reports Skilled as its only source");
 }
 
@@ -187,8 +187,9 @@ void persistence()
           "A Skilled campaign reload is canonical");
     const auto back = reloaded.member(1).character.sheet();
     check(back.grants == sheet.grants, "Reload preserves every Skilled grant and its provenance");
-    check(probe(back, 1, "stealth").proficiency == probe(sheet, 1, "stealth").proficiency &&
-          probe(back, 4, "perception").proficiency > 0,
+    check(probe(back, Ability::dexterity, "stealth").proficiency ==
+          probe(sheet, Ability::dexterity, "stealth").proficiency &&
+          probe(back, Ability::wisdom, "perception").proficiency > 0,
           "Skilled check effects survive a reload");
 }
 

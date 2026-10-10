@@ -172,9 +172,9 @@ void thresholds()
                 const auto h = hero(klass.id, w.ranged ? 15 : score, w.ranged ? score : 15);
                 // Honor the existing character creator's house prerequisites.
                 const auto requirements = srd5::character_rules()->class_requirements(klass.id);
-                const auto qualifies = [&](unsigned ability)
+                const auto qualifies = [&](Ability ability)
                 {
-                    return h.sheet().scores[ability] >= 13;
+                    return h.sheet().scores[ability_index(ability)] >= 13;
                 };
                 if (requirements.any ? !std::any_of(requirements.abilities.begin(),
                                                     requirements.abilities.end(), qualifies)

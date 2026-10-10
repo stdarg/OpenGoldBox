@@ -402,7 +402,7 @@ rules::CharacterProfile CampaignParty::profile(MemberId id) const
     return rules_->character_profile(m.character.sheet(), keys);
 }
 
-rules::AbilityCheckModifier CampaignParty::ability_check(MemberId id, unsigned ability,
+rules::AbilityCheckModifier CampaignParty::ability_check(MemberId id, rules::Ability ability,
         std::string_view skill) const
 {
     const auto &m = member(id);
@@ -870,9 +870,10 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
 
         const auto roll =
             method == DoorMethod::bash
-            ? rules_->roll_ability_check(m.character.sheet(), gear, 0, "athletics", random_state)
-            : rules_->roll_ability_check(m.character.sheet(), gear, 1, "sleight_of_hand",
-                                         random_state);
+            ? rules_->roll_ability_check(m.character.sheet(), gear, rules::Ability::strength,
+                                         "athletics", random_state)
+            : rules_->roll_ability_check(m.character.sheet(), gear, rules::Ability::dexterity,
+                                         "sleight_of_hand", random_state);
         attempts.push_back({id, roll});
         if (roll.total >= difficulty)
             break;

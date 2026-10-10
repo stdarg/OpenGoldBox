@@ -104,7 +104,7 @@ class CreatorRules final : public CharacterRules
     std::vector<CreationChoice> choices(CreationField field) const override;
     std::vector<ScoreAdjustment> adjustments(std::string_view background) const override;
     std::array<AbilityRoll, 6> roll(RandomState &state) const override;
-    std::optional<int> ability_score(const CharacterDraft &draft, unsigned ability) const override;
+    std::optional<int> ability_score(const CharacterDraft &draft, Ability ability) const override;
     CharacterSheet evaluate(const CharacterDraft &draft, NameRequirement name) const override;
 
     std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft) const override
@@ -158,7 +158,7 @@ class CreatorRules final : public CharacterRules
         return group;
     }
 
-    AbilityCheckModifier ability_check(const CharacterSheet &sheet, unsigned ability,
+    AbilityCheckModifier ability_check(const CharacterSheet &sheet, Ability ability,
                                        std::string_view skill) const override
     {
         return detail::ability_check(sheet.grants, detail::grant_source_id(sheet.character_class),
@@ -267,9 +267,13 @@ std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view backgrou
 
 ClassRequirements CreatorRules::class_requirements(std::string_view id) const
 {
-    const std::array<std::vector<unsigned>, 12> primary
+    using enum Ability;
+    const std::array<std::vector<Ability>, 12> primary
     {
-        {{0}, {5}, {4}, {4}, {0, 1}, {1, 4}, {0, 5}, {1, 4}, {1}, {5}, {5}, {3}}};
+        {   {strength}, {charisma}, {wisdom}, {wisdom}, {strength, dexterity},
+            {dexterity, wisdom}, {strength, charisma}, {dexterity, wisdom}, {dexterity},
+            {charisma}, {charisma}, {intelligence}
+        }};
     const auto found = std::find_if(classes.begin(), classes.end(),
                                     [&](const auto & c)
     {
@@ -282,7 +286,7 @@ ClassRequirements CreatorRules::class_requirements(std::string_view id) const
     {
         if (!result.description.empty())
             result.description += result.any ? " or " : " and ";
-        result.description += ability_names[ability] + " 13";
+        result.description += ability_names[ability_index(ability)] + " 13";
     }
     return result;
 }
@@ -300,17 +304,18 @@ std::array<AbilityRoll, 6> CreatorRules::roll(RandomState &state) const
     return result;
 }
 
-std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, unsigned ability) const
+std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, Ability ability) const
 {
-    if (ability >= 6 || d.assignment[ability] > 6)
+    const auto index = ability_index(ability);
+    if (index >= d.assignment.size() || d.assignment[index] > 6)
         throw std::runtime_error("Invalid ability assignment");
-    if (!d.rolled || d.assignment[ability] == 6)
+    if (!d.rolled || d.assignment[index] == 6)
         return std::nullopt;
     const auto options = adjustments(d.background);
     if (d.adjustment >= options.size())
         throw std::runtime_error("Invalid background bonuses");
     const auto score =
-        d.rolls[d.assignment[ability]].total() + options[d.adjustment].bonuses[ability];
+        d.rolls[d.assignment[index]].total() + options[d.adjustment].bonuses[index];
     if (score > 20)
         throw std::runtime_error("Background bonuses cannot raise a score above 20");
     return score;
@@ -368,7 +373,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
         if (d.assignment[i] >= 6 || !used.insert(d.assignment[i]).second)
             throw std::runtime_error("Each roll must be assigned exactly once");
         s.base[i] = d.rolls[d.assignment[i]].total();
-        s.scores[i] = *ability_score(d, i);
+        s.scores[i] = *ability_score(d, static_cast<Ability>(i));
         s.modifiers[i] = ability_modifier(s.scores[i]);
     }
     const auto c = std::find_if(classes.begin(), classes.end(),

@@ -6,6 +6,7 @@
 #include <compare>
 #include <functional>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <map>
@@ -275,6 +276,25 @@ struct HitDieResult
     int roll{}, modifier{}, healing{};
     unsigned remaining{};
 };
+
+// The six abilities, in the order of a sheet's score arrays, named so an
+// ability cannot be confused with a score, a count or an array position
+// (Effective C++ Item 18).
+enum class Ability : unsigned
+{
+    strength,
+    dexterity,
+    constitution,
+    intelligence,
+    wisdom,
+    charisma
+};
+
+// The position of an ability in a sheet's six-element arrays.
+[[nodiscard]] constexpr std::size_t ability_index(Ability ability) noexcept
+{
+    return static_cast<std::size_t>(ability);
+}
 
 // One rolled d20 ability check: the kept die and the check total.
 struct AbilityCheckRoll
@@ -647,11 +667,11 @@ class RulesModule
     // An empty skill is a plain ability check. No default: an override cannot
     // redefine one (Effective C++ Item 37).
     [[nodiscard]] virtual AbilityCheckModifier
-    ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
+    ability_check(const CharacterSheet &, std::span<const std::string> gear, Ability ability,
                   std::string_view skill) const = 0;
     // Rolls that check outside combat, advancing the campaign service random state.
     [[nodiscard]] virtual AbilityCheckRoll
-    roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
+    roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, Ability ability,
                        std::string_view skill, RandomState &random_state) const = 0;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const = 0;
     [[nodiscard]] virtual std::optional<TrainingReplacementOptions>

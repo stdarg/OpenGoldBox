@@ -19,7 +19,8 @@ inline godot::String requirements(const opengold::rules::ClassRequirements &requ
     {
         if (!result.is_empty())
             result += requirement.any ? i18n::text(" or ") : i18n::text(" and ");
-        result += i18n::format("{ability} {minimum}", {{"ability", text(ability_short.at(ability))},
+        const auto name = text(ability_short.at(opengold::rules::ability_index(ability)));
+        result += i18n::format("{ability} {minimum}", {{"ability", name},
             {"minimum", requirement.minimum}
         });
     }

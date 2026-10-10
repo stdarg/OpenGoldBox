@@ -84,14 +84,14 @@ class ForwardingModule : public rules::RulesModule
     }
 
     rules::AbilityCheckModifier ability_check(const rules::CharacterSheet &sheet,
-            std::span<const std::string> gear, unsigned ability,
+            std::span<const std::string> gear, rules::Ability ability,
             std::string_view skill) const override
     {
         return rules_->ability_check(sheet, gear, ability, skill);
     }
 
     rules::AbilityCheckRoll roll_ability_check(const rules::CharacterSheet &sheet,
-            std::span<const std::string> gear, unsigned ability, std::string_view skill,
+            std::span<const std::string> gear, rules::Ability ability, std::string_view skill,
             RandomState &random_state) const override
     {
         return rules_->roll_ability_check(sheet, gear, ability, skill, random_state);

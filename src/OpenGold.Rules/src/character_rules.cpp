@@ -8,7 +8,7 @@ namespace opengold::rules
 bool class_eligible(const CharacterRules &rules, const CharacterDraft &d, std::string_view id)
 {
     const auto r = rules.class_requirements(id);
-    const auto meets = [&](unsigned ability)
+    const auto meets = [&](Ability ability)
     {
         return rules.ability_score(d, ability).value_or(0) >= r.minimum;
     };
@@ -26,7 +26,7 @@ std::array<bool, 6> unmet_targets(const CharacterRules &rules, const CharacterDr
         const auto r = rules.class_requirements(id);
         for (auto ability : r.abilities)
             if (rules.ability_score(d, ability).value_or(0) < r.minimum)
-                result.at(ability) = true;
+                result.at(ability_index(ability)) = true;
     }
     return result;
 }

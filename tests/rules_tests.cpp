@@ -1385,6 +1385,19 @@ static_assert(std::is_same_v<decltype(Participant::side), Side> &&
               std::is_same_v<decltype(CombatantView::side), Side>);
 static_assert(static_cast<int>(Side::party) == 0 && static_cast<int>(Side::opposition) == 1);
 
+// An ability check names its ability; a bare number, which could be a score or
+// an array position, is refused (Effective C++ Item 18).
+template <class Value>
+concept checks_ability_with =
+requires(const RulesModule &rules, const CharacterRules &creation, const CharacterSheet &sheet,
+         Value ability)
+{
+    rules.ability_check(sheet, std::span<const std::string> {}, ability, std::string_view{});
+    creation.ability_check(sheet, ability, std::string_view{});
+};
+static_assert(checks_ability_with<Ability> && !checks_ability_with<unsigned>,
+              "Ability checks take an Ability");
+
 // advance_character has one overridable form; a second overload that delegated
 // to it in the opposite direction let a module recurse forever (Effective C++
 // Item 34).

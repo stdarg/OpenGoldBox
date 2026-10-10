@@ -677,7 +677,7 @@ void CharacterCreationView::refresh()
             }
             get_node<RichTextLabel>(gs("Dice" + std::to_string(i)))
             ->set_text(gs("[center]" + dice + "[/center]"));
-            const auto score = creator_->rules().ability_score(d, i);
+            const auto score = creator_->rules().ability_score(d, static_cast<rules::Ability>(i));
             auto *score_box = get_node<Button>(gs("Score" + std::to_string(i)));
             score_box->set_text(score ? gs(std::to_string(*score)) : String());
             const bool unmet = creator_->rules().unmet_targets(d)[i];

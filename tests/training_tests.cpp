@@ -231,8 +231,8 @@ void all_class_skills()
                                     FeatureGrant{"skill:" + id, "class:" + klass.id, 1, {}}) !=
                           h.sheet().grants.end(),
                           "Class skill has exact level-one provenance");
-                    check(item.bonus ==
-                          h.sheet().modifiers[item.ability] + (item.expertise ? 4 : 2),
+                    check(item.bonus == h.sheet().modifiers[ability_index(item.ability)] +
+                          (item.expertise ? 4 : 2),
                           "Overlapping background and class grants add proficiency once");
                 }
                 auto bad = d;
@@ -615,25 +615,25 @@ void grants_and_checks()
           "Proficient and untrained skills use different bonuses");
     check(skill(sheet, "stealth").sources.size() == 2,
           "Expertise and background proficiency have separate provenance");
-    auto result = creation->ability_check(sheet, 1, "sleight_of_hand");
+    auto result = creation->ability_check(sheet, Ability::dexterity, "sleight_of_hand");
     check(result.ability_modifier == 3 && result.proficiency == 2 && result.total == 5 &&
           !result.expertise && !result.advantage && result.sources.size() == 1,
           "A proficient skill adds proficiency once");
-    result = creation->ability_check(sheet, 1, "stealth");
+    result = creation->ability_check(sheet, Ability::dexterity, "stealth");
     check(result.total == 7 && result.expertise && result.sources.size() == 2,
           "Expertise doubles proficiency and keeps both sources");
-    result = creation->ability_check(sheet, 0, "stealth");
+    result = creation->ability_check(sheet, Ability::strength, "stealth");
     check(result.total == 6,
           "A rule can choose another governing ability without changing training");
     rejects(
         [&]
     {
-        (void)creation->ability_check(sheet, 6, "stealth");
+        (void)creation->ability_check(sheet, static_cast<Ability>(6), "stealth");
     });
     rejects(
         [&]
     {
-        (void)creation->ability_check(sheet, 1, "unknown");
+        (void)creation->ability_check(sheet, Ability::dexterity, "unknown");
     });
     // Independent proficiency table boundaries. This query is shared math,
     // not a claim that Rogue advancement beyond level one is integrated.
@@ -645,7 +645,7 @@ void grants_and_checks()
     {
         auto later = sheet;
         later.level = level;
-        check(creation->ability_check(later, 1, "stealth").total == 3 + 2 * bonus,
+        check(creation->ability_check(later, Ability::dexterity, "stealth").total == 3 + 2 * bonus,
               "Expertise uses the character-level proficiency table");
     }
     d.training["class:rogue"] = {"stealth", "investigation", "perception", "persuasion"};
@@ -803,7 +803,7 @@ void sage_training()
                   trained.sources[0].source_id == "background:sage",
                   "Every starting class gets sourced +2 Sage proficiency");
         }
-        const auto arcana = creation->ability_check(sheet, 3, "arcana");
+        const auto arcana = creation->ability_check(sheet, Ability::intelligence, "arcana");
         check(arcana.total == 4 && arcana.proficiency == 2 && arcana.sources.size() == 1 &&
               arcana.sources[0].id == "skill:arcana",
               "Fixed skill proficiency participates in ability-check API");

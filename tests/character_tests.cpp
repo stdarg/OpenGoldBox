@@ -166,13 +166,13 @@ void creation_tests()
         {
             const auto bonuses =
                 module->adjustments(boundary.background)[boundary.adjustment].bonuses;
-            const int total = 13 - bonuses[ability];
-            boundary.rolls[ability] = {{{total - 8, 4, 4, 1}}, 3};
+            const int total = 13 - bonuses[ability_index(ability)];
+            boundary.rolls[ability_index(ability)] = {{{total - 8, 4, 4, 1}}, 3};
         }
         check(rules::class_eligible(*module, boundary, option.id),
               "Every class accepts exactly 13 in its primary abilities");
         for (auto ability : req.abilities)
-            --boundary.rolls[ability].dice[0];
+            --boundary.rolls[ability_index(ability)].dice[0];
         check(!rules::class_eligible(*module, boundary, option.id),
               "Every class rejects primaries below 13");
     }
@@ -240,14 +240,18 @@ void creation_tests()
     "Cannot continue with empty ability boxes");
     creator.assign_roll(0, 3);
     creator.select(CreationField::background, "acolyte");
-    check(creator.rules().ability_score(creator.draft(), 3) == original[0].total() + 2,
+    const auto intelligence = [&]
+    {
+        return creator.rules().ability_score(creator.draft(), Ability::intelligence);
+    };
+    check(intelligence() == original[0].total() + 2,
           "Assigned Intelligence includes Acolyte bonus before other rolls are assigned");
     creator.select(CreationField::background, "sage");
-    check(creator.rules().ability_score(creator.draft(), 3) == original[0].total() + 1,
+    check(intelligence() == original[0].total() + 1,
           "Background changes recalculate partial scores");
     creator.select_adjustment(1);
-    check(creator.rules().ability_score(creator.draft(), 3) == original[0].total() &&
-          !creator.rules().ability_score(creator.draft(), 0),
+    check(intelligence() == original[0].total() &&
+          !creator.rules().ability_score(creator.draft(), Ability::strength),
           "Bonus changes update assigned scores and leave empty abilities empty");
     check(creator.draft().rolls == original, "Bonus changes preserve original dice");
     creator.select(CreationField::background, "acolyte");

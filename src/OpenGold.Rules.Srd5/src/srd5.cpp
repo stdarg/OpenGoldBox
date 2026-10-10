@@ -11344,18 +11344,21 @@ class Module final : public RulesModule
     }
 
     AbilityCheckModifier ability_check(const CharacterSheet &sheet,
-                                       std::span<const std::string> gear, unsigned ability,
+                                       std::span<const std::string> gear, Ability ability,
                                        std::string_view skill) const override
     {
         const auto d = character_definition(character_profile(sheet, gear).data);
         auto result = character_rules()->ability_check(sheet, ability, skill);
-        result.disadvantage = (ability < 2 && d.str_dex_disadvantage) ||
-                              (ability == 1 && skill == "stealth" && d.stealth_disadvantage);
+        const bool strength_or_dexterity =
+            ability == Ability::strength || ability == Ability::dexterity;
+        result.disadvantage =
+            (strength_or_dexterity && d.str_dex_disadvantage) ||
+            (ability == Ability::dexterity && skill == "stealth" && d.stealth_disadvantage);
         return result;
     }
 
     AbilityCheckRoll roll_ability_check(const CharacterSheet &sheet,
-                                        std::span<const std::string> gear, unsigned ability,
+                                        std::span<const std::string> gear, Ability ability,
                                         std::string_view skill,
                                         RandomState &random_state) const override
     {

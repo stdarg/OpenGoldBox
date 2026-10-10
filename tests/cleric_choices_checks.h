@@ -94,11 +94,12 @@ void divine_order_checks()
     for (const auto *skill :
             {"arcana", "religion"
             })
-        check(rules->ability_check(thaumaturge.sheet(), {}, 3, skill).total ==
-              rules->ability_check(protector.sheet(), {}, 3, skill).total + wisdom,
+        check(rules->ability_check(thaumaturge.sheet(), {}, Ability::intelligence, skill).total ==
+              rules->ability_check(protector.sheet(), {}, Ability::intelligence, skill).total +
+              wisdom,
               "Thaumaturge adds Wisdom to Arcana and Religion checks");
-    check(rules->ability_check(thaumaturge.sheet(), {}, 3, "history").total ==
-          rules->ability_check(protector.sheet(), {}, 3, "history").total,
+    check(rules->ability_check(thaumaturge.sheet(), {}, Ability::intelligence, "history").total ==
+          rules->ability_check(protector.sheet(), {}, Ability::intelligence, "history").total,
           "Thaumaturge adds nothing to other Intelligence checks");
 }
 

@@ -162,13 +162,14 @@ void grants_and_checks()
               "Subclass and both feature grants follow ordinary level three acquisition");
         check(rules->character_profile(h.sheet(), {}).data.starts_with("PC42 "),
               "Every profile uses the current profile tag");
-        const auto athletics = rules->ability_check(h.sheet(), {}, 0, "athletics");
+        const auto athletics = rules->ability_check(h.sheet(), {}, Ability::strength, "athletics");
         check(athletics.advantage == champion,
               "Strength Athletics gains Advantage only for Champion");
-        check(!rules->ability_check(h.sheet(), {}, 1, "athletics").advantage &&
-              !rules->ability_check(h.sheet(), {}, 0, "acrobatics").advantage,
+        check(!rules->ability_check(h.sheet(), {}, Ability::dexterity, "athletics").advantage &&
+              !rules->ability_check(h.sheet(), {}, Ability::strength, "acrobatics").advantage,
               "Other ability/skill combinations excluded");
-        const auto armored = rules->ability_check(h.sheet(), std::vector<std::string> {"hide"}, 0,
+        const auto armored = rules->ability_check(h.sheet(), std::vector<std::string> {"hide"},
+            Ability::strength,
             "athletics");
         check(armored.advantage == champion && !armored.disadvantage,
               "Trained Fighter armor does not cancel Advantage");
@@ -432,13 +433,13 @@ void campaign_and_cancellation()
                                          "champion-current", nullptr)
                          .party);
             check(encode_campaign(copy, nullptr, "champion-current") == bytes &&
-                  copy.ability_check(id, 0, "athletics").advantage,
+                  copy.ability_check(id, Ability::strength, "athletics").advantage,
                   "Ordinary campaign save/reload keeps subclass and check source");
             check(bool(copy.rest(RestKind::short_rest)), "Champion uses ordinary Short Rest");
             if (copy.state().short_rest)
                 copy.finish_short_rest(copy.state().short_rest->ticket);
             check(bool(copy.rest(RestKind::long_rest)), "Champion uses ordinary Long Rest");
-            check(copy.ability_check(id, 0, "athletics").advantage,
+            check(copy.ability_check(id, Ability::strength, "athletics").advantage,
                   "Rests retain Champion entitlement");
             check(copy.member(id).equipped == std::vector<std::uint64_t> {1},
                   "Resting never unequips the held sword");
