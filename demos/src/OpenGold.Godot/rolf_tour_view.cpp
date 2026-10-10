@@ -986,7 +986,7 @@ void RolfTourView::check_town()
         throw std::runtime_error("Town started before the full tour");
     if (shop_check_stage_ == 3 && s.phase == TourPhase::completed)
     {
-        if (inventory_size() != 1 || session_->script_variable(0x6BC1) != gold())
+        if (inventory_size() != 1 || session_->script_variable(EclAddress{0x6BC1}) != gold())
             throw std::runtime_error("Shop results did not persist after leaving");
         party_selected(0);
         auto *sheet = get_node<Window>(embedded_party_ ? "../TownSheet" : "MemberSheet");
@@ -1176,7 +1176,7 @@ bool RolfTourView::check_expedition_step()
         return false;
     if (s.area_id == 0)
     {
-        if (session_->script_variable(0x4ACA) == 255)
+        if (session_->script_variable(ecl_slums_orc_victory) == 255)
             return true;
         if (s.pose.x != 0 || s.pose.y != 4)
             throw std::runtime_error("Unexpected tour destination");
@@ -1186,7 +1186,7 @@ bool RolfTourView::check_expedition_step()
             forward();
         return false;
     }
-    if (session_->script_variable(0x4ACA) == 255)
+    if (session_->script_variable(ecl_slums_orc_victory) == 255)
     {
         if (s.pose.x != 15 || s.pose.y != 4)
             check_walk_to(15, 4);
@@ -1314,7 +1314,7 @@ void RolfTourView::check_recovery()
     if (recovery_stage_ == 4)
     {
         if (member.wealth[3] != recovery_before_->roster.at(0).wealth[3] - 100 ||
-                member.vitals.hit_points <= 1 || session_->script_variable(0x6de2) != 0)
+                member.vitals.hit_points <= 1 || session_->script_variable(ecl_temple_service) != 0)
             throw std::runtime_error("Original temple must charge 100 gp, heal and resume ECL");
         if (save_check)
             save_check("temple-payment");

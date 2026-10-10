@@ -479,8 +479,8 @@ void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t see
     {{0x4900, 0x4cff}, {0x6b00, 0x6eff}, {0x9700, 0x98ff}}
 })
     for (unsigned a = first; a <= last; ++a)
-        vm.bind_variable(static_cast<std::uint16_t>(a), 0);
-    vm.bind_variable(0xC04F, 1);
+        vm.bind_variable(EclAddress(static_cast<std::uint16_t>(a)), 0);
+    vm.bind_variable(ecl_cell_event, 1);
     for (std::uint8_t opcode :
             {
                 11, 12, 13, 14, 28, 36
@@ -513,8 +513,9 @@ void CombatDemo::pump()
             throw std::runtime_error(result.diagnostic);
         if (result.state == EclState::completed)
         {
-            status_ = "Script complete; event flag " + std::to_string(vm_->variable(0x4ACA)) +
-                      ", fight count " + std::to_string(vm_->variable(0x4ABB));
+            status_ = "Script complete; event flag " +
+                      std::to_string(vm_->variable(ecl_slums_orc_victory)) + ", fight count " +
+                      std::to_string(vm_->variable(EclAddress{0x4ABB}));
             return;
         }
         if (!result.request)
@@ -568,8 +569,9 @@ void CombatDemo::pump()
             }
             else if (opcode == 36)
             {
-                if (enemies_.size() != 4 || encounters_ != 0 || vm_->variable(0x6DC6) != 99 ||
-                        vm_->variable(0x6DCB) != 0)
+                if (enemies_.size() != 4 || encounters_ != 0 ||
+                        vm_->variable(ecl_encounter_morale) != 99 ||
+                        vm_->variable(ecl_encounter_surprise) != 0)
                     throw std::runtime_error("Unsupported Slums combat context");
                 start_encounter(enemies_, "por:ECL2:20:search1:orcs:v1");
                 combat_ticket_ = request.id;
@@ -618,15 +620,15 @@ void CombatDemo::finish_combat()
     reply.writes =
     {
         // The original's combat results: 0 won, 128 the party fled, 129 it fell.
-        {0x6DC7, static_cast<std::uint16_t>(state.outcome == Outcome::victory ? 0
-                                            : state.outcome == Outcome::fled ? 128
-                                            : 129)},
-        {0x6DC8, static_cast<std::uint16_t>(defeated)},
-        {0x6DCB, 0},
-        {0x6DE3, 0},
-        {0x6E70, 0},
-        {0x6E71, 0},
-        {0x6E72, 0}
+        {ecl_combat_result, static_cast<std::uint16_t>(state.outcome == Outcome::victory ? 0
+                                                       : state.outcome == Outcome::fled ? 128
+                                                       : 129)},
+        {ecl_monsters_defeated, static_cast<std::uint16_t>(defeated)},
+        {ecl_encounter_surprise, 0},
+        {EclAddress{0x6DE3}, 0},
+        {EclAddress{0x6E70}, 0},
+        {EclAddress{0x6E71}, 0},
+        {EclAddress{0x6E72}, 0}
     };
     if (!vm_->resume_host(combat_ticket_, reply))
         throw std::runtime_error("Combat outcome rejected by ECL");
@@ -669,7 +671,7 @@ void CombatDemo::restore_combat(std::string_view checkpoint)
     combat_ = std::move(restored);
 }
 
-unsigned CombatDemo::script_variable(std::uint16_t address) const
+unsigned CombatDemo::script_variable(EclAddress address) const
 {
     if (!vm_)
         throw std::runtime_error("No active campaign script");

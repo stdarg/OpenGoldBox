@@ -460,7 +460,8 @@ void roundtrip(const std::filesystem::path &directory)
     town.explore(por::ExplorationCommand::look);
     settle(*loaded.town);
     settle(town);
-    check(loaded.town->script_variable(0x9810) == town.script_variable(0x9810),
+    check(loaded.town->script_variable(por::EclAddress{0x9810}) ==
+          town.script_variable(por::EclAddress{0x9810}),
           "Script continuation matches");
     auto next = encode_campaign(*replacement, &*loaded.town, "fixture-v1");
     write_campaign_file(path, next);

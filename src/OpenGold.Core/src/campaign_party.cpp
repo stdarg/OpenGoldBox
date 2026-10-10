@@ -994,7 +994,7 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot,
     if (!id)
         return {};
     const auto &current = member(id);
-    const auto hp = vm.variable(0x6C19);
+    const auto hp = vm.variable(por::ecl_character_hit_points);
     if (hp > hit_point_maximum(id) || (current.vitals.dead && hp))
         throw std::runtime_error("Unsupported script HP change");
     Purse after_script;

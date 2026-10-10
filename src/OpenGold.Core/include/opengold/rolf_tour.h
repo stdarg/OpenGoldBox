@@ -227,7 +227,7 @@ class RolfTourSession
         return picture_;
     }
 
-    [[nodiscard]] std::uint16_t script_variable(std::uint16_t address) const
+    [[nodiscard]] std::uint16_t script_variable(EclAddress address) const
     {
         return machine_.variable(address);
     }

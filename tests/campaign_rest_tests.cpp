@@ -582,7 +582,7 @@ void campaign_services()
     check(town.camp(RestKind::short_rest), "Short Rest enters the original pre-camp service");
     settle(town);
     check(town.can_leave() && party->state().short_rest && party->state().time_minutes == 60 &&
-          town.script_variable(0x49c9) == 13,
+          town.script_variable(por::ecl_clock_hour) == 13,
           "Safe camp grants a completed hour and updates original clock registers");
     check(!town.explore(por::ExplorationCommand::forward) && !town.camp(RestKind::long_rest),
           "Campaign events cannot run over pending spending");
@@ -600,7 +600,7 @@ void campaign_services()
     check(disk.town->explore(por::ExplorationCommand::look), "Finish permits exploration");
     settle(*disk.town);
     check(resumed->member(id).vitals.hit_points == healed_hp &&
-          disk.town->script_variable(0x6c19) == healed_hp,
+          disk.town->script_variable(por::ecl_character_hit_points) == healed_hp,
           "Next script cannot overwrite committed Hit Die healing with stale HP");
     for (const auto kind :
             {

@@ -135,10 +135,10 @@ unsigned party_strength(const CampaignParty &party)
     return result & 255;
 }
 
-std::array<unsigned, 4> check_party(const CampaignParty &party, unsigned address,
+std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attribute,
                                     unsigned effect)
 {
-    if (address != 0x6C1B || effect)
+    if (attribute != EclAddress{0x6C1B} || effect)
         throw std::runtime_error("Unsupported CHECK PARTY attribute/effect conversion");
     unsigned count = 0, low = 255, high = 0, total = 0;
     for (auto id : party.state().slots)
@@ -177,12 +177,13 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
         fields[0x119] = m.vitals.hit_points;
         const auto coins = script_coins(m.wealth);
         for (unsigned n = 0; n < 7; ++n)
-            fields[ecl_coin_addresses[n] - 0x6B00] = coins[n];
+            fields[ecl_coin_addresses[n].location - ecl_character_record.location] = coins[n];
     }
     for (unsigned n = 0; n < fields.size(); ++n)
-        reply.writes.push_back({static_cast<std::uint16_t>(0x6B00 + n), fields[n]});
-    reply.writes.push_back({0x6DB1, static_cast<std::uint16_t>(slot.index)});
-    reply.writes.push_back({0x6DB4, static_cast<std::uint16_t>(slot.index)});
+        reply.writes.push_back(
+        {EclAddress(static_cast<std::uint16_t>(ecl_character_record.location + n)), fields[n]});
+    reply.writes.push_back({EclAddress{0x6DB1}, static_cast<std::uint16_t>(slot.index)});
+    reply.writes.push_back({EclAddress{0x6DB4}, static_cast<std::uint16_t>(slot.index)});
     return reply;
 }
 } // namespace opengold::por

@@ -192,7 +192,8 @@ void script_payment_tests()
     por::RolfTourSession town({}, payment, {}, 0x9914, {}, resources);
     town.campaign_party(party);
     settle_synthetic(town);
-    check(town.script_variable(0x6BC3) == 15, "The script sees fifteen affordable platinum");
+    check(town.script_variable(por::EclAddress{0x6BC3}) == 15,
+          "The script sees fifteen affordable platinum");
     check(town.explore(por::ExplorationCommand::look), "Payment event starts");
     settle_synthetic(town);
     check(party->member(payer).wealth == Purse{0, 96, 0, 135, 0, 0, 0},
@@ -200,7 +201,8 @@ void script_payment_tests()
     check(town.snapshot().payments.size() == 1 && town.snapshot().payments[0].payer == "Arden" &&
           town.snapshot().payments[0].coins.paid == Coins{0, 0, 0, 10, 0},
           "The exchange is reported for the payer");
-    check(town.script_variable(0x6BC3) == 14 && town.script_variable(0x6BC1) == 144,
+    check(town.script_variable(por::EclAddress{0x6BC3}) == 14 &&
+          town.script_variable(por::EclAddress{0x6BC1}) == 144,
           "The script then sees the settled purse");
 
     auto reader = program({10, 0, 128, 0});
@@ -288,7 +290,7 @@ void script_treasure_tests()
           "A failure after the award reports and rolls back the event");
     check(purses(party->checkpoint()) == purses(before) &&
           party->state().claimed_rewards == before.claimed_rewards &&
-          town.script_variable(0x4A04) == 0,
+          town.script_variable(por::EclAddress{0x4A04}) == 0,
           "The rollback restores purses, claims and the quest flag together");
 
     party->select(PartySlot{0});
@@ -296,7 +298,7 @@ void script_treasure_tests()
     const auto paid = party->checkpoint();
     check(paid.roster[0].wealth == Purse{0, 0, 0, 0, 150, 0, 1} &&
           paid.roster[1].wealth == Purse{} && claims_starting(paid, synthetic_treasure) == 1 &&
-          town.script_variable(0x4A04) == 255 && paid.roster[0].experience == 0,
+          town.script_variable(por::EclAddress{0x4A04}) == 255 && paid.roster[0].experience == 0,
           "The first living member receives 150 pp and the jewelry once, with no XP");
     const auto &arden = paid.roster[0];
     check(arden.character.inventory().items().size() == 1 && arden.item_sources.size() == 1 &&
@@ -381,7 +383,7 @@ void deferred_treasure_tests()
     town.campaign_party(party);
     settle_synthetic(town);
 
-    check(look(town) && town.script_variable(0x4A04) == 255 &&
+    check(look(town) && town.script_variable(por::EclAddress{0x4A04}) == 255 &&
           party->member(arden).wealth == Purse{0, 0, 0, 0, 65535 - 100, 0, 0} &&
           claims_starting(party->checkpoint(), synthetic_treasure) == 0 &&
           town.snapshot().dialogue.find("Loot is retained") != std::string::npos,
@@ -882,7 +884,7 @@ void defeat_four_orcs(Expedition &trip)
     check(town.snapshot().area_id == 20, "The west gate leads into the Slums");
     // The route passes (13,1), where the orcs argue over their papers.
     walk_to(town, party, 12, 1);
-    check(town.script_variable(0x4ACA) == 255 && orc_rewards(*party) == 2,
+    check(town.script_variable(por::ecl_slums_orc_victory) == 255 && orc_rewards(*party) == 2,
           "The four-orc victory sets its original flag and claims XP and loot once");
     unsigned silver = 0;
     for (const auto &member : party->state().roster)
@@ -979,7 +981,7 @@ void revisit_orcs(Expedition &trip)
     const auto before = party->checkpoint();
     town.explore(por::ExplorationCommand::look);
     settle(town, party);
-    check(town.script_variable(0x4ACA) == 255 && orc_rewards(*party) == 2 &&
+    check(town.script_variable(por::ecl_slums_orc_victory) == 255 && orc_rewards(*party) == 2 &&
           party->state().claimed_rewards == before.claimed_rewards,
           "The completed event does not fight or reward again");
     for (std::size_t n = 0; n < before.roster.size(); ++n)
@@ -1010,7 +1012,8 @@ PartyState enter_ohlo_room(Expedition &trip, std::uint16_t until_commission)
     auto &[party, town] = trip;
     walk_to(town, party, 14, 10, quest_answer, true);
     auto before = party->checkpoint();
-    for (unsigned tries = 0; town.script_variable(0x4A04) != until_commission; ++tries)
+    for (unsigned tries = 0; town.script_variable(por::EclAddress{0x4A04}) != until_commission;
+            ++tries)
     {
         check(tries < 40, "The party forces Ohlo's door");
         before = party->checkpoint();
@@ -1044,7 +1047,7 @@ void accept_commission(Expedition &trip)
     check(town.snapshot().area_id == 20, "The west gate leads into the Slums");
 
     const auto accepting = enter_ohlo_room(trip, 250);
-    check(town.script_variable(0x4A81) == 0 &&
+    check(town.script_variable(por::EclAddress{0x4A81}) == 0 &&
           purses(*party) == purses(accepting) &&
           party->state().claimed_rewards == accepting.claimed_rewards,
           "Accepting the commission sets its flag and pays nothing");
@@ -1069,7 +1072,7 @@ void fetch_potion(Expedition &trip, const std::string &assets)
     }),
     "A save during the booth's dialogue is refused");
     settle(town, party, quest_answer, "ohlo");
-    check(town.script_variable(0x4A81) == 250 &&
+    check(town.script_variable(por::EclAddress{0x4A81}) == 250 &&
           town.snapshot().dialogue.find("RETURNS WITH A PACKAGE") != std::string::npos,
           "Speaking Ohlo's name at the booth obtains the potion");
     check(speaking_npc_portrait(town.snapshot()) == "NPCs/ohlos-potion-keeper.png",
@@ -1115,7 +1118,7 @@ void hand_in_potion(Expedition &trip)
 {
     auto &[party, town] = trip;
     const auto before = enter_ohlo_room(trip, 255);
-    check(town.script_variable(0x4A81) == 255 && ohlo_rewards(*party) == 1,
+    check(town.script_variable(por::EclAddress{0x4A81}) == 255 && ohlo_rewards(*party) == 1,
           "Handing in the potion completes the quest and claims the reward once");
     check_ohlo_reward(before, party->checkpoint());
     walk_to(town, party, 15, 4);
@@ -1151,7 +1154,7 @@ void revisit_ohlo(Expedition &trip)
     step(town, party, 1);
     visit(14, 12, 1);
     // 0x4A04 is area-local (cleared on entering the Slums); 0x4A81 records completion.
-    check(town.snapshot().pose.x == 15 && town.script_variable(0x4A81) == 255 &&
+    check(town.snapshot().pose.x == 15 && town.script_variable(por::EclAddress{0x4A81}) == 255 &&
           ohlo_rewards(*party) == 1,
           "Revisiting Ohlo and the booth keeps the quest complete without a second reward");
 }
@@ -1173,7 +1176,8 @@ void slums_camp_ambush(Expedition &trip)
         step(town, party, 3);
     }
     walk_to(town, party, 14, 4);
-    check(town.script_variable(0x6E82) == 0 && town.script_variable(0x4ABB) < 254,
+    check(town.script_variable(por::EclAddress{0x6E82}) == 0 &&
+          town.script_variable(por::EclAddress{0x4ABB}) < 254,
           "The party stands on an uncleared Slums street without a special event");
     bool attacked = false;
     for (unsigned tries = 0; tries < 60; ++tries)
@@ -1189,7 +1193,8 @@ void slums_camp_ambush(Expedition &trip)
             else
                 check(town.choose(s.continue_ticket, stand_and_fight(s)), "Answer accepted");
         }
-        check(town.script_variable(0x6DD2) == 24 && town.script_variable(0x6DD3) == 24,
+        check(town.script_variable(por::ecl_rest_check_interval) == 24 &&
+              town.script_variable(por::ecl_rest_interruption_chance) == 24,
               "The original pre-camp script sets the street's 24/24 profile");
         if (town.snapshot().phase == por::TourPhase::combat)
         {
@@ -1281,17 +1286,18 @@ void resume_quest(std::string_view checkpoint, const std::filesystem::path &save
     const auto assets = campaign_asset_identity(directory);
     auto trip = load_expedition(save, directory);
     const auto &town = trip.town;
-    check(town.snapshot().area_id == 20 && town.script_variable(0x4A04) == 250 &&
+    check(town.snapshot().area_id == 20 && town.script_variable(por::EclAddress{0x4A04}) == 250 &&
           ohlo_rewards(*trip.party) == 0,
           "The Slums save keeps the accepted commission and no reward");
     if (checkpoint == "accepted")
     {
-        check(town.script_variable(0x4A81) == 0, "The potion is not yet fetched");
+        check(town.script_variable(por::EclAddress{0x4A81}) == 0, "The potion is not yet fetched");
         fetch_potion(trip, assets);
         write_campaign_file(resume_result(save), encode_campaign(*trip.party, &trip.town, assets));
         return;
     }
-    check(town.script_variable(0x4A81) == 250, "The fetched potion is kept for the hand-in");
+    check(town.script_variable(por::EclAddress{0x4A81}) == 250,
+          "The fetched potion is kept for the hand-in");
     return_to_ohlo(trip);
     write_campaign_file(resume_result(save), encode_campaign(*trip.party, &trip.town, assets));
     hand_in_potion(trip);
@@ -1304,7 +1310,8 @@ void verify_hand_in(const std::filesystem::path &at_door, const std::filesystem:
 {
     const auto before = load_expedition(at_door, directory);
     const auto after = load_expedition(handed_in, directory);
-    check(after.town.snapshot().area_id == 20 && after.town.script_variable(0x4A81) == 255 &&
+    check(after.town.snapshot().area_id == 20 &&
+          after.town.script_variable(por::EclAddress{0x4A81}) == 255 &&
           ohlo_rewards(*after.party) == 1,
           "The game's save holds the completed quest and one reward");
     check_ohlo_reward(before.party->checkpoint(), after.party->checkpoint());
@@ -1455,7 +1462,8 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     const auto lead = party->state().slots[0];
     const auto experience = party->member(lead).experience;
     walk_to(town, party, 10, 3, catacomb_answer("FIGHT"));
-    check(town.script_variable(0x4A24) == 255 && party->member(lead).experience > experience,
+    check(town.script_variable(por::EclAddress{0x4A24}) == 255 &&
+          party->member(lead).experience > experience,
           "The party defeats Norris the Gray's band and earns his XP");
     const auto coins = party_coins(*party);
     walk_to(town, party, 13, 1, catacomb_answer("FIGHT"), false, true);
@@ -1669,7 +1677,7 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
     {
         if (s.choices[0] != "HAUGHTY")
             return 3; // Advance until Parley, then Abusive.
-        reaction_score = talkers.town.script_variable(0x6DCF);
+        reaction_score = talkers.town.script_variable(por::EclAddress{0x6DCF});
         return 4;
     });
     check(menus.front().choices == std::vector<std::string> {"Fight", "Wait", "Flee", "Advance"},
@@ -1929,7 +1937,8 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     const auto result = combat.combat().snapshot();
     check(result.outcome == rules::Outcome::fled, "The party flees the fight");
     check(town.resolve_combat(result), "Exploration accepts the flight");
-    check(town.snapshot().phase != por::TourPhase::faulted && town.script_variable(0x6DC7) == 128,
+    check(town.snapshot().phase != por::TourPhase::faulted &&
+          town.script_variable(por::ecl_combat_result) == 128,
           "The original script hears that the party fled");
     bool someone_got_away = false;
     for (const auto &unit : result.combatants)

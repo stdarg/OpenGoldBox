@@ -215,7 +215,7 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--demo")
         {
             EclMachine vm(demo());
-            vm.bind_variable(0x9700, 0);
+            vm.bind_variable(EclAddress{0x9700}, 0);
             (void)vm.start(0);
             return run(vm);
         }
@@ -259,7 +259,9 @@ int main(int argc, char **argv)
             const auto equal = binding.find('=');
             if (equal == std::string_view::npos)
                 throw EclError("Expected ADDRESS=VALUE");
-            vm.bind_variable(static_cast<std::uint16_t>(number(binding.substr(0, equal), 65535)),
+            const EclAddress address(
+                static_cast<std::uint16_t>(number(binding.substr(0, equal), 65535)));
+            vm.bind_variable(address,
                              static_cast<std::uint16_t>(number(binding.substr(equal + 1), 65535)));
         }
         (void)vm.start(number(argv[5], 4));

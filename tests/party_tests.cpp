@@ -2010,7 +2010,8 @@ void rejected_combat_handoff()
               party->state().claimed_rewards == before.claimed_rewards,
               "Rollback restores party HP and resources without rewards");
         check(town.snapshot().area_id == 0 &&
-              town.script_variable(0x6C19) == before.roster[0].vitals.hit_points,
+              town.script_variable(por::ecl_character_hit_points) ==
+              before.roster[0].vitals.hit_points,
               "Rollback restores the map and original script state");
         check(town.snapshot().seen == known_before,
               "Failed district event restores exploration knowledge atomically");
@@ -2129,9 +2130,11 @@ void recovery_hosts()
     check(allowed.can_leave() && party->time_hours() == 8 &&
           party->member(pc).vitals.hit_points == party->member(pc).character.sheet().hit_points,
           "Allowed ECL camp recovers party");
-    check(allowed.script_variable(0x6c19) == party->member(pc).vitals.hit_points,
+    check(allowed.script_variable(por::ecl_character_hit_points) ==
+          party->member(pc).vitals.hit_points,
           "Camp synchronizes script HP");
-    check(allowed.script_variable(0x49c9) == 20, "Camp updates original hour register");
+    check(allowed.script_variable(por::ecl_clock_hour) == 20,
+          "Camp updates original hour register");
     allowed.explore(por::ExplorationCommand::look);
     settle(allowed);
     check(party->member(pc).vitals.hit_points == party->member(pc).character.sheet().hit_points,
@@ -2164,10 +2167,10 @@ void recovery_hosts()
     settle(interrupted);
     interrupted.explore(por::ExplorationCommand::camp);
     settle(interrupted);
-    check(interrupted.can_leave() && interrupted.script_variable(0x9810) == 1 &&
+    check(interrupted.can_leave() && interrupted.script_variable(por::EclAddress{0x9810}) == 1 &&
           party->state().time_minutes == 5 && party->member(pc).vitals.hit_points == 1,
           "Interruption entry runs without granting rest benefits");
-    check(interrupted.script_variable(0x49c7) == 5,
+    check(interrupted.script_variable(por::ecl_clock_minute_ones) == 5,
           "Interruption advances original minute register");
     party->restore(state);
     auto inn_program = program({56, 0, 9, 0});
@@ -2176,7 +2179,8 @@ void recovery_hosts()
     settle(inn);
     inn.explore(por::ExplorationCommand::look);
     settle(inn);
-    check(inn.can_leave() && party->time_hours() == 8 && inn.script_variable(0x49c9) == 20,
+    check(inn.can_leave() && party->time_hours() == 8 &&
+          inn.script_variable(por::ecl_clock_hour) == 20,
           "PROGRAM 9 replies with restored HP and advanced clock");
     party->restore(state);
     auto temple_program = program({9, 0, 1, 1, 0xe2, 0x6d, 36, 9, 0, 1, 1, 0x11, 0x98, 0});
@@ -2195,8 +2199,9 @@ void recovery_hosts()
     check(temple.choose(ticket, 0) && !temple.choose(ticket, 0),
           "Temple payment accepted exactly once");
     settle(temple);
-    check(temple.can_leave() && temple.script_variable(0x6de2) == 0 &&
-          temple.script_variable(0x9811) == 1 && party->member(pc).wealth[3] == 0 &&
+    check(temple.can_leave() && temple.script_variable(por::ecl_temple_service) == 0 &&
+          temple.script_variable(por::EclAddress{0x9811}) == 1 &&
+          party->member(pc).wealth[3] == 0 &&
           party->member(pc).vitals.hit_points > 1,
           "Temple resumes ECL with healed HP and charged purse");
     // An unsupported continuation refunds the complete service, including dice.
@@ -2285,7 +2290,7 @@ void shop_buyer_switch()
           "The purchase debits only the new buyer");
     town.leave_shop(town.snapshot().continue_ticket);
     settle(town);
-    check(town.script_variable(0x6BC1) == 90,
+    check(town.script_variable(por::EclAddress{0x6BC1}) == 90,
           "Leaving the shop hands the final buyer to the original script");
 }
 
@@ -2322,17 +2327,18 @@ void script_handoff()
     check(por::party_has_item(*party, 59), "Script item query sees purchase");
     town.leave_shop(town.snapshot().continue_ticket);
     settle(town);
-    check(town.script_variable(0x6BC1) == 190 && town.can_leave(),
+    check(town.script_variable(por::EclAddress{0x6BC1}) == 190 && town.can_leave(),
           "Shop return synchronizes selected character");
     // PARTY STRENGTH ran with the level-one fighter at full HP and the cleric at 3 HP:
     // (HP + 5 for THAC0 20) / 10 and (4 + 3 + 5) / 10.
     const auto first_hp = party->member(first).character.sheet().hit_points;
-    check(town.script_variable(0x9810) == (first_hp + 5) / 10 + 1 &&
-          town.script_variable(0x9811) == 12 &&
-          town.script_variable(0x9812) == 12 && town.script_variable(0x9813) == 12 &&
-          town.script_variable(0x9814) == 12,
+    check(town.script_variable(por::EclAddress{0x9810}) == (first_hp + 5) / 10 + 1 &&
+          town.script_variable(por::EclAddress{0x9811}) == 12 &&
+          town.script_variable(por::EclAddress{0x9812}) == 12 &&
+          town.script_variable(por::EclAddress{0x9813}) == 12 &&
+          town.script_variable(por::EclAddress{0x9814}) == 12,
           "ECL movement queries share encounter-menu conversion units; the fourth is the slowest");
-    check(town.script_variable(0x9815) == 1,
+    check(town.script_variable(por::EclAddress{0x9815}) == 1,
           "FIND ITEM drives actual bytecode branch after purchase");
     check(party->state().slots[6] && party->member(party->state().slots[6]).morale == 70,
           "ADD NPC uses explicit conversion and requested morale");

@@ -84,25 +84,25 @@ void RolfTourSession::configure_town()
 {
     // Campaign flags, area-local flags, host registers and scratch strings have
     // explicit lifetimes. These are logical VM cells, never native addresses.
-    for (unsigned a = 0x49C3; a <= 0x4AFF; ++a)
-        machine_.bind_variable(a, 0);
-    for (unsigned a = 0x6B00; a <= 0x6C1C; ++a)
-        machine_.bind_variable(a, 0);
-    for (unsigned a = 0x6DA8; a <= 0x6EFF; ++a)
-        machine_.bind_variable(a, 0);
-    for (unsigned a = 0x9800; a <= 0x98FF; ++a)
-        machine_.bind_variable(a, 0);
-    machine_.bind_variable(0xB8, 0);
-    machine_.bind_variable(0xB9, 0);
-    machine_.bind_variable(0x49C9, 12);
-    machine_.bind_variable(0x49CA, 1);
-    machine_.bind_variable(0x6E12, 3);
-    machine_.bind_variable(0x6E3E, 1);
+    for (std::uint16_t a = 0x49C3; a <= 0x4AFF; ++a)
+        machine_.bind_variable(EclAddress{a}, 0);
+    for (std::uint16_t a = 0x6B00; a <= 0x6C1C; ++a)
+        machine_.bind_variable(EclAddress{a}, 0);
+    for (std::uint16_t a = 0x6DA8; a <= 0x6EFF; ++a)
+        machine_.bind_variable(EclAddress{a}, 0);
+    for (std::uint16_t a = 0x9800; a <= 0x98FF; ++a)
+        machine_.bind_variable(EclAddress{a}, 0);
+    machine_.bind_variable(EclAddress{0xB8}, 0);
+    machine_.bind_variable(EclAddress{0xB9}, 0);
+    machine_.bind_variable(ecl_clock_hour, 12);
+    machine_.bind_variable(ecl_clock_day, 1);
+    machine_.bind_variable(ecl_script_bank, 3);
+    machine_.bind_variable(EclAddress{0x6E3E}, 1);
     // Kuto's Well's setup writes these two engine cells (65 or 8, and a table
     // value) when its plaza or catacombs load. Their meaning is unverified;
     // they are stored for the script and have no effect yet.
-    machine_.bind_variable(0xC059, 0);
-    machine_.bind_variable(0xC05F, 0);
+    machine_.bind_variable(EclAddress{0xC059}, 0);
+    machine_.bind_variable(EclAddress{0xC05F}, 0);
     if (campaign_)
         selected_character_ = campaign_->state().selected_slot;
     for (const auto &w : character_reply(selected_character_).writes)
@@ -135,12 +135,12 @@ EclHostReply RolfTourSession::clock_reply() const
     const auto minutes = campaign_->state().time_minutes;
     const auto minute_of_day = (minutes % 1440 + 720) % 1440;
     const auto days = minutes / 1440 + (minutes % 1440 + 720) / 1440;
-    reply.writes = {{0x49C7, static_cast<std::uint16_t>(minute_of_day % 10)},
-        {0x49C8, static_cast<std::uint16_t>((minute_of_day % 60) / 10)},
-        {0x49C9, static_cast<std::uint16_t>(minute_of_day / 60)},
-        {0x49CA, static_cast<std::uint16_t>(days % 30 + 1)},
-        {0x49CB, static_cast<std::uint16_t>((days / 30) % 12 + 1)},
-        {0x49CC, static_cast<std::uint16_t>((days / 360) % 256)}
+    reply.writes = {{ecl_clock_minute_ones, static_cast<std::uint16_t>(minute_of_day % 10)},
+        {ecl_clock_minute_tens, static_cast<std::uint16_t>((minute_of_day % 60) / 10)},
+        {ecl_clock_hour, static_cast<std::uint16_t>(minute_of_day / 60)},
+        {ecl_clock_day, static_cast<std::uint16_t>(days % 30 + 1)},
+        {ecl_clock_month, static_cast<std::uint16_t>((days / 30) % 12 + 1)},
+        {ecl_clock_year, static_cast<std::uint16_t>((days / 360) % 256)}
     };
     return reply;
 }
@@ -159,12 +159,14 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
         fields[0x100] = 1;
         fields[0x119] = party_.hit_points;
         for (unsigned n = 0; n < ecl_coin_addresses.size(); ++n)
-            fields[ecl_coin_addresses[n] - 0x6B00] = party_.wealth[n];
+            fields[ecl_coin_addresses[n].location - ecl_character_record.location] =
+                party_.wealth[n];
     }
     for (unsigned n = 0; n < fields.size(); ++n)
-        reply.writes.push_back({static_cast<std::uint16_t>(0x6B00 + n), fields[n]});
-    reply.writes.push_back({0x6DB1, static_cast<std::uint16_t>(slot.index)});
-    reply.writes.push_back({0x6DB4, static_cast<std::uint16_t>(slot.index)});
+        reply.writes.push_back(
+        {EclAddress(static_cast<std::uint16_t>(ecl_character_record.location + n)), fields[n]});
+    reply.writes.push_back({EclAddress{0x6DB1}, static_cast<std::uint16_t>(slot.index)});
+    reply.writes.push_back({EclAddress{0x6DB4}, static_cast<std::uint16_t>(slot.index)});
     return reply;
 }
 
@@ -185,17 +187,17 @@ void RolfTourSession::read_character()
         return;
     for (unsigned n = 0; n < ecl_coin_addresses.size(); ++n)
         party_.wealth[n] = machine_.variable(ecl_coin_addresses[n]);
-    party_.hit_points = machine_.variable(0x6C19);
+    party_.hit_points = machine_.variable(ecl_character_hit_points);
 }
 
 void RolfTourSession::bind_pose(PartyPose pose)
 {
-    machine_.bind_variable(0xC04B, pose.x);
-    machine_.bind_variable(0xC04C, pose.y);
-    machine_.bind_variable(0xC04D, static_cast<std::uint16_t>(index(pose.facing)));
+    machine_.bind_variable(ecl_party_x, pose.x);
+    machine_.bind_variable(ecl_party_y, pose.y);
+    machine_.bind_variable(ecl_party_facing, static_cast<std::uint16_t>(index(pose.facing)));
     const auto &cell = map_.at(pose.x, pose.y);
-    machine_.bind_variable(0xC04E, cell.walls[index(pose.facing)]);
-    machine_.bind_variable(0xC04F, cell.event_raw);
+    machine_.bind_variable(ecl_wall_ahead, cell.walls[index(pose.facing)]);
+    machine_.bind_variable(ecl_cell_event, cell.event_raw);
     publish_pose();
 }
 
@@ -210,7 +212,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         pose.facing = reversed(pose.facing);
     else if (command == ExplorationCommand::forward)
     {
-        if (machine_.variable(0x6DC9) == 255)
+        if (machine_.variable(EclAddress{0x6DC9}) == 255)
             return false;
         const int x = static_cast<int>(pose.x) + step_x(pose.facing),
                   y = static_cast<int>(pose.y) + step_y(pose.facing);
@@ -225,8 +227,8 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         };
         if (blocked(a.walls[index(side)], a.doors[index(side)]) || blocked(b.walls[index(other)], b.doors[index(other)]))
             return false;
-        machine_.bind_variable(0x49F0, pose.x);
-        machine_.bind_variable(0x49F1, pose.y);
+        machine_.bind_variable(EclAddress{0x49F0}, pose.x);
+        machine_.bind_variable(EclAddress{0x49F1}, pose.y);
         pose.x = wrapped_x;
         pose.y = wrapped_y;
         pick_tried_ = false;
@@ -267,7 +269,7 @@ void RolfTourSession::begin_event(unsigned slot)
                                         .snapshot = snapshot_,
                                         .selected_character = selected_character_};
     event_stage_ = slot == 0 ? 1 : slot == 2 ? 4 : 2;
-    machine_.bind_variable(0x6DC9, 0);
+    machine_.bind_variable(EclAddress{0x6DC9}, 0);
     encounter_outcome_.clear();
     meeting_pose_.reset();
     robbed_ = false;
@@ -282,15 +284,15 @@ void RolfTourSession::begin_event(unsigned slot)
         off_map = (x < 0 || y < 0 || x >= 16 || y >= 16) && cell.doors[index(p.facing)] <= 1 &&
                   (!cell.walls[index(p.facing)] || cell.doors[index(p.facing)]);
     }
-    machine_.bind_variable(0x6DD5, off_map ? 1 : 0);
-    machine_.bind_variable(0x6DCA, slot == 1 ? 2 : 0);
+    machine_.bind_variable(EclAddress{0x6DD5}, off_map ? 1 : 0);
+    machine_.bind_variable(EclAddress{0x6DCA}, slot == 1 ? 2 : 0);
     // The spokesman's reaction score (0x6DCF), which the scripts add to reaction
     // rolls. The original's formula is unknown; twice Charisma, as New Phlan's
     // own script doubles it, was chosen (LEADER-1).
     if (campaign_)
         if (const auto speaker = campaign_->spokesman())
             machine_.bind_variable(
-                0x6DCF,
+                EclAddress{0x6DCF},
                 static_cast<std::uint16_t>(2 * campaign_->member(speaker).character.sheet().scores[5]));
     if (!machine_.start(slot))
     {
@@ -440,7 +442,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                     experience += area_resources().conversions.at(record).award_xp;
                 campaign_->award_experience(experience, reward);
                 pending_loot_.push_back(encounter_loot(current_area_, paying, reward + ":loot",
-                                                       machine_.variable(0x6DE3) != 1));
+                                                       machine_.variable(EclAddress{0x6DE3}) != 1));
                 claim_loot();
             }
             // Treasure the script added to the fight is won with it.
@@ -449,13 +451,14 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         }
         auto reply = character_reply(selected_character_);
         // The original's combat results: 0 won, 128 the party fled.
-        for (auto write : std::array<EclMemoryWrite, 7> {{{0x6DC7, static_cast<std::uint16_t>(fled ? 128 : 0)},
-            {0x6DC8, static_cast<std::uint16_t>(defeated)},
-                {0x6DCB, 0},
-                {0x6DE3, 0},
-                {0x6E70, 0},
-                {0x6E71, 0},
-                {0x6E72, 0}
+        for (auto write : std::array<EclMemoryWrite, 7> {{
+                {ecl_combat_result, static_cast<std::uint16_t>(fled ? 128 : 0)},
+            {ecl_monsters_defeated, static_cast<std::uint16_t>(defeated)},
+                {ecl_encounter_surprise, 0},
+                {EclAddress{0x6DE3}, 0},
+                {EclAddress{0x6E70}, 0},
+                {EclAddress{0x6E71}, 0},
+                {EclAddress{0x6E72}, 0}
             }
         })
         reply.writes.push_back(write);
@@ -551,7 +554,8 @@ void RolfTourSession::finish_event()
     {
         if (!campaign_)
             throw EclError("Rest requires campaign rules");
-        const auto interval = machine_.variable(0x6DD2), chance = machine_.variable(0x6DD3);
+        const auto interval = machine_.variable(ecl_rest_check_interval),
+                   chance = machine_.variable(ecl_rest_interruption_chance);
         if (chance == 255)
             snapshot_.dialogue += "\nRest is not allowed here.";
         else
@@ -638,7 +642,7 @@ void RolfTourSession::search_destination()
 
 bool RolfTourSession::locked_door_ahead() const
 {
-    if (!campaign_ || !pending_movement_ || machine_.variable(0x6DC9) == 255)
+    if (!campaign_ || !pending_movement_ || machine_.variable(EclAddress{0x6DC9}) == 255)
         return false;
     const auto edge = edge_ahead(snapshot_.pose);
     const auto &from = map_.at(edge.x, edge.y);
@@ -919,7 +923,7 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
         return true;
     }
     EclHostReply reply;
-    reply.writes = {{args[3].value, static_cast<std::uint16_t>(result)}};
+    reply.writes = {{EclAddress{args[3].value}, static_cast<std::uint16_t>(result)}};
     if (!machine_.resume_host(request.id, reply))
         return false;
     // The script ends the meeting quietly (0); the event's end says so.
@@ -957,7 +961,7 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
             if (!cancel)
                 campaign_->temple_heal(temple_targets_.at(choice));
             auto reply = character_reply(selected_character_);
-            reply.writes.push_back({0x6DE2, 0});
+            reply.writes.push_back({ecl_temple_service, 0});
             if (!machine_.resume_host(temple_request_, reply))
                 throw EclError("Temple reply rejected");
             temple_request_ = 0;
@@ -1097,7 +1101,7 @@ bool RolfTourSession::leave_shop(std::uint64_t ticket)
         return false;
     const auto selected = campaign_ ? campaign_->state().selected_slot : PartySlot{};
     auto reply = character_reply(selected);
-    reply.writes.push_back({0x6E6C, 0});
+    reply.writes.push_back({ecl_shop_service, 0});
     if (!machine_.resume_host(shop_request_, reply))
         return false;
     selected_character_ = selected;
@@ -1216,7 +1220,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         ++snapshot_.picture_revision;
         if (arg(0) == 255)
             break;
-        const auto head_id = machine_.variable(0x6DE1);
+        const auto head_id = machine_.variable(EclAddress{0x6DE1});
         if (head_id == 255)
         {
             const auto found = area_resources().pictures.find(arg(0));
@@ -1291,9 +1295,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 34:
     {
         // Supported converted party profiles have no original surprise modifiers.
-        std::map<std::uint16_t, std::uint16_t> outputs;
-        outputs[arg(0)] = 0;
-        outputs[arg(1)] = 0;
+        std::map<EclAddress, std::uint16_t> outputs;
+        outputs[EclAddress{arg(0)}] = 0;
+        outputs[EclAddress{arg(1)}] = 0;
         for (auto [address, value] : outputs)
             reply.writes.push_back({address, value});
         break;
@@ -1301,15 +1305,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 35:
     {
         const int party_threshold =
-            2 + static_cast<int>(arg(3)) - static_cast<int>(machine_.variable(arg(0)));
+            2 + static_cast<int>(arg(3)) - static_cast<int>(machine_.variable(EclAddress{arg(0)}));
         const int monster_threshold =
-            2 + static_cast<int>(machine_.variable(arg(1))) - static_cast<int>(arg(2));
+            2 + static_cast<int>(machine_.variable(EclAddress{arg(1)})) - static_cast<int>(arg(2));
         const bool party =
             static_cast<int>(machine_.host_random(request.id, 6)) + 1 <= party_threshold;
         const bool monsters =
             static_cast<int>(machine_.host_random(request.id, 6)) + 1 <= monster_threshold;
         reply.writes.push_back(
-        {0x6DCB, static_cast<std::uint16_t>((party ? 1 : 0) | (monsters ? 2 : 0))});
+        {ecl_encounter_surprise, static_cast<std::uint16_t>((party ? 1 : 0) | (monsters ? 2 : 0))});
         break;
     }
     case 41:
@@ -1322,17 +1326,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 29:
         read_character();
         reply = character_reply(selected_character_);
-        reply.writes.push_back({static_cast<std::uint16_t>(arg(0)),
+        reply.writes.push_back({EclAddress{arg(0)},
                                 static_cast<std::uint16_t>(party_strength(*campaign_))});
         break;
     case 30:
     {
         read_character();
         reply = character_reply(selected_character_);
-        const auto values = check_party(*campaign_, arg(0), arg(1));
-        std::map<std::uint16_t, std::uint16_t> outputs;
+        const auto values = check_party(*campaign_, EclAddress{arg(0)}, arg(1));
+        std::map<EclAddress, std::uint16_t> outputs;
         for (unsigned n = 0; n < 4; ++n)
-            outputs[static_cast<std::uint16_t>(arg(n + 2))] = values[n];
+            outputs[EclAddress{arg(n + 2)}] = values[n];
         for (const auto &[address, value] : outputs)
             reply.writes.push_back({address, value});
         break;
@@ -1376,10 +1380,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             encounter_ = opengold::CampaignEncounter
             {
                 dungeon_battlefield(map_, p.x, p.y), staged_enemies_, staged_art_,
-                area_resources().terrain_art,        p.facing,        machine_.variable(0x6DCB)};
+                area_resources().terrain_art,        p.facing,
+                machine_.variable(ecl_encounter_surprise)};
             encounter_->party_resting = event_stage_ == 5;
             // The script sets the encounter's morale before COMBAT.
-            encounter_->morale = std::min<unsigned>(machine_.variable(0x6DC6), 100);
+            encounter_->morale = std::min<unsigned>(machine_.variable(ecl_encounter_morale), 100);
             announce_camp_attack();
             combat_request_ = request.id;
             // The original shows the approached monster's close-up until a key press.
@@ -1389,7 +1394,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             ++snapshot_.revision;
             return true;
         }
-        if (machine_.variable(0x6DE2) == 1)
+        if (machine_.variable(ecl_temple_service) == 1)
         {
             if (!campaign_)
                 throw EclError("Temple service requires a campaign party");
@@ -1417,7 +1422,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             ++snapshot_.revision;
             return true;
         }
-        if (machine_.variable(0x6E6C) == 1)
+        if (machine_.variable(ecl_shop_service) == 1)
         {
             // The leader deals with shopkeepers unless the event already asked who;
             // another buyer can still be chosen.
@@ -1445,7 +1450,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             reply = character_reply(selected_character_);
             break;
         }
-        throw EclError(machine_.variable(0x6DE2) == 1 ? "Temple healing service"
+        throw EclError(machine_.variable(ecl_temple_service) == 1 ? "Temple healing service"
                        : "This town combat encounter");
     case 32:
     {
@@ -1458,8 +1463,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         for (const auto &[id, district] : town_->districts)
             if (district->script == arg(0))
                 bank = district->bank;
-        reply.writes = {{0x49F2, static_cast<std::uint16_t>(current_script_)},
-            {0x6E12, static_cast<std::uint16_t>(bank)}
+        reply.writes = {{EclAddress{0x49F2}, static_cast<std::uint16_t>(current_script_)},
+            {ecl_script_bank, static_cast<std::uint16_t>(bank)}
         };
         current_script_ = arg(0);
         snapshot_.script_id = current_script_;
@@ -1482,11 +1487,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             change_area(0);
         else
             throw EclError("Resources outside the supported areas (map " + std::to_string(arg(0)) + ")");
-        const auto &cell = map_.at(machine_.variable(0xC04B), machine_.variable(0xC04C));
-        const auto facing = machine_.variable(0xC04D);
+        const auto &cell = map_.at(machine_.variable(ecl_party_x), machine_.variable(ecl_party_y));
+        const auto facing = machine_.variable(ecl_party_facing);
         if (facing >= 4)
             throw EclError("Invalid district entry facing");
-        reply.writes = {{0xC04E, cell.walls[facing]}, {0xC04F, cell.event_raw}};
+        reply.writes = {{ecl_wall_ahead, cell.walls[facing]}, {ecl_cell_event, cell.event_raw}};
         break;
     }
     case 55:
@@ -1550,8 +1555,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             throw EclError("Training/camp service " + std::to_string(arg(0)));
         // The original inn invokes its pre-camp subroutine before PROGRAM 9.
         read_character();
-        if (machine_.variable(0x6DD3) == 255 ||
-                (machine_.variable(0x6DD2) && machine_.variable(0x6DD3)))
+        if (machine_.variable(ecl_rest_interruption_chance) == 255 ||
+                (machine_.variable(ecl_rest_check_interval) &&
+                 machine_.variable(ecl_rest_interruption_chance)))
             throw EclError("Inn rest is not safe in this script context");
         if (!campaign_->rest())
             throw EclError("Party is not eligible for a long rest");

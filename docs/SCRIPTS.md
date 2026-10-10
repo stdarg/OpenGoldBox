@@ -64,8 +64,8 @@ void prepare_script(const std::filesystem::path& directory)
     const auto program = catalog.find({"ECL2.DAX", 20});
     if (!program) return;
     EclMachine machine(program);
-    machine.bind_variable(0xC04F, 1); // Explicit research input: event byte.
-    machine.seed_random(1234);      // Reproducible OpenGoldBox sequence.
+    machine.bind_variable(ecl_cell_event, 1); // Explicit research input: event byte.
+    machine.seed_random(1234);                // Reproducible OpenGoldBox sequence.
     // Bind all other required variables and provide real engine services.
     if (!machine.start(1)) return;
     const auto result = machine.run(1000);
@@ -106,7 +106,9 @@ terminator; a reference in a numeric destination supplies its encoded address.
 The Slums encounter descriptions exercise the string-to-string case.
 
 `bind_variable()` and `bind_string()` establish research state while idle or
-completed. Program bytes have a private writable copy per machine, including
+completed. Addresses are `EclAddress` values, never bare numbers, so an address
+and the value stored there cannot be swapped; `ecl_address.h` names the cells the
+engine itself uses, such as `ecl_cell_event`. Program bytes have a private writable copy per machine, including
 embedded tables; fetches observe changes and affected instruction spans are
 invalidated. The shared catalog remains unchanged. Script space is bounded to
 `0x9900..0xB6FF` and the loaded image's actual length. Its cells and the five map

@@ -1142,7 +1142,7 @@ void CharacterCreationView::expedition_check()
     if (!town->check_expedition_step())
         return;
     const auto *session = town->saved_session();
-    if (!session || session->script_variable(0x4ACA) != 255)
+    if (!session || session->script_variable(por::ecl_slums_orc_victory) != 255)
         throw std::runtime_error("Four-orc victory flag missing");
     const auto &rewards = campaign_->state().claimed_rewards;
     if (std::count(rewards.begin(), rewards.end(), "por:ECL2:20:search1:orcs:v1") != 1)

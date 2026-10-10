@@ -72,7 +72,7 @@ class CombatDemo
         return vm_ && vm_->state() == por::EclState::completed;
     }
 
-    [[nodiscard]] unsigned script_variable(std::uint16_t address) const;
+    [[nodiscard]] unsigned script_variable(por::EclAddress address) const;
 
     [[nodiscard]] const auto &art() const noexcept
     {

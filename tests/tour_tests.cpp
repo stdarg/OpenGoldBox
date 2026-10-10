@@ -322,7 +322,8 @@ void shopping_tests()
     check(!town.buy(ticket, 0) && town.party().wealth[3] == 9839, "Full inventory does not charge");
     check(town.leave_shop(ticket) && !town.leave_shop(ticket), "Shop reply completes once");
     step_to_prompt(town);
-    check(town.script_variable(0x6E6C) == 0 && town.script_variable(0x6BC1) == 9839,
+    check(town.script_variable(ecl_shop_service) == 0 &&
+          town.script_variable(EclAddress{0x6BC1}) == 9839,
           "Shop results synchronize script purse and mode");
     check(town.explore(ExplorationCommand::look), "Can revisit shop");
     step_to_prompt(town);
@@ -349,7 +350,7 @@ void shopping_tests()
     check(failure.snapshot().phase == TourPhase::awaiting_continue &&
           failure.script_diagnostics().size() == 1,
           "Unsupported service produces a recoverable event notice");
-    check(failure.party().wealth[3] == 9999 && failure.script_variable(0x6BC1) == 9999,
+    check(failure.party().wealth[3] == 9999 && failure.script_variable(EclAddress{0x6BC1}) == 9999,
           "Unsupported event rolls back script and party mutations");
     check(failure.continue_dialogue(failure.snapshot().continue_ticket) &&
           failure.snapshot().phase == TourPhase::completed,
@@ -570,7 +571,7 @@ void synthetic()
     check(!tour.explore(ExplorationCommand::forward), "Movement locked while scripts run");
     tour.advance(0);
     check(tour.snapshot().sprite_frame == 2, "Far sprite setup and delay");
-    check(tour.script_variable(0xC04F) == 7, "Redraw derives current map event");
+    check(tour.script_variable(ecl_cell_event) == 7, "Redraw derives current map event");
     tour.advance(0);
     check(tour.snapshot().sprite_frame == 2, "Delay is nonblocking and not reissued");
     step_to_prompt(tour);
@@ -593,7 +594,8 @@ void synthetic()
     check(tour.snapshot().pose == before_turn, "Two half turns restore facing");
     check(!tour.explore(ExplorationCommand::forward), "Wall blocks exploration");
     check(tour.explore(ExplorationCommand::turn_left), "Turn after completion");
-    check(tour.script_variable(0xC04D) == 0, "Exploration and VM share authoritative pose");
+    check(tour.script_variable(ecl_party_facing) == 0,
+          "Exploration and VM share authoritative pose");
     check(tour.explore(ExplorationCommand::forward), "Open edge permits a step");
     check(!tour.explore(ExplorationCommand::forward), "Door blocks inspection movement");
     tour.explore(ExplorationCommand::turn_right);
@@ -676,7 +678,7 @@ void installed(const char *directory)
     check(prompts == 8, "Welcome, six landmarks, farewell");
     check(tour.snapshot().redraws > 20 && tour.snapshot().footsteps > 20,
           "Tour extends across original table-driven route");
-    check(tour.script_variable(0x4AC5) == 1, "Original tour flag retained");
+    check(tour.script_variable(EclAddress{0x4AC5}) == 1, "Original tour flag retained");
     std::cout << "Installed tour complete: " << prompts << " prompts, " << tour.snapshot().redraws
               << " redraws.\n";
     installed_town(tour);

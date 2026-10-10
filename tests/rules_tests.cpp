@@ -1266,17 +1266,19 @@ void installed()
     while (demo.waiting())
         demo.continue_script();
     check(demo.script_complete(), "Original ECL resumes after real combat");
-    check(demo.script_variable(0x6DC7) == (outcome == Outcome::victory ? 0 : 128),
+    check(demo.script_variable(por::ecl_combat_result) == (outcome == Outcome::victory ? 0 : 128),
           "Actual outcome mapped to original ECL");
     if (outcome == Outcome::victory)
     {
-        check(demo.script_variable(0x6DC8) == 4, "Actual defeated count returned");
-        check(demo.script_variable(0x4ACA) == 255 && demo.script_variable(0x4ABB) == 1,
+        check(demo.script_variable(por::ecl_monsters_defeated) == 4,
+              "Actual defeated count returned");
+        check(demo.script_variable(por::ecl_slums_orc_victory) == 255 &&
+              demo.script_variable(por::EclAddress{0x4ABB}) == 1,
               "Victory updates original event state");
         demo.revisit();
         check(demo.script_complete() && !demo.waiting(),
               "Completed event does not replay the fight");
-        check(demo.script_variable(0x4ABB) == 1, "Revisit preserves fight count");
+        check(demo.script_variable(por::EclAddress{0x4ABB}) == 1, "Revisit preserves fight count");
     }
     std::cout << "Original Slums event completed with real rules combat: "
               << (outcome == Outcome::victory ? "victory" : "defeat") << ".\n";

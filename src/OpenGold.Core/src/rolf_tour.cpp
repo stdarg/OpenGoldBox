@@ -404,8 +404,8 @@ void RolfTourSession::reset_run()
                 0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
                 0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F
             })
-        machine_.bind_variable(address, 0);
-    machine_.bind_variable(0x49C9, 12); // Research fixture: midday.
+        machine_.bind_variable(EclAddress{address}, 0);
+    machine_.bind_variable(ecl_clock_hour, 12); // Research fixture: midday.
     for (const std::uint8_t opcode :
             {
                 12, 13, 14, 45, 49, 58
@@ -490,8 +490,8 @@ void RolfTourSession::roll_back_event()
 
 void RolfTourSession::publish_pose()
 {
-    const auto facing = map_direction(machine_.variable(0xC04D));
-    const PartyPose next{machine_.variable(0xC04B), machine_.variable(0xC04C),
+    const auto facing = map_direction(machine_.variable(ecl_party_facing));
+    const PartyPose next{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
                          facing.value_or(MapDirection::north)};
     if (next.x >= 16 || next.y >= 16 || !facing)
         throw EclError("Tour wrote an invalid party pose");
@@ -554,33 +554,33 @@ void RolfTourSession::handle_host(const EclRequest &request)
         const auto service = request.arguments[0].value;
         if (service == 0xC01E)
         {
-            const auto facing = map_direction(machine_.variable(0xC04D));
-            PartyPose pose{machine_.variable(0xC04B), machine_.variable(0xC04C),
+            const auto facing = map_direction(machine_.variable(ecl_party_facing));
+            PartyPose pose{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
                            facing.value_or(MapDirection::north)};
             if (pose.x >= 16 || pose.y >= 16 || !facing)
                 throw EclError("Invalid scripted movement pose");
             pose.x = (static_cast<int>(pose.x) + step_x(pose.facing) + 16) % 16;
             pose.y = (static_cast<int>(pose.y) + step_y(pose.facing) + 16) % 16;
             const auto &cell = map_.at(pose.x, pose.y);
-            reply.writes = {{0xC04B, static_cast<std::uint16_t>(pose.x)},
-                {0xC04C, static_cast<std::uint16_t>(pose.y)},
-                {0xC04E, cell.walls[index(pose.facing)]},
-                {0xC04F, cell.event_raw}
+            reply.writes = {{ecl_party_x, static_cast<std::uint16_t>(pose.x)},
+                {ecl_party_y, static_cast<std::uint16_t>(pose.y)},
+                {ecl_wall_ahead, cell.walls[index(pose.facing)]},
+                {ecl_cell_event, cell.event_raw}
             };
         }
         else if (service == 0x2C90 || service == 0xC018)
         {
-            const auto x = machine_.variable(0xC04B), y = machine_.variable(0xC04C),
-                       f = machine_.variable(0xC04D);
+            const auto x = machine_.variable(ecl_party_x), y = machine_.variable(ecl_party_y),
+                       f = machine_.variable(ecl_party_facing);
             if (x >= 16 || y >= 16 || f >= 4)
                 throw EclError("Invalid redraw pose");
             const auto &cell = map_.at(x, y);
-            reply.writes = {{0xC04E, cell.walls[f]}, {0xC04F, cell.event_raw}};
+            reply.writes = {{ecl_wall_ahead, cell.walls[f]}, {ecl_cell_event, cell.event_raw}};
             ++snapshot_.redraws;
         }
         else if (service == 0xBA03)
         {
-            if (machine_.variable(0x03DE) != 8)
+            if (machine_.variable(EclAddress{0x03DE}) != 8)
                 throw EclError("Unsupported tour sound selector");
             ++snapshot_.footsteps; // Presentation plays an original OpenGoldBox footstep cue.
         }
@@ -761,12 +761,12 @@ bool RolfTourSession::explore(ExplorationCommand command)
         pose.x = x;
         pose.y = y;
     }
-    machine_.bind_variable(0xC04B, pose.x);
-    machine_.bind_variable(0xC04C, pose.y);
-    machine_.bind_variable(0xC04D, static_cast<std::uint16_t>(index(pose.facing)));
+    machine_.bind_variable(ecl_party_x, pose.x);
+    machine_.bind_variable(ecl_party_y, pose.y);
+    machine_.bind_variable(ecl_party_facing, static_cast<std::uint16_t>(index(pose.facing)));
     const auto &cell = map_.at(pose.x, pose.y);
-    machine_.bind_variable(0xC04E, cell.walls[index(pose.facing)]);
-    machine_.bind_variable(0xC04F, cell.event_raw);
+    machine_.bind_variable(ecl_wall_ahead, cell.walls[index(pose.facing)]);
+    machine_.bind_variable(ecl_cell_event, cell.event_raw);
     publish_pose();
     return true;
 }

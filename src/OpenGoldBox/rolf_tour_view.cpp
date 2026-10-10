@@ -1346,7 +1346,7 @@ void RolfTourView::check_town()
         throw std::runtime_error("Town started before the full tour");
     if (shop_check_stage_ == 3 && s.phase == TourPhase::completed)
     {
-        if (inventory_size() != 1 || session_->script_variable(0x6BC1) != gold())
+        if (inventory_size() != 1 || session_->script_variable(EclAddress{0x6BC1}) != gold())
             throw std::runtime_error("Shop results did not persist after leaving");
         party_selected(0);
         auto *sheet =
@@ -1588,7 +1588,7 @@ bool RolfTourView::check_expedition_step()
         return false;
     if (s.area_id == 0)
     {
-        if (session_->script_variable(0x4ACA) == 255)
+        if (session_->script_variable(ecl_slums_orc_victory) == 255)
         {
             if (!slums_labels_checked_)
                 throw std::runtime_error("Slums district labels were never checked");
@@ -1602,7 +1602,7 @@ bool RolfTourView::check_expedition_step()
             forward();
         return false;
     }
-    if (session_->script_variable(0x4ACA) == 255)
+    if (session_->script_variable(ecl_slums_orc_victory) == 255)
     {
         if (s.pose.x != 15 || s.pose.y != 4)
             check_walk_to(15, 4);
@@ -1751,7 +1751,7 @@ void RolfTourView::check_recovery()
     {
         const auto gold_before = coins(recovery_before_->roster.at(0).wealth, Coin::gold);
         if (coins(member.wealth, Coin::gold) != gold_before - 100 ||
-                member.vitals.hit_points <= 1 || session_->script_variable(0x6de2) != 0)
+                member.vitals.hit_points <= 1 || session_->script_variable(ecl_temple_service) != 0)
             throw std::runtime_error("Original temple must charge 100 gp, heal and resume ECL");
         if (save_check_)
             save_check_("temple-payment");

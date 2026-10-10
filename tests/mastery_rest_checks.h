@@ -43,9 +43,10 @@ void script_reads_after_rest(CampaignParty &party, MemberId id)
     record.push_back(0); // An EXIT body; the machine only supplies variables here.
     por::EclMachine vm(std::make_shared<const por::EclProgram>(
                            por::EclProgram::decode(record, "inn-read")));
-    vm.bind_variable(0x6C19, static_cast<std::uint16_t>(party.member(id).vitals.hit_points));
+    vm.bind_variable(por::ecl_character_hit_points,
+                     static_cast<std::uint16_t>(party.member(id).vitals.hit_points));
     for (std::uint16_t coin = 0x6BBB; coin <= 0x6BC7; coin += 2)
-        vm.bind_variable(coin, coin == 0x6BC1 ? 7 : 0); // Seven gold coins.
+        vm.bind_variable(por::EclAddress{coin}, coin == 0x6BC1 ? 7 : 0); // Seven gold coins.
     (void)party.read_character(PartySlot{}, vm);
     check(party.member(id).wealth[3] == 7 && party.state().training_rest,
           "Script read after a Long Rest keeps the pending mastery choice");

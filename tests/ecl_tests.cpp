@@ -11,6 +11,32 @@ namespace
 {
 using Bytes = std::vector<std::uint8_t>;
 
+// A script address and the value stored there are both 16-bit, so only an
+// explicit EclAddress may name the cell: a bare number, or an (address, value)
+// pair given in the wrong order, must not compile.
+template <class Address>
+concept BindsVariableAt = requires(EclMachine &vm, Address address)
+{
+    vm.bind_variable(address, std::uint16_t{});
+};
+
+template <class Address>
+concept ReadsVariableAt = requires(const EclMachine &vm, Address address)
+{
+    vm.variable(address);
+};
+
+template <class Address>
+concept WritesMemoryAt = requires(Address address)
+{
+    EclMemoryWrite{address, std::uint16_t{}};
+};
+
+static_assert(BindsVariableAt<EclAddress> && !BindsVariableAt<std::uint16_t> &&
+              !BindsVariableAt<int>);
+static_assert(ReadsVariableAt<EclAddress> && !ReadsVariableAt<std::uint16_t>);
+static_assert(WritesMemoryAt<EclAddress> && !WritesMemoryAt<std::uint16_t>);
+
 void check(bool condition, const char *message)
 {
     if (!condition)
@@ -48,7 +74,7 @@ std::shared_ptr<const EclProgram> program(const Bytes &body)
 EclMachine machine(const Bytes &body)
 {
     EclMachine vm(program(body));
-    vm.bind_variable(0x9700, 0);
+    vm.bind_variable(EclAddress{0x9700}, 0);
     check(vm.start(0), "Start");
     return vm;
 }
@@ -56,14 +82,14 @@ EclMachine machine(const Bytes &body)
 void host_random_and_string_copy()
 {
     EclMachine strings(program({9, 129, 0, 0x97, 129, 0x20, 0x97, 0}));
-    strings.bind_string(0x9700, "ORCS");
-    strings.bind_string(0x9720, ".....");
+    strings.bind_string(EclAddress{0x9700}, "ORCS");
+    strings.bind_string(EclAddress{0x9720}, ".....");
     check(strings.start(0) && strings.run().state == EclState::completed &&
-          strings.string(0x9720) == "ORCS",
+          strings.string(EclAddress{0x9720}) == "ORCS",
           "SAVE string reference copies text into string destination");
     EclMachine vm(program({35, 1, 0, 0x97, 1, 1, 0x97, 0, 0, 0, 0, 0}));
-    vm.bind_variable(0x9700, 0);
-    vm.bind_variable(0x9701, 0);
+    vm.bind_variable(EclAddress{0x9700}, 0);
+    vm.bind_variable(EclAddress{0x9701}, 0);
     vm.enable_host(35);
     check(vm.start(0), "Host random start");
     const auto request = vm.run().request;
@@ -153,8 +179,9 @@ void arithmetic()
 {
     auto vm = machine({9, 2, 255, 255, 1, 0, 0x97, 4, 0, 1, 1, 0, 0x97, 1, 0, 0x97, 0});
     check(vm.run(0).instructions == 0, "Zero budget");
-    check(vm.run(1).state == EclState::running && vm.variable(0x9700) == 65535, "Budget yield");
-    check(vm.run().state == EclState::completed && vm.variable(0x9700) == 0,
+    check(vm.run(1).state == EclState::running && vm.variable(EclAddress{0x9700}) == 65535,
+          "Budget yield");
+    check(vm.run().state == EclState::completed && vm.variable(EclAddress{0x9700}) == 0,
           "16-bit addition wrap");
     check(vm.start(4), "Restart another entry after completion");
     check(vm.run().state == EclState::completed, "Restart completes");
@@ -162,7 +189,7 @@ void arithmetic()
     std::array<std::array<unsigned, 2>, 4> {{{5, 7}, {7, 30}, {47, 2}, {48, 11}}})
     {
         auto n = machine({static_cast<std::uint8_t>(op), 0, 3, 0, 10, 1, 0, 0x97, 0});
-        check(n.run().state == EclState::completed && n.variable(0x9700) == expected,
+        check(n.run().state == EclState::completed && n.variable(EclAddress{0x9700}) == expected,
               "Arithmetic/bitwise operand semantics");
     }
     auto unbound = machine({9, 0, 1, 1, 1, 0x97, 0});
@@ -170,7 +197,7 @@ void arithmetic()
     check(fail.state == EclState::faulted &&
           fail.diagnostic.find("TEST:7 @ 0x9914") != std::string::npos,
           "Unbound write with context");
-    check(unbound.variable(0x9700) == 0, "Fault does not alter other variables");
+    check(unbound.variable(EclAddress{0x9700}) == 0, "Fault does not alter other variables");
     check(!unbound.start(0), "Fault cannot silently restart");
 }
 
@@ -178,7 +205,8 @@ void control()
 {
     // CALL subroutine at 9919, return to EXIT at 9918.
     auto call = machine({2, 1, 0x19, 0x99, 0, 9, 0, 42, 1, 0, 0x97, 19});
-    check(call.run().state == EclState::completed && call.variable(0x9700) == 42, "GOSUB/RETURN");
+    check(call.run().state == EclState::completed && call.variable(EclAddress{0x9700}) == 42,
+          "GOSUB/RETURN");
     auto underflow = machine({19, 0});
     check(underflow.run().state == EclState::completed, "Empty RETURN falls through in PoR");
     auto recursion = machine({2, 1, 0x14, 0x99});
@@ -190,18 +218,20 @@ void control()
     auto overlap = machine({1, 1, 0x15, 0x99, 0});
     check(overlap.run().state == EclState::faulted, "Jump into operand");
     auto no_compare = machine({22, 9, 0, 1, 1, 0, 0x97, 0});
-    check(no_compare.run().state == EclState::completed && no_compare.variable(0x9700) == 0,
+    check(no_compare.run().state == EclState::completed &&
+          no_compare.variable(EclAddress{0x9700}) == 0,
           "Comparison flags start false");
     // False IF = skips the entire variable-length menu, without needing its destination binding.
     auto skip = machine(
     {3, 0, 1, 0, 2, 22, 43, 1, 1, 0x97, 0, 1, 128, 3, 4, 32, 192, 9, 0, 9, 1, 0, 0x97, 0});
-    check(skip.run().state == EclState::completed && skip.variable(0x9700) == 9,
+    check(skip.run().state == EclState::completed && skip.variable(EclAddress{0x9700}) == 9,
           "Variable-length conditional skip");
     for (unsigned op = 22; op <= 27; ++op)
     {
         const bool pass = op == 23 || op == 24 || op == 26;
         auto cond = machine({3, 0, 1, 0, 2, static_cast<std::uint8_t>(op), 9, 0, 7, 1, 0, 0x97, 0});
-        check(cond.run().state == EclState::completed && cond.variable(0x9700) == (pass ? 7 : 0),
+        check(cond.run().state == EclState::completed && cond.variable(EclAddress{0x9700}) ==
+              (pass ? 7 : 0),
               "Conditional relation");
     }
     // Indexed goto selects the first target with index 0, and falls through for >= count.
@@ -212,7 +242,7 @@ void control()
     {
         auto indexed = machine({37, 0, index, 0, 1, 1, 0x1e, 0x99, 0, 0, 9, 0, 8, 1, 0, 0x97, 0});
         check(indexed.run().state == EclState::completed &&
-              indexed.variable(0x9700) == (index == 0 ? 8 : 0),
+              indexed.variable(EclAddress{0x9700}) == (index == 0 ? 8 : 0),
               "Indexed goto and fallthrough");
     }
     // ON GOSUB's first/last choices must both return to the fallthrough EXIT.
@@ -224,7 +254,7 @@ void control()
         auto indexed = machine({38, 0, index, 0, 2,    1,  0x20, 0x99, 1, 0x27, 0x99, 0,    9,
                                 0,  8, 1,     0, 0x97, 19, 9,    0,    9, 1,    0,    0x97, 19});
         check(indexed.run().state == EclState::completed &&
-              indexed.variable(0x9700) == (index < 2 ? index + 8 : 0),
+              indexed.variable(EclAddress{0x9700}) == (index < 2 ? index + 8 : 0),
               "Indexed subroutine first/last/out of range");
     }
 }
@@ -244,9 +274,9 @@ void suspension()
     rejects(
         [&]
     {
-        vm.bind_variable(0x9700, 99);
+        vm.bind_variable(EclAddress{0x9700}, 99);
     });
-    check(vm.resume(id, 1) && vm.variable(0x9700) == 1, "Choice uses zero-based value");
+    check(vm.resume(id, 1) && vm.variable(EclAddress{0x9700}) == 1, "Choice uses zero-based value");
     check(!vm.resume(id, 0), "Duplicate response rejected");
     result = vm.run();
     check(result.state == EclState::waiting && result.request->text == "1",
@@ -262,8 +292,8 @@ void suspension()
     check(menu.request && menu.request->vertical && menu.request->text == "ABC",
           "Vertical menu metadata");
     auto other = machine({9, 0, 13, 1, 0, 0x97, 0});
-    check(other.run().state == EclState::completed && other.variable(0x9700) == 13 &&
-          vertical.variable(0x9700) == 0,
+    check(other.run().state == EclState::completed && other.variable(EclAddress{0x9700}) == 13 &&
+          vertical.variable(EclAddress{0x9700}) == 0,
           "Independent VM variable state");
     auto unsupported = machine({36});
     check(unsupported.run().diagnostic.find("COMBAT") != std::string::npos,
@@ -275,11 +305,11 @@ void suspension()
 void por_operations()
 {
     auto div = machine({6, 0, 17, 0, 5, 1, 0, 0x97, 0});
-    check(div.run().state == EclState::completed && div.variable(0x9700) == 3,
+    check(div.run().state == EclState::completed && div.variable(EclAddress{0x9700}) == 3,
           "PoR DIVIDE quotient without remainder binding");
     auto zero = machine({6, 0, 17, 0, 0, 1, 0, 0x97, 0});
     check(zero.run().diagnostic.find("Division by zero") != std::string::npos &&
-          zero.variable(0x9700) == 0,
+          zero.variable(EclAddress{0x9700}) == 0,
           "Divide fault before mutation");
     for (const std::uint8_t op :
             {
@@ -288,7 +318,7 @@ void por_operations()
     {
         auto bits = machine({op, 0, 2, 0, 1, 1, 0, 0x97, 23, 9, 0, 99, 1, 0, 0x97, 0});
         check(bits.run().state == EclState::completed &&
-              bits.variable(0x9700) == (op == 47 ? 0 : 99),
+              bits.variable(EclAddress{0x9700}) == (op == 47 ? 0 : 99),
               "Bitwise IF <> without preceding COMPARE");
     }
     for (unsigned op = 22; op <= 27; ++op)
@@ -297,21 +327,22 @@ void por_operations()
             machine({3, 0, 1,  0, 2, 20,   0, 7, 0, 7, 0, 9, 0, 9, static_cast<std::uint8_t>(op),
                      9, 0, 42, 1, 0, 0x97, 0});
         check(flags.run().state == EclState::completed &&
-              flags.variable(0x9700) == (op == 22 ? 42 : 0),
+              flags.variable(EclAddress{0x9700}) == (op == 22 ? 42 : 0),
               "COMPARE AND clears ordering flags");
     }
     auto parlay = machine({44, 0, 12, 0, 23, 0, 34, 0, 45, 0, 56, 1, 0, 0x97, 0});
     auto r = parlay.run();
     check(r.request && r.request->choices.size() == 5 && parlay.resume(r.request->id, 2),
           "PARLAY choice");
-    check(parlay.run().state == EclState::completed && parlay.variable(0x9700) == 34,
+    check(parlay.run().state == EclState::completed && parlay.variable(EclAddress{0x9700}) == 34,
           "PARLAY stores attitude value");
     auto blank = machine({51, 9, 0, 7, 1, 0, 0x97, 61, 0});
     r = blank.run();
     check(r.request && r.request->text == "\n" && blank.resume(r.request->id),
           "PRINT RETURN emits blank line");
     r = blank.run();
-    check(blank.variable(0x9700) == 7 && r.request->clear && blank.resume(r.request->id),
+    check(blank.variable(EclAddress{0x9700}) == 7 && r.request->clear &&
+          blank.resume(r.request->id),
           "PRINT RETURN falls through to CLEAR BOX");
     check(blank.run().state == EclState::completed, "Clear completes");
     auto noops = machine({45, 2, 0, 0, 56, 0, 1, 59, 0, 4, 1, 0, 0x49, 1, 1, 0x49, 0});
@@ -328,8 +359,8 @@ void por_operations()
     {
         EclMachine first(program({8, 0, limit, 1, 0, 0x97, 0})),
                    second(program({8, 0, limit, 1, 0, 0x97, 0}));
-        first.bind_variable(0x9700, 0);
-        second.bind_variable(0x9700, 0);
+        first.bind_variable(EclAddress{0x9700}, 0);
+        second.bind_variable(EclAddress{0x9700}, 0);
         first.seed_random(1234);
         second.seed_random(1234);
         bool saw_low = false, saw_high = false;
@@ -339,9 +370,9 @@ void por_operations()
             check(first.run().state == EclState::completed &&
                   second.run().state == EclState::completed,
                   "RNG completes");
-            const auto v = first.variable(0x9700);
+            const auto v = first.variable(EclAddress{0x9700});
             const auto maximum = std::min<unsigned>(limit, 254);
-            check(v <= maximum && v == second.variable(0x9700),
+            check(v <= maximum && v == second.variable(EclAddress{0x9700}),
                   "Seeded RNG bounds and reproducibility");
             saw_low |= v == 0;
             saw_high |= v == maximum;
@@ -357,15 +388,16 @@ void memory_and_input()
     body.insert(body.end(), {5, 77}); // Table at 9930.
     auto p = program(body);
     EclMachine vm(p), other(p);
-    vm.bind_variable(0x9700, 0);
+    vm.bind_variable(EclAddress{0x9700}, 0);
     check(vm.start(0), "Table start");
-    check(vm.run().state == EclState::completed && vm.variable(0x9700) == 77,
+    check(vm.run().state == EclState::completed && vm.variable(EclAddress{0x9700}) == 77,
           "Embedded byte table read");
-    check(vm.variable(0x9931) == 200 && other.variable(0x9931) == 77 && p->raw().back() == 77,
+    check(vm.variable(EclAddress{0x9931}) == 200 && other.variable(EclAddress{0x9931}) == 77
+          && p->raw().back() == 77,
           "Private writable script image");
     auto slots =
         machine({53, 2, 0x34, 0x12, 1, 0, 0x97, 0, 0, 42, 1, 0, 0x97, 0, 0, 1, 0, 0x97, 0});
-    check(slots.run().state == EclState::completed && slots.variable(0x9700) == 0x1234,
+    check(slots.run().state == EclState::completed && slots.variable(EclAddress{0x9700}) == 0x1234,
           "Word-sized logical table cells");
     auto overflow = machine({42, 2, 255, 255, 0, 1, 1, 0, 0x97, 0});
     check(overflow.run().diagnostic.find("overflow") != std::string::npos,
@@ -373,27 +405,28 @@ void memory_and_input()
     // Change a byte used by an already encountered command; a later invocation
     // must fetch the new operand, without changing another machine's image.
     auto patched = machine({9, 0, 7, 1, 0, 0x97, 53, 0, 42, 1, 0x16, 0x99, 0, 0, 0});
-    check(patched.run().state == EclState::completed && patched.variable(0x9700) == 7,
+    check(patched.run().state == EclState::completed && patched.variable(EclAddress{0x9700}) == 7,
           "Initial code fetch before write");
     check(patched.start(0) && patched.run().state == EclState::completed &&
-          patched.variable(0x9700) == 42,
+          patched.variable(EclAddress{0x9700}) == 42,
           "Modified operand fetched on restart");
     auto referenced = machine({3, 129, 0, 0x97, 2, 0, 0x97, 22, 9, 0, 8, 1, 0, 0x97, 0});
-    check(referenced.run().state == EclState::completed && referenced.variable(0x9700) == 8,
+    check(referenced.run().state == EclState::completed &&
+          referenced.variable(EclAddress{0x9700}) == 8,
           "Mixed numeric/string COMPARE uses encoded reference address");
     EclMachine strings(program({9,    128, 3, 4, 32, 192, 129, 0,  0x97, 3, 129,  0,
                                 0x97, 128, 3, 4, 32, 192, 22,  17, 129,  0, 0x97, 0}));
-    strings.bind_string(0x9700, "....");
+    strings.bind_string(EclAddress{0x9700}, "....");
     check(strings.start(0), "String start");
     auto r = strings.run();
-    check(r.request && r.request->text == "ABC" && strings.string(0x9700) == "ABC",
+    check(r.request && r.request->text == "ABC" && strings.string(EclAddress{0x9700}) == "ABC",
           "String SAVE, C-string reference and mixed COMPARE");
     check(strings.resume(r.request->id) && strings.run().state == EclState::completed,
           "String continuation");
     EclMachine input(
         program({15, 0, 1, 1, 0, 0x97, 16, 0, 1, 1, 1, 0x97, 16, 0, 1, 1, 1, 0x97, 0}));
     for (std::uint16_t addr = 0x9700; addr <= 0x9729; ++addr)
-        input.bind_variable(addr, 0);
+        input.bind_variable(EclAddress{addr}, 0);
     check(input.start(0), "Input start");
     r = input.run();
     check(r.request && r.request->input_limit == 6 && !input.resume(r.request->id),
@@ -401,7 +434,7 @@ void memory_and_input()
     check(!input.resume_input(r.request->id, "65536") && !input.resume_input(r.request->id, "-1") &&
           !input.resume_input(r.request->id, "") && !input.resume_input(r.request->id, "1x"),
           "Invalid number keeps continuation");
-    check(input.resume_input(r.request->id, "65535") && input.variable(0x9700) == 65535,
+    check(input.resume_input(r.request->id, "65535") && input.variable(EclAddress{0x9700}) == 65535,
           "Input ignores encoded digit maximum");
     r = input.run();
     check(r.request->input_limit == 40 && !input.resume_input(r.request->id, std::string(41, 'X')),
@@ -410,24 +443,25 @@ void memory_and_input()
           input.resume_input(r.request->id, ""),
           "NUL rejected, empty input becomes space");
     r = input.run();
-    check(r.request && input.string(0x9701) == " ", "Input string stored with terminator");
+    check(r.request && input.string(EclAddress{0x9701}) == " ",
+          "Input string stored with terminator");
     check(input.resume_input(r.request->id, "Ohlo") && input.run().state == EclState::completed &&
-          input.string(0x9701) == "OHLO",
+          input.string(EclAddress{0x9701}) == "OHLO",
           "Typed text is upper case, as the original input routine returns it");
     auto partial = machine({9, 128, 3, 4, 32, 192, 1, 0, 0x97, 0});
-    check(partial.run().state == EclState::faulted && partial.variable(0x9700) == 0,
+    check(partial.run().state == EclState::faulted && partial.variable(EclAddress{0x9700}) == 0,
           "String writes validate full destination first");
     EclMachine bytes(program({9, 2, 255, 255, 1, 0x4b, 0xc0, 0}));
-    bytes.bind_variable(0xC04B, 0);
+    bytes.bind_variable(ecl_party_x, 0);
     check(bytes.start(0), "Byte write start");
-    check(bytes.run().state == EclState::completed && bytes.variable(0xC04B) == 255,
+    check(bytes.run().state == EclState::completed && bytes.variable(ecl_party_x) == 255,
           "Map data uses byte width");
 }
 
 void host_services()
 {
     EclMachine vm(program({29, 1, 0, 0x97, 50, 0, 7, 22, 9, 0, 99, 1, 0, 0x97, 0}));
-    vm.bind_variable(0x9700, 0);
+    vm.bind_variable(EclAddress{0x9700}, 0);
     vm.enable_host(29);
     vm.enable_host(50);
     check(vm.start(0), "Host start");
@@ -439,11 +473,12 @@ void host_services()
     const auto id = r.request->id;
     check(!vm.resume(id) && !vm.resume_host(id, {}),
           "Required host result cannot be acknowledged away");
-    check(!vm.resume_host(id, {{{0x9700, 10}, {0x9701, 20}}}) && vm.variable(0x9700) == 0,
-            "Atomic host write validation");
-    check(!vm.resume_host(id, {{{0x9700, 10}, {0x9700, 20}}}),
+    check(!vm.resume_host(id, {{{EclAddress{0x9700}, 10}, {EclAddress{0x9701}, 20}}})
+    && vm.variable(EclAddress{0x9700}) == 0,
+         "Atomic host write validation");
+    check(!vm.resume_host(id, {{{EclAddress{0x9700}, 10}, {EclAddress{0x9700}, 20}}}),
     "Duplicate host destinations rejected");
-    check(vm.resume_host(id, {{{0x9700, 10}}}) && !vm.resume_host(id, {}),
+    check(vm.resume_host(id, {{{EclAddress{0x9700}, 10}}}) && !vm.resume_host(id, {}),
     "Host result consumed once");
     r = vm.run();
     check(r.request && r.request->instruction->opcode == 50, "FIND ITEM host request");
@@ -451,38 +486,41 @@ void host_services()
     EclHostReply found;
     found.conditions = EclConditions{true, false, false, false, false, false};
     check(vm.resume_host(r.request->id, found) && vm.run().state == EclState::completed &&
-          vm.variable(0x9700) == 99,
+          vm.variable(EclAddress{0x9700}) == 99,
           "FIND ITEM controls IF");
     EclMachine transition(program({32, 0, 7, 255}));
     transition.enable_host(32);
-    transition.bind_variable(0x4A00, 9);
-    transition.bind_variable(0x4A20, 8);
+    transition.bind_variable(EclAddress{0x4A00}, 9);
+    transition.bind_variable(EclAddress{0x4A20}, 8);
     check(transition.start(0), "Transition start");
     r = transition.run();
     EclHostReply next;
     next.next_program = program({17, 0, 42, 0});
     check(!transition.resume_host(r.request->id, {}) && transition.resume_host(r.request->id, next),
           "NEW ECL requires resolved program");
-    check(transition.state() == EclState::completed && transition.variable(0x4A00) == 0 &&
-          transition.variable(0x4A20) == 8,
+    check(transition.state() == EclState::completed &&
+          transition.variable(EclAddress{0x4A00}) == 0 &&
+          transition.variable(EclAddress{0x4A20}) == 8,
           "New ECL exits old script, resets local flags, preserves campaign flags");
     check(transition.start(4) && transition.run().request->text == "42", "New ECL startup entry");
     EclMachine query(
         program({30, 1, 0x1b, 0x6c, 0, 0, 1, 0, 0x97, 1, 1, 0x97, 1, 2, 0x97, 1, 3, 0x97, 0}));
     for (std::uint16_t a = 0x9700; a < 0x9704; ++a)
-        query.bind_variable(a, 0);
+        query.bind_variable(EclAddress{a}, 0);
     query.enable_host(30);
     check(query.start(0), "CHECK PARTY start");
     r = query.run();
     check(r.request->arguments[0].kind == EclArgumentKind::address &&
           r.request->arguments[0].value == 0x6c1b,
           "CHECK PARTY passes attribute address without selecting/dereferencing a character");
-    check(!query.resume_host(r.request->id, {{{0x9700, 1}}}),
+    check(!query.resume_host(r.request->id, {{{EclAddress{0x9700}, 1}}}),
     "All four CHECK PARTY results required");
-    check(
-    query.resume_host(r.request->id, {{{0x9700, 1}, {0x9701, 3}, {0x9702, 2}, {0x9703, 0}}}) &&
-    query.run().state == EclState::completed,
-         "CHECK PARTY complete reply");
+    EclHostReply all_four;
+    all_four.writes = {{EclAddress{0x9700}, 1}, {EclAddress{0x9701}, 3}, {EclAddress{0x9702}, 2},
+        {EclAddress{0x9703}, 0}
+    };
+    check(query.resume_host(r.request->id, all_four) && query.run().state == EclState::completed,
+          "CHECK PARTY complete reply");
 }
 
 // Optional regression against the user's own DOS data. Host effects are mocked;
@@ -498,8 +536,8 @@ void installed_slums(const EclCatalog &catalog)
     {{0x4900, 0x4cff}, {0x6b00, 0x6eff}, {0x9700, 0x98ff}}
 })
     for (unsigned a = first; a <= last; ++a)
-        vm.bind_variable(static_cast<std::uint16_t>(a), 0);
-    vm.bind_variable(0xC04F, 1); // Slums event 1, as in marainein's published trace.
+        vm.bind_variable(EclAddress(static_cast<std::uint16_t>(a)), 0);
+    vm.bind_variable(ecl_cell_event, 1); // Slums event 1, as in marainein's published trace.
     for (std::uint8_t op :
             {
                 11, 12, 13, 14, 28, 36
@@ -542,9 +580,11 @@ void installed_slums(const EclCatalog &catalog)
                 EclHostReply reply;
                 if (opcode == 36)
                 {
-                    check(vm.variable(0x6DC6) == 99 && vm.variable(0x6DCB) == 0,
+                    check(vm.variable(ecl_encounter_morale) == 99 &&
+                          vm.variable(ecl_encounter_surprise) == 0,
                           "Slums combat inputs");
-                    reply.writes = {{0x6DC7, 0}, {0x6DC8, 4}}; // Test-only combat result.
+                    // Test-only combat result.
+                    reply.writes = {{ecl_combat_result, 0}, {ecl_monsters_defeated, 4}};
                 }
                 check(vm.resume_host(request.id, reply), "Slums host completion");
             }
@@ -554,7 +594,7 @@ void installed_slums(const EclCatalog &catalog)
             :
             std::vector<unsigned> {14};
         check(services == expected, "Slums event dispatch and revisit suppression");
-        check(vm.variable(0x4ACA) == 255 && vm.variable(0x4ABB) == 1,
+        check(vm.variable(ecl_slums_orc_victory) == 255 && vm.variable(EclAddress{0x4ABB}) == 1,
               "Slums persistent completion flag and fight count");
     }
     std::cout << "Installed Slums event 1 and revisit passed (mock combat host).\n";

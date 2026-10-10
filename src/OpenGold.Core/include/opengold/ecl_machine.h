@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_ECL_MACHINE_H
 #define OPENGOLD_ECL_MACHINE_H
 #include "opengold/ecl.h"
+#include "opengold/ecl_address.h"
 #include <filesystem>
 #include <compare>
 #include <map>
@@ -73,7 +74,8 @@ using EclConditions = std::array<bool, 6>; // =, <>, <, >, <=, >=
 
 struct EclMemoryWrite
 {
-    std::uint16_t address{}, value{};
+    EclAddress address;
+    std::uint16_t value{};
 };
 
 struct EclHostReply
@@ -113,12 +115,12 @@ class EclMachine
   public:
     explicit EclMachine(std::shared_ptr<const EclProgram> program);
     // Variables persist across invocations; binding is allowed only while idle/completed.
-    void bind_variable(std::uint16_t address, std::uint16_t value);
-    void bind_string(std::uint16_t address, std::string_view value);
+    void bind_variable(EclAddress address, std::uint16_t value);
+    void bind_string(EclAddress address, std::string_view value);
     void seed_random(std::uint32_t seed);
     void enable_host(std::uint8_t opcode);
-    [[nodiscard]] std::uint16_t variable(std::uint16_t address) const;
-    [[nodiscard]] std::string string(std::uint16_t address) const;
+    [[nodiscard]] std::uint16_t variable(EclAddress address) const;
+    [[nodiscard]] std::string string(EclAddress address) const;
     bool start(std::size_t entry_slot);
     // Explicit isolated research entry. Bypasses campaign entry scheduling; the
     // caller must identify an instruction boundary from its compatibility profile.
@@ -163,17 +165,17 @@ class EclMachine
     std::vector<std::uint32_t> stack_, trace_;
     EclConditions conditions_{};
     std::optional<EclRequest> pending_;
-    std::optional<std::uint16_t> destination_;
+    std::optional<EclAddress> destination_;
     std::vector<std::uint16_t> menu_values_;
     std::uint64_t next_request_{1}, total_instructions_{};
     std::string diagnostic_;
     [[nodiscard]] EclInstruction decode(std::uint32_t address);
     [[nodiscard]] std::uint16_t value(const EclOperand &arg) const;
-    [[nodiscard]] std::uint16_t destination(const EclOperand &arg) const;
+    [[nodiscard]] EclAddress destination(const EclOperand &arg) const;
     [[nodiscard]] std::string text(const EclOperand &arg) const;
     void require_configurable() const;
-    void write(std::uint16_t address, std::uint16_t value);
-    void write_string(std::uint16_t address, std::string_view value);
+    void write(EclAddress address, std::uint16_t value);
+    void write_string(EclAddress address, std::string_view value);
     void finish_request();
     [[nodiscard]] unsigned draw(unsigned count);
     void request_host(const EclInstruction &instruction);
