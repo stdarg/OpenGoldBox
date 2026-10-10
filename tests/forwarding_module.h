@@ -221,10 +221,11 @@ class ForwardingModule : public rules::RulesModule
 
     rules::HazardAttackResult hazard_attack(rules::VitalState &state,
                                             const rules::CharacterSheet &sheet,
+                                            std::span<const std::string> gear,
                                             const rules::HazardAttack &attack,
                                             RandomState &random_state) const override
     {
-        return rules_->hazard_attack(state, sheet, attack, random_state);
+        return rules_->hazard_attack(state, sheet, gear, attack, random_state);
     }
 
     int hit_point_maximum(const rules::CharacterSheet &sheet,

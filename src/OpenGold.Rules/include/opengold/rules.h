@@ -785,9 +785,10 @@ class RulesModule
     virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const = 0;
     virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,
                              RandomState &random_state) const = 0;
+    // `gear` is what the member wears, so the attack meets its armor and shield.
     [[nodiscard]] virtual HazardAttackResult hazard_attack(VitalState &state,
-            const CharacterSheet &sheet, const HazardAttack &attack,
-            RandomState &random_state) const = 0;
+            const CharacterSheet &sheet, std::span<const std::string> gear,
+            const HazardAttack &attack, RandomState &random_state) const = 0;
     // The current Hit Point maximum, which a lasting effect such as Aid raises
     // above the sheet's.
     [[nodiscard]] virtual int hit_point_maximum(const CharacterSheet &,

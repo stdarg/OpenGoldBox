@@ -11032,10 +11032,11 @@ class Module final : public RulesModule
     }
 
     HazardAttackResult hazard_attack(VitalState &state, const CharacterSheet &sheet,
+                                     std::span<const std::string> gear,
                                      const HazardAttack &attack,
                                      RandomState &random_state) const override
     {
-        auto actor = camp_actor(sheet, state);
+        auto actor = actor_from(character_definition(character_profile(sheet, gear).data), state);
         if (actor.life.dead || actor.life.hp < 1)
             throw std::runtime_error("A hazard attacks a conscious member");
         auto rng = random_state.value;

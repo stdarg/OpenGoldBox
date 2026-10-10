@@ -137,6 +137,18 @@ campaign-arc simulator should get a Kuto's Well stage to measure it.
   fight all work. It found the area named "New Phlan" (fixed: "Kuto's Well")
   and that a four-arrow report already scrolls the dialogue box.
 
+- **Play-test follow-up (2026-10-10):** the volley rolled against each
+  member's unarmored AC (11–13) while Norris's fight showed the same party at
+  AC 18. In the Gold Box engine (Simeon Pilgrim's reconstruction of its
+  sequel's engine, `coab`, `CMD_Damage` and `CanHitTarget`) an arrow meets the
+  member's current AC, so arrows now count worn armor and shield. Two arrows
+  of one volley may strike the same member: that engine picks a member at
+  random for each arrow. Norris's band "surrounds" the party only in the
+  script's words: that engine (`PlaceCombatants`) places the monsters as one
+  group ahead of the party, at the encounter distance (two `APPROACH`es bring
+  it to 0 before he speaks), while the campaign always places them about one
+  square of exploration ahead ([EXPEDITION.md](../EXPEDITION.md)).
+
 ## Suggested increments
 
 1. Data-driven area table; load Kuto's Well (both maps) and travel to and from

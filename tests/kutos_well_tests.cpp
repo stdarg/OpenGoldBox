@@ -1,5 +1,6 @@
 // Kuto's Well (docs/audits/kutos-well.md): its creature conversions, the
 // rules they need, its arrow traps and Norris the Gray's portrait.
+#include "opengold/campaign_party.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
@@ -95,7 +96,7 @@ void multiattack()
 }
 
 // A created level-1 Fighter.
-CharacterSheet fighter()
+Character fighter_character()
 {
     CharacterDraft d;
     d.race = "human";
@@ -107,7 +108,12 @@ CharacterSheet fighter()
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    return Character(*srd5::character_rules(), d, {}).sheet();
+    return Character(*srd5::character_rules(), d, {});
+}
+
+CharacterSheet fighter()
+{
+    return fighter_character().sheet();
 }
 
 // The DAMAGE arrows: an attack roll against AC, doubled dice on a 20, and death
@@ -123,7 +129,7 @@ void arrow_traps()
     {
         VitalState state{sheet.hit_points, false, {}};
         RandomState random{seed};
-        const auto r = module->hazard_attack(state, sheet, arrow, random);
+        const auto r = module->hazard_attack(state, sheet, {}, arrow, random);
         check(r.total == r.natural + 3 && r.armor_class == armor_class,
               "An arrow rolls d20 + 3 against the member's AC");
         check(r.hit == (r.natural == 20 || (r.natural != 1 && r.total >= r.armor_class)) &&
@@ -140,11 +146,11 @@ void arrow_traps()
 
     VitalState frail{1, false, {}};
     RandomState random{1};
-    auto dropped = module->hazard_attack(frail, sheet, {100, 1, 1, 0, "piercing"}, random);
+    auto dropped = module->hazard_attack(frail, sheet, {}, {100, 1, 1, 0, "piercing"}, random);
     while (!dropped.hit)
     {
         frail = {1, false, {}};
-        dropped = module->hazard_attack(frail, sheet, {100, 1, 1, 0, "piercing"}, random);
+        dropped = module->hazard_attack(frail, sheet, {}, {100, 1, 1, 0, "piercing"}, random);
     }
     check(!dropped.death_saves.empty() &&
           (frail.dead || frail.hit_points == 1 || dropped.death_saves.back() >= 10),
@@ -153,7 +159,7 @@ void arrow_traps()
     try
     {
         VitalState down{0, false, frail.resources};
-        (void)module->hazard_attack(down, sheet, arrow, random);
+        (void)module->hazard_attack(down, sheet, {}, arrow, random);
     }
     catch (const std::exception &)
     {
@@ -169,7 +175,7 @@ void arrow_traps()
         {
             VitalState target{sheet.hit_points, false, {}};
             random = RandomState{seed};
-            (void)module->hazard_attack(target, sheet, {100, 1, 0, 0, "piercing"}, random);
+            (void)module->hazard_attack(target, sheet, {}, {100, 1, 0, 0, "piercing"}, random);
         }
     }
     catch (const std::invalid_argument &)
@@ -177,6 +183,25 @@ void arrow_traps()
         rejected = true;
     }
     check(rejected, "An arrow whose die has no sides is refused");
+}
+
+// An arrow rolls against the AC the member's worn armor and shield give, as the
+// original's arrows did, not against the member unarmored.
+void arrows_meet_worn_armor()
+{
+    CampaignParty party(rules());
+    auto person = fighter_character();
+    const auto mail = person.add_item({.definition_id = "chain_mail", .name = "Chain mail"});
+    const auto shield = person.add_item({.definition_id = "shield", .name = "Shield"});
+    const auto id = party.add_pc(std::move(person));
+    party.equip(id, mail);
+    party.equip(id, shield);
+    const int worn_armor_class = party.profile(id).armor_class;
+    check(worn_armor_class > rules()->character_profile(fighter(), {}).armor_class,
+          "Chain mail and a shield raise the Fighter's AC");
+    const auto arrow = party.hazard_attack({4, 1, 6, 0, "piercing"});
+    check(arrow && arrow->result.armor_class == worn_armor_class,
+          "An arrow rolls against the member's worn armor and shield");
 }
 
 // Norris the Gray's portrait fills the view once he has walked up and speaks.
@@ -212,6 +237,7 @@ int main()
         multiattack();
         norris_portrait();
         arrow_traps();
+        arrows_meet_worn_armor();
         std::cout << "Kuto's Well tests passed\n";
         return 0;
     }

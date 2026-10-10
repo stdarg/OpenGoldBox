@@ -910,8 +910,8 @@ std::optional<HazardHit> CampaignParty::hazard_attack(const rules::HazardAttack 
     const auto target =
         conscious[roll_die(next.random_state, static_cast<int>(conscious.size())) - 1];
     auto &struck = member_in(next, target);
-    HazardHit hit{target, rules_->hazard_attack(struck.vitals, struck.character.sheet(), attack,
-                  next.random_state)};
+    HazardHit hit{target, rules_->hazard_attack(struck.vitals, struck.character.sheet(),
+                  equipped_definitions(struck), attack, next.random_state)};
     state_ = std::move(next);
     return hit;
 }
