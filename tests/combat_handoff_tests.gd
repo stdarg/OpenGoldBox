@@ -42,16 +42,15 @@ func run_checks() -> void:
     var creation := current_scene as Control
     require(creation.has_node("PartyPanel"), "Original character assets must load")
     creation.get_node("Party").pressed.emit()
-    add_class(creation, "Rogue")
+    # Every created class can fight, so the refusal left to try is an empty party.
     creation.get_node("PartyPanel/Combat").pressed.emit()
     await settle()
     require(not creation.has_node("CampaignCombat"), "Failed initialization must not install a blank battlefield")
     require(creation.get_node("PartyPanel").is_visible_in_tree(), "Failed initialization must preserve the party screen")
-    require(creation.get_node("PartyPanel/Status").text.contains("Campaign combat supports"), "The party screen must explain the failure")
+    require(creation.get_node("PartyPanel/Status").text.contains("Add a party member first"), "The party screen must explain the failure")
     await capture()
 
-    # The failed attempt must release ownership so users can edit and retry.
-    creation.get_node("PartyPanel/Remove").pressed.emit()
+    # The failed attempt must leave the party editable so users can retry.
     add_class(creation, "Fighter")
     creation.get_node("PartyPanel/Combat").pressed.emit()
     await settle()
@@ -60,7 +59,9 @@ func run_checks() -> void:
     require(not creation.get_node("PartyPanel").visible, "Successful handoff opens the combat screen")
     require(not combat.get_node("Roster").text.is_empty(), "Successful handoff must contain actual combatants")
     var scroll: ScrollContainer = combat.get_node("BattlefieldScroll")
-    require(scroll.get_node("Canvas").size.is_equal_approx(scroll.size * 3), "Mounted campaign battlefield must have its full canvas")
+    var canvas: Control = scroll.get_node("Canvas")
+    # The board is scaled to fill the view along its larger ratio, then zoomed.
+    require(canvas.size.is_equal_approx(canvas.custom_minimum_size) and canvas.size.x >= scroll.size.x - 1 and canvas.size.y >= scroll.size.y - 1, "Mounted campaign battlefield must have its full canvas")
     await capture()
-    print("Combat handoff checks passed: rejected profile, visible diagnostic, party edits and successful retry")
+    print("Combat handoff checks passed: refused empty party, visible diagnostic, party edits and successful retry")
     quit(0)
