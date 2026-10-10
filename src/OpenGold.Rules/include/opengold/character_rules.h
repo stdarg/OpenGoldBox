@@ -138,6 +138,8 @@ enum class NameRequirement
     required
 };
 
+// Every operation is pure, so a module that omits one fails to compile
+// instead of failing in play (Effective C++ Item 34).
 class CharacterRules
 {
   public:
@@ -151,35 +153,18 @@ class CharacterRules
             unsigned ability) const = 0;
 
     [[nodiscard]] virtual std::array<unsigned, 6> preset_ability_priority(std::string_view,
-            unsigned) const
-    {
-        return {0, 1, 2, 3, 4, 5};
-    }
-
+            unsigned) const = 0;
     [[nodiscard]] virtual ClassRequirements class_requirements(std::string_view id) const = 0;
     [[nodiscard]] virtual CharacterSheet evaluate(const CharacterDraft &draft,
             NameRequirement name) const = 0;
-
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
-    training_options(const CharacterDraft &) const
-    {
-        return {};
-    }
-
-    [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterDraft &) const
-    {
-        return {};
-    }
-
-    [[nodiscard]] virtual TrainingChoiceGroup cantrip_options(const CharacterDraft &) const
-    {
-        return {};
-    }
-
+    training_options(const CharacterDraft &) const = 0;
+    [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterDraft &) const = 0;
+    [[nodiscard]] virtual TrainingChoiceGroup cantrip_options(const CharacterDraft &) const = 0;
     // An empty skill is a plain ability check. No default: an override cannot
     // redefine one (Effective C++ Item 37).
     [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
-            unsigned ability, std::string_view skill) const;
+            unsigned ability, std::string_view skill) const = 0;
 
   protected:
     // Implementations may copy themselves (a session's rollback does), but an

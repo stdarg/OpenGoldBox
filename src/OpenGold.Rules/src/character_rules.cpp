@@ -5,12 +5,6 @@
 
 namespace opengold::rules
 {
-AbilityCheckModifier CharacterRules::ability_check(const CharacterSheet &, unsigned,
-        std::string_view) const
-{
-    throw std::runtime_error("Ability checks are unsupported by this rules module");
-}
-
 bool class_eligible(const CharacterRules &rules, const CharacterDraft &d, std::string_view id)
 {
     const auto r = rules.class_requirements(id);

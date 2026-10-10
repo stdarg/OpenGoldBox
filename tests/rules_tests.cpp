@@ -1342,15 +1342,15 @@ void monster_trait_tests()
 
 namespace
 {
-// A rules module that offers no advancement. advance_character has one
-// overridable form; a second overload that delegated to it in the opposite
-// direction let a module recurse forever (Effective C++ Item 34).
-class NoAdvancementModule final : public RulesModule
+// A module that implements only combat. Every campaign operation is pure, so
+// such a module cannot be instantiated rather than throwing "not supported"
+// when the campaign first calls one (Effective C++ Item 34).
+class CombatOnlyModule : public RulesModule
 {
   public:
     Identity identity() const override
     {
-        return {"test.no-advancement", "1", "none"};
+        return {"test.combat-only", "1", "none"};
     }
 
     std::vector<std::string> supported_features() const override
@@ -1368,7 +1368,12 @@ class NoAdvancementModule final : public RulesModule
         throw std::runtime_error("Unused test restore");
     }
 };
+static_assert(std::is_abstract_v<CombatOnlyModule>,
+              "A module must implement every campaign operation");
 
+// advance_character has one overridable form; a second overload that delegated
+// to it in the opposite direction let a module recurse forever (Effective C++
+// Item 34).
 template <class Rules>
 concept advances_without_a_choice =
 requires(const Rules &rules, CharacterSheet &sheet, VitalState &state)
@@ -1398,17 +1403,6 @@ static_assert(!std::is_copy_constructible_v<RulesModule> &&
               !std::is_copy_assignable_v<RulesModule>);
 static_assert(!std::is_copy_constructible_v<CharacterRules> &&
               !std::is_copy_assignable_v<CharacterRules>);
-
-void single_advancement_override_tests()
-{
-    const NoAdvancementModule rules;
-    CharacterSheet sheet;
-    VitalState state;
-    rejects([&]
-    {
-        (void)rules.advance_character(sheet, state, AdvancementChoice{});
-    }, "A module without advancement refuses a level-up");
-}
 } // namespace
 
 int main()
@@ -1416,7 +1410,6 @@ int main()
     try
     {
         unconscious_transit::run();
-        single_advancement_override_tests();
         turn_budget_tests();
         boundary_tests();
         mechanics_tests();

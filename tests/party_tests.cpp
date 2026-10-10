@@ -1,4 +1,5 @@
 #include "combat_fixture.h"
+#include "forwarding_module.h"
 #include "opengold/campaign_party.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/character_creator.h"
@@ -186,27 +187,16 @@ por::Equipment item(unsigned type, unsigned price = 10)
 
 // An intentionally different equipment policy proves Core applies rules-owned
 // choices, rather than retaining the SRD single-weapon replacement decision.
-class AlternateEquipmentRules final : public RulesModule
+class AlternateEquipmentRules final : public test::ForwardingModule
 {
   public:
+    AlternateEquipmentRules() : ForwardingModule(module())
+    {
+    }
+
     Identity identity() const override
     {
         return {"equipment-test", "1", "owned-plans"};
-    }
-
-    std::vector<std::string> supported_features() const override
-    {
-        return {};
-    }
-
-    std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
-    {
-        return {};
-    }
-
-    std::unique_ptr<CombatSession> restore(std::string_view) const override
-    {
-        return {};
     }
 
     EquipmentInfo equipment_info(std::string_view) const override
@@ -1173,39 +1163,23 @@ struct EncounterObservation
 };
 
 // Observe the adapter boundary while retaining real rules validation and combat.
-class ObservedModule final : public RulesModule
+class ObservedModule final : public test::ForwardingModule
 {
   public:
     explicit ObservedModule(std::shared_ptr<EncounterObservation> observation)
-        : observation_(std::move(observation)), rules_(module())
+        : ForwardingModule(module()), observation_(std::move(observation))
     {
-    }
-
-    Identity identity() const override
-    {
-        return rules_->identity();
-    }
-
-    std::vector<std::string> supported_features() const override
-    {
-        return rules_->supported_features();
     }
 
     std::unique_ptr<CombatSession> create(Encounter encounter, std::uint64_t seed) const override
     {
         observation_->encounter = encounter;
         observation_->seed = seed;
-        return rules_->create(std::move(encounter), seed);
-    }
-
-    std::unique_ptr<CombatSession> restore(std::string_view bytes) const override
-    {
-        return rules_->restore(bytes);
+        return ForwardingModule::create(std::move(encounter), seed);
     }
 
   private:
     std::shared_ptr<EncounterObservation> observation_;
-    std::unique_ptr<RulesModule> rules_;
 };
 
 CampaignEncounter encounter_fixture()
@@ -1457,27 +1431,16 @@ class InvalidInitialSession final : public CombatSession
     }
 };
 
-class InvalidInitialModule final : public RulesModule
+class InvalidInitialModule final : public test::ForwardingModule
 {
   public:
-    Identity identity() const override
+    InvalidInitialModule() : ForwardingModule(module())
     {
-        return module()->identity();
-    }
-
-    std::vector<std::string> supported_features() const override
-    {
-        return {};
     }
 
     std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
     {
         return std::make_unique<InvalidInitialSession>();
-    }
-
-    std::unique_ptr<CombatSession> restore(std::string_view) const override
-    {
-        throw std::runtime_error("Unused test restore");
     }
 };
 

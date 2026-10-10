@@ -1,3 +1,4 @@
+#include "forwarding_module.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -95,40 +96,11 @@ unsigned winds(const PartyMember &member)
 }
 
 // Deliberately non-SRD rest behavior proves Core applies module outcomes.
-class AlternateRestRules final : public RulesModule
+class AlternateRestRules final : public test::ForwardingModule
 {
   public:
-    Identity identity() const override
+    AlternateRestRules() : ForwardingModule(module())
     {
-        return module()->identity();
-    }
-
-    std::vector<std::string> supported_features() const override
-    {
-        return {};
-    }
-
-    std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
-    {
-        return {};
-    }
-
-    std::unique_ptr<CombatSession> restore(std::string_view) const override
-    {
-        return {};
-    }
-
-    CharacterProfile character_profile(const CharacterSheet &sheet,
-                                       std::span<const std::string> gear) const override
-    {
-        return module()->character_profile(sheet, gear);
-    }
-
-    EquipmentChange equipment_change(const CharacterSheet &sheet, std::span<const std::string> gear,
-                                     unsigned selected,
-                                     EquipmentOperation operation) const override
-    {
-        return module()->equipment_change(sheet, gear, selected, operation);
     }
 
     RecoveryInfo recovery_info(const CharacterSheet &, const VitalState &) const override
