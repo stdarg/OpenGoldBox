@@ -17,6 +17,11 @@
 #include <string>
 #include <vector>
 
+// The creation wizard, party panel, save/load and drag-and-drop stay in this
+// class on purpose: they all read and write its creator, campaign and party
+// state. The parts with state of their own are separate classes (Effective
+// C++ Item 31): PortraitCatalog, LevelUpDialog, EquipmentChoiceDialog,
+// CharacterPoolDialog, TownSheetDialog and presentation::sheet_text.
 class CharacterCreationView : public godot::Control
 {
     GDCLASS(CharacterCreationView, godot::Control)
