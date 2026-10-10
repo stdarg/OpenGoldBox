@@ -59,6 +59,12 @@ run, since a party nearly always has someone faster; parties as slow as their
 foes see them run instead (six Rogues: 3 escape a run, none surrender). Simulated
 parties never flee: with so few defeats, fleeing would change nothing measurable.
 
+Re-measured with 20 runs per party (2026-10-10): 1 defeat in 300 runs (six
+Wizards, at the trolls). Before then the simulator stopped on the `casters`
+party: a creature that surrendered as its turn began, just after a member
+dropped on its own turn, stayed on the field until the next command, and an
+attack on it crashed when a reaction to that attack was answered.
+
 Martial parties' remaining deaths (2026-10-09) were neither the fight areas nor
 their gear: shields taken off for bows preceded only 4 of 27 Fighter and
 Barbarian deaths, and the troll arena is won at every width. Three in four

@@ -7881,7 +7881,12 @@ bool Session::submit(const Command &command)
         update_outcome();
         if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
                 !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].life.hp == 0)
+        {
             end_turn();
+            // A creature whose morale broke as its turn began leaves now too.
+            remove_fled();
+            update_outcome();
+        }
         if (outcome_ != Outcome::ongoing)
             advance_turn_time();
     }
