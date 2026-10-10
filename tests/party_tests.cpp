@@ -2035,9 +2035,8 @@ void rejected_combat_handoff()
     }
 }
 
-// A member who died in an earlier fight sits out the next one. Winning it must
-// still return the party to exploration with its rewards.
-void victory_beside_dead_member()
+// A synthetic district whose gate starts one encounter with a Test orc.
+std::shared_ptr<por::PhlanResources> orc_encounter_resources()
 {
     auto gate = program({32, 0, 20, 0});
     auto encounter = program({58, 33, 0, 20, 0, 2, 0, 255, 11, 0, 4, 0, 1, 0, 4, 36, 0});
@@ -2057,6 +2056,29 @@ void victory_beside_dead_member()
     district->script = 20; // the Slums script loads it
     district->bank = 2;
     resources->districts[20] = district;
+    return resources;
+}
+
+// Walks the synthetic gate into its encounter and returns the fight's opening
+// snapshot.
+Snapshot start_orc_encounter(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
+{
+    town.campaign_party(party);
+    settle(town);
+    check(town.explore(por::ExplorationCommand::look), "Synthetic gate starts the encounter");
+    settle(town);
+    check(town.pending_encounter().has_value(), "The encounter reaches combat");
+    CombatDemo combat(module());
+    combat.campaign_party(party);
+    combat.encounter(*town.pending_encounter(), 42);
+    return combat.combat().snapshot();
+}
+
+// A member who died in an earlier fight sits out the next one. Winning it must
+// still return the party to exploration with its rewards.
+void victory_beside_dead_member()
+{
+    const auto resources = orc_encounter_resources();
     auto party = std::make_shared<CampaignParty>(module());
     (void)party->add_pc(character("fighter"));
     const auto fallen = party->add_pc(character("fighter", "Bo"));
@@ -2064,19 +2086,8 @@ void victory_beside_dead_member()
     state.roster[1].vitals.hit_points = 0;
     state.roster[1].vitals.dead = true;
     party->restore(state);
-    por::RolfTourSession town({}, gate, {}, 0x9914, {}, resources);
-    town.campaign_party(party);
-    settle(town);
-    check(town.explore(por::ExplorationCommand::look), "Synthetic gate starts the encounter");
-    settle(town);
-    check(town.pending_encounter().has_value(), "The encounter reaches combat");
-    Snapshot result;
-    {
-        CombatDemo combat(module());
-        combat.campaign_party(party);
-        combat.encounter(*town.pending_encounter(), 42);
-        result = combat.combat().snapshot();
-    }
+    por::RolfTourSession town({}, resources->programs.at(0), {}, 0x9914, {}, resources);
+    auto result = start_orc_encounter(town, party);
     check(std::none_of(result.combatants.begin(), result.combatants.end(),
                        [&](const auto & unit)
     {
@@ -2089,6 +2100,27 @@ void victory_beside_dead_member()
             unit.hit_points = 0;
     check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
           "The victory resolves although a dead member sat it out");
+}
+
+// When every monster runs off the field the party wins, but nothing is left to
+// pay experience or treasure. The fight must still end, once.
+void victory_when_every_monster_fled()
+{
+    const auto resources = orc_encounter_resources();
+    auto party = std::make_shared<CampaignParty>(module());
+    (void)party->add_pc(character("fighter"));
+    por::RolfTourSession town({}, resources->programs.at(0), {}, 0x9914, {}, resources);
+    auto result = start_orc_encounter(town, party);
+    const auto before = party->checkpoint();
+    result.outcome = Outcome::victory;
+    for (auto &unit : result.combatants)
+        if (unit.side == 1)
+            unit.fled = true;
+    check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
+          "A victory over monsters that all fled ends the fight");
+    check(party->state().claimed_rewards == before.claimed_rewards &&
+          party->state().roster[0].experience == before.roster[0].experience,
+          "Monsters that all got away are worth no experience or treasure");
 }
 
 void recovery_hosts()
@@ -2439,6 +2471,7 @@ int main()
         shop_buyer_switch();
         rejected_combat_handoff();
         victory_beside_dead_member();
+        victory_when_every_monster_fled();
         monster_picture_before_combat();
         recovery_hosts();
         reward_reentry();

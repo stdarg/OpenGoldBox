@@ -395,63 +395,73 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                         std::to_string(current_script_) + ":roaming:" +
                         std::to_string(++next_ticket_);
     const bool fled = result.outcome == rules::Outcome::fled;
-    if (fled)
+    // Members are lost and rewards claimed before the original script hears the
+    // result; any failure from here rolls the whole event back rather than
+    // leaving those half applied (Effective C++ Item 29).
+    try
     {
-        // The party fled (the original's rule): members left on the field are
-        // lost for good, and only the monsters it killed are worth experience.
-        // The treasure stays with the monsters.
-        snapshot_.dialogue = "Your party flees the battle.";
-        for (const auto &unit : result.combatants)
-            if (unit.side == 0 && !unit.fled)
-            {
-                campaign_->lose(unit.id);
-                snapshot_.dialogue += "\n" + unit.name + " is left behind and lost.";
-            }
-        unsigned experience = 0;
-        for (const auto &unit : result.combatants)
-            if (unit.side == 1 && unit.hit_points == 0)
-                experience += area_resources()
-                              .conversions.at(staged_records_.at(unit.id - 1000))
-                              .award_xp;
-        if (experience)
-            campaign_->award_experience(experience, reward);
-    }
-    else
-    {
-        // Experience and loot stay the original encounter's, however many fought,
-        // less a record for each monster that got away.
-        auto paying = encounter_records_;
-        for (const auto record : escaped_records)
-            if (const auto it = std::find(paying.begin(), paying.end(), record); it != paying.end())
-                paying.erase(it);
-        unsigned experience = 0;
-        for (auto record : paying)
-            experience += area_resources().conversions.at(record).award_xp;
-        campaign_->award_experience(experience, reward);
-        pending_loot_.push_back(encounter_loot(current_area_, paying, reward + ":loot",
-                                               machine_.variable(0x6DE3) != 1));
-        claim_loot();
-        // Treasure the script added to the fight is won with it.
-        if (staged_treasure_)
-            award_staged_treasure();
-    }
-    auto reply = character_reply(selected_character_);
-    // The original's combat results: 0 won, 128 the party fled.
-    for (auto write : std::array<EclMemoryWrite, 7> {{{0x6DC7, static_cast<std::uint16_t>(fled ? 128 : 0)},
-        {0x6DC8, static_cast<std::uint16_t>(defeated)},
-            {0x6DCB, 0},
-            {0x6DE3, 0},
-            {0x6E70, 0},
-            {0x6E71, 0},
-            {0x6E72, 0}
+        if (fled)
+        {
+            // The party fled (the original's rule): members left on the field are
+            // lost for good, and only the monsters it killed are worth experience.
+            // The treasure stays with the monsters.
+            snapshot_.dialogue = "Your party flees the battle.";
+            for (const auto &unit : result.combatants)
+                if (unit.side == 0 && !unit.fled)
+                {
+                    campaign_->lose(unit.id);
+                    snapshot_.dialogue += "\n" + unit.name + " is left behind and lost.";
+                }
+            unsigned experience = 0;
+            for (const auto &unit : result.combatants)
+                if (unit.side == 1 && unit.hit_points == 0)
+                    experience += area_resources()
+                                  .conversions.at(staged_records_.at(unit.id - 1000))
+                                  .award_xp;
+            if (experience)
+                campaign_->award_experience(experience, reward);
         }
-    })
-    reply.writes.push_back(write);
-    // The party has already lost members and won rewards above; a rejected
-    // result rolls the whole event back rather than leaving those half applied.
-    if (!machine_.resume_host(combat_request_, reply))
+        else
+        {
+            // Experience and loot stay the original encounter's, however many fought,
+            // less a record for each monster that got away.
+            auto paying = encounter_records_;
+            for (const auto record : escaped_records)
+                if (const auto it = std::find(paying.begin(), paying.end(), record); it != paying.end())
+                    paying.erase(it);
+            // Monsters that all got away leave nothing to pay.
+            if (!paying.empty())
+            {
+                unsigned experience = 0;
+                for (auto record : paying)
+                    experience += area_resources().conversions.at(record).award_xp;
+                campaign_->award_experience(experience, reward);
+                pending_loot_.push_back(encounter_loot(current_area_, paying, reward + ":loot",
+                                                       machine_.variable(0x6DE3) != 1));
+                claim_loot();
+            }
+            // Treasure the script added to the fight is won with it.
+            if (staged_treasure_)
+                award_staged_treasure();
+        }
+        auto reply = character_reply(selected_character_);
+        // The original's combat results: 0 won, 128 the party fled.
+        for (auto write : std::array<EclMemoryWrite, 7> {{{0x6DC7, static_cast<std::uint16_t>(fled ? 128 : 0)},
+            {0x6DC8, static_cast<std::uint16_t>(defeated)},
+                {0x6DCB, 0},
+                {0x6DE3, 0},
+                {0x6E70, 0},
+                {0x6E71, 0},
+                {0x6E72, 0}
+            }
+        })
+        reply.writes.push_back(write);
+        if (!machine_.resume_host(combat_request_, reply))
+            throw EclError("Combat result rejected by original script");
+    }
+    catch (const std::exception &error)
     {
-        fail("Combat result rejected by original script");
+        fail(error.what());
         return true;
     }
     combat_request_ = 0;
