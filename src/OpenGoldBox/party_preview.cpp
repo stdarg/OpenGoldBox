@@ -549,7 +549,7 @@ void CharacterCreationView::equipment_art_check()
         auto appearance = character.appearance();
         appearance.combat_body = 24;
         character.appearance(appearance);
-        for (const auto &option : body_catalog_->options)
+        for (const auto &option : body_catalog_->options())
             if (option.original_type)
             {
                 por::Equipment item;

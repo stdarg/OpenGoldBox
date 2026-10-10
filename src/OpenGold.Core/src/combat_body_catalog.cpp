@@ -65,9 +65,9 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
                 !keys.insert(option.id).second || !keys.insert(option.id + "_shield").second ||
                 !item_types.emplace(option.original_type).second)
             throw std::runtime_error("Duplicate or invalid combat look option");
-        result.options.push_back(std::move(option));
+        result.options_.push_back(std::move(option));
     }
-    if (!options.eof() || result.options.empty())
+    if (!options.eof() || result.options_.empty())
         throw std::runtime_error("Invalid combat look options file");
     std::ifstream in(assignments);
     if (!in)
@@ -84,7 +84,7 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
         if (line.substr(0, tab) == "deleted")
         {
             const auto key = strip_cr(line.substr(tab + 1));
-            if (key == "unreviewed" || !keys.contains(key) || !result.deleted.insert(key).second)
+            if (key == "unreviewed" || !keys.contains(key) || !result.deleted_.insert(key).second)
                 throw std::runtime_error("Invalid deleted combat combination");
             continue;
         }
@@ -101,7 +101,7 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
                     key = "type_" + key.substr(7);
                 if (key == "unreviewed" || !keys.contains(key))
                     throw std::runtime_error("Unknown combat body assignment");
-                result.bodies[index].insert(std::move(key));
+                result.bodies_[index].insert(std::move(key));
                 if (end == std::string::npos)
                     break;
                 begin = end + 1;
@@ -117,10 +117,45 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
     return present;
 }))
     throw std::runtime_error("Combat body catalog must contain all original 33 bodies");
-    for (auto &body : result.bodies)
-        for (const auto &key : result.deleted)
+    for (auto &body : result.bodies_)
+        for (const auto &key : result.deleted_)
             body.erase(key);
     return result;
+}
+
+void CombatBodyCatalog::assign_body(unsigned body, std::set<std::string> combinations)
+{
+    if (body >= bodies_.size())
+        throw std::out_of_range("Combat body out of range");
+    for (const auto &combination : combinations)
+        if (!names_option(combination) || deleted_.contains(combination))
+            throw std::invalid_argument("Unknown or deleted combat combination: " + combination);
+    bodies_[body] = std::move(combinations);
+}
+
+// As a "deleted" row in the file does: no body keeps the combination.
+void CombatBodyCatalog::delete_combination(const std::string &combination)
+{
+    if (!names_option(combination))
+        throw std::invalid_argument("Unknown combat combination: " + combination);
+    deleted_.insert(combination);
+    for (auto &body : bodies_)
+        body.erase(combination);
+}
+
+void CombatBodyCatalog::clear_assignments()
+{
+    for (auto &body : bodies_)
+        body.clear();
+    deleted_.clear();
+}
+
+bool CombatBodyCatalog::names_option(const std::string &combination) const
+{
+    return std::any_of(options_.begin(), options_.end(), [&](const auto & option)
+    {
+        return combination == option.id || combination == option.id + "_shield";
+    });
 }
 
 ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
@@ -175,7 +210,7 @@ CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> e
                 else if (item.definition_id == "shortbow")
                     type = 44;
             }
-            if (!weapon && std::any_of(options.begin(), options.end(),
+            if (!weapon && std::any_of(options_.begin(), options_.end(),
                                        [&](const auto & option)
         {
             return option.original_type == type;
@@ -187,21 +222,21 @@ CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> e
         }
     }
     const auto type = weapon ? weapon_type : 0;
-    const auto option = std::find_if(options.begin(), options.end(),
+    const auto option = std::find_if(options_.begin(), options_.end(),
                                      [&](const auto & value)
     {
         return value.original_type == type;
     });
-    const auto key = (option == options.end() ? "type_" + std::to_string(type) : option->id) +
+    const auto key = (option == options_.end() ? "type_" + std::to_string(type) : option->id) +
                      (shield ? "_shield" : "");
     const auto label =
-        (option == options.end() ? "Unknown weapon" : option->label) + (shield ? " & Shield" : "");
-    if (deleted.contains(key))
+        (option == options_.end() ? "Unknown weapon" : option->label) + (shield ? " & Shield" : "");
+    if (deleted_.contains(key))
         return {fallback, false, key, label};
-    if (fallback < bodies.size() && bodies[fallback].contains(key))
+    if (fallback < bodies_.size() && bodies_[fallback].contains(key))
         return {fallback, true, key, label};
-    for (unsigned id = 0; id < bodies.size(); ++id)
-        if (bodies[id].contains(key))
+    for (unsigned id = 0; id < bodies_.size(); ++id)
+        if (bodies_[id].contains(key))
             return {id, true, key, label};
     return {fallback, false, key, label};
 }

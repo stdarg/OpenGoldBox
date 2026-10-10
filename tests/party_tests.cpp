@@ -19,6 +19,7 @@
 #include <set>
 #include <stdexcept>
 #include <string_view>
+#include <type_traits>
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -54,13 +55,38 @@ concept SelectsBy = requires(CampaignParty &party, Slot slot)
 static_assert(SelectsBy<PartySlot>);
 static_assert(!SelectsBy<MemberId>);
 
+// A holder may read a loaded catalog but not change what load() checked: it
+// has no public fields, and its accessors return const (Effective C++ Item 22).
+template <class Catalog>
+concept WritableCatalogData = requires(Catalog &catalog)
+{
+    catalog.bodies[0].clear();
+} || requires(Catalog &catalog)
+{
+    catalog.deleted.clear();
+} || requires(Catalog &catalog)
+{
+    catalog.options.clear();
+} || requires(Catalog &catalog)
+{
+    catalog.bodies()[0].clear();
+} || requires(Catalog &catalog)
+{
+    catalog.deleted().clear();
+} || requires(Catalog &catalog)
+{
+    catalog.options().clear();
+};
+static_assert(!WritableCatalogData<por::CombatBodyCatalog>);
+static_assert(!std::is_aggregate_v<por::CombatBodyCatalog>);
+
 void combat_body_assignments()
 {
     const auto folder = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art";
     const auto saved = por::CombatBodyCatalog::load(folder / "combat-body-looks.tsv",
         folder / "combat-weapon-options.tsv");
-    check(saved.options.size() == 48, "Options contain ordinary shop weapons, wand and unarmed");
-    for (const auto &option : saved.options)
+    check(saved.options().size() == 48, "Options contain ordinary shop weapons, wand and unarmed");
+    for (const auto &option : saved.options())
         for (const bool shield :
                 {
                     false, true
@@ -75,35 +101,33 @@ void combat_body_assignments()
             const auto selected = saved.choose(gear, 10);
             check(selected.combination == combination,
                   "Every catalog option resolves its exact equipment key");
-            const auto assigned = std::find_if(saved.bodies.begin(), saved.bodies.end(),
+            const auto assigned = std::find_if(saved.bodies().begin(), saved.bodies().end(),
                                                [&](const auto & body)
             {
                 return body.contains(combination);
             });
             const bool has_art =
-                !saved.deleted.contains(combination) && assigned != saved.bodies.end();
+                !saved.deleted().contains(combination) && assigned != saved.bodies().end();
             check(selected.matched == has_art,
                   "Only assigned, non-deleted combinations have artwork");
             check(
                 selected.body ==
-                (has_art ? (saved.bodies[10].contains(combination)
+                (has_art ? (saved.bodies()[10].contains(combination)
                             ? 10u
-                            : static_cast<unsigned>(assigned - saved.bodies.begin()))
+                            : static_cast<unsigned>(assigned - saved.bodies().begin()))
                  : 10u),
                 "Catalog selection prefers the saved body, then first assignment, otherwise fallback");
         }
     const std::vector<por::CombatEquipment> shield_only{{59, "Shield", "shield"}};
     por::CombatBodyCatalog catalog = saved;
-    for (auto &body : catalog.bodies)
-        body.clear();
-    catalog.deleted.clear();
-    catalog.bodies[32] = {"type_0_shield"};
+    catalog.clear_assignments();
+    catalog.assign_body(32, {"type_0_shield"});
     check(catalog.choose(shield_only, 21).matched && catalog.choose(shield_only, 21).body == 32,
           "Unarmed with shield selects the assigned derived wand-free body");
-    catalog.bodies[1] = {"type_43", "type_44"};
-    catalog.bodies[4] = {"type_23_shield"};
-    catalog.bodies[7] = {"type_23"};
-    catalog.bodies[9] = {"type_43"};
+    catalog.assign_body(1, {"type_43", "type_44"});
+    catalog.assign_body(4, {"type_23_shield"});
+    catalog.assign_body(7, {"type_23"});
+    catalog.assign_body(9, {"type_43"});
     const std::vector<por::CombatEquipment> mace_shield{{23, "Mace", "mace"},
         {59, "Shield", "shield"}},
     mace{{23, "Mace", "mace"}}, bow{{43, "Long Bow", "longbow"}},
@@ -115,15 +139,32 @@ void combat_body_assignments()
     check(catalog.choose(bow, 9).body == 9, "Prefer saved matching body");
     check(catalog.choose(bow, 31).body == 1, "Otherwise choose lowest body ID");
     check(catalog.choose(silver_mace, 31).body == 7, "Silver uses ordinary associations");
-    catalog.bodies[1].erase("type_44");
+    catalog.assign_body(1, {"type_43"});
     check(catalog.choose(bow, 31).matched && !catalog.choose(shortbow, 31).matched,
           "Unchecking one association preserves the other");
-    catalog.bodies[4].clear();
+    catalog.assign_body(4, {});
     const auto missing = catalog.choose(mace_shield, 31);
     check(!missing.matched && missing.body == 31 && missing.combination == "type_23_shield",
           "No opposite shield substitution; saved appearance fallback is explicit");
     check(!catalog.choose({}, 30).matched && catalog.choose({}, 30).body == 30,
           "Unmapped unarmed also retains appearance");
+    rejects([&]
+    {
+        catalog.assign_body(7, {"type_23", "not_an_option"});
+    });
+    rejects([&]
+    {
+        catalog.assign_body(35, {"type_23"});
+    });
+    check(catalog.bodies()[7] == std::set<std::string> {"type_23"},
+          "A rejected assignment leaves the body unchanged");
+    catalog.delete_combination("type_23");
+    check(catalog.deleted().contains("type_23") && catalog.bodies()[7].empty(),
+          "Deleting a combination takes it from every body");
+    rejects([&]
+    {
+        catalog.assign_body(7, {"type_23"});
+    });
 
     struct TemporaryCatalog
     {
@@ -151,16 +192,16 @@ void combat_body_assignments()
                 << '\n';
     }
     const auto migrated = por::CombatBodyCatalog::load(path, folder / "combat-weapon-options.tsv");
-    check(migrated.bodies[1].size() == 2 &&
-          migrated.bodies[4] == std::set<std::string> {"type_23_shield"} &&
-          migrated.bodies[7].contains("type_23"),
+    check(migrated.bodies()[1].size() == 2 &&
+          migrated.bodies()[4] == std::set<std::string> {"type_23_shield"} &&
+          migrated.bodies()[7].contains("type_23"),
           "Load multiple, singleton and silver assignments without duplicates");
     {
         std::ofstream out(path, std::ios::app | std::ios::binary);
         out << "deleted\ttype_43\n";
     }
     const auto deleted = por::CombatBodyCatalog::load(path, folder / "combat-weapon-options.tsv");
-    check(deleted.deleted.contains("type_43") && !deleted.bodies[1].contains("type_43"),
+    check(deleted.deleted().contains("type_43") && !deleted.bodies()[1].contains("type_43"),
           "Deleted combination is removed from native associations");
     check(!deleted.choose(bow, 31).matched && deleted.choose(bow, 31).body == 31,
           "Deleted combination retains saved appearance");
@@ -373,16 +414,14 @@ void party_combat_appearance()
         folder / "combat-weapon-options.tsv");
     // Exercise equipment resolution against authored assignments, independently
     // of ongoing art review and intentionally unassigned production combinations.
-    for (auto &body : catalog.bodies)
-        body.clear();
-    catalog.deleted.clear();
-    catalog.bodies[0] = {"type_0"};
-    catalog.bodies[2] = {"type_36"};
-    catalog.bodies[33] = {"type_8"};
-    catalog.bodies[20] = {"type_36_shield"};
-    catalog.bodies[34] = {"type_8_shield"};
-    catalog.bodies[24] = {"type_36_shield"};
-    catalog.bodies[32] = {"type_0_shield"};
+    catalog.clear_assignments();
+    catalog.assign_body(0, {"type_0"});
+    catalog.assign_body(2, {"type_36"});
+    catalog.assign_body(33, {"type_8"});
+    catalog.assign_body(20, {"type_36_shield"});
+    catalog.assign_body(34, {"type_8_shield"});
+    catalog.assign_body(24, {"type_36_shield"});
+    catalog.assign_body(32, {"type_0_shield"});
     CampaignParty party(module());
     auto pc = character(), npc = character("fighter", "Guard");
     auto appearance = pc.appearance();
@@ -436,14 +475,18 @@ void party_combat_appearance()
         party.equip(id, gear[0].id);
         party.equip(id, gear[2].id);
         auto missing = catalog;
-        for (auto &body : missing.bodies)
-            body.erase("type_36_shield");
+        for (unsigned body = 0; body < missing.bodies().size(); ++body)
+        {
+            auto combinations = missing.bodies()[body];
+            combinations.erase("type_36_shield");
+            missing.assign_body(body, std::move(combinations));
+        }
         const auto fallback = por::resolve_combat_appearance(party.member(id), missing);
         check(!fallback.selection.matched && fallback.appearance == original &&
               fallback.selection.label == "Long Sword & Shield",
               "An unmapped combination preserves the complete saved appearance and diagnostic");
         auto deleted = catalog;
-        deleted.deleted.insert("type_36_shield");
+        deleted.delete_combination("type_36_shield");
         check(!por::resolve_combat_appearance(party.member(id), deleted).selection.matched,
               "Deleted combinations cannot select assigned artwork");
         auto invalid = party.member(id);
@@ -488,7 +531,7 @@ void all_weapon_equipment()
     const auto catalog = por::CombatBodyCatalog::load(folder / "combat-body-looks.tsv",
         folder / "combat-weapon-options.tsv");
     auto hero = character();
-    for (const auto &option : catalog.options)
+    for (const auto &option : catalog.options())
         if (option.original_type)
             hero.add_item({.definition_id = equipment_conversion(item(option.original_type)),
                                   .name = option.label,
