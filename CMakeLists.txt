@@ -84,6 +84,7 @@ target_include_directories(opengold_rules PUBLIC src/OpenGold.Rules/include)
 add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/srd5.cpp
     src/OpenGold.Rules.Srd5/src/character_rules.cpp
+    src/OpenGold.Rules.Srd5/src/character_class.cpp
     src/OpenGold.Rules.Srd5/src/weapon_mastery.cpp
     src/OpenGold.Rules.Srd5/src/feature_grants.cpp
     src/OpenGold.Rules.Srd5/src/training.cpp

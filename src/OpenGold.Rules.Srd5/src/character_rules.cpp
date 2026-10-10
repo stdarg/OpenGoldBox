@@ -1,4 +1,5 @@
 #include "dice.h"
+#include "character_class.h"
 #include "feature_grants.h"
 #include "training.h"
 #include "spell_access.h"
@@ -19,51 +20,59 @@ const std::array<std::string, 6> ability_names{"STR", "DEX", "CON", "INT", "WIS"
 
 struct Class
 {
-    const char *id;
-    const char *name;
+    detail::CharacterClass character_class;
     int die;
     const char *description;
 };
 
 constexpr std::array<Class, 12> classes
 {
-    {   {"barbarian", "Barbarian", 12, "A fierce warrior. Primary ability: Strength. Hit Die: d12."},
+    {   {
+            detail::CharacterClass::barbarian, 12,
+            "A fierce warrior. Primary ability: Strength. Hit Die: d12."
+        },
         {
-            "bard", "Bard", 8,
+            detail::CharacterClass::bard, 8,
             "An inspiring performer and spellcaster. Primary ability: Charisma. Hit Die: d8."
         },
-        {"cleric", "Cleric", 8, "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."},
-        {"druid", "Druid", 8, "A guardian of nature. Primary ability: Wisdom. Hit Die: d8."},
         {
-            "fighter", "Fighter", 10,
+            detail::CharacterClass::cleric, 8,
+            "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
+        },
+        {
+            detail::CharacterClass::druid, 8,
+            "A guardian of nature. Primary ability: Wisdom. Hit Die: d8."
+        },
+        {
+            detail::CharacterClass::fighter, 10,
             "A master of weapons. Primary ability: Strength or Dexterity. Hit Die: d10."
         },
         {
-            "monk", "Monk", 8,
+            detail::CharacterClass::monk, 8,
             "A disciplined martial artist. Primary abilities: Dexterity and Wisdom. Hit Die: d8."
         },
         {
-            "paladin", "Paladin", 10,
+            detail::CharacterClass::paladin, 10,
             "An oathbound warrior. Primary abilities: Strength and Charisma. Hit Die: d10."
         },
         {
-            "ranger", "Ranger", 10,
+            detail::CharacterClass::ranger, 10,
             "A hunter and wilderness explorer. Primary abilities: Dexterity and Wisdom. Hit Die: d10."
         },
         {
-            "rogue", "Rogue", 8,
+            detail::CharacterClass::rogue, 8,
             "An expert in stealth and precision. Primary ability: Dexterity. Hit Die: d8."
         },
         {
-            "sorcerer", "Sorcerer", 6,
+            detail::CharacterClass::sorcerer, 6,
             "A spellcaster with innate magic. Primary ability: Charisma. Hit Die: d6."
         },
         {
-            "warlock", "Warlock", 8,
+            detail::CharacterClass::warlock, 8,
             "A spellcaster empowered by a pact. Primary ability: Charisma. Hit Die: d8."
         },
         {
-            "wizard", "Wizard", 6,
+            detail::CharacterClass::wizard, 6,
             "A scholar of arcane magic. Primary ability: Intelligence. Hit Die: d6."
         }
     }};
@@ -161,7 +170,7 @@ class CreatorRules final : public CharacterRules
     AbilityCheckModifier ability_check(const CharacterSheet &sheet, Ability ability,
                                        std::string_view skill) const override
     {
-        return detail::ability_check(sheet.grants, detail::grant_source_id(sheet.character_class),
+        return detail::ability_check(sheet.grants, detail::class_id(detail::class_of(sheet)),
                                      detail::grant_source_id(sheet.background), sheet.level,
                                      sheet.scores, ability, skill);
     }
@@ -197,7 +206,8 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
     {
         std::vector<CreationChoice> result;
         for (const auto &c : classes)
-            result.push_back({c.id, c.name, c.description});
+            result.push_back({std::string(detail::class_id(c.character_class)),
+                              std::string(detail::class_label(c.character_class)), c.description});
         return result;
     }
     case CreationField::alignment:
@@ -277,7 +287,7 @@ ClassRequirements CreatorRules::class_requirements(std::string_view id) const
     const auto found = std::find_if(classes.begin(), classes.end(),
                                     [&](const auto & c)
     {
-        return c.id == id;
+        return detail::class_id(c.character_class) == id;
     });
     if (found == classes.end())
         throw std::runtime_error("Unknown class prerequisite");
@@ -379,12 +389,12 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     const auto c = std::find_if(classes.begin(), classes.end(),
                                 [&](const auto & c)
     {
-        return c.id == d.character_class;
+        return detail::class_id(c.character_class) == d.character_class;
     });
     s.hit_die = c->die;
     const int racial_hp = d.race == "dwarf" ? 1 : 0;
     // Core class traits, SRD 5.2.1. Single-class level-one creation.
-    const auto trained = detail::class_save_proficiencies(s.character_class);
+    const auto trained = detail::class_save_proficiencies(c->character_class);
     for (unsigned i = 0; i < 6; ++i)
     {
         s.save_proficiencies[i] = i == trained[0] || i == trained[1];

@@ -42,11 +42,9 @@ SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifi
             static_cast<std::int64_t>(natural) + bonus >= dc};
 }
 
-std::array<unsigned, 2> class_save_proficiencies(std::string_view name)
+std::array<unsigned, 2> class_save_proficiencies(CharacterClass character_class)
 {
-    constexpr std::array<std::string_view, 12> names{"Barbarian", "Bard",     "Cleric",  "Druid",
-            "Fighter",   "Monk",     "Paladin", "Ranger",
-            "Rogue",     "Sorcerer", "Warlock", "Wizard"};
+    // Indexed by CharacterClass.
     constexpr std::array<std::array<unsigned, 2>, 12> saves{{{0, 2},
             {1, 5},
             {4, 5},
@@ -60,10 +58,7 @@ std::array<unsigned, 2> class_save_proficiencies(std::string_view name)
             {4, 5},
             {3, 4}
         }};
-    const auto found = std::find(names.begin(), names.end(), name);
-    if (found == names.end())
-        throw std::runtime_error("Unknown saving throw class");
-    return saves[found - names.begin()];
+    return saves.at(static_cast<std::size_t>(character_class));
 }
 
 bool healing_blocked(const EffectState &effects, std::uint64_t after_ms)

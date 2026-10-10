@@ -1,4 +1,5 @@
 #include "dice.h"
+#include "character_class.h"
 #include "damage_roll.h"
 #include "sneak_attack.h"
 #include "action_budget.h"
@@ -33,6 +34,7 @@
 namespace opengold::srd5
 {
 using namespace rules;
+using detail::CharacterClass;
 
 int ability_modifier(int score) noexcept
 {
@@ -68,7 +70,7 @@ std::string attack_ability(std::string_view key)
            : "Strength";
 }
 
-bool trained(std::string_view klass, std::span<const FeatureGrant> grants, std::string_view key)
+bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::string_view key)
 {
     // Starting-class grants, SRD 5.2.1 pp. 49 and 61, plus the Protector Divine
     // Order's Martial weapon and Heavy armor training. Multiclass entry and other
@@ -77,7 +79,7 @@ bool trained(std::string_view klass, std::span<const FeatureGrant> grants, std::
     const bool protector = detail::has_grant(grants, "order:protector");
     const bool warden = detail::has_grant(grants, "order:warden");
     if (const auto *weapon = detail::weapon(key))
-        return detail::weapon_proficient(detail::grant_source_id(klass), *weapon) ||
+        return detail::weapon_proficient(detail::class_id(klass), *weapon) ||
                ((protector || warden) && weapon->martial);
     if (const auto *armor = detail::armor(key))
         return detail::armor_trained(klass, armor->category) ||
@@ -226,7 +228,7 @@ bool is_smite(std::string_view verb)
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
     std::string text;
-    if (trained(sheet.character_class, sheet.grants, item))
+    if (trained(detail::class_of(sheet), sheet.grants, item))
         text = "Class training: no untrained-use penalty.";
     else if (item == "shield")
         text = "Untrained shield: no AC bonus.";
@@ -262,237 +264,238 @@ constexpr int melee_reach = 5;
 // packed allow-mask, which could not express a spell beyond the 31st bit.
 struct SpellAccessRow
 {
-    std::string_view klass, spell;
+    CharacterClass klass;
+    std::string_view spell;
     unsigned min_level;
 };
 
 constexpr std::array class_spell_access
 {
-    SpellAccessRow{"Cleric", "cure_wounds", 1},
-    SpellAccessRow{"Cleric", "healing_word", 1},
-    SpellAccessRow{"Cleric", "blindness", 3},
-    SpellAccessRow{"Cleric", "sacred_flame", 1},
-    SpellAccessRow{"Cleric", "inflict_wounds", 1},
-    SpellAccessRow{"Paladin", "cure_wounds", 1},
-    SpellAccessRow{"Paladin", "divine_smite", 1},
-    SpellAccessRow{"Paladin", "searing_smite", 1},
-    SpellAccessRow{"Paladin", "shield_of_faith", 1},
-    SpellAccessRow{"Paladin", "heroism", 1},
-    SpellAccessRow{"Paladin", "divine_favor", 1},
-    SpellAccessRow{"Cleric", "shield_of_faith", 1},
-    SpellAccessRow{"Cleric", "bless", 1},
-    SpellAccessRow{"Paladin", "bless", 1},
-    SpellAccessRow{"Paladin", "protection_from_evil_and_good", 1},
-    SpellAccessRow{"Cleric", "protection_from_evil_and_good", 1},
-    SpellAccessRow{"Paladin", "command", 1},
-    SpellAccessRow{"Ranger", "cure_wounds", 1},
-    SpellAccessRow{"Ranger", "hunters_mark", 1},
-    SpellAccessRow{"Ranger", "longstrider", 1},
-    SpellAccessRow{"Ranger", "goodberry", 1},
-    SpellAccessRow{"Ranger", "ensnaring_strike", 1},
-    SpellAccessRow{"Ranger", "entangle", 1},
-    SpellAccessRow{"Ranger", "fog_cloud", 1},
+    SpellAccessRow{CharacterClass::cleric, "cure_wounds", 1},
+    SpellAccessRow{CharacterClass::cleric, "healing_word", 1},
+    SpellAccessRow{CharacterClass::cleric, "blindness", 3},
+    SpellAccessRow{CharacterClass::cleric, "sacred_flame", 1},
+    SpellAccessRow{CharacterClass::cleric, "inflict_wounds", 1},
+    SpellAccessRow{CharacterClass::paladin, "cure_wounds", 1},
+    SpellAccessRow{CharacterClass::paladin, "divine_smite", 1},
+    SpellAccessRow{CharacterClass::paladin, "searing_smite", 1},
+    SpellAccessRow{CharacterClass::paladin, "shield_of_faith", 1},
+    SpellAccessRow{CharacterClass::paladin, "heroism", 1},
+    SpellAccessRow{CharacterClass::paladin, "divine_favor", 1},
+    SpellAccessRow{CharacterClass::cleric, "shield_of_faith", 1},
+    SpellAccessRow{CharacterClass::cleric, "bless", 1},
+    SpellAccessRow{CharacterClass::paladin, "bless", 1},
+    SpellAccessRow{CharacterClass::paladin, "protection_from_evil_and_good", 1},
+    SpellAccessRow{CharacterClass::cleric, "protection_from_evil_and_good", 1},
+    SpellAccessRow{CharacterClass::paladin, "command", 1},
+    SpellAccessRow{CharacterClass::ranger, "cure_wounds", 1},
+    SpellAccessRow{CharacterClass::ranger, "hunters_mark", 1},
+    SpellAccessRow{CharacterClass::ranger, "longstrider", 1},
+    SpellAccessRow{CharacterClass::ranger, "goodberry", 1},
+    SpellAccessRow{CharacterClass::ranger, "ensnaring_strike", 1},
+    SpellAccessRow{CharacterClass::ranger, "entangle", 1},
+    SpellAccessRow{CharacterClass::ranger, "fog_cloud", 1},
     // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
-    SpellAccessRow{"Ranger", "poison_spray", 2},
-    SpellAccessRow{"Paladin", "sacred_flame", 2},
-    SpellAccessRow{"Cleric", "command", 1},
-    SpellAccessRow{"Cleric", "lesser_restoration", 3},
-    SpellAccessRow{"Cleric", "aid", 3},
-    SpellAccessRow{"Cleric", "guiding_bolt", 1},
-    SpellAccessRow{"Cleric", "bane", 1},
-    SpellAccessRow{"Cleric", "spare_the_dying", 1},
-    SpellAccessRow{"Cleric", "hold_person", 3},
-    SpellAccessRow{"Cleric", "sanctuary", 1},
-    SpellAccessRow{"Cleric", "warding_bond", 3},
-    SpellAccessRow{"Cleric", "protection_from_poison", 3},
-    SpellAccessRow{"Cleric", "resistance", 1},
-    SpellAccessRow{"Cleric", "silence", 3},
-    SpellAccessRow{"Cleric", "spiritual_weapon", 3},
-    SpellAccessRow{"Cleric", "prayer_of_healing", 3},
-    SpellAccessRow{"Paladin", "resistance", 2},
-    SpellAccessRow{"Ranger", "resistance", 2},
-    SpellAccessRow{"Paladin", "spare_the_dying", 2},
-    SpellAccessRow{"Ranger", "spare_the_dying", 2},
-    SpellAccessRow{"Wizard", "fire_bolt", 1},
-    SpellAccessRow{"Wizard", "magic_missile", 1},
-    SpellAccessRow{"Wizard", "scorching_ray", 3},
-    SpellAccessRow{"Wizard", "protection_from_evil_and_good", 1},
-    SpellAccessRow{"Wizard", "longstrider", 1},
-    SpellAccessRow{"Wizard", "fog_cloud", 1},
-    SpellAccessRow{"Wizard", "hold_person", 3},
-    SpellAccessRow{"Wizard", "burning_hands", 1},
-    SpellAccessRow{"Wizard", "thunderwave", 1},
-    SpellAccessRow{"Wizard", "shatter", 3},
-    SpellAccessRow{"Wizard", "mage_armor", 1},
-    SpellAccessRow{"Wizard", "false_life", 1},
-    SpellAccessRow{"Wizard", "expeditious_retreat", 1},
-    SpellAccessRow{"Wizard", "ray_of_sickness", 1},
-    SpellAccessRow{"Wizard", "ice_knife", 1},
-    SpellAccessRow{"Wizard", "chromatic_orb", 1},
-    SpellAccessRow{"Wizard", "acid_splash", 1},
-    SpellAccessRow{"Wizard", "sleep", 1},
-    SpellAccessRow{"Wizard", "hideous_laughter", 1},
-    SpellAccessRow{"Wizard", "color_spray", 1},
-    SpellAccessRow{"Wizard", "grease", 1},
-    SpellAccessRow{"Wizard", "web", 3},
-    SpellAccessRow{"Wizard", "shield", 1},
-    SpellAccessRow{"Wizard", "misty_step", 3},
-    SpellAccessRow{"Wizard", "acid_arrow", 3},
-    SpellAccessRow{"Wizard", "mind_spike", 3},
-    SpellAccessRow{"Wizard", "ray_of_enfeeblement", 3},
-    SpellAccessRow{"Wizard", "blur", 3},
-    SpellAccessRow{"Wizard", "mirror_image", 3},
-    SpellAccessRow{"Wizard", "magic_weapon", 3},
-    SpellAccessRow{"Wizard", "invisibility", 3},
-    SpellAccessRow{"Wizard", "see_invisibility", 3},
-    SpellAccessRow{"Wizard", "darkness", 3},
-    SpellAccessRow{"Wizard", "flaming_sphere", 3},
-    SpellAccessRow{"Wizard", "knock", 3},
-    SpellAccessRow{"Wizard", "enlarge_reduce", 3},
-    SpellAccessRow{"Wizard", "true_strike", 1},
-    SpellAccessRow{"Wizard", "dragons_breath", 3},
-    SpellAccessRow{"Wizard", "charm_person", 1},
-    SpellAccessRow{"Wizard", "gust_of_wind", 3},
-    SpellAccessRow{"Wizard", "blindness", 3},
-    SpellAccessRow{"Wizard", "poison_spray", 1},
-    SpellAccessRow{"Wizard", "ray_of_frost", 1},
-    SpellAccessRow{"Wizard", "shocking_grasp", 1},
-    SpellAccessRow{"Wizard", "chill_touch", 1},
-    SpellAccessRow{"Sorcerer", "fire_bolt", 1},
-    SpellAccessRow{"Sorcerer", "poison_spray", 1},
-    SpellAccessRow{"Sorcerer", "ray_of_frost", 1},
-    SpellAccessRow{"Sorcerer", "shocking_grasp", 1},
-    SpellAccessRow{"Sorcerer", "chill_touch", 1},
-    SpellAccessRow{"Sorcerer", "acid_splash", 1},
-    SpellAccessRow{"Sorcerer", "true_strike", 1},
+    SpellAccessRow{CharacterClass::ranger, "poison_spray", 2},
+    SpellAccessRow{CharacterClass::paladin, "sacred_flame", 2},
+    SpellAccessRow{CharacterClass::cleric, "command", 1},
+    SpellAccessRow{CharacterClass::cleric, "lesser_restoration", 3},
+    SpellAccessRow{CharacterClass::cleric, "aid", 3},
+    SpellAccessRow{CharacterClass::cleric, "guiding_bolt", 1},
+    SpellAccessRow{CharacterClass::cleric, "bane", 1},
+    SpellAccessRow{CharacterClass::cleric, "spare_the_dying", 1},
+    SpellAccessRow{CharacterClass::cleric, "hold_person", 3},
+    SpellAccessRow{CharacterClass::cleric, "sanctuary", 1},
+    SpellAccessRow{CharacterClass::cleric, "warding_bond", 3},
+    SpellAccessRow{CharacterClass::cleric, "protection_from_poison", 3},
+    SpellAccessRow{CharacterClass::cleric, "resistance", 1},
+    SpellAccessRow{CharacterClass::cleric, "silence", 3},
+    SpellAccessRow{CharacterClass::cleric, "spiritual_weapon", 3},
+    SpellAccessRow{CharacterClass::cleric, "prayer_of_healing", 3},
+    SpellAccessRow{CharacterClass::paladin, "resistance", 2},
+    SpellAccessRow{CharacterClass::ranger, "resistance", 2},
+    SpellAccessRow{CharacterClass::paladin, "spare_the_dying", 2},
+    SpellAccessRow{CharacterClass::ranger, "spare_the_dying", 2},
+    SpellAccessRow{CharacterClass::wizard, "fire_bolt", 1},
+    SpellAccessRow{CharacterClass::wizard, "magic_missile", 1},
+    SpellAccessRow{CharacterClass::wizard, "scorching_ray", 3},
+    SpellAccessRow{CharacterClass::wizard, "protection_from_evil_and_good", 1},
+    SpellAccessRow{CharacterClass::wizard, "longstrider", 1},
+    SpellAccessRow{CharacterClass::wizard, "fog_cloud", 1},
+    SpellAccessRow{CharacterClass::wizard, "hold_person", 3},
+    SpellAccessRow{CharacterClass::wizard, "burning_hands", 1},
+    SpellAccessRow{CharacterClass::wizard, "thunderwave", 1},
+    SpellAccessRow{CharacterClass::wizard, "shatter", 3},
+    SpellAccessRow{CharacterClass::wizard, "mage_armor", 1},
+    SpellAccessRow{CharacterClass::wizard, "false_life", 1},
+    SpellAccessRow{CharacterClass::wizard, "expeditious_retreat", 1},
+    SpellAccessRow{CharacterClass::wizard, "ray_of_sickness", 1},
+    SpellAccessRow{CharacterClass::wizard, "ice_knife", 1},
+    SpellAccessRow{CharacterClass::wizard, "chromatic_orb", 1},
+    SpellAccessRow{CharacterClass::wizard, "acid_splash", 1},
+    SpellAccessRow{CharacterClass::wizard, "sleep", 1},
+    SpellAccessRow{CharacterClass::wizard, "hideous_laughter", 1},
+    SpellAccessRow{CharacterClass::wizard, "color_spray", 1},
+    SpellAccessRow{CharacterClass::wizard, "grease", 1},
+    SpellAccessRow{CharacterClass::wizard, "web", 3},
+    SpellAccessRow{CharacterClass::wizard, "shield", 1},
+    SpellAccessRow{CharacterClass::wizard, "misty_step", 3},
+    SpellAccessRow{CharacterClass::wizard, "acid_arrow", 3},
+    SpellAccessRow{CharacterClass::wizard, "mind_spike", 3},
+    SpellAccessRow{CharacterClass::wizard, "ray_of_enfeeblement", 3},
+    SpellAccessRow{CharacterClass::wizard, "blur", 3},
+    SpellAccessRow{CharacterClass::wizard, "mirror_image", 3},
+    SpellAccessRow{CharacterClass::wizard, "magic_weapon", 3},
+    SpellAccessRow{CharacterClass::wizard, "invisibility", 3},
+    SpellAccessRow{CharacterClass::wizard, "see_invisibility", 3},
+    SpellAccessRow{CharacterClass::wizard, "darkness", 3},
+    SpellAccessRow{CharacterClass::wizard, "flaming_sphere", 3},
+    SpellAccessRow{CharacterClass::wizard, "knock", 3},
+    SpellAccessRow{CharacterClass::wizard, "enlarge_reduce", 3},
+    SpellAccessRow{CharacterClass::wizard, "true_strike", 1},
+    SpellAccessRow{CharacterClass::wizard, "dragons_breath", 3},
+    SpellAccessRow{CharacterClass::wizard, "charm_person", 1},
+    SpellAccessRow{CharacterClass::wizard, "gust_of_wind", 3},
+    SpellAccessRow{CharacterClass::wizard, "blindness", 3},
+    SpellAccessRow{CharacterClass::wizard, "poison_spray", 1},
+    SpellAccessRow{CharacterClass::wizard, "ray_of_frost", 1},
+    SpellAccessRow{CharacterClass::wizard, "shocking_grasp", 1},
+    SpellAccessRow{CharacterClass::wizard, "chill_touch", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "fire_bolt", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "poison_spray", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "ray_of_frost", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "shocking_grasp", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "chill_touch", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "acid_splash", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "true_strike", 1},
     // Prepared Sorcerer spells; Command comes only from Draconic Spells.
-    SpellAccessRow{"Sorcerer", "burning_hands", 1},
-    SpellAccessRow{"Sorcerer", "charm_person", 1},
-    SpellAccessRow{"Sorcerer", "chromatic_orb", 1},
-    SpellAccessRow{"Sorcerer", "color_spray", 1},
-    SpellAccessRow{"Sorcerer", "expeditious_retreat", 1},
-    SpellAccessRow{"Sorcerer", "false_life", 1},
-    SpellAccessRow{"Sorcerer", "fog_cloud", 1},
-    SpellAccessRow{"Sorcerer", "grease", 1},
-    SpellAccessRow{"Sorcerer", "ice_knife", 1},
-    SpellAccessRow{"Sorcerer", "mage_armor", 1},
-    SpellAccessRow{"Sorcerer", "magic_missile", 1},
-    SpellAccessRow{"Sorcerer", "ray_of_sickness", 1},
-    SpellAccessRow{"Sorcerer", "shield", 1},
-    SpellAccessRow{"Sorcerer", "sleep", 1},
-    SpellAccessRow{"Sorcerer", "thunderwave", 1},
-    SpellAccessRow{"Sorcerer", "sorcerous_burst", 1},
-    SpellAccessRow{"Sorcerer", "blindness", 3},
-    SpellAccessRow{"Sorcerer", "blur", 3},
-    SpellAccessRow{"Sorcerer", "darkness", 3},
-    SpellAccessRow{"Sorcerer", "dragons_breath", 3},
-    SpellAccessRow{"Sorcerer", "enlarge_reduce", 3},
-    SpellAccessRow{"Sorcerer", "flaming_sphere", 3},
-    SpellAccessRow{"Sorcerer", "gust_of_wind", 3},
-    SpellAccessRow{"Sorcerer", "hold_person", 3},
-    SpellAccessRow{"Sorcerer", "invisibility", 3},
-    SpellAccessRow{"Sorcerer", "knock", 3},
-    SpellAccessRow{"Sorcerer", "magic_weapon", 3},
-    SpellAccessRow{"Sorcerer", "mind_spike", 3},
-    SpellAccessRow{"Sorcerer", "mirror_image", 3},
-    SpellAccessRow{"Sorcerer", "misty_step", 3},
-    SpellAccessRow{"Sorcerer", "scorching_ray", 3},
-    SpellAccessRow{"Sorcerer", "see_invisibility", 3},
-    SpellAccessRow{"Sorcerer", "shatter", 3},
-    SpellAccessRow{"Sorcerer", "web", 3},
-    SpellAccessRow{"Sorcerer", "command", 3},
-    SpellAccessRow{"Bard", "true_strike", 1},
-    SpellAccessRow{"Bard", "vicious_mockery", 1},
-    SpellAccessRow{"Bard", "starry_wisp", 1},
-    SpellAccessRow{"Bard", "bane", 1},
-    SpellAccessRow{"Bard", "charm_person", 1},
-    SpellAccessRow{"Bard", "color_spray", 1},
-    SpellAccessRow{"Bard", "command", 1},
-    SpellAccessRow{"Bard", "cure_wounds", 1},
-    SpellAccessRow{"Bard", "dissonant_whispers", 1},
-    SpellAccessRow{"Bard", "faerie_fire", 1},
-    SpellAccessRow{"Bard", "healing_word", 1},
-    SpellAccessRow{"Bard", "heroism", 1},
-    SpellAccessRow{"Bard", "hideous_laughter", 1},
-    SpellAccessRow{"Bard", "longstrider", 1},
-    SpellAccessRow{"Bard", "sleep", 1},
-    SpellAccessRow{"Bard", "thunderwave", 1},
-    SpellAccessRow{"Bard", "aid", 3},
-    SpellAccessRow{"Bard", "blindness", 3},
-    SpellAccessRow{"Bard", "enlarge_reduce", 3},
-    SpellAccessRow{"Bard", "hold_person", 3},
-    SpellAccessRow{"Bard", "invisibility", 3},
-    SpellAccessRow{"Bard", "knock", 3},
-    SpellAccessRow{"Bard", "lesser_restoration", 3},
-    SpellAccessRow{"Bard", "mirror_image", 3},
-    SpellAccessRow{"Bard", "see_invisibility", 3},
-    SpellAccessRow{"Bard", "shatter", 3},
-    SpellAccessRow{"Bard", "silence", 3},
-    SpellAccessRow{"Druid", "produce_flame", 1},
-    SpellAccessRow{"Druid", "shillelagh", 1},
-    SpellAccessRow{"Druid", "poison_spray", 1},
-    SpellAccessRow{"Druid", "resistance", 1},
-    SpellAccessRow{"Druid", "spare_the_dying", 1},
-    SpellAccessRow{"Druid", "starry_wisp", 1},
-    SpellAccessRow{"Druid", "charm_person", 1},
-    SpellAccessRow{"Druid", "cure_wounds", 1},
-    SpellAccessRow{"Druid", "entangle", 1},
-    SpellAccessRow{"Druid", "faerie_fire", 1},
-    SpellAccessRow{"Druid", "fog_cloud", 1},
-    SpellAccessRow{"Druid", "goodberry", 1},
-    SpellAccessRow{"Druid", "healing_word", 1},
-    SpellAccessRow{"Druid", "ice_knife", 1},
-    SpellAccessRow{"Druid", "longstrider", 1},
-    SpellAccessRow{"Druid", "protection_from_evil_and_good", 1},
-    SpellAccessRow{"Druid", "thunderwave", 1},
-    SpellAccessRow{"Druid", "aid", 3},
-    SpellAccessRow{"Druid", "barkskin", 3},
-    SpellAccessRow{"Druid", "flame_blade", 3},
-    SpellAccessRow{"Druid", "moonbeam", 3},
-    SpellAccessRow{"Druid", "spike_growth", 3},
-    SpellAccessRow{"Druid", "heat_metal", 3},
-    SpellAccessRow{"Bard", "heat_metal", 3},
-    SpellAccessRow{"Druid", "enlarge_reduce", 3},
-    SpellAccessRow{"Druid", "flaming_sphere", 3},
-    SpellAccessRow{"Druid", "gust_of_wind", 3},
-    SpellAccessRow{"Druid", "hold_person", 3},
-    SpellAccessRow{"Druid", "lesser_restoration", 3},
-    SpellAccessRow{"Druid", "protection_from_poison", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "burning_hands", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "charm_person", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "chromatic_orb", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "color_spray", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "expeditious_retreat", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "false_life", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "fog_cloud", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "grease", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "ice_knife", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "mage_armor", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "magic_missile", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "ray_of_sickness", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "shield", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "sleep", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "thunderwave", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "sorcerous_burst", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "blindness", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "blur", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "darkness", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "dragons_breath", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "enlarge_reduce", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "flaming_sphere", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "gust_of_wind", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "hold_person", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "invisibility", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "knock", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "magic_weapon", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "mind_spike", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "mirror_image", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "misty_step", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "scorching_ray", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "see_invisibility", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "shatter", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "web", 3},
+    SpellAccessRow{CharacterClass::sorcerer, "command", 3},
+    SpellAccessRow{CharacterClass::bard, "true_strike", 1},
+    SpellAccessRow{CharacterClass::bard, "vicious_mockery", 1},
+    SpellAccessRow{CharacterClass::bard, "starry_wisp", 1},
+    SpellAccessRow{CharacterClass::bard, "bane", 1},
+    SpellAccessRow{CharacterClass::bard, "charm_person", 1},
+    SpellAccessRow{CharacterClass::bard, "color_spray", 1},
+    SpellAccessRow{CharacterClass::bard, "command", 1},
+    SpellAccessRow{CharacterClass::bard, "cure_wounds", 1},
+    SpellAccessRow{CharacterClass::bard, "dissonant_whispers", 1},
+    SpellAccessRow{CharacterClass::bard, "faerie_fire", 1},
+    SpellAccessRow{CharacterClass::bard, "healing_word", 1},
+    SpellAccessRow{CharacterClass::bard, "heroism", 1},
+    SpellAccessRow{CharacterClass::bard, "hideous_laughter", 1},
+    SpellAccessRow{CharacterClass::bard, "longstrider", 1},
+    SpellAccessRow{CharacterClass::bard, "sleep", 1},
+    SpellAccessRow{CharacterClass::bard, "thunderwave", 1},
+    SpellAccessRow{CharacterClass::bard, "aid", 3},
+    SpellAccessRow{CharacterClass::bard, "blindness", 3},
+    SpellAccessRow{CharacterClass::bard, "enlarge_reduce", 3},
+    SpellAccessRow{CharacterClass::bard, "hold_person", 3},
+    SpellAccessRow{CharacterClass::bard, "invisibility", 3},
+    SpellAccessRow{CharacterClass::bard, "knock", 3},
+    SpellAccessRow{CharacterClass::bard, "lesser_restoration", 3},
+    SpellAccessRow{CharacterClass::bard, "mirror_image", 3},
+    SpellAccessRow{CharacterClass::bard, "see_invisibility", 3},
+    SpellAccessRow{CharacterClass::bard, "shatter", 3},
+    SpellAccessRow{CharacterClass::bard, "silence", 3},
+    SpellAccessRow{CharacterClass::druid, "produce_flame", 1},
+    SpellAccessRow{CharacterClass::druid, "shillelagh", 1},
+    SpellAccessRow{CharacterClass::druid, "poison_spray", 1},
+    SpellAccessRow{CharacterClass::druid, "resistance", 1},
+    SpellAccessRow{CharacterClass::druid, "spare_the_dying", 1},
+    SpellAccessRow{CharacterClass::druid, "starry_wisp", 1},
+    SpellAccessRow{CharacterClass::druid, "charm_person", 1},
+    SpellAccessRow{CharacterClass::druid, "cure_wounds", 1},
+    SpellAccessRow{CharacterClass::druid, "entangle", 1},
+    SpellAccessRow{CharacterClass::druid, "faerie_fire", 1},
+    SpellAccessRow{CharacterClass::druid, "fog_cloud", 1},
+    SpellAccessRow{CharacterClass::druid, "goodberry", 1},
+    SpellAccessRow{CharacterClass::druid, "healing_word", 1},
+    SpellAccessRow{CharacterClass::druid, "ice_knife", 1},
+    SpellAccessRow{CharacterClass::druid, "longstrider", 1},
+    SpellAccessRow{CharacterClass::druid, "protection_from_evil_and_good", 1},
+    SpellAccessRow{CharacterClass::druid, "thunderwave", 1},
+    SpellAccessRow{CharacterClass::druid, "aid", 3},
+    SpellAccessRow{CharacterClass::druid, "barkskin", 3},
+    SpellAccessRow{CharacterClass::druid, "flame_blade", 3},
+    SpellAccessRow{CharacterClass::druid, "moonbeam", 3},
+    SpellAccessRow{CharacterClass::druid, "spike_growth", 3},
+    SpellAccessRow{CharacterClass::druid, "heat_metal", 3},
+    SpellAccessRow{CharacterClass::bard, "heat_metal", 3},
+    SpellAccessRow{CharacterClass::druid, "enlarge_reduce", 3},
+    SpellAccessRow{CharacterClass::druid, "flaming_sphere", 3},
+    SpellAccessRow{CharacterClass::druid, "gust_of_wind", 3},
+    SpellAccessRow{CharacterClass::druid, "hold_person", 3},
+    SpellAccessRow{CharacterClass::druid, "lesser_restoration", 3},
+    SpellAccessRow{CharacterClass::druid, "protection_from_poison", 3},
     // Circle Spells come only from the land chosen at level three.
-    SpellAccessRow{"Druid", "blur", 3},
-    SpellAccessRow{"Druid", "burning_hands", 3},
-    SpellAccessRow{"Druid", "fire_bolt", 3},
-    SpellAccessRow{"Druid", "ray_of_frost", 3},
-    SpellAccessRow{"Druid", "misty_step", 3},
-    SpellAccessRow{"Druid", "shocking_grasp", 3},
-    SpellAccessRow{"Druid", "sleep", 3},
-    SpellAccessRow{"Druid", "acid_splash", 3},
-    SpellAccessRow{"Druid", "ray_of_sickness", 3},
-    SpellAccessRow{"Druid", "web", 3},
+    SpellAccessRow{CharacterClass::druid, "blur", 3},
+    SpellAccessRow{CharacterClass::druid, "burning_hands", 3},
+    SpellAccessRow{CharacterClass::druid, "fire_bolt", 3},
+    SpellAccessRow{CharacterClass::druid, "ray_of_frost", 3},
+    SpellAccessRow{CharacterClass::druid, "misty_step", 3},
+    SpellAccessRow{CharacterClass::druid, "shocking_grasp", 3},
+    SpellAccessRow{CharacterClass::druid, "sleep", 3},
+    SpellAccessRow{CharacterClass::druid, "acid_splash", 3},
+    SpellAccessRow{CharacterClass::druid, "ray_of_sickness", 3},
+    SpellAccessRow{CharacterClass::druid, "web", 3},
     // Fiend Spells come only from the Fiend Patron.
-    SpellAccessRow{"Warlock", "burning_hands", 3},
-    SpellAccessRow{"Warlock", "command", 3},
-    SpellAccessRow{"Warlock", "scorching_ray", 3},
-    SpellAccessRow{"Warlock", "chill_touch", 1},
-    SpellAccessRow{"Warlock", "eldritch_blast", 1},
-    SpellAccessRow{"Warlock", "poison_spray", 1},
-    SpellAccessRow{"Warlock", "true_strike", 1},
-    SpellAccessRow{"Warlock", "bane", 1},
-    SpellAccessRow{"Warlock", "charm_person", 1},
-    SpellAccessRow{"Warlock", "expeditious_retreat", 1},
-    SpellAccessRow{"Warlock", "hellish_rebuke", 1},
-    SpellAccessRow{"Warlock", "hex", 1},
-    SpellAccessRow{"Warlock", "hideous_laughter", 1},
-    SpellAccessRow{"Warlock", "protection_from_evil_and_good", 1},
-    SpellAccessRow{"Warlock", "darkness", 3},
-    SpellAccessRow{"Warlock", "hold_person", 3},
-    SpellAccessRow{"Warlock", "invisibility", 3},
-    SpellAccessRow{"Warlock", "mind_spike", 3},
-    SpellAccessRow{"Warlock", "mirror_image", 3},
-    SpellAccessRow{"Warlock", "misty_step", 3},
-    SpellAccessRow{"Warlock", "ray_of_enfeeblement", 3}};
+    SpellAccessRow{CharacterClass::warlock, "burning_hands", 3},
+    SpellAccessRow{CharacterClass::warlock, "command", 3},
+    SpellAccessRow{CharacterClass::warlock, "scorching_ray", 3},
+    SpellAccessRow{CharacterClass::warlock, "chill_touch", 1},
+    SpellAccessRow{CharacterClass::warlock, "eldritch_blast", 1},
+    SpellAccessRow{CharacterClass::warlock, "poison_spray", 1},
+    SpellAccessRow{CharacterClass::warlock, "true_strike", 1},
+    SpellAccessRow{CharacterClass::warlock, "bane", 1},
+    SpellAccessRow{CharacterClass::warlock, "charm_person", 1},
+    SpellAccessRow{CharacterClass::warlock, "expeditious_retreat", 1},
+    SpellAccessRow{CharacterClass::warlock, "hellish_rebuke", 1},
+    SpellAccessRow{CharacterClass::warlock, "hex", 1},
+    SpellAccessRow{CharacterClass::warlock, "hideous_laughter", 1},
+    SpellAccessRow{CharacterClass::warlock, "protection_from_evil_and_good", 1},
+    SpellAccessRow{CharacterClass::warlock, "darkness", 3},
+    SpellAccessRow{CharacterClass::warlock, "hold_person", 3},
+    SpellAccessRow{CharacterClass::warlock, "invisibility", 3},
+    SpellAccessRow{CharacterClass::warlock, "mind_spike", 3},
+    SpellAccessRow{CharacterClass::warlock, "mirror_image", 3},
+    SpellAccessRow{CharacterClass::warlock, "misty_step", 3},
+    SpellAccessRow{CharacterClass::warlock, "ray_of_enfeeblement", 3}};
 
-std::vector<std::string> allowed_spells(std::string_view klass, unsigned level)
+std::vector<std::string> allowed_spells(CharacterClass klass, unsigned level)
 {
     std::vector<std::string> result;
     for (const auto &row : class_spell_access)
@@ -997,7 +1000,7 @@ character_definition(std::string_view bytes,
     if (bytes.size() > 8192)
         throw std::runtime_error("Character profile exceeds limit");
     std::istringstream in{std::string(bytes)};
-    std::string magic, klass, race;
+    std::string magic, class_label, race;
     std::array<int, 6> scores{};
     unsigned count{}, level{}, features{}, listed{};
     in >> magic >> level >> features >> listed;
@@ -1014,7 +1017,7 @@ character_definition(std::string_view bytes,
             throw std::runtime_error("Invalid character profile");
         stored_spells.push_back(std::move(id));
     }
-    in >> std::quoted(klass) >> std::quoted(race);
+    in >> std::quoted(class_label) >> std::quoted(race);
     for (auto &score : scores)
         in >> score;
     if (!in || level < 1 || level > 4 || features > 63 ||
@@ -1024,11 +1027,10 @@ character_definition(std::string_view bytes,
     return n < 3 || n > 20;
 }))
     throw std::runtime_error("Invalid character profile");
-    if (level > 1 && klass != "Fighter" && klass != "Cleric" && klass != "Wizard" &&
-            klass != "Rogue" && klass != "Paladin" && klass != "Ranger" && klass != "Barbarian" &&
-            klass != "Monk" && klass != "Sorcerer" && klass != "Warlock" && klass != "Bard" &&
-            klass != "Druid")
-        throw std::runtime_error("Advancement is unsupported for this class");
+    const auto character_class = detail::class_from_label(class_label);
+    if (!character_class)
+        throw std::runtime_error("Unknown class");
+    const CharacterClass klass = *character_class;
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
                      [&](const auto & r)
@@ -1044,44 +1046,41 @@ character_definition(std::string_view bytes,
     in >> count;
     if (!in || count > 3 || hp_modifiers.back() != con)
         throw std::runtime_error("Invalid character HP history or equipment count");
-    const auto classes = character_rules()->choices(CreationField::character_class);
-    if (std::none_of(classes.begin(), classes.end(),
-                     [&](const auto & c)
-{
-    return c.label == klass;
-}))
-    throw std::runtime_error("Unknown class");
-    const int die = klass == "Barbarian"                                              ? 12
-                    : (klass == "Fighter" || klass == "Paladin" || klass == "Ranger") ? 10
-                    : (klass == "Wizard" || klass == "Sorcerer")                      ? 6
+    const int die = klass == CharacterClass::barbarian ? 12
+                    : (klass == CharacterClass::fighter || klass == CharacterClass::paladin ||
+                       klass == CharacterClass::ranger) ? 10
+                    : (klass == CharacterClass::wizard || klass == CharacterClass::sorcerer) ? 6
                     : 8;
     Definition d;
-    d.hp = maximum_hit_points(die, race == "Dwarf", hp_modifiers, klass == "Sorcerer");
+    d.hp = maximum_hit_points(die, race == "Dwarf", hp_modifiers,
+                              klass == CharacterClass::sorcerer);
     d.hit_die = die;
     d.constitution = con;
     d.dwarf = race == "Dwarf";
     // Elves do not sleep, so Sleep cannot touch them.
     d.sleepless = race == "Elf";
-    d.rages = klass == "Barbarian" ? (level >= 3 ? 3 : 2) : 0;
-    d.wild_shapes = klass == "Druid" && level >= 2 ? 2 : 0;
-    d.lands_aid = klass == "Druid" && level >= 3;
-    d.rage_damage = klass == "Barbarian" ? 2 : 0;
+    d.rages = klass == CharacterClass::barbarian ? (level >= 3 ? 3 : 2) : 0;
+    d.wild_shapes = klass == CharacterClass::druid && level >= 2 ? 2 : 0;
+    d.lands_aid = klass == CharacterClass::druid && level >= 3;
+    d.rage_damage = klass == CharacterClass::barbarian ? 2 : 0;
     d.strength = str;
-    d.danger_sense = d.reckless = klass == "Barbarian" && level >= 2;
-    d.frenzy = klass == "Barbarian" && level >= 3;
-    d.focus = klass == "Monk" && level >= 2 ? static_cast<int>(level) : 0;
-    d.metabolism = klass == "Monk" && level >= 2 ? 1 : 0;
-    d.innate_sorcery = klass == "Sorcerer" ? 2 : 0;
-    d.sorcery_points = klass == "Sorcerer" && level >= 2 ? static_cast<int>(level) : 0;
-    d.pact_magic = klass == "Warlock";
-    d.magical_cunning = klass == "Warlock" && level >= 2 ? 1 : 0;
-    d.bardic_inspiration = klass == "Bard" ? std::max(1, ability_modifier(scores[5])) : 0;
-    d.cutting_words = klass == "Bard" && level >= 3;
+    d.danger_sense = d.reckless = klass == CharacterClass::barbarian && level >= 2;
+    d.frenzy = klass == CharacterClass::barbarian && level >= 3;
+    d.focus = klass == CharacterClass::monk && level >= 2 ? static_cast<int>(level) : 0;
+    d.metabolism = klass == CharacterClass::monk && level >= 2 ? 1 : 0;
+    d.innate_sorcery = klass == CharacterClass::sorcerer ? 2 : 0;
+    d.sorcery_points =
+        klass == CharacterClass::sorcerer && level >= 2 ? static_cast<int>(level) : 0;
+    d.pact_magic = klass == CharacterClass::warlock;
+    d.magical_cunning = klass == CharacterClass::warlock && level >= 2 ? 1 : 0;
+    d.bardic_inspiration =
+        klass == CharacterClass::bard ? std::max(1, ability_modifier(scores[5])) : 0;
+    d.cutting_words = klass == CharacterClass::bard && level >= 3;
     d.dark_ones_blessing =
-        klass == "Warlock" && level >= 3
+        klass == CharacterClass::warlock && level >= 3
         ? std::max(1, ability_modifier(scores[5]) + static_cast<int>(level))
         : 0;
-    d.deflect = d.open_hand = klass == "Monk" && level >= 3;
+    d.deflect = d.open_hand = klass == CharacterClass::monk && level >= 3;
     d.focus_dc = 8 + 2 + ability_modifier(scores[4]);
     d.dexterity = dex;
     d.rushes = race == "Orc" ? 2 + (level - 1) / 4 : 0;
@@ -1094,56 +1093,62 @@ character_definition(std::string_view bytes,
     // Jack of All Trades adds half the Proficiency Bonus to Initiative, as
     // SRD-DECISIONS keeps it, unless Alert already adds the whole bonus.
     d.initiative = dex + (d.alert ? static_cast<int>(2 + (level - 1) / 4)
-                          : klass == "Bard" && level >= 2 ? 1 : 0);
+                          : klass == CharacterClass::bard && level >= 2 ? 1 : 0);
     d.speed = race == "Goliath" ? 35 : 30;
     d.level = level;
     d.melee_bonus = 2 + str;
     d.melee = {0, 0, std::max(0, 1 + str)};
-    d.champion = klass == "Fighter" && level >= 3;
-    d.arcane = klass == "Wizard" ? 1 : 0;
-    d.lay_on_hands = klass == "Paladin" ? 5 * level : 0;
-    d.channel_divinity = (klass == "Paladin" && level >= 3) || (klass == "Cleric" && level >= 2) ? 2
+    d.champion = klass == CharacterClass::fighter && level >= 3;
+    d.arcane = klass == CharacterClass::wizard ? 1 : 0;
+    d.lay_on_hands = klass == CharacterClass::paladin ? 5 * level : 0;
+    d.channel_divinity = (klass == CharacterClass::paladin && level >= 3) ||
+                         (klass == CharacterClass::cleric && level >= 2) ? 2
                          : 0;
-    d.sacred_weapon = klass == "Paladin" && level >= 3;
-    d.divine_spark = klass == "Cleric" && level >= 2;
-    d.life_domain = klass == "Cleric" && level >= 3;
-    d.evoker = klass == "Wizard" && level >= 3;
-    d.free_smite = klass == "Paladin" && level >= 2 ? 1 : 0;
-    d.favored_enemy = klass == "Ranger" ? 2 : 0;
+    d.sacred_weapon = klass == CharacterClass::paladin && level >= 3;
+    d.divine_spark = klass == CharacterClass::cleric && level >= 2;
+    d.life_domain = klass == CharacterClass::cleric && level >= 3;
+    d.evoker = klass == CharacterClass::wizard && level >= 3;
+    d.free_smite = klass == CharacterClass::paladin && level >= 2 ? 1 : 0;
+    d.favored_enemy = klass == CharacterClass::ranger ? 2 : 0;
     d.medicine = ability_modifier(scores[4]);
-    d.tactical_mind = klass == "Fighter" && level >= 2;
-    d.cunning = klass == "Rogue" && level >= 2;
-    d.sneak_level = klass == "Rogue" ? level : 0;
+    d.tactical_mind = klass == CharacterClass::fighter && level >= 2;
+    d.cunning = klass == CharacterClass::rogue && level >= 2;
+    d.sneak_level = klass == CharacterClass::rogue ? level : 0;
     d.great_weapon_fighting = (features & 8) != 0;
     d.two_weapon_fighting = (features & 16) != 0;
-    d.surges = klass == "Fighter" && level >= 2 ? 1 : 0;
-    d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
+    d.surges = klass == CharacterClass::fighter && level >= 2 ? 1 : 0;
+    d.winds = klass == CharacterClass::fighter ? (level == 4 ? 3 : 2) : 0;
     // Pact Magic: one level-1 slot, then two; level-2 slots from level 3.
-    d.slots = klass == "Warlock" ? (level <= 2 ? static_cast<int>(level) : 0)
-              : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard" ||
-                 klass == "Druid")
+    d.slots = klass == CharacterClass::warlock ? (level <= 2 ? static_cast<int>(level) : 0)
+              : (klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
+                 klass == CharacterClass::sorcerer || klass == CharacterClass::bard ||
+                 klass == CharacterClass::druid)
               ? (level == 1 ? 2 : level == 2 ? 3 : 4)
-              : (klass == "Paladin" || klass == "Ranger") ? (level <= 2 ? 2 : 3)
+              : (klass == CharacterClass::paladin || klass == CharacterClass::ranger)
+              ? (level <= 2 ? 2 : 3)
               : 0;
-    d.slots2 = klass == "Warlock" && level >= 3 ? 2
-               : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard" ||
-                 klass == "Druid") &&
+    d.slots2 = klass == CharacterClass::warlock && level >= 3 ? 2
+               : (klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
+                  klass == CharacterClass::sorcerer || klass == CharacterClass::bard ||
+                  klass == CharacterClass::druid) &&
                level >= 3
                ? (level == 3 ? 2 : 3)
                : 0;
-    d.casting = 2 + ability_modifier(scores[(klass == "Cleric" || klass == "Ranger" ||
-                                             klass == "Druid") ? 4
-                                            : (klass == "Warlock" || klass == "Sorcerer" ||
-                                               klass == "Paladin" || klass == "Bard") ? 5
-                                            : 3]);
+    const unsigned casting_ability =
+        (klass == CharacterClass::cleric || klass == CharacterClass::ranger ||
+         klass == CharacterClass::druid) ? 4
+        : (klass == CharacterClass::warlock || klass == CharacterClass::sorcerer ||
+           klass == CharacterClass::paladin || klass == CharacterClass::bard) ? 5
+        : 3;
+    d.casting = 2 + ability_modifier(scores[casting_ability]);
     const auto allowed = allowed_spells(klass, level);
     const bool eligible = std::all_of(stored_spells.begin(), stored_spells.end(),
                                       [&](const auto & id)
     {
         return detail::knows_spell(allowed, id);
     });
-    if (!eligible || ((features & 1) && klass != "Fighter" && klass != "Paladin" &&
-                      klass != "Ranger"))
+    if (!eligible || ((features & 1) && klass != CharacterClass::fighter &&
+                      klass != CharacterClass::paladin && klass != CharacterClass::ranger))
         throw std::runtime_error("Invalid prepared spells or feat prerequisites");
     d.spells = stored_spells;
     d.savage = (features & 2) != 0;
@@ -1272,7 +1277,7 @@ character_definition(std::string_view bytes,
         hands = hands - d.weapon_hands + 2;
         d.weapon_hands = 2;
     }
-    const auto training = detail::training_profile(grants, detail::grant_source_id(klass),
+    const auto training = detail::training_profile(grants, detail::class_id(klass),
                           background, level, scores);
     d.medicine = std::find_if(training.skills.begin(), training.skills.end(),
                               [](const auto & skill)
@@ -1317,7 +1322,7 @@ character_definition(std::string_view bytes,
             !same_spells(detail::casting_ids(access), stored_spells))
         throw std::runtime_error("Character casting access disagrees with spell grants");
     const auto features_only = detail::without_spell_grants(detail::without_training(grants));
-    const auto effects = detail::validate_grants(features_only, detail::grant_source_id(klass),
+    const auto effects = detail::validate_grants(features_only, detail::class_id(klass),
                          detail::grant_source_id(race), background, level);
     if (effects.feats != features)
         throw std::runtime_error("Character effects disagree with acquired grants");
@@ -1331,18 +1336,18 @@ character_definition(std::string_view bytes,
     if (hands > 2)
         throw std::runtime_error(
             "Not enough free hands. Unequip the shield or two-handed weapon first.");
-    if (!armor && klass == "Barbarian")
+    if (!armor && klass == CharacterClass::barbarian)
         d.ac = std::max(d.ac, 10 + dex + con);
     // Draconic Resilience: dragon-like scales.
-    if (!armor && klass == "Sorcerer" && level >= 3)
+    if (!armor && klass == CharacterClass::sorcerer && level >= 3)
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[5]));
-    if (!armor && !shield && klass == "Monk")
+    if (!armor && !shield && klass == CharacterClass::monk)
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[4]));
     // Martial Arts: the better of Strength and Dexterity for attack and damage
     // rolls, and the Martial Arts die (a d6 through level four) when larger.
-    d.martial_arts = klass == "Monk" && !armor && !shield && monk_weapons;
+    d.martial_arts = klass == CharacterClass::monk && !armor && !shield && monk_weapons;
     // Unarmored Movement: 10 feet more without armor or a Shield.
-    if (klass == "Monk" && level >= 2 && !armor && !shield)
+    if (klass == CharacterClass::monk && level >= 2 && !armor && !shield)
         d.speed += 10;
     if (d.martial_arts)
     {
@@ -9973,17 +9978,18 @@ class Module final : public RulesModule
 
     std::vector<TrainingChoiceGroup> training_options(const CharacterSheet &sheet) const override
     {
-        if (sheet.character_class == "Wizard" && sheet.level >= 2)
+        const auto klass = detail::class_of(sheet);
+        if (klass == CharacterClass::wizard && sheet.level >= 2)
             return {detail::scholar_options(sheet.grants)};
-        if (sheet.character_class == "Fighter" && sheet.level >= 4)
+        if (klass == CharacterClass::fighter && sheet.level >= 4)
             return {detail::mastery_options("fighter", 4, sheet.grants)};
-        if (sheet.character_class == "Sorcerer" && sheet.level >= 2)
+        if (klass == CharacterClass::sorcerer && sheet.level >= 2)
             return {detail::metamagic_options()};
-        if (sheet.character_class == "Bard" && sheet.level >= 3)
+        if (klass == CharacterClass::bard && sheet.level >= 3)
             return {detail::lore_options(sheet.grants)};
-        if (sheet.character_class == "Druid" && sheet.level >= 3)
+        if (klass == CharacterClass::druid && sheet.level >= 3)
             return {detail::land_options()};
-        if (sheet.character_class == "Barbarian" && sheet.level >= 3)
+        if (klass == CharacterClass::barbarian && sheet.level >= 3)
         {
             std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
             if (sheet.level >= 4)
@@ -10032,27 +10038,23 @@ class Module final : public RulesModule
 
     AdvancementOptions advancement_options(const CharacterSheet &sheet) const override
     {
-        if (sheet.level >= 4 ||
-                (sheet.character_class != "Fighter" && sheet.character_class != "Cleric" &&
-                 sheet.character_class != "Wizard" && sheet.character_class != "Rogue" &&
-                 sheet.character_class != "Paladin" && sheet.character_class != "Ranger" &&
-                 sheet.character_class != "Barbarian" && sheet.character_class != "Monk" &&
-                 sheet.character_class != "Sorcerer" && sheet.character_class != "Warlock" &&
-                 sheet.character_class != "Bard" && sheet.character_class != "Druid"))
+        // Every class advances to level four; class_of rejects a label no class has.
+        const auto klass = detail::class_of(sheet);
+        if (sheet.level >= 4)
             return {};
         AdvancementOptions result;
         result.level = sheet.level + 1;
-        if (sheet.character_class == "Fighter" ||
-                ((sheet.character_class == "Paladin" || sheet.character_class == "Ranger") &&
+        if (klass == CharacterClass::fighter ||
+                ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
                  result.level == 2))
         {
-            if (sheet.character_class == "Fighter")
+            if (klass == CharacterClass::fighter)
                 result.fighting_styles.push_back(
             {"keep", "Keep current", "Retain the class-granted Fighting Style."});
             for (auto style : detail::fighting_styles())
             {
                 style.available =
-                    (sheet.character_class != "Fighter" ||
+                    (klass != CharacterClass::fighter ||
                      std::any_of(sheet.grants.begin(), sheet.grants.end(),
                                  [](const auto & g)
                 {
@@ -10066,39 +10068,39 @@ class Module final : public RulesModule
                 result.fighting_styles.push_back(std::move(style));
             }
             // SRD 5.2.1 p. 54: the Paladin's alternative to a Fighting Style feat.
-            if (sheet.character_class == "Paladin")
+            if (klass == CharacterClass::paladin)
                 result.fighting_styles.push_back(
             {
                 "blessed_warrior", "Blessed Warrior",
                 "Learn two Cleric cantrips; Charisma is your spellcasting ability for them."
             });
             // SRD 5.2.1 p. 59: the Ranger's alternative.
-            if (sheet.character_class == "Ranger")
+            if (klass == CharacterClass::ranger)
                 result.fighting_styles.push_back(
             {
                 "druidic_warrior", "Druidic Warrior",
                 "Learn two Druid cantrips; Wisdom is your spellcasting ability for them."
             });
         }
-        if (sheet.character_class == "Wizard" && result.level == 2)
+        if (klass == CharacterClass::wizard && result.level == 2)
             result.training = {detail::scholar_options(sheet.grants)};
-        if (sheet.character_class == "Fighter" && result.level == 4)
+        if (klass == CharacterClass::fighter && result.level == 4)
             result.training = {detail::mastery_options("fighter", 4, sheet.grants)};
-        if (sheet.character_class == "Barbarian" && result.level == 3)
+        if (klass == CharacterClass::barbarian && result.level == 3)
             result.training = {detail::primal_knowledge_options(sheet.grants)};
-        if (sheet.character_class == "Sorcerer" && result.level == 2)
+        if (klass == CharacterClass::sorcerer && result.level == 2)
             result.training = {detail::metamagic_options()};
-        if (sheet.character_class == "Bard" && result.level == 3)
+        if (klass == CharacterClass::bard && result.level == 3)
             result.training = {detail::lore_options(sheet.grants)};
-        if (sheet.character_class == "Druid" && result.level == 3)
+        if (klass == CharacterClass::druid && result.level == 3)
             result.training = {detail::land_options()};
-        if (sheet.character_class == "Warlock" && result.level == 2)
+        if (klass == CharacterClass::warlock && result.level == 2)
             result.training = {detail::invocation_options(2, sheet.grants,
                                                           "class:warlock:invocations:2")};
-        if (sheet.character_class == "Barbarian" && result.level == 4)
+        if (klass == CharacterClass::barbarian && result.level == 4)
             result.training = {detail::mastery_options("barbarian", 4, sheet.grants)};
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
-        if (sheet.character_class == "Ranger" && result.level == 3)
+        if (klass == CharacterClass::ranger && result.level == 3)
             result.training = {{
                 "subclass:ranger:hunter", "Hunter's Prey", 1,
                 {   {
@@ -10115,37 +10117,37 @@ class Module final : public RulesModule
         };
         result.description =
             "Fixed-average HP growth. Resources gain only their new capacity;\nexisting expenditure remains.";
-        if (sheet.character_class == "Cleric" && result.level == 2)
+        if (klass == CharacterClass::cleric && result.level == 2)
             result.description =
                 "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead.";
-        if (sheet.character_class == "Wizard" && result.level == 3)
+        if (klass == CharacterClass::wizard && result.level == 3)
             result.description =
                 "Evoker: Potent Cantrip deals half damage when a cantrip misses or is saved against; Sculpt Spells spares up to 1 + the spell's level allies in your Evocation areas.";
-        if (sheet.character_class == "Cleric" && result.level == 3)
+        if (klass == CharacterClass::cleric && result.level == 3)
             result.description =
                 "Life Domain: Disciple of Life adds 2 + the slot level to healing spells; Preserve Life (Channel Divinity) restores five times your level among Bloodied allies within 30 feet; Bless, Cure Wounds and Lesser Restoration are always prepared.";
-        if (sheet.character_class == "Fighter" && result.level == 3)
+        if (klass == CharacterClass::fighter && result.level == 3)
             result.description =
                 "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks.";
-        if (sheet.character_class == "Rogue" && result.level >= 3)
+        if (klass == CharacterClass::rogue && result.level >= 3)
             result.description =
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide and weapon mastery remain unavailable.";
-        if (sheet.character_class == "Paladin")
+        if (klass == CharacterClass::paladin)
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
-        if (sheet.character_class == "Druid")
+        if (klass == CharacterClass::druid)
             result.description = "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points.";
-        if (sheet.character_class == "Bard")
+        if (klass == CharacterClass::bard)
             result.description = "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points.";
-        if (sheet.character_class == "Warlock")
+        if (klass == CharacterClass::warlock)
             result.description = "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points.";
-        if (sheet.character_class == "Sorcerer")
+        if (klass == CharacterClass::sorcerer)
             result.description = "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
-        if (sheet.character_class == "Monk")
+        if (klass == CharacterClass::monk)
             result.description = "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
-        if (sheet.character_class == "Barbarian")
+        if (klass == CharacterClass::barbarian)
             result.description = "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery.";
-        if (sheet.character_class == "Ranger")
+        if (klass == CharacterClass::ranger)
             result.description =
                 "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
         if (result.level == 4)
@@ -10201,7 +10203,7 @@ class Module final : public RulesModule
                 "Gain proficiency in any three skills of your choice."
             }
         };
-        if (sheet.character_class == "Paladin")
+        if (klass == CharacterClass::paladin)
             result.spells =
         {
             {"cure_wounds", "Cure Wounds", "Action; touch; heals 2d8 + Charisma modifier."},
@@ -10214,7 +10216,7 @@ class Module final : public RulesModule
                 "Bonus Action right after a melee hit: 1d6 Fire damage, then 1d6 at the start of each of the target's turns until it succeeds on a Constitution save."
             }
         };
-        if (sheet.character_class == "Cleric")
+        if (klass == CharacterClass::cleric)
             result.spells =
         {
             {"cure_wounds", "Cure Wounds", "Action; touch; heals 2d8 + Wisdom modifier."},
@@ -10237,7 +10239,7 @@ class Module final : public RulesModule
                 "Action; touch; Aberrations, Celestials, Elementals, Fey, Fiends and Undead attack the creature with Disadvantage. Concentration, up to 10 minutes."
             }
         };
-        if (sheet.character_class == "Wizard")
+        if (klass == CharacterClass::wizard)
             result.spells =
         {
             {"magic_missile", "Magic Missile", "Action; 120 feet; three darts at one target."},
@@ -10264,7 +10266,7 @@ class Module final : public RulesModule
         // so switching away from it drops the group and its unconfirmed picks.
         if (choice.feat == "skilled" && options.level == 4)
             options.training.push_back(detail::skilled_options(sheet.grants));
-        if (choice.fighting_style && sheet.character_class == "Fighter")
+        if (choice.fighting_style && detail::class_of(sheet) == CharacterClass::fighter)
         {
             const auto source = "class:fighter:fighting_style";
             for (auto &feat : options.feats)
@@ -10283,21 +10285,22 @@ class Module final : public RulesModule
 
     AdvancementChoice default_advancement(const CharacterSheet &sheet) const override
     {
+        const auto klass = detail::class_of(sheet);
         AdvancementChoice choice;
         const auto options = advancement_options(sheet);
         if (!options.level)
             return choice;
         if (options.level == 2 &&
-                (sheet.character_class == "Paladin" || sheet.character_class == "Ranger"))
+                (klass == CharacterClass::paladin || klass == CharacterClass::ranger))
             choice.fighting_style = "defense";
         choice.spells = sheet.prepared_spells;
         for (const auto &group : options.training)
             for (const auto &option : group.options)
                 if (choice.training[group.id].size() < group.count)
                     choice.training[group.id].push_back(option.id);
-        if (choice.spells.empty() && sheet.character_class == "Wizard")
+        if (choice.spells.empty() && klass == CharacterClass::wizard)
             choice.spells = {"magic_missile"};
-        if (detail::prepares_spells(sheet.character_class))
+        if (detail::prepares_spells(klass))
         {
             auto next = sheet;
             next.level = options.level;
@@ -10329,11 +10332,11 @@ class Module final : public RulesModule
         {
             choice.feat = "ability_score_improvement";
             const unsigned primary =
-                (sheet.character_class == "Fighter" || sheet.character_class == "Paladin") ? 0
-                : (sheet.character_class == "Cleric" || sheet.character_class == "Druid") ? 4
-                : (sheet.character_class == "Rogue" || sheet.character_class == "Ranger")  ? 1
-                : (sheet.character_class == "Sorcerer" || sheet.character_class == "Warlock" ||
-                   sheet.character_class == "Bard") ? 5
+                (klass == CharacterClass::fighter || klass == CharacterClass::paladin) ? 0
+                : (klass == CharacterClass::cleric || klass == CharacterClass::druid) ? 4
+                : (klass == CharacterClass::rogue || klass == CharacterClass::ranger)  ? 1
+                : (klass == CharacterClass::sorcerer || klass == CharacterClass::warlock ||
+                   klass == CharacterClass::bard) ? 5
                 : 3;
             unsigned remaining = 2;
             for (unsigned n = 0; n < 6 && remaining; ++n)
@@ -10350,18 +10353,19 @@ class Module final : public RulesModule
     CharacterSheet spell_choice_sheet(const CharacterSheet &sheet,
                                       const AdvancementChoice &choice) const override
     {
+        const auto klass = detail::class_of(sheet);
         auto next = sheet;
         ++next.level;
-        if ((sheet.character_class == "Paladin" || sheet.character_class == "Ranger") &&
+        if ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
                 next.level == 2)
             next.grants.push_back({"feature:fighting_style",
-                                   "class:" + detail::grant_source_id(sheet.character_class),
+                                   "class:" + std::string(detail::class_id(klass)),
                                    2,
                                    {}});
         if (choice.fighting_style)
         {
             const auto source =
-                "class:" + detail::grant_source_id(sheet.character_class) + ":fighting_style";
+                "class:" + std::string(detail::class_id(klass)) + ":fighting_style";
             std::erase_if(next.grants,
                           [&](const auto & g)
             {
@@ -10376,11 +10380,12 @@ class Module final : public RulesModule
     bool advance_character(CharacterSheet &sheet, VitalState &state,
                            const AdvancementChoice &choice) const override
     {
+        const auto klass = detail::class_of(sheet);
         const auto options = advancement_options(sheet, choice);
         if (!options.level)
             return false;
         const bool half_style =
-            (sheet.character_class == "Paladin" || sheet.character_class == "Ranger") &&
+            (klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
             options.level == 2;
         if (half_style && !choice.fighting_style)
             throw std::runtime_error("Choose a Fighting Style");
@@ -10423,7 +10428,7 @@ class Module final : public RulesModule
         for (const auto &spell : choice.spells)
         {
             if (!selected.insert(spell).second ||
-                    (!detail::prepares_spells(sheet.character_class) &&
+                    (!detail::prepares_spells(klass) &&
                      std::none_of(options.spells.begin(), options.spells.end(),
                                   [&](const auto & s)
         {
@@ -10471,65 +10476,65 @@ class Module final : public RulesModule
                 unsigned(next.level),
                 {}});
         }
-        if (next.character_class == "Warlock" && next.level == 2)
+        if (klass == CharacterClass::warlock && next.level == 2)
             next.grants.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
-        if (next.character_class == "Bard" && next.level == 2)
+        if (klass == CharacterClass::bard && next.level == 2)
             next.grants.push_back({"feature:jack_of_all_trades", "class:bard", 2, {}});
         // The Circle of the Land is the SRD's only Druid subclass.
-        if (next.character_class == "Druid" && next.level == 2)
+        if (klass == CharacterClass::druid && next.level == 2)
             next.grants.push_back({"feature:wild_shape", "class:druid", 2, {}});
-        if (next.character_class == "Druid" && next.level == 3)
+        if (klass == CharacterClass::druid && next.level == 3)
         {
             next.grants.push_back({"subclass:land", "class:druid", 3, {}});
             next.grants.push_back({"feature:circle_spells", "subclass:druid:land", 3, {}});
             next.grants.push_back({"feature:lands_aid", "subclass:druid:land", 3, {}});
         }
         // The College of Lore is the SRD's only Bard subclass.
-        if (next.character_class == "Bard" && next.level == 3)
+        if (klass == CharacterClass::bard && next.level == 3)
         {
             next.grants.push_back({"subclass:lore", "class:bard", 3, {}});
             next.grants.push_back({"feature:bonus_proficiencies", "subclass:bard:lore", 3, {}});
             next.grants.push_back({"feature:cutting_words", "subclass:bard:lore", 3, {}});
         }
         // The Fiend Patron is the SRD's only Warlock subclass.
-        if (next.character_class == "Warlock" && next.level == 3)
+        if (klass == CharacterClass::warlock && next.level == 3)
         {
             next.grants.push_back({"subclass:fiend", "class:warlock", 3, {}});
             next.grants.push_back({"feature:dark_ones_blessing", "subclass:warlock:fiend", 3, {}});
             next.grants.push_back({"feature:fiend_spells", "subclass:warlock:fiend", 3, {}});
         }
-        if (next.character_class == "Sorcerer" && next.level == 2)
+        if (klass == CharacterClass::sorcerer && next.level == 2)
         {
             next.grants.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
             next.grants.push_back({"feature:metamagic", "class:sorcerer", 2, {}});
         }
         // Draconic Sorcery is the SRD's only Sorcerer subclass.
-        if (next.character_class == "Sorcerer" && next.level == 3)
+        if (klass == CharacterClass::sorcerer && next.level == 3)
         {
             next.grants.push_back({"subclass:draconic", "class:sorcerer", 3, {}});
             next.grants.push_back({"feature:draconic_resilience", "subclass:sorcerer:draconic", 3, {}});
             next.grants.push_back({"feature:draconic_spells", "subclass:sorcerer:draconic", 3, {}});
         }
-        if (next.character_class == "Monk" && next.level == 2)
+        if (klass == CharacterClass::monk && next.level == 2)
         {
             next.grants.push_back({"feature:monks_focus", "class:monk", 2, {}});
             next.grants.push_back({"feature:unarmored_movement", "class:monk", 2, {}});
             next.grants.push_back({"feature:uncanny_metabolism", "class:monk", 2, {}});
         }
         // The Warrior of the Open Hand is the SRD's only Monk subclass.
-        if (next.character_class == "Monk" && next.level == 3)
+        if (klass == CharacterClass::monk && next.level == 3)
         {
             next.grants.push_back({"feature:deflect_attacks", "class:monk", 3, {}});
             next.grants.push_back({"subclass:open_hand", "class:monk", 3, {}});
             next.grants.push_back({"feature:open_hand_technique", "subclass:monk:open_hand", 3, {}});
         }
-        if (next.character_class == "Barbarian" && next.level == 2)
+        if (klass == CharacterClass::barbarian && next.level == 2)
         {
             next.grants.push_back({"feature:danger_sense", "class:barbarian", 2, {}});
             next.grants.push_back({"feature:reckless_attack", "class:barbarian", 2, {}});
         }
         // The Berserker is the SRD's only Barbarian subclass.
-        if (next.character_class == "Barbarian" && next.level == 3)
+        if (klass == CharacterClass::barbarian && next.level == 3)
         {
             next.grants.push_back({"subclass:berserker", "class:barbarian", 3, {}});
             next.grants.push_back({"feature:frenzy", "subclass:barbarian:berserker", 3, {}});
@@ -10537,49 +10542,49 @@ class Module final : public RulesModule
         }
         // The Thief is the SRD's only Rogue subclass. Fast Hands waits for magic
         // items to have a use; Second-Story Work is cut (SRD-DECISIONS).
-        if (next.character_class == "Rogue" && next.level == 3)
+        if (klass == CharacterClass::rogue && next.level == 3)
         {
             next.grants.push_back({"feature:steady_aim", "class:rogue", 3, {}});
             next.grants.push_back({"subclass:thief", "class:rogue", 3, {}});
             next.grants.push_back({"feature:fast_hands", "subclass:rogue:thief", 3, {}});
         }
-        if (next.character_class == "Rogue" && next.level == 2)
+        if (klass == CharacterClass::rogue && next.level == 2)
             next.grants.push_back({"feature:cunning_action", "class:rogue", 2, {}});
-        if (next.character_class == "Fighter" && next.level == 2)
+        if (klass == CharacterClass::fighter && next.level == 2)
         {
             next.grants.push_back({"feature:action_surge", "class:fighter", 2, {}});
             next.grants.push_back({"feature:tactical_mind", "class:fighter", 2, {}});
         }
-        if (next.character_class == "Cleric" && next.level == 2)
+        if (klass == CharacterClass::cleric && next.level == 2)
             next.grants.push_back({"feature:channel_divinity", "class:cleric", 2, {}});
         // The Life Domain is the SRD's only Cleric subclass.
-        if (next.character_class == "Cleric" && next.level == 3)
+        if (klass == CharacterClass::cleric && next.level == 3)
         {
             next.grants.push_back({"subclass:life", "class:cleric", 3, {}});
             next.grants.push_back({"feature:disciple_of_life", "subclass:cleric:life", 3, {}});
             next.grants.push_back({"feature:preserve_life", "subclass:cleric:life", 3, {}});
         }
         // The Evoker is the SRD's only Wizard subclass.
-        if (next.character_class == "Wizard" && next.level == 3)
+        if (klass == CharacterClass::wizard && next.level == 3)
         {
             next.grants.push_back({"subclass:evoker", "class:wizard", 3, {}});
             next.grants.push_back({"feature:potent_cantrip", "subclass:wizard:evoker", 3, {}});
             next.grants.push_back({"feature:sculpt_spells", "subclass:wizard:evoker", 3, {}});
         }
-        if (next.character_class == "Ranger" && next.level == 3)
+        if (klass == CharacterClass::ranger && next.level == 3)
         {
             next.grants.push_back({"subclass:hunter", "class:ranger", 3, {}});
             next.grants.push_back({"feature:hunters_lore", "subclass:ranger:hunter", 3, {}});
         }
         // The Oath of Devotion is the SRD's only Paladin subclass.
-        if (next.character_class == "Paladin" && next.level == 3)
+        if (klass == CharacterClass::paladin && next.level == 3)
         {
             next.grants.push_back({"feature:channel_divinity", "class:paladin", 3, {}});
             next.grants.push_back({"subclass:devotion", "class:paladin", 3, {}});
             next.grants.push_back(
             {"feature:sacred_weapon", "subclass:paladin:devotion", 3, {}});
         }
-        if (next.character_class == "Fighter" && next.level == 3)
+        if (klass == CharacterClass::fighter && next.level == 3)
         {
             next.grants.push_back({"subclass:champion", "class:fighter", 3, {}});
             next.grants.push_back(
@@ -10611,7 +10616,7 @@ class Module final : public RulesModule
         }
         if (!choice.feat.empty())
             next.grants.push_back(detail::advancement_grant(
-                                      detail::grant_source_id(sheet.character_class), next.level, choice));
+                                      detail::class_id(klass), next.level, choice));
         next.prepared_spells = choice.spells;
         if (choice.spell_learning)
         {
@@ -10621,15 +10626,15 @@ class Module final : public RulesModule
                                         SpellChoiceContext::advancement,
                                         ChoiceCompleteness::complete);
         }
-        else if (detail::prepares_spells(sheet.character_class))
+        else if (detail::prepares_spells(klass))
             throw std::runtime_error("Independent spell learning choices are required");
         next.training = detail::training_profile(
-                            next.grants, detail::grant_source_id(next.character_class),
+                            next.grants, detail::class_id(klass),
                             detail::grant_source_id(next.background), next.level, next.scores);
         next.hit_point_modifiers.push_back(next.modifiers[2]);
         next.hit_points =
             maximum_hit_points(next.hit_die, next.race == "Dwarf", next.hit_point_modifiers,
-                               next.character_class == "Sorcerer");
+                               klass == CharacterClass::sorcerer);
         if (next.race == "Dwarf")
         {
             next.racial_modifiers.replace(0, next.racial_modifiers.find('\n'),
@@ -10654,7 +10659,7 @@ class Module final : public RulesModule
                 }
             }
         };
-        if (next.character_class == "Rogue" && next.level == 2)
+        if (klass == CharacterClass::rogue && next.level == 2)
         {
             next.class_modifiers +=
                 "\nCunning Action: Dash or Disengage as a Bonus Action on your turn. Hide remains unavailable.";
@@ -10663,7 +10668,7 @@ class Module final : public RulesModule
                 "Cunning Action: Dash or Disengage as a Bonus Action on your turn. Hide remains unavailable.",
                 {}});
         }
-        if (next.character_class == "Rogue" && next.level == 3)
+        if (klass == CharacterClass::rogue && next.level == 3)
         {
             next.class_modifiers +=
                 "\nSneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.";
@@ -10672,25 +10677,25 @@ class Module final : public RulesModule
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.",
                 {}});
         }
-        if (next.character_class == "Paladin" || next.character_class == "Ranger" ||
-                next.character_class == "Barbarian" || next.character_class == "Monk" ||
-                next.character_class == "Sorcerer" || next.character_class == "Warlock" ||
-                next.character_class == "Bard" || next.character_class == "Druid")
+        if (klass == CharacterClass::paladin || klass == CharacterClass::ranger ||
+                klass == CharacterClass::barbarian || klass == CharacterClass::monk ||
+                klass == CharacterClass::sorcerer || klass == CharacterClass::warlock ||
+                klass == CharacterClass::bard || klass == CharacterClass::druid)
         {
             const std::string note =
-                next.character_class == "Druid"
+                klass == CharacterClass::druid
                 ? "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points."
-                : next.character_class == "Bard"
+                : klass == CharacterClass::bard
                 ? "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points."
-                : next.character_class == "Warlock"
+                : klass == CharacterClass::warlock
                 ? "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points."
-                : next.character_class == "Sorcerer"
+                : klass == CharacterClass::sorcerer
                 ? "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
-                : next.character_class == "Monk"
+                : klass == CharacterClass::monk
                 ? "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points."
-                : next.character_class == "Barbarian"
+                : klass == CharacterClass::barbarian
                 ? "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery."
-                : next.character_class == "Paladin"
+                : klass == CharacterClass::paladin
                 ? "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
                 : "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
             next.class_modifiers += "\n" + note;
@@ -10706,7 +10711,7 @@ class Module final : public RulesModule
                 "Level {level}: HP and spell-slot advancement applied. Additional class and subclass features remain unavailable.",
                 {{"level", std::to_string(next.level)}}});
         }
-        if (next.character_class == "Fighter" && next.level == 2)
+        if (klass == CharacterClass::fighter && next.level == 2)
         {
             next.class_modifiers +=
                 "\nAction Surge: one additional action, except Magic, on your turn. One use per Short or Long Rest.";
@@ -11227,7 +11232,7 @@ class Module final : public RulesModule
 
     SpellAccess spell_access(const CharacterSheet &sheet) const override
     {
-        return detail::spell_access(sheet.grants, sheet.character_class, sheet.level,
+        return detail::spell_access(sheet.grants, detail::class_of(sheet), sheet.level,
                                     sheet.prepared_spells);
     }
 
@@ -11380,14 +11385,15 @@ class Module final : public RulesModule
     {
         if (sheet.identity != character_rules()->identity() || sheet.level < 1 || sheet.level > 4)
             throw std::runtime_error("Unsupported character rules identity or level");
-        (void)detail::training_profile(sheet.grants, detail::grant_source_id(sheet.character_class),
+        const auto klass = detail::class_of(sheet);
+        (void)detail::training_profile(sheet.grants, detail::class_id(klass),
                                        detail::grant_source_id(sheet.background), sheet.level,
                                        sheet.scores);
         const auto features_only =
             detail::without_spell_grants(detail::without_training(sheet.grants));
         const auto access = spell_access(sheet);
         const auto effects =
-            detail::validate_grants(features_only, detail::grant_source_id(sheet.character_class),
+            detail::validate_grants(features_only, detail::class_id(klass),
                                     detail::grant_source_id(sheet.race),
                                     detail::grant_source_id(sheet.background), sheet.level);
         const unsigned features = effects.feats;
@@ -11411,7 +11417,7 @@ class Module final : public RulesModule
                 throw std::runtime_error("Ability totals disagree with acquired choices");
         }
         auto spells =
-            detail::prepares_spells(sheet.character_class)
+            detail::prepares_spells(klass)
             ? detail::casting_ids(access)
             : detail::known_cantrip_ids(access);
         std::set<std::string> selected;
@@ -11423,7 +11429,7 @@ class Module final : public RulesModule
         // Preparable spells come from the eligibility table. Cantrips are
         // filtered out: they are known, never prepared.
         const auto preparable =
-            detail::spells_of_level(allowed_spells(sheet.character_class, sheet.level), false);
+            detail::spells_of_level(allowed_spells(klass, sheet.level), false);
         for (const auto &spell : sheet.prepared_spells)
         {
             if (!selected.insert(spell).second)
@@ -11480,7 +11486,7 @@ class Module final : public RulesModule
         for (const auto &key : gear)
         {
             if (key == "shield")
-                result.item_modifiers += trained(sheet.character_class, sheet.grants, key)
+                result.item_modifiers += trained(klass, sheet.grants, key)
                                          ? "Source: equipped Shield: +2 AC.\n"
                                          : "Source: equipped Shield: +0 AC (untrained).\n";
             else if (key == "leather")
@@ -11509,7 +11515,7 @@ class Module final : public RulesModule
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + ". Attack uses " +
                     attack_ability(key) + " modifier" +
-                    (trained(sheet.character_class, sheet.grants, key) ? " +2 class proficiency"
+                    (trained(klass, sheet.grants, key) ? " +2 class proficiency"
                      : " without proficiency") +
                                                        "; damage is fixed at " + std::to_string(item->fixed_damage) +
                                                        " without an ability modifier.\n";
@@ -11517,7 +11523,7 @@ class Module final : public RulesModule
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + " and " + sheet.character_class +
                     " weapon proficiency. Weapon attack uses " + attack_ability(key) + " modifier" +
-                    (trained(sheet.character_class, sheet.grants, key) ? " +2 class proficiency"
+                    (trained(klass, sheet.grants, key) ? " +2 class proficiency"
                      : " without proficiency") +
                                                        "; damage adds that ability modifier.\n";
         }
@@ -11541,14 +11547,14 @@ class Module final : public RulesModule
                 std::to_string(sheet.scores[0]) +
                 ". Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0).";
         result.spell_modifiers = "Active conditions are shown in the character status.";
-        if (sheet.character_class == "Wizard")
+        if (klass == CharacterClass::wizard)
             result.spell_modifiers =
                 "Source: Fire Bolt and Wizard spellcasting, Intelligence score " +
                 std::to_string(sheet.scores[3]) +
                 ". Attack: Intelligence modifier +2 level-one proficiency = " +
                 std::to_string(d.casting) + ". Magic Missile has no ability modifier to damage.\n" +
                 result.spell_modifiers;
-        if (sheet.character_class == "Cleric")
+        if (klass == CharacterClass::cleric)
             result.spell_modifiers =
                 "Source: Cure Wounds and Cleric spellcasting, Wisdom score " +
                 std::to_string(sheet.scores[4]) + ". Healing: 2d8 + Wisdom modifier (" +
@@ -11560,7 +11566,7 @@ class Module final : public RulesModule
         for (const auto &key : gear)
         {
             if (key == "shield")
-                result.item_messages.push_back({trained(sheet.character_class, sheet.grants, key)
+                result.item_messages.push_back({trained(klass, sheet.grants, key)
                                                 ? "Source: equipped Shield: +2 AC."
                                                 : "Source: equipped Shield: +0 AC (untrained).",
                                                 {}});
@@ -11603,7 +11609,7 @@ class Module final : public RulesModule
                     {"ability", attack_ability(key), true},
                     {
                         "proficiency",
-                        trained(sheet.character_class, sheet.grants, key) ? "+2 class proficiency"
+                        trained(klass, sheet.grants, key) ? "+2 class proficiency"
                         : "without proficiency",
                         true
                     },
@@ -11618,7 +11624,7 @@ class Module final : public RulesModule
                     {"ability", attack_ability(key), true},
                     {
                         "proficiency",
-                        trained(sheet.character_class, sheet.grants, key) ? "+2 class proficiency"
+                        trained(klass, sheet.grants, key) ? "+2 class proficiency"
                         : "without proficiency",
                         true
                     }
@@ -11703,14 +11709,14 @@ class Module final : public RulesModule
         if (d.str_dex_disadvantage)
             result.spell_messages.push_back(
         {"Cannot cast spells while wearing untrained armor.", {}});
-        if (sheet.character_class == "Wizard")
+        if (klass == CharacterClass::wizard)
             result.spell_messages.push_back(
         {
             "Source: Fire Bolt and Wizard spellcasting, Intelligence score {score}. Attack: Intelligence modifier +2 level-one proficiency = {attack}. Magic Missile has no ability modifier to damage.",
             {   {"score", std::to_string(sheet.scores[3])},
                 {"attack", std::to_string(d.casting)}
             }});
-        if (sheet.character_class == "Cleric")
+        if (klass == CharacterClass::cleric)
             result.spell_messages.push_back(
         {
             "Source: Cure Wounds and Cleric spellcasting, Wisdom score {score}. Healing: 2d8 + Wisdom modifier ({modifier}).",
@@ -11726,7 +11732,7 @@ class Module final : public RulesModule
                 {"Known cantrip: {spell}.", {{"spell", spell.label, true}}});
             }
         }
-        if (sheet.character_class == "Sorcerer")
+        if (klass == CharacterClass::sorcerer)
         {
             result.spell_modifiers +=
                 "\nSorcerer cantrips: Charisma score " + std::to_string(sheet.scores[5]) +
@@ -11740,7 +11746,7 @@ class Module final : public RulesModule
                     {"cantrips", std::to_string(access.cantrip_choices - access.cantrips.size())}
                 }});
         }
-        if (sheet.character_class == "Warlock")
+        if (klass == CharacterClass::warlock)
         {
             result.spell_modifiers +=
                 "\nPact Magic cantrips: Charisma score " + std::to_string(sheet.scores[5]) +
@@ -11754,7 +11760,7 @@ class Module final : public RulesModule
                     {"cantrips", std::to_string(access.cantrip_choices - access.cantrips.size())}
                 }});
         }
-        if (sheet.character_class == "Cleric")
+        if (klass == CharacterClass::cleric)
         {
             result.spell_modifiers +=
                 "\nPending Cleric choices: " +
@@ -11768,7 +11774,7 @@ class Module final : public RulesModule
                     {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
                 }});
         }
-        if (sheet.character_class == "Ranger")
+        if (klass == CharacterClass::ranger)
         {
             result.spell_modifiers +=
                 "\nRanger spellcasting: Wisdom score " + std::to_string(sheet.scores[4]) +
@@ -11781,7 +11787,7 @@ class Module final : public RulesModule
                     {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
                 }});
         }
-        if (sheet.character_class == "Paladin")
+        if (klass == CharacterClass::paladin)
         {
             result.spell_modifiers +=
                 "\nPaladin spellcasting: Charisma score " + std::to_string(sheet.scores[5]) +
@@ -11794,7 +11800,7 @@ class Module final : public RulesModule
                     {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
                 }});
         }
-        if (sheet.character_class == "Wizard")
+        if (klass == CharacterClass::wizard)
         {
             for (const auto &spell : access.spellbook)
             {

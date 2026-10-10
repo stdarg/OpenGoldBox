@@ -162,6 +162,24 @@ void dwarf_class_sources()
     }
 }
 
+// Rules key on the class, never its label: every class's sheet is offered its
+// next level, and a misspelt or translated label is rejected instead of being
+// read as a character with no class features to advance.
+void class_identity()
+{
+    const auto rules = module();
+    for (const auto &choice : srd5::character_rules()->choices(CreationField::character_class))
+        check(rules->advancement_options(character(choice.id).sheet()).level == 2,
+              "Every class is recognised by its rules");
+    auto misspelt = character("wizard").sheet();
+    misspelt.character_class = "Wizzard";
+    rejects(
+        [&]
+    {
+        (void)rules->advancement_options(misspelt);
+    });
+}
+
 void progression()
 {
     for (const char *klass :
@@ -900,6 +918,7 @@ int main(int argc, char **argv)
         check(argc == 1, "Unknown advancement test argument");
         asi_conformance();
         dwarf_class_sources();
+        class_identity();
         progression();
         hp_history();
         ability_sources();

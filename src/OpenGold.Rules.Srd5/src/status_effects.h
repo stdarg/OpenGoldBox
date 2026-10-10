@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_SRD5_STATUS_EFFECTS_H
 #define OPENGOLD_SRD5_STATUS_EFFECTS_H
 
+#include "character_class.h"
 #include "opengold/rules.h"
 #include <functional>
 #include <iosfwd>
@@ -189,7 +190,7 @@ struct SaveResult
 [[nodiscard]] SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifiers,
                                       std::uint64_t &rng);
 [[nodiscard]] int d20(RollModifiers modifiers, std::uint64_t &rng);
-[[nodiscard]] std::array<unsigned, 2> class_save_proficiencies(std::string_view class_name);
+[[nodiscard]] std::array<unsigned, 2> class_save_proficiencies(CharacterClass character_class);
 
 // A source is provenance, never a borrowed Actor pointer. Scope distinguishes
 // encounter-local monster IDs when a lasting effect reaches another encounter.

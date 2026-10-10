@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_SRD5_ARMOR_H
 #define OPENGOLD_SRD5_ARMOR_H
+#include "character_class.h"
 #include <algorithm>
 #include <array>
 #include <string_view>
@@ -58,11 +59,12 @@ inline const Armor *armor(std::string_view key)
     return nullptr;
 }
 
-inline bool armor_trained(std::string_view klass, ArmorCategory category)
+inline bool armor_trained(CharacterClass klass, ArmorCategory category)
 {
-    const bool heavy = klass == "Fighter" || klass == "Paladin";
-    const bool medium = heavy || klass == "Barbarian" || klass == "Cleric" || klass == "Ranger";
-    const bool shield = medium || klass == "Druid";
+    const bool heavy = klass == CharacterClass::fighter || klass == CharacterClass::paladin;
+    const bool medium = heavy || klass == CharacterClass::barbarian ||
+                        klass == CharacterClass::cleric || klass == CharacterClass::ranger;
+    const bool shield = medium || klass == CharacterClass::druid;
     switch (category)
     {
     case ArmorCategory::heavy:
@@ -72,7 +74,8 @@ inline bool armor_trained(std::string_view klass, ArmorCategory category)
     case ArmorCategory::shield:
         return shield;
     case ArmorCategory::light:
-        return shield || klass == "Bard" || klass == "Rogue" || klass == "Warlock";
+        return shield || klass == CharacterClass::bard || klass == CharacterClass::rogue ||
+               klass == CharacterClass::warlock;
     }
     return false;
 }

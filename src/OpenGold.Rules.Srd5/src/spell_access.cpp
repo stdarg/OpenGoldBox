@@ -152,7 +152,8 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
 struct PreparedCaster
 {
-    std::string_view klass, source, cantrip_label;
+    CharacterClass klass;
+    std::string_view source, cantrip_label;
     // The feature that grants the spells: Spellcasting, or a Warlock's Pact Magic.
     std::string_view feature;
     unsigned list, cantrip_list;
@@ -169,39 +170,43 @@ struct PreparedCaster
 
 constexpr std::array prepared_casters{
     PreparedCaster{
-        "Cleric", "class:cleric:spellcasting", "Cleric cantrips", "feature:spellcasting", cleric_list, cleric_list,
+        CharacterClass::cleric, "class:cleric:spellcasting", "Cleric cantrips",
+        "feature:spellcasting", cleric_list, cleric_list,
         {3, 3, 3, 4}, {4, 5, 6, 7}, {1, 1, 2, 2}, PreparedCaster::RestChange::any},
     PreparedCaster{
         // Paladin cantrips come only from Blessed Warrior, from the Cleric list.
-        "Paladin", "class:paladin:spellcasting", "Blessed Warrior cantrips", "feature:spellcasting", paladin_list,
-        cleric_list, {0, 0, 0, 0},
+        CharacterClass::paladin, "class:paladin:spellcasting", "Blessed Warrior cantrips",
+        "feature:spellcasting", paladin_list, cleric_list, {0, 0, 0, 0},
         {2, 3, 4, 5}, {1, 1, 1, 1}, PreparedCaster::RestChange::one},
     // Ranger cantrips come only from Druidic Warrior, from the Druid list.
     PreparedCaster{
-        "Ranger", "class:ranger:spellcasting", "Druidic Warrior cantrips", "feature:spellcasting", ranger_list,
-        druid_list,
+        CharacterClass::ranger, "class:ranger:spellcasting", "Druidic Warrior cantrips",
+        "feature:spellcasting", ranger_list, druid_list,
         {0, 0, 0, 0}, {2, 3, 4, 4}, {1, 1, 1, 1}, PreparedCaster::RestChange::one},
     PreparedCaster{
-        "Sorcerer", "class:sorcerer:spellcasting", "Sorcerer cantrips", "feature:spellcasting", sorcerer_list,
-        sorcerer_list, {4, 4, 4, 5}, {2, 4, 6, 7}, {1, 1, 2, 2},
-        PreparedCaster::RestChange::none},
+        CharacterClass::sorcerer, "class:sorcerer:spellcasting", "Sorcerer cantrips",
+        "feature:spellcasting", sorcerer_list, sorcerer_list, {4, 4, 4, 5}, {2, 4, 6, 7},
+        {1, 1, 2, 2}, PreparedCaster::RestChange::none},
     // Pact Magic: a Warlock prepares from its list; its slots are all one level.
     PreparedCaster{
-        "Warlock", "class:warlock:pact_magic", "Warlock cantrips", "feature:pact_magic",
-        warlock_list, warlock_list, {2, 2, 2, 3}, {2, 3, 4, 5}, {1, 1, 2, 2},
+        CharacterClass::warlock, "class:warlock:pact_magic", "Warlock cantrips",
+        "feature:pact_magic", warlock_list, warlock_list, {2, 2, 2, 3}, {2, 3, 4, 5},
+        {1, 1, 2, 2}, PreparedCaster::RestChange::none},
+    PreparedCaster{
+        CharacterClass::bard, "class:bard:spellcasting", "Bard cantrips", "feature:spellcasting",
+        bard_list, bard_list, {2, 2, 2, 3}, {4, 5, 6, 7}, {1, 1, 2, 2},
         PreparedCaster::RestChange::none},
     PreparedCaster{
-        "Bard", "class:bard:spellcasting", "Bard cantrips", "feature:spellcasting", bard_list,
-        bard_list, {2, 2, 2, 3}, {4, 5, 6, 7}, {1, 1, 2, 2}, PreparedCaster::RestChange::none},
-    PreparedCaster{
-        "Druid", "class:druid:spellcasting", "Druid cantrips", "feature:spellcasting", druid_list,
-        druid_list, {2, 2, 2, 3}, {4, 5, 6, 7}, {1, 1, 2, 2}, PreparedCaster::RestChange::any}};
+        CharacterClass::druid, "class:druid:spellcasting", "Druid cantrips",
+        "feature:spellcasting", druid_list, druid_list, {2, 2, 2, 3}, {4, 5, 6, 7},
+        {1, 1, 2, 2}, PreparedCaster::RestChange::any}};
 
 // Spells a class always has prepared from a class level on. `land` names the
 // Circle of the Land type whose Circle Spells these are.
 struct AlwaysPrepared
 {
-    std::string_view klass, spell;
+    CharacterClass klass;
+    std::string_view spell;
     unsigned level;
     std::string_view land{};
 };
@@ -209,39 +214,39 @@ struct AlwaysPrepared
 // Paladin's Smite, SRD 5.2.1 p. 54, the Oath of Devotion spells, p. 56, the
 // Ranger's Favored Enemy and the Cleric's Life Domain.
 constexpr std::array always_prepared_table{
-    AlwaysPrepared{"Paladin", "divine_smite", 2},
+    AlwaysPrepared{CharacterClass::paladin, "divine_smite", 2},
     // Circle of the Land spells, p. 46, for the land chosen.
-    AlwaysPrepared{"Druid", "blur", 3, "arid"},
-    AlwaysPrepared{"Druid", "burning_hands", 3, "arid"},
-    AlwaysPrepared{"Druid", "fire_bolt", 3, "arid"},
-    AlwaysPrepared{"Druid", "fog_cloud", 3, "polar"},
-    AlwaysPrepared{"Druid", "hold_person", 3, "polar"},
-    AlwaysPrepared{"Druid", "ray_of_frost", 3, "polar"},
-    AlwaysPrepared{"Druid", "misty_step", 3, "temperate"},
-    AlwaysPrepared{"Druid", "shocking_grasp", 3, "temperate"},
-    AlwaysPrepared{"Druid", "sleep", 3, "temperate"},
-    AlwaysPrepared{"Druid", "acid_splash", 3, "tropical"},
-    AlwaysPrepared{"Druid", "ray_of_sickness", 3, "tropical"},
-    AlwaysPrepared{"Druid", "web", 3, "tropical"},
+    AlwaysPrepared{CharacterClass::druid, "blur", 3, "arid"},
+    AlwaysPrepared{CharacterClass::druid, "burning_hands", 3, "arid"},
+    AlwaysPrepared{CharacterClass::druid, "fire_bolt", 3, "arid"},
+    AlwaysPrepared{CharacterClass::druid, "fog_cloud", 3, "polar"},
+    AlwaysPrepared{CharacterClass::druid, "hold_person", 3, "polar"},
+    AlwaysPrepared{CharacterClass::druid, "ray_of_frost", 3, "polar"},
+    AlwaysPrepared{CharacterClass::druid, "misty_step", 3, "temperate"},
+    AlwaysPrepared{CharacterClass::druid, "shocking_grasp", 3, "temperate"},
+    AlwaysPrepared{CharacterClass::druid, "sleep", 3, "temperate"},
+    AlwaysPrepared{CharacterClass::druid, "acid_splash", 3, "tropical"},
+    AlwaysPrepared{CharacterClass::druid, "ray_of_sickness", 3, "tropical"},
+    AlwaysPrepared{CharacterClass::druid, "web", 3, "tropical"},
     // Fiend Spells, p. 76 (Suggestion removed by DM-3).
-    AlwaysPrepared{"Warlock", "burning_hands", 3},
-    AlwaysPrepared{"Warlock", "command", 3},
-    AlwaysPrepared{"Warlock", "scorching_ray", 3},
+    AlwaysPrepared{CharacterClass::warlock, "burning_hands", 3},
+    AlwaysPrepared{CharacterClass::warlock, "command", 3},
+    AlwaysPrepared{CharacterClass::warlock, "scorching_ray", 3},
     // Draconic Spells, p. 70 (Alter Self removed by DM-3).
-    AlwaysPrepared{"Sorcerer", "chromatic_orb", 3},
-    AlwaysPrepared{"Sorcerer", "command", 3},
-    AlwaysPrepared{"Sorcerer", "dragons_breath", 3},
-    AlwaysPrepared{"Paladin", "protection_from_evil_and_good", 3},
-    AlwaysPrepared{"Paladin", "shield_of_faith", 3},
+    AlwaysPrepared{CharacterClass::sorcerer, "chromatic_orb", 3},
+    AlwaysPrepared{CharacterClass::sorcerer, "command", 3},
+    AlwaysPrepared{CharacterClass::sorcerer, "dragons_breath", 3},
+    AlwaysPrepared{CharacterClass::paladin, "protection_from_evil_and_good", 3},
+    AlwaysPrepared{CharacterClass::paladin, "shield_of_faith", 3},
     // Favored Enemy, SRD 5.2.1 p. 57.
-    AlwaysPrepared{"Ranger", "hunters_mark", 1},
+    AlwaysPrepared{CharacterClass::ranger, "hunters_mark", 1},
     // Life Domain spells, p. 37.
-    AlwaysPrepared{"Cleric", "aid", 3},
-    AlwaysPrepared{"Cleric", "bless", 3},
-    AlwaysPrepared{"Cleric", "cure_wounds", 3},
-    AlwaysPrepared{"Cleric", "lesser_restoration", 3}};
+    AlwaysPrepared{CharacterClass::cleric, "aid", 3},
+    AlwaysPrepared{CharacterClass::cleric, "bless", 3},
+    AlwaysPrepared{CharacterClass::cleric, "cure_wounds", 3},
+    AlwaysPrepared{CharacterClass::cleric, "lesser_restoration", 3}};
 
-const PreparedCaster *prepared_caster(std::string_view klass)
+const PreparedCaster *prepared_caster(CharacterClass klass)
 {
     for (const auto &caster : prepared_casters)
         if (caster.klass == klass)
@@ -271,7 +276,7 @@ FeatureGrant grant(std::string_view id, unsigned level, std::string_view origin 
     {{"access", find(id).level ? "spellbook" : "cantrip"}}};
 }
 
-std::string_view class_source(std::string_view klass)
+std::string_view class_source(CharacterClass klass)
 {
     const auto *caster = prepared_caster(klass);
     return caster ? caster->source : source;
@@ -314,10 +319,12 @@ unsigned cantrips_at(const PreparedCaster &caster, std::span<const FeatureGrant>
                      unsigned level)
 {
     return caster.cantrips[level - 1] +
-           (caster.klass == "Cleric" && thaumaturge(grants) ? 1 : 0) +
-           (caster.klass == "Druid" && magician(grants) ? 1 : 0) +
-           (caster.klass == "Paladin" && level >= 2 && blessed_warrior(grants) ? 2 : 0) +
-           (caster.klass == "Ranger" && level >= 2 && druidic_warrior(grants) ? 2 : 0);
+           (caster.klass == CharacterClass::cleric && thaumaturge(grants) ? 1 : 0) +
+           (caster.klass == CharacterClass::druid && magician(grants) ? 1 : 0) +
+           (caster.klass == CharacterClass::paladin && level >= 2 && blessed_warrior(grants)
+            ? 2 : 0) +
+           (caster.klass == CharacterClass::ranger && level >= 2 && druidic_warrior(grants)
+            ? 2 : 0);
 }
 
 SpellAccess prepared_access(const PreparedCaster &caster, std::span<const FeatureGrant> grants,
@@ -661,13 +668,13 @@ starting_spell_grants(std::string_view klass,
     return result;
 }
 
-SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view klass,
+SpellAccess spell_access(std::span<const FeatureGrant> grants, CharacterClass klass,
                          unsigned level, std::span<const std::string> prepared)
 {
     SpellAccess result;
     if (const auto *caster = prepared_caster(klass))
         return prepared_access(*caster, grants, level, prepared);
-    if (klass != "Wizard")
+    if (klass != CharacterClass::wizard)
     {
         require(std::none_of(grants.begin(), grants.end(), is_spell_grant));
         return result; // Each other class's preparation policy has its own issue.
@@ -734,12 +741,12 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, std::string_view 
 SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoiceContext context)
 {
     SpellChoiceOptions result;
-    if (const auto *caster = prepared_caster(sheet.character_class))
+    const auto klass = class_of(sheet);
+    if (const auto *caster = prepared_caster(klass))
         return prepared_choice_options(*caster, sheet, context);
-    if (sheet.character_class != "Wizard")
+    if (klass != CharacterClass::wizard)
         return result;
-    const auto access =
-        spell_access(sheet.grants, sheet.character_class, sheet.level, sheet.prepared_spells);
+    const auto access = spell_access(sheet.grants, klass, sheet.level, sheet.prepared_spells);
     auto known = [&](std::string_view id)
     {
         return std::any_of(sheet.grants.begin(), sheet.grants.end(),
@@ -807,9 +814,10 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
                          SpellChoiceContext context, ChoiceCompleteness completeness)
 {
     const bool complete = completeness == ChoiceCompleteness::complete;
-    const auto *caster = prepared_caster(sheet.character_class);
-    require(sheet.character_class == "Wizard" || caster);
-    const auto origin = class_source(sheet.character_class);
+    const auto klass = class_of(sheet);
+    const auto *caster = prepared_caster(klass);
+    require(klass == CharacterClass::wizard || caster);
+    const auto origin = class_source(klass);
     auto candidate = sheet;
     const auto options = spell_choice_options(sheet, context);
     for (const auto &[id, values] : choices.learning)
@@ -866,13 +874,13 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
             return std::find(choices.prepared->begin(), choices.prepared->end(), id) ==
                    choices.prepared->end();
         }) <= 1);
-        const auto always = always_prepared_spells(sheet.character_class, sheet.level, sheet.grants);
+        const auto always = always_prepared_spells(klass, sheet.level, sheet.grants);
         for (const auto &id : *choices.prepared)
             require(std::find(always.begin(), always.end(), id) == always.end());
         candidate.prepared_spells = *choices.prepared;
     }
-    const auto access = spell_access(candidate.grants, candidate.character_class, candidate.level,
-                                     candidate.prepared_spells);
+    const auto access =
+        spell_access(candidate.grants, klass, candidate.level, candidate.prepared_spells);
     if (complete)
     {
         const auto remaining = spell_choice_options(candidate, context);
@@ -886,7 +894,7 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     sheet = std::move(candidate);
 }
 
-std::vector<std::string> always_prepared_spells(std::string_view klass, unsigned level,
+std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned level,
         std::span<const FeatureGrant> grants)
 {
     std::vector<std::string> result;
@@ -901,9 +909,9 @@ std::vector<std::string> always_prepared_spells(std::string_view klass, unsigned
     return result;
 }
 
-bool prepares_spells(std::string_view klass)
+bool prepares_spells(CharacterClass klass)
 {
-    return klass == "Wizard" || prepared_caster(klass);
+    return klass == CharacterClass::wizard || prepared_caster(klass);
 }
 
 std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
