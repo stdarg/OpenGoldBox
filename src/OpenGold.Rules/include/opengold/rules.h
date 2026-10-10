@@ -2,6 +2,7 @@
 #define OPENGOLD_RULES_H
 #include "opengold/message.h"
 #include "opengold/random_state.h"
+#include <chrono>
 #include <compare>
 #include <array>
 #include <cstdint>
@@ -703,7 +704,9 @@ class RulesModule
     virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &, RandomState &) const;
 
     // Advances module-owned lasting effects for a group in deterministic order.
-    virtual void elapse(std::span<Participant>, std::uint64_t, RandomState &) const
+    // A duration, not a bare count, so minutes or the dice state cannot be
+    // passed where milliseconds belong (Effective C++ Item 18).
+    virtual void elapse(std::span<Participant>, std::chrono::milliseconds, RandomState &) const
     {
     }
 

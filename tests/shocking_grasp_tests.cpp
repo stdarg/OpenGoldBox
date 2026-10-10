@@ -528,10 +528,10 @@ void campaign()
                   "Campaign exact round trip");
             auto participants = restored.participants();
             RandomState random{123};
-            rules->elapse(participants, 5999, random);
+            rules->elapse(participants, std::chrono::milliseconds(5999), random);
             check(fx::opportunity_blocked(effects(*participants[0].state)) && random.value == 123,
                   "Suppression persists until deadline outside combat");
-            rules->elapse(participants, 1, random);
+            rules->elapse(participants, std::chrono::milliseconds(1), random);
             check(!fx::opportunity_blocked(effects(*participants[0].state)) && random.value == 123,
                   "Expires at exact campaign deadline");
             for (auto kind :

@@ -111,7 +111,7 @@ void run()
             rejects(
                 [&]
             {
-                party.advance_time(1);
+                party.advance_time(std::chrono::minutes(1));
             });
             rejects(
                 [&]
@@ -168,7 +168,7 @@ void run()
             party = roundtrip(party);
             check(saved(party).starts_with("OPENGOLD-CAMPAIGN 25\n"),
                   "Actual training history uses the current campaign format");
-            party.advance_time(24 * 60);
+            party.advance_time(std::chrono::minutes(24 * 60));
             check(bool(party.rest(RestKind::long_rest)),
                   "Next qualified rest can offer a new choice");
             if (party.state().spell_rest)
@@ -198,7 +198,7 @@ void run()
     p = roundtrip(p);
     check(p.member(id).character.sheet().training.masteries.size() == 4,
           "Rest edit replays before later Fighter entitlement");
-    p.advance_time(24 * 60);
+    p.advance_time(std::chrono::minutes(24 * 60));
     check(bool(p.rest(RestKind::long_rest)), "Level4 qualified rest starts");
     const auto options = *rules->rest_training_options(p.member(id).character.sheet());
     check(options.group.count == 4 && options.replacement_limit == 1,

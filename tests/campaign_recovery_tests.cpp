@@ -97,9 +97,9 @@ void golden_events()
     auto rules = module();
     std::vector<Participant> people{patient(1, unstable())};
     RandomState rng{17};
-    rules->elapse(people, 0, rng);
+    rules->elapse(people, std::chrono::milliseconds(0), rng);
     check(people[0].state == unstable() && rng.value == 17, "Zero elapsed time rolls nothing");
-    rules->elapse(people, 1, rng);
+    rules->elapse(people, std::chrono::milliseconds(1), rng);
     check(people[0].state->hit_points == 1 &&
           people[0].state->resources == "SRD11 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0" &&
           rng.value == 11400714819323198502ULL,
@@ -113,15 +113,15 @@ void golden_events()
                   "FX8 2 1 1 1 77 99 \"Caster\" 13 60000 6000 0";
     people = {patient(2, unstable()), patient(1, a)};
     rng.value = 34;
-    rules->elapse(people, 6000, rng);
+    rules->elapse(people, std::chrono::milliseconds(6000), rng);
     check(
         people[1].state->resources == "SRD11 0 0 0 0 0 1 1 0 7194000 0 \"\" 0 1 0 0 0 0 FX8 2 0 0" &&
         people[0].state->resources == "SRD11 0 0 0 0 0 1 1 0 14394000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0" &&
         rng.value == 1663341875487337611ULL,
         "Death saves resolve in entity order before simultaneous effect saves");
-    rules->elapse(people, 7193999, rng);
+    rules->elapse(people, std::chrono::milliseconds(7193999), rng);
     check(people[1].state->hit_points == 0, "Stable recovery waits until its exact deadline");
-    rules->elapse(people, 1, rng);
+    rules->elapse(people, std::chrono::milliseconds(1), rng);
     check(people[1].state->hit_points == 1 && people[0].state->hit_points == 0 &&
           rng.value == 1663341875487337611ULL,
           "Natural recovery adds no second duration roll");
@@ -130,17 +130,26 @@ void golden_events()
                   "FX8 2 1 1 1 77 99 \"Caster\" 38 60000 6000 0";
     people = {patient(1, a)};
     rng.value = 29;
-    rules->elapse(people, 60000, rng);
+    rules->elapse(people, std::chrono::milliseconds(60000), rng);
     check(people[0].state->dead &&
           people[0].state->resources == "SRD11 0 0 0 2 3 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 2 0 0" &&
           rng.value == 11400714819323198514ULL,
           "A natural-one death ends mortality rolls and skips saves on lingering effects");
     people = {patient(1, stable(7200000))};
     rng.value = 42;
-    rules->elapse(people, std::numeric_limits<std::uint64_t>::max(), rng);
+    rules->elapse(people, std::chrono::milliseconds::max(), rng);
     check(people[0].state->hit_points == 1 && rng.value == 42,
           "Very large elapsed time finishes without overflow or redundant rolls");
 }
+
+// Campaign time is a duration: minutes convert to it, a bare number does
+// not, so minutes cannot be passed as milliseconds (Effective C++ Item 18).
+template <class Time>
+concept advances_by = requires(CampaignParty &party, Time elapsed)
+{
+    party.advance_time(elapsed);
+};
+static_assert(advances_by<std::chrono::minutes> && !advances_by<int>);
 
 void partitions_and_rejection()
 {
@@ -155,17 +164,17 @@ void partitions_and_rejection()
         auto whole = initial, split = initial;
         std::reverse(split.begin(), split.end());
         RandomState big_rng{seed}, small_rng{seed};
-        rules->elapse(whole, 14406001, big_rng);
+        rules->elapse(whole, std::chrono::milliseconds(14406001), big_rng);
         std::uint64_t remaining = 14406001;
         for (const auto amount :
                 {
                     1ULL, 1110ULL, 1000ULL, 3890ULL, 7123ULL, 48001ULL, 3523456ULL, 61ULL
                 })
         {
-            rules->elapse(split, amount, small_rng);
+            rules->elapse(split, std::chrono::milliseconds(amount), small_rng);
             remaining -= amount;
         }
-        rules->elapse(split, remaining, small_rng);
+        rules->elapse(split, std::chrono::milliseconds(remaining), small_rng);
         std::reverse(split.begin(), split.end());
         for (std::size_t i = 0; i < whole.size(); ++i)
             check(
@@ -180,7 +189,7 @@ void partitions_and_rejection()
     rejects(
         [&]
     {
-        rules->elapse(bad, 60000, rng);
+        rules->elapse(bad, std::chrono::milliseconds(60000), rng);
     });
     check(*bad.front().state == first && rng.value == 34,
           "Malformed late member cannot partly advance earlier members or RNG");
@@ -189,7 +198,7 @@ void partitions_and_rejection()
     rejects(
         [&]
     {
-        rules->elapse(bad, 60000, rng);
+        rules->elapse(bad, std::chrono::milliseconds(60000), rng);
     });
     check(*bad.front().state == first && rng.value == 34,
           "Ambiguous participant ordering rejects atomically");
@@ -208,14 +217,14 @@ void campaign_continuation()
     state.roster[2].vitals = unstable(6000);
     party.restore(state);
     const auto before = saved(party);
-    party.advance_time_milliseconds(0);
+    party.advance_time(std::chrono::milliseconds(0));
     check(saved(party) == before, "Zero campaign time is read-only");
-    party.advance_time_milliseconds(5999);
+    party.advance_time(std::chrono::milliseconds(5999));
     auto copy = loaded(saved(party));
     check(saved(copy) == saved(party), "Partial cadence saves with exact RNG and timers");
-    party.advance_time_milliseconds(14400001);
-    copy.advance_time_milliseconds(1);
-    copy.advance_time_milliseconds(14400000);
+    party.advance_time(std::chrono::milliseconds(14400001));
+    copy.advance_time(std::chrono::milliseconds(1));
+    copy.advance_time(std::chrono::milliseconds(14400000));
     check(saved(party) == saved(copy) && party.member(pc).vitals.hit_points == 1 &&
           party.member(npc).vitals.hit_points == 1,
           "PCs, recruited NPCs and reserves continue through save/load and subdivisions");
@@ -250,7 +259,7 @@ void campaign_continuation()
     rejects(
         [&]
     {
-        party.advance_time(1);
+        party.advance_time(std::chrono::minutes(1));
     });
     check(saved(party) == overflow, "Clock overflow preserves all vitality and RNG");
 }
@@ -291,7 +300,7 @@ void combat_handoff()
     {
         check(combat->submit(end(*combat)), "Complete the conscious combat turn");
         const auto snap = combat->snapshot();
-        direct.advance_time_milliseconds(snap.elapsed_milliseconds - previous);
+        direct.advance_time(std::chrono::milliseconds(snap.elapsed_milliseconds - previous));
         previous = snap.elapsed_milliseconds;
         party.apply_combat(snap);
         const auto once = party.checkpoint();
@@ -325,8 +334,8 @@ void combat_handoff()
     check(party.member(npc).vitals.hit_points == 1,
           "Stable combat countdown wakes its companion once");
     auto copy = loaded(saved(party));
-    party.advance_time_milliseconds(6111);
-    copy.advance_time_milliseconds(6111);
+    party.advance_time(std::chrono::milliseconds(6111));
+    copy.advance_time(std::chrono::milliseconds(6111));
     check(saved(party) == saved(copy), "Encounter exit continues through campaign save/load");
     // A fresh encounter rebases unstable saves onto initiative, including slot zero.
     state = party.checkpoint();
@@ -339,9 +348,9 @@ void combat_handoff()
     party.apply_combat(combat->snapshot());
     party.end_combat();
     copy = loaded(saved(party));
-    party.advance_time_milliseconds(18000);
-    copy.advance_time_milliseconds(1);
-    copy.advance_time_milliseconds(17999);
+    party.advance_time(std::chrono::milliseconds(18000));
+    copy.advance_time(std::chrono::milliseconds(1));
+    copy.advance_time(std::chrono::milliseconds(17999));
     check(saved(party) == saved(copy),
           "Death cadence transfers out of a new initiative without restarting on campaign load");
 }

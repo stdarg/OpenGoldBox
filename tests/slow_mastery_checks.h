@@ -162,9 +162,9 @@ void consumers()
     copy.restore(decoded.party);
     check(encode_campaign(copy, nullptr, "slow-consumers") == encoded,
           "Campaign Slow continuation retains exact resources and clocks");
-    p.advance_time_milliseconds(6000);
+    p.advance_time(std::chrono::milliseconds(6000));
     for (unsigned n = 0; n < 6; ++n)
-        copy.advance_time_milliseconds(1000);
+        copy.advance_time(std::chrono::milliseconds(1000));
     check(encode_campaign(copy, nullptr, "slow-consumers") ==
           encode_campaign(p, nullptr, "slow-consumers"),
           "Campaign chunking preserves Slow/Frost expiry and random state");

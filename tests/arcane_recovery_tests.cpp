@@ -325,7 +325,7 @@ void eligibility_and_effects()
     auto participants = party.participants();
     participants.front().state = state;
     RandomState rng{123};
-    rules->elapse(participants, 6000, rng);
+    rules->elapse(participants, std::chrono::milliseconds(6000), rng);
     const auto &elapsed = *participants.front().state;
     std::istringstream decoded(elapsed.resources.substr(elapsed.resources.find("FX")));
     check(srd5::detail::read_effects(decoded).active.empty() && rng.value == 123 &&

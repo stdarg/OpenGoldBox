@@ -394,7 +394,8 @@ void long_rest(CampaignParty &party, RunResult &result)
         if (info.denial == RestDenial::cooldown)
             wait = std::max(wait, info.wait_milliseconds);
     if (wait)
-        party.advance_time_milliseconds(wait);
+        party.advance_time(std::chrono::milliseconds{
+            static_cast<std::chrono::milliseconds::rep>(wait)});
     if (party.rest(rules::RestKind::long_rest))
         ++result.long_rests;
     settle_rest_choices(party);
@@ -713,12 +714,12 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
             experience += original_xp(record);
         party->award_experience(experience, "sim:" + std::to_string(n));
         // The fight bandaged the dying; the Stable regain 1 HP in hours.
-        party->advance_time(10);
+        party->advance_time(std::chrono::minutes{10});
         bool down = false;
         for (const auto id : living(*party))
             down |= party->member(id).vitals.hit_points == 0;
         if (down)
-            party->advance_time(240);
+            party->advance_time(std::chrono::minutes{240});
         for (const auto id : living(*party))
             while (party->can_advance(id))
                 party->advance(id, advancement(*party, id));

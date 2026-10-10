@@ -3,6 +3,7 @@
 #include "opengold/character.h"
 #include "opengold/coin_purse.h"
 #include "opengold/equipment.h"
+#include <chrono>
 
 namespace opengold::por
 {
@@ -207,8 +208,9 @@ class CampaignParty
     // the difficulty. Returns every attempt; the door opens if the last succeeded.
     [[nodiscard]] std::vector<DoorAttempt> try_door(DoorMethod method, int difficulty);
     [[nodiscard]] bool can_try_door(DoorMethod method) const;
-    void advance_time(unsigned minutes);
-    void advance_time_milliseconds(std::uint64_t milliseconds);
+    // Minutes, seconds and milliseconds all convert; a bare number does not
+    // (Effective C++ Item 18).
+    void advance_time(std::chrono::milliseconds elapsed);
 
     [[nodiscard]] std::uint64_t time_hours() const noexcept
     {
@@ -265,7 +267,7 @@ class CampaignParty
     bool combat_{};
     bool combat_registered_{};
     std::uint64_t combat_elapsed_{};
-    void elapse(PartyState &state, std::uint64_t milliseconds,
+    void elapse(PartyState &state, std::chrono::milliseconds elapsed,
                 std::span<const MemberId> in_combat = {}) const;
     void editable() const;
     void outside_combat() const;

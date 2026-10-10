@@ -1552,7 +1552,7 @@ void progression_and_services()
           "Long rest restores HP and advances campaign time");
     check(!party.rest() && party.time_hours() == 8,
           "Repeated long rest is denied without advancing time");
-    party.advance_time(16 * 60);
+    party.advance_time(std::chrono::minutes(16 * 60));
     check(party.rest() && party.time_hours() == 32, "Long rest is allowed after the required wait");
     rejects(
         [&]
@@ -2252,7 +2252,7 @@ void reward_reentry()
     {
         if (visit)
         {
-            party->advance_time(24 * 60);
+            party->advance_time(std::chrono::minutes(24 * 60));
             check(party->rest(), "Recover before second preview");
             party->keep_rest_spells(pc);
         }

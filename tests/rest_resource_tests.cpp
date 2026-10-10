@@ -324,7 +324,7 @@ void persistence_and_advancement()
         next_die.roll == 2 && first == second && first_rng == second_rng &&
         first_rng.value == 4354685564936845396ULL,
         "The next chosen die after save/reload consumes the known second RNG draw and gives the same healing");
-    party.advance_time_milliseconds(1000);
+    party.advance_time(std::chrono::milliseconds(1000));
     check(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
           .hit_dice == 1 &&
           party.member(id).vitals.resources.find("42000 1000") != std::string::npos,

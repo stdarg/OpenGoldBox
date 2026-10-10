@@ -764,26 +764,25 @@ void CampaignParty::keep_rest_training(RestTicket ticket, MemberId id)
     replace_rest_training(ticket, id, options->selected);
 }
 
-void CampaignParty::advance_time(unsigned minutes)
-{
-    advance_time_milliseconds(std::uint64_t(minutes) * 60000);
-}
-
-void CampaignParty::advance_time_milliseconds(std::uint64_t milliseconds)
+void CampaignParty::advance_time(std::chrono::milliseconds elapsed)
 {
     outside_combat();
-    if ((state_.spell_rest || state_.training_rest) && milliseconds)
+    const bool passes = elapsed != std::chrono::milliseconds::zero();
+    if ((state_.spell_rest || state_.training_rest) && passes)
         throw std::runtime_error("Finish Long Rest spell choices before advancing time");
     auto next = state_;
-    elapse(next, milliseconds);
-    if (milliseconds)
+    elapse(next, elapsed);
+    if (passes)
         next.short_rest.reset();
     state_ = std::move(next);
 }
 
-void CampaignParty::elapse(PartyState &state, std::uint64_t milliseconds,
+void CampaignParty::elapse(PartyState &state, std::chrono::milliseconds elapsed,
                            std::span<const MemberId> in_combat) const
 {
+    if (elapsed < std::chrono::milliseconds::zero())
+        throw std::runtime_error("Time cannot run backwards");
+    const auto milliseconds = static_cast<std::uint64_t>(elapsed.count());
     const auto remainder = state.subminute_milliseconds + milliseconds % 60000;
     const auto minutes = milliseconds / 60000 + remainder / 60000;
     if (minutes > std::numeric_limits<std::uint64_t>::max() - state.time_minutes)
@@ -806,7 +805,7 @@ void CampaignParty::elapse(PartyState &state, std::uint64_t milliseconds,
                                 profile.data,
                                 member.vitals});
     }
-    rules_->elapse(participants, milliseconds, state.random_state);
+    rules_->elapse(participants, elapsed, state.random_state);
     for (const auto &participant : participants)
         std::find_if(state.roster.begin(), state.roster.end(),
                      [&](const auto & m)
@@ -1298,7 +1297,11 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
             active.push_back(actor.id);
     // Combat has already advanced active actors' effects and mortality. Only reserves
     // need campaign-side updates, preventing duplicate recovery rolls.
-    elapse(next, snapshot.elapsed_milliseconds - combat_elapsed_, active);
+    elapse(next,
+           std::chrono::milliseconds{
+               static_cast<std::chrono::milliseconds::rep>(snapshot.elapsed_milliseconds -
+                       combat_elapsed_)},
+           active);
     for (const auto &actor : snapshot.combatants)
         if (actor.side == 0)
         {

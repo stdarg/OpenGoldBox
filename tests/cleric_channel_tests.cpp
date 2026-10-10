@@ -289,7 +289,7 @@ void aid_expiry_checks()
     };
     party.restore(state);
     check(party.hit_point_maximum(id) == sheet_maximum + 5, "Aid raises the campaign maximum");
-    party.advance_time(481);
+    party.advance_time(std::chrono::minutes(481));
     check(party.hit_point_maximum(id) == sheet_maximum &&
           party.member(id).vitals.hit_points == sheet_maximum,
           "When Aid ends after 8 hours the maximum and the extra Hit Points go");

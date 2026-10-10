@@ -648,15 +648,15 @@ void death_saves_outside_combat()
     whole.restore(state);
     CampaignParty pieces(module());
     pieces.restore(state);
-    whole.advance_time_milliseconds(6000);
-    pieces.advance_time_milliseconds(1);
+    whole.advance_time(std::chrono::milliseconds(6000));
+    pieces.advance_time(std::chrono::milliseconds(1));
     const auto settled = encode_campaign(pieces, nullptr, "chill-death-saves");
     CampaignParty loaded(module());
     loaded.restore(
         decode_campaign(settled, *srd5::character_rules(), *rules, "chill-death-saves", nullptr)
         .party);
-    loaded.advance_time_milliseconds(1999);
-    loaded.advance_time_milliseconds(4000);
+    loaded.advance_time(std::chrono::milliseconds(1999));
+    loaded.advance_time(std::chrono::milliseconds(4000));
     check(encode_campaign(loaded, nullptr, "chill-death-saves") ==
           encode_campaign(whole, nullptr, "chill-death-saves"),
           "Death saves resolved in the first moment continue identically after save/load");
@@ -691,9 +691,9 @@ void persistence()
               "Campaign grant and effect round trip");
         auto actors = copy.participants();
         RandomState random{17};
-        rules->elapse(actors, 8999, random);
+        rules->elapse(actors, std::chrono::milliseconds(8999), random);
         check(fx::healing_blocked(effects(*actors[0].state)), "Campaign expiry not early");
-        rules->elapse(actors, 1, random);
+        rules->elapse(actors, std::chrono::milliseconds(1), random);
         check(!fx::healing_blocked(effects(*actors[0].state)) && random.value == 17,
               "Exact outside combat expiry, no RNG");
         (void)id;
@@ -803,7 +803,7 @@ void stable_continuation()
     stage.random_state.value = 17;
     stage.next_combat_scope = 6;
     party.restore(stage);
-    party.advance_time_milliseconds(1000);
+    party.advance_time(std::chrono::milliseconds(1000));
     const auto pending = party.member(id).vitals;
     check(pending.hit_points == 0 && pending.resources.find("14400001") != pending.resources.npos &&
           party.state().random_state.value == 17,
@@ -821,11 +821,11 @@ void stable_continuation()
     {
         rules->validate_character_state(h.sheet(), no_block);
     });
-    loaded.advance_time_milliseconds(7999);
+    loaded.advance_time(std::chrono::milliseconds(7999));
     check(loaded.member(id).vitals.hit_points == 0 && loaded.state().random_state.value == 17,
           "Deferred recovery waits without reroll");
-    loaded.advance_time_milliseconds(1);
-    party.advance_time_milliseconds(8000);
+    loaded.advance_time(std::chrono::milliseconds(1));
+    party.advance_time(std::chrono::milliseconds(8000));
     check(loaded.member(id).vitals.hit_points == 1 && loaded.state().random_state.value == 17 &&
           encode_campaign(loaded, nullptr, "earned-recovery") ==
           encode_campaign(party, nullptr, "earned-recovery"),

@@ -36,7 +36,7 @@ void wizard_choices_checks()
     rejects(
         [&]
     {
-        party.advance_time(1);
+        party.advance_time(std::chrono::minutes(1));
     });
     rejects(
         [&]

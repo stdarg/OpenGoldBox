@@ -437,15 +437,15 @@ void campaign()
         member.vitals = with_effects(vitals, blind());
     }
     party.restore(state);
-    party.advance_time_milliseconds(1234);
+    party.advance_time(std::chrono::milliseconds(1234));
     const auto saved = encode_campaign(party, nullptr, "conditions");
     auto loaded = decode_campaign(saved, *srd5::character_rules(), *rules, "conditions", nullptr);
     CampaignParty restored(module());
     restored.restore(loaded.party);
     check(encode_campaign(restored, nullptr, "conditions") == saved,
           "PC, NPC, reserve effects and sub-minute clock survive campaign save");
-    party.advance_time_milliseconds(59999);
-    restored.advance_time_milliseconds(59999);
+    party.advance_time(std::chrono::milliseconds(59999));
+    restored.advance_time(std::chrono::milliseconds(59999));
     check(encode_campaign(party, nullptr, "conditions") ==
           encode_campaign(restored, nullptr, "conditions"),
           "Exploration recovery continues deterministically");
@@ -489,9 +489,9 @@ void campaign()
           "Fractional rest completion survives saving");
     while (restored.state().spell_rest)
         restored.keep_rest_spells(restored.state().spell_rest->members.front());
-    restored.advance_time_milliseconds(960ULL * 60000 - 1);
+    restored.advance_time(std::chrono::milliseconds(960ULL * 60000 - 1));
     check(!restored.rest(), "Rest cannot become eligible one millisecond early");
-    restored.advance_time_milliseconds(1);
+    restored.advance_time(std::chrono::milliseconds(1));
     check(restored.rest(), "Rest is eligible at the exact sixteen-hour boundary");
 }
 

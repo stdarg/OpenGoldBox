@@ -248,7 +248,7 @@ void individual_eligibility()
           "Mixed cooldowns persist across load");
     copy.keep_rest_spells(w);
     copy.remove(f);
-    copy.advance_time_milliseconds(480ULL * 60000 - 1);
+    copy.advance_time(std::chrono::milliseconds(480ULL * 60000 - 1));
     copy.rejoin(f);
     auto status = copy.rest_info(RestKind::long_rest);
     const auto found = std::find_if(status.begin(), status.end(),
@@ -258,7 +258,7 @@ void individual_eligibility()
     });
     check(found != status.end() && found->wait_milliseconds == 1,
           "Removal/rejoin preserves the cooldown down to one millisecond");
-    copy.advance_time_milliseconds(1);
+    copy.advance_time(std::chrono::milliseconds(1));
     status = copy.rest_info(RestKind::long_rest);
     check(std::find_if(
               status.begin(), status.end(),
@@ -433,9 +433,9 @@ void expiry_and_atomicity()
     auto rest = party.rest(RestKind::short_rest);
     const auto ticket = *rest->spending;
     const auto before = saved(party);
-    party.advance_time_milliseconds(0);
+    party.advance_time(std::chrono::milliseconds(0));
     check(saved(party) == before, "Zero elapsed time does not expire spending");
-    party.advance_time_milliseconds(1);
+    party.advance_time(std::chrono::milliseconds(1));
     check(!party.state().short_rest, "Positive elapsed time expires spending");
     const auto expired = saved(party);
     rejects(
@@ -542,7 +542,7 @@ void effects_once()
         party.restore(state);
         CampaignParty elapsed(module());
         elapsed.restore(state);
-        elapsed.advance_time(kind == RestKind::short_rest ? 60 : 480);
+        elapsed.advance_time(std::chrono::minutes(kind == RestKind::short_rest ? 60 : 480));
         check(party.rest(kind).has_value(), "Rest with active effects completes");
         check(party.state().time_minutes == elapsed.state().time_minutes &&
               party.state().subminute_milliseconds == 4321 &&

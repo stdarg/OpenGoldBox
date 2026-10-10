@@ -233,7 +233,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         ++snapshot_.footsteps;
     }
     if (campaign_ && command == ExplorationCommand::forward)
-        campaign_->advance_time_milliseconds(6000);
+        campaign_->advance_time(std::chrono::seconds{6});
     bind_pose(pose);
     synchronize_clock();
     return true;
@@ -559,7 +559,7 @@ void RolfTourSession::finish_event()
             // the party rests again.
             if (const auto rested = rest_interruption(interval, chance))
             {
-                campaign_->advance_time(*rested);
+                campaign_->advance_time(std::chrono::minutes{*rested});
                 synchronize_clock();
                 event_stage_ = 5;
                 if (!machine_.start(3))

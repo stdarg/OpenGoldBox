@@ -172,7 +172,7 @@ void rule_operations()
         }
     };
     const auto before = state;
-    rules->elapse(participants, 24ULL * 60 * 60 * 1000, rng);
+    rules->elapse(participants, std::chrono::milliseconds(24ULL * 60 * 60 * 1000), rng);
     check(*participants[0].state == before,
           "Elapsed time alone does not expire an until-Long-Rest pool");
     rules->recover(state, c.sheet());
@@ -183,10 +183,10 @@ void rule_operations()
                                       TemporaryHpChoice::use_new);
     participants[0].state = stable;
     const auto prior_rng = rng;
-    rules->elapse(participants, 999, rng);
+    rules->elapse(participants, std::chrono::milliseconds(999), rng);
     check(participants[0].state->hit_points == 0 && pool(c, *participants[0].state).amount == 7,
           "Vital state preserves the countdown and buffer before natural recovery");
-    rules->elapse(participants, 1, rng);
+    rules->elapse(participants, std::chrono::milliseconds(1), rng);
     check(participants[0].state->hit_points == 1 && pool(c, *participants[0].state).amount == 7 &&
           rng == prior_rng,
           "Natural recovery preserves the pool and does not reroll a saved deadline");

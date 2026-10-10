@@ -407,10 +407,10 @@ void campaign()
           "Campaign reload retains exact unresolved duration and grants");
     auto participants = restored.participants();
     RandomState random{123};
-    rules->elapse(participants, 5999, random);
+    rules->elapse(participants, std::chrono::milliseconds(5999), random);
     check(fx::speed_penalty(effects(*participants[0].state)) == 10 && random.value == 123,
           "Campaign timeline preserves a still-active slow without save rolls");
-    rules->elapse(participants, 1, random);
+    rules->elapse(participants, std::chrono::milliseconds(1), random);
     check(effects(*participants[0].state).active.empty() && random.value == 123,
           "Campaign effect ends at exact deadline");
     auto rest = restored.rest(RestKind::short_rest);

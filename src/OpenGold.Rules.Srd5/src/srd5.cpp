@@ -10692,9 +10692,12 @@ class Module final : public RulesModule
         return {60, 0};
     }
 
-    void elapse(std::span<Participant> participants, std::uint64_t milliseconds,
+    void elapse(std::span<Participant> participants, std::chrono::milliseconds elapsed,
                 RandomState &random_state) const override
     {
+        if (elapsed < std::chrono::milliseconds::zero())
+            throw std::invalid_argument("Time cannot run backwards");
+        const auto milliseconds = static_cast<std::uint64_t>(elapsed.count());
         // Work on owned candidates so malformed state cannot partly advance a
         // party or consume its RNG. No Godot or campaign data enters the rules.
         std::vector<Actor> actors;

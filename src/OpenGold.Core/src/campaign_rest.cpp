@@ -81,7 +81,7 @@ std::optional<RestResult> CampaignParty::rest(RestKind kind)
     auto next = state_;
     // Eligibility was captured before the rest's time passed, so a member who
     // recovers from zero HP meanwhile gains no rest benefits.
-    elapse(next, std::uint64_t(minutes) * 60000);
+    elapse(next, std::chrono::minutes{minutes});
     RestResult result{kind, minutes, {}};
     if (kind == RestKind::short_rest)
     {
