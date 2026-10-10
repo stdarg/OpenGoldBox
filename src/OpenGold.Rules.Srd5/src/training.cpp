@@ -171,6 +171,10 @@ std::vector<FeatureGrant> fixed(std::string_view background)
     return result;
 }
 
+// Returns a reference into `choices`, so a temporary is refused: its result
+// would dangle at the end of the statement (Effective C++ Item 21).
+const std::vector<std::string> &selected(TrainingChoices &&, std::string_view) = delete;
+
 const std::vector<std::string> &selected(const TrainingChoices &choices, std::string_view id)
 {
     static const std::vector<std::string> empty;
