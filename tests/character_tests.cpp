@@ -573,12 +573,12 @@ void additional_portrait_tests()
     },
     "Truncated portrait pixels rejected");
     CharacterArt art;
-    art.heads.emplace(1, PortraitPart{"original", panel});
+    art.set_original_head(1, PortraitPart{"original", panel});
     Image body;
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.bodies.emplace(1, PortraitPart{"original", body});
+    art.set_original_body(1, PortraitPart{"original", body});
     std::set<unsigned> ids;
     std::set<std::string_view> files;
     const auto additions = additional_portrait_heads();
@@ -597,7 +597,7 @@ void additional_portrait_tests()
               "Additional heads compose a complete portrait");
         check(std::equal(body.rgba.begin(), body.rgba.end(), portrait.rgba.begin() + 88 * 40 * 4),
               "Neck fitting leaves the original body unchanged");
-        check(art.heads.at(head.id).label == head.label,
+        check(art.heads().at(head.id).label == head.label,
               "Additional heads retain readable selection labels");
     }
     check(!matching_portrait_head("human", "female") &&
@@ -676,7 +676,7 @@ void additional_portrait_tests()
             }
             torso.rgba[32 * 4] = 170; // red collar, not skin
             CharacterArt joined;
-            joined.bodies.emplace(1, PortraitPart{"synthetic", torso});
+            joined.set_original_body(1, PortraitPart{"synthetic", torso});
             joined.add_portrait_head(head.id, neck);
             CharacterAppearance a;
             a.portrait_head = head.id;
@@ -793,8 +793,8 @@ void art_tests()
                     })
             {
                 const auto bank = (tall ? 64u : 0u) + (action ? 128u : 0u);
-                auto source = art.combat_bodies.at(bank + 4).pixels;
-                const auto &head_pixels = art.combat_heads.at(bank + 2).pixels;
+                auto source = art.combat_bodies().at(bank + 4).pixels;
+                const auto &head_pixels = art.combat_heads().at(bank + 2).pixels;
                 for (unsigned p = 0; p < head_pixels.size(); ++p)
                     if (head_pixels[p])
                         source[p] = head_pixels[p];
@@ -831,8 +831,8 @@ void art_tests()
                     0u, 64u, 128u, 192u
                 })
         {
-            const auto &original = art.combat_bodies.at(bank + 21).pixels;
-            const auto &derived = art.combat_bodies.at(bank + 32).pixels;
+            const auto &original = art.combat_bodies().at(bank + 21).pixels;
+            const auto &derived = art.combat_bodies().at(bank + 32).pixels;
             check(original.size() == derived.size(),
                   "Derived shield body retains original dimensions");
             unsigned removed = 0;
@@ -859,8 +859,8 @@ void art_tests()
                           art.icon(a, true).rgba.size() == 576 * 4,
                           "Every original head/body combination has both poses");
                 }
-        std::cout << "Original character art: " << art.heads.size() << " portrait heads, "
-                  << art.bodies.size()
+        std::cout << "Original character art: " << art.heads().size() << " portrait heads, "
+                  << art.bodies().size()
                   << " bodies; 14 combat heads, 35 bodies, both sizes and poses\n";
     }
 }

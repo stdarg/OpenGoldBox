@@ -1049,7 +1049,7 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
                 }
                 const auto &appearance = member.character.appearance();
                 if (appearance.portrait_head > 255 &&
-                        !legacy.heads.contains(appearance.portrait_head))
+                        !legacy.heads().contains(appearance.portrait_head))
                     presentation::load_additional_portrait_heads(legacy);
                 const auto image = presentation::rgba_image(legacy.portrait(appearance));
                 portraits_.emplace(id, ImageTexture::create_from_image(image));

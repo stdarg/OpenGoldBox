@@ -56,7 +56,7 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                                       const por::CharacterArt &art)
 {
     using namespace rules;
-    if (art.bodies.empty() || art.heads.empty())
+    if (art.bodies().empty() || art.heads().empty())
         throw std::runtime_error("Load character art before opening the pool");
     const auto classes = rules.choices(CreationField::character_class);
     const auto alignments = rules.choices(CreationField::alignment);
@@ -81,7 +81,7 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
         "Hazelridge",   "Kingswell",   "Larkspur",   "Moonwhisper", "Reedwalker",  "Stormglen"};
     const std::array<const char *, 5> races{"gnome", "orc", "goliath", "tiefling", "dragonborn"};
     std::vector<unsigned> bodies;
-    for (const auto &[id, body] : art.bodies)
+    for (const auto &[id, body] : art.bodies())
         bodies.push_back(id);
     std::vector<Character> result;
     for (unsigned c = 0; c < classes.size(); ++c)
@@ -168,9 +168,9 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             }
             por::CharacterAppearance appearance;
             appearance.portrait_head =
-                por::matching_portrait_head(d.race, d.gender).value_or(art.heads.begin()->first);
-            if (!art.heads.contains(appearance.portrait_head))
-                appearance.portrait_head = art.heads.begin()->first;
+                por::matching_portrait_head(d.race, d.gender).value_or(art.heads().begin()->first);
+            if (!art.heads().contains(appearance.portrait_head))
+                appearance.portrait_head = art.heads().begin()->first;
             appearance.portrait_body = bodies[(c * 3 + variant) % bodies.size()];
             appearance.combat_head = (c + variant * 3) % 14;
             appearance.combat_body = (c * 2 + variant * 5) % 32;

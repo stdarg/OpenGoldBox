@@ -474,8 +474,8 @@ void pool_starting_gear()
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.heads.emplace(1, por::PortraitPart{"fixture", head});
-    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
     const std::set<std::string> ranged{"longbow", "shortbow", "light_crossbow"},
           ammunition{"arrow", "bolt"}, body_armor{"leather", "chain_mail"},
           unarmored{"barbarian", "monk", "sorcerer", "wizard"},
@@ -534,8 +534,8 @@ void preset_training()
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.heads.emplace(1, por::PortraitPart{"fixture", head});
-    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
     auto creation = srd5::character_rules();
     const auto pool = character_pool(*creation, art), again = character_pool(*creation, art);
     check(pool.size() == 48, "Pool contains four presets for all twelve classes");

@@ -75,9 +75,36 @@ class CharacterArt
 {
   public:
     [[nodiscard]] static CharacterArt load(const std::filesystem::path &directory);
-    std::map<unsigned, PortraitPart> heads, bodies;
-    std::map<unsigned, IndexedIcon> combat_heads, combat_bodies;
+    // The parts are private so each keeps the size the composition relies on:
+    // portrait heads 88x40, bodies 88x48, combat icons 24 pixels wide and at
+    // most 24 high (Effective C++ Item 22). These add or replace a part after
+    // checking it.
     void add_portrait_head(unsigned id, Image image);
+    void set_original_head(unsigned id, PortraitPart part);
+    void set_original_body(unsigned id, PortraitPart part);
+    void set_combat_head(unsigned id, IndexedIcon icon);
+    void set_combat_body(unsigned id, IndexedIcon icon);
+
+    [[nodiscard]] const std::map<unsigned, PortraitPart> &heads() const
+    {
+        return heads_;
+    }
+
+    [[nodiscard]] const std::map<unsigned, PortraitPart> &bodies() const
+    {
+        return bodies_;
+    }
+
+    [[nodiscard]] const std::map<unsigned, IndexedIcon> &combat_heads() const
+    {
+        return combat_heads_;
+    }
+
+    [[nodiscard]] const std::map<unsigned, IndexedIcon> &combat_bodies() const
+    {
+        return combat_bodies_;
+    }
+
     [[nodiscard]] Image portrait(const CharacterAppearance &) const;
     [[nodiscard]] Image icon(const CharacterAppearance &, bool action) const;
     // Stable anatomy from the saved body; only the wielding arms and equipment
@@ -87,6 +114,10 @@ class CharacterArt
                                       bool action) const;
     [[nodiscard]] CharacterColorUsage color_usage(const CharacterAppearance &) const;
     void validate(const CharacterAppearance &) const;
+
+  private:
+    std::map<unsigned, PortraitPart> heads_, bodies_;
+    std::map<unsigned, IndexedIcon> combat_heads_, combat_bodies_;
 };
 } // namespace opengold::por
 #endif

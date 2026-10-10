@@ -30,7 +30,7 @@ unsigned bank(const CharacterAppearance &a, bool action)
 
 const IndexedIcon &body_at(const CharacterArt &art, unsigned id)
 {
-    const auto &body = art.combat_bodies.at(id);
+    const auto &body = art.combat_bodies().at(id);
     if (body.width != 24 || body.height != 24 || body.pixels.size() != 576)
         throw std::runtime_error("Invalid combat layer dimensions");
     return body;
@@ -147,6 +147,6 @@ Image CharacterArt::equipped_icon(const CharacterAppearance &a, unsigned equipme
                     equipment(color, equipment_body, action, a.tall, x, y))
                 composed.pixels[p] = color;
         }
-    return compose_character_icon(combat_heads.at(offset + a.combat_head), composed, a);
+    return compose_character_icon(combat_heads_.at(offset + a.combat_head), composed, a);
 }
 } // namespace opengold::por

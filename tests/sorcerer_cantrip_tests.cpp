@@ -242,8 +242,8 @@ void access()
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.heads.emplace(1, por::PortraitPart{"fixture", head});
-    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
     unsigned count = 0;
     for (const auto &preset : character_pool(*creation, art))
         if (preset.sheet().character_class == "Sorcerer")
