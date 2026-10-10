@@ -64,12 +64,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             intro.opcode != 18 || intro.operands[0].tag != 128 || setup.opcode != 12 ||
             setup.operands[0].value != 12)
         throw EclError("This ECL3:0 does not match the supported Rolf entry profile");
-    const auto maps = MapCatalog::load(directory);
-    const auto map = maps.find({"GEO3.DAX", 0});
-    if (!map)
-        throw EclError("Rolf tour requires GEO3.DAX record 0");
     // Explicit, verified Phlan profile. This does not implement general 127
     // operand semantics or assume that every map shares its GEO/art record ID.
+    // Checked before the maps are loaded: it needs only the program
+    // (Effective C++ Item 26).
     const auto pieces = program->instruction(0x9B11);
     if (pieces.opcode != 55 || pieces.operands.size() != 3 ||
             std::any_of(pieces.operands.begin(), pieces.operands.end(),
@@ -78,6 +76,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     return a.tag != 0 || a.value != 127;
 }))
     throw EclError("Unsupported Phlan wall resource profile");
+    const auto maps = MapCatalog::load(directory);
+    const auto map = maps.find({"GEO3.DAX", 0});
+    if (!map)
+        throw EclError("Rolf tour requires GEO3.DAX record 0");
     const auto archive = [&](const char *name)
     {
         auto records = decode_dax_archive(read_archive(resolve_archive(directory, name)));

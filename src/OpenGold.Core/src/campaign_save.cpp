@@ -318,8 +318,6 @@ struct SaveCodec
                 int level{};
                 fields(draft, appearance, level);
                 require(level >= 1 && level <= 4, "Unsupported saved character level");
-                Character character(*creation, std::move(draft), appearance);
-                rules::VitalState scratch;
                 std::vector<rules::AdvancementChoice> history;
                 std::vector<SpellChoiceEdit> edits;
                 std::vector<TrainingChoiceEdit> training;
@@ -346,6 +344,10 @@ struct SaveCodec
                     previous = edit.level;
                     rest = edit.rest_session;
                 }
+                // Built once the history is known to be sound: evaluating the
+                // character is the expensive part (Effective C++ Item 26).
+                Character character(*creation, std::move(draft), appearance);
+                rules::VitalState scratch;
                 auto replay = [&]
                 {
                     for (const auto &edit : edits)
