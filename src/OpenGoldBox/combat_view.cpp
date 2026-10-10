@@ -145,7 +145,7 @@ Array CombatView::enemy_cells() const
     Array cells;
     if (!demo_ || !demo_->has_combat())
         return cells;
-    for (const auto &a : demo_->combat().snapshot().combatants)
+    for (const auto &a : demo_.snapshot().combatants)
         if (a.side != 0 && a.hit_points > 0)
             cells.push_back(Vector2i(a.cell.x, a.cell.y));
     return cells;
@@ -155,7 +155,7 @@ Vector2i CombatView::selected_character_cell() const
 {
     if (!demo_ || !demo_->has_combat())
         return {-1, -1};
-    const auto state = demo_->combat().snapshot();
+    const auto state = demo_.snapshot();
     const auto selected = std::find_if(state.combatants.begin(), state.combatants.end(),
                                        [&](const auto & a)
     {
@@ -169,7 +169,7 @@ bool CombatView::sprite_facing_left(std::int64_t id) const
 {
     if (!demo_ || !demo_->has_combat())
         return false;
-    const auto state = demo_->combat().snapshot();
+    const auto state = demo_.snapshot();
     const auto actor = std::find_if(state.combatants.begin(), state.combatants.end(),
                                     [&](const auto & a)
     {
@@ -192,7 +192,7 @@ Ref<Texture2D> CombatView::sprite_texture(EntityId id, por::IconPose pose) const
     CombatantView combatant;
     combatant.id = id;
     if (demo_ && demo_->has_combat())
-        for (const auto &a : demo_->combat().snapshot().combatants)
+        for (const auto &a : demo_.snapshot().combatants)
             if (a.id == id)
                 combatant = a;
     const auto *art = combatant_art(combatant);
@@ -232,7 +232,7 @@ void CombatView::quick()
 {
     if (!demo_ || !demo_->has_combat())
         return;
-    const auto actor = demo_->combat().snapshot().actor;
+    const auto actor = demo_.snapshot().actor;
     if (campaign_)
         campaign_->set_quick(actor);
     else
@@ -272,7 +272,7 @@ bool CombatView::quick_turn(const Snapshot &state) const
 // the computer plays a member takes the party back, as the original's keys.
 bool CombatView::quick_key(Key key)
 {
-    const auto state = demo_->combat().snapshot();
+    const auto state = demo_.snapshot();
     if (state.outcome != Outcome::ongoing)
         return false;
     if (key == Key::KEY_Q)
@@ -568,12 +568,12 @@ void CombatView::layout()
     followed_.reset();
     const double width = get_size().x, height = get_size().y, sidebar = 358,
                  left_width = width - sidebar - 72;
-    const auto board = demo_ && demo_->has_combat() ? demo_->combat().snapshot().battlefield
+    const auto board = demo_ && demo_->has_combat() ? demo_.snapshot().battlefield
                        : Battlefield{12, 9, {}};
     bool party_controls = false;
     if (demo_ && demo_->has_combat())
     {
-        const auto state = demo_->combat().snapshot();
+        const auto state = demo_.snapshot();
         party_controls = state.outcome == Outcome::ongoing &&
                          std::any_of(state.combatants.begin(), state.combatants.end(),
                                      [&](const auto & actor)
@@ -803,7 +803,8 @@ void CombatView::training()
     try
     {
         error_.clear();
-        demo_->training(settings::flag("--conditions") ? 3 : 42, settings::flag("--conditions"));
+        demo_.change().training(settings::flag("--conditions") ? 3 : 42,
+                                settings::flag("--conditions"));
         sync_art();
         mode_ = "move";
         refresh();
@@ -821,7 +822,7 @@ void CombatView::slums()
     {
         error_.clear();
         const auto directory = settings::game_path();
-        demo_->slums(presentation::path_from_godot(directory));
+        demo_.change().slums(presentation::path_from_godot(directory));
         mode_ = "move";
         sync_art();
         refresh();
@@ -847,7 +848,7 @@ void CombatView::next()
     {
         if (demo_)
         {
-            demo_->continue_script();
+            demo_.change().continue_script();
             sync_art();
             refresh();
         }
@@ -863,7 +864,7 @@ void CombatView::revisit()
 {
     try
     {
-        demo_->revisit();
+        demo_.change().revisit();
         refresh();
     }
     catch (const std::exception &e)
@@ -1129,7 +1130,7 @@ void CombatView::load_game()
     try
     {
         const auto bytes = read_save_file(local_path("user://checks/combat.save"), 4 * 1024 * 1024);
-        demo_->restore_combat(bytes);
+        demo_.change().restore_combat(bytes);
         sync_art();
         error_.clear();
         refresh();
@@ -1146,7 +1147,7 @@ void CombatView::load_game()
 void CombatView::select_acting_character()
 {
     if (demo_ && demo_->has_combat())
-        selected_ = demo_->combat().snapshot().actor;
+        selected_ = demo_.snapshot().actor;
 }
 
 void CombatView::select_mode(String verb)
@@ -1297,7 +1298,7 @@ void CombatView::select_party(EntityId id)
 {
     if (!demo_ || !demo_->has_combat())
         return;
-    const auto state = demo_->combat().snapshot();
+    const auto state = demo_.snapshot();
     if (state.free_movement)
         return;
     const auto selected = std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -1318,7 +1319,7 @@ void CombatView::move_selected(Cell direction)
 {
     if (!demo_ || !demo_->has_combat())
         return;
-    const auto state = demo_->combat().snapshot();
+    const auto state = demo_.snapshot();
     const auto explain = [&](const char *message)
     {
         error_ = message;
@@ -1425,7 +1426,7 @@ void CombatView::immediate(String verb)
     if (!demo_ || !demo_->has_combat())
         return;
     auto wanted = std::string(verb.utf8().get_data());
-    const auto state = demo_->combat().snapshot();
+    const auto state = demo_.snapshot();
     if (state.effect_targeting && wanted == "end")
         wanted = "effect_skip";
     // While choosing a spell's creatures, End casts on those chosen.
@@ -1467,10 +1468,10 @@ void CombatView::act(const Command &command)
 {
     try
     {
-        const auto before = demo_->combat().snapshot();
-        if (demo_->submit(command))
+        const auto before = demo_.snapshot();
+        if (demo_.change().submit(command))
         {
-            const auto after = demo_->combat().snapshot();
+            const auto after = demo_.snapshot();
             unsigned sound = 0;
             if (command.verb == "melee" || command.verb == "opportunity")
             {
@@ -1588,8 +1589,9 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
             flee_mode_ &&
             (key.is_valid() || (click.is_valid() && click->get_button_index() == MOUSE_BUTTON_LEFT)))
         return;
+    // A copy: act() changes the combat, which drops the cached snapshot.
     if (demo_->has_combat() && presentation::effect_target_input(
-                event, demo_->combat().snapshot(),
+                event, Snapshot(demo_.snapshot()),
                 demo_->combat().legal_commands(), effect_target_index_,
                 [&](const Command & c)
 {
@@ -1604,7 +1606,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         return;
     }
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && demo_->has_combat() &&
-            demo_->combat().snapshot().free_movement)
+            demo_.snapshot().free_movement)
     {
         if (key->get_keycode() == Key::KEY_ESCAPE ||
                 (key->get_keycode() == Key::KEY_SPACE &&
@@ -1624,7 +1626,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
              (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
             demo_->has_combat())
     {
-        const auto state = demo_->combat().snapshot();
+        const auto state = demo_.snapshot();
         const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
                                          [&](const auto & a)
         {
@@ -1695,7 +1697,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         // Aiming an area spell (CLASS-5): arrows move the preview, Space or Enter
         // casts and Escape cancels. With an area spell selected, Space or Enter
         // starts aiming.
-        if (demo_->combat().snapshot().area_targeting)
+        if (demo_.snapshot().area_targeting)
         {
             const auto code = key->get_keycode();
             if (code == Key::KEY_SPACE || code == Key::KEY_ENTER || code == Key::KEY_KP_ENTER)
@@ -1704,7 +1706,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                 immediate("spell_cancel");
             else if (const auto step = movement_direction(code, key->is_shift_pressed()))
             {
-                const auto center = demo_->combat().snapshot().area_targeting->center;
+                const auto center = demo_.snapshot().area_targeting->center;
                 aim_area_at({center.x + step->x, center.y + step->y});
             }
             get_viewport()->set_input_as_handled();
@@ -1719,7 +1721,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
             return;
         }
         // While choosing a spell's creatures, Space casts and Escape cancels.
-        if (demo_->combat().snapshot().spell_targeting &&
+        if (demo_.snapshot().spell_targeting &&
                 (key->get_keycode() == Key::KEY_SPACE || key->get_keycode() == Key::KEY_ESCAPE))
         {
             immediate(key->get_keycode() == Key::KEY_SPACE ? "spell_cast" : "spell_cancel");
@@ -1889,7 +1891,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                     static_cast<int>(std::floor(relative.y))};
     // Area spells (CLASS-5): a left click aims (starting the aim when the spell
     // is selected), a right click casts at the preview.
-    const bool aiming = demo_->combat().snapshot().area_targeting.has_value();
+    const bool aiming = demo_.snapshot().area_targeting.has_value();
     if (aiming && mouse->get_button_index() == MouseButton::MOUSE_BUTTON_RIGHT)
     {
         immediate("area_cast");
@@ -1906,7 +1908,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         get_viewport()->set_input_as_handled();
         return;
     }
-    const auto s = demo_->combat().snapshot();
+    const auto s = demo_.snapshot();
     // A click on an ally that the selected action can target casts on it
     // instead of selecting it; these modes always target.
     const auto offered_here = demo_->combat().legal_commands();
@@ -1990,7 +1992,7 @@ void CombatView::update_hover(const Vector2 &pointer)
                         .xform(pointer);
     const Cell cell{static_cast<int>(std::floor(canvas.x / (combat_zoom_ * base_tile_))),
                     static_cast<int>(std::floor(canvas.y / (combat_zoom_ * base_tile_)))};
-    const auto state = demo_->combat().snapshot();
+    const auto &state = demo_.snapshot();
     if (!state.battlefield.contains(cell))
         return;
     const auto npc = [&](EntityId id) -> std::optional<std::reference_wrapper<const PartyMember>>
@@ -2078,7 +2080,7 @@ void CombatView::refresh()
     const bool loaded = demo_ && demo_->has_combat();
     Snapshot s;
     if (loaded)
-        s = demo_->combat().snapshot();
+        s = demo_.snapshot();
     if (loaded)
         for (const auto &actor : s.combatants)
         {
@@ -2735,7 +2737,7 @@ void CombatView::draw_view()
     draw_rect(board_rect_, Color("202d33"));
     if (!campaign_ || !demo_ || !demo_->has_combat())
         return;
-    const auto snapshot = demo_->combat().snapshot();
+    const auto &snapshot = demo_.snapshot();
     const auto font = get_theme_default_font();
     const double right = get_size().x - 382, row_height = (get_size().y - 120) / 8.0;
     for (unsigned slot = 0; slot < 8; ++slot)
@@ -2804,7 +2806,7 @@ void CombatView::draw_battlefield()
         return;
     auto *canvas = &required_node<Control>(*this, "BattlefieldScroll/Canvas");
     canvas->draw_set_transform(Vector2(), 0, Vector2(combat_zoom_, combat_zoom_));
-    const auto s = demo_->combat().snapshot();
+    const auto &s = demo_.snapshot();
     const double tile = base_tile_;
     const auto font = get_theme_default_font();
     for (int y = 0; y < s.battlefield.height; ++y)
@@ -2995,7 +2997,7 @@ void CombatView::_process(double delta)
         }
         if (!demo_->has_combat())
             return;
-        const auto s = demo_->combat().snapshot();
+        const auto s = demo_.snapshot();
         if (zoom_center_frames_)
             --zoom_center_frames_;
         else
@@ -3032,7 +3034,7 @@ void CombatView::_process(double delta)
                     if (!demo_->script_complete())
                         throw std::runtime_error("Original ECL did not finish");
                     if (s.outcome == Outcome::victory)
-                        demo_->revisit();
+                        demo_.change().revisit();
                 }
                 UtilityFunctions::print(
                     "Godot C++ combat check passed: ", check_slums_ ? "Slums" : "training",
@@ -3057,7 +3059,7 @@ void CombatView::_process(double delta)
             key->set_keycode(Key::KEY_ENTER);
             key->set_pressed(true);
             _input(key);
-            if (demo_->combat().snapshot().revision != s.revision)
+            if (demo_.snapshot().revision != s.revision)
                 throw std::runtime_error("Keyboard skipped enemy turn");
         }
         if (checking_ && !checked_input_ && active->side == 0 && !s.reaction_pending)
@@ -3090,7 +3092,7 @@ void CombatView::_process(double delta)
                             .xform(Vector2(target->cell.x + .5, target->cell.y + .5) *
                                    (combat_zoom_ * base_tile_)));
                         get_viewport()->push_input(mouse, true);
-                        if (demo_->combat().snapshot().revision != s.revision + 1)
+                        if (demo_.snapshot().revision != s.revision + 1)
                             throw std::runtime_error(
                                 "Action button/target click did not submit command");
                         checked_input_ = true;
@@ -3109,7 +3111,7 @@ void CombatView::_process(double delta)
             {
                 const auto before = active->hit_points;
                 required_node<Button>(*this, "AdrenalineRush").emit_signal("pressed");
-                const auto after = demo_->combat().snapshot();
+                const auto after = demo_.snapshot();
                 const auto current = std::find_if(after.combatants.begin(), after.combatants.end(),
                                                   [&](const auto & a)
                 {

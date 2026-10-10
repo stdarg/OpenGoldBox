@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_COMBAT_VIEW_H
 #define OPENGOLD_COMBAT_VIEW_H
+#include "cached_combat.h"
 #include "opengold/combat_demo.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
@@ -53,14 +54,14 @@ class CombatView : public godot::Control
     [[nodiscard]] bool defeated() const
     {
         return campaign_ && demo_ && demo_->has_combat() &&
-               demo_->combat().snapshot().outcome == opengold::rules::Outcome::defeat;
+               demo_.snapshot().outcome == opengold::rules::Outcome::defeat;
     }
 
     [[nodiscard]] bool can_leave() const
     {
         return !defeated() &&
                (!demo_ || !demo_->has_combat() ||
-                demo_->combat().snapshot().outcome != opengold::rules::Outcome::ongoing);
+                demo_.snapshot().outcome != opengold::rules::Outcome::ongoing);
     }
 
     void campaign_encounter(opengold::CampaignEncounter encounter)
@@ -77,7 +78,7 @@ class CombatView : public godot::Control
     {
         if (!demo_ || !demo_->has_combat())
             return {};
-        auto s = demo_->combat().snapshot();
+        const auto &s = demo_.snapshot();
         return s.outcome == opengold::rules::Outcome::ongoing ? std::nullopt : std::optional{s};
     }
 
@@ -88,7 +89,7 @@ class CombatView : public godot::Control
   private:
     void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     void draw_view();
-    std::unique_ptr<opengold::CombatDemo> demo_;
+    presentation::CachedCombat demo_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::vector<opengold::CombatArt> campaign_art_;
     std::map<opengold::rules::EntityId, std::string> missing_art_;
