@@ -184,6 +184,14 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_status_effect_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_status_effect_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_status_effect_tests COMMAND opengold_status_effect_tests)
+    # It also writes the Weapon Mastery, Nick, Graze and optional mastery screen fixtures.
+    set(mastery_fixture_environment
+        "OPENGOLD_MASTERY_FIXTURES=${PROJECT_BINARY_DIR}/mastery-fixtures"
+        "OPENGOLD_NICK_FIXTURES=${PROJECT_BINARY_DIR}/nick-fixtures"
+        "OPENGOLD_GRAZE_FIXTURES=${PROJECT_BINARY_DIR}/graze-fixtures"
+        "OPENGOLD_OPTIONAL_MASTERY_FIXTURES=${PROJECT_BINARY_DIR}/optional-mastery-fixtures")
+    set_tests_properties(opengold_status_effect_tests PROPERTIES FIXTURES_SETUP mastery_fixtures
+        ENVIRONMENT "${mastery_fixture_environment}")
     add_executable(opengold_combat_grid_tests tests/combat_grid_tests.cpp)
     target_include_directories(opengold_combat_grid_tests PRIVATE src/OpenGold.Rules.Srd5/src)
     target_link_libraries(opengold_combat_grid_tests PRIVATE opengold_rules_srd5)
@@ -202,6 +210,9 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_feature_grant_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_feature_grant_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_feature_grant_tests COMMAND opengold_feature_grant_tests)
+    # With original files it also writes the pending mastery rest screen fixture.
+    set_tests_properties(opengold_feature_grant_tests PROPERTIES FIXTURES_SETUP mastery_rest_fixture
+        ENVIRONMENT "OPENGOLD_MASTERY_REST_FIXTURE=${PROJECT_BINARY_DIR}/mastery-rest-pending.ogs")
     add_executable(opengold_action_surge_tests tests/action_surge_tests.cpp)
     target_include_directories(opengold_action_surge_tests PRIVATE src/OpenGold.Rules.Srd5/src)
     target_link_libraries(opengold_action_surge_tests PRIVATE opengold_core opengold_rules_srd5)
@@ -384,9 +395,9 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_training_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_training_tests COMMAND opengold_training_tests)
     # With original files it also writes the Fighting Style, Rogue and Scholar
-    # level-up screen fixtures.
+    # level-up screen fixtures; it always writes the Alert and Light ones.
     set_tests_properties(opengold_training_tests PROPERTIES
-        FIXTURES_SETUP "cunning_fixtures;advancement_ui_fixtures")
+        FIXTURES_SETUP "cunning_fixtures;advancement_ui_fixtures;alert_fixtures;light_fixtures")
     add_test(NAME opengold_hands_fixture COMMAND opengold_training_tests --hands-ui)
     set_tests_properties(opengold_hands_fixture PROPERTIES FIXTURES_SETUP hands_fixtures)
     add_executable(opengold_rest_resource_tests tests/rest_resource_tests.cpp)

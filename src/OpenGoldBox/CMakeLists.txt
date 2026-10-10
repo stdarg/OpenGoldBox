@@ -212,6 +212,38 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_divine_spark PROPERTIES FIXTURES_REQUIRED "godot_project;cleric_fixtures")
     opengold_godot_test(poison poison_view_tests "Poison Spray view checks passed" "--poison-fixtures=${PROJECT_BINARY_DIR}/poison-fixtures")
     set_tests_properties(opengold_godot_poison PROPERTIES FIXTURES_REQUIRED "godot_project;poison_fixtures")
+    opengold_godot_test(mastery_combat mastery_combat_view_tests "Sap/Vex UI/native checks passed"
+        "--mastery-fixtures=${PROJECT_BINARY_DIR}/mastery-fixtures")
+    set_tests_properties(opengold_godot_mastery_combat PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_fixtures")
+    opengold_godot_test(nick nick_view_tests "Nick UI/native checks passed"
+        "--nick-fixtures=${PROJECT_BINARY_DIR}/nick-fixtures")
+    set_tests_properties(opengold_godot_nick PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_fixtures")
+    opengold_godot_test(graze graze_view_tests "Graze controls passed"
+        "--nick-fixtures=${PROJECT_BINARY_DIR}/graze-fixtures")
+    set_tests_properties(opengold_godot_graze PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_fixtures")
+    opengold_godot_test(optional_mastery optional_mastery_view_tests
+        "Optional mastery controls passed"
+        "--nick-fixtures=${PROJECT_BINARY_DIR}/optional-mastery-fixtures")
+    set_tests_properties(opengold_godot_optional_mastery PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_fixtures")
+    opengold_godot_test(alert alert_view_tests "Alert UI tests passed"
+        "--nick-fixtures=${PROJECT_BINARY_DIR}/alert-fixtures")
+    set_tests_properties(opengold_godot_alert PROPERTIES
+        FIXTURES_REQUIRED "godot_project;alert_fixtures")
+    opengold_godot_test(light_attack light_attack_view_tests "Light attack UI/native checks passed"
+        "--light-fixtures=${PROJECT_BINARY_DIR}/light-fixtures")
+    set_tests_properties(opengold_godot_light_attack PROPERTIES
+        FIXTURES_REQUIRED "godot_project;light_fixtures")
+    # The tour scene runs the mastery rest check; the script's options choose
+    # the locale and the window size.
+    opengold_godot_test(mastery_rest mastery_rest_view_tests "Weapon Mastery rest controls passed"
+        --mastery-rest-check)
+    opengold_godot_test(mastery_rest_es mastery_rest_view_tests
+        "Weapon Mastery rest controls passed"
+        --mastery-rest-check --mastery-locale=es --mastery-large)
     opengold_godot_test(opportunity opportunity_view_tests "Opportunity view checks passed")
     opengold_godot_test(conditions condition_view_tests "Condition view checks passed" --conditions)
     opengold_godot_test(node_ownership node_ownership_tests "Native node ownership checks passed")
@@ -355,6 +387,12 @@ if(OPENGOLD_BUILD_TESTS)
         set_tests_properties(opengold_godot_creation_style_light_${klass} PROPERTIES
             FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
     endforeach()
+    # A pending Weapon Mastery choice survives saving from the rest dialog.
+    opengold_original_check(mastery_rest_save "Weapon Mastery rest saving controls passed"
+        -DSCRIPT=mastery_rest_save_view_tests
+        "-DARGS=--style-fixture=${PROJECT_BINARY_DIR}/mastery-rest-pending.ogs")
+    set_tests_properties(opengold_godot_mastery_rest_save PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_rest_fixture")
 endif()
 
 # Godot exports the executable; the C++ game code is its GDExtension.
