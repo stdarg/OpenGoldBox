@@ -593,8 +593,6 @@ class RulesModule
     roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
                        std::string_view skill, std::uint64_t &random_state) const;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const;
-    // False means this module's supported advancement ceiling was reached.
-    virtual bool advance_character(CharacterSheet &sheet, VitalState &state) const;
 
     [[nodiscard]] virtual std::optional<TrainingReplacementOptions>
     rest_training_options(const CharacterSheet &) const
@@ -633,6 +631,9 @@ class RulesModule
     [[nodiscard]] virtual CharacterSheet spell_choice_sheet(const CharacterSheet &,
             const AdvancementChoice &) const;
 
+    // The only form a module overrides; default_advancement() supplies the
+    // choice when the player makes none. False means this module's supported
+    // advancement ceiling was reached.
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state,
                                    const AdvancementChoice &) const;
     virtual void recover(VitalState &state, const CharacterSheet &sheet) const;

@@ -1339,11 +1339,62 @@ void monster_trait_tests()
           "A checkpoint keeps Aggressive's extra movement");
 }
 
+namespace
+{
+// A rules module that offers no advancement. advance_character has one
+// overridable form; a second overload that delegated to it in the opposite
+// direction let a module recurse forever (Effective C++ Item 34).
+class NoAdvancementModule final : public RulesModule
+{
+  public:
+    Identity identity() const override
+    {
+        return {"test.no-advancement", "1", "none"};
+    }
+
+    std::vector<std::string> supported_features() const override
+    {
+        return {};
+    }
+
+    std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
+    {
+        throw std::runtime_error("Unused test create");
+    }
+
+    std::unique_ptr<CombatSession> restore(std::string_view) const override
+    {
+        throw std::runtime_error("Unused test restore");
+    }
+};
+
+template <class Rules>
+concept advances_without_a_choice =
+requires(const Rules &rules, CharacterSheet &sheet, VitalState &state)
+{
+    rules.advance_character(sheet, state);
+};
+static_assert(!advances_without_a_choice<RulesModule>,
+              "advance_character has a single overridable form, taking the choice");
+
+void single_advancement_override_tests()
+{
+    const NoAdvancementModule rules;
+    CharacterSheet sheet;
+    VitalState state;
+    rejects([&]
+    {
+        (void)rules.advance_character(sheet, state, AdvancementChoice{});
+    }, "A module without advancement refuses a level-up");
+}
+} // namespace
+
 int main()
 {
     try
     {
         unconscious_transit::run();
+        single_advancement_override_tests();
         turn_budget_tests();
         boundary_tests();
         mechanics_tests();

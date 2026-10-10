@@ -55,15 +55,10 @@ TrainingChoices RulesModule::replace_rest_training(CharacterSheet &,
     throw std::runtime_error("Long Rest training replacement is not supported");
 }
 
-bool RulesModule::advance_character(CharacterSheet &, VitalState &) const
-{
-    throw std::runtime_error("This rules module does not support advancement");
-}
-
-bool RulesModule::advance_character(CharacterSheet &sheet, VitalState &state,
+bool RulesModule::advance_character(CharacterSheet &, VitalState &,
                                     const AdvancementChoice &) const
 {
-    return advance_character(sheet, state);
+    throw std::runtime_error("This rules module does not support advancement");
 }
 
 void RulesModule::recover(VitalState &, const CharacterSheet &) const

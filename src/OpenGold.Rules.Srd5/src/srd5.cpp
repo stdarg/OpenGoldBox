@@ -9865,11 +9865,6 @@ class Module final : public RulesModule
         return thresholds[level];
     }
 
-    bool advance_character(CharacterSheet &sheet, VitalState &state) const override
-    {
-        return advance_character(sheet, state, default_advancement(sheet));
-    }
-
     std::vector<TrainingChoiceGroup> training_options(const CharacterSheet &sheet) const override
     {
         if (sheet.character_class == "Wizard" && sheet.level >= 2)
