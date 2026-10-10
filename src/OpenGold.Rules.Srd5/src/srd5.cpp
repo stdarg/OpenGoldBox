@@ -2833,7 +2833,9 @@ void Session::run_off_field(Actor &a)
             fastest = std::max(fastest, current_speed(other));
     if (current_speed(a) < fastest || (current_speed(a) == fastest && roll(2) == 1))
     {
+        // Cornered, a broken monster fights on from now, not from its next turn.
         a.must_stay = true;
+        a.panicked = false;
         log(a.source.name + " cannot get away and must stay.",
         {"{name} cannot get away and must stay.", {{"name", a.source.name}}});
         return;
@@ -11969,7 +11971,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.152", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.153", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

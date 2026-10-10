@@ -262,6 +262,51 @@ void cornered_monster_fights()
     throw std::runtime_error("No broken creature failed to get away");
 }
 
+// Cornered from the moment it fails to get away: for the rest of that turn it
+// no longer shows Fleeing in panic, and once it has walked toward a foe out of
+// sight it does not spend its Action on a Dash for an edge it cannot leave by.
+void cornered_at_once()
+{
+    const auto rules = module();
+    for (std::uint64_t seed = 1; seed < 80; ++seed)
+    {
+        // A wall down the middle with a gap at the bottom keeps them out of sight.
+        std::vector<Terrain> terrain(180);
+        for (int y = 0; y < 8; ++y)
+            terrain[static_cast<std::size_t>(y * 20 + 10)] = Terrain::obstacle;
+        Encounter e{{20, 9, std::move(terrain)},
+            {   {1, "runner", "Runner", Side::party, {1, 1}},
+                {9, "even", "Enemy", Side::opposition, {18, 1}, {}, VitalState{10}}
+            }};
+        e.morale = 1;
+        auto c = rules->create(std::move(e), seed);
+        for (unsigned n = 0; n < 40 && c->snapshot().outcome == Outcome::ongoing; ++n)
+        {
+            const auto actor = c->snapshot().actor;
+            const auto end = offered(*c, "end", 1);
+            check(c->submit(actor == 1 ? *end : choose_demo_command(*c)), "The command is legal");
+            if (!logged(*c, "Enemy cannot get away and must stay."))
+                continue;
+            const auto s = c->snapshot();
+            const auto &enemy = unit(s, 9);
+            check(!enemy.panicked && std::none_of(enemy.conditions.begin(), enemy.conditions.end(),
+                                                  [](const auto & condition)
+            {
+                return condition.source == "Fleeing in panic";
+            }), "Failing to get away, it is no longer fleeing in panic");
+            const auto failed_at = s.log().size();
+            while (c->snapshot().actor == 9 && c->snapshot().outcome == Outcome::ongoing)
+                check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
+            const auto log = c->snapshot().log();
+            check(std::find(log.begin() + static_cast<std::ptrdiff_t>(failed_at), log.end(),
+                            "Enemy dashes.") == log.end(),
+                  "Cornered, it does not Dash for the edge");
+            return;
+        }
+    }
+    throw std::runtime_error("No broken creature failed to get away");
+}
+
 void monsters_break()
 {
     const auto rules = module();
@@ -319,6 +364,7 @@ int main()
         flee_policy();
         monsters_break();
         cornered_monster_fights();
+        cornered_at_once();
         std::cout << "Flee tests passed\n";
         return 0;
     }

@@ -77,6 +77,9 @@ combat can leave them out
 Rules 0.6.152 keeps a Grease's spell DC in the Grease itself, so the Grease
 lasts its minute after its caster flees the fight; combat checkpoints become
 `OGCOMBAT 47`.
+Rules 0.6.153 has a broken creature fight on from the moment it fails to get
+away; until its next turn it still showed "Fleeing in panic" and could spend
+its Action on a Dash back toward the edge.
 
 ## Slums set-encounter creatures
 
