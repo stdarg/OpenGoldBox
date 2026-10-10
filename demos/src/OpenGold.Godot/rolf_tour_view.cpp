@@ -650,10 +650,10 @@ void RolfTourView::refresh()
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
     get_node<Label>("Location")
-    ->set_text("New Phlan  /  " + String(direction_name[s.pose.facing]) + " view");
+    ->set_text("New Phlan  /  " + String(direction_name[index(s.pose.facing)]) + " view");
     get_node<Label>("Coordinates")
     ->set_text("Party  (" + String::num_uint64(s.pose.x) + ", " + String::num_uint64(s.pose.y) +
-               ")   " + String(direction_name[s.pose.facing]));
+               ")   " + String(direction_name[index(s.pose.facing)]));
     get_node<Label>("Speaker")->set_text(faulted           ? "Unable to continue"
                                          : shopping        ? "Shop / select an item"
                                          : s.tour_finished ? "New Phlan"
@@ -852,7 +852,7 @@ void RolfTourView::draw_map()
         }
     const auto center =
         map_rect_.position + Vector2((s.pose.x + .5) * cell, (s.pose.y + .5) * cell);
-    const auto forward = direction[s.pose.facing], right = Vector2(-forward.y, forward.x);
+    const auto forward = direction[index(s.pose.facing)], right = Vector2(-forward.y, forward.x);
     PackedVector2Array arrow;
     arrow.push_back(center + forward * cell * .43);
     arrow.push_back(center - forward * cell * .3 + right * cell * .32);
@@ -924,7 +924,8 @@ void RolfTourView::check_run()
                         !get_node<Button>("Forward")->is_disabled())
                     throw std::runtime_error("Incorrect input lock at tour prompt");
                 UtilityFunctions::print("Tour pause ", check_prompts_, " at ", s.pose.x, ",",
-                                        s.pose.y, " facing ", s.pose.facing);
+                                        s.pose.y, " facing ",
+                                        static_cast<int64_t>(index(s.pose.facing)));
                 get_node<Button>("MapMode")->grab_focus();
                 const auto pose = s.pose;
                 press_key(Key::KEY_RIGHT);
@@ -946,11 +947,11 @@ void RolfTourView::check_run()
             get_node<Button>("Restart")->grab_focus();
             const auto facing = s.pose.facing;
             press_key(Key::KEY_RIGHT);
-            if (session_->snapshot().pose.facing != (facing + 1) % 4)
+            if (session_->snapshot().pose.facing != turned_right(facing))
                 throw std::runtime_error("Exploration turn did not update native state");
             const auto before = session_->snapshot().pose;
             press_key(Key::KEY_DOWN);
-            if (session_->snapshot().pose != PartyPose{before.x, before.y, (before.facing + 2) % 4})
+            if (session_->snapshot().pose != PartyPose{before.x, before.y, reversed(before.facing)})
                 throw std::runtime_error("Down arrow must turn without moving");
             UtilityFunctions::print("Godot C++ tour integration passed: ", check_prompts_,
                                     " pauses.");
@@ -1150,10 +1151,10 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
                                  std::to_string(check_refused_edges_.size()));
     while (previous[next] != origin)
         next = previous[next];
-    const unsigned facing = next % 16 > int(s.pose.x)   ? 1
-                            : next % 16 < int(s.pose.x) ? 3
-                            : next / 16 > int(s.pose.y) ? 2
-                            : 0;
+    const auto facing = next % 16 > static_cast<int>(s.pose.x)   ? MapDirection::east
+                        : next % 16 < static_cast<int>(s.pose.x) ? MapDirection::west
+                        : next / 16 > static_cast<int>(s.pose.y) ? MapDirection::south
+                        : MapDirection::north;
     if (s.pose.facing == facing)
         check_pending_edge_ = {{origin, next}};
     get_node<Button>(s.pose.facing == facing ? "Forward" : "Right")->emit_signal("pressed");
@@ -1183,7 +1184,7 @@ bool RolfTourView::check_expedition_step()
             return true;
         if (s.pose.x != 0 || s.pose.y != 4)
             throw std::runtime_error("Unexpected tour destination");
-        if (s.pose.facing != 3)
+        if (s.pose.facing != MapDirection::west)
             right();
         else
             forward();
@@ -1193,7 +1194,7 @@ bool RolfTourView::check_expedition_step()
     {
         if (s.pose.x != 15 || s.pose.y != 4)
             check_walk_to(15, 4);
-        else if (s.pose.facing != 1)
+        else if (s.pose.facing != MapDirection::east)
             right();
         else
             forward();
