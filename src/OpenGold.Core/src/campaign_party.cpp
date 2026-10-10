@@ -995,7 +995,7 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
             if (id)
             {
                 auto &m = find(id);
-                party.push_back({&m.character.sheet(), &m.vitals});
+                party.push_back({m.character.sheet(), m.vitals});
             }
         rules_->use_party_camp_action(caster.character.sheet(), caster.vitals, party, action,
                                       next.random_state);

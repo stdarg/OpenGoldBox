@@ -11119,7 +11119,7 @@ class Module final : public RulesModule
     // Prayer of Healing: the five most hurt members it has not healed since
     // their last Long Rest each regain 2d8 + the spellcasting modifier.
     void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
-                               std::span<const CampTarget> party, std::string_view action,
+                               std::span<CampTarget> party, std::string_view action,
                                RandomState &random_state) const override
     {
         const auto offered = camp_actions(user, user_state);
@@ -11143,14 +11143,14 @@ class Module final : public RulesModule
         }
         std::vector<std::pair<Actor, VitalState *>> members;
         for (const auto &member : party)
-            if (member.state != &user_state)
-                members.push_back({camp_actor(*member.sheet, *member.state), member.state});
+            if (&member.state.get() != &user_state)
+                members.push_back({camp_actor(member.sheet, member.state), &member.state.get()});
         std::vector<Actor *> chosen{&caster};
         for (auto &[actor, state] : members)
             chosen.push_back(&actor);
         if (std::none_of(party.begin(), party.end(), [&](const auto & member)
     {
-        return member.state == &user_state;
+        return &member.state.get() == &user_state;
     }))
         chosen.erase(chosen.begin());
         std::erase_if(chosen, [](const Actor * a)

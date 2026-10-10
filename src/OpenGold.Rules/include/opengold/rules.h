@@ -4,6 +4,7 @@
 #include "opengold/random_state.h"
 #include <chrono>
 #include <compare>
+#include <functional>
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -249,11 +250,14 @@ struct CampAction
     bool whole_party{}; // affects several members at once; no target is chosen
 };
 
-// A party member a whole-party camp action may affect.
+// A party member a whole-party camp action may affect: its sheet is read and
+// its state changed. References, so neither can be null, and the action takes
+// a non-const span, so the call shows that party state changes (Effective C++
+// Item 18).
 struct CampTarget
 {
-    const CharacterSheet *sheet{};
-    VitalState *state{};
+    std::reference_wrapper<const CharacterSheet> sheet;
+    std::reference_wrapper<VitalState> state;
 };
 
 struct RecoveryInfo
@@ -737,7 +741,7 @@ class RulesModule
     // Uses a whole_party camp action on the members it chooses among `party`,
     // which may include the user's own state.
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
-                                       std::span<const CampTarget> party, std::string_view action,
+                                       std::span<CampTarget> party, std::string_view action,
                                        RandomState &random_state) const;
     // A spell cast while exploring, such as Knock on a locked door.
     [[nodiscard]] virtual bool can_cast_exploration_spell(const CharacterSheet &,

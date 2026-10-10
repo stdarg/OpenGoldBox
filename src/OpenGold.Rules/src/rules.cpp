@@ -131,7 +131,7 @@ void RulesModule::use_camp_action(const CharacterSheet &, VitalState &, const Ch
 }
 
 void RulesModule::use_party_camp_action(const CharacterSheet &, VitalState &,
-                                        std::span<const CampTarget>, std::string_view,
+                                        std::span<CampTarget>, std::string_view,
                                         RandomState &) const
 {
     throw std::runtime_error("This rules module has no camp actions");
