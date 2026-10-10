@@ -2,12 +2,8 @@
 #include "localization.h"
 #include "guarded_handlers.h"
 #include "godot_nodes.h"
-#include <godot_cpp/classes/file_access.hpp>
-#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/option_button.hpp>
-#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
-#include <algorithm>
 #include <set>
 #include <stdexcept>
 using namespace godot;
@@ -19,61 +15,11 @@ String gs(std::string_view s)
 {
     return String::utf8(s.data(), s.size());
 }
-
-std::string normalized(std::string s)
-{
-    for (auto &c : s)
-    {
-        if (c >= 'A' && c <= 'Z')
-            c += 32;
-    }
-    s.erase(std::remove_if(s.begin(), s.end(),
-                           [](char c)
-    {
-        return c == '-' || c == '_' || c == ' ';
-    }),
-    s.end());
-    return s;
-}
 } // namespace
 
 void CharacterCreationView::load_portraits()
 {
-    Ref<JSON> json;
-    json.instantiate();
-    if (json->parse(FileAccess::get_file_as_string("res://bin/portraits/portraits.json")) != OK ||
-            json->get_data().get_type() != Variant::DICTIONARY)
-        throw std::runtime_error("Cannot read portrait catalog. Run build-opengoldbox.cmd.");
-    const Dictionary catalog = json->get_data();
-    const Array keys = catalog.keys();
-    for (int64_t i = 0; i < keys.size(); ++i)
-    {
-        if (catalog[keys[i]].get_type() != Variant::DICTIONARY)
-            throw std::runtime_error("Invalid portrait metadata");
-        const Dictionary entry = catalog[keys[i]];
-        const auto field = [&](const char *key)
-        {
-            if (!entry.has(key) || entry[key].get_type() != Variant::STRING ||
-                    String(entry[key]).is_empty())
-                throw std::runtime_error("Missing portrait metadata");
-            return std::string(String(entry[key]).utf8().get_data());
-        };
-        Portrait p{String(keys[i]).utf8().get_data(), field("Gender"), field("Class"),
-                   field("Race")};
-        opengold::por::CharacterAppearance a;
-        a.portrait = p.filename;
-        opengold::por::validate_character_appearance(a);
-        if (!ResourceLoader::get_singleton()->exists(gs("res://bin/portraits/" + p.filename)))
-            throw std::runtime_error("Missing portrait: " + p.filename);
-        portraits_.push_back(std::move(p));
-    }
-    if (portraits_.empty())
-        throw std::runtime_error("Empty portrait catalog");
-    std::sort(portraits_.begin(), portraits_.end(),
-              [](const auto & a, const auto & b)
-    {
-        return a.filename < b.filename;
-    });
+    portraits_ = PortraitCatalog::load();
     for (int field = 0; field < 3; ++field)
     {
         const char *names[] {"PortraitGender", "PortraitClass", "PortraitRace"};
@@ -81,7 +27,7 @@ void CharacterCreationView::load_portraits()
         auto *control = &required_node<OptionButton>(*this, names[field]);
         control->add_item(i18n::text(labels[field]));
         std::set<std::string> values;
-        for (const auto &p : portraits_)
+        for (const auto &p : portraits_->entries())
             values.insert(field == 0 ? p.gender : field == 1 ? p.klass : p.race);
         for (const auto &value : values)
         {
@@ -91,47 +37,6 @@ void CharacterCreationView::load_portraits()
         control->connect("item_selected",
                          presentation::guarded(this, &CharacterCreationView::portrait_filter_selected));
     }
-}
-
-std::string
-CharacterCreationView::recommended_portrait(const opengold::rules::CharacterDraft &draft) const
-{
-    const Portrait *best = &portraits_.front();
-    int score = -1;
-    for (const auto &p : portraits_)
-    {
-        const int value = 4 * (normalized(p.race) == normalized(draft.race)) +
-                          2 * (normalized(p.gender) == normalized(draft.gender)) +
-                          (normalized(p.klass) == normalized(draft.character_class));
-        if (value > score)
-        {
-            score = value;
-            best = &p;
-        }
-    }
-    return best->filename;
-}
-
-Ref<ImageTexture>
-CharacterCreationView::portrait_texture(const opengold::por::CharacterAppearance &appearance,
-                                        const opengold::rules::CharacterDraft &draft)
-{
-    auto filename = appearance.portrait;
-    if (std::none_of(portraits_.begin(), portraits_.end(),
-                     [&](const auto & p)
-{
-    return p.filename == filename;
-}))
-    filename = recommended_portrait(draft);
-    if (const auto found = portrait_textures_.find(filename); found != portrait_textures_.end())
-        return found->second;
-    Ref<Texture2D> texture =
-        ResourceLoader::get_singleton()->load(gs("res://bin/portraits/" + filename));
-    if (texture.is_null())
-        throw std::runtime_error("Cannot load portrait: " + filename);
-    auto result = ImageTexture::create_from_image(texture->get_image());
-    portrait_textures_.emplace(filename, result);
-    return result;
 }
 
 void CharacterCreationView::refresh_portraits()
@@ -146,9 +51,9 @@ void CharacterCreationView::refresh_portraits()
                String(c->get_item_metadata(c->get_selected())) == gs(value);
     };
     int selected = -1;
-    for (std::size_t i = 0; i < portraits_.size(); ++i)
+    for (std::size_t i = 0; i < portraits_->entries().size(); ++i)
     {
-        const auto &p = portraits_[i];
+        const auto &p = portraits_->entries()[i];
         if (!matches("PortraitGender", p.gender) || !matches("PortraitClass", p.klass) ||
                 !matches("PortraitRace", p.race))
             continue;
@@ -204,7 +109,7 @@ void CharacterCreationView::portrait_selected(std::int64_t index)
         if (index < 0 || static_cast<std::size_t>(index) >= filtered_portraits_.size())
             throw std::runtime_error("Invalid portrait selection");
         auto a = creator_->appearance();
-        a.portrait = portraits_.at(filtered_portraits_[index]).filename;
+        a.portrait = portraits_->entries().at(filtered_portraits_[index]).filename;
         creator_->appearance(a);
         if (completed_)
             completed_->appearance(a);

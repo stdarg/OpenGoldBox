@@ -460,7 +460,7 @@ void CharacterCreationView::recommend_portrait()
         return;
     auto a = creator_->appearance();
     const auto &d = creator_->draft();
-    a.portrait = recommended_portrait(d);
+    a.portrait = portraits_->recommended(d);
     creator_->appearance(a);
 }
 
@@ -471,7 +471,7 @@ void CharacterCreationView::refresh_art()
     const auto &a = creator_->appearance();
     const std::array<opengold::Image, 3> images{opengold::Image{}, art_->icon(a, por::IconPose::ready),
             art_->icon(a, por::IconPose::action)};
-    images_[0] = portrait_texture(a, creator_->draft());
+    images_[0] = portraits_->texture(a, creator_->draft());
     for (unsigned i = 1; i < images.size(); ++i)
     {
         const auto &source = images[i];
@@ -1301,7 +1301,7 @@ void CharacterCreationView::_process(double)
             throw std::runtime_error(error_.utf8().get_data());
         if (++check_frames_ % 4 == 0)
             check_run();
-        if (check_frames_ > 400 + portraits_.size() * 4)
+        if (check_frames_ > 400 + portraits_->entries().size() * 4)
             throw std::runtime_error("Character UI check timed out");
     }
     catch (const std::exception &e)
@@ -1529,14 +1529,14 @@ void CharacterCreationView::check_run()
             }
         throw std::runtime_error("Missing UI choice");
     };
-    if (check_stage_ == 0 && check_head_ < portraits_.size())
+    if (check_stage_ == 0 && check_head_ < portraits_->entries().size())
     {
         if (check_head_ == 0)
         {
             capture("character-race-columns.png");
             portrait_selected(0);
         }
-        const auto &p = portraits_[check_head_];
+        const auto &p = portraits_->entries()[check_head_];
         if (creator_->appearance().portrait != p.filename || images_[0]->get_width() != 1254)
             throw std::runtime_error("Portrait navigation or full-resolution texture failed");
         ++check_head_;
@@ -1575,7 +1575,7 @@ void CharacterCreationView::check_run()
                             }
                     }
                     std::size_t count = 0;
-                    for (const auto &p : portraits_)
+                    for (const auto &p : portraits_->entries())
                         if (p.gender == gender && p.klass == klass && p.race == race)
                             ++count;
                     if (filtered_portraits_.size() != count ||
@@ -1594,7 +1594,7 @@ void CharacterCreationView::check_run()
             required_node<OptionButton>(*this, name).select(0);
             portrait_filter_selected(0);
         }
-        if (filtered_portraits_.size() != portraits_.size())
+        if (filtered_portraits_.size() != portraits_->entries().size())
             throw std::runtime_error("Clearing filters failed");
         ++check_default_;
         restart();
@@ -1824,7 +1824,7 @@ void CharacterCreationView::check_run()
         if (completed_ || creator_->draft().rolled || !creator_->draft().name.empty() ||
                 creator_->step() != CreationStep::race)
             throw std::runtime_error("Start over did not clear the character");
-        if (creator_->appearance().portrait != recommended_portrait(creator_->draft()))
+        if (creator_->appearance().portrait != portraits_->recommended(creator_->draft()))
             throw std::runtime_error("Restart did not restore the default race's recommended head");
         UtilityFunctions::print(
             "Godot C++ character check passed: choices, mouse drag assignment, swaps, background, HP, name, complete portraits, race/gender defaults, live texture recolors, saving throws, modifier modal, character/inventory, sheet, edit, restart");

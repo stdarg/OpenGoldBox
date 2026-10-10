@@ -3,6 +3,7 @@
 #include "opengold/character_creator.h"
 #include "opengold/campaign_party.h"
 #include "opengold/combat_body_catalog.h"
+#include "portrait_catalog.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <exception>
@@ -12,7 +13,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -49,22 +49,11 @@ class CharacterCreationView : public godot::Control
     void refresh();
     void refresh_art();
     void recommend_portrait();
-
-    struct Portrait
-    {
-        std::string filename, gender, klass, race;
-    };
-
-    std::vector<Portrait> portraits_;
-    std::map<std::string, godot::Ref<godot::ImageTexture>> portrait_textures_;
+    std::optional<PortraitCatalog> portraits_;
     std::vector<std::size_t> filtered_portraits_;
     void load_portraits();
     void refresh_portraits();
     void portrait_filter_selected(std::int64_t index);
-    std::string recommended_portrait(const opengold::rules::CharacterDraft &draft) const;
-    godot::Ref<godot::ImageTexture>
-    portrait_texture(const opengold::por::CharacterAppearance &appearance,
-                     const opengold::rules::CharacterDraft &draft);
     void perform(const std::function<void()> &action);
     void next();
     void back();

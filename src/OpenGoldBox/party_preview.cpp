@@ -255,7 +255,7 @@ void CharacterCreationView::refresh_party()
                             gs(std::to_string(item.quantity)));
         }
         required_node<TextureRect>(*this, "PartyPanel/Portrait")
-        .set_texture(portrait_texture(m.character.appearance(), m.character.creation_data()));
+        .set_texture(portraits_->texture(m.character.appearance(), m.character.creation_data()));
         const auto resolved = por::resolve_combat_appearance(m, *body_catalog_);
         for (unsigned pose = 0; pose < 2; ++pose)
         {
@@ -390,7 +390,7 @@ void CharacterCreationView::equipment_art_check()
             auto a = guard.appearance();
             a.combat_body = 24;
             a.tall = member == 0;
-            a.portrait = recommended_portrait(draft);
+            a.portrait = portraits_->recommended(draft);
             Character character(*srd5::character_rules(), draft, a);
             const auto id = member
                             ? campaign_->recruit("check:equipment-guard", std::move(character))

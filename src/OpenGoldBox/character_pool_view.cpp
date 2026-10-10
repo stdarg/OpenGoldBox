@@ -64,7 +64,7 @@ void CharacterCreationView::show_pool()
             for (auto &c : pool_)
             {
                 auto a = c.appearance();
-                a.portrait = recommended_portrait(c.creation_data());
+                a.portrait = portraits_->recommended(c.creation_data());
                 c.appearance(a);
             }
         }
@@ -91,7 +91,7 @@ void CharacterCreationView::pool_selected(std::int64_t index)
     const auto &character = pool_[pool_index_];
     required_node<RichTextLabel>(*this, "PoolModal/Text").set_text(sheet_text(character));
     required_node<TextureRect>(*this, "PoolModal/Portrait")
-    .set_texture(portrait_texture(character.appearance(), character.creation_data()));
+    .set_texture(portraits_->texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)
     {
         const auto source = art_->icon(character.appearance(),
