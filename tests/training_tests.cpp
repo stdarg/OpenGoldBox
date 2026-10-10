@@ -484,11 +484,11 @@ void pool_starting_gear()
     {
         const auto klass = preset.creation_data().character_class;
         CampaignParty party(module());
-        const auto id = party.add_pc(preset);
-        party.set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
-        outfit_pool_member(party, id);
+        const auto id = add_pool_member(party, preset, 3);
         const auto &member = party.member(id);
         check(member.wealth[3] == 250, "Starting gear is free");
+        check(member.creation_source == "pool:v1:3" && party.state().roster.size() == 1,
+              "A pool member joins once, recording which pool character it is");
         std::vector<std::string> held, carried;
         for (const auto &item : member.character.inventory().items())
         {

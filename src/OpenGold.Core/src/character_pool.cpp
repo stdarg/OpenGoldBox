@@ -258,4 +258,24 @@ void outfit_pool_member(CampaignParty &party, MemberId member)
     // Every kit carries a torch, as the SRD's starting packs do.
     add(authored_item::torch, 1, false);
 }
+
+MemberId add_pool_member(CampaignParty &party, const Character &character, unsigned pool_index)
+{
+    const auto before = party.checkpoint();
+    try
+    {
+        const auto id = party.add_pc(character);
+        party.set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
+        outfit_pool_member(party, id);
+        auto state = party.checkpoint();
+        state.roster.back().creation_source = "pool:v1:" + std::to_string(pool_index);
+        party.restore(std::move(state));
+        return id;
+    }
+    catch (...)
+    {
+        party.restore(before);
+        throw;
+    }
+}
 } // namespace opengold
