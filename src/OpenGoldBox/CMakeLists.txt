@@ -403,6 +403,53 @@ if(OPENGOLD_BUILD_TESTS)
         -DSCRIPT=combat_hover_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
     opengold_original_check(combat_unconscious_scene "Unconscious combatant captured"
         -DSCRIPT=combat_unconscious_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    # Startup and setup checks rewrite the project's settings.cfg; the driver
+    # keeps the developer's own copy aside. Skipped without OPENGOLD_GAME_DIR.
+    function(opengold_settings_check name script expected)
+        add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
+            "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+            "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/${script}.gd" "-DEXPECTED=${expected}"
+            "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/${name}"
+            "-DKEPT=${CMAKE_BINARY_DIR}/settings-checks/developer-settings" ${ARGN}
+            -P "${PROJECT_SOURCE_DIR}/tests/settings_check.cmake")
+        set_tests_properties("opengold_godot_${name}" PROPERTIES
+            FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot RESOURCE_LOCK godot_project
+            SKIP_REGULAR_EXPRESSION "Skipped: ")
+    endfunction()
+    opengold_settings_check(startup startup_tests "Startup check passed: no flag")
+    opengold_settings_check(startup_splash startup_tests "Startup check passed: two"
+        -DARGS=--splash)
+    # The main check leaves Spanish saved for a second process to restore.
+    opengold_settings_check(language language_dialog_tests "Language dialog passed"
+        -DARGS=--reset-lang -DRESTART_ARGS=--language-restore
+        "-DRESTART_EXPECTED=Language restore passed across process restart")
+    opengold_settings_check(language_splash language_dialog_tests "Language dialog passed"
+        "-DARGS=--reset-lang\;--splash")
+    opengold_settings_check(language_close language_dialog_tests
+        "Language dialog close: scene teardown passed" "-DARGS=--reset-lang\;--language-close")
+    opengold_settings_check(language_ctrl_x language_dialog_tests
+        "Language dialog Ctrl.X: scene teardown passed" "-DARGS=--reset-lang\;--language-ctrl-x")
+    # Setup completes before the optional splash screens, which these cases check
+    # start. The reset flags make a complete config ask again.
+    foreach(setup_case first first-warning save-error missing-path valid override missing-lang)
+        string(REPLACE "-" "_" test_name "setup_${setup_case}")
+        opengold_settings_check(${test_name} setup_config_tests
+            "Setup config passed: ${setup_case}" "-DARGS=--setup-case=${setup_case}\;--splash")
+    endforeach()
+    foreach(setup_case mismatch missing-file)
+        string(REPLACE "-" "_" test_name "setup_${setup_case}")
+        opengold_settings_check(${test_name} setup_config_tests
+            "Setup config passed: ${setup_case}"
+            "-DARGS=--setup-case=${setup_case}\;--splash\;--reset-game-path")
+    endforeach()
+    opengold_settings_check(setup_reset setup_config_tests "Setup config passed: reset"
+        "-DARGS=--setup-case=reset\;--splash\;--reset-lang\;--reset-game-path")
+    opengold_settings_check(setup_cancel_path setup_config_tests "Setup cancel-path passed"
+        "-DARGS=--setup-case=cancel-path\;--splash")
+    opengold_settings_check(setup_cancel_lang setup_config_tests "Setup cancel-language passed"
+        "-DARGS=--setup-case=cancel-lang\;--splash\;--reset-lang")
+    opengold_settings_check(setup_warning_quit setup_config_tests "Setup checksum-quit passed"
+        "-DARGS=--setup-case=warning-quit\;--splash\;--reset-game-path")
 endif()
 
 # Godot exports the executable; the C++ game code is its GDExtension.

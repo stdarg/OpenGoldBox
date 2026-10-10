@@ -26,6 +26,8 @@ func key(viewport: Viewport, code: Key, ctrl := false) -> void:
 	event.ctrl_pressed = ctrl
 	viewport.push_input(event, true)
 	await settle()
+	# Confirming the language can open character creation, freeing the dialog.
+	if not is_instance_valid(viewport): return
 	var release := InputEventKey.new()
 	release.keycode = code
 	release.ctrl_pressed = ctrl
