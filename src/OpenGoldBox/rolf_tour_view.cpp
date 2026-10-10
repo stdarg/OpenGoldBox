@@ -862,7 +862,6 @@ void RolfTourView::refresh()
     }
     const bool loaded = session_.has_value();
     const TourSnapshot s = loaded ? session_->snapshot() : TourSnapshot{};
-    shown_revision_ = s.revision;
     refresh_rest();
     const bool waiting = loaded && s.phase == TourPhase::awaiting_continue;
     const bool completed = loaded && s.phase == TourPhase::completed;
@@ -1064,6 +1063,9 @@ void RolfTourView::refresh()
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());
     }
     queue_redraw();
+    // Marked shown only once everything above succeeded, so a failed refresh
+    // is tried again on the next frame (Effective C++ Item 29).
+    shown_revision_ = s.revision;
 }
 
 void RolfTourView::_draw()
