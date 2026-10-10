@@ -92,7 +92,7 @@ bool aim(CombatSession &c, Cell cell)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -138,7 +138,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 // The bonus in the latest "d20 N + B vs AC" line.
 int attack_bonus(const CombatSession &c)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
         if (const auto at = line->find(" vs AC "); at != std::string::npos)
         {
@@ -163,7 +163,8 @@ void cantrip_checks()
     }
     {
         auto c = battle(*module, sheet);
-        check(std::none_of(c->legal_commands().begin(), c->legal_commands().end(),
+        const auto commands = c->legal_commands();
+        check(std::none_of(commands.begin(), commands.end(),
                            [](const auto & command)
         {
             return command.verb == "shillelagh" || command.verb == "hurl_flame";
@@ -239,7 +240,7 @@ CharacterSheet preparing(std::string spell)
 
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::count_if(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
