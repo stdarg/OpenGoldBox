@@ -183,7 +183,7 @@ struct RollModifiers
     // Multiple sources never add extra dice. Opposing sources cancel.
     [[nodiscard]] int mode() const
     {
-        return int(advantage) - int(disadvantage);
+        return static_cast<int>(advantage) - static_cast<int>(disadvantage);
     }
 };
 

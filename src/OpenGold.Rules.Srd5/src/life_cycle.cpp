@@ -62,7 +62,8 @@ void start_stable_recovery(LifeState &state, std::uint64_t &rng)
 {
     if (state.hp == 0 && !state.dead && state.stable && !state.recovery.stable_recovery_in_ms &&
             !state.recovery.stable_recovery_due)
-        state.recovery.stable_recovery_in_ms = unsigned(roll_die(rng, 4)) * recovery_hour_ms;
+        state.recovery.stable_recovery_in_ms =
+            static_cast<unsigned>(roll_die(rng, 4)) * recovery_hour_ms;
 }
 
 void stabilize(LifeState &state, std::uint64_t &rng)

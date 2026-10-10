@@ -1282,7 +1282,9 @@ inline int command_option(std::string_view verb)
         return 0;
     verb.remove_prefix(8);
     const auto found = std::find(command_options.begin(), command_options.end(), verb);
-    return found == command_options.end() ? 0 : int(found - command_options.begin()) + 1;
+    return found == command_options.end()
+           ? 0
+           : static_cast<int>(found - command_options.begin()) + 1;
 }
 
 // Chromatic Orb's damage types, each offered as "chromatic_orb_<type>".

@@ -100,7 +100,7 @@ class ConcentrationState
 
 inline void write_concentration(std::ostream &out, const ConcentrationState &state)
 {
-    out << "CN1 " << int(bool(state.active()));
+    out << "CN1 " << static_cast<int>(state.active().has_value());
     if (const auto &value = state.active())
         out << ' ' << value->source.scope << ' ' << value->source.application << ' '
             << value->source.caster << ' ' << value->remaining_ms;

@@ -330,20 +330,20 @@ std::vector<rules::FeatureGrant> read_grants(std::istream &in)
 {
     unsigned count{};
     in >> count;
-    require(bool(in) && count <= 32);
+    require(static_cast<bool>(in) && count <= 32);
     std::vector<rules::FeatureGrant> result;
     for (unsigned i = 0; i < count; ++i)
     {
         rules::FeatureGrant grant;
         unsigned choices{};
         in >> std::quoted(grant.id) >> std::quoted(grant.source_id) >> grant.level >> choices;
-        require(bool(in) && grant.id.size() <= 128 && grant.source_id.size() <= 128 &&
+        require(static_cast<bool>(in) && grant.id.size() <= 128 && grant.source_id.size() <= 128 &&
                 choices <= 6);
         for (unsigned n = 0; n < choices; ++n)
         {
             std::string key, value;
             in >> std::quoted(key) >> std::quoted(value);
-            require(bool(in) && key.size() <= 128 && value.size() <= 128 &&
+            require(static_cast<bool>(in) && key.size() <= 128 && value.size() <= 128 &&
                     grant.choices.emplace(key, value).second);
         }
         result.push_back(std::move(grant));

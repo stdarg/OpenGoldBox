@@ -193,8 +193,8 @@ bool concentration_effect(detail::EffectKind kind)
 // Command's option as players read it, "Approach" for 1.
 std::string command_label(int option)
 {
-    auto label = std::string(detail::command_options.at(std::size_t(option - 1)));
-    label[0] = char(label[0] - 'a' + 'A');
+    auto label = std::string(detail::command_options.at(static_cast<std::size_t>(option - 1)));
+    label[0] = static_cast<char>(label[0] - 'a' + 'A');
     return label;
 }
 
@@ -874,12 +874,12 @@ Definition shaped(Definition d, const detail::BeastForm &form)
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
                                   const Definition &d)
 {
-    const auto capacity = unsigned(d.*descriptor.capacity);
+    const auto capacity = static_cast<unsigned>(d.*descriptor.capacity);
     return {std::string(descriptor.id),
         {std::string(descriptor.label), {}},
-        unsigned(actor.*descriptor.remaining),
+        static_cast<unsigned>(actor.*descriptor.remaining),
         capacity,
-        descriptor.short_rest < 0 ? capacity : unsigned(descriptor.short_rest)};
+        descriptor.short_rest < 0 ? capacity : static_cast<unsigned>(descriptor.short_rest)};
 }
 
 bool unconscious(const Actor &a)
@@ -908,9 +908,9 @@ bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
 {
     const auto &d = actor.definition;
     return conscious(actor) && d.arcane && actor.arcane > 0 &&
-           choice.first + 2 * choice.second <= unsigned((d.level + 1) / 2) &&
-           choice.first <= unsigned(d.slots - actor.slots) &&
-           choice.second <= unsigned(d.slots2 - actor.slots2);
+           choice.first + 2 * choice.second <= static_cast<unsigned>((d.level + 1) / 2) &&
+           choice.first <= static_cast<unsigned>(d.slots - actor.slots) &&
+           choice.second <= static_cast<unsigned>(d.slots2 - actor.slots2);
 }
 
 int movement_left(const Actor &a)
@@ -973,15 +973,15 @@ int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers, bool
     return n < -4 || n > 5;
 }))
     throw std::runtime_error("Invalid HP advancement history");
-    int hp = die + modifiers.front() + (dwarf ? int(modifiers.size()) : 0) +
-             (draconic && modifiers.size() >= 3 ? int(modifiers.size()) : 0);
+    int hp = die + modifiers.front() + (dwarf ? static_cast<int>(modifiers.size()) : 0) +
+             (draconic && modifiers.size() >= 3 ? static_cast<int>(modifiers.size()) : 0);
     for (std::size_t i = 1; i < modifiers.size(); ++i)
     {
         const int increase = modifiers[i] - modifiers[i - 1];
         if (increase < 0 || increase > 1 || (i != 3 && increase))
             throw std::runtime_error("Invalid Constitution advancement history");
         // SRD p. 23: gain HP first, then apply a new modifier per attained level.
-        hp += std::max(1, die / 2 + 1 + modifiers[i - 1]) + increase * int(i + 1);
+        hp += std::max(1, die / 2 + 1 + modifiers[i - 1]) + increase * static_cast<int>(i + 1);
     }
     return hp;
 }
@@ -1066,16 +1066,18 @@ character_definition(std::string_view bytes,
     d.strength = str;
     d.danger_sense = d.reckless = klass == "Barbarian" && level >= 2;
     d.frenzy = klass == "Barbarian" && level >= 3;
-    d.focus = klass == "Monk" && level >= 2 ? int(level) : 0;
+    d.focus = klass == "Monk" && level >= 2 ? static_cast<int>(level) : 0;
     d.metabolism = klass == "Monk" && level >= 2 ? 1 : 0;
     d.innate_sorcery = klass == "Sorcerer" ? 2 : 0;
-    d.sorcery_points = klass == "Sorcerer" && level >= 2 ? int(level) : 0;
+    d.sorcery_points = klass == "Sorcerer" && level >= 2 ? static_cast<int>(level) : 0;
     d.pact_magic = klass == "Warlock";
     d.magical_cunning = klass == "Warlock" && level >= 2 ? 1 : 0;
     d.bardic_inspiration = klass == "Bard" ? std::max(1, ability_modifier(scores[5])) : 0;
     d.cutting_words = klass == "Bard" && level >= 3;
     d.dark_ones_blessing =
-        klass == "Warlock" && level >= 3 ? std::max(1, ability_modifier(scores[5]) + int(level)) : 0;
+        klass == "Warlock" && level >= 3
+        ? std::max(1, ability_modifier(scores[5]) + static_cast<int>(level))
+        : 0;
     d.deflect = d.open_hand = klass == "Monk" && level >= 3;
     d.focus_dc = 8 + 2 + ability_modifier(scores[4]);
     d.dexterity = dex;
@@ -1088,7 +1090,7 @@ character_definition(std::string_view bytes,
     d.ac = 10 + dex;
     // Jack of All Trades adds half the Proficiency Bonus to Initiative, as
     // SRD-DECISIONS keeps it, unless Alert already adds the whole bonus.
-    d.initiative = dex + (d.alert ? int(2 + (level - 1) / 4)
+    d.initiative = dex + (d.alert ? static_cast<int>(2 + (level - 1) / 4)
                           : klass == "Bard" && level >= 2 ? 1 : 0);
     d.speed = race == "Goliath" ? 35 : 30;
     d.level = level;
@@ -1114,7 +1116,7 @@ character_definition(std::string_view bytes,
     d.surges = klass == "Fighter" && level >= 2 ? 1 : 0;
     d.winds = klass == "Fighter" ? (level == 4 ? 3 : 2) : 0;
     // Pact Magic: one level-1 slot, then two; level-2 slots from level 3.
-    d.slots = klass == "Warlock" ? (level <= 2 ? int(level) : 0)
+    d.slots = klass == "Warlock" ? (level <= 2 ? static_cast<int>(level) : 0)
               : (klass == "Cleric" || klass == "Wizard" || klass == "Sorcerer" || klass == "Bard" ||
                  klass == "Druid")
               ? (level == 1 ? 2 : level == 2 ? 3 : 4)
@@ -1179,7 +1181,7 @@ character_definition(std::string_view bytes,
     if (invoked("lessons_alert"))
     {
         d.alert = true;
-        d.initiative = dex + int(2 + (level - 1) / 4);
+        d.initiative = dex + static_cast<int>(2 + (level - 1) / 4);
     }
     for (const auto &key : d.equipment_keys)
     {
@@ -1614,7 +1616,7 @@ class Session final : public CombatSession
             for (auto &a : actors_)
                 for (const auto &item : a.source.inventory)
                     if (const auto *gear = detail::thrown_gear(item.definition))
-                        a.thrown_gear_left[std::size_t(gear->effect)] += item.quantity;
+                        a.thrown_gear_left[static_cast<std::size_t>(gear->effect)] += item.quantity;
             for (const auto &a : actors_)
                 if (a.definition.other_weapon)
                     physical_inventory_ = true;
@@ -1959,7 +1961,7 @@ class Session final : public CombatSession
 
     unsigned turn_end_ms(std::size_t index) const
     {
-        return unsigned((index + 1) * detail::round_ms / actors_.size());
+        return static_cast<unsigned>((index + 1) * detail::round_ms / actors_.size());
     }
 
     bool shares_occupied_space(const Actor &who) const
@@ -2285,7 +2287,7 @@ void Session::activate_light()
         if (items_[i].holder && !items_[i].stowed && items_[i].quantity > 1)
         {
             auto carried = items_[i];
-            carried.id = unsigned(items_.size() + 1);
+            carried.id = static_cast<unsigned>(items_.size() + 1);
             --carried.quantity;
             carried.stowed = true;
             items_[i].quantity = 1;
@@ -2330,15 +2332,16 @@ void Session::ready_metamagic(Actor &a, std::string_view choice)
     if (choice.starts_with("transmuted_"))
     {
         const auto type = choice.substr(11);
-        value = 10 + int(std::find(transmuted_types.begin(), transmuted_types.end(), type) -
-                         transmuted_types.begin());
+        value = 10 + static_cast<int>(std::find(transmuted_types.begin(),
+                                                transmuted_types.end(), type) -
+                                      transmuted_types.begin());
         label = "Transmuted Spell";
     }
     else
     {
-        value = int(std::find(metamagic_ids.begin(), metamagic_ids.end(), choice) -
-                    metamagic_ids.begin());
-        label = metamagic_labels[std::size_t(value)];
+        value = static_cast<int>(std::find(metamagic_ids.begin(), metamagic_ids.end(), choice) -
+                                 metamagic_ids.begin());
+        label = metamagic_labels[static_cast<std::size_t>(value)];
     }
     detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
                                 detail::EffectKind::metamagic, value);
@@ -2561,7 +2564,7 @@ void Session::initialize_items()
                 continue;
             HeldItemView item
             {
-                unsigned(items_.size() + 1),
+                static_cast<unsigned>(items_.size() + 1),
                 a->source.id,
                 a->source.id,
                 i,
@@ -2581,7 +2584,7 @@ void Session::initialize_items()
         if (physical_inventory_)
             for (const auto &source : a->source.inventory)
                 if (source.equipment_index < 0 && detail::weapon(source.definition))
-                    items_.push_back({unsigned(items_.size() + 1),
+                    items_.push_back({static_cast<unsigned>(items_.size() + 1),
                                       a->source.id,
                                       a->source.id,
                                       0,
@@ -2680,7 +2683,7 @@ bool Session::shield_blocks_bow(const Actor &a) const
 void Session::check_morale(Actor &a)
 {
     const int lost = 100 - 100 * a.life.hp / std::max(1, max_hp(a));
-    bool holds = a.source.morale > 0 && int(a.source.morale) >= lost;
+    bool holds = a.source.morale > 0 && static_cast<int>(a.source.morale) >= lost;
     if (!holds)
     {
         int remaining = 0, total = 0;
@@ -2695,7 +2698,7 @@ void Session::check_morale(Actor &a)
             if (gone.source.side == a.source.side)
                 total += gone.max_hp;
         const int percent = total ? remaining * 100 / total / 5 * 5 : 0;
-        holds = percent > 0 && percent >= 100 - int(morale_);
+        holds = percent > 0 && percent >= 100 - static_cast<int>(morale_);
     }
     if (holds)
     {
@@ -2792,8 +2795,9 @@ void Session::remove_fled()
         gone.surrendered = a.surrendered;
         if (!a.source.character_profile.empty())
             for (const auto &gear : detail::thrown_gear_items)
-                gone.thrown_gear_left.emplace_back(std::string(gear.key),
-                                                   a.thrown_gear_left[std::size_t(gear.effect)]);
+                gone.thrown_gear_left.emplace_back(
+                    std::string(gear.key),
+                    a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
         fled_.push_back(std::move(gone));
         actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(i));
         if (i < turn_)
@@ -2816,7 +2820,7 @@ void Session::torch_attack(Actor &a, Actor &target)
 // Bonus (SRD 5.2.1 adventuring gear).
 void Session::throw_gear(Actor &a, Actor &target, const detail::ThrownGear &gear)
 {
-    --a.thrown_gear_left[std::size_t(gear.effect)];
+    --a.thrown_gear_left[static_cast<std::size_t>(gear.effect)];
     const auto &d = def(a);
     const int dc = 8 + d.dexterity + 2 + (d.level - 1) / 4;
     const auto label = std::string(gear.label);
@@ -2829,7 +2833,7 @@ void Session::throw_gear(Actor &a, Actor &target, const detail::ThrownGear &gear
         return;
     if (gear.effect == detail::ThrownGearEffect::oil)
     {
-        target.oiled_until_round = int(round_) + 10;
+        target.oiled_until_round = static_cast<int>(round_) + 10;
         log(target.source.name + " is covered in oil.",
         {"{name} is covered in oil.", {{"name", target.source.name}}});
         return;
@@ -2878,7 +2882,7 @@ Battlefield Session::zoned_board() const
                 zone.kind == ZoneKind::spikes)
             for (const auto cell : zone.cells)
                 if (board.at(cell) == 0)
-                    board.terrain[std::size_t(cell.y * board.width + cell.x)] = 2;
+                    board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] = 2;
     return board;
 }
 
@@ -3082,7 +3086,7 @@ Snapshot Session::snapshot() const
                          std::find(def(a).equipment_keys.begin(), def(a).equipment_keys.end(),
                                    "torch") != def(a).equipment_keys.end();
         view.burning = a.burning;
-        view.oiled = a.oiled_until_round >= int(round_);
+        view.oiled = a.oiled_until_round >= static_cast<int>(round_);
         view.panicked = a.panicked;
         view.spells = def(a).spells;
         view.can_flee = a.source.side == 0 && conscious(a) && !a.must_stay &&
@@ -3093,8 +3097,9 @@ Snapshot Session::snapshot() const
         });
         for (const auto &gear : detail::thrown_gear_items)
             if (a.source.side == 0 && !a.source.character_profile.empty())
-                view.thrown_gear_left.emplace_back(std::string(gear.key),
-                                                   a.thrown_gear_left[std::size_t(gear.effect)]);
+                view.thrown_gear_left.emplace_back(
+                    std::string(gear.key),
+                    a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
         view.temporary_hp = a.life.temporary_hp;
         view.prone = a.effects.prone;
         if (physical_inventory_)
@@ -3366,7 +3371,7 @@ Snapshot Session::snapshot() const
         for (const auto &[shown, label] :
                 {
                     std::pair{a.burning, "Burning"},
-                    std::pair{a.oiled_until_round >= int(round_), "Covered in oil"}
+                    std::pair{a.oiled_until_round >= static_cast<int>(round_), "Covered in oil"}
                 })
             if (shown)
             {
@@ -3383,7 +3388,7 @@ Snapshot Session::snapshot() const
         for (const auto &effect : a.effects.active)
             if (effect.kind == detail::EffectKind::wild_shape)
             {
-                const auto &form = detail::beast_forms.at(std::size_t(effect.dc - 1));
+                const auto &form = detail::beast_forms.at(static_cast<std::size_t>(effect.dc - 1));
                 s.combatants.back().form = std::string(form.key);
                 const Message shape{"Wild Shape ({form})", {{"form", std::string(form.label), true}}};
                 messages.push_back(shape);
@@ -3473,7 +3478,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     {
         const auto type = *detail::resistance_type(verb);
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
-                                    detail::EffectKind::resistance, int(type));
+                                    detail::EffectKind::resistance, static_cast<int>(type));
         const auto name = std::string(detail::damage_name(type));
         log(target.source.name + " gains Resistance against " + name + " damage.",
         {
@@ -3651,7 +3656,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::dragons_breath:
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::dragons_breath,
-                                    int(*detail::dragon_type(verb)));
+                                    static_cast<int>(*detail::dragon_type(verb)));
         log(target.source.name + " gains Dragon's Breath.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Dragon's Breath", true}}});
         return;
@@ -4524,9 +4529,10 @@ std::vector<Command> Session::legal_commands() const
         else
             for (const auto &known : d.metamagic)
             {
-                const auto index = std::size_t(std::find(metamagic_ids.begin(), metamagic_ids.end(),
-                                               known) - metamagic_ids.begin());
-                const auto option = Metamagic(index);
+                const auto index = static_cast<std::size_t>(
+                    std::find(metamagic_ids.begin(), metamagic_ids.end(), known) -
+                    metamagic_ids.begin());
+                const auto option = static_cast<Metamagic>(index);
                 const int cost = metamagic_cost(option);
                 // Subtle Spell retired with spell components (CLASS-11).
                 if (a.lay_on_hands < cost || option == Metamagic::subtle)
@@ -4767,7 +4773,7 @@ std::vector<Command> Session::legal_commands() const
         for (const auto &effect : a.effects.active)
             if (effect.kind == detail::EffectKind::dragons_breath)
                 for (const auto type : detail::dragon_types)
-                    if (detail::damage_type(type) == detail::DamageType(effect.dc))
+                    if (detail::damage_type(type) == static_cast<detail::DamageType>(effect.dc))
                         commands.push_back({revision_, id, 0,
                                             "dragons_breath_exhale_" + std::string(type),
                                             "Exhale (Dragon's Breath)", Cell{}, 0, true});
@@ -4802,7 +4808,7 @@ std::vector<Command> Session::legal_commands() const
                     add(id, "shoot", "Shoot", other.source.id);
                 for (const auto &gear : detail::thrown_gear_items)
                     if (wields_equipment && feet <= detail::thrown_gear_range &&
-                            a.thrown_gear_left[std::size_t(gear.effect)])
+                            a.thrown_gear_left[static_cast<std::size_t>(gear.effect)])
                         add(id, "throw_" + std::string(gear.key), "Throw " + std::string(gear.label),
                             other.source.id);
                 if (wields_equipment && physical_inventory_)
@@ -4875,7 +4881,7 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
     // With no caster left there is nothing to approach or flee.
     if (caster == actors_.end() || caster->life.dead)
         return;
-    const bool approach = command->dc == int(detail::CommandOption::approach);
+    const bool approach = command->dc == static_cast<int>(detail::CommandOption::approach);
     const int start = distance(a.source.cell, caster->source.cell);
     // Approach ends the turn within 5 feet of the caster.
     const Command *best = nullptr;
@@ -4937,7 +4943,7 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
     const auto ward = std::find_if(target.effects.active.begin(), target.effects.active.end(),
                                    [&](const auto & e)
     {
-        return e.kind == detail::EffectKind::resistance && e.dc == int(type);
+        return e.kind == detail::EffectKind::resistance && e.dc == static_cast<int>(type);
     });
     if (ward != target.effects.active.end() && !target.resistance_used && amount > 0)
     {
@@ -4952,7 +4958,8 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
         });
     }
     // Oil: Fire damage on an oiled creature deals 5 more, once, from the burning oil.
-    if (type == detail::DamageType::fire && amount > 0 && target.oiled_until_round >= int(round_))
+    if (type == detail::DamageType::fire && amount > 0 &&
+            target.oiled_until_round >= static_cast<int>(round_))
     {
         target.oiled_until_round = 0;
         amount += 5;
@@ -5052,7 +5059,8 @@ void Session::damage(Actor &target, int amount, bool critical)
                 saving_throw_succeeds(target, detail::Ability::wisdom, target.effects.active[n].dc,
                                       true))
         {
-            target.effects.active.erase(target.effects.active.begin() + std::ptrdiff_t(n));
+            target.effects.active.erase(target.effects.active.begin() +
+                                        static_cast<std::ptrdiff_t>(n));
             log(target.source.name + " stops laughing.",
             {"{name} stops laughing.", {{"name", target.source.name}}});
             break;
@@ -5451,7 +5459,8 @@ void Session::refresh_form(Actor &a)
     if (shape == a.effects.active.end())
         a.form.reset();
     else
-        a.form = shaped(a.definition, detail::beast_forms.at(std::size_t(shape->dc - 1)));
+        a.form = shaped(a.definition,
+                        detail::beast_forms.at(static_cast<std::size_t>(shape->dc - 1)));
 }
 
 void Session::end_wild_shape(Actor &a)
@@ -5829,7 +5838,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
 int Session::disciple_of_life(const Actor &caster, unsigned slot_level) const
 {
     // Disciple of Life: healing from a spell slot restores 2 + the slot's level more.
-    return def(caster).life_domain ? 2 + int(slot_level) : 0;
+    return def(caster).life_domain ? 2 + static_cast<int>(slot_level) : 0;
 }
 
 void Session::preserve_life(Actor &cleric)
@@ -6915,9 +6924,10 @@ std::optional<Session::ReadyMetamagic> Session::readied_metamagic(const Actor &a
         if (e.kind == detail::EffectKind::metamagic)
         {
             if (e.dc < 10)
-                return ReadyMetamagic{Metamagic(e.dc), std::nullopt};
+                return ReadyMetamagic{static_cast<Metamagic>(e.dc), std::nullopt};
             return ReadyMetamagic{Metamagic::transmuted,
-                                  detail::damage_type(transmuted_types.at(std::size_t(e.dc - 10)))};
+                                  detail::damage_type(transmuted_types.at(
+                                      static_cast<std::size_t>(e.dc - 10)))};
         }
     return std::nullopt;
 }
@@ -6942,7 +6952,7 @@ void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
         return e.kind == detail::EffectKind::metamagic;
     });
     casting_metamagic_ = ready;
-    const std::string label(metamagic_labels[std::size_t(ready->option)]);
+    const std::string label(metamagic_labels[static_cast<std::size_t>(ready->option)]);
     log(caster.source.name + " uses " + label + ".",
     {"{name} uses {feature}.", {{"name", caster.source.name}, {"feature", label, true}}});
 }
@@ -6977,7 +6987,9 @@ int Session::spell_dice(const Actor &caster, Dice dice, bool critical)
         rolls.push_back(roll(dice.sides));
     std::sort(rolls.begin(), rolls.end());
     const int rerolls = std::max(1, def(caster).casting - 2);
-    for (int n = 0; n < rerolls && n < int(rolls.size()) && rolls[n] * 2 < dice.sides + 1; ++n)
+    for (int n = 0;
+            n < rerolls && n < static_cast<int>(rolls.size()) && rolls[n] * 2 < dice.sides + 1;
+            ++n)
         rolls[n] = roll(dice.sides);
     int total = dice.bonus;
     for (const int value : rolls)
@@ -6990,7 +7002,7 @@ std::vector<EntityId> Session::careful_allies(const Actor &caster, const std::ve
     std::vector<EntityId> spared;
     if (!casting_with(Metamagic::careful))
         return spared;
-    const auto most = std::size_t(std::max(1, def(caster).casting - 2));
+    const auto most = static_cast<std::size_t>(std::max(1, def(caster).casting - 2));
     for (const auto &other : actors_)
         if (spared.size() < most && other.source.side == caster.source.side &&
                 other.source.id != caster.source.id && !other.life.dead &&
@@ -7408,13 +7420,13 @@ bool Session::begin_turn()
     // the turn's commands instead (obey_command).
     if (const auto *command = detail::command_effect(a.effects))
     {
-        if (command->dc == int(detail::CommandOption::grovel))
+        if (command->dc == static_cast<int>(detail::CommandOption::grovel))
         {
             a.effects.prone = true;
             log(a.source.name + " grovels.", {"{name} grovels.", {{"name", a.source.name}}});
             return false;
         }
-        if (command->dc == int(detail::CommandOption::halt))
+        if (command->dc == static_cast<int>(detail::CommandOption::halt))
         {
             log(a.source.name + " halts.", {"{name} halts.", {{"name", a.source.name}}});
             return false;
@@ -8316,7 +8328,7 @@ void Session::dispatch(const Command &command)
         });
         detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
                                     detail::EffectKind::wild_shape,
-                                    int(form - detail::beast_forms.data()) + 1);
+                                    static_cast<int>(form - detail::beast_forms.data()) + 1);
         refresh_form(a);
         log(a.source.name + " takes the shape of a " + std::string(form->label) + ".",
         {"{name} takes the shape of a {form}.", {{"name", a.source.name}, {"form", std::string(form->label), true}}});
@@ -8706,7 +8718,7 @@ std::string Session::save() const
         << '\n';
     out << board_.width << ' ' << board_.height << '\n';
     for (auto cell : board_.terrain)
-        out << unsigned(cell) << ' ';
+        out << static_cast<unsigned>(cell) << ' ';
     out << '\n';
     out << rng_ << ' ' << revision_ << ' ' << turn_ << ' ' << round_ << ' '
         << static_cast<int>(outcome_) << ' ' << actors_.size() << '\n';
@@ -8758,7 +8770,7 @@ std::string Session::save() const
         detail::write_effects(out, a.effects);
         out << '\n';
     }
-    out << bool(temporary_offer_) << '\n';
+    out << static_cast<bool>(temporary_offer_) << '\n';
     if (temporary_offer_)
         out << temporary_offer_->amount << ' ' << std::quoted(temporary_offer_->source_id) << '\n';
     out << frost_movement_ << ' ' << items_active_ << '\n';
@@ -8771,31 +8783,32 @@ std::string Session::save() const
                 << item.inventory_id << ' ' << std::quoted(item.definition) << ' ' << item.quantity
                 << ' ' << item.stowed << ' ' << item.holder << '\n';
     }
-    out << bool(check_choice_) << '\n';
+    out << static_cast<bool>(check_choice_) << '\n';
     if (check_choice_)
     {
         const auto &c = *check_choice_;
         out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.surge_spent << '\n';
     }
-    out << bool(champion_move_) << '\n';
+    out << static_cast<bool>(champion_move_) << '\n';
     if (champion_move_)
     {
         const auto &c = *champion_move_;
         out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.remaining << ' '
             << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << '\n';
     }
-    out << bool(graze_) << '\n';
+    out << static_cast<bool>(graze_) << '\n';
     if (graze_)
     {
         const auto &g = *graze_;
         out << g.actor << ' ' << g.target << ' ' << g.natural << ' ';
     }
     out << light_active_ << ' ' << nick_active_ << '\n';
-    out << bool(mastery_) << '\n';
+    out << static_cast<bool>(mastery_) << '\n';
     if (mastery_)
     {
         const auto &m = *mastery_;
-        out << m.actor << ' ' << m.target << ' ' << unsigned(m.kind) << ' ' << m.natural << ' '
+        out << m.actor << ' ' << m.target << ' ' << static_cast<unsigned>(m.kind) << ' '
+            << m.natural << ' '
             << m.ranged << ' ' << m.targeting << ' ' << std::quoted(m.weapon) << ' '
             << m.origin.x << ' ' << m.origin.y << ' ' << m.thrown_item << '\n';
     }
@@ -8814,7 +8827,7 @@ std::string Session::save() const
     }
     if (champion_move_)
         extra(*champion_move_);
-    out << bool(effect_reaction_origin_) << ' ';
+    out << static_cast<bool>(effect_reaction_origin_) << ' ';
     if (effect_reaction_origin_)
         out << effect_reaction_origin_->actor << ' ' << effect_reaction_origin_->source.x << ' '
             << effect_reaction_origin_->source.y << ' ' << effect_reaction_origin_->mover.x
@@ -8825,7 +8838,7 @@ std::string Session::save() const
     for (const auto id : initiative_choices_)
         out << ' ' << id;
     out << '\n';
-    out << bool(selection_);
+    out << static_cast<bool>(selection_);
     if (selection_)
     {
         out << ' ' << selection_->caster << ' ' << selection_->verb << ' '
@@ -8834,30 +8847,31 @@ std::string Session::save() const
             out << ' ' << id;
     }
     out << '\n';
-    out << bool(area_);
+    out << static_cast<bool>(area_);
     if (area_)
         out << ' ' << area_->caster << ' ' << area_->verb << ' ' << area_->center.x << ' '
             << area_->center.y;
     out << '\n' << zones_.size();
     for (const auto &zone : zones_)
     {
-        out << ' ' << zone.caster << ' ' << unsigned(zone.kind) << ' ' << zone.ends_ms << ' '
+        out << ' ' << zone.caster << ' ' << static_cast<unsigned>(zone.kind) << ' '
+            << zone.ends_ms << ' '
             << zone.save_dc << ' ' << zone.cells.size();
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
     }
-    out << '\n' << bool(reaction_prompt_);
+    out << '\n' << static_cast<bool>(reaction_prompt_);
     if (reaction_prompt_)
     {
         const auto &prompt = *reaction_prompt_;
         const auto &question = prompt.question;
         const auto &command = prompt.command;
-        out << ' ' << question.target << ' ' << unsigned(question.asked) << ' '
+        out << ' ' << question.target << ' ' << static_cast<unsigned>(question.asked) << ' '
             << question.deflectable << ' ' << question.critical << ' ' << command.actor << ' '
             << command.target << ' ' << std::quoted(command.verb) << ' ' << command.destination.x
             << ' ' << command.destination.y << ' ' << command.item << ' ' << prompt.answers.size();
         for (const auto &answer : prompt.answers)
-            out << ' ' << answer.target << ' ' << unsigned(answer.asked) << ' '
+            out << ' ' << answer.target << ' ' << static_cast<unsigned>(answer.asked) << ' '
                 << std::quoted(answer.verb);
     }
     out << '\n';
@@ -8965,9 +8979,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
                              detail::knows_spell(definition.spells, "expeditious_retreat")) &&
                             !actor.bonus;
     if (actor.dashes < 0 ||
-            actor.dashes > int(!actor.actions.normal) +
-            int(actor.rush_used || bonus_dash) +
-            int(actor.surge_used && !actor.actions.surge) ||
+            actor.dashes > static_cast<int>(!actor.actions.normal) +
+            static_cast<int>(actor.rush_used || bonus_dash) +
+            static_cast<int>(actor.surge_used && !actor.actions.surge) ||
             actor.movement > definition.speed * (1 + actor.dashes))
         throw std::runtime_error("Invalid Dash allowance count");
     // The upper bound waits for the effects, read later: Aid raises it.
@@ -8978,7 +8992,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.movement < 0 ||
             actor.movement >
             definition.speed * (1 + !actor.actions.normal +
-                                int(actor.rush_used || bonus_dash) +
+                                static_cast<int>(actor.rush_used || bonus_dash) +
                                 (actor.surge_used && !actor.actions.surge)) ||
             actor.arcane < 0 || actor.arcane > arcane_capacity(definition) || actor.surges < 0 ||
             actor.surges > surge_capacity(definition) ||
@@ -9308,7 +9322,7 @@ void Session::validate_restored_state() const
         if (actor.regeneration_blocked && !def(actor).regeneration)
             throw std::runtime_error("Regeneration blocked without Regeneration");
         if ((actor.burning && actor.life.dead) || actor.oiled_until_round < 0 ||
-                actor.oiled_until_round > int(round_) + 10 ||
+                actor.oiled_until_round > static_cast<int>(round_) + 10 ||
                 (actor.source.character_profile.empty() &&
                  std::any_of(actor.thrown_gear_left.begin(), actor.thrown_gear_left.end(),
                              [](auto left)
@@ -9701,8 +9715,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         // Only Grease keeps time; every other zone ends with Concentration.
         // Grease outlasts a caster who has since run off the field.
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > unsigned(ZoneKind::spikes) ||
-                (kind == unsigned(ZoneKind::grease)) != (zone.ends_ms != 0) || !cells ||
+                kind > static_cast<unsigned>(ZoneKind::spikes) ||
+                (kind == static_cast<unsigned>(ZoneKind::grease)) != (zone.ends_ms != 0) ||
+                !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
         zone.kind = static_cast<ZoneKind>(kind);
@@ -9728,23 +9743,25 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         input >> question.target >> asked >> question.deflectable >> question.critical >>
               command.actor >> command.target >> std::quoted(command.verb) >>
               command.destination.x >> command.destination.y >> command.item >> answers;
-        if (!input || !known_actor(question.target) || asked > unsigned(Asked::cutting) ||
+        if (!input || !known_actor(question.target) ||
+                asked > static_cast<unsigned>(Asked::cutting) ||
                 !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
                 command.verb.empty() || answers > 3 * session->actors_.size())
             throw std::runtime_error("Invalid reaction prompt");
-        question.asked = Asked(asked);
+        question.asked = static_cast<Asked>(asked);
         for (std::size_t n = 0; n < answers; ++n)
         {
             ReactionAnswer answer;
             unsigned kind{};
             input >> answer.target >> kind >> std::quoted(answer.verb);
-            if (!input || !known_actor(answer.target) || kind > unsigned(Asked::cutting) ||
+            if (!input || !known_actor(answer.target) ||
+                    kind > static_cast<unsigned>(Asked::cutting) ||
                     (answer.verb != "shield" && answer.verb != "deflect" &&
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
                      answer.verb != "inspire" && answer.verb != "cutting" &&
                      answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
-            answer.asked = Asked(kind);
+            answer.asked = static_cast<Asked>(kind);
             prompt.answers.push_back(std::move(answer));
         }
         session->reaction_prompt_ = std::move(prompt);
@@ -11870,7 +11887,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             if (!row || !content.definitions.contains(key) || found == names.end() ||
                     !size_rows.insert(key).second)
                 throw std::runtime_error("Invalid creature size");
-            content.definitions.at(key).size = int(found - names.begin());
+            content.definitions.at(key).size = static_cast<int>(found - names.begin());
             row >> std::ws;
             if (!row.eof())
                 throw std::runtime_error("Unknown creature size fields");
@@ -12009,9 +12026,10 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 if (definition.level < 3 || definition.slots2 < 0 || definition.slots2 > 20 ||
                         casting_spells < 0 || casting_spells > 63)
                     throw std::runtime_error("Invalid supplemental spellcasting");
-                definition.spells = detail::spells_from_mask(unsigned(casting_spells));
+                definition.spells = detail::spells_from_mask(static_cast<unsigned>(casting_spells));
                 definition.known_cantrips = detail::spells_of_level(definition.spells, true);
-                if (detail::mask_from_spells(definition.spells) != unsigned(casting_spells))
+                if (detail::mask_from_spells(definition.spells) !=
+                        static_cast<unsigned>(casting_spells))
                     throw std::runtime_error("Invalid supplemental spellcasting");
             }
             if (!row)
@@ -12043,9 +12061,9 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 creature_spells > 7 || d.melee_bonus < -10 || d.melee_bonus > 30 || d.casting < -10 ||
                 d.casting > 30 || d.melee.bonus < -10 || d.melee.bonus > 30)
             throw std::runtime_error("Invalid or unsupported creature definition: " + key);
-        d.spells = detail::spells_from_mask(unsigned(creature_spells));
+        d.spells = detail::spells_from_mask(static_cast<unsigned>(creature_spells));
         d.known_cantrips = detail::spells_of_level(d.spells, true);
-        if (detail::mask_from_spells(d.spells) != unsigned(creature_spells))
+        if (detail::mask_from_spells(d.spells) != static_cast<unsigned>(creature_spells))
             throw std::runtime_error("Invalid or unsupported creature definition: " + key);
         row >> std::ws;
         if (!row.eof())

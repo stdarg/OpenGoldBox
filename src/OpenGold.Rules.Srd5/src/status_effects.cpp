@@ -38,7 +38,8 @@ SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifi
     const int natural = d20(modifiers, rng);
     // Ordinary saves compare totals. The special natural 1/20 death-save and
     // attack rules do not apply here. Widen before adding user-supplied values.
-    return {ability, natural, bonus, dc, modifiers.mode(), std::int64_t(natural) + bonus >= dc};
+    return {ability, natural, bonus, dc, modifiers.mode(),
+            static_cast<std::int64_t>(natural) + bonus >= dc};
 }
 
 std::array<unsigned, 2> class_save_proficiencies(std::string_view name)
@@ -367,7 +368,7 @@ void apply_searing_smite(EffectState &effects, std::uint64_t scope, rules::Entit
 int benefit_value_limit(EffectKind kind)
 {
     return kind == EffectKind::resistance || kind == EffectKind::dragons_breath
-           ? int(DamageType::count) - 1
+           ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::metamagic ? 15
            : 10;
 }
@@ -512,9 +513,9 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
             for (const auto &e : subject.effects.get().active)
             {
                 any = true;
-                step = std::min(step, std::uint64_t(e.remaining_ms));
+                step = std::min(step, static_cast<std::uint64_t>(e.remaining_ms));
                 if (e.save_in_ms)
-                    step = std::min(step, std::uint64_t(e.save_in_ms));
+                    step = std::min(step, static_cast<std::uint64_t>(e.save_in_ms));
             }
         if (!any)
             return;
@@ -589,7 +590,7 @@ void write_effects(std::ostream &out, const EffectState &effects)
 {
     out << effects_magic << ' ' << effects.next_id << ' ' << effects.active.size();
     for (const auto &e : effects.active)
-        out << ' ' << e.id << ' ' << unsigned(e.kind) << ' ' << e.source_scope << ' '
+        out << ' ' << e.id << ' ' << static_cast<unsigned>(e.kind) << ' ' << e.source_scope << ' '
             << e.source_actor << ' ' << std::quoted(e.source_name) << ' ' << e.dc << ' '
             << e.remaining_ms << ' ' << e.save_in_ms;
     out << ' ' << effects.prone;

@@ -133,7 +133,7 @@ int modifier(int score)
 int proficiency(unsigned level)
 {
     require(level >= 1 && level <= 20);
-    return 2 + int((level - 1) / 4);
+    return 2 + static_cast<int>((level - 1) / 4);
 }
 
 bool source(std::span<const FeatureGrant> grants, std::string_view id)
@@ -719,7 +719,7 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, std::stri
             result.masteries.push_back({std::string(item->key), std::string(item->label), {g}});
         }
     const auto &picked = selected(choices, skilled);
-    const bool has_skilled = bool(source(grants, std::string(skilled)));
+    const bool has_skilled = static_cast<bool>(source(grants, std::string(skilled)));
     require((picked.empty() && !has_skilled) || level >= 4);
     if (has_skilled)
         result.complete &= picked.size() == 3;
