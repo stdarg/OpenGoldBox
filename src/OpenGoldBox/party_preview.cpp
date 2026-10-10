@@ -102,19 +102,18 @@ void CharacterCreationView::setup_party()
     i18n::prepare_ui(*panel);
     presentation::attach_child(*this, std::move(panel));
     required_node<Control>(*this, "PartyPanel").hide();
-    required_node<Button>(*this, "Party").connect(
-        "pressed", presentation::guarded(this, &CharacterCreationView::party_action).bind(0));
-    required_node<Button>(*this, "AddParty")
-    .connect("pressed", presentation::guarded(this, &CharacterCreationView::party_action).bind(1));
-    required_node<Button>(*this, "ReturnParty")
-    .connect("pressed", presentation::guarded(this, &CharacterCreationView::party_action).bind(9));
-    const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
-            "Unequip", "Explore", "Combat", "Close"};
-    const std::array<int, 9> actions{2, 3, 4, 5, 6, 10, 7, 8, 11};
-    for (unsigned i = 0; i < buttons.size(); ++i)
-        required_node<Button>(*this, gs(std::string("PartyPanel/") + buttons[i]))
-        .connect("pressed",
-                  presentation::guarded(this, &CharacterCreationView::party_action).bind(actions[i]));
+    connect_party_button("Party", PartyAction::open);
+    connect_party_button("AddParty", PartyAction::add_created);
+    connect_party_button("ReturnParty", PartyAction::return_to_party);
+    connect_party_button("PartyPanel/Create", PartyAction::create);
+    connect_party_button("PartyPanel/Remove", PartyAction::remove);
+    connect_party_button("PartyPanel/Rejoin", PartyAction::rejoin);
+    connect_party_button("PartyPanel/Recruit", PartyAction::recruit);
+    connect_party_button("PartyPanel/Equip", PartyAction::equip);
+    connect_party_button("PartyPanel/Unequip", PartyAction::unequip);
+    connect_party_button("PartyPanel/Explore", PartyAction::explore);
+    connect_party_button("PartyPanel/Combat", PartyAction::combat);
+    connect_party_button("PartyPanel/Close", PartyAction::close);
     required_node<ItemList>(*this, "PartyPanel/Roster")
     .connect("item_selected", presentation::guarded(this, &CharacterCreationView::party_selected));
     required_node<Button>(*this, "PartyPanel/MakeLeader")
@@ -601,7 +600,21 @@ void CharacterCreationView::equipment_art_check()
     ++check_stage_;
 }
 
-void CharacterCreationView::party_action(int action)
+void CharacterCreationView::connect_party_button(const char *path, PartyAction action)
+{
+    // A bound signal argument travels as a Variant, which carries the action
+    // as its number; party_button_pressed turns it back.
+    required_node<Button>(*this, path)
+    .connect("pressed", presentation::guarded(this, &CharacterCreationView::party_button_pressed)
+             .bind(static_cast<int>(action)));
+}
+
+void CharacterCreationView::party_button_pressed(int action)
+{
+    party_action(static_cast<PartyAction>(action));
+}
+
+void CharacterCreationView::party_action(PartyAction action)
 {
     try
     {
@@ -611,7 +624,7 @@ void CharacterCreationView::party_action(int action)
         String equipment_notice;
         const auto id =
             campaign_->state().roster.empty() ? 0 : campaign_->state().roster.at(roster_index_).id;
-        if (action == 1)
+        if (action == PartyAction::add_created)
         {
             if (!completed_ || added_to_party_)
                 return;
@@ -621,19 +634,19 @@ void CharacterCreationView::party_action(int action)
             roster_index_ = campaign_->state().roster.size() - 1;
             refresh();
         }
-        if (action == 2 || action == 11)
+        if (action == PartyAction::create || action == PartyAction::close)
         {
             party_open_ = false;
             required_node<Control>(*this, "PartyPanel").hide();
-            if (action == 2)
+            if (action == PartyAction::create)
                 restart();
             return;
         }
-        if (action == 3)
+        if (action == PartyAction::remove)
             campaign_->remove(id);
-        if (action == 4)
+        if (action == PartyAction::rejoin)
             campaign_->rejoin(id);
-        if (action == 5)
+        if (action == PartyAction::recruit)
         {
             const auto recruited = campaign_->recruit("preview:guard", preview_guard());
             const auto &roster = campaign_->state().roster;
@@ -644,7 +657,7 @@ void CharacterCreationView::party_action(int action)
             }) -
             roster.begin();
         }
-        if (action == 6 || action == 10)
+        if (action == PartyAction::equip || action == PartyAction::unequip)
         {
             const auto selection =
                 required_node<ItemList>(*this, "PartyPanel/Inventory").get_selected_items();
@@ -657,7 +670,7 @@ void CharacterCreationView::party_action(int action)
                 throw std::runtime_error("Select an existing item");
             const auto selected = items[selection[0]].id;
             const std::string definition = items[selection[0]].definition_id;
-            if (action == 6)
+            if (action == PartyAction::equip)
             {
                 if (open_equipment_choice(id, selected))
                     return;
@@ -670,11 +683,11 @@ void CharacterCreationView::party_action(int action)
             else
                 campaign_->unequip(id, selected);
         }
-        if (action == 7 || action == 8)
+        if (action == PartyAction::explore || action == PartyAction::combat)
         {
             if (!campaign_->selected())
                 throw std::runtime_error("Add a party member first");
-            if (action == 7)
+            if (action == PartyAction::explore)
             {
                 auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
                 if (!town)
@@ -714,7 +727,7 @@ void CharacterCreationView::party_action(int action)
             party_layout();
             return;
         }
-        if (action == 9)
+        if (action == PartyAction::return_to_party)
         {
             if (auto *combat = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
             {
@@ -1103,7 +1116,7 @@ void CharacterCreationView::expedition_check()
                     campaign_->advance(id, choice);
                 }
         expedition_started_ = true;
-        party_action(7);
+        party_action(PartyAction::explore);
         return;
     }
     if (campaign_defeated_)
@@ -1241,7 +1254,7 @@ void CharacterCreationView::defeat_check()
             required_node<Button>(*saves, "Action").emit_signal("pressed");
         if (saves->is_visible())
             throw std::runtime_error("Defeat fixture save failed");
-        party_action(8);
+        party_action(PartyAction::combat);
         ++defeat_check_stage_;
         return;
     }
@@ -1253,7 +1266,7 @@ void CharacterCreationView::defeat_check()
         if (!dialog->is_visible() || fight->can_leave() || campaign_->in_combat() ||
                 campaign_->state().roster.at(0).vitals.hit_points)
             throw std::runtime_error("Defeat did not lock gameplay with persisted zero HP");
-        party_action(9);
+        party_action(PartyAction::return_to_party);
         if (!get_node_or_null("CampaignCombat") || !dialog->is_visible())
             throw std::runtime_error("Return to party bypassed defeat");
         required_node<Button>(*dialog, "Reload").emit_signal("pressed");
@@ -1317,7 +1330,7 @@ void CharacterCreationView::defeat_check()
                 get_node_or_null("CampaignCombat") ||
                 campaign_->state().roster.at(0).vitals.hit_points == 0)
             throw std::runtime_error("Confirmed reload did not replace defeated campaign");
-        party_action(8);
+        party_action(PartyAction::combat);
         ++defeat_check_stage_;
         return;
     }

@@ -177,7 +177,26 @@ class CharacterCreationView : public godot::Control
     bool save_read_check_{};
     unsigned save_capture_frames_{};
     void capture_save_ui();
-    void party_action(int action);
+    // The party panel's commands, named so a call says which one it means
+    // rather than passing a bare number (Effective C++ Item 18).
+    enum class PartyAction
+    {
+        open,
+        add_created,
+        create,
+        remove,
+        rejoin,
+        recruit,
+        equip,
+        unequip,
+        explore,
+        combat,
+        return_to_party,
+        close,
+    };
+    void connect_party_button(const char *path, PartyAction action);
+    void party_button_pressed(int action);
+    void party_action(PartyAction action);
     void party_selected(std::int64_t index);
     void refresh_party();
     void party_layout();

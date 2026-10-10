@@ -789,7 +789,7 @@ void CharacterCreationView::advancement_check()
                                     opengold::Character(*opengold::srd5::character_rules(), draft, {}));
             campaign_->award_experience(2700, "fixture:champion-review");
             campaign_->advance(member, campaign_->default_advancement(member));
-            party_action(0);
+            party_action(PartyAction::open);
             refresh_party();
             refresh_advancement_arrows();
             open_advancement(member);
@@ -823,7 +823,7 @@ void CharacterCreationView::advancement_check()
             if (member)
                 for (unsigned level = 2; level <= 3; ++level)
                     campaign_->advance(member, campaign_->default_advancement(member));
-        party_action(0);
+        party_action(PartyAction::open);
         error_ =
             "Review party: each character is ready for level 4. Click the arrow beside a name.";
         refresh_party();
@@ -902,7 +902,7 @@ void CharacterCreationView::advancement_check()
                     "Saved bonus sources must reconstruct the same modifier dialog");
         }
         close_modifiers();
-        party_action(7);
+        party_action(PartyAction::explore);
         break;
     case 4:
     {
@@ -1013,7 +1013,7 @@ void CharacterCreationView::advancement_check()
         campaign_->restore(std::move(restored.party));
         if (opengold::encode_campaign(*campaign_, nullptr, "archery-ui-check") != bytes)
             throw std::runtime_error("UI-acquired Archery must survive reload");
-        party_action(9);
+        party_action(PartyAction::return_to_party);
         capture("level-up-complete.png");
         UtilityFunctions::print(
             "Godot advancement passed: roster and town arrows, HP preview, Cancel rollback, invalid-point prevention, level-four feat and spell confirmations.");

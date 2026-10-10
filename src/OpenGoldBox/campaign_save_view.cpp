@@ -322,7 +322,7 @@ void CharacterCreationView::capture_save_ui()
     if (save_capture_frames_ == 8)
     {
         capture("campaign-party.png");
-        party_action(7);
+        party_action(PartyAction::explore);
     }
     if (save_capture_frames_ == 12)
     {
