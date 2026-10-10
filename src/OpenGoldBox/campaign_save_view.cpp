@@ -135,8 +135,7 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     get_node<Window>("Defeat")->hide();
     if (auto *fight = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
     {
-        remove_child(fight);
-        presentation::NodeOwner<Node> removed(fight);
+        presentation::detach_child(*this, *fight).reset();
     }
     if (saved.town)
     {
@@ -147,8 +146,7 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     }
     else if (town)
     {
-        remove_child(town);
-        presentation::NodeOwner<Node> removed(town);
+        presentation::detach_child(*this, *town).reset();
     }
     pool_added_.clear();
     for (unsigned i = 0; i < 48; ++i)

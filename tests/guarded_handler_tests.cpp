@@ -8,7 +8,8 @@
 
 // Godot calls a game handler from engine code that a C++ exception cannot
 // unwind through. These checks keep every handler behind the guard in
-// guarded_handlers.h and keep a failed handler from leaving a screen stuck.
+// guarded_handlers.h, keep a failed handler from leaving a screen stuck, and
+// keep nodes taken out of the tree owned.
 namespace
 {
 void check(bool ok, const std::string &message)
@@ -55,6 +56,11 @@ void every_handler_is_guarded()
         check(text.find("callable_mp(") == std::string::npos,
               entry.path().filename().string() +
               " connects a handler with callable_mp; use presentation::guarded");
+        // A node taken out of the tree must be owned in the same step.
+        check(entry.path().filename() == "godot_nodes.h" ||
+              text.find("remove_child(") == std::string::npos,
+              entry.path().filename().string() +
+              " removes a child by hand; use presentation::detach_child");
     }
     check(sources > 20, "The game's sources are found");
 }

@@ -506,10 +506,8 @@ void CharacterCreationView::equipment_art_check()
         verify_combat();
         capture("equipment-art-combat.png");
         auto *combat = get_node<CombatView>("CampaignCombat");
-        remove_child(combat);
-        {
-            presentation::NodeOwner<Node> removed(combat);
-        } // Release the fixture's combat lock.
+        // Freeing the fight releases the fixture's combat lock.
+        presentation::detach_child(*this, *combat).reset();
         CampaignEncounter encounter;
         encounter.field.geometry = {12, 9, std::vector<std::uint8_t>(108)};
         encounter.enemies.push_back({1000, "bandit", "Artwork fixture", 1, {9, 4}});
@@ -536,10 +534,7 @@ void CharacterCreationView::equipment_art_check()
     else if (check_stage_ == 19)
     {
         auto *combat = get_node<CombatView>("CampaignCombat");
-        remove_child(combat);
-        {
-            presentation::NodeOwner<Node> removed(combat);
-        }
+        presentation::detach_child(*this, *combat).reset();
         auto character = preview_guard();
         auto appearance = character.appearance();
         appearance.combat_body = 24;
@@ -704,8 +699,7 @@ void CharacterCreationView::party_action(int action)
             {
                 if (!combat->can_leave())
                     throw std::runtime_error("Finish the fight before returning to the party");
-                remove_child(combat);
-                presentation::NodeOwner<Node> released(combat);
+                presentation::detach_child(*this, *combat).reset();
             }
             if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
             {
@@ -1015,8 +1009,7 @@ void CharacterCreationView::update_party_navigation()
                 if (outcome->outcome == rules::Outcome::victory ||
                         outcome->outcome == rules::Outcome::fled)
                 {
-                    remove_child(fight);
-                    presentation::NodeOwner<Node> released(fight);
+                    const auto released = presentation::detach_child(*this, *fight);
                     fight = nullptr;
                     town->show();
                     town->set_process(true);

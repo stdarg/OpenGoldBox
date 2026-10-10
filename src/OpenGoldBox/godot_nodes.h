@@ -37,6 +37,17 @@ template <class T> T *attach_child(godot::Node &parent, NodeOwner<T> child)
     return child.release();
 }
 
+// Takes a child back from its parent: the returned owner frees it unless it is
+// attached again. The reverse of attach_child, in one step, so nothing can come
+// between leaving the tree and being owned (Effective C++ Item 13).
+template <class T> [[nodiscard]] NodeOwner<T> detach_child(godot::Node &parent, T &child)
+{
+    if (child.get_parent() != &parent)
+        throw std::logic_error("Expected a child of this parent");
+    parent.remove_child(&child);
+    return NodeOwner<T>(&child);
+}
+
 template <class T> T *add_control(godot::Node &parent, const godot::String &name, godot::Rect2 rect)
 {
     auto child = make_node<T>();
