@@ -679,10 +679,10 @@ void CharacterCreationView::party_action(int action)
                     town->set_name("CampaignTown");
                     town->campaign_party(campaign_);
                     if (OS::get_singleton()->get_cmdline_user_args().has("--save-check-write"))
-                        town->save_check = [this](const auto & name)
+                        town->enable_save_check([this](const auto & name)
                     {
                         save_checkpoint_check(name);
-                    };
+                    });
                     town->connect("save_requested",
                                   presentation::guarded(this, &CharacterCreationView::open_saves));
                     town->connect("party_member_selected",

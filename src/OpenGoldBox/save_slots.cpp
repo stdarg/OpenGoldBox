@@ -79,6 +79,14 @@ void SaveSlots::_ready()
                      ProjectSettings::get_singleton()->globalize_path("user://saves"));
 }
 
+void SaveSlots::connect_host(FileAction save, FileAction load)
+{
+    if (!save || !load)
+        throw std::logic_error("Save slots need both a save and a load action");
+    save_ = std::move(save);
+    load_ = std::move(load);
+}
+
 void SaveSlots::report_failure(const std::exception &failure)
 {
     get_node<Label>("Status")->set_text(i18n::text(failure.what()));
@@ -188,9 +196,9 @@ void SaveSlots::act()
             return;
         }
         if (saving_)
-            save(path);
+            save_(path);
         else
-            load(path);
+            load_(path);
         hide();
     }
     catch (const std::exception &e)

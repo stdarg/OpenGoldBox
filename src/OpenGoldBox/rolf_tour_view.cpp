@@ -1637,7 +1637,7 @@ void RolfTourView::check_recovery()
     {
         if (recovery_stage_ == 3 && !s.choices.empty() && s.choices[0].starts_with("Cure Wounds:"))
         {
-            if (save_check && !save_cancel_checked_)
+            if (save_check_ && !save_cancel_checked_)
             {
                 recovery_before_ = campaign_->checkpoint();
                 save_cancel_checked_ = save_cancel_pending_ = true;
@@ -1696,7 +1696,7 @@ void RolfTourView::check_recovery()
         if (member.wealth != recovery_before_->roster.at(0).wealth ||
                 member.vitals != recovery_before_->roster.at(0).vitals)
             throw std::runtime_error("Cancelled temple service changed party");
-        save_check("cancelled-service");
+        save_check_("cancelled-service");
         save_cancel_pending_ = false;
     }
     if (recovery_stage_ == 1)
@@ -1720,8 +1720,8 @@ void RolfTourView::check_recovery()
     {.hit_dice = 1}))
             throw std::runtime_error(
                 "Camp time must advance companion Stable recovery and the reserve death save exactly once");
-        if (save_check)
-            save_check("interrupted-rest");
+        if (save_check_)
+            save_check_("interrupted-rest");
         recovery_stage_ = 3;
     }
     if (recovery_stage_ == 4)
@@ -1729,8 +1729,8 @@ void RolfTourView::check_recovery()
         if (member.wealth[3] != recovery_before_->roster.at(0).wealth[3] - 100 ||
                 member.vitals.hit_points <= 1 || session_->script_variable(0x6de2) != 0)
             throw std::runtime_error("Original temple must charge 100 gp, heal and resume ECL");
-        if (save_check)
-            save_check("temple-payment");
+        if (save_check_)
+            save_check_("temple-payment");
         recovery_before_ = campaign_->checkpoint();
         recovery_stage_ = 5;
     }
@@ -1755,9 +1755,9 @@ void RolfTourView::check_recovery()
         get_node<Button>("RestTraining/Cancel")->emit_signal("pressed");
         if (campaign_->state().training_rest)
             throw std::runtime_error("Keeping the mastery set must finish the rest choices");
-        if (save_check)
-            save_check("inn-rest");
-        if (save_check)
+        if (save_check_)
+            save_check_("inn-rest");
+        if (save_check_)
         {
             bool rejected = false;
             try
@@ -1770,7 +1770,7 @@ void RolfTourView::check_recovery()
             }
             if (!rejected)
                 throw std::runtime_error("Full-health temple service should reject");
-            save_check("rejected-service");
+            save_check_("rejected-service");
         }
         recovery_before_ = campaign_->checkpoint();
         recovery_stage_ = 6;
@@ -1787,9 +1787,9 @@ void RolfTourView::check_recovery()
                 !get_node<Window>("RestDialog")->get_node<Button>("Start")->is_disabled())
             throw std::runtime_error("Immediate repeated long rest must be denied");
         get_node<Window>("RestDialog")->get_node<Button>("Finish")->emit_signal("pressed");
-        if (save_check)
-            save_check("denied-rest");
-        if (save_check)
+        if (save_check_)
+            save_check_("denied-rest");
+        if (save_check_)
         {
             // A wounded member gives the reloaded rest something to heal; the
             // route then continues from the unwounded party.
@@ -1798,7 +1798,7 @@ void RolfTourView::check_recovery()
             wounded.roster.at(0).vitals.hit_points = 1;
             campaign_->restore(std::move(wounded));
             (void)campaign_->rest(opengold::RestKind::short_rest);
-            save_check("short-rest-spending");
+            save_check_("short-rest-spending");
             campaign_->finish_short_rest(campaign_->state().short_rest->ticket);
             campaign_->restore(rested);
         }

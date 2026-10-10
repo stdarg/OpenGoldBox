@@ -74,7 +74,11 @@ class RolfTourView : public godot::Control
     void restore_campaign(std::shared_ptr<opengold::CampaignParty> party,
                           opengold::por::RolfTourSession session);
     void request_save(bool saving);
-    std::function<void(const std::string &)> save_check;
+    // The party check's save-and-reload hook; only that check sets one.
+    void enable_save_check(std::function<void(const std::string &)> check)
+    {
+        save_check_ = std::move(check);
+    }
 
     [[nodiscard]] bool party_route_checked() const
     {
@@ -98,6 +102,8 @@ class RolfTourView : public godot::Control
     void _notification(int what);
 
   private:
+    // Private, so only enable_save_check sets it (Effective C++ Item 22).
+    std::function<void(const std::string &)> save_check_;
     void advance_frame(double delta);
     void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     std::optional<opengold::por::RolfTourSession> session_;

@@ -46,14 +46,14 @@ void CharacterCreationView::setup_saves()
     save_read_check_ = OS::get_singleton()->get_cmdline_user_args().has("--save-check-read");
     auto dialog = presentation::make_node<SaveSlots>();
     dialog->set_name("SaveSlots");
-    dialog->save = [this](const auto & p)
+    dialog->connect_host([this](const auto & p)
     {
         save_campaign(p);
-    };
-    dialog->load = [this](const auto & p)
+    },
+    [this](const auto & p)
     {
         load_campaign(p);
-    };
+    });
     presentation::attach_child(*this, std::move(dialog));
     for (bool saving :
             {
