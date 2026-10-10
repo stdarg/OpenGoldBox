@@ -383,7 +383,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_training_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_training_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_training_tests COMMAND opengold_training_tests)
-    set_tests_properties(opengold_training_tests PROPERTIES FIXTURES_SETUP cunning_fixtures)
+    # With original files it also writes the Fighting Style, Rogue and Scholar
+    # level-up screen fixtures.
+    set_tests_properties(opengold_training_tests PROPERTIES
+        FIXTURES_SETUP "cunning_fixtures;advancement_ui_fixtures")
     add_test(NAME opengold_hands_fixture COMMAND opengold_training_tests --hands-ui)
     set_tests_properties(opengold_hands_fixture PROPERTIES FIXTURES_SETUP hands_fixtures)
     add_executable(opengold_rest_resource_tests tests/rest_resource_tests.cpp)
@@ -448,6 +451,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_spell_access_tests PRIVATE opengold_rules_srd5 opengold_core)
     target_compile_definitions(opengold_spell_access_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_spell_access_tests COMMAND opengold_spell_access_tests)
+    # With original files it also writes the Wizard, Cleric and Blessed Warrior
+    # level-up screen fixtures.
+    set_tests_properties(opengold_spell_access_tests PROPERTIES
+        FIXTURES_SETUP spell_choice_fixtures)
 
     add_executable(opengold_armor_catalog_tests tests/armor_catalog_tests.cpp)
     target_link_libraries(opengold_armor_catalog_tests PRIVATE opengold_rules_srd5 opengold_core)

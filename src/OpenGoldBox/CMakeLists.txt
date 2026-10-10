@@ -306,6 +306,49 @@ if(OPENGOLD_BUILD_TESTS)
         set_tests_properties(opengold_godot_creation_skilled_${klass} PROPERTIES
             FIXTURES_REQUIRED "godot_project;asi_fixtures")
     endforeach()
+    # Spell and cantrip choices while creating a character.
+    opengold_creation_check(cantrip "Cantrip creator checks passed" -DSCRIPT=cantrip_view_tests)
+    opengold_creation_check(chill "Chill creator checks passed" -DSCRIPT=chill_cantrip_view_tests)
+    opengold_creation_check(cleric_cantrip "Cleric cantrip creator checks passed"
+        -DSCRIPT=cleric_cantrip_view_tests)
+    opengold_creation_check(shocking "Shocking creator checks passed"
+        -DSCRIPT=shocking_cantrip_view_tests)
+    opengold_creation_check(sorcerer "Sorcerer creator checks passed"
+        -DSCRIPT=sorcerer_cantrip_view_tests)
+    opengold_creation_check(warlock "Warlock creator checks passed"
+        -DSCRIPT=warlock_cantrip_view_tests)
+    opengold_creation_check(localization "Localization UI passed" -DSCRIPT=localization_tests)
+    # Level-up screens loaded from fixtures the native tests write with original files.
+    opengold_creation_check(blessed_warrior "Blessed Warrior view checks passed"
+        -DSCRIPT=blessed_warrior_view_tests
+        "-DARGS=--blessed-fixture=${PROJECT_BINARY_DIR}/blessed-warrior-ui.ogs")
+    opengold_creation_check(cleric_preparation "Cleric choices view checks passed"
+        -DSCRIPT=cleric_preparation_view_tests
+        "-DARGS=--cleric-fixture=${PROJECT_BINARY_DIR}/cleric-choices-ui.ogs")
+    opengold_creation_check(wizard_choices "Wizard choices view checks passed"
+        -DSCRIPT=wizard_choices_view_tests
+        "-DARGS=--wizard-fixture=${PROJECT_BINARY_DIR}/wizard-choices-ui.ogs")
+    foreach(name blessed_warrior cleric_preparation wizard_choices)
+        set_tests_properties(opengold_godot_creation_${name} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;spell_choice_fixtures")
+    endforeach()
+    opengold_creation_check(scholar "Scholar view checks passed" -DSCRIPT=scholar_view_tests
+        "-DARGS=--scholar-fixture=${PROJECT_BINARY_DIR}/scholar-ui.ogs")
+    opengold_creation_check(rogue_advancement "Rogue advancement UI checks passed"
+        -DSCRIPT=rogue_advancement_view_tests
+        "-DARGS=--rogue-fixture=${PROJECT_BINARY_DIR}/rogue-advancement-ui.ogs")
+    foreach(name scholar rogue_advancement)
+        set_tests_properties(opengold_godot_creation_${name} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
+    endforeach()
+    foreach(klass fighter paladin ranger)
+        set(fixture "${PROJECT_BINARY_DIR}/style-${klass}-ui.ogs")
+        opengold_original_check(creation_style_${klass}
+            "Fighting Style advancement UI checks passed" -DSCRIPT=style_advancement_view_tests
+            "-DARGS=--style-class=${klass}\;--style-fixture=${fixture}")
+        set_tests_properties(opengold_godot_creation_style_${klass} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
+    endforeach()
 endif()
 
 # Godot exports the executable; the C++ game code is its GDExtension.
