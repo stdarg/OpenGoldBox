@@ -1003,7 +1003,7 @@ void RolfTourView::refresh()
             {"current", p.hit_points},
             {"maximum", p.max_hit_points},
             {"gold", p.wealth[3]},
-            {"items", i18n::plural("{count} item", "{count} items", p.inventory.size())}
+            {"items", i18n::plural("{count} item", "{count} items", static_cast<int>(p.inventory.size()))}
         }));
     }
     if (loaded && campaign_ && campaign_->selected())
@@ -1018,7 +1018,7 @@ void RolfTourView::refresh()
             {"gold", m.wealth[3]},
             {
                 "items", i18n::plural("{count} item", "{count} items",
-                                      m.character.inventory().items().size())
+                                      static_cast<int>(m.character.inventory().items().size()))
             }
         }));
     }
@@ -1424,7 +1424,7 @@ void RolfTourView::check_town()
             selection = 0;
         if (campaign_ && s.dialogue == "Choose a party member.")
             selection = 0;
-        get_node<ItemList>("Choices")->select(selection);
+        get_node<ItemList>("Choices")->select(static_cast<std::int32_t>(selection));
         get_node<Button>("Continue")->emit_signal("pressed");
         return;
     }
@@ -1620,7 +1620,7 @@ void RolfTourView::check_recovery()
         throw std::runtime_error("Recovery route fault: " + session_->script_diagnostics().back());
     const auto choose = [&](std::size_t choice)
     {
-        get_node<ItemList>("Choices")->select(choice);
+        get_node<ItemList>("Choices")->select(static_cast<std::int32_t>(choice));
         get_node<Button>("Continue")->emit_signal("pressed");
     };
     if (s.phase == TourPhase::awaiting_continue)

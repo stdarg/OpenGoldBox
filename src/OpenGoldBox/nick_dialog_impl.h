@@ -12,7 +12,7 @@ void CombatView::nick_selected(std::int64_t index)
     auto *choices = get_node<OptionButton>("NickAttack/Choices");
     get_node<Button>("NickAttack/Target")
     ->set_disabled(index < 0 || index >= choices->get_item_count() ||
-                   choices->is_item_disabled(index));
+                   choices->is_item_disabled(static_cast<std::int32_t>(index)));
 }
 
 void CombatView::cancel_nick()
@@ -37,7 +37,7 @@ void CombatView::confirm_nick()
     if (index < 0 || get_node<Button>("NickAttack/Target")->is_disabled())
         return;
     const String key = choices->get_item_metadata(index);
-    light_item_ = key.get_slice("#", 1).to_int();
+    light_item_ = static_cast<unsigned>(key.get_slice("#", 1).to_int());
     cancel_nick();
     get_node<Button>("Nick")->release_focus();
     select_mode(key.get_slice("#", 0));

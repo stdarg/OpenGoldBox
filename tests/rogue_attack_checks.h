@@ -136,7 +136,7 @@ void run()
     {
         if (level > 1)
             check(h.advance(*rules, wounds), "Rogue advances normally through level four");
-        check(h.sheet().level == level && wounds.hit_points == h.sheet().hit_points - 2,
+        check(std::cmp_equal(h.sheet().level, level) && wounds.hit_points == h.sheet().hit_points - 2,
               "Rogue advancement preserves wounds");
         const auto &grants = h.sheet().grants;
         for (const auto *thief : {"subclass:thief", "feature:fast_hands"})
@@ -493,7 +493,7 @@ void run()
     if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
     {
         CampaignParty ui(module());
-        const auto ui_id = ui.add_pc(hero(d));
+        (void)ui.add_pc(hero(d));
         ui.award_experience(2700, "rogue-ui");
         auto state = ui.checkpoint();
         state.roster.front().vitals.hit_points -= 2;

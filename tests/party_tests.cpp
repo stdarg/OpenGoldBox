@@ -233,7 +233,7 @@ class AlternateEquipmentRules final : public RulesModule
         if (gear[selected] == "rejected")
             throw std::runtime_error("Alternate rules reject this equipment");
         EquipmentChange result;
-        for (unsigned n = gear.size(); n > 0; --n)
+        for (auto n = static_cast<unsigned>(gear.size()); n > 0; --n)
             if (operation != EquipmentOperation::unequip || n - 1 != selected)
                 result.indices.push_back(n - 1);
         return result;
@@ -2163,7 +2163,7 @@ void recovery_hosts()
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
     bytes.push_back(0);
     Bytes pre{9, 0, 1, 1, 0xd2, 0x6d, 9, 0, 101, 1, 0xd3, 0x6d, 0};
-    const unsigned interrupt = 0x9915 + pre.size();
+    const unsigned interrupt = 0x9915 + static_cast<unsigned>(pre.size());
     bytes[16] = interrupt & 255;
     bytes[17] = interrupt >> 8;
     bytes.insert(bytes.end(), pre.begin(), pre.end());

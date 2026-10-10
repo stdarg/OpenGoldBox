@@ -6,6 +6,7 @@
 #include <set>
 #include <stdexcept>
 #include <tuple>
+#include <utility>
 
 namespace opengold
 {
@@ -506,7 +507,7 @@ std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id
     for (auto key : m.equipped)
         keys.push_back(m.character.inventory().find(key)->get().definition_id);
     keys.push_back(selected->get().definition_id);
-    return rules_->equipment_choices(m.character.sheet(), keys, keys.size() - 1);
+    return rules_->equipment_choices(m.character.sheet(), keys, static_cast<unsigned>(keys.size() - 1));
 }
 
 void CampaignParty::equip(MemberId id, std::uint64_t item, rules::EquipmentOperation operation)
@@ -533,8 +534,8 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
     if (operation == rules::EquipmentOperation::unequip && found == candidates.end())
         return;
     const unsigned selected = operation != rules::EquipmentOperation::unequip
-                              ? candidates.size()
-                              : found - candidates.begin();
+                              ? static_cast<unsigned>(candidates.size())
+                              : static_cast<unsigned>(found - candidates.begin());
     if (operation != rules::EquipmentOperation::unequip)
         candidates.push_back(item);
     std::vector<std::string> keys;
@@ -1106,7 +1107,7 @@ bool CampaignParty::has_item(unsigned type) const
     for (auto id : state_.slots)
         if (id)
             for (const auto &item : member(id).character.inventory().items())
-                if (item.original_type == type)
+                if (std::cmp_equal(item.original_type, type))
                     return true;
     return false;
 }

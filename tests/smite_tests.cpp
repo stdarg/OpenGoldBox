@@ -202,7 +202,7 @@ void searing_smite_checks()
         while (c->snapshot().actor != 1)
             check(submit(*c, "end"), "Return to the Paladin");
         const auto so_far = c->snapshot().log;
-        const int burned_again = std::count_if(so_far.begin(), so_far.end(), [](const auto & line)
+        const auto burned_again = std::count_if(so_far.begin(), so_far.end(), [](const auto & line)
         {
             return line.starts_with("Target burns for ");
         });
@@ -210,7 +210,7 @@ void searing_smite_checks()
         while (c->snapshot().actor != 99)
             check(submit(*c, "end"), "Reach the target's next turn");
         const auto later = c->snapshot().log;
-        const int burns = std::count_if(later.begin(), later.end(), [](const auto & line)
+        const auto burns = std::count_if(later.begin(), later.end(), [](const auto & line)
         {
             return line.starts_with("Target burns for ");
         });

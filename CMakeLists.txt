@@ -33,6 +33,29 @@ option(OPENGOLD_BUILD_GODOT "Build the C++ Godot tour and combat scenes" OFF)
 option(OPENGOLD_BUILD_GAME "Build the OpenGoldBox Windows game" OFF)
 option(OPENGOLD_BUILD_FUZZERS "Build isolated Clang libFuzzer targets with ASan/UBSan" OFF)
 
+# Effective C++ Item 53: the project's own targets build at a high warning
+# level, while fetched code such as godot-cpp keeps its own flags. Designated
+# initializers that leave fields at their defaults are idiomatic here, so that
+# one warning stays off.
+if(MSVC)
+    set(OPENGOLD_WARNING_FLAGS /W4 /permissive-)
+else()
+    set(OPENGOLD_WARNING_FLAGS -Wall -Wextra -Wno-missing-field-initializers)
+    # Clang can also report the 64-to-32-bit narrowing MSVC's /W4 warns about.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        list(APPEND OPENGOLD_WARNING_FLAGS -Wshorten-64-to-32)
+    endif()
+endif()
+function(opengold_enable_warnings directory)
+    get_property(targets DIRECTORY "${directory}" PROPERTY BUILDSYSTEM_TARGETS)
+    foreach(target IN LISTS targets)
+        get_target_property(type ${target} TYPE)
+        if(type MATCHES "^(EXECUTABLE|STATIC_LIBRARY|SHARED_LIBRARY|MODULE_LIBRARY|OBJECT_LIBRARY)$")
+            target_compile_options(${target} PRIVATE ${OPENGOLD_WARNING_FLAGS})
+        endif()
+    endforeach()
+endfunction()
+
 if(OPENGOLD_BUILD_FUZZERS)
     if(OPENGOLD_BUILD_GAME OR OPENGOLD_BUILD_GODOT)
         message(FATAL_ERROR "Use a separate native-only build directory for fuzzing")
@@ -500,3 +523,5 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_posture_tests COMMAND opengold_posture_tests)
     set_tests_properties(opengold_posture_tests PROPERTIES FIXTURES_SETUP posture_fixtures)
 endif()
+
+opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

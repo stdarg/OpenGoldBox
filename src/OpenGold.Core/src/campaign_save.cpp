@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <utility>
 
 namespace opengold
 {
@@ -323,7 +324,7 @@ struct SaveCodec
                 std::vector<SpellChoiceEdit> edits;
                 std::vector<TrainingChoiceEdit> training;
                 fields(history, edits, training);
-                require(history.size() == level - 1,
+                require(std::cmp_equal(history.size(), level - 1),
                         "Saved advancement history disagrees with level");
                 unsigned prior_level = 1;
                 std::uint64_t prior_session = 0;

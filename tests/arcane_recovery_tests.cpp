@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 using namespace opengold;
 using namespace opengold::rules;
@@ -122,7 +123,7 @@ void baseline_spending()
     {
         CampaignParty party(module());
         party.restore(baseline(level));
-        check(party.member(1).character.sheet().level == level && party.state().short_rest &&
+        check(std::cmp_equal(party.member(1).character.sheet().level, level) && party.state().short_rest &&
               party.state().short_rest->members == std::vector<MemberId> {1},
               "Attained Wizard level and pending Short Rest eligibility survive");
         const auto resources = party.recovery_info(1).resources;

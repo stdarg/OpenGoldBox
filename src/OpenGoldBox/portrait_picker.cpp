@@ -151,7 +151,7 @@ void CharacterCreationView::refresh_portraits()
                 !matches("PortraitRace", p.race))
             continue;
         if (p.filename == creator_->appearance().portrait)
-            selected = filtered_portraits_.size();
+            selected = static_cast<int>(filtered_portraits_.size());
         filtered_portraits_.push_back(i);
         list->add_item(i18n::text(p.klass) + " / " + i18n::text(p.race) + " / " +
                        i18n::text(p.gender));
@@ -187,7 +187,7 @@ void CharacterCreationView::portrait_part(int direction)
     if (added_to_party_ || filtered_portraits_.empty())
         return;
     const int current = get_node<OptionButton>("PortraitSelect")->get_selected(),
-              count = filtered_portraits_.size();
+              count = static_cast<int>(filtered_portraits_.size());
     portrait_selected(current < 0 ? (direction > 0 ? 0 : count - 1)
                       : (current + direction + count) % count);
 }

@@ -48,6 +48,7 @@
 #include <cmath>
 #include <fstream>
 #include <limits>
+#include <utility>
 using namespace godot;
 using namespace opengold;
 using namespace opengold::rules;
@@ -660,7 +661,6 @@ void CombatView::layout_reaction_controls(bool show_controls)
     get_node<Label>("WeaponLabel")->set_size(Vector2(180, 36));
     get_node<OptionButton>("Weapons")->set_position(Vector2(214, top + 88));
     get_node<OptionButton>("Weapons")->set_size(Vector2(450, 36));
-    const bool cunning = get_node<OptionButton>("CunningAction")->is_visible();
     const bool aid = get_node<Button>("Stabilize")->is_visible();
     get_node<Button>("Stabilize")->set_position(Vector2(704, top + weapon_height + 88));
     get_node<Button>("Stabilize")->set_size(Vector2(110, 36));
@@ -1122,7 +1122,7 @@ void CombatView::cantrip_selected(std::int64_t index)
     auto *choices = get_node<OptionButton>("Cantrip");
     if (index < 0 || index >= choices->get_item_count())
         return;
-    cantrip_ = String(choices->get_item_metadata(index)).utf8().get_data();
+    cantrip_ = String(choices->get_item_metadata(static_cast<std::int32_t>(index))).utf8().get_data();
     mode_ = "move";
     refresh();
 }
@@ -1140,7 +1140,7 @@ void CombatView::weapon_selected(std::int64_t index)
     if (!demo_ || !demo_->has_combat() || index < 0 || index >= choices->get_item_count())
         return;
     for (const auto &c : demo_->combat().legal_commands())
-        if (c.verb == "weapon_select" && c.item == unsigned(choices->get_item_id(index)))
+        if (c.verb == "weapon_select" && c.item == static_cast<unsigned>(choices->get_item_id(static_cast<std::int32_t>(index))))
         {
             act(c);
             return;
@@ -1156,7 +1156,7 @@ void CombatView::use_cunning_action()
     const String verb = key.get_slice("#", 0);
     if (verb.begins_with("light_"))
     {
-        light_item_ = key.get_slice("#", 1).to_int();
+        light_item_ = static_cast<unsigned>(key.get_slice("#", 1).to_int());
         get_node<Button>("UseCunningAction")->release_focus();
         select_mode(verb);
     }
@@ -1187,7 +1187,7 @@ void CombatView::thrown_selected(std::int64_t index)
     auto *choices = get_node<OptionButton>("ThrownWeapon");
     if (index < 0 || index >= choices->get_item_count())
         return;
-    thrown_item_ = choices->get_item_id(index);
+    thrown_item_ = choices->get_item_id(static_cast<std::int32_t>(index));
     mode_ = "move";
     refresh();
 }
@@ -2719,7 +2719,7 @@ void CombatView::draw_view()
             auto cursor = Vector2(text_x, y);
             for (int i = 0; i < value.length(); ++i)
                 cursor.x +=
-                    font->draw_char(get_canvas_item(), cursor, value.unicode_at(i), size, color);
+                    font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(value.unicode_at(i)), size, color);
         };
         line(gs(member.character.sheet().name), top + 27, 17, Color("e2edf0"));
         // A gold tag marks a member the computer plays (Quick).
@@ -2731,10 +2731,10 @@ void CombatView::draw_view()
             const String text = i18n::text(N_("QUICK"));
             double width = 0;
             for (int i = 0; i < text.length(); ++i)
-                width += font->get_char_size(text.unicode_at(i), 12).x;
+                width += font->get_char_size(static_cast<char32_t>(text.unicode_at(i)), 12).x;
             auto cursor = Vector2(tag.get_center().x - width / 2, top + 24);
             for (int i = 0; i < text.length(); ++i)
-                cursor.x += font->draw_char(get_canvas_item(), cursor, text.unicode_at(i), 12,
+                cursor.x += font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(text.unicode_at(i)), 12,
                                             Color("f0cf6a"));
         }
         const auto &sheet = member.character.sheet();
@@ -2763,7 +2763,7 @@ void CombatView::draw_battlefield()
                               ? Color("665238")
                               : ((x + y) % 2 ? Color("29373c") : Color("253137")));
             const auto index = y * s.battlefield.width + x;
-            if (index < demo_->battlefield_tiles().size() &&
+            if (std::cmp_less(index, demo_->battlefield_tiles().size()) &&
                     demo_->battlefield_tiles()[index] < terrain_art_.size())
                 canvas->draw_texture_rect(terrain_art_[demo_->battlefield_tiles()[index]], cell,
                                           false);

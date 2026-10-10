@@ -179,7 +179,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     ->set_text("[b]" + tr(N_("Fixed training")) + "[/b]\n" +
                training_summary(creator.rules().evaluate(fixed, false).training, tr, true));
     const auto groups = creator.training_options();
-    for (unsigned i = groups.size(); i < static_cast<unsigned>(rows->get_child_count()); ++i)
+    for (auto i = static_cast<unsigned>(groups.size()); i < static_cast<unsigned>(rows->get_child_count()); ++i)
         rows->get_node<Control>(String("Group") + String::num_uint64(i))->hide();
     for (unsigned i = 0; i < groups.size(); ++i)
     {

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -62,7 +63,7 @@ Character hero(std::string klass = "fighter", std::string background = "sage")
 
 void grow(CampaignParty &p, MemberId id, unsigned level)
 {
-    while (p.member(id).character.sheet().level < level)
+    while (std::cmp_less(p.member(id).character.sheet().level, level))
         p.advance(id, p.default_advancement(id));
 }
 

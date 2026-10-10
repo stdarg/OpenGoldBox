@@ -509,7 +509,7 @@ void pool_starting_gear()
                 return kinds.contains(item);
             });
         };
-        check(held.size() == 1 + count_in(held, body_armor) +
+        check(std::ssize(held) == 1 + count_in(held, body_armor) +
               std::count(held.begin(), held.end(), "shield") && !count_in(held, ranged),
               "Hold exactly one melee weapon");
         check(count_in(held, body_armor) == (unarmored.contains(klass) ? 0 : 1),

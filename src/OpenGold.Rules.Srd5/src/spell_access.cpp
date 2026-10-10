@@ -388,11 +388,11 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
                               : 0;
     if (context == SpellChoiceContext::advancement && capacity)
     {
-        const unsigned used = std::count_if(sheet.grants.begin(), sheet.grants.end(),
+        const auto used = static_cast<unsigned>(std::count_if(sheet.grants.begin(), sheet.grants.end(),
                                             [&](const auto & g)
         {
             return is_spell_grant(g) && g.level == level;
-        });
+        }));
         if (used < capacity)
         {
             TrainingChoiceGroup group{"cantrips:" + std::to_string(level),
@@ -762,13 +762,13 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
                                                  : level == 4 ? 1
                                                  : 0)
                                       : (level == 1 ? 6 : 2);
-            const unsigned used = std::count_if(
+            const auto used = static_cast<unsigned>(std::count_if(
                                       sheet.grants.begin(), sheet.grants.end(),
                                       [&](const auto & g)
             {
                 return is_spell_grant(g) && g.level == level &&
                        (find(std::string_view(g.id).substr(6)).level == 0) == cantrip;
-            });
+            }));
             if (capacity == used)
                 continue;
             TrainingChoiceGroup group;

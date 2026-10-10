@@ -157,7 +157,7 @@ void StartupView::check_path()
     {
         String message = result.error.is_empty() ? i18n::text("Missing or unreadable game files:")
                          : i18n::text(result.error.utf8().get_data());
-        for (int i = 0; i < std::min<int>(result.missing.size(), 5); ++i)
+        for (int i = 0; i < std::min(static_cast<int>(result.missing.size()), 5); ++i)
             message += " " + result.missing[i];
         if (result.missing.size() > 5)
             message += " ...";
@@ -240,7 +240,7 @@ void StartupView::preview_language(std::int64_t index)
         return;
     auto *translations = TranslationServer::get_singleton();
     const String previous = translations->get_locale();
-    translations->set_locale(choices->get_item_metadata(index));
+    translations->set_locale(choices->get_item_metadata(static_cast<std::int32_t>(index)));
     dialog->set_title(i18n::text("Language"));
     dialog->get_node<Label>("Title")->set_text(i18n::text("Choose language"));
     dialog->get_node<Button>("Continue")->set_text(i18n::text("Continue"));

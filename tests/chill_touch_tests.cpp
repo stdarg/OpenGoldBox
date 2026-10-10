@@ -730,7 +730,7 @@ void earned_lifecycle()
     check(fx::advance_recovery_clock(life, 1) && life.hp == 1 &&
           life.recovery == fx::RecoveryClock{},
           "Earned recovery grants exactly one HP once allowed");
-    for (const auto invalid : std::vector<fx::LifeState> {{1, 0, 0, true, false, {0, 0, true}},
+    for (const auto &invalid : std::vector<fx::LifeState> {{1, 0, 0, true, false, {0, 0, true}},
     {0, 0, 0, true, true, {0, 0, true}},
     {0, 0, 0, false, false, {0, 0, true}},
     {0, 0, 0, true, false, {0, 1, true}}

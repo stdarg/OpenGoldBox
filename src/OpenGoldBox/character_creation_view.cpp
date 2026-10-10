@@ -35,6 +35,7 @@
 #include <chrono>
 #include <cmath>
 #include <stdexcept>
+#include <utility>
 
 using namespace godot;
 using namespace opengold;
@@ -68,7 +69,6 @@ CreationField choice_field(CreationStep step)
     }
 }
 
-const std::array<const char *, 6> abilities{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
 const std::array<const char *, 6> full_abilities{N_("Strength"),     N_("Dexterity"),
     N_("Constitution"), N_("Intelligence"),
     N_("Wisdom"),       N_("Charisma")};
@@ -680,7 +680,7 @@ void CharacterCreationView::refresh()
         for (unsigned i = 0; i < 6; ++i)
         {
             auto *b = get_node<Button>(gs("Ability" + std::to_string(i)));
-            b->set_text(String(selected_score_ == i ? "> " : "") + i18n::text(full_abilities[i]));
+            b->set_text(String(std::cmp_equal(selected_score_, i) ? "> " : "") + i18n::text(full_abilities[i]));
             b->set_disabled(!d.rolled);
             std::string dice;
             if (d.rolled &&
@@ -993,8 +993,8 @@ void CharacterCreationView::next()
         creator_->next();
         if (creator_->step() == CreationStep::sheet)
             completed_ = creator_->create_character();
-            selected_score_ = -1;
-        });
+        selected_score_ = -1;
+    });
 }
 
 void CharacterCreationView::back()
@@ -1743,7 +1743,7 @@ void CharacterCreationView::check_run()
                 {
                     const auto pixels = images_[pose + 1]->get_image()->get_data();
                     const auto expected = art_->icon(creator_->appearance(), pose != 0);
-                    if (pixels.size() != expected.rgba.size() ||
+                    if (std::cmp_not_equal(pixels.size(), expected.rgba.size()) ||
                             !std::equal(expected.rgba.begin(), expected.rgba.end(), pixels.ptr()))
                         throw std::runtime_error("Preview texture is stale after palette input");
                     unsigned changed = 0;

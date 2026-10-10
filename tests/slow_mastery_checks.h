@@ -52,7 +52,7 @@ void lifecycle()
           "Chunked Slow expiry is exact and consumes no RNG");
     auto full = slow();
     while (full.active.size() < fx::effect_limit)
-        fx::apply_attack_mastery(full, fx::EffectKind::slow, 777, full.active.size() + 100,
+        fx::apply_attack_mastery(full, fx::EffectKind::slow, 777, static_cast<rules::EntityId>(full.active.size() + 100),
                                  "Source", 6000);
     check(!fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 999) &&
           fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 99),

@@ -145,9 +145,11 @@ bool effect_target_input(const godot::Ref<godot::InputEvent> &event,
     if (code == Key::KEY_LEFT || code == Key::KEY_UP || code == Key::KEY_RIGHT ||
             code == Key::KEY_DOWN)
     {
-        selected = (selected +
-                    ((code == Key::KEY_RIGHT || code == Key::KEY_DOWN) ? 1 : targets.size() - 1)) %
-                   targets.size();
+        selected = static_cast<unsigned>(
+                       (selected + ((code == Key::KEY_RIGHT || code == Key::KEY_DOWN)
+                                    ? 1
+                                    : targets.size() - 1)) %
+                       targets.size());
         refresh();
         return true;
     }

@@ -388,7 +388,7 @@ void boundary_tests()
                         [](const auto & c)
     {
         return c.verb == "move";
-    }) == preview.size(),
+    }) == std::ssize(preview),
                  "Active movement preview matches legal move count");
     for (const auto &cell : preview)
         check(std::any_of(legal.begin(), legal.end(),

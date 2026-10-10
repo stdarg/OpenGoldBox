@@ -650,7 +650,7 @@ void malformed()
     check(start != bytes.npos, "Find pending mastery record");
     const auto end = bytes.find('\n', start + 1);
     const auto row = bytes.substr(start + 1, end - start - 1);
-    for (const auto replacement :
+    for (const auto &replacement :
             {
                 std::string("99999 99 ") + row.substr(5), std::string("1 1 ") + row.substr(5),
                 std::string("1 99 99 20 0 0 \"maul\" 1 1 0")

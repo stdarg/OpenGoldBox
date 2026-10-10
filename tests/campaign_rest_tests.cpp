@@ -271,7 +271,8 @@ void individual_eligibility()
 void spending_and_continuation()
 {
     CampaignParty party(module());
-    const auto f = party.add_pc(hero()), w = party.add_pc(hero("wizard"));
+    const auto f = party.add_pc(hero());
+    (void)party.add_pc(hero("wizard"));
     const auto reserve = party.add_pc(hero());
     party.remove(reserve);
     auto state = party.checkpoint();
@@ -691,7 +692,7 @@ void watch_interruption_and_rollback()
             bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
         bytes.push_back(0);
         const Bytes pre{9, 0, 1, 1, 0xd2, 0x6d, 9, 0, 101, 1, 0xd3, 0x6d, 0};
-        const unsigned arrival = 0x9915 + pre.size();
+        const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
         bytes[16] = arrival & 255;
         bytes[17] = arrival >> 8;
         bytes.insert(bytes.end(), pre.begin(), pre.end());
@@ -737,7 +738,7 @@ std::shared_ptr<const por::EclProgram> camp_script(std::uint8_t interval, std::u
     for (unsigned n = 0; n < 5; ++n)
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
     bytes.push_back(0);
-    const unsigned arrival = 0x9915 + pre.size();
+    const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
     bytes[16] = arrival & 255;
     bytes[17] = arrival >> 8;
     bytes.insert(bytes.end(), pre.begin(), pre.end());

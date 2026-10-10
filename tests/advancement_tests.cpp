@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -228,7 +229,7 @@ void progression()
             check(saved(party) == before, "Preview is entirely read only");
             party.advance(id, choice);
             const auto &now = party.member(id);
-            check(now.character.sheet().level == level && now.vitals == preview.vitals,
+            check(std::cmp_equal(now.character.sheet().level, level) && now.vitals == preview.vitals,
                   "Confirmation matches HP and resource preview");
             check(now.character.sheet().hit_points - now.vitals.hit_points == 3,
                   "Level-up preserves pre-existing HP deficit");

@@ -14,6 +14,9 @@ FetchContent_Declare(godot_cpp
     GIT_REPOSITORY https://github.com/godotengine/godot-cpp.git
     GIT_TAG e83fd0904c13356ed1d4c3d09f8bb9132bdc6b77)
 FetchContent_MakeAvailable(godot_cpp)
+# godot-cpp's headers are third-party; keep their warnings out of the project's.
+get_target_property(godot_cpp_includes godot-cpp INTERFACE_INCLUDE_DIRECTORIES)
+set_target_properties(godot-cpp PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${godot_cpp_includes}")
 find_program(OPENGOLDBOX_GODOT NAMES godot_console godot Godot
     HINTS "/Applications/Godot.app/Contents/MacOS" "/Applications/Godot_mono.app/Contents/MacOS" REQUIRED)
 set(game_project "${CMAKE_CURRENT_SOURCE_DIR}/godot")
@@ -269,3 +272,5 @@ add_custom_target(OpenGoldBox ALL
     ${package_commands}
     DEPENDS opengoldbox_game opengoldbox_assets
     VERBATIM)
+
+opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

@@ -81,9 +81,13 @@ than every change:
 .\build.cmd debug
 ```
 
-Pass `--werror` to either script, alone or beside a preset name, to make every
-compiler warning fail the build. The native build is warning-free with Apple
-Clang; leaving the flag off on a later run turns warnings back into warnings:
+The project's own targets build at a high warning level: `-Wall -Wextra` with
+Clang and GCC (plus `-Wshorten-64-to-32` on Clang, which reports the narrowing
+MSVC warns about) and `/W4 /permissive-` with MSVC. Fetched code such as
+godot-cpp keeps its own flags. Pass `--werror` to either script, alone or beside
+a preset name, to make every compiler warning fail the build. The native and
+game builds are warning-free with Apple Clang; leaving the flag off on a later
+run turns warnings back into warnings:
 
 ```bash
 ./build.sh --werror

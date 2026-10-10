@@ -11337,7 +11337,7 @@ class Module final : public RulesModule
                                     detail::grant_source_id(sheet.race),
                                     detail::grant_source_id(sheet.background), sheet.level);
         const unsigned features = effects.feats;
-        if (sheet.hit_point_modifiers.size() != sheet.level)
+        if (std::cmp_not_equal(sheet.hit_point_modifiers.size(), sheet.level))
             throw std::runtime_error("HP history does not match character advancement");
         const bool asi = detail::has_grant(sheet.grants, "feat:ability_score_improvement");
         if (sheet.ability_adjustments.size() != (asi ? 2u : 1u))

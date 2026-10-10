@@ -125,7 +125,7 @@ void decoding()
     {
         (void)EclProgram::decode(bad, "target");
     });
-    for (const Bytes body :
+    for (const Bytes &body :
             {
                 Bytes{17, 128, 3, 4}, Bytes{17, 1, 0}, Bytes{17, 9, 0}, Bytes{255},
                 Bytes{43, 1, 0, 0x97, 1, 0, 0x97}

@@ -26,6 +26,7 @@
 #include "guarded_handlers.h"
 #include "scoped_flag.h"
 #include <algorithm>
+#include <utility>
 
 using namespace godot;
 
@@ -380,7 +381,7 @@ void CharacterCreationView::refresh_advancement_arrows()
         }
         arrow->set_tooltip_text(
         i18n::format("Level up {name}", {{"name", gs(member.character.sheet().name)}}));
-        const auto rect = list->get_item_rect(i);
+        const auto rect = list->get_item_rect(static_cast<std::int32_t>(i));
         const float y = rect.position.y - list->get_v_scroll_bar()->get_value();
         const auto font = list->get_theme_font("font");
         const float width = Vector2(font->call("get_string_size", gs(member.character.sheet().name),
@@ -404,8 +405,9 @@ void CharacterCreationView::refresh_advancement_arrows()
         }
 }
 
-void CharacterCreationView::open_advancement(std::int64_t id)
+void CharacterCreationView::open_advancement(std::int64_t member)
 {
+    const auto id = static_cast<opengold::MemberId>(member);
     if (campaign_defeated_ || !campaign_->can_advance(id))
         return;
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
@@ -831,8 +833,10 @@ void CharacterCreationView::advancement_check()
         for (unsigned i = 0; i < 4; ++i)
         {
             auto *button = get_node<Button>(arrow(campaign_->state().slots[i]));
-            if (list->get_item_at_position(button->get_position() + button->get_size() / 2, true) !=
-                    i)
+            if (std::cmp_not_equal(
+                        list->get_item_at_position(button->get_position() + button->get_size() / 2,
+                                                   true),
+                        i))
                 throw std::runtime_error("Level-up arrow is not beside its own character row");
         }
         capture("level-up-arrows.png");

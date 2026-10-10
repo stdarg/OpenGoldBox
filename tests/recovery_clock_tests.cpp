@@ -139,7 +139,7 @@ void validation()
     life::start_stable_recovery(state, rng);
     check(state.recovery.stable_recovery_in_ms == 7200000 && rng == 11400714819323198527ULL,
           "Starting Stable recovery rolls its duration once");
-    for (const auto invalid : std::vector<life::LifeState> {{1, 0, 0, false, false, {1, 0}},
+    for (const auto &invalid : std::vector<life::LifeState> {{1, 0, 0, false, false, {1, 0}},
     {0, 0, 0, false, true, {1, 0}},
     {0, 0, 0, false, false, {6001, 0}},
     {0, 0, 0, true, false, {1, 1}},

@@ -273,11 +273,11 @@ void file_safety(const std::filesystem::path &directory)
     backup += ".bak";
     const auto has_temporary = [&]
     {
-for (const auto &entry : std::filesystem::directory_iterator(directory))
-        if (entry.path().filename().string().starts_with("storage.save.tmp"))
-            return true;
-            return false;
-        };
+        for (const auto &entry : std::filesystem::directory_iterator(directory))
+            if (entry.path().filename().string().starts_with("storage.save.tmp"))
+                return true;
+        return false;
+    };
 const std::string first("first\0checkpoint", 16);
     write_save_file(path, first, 64);
     check(read_save_file(path, 64) == first, "Storage preserves binary checkpoint bytes");
