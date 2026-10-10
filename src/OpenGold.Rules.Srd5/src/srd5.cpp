@@ -657,8 +657,12 @@ struct Content
     std::map<std::string, Definition> definitions;
 };
 
-struct Actor : detail::LifeState
+// An actor has a life state (hit points, death saves, recovery); it is not
+// one, so it holds it rather than inheriting it, and two actors do not compare
+// equal merely because their hit points match (Effective C++ Item 38).
+struct Actor
 {
+    detail::LifeState life;
     Participant source;
     Definition definition;
     int initiative{}, movement{}, winds{}, slots{}, slots2{};
@@ -880,12 +884,12 @@ rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Ac
 
 bool unconscious(const Actor &a)
 {
-    return a.hp == 0;
+    return a.life.hp == 0;
 }
 
 bool conscious(const Actor &a)
 {
-    return !a.dead && !unconscious(a);
+    return !a.life.dead && !unconscious(a);
 }
 
 struct ArcaneAllocation
@@ -1369,8 +1373,8 @@ constexpr std::string_view vitals_magic = "SRD11";
 
 void restore_vitals(Actor &a, const VitalState &state)
 {
-    a.hp = state.hit_points;
-    a.dead = state.dead;
+    a.life.hp = state.hit_points;
+    a.life.dead = state.dead;
     // Empty resources describe a fresh character: every pool and Hit Die is
     // full. Callers supply the full Second Wind and spell-slot values.
     a.hit_dice = a.definition.hit_die ? a.definition.level : 0;
@@ -1384,32 +1388,32 @@ void restore_vitals(Actor &a, const VitalState &state)
     {
         std::istringstream in(state.resources);
         std::string magic;
-        in >> magic >> a.winds >> a.slots >> a.slots2 >> a.successes >> a.failures >> a.stable >>
-           a.hit_dice >> a.recovery.death_save_in_ms >> a.recovery.stable_recovery_in_ms >>
-           a.temporary_hp.amount >> std::quoted(a.temporary_hp.source_id) >> a.rushes >>
+        in >> magic >> a.winds >> a.slots >> a.slots2 >> a.life.successes >> a.life.failures >> a.life.stable >>
+           a.hit_dice >> a.life.recovery.death_save_in_ms >> a.life.recovery.stable_recovery_in_ms >>
+           a.life.temporary_hp.amount >> std::quoted(a.life.temporary_hp.source_id) >> a.rushes >>
            a.surges >> a.arcane >> a.lay_on_hands >> a.free_casts >> a.channel_divinity;
         if (!in || magic != vitals_magic)
             throw std::runtime_error("Invalid character resource state");
-        detail::decode_stable_recovery(a.recovery);
+        detail::decode_stable_recovery(a.life.recovery);
         a.effects = detail::read_effects(in);
         in >> std::ws;
         if (!in.eof())
             throw std::runtime_error("Trailing character resource state");
     }
     const auto &d = a.definition;
-    if (a.hp < 0 || a.hp > max_hp(a) || (a.dead && a.hp != 0) || a.winds < 0 || a.winds > d.winds ||
+    if (a.life.hp < 0 || a.life.hp > max_hp(a) || (a.life.dead && a.life.hp != 0) || a.winds < 0 || a.winds > d.winds ||
             a.slots < 0 || a.slots > slot_room(d) || a.arcane < 0 || a.arcane > arcane_capacity(d) ||
             a.slots2 < 0 || a.slots2 > slot2_room(d) || a.surges < 0 ||
             a.surges > surge_capacity(d) || a.rushes < 0 ||
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
-            a.successes < 0 || a.successes > 3 || a.failures < 0 || a.failures > 4 ||
+            a.life.successes < 0 || a.life.successes > 3 || a.life.failures < 0 || a.life.failures > 4 ||
             a.lay_on_hands < 0 || a.lay_on_hands > lay_capacity(d) || a.free_casts < 0 ||
             a.free_casts > free_cast_capacity(d) || a.channel_divinity < 0 ||
             a.channel_divinity > channel_capacity(d))
         throw std::runtime_error("Invalid character vitals");
-    detail::validate_recovery(a);
-    detail::validate_temporary_hp(a.temporary_hp);
-    if (a.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
+    detail::validate_recovery(a.life);
+    detail::validate_temporary_hp(a.life.temporary_hp);
+    if (a.life.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
         throw std::runtime_error("Earned recovery requires active healing prevention");
 }
 
@@ -1417,9 +1421,9 @@ VitalState vitals(const Actor &a)
 {
     std::ostringstream out;
     out << vitals_magic << ' ' << a.winds << ' ' << a.slots << ' ' << a.slots2 << ' '
-        << a.successes << ' ' << a.failures << ' ' << a.stable << ' ' << a.hit_dice << ' '
-        << a.recovery.death_save_in_ms << ' ' << detail::encode_stable_recovery(a.recovery) << ' '
-        << a.temporary_hp.amount << ' ' << std::quoted(a.temporary_hp.source_id) << ' '
+        << a.life.successes << ' ' << a.life.failures << ' ' << a.life.stable << ' ' << a.hit_dice << ' '
+        << a.life.recovery.death_save_in_ms << ' ' << detail::encode_stable_recovery(a.life.recovery) << ' '
+        << a.life.temporary_hp.amount << ' ' << std::quoted(a.life.temporary_hp.source_id) << ' '
         << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' '
         << a.free_casts << ' ' << a.channel_divinity << ' ';
     detail::write_effects(out, a.effects);
@@ -1439,13 +1443,13 @@ VitalState vitals(const Actor &a)
     if (a.definition.surges && a.surges < a.definition.surges)
         description += (description.empty() ? "" : "\n") + std::string("Action Surge uses: ") +
                        std::to_string(a.surges) + " / " + std::to_string(a.definition.surges);
-    if (a.hp == 0)
+    if (a.life.hp == 0)
         description += (description.empty() ? "" : "\n") +
-                       std::string(a.dead     ? "Dead"
-                                   : a.stable ? "Stable, unconscious"
+                       std::string(a.life.dead     ? "Dead"
+                                   : a.life.stable ? "Stable, unconscious"
                                    : "Unconscious; death saves ") +
-                       (!a.dead && !a.stable ? std::to_string(a.successes) + " successes, " +
-                        std::to_string(a.failures) + " failures"
+                       (!a.life.dead && !a.life.stable ? std::to_string(a.life.successes) + " successes, " +
+                        std::to_string(a.life.failures) + " failures"
                         : "");
     if (detail::healing_blocked(a.effects))
         description += "\nChill Touch: cannot regain HP.";
@@ -1459,7 +1463,7 @@ VitalState vitals(const Actor &a)
         description += "\nBlinded";
     if (a.effects.prone)
         description += "\nProne";
-    return {a.hp, a.dead, out.str(), description};
+    return {a.life.hp, a.life.dead, out.str(), description};
 }
 
 int distance(Cell a, Cell b)
@@ -1539,7 +1543,7 @@ class Session final : public CombatSession
             Actor a;
             a.definition = d;
             a.source = std::move(p);
-            a.hp = d.hp;
+            a.life.hp = d.hp;
             a.winds = d.winds;
             a.slots = d.slots;
             a.slots2 = d.slots2;
@@ -1949,7 +1953,7 @@ class Session final : public CombatSession
         return std::any_of(actors_.begin(), actors_.end(),
                            [&](const auto & other)
         {
-            return other.source.id != who.source.id && !other.dead &&
+            return other.source.id != who.source.id && !other.life.dead &&
                    other.source.cell == who.source.cell;
         });
     }
@@ -1957,7 +1961,7 @@ class Session final : public CombatSession
     void clear_departed_overlaps()
     {
         for (auto &a : actors_)
-            if (a.dead || !shares_occupied_space(a))
+            if (a.life.dead || !shares_occupied_space(a))
                 a.involuntary_overlap = false;
     }
 
@@ -2169,13 +2173,13 @@ class Session final : public CombatSession
     // A creature with Regeneration that has not died: down at 0 HP, it may rise.
     bool may_rise(const Actor &a) const
     {
-        return def(a).regeneration && !a.dead;
+        return def(a).regeneration && !a.life.dead;
     }
     // As in the original game, a downed troll's square can be stood on, and a
     // creature standing there keeps it from getting up.
     bool downed_riser(const Actor &a) const
     {
-        return may_rise(a) && a.hp == 0;
+        return may_rise(a) && a.life.hp == 0;
     }
     void regenerate(Actor &a);
     std::vector<EntityId> initiative_choices_;
@@ -2189,8 +2193,8 @@ class Session final : public CombatSession
             for (auto &effect : actors_[i].effects.active)
                 if (effect.kind == detail::EffectKind::blindness)
                     effect.save_in_ms = turn_end_ms(i);
-            if (actors_[i].hp == 0 && !actors_[i].dead && !actors_[i].stable)
-                actors_[i].recovery.death_save_in_ms = i ? turn_end_ms(i - 1) : 0;
+            if (actors_[i].life.hp == 0 && !actors_[i].life.dead && !actors_[i].life.stable)
+                actors_[i].life.recovery.death_save_in_ms = i ? turn_end_ms(i - 1) : 0;
         }
         if (outcome_ == Outcome::ongoing && !begin_turn())
             end_turn();
@@ -2201,7 +2205,7 @@ class Session final : public CombatSession
     bool metabolism_ready(const Actor &a) const
     {
         return def(a).metabolism && a.arcane > 0 &&
-               (a.surges < surge_capacity(def(a)) || a.hp < max_hp(a));
+               (a.surges < surge_capacity(def(a)) || a.life.hp < max_hp(a));
     }
 
     void resolve_initiative(const Command &command)
@@ -2661,7 +2665,7 @@ bool Session::shield_blocks_bow(const Actor &a) const
 // above 5 surrenders, and the rest fight on. It is tested again every turn.
 void Session::check_morale(Actor &a)
 {
-    const int lost = 100 - 100 * a.hp / std::max(1, max_hp(a));
+    const int lost = 100 - 100 * a.life.hp / std::max(1, max_hp(a));
     bool holds = a.source.morale > 0 && int(a.source.morale) >= lost;
     if (!holds)
     {
@@ -2670,8 +2674,8 @@ void Session::check_morale(Actor &a)
             if (other.source.side == a.source.side)
             {
                 total += max_hp(other);
-                if (!other.dead && !other.fled)
-                    remaining += other.hp;
+                if (!other.life.dead && !other.fled)
+                    remaining += other.life.hp;
             }
         for (const auto &gone : fled_)
             if (gone.source.side == a.source.side)
@@ -2686,7 +2690,7 @@ void Session::check_morale(Actor &a)
     }
     const bool outpaced = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        return other.source.side != a.source.side && other.hp > 0 && !other.dead && !other.fled &&
+        return other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead && !other.fled &&
                current_speed(other) > current_speed(a);
     });
     // One that already failed to get away is cornered and fights on.
@@ -2770,7 +2774,7 @@ void Session::remove_fled()
         const auto &a = actors_[i];
         if (!a.fled)
             continue;
-        Departed gone{a.source, a.surrendered ? 0 : a.hp, max_hp(a), armor_class(a), vitals(a)};
+        Departed gone{a.source, a.surrendered ? 0 : a.life.hp, max_hp(a), armor_class(a), vitals(a)};
         gone.surrendered = a.surrendered;
         if (!a.source.character_profile.empty())
             for (const auto &gear : detail::thrown_gear_items)
@@ -2828,7 +2832,7 @@ void Session::throw_gear(Actor &a, Actor &target, const detail::ThrownGear &gear
         }
     });
     damage(target, amount, false);
-    if (!acid && !target.dead)
+    if (!acid && !target.life.dead)
     {
         target.burning = true;
         log(target.source.name + " starts burning.",
@@ -2875,7 +2879,7 @@ Cell Session::spectral_cell(const Actor &target, Cell from) const
             if ((!dx && !dy) || !board_.contains(cell) || board_.at(cell) == 1 ||
                     std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
             {
-                return !other.dead && other.source.cell == cell;
+                return !other.life.dead && other.source.cell == cell;
             }))
             continue;
             if (!best || distance(cell, from) < distance(*best, from))
@@ -2920,7 +2924,7 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
     {
         // Unconscious actors still occupy space; corpses do not. The mover's
         // current cell is the path origin, not an obstacle.
-        if (!other.dead && !downed_riser(other) && other.source.id != mover.source.id)
+        if (!other.life.dead && !downed_riser(other) && other.source.id != mover.source.id)
             occupants.push_back(
         {other.source.cell, other.source.side != mover.source.side, unconscious(other)});
     }
@@ -3034,11 +3038,11 @@ Snapshot Session::snapshot() const
     }
     if (temporary_offer_)
         s.temporary_hp_offer = TemporaryHpOffer{actors_[turn_].source.id,
-                                                actors_[turn_].temporary_hp, *temporary_offer_};
+                                                actors_[turn_].life.temporary_hp, *temporary_offer_};
     for (const auto &a : actors_)
     {
-        std::string status = a.dead      ? "Dead"
-                             : a.hp == 0 ? (a.stable ? "Stable, unconscious" : "Unconscious")
+        std::string status = a.life.dead      ? "Dead"
+                             : a.life.hp == 0 ? (a.life.stable ? "Stable, unconscious" : "Unconscious")
                              : a.effects.prone    ? "Prone"
                              : a.dodge            ? "Dodging"
                              : "Ready";
@@ -3050,12 +3054,12 @@ Snapshot Session::snapshot() const
             status += " | Second Wind " + std::to_string(a.winds);
         s.combatants.push_back(
         {
-            a.source.id, a.source.name, a.source.definition, a.source.side, a.source.cell, a.hp,
+            a.source.id, a.source.name, a.source.definition, a.source.side, a.source.cell, a.life.hp,
             max_hp(a), armor_class(a), a.initiative,
             champion_move_ && champion_move_->actor == a.source.id ? champion_move_->remaining
             : movement_left(a),
             a.actions.available() && conscious(a), a.bonus && conscious(a),
-            a.reaction && conscious(a), conscious(a), a.dead, a.facing_left, status, vitals(a)});
+            a.reaction && conscious(a), conscious(a), a.life.dead, a.facing_left, status, vitals(a)});
         const auto display = combat_display(a.source.definition);
         auto &view = s.combatants.back();
         view.regenerates = def(a).regeneration > 0;
@@ -3077,7 +3081,7 @@ Snapshot Session::snapshot() const
             if (a.source.side == 0 && !a.source.character_profile.empty())
                 view.thrown_gear_left.emplace_back(std::string(gear.key),
                                                    a.thrown_gear_left[std::size_t(gear.effect)]);
-        view.temporary_hp = a.temporary_hp;
+        view.temporary_hp = a.life.temporary_hp;
         view.prone = a.effects.prone;
         if (physical_inventory_)
             for (const auto &item : items_)
@@ -3255,8 +3259,8 @@ Snapshot Session::snapshot() const
             view.ranged_weapon = display.ranged;
         view.ranged_attack_available = def(a).range > 0;
         auto &messages = s.combatants.back().status_messages;
-        messages.push_back({a.dead      ? "Dead"
-                            : a.hp == 0 ? (a.stable ? "Stable, unconscious" : "Unconscious")
+        messages.push_back({a.life.dead      ? "Dead"
+                            : a.life.hp == 0 ? (a.life.stable ? "Stable, unconscious" : "Unconscious")
                             : a.effects.prone    ? "Prone"
                             : a.dodge            ? "Dodging"
                             : "Ready",
@@ -3512,10 +3516,10 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                                    "spell:false_life"};
         log(target.source.name + " gains False Life.",
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "False Life", true}}});
-        if (target.temporary_hp.amount)
+        if (target.life.temporary_hp.amount)
             temporary_offer_ = std::move(offered);
         else
-            detail::grant_temporary_hp(target, offered, TemporaryHpChoice::use_new);
+            detail::grant_temporary_hp(target.life, offered, TemporaryHpChoice::use_new);
         return;
     }
     case detail::Rider::expeditious_retreat:
@@ -3709,7 +3713,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::aid:
     {
         // Aid does not stack with itself; a creature already aided keeps its own.
-        if (detail::hit_point_bonus(target.effects) >= 5 || target.dead ||
+        if (detail::hit_point_bonus(target.effects) >= 5 || target.life.dead ||
                 !detail::can_apply(target.effects))
             return;
         detail::apply_spell_benefit(target.effects, scope_, a.source.id, a.source.name,
@@ -3850,7 +3854,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     case detail::SpellPattern::stabilize:
     {
         auto &target = actor(target_id);
-        detail::stabilize(target, rng_);
+        detail::stabilize(target.life, rng_);
         log(a.source.name + " casts " + name + ": " + target.source.name + " is Stable.",
         {
             "{name} casts {spell}: {target} is Stable.",
@@ -3888,11 +3892,11 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             rolled.bonus += d.casting - 2;
         const bool struck = attack(a, target, !spell.melee, true, rolled, type, bursts);
         // Repelling Blast pushes a Large or smaller creature 10 feet away.
-        if (struck && blast && d.repelling_blast && !target.dead && def(target).size <= 3)
+        if (struck && blast && d.repelling_blast && !target.life.dead && def(target).size <= 3)
             push_away(a, target, 2);
         if (struck)
             apply_rider(spell, verb, a, target, dc);
-        else if (spell.rider == detail::Rider::acid_arrow && target.hp > 0)
+        else if (spell.rider == detail::Rider::acid_arrow && target.life.hp > 0)
         {
             // A miss splashes half the initial damage, without the later burn.
             const int amount = resolved_damage(target, spell.damage, dice(rolled) / 2);
@@ -3904,7 +3908,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             });
             damage(target, amount, false);
         }
-        else if (d.evoker && !spell.level && target.hp > 0)
+        else if (d.evoker && !spell.level && target.life.hp > 0)
             potent_cantrip(target, spell, rolled);
         // Ice Knife's shard explodes, hit or miss.
         if (spell.rider == detail::Rider::ice_knife)
@@ -3913,7 +3917,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     }
     case detail::SpellPattern::repeat_attack:
         // Re-read the target each pass: it may drop before the later rays.
-        for (unsigned ray = 0; ray < instances && actor(target_id).hp > 0; ++ray)
+        for (unsigned ray = 0; ray < instances && actor(target_id).life.hp > 0; ++ray)
             attack(a, actor(target_id), !spell.melee, true, rolled, cast_damage_type(spell.damage));
         return;
     case detail::SpellPattern::auto_damage:
@@ -3985,7 +3989,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             }
         });
         damage(target, amount);
-        if (!saved && spell.rider != detail::Rider::none && !target.dead)
+        if (!saved && spell.rider != detail::Rider::none && !target.life.dead)
             apply_rider(spell, verb, a, target, dc);
         return;
     }
@@ -4030,7 +4034,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
     // The Bonus Action pass runs before the loop that skips corpses, so filter
     // them here too; the Action pass has already done it and is unaffected.
     // A raging creature cannot cast spells.
-    if (other.dead || rage_of(a))
+    if (other.life.dead || rage_of(a))
         return;
     const auto &d = def(a);
     for (const auto &spell : detail::spell_table)
@@ -4051,11 +4055,11 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         switch (spell.target)
         {
         case detail::SpellTarget::enemy:
-            if (other.source.side == a.source.side || other.hp <= 0)
+            if (other.source.side == a.source.side || other.life.hp <= 0)
                 continue;
             break;
         case detail::SpellTarget::wounded_ally:
-            if (other.source.side != a.source.side || other.hp >= max_hp(other))
+            if (other.source.side != a.source.side || other.life.hp >= max_hp(other))
                 continue;
             break;
         case detail::SpellTarget::any_creature:
@@ -4071,7 +4075,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         case detail::SpellTarget::area:
             break; // Aimed at a point after it is chosen.
         case detail::SpellTarget::dying_ally:
-            if (other.source.side != a.source.side || other.hp != 0 || other.stable)
+            if (other.source.side != a.source.side || other.life.hp != 0 || other.life.stable)
                 continue;
             break;
         }
@@ -4264,7 +4268,7 @@ std::vector<Command> Session::legal_commands() const
         const auto &caster = actor(selection_->caster);
         const auto &spell = *detail::find_spell(selection_->verb);
         for (const auto &other : actors_)
-            if (!other.dead && distance(caster.source.cell, other.source.cell) <= spell.range)
+            if (!other.life.dead && distance(caster.source.cell, other.source.cell) <= spell.range)
                 add(caster.source.id, selection_->verb, std::string(spell.label), other.source.id);
         if (!selection_->chosen.empty())
             add(caster.source.id, "spell_cast", "Cast spell");
@@ -4440,15 +4444,15 @@ std::vector<Command> Session::legal_commands() const
         for (const auto &other : actors_)
         {
             const int feet = distance(a.source.cell, other.source.cell);
-            if (other.source.id == a.source.id || other.dead || feet > 30)
+            if (other.source.id == a.source.id || other.life.dead || feet > 30)
                 continue;
-            if (other.source.side != a.source.side && other.hp > 0 &&
+            if (other.source.side != a.source.side && other.life.hp > 0 &&
                     def(other).creature_type == "undead")
                 undead = true;
             const bool wounded_ally = other.source.side == a.source.side &&
-                                      other.hp < max_hp(other) &&
+                                      other.life.hp < max_hp(other) &&
                                       !detail::healing_blocked(other.effects);
-            const bool enemy = other.source.side != a.source.side && other.hp > 0;
+            const bool enemy = other.source.side != a.source.side && other.life.hp > 0;
             if ((wounded_ally || enemy) && can_see(a, other))
                 add(id, "divine_spark", "Divine Spark", other.source.id);
         }
@@ -4457,8 +4461,8 @@ std::vector<Command> Session::legal_commands() const
         // Preserve Life (Life Domain) needs a Bloodied ally within 30 feet.
         if (d.life_domain && std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        return other.source.side == a.source.side && !other.dead &&
-                   other.hp * 2 <= max_hp(other) &&
+        return other.source.side == a.source.side && !other.life.dead &&
+                   other.life.hp * 2 <= max_hp(other) &&
                    distance(a.source.cell, other.source.cell) <= 30;
         }))
         add(id, "preserve_life", "Preserve Life", id);
@@ -4481,7 +4485,7 @@ std::vector<Command> Session::legal_commands() const
     // Martial Arts: an Unarmed Strike as a Bonus Action.
     if (a.bonus && d.martial_arts)
         for (const auto &other : actors_)
-            if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "martial_arts", "Unarmed Strike", other.source.id);
     // Font of Magic: a Bonus Action turns Sorcery Points into a slot; a slot
@@ -4528,7 +4532,7 @@ std::vector<Command> Session::legal_commands() const
     // Bardic Inspiration: a Bonus Action gives an ally within 60 feet the die.
     if (a.bonus && d.bardic_inspiration && a.arcane > 0)
         for (const auto &other : actors_)
-            if (other.source.side == a.source.side && other.source.id != id && !other.dead &&
+            if (other.source.side == a.source.side && other.source.id != id && !other.life.dead &&
                     distance(a.source.cell, other.source.cell) <= 60 &&
                     !detail::has_effect(other.effects, detail::EffectKind::inspired))
                 add(id, "bardic_inspiration", "Bardic Inspiration", other.source.id);
@@ -4547,7 +4551,7 @@ std::vector<Command> Session::legal_commands() const
             add(id, "patient_defense_focus", "Patient Defense: Disengage and Dodge (1 Focus)");
             add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
             for (const auto &other : actors_)
-                if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+                if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                         distance(a.source.cell, other.source.cell) <= 5)
                 {
                     add(id, "flurry_of_blows", "Flurry of Blows", other.source.id);
@@ -4589,13 +4593,13 @@ std::vector<Command> Session::legal_commands() const
     for (const auto &zone : zones_)
         if (zone.kind == ZoneKind::flaming_sphere && zone.caster == id && a.bonus)
             for (const auto &other : actors_)
-                if (other.hp > 0 && !other.dead && other.source.id != id &&
+                if (other.life.hp > 0 && !other.life.dead && other.source.id != id &&
                         distance(zone.cells.front(), other.source.cell) <= 30)
                     add(id, "roll_flaming_sphere", "Roll Flaming Sphere", other.source.id);
     // Heat Metal: a Bonus Action on later turns heats the metal again.
     if (a.bonus)
         for (const auto &other : actors_)
-            if (!other.dead && other.hp > 0 &&
+            if (!other.life.dead && other.life.hp > 0 &&
                     distance(a.source.cell, other.source.cell) <= 60 &&
                     std::any_of(other.effects.active.begin(), other.effects.active.end(),
                                 [&](const auto & e)
@@ -4607,14 +4611,14 @@ std::vector<Command> Session::legal_commands() const
     for (const auto &zone : zones_)
         if (zone.kind == ZoneKind::moonbeam && zone.caster == id && a.actions.available(true))
             for (const auto &other : actors_)
-                if (other.hp > 0 && !other.dead && !in_zone(zone, other.source.cell) &&
+                if (other.life.hp > 0 && !other.life.dead && !in_zone(zone, other.source.cell) &&
                         distance(zone.cells.front(), other.source.cell) <= 60)
                     add(id, "move_moonbeam", "Move Moonbeam", other.source.id);
     // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
     // feet and attacks a creature within 5 feet of it.
     if (const auto *force = spiritual_weapon(a); force && a.bonus)
         for (const auto &other : actors_)
-            if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     distance(force->cells.front(), other.source.cell) <= 25)
                 add(id, "spiritual_weapon_strike", "Spiritual Weapon attack", other.source.id);
     // Horde Breaker: once per turn, after a weapon attack, another creature
@@ -4626,7 +4630,7 @@ std::vector<Command> Session::legal_commands() const
         {
             const int feet = distance(a.source.cell, other.source.cell);
             if (other.source.id != origin.source.id && other.source.side != a.source.side &&
-                    other.hp > 0 && distance(origin.source.cell, other.source.cell) <= 5 &&
+                    other.life.hp > 0 && distance(origin.source.cell, other.source.cell) <= 5 &&
                     (feet <= d.reach || (d.range > 0 && feet <= d.long_range)))
                 add(id, "horde_breaker", "Horde Breaker", other.source.id);
         }
@@ -4635,7 +4639,7 @@ std::vector<Command> Session::legal_commands() const
     // carries the mark already; a dropped quarry's mark moves for a Bonus Action.
     const bool marking = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        return other.hp > 0 && !other.dead && marked_by(other, a);
+        return other.life.hp > 0 && !other.life.dead && marked_by(other, a);
     });
     const bool free_mark = a.bonus && a.free_casts > 0 && d.favored_enemy && !marking &&
                            detail::knows_spell(d.spells, "hunters_mark") && !d.str_dex_disadvantage;
@@ -4643,12 +4647,12 @@ std::vector<Command> Session::legal_commands() const
     // Hex moves to a new creature as a Bonus Action once its first drops.
     if (a.bonus && hex_can_move(a))
         for (const auto &other : actors_)
-            if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     distance(a.source.cell, other.source.cell) <= 90 && can_see(a, other))
                 add(id, "hex_move", "Move Hex", other.source.id);
     if (free_mark || moving_mark)
         for (const auto &other : actors_)
-            if (other.source.side != a.source.side && other.hp > 0 && !other.dead &&
+            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     distance(a.source.cell, other.source.cell) <= 90 && can_see(a, other) &&
                     !marked_by(other, a))
             {
@@ -4664,18 +4668,18 @@ std::vector<Command> Session::legal_commands() const
         add(id, "sacred_weapon", "Sacred Weapon", id);
     if (a.bonus && d.aggressive && speed > 0 && enemy_in_sight(a))
         add(id, "aggressive", "Aggressive");
-    if (a.bonus && a.winds > 0 && a.hp < max_hp(a))
+    if (a.bonus && a.winds > 0 && a.life.hp < max_hp(a))
         add(id, "second_wind", "Second Wind", id);
     // Lay On Hands: touch yourself or an adjacent wounded ally whose healing
     // can take effect, including one at 0 Hit Points.
     if (a.bonus && d.lay_on_hands && a.lay_on_hands > 0)
         for (const auto &other : actors_)
-            if (other.source.side == a.source.side && !other.dead &&
-                    other.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
+            if (other.source.side == a.source.side && !other.life.dead &&
+                    other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
     // Smites, right after this actor's own melee hit on a creature still standing.
-    if (a.bonus && a.smite_target && actor(a.smite_target).hp > 0 && !d.spells.empty())
+    if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
     {
         const bool slot = a.slots > 0 && !a.spent_slot;
         const bool melee = a.smite_melee;
@@ -4703,7 +4707,7 @@ std::vector<Command> Session::legal_commands() const
             {
                 const auto *weapon = detail::weapon(item.definition);
                 for (const auto &other : actors_)
-                    if (other.source.side != a.source.side && !other.dead && other.hp > 0 &&
+                    if (other.source.side != a.source.side && !other.life.dead && other.life.hp > 0 &&
                             line_of_sight(a.source.cell, other.source.cell))
                     {
                         const auto offer = [&](const char *light, const char *nick)
@@ -4762,14 +4766,14 @@ std::vector<Command> Session::legal_commands() const
         add(id, "disengage", "Disengage");
         for (const auto &other : actors_)
         {
-            if (other.dead || !line_of_sight(a.source.cell, other.source.cell))
+            if (other.life.dead || !line_of_sight(a.source.cell, other.source.cell))
                 continue;
             const int feet = distance(a.source.cell, other.source.cell);
-            if (!a.source.character_profile.empty() && other.hp == 0 && !other.stable &&
+            if (!a.source.character_profile.empty() && other.life.hp == 0 && !other.life.stable &&
                     !may_rise(other) && feet <= 5)
                 add(id, "stabilize", "Stabilize", other.source.id);
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, false);
-            if (other.source.side != a.source.side && (other.hp > 0 || may_rise(other)))
+            if (other.source.side != a.source.side && (other.life.hp > 0 || may_rise(other)))
             {
                 // A Wild Shape form cannot wield its equipment (SRD 5.2.1), so it
                 // draws no Torch or bow and throws no flask.
@@ -4855,7 +4859,7 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
         return command->source_scope == scope_ && other.source.id == command->source_actor;
     });
     // With no caster left there is nothing to approach or flee.
-    if (caster == actors_.end() || caster->dead)
+    if (caster == actors_.end() || caster->life.dead)
         return;
     const bool approach = command->dc == int(detail::CommandOption::approach);
     const int start = distance(a.source.cell, caster->source.cell);
@@ -4965,20 +4969,20 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
 
 void Session::damage(Actor &target, int amount, bool critical)
 {
-    if (!amount || target.dead)
+    if (!amount || target.life.dead)
         return;
-    const bool standing = target.hp > 0;
-    detail::damage_life(target, amount, max_hp(target), critical,
+    const bool standing = target.life.hp > 0;
+    detail::damage_life(target.life, amount, max_hp(target), critical,
                         target.source.side == 1 && !def(target).regeneration);
     // Regeneration: damage never kills it and it makes no death saves; the start
     // of its next turn decides (regenerate).
-    if (def(target).regeneration && target.hp == 0)
+    if (def(target).regeneration && target.life.hp == 0)
     {
-        target.dead = false;
-        target.successes = target.failures = 0;
-        target.recovery = {detail::death_turn_ms, 0};
+        target.life.dead = false;
+        target.life.successes = target.life.failures = 0;
+        target.life.recovery = {detail::death_turn_ms, 0};
     }
-    if (standing && target.hp == 0)
+    if (standing && target.life.hp == 0)
         bless_fiends(target);
     // Warding Bond: the caster takes the same damage; the bond ends when the
     // caster drops to 0 Hit Points or is more than 60 feet away.
@@ -4993,7 +4997,7 @@ void Session::damage(Actor &target, int amount, bool critical)
         });
         damage(caster, amount, false);
     }
-    if (target.hp == 0)
+    if (target.life.hp == 0)
         for (auto &other : actors_)
             std::erase_if(other.effects.active, [&](const auto & e)
         {
@@ -5003,20 +5007,20 @@ void Session::damage(Actor &target, int amount, bool critical)
     // Damage tests Concentration; dropping to 0 Hit Points ends it.
     if (target.concentration.active())
     {
-        const bool rolls = target.hp > 0 && !target.dead;
+        const bool rolls = target.life.hp > 0 && !target.life.dead;
         auto modifiers = detail::saving_modifiers(detail::Ability::constitution,
                          def(target).str_dex_disadvantage, target.dodge);
         modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::extended) ||
                                def(target).eldritch_mind;
         const auto result = target.concentration.damage(
                                 amount, def(target).saves[2] + (rolls ? blessing_die(target) : 0),
-                                modifiers, target.hp == 0 || target.dead, rng_);
+                                modifiers, target.life.hp == 0 || target.life.dead, rng_);
         if (result.save)
             log_save(target, *result.save);
         if (result.ended)
             drop_concentration_effects(target);
     }
-    if (target.hp == 0)
+    if (target.life.hp == 0)
     {
         target.effects.prone = true;
         end_wild_shape(target);
@@ -5029,7 +5033,7 @@ void Session::damage(Actor &target, int amount, bool critical)
                e.kind == detail::EffectKind::asleep || e.kind == detail::EffectKind::charmed;
     });
     // Hideous Laughter: damage calls for a new Wisdom save, with Advantage.
-    for (std::size_t n = 0; n < target.effects.active.size() && target.hp > 0; ++n)
+    for (std::size_t n = 0; n < target.effects.active.size() && target.life.hp > 0; ++n)
         if (target.effects.active[n].kind == detail::EffectKind::laughing &&
                 saving_throw_succeeds(target, detail::Ability::wisdom, target.effects.active[n].dc,
                                       true))
@@ -5040,21 +5044,21 @@ void Session::damage(Actor &target, int amount, bool critical)
             break;
         }
     // Sacred Weapon ends when its wielder is Incapacitated.
-    if (target.hp == 0)
+    if (target.life.hp == 0)
         std::erase_if(target.effects.active, [](const auto & e)
     {
         return e.kind == detail::EffectKind::sacred_weapon;
     });
-    if (target.hp == 0 && !target.dead && !target.stable)
-        target.recovery.death_save_in_ms = next_turn_ms(target);
-    if (target.hp == 0)
+    if (target.life.hp == 0 && !target.life.dead && !target.life.stable)
+        target.life.recovery.death_save_in_ms = next_turn_ms(target);
+    if (target.life.hp == 0)
     {
         target.dodge = false;
-        if (!target.dead && shares_occupied_space(target))
+        if (!target.life.dead && shares_occupied_space(target))
             target.involuntary_overlap = true;
-        log(target.source.name + (target.dead ? " is defeated." : " falls unconscious."),
+        log(target.source.name + (target.life.dead ? " is defeated." : " falls unconscious."),
         {
-            target.dead ? "{name} is defeated." : "{name} falls unconscious.",
+            target.life.dead ? "{name} is defeated." : "{name} falls unconscious.",
             {{"name", target.source.name}}
         });
     }
@@ -5063,11 +5067,11 @@ void Session::damage(Actor &target, int amount, bool critical)
 
 int Session::heal(Actor &target, int amount)
 {
-    if (target.hp == 0 && shares_occupied_space(target))
+    if (target.life.hp == 0 && shares_occupied_space(target))
         target.involuntary_overlap = true;
-    const bool was_unconscious = target.hp == 0;
+    const bool was_unconscious = target.life.hp == 0;
     const int restored =
-        detail::heal_life(target, amount, max_hp(target), !detail::healing_blocked(target.effects));
+        detail::heal_life(target.life, amount, max_hp(target), !detail::healing_blocked(target.effects));
     if (was_unconscious && restored)
         target.effects.prone = true;
     log(target.source.name + " recovers " + std::to_string(restored) + " HP.",
@@ -5125,7 +5129,7 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
         }
     });
     damage(target, amount, false);
-    if (searing && target.hp > 0 && detail::can_apply(target.effects))
+    if (searing && target.life.hp > 0 && detail::can_apply(target.effects))
         detail::apply_searing_smite(target.effects, scope_, a.source.id, a.source.name,
                                     spell_dc(a));
 }
@@ -5213,7 +5217,7 @@ bool Session::teleport_open(const Actor &caster, Cell cell) const
            line_of_sight(caster.source.cell, cell) && !obscured(caster, cell) &&
            std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        return !other.dead && other.source.cell == cell;
+        return !other.life.dead && other.source.cell == cell;
     });
 }
 
@@ -5227,7 +5231,7 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
     {
         const Actor *nearest = nullptr; // Borrowed from actors_.
         for (const auto &other : actors_)
-            if (other.source.side != caster.source.side && other.hp > 0 && !other.dead &&
+            if (other.source.side != caster.source.side && other.life.hp > 0 && !other.life.dead &&
                     (!nearest || distance(caster.source.cell, other.source.cell) <
                      distance(caster.source.cell, nearest->source.cell)))
                 nearest = &other;
@@ -5239,7 +5243,7 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
     for (const auto &other : actors_)
     {
         const int feet = distance(caster.source.cell, other.source.cell);
-        if (other.source.side != caster.source.side && other.hp > 0 && feet < best_feet)
+        if (other.source.side != caster.source.side && other.life.hp > 0 && feet < best_feet)
         {
             best = other.source.cell;
             best_feet = feet;
@@ -5281,7 +5285,7 @@ std::vector<EntityId> Session::sculpted(const Actor &caster, const detail::Spell
         return spared;
     for (const auto &other : actors_)
         if (spared.size() < 1 + slot_level && other.source.side == caster.source.side &&
-                other.source.id != caster.source.id && !other.dead && can_see(caster, other) &&
+                other.source.id != caster.source.id && !other.life.dead && can_see(caster, other) &&
                 std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
             spared.push_back(other.source.id);
     return spared;
@@ -5314,7 +5318,7 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     const auto careful = careful_allies(caster, cells);
     for (auto &other : actors_)
     {
-        if (other.dead || other.source.id == caster.source.id ||
+        if (other.life.dead || other.source.id == caster.source.id ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(spared.begin(), spared.end(), other.source.id) != spared.end() ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end())
@@ -5331,7 +5335,7 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
             {{"name", other.source.name}, {"damage", std::to_string(amount)}, {"type", type, true}}
         });
         damage(other, amount);
-        if (!saved && spell.rider == detail::Rider::thunderwave && !other.dead)
+        if (!saved && spell.rider == detail::Rider::thunderwave && !other.life.dead)
             push_away(caster, other, 2);
     }
 }
@@ -5348,7 +5352,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     const auto careful = careful_allies(caster, cells);
     for (auto &other : actors_)
     {
-        if (other.dead || other.hp == 0 || other.source.id == caster.source.id ||
+        if (other.life.dead || other.life.hp == 0 || other.source.id == caster.source.id ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
                 (sleep && other.source.side == caster.source.side) || !detail::can_apply(other.effects))
@@ -5389,7 +5393,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
 void Session::blow(const Zone &line, Actor &creature)
 {
     // Gust of Wind: a Strength save or 15 feet away from the caster.
-    if (creature.dead || creature.hp == 0 || creature.source.id == line.caster)
+    if (creature.life.dead || creature.life.hp == 0 || creature.source.id == line.caster)
         return;
     const auto &caster = actor(line.caster);
     if (!saving_throw_succeeds(creature, detail::Ability::strength, spell_dc(caster)))
@@ -5408,7 +5412,7 @@ void Session::burn_beside_spheres(Actor &creature)
 
 void Session::sphere_burns(const Actor &caster, Actor &creature)
 {
-    if (creature.dead || creature.hp == 0)
+    if (creature.life.dead || creature.life.hp == 0)
         return;
     const auto &spell = *detail::find_spell("flaming_sphere");
     const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster));
@@ -5458,14 +5462,14 @@ void Session::lands_aid(Actor &druid, Cell center)
     const auto cells = area_cells(aid, aid.id, druid.source.cell, center);
     const auto inside = [&](const Actor & other)
     {
-        return !other.dead && std::find(cells.begin(), cells.end(), other.source.cell) != cells.end();
+        return !other.life.dead && std::find(cells.begin(), cells.end(), other.source.cell) != cells.end();
     };
     // The Druid chooses its enemies for the thorns and its most wounded ally
     // for the flowers.
     const int dc = spell_dc(druid), rolled = dice(aid.dice);
     for (auto &other : actors_)
     {
-        if (!inside(other) || other.source.side == druid.source.side || other.hp == 0)
+        if (!inside(other) || other.source.side == druid.source.side || other.life.hp == 0)
             continue;
         const bool saved = saving_throw_succeeds(other, aid.save, dc);
         const int amount = resolved_damage(other, aid.damage, saved ? rolled / 2 : rolled);
@@ -5478,8 +5482,8 @@ void Session::lands_aid(Actor &druid, Cell center)
     }
     Actor *wounded = nullptr; // Borrowed from actors_.
     for (auto &other : actors_)
-        if (inside(other) && other.source.side == druid.source.side && other.hp < max_hp(other) &&
-                (!wounded || max_hp(other) - other.hp > max_hp(*wounded) - wounded->hp))
+        if (inside(other) && other.source.side == druid.source.side && other.life.hp < max_hp(other) &&
+                (!wounded || max_hp(other) - other.life.hp > max_hp(*wounded) - wounded->life.hp))
             wounded = &other;
     if (wounded)
         (void)heal(*wounded, dice(aid.dice));
@@ -5507,7 +5511,7 @@ void Session::heat_metal(const Actor &caster, Actor &creature)
         {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
     });
     damage(creature, amount);
-    if (creature.dead || creature.hp == 0 || !detail::can_apply(creature.effects) ||
+    if (creature.life.dead || creature.life.hp == 0 || !detail::can_apply(creature.effects) ||
             saving_throw_succeeds(creature, spell.save, spell_dc(caster)))
         return;
     detail::apply_poisoned(creature.effects, scope_, caster.source.id, caster.source.name,
@@ -5550,7 +5554,7 @@ void Session::moonbeam_burns(const Zone &beam, Actor &creature)
     {
         return zone.kind == ZoneKind::moonbeam && zone.caster == beam.caster;
     });
-    if (!shining || creature.dead || creature.hp == 0 ||
+    if (!shining || creature.life.dead || creature.life.hp == 0 ||
             detail::has_effect(creature.effects, detail::EffectKind::moonlit))
         return;
     const auto &caster = actor(beam.caster);
@@ -5591,7 +5595,7 @@ bool Session::spring_zone(const Zone &zone, Actor &creature)
     // Grease knocks a creature Prone and Web Restrains it, each on a failed
     // Dexterity save against the caster's spell DC.
     const bool grease = zone.kind == ZoneKind::grease;
-    if (creature.dead || creature.hp == 0 ||
+    if (creature.life.dead || creature.life.hp == 0 ||
             (grease ? creature.effects.prone
              : detail::has_effect(creature.effects, detail::EffectKind::webbed) ||
              !detail::can_apply(creature.effects)))
@@ -5632,7 +5636,7 @@ void Session::ice_burst(Actor &caster, const Actor &target, bool upcast)
     const auto centre = target.source.cell;
     for (auto &other : actors_)
     {
-        if (other.dead || distance(centre, other.source.cell) > 5)
+        if (other.life.dead || distance(centre, other.source.cell) > 5)
             continue;
         if (saving_throw_succeeds(other, detail::Ability::dexterity, dc))
             continue;
@@ -5658,7 +5662,7 @@ void Session::push_away(const Actor &from, Actor &target, int squares)
         if (!board_.contains(next) || board_.at(next) == 1 ||
                 std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
         {
-            return !other.dead && other.source.cell == next;
+            return !other.life.dead && other.source.cell == next;
         }))
         break;
         target.source.cell = next;
@@ -5720,7 +5724,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     if (casting_with(Metamagic::heightened))
         for (const auto cell : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
             for (const auto &other : actors_)
-                if (!heightened_target_ && !other.dead && other.source.cell == cell &&
+                if (!heightened_target_ && !other.life.dead && other.source.cell == cell &&
                         other.source.side != a.source.side)
                     heightened_target_ = other.source.id;
     if (spell.rider == detail::Rider::flaming_sphere)
@@ -5797,7 +5801,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     const int dc = spell_dc(a);
     for (auto &other : actors_)
     {
-        if (other.dead || other.source.id == a.source.id ||
+        if (other.life.dead || other.source.id == a.source.id ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 !detail::can_apply(other.effects) ||
                 saving_throw_succeeds(other, spell.save, dc))
@@ -5823,18 +5827,18 @@ void Session::preserve_life(Actor &cleric)
     int pool = 5 * def(cleric).level;
     std::vector<Actor *> bloodied;
     for (auto &other : actors_)
-        if (other.source.side == cleric.source.side && !other.dead &&
-                other.hp * 2 <= max_hp(other) &&
+        if (other.source.side == cleric.source.side && !other.life.dead &&
+                other.life.hp * 2 <= max_hp(other) &&
                 distance(cleric.source.cell, other.source.cell) <= 30 &&
                 def(other).creature_type != "undead" && def(other).creature_type != "construct")
             bloodied.push_back(&other);
     std::sort(bloodied.begin(), bloodied.end(), [&](const Actor * x, const Actor * y)
     {
-        return x->hp * max_hp(*y) < y->hp * max_hp(*x);
+        return x->life.hp * max_hp(*y) < y->life.hp * max_hp(*x);
     });
     for (auto *other : bloodied)
     {
-        const int room = max_hp(*other) / 2 - other->hp;
+        const int room = max_hp(*other) / 2 - other->life.hp;
         if (pool <= 0 || room <= 0)
             continue;
         pool -= heal(*other, std::min(pool, room));
@@ -5881,7 +5885,7 @@ void Session::turn_undead(Actor &cleric)
     log(cleric.source.name + " uses Turn Undead.",
     {"{name} uses Turn Undead.", {{"name", cleric.source.name}}});
     for (auto &other : actors_)
-        if (other.source.side != cleric.source.side && other.hp > 0 &&
+        if (other.source.side != cleric.source.side && other.life.hp > 0 &&
                 def(other).creature_type == "undead" &&
                 distance(cleric.source.cell, other.source.cell) <= 30 &&
                 detail::can_apply(other.effects) &&
@@ -5955,7 +5959,7 @@ void Session::resolve_ensnaring_strike(Actor &a)
         {{"name", a.source.name}, {"target", target.source.name}}
     });
     const int dc = spell_dc(a);
-    if (target.hp == 0 || !detail::can_apply(target.effects) ||
+    if (target.life.hp == 0 || !detail::can_apply(target.effects) ||
             saving_throw_succeeds(target, detail::Ability::strength, dc, def(target).size >= 3))
         return;
     begin_concentration(a, spell);
@@ -5967,7 +5971,7 @@ void Session::resolve_ensnaring_strike(Actor &a)
 void Session::squeeze_ensnared(Actor &a)
 {
     // Ensnaring Strike's vines deal 1d6 Piercing at the start of each turn.
-    if (!detail::has_effect(a.effects, detail::EffectKind::ensnaring_strike) || a.hp == 0)
+    if (!detail::has_effect(a.effects, detail::EffectKind::ensnaring_strike) || a.life.hp == 0)
         return;
     const int amount = resolved_damage(a, detail::DamageType::piercing, roll(6));
     log(a.source.name + " takes " + std::to_string(amount) + " Piercing damage from the vines.",
@@ -6150,7 +6154,7 @@ std::vector<EntityId> Session::bonds_on(const Actor &target) const
     for (const auto &e : target.effects.active)
         if (e.kind == detail::EffectKind::warding_bond && e.source_scope == scope_)
             for (const auto &caster : actors_)
-                if (caster.source.id == e.source_actor && caster.hp > 0 && !caster.dead &&
+                if (caster.source.id == e.source_actor && caster.life.hp > 0 && !caster.life.dead &&
                         caster.source.id != target.source.id &&
                         distance(caster.source.cell, target.source.cell) <= 60)
                     casters.push_back(caster.source.id);
@@ -6263,7 +6267,7 @@ void Session::drop_concentration_effects(const Actor &caster)
 void Session::burn_searing_smites(Actor &a)
 {
     // At the start of each of its turns the target burns, then saves to end it.
-    for (std::size_t n = 0; n < a.effects.active.size() && a.hp > 0; ++n)
+    for (std::size_t n = 0; n < a.effects.active.size() && a.life.hp > 0; ++n)
     {
         if (a.effects.active[n].kind != detail::EffectKind::searing_smite)
             continue;
@@ -6275,7 +6279,7 @@ void Session::burn_searing_smites(Actor &a)
             {{"name", a.source.name}, {"damage", std::to_string(amount)}}
         });
         damage(a, amount, false);
-        if (a.hp > 0 && saving_throw_succeeds(a, detail::Ability::constitution, dc))
+        if (a.life.hp > 0 && saving_throw_succeeds(a, detail::Ability::constitution, dc))
             a.effects.active[n].remaining_ms = 0;
     }
     std::erase_if(a.effects.active, [](const auto & e)
@@ -6336,7 +6340,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // At longer range their opposing attack modifiers cancel, not stack.
     const bool pack_tactics = !spell && d.pack_tactics && ally_beside(a, target);
     // A Boar's Bloodied Fury: Advantage at half its Hit Points or fewer.
-    if (!spell && d.bloodied_fury && a.hp * 2 <= max_hp(a))
+    if (!spell && d.bloodied_fury && a.life.hp * 2 <= max_hp(a))
         result.advantage = true;
     if (helpless(target) || a.aim_ready || pack_tactics ||
             detail::vexed_by(target.effects, scope_, a.source.id))
@@ -6378,7 +6382,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
             (type == "aberration" || type == "celestial" || type == "elemental" ||
              type == "fey" || type == "fiend" || type == "undead"))
         result.disadvantage = true;
-    if (target.effects.prone || target.hp == 0)
+    if (target.effects.prone || target.life.hp == 0)
     {
         if (distance(a.source.cell, target.source.cell) <= 5)
             result.advantage = true;
@@ -6462,7 +6466,7 @@ void Session::apply_hit(Actor &a, Actor &target, int natural, int bonus, int mod
     });
 damage(target, amount, critical);
     // A Wolf's bite knocks a Medium or smaller target Prone.
-    if (!spell && !ranged && def(a).prone_bite && def(target).size <= 2 && target.hp > 0 &&
+    if (!spell && !ranged && def(a).prone_bite && def(target).size <= 2 && target.life.hp > 0 &&
             !target.effects.prone)
     {
         target.effects.prone = true;
@@ -6524,7 +6528,7 @@ damage(target, amount, critical);
         else
             champion_move_ = move;
     }
-    if (pending() == a.source.id && actors_[turn_].hp == 0 && (effect_waiting() || champion_move_))
+    if (pending() == a.source.id && actors_[turn_].life.hp == 0 && (effect_waiting() || champion_move_))
     {
         path_.clear();
         path_index_ = 0;
@@ -6714,7 +6718,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     }
     weapon_damage = resized_damage(a, hit && !spell, weapon_damage);
     // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
-    if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.hp < max_hp(target))
+    if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.life.hp < max_hp(target))
     {
         a.colossus_used = true;
         const int extra = dice({1, 8, 0}, critical_hit(a, target, natural));
@@ -6737,7 +6741,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     apply_hit(a, target, natural, bonus, modifiers.mode(), amount, savage, damage_type, ranged,
               spell);
     // A ranged hit's added damage of a second type (the Hobgoblin Warrior's poison).
-    if (hit && !spell && ranged && d.ranged_extra.count && !target.dead)
+    if (hit && !spell && ranged && d.ranged_extra.count && !target.life.dead)
     {
         const auto type = d.ranged_extra_type;
         const int extra = resolved_damage(target, type,
@@ -6751,7 +6755,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         damage(target, extra, false);
     }
     // Hunter's Mark: any attack-roll hit on the caster's quarry deals 1d6 Force.
-    if (hit && marked_by(target, a) && !target.dead)
+    if (hit && marked_by(target, a) && !target.life.dead)
     {
         const int extra = resolved_damage(target, detail::DamageType::force,
                                           dice({1, 6, 0}, critical_hit(a, target, natural, spell)));
@@ -6764,7 +6768,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         damage(target, extra, false);
     }
     // Hex: the caster's attack-roll hits deal 1d6 more Necrotic damage.
-    if (hit && hexed_by(target, a) && !target.dead)
+    if (hit && hexed_by(target, a) && !target.life.dead)
     {
         const int extra = resolved_damage(target, detail::DamageType::necrotic,
                                           dice({1, 6, 0}, critical_hit(a, target, natural, spell)));
@@ -6777,7 +6781,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
     }
     // Divine Favor: a weapon hit deals an extra 1d4 Radiant damage.
     if (hit && !spell && detail::has_effect(a.effects, detail::EffectKind::divine_favor) &&
-            !target.dead)
+            !target.life.dead)
     {
         const int extra = resolved_damage(target, detail::DamageType::radiant,
                                           dice({1, 4, 0}, critical_hit(a, target, natural)));
@@ -6790,7 +6794,7 @@ bool Session::attack(Actor &a, Actor &target, bool ranged, bool spell, Dice spel
         damage(target, extra, false);
     }
     // Hellish Rebuke answers the damage once the attack is done.
-    if (hit && amount > 0 && target.hp > 0)
+    if (hit && amount > 0 && target.life.hp > 0)
         rebuke(a, target);
     return hit;
 }
@@ -6851,7 +6855,7 @@ bool Session::hex_can_move(const Actor &caster) const
     for (const auto &other : actors_)
         if (hexed_by(other, caster))
         {
-            if (other.hp > 0 && !other.dead)
+            if (other.life.hp > 0 && !other.life.dead)
                 return false;
             hexed = true;
         }
@@ -6866,7 +6870,7 @@ bool Session::mark_can_move(const Actor &caster) const
     for (const auto &other : actors_)
         if (marked_by(other, caster))
         {
-            if (other.hp > 0 && !other.dead)
+            if (other.life.hp > 0 && !other.life.dead)
                 return false;
             marked = true;
         }
@@ -6975,7 +6979,7 @@ std::vector<EntityId> Session::careful_allies(const Actor &caster, const std::ve
     const auto most = std::size_t(std::max(1, def(caster).casting - 2));
     for (const auto &other : actors_)
         if (spared.size() < most && other.source.side == caster.source.side &&
-                other.source.id != caster.source.id && !other.dead &&
+                other.source.id != caster.source.id && !other.life.dead &&
                 std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
             spared.push_back(other.source.id);
     return spared;
@@ -7124,7 +7128,7 @@ void Session::finish_reaction()
     update_outcome();
     if (outcome_ == Outcome::ongoing)
     {
-        if (actors_[turn_].hp == 0)
+        if (actors_[turn_].life.hp == 0)
         {
             path_.clear();
             path_index_ = 0;
@@ -7143,7 +7147,7 @@ void Session::update_outcome()
         return;
     bool party = false, enemies = false;
     for (const auto &a : actors_)
-        if (a.hp > 0 && !a.dead && !a.fled)
+        if (a.life.hp > 0 && !a.life.dead && !a.fled)
             (a.source.side == 0 ? party : enemies) = true;
     if (!party || !enemies)
     {
@@ -7176,8 +7180,8 @@ void Session::update_outcome()
             for (auto &a : actors_)
                 if (a.source.side == 1 && downed_riser(a))
                 {
-                    a.dead = true;
-                    a.recovery = {};
+                    a.life.dead = true;
+                    a.life.recovery = {};
                     log(a.source.name + " stays down.",
                     {"{name} stays down.", {{"name", a.source.name}}});
                 }
@@ -7207,9 +7211,9 @@ void Session::bandage_after_victory()
 {
     for (auto &a : actors_)
     {
-        if (a.hp != 0 || a.dead || a.stable)
+        if (a.life.hp != 0 || a.life.dead || a.life.stable)
             continue;
-        detail::stabilize(a, rng_);
+        detail::stabilize(a.life, rng_);
         log(a.source.name + " is bandaged and stable.",
         {"{name} is bandaged and stable.", {{"name", a.source.name}}});
     }
@@ -7222,7 +7226,7 @@ void Session::bandage_after_victory()
 // original game's rule), and a creature at 0 HP that cannot regenerate dies.
 void Session::regenerate(Actor &a)
 {
-    const bool stood_on = a.hp == 0 && std::any_of(actors_.begin(), actors_.end(),
+    const bool stood_on = a.life.hp == 0 && std::any_of(actors_.begin(), actors_.end(),
                           [&](const auto & other)
     {
         return other.source.id != a.source.id && conscious(other) &&
@@ -7232,22 +7236,22 @@ void Session::regenerate(Actor &a)
     a.regeneration_blocked = false;
     if (blocked)
     {
-        if (a.hp > 0)
+        if (a.life.hp > 0)
         {
             log(a.source.name + " cannot regenerate this turn.",
             {"{name} cannot regenerate this turn.", {{"name", a.source.name}}});
             return;
         }
-        a.dead = true;
-        a.stable = false;
-        a.recovery = {};
+        a.life.dead = true;
+        a.life.stable = false;
+        a.life.recovery = {};
         log(a.source.name + " cannot regenerate and dies.",
         {"{name} cannot regenerate and dies.", {{"name", a.source.name}}});
         clear_departed_overlaps();
         return;
     }
-    const bool rising = a.hp == 0;
-    const int healed = detail::heal_life(a, def(a).regeneration, max_hp(a),
+    const bool rising = a.life.hp == 0;
+    const int healed = detail::heal_life(a.life, def(a).regeneration, max_hp(a),
                                          !detail::healing_blocked(a.effects));
     if (!healed)
         return;
@@ -7280,7 +7284,7 @@ bool Session::begin_turn()
     {
         return effect.kind == detail::EffectKind::shocking_grasp;
     });
-    if (a.dead)
+    if (a.life.dead)
         return false;
     // Warding Bond ends once its caster is down or more than 60 feet away.
     for (auto &other : actors_)
@@ -7303,52 +7307,52 @@ bool Session::begin_turn()
         for (auto &effect : other.effects.active)
             if (effect.kind == detail::EffectKind::heated && effect.source_actor == a.source.id)
                 effect.dc = 0;
-    if (a.dead)
+    if (a.life.dead)
         return false;
     spring_zones(a, ZoneKind::web);
     // Heroism: Temporary HP at the start of each of the target's turns, kept
     // only when higher than what the target already has.
     for (const auto &effect : a.effects.active)
-        if (effect.kind == detail::EffectKind::heroism && a.hp > 0 &&
-                effect.dc > a.temporary_hp.amount)
-            detail::grant_temporary_hp(a, {effect.dc, "spell:heroism"},
+        if (effect.kind == detail::EffectKind::heroism && a.life.hp > 0 &&
+                effect.dc > a.life.temporary_hp.amount)
+            detail::grant_temporary_hp(a.life, {effect.dc, "spell:heroism"},
                                        TemporaryHpChoice::use_new);
     // Burning: 1d4 Fire damage at the start of each turn until put out.
-    if (a.burning && !a.dead)
+    if (a.burning && !a.life.dead)
     {
         const int amount = resolved_damage(a, detail::DamageType::fire, roll(4));
         log(a.source.name + " burns for " + std::to_string(amount) + " Fire damage.",
         {"{name} burns for {damage} Fire damage.", {{"name", a.source.name}, {"damage", std::to_string(amount)}}});
         damage(a, amount, false);
-        if (a.dead)
+        if (a.life.dead)
             a.burning = false;
     }
     if (def(a).regeneration)
     {
         regenerate(a);
-        if (a.hp == 0)
+        if (a.life.hp == 0)
             return false;
     }
-    if (a.hp == 0)
+    if (a.life.hp == 0)
     {
-        if (!a.stable)
+        if (!a.life.stable)
         {
-            const int result = detail::death_save(a, rng_, !detail::healing_blocked(a.effects));
+            const int result = detail::death_save(a.life, rng_, !detail::healing_blocked(a.effects));
             log(a.source.name + " death save: " + std::to_string(result),
             {
                 "{name} death save: {roll}",
                 {{"name", a.source.name}, {"roll", std::to_string(result)}}
             });
-            if (a.hp > 0)
+            if (a.life.hp > 0)
             {
                 a.effects.prone = true;
                 if (shares_occupied_space(a))
                     a.involuntary_overlap = true;
             }
-            if (a.dead)
+            if (a.life.dead)
                 clear_departed_overlaps();
         }
-        if (a.hp == 0)
+        if (a.life.hp == 0)
             return false;
     }
     for (auto &actor : actors_)
@@ -7529,7 +7533,7 @@ void Session::advance_turn_time()
     // Dead/unconscious slots still pass time; menus and repeated snapshots don't.
     const unsigned delta = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     for (auto &a : actors_)
-        detail::start_stable_recovery(a, rng_);
+        detail::start_stable_recovery(a.life, rng_);
     std::vector<detail::RecoverySubject> subjects;
     std::vector<EntityId> unconscious;
     // Acid Arrow burns once its effect runs out, after the effects are walked.
@@ -7538,9 +7542,9 @@ void Session::advance_turn_time()
     {
         subjects.push_back(
         {
-            {a.source.id, a.effects, def(a).saves, a.dead, def(a).str_dex_disadvantage, a.dodge},
-            a});
-        if (a.hp == 0)
+            {a.source.id, a.effects, def(a).saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge},
+            a.life});
+        if (a.life.hp == 0)
             unconscious.push_back(a.source.id);
     }
     detail::elapse_recovery(
@@ -7588,7 +7592,7 @@ void Session::advance_turn_time()
     for (const auto id : burned)
     {
         auto &target = actor(id);
-        if (target.dead)
+        if (target.life.dead)
             continue;
         const int amount = resolved_damage(target, detail::DamageType::acid, dice({2, 4, 0}));
         log(target.source.name + " takes " + std::to_string(amount) + " Acid damage from Acid Arrow.",
@@ -7603,16 +7607,16 @@ void Session::advance_turn_time()
             drop_concentration_effects(a);
     // Rage ends early when the Barbarian is Incapacitated or falls.
     for (auto &a : actors_)
-        if (rage_of(a) && (detail::incapacitated(a.effects) || a.hp == 0))
+        if (rage_of(a) && (detail::incapacitated(a.effects) || a.life.hp == 0))
             std::erase_if(a.effects.active, [](const auto & e)
         {
             return e.kind == detail::EffectKind::raging;
         });
     // An ended Aid lowers the maximum, and Hit Points above it with it.
     for (auto &a : actors_)
-        a.hp = std::min(a.hp, max_hp(a));
+        a.life.hp = std::min(a.life.hp, max_hp(a));
     for (auto &a : actors_)
-        if (a.hp > 0 &&
+        if (a.life.hp > 0 &&
                 std::find(unconscious.begin(), unconscious.end(), a.source.id) != unconscious.end())
         {
             a.effects.prone = true;
@@ -7663,7 +7667,7 @@ void Session::progress_movement()
 {
     auto &a = actors_[turn_];
     const auto grid = movement_grid(a);
-    while (path_index_ < path_.size() && a.hp > 0)
+    while (path_index_ < path_.size() && a.life.hp > 0)
     {
         const auto destination = path_[path_index_];
         if (reactors_.empty() && !a.disengaged)
@@ -7751,7 +7755,7 @@ bool Session::submit(const Command &command)
         remove_fled();
         update_outcome();
         if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
-                !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].hp == 0)
+                !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].life.hp == 0)
             end_turn();
         if (outcome_ != Outcome::ongoing)
             advance_turn_time();
@@ -7826,7 +7830,7 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
         {{"name", target.source.name}, {"damage", std::to_string(amount - left)}}
     });
     const int reach = ranged ? 60 : 5;
-    if (left || target.surges <= 0 || attacker.hp <= 0 ||
+    if (left || target.surges <= 0 || attacker.life.hp <= 0 ||
             distance(target.source.cell, attacker.source.cell) > reach ||
             !can_see(target, attacker))
         return left;
@@ -7860,12 +7864,12 @@ void Session::bless_fiends(const Actor &fallen)
     for (auto &warlock : actors_)
     {
         const int amount = def(warlock).dark_ones_blessing;
-        if (!amount || warlock.hp <= 0 || warlock.dead ||
+        if (!amount || warlock.life.hp <= 0 || warlock.life.dead ||
                 warlock.source.side == fallen.source.side ||
                 (by != warlock.source.id && distance(warlock.source.cell, fallen.source.cell) > 10) ||
-                amount <= warlock.temporary_hp.amount)
+                amount <= warlock.life.temporary_hp.amount)
             continue;
-        detail::grant_temporary_hp(warlock, {amount, "feature:dark_ones_blessing"},
+        detail::grant_temporary_hp(warlock.life, {amount, "feature:dark_ones_blessing"},
                                    TemporaryHpChoice::use_new);
         log("Dark One's Blessing: " + warlock.source.name + " gains " + std::to_string(amount) +
             " Temporary Hit Points.",
@@ -7934,7 +7938,7 @@ bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
            (warlock.slots > 0 || warlock.slots2 > 0) &&
            detail::knows_spell(def(warlock).spells, "hellish_rebuke") &&
            distance(warlock.source.cell, attacker.source.cell) <= 60 && can_see(warlock, attacker) &&
-           !attacker.dead;
+           !attacker.life.dead;
 }
 
 void Session::rebuke(const Actor &attacker, Actor &warlock)
@@ -8127,7 +8131,7 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "temp_hp_keep" || command.verb == "temp_hp_use")
     {
-        detail::grant_temporary_hp(a, *temporary_offer_,
+        detail::grant_temporary_hp(a.life, *temporary_offer_,
                                    command.verb == "temp_hp_keep" ? TemporaryHpChoice::keep_current
                                    : TemporaryHpChoice::use_new);
         temporary_offer_.reset();
@@ -8235,12 +8239,12 @@ void Session::dispatch(const Command &command)
         --a.surges;
         log(a.source.name + " uses Flurry of Blows.",
         {"{name} uses Flurry of Blows.", {{"name", a.source.name}}});
-        for (int strike = 0; strike < 2 && actor(command.target).hp > 0; ++strike)
+        for (int strike = 0; strike < 2 && actor(command.target).life.hp > 0; ++strike)
         {
             auto striker = unarmed_actor(a);
             const bool hit = attack(striker, actor(command.target), false);
             a.aim_ready = striker.aim_ready;
-            if (hit && actor(command.target).hp > 0)
+            if (hit && actor(command.target).life.hp > 0)
                 open_hand(a, actor(command.target), command.verb);
         }
     }
@@ -8270,10 +8274,10 @@ void Session::dispatch(const Command &command)
             TemporaryHitPoints offered{12, "spell:false_life"};
             log(a.source.name + " gains False Life.",
             {"{name} gains {spell}.", {{"name", a.source.name}, {"spell", "False Life", true}}});
-            if (a.temporary_hp.amount)
+            if (a.life.temporary_hp.amount)
                 temporary_offer_ = std::move(offered);
             else
-                detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
+                detail::grant_temporary_hp(a.life, offered, TemporaryHpChoice::use_new);
         }
         if (was_invisible)
             end_invisibility(a.source.id);
@@ -8304,10 +8308,10 @@ void Session::dispatch(const Command &command)
         {"{name} takes the shape of a {form}.", {{"name", a.source.name}, {"form", std::string(form->label), true}}});
         // Temporary Hit Points equal to the Druid level.
         TemporaryHitPoints offered{def(a).level, "feature:wild_shape"};
-        if (a.temporary_hp.amount)
+        if (a.life.temporary_hp.amount)
             temporary_offer_ = std::move(offered);
         else
-            detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
+            detail::grant_temporary_hp(a.life, offered, TemporaryHpChoice::use_new);
     }
     else if (command.verb == "leave_wild_shape")
     {
@@ -8502,10 +8506,10 @@ void Session::dispatch(const Command &command)
         a.movement += d.speed;
         ++a.dashes;
         TemporaryHitPoints offered{d.rushes, std::string(rush_source)};
-        if (a.temporary_hp.amount)
+        if (a.life.temporary_hp.amount)
             temporary_offer_ = std::move(offered);
         else
-            detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
+            detail::grant_temporary_hp(a.life, offered, TemporaryHpChoice::use_new);
         log(a.source.name + " uses Adrenaline Rush.",
         {"{name} uses Adrenaline Rush.", {{"name", a.source.name}}});
     }
@@ -8551,7 +8555,7 @@ void Session::dispatch(const Command &command)
             "{name} uses Lay On Hands on {target}.",
             {{"name", a.source.name}, {"target", target.source.name}}
         });
-        a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, max_hp(target) - target.hp));
+        a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, max_hp(target) - target.life.hp));
     }
     else if (const auto *aimed = detail::find_spell(command.verb);
              aimed && aimed->target == detail::SpellTarget::area)
@@ -8670,7 +8674,7 @@ void Session::dispatch(const Command &command)
                 // Multiattack: a monster's melee attacks follow on the same
                 // target while it stands.
                 const int attacks = command.verb == "melee" ? d.multiattack : 1;
-                for (int n = 0; n < attacks && actor(command.target).hp > 0; ++n)
+                for (int n = 0; n < attacks && actor(command.target).life.hp > 0; ++n)
                     attack(a, actor(command.target), command.verb != "melee");
                 if (qualifies)
                     qualify_light(a, token);
@@ -8696,15 +8700,15 @@ std::string Session::save() const
     {
         out << a.source.id << ' ' << std::quoted(a.source.definition) << ' '
             << std::quoted(a.source.name) << ' ' << a.source.side << ' ' << a.source.cell.x << ' '
-            << a.source.cell.y << ' ' << a.hp << ' ' << a.initiative << ' ' << a.movement << ' '
-            << a.winds << ' ' << a.slots << ' ' << a.successes << ' ' << a.failures << ' '
+            << a.source.cell.y << ' ' << a.life.hp << ' ' << a.initiative << ' ' << a.movement << ' '
+            << a.winds << ' ' << a.slots << ' ' << a.life.successes << ' ' << a.life.failures << ' '
             << a.actions.normal << ' ' << a.bonus << ' ' << a.reaction << ' ' << a.dodge << ' '
-            << a.disengaged << ' ' << a.stable << ' ' << a.dead << ' '
+            << a.disengaged << ' ' << a.life.stable << ' ' << a.life.dead << ' '
             << std::quoted(a.source.character_profile) << ' ' << a.slots2 << ' ' << a.spent_slot
             << ' ' << a.savage_used << ' ' << a.facing_left << ' ' << a.involuntary_overlap << ' '
-            << a.hit_dice << ' ' << a.recovery.death_save_in_ms << ' '
-            << detail::encode_stable_recovery(a.recovery) << ' ' << a.temporary_hp.amount << ' '
-            << std::quoted(a.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
+            << a.hit_dice << ' ' << a.life.recovery.death_save_in_ms << ' '
+            << detail::encode_stable_recovery(a.life.recovery) << ' ' << a.life.temporary_hp.amount << ' '
+            << std::quoted(a.life.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
             << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' ' << a.dashes
             << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.free_casts << ' '
             << a.channel_divinity << ' ' << a.smite_target << ' ' << a.smite_critical << ' '
@@ -8879,14 +8883,14 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     auto &source = actor.source;
     unsigned light_count{};
     input >> source.id >> std::quoted(source.definition) >> std::quoted(source.name) >>
-          source.side >> source.cell.x >> source.cell.y >> actor.hp >> actor.initiative >>
-          actor.movement >> actor.winds >> actor.slots >> actor.successes >> actor.failures >>
+          source.side >> source.cell.x >> source.cell.y >> actor.life.hp >> actor.initiative >>
+          actor.movement >> actor.winds >> actor.slots >> actor.life.successes >> actor.life.failures >>
           actor.actions.normal >> actor.bonus >> actor.reaction >> actor.dodge >> actor.disengaged >>
-          actor.stable >> actor.dead >> std::quoted(source.character_profile) >> actor.slots2 >>
+          actor.life.stable >> actor.life.dead >> std::quoted(source.character_profile) >> actor.slots2 >>
           actor.spent_slot >> actor.savage_used >> actor.facing_left >> actor.involuntary_overlap >>
-          actor.hit_dice >> actor.recovery.death_save_in_ms >>
-          actor.recovery.stable_recovery_in_ms >> actor.temporary_hp.amount >>
-          std::quoted(actor.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
+          actor.hit_dice >> actor.life.recovery.death_save_in_ms >>
+          actor.life.recovery.stable_recovery_in_ms >> actor.life.temporary_hp.amount >>
+          std::quoted(actor.life.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
           actor.surges >> actor.surge_used >> actor.actions.surge >> actor.dashes >> actor.arcane >>
           actor.lay_on_hands >> actor.free_casts >> actor.channel_divinity >> actor.smite_target >>
           actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
@@ -8912,7 +8916,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     if (const auto &held = actor.concentration.active();
             held && (held->source.caster != source.id || held->remaining_ms > 3600000))
         throw std::runtime_error("Invalid checkpoint concentration");
-    detail::decode_stable_recovery(actor.recovery);
+    detail::decode_stable_recovery(actor.life.recovery);
     if (!input ||
             (source.character_profile.empty() && !content.definitions.contains(source.definition)))
         throw std::runtime_error("Invalid checkpoint actor");
@@ -8953,7 +8957,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.movement > definition.speed * (1 + actor.dashes))
         throw std::runtime_error("Invalid Dash allowance count");
     // The upper bound waits for the effects, read later: Aid raises it.
-    if (actor.hp < 0 || (actor.dead && actor.hp > 0) ||
+    if (actor.life.hp < 0 || (actor.life.dead && actor.life.hp > 0) ||
             // Dash spends the action before adding a second movement allowance.
             // Accepting both extra movement and an unused action lets a later Dash
             // create a state outside the checkpoint's own movement bounds.
@@ -8973,13 +8977,13 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.slots > slot_room(definition) || actor.slots2 < 0 ||
             actor.slots2 > slot2_room(definition) ||
             actor.hit_dice < 0 || actor.hit_dice > (definition.hit_die ? definition.level : 0) ||
-            actor.successes < 0 || actor.successes > 3 || actor.failures < 0 || actor.failures > 4 ||
+            actor.life.successes < 0 || actor.life.successes > 3 || actor.life.failures < 0 || actor.life.failures > 4 ||
             actor.lay_on_hands < 0 || actor.lay_on_hands > lay_capacity(definition) ||
             actor.free_casts < 0 || actor.free_casts > free_cast_capacity(definition) ||
             actor.channel_divinity < 0 || actor.channel_divinity > channel_capacity(definition))
         throw std::runtime_error("Invalid checkpoint actor state");
-    detail::validate_recovery(actor);
-    detail::validate_temporary_hp(actor.temporary_hp);
+    detail::validate_recovery(actor.life);
+    detail::validate_temporary_hp(actor.life.temporary_hp);
     return actor;
 }
 
@@ -9042,7 +9046,7 @@ void Session::finish_check(const PendingCheck &check, int boost)
     const int total = check.natural + def(a).medicine + boost;
     const bool success = total >= 10;
     if (success)
-        detail::stabilize(target, rng_);
+        detail::stabilize(target.life, rng_);
     Message message
     {
         "{actor} stabilizes {target}: d20 {roll} + {modifier} + {boost} = {total} vs DC {dc}: {result}.",
@@ -9156,14 +9160,14 @@ void Session::validate_champion_move() const
             c.remaining < 0 || c.remaining > budget ||
             distance(c.origin, who->source.cell) > budget - c.remaining ||
             !(c.natural == 20 || (!c.spell && c.natural == 19) ||
-              ((c.helpless || target->hp == 0) &&
+              ((c.helpless || target->life.hp == 0) &&
                distance(c.triggered ? c.trigger_origin : c.origin,
                         c.triggered ? c.target_origin : target->source.cell) <= 5)) ||
             (pending() ? (pending() != c.actor || who->reaction ||
                           (!c.cleave && c.target != actors_[turn_].source.id))
              : (c.actor != actors_[turn_].source.id &&
-                !((c.cleave ? actors_[turn_].hp == 0
-                   : c.target == actors_[turn_].source.id && target->hp == 0) &&
+                !((c.cleave ? actors_[turn_].life.hp == 0
+                   : c.target == actors_[turn_].source.id && target->life.hp == 0) &&
                   !who->reaction))))
         throw std::runtime_error("Invalid Champion movement allowance/trigger");
 }
@@ -9181,7 +9185,7 @@ void Session::validate_check() const
     });
     if (c.actor != a.source.id || !conscious(a) || !def(a).tactical_mind || a.winds <= 0 ||
             c.natural < 1 || c.natural > 20 || c.natural + def(a).medicine >= 10 ||
-            target == actors_.end() || target->hp != 0 || target->dead || target->stable ||
+            target == actors_.end() || target->life.hp != 0 || target->life.dead || target->life.stable ||
             distance(a.source.cell, target->source.cell) > 5 ||
             !line_of_sight(a.source.cell, target->source.cell) || pending() || temporary_offer_ ||
             outcome_ != Outcome::ongoing || a.actions.surge ||
@@ -9206,7 +9210,7 @@ void Session::validate_graze() const
     {
         return a.source.id == g.target;
     });
-    if (a == actors_.end() || t == actors_.end() || a == t || !conscious(*a) || t->dead ||
+    if (a == actors_.end() || t == actors_.end() || a == t || !conscious(*a) || t->life.dead ||
             weapon_mastery(*a, false) != detail::Mastery::graze || g.natural < 1 || g.natural > 20 ||
             attack_hits(g.natural, def(*a).melee_bonus, armor_class(*t)) ||
             (def(*a).champion && g.natural == 19) ||
@@ -9252,7 +9256,7 @@ void Session::validate_initiative() const
 void Session::validate_restored_state() const
 {
     for (const auto &a : actors_)
-        if (a.hp > max_hp(a))
+        if (a.life.hp > max_hp(a))
             throw std::runtime_error("Invalid checkpoint Hit Points");
     for (const auto &a : actors_)
         if (a.horde_origin && std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
@@ -9269,7 +9273,7 @@ void Session::validate_restored_state() const
         throw std::runtime_error("Reaction without movement");
     const auto &mover = actors_[turn_];
     if (temporary_offer_ && (outcome_ != Outcome::ongoing || pending() || !conscious(mover) ||
-                             !mover.rush_used || mover.bonus || mover.temporary_hp.amount <= 0 ||
+                             !mover.rush_used || mover.bonus || mover.life.temporary_hp.amount <= 0 ||
                              temporary_offer_->amount != mover.definition.rushes ||
                              temporary_offer_->source_id != rush_source))
         throw std::runtime_error("Invalid pending Temporary HP replacement");
@@ -9285,11 +9289,11 @@ void Session::validate_restored_state() const
             throw std::runtime_error("Steady Aim outside current turn");
         if (actor.actions.surge && actor.source.id != mover.source.id)
             throw std::runtime_error("Action Surge allowance outside its turn");
-        if (actor.involuntary_overlap && (actor.dead || !shares_occupied_space(actor)))
+        if (actor.involuntary_overlap && (actor.life.dead || !shares_occupied_space(actor)))
             throw std::runtime_error("Invalid involuntary checkpoint overlap");
         if (actor.regeneration_blocked && !def(actor).regeneration)
             throw std::runtime_error("Regeneration blocked without Regeneration");
-        if ((actor.burning && actor.dead) || actor.oiled_until_round < 0 ||
+        if ((actor.burning && actor.life.dead) || actor.oiled_until_round < 0 ||
                 actor.oiled_until_round > int(round_) + 10 ||
                 (actor.source.character_profile.empty() &&
                  std::any_of(actor.thrown_gear_left.begin(), actor.thrown_gear_left.end(),
@@ -9298,13 +9302,13 @@ void Session::validate_restored_state() const
         return left > 0;
     })))
         throw std::runtime_error("Invalid fire, oil or thrown gear state");
-        if (actor.hp > 0 && !actor.dead)
+        if (actor.life.hp > 0 && !actor.life.dead)
             (actor.source.side == 0 ? party : enemies) = true;
-        if (actor.dead)
+        if (actor.life.dead)
             continue;
         for (const auto &other : actors_)
         {
-            if (other.source.id <= actor.source.id || other.dead ||
+            if (other.source.id <= actor.source.id || other.life.dead ||
                     actor.source.cell != other.source.cell)
                 continue;
             const bool in_transit =
@@ -9326,7 +9330,7 @@ void Session::validate_restored_state() const
     const auto expected = !party ? (party_fled ? Outcome::fled : Outcome::defeat)
                           : !enemies ? Outcome::victory : Outcome::ongoing;
     if (outcome_ != expected || (initiative_choices_.empty() && expected == Outcome::ongoing &&
-                                 mover.hp == 0 && !champion_move_ && !effect_waiting()))
+                                 mover.life.hp == 0 && !champion_move_ && !effect_waiting()))
         throw std::runtime_error("Invalid checkpoint outcome/turn");
     if (!pending() && (!path_.empty() || !reactors_.empty()))
         throw std::runtime_error("Unpaused checkpoint movement");
@@ -9346,7 +9350,7 @@ void Session::validate_pending_movement() const
         throw std::runtime_error("Invalid pending movement");
     std::vector<detail::Occupant> occupants;
     for (const auto &other : actors_)
-        if (!other.dead && !downed_riser(other) && other.source.id != mover.source.id)
+        if (!other.life.dead && !downed_riser(other) && other.source.id != mover.source.id)
             occupants.push_back({effect_reaction_origin_ && other.source.id == pending()
                                  ? effect_reaction_origin_->source
                                  : champion_move_ && other.source.id == champion_move_->actor
@@ -9396,7 +9400,7 @@ void Session::validate_pending_movement() const
                 throw std::runtime_error("Invalid Champion reaction origin");
             continue;
         }
-        if (detail::opportunity_blocked(actor.effects) || actor.hp == 0 ||
+        if (detail::opportunity_blocked(actor.effects) || actor.life.hp == 0 ||
                 (!actor.reaction && !(graze_ && graze_->actor == actor.source.id &&
                                       i == reactor_index_)) ||
                 actor.source.side == mover.source.side ||
@@ -9476,7 +9480,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     for (auto &a : session->actors_)
     {
         a.effects = detail::read_effects(input);
-        if (a.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
+        if (a.life.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
             throw std::runtime_error("Invalid earned recovery checkpoint");
     }
     bool pending_offer{};
@@ -10637,8 +10641,8 @@ class Module final : public RulesModule
                 {}});
         }
         actor.definition = character_definition(character_profile(next, {}).data);
-        if (actor.hp > 0)
-            actor.hp += growth;
+        if (actor.life.hp > 0)
+            actor.life.hp += growth;
         // Pact Magic's slots become level-two slots at Warlock level 3; the
         // slots already spent stay spent.
         const int spent_slots = old.slots - actor.slots + old.slots2 - actor.slots2;
@@ -10701,7 +10705,7 @@ class Module final : public RulesModule
             a.source = p;
             a.definition = p.character_profile.empty() ? content_->definitions.at(p.definition)
                            : character_definition(p.character_profile);
-            a.hp = a.definition.hp;
+            a.life.hp = a.definition.hp;
             a.winds = a.definition.winds;
             a.slots = a.definition.slots;
             a.slots2 = a.definition.slots2;
@@ -10713,15 +10717,15 @@ class Module final : public RulesModule
         std::vector<detail::RecoverySubject> subjects;
         for (auto &a : actors)
             subjects.push_back({{
-                a.source.id, a.effects, a.definition.saves, a.dead,
+                a.source.id, a.effects, a.definition.saves, a.life.dead,
                 a.definition.str_dex_disadvantage, false
             },
-            a});
+            a.life});
         auto rng = random_state.value;
         detail::elapse_recovery(subjects, milliseconds, rng);
         // An ended Aid lowers the maximum, and Hit Points above it with it.
         for (auto &a : actors)
-            a.hp = std::min(a.hp, max_hp(a));
+            a.life.hp = std::min(a.life.hp, max_hp(a));
         if (!milliseconds)
             return;
         std::vector<VitalState> next;
@@ -10746,9 +10750,9 @@ class Module final : public RulesModule
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
         restore_vitals(actor, state);
-        if (actor.dead || actor.hp < 1)
+        if (actor.life.dead || actor.life.hp < 1)
             throw std::runtime_error("Long rest requires at least one HP at its start");
-        (void)detail::heal_life(actor, max_hp(actor), max_hp(actor),
+        (void)detail::heal_life(actor.life, max_hp(actor), max_hp(actor),
                                 !detail::healing_blocked(actor.effects));
         // A Long Rest makes Prayer of Healing able to help the creature again.
         std::erase_if(actor.effects.active, [](const auto & e)
@@ -10759,10 +10763,10 @@ class Module final : public RulesModule
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
         actor.hit_dice = d.hit_die ? d.level : 0;
-        actor.successes = actor.failures = 0;
-        actor.stable = false;
-        actor.recovery = {};
-        actor.temporary_hp = {};
+        actor.life.successes = actor.life.failures = 0;
+        actor.life.stable = false;
+        actor.life.recovery = {};
+        actor.life.temporary_hp = {};
         actor.rushes = d.rushes;
         actor.surges = surge_capacity(d);
         actor.arcane = arcane_capacity(d);
@@ -10784,9 +10788,9 @@ class Module final : public RulesModule
         RecoveryInfo result{unsigned(d.hit_die),
                             unsigned(actor.hit_dice),
                             unsigned(d.level),
-                            !actor.dead && actor.hp > 0,
+                            !actor.life.dead && actor.life.hp > 0,
                             {},
-                            actor.temporary_hp};
+                            actor.life.temporary_hp};
         for (const auto &descriptor : resource_descriptors)
             if (d.*descriptor.capacity)
                 result.resources.push_back(resource_pool(descriptor, actor, d));
@@ -10807,7 +10811,7 @@ class Module final : public RulesModule
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
         restore_vitals(actor, state);
-        detail::grant_temporary_hp(actor, offered, choice);
+        detail::grant_temporary_hp(actor.life, offered, choice);
         auto next = vitals(actor);
         state = std::move(next);
     }
@@ -10821,7 +10825,7 @@ class Module final : public RulesModule
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
         restore_vitals(actor, state);
-        if (actor.dead || actor.hp < 1)
+        if (actor.life.dead || actor.life.hp < 1)
             throw std::runtime_error("Short rest requires at least one HP at its start");
         actor.winds = std::min(d.winds, actor.winds + 1);
         actor.rushes = d.rushes;
@@ -10875,11 +10879,11 @@ class Module final : public RulesModule
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
         restore_vitals(actor, state);
-        if (actor.dead || actor.hp < 1 || actor.hit_dice < 1)
+        if (actor.life.dead || actor.life.hp < 1 || actor.hit_dice < 1)
             throw std::runtime_error("No Hit Die can be spent by this character");
         auto rng = random_state.value;
         const int rolled = roll_die(rng, d.hit_die);
-        const int healing = detail::heal_life(actor, std::max(1, rolled + d.constitution), max_hp(actor),
+        const int healing = detail::heal_life(actor.life, std::max(1, rolled + d.constitution), max_hp(actor),
                                               !detail::healing_blocked(actor.effects));
         --actor.hit_dice;
         HitDieResult result{unsigned(d.hit_die), rolled, d.constitution, healing,
@@ -10903,7 +10907,7 @@ class Module final : public RulesModule
         if (hp == state.hit_points ||
                 (hp > state.hit_points && detail::healing_blocked(actor.effects)))
             return;
-        detail::set_life_hit_points(actor, hp, max_hp(actor));
+        detail::set_life_hit_points(actor.life, hp, max_hp(actor));
         state = vitals(actor);
     }
 
@@ -10912,7 +10916,7 @@ class Module final : public RulesModule
                                      RandomState &random_state) const override
     {
         auto actor = camp_actor(sheet, state);
-        if (actor.dead || actor.hp < 1)
+        if (actor.life.dead || actor.life.hp < 1)
             throw std::runtime_error("A hazard attacks a conscious member");
         auto rng = random_state.value;
         HazardAttackResult result;
@@ -10930,11 +10934,11 @@ class Module final : public RulesModule
                                           std::max(0, rolled)};
             const auto &d = actor.form ? *actor.form : actor.definition;
             result.damage = detail::resolve_damage({&part, 1}, d.affinities).total;
-            detail::damage_life(actor, result.damage, max_hp(actor));
+            detail::damage_life(actor.life, result.damage, max_hp(actor));
             // As after a victory, the dying member's saves are rolled at once.
-            while (actor.hp == 0 && !actor.dead && !actor.stable)
+            while (actor.life.hp == 0 && !actor.life.dead && !actor.life.stable)
                 result.death_saves.push_back(
-                    detail::death_save(actor, rng, !detail::healing_blocked(actor.effects)));
+                    detail::death_save(actor.life, rng, !detail::healing_blocked(actor.effects)));
         }
         state = vitals(actor);
         random_state.value = rng;
@@ -10963,14 +10967,14 @@ class Module final : public RulesModule
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
         restore_vitals(actor, state);
-        if (actor.dead || actor.hp >= max_hp(actor))
+        if (actor.life.dead || actor.life.hp >= max_hp(actor))
             throw std::runtime_error("Cure Wounds requires a wounded living member");
         // Authored temple caster: Cure Wounds, Wisdom +3. Same SplitMix64 as combat.
         auto rng = random_state.value;
         int amount = 3;
         for (int i = 0; i < 2; ++i)
             amount += roll_die(rng, 8);
-        (void)detail::heal_life(actor, amount, max_hp(actor), !detail::healing_blocked(actor.effects));
+        (void)detail::heal_life(actor.life, amount, max_hp(actor), !detail::healing_blocked(actor.effects));
         auto next = vitals(actor);
         state = std::move(next);
         random_state.value = rng;
@@ -10998,7 +11002,7 @@ class Module final : public RulesModule
         const auto actor = camp_actor(sheet, state);
         const auto &d = actor.definition;
         std::vector<CampAction> actions;
-        if (actor.dead || actor.hp == 0)
+        if (actor.life.dead || actor.life.hp == 0)
             return actions;
         if (d.lay_on_hands && actor.lay_on_hands > 0)
             actions.push_back({"lay_on_hands", {"Lay On Hands", {}}});
@@ -11047,7 +11051,7 @@ class Module final : public RulesModule
         auto healed = self ? caster : camp_actor(target, target_state);
         auto &patient = self ? caster : healed;
         const int maximum = max_hp(patient);
-        if (patient.dead || patient.hp >= maximum)
+        if (patient.life.dead || patient.life.hp >= maximum)
             throw std::runtime_error("Healing requires a wounded living member");
         const bool can_heal = !detail::healing_blocked(patient.effects);
         auto rng = random_state.value;
@@ -11055,13 +11059,13 @@ class Module final : public RulesModule
         {
             // Only the Hit Points actually restored are spent from the pool.
             caster.lay_on_hands -= detail::heal_life(
-                                       patient, std::min(caster.lay_on_hands, maximum - patient.hp),
+                                       patient.life, std::min(caster.lay_on_hands, maximum - patient.life.hp),
                                        maximum, can_heal);
         }
         else if (action == "goodberry")
         {
             --caster.slots;
-            (void)detail::heal_life(patient, std::min(10, maximum - patient.hp), maximum, can_heal);
+            (void)detail::heal_life(patient.life, std::min(10, maximum - patient.life.hp), maximum, can_heal);
         }
         else
         {
@@ -11077,7 +11081,7 @@ class Module final : public RulesModule
             const int count = spell.dice.count + (upcast ? int(spell.upcast.extra_dice) : 0);
             for (int n = 0; n < count; ++n)
                 amount += roll_die(rng, spell.dice.sides);
-            (void)detail::heal_life(patient, std::max(0, amount), maximum, can_heal);
+            (void)detail::heal_life(patient.life, std::max(0, amount), maximum, can_heal);
         }
         user_state = vitals(caster);
         if (!self)
@@ -11090,8 +11094,8 @@ class Module final : public RulesModule
     {
         const auto actor = camp_actor(sheet, state);
         const auto *spell = detail::find_spell(id);
-        return spell && spell->pattern == detail::SpellPattern::exploration && !actor.dead &&
-               actor.hp > 0 && !actor.definition.str_dex_disadvantage &&
+        return spell && spell->pattern == detail::SpellPattern::exploration && !actor.life.dead &&
+               actor.life.hp > 0 && !actor.definition.str_dex_disadvantage &&
                detail::knows_spell(actor.definition.spells, id) &&
                (spell->level >= 2 ? actor.slots2 : actor.slots) > 0;
     }
@@ -11148,14 +11152,14 @@ class Module final : public RulesModule
         chosen.erase(chosen.begin());
         std::erase_if(chosen, [](const Actor * a)
         {
-            return a->dead || a->hp >= max_hp(*a) ||
+            return a->life.dead || a->life.hp >= max_hp(*a) ||
                    detail::has_effect(a->effects, detail::EffectKind::prayer_of_healing);
         });
         if (chosen.empty())
             throw std::runtime_error("No member can be healed by it now");
         std::sort(chosen.begin(), chosen.end(), [](const Actor * x, const Actor * y)
         {
-            return x->hp * max_hp(*y) < y->hp * max_hp(*x);
+            return x->life.hp * max_hp(*y) < y->life.hp * max_hp(*x);
         });
         if (chosen.size() > 5)
             chosen.resize(5);
@@ -11169,7 +11173,7 @@ class Module final : public RulesModule
                          (caster.definition.life_domain ? 2 + int(spell.level) : 0);
             for (int n = 0; n < spell.dice.count; ++n)
                 amount += roll_die(rng, spell.dice.sides);
-            (void)detail::heal_life(*patient, std::max(0, amount), max_hp(*patient),
+            (void)detail::heal_life(patient->life, std::max(0, amount), max_hp(*patient),
                                     !detail::healing_blocked(patient->effects));
             // Camp effects carry scope 1: there is no encounter to source them.
             detail::apply_spell_benefit(patient->effects, 1, 1, user.name,
