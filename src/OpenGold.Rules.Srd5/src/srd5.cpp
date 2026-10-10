@@ -7796,8 +7796,10 @@ bool Session::submit(const Command &command)
     }))
     return false;
     // A command applies completely or not at all: an exception part way
-    // through restores the session as it was (Effective C++ Item 29).
-    const Session before = *this;
+    // through restores the session as it was (Effective C++ Item 29). The
+    // restore moves, so it cannot itself fail part way.
+    static_assert(std::is_nothrow_move_assignable_v<Session>);
+    Session before = *this;
     try
     {
         if (reaction_prompt_)
@@ -7822,7 +7824,7 @@ bool Session::submit(const Command &command)
     }
     catch (...)
     {
-        *this = before;
+        *this = std::move(before);
         throw;
     }
     return true;
