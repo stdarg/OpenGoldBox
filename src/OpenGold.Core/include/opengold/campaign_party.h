@@ -254,7 +254,7 @@ class CampaignParty
         return *rules_;
     }
 
-    [[nodiscard]] const rules::Identity identity() const
+    [[nodiscard]] rules::Identity identity() const
     {
         return rules_->identity();
     }
