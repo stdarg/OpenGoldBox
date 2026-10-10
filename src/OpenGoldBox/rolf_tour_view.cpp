@@ -1625,10 +1625,10 @@ void RolfTourView::start_recovery_check()
     auto &member = state.roster.at(0);
     state.random_state.value = 17;
     const auto stable = presentation::srd_vitals(
-                            state.roster.at(1).character.sheet(),
+                            state.roster.at(1).character,
     {.stable = true, .hit_dice = 1, .stable_recovery_ms = 2000});
     const auto dying = presentation::srd_vitals(
-                           state.roster.back().character.sheet(),
+                           state.roster.back().character,
     {.successes = 2, .failures = 1, .hit_dice = 1, .death_save_ms = 6000});
     state.roster.at(1).vitals = {0, false, stable};
     state.roster.back().vitals = {0, false, dying};
@@ -1739,7 +1739,7 @@ void RolfTourView::check_recovery()
                 campaign_->state().roster.back().vitals.hit_points != 1 ||
                 campaign_->state().random_state.value != 11400714819323198502ULL ||
                 campaign_->state().roster.back().vitals.resources !=
-                presentation::srd_vitals(campaign_->state().roster.back().character.sheet(),
+                presentation::srd_vitals(campaign_->state().roster.back().character,
     {.hit_dice = 1}))
             throw std::runtime_error(
                 "Camp time must advance companion Stable recovery and the reserve death save exactly once");

@@ -3,7 +3,7 @@
 // Acceptance checks author rules-owned vital state directly. This writes the
 // SRD module's only vital format with every class pool full, so a check states
 // just the spent and mortality fields it exercises.
-#include "opengold/character_rules.h"
+#include "opengold/character.h"
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -19,16 +19,19 @@ struct VitalFixture
     std::string_view effects = "FX8 1 0 0";
 };
 
-inline std::string srd_vitals(const opengold::rules::CharacterSheet &sheet,
-                              const VitalFixture &fixture)
+// Reads the race and class by stable ID; their labels are presentation only.
+inline std::string srd_vitals(const opengold::Character &character, const VitalFixture &fixture)
 {
-    const int rushes = sheet.race == "Orc" ? 2 + (sheet.level - 1) / 4 : 0;
-    const int surges = sheet.character_class == "Fighter" && sheet.level >= 2 ? 1 : 0;
-    const int arcane = sheet.character_class == "Wizard" ? 1 : 0;
-    const int lay_on_hands = sheet.character_class == "Paladin" ? 5 * sheet.level : 0;
+    const auto &sheet = character.sheet();
+    const auto &race = character.creation_data().race;
+    const auto &class_id = character.creation_data().character_class;
+    const int rushes = race == "orc" ? 2 + (sheet.level - 1) / 4 : 0;
+    const int surges = class_id == "fighter" && sheet.level >= 2 ? 1 : 0;
+    const int arcane = class_id == "wizard" ? 1 : 0;
+    const int lay_on_hands = class_id == "paladin" ? 5 * sheet.level : 0;
     std::ostringstream out;
-    const int free_casts = sheet.character_class == "Paladin" && sheet.level >= 2 ? 1
-                           : sheet.character_class == "Ranger"                 ? 2
+    const int free_casts = class_id == "paladin" && sheet.level >= 2 ? 1
+                           : class_id == "ranger"                 ? 2
                            : 0;
     out << "SRD11 " << fixture.winds << ' ' << fixture.slots << ' ' << fixture.slots2 << ' '
         << fixture.successes << ' ' << fixture.failures << ' ' << fixture.stable << ' '

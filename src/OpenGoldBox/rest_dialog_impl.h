@@ -463,7 +463,7 @@ void RolfTourView::check_rest_controls()
             for (auto &m : state.roster)
                 if (m.id == companion)
                     m.vitals = {0, true,
-                                presentation::srd_vitals(m.character.sheet(),
+                                presentation::srd_vitals(m.character,
                     {.failures = 3, .hit_dice = 1}),
                     "Dead"};
             campaign_->restore(state);
@@ -582,7 +582,7 @@ void RolfTourView::check_rest_controls()
             for (auto &member : state.roster)
                 if (member.id == rest_member_)
                     member.vitals.resources = presentation::srd_vitals(
-                                                  member.character.sheet(),
+                                                  member.character,
                     {.slots = 2, .slots2 = 1, .hit_dice = 3});
             campaign_->restore(state);
             std::vector<std::uint8_t> bytes{0, 0};
@@ -878,8 +878,9 @@ void RolfTourView::check_rest_controls()
                   "Use casts Cure Wounds on the chosen member");
             rest_member_ = patient;
             refresh_rest();
-            check(campaign_->member(patient).character.sheet().character_class == "Cleric" ||
-                  campaign_->member(patient).character.sheet().character_class == "Paladin" ||
+            const auto &patient_class =
+                campaign_->member(patient).character.creation_data().character_class;
+            check(patient_class == "cleric" || patient_class == "paladin" ||
                   !presentation::required_node<Button>(*w, "Use").is_visible(),
                   "A member with nothing to use has no Cast / Use row");
             w->hide();

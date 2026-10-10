@@ -253,20 +253,21 @@ const std::size_t kutos_well_start = 15;
 
 // Spells the demo policy uses well, prepared on gaining a level when offered.
 const std::map<std::string, std::vector<std::string>> preferred_spells{
-    {"Cleric", {"spiritual_weapon", "healing_word", "cure_wounds", "guiding_bolt", "hold_person"}},
-    {"Druid", {"moonbeam", "healing_word", "cure_wounds"}},
-    {"Bard", {"healing_word", "dissonant_whispers", "cure_wounds", "hold_person"}},
-    {"Sorcerer", {"magic_missile", "scorching_ray", "shield", "hold_person"}},
-    {"Warlock", {"hex", "hold_person"}},
-    {"Paladin", {"cure_wounds"}},
-    {"Ranger", {"cure_wounds"}}};
+    {"cleric", {"spiritual_weapon", "healing_word", "cure_wounds", "guiding_bolt", "hold_person"}},
+    {"druid", {"moonbeam", "healing_word", "cure_wounds"}},
+    {"bard", {"healing_word", "dissonant_whispers", "cure_wounds", "hold_person"}},
+    {"sorcerer", {"magic_missile", "scorching_ray", "shield", "hold_person"}},
+    {"warlock", {"hex", "hold_person"}},
+    {"paladin", {"cure_wounds"}},
+    {"ranger", {"cure_wounds"}}};
 
 // The default advancement, with the class's preferred spells swapped in for
 // the last unlocked defaults where the rules accept them.
 rules::AdvancementChoice advancement(const CampaignParty &party, MemberId id)
 {
     auto choice = party.default_advancement(id);
-    const auto found = preferred_spells.find(party.member(id).character.sheet().character_class);
+    const auto &class_id = party.member(id).character.creation_data().character_class;
+    const auto found = preferred_spells.find(class_id);
     if (found == preferred_spells.end())
         return choice;
     for (const auto &spell : found->second)

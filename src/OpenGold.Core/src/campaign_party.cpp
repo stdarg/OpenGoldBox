@@ -821,7 +821,7 @@ bool tries_door(const PartyMember &m, DoorMethod method)
 {
     const bool conscious = !m.vitals.dead && m.vitals.hit_points > 0;
     return conscious &&
-           (method == DoorMethod::bash || m.character.sheet().character_class == "Rogue");
+           (method == DoorMethod::bash || m.character.creation_data().character_class == "rogue");
 }
 } // namespace
 

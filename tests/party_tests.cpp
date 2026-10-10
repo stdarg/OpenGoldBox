@@ -2415,6 +2415,11 @@ void party_strength()
     set_hit_points({{fighter, 5}, {cleric, 5}, {wizard, 5}, {rogue, 4}});
     check(por::party_strength(party) == 3, "Level-one party strength uses AD&D-equivalent values");
 
+    // These hit points tell the groups apart: the Cleric (4 + 1 + 5) and Wizard
+    // (8 + 2) add 1 each, but read as Fighters (1 + 5, 2 + 5) they would add 0.
+    set_hit_points({{fighter, 5}, {cleric, 1}, {wizard, 2}, {rogue, 4}});
+    check(por::party_strength(party) == 3, "Cleric and magic-user groups come from the class ID");
+
     party.award_experience(900, "strength-levels");
     for (const auto id : {fighter, wizard})
         for (unsigned level = 2; level <= 3; ++level)

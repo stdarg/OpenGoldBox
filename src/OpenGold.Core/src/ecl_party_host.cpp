@@ -20,14 +20,14 @@ enum class AdndGroup
     thief
 };
 
-AdndGroup adnd_group(std::string_view character_class)
+// Takes the class's stable ID, not its label, which is presentation only.
+AdndGroup adnd_group(std::string_view class_id)
 {
-    if (character_class == "Cleric" || character_class == "Druid" || character_class == "Monk")
+    if (class_id == "cleric" || class_id == "druid" || class_id == "monk")
         return AdndGroup::cleric;
-    if (character_class == "Wizard" || character_class == "Sorcerer" ||
-            character_class == "Warlock")
+    if (class_id == "wizard" || class_id == "sorcerer" || class_id == "warlock")
         return AdndGroup::magic_user;
-    if (character_class == "Rogue" || character_class == "Bard")
+    if (class_id == "rogue" || class_id == "bard")
         return AdndGroup::thief;
     return AdndGroup::fighter;
 }
@@ -74,7 +74,8 @@ AdndCombatValues adnd_combat_values(const PartyMember &m)
 {
     const auto &sheet = m.character.sheet();
     AdndCombatValues values;
-    values.thac0 = adnd_thac0(adnd_group(sheet.character_class), sheet.level);
+    values.thac0 =
+        adnd_thac0(adnd_group(m.character.creation_data().character_class), sheet.level);
     int weapon_bonus = 0;
     for (const auto equipped : m.equipped)
     {
@@ -120,9 +121,9 @@ unsigned party_strength(const CampaignParty &party)
             // 5 per point of THAC0 below 21.
             const auto adnd = adnd_combat_values(m);
             const auto &sheet = m.character.sheet();
-            const auto group = adnd_group(sheet.character_class);
-            const int cleric_levels =
-                sheet.character_class == "Cleric" ? static_cast<int>(sheet.level) : 0;
+            const auto &class_id = m.character.creation_data().character_class;
+            const auto group = adnd_group(class_id);
+            const int cleric_levels = class_id == "cleric" ? static_cast<int>(sheet.level) : 0;
             const int magic_user_levels =
                 group == AdndGroup::magic_user ? static_cast<int>(sheet.level) : 0;
             result += static_cast<unsigned>(cleric_levels * 4 + m.vitals.hit_points +

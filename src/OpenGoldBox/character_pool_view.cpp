@@ -110,12 +110,12 @@ void CharacterCreationView::pool_selected(std::int64_t index)
         return !id;
     });
     required_node<Button>(*this, "PoolModal/Add").set_disabled(added || full);
-    const auto &c = character.sheet().character_class;
+    const auto &c = character.creation_data().character_class;
     required_node<Label>(*this, "PoolModal/Status")
     .set_text(i18n::text(
                    added  ? N_("Already added. Use Rejoin party for a reserved member.")
                    : full ? N_("All six PC positions are occupied.")
-                   : (c == "Fighter" || c == "Cleric" || c == "Wizard")
+                   : (c == "fighter" || c == "cleric" || c == "wizard")
                    ? N_("Starts with 250 gp. Preview portraits and both combat poses before adding.")
                    : N_("Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet.")));
 }
