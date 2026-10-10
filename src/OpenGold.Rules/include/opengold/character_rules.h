@@ -178,9 +178,10 @@ class CharacterRules
         return {};
     }
 
+    // An empty skill is a plain ability check. No default: an override cannot
+    // redefine one (Effective C++ Item 37).
     [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
-            unsigned ability,
-            std::string_view skill = {}) const;
+            unsigned ability, std::string_view skill) const;
 
   protected:
     // Implementations may copy themselves (a session's rollback does), but an

@@ -218,7 +218,7 @@ void all_classes()
                   "All entries equip through the shared equipment contract");
             for (unsigned ability = 0; ability < 6; ++ability)
             {
-                const auto plain = rules->ability_check(h.sheet(), gear, ability),
+                const auto plain = rules->ability_check(h.sheet(), gear, ability, ""),
                            stealth = rules->ability_check(h.sheet(), gear, ability, "stealth");
                 check(
                     plain.disadvantage == (penalty && ability < 2) &&
@@ -327,7 +327,7 @@ void boundaries()
     rejects(
         [&]
     {
-        (void)rules->ability_check(h.sheet(), {}, 6);
+        (void)rules->ability_check(h.sheet(), {}, 6, "");
     });
     rejects(
         [&]

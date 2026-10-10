@@ -635,9 +635,11 @@ class RulesModule
     // (Effective C++ Item 37), and every caller says which it means.
     virtual void apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
                                      ChoiceCompleteness) const;
+    // An empty skill is a plain ability check. No default: an override cannot
+    // redefine one (Effective C++ Item 37).
     [[nodiscard]] virtual AbilityCheckModifier
     ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
-                  std::string_view skill = {}) const;
+                  std::string_view skill) const;
     // Rolls that check outside combat, advancing the campaign service random state.
     [[nodiscard]] virtual AbilityCheckRoll
     roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
