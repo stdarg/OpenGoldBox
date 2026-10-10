@@ -1,4 +1,5 @@
 #include "opengold/formats.h"
+#include "little_endian.h"
 
 #include <algorithm>
 #include <array>
@@ -10,19 +11,8 @@ namespace opengold
 namespace
 {
 
-std::uint16_t read_u16(std::span<const std::uint8_t> bytes, std::size_t offset)
-{
-    return static_cast<std::uint16_t>(bytes[offset]) |
-           static_cast<std::uint16_t>(bytes[offset + 1] << 8);
-}
-
-std::uint32_t read_u32(std::span<const std::uint8_t> bytes, std::size_t offset)
-{
-    return static_cast<std::uint32_t>(bytes[offset]) |
-           (static_cast<std::uint32_t>(bytes[offset + 1]) << 8) |
-           (static_cast<std::uint32_t>(bytes[offset + 2]) << 16) |
-           (static_cast<std::uint32_t>(bytes[offset + 3]) << 24);
-}
+using format::read_u16;
+using format::read_u32;
 
 struct RecordResult
 {

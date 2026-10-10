@@ -1,4 +1,5 @@
 #include "opengold/pool_radiance.h"
+#include "little_endian.h"
 
 #include <algorithm>
 #include <utility>
@@ -12,15 +13,6 @@ int signed_byte(std::uint8_t value)
     return value < 128 ? value : static_cast<int>(value) - 256;
 }
 
-std::uint16_t u16(std::span<const std::uint8_t> b, std::size_t p)
-{
-    return static_cast<std::uint16_t>(b[p] | (b[p + 1] << 8));
-}
-
-std::uint32_t u32(std::span<const std::uint8_t> b, std::size_t p)
-{
-    return u16(b, p) | (static_cast<std::uint32_t>(u16(b, p + 2)) << 16);
-}
 
 template <std::size_t N>
 void copy(std::span<const std::uint8_t> b, std::size_t p, std::array<std::uint8_t, N> &out)
@@ -53,7 +45,7 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.levels = {b[150], b[151], b[152], b[153], b[154], b[155], b[156], b[157]};
     c.race = b[46];
     c.character_class = b[47];
-    c.age = u16(b, 48);
+    c.age = format::read_u16(b, 48);
     c.gender = b[158];
     c.alignment = b[160];
     c.type = b[159];
@@ -69,17 +61,17 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     copy(b, 178, c.cleric_spell_slots);
     copy(b, 181, c.mage_spell_slots);
     c.spell_byte_44_raw = b[44];
-    c.experience = u32(b, 172);
-    c.base_xp_award = u16(b, 184);
+    c.experience = format::read_u32(b, 172);
+    c.base_xp_award = format::read_u16(b, 184);
     c.xp_per_hit_point = b[186];
     for (std::size_t i = 0; i < c.wealth.size(); ++i)
-        c.wealth[i] = u16(b, 136 + 2 * i);
+        c.wealth[i] = format::read_u16(b, 136 + 2 * i);
     c.strength_bonus_flag_raw = b[170];
     c.item_count = b[199];
     c.item_limit = b[176];
     c.hands_equipped = b[256];
     c.save_bonus = signed_byte(b[257]);
-    c.encumbrance = u16(b, 258);
+    c.encumbrance = format::read_u16(b, 258);
     c.status = b[268];
     c.enabled = b[269];
     c.hostile = b[270];
@@ -115,9 +107,9 @@ std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t
         item.readied_raw = b[52];
         item.revealed_components = b[53];
         item.cursed_raw = b[54];
-        item.weight = u16(b, 55);
+        item.weight = format::read_u16(b, 55);
         item.stack_size = b[57];
-        item.value = u16(b, 58);
+        item.value = format::read_u16(b, 58);
         item.effect_codes = {b[60], b[61], b[62]};
         result.push_back(std::move(item));
     }
@@ -135,10 +127,10 @@ std::optional<std::vector<EffectRecord>> decode_effects(std::span<const std::uin
         EffectRecord effect;
         copy(b, 0, effect.raw);
         effect.code = b[0];
-        effect.duration_raw = u16(b, 1);
+        effect.duration_raw = format::read_u16(b, 1);
         effect.data = b[3];
         effect.table_flag = b[4];
-        effect.next_pointer_raw = u32(b, 5);
+        effect.next_pointer_raw = format::read_u32(b, 5);
         result.push_back(effect);
     }
     return result;
