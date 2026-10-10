@@ -595,6 +595,19 @@ void write_effects(std::ostream &out, const EffectState &effects)
     out << ' ' << effects.prone;
 }
 
+namespace
+{
+// A saved effect kind, checked before it becomes an EffectKind so the reader
+// compares kinds rather than casting numbers (Effective C++ Item 27).
+// wild_shape is the last kind.
+EffectKind saved_effect_kind(unsigned value)
+{
+    if (value > static_cast<unsigned>(EffectKind::wild_shape))
+        throw std::runtime_error("Invalid active effect");
+    return static_cast<EffectKind>(value);
+}
+} // namespace
+
 EffectState read_effects(std::istream &in)
 {
     std::string magic;
@@ -609,41 +622,42 @@ EffectState read_effects(std::istream &in)
     for (std::size_t n = 0; n < count; ++n)
     {
         Effect e;
-        unsigned kind{};
+        unsigned saved_kind{};
         unsigned_field(in, e.id);
-        unsigned_field(in, kind);
+        unsigned_field(in, saved_kind);
         unsigned_field(in, e.source_scope);
         unsigned_field(in, e.source_actor);
         in >> std::quoted(e.source_name) >> e.dc;
         unsigned_field(in, e.remaining_ms);
         unsigned_field(in, e.save_in_ms);
-        const bool timed = kind == unsigned(EffectKind::ray_of_frost) ||
-                           kind == unsigned(EffectKind::shocking_grasp) ||
-                           kind == unsigned(EffectKind::chill_touch) ||
-                           kind == unsigned(EffectKind::sap) || kind == unsigned(EffectKind::vex) ||
-                           kind == unsigned(EffectKind::slow) ||
-                           kind == unsigned(EffectKind::guiding_bolt) ||
-                           kind == unsigned(EffectKind::poisoned) ||
-                           kind == unsigned(EffectKind::dazzled) ||
-                           kind == unsigned(EffectKind::shield) ||
-                           kind == unsigned(EffectKind::acid_arrow) ||
-                           kind == unsigned(EffectKind::raging) ||
-                           kind == unsigned(EffectKind::reckless) ||
-                           kind == unsigned(EffectKind::addled) ||
-                           kind == unsigned(EffectKind::lit) ||
-                           kind == unsigned(EffectKind::moonlit) ||
-                           kind == unsigned(EffectKind::scorched);
+        const auto kind = saved_effect_kind(saved_kind);
+        const bool timed = kind == EffectKind::ray_of_frost ||
+                           kind == EffectKind::shocking_grasp ||
+                           kind == EffectKind::chill_touch ||
+                           kind == EffectKind::sap || kind == EffectKind::vex ||
+                           kind == EffectKind::slow ||
+                           kind == EffectKind::guiding_bolt ||
+                           kind == EffectKind::poisoned ||
+                           kind == EffectKind::dazzled ||
+                           kind == EffectKind::shield ||
+                           kind == EffectKind::acid_arrow ||
+                           kind == EffectKind::raging ||
+                           kind == EffectKind::reckless ||
+                           kind == EffectKind::addled ||
+                           kind == EffectKind::lit ||
+                           kind == EffectKind::moonlit ||
+                           kind == EffectKind::scorched;
         // Searing Smite, Ensnaring Strike and Entangle act at the start of the
         // target's turn or on its escape, not on a timer.
-        const bool turn_save = kind == unsigned(EffectKind::searing_smite) ||
-                               kind == unsigned(EffectKind::ensnaring_strike) ||
-                               kind == unsigned(EffectKind::entangle) ||
-                               kind == unsigned(EffectKind::webbed) ||
-                               kind == unsigned(EffectKind::sanctuary) ||
-                               kind == unsigned(EffectKind::asleep);
+        const bool turn_save = kind == EffectKind::searing_smite ||
+                               kind == EffectKind::ensnaring_strike ||
+                               kind == EffectKind::entangle ||
+                               kind == EffectKind::webbed ||
+                               kind == EffectKind::sanctuary ||
+                               kind == EffectKind::asleep;
         // A spell benefit has no save; `dc` carries its value.
-        const auto benefit = benefit_duration_ms(static_cast<EffectKind>(kind));
-        if (kind == unsigned(EffectKind::command) && in)
+        const auto benefit = benefit_duration_ms(kind);
+        if (kind == EffectKind::command && in)
         {
             if (e.id <= previous || e.id >= result.next_id || !e.source_scope ||
                     !e.source_actor || e.source_name.empty() || e.source_name.size() > 160 ||
@@ -659,38 +673,38 @@ EffectState read_effects(std::istream &in)
         {
             if (e.id <= previous || e.id >= result.next_id || !e.source_scope ||
                     !e.source_actor || e.source_name.empty() || e.source_name.size() > 160 ||
-                    e.dc < 0 || e.dc > benefit_value_limit(static_cast<EffectKind>(kind)) ||
+                    e.dc < 0 || e.dc > benefit_value_limit(kind) ||
                     !e.remaining_ms || e.remaining_ms > benefit ||
                     e.save_in_ms)
                 throw std::runtime_error("Invalid active effect");
-            e.kind = static_cast<EffectKind>(kind);
+            e.kind = kind;
             previous = e.id;
             result.active.push_back(std::move(e));
             continue;
         }
-        if (!in || (!timed && !turn_save && kind != unsigned(EffectKind::blindness) &&
-                    kind != unsigned(EffectKind::hold_person) &&
-                    kind != unsigned(EffectKind::drowsy) && kind != unsigned(EffectKind::laughing) &&
-                    kind != unsigned(EffectKind::enfeebled)) ||
+        if (!in || (!timed && !turn_save && kind != EffectKind::blindness &&
+                    kind != EffectKind::hold_person &&
+                    kind != EffectKind::drowsy && kind != EffectKind::laughing &&
+                    kind != EffectKind::enfeebled) ||
                 e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 ||
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
                             (turn_save ? e.save_in_ms != 0
                              : (!e.save_in_ms || e.save_in_ms > round_ms)))) ||
-                (timed && ((e.dc != 0 && !(kind == unsigned(EffectKind::reckless) && e.dc == 1)) ||
+                (timed && ((e.dc != 0 && !(kind == EffectKind::reckless && e.dc == 1)) ||
                            e.save_in_ms != 0 || !e.remaining_ms ||
-                           e.remaining_ms > ((kind == unsigned(EffectKind::chill_touch) ||
-                                              kind == unsigned(EffectKind::vex) ||
-                                              kind == unsigned(EffectKind::guiding_bolt) ||
-                                              kind == unsigned(EffectKind::poisoned) ||
-                                              kind == unsigned(EffectKind::dazzled) ||
-                                              kind == unsigned(EffectKind::acid_arrow) ||
-                                              kind == unsigned(EffectKind::raging) ||
-                                              kind == unsigned(EffectKind::lit))
+                           e.remaining_ms > ((kind == EffectKind::chill_touch ||
+                                              kind == EffectKind::vex ||
+                                              kind == EffectKind::guiding_bolt ||
+                                              kind == EffectKind::poisoned ||
+                                              kind == EffectKind::dazzled ||
+                                              kind == EffectKind::acid_arrow ||
+                                              kind == EffectKind::raging ||
+                                              kind == EffectKind::lit)
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");
-        e.kind = static_cast<EffectKind>(kind);
+        e.kind = kind;
         previous = e.id;
         result.active.push_back(std::move(e));
     }

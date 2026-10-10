@@ -167,6 +167,7 @@ enum class EffectKind : unsigned
     // Heat Metal: Disadvantage on attack rolls until the caster's next turn.
     scorched = 66,
     // Wild Shape: `dc` is the Beast form, one past its index in beast_forms.
+    // The last kind: a new one goes after it and updates saved_effect_kind().
     wild_shape = 67
 };
 
