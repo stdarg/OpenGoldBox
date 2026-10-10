@@ -143,6 +143,7 @@ if(OPENGOLD_BUILD_TESTS)
         add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/${script}.gd" "-DEXPECTED=${expected}" "-DARGS=${ARGN}"
+            "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/${name}"
             -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties("opengold_godot_${name}" PROPERTIES FIXTURES_REQUIRED godot_project
             TIMEOUT 40 LABELS godot RESOURCE_LOCK godot_project
