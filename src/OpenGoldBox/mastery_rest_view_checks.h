@@ -45,6 +45,33 @@ void RolfTourView::check_mastery_rest_controls()
                                 std::find(selected.begin(), selected.end(), o.id) == selected.end())
                             selected.push_back(o.id);
                 }
+                // Wizards, Paladins and Rangers choose spells at creation, and a
+                // Long Rest asks each of them to keep or change those spells.
+                const auto cantrips = rules->cantrip_options(draft);
+                if (!cantrips.options.empty())
+                {
+                    draft.cantrips.emplace();
+                    for (const auto &o : cantrips.options)
+                        if (draft.cantrips->size() < cantrips.count)
+                            draft.cantrips->push_back(o.id);
+                }
+                if (rules->spell_choice_options(draft).may_prepare)
+                {
+                    draft.spells.emplace();
+                    for (const auto &group : rules->spell_choice_options(draft).learning)
+                    {
+                        auto &learned = draft.spells->learning[group.id];
+                        for (const auto &o : group.options)
+                            if (learned.size() < group.count)
+                                learned.push_back(o.id);
+                    }
+                    // A Wizard prepares from the spellbook just chosen.
+                    const auto preparation = rules->spell_choice_options(draft);
+                    draft.spells->prepared.emplace();
+                    for (const auto &o : preparation.preparation)
+                        if (draft.spells->prepared->size() < preparation.prepared_count)
+                            draft.spells->prepared->push_back(o.id);
+                }
                 opengold::Character h(*rules, draft, {});
                 const auto id = index == 3 || index == 4
                                 ? campaign_->recruit("mastery-ui:" + klass, std::move(h))
@@ -78,12 +105,22 @@ void RolfTourView::check_mastery_rest_controls()
             .emit_signal("item_selected", 1);
             presentation::required_node<Button>(*picker, "Start").emit_signal("pressed");
             check(campaign_->state().spell_rest && campaign_->state().training_rest &&
+                  campaign_->state().spell_rest->members.size() == 3 &&
                   campaign_->state().training_rest->members.size() == 5,
                   "Completed camp creates independent spell and mastery windows");
-            check(presentation::required_node<Window>(*this, "RestSpells").is_visible() &&
-                  !w->is_visible(),
-                  "Spell choices precede mastery choices");
-            presentation::required_node<Button>(*this, "RestSpells/Cancel").emit_signal("pressed");
+            // The Wizard, Paladin and Ranger each keep their spells in turn.
+            for (int caster = 0; caster < 3; ++caster)
+            {
+                check(presentation::required_node<Window>(*this, "RestSpells").is_visible() &&
+                      !w->is_visible(),
+                      "Spell choices precede mastery choices");
+                presentation::required_node<Button>(*this, "RestSpells/Cancel")
+                .emit_signal("pressed");
+                check(presentation::required_node<Label>(*this, "RestSpells/Error")
+                      .get_text()
+                      .is_empty(),
+                      "Each caster keeps current spells");
+            }
             check(w->is_visible() && !campaign_->state().spell_rest,
                   "Mastery opens after spell choices");
         }
