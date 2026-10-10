@@ -142,7 +142,7 @@ void cleric_advancement_checks()
           "Level three prepares a level-two spell");
     party.advance(id, third);
     party.advance(id, party.default_advancement(id));
-    const auto &sheet = party.member(id).character.sheet();
+    const auto sheet = party.member(id).character.sheet();
     const auto access = rules->spell_access(sheet);
     // Aid, Bless, Cure Wounds and Lesser Restoration are Life Domain spells from
     // level three; seven others fill the places. Of four cantrips only Sacred
