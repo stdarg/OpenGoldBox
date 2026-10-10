@@ -22,7 +22,6 @@
 #include <utility>
 #include <array>
 #include <cmath>
-#include <exception>
 #include <fstream>
 #include <iomanip>
 #include <limits>
@@ -1910,39 +1909,13 @@ class Session final : public CombatSession
                !detail::has_effect(target.effects, detail::EffectKind::lit);
     }
 
-    // Invisibility ends right after its creature casts a spell, once any
-    // attack roll the spell makes has had the benefit. Casting Invisibility on
-    // oneself starts it rather than ending it.
-    class InvisibilityEnds
-    {
-      public:
-        InvisibilityEnds(Session &session, const Actor &caster)
-            : session_(session), id_(caster.source.id),
-              invisible_(detail::has_effect(caster.effects, detail::EffectKind::invisible)),
-              exceptions_(std::uncaught_exceptions())
-        {
-        }
-
-        InvisibilityEnds(const InvisibilityEnds &) = delete;
-        InvisibilityEnds &operator=(const InvisibilityEnds &) = delete;
-
-        // Only an action that completes ends the Invisibility. While an
-        // exception unwinds the action (a ReactionQuestion undoes it to ask a
-        // reaction), the session is about to be restored, and a second
-        // exception from here would terminate the program (Effective C++
-        // Item 8).
-        ~InvisibilityEnds()
-        {
-            if (invisible_ && std::uncaught_exceptions() == exceptions_)
-                session_.end_invisibility(id_);
-        }
-
-      private:
-        Session &session_;
-        EntityId id_;
-        bool invisible_;
-        int exceptions_;
-    };
+    // Invisibility ends right after its creature casts a spell, once any attack
+    // roll the spell makes has had the benefit; casting Invisibility on oneself
+    // starts it rather than ending it, so callers check before the spell. The
+    // end is an ordinary call after the action rather than a destructor's work,
+    // so an exception (a reaction question undoing the action) skips it and
+    // nothing can throw from a destructor (Effective C++ Item 8).
+    [[nodiscard]] static bool invisible(const Actor &a);
     void end_invisibility(EntityId id);
     // The Barbarian's Rage effect, if it is raging; borrowed from its effects.
     [[nodiscard]] static const detail::Effect *rage_of(const Actor &a);
@@ -1987,6 +1960,8 @@ class Session final : public CombatSession
     // "_2" level-two slot form and Command's option.
     void resolve_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
                        EntityId target_id);
+    void cast_resolved_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
+                             EntityId target_id);
     void apply_rider(const detail::SpellDef &spell, std::string_view verb, Actor &a, Actor &target,
                      int dc);
     // Command's Approach and Flee: the commanded creature only moves toward or
@@ -2048,6 +2023,7 @@ class Session final : public CombatSession
     [[nodiscard]] std::vector<EntityId> sculpted(const Actor &caster, const detail::SpellDef &spell,
             unsigned slot_level, const std::vector<Cell> &cells) const;
     void cast_area();
+    void cast_aimed_area(Actor &a, const PendingArea &aimed);
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
     [[nodiscard]] bool mark_can_move(const Actor &caster) const;
@@ -2174,6 +2150,7 @@ class Session final : public CombatSession
     unsigned selection_maximum(const PendingSelection &) const;
     void choose_target(const Command &command);
     void cast_on_selection();
+    void cast_selected(Actor &a, const PendingSelection &selection);
     // Bless adds 1d4 to attack rolls and saving throws; Bane subtracts 1d4.
     int blessing_die(const Actor &a);
     void burn_searing_smites(Actor &a);
@@ -3818,10 +3795,19 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
 void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
                             EntityId target_id)
 {
+    end_sanctuary(a);
+    const bool was_invisible = invisible(a);
+    const auto id = a.source.id;
+    cast_resolved_spell(spell, verb, a, target_id);
+    if (was_invisible)
+        end_invisibility(id);
+}
+
+void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
+                                  EntityId target_id)
+{
     const auto &d = def(a);
     const bool upcast = verb.ends_with("_2");
-    end_sanctuary(a);
-    const InvisibilityEnds ends{*this, a};
     take_metamagic(a, spell);
     if (casting_with(Metamagic::heightened))
         heightened_target_ = target_id;
@@ -5688,7 +5674,15 @@ void Session::cast_area()
         return;
     }
     end_sanctuary(a);
-    const InvisibilityEnds ends{*this, a};
+    const bool was_invisible = invisible(a);
+    const auto id = a.source.id;
+    cast_aimed_area(a, aimed);
+    if (was_invisible)
+        end_invisibility(id);
+}
+
+void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
+{
     const auto &spell = *detail::find_spell(aimed.verb);
     // Quickened Spell casts an Action spell as a Bonus Action.
     const bool quickened = !spell.bonus_action && readies(a, Metamagic::quickened, spell);
@@ -6060,7 +6054,15 @@ void Session::cast_on_selection()
     selection_.reset();
     auto &a = actor(selection.caster);
     end_sanctuary(a);
-    const InvisibilityEnds ends{*this, a};
+    const bool was_invisible = invisible(a);
+    const auto id = a.source.id;
+    cast_selected(a, selection);
+    if (was_invisible)
+        end_invisibility(id);
+}
+
+void Session::cast_selected(Actor &a, const PendingSelection &selection)
+{
     const auto &spell = *detail::find_spell(selection.verb);
     const bool quickened = readies(a, Metamagic::quickened, spell);
     take_metamagic(a, spell);
@@ -6168,6 +6170,11 @@ void Session::extend_rage(Actor &a)
     for (auto &e : a.effects.active)
         if (e.kind == detail::EffectKind::raging)
             e.remaining_ms = rage_duration(a);
+}
+
+bool Session::invisible(const Actor &a)
+{
+    return detail::has_effect(a.effects, detail::EffectKind::invisible);
 }
 
 void Session::end_invisibility(EntityId id)
@@ -8246,7 +8253,7 @@ void Session::dispatch(const Command &command)
         a.nick_origin = 0;
         (void)a.actions.spend(true);
         end_sanctuary(a);
-        const InvisibilityEnds ends{*this, a};
+        const bool was_invisible = invisible(a);
         if (command.verb == "armor_of_shadows")
         {
             detail::apply_spell_benefit(a.effects, scope_, a.source.id, a.source.name,
@@ -8265,6 +8272,8 @@ void Session::dispatch(const Command &command)
             else
                 detail::grant_temporary_hp(a, offered, TemporaryHpChoice::use_new);
         }
+        if (was_invisible)
+            end_invisibility(a.source.id);
     }
     else if (command.verb == "flame_blade_strike")
     {
