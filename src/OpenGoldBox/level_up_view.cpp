@@ -137,7 +137,8 @@ void CharacterCreationView::advancement_check()
     {
         auto *button = &required_node<Button>(*this, path);
         if (button->is_disabled())
-            throw std::runtime_error("Disabled advancement check control");
+            throw std::runtime_error("Disabled advancement check control: " +
+                                     std::string(path.utf8().get_data()));
         button->emit_signal("pressed");
     };
     const auto arrow = [](opengold::MemberId id)
@@ -261,8 +262,12 @@ void CharacterCreationView::advancement_check()
     case 3:
         capture_dialog("level-up-choices.png");
         press("LevelUp/Confirm");
+        if (!required_node<Control>(*this, "LevelUp/SpellChoicesPage").is_visible())
+            throw std::runtime_error("A Wizard's spell page follows the first page");
+        press("LevelUp/Confirm");
         if (campaign_->member(id).character.sheet().level != 4 ||
-                campaign_->member(id).character.sheet().prepared_spells.size() != 2 ||
+                // The SRD Wizard prepares seven spells at level 4.
+                campaign_->member(id).character.sheet().prepared_spells.size() != 7 ||
                 required_node<Button>(*this, arrow(id)).is_visible())
             throw std::runtime_error("Wizard confirmation did not apply choices and hide arrow");
         show_modifiers();
@@ -313,6 +318,8 @@ void CharacterCreationView::advancement_check()
         if (!required_node<Window>(*this, "LevelUp").is_visible())
             throw std::runtime_error("Town arrow did not open advancement");
         select("LevelUp/Feat", 1);
+        // A level-four Fighter also masters a fourth weapon.
+        select("LevelUp/AdvancementTraining", 1);
         break;
     }
     case 5:
@@ -343,6 +350,9 @@ void CharacterCreationView::advancement_check()
     {
         capture_dialog("level-up-cleric.png");
         press("LevelUp/Confirm");
+        if (!required_node<Control>(*this, "LevelUp/SpellChoicesPage").is_visible())
+            throw std::runtime_error("A Cleric's spell page follows the first page");
+        press("LevelUp/Confirm");
         const auto cleric_id = campaign_->state().slots[2];
         const auto has_feat = [&]
         {
@@ -353,8 +363,9 @@ void CharacterCreationView::advancement_check()
                 4,
                 {}}) != grants.end();
         };
+        // The SRD Cleric prepares seven spells at level 4.
         if (!has_feat() ||
-                campaign_->member(cleric_id).character.sheet().prepared_spells.size() != 2)
+                campaign_->member(cleric_id).character.sheet().prepared_spells.size() != 7)
             throw std::runtime_error(
                 "Cleric selection must grant Savage Attacker with its source and chosen spells");
         const auto saved = opengold::encode_campaign(*campaign_, nullptr, "feat-ui-check");
@@ -381,6 +392,7 @@ void CharacterCreationView::advancement_check()
         select("LevelUp/Feat", static_cast<int>(archery - offered.begin()));
         if (feats->get_item_text(feats->get_selected()) != i18n::text("Archery"))
             throw std::runtime_error("Archery choice must be translated");
+        select("LevelUp/AdvancementTraining", 1);
         break;
     }
     case 7:
