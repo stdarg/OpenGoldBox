@@ -386,8 +386,10 @@ void campaign()
     for (const auto &e : expectations())
     {
         auto c = h;
-        const auto item = c.inventory().add(e.key, e.key, 1);
-        const auto shield = c.inventory().add("shield", "Shield", 1);
+        const auto item = c.inventory().add({.definition_id = e.key, .name = e.key, .quantity = 1});
+        const auto shield = c.inventory().add({.definition_id = "shield",
+                                               .name = "Shield",
+                                               .quantity = 1});
         CampaignParty party(module());
         const auto id = party.add_pc(std::move(c));
         auto state = party.checkpoint();

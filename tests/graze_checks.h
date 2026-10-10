@@ -159,7 +159,7 @@ void advancement_and_rejection()
             auto r = rules("");
             CampaignParty party(module());
             auto h = hero("greatsword", klass, "soldier");
-            h.inventory().add("greatsword", "Physical blade");
+            h.inventory().add({.definition_id = "greatsword", .name = "Physical blade"});
             const auto id = party.add_pc(h);
             party.equip(id, 1);
             party.award_experience(2700, "graze-levels");

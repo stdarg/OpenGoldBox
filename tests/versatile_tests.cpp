@@ -197,8 +197,12 @@ void campaign()
     auto rules = module();
     CampaignParty party(module());
     auto character = hero();
-    const auto staff = character.inventory().add("quarterstaff", "Quarterstaff", 1),
-               shield = character.inventory().add("shield", "Shield", 1);
+    const auto staff = character.inventory().add({.definition_id = "quarterstaff",
+                                                  .name = "Quarterstaff",
+                                                  .quantity = 1}),
+               shield = character.inventory().add({.definition_id = "shield",
+                                                   .name = "Shield",
+                                                   .quantity = 1});
     const auto id = party.add_pc(std::move(character));
     party.equip(id, staff);
     auto wounded = party.checkpoint();

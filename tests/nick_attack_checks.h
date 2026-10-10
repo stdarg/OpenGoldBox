@@ -18,8 +18,8 @@ CampaignParty party(std::string weapon = "dagger", bool style = false, bool nega
         for (auto &roll : draft.rolls)
             roll = {{2, 2, 1, 1}, 3};
     Character h(*srd5::character_rules(), draft, {});
-    h.inventory().add(weapon, "First weapon");
-    h.inventory().add(weapon, "Second weapon");
+    h.inventory().add({.definition_id = weapon, .name = "First weapon"});
+    h.inventory().add({.definition_id = weapon, .name = "Second weapon"});
     CampaignParty p(rules());
     const auto id = npc ? p.recruit("nick:npc", h) : p.add_pc(h);
     p.equip(id, 1);
@@ -191,8 +191,8 @@ void pending_interactions()
     auto draft = hero("shortsword", "rogue", "soldier").creation_data();
     draft.training["class:rogue:weapon_mastery"] = {"shortsword", "scimitar"};
     Character rogue(*srd5::character_rules(), draft, {});
-    rogue.inventory().add("shortsword", "Vex blade");
-    rogue.inventory().add("scimitar", "Nick blade");
+    rogue.inventory().add({.definition_id = "shortsword", .name = "Vex blade"});
+    rogue.inventory().add({.definition_id = "scimitar", .name = "Nick blade"});
     CampaignParty p(rules());
     p.add_pc(rogue);
     p.equip(1, 1);
@@ -278,7 +278,7 @@ void throwing_and_provenance()
     }
     auto p = party();
     auto h = p.member(1).character;
-    h.inventory().add("club", "Other kind");
+    h.inventory().add({.definition_id = "club", .name = "Other kind"});
     CampaignParty mixed(rules());
     mixed.add_pc(h);
     mixed.equip(1, 1);
@@ -290,8 +290,8 @@ void throwing_and_provenance()
         !offers(*c, "nick_melee") && offers(*c, "light_melee"),
         "Mastered Nick on the first weapon does not grant Nick to a different non-Nick second weapon");
     auto plain = character("fighter", "Pending mastery");
-    plain.inventory().add("dagger", "One");
-    plain.inventory().add("dagger", "Two");
+    plain.inventory().add({.definition_id = "dagger", .name = "One"});
+    plain.inventory().add({.definition_id = "dagger", .name = "Two"});
     CampaignParty missing(rules());
     missing.add_pc(plain);
     missing.equip(1, 1);
@@ -370,8 +370,8 @@ void ui_fixtures()
     };
     CampaignParty p(module());
     auto h = hero("handaxe", "fighter", "soldier");
-    h.inventory().add("dagger", "First dagger");
-    h.inventory().add("dagger", "Second dagger");
+    h.inventory().add({.definition_id = "dagger", .name = "First dagger"});
+    h.inventory().add({.definition_id = "dagger", .name = "Second dagger"});
     const auto id = p.add_pc(h);
     p.equip(id, 1);
     p.equip(id, 2, EquipmentOperation::equip_other);

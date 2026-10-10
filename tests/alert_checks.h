@@ -16,7 +16,7 @@ CampaignParty party()
                 for (unsigned i = 0; i < g.count; ++i)
                     d.training[g.id].push_back(g.options.at(i).id);
         auto h = hero(d);
-        h.inventory().add("dagger", "Dagger", 2);
+        h.inventory().add({.definition_id = "dagger", .name = "Dagger", .quantity = 2});
         const auto id = p.add_pc(std::move(h));
         p.equip(id, 1);
     }

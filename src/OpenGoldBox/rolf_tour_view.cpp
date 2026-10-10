@@ -1401,7 +1401,9 @@ void RolfTourView::check_town()
             throw std::runtime_error("Equip must display the untrained penalty");
         auto staff_fixture = retained;
         auto &wielder = staff_fixture.roster.at(0);
-        const auto staff = wielder.character.inventory().add("quarterstaff", "Quarterstaff", 1);
+        const auto staff = wielder.character.inventory().add({.definition_id = "quarterstaff",
+                                                              .name = "Quarterstaff",
+                                                              .quantity = 1});
         wielder.equipped.push_back(staff);
         campaign_->restore(staff_fixture);
         refresh_inventory();

@@ -549,10 +549,15 @@ void CharacterCreationView::equipment_art_check()
                 por::Equipment item;
                 item.stored.type = option.original_type;
                 item.stored.stack_size = 1;
-                character.inventory().add(equipment_conversion(item), option.label, 1,
-                                          option.original_type);
+                character.inventory().add({.definition_id = equipment_conversion(item),
+                                           .name = option.label,
+                                           .quantity = 1,
+                                           .original_type = option.original_type});
             }
-        character.inventory().add("shield", "Shield", 1, 59);
+        character.inventory().add({.definition_id = "shield",
+                                   .name = "Shield",
+                                   .quantity = 1,
+                                   .original_type = 59});
         const auto id = campaign_->add_pc(std::move(character));
         party_selected(campaign_->state().roster.size() - 1);
         // Exercise the shipped party's buttons, not the separate review UI.

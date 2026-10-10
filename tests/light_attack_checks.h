@@ -34,12 +34,12 @@ CampaignParty party(bool feat = false, bool negative = false, bool npc = false)
 {
     CampaignParty p(rules());
     auto h = hero_for(feat, negative);
-    h.inventory().add("dagger", "Dagger");
-    h.inventory().add("dagger", "Dagger");
-    h.inventory().add("dagger", "Dagger", 3);
-    h.inventory().add("hand_crossbow", "Hand Crossbow");
-    h.inventory().add("hand_crossbow", "Hand Crossbow");
-    h.inventory().add("shield", "Shield");
+    h.inventory().add({.definition_id = "dagger", .name = "Dagger"});
+    h.inventory().add({.definition_id = "dagger", .name = "Dagger"});
+    h.inventory().add({.definition_id = "dagger", .name = "Dagger", .quantity = 3});
+    h.inventory().add({.definition_id = "hand_crossbow", .name = "Hand Crossbow"});
+    h.inventory().add({.definition_id = "hand_crossbow", .name = "Hand Crossbow"});
+    h.inventory().add({.definition_id = "shield", .name = "Shield"});
     const auto id = npc ? p.recruit("light:npc", h) : p.add_pc(h);
     p.equip(id, 1);
     p.equip(id, 2, EquipmentOperation::equip_other);
@@ -254,8 +254,8 @@ void run()
     // adjacent-only melee (MELEE-1), leaving the Whip's square provokes directly.
     {
         auto h = hero_for();
-        h.inventory().add("whip", "Whip");
-        h.inventory().add("dagger", "Dagger");
+        h.inventory().add({.definition_id = "whip", .name = "Whip"});
+        h.inventory().add({.definition_id = "dagger", .name = "Dagger"});
         CampaignParty reactions(rules());
         reactions.add_pc(std::move(h));
         reactions.equip(1, 1);
@@ -283,8 +283,8 @@ void run()
     // A Magic action with a Light weapon held never earns an extra weapon attack.
     {
         auto h = hero_for(false, false, "wizard");
-        h.inventory().add("dagger", "Dagger");
-        h.inventory().add("dagger", "Dagger");
+        h.inventory().add({.definition_id = "dagger", .name = "Dagger"});
+        h.inventory().add({.definition_id = "dagger", .name = "Dagger"});
         CampaignParty p(rules());
         p.add_pc(std::move(h));
         p.equip(1, 1);
@@ -295,8 +295,8 @@ void run()
     }
     {
         auto h = hero_for(false, false, "rogue");
-        h.inventory().add("dagger", "Dagger");
-        h.inventory().add("dagger", "Dagger");
+        h.inventory().add({.definition_id = "dagger", .name = "Dagger"});
+        h.inventory().add({.definition_id = "dagger", .name = "Dagger"});
         CampaignParty p(rules());
         p.add_pc(std::move(h));
         p.equip(1, 1);

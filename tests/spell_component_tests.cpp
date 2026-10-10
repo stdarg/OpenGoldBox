@@ -198,8 +198,8 @@ CampaignParty party(bool npc = false)
 {
     CampaignParty p(module());
     auto h = hero("cleric");
-    h.inventory().add("mace", "Mace");
-    h.inventory().add("shield", "Shield");
+    h.inventory().add({.definition_id = "mace", .name = "Mace"});
+    h.inventory().add({.definition_id = "shield", .name = "Shield"});
     const auto id = npc ? p.recruit("fixture:cleric", std::move(h)) : p.add_pc(std::move(h));
     p.equip(id, 1);
     p.equip(id, 2);

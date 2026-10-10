@@ -428,7 +428,8 @@ void creation_tests()
           saved.hit_die == sheet.hit_die && saved.hit_points == sheet.hit_points &&
           saved.hp_explanation == sheet.hp_explanation && saved.level == 1,
           "Character retains rules identity and evaluated sheet values");
-    const auto sword = finished.inventory().add("test:longsword", "Longsword");
+    const auto sword = finished.inventory().add({.definition_id = "test:longsword",
+                                                 .name = "Longsword"});
     auto copy = finished;
     copy.inventory().remove(sword);
     auto recolored = appearance;
@@ -468,23 +469,27 @@ void inventory_tests()
     rejects(
         [&]
     {
-        inventory.add("", "Arrows");
+        inventory.add({.definition_id = "", .name = "Arrows"});
     },
     "Items require a stable definition key");
     rejects(
         [&]
     {
-        inventory.add("test:arrow", "  ");
+        inventory.add({.definition_id = "test:arrow", .name = "  "});
     },
     "Items require a display name");
     rejects(
         [&]
     {
-        inventory.add("test:arrow", "Arrows", 0);
+        inventory.add({.definition_id = "test:arrow", .name = "Arrows", .quantity = 0});
     },
     "Empty stacks rejected");
-    const auto first = inventory.add("test:arrow", "Arrows", 20),
-               second = inventory.add("test:arrow", "Arrows", 5);
+    const auto first = inventory.add({.definition_id = "test:arrow",
+                                      .name = "Arrows",
+                                      .quantity = 20}),
+               second = inventory.add({.definition_id = "test:arrow",
+                                       .name = "Arrows",
+                                       .quantity = 5});
     check(first != second && inventory.items().size() == 2 &&
           inventory.find(first)->get().definition_id == "test:arrow",
           "Separate stacks have stable IDs");
@@ -517,7 +522,7 @@ void inventory_tests()
     inventory.remove(first);
     check(!inventory.find(first) && inventory.items().size() == 1,
           "Removing the final item removes its stack");
-    const auto third = inventory.add("test:shield", "Shield");
+    const auto third = inventory.add({.definition_id = "test:shield", .name = "Shield"});
     check(third != first && third != second, "Removed stack IDs are not reused");
     inventory.remove(second, 5);
     inventory.remove(third);

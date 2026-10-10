@@ -155,7 +155,7 @@ void campaign()
     {
         CampaignParty party(module());
         auto h = selected(true);
-        h.inventory().add("quarterstaff", "Quarterstaff");
+        h.inventory().add({.definition_id = "quarterstaff", .name = "Quarterstaff"});
         const auto id = npc ? party.recruit("fixture:warlock-poison", std::move(h))
                         : party.add_pc(std::move(h));
         party.equip(id, 1);

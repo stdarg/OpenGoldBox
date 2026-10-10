@@ -9,10 +9,10 @@ CampaignParty party()
             })
     {
         auto h = style_route_checks::starter(klass);
-        h.inventory().add("greatsword", "Greatsword");
-        h.inventory().add("dagger", "Dagger", 3);
-        h.inventory().add("hand_crossbow", "Hand Crossbow");
-        h.inventory().add("shield", "Shield");
+        h.inventory().add({.definition_id = "greatsword", .name = "Greatsword"});
+        h.inventory().add({.definition_id = "dagger", .name = "Dagger", .quantity = 3});
+        h.inventory().add({.definition_id = "hand_crossbow", .name = "Hand Crossbow"});
+        h.inventory().add({.definition_id = "shield", .name = "Shield"});
         const auto id = std::string_view(klass) == "fighter"
                         ? p.add_pc(std::move(h))
                         : p.recruit(std::string("baseline:") + klass, std::move(h));

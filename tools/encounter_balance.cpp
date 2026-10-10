@@ -97,7 +97,7 @@ std::shared_ptr<CampaignParty> party_of(bool mixed, unsigned level)
         auto person = create(member, seed++);
         std::vector<std::uint64_t> items;
         for (const auto *key : member.gear)
-            items.push_back(person.inventory().add(key, key));
+            items.push_back(person.inventory().add({.definition_id = key, .name = key}));
         const auto id = party->add_pc(std::move(person));
         for (const auto item : items)
             party->equip(id, item);

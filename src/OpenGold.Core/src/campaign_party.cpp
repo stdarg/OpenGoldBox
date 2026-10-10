@@ -473,7 +473,10 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
             inventory_changed = true;
             inventory.remove(item, 1);
             candidates[selected] =
-                inventory.add(unit.definition_id, unit.name, 1, unit.original_type);
+                inventory.add({.definition_id = unit.definition_id,
+                               .name = unit.name,
+                               .quantity = 1,
+                               .original_type = unit.original_type});
             if (const auto source = sources.find(item); source != sources.end())
                 sources.emplace(candidates[selected], source->second);
         }
@@ -515,8 +518,10 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     auto inventory = m.character.inventory();
     auto sources = m.item_sources;
     const auto key =
-        inventory.add(equipment_conversion(item), item.label(),
-                      std::max(1u, unsigned(item.stored.stack_size)), item.stored.type);
+        inventory.add({.definition_id = equipment_conversion(item),
+                       .name = item.label(),
+                       .quantity = std::max(1u, unsigned(item.stored.stack_size)),
+                       .original_type = item.stored.type});
     sources.emplace(key, item);
     m.character.inventory() = std::move(inventory);
     m.item_sources = std::move(sources);
@@ -579,9 +584,13 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         });
         auto &m = next.roster[recipient];
         // Encounter rewards are retained even beyond the shop's purchase cap.
-        const auto id = m.character.inventory().add(equipment_conversion(item), item.label(),
-            std::max(1u, unsigned(item.stored.stack_size)),
-            item.stored.type);
+        const auto id = m.character.inventory().add(
+        {
+            .definition_id = equipment_conversion(item),
+            .name = item.label(),
+            .quantity = std::max(1u, unsigned(item.stored.stack_size)),
+            .original_type = item.stored.type
+        });
         m.item_sources.emplace(id, item);
     }
     next.claimed_rewards.push_back(std::move(reward_id));

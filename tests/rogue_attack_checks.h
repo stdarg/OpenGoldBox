@@ -208,7 +208,7 @@ void run()
         VitalState v;
         for (unsigned n = 2; n <= level; ++n)
             check(pc.advance(*rules, v), "Recruited Rogue ordinary advancement");
-        pc.inventory().add("dagger", "Dagger");
+        pc.inventory().add({.definition_id = "dagger", .name = "Dagger"});
         const auto id = recruited.recruit("fixture:rogue-attacks", std::move(pc));
         recruited.equip(id, 1);
         recruited.add_pc(hero(d));
@@ -389,7 +389,7 @@ void run()
         {
             CampaignParty party(rules_module());
             auto pc = h;
-            const auto token = pc.inventory().add(weapon, weapon);
+            const auto token = pc.inventory().add({.definition_id = weapon, .name = weapon});
             const auto id = party.add_pc(std::move(pc));
             party.equip(id, token);
             auto actors = party.participants();

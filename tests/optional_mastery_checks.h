@@ -180,7 +180,7 @@ void reactions()
         {
             CampaignParty p(module());
             auto h = hero(key, "fighter", "soldier");
-            h.inventory().add(key, "Mastery weapon");
+            h.inventory().add({.definition_id = key, .name = "Mastery weapon"});
             p.add_pc(h);
             p.equip(1, 1);
             p.award_experience(900, "reaction-mastery");
@@ -249,7 +249,7 @@ void cleave_criticals()
     auto r = rules();
     CampaignParty p(module());
     auto h = hero("greataxe", "fighter", "soldier");
-    h.inventory().add("greataxe", "Axe");
+    h.inventory().add({.definition_id = "greataxe", .name = "Axe"});
     p.add_pc(h);
     p.equip(1, 1);
     p.award_experience(900, "cleave-champion");
@@ -472,7 +472,7 @@ void movement_enables_mastery()
     {
         CampaignParty p(module());
         auto h = hero(key, "fighter", "soldier");
-        h.inventory().add(key, "Weapon");
+        h.inventory().add({.definition_id = key, .name = "Weapon"});
         p.add_pc(h);
         p.equip(1, 1);
         p.award_experience(900, "positioning");
@@ -532,7 +532,7 @@ void slain_reaction_mover()
     auto r = rules();
     CampaignParty p(module());
     auto h = hero("greataxe", "fighter", "soldier");
-    h.inventory().add("greataxe", "Axe");
+    h.inventory().add({.definition_id = "greataxe", .name = "Axe"});
     p.add_pc(h);
     p.equip(1, 1);
     auto roster = p.participants();
@@ -581,7 +581,7 @@ void physical_and_damage()
         {
             CampaignParty p(module());
             auto h = hero(key, "fighter", background);
-            h.inventory().add(key, "Thrown weapon");
+            h.inventory().add({.definition_id = key, .name = "Thrown weapon"});
             p.add_pc(h);
             p.equip(1, 1);
             auto roster = p.participants();
