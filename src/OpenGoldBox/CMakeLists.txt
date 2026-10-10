@@ -125,6 +125,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_godot_path_tests COMMAND opengold_godot_path_tests)
     add_test(NAME opengold_screenshot_tool_tests
         COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tests/screenshot_tool_tests.py")
+    # The catalogs must list every message the game shows, with current references.
+    add_test(NAME opengold_localization_check
+        COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tools/localization.py" --check)
     # These checks use synthetic combat and first-run setup, without original
     # game files, export templates, or a packaged application.
     add_custom_target(opengoldbox_test_project
