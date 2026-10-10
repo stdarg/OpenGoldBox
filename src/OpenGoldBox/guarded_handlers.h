@@ -21,9 +21,26 @@ concept ReportsFailures = requires(View &view, const std::exception &failure)
     view.report_failure(failure);
 };
 
+// Logs a failed handler and passes it to the view. Instantiated once per
+// view rather than once per handler, since it depends on nothing else
+// (Effective C++ Item 44).
+template <ReportsFailures View>
+void report_guarded_failure(View &view, const std::exception &failure) noexcept
+{
+    godot::UtilityFunctions::push_error(godot::String::utf8(failure.what()));
+    try
+    {
+        view.report_failure(failure);
+    }
+    catch (const std::exception &)
+    {
+        // Already logged above; the view could not show it.
+    }
+}
+
 // Godot calls handlers from engine code that a C++ exception cannot unwind
-// through, so an escaping exception ends the game. run_guarded logs a failure
-// instead and passes it to the view's report_failure.
+// through, so an escaping exception ends the game. run_guarded reports a
+// failure through report_guarded_failure instead.
 template <ReportsFailures View, class Work> void run_guarded(View &view, Work &&work) noexcept
 {
     try
@@ -32,15 +49,7 @@ template <ReportsFailures View, class Work> void run_guarded(View &view, Work &&
     }
     catch (const std::exception &failure)
     {
-        godot::UtilityFunctions::push_error(godot::String::utf8(failure.what()));
-        try
-        {
-            view.report_failure(failure);
-        }
-        catch (const std::exception &)
-        {
-            // Already logged above; the view could not show it.
-        }
+        report_guarded_failure(view, failure);
     }
 }
 
