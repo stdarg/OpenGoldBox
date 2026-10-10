@@ -16,9 +16,9 @@ namespace
 {
 // A session drives a shared party, so copying is explicit (detached_copy)
 // and moving is free (Effective C++ Item 6).
-static_assert(!std::is_copy_constructible_v<por::RolfTourSession> &&
-              !std::is_copy_assignable_v<por::RolfTourSession> &&
-              std::is_move_constructible_v<por::RolfTourSession>);
+static_assert(!std::is_copy_constructible_v<RolfTourSession> &&
+              !std::is_copy_assignable_v<RolfTourSession> &&
+              std::is_move_constructible_v<RolfTourSession>);
 
 using Bytes = std::vector<std::uint8_t>;
 
