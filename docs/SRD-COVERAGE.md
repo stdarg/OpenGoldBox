@@ -80,6 +80,10 @@ lasts its minute after its caster flees the fight; combat checkpoints become
 Rules 0.6.153 has a broken creature fight on from the moment it fails to get
 away; until its next turn it still showed "Fleeing in panic" and could spend
 its Action on a Dash back toward the edge.
+Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
+and shield, as the original engine did, instead of an unarmored AC. A creature
+that surrenders as its turn begins, right after a party member drops, now
+leaves the field at once; its surrender used to leave it standing.
 
 ## Slums set-encounter creatures
 
