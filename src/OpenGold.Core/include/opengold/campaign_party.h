@@ -3,7 +3,13 @@
 #include "opengold/character.h"
 #include "opengold/coin_purse.h"
 #include "opengold/creature_catalog.h"
-#include "opengold/ecl_machine.h"
+
+namespace opengold::por
+{
+// Only read_character() names the script machine, by reference, so files that
+// include this header do not compile the machine (Effective C++ Item 31).
+class EclMachine;
+} // namespace opengold::por
 
 namespace opengold
 {
