@@ -326,15 +326,17 @@ void creation_tests()
         creator.next();
     },
     "Required training blocks Name");
-    creator.training_choice("class:cleric", "medicine", true);
-    creator.training_choice("class:cleric", "persuasion", true);
+    creator.training_choice({.group = "class:cleric", .option = "medicine", .selected = true});
+    creator.training_choice({.group = "class:cleric", .option = "persuasion", .selected = true});
     rejects(
         [&]
     {
         creator.next();
     },
     "A Cleric chooses a Divine Order");
-    creator.training_choice("class:cleric:divine_order", "protector", true);
+    creator.training_choice({.group = "class:cleric:divine_order",
+                             .option = "protector",
+                             .selected = true});
     creator.next();
     check(creator.draft().character_class == "cleric" &&
           creator.step() == CreationStep::spell_choices,
@@ -351,7 +353,7 @@ void creation_tests()
     for (const auto *spell :
             {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"
             })
-        creator.spell_choice("prepared", spell, true);
+        creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
     creator.next();
     check(creator.step() == CreationStep::name, "Spell Choices advances to Name");
     rejects(

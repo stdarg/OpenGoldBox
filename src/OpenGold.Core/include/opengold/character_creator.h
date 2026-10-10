@@ -17,6 +17,15 @@ enum class CreationStep
     sheet
 };
 
+// One option of a choice group switched on or off. Group and option are both
+// strings, so they are named fields rather than adjacent parameters
+// (Effective C++ Item 18).
+struct ChoiceToggle
+{
+    std::string_view group, option;
+    bool selected{};
+};
+
 class CharacterCreator
 {
   public:
@@ -48,8 +57,8 @@ class CharacterCreator
     void select(rules::CreationField field, std::string_view id);
     void target_class(std::string_view id, bool selected);
     void select_adjustment(unsigned index);
-    void training_choice(std::string_view group, std::string_view option, bool selected);
-    void spell_choice(std::string_view group, std::string_view option, bool selected);
+    void training_choice(ChoiceToggle toggle);
+    void spell_choice(ChoiceToggle toggle);
     [[nodiscard]] bool has_spell_choices() const;
     [[nodiscard]] bool spell_choices_complete() const;
     void cantrip_choice(std::string_view option, bool selected);

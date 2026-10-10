@@ -968,8 +968,9 @@ void RolfTourView::refresh_rest_spells()
 
 void RolfTourView::rest_spell_toggled(bool selected, String group, String option)
 {
-    presentation::toggle_spell(rest_spell_choice_, selected, group.utf8().get_data(),
-                               option.utf8().get_data());
+    presentation::toggle_spell(rest_spell_choice_, {.group = group.utf8().get_data(),
+                                                    .option = option.utf8().get_data(),
+                                                    .selected = selected});
     refresh_rest_spells();
 }
 

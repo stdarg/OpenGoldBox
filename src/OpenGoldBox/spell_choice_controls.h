@@ -100,16 +100,16 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
     }
 }
 
-inline void toggle_spell(opengold::rules::SpellChoices &choice, bool selected, std::string group,
-                         std::string value)
+inline void toggle_spell(opengold::rules::SpellChoices &choice, opengold::ChoiceToggle toggle)
 {
+    const auto [group, value, selected] = toggle;
     if (group == "prepared" && !choice.prepared)
         choice.prepared.emplace();
-    auto &values = group == "prepared" ? *choice.prepared : choice.learning[group];
+    auto &values = group == "prepared" ? *choice.prepared : choice.learning[std::string(group)];
     if (selected)
     {
         if (std::find(values.begin(), values.end(), value) == values.end())
-            values.push_back(std::move(value));
+            values.emplace_back(value);
     }
     else
         std::erase(values, value);

@@ -341,8 +341,9 @@ void CharacterCreationView::advancement_learning_toggled(bool selected, String g
     opengold::rules::SpellChoices choices
     {
         *advancement_choice_.spell_learning, advancement_choice_.spells, {}, {}};
-    presentation::toggle_spell(choices, selected, group.utf8().get_data(),
-                               option.utf8().get_data());
+    presentation::toggle_spell(choices, {.group = group.utf8().get_data(),
+                                         .option = option.utf8().get_data(),
+                                         .selected = selected});
     advancement_choice_.spell_learning = choices.learning;
     advancement_choice_.spells = *choices.prepared;
     if (group != "prepared" && !selected)

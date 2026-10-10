@@ -144,8 +144,9 @@ void CharacterCreator::cantrip_choice(std::string_view option, bool selected)
     draft_ = std::move(candidate);
 }
 
-void CharacterCreator::spell_choice(std::string_view group, std::string_view option, bool selected)
+void CharacterCreator::spell_choice(ChoiceToggle toggle)
 {
+    const auto [group, option, selected] = toggle;
     require_editable();
     const auto options = rules_->spell_choice_options(draft_);
     auto next = draft_;
@@ -282,8 +283,9 @@ void CharacterCreator::prune_training(CharacterDraft &candidate) const
     }
 }
 
-void CharacterCreator::training_choice(std::string_view id, std::string_view option, bool selected)
+void CharacterCreator::training_choice(ChoiceToggle toggle)
 {
+    const auto [id, option, selected] = toggle;
     require_editable();
     auto candidate = draft_;
     const auto groups = training_options();

@@ -931,7 +931,9 @@ void CharacterCreationView::creation_spell_toggled(bool selected, String group, 
     perform(
         [&]
     {
-        creator_->spell_choice(group.utf8().get_data(), option.utf8().get_data(), selected);
+        creator_->spell_choice({.group = group.utf8().get_data(),
+                                .option = option.utf8().get_data(),
+                                .selected = selected});
     });
 }
 
@@ -963,7 +965,9 @@ void CharacterCreationView::training_selected(std::int64_t index, String group)
                 found->control != opengold::rules::TrainingChoiceControl::single_selection ||
                 static_cast<std::size_t>(index) > found->options.size())
             throw std::runtime_error("Unknown training choice");
-        creator_->training_choice(found->id, found->options[index - 1].id, true);
+        creator_->training_choice({.group = found->id,
+                                   .option = found->options[index - 1].id,
+                                   .selected = true});
     });
 }
 
@@ -974,7 +978,9 @@ void CharacterCreationView::training_toggled(bool selected, String group, String
     perform(
         [&]
     {
-        creator_->training_choice(group.utf8().get_data(), option.utf8().get_data(), selected);
+        creator_->training_choice({.group = group.utf8().get_data(),
+                                   .option = option.utf8().get_data(),
+                                   .selected = selected});
     });
 }
 

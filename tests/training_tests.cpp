@@ -305,7 +305,9 @@ void all_class_skills()
             creator.select(CreationField::character_class, from.id);
             auto expected = chosen_class_skills(from.id);
             for (const auto &id : expected)
-                creator.training_choice("class:" + from.id, id, true);
+                creator.training_choice({.group = "class:" + from.id,
+                                         .option = id,
+                                         .selected = true});
             const auto allowed = expected_class_skills(to.id);
             std::erase_if(expected,
                           [&](const auto & id)
@@ -354,12 +356,14 @@ void creation_controls()
     rejects(
         [&]
     {
-        creator.training_choice("unknown", "stealth", true);
+        creator.training_choice({.group = "unknown", .option = "stealth", .selected = true});
     });
     rejects(
         [&]
     {
-        creator.training_choice("class:rogue:expertise", "arcana", true);
+        creator.training_choice({.group = "class:rogue:expertise",
+                                 .option = "arcana",
+                                 .selected = true});
     });
     // Independent, authored choices exercise dependent groups in UI order.
     const auto selected = choices();
@@ -367,27 +371,29 @@ void creation_controls()
             {"class:rogue", "class:rogue:expertise", "class:rogue:weapon_mastery"
             })
         for (const auto &value : selected.at(group))
-            creator.training_choice(group, value, true);
+            creator.training_choice({.group = group, .option = value, .selected = true});
     check(creator.training_complete() && creator.sheet().training.complete,
           "Every required choice permits completion");
     const auto before = creator.draft().training;
-    creator.training_choice("class:rogue", "acrobatics", true);
+    creator.training_choice({.group = "class:rogue", .option = "acrobatics", .selected = true});
     rejects(
         [&]
     {
-        creator.training_choice("class:rogue", "stealth", true);
+        creator.training_choice({.group = "class:rogue", .option = "stealth", .selected = true});
     });
     check(creator.draft().training == before,
           "Duplicate selection is idempotent; excessive selection rejects atomically");
     creator.next();
     creator.back();
     check(creator.draft().training == before, "Back preserves selected training");
-    creator.training_choice("class:rogue", "perception", false);
+    creator.training_choice({.group = "class:rogue", .option = "perception", .selected = false});
     check(creator.draft().training.at("class:rogue:expertise") ==
           std::vector<std::string> {"stealth"},
           "Removing a skill removes only its dependent Expertise");
-    creator.training_choice("class:rogue", "perception", true);
-    creator.training_choice("class:rogue:expertise", "perception", true);
+    creator.training_choice({.group = "class:rogue", .option = "perception", .selected = true});
+    creator.training_choice({.group = "class:rogue:expertise",
+                             .option = "perception",
+                             .selected = true});
     creator.back();
     creator.back();
     creator.select(CreationField::background, "sage");
@@ -399,19 +405,27 @@ void creation_controls()
                               selected.at("class:rogue").begin(), selected.at("class:rogue").end()),
           "Changing background preserves valid skill choices");
     creator.select(CreationField::background, "criminal");
-    creator.training_choice("class:rogue:expertise", "stealth", true);
+    creator.training_choice({.group = "class:rogue:expertise",
+                             .option = "stealth",
+                             .selected = true});
     creator.select(CreationField::character_class, "fighter");
     check(creator.draft().training.size() == 2,
           "Class change preserves compatible skills and mastery while clearing Rogue-only groups");
     check(!creator.training_complete(), "Fighter requires its own starting style choice");
-    creator.training_choice("class:fighter:fighting_style", "defense", true);
+    creator.training_choice({.group = "class:fighter:fighting_style",
+                             .option = "defense",
+                             .selected = true});
     check(creator.draft().training.at("class:fighter") ==
           std::vector<std::string>({"acrobatics", "persuasion"}),
           "Class change keeps the first two valid selected skills");
-    creator.training_choice("class:fighter:weapon_mastery", "longsword", true);
+    creator.training_choice({.group = "class:fighter:weapon_mastery",
+                             .option = "longsword",
+                             .selected = true});
     check(creator.training_complete(),
           "Fighter style, skills and three mastery kinds complete supported training");
-    creator.training_choice("class:fighter:fighting_style", "archery", true);
+    creator.training_choice({.group = "class:fighter:fighting_style",
+                             .option = "archery",
+                             .selected = true});
     check(creator.draft().training.at("class:fighter:fighting_style") ==
           std::vector<std::string> {"archery"},
           "Single selection replaces the prior style atomically");
@@ -419,7 +433,9 @@ void creation_controls()
     rejects(
         [&]
     {
-        creator.training_choice("class:fighter:fighting_style", "unimplemented", true);
+        creator.training_choice({.group = "class:fighter:fighting_style",
+                                 .option = "unimplemented",
+                                 .selected = true});
     });
     check(creator.draft().training == style_before,
           "Invalid replacement preserves the prior style");
@@ -434,7 +450,7 @@ void creation_controls()
             {"class:rogue", "class:rogue:expertise", "class:rogue:weapon_mastery"
             })
         for (const auto &value : selected.at(group))
-            creator.training_choice(group, value, true);
+            creator.training_choice({.group = group, .option = value, .selected = true});
     creator.next();
     creator.next();
     creator.next();
@@ -456,7 +472,9 @@ void creation_controls()
     rejects(
         [&]
     {
-        creator.training_choice("class:rogue", "acrobatics", false);
+        creator.training_choice({.group = "class:rogue",
+                                 .option = "acrobatics",
+                                 .selected = false});
     });
     creator.restart();
     check(creator.draft().training.empty() && !creator.training_complete(),

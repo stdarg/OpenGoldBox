@@ -83,7 +83,7 @@ Character create(const Member &member, std::uint64_t seed)
     for (const auto *spell : member.cantrips)
         creator.cantrip_choice(spell, true);
     for (const auto *spell : member.prepared)
-        creator.spell_choice("prepared", spell, true);
+        creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
     return Character(creator.rules(), creator.draft(), creator.appearance());
 }
 
