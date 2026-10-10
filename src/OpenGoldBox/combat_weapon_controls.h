@@ -140,6 +140,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         : godot::String();
     choices->clear();
     bool any = false;
+    int previous_index = -1;
     for (const auto &option : options)
     {
         const auto key = godot::String::utf8(
@@ -152,8 +153,11 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         choices->set_item_disabled(index, !option.available);
         any |= option.available;
         if (key == previous)
-            choices->select(index);
+            previous_index = index;
     }
+    // Select after filling: while no listed item is enabled, Godot's add_item
+    // selects each new item, which would replace the choice kept above.
+    choices->select(previous_index);
     if (any && (choices->get_selected() < 0 || choices->is_item_disabled(choices->get_selected())))
         for (int i = 0; i < choices->get_item_count(); ++i)
             if (!choices->is_item_disabled(i))
