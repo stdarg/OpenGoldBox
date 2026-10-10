@@ -5,6 +5,10 @@ at character creation and retains the connected party, town, combat, inventory,
 save, and advancement flow. The reference demos remain under `demos/`.
 This starting point does not claim a complete campaign.
 
+For interactive level-up review without original game files, run the
+[level-up review app](../../docs/LEVEL-UP-LAB.md). It opens the game's own
+advancement dialog for any class, race, or gender at starting levels 1–3.
+
 The C++20 code builds as a Godot GDExtension. `godot/` contains the game's own
 scenes and theme. Godot exports the Windows executable; no demo project or
 installed Godot editor is needed when running the exported game folder.

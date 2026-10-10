@@ -51,7 +51,7 @@ endif()
 configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
-    portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp campaign_save_view.cpp save_slots.cpp
+    portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
     character_pool_dialog.cpp town_sheet_dialog.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp startup_view.cpp game_lifecycle.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengoldbox_game PRIVATE cxx_std_20)
@@ -181,6 +181,7 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_quick PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
     opengold_godot_test(ui_audit ui_audit "UI audit passed" "--playtest-fixtures=${PROJECT_BINARY_DIR}/playtest-fixtures")
     set_tests_properties(opengold_godot_ui_audit PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
+    opengold_godot_test(level_up_lab level_up_lab_tests "Level-up lab passed")
     opengold_godot_test(champion champion_view_tests "Champion controls passed" "--champion-fixtures=${PROJECT_BINARY_DIR}/champion-fixtures")
     set_tests_properties(opengold_godot_champion PROPERTIES FIXTURES_REQUIRED "godot_project;champion_fixtures")
     opengold_godot_test(shocking shocking_view_tests "Shocking Grasp view checks passed" "--shocking-fixtures=${PROJECT_BINARY_DIR}/shocking-fixtures")

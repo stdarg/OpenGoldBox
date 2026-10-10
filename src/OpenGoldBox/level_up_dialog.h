@@ -18,7 +18,7 @@ class LevelUpDialog : public godot::Window
     using FailureReport = std::function<void(const std::exception &)>;
 
     // The hidden window, named LevelUp, with all of its controls.
-    [[nodiscard]] static presentation::NodeOwner<LevelUpDialog> create();
+    [[nodiscard]] static presentation::NodeOwner<> create();
     // The host's campaign, read at each use because loading a save replaces
     // it; what follows a confirmed level-up; and where a failed handler is
     // shown. All three are required.
@@ -60,7 +60,7 @@ class LevelUpDialog : public godot::Window
     opengold::rules::AdvancementChoice advancement_choice_;
     bool advancement_refreshing_{};
 
-    void add_controls();
+    void bind_controls();
     [[nodiscard]] opengold::CampaignParty &campaign();
     void advancement_pages();
     [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_skilled_group() const;

@@ -1,0 +1,264 @@
+[gd_scene format=3]
+
+[node name="LevelUp" type="LevelUpDialog"]
+title = "Level up"
+initial_position = 1
+size = Vector2i(700, 670)
+min_size = Vector2i(700, 670)
+visible = false
+unresizable = true
+transient = true
+exclusive = true
+
+[node name="SpellChoicesPage" type="ScrollContainer" parent="."]
+offset_left = 24.0
+offset_top = 70.0
+offset_right = 676.0
+offset_bottom = 545.0
+visible = false
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Rows" type="VBoxContainer" parent="SpellChoicesPage"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="SkilledCount" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 44.0
+offset_right = 676.0
+offset_bottom = 68.0
+visible = false
+
+[node name="SkilledPage" type="ScrollContainer" parent="."]
+offset_left = 24.0
+offset_top = 70.0
+offset_right = 676.0
+offset_bottom = 545.0
+visible = false
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Rows" type="VBoxContainer" parent="SkilledPage"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="Back" type="Button" parent="."]
+offset_left = 236.0
+offset_top = 610.0
+offset_right = 372.0
+offset_bottom = 650.0
+visible = false
+text = "Back"
+
+[node name="Title" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 676.0
+offset_bottom = 60.0
+clip_text = true
+theme_override_font_sizes/font_size = 24
+
+[node name="HP" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 70.0
+offset_right = 676.0
+offset_bottom = 112.0
+
+[node name="FeatLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 122.0
+offset_right = 676.0
+offset_bottom = 150.0
+text = "Feat or ability points"
+
+[node name="Feat" type="OptionButton" parent="."]
+offset_left = 24.0
+offset_top = 155.0
+offset_right = 676.0
+offset_bottom = 193.0
+
+[node name="AdvancementTrainingLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 205.0
+offset_right = 676.0
+offset_bottom = 230.0
+visible = false
+
+[node name="AdvancementTraining" type="OptionButton" parent="."]
+offset_left = 24.0
+offset_top = 236.0
+offset_right = 676.0
+offset_bottom = 272.0
+visible = false
+
+[node name="AbilityLabel0" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 205.0
+offset_right = 124.0
+offset_bottom = 230.0
+
+[node name="Ability0" type="OptionButton" parent="."]
+offset_left = 24.0
+offset_top = 236.0
+offset_right = 124.0
+offset_bottom = 272.0
+
+[node name="AbilityLabel1" type="Label" parent="."]
+offset_left = 134.0
+offset_top = 205.0
+offset_right = 234.0
+offset_bottom = 230.0
+
+[node name="Ability1" type="OptionButton" parent="."]
+offset_left = 134.0
+offset_top = 236.0
+offset_right = 234.0
+offset_bottom = 272.0
+
+[node name="AbilityLabel2" type="Label" parent="."]
+offset_left = 244.0
+offset_top = 205.0
+offset_right = 344.0
+offset_bottom = 230.0
+
+[node name="Ability2" type="OptionButton" parent="."]
+offset_left = 244.0
+offset_top = 236.0
+offset_right = 344.0
+offset_bottom = 272.0
+
+[node name="AbilityLabel3" type="Label" parent="."]
+offset_left = 354.0
+offset_top = 205.0
+offset_right = 454.0
+offset_bottom = 230.0
+
+[node name="Ability3" type="OptionButton" parent="."]
+offset_left = 354.0
+offset_top = 236.0
+offset_right = 454.0
+offset_bottom = 272.0
+
+[node name="AbilityLabel4" type="Label" parent="."]
+offset_left = 464.0
+offset_top = 205.0
+offset_right = 564.0
+offset_bottom = 230.0
+
+[node name="Ability4" type="OptionButton" parent="."]
+offset_left = 464.0
+offset_top = 236.0
+offset_right = 564.0
+offset_bottom = 272.0
+
+[node name="AbilityLabel5" type="Label" parent="."]
+offset_left = 574.0
+offset_top = 205.0
+offset_right = 674.0
+offset_bottom = 230.0
+
+[node name="Ability5" type="OptionButton" parent="."]
+offset_left = 574.0
+offset_top = 236.0
+offset_right = 674.0
+offset_bottom = 272.0
+
+[node name="SpellLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 292.0
+offset_right = 676.0
+offset_bottom = 320.0
+text = "Prepared spells"
+
+[node name="FightingStyle" type="OptionButton" parent="."]
+offset_left = 24.0
+offset_top = 325.0
+offset_right = 676.0
+offset_bottom = 363.0
+visible = false
+
+[node name="Spell0" type="CheckBox" parent="."]
+offset_left = 24.0
+offset_top = 325.0
+offset_right = 676.0
+offset_bottom = 361.0
+
+[node name="Spell1" type="CheckBox" parent="."]
+offset_left = 24.0
+offset_top = 363.0
+offset_right = 676.0
+offset_bottom = 399.0
+
+[node name="Spell2" type="CheckBox" parent="."]
+offset_left = 24.0
+offset_top = 401.0
+offset_right = 676.0
+offset_bottom = 437.0
+
+[node name="Spell3" type="CheckBox" parent="."]
+offset_left = 24.0
+offset_top = 439.0
+offset_right = 676.0
+offset_bottom = 475.0
+
+[node name="Note" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 489.0
+offset_right = 676.0
+offset_bottom = 555.0
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 3
+
+[node name="Error" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 560.0
+offset_right = 676.0
+offset_bottom = 594.0
+theme_override_font_sizes/font_size = 15
+
+[node name="Cancel" type="Button" parent="."]
+offset_left = 386.0
+offset_top = 610.0
+offset_right = 522.0
+offset_bottom = 650.0
+text = "Cancel"
+
+[node name="Confirm" type="Button" parent="."]
+offset_left = 536.0
+offset_top = 610.0
+offset_right = 676.0
+offset_bottom = 650.0
+text = "Confirm"
+
+[node name="TrainingPrimaryLabelPosition" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 205.0
+offset_right = 24.0
+offset_bottom = 205.0
+visible = false
+mouse_filter = 2
+
+[node name="TrainingPrimaryPosition" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 236.0
+offset_right = 24.0
+offset_bottom = 236.0
+visible = false
+mouse_filter = 2
+
+[node name="TrainingSupplementalLabelPosition" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 374.0
+offset_right = 24.0
+offset_bottom = 374.0
+visible = false
+mouse_filter = 2
+
+[node name="TrainingSupplementalPosition" type="Control" parent="."]
+offset_left = 24.0
+offset_top = 406.0
+offset_right = 24.0
+offset_bottom = 406.0
+visible = false
+mouse_filter = 2

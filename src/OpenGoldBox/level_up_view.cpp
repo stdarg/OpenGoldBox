@@ -48,7 +48,8 @@ void CharacterCreationView::setup_advancement()
     advancement_check_ = args.has("--advancement-check") || args.has("--champion-creator");
     advancement_review_ = args.has("--level-up-review");
     auto dialog = LevelUpDialog::create();
-    dialog->connect_host([this]() -> opengold::CampaignParty &
+    auto *level_up = Object::cast_to<LevelUpDialog>(dialog.get());
+    level_up->connect_host([this]() -> opengold::CampaignParty &
     {
         return *campaign_;
     },
@@ -58,7 +59,7 @@ void CharacterCreationView::setup_advancement()
         refresh_advancement_arrows();
         if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
             town->resume_party();
-    },
+        },
     [this](const std::exception & failure)
     {
         report_failure(failure);

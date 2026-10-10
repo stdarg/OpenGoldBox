@@ -26,7 +26,8 @@ covered, so a run that silently skipped one cannot pass unnoticed.
 
 - Always: the startup screen and the combat screen, empty and in the play-test
   fights (`gear-torch`, `gear-ally`, `bandage`, `morale-panic`, `flee`), and
-  on a member's turn the computer plays (Quick).
+  on a member's turn the computer plays (Quick). The isolated level-up review
+  app, its first dialog page, and the Wizard spell-choice page are also audited.
 - With the original files (`OPENGOLD_GAME_DIR`): each character-creation page
   the audit can reach by taking the first choice (through Training), and the
   party.

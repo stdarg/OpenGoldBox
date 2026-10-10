@@ -173,8 +173,29 @@ func creation_pages() -> void:
         if next.disabled or not next.is_visible_in_tree(): return
         next.pressed.emit(); await settle()
 
+func level_up_lab() -> void:
+    await open("res://scenes/level_up_lab.tscn")
+    await audit("level-up-lab")
+    var klass: OptionButton = current_scene.get_node("Class")
+    var wizard := -1
+    for i in range(klass.item_count):
+        if str(klass.get_item_metadata(i)) == "wizard": wizard = i
+    if wizard < 0:
+        findings.append("level-up lab has no Wizard choice"); return
+    klass.select(wizard)
+    (current_scene.get_node("CurrentLevel") as OptionButton).select(2)
+    await press("CreateCharacter")
+    await press("OpenLevelUp")
+    await audit("level-up-dialog", current_scene.get_node("LevelUp"))
+    await press("LevelUp/Confirm")
+    if current_scene.get_node("LevelUp/SpellChoicesPage").visible:
+        await audit("level-up-spell-page", current_scene.get_node("LevelUp"))
+    else:
+        findings.append("Wizard level-up did not open its spell-choice page")
+
 func screens() -> void:
     await open("res://scenes/startup.tscn"); await audit("startup")
+    await level_up_lab()
     if not OS.get_environment("OPENGOLD_GAME_DIR").is_empty():
         await open("res://scenes/character_creation.tscn")
         await creation_pages()

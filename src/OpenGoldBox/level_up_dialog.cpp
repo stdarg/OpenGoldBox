@@ -26,19 +26,15 @@ String gs(std::string_view s)
 
 } // namespace
 
-presentation::NodeOwner<LevelUpDialog> LevelUpDialog::create()
+presentation::NodeOwner<> LevelUpDialog::create()
 {
-    auto window = presentation::make_node<LevelUpDialog>();
-    window->set_name("LevelUp");
-    window->set_title(i18n::text(N_("Level up")));
-    window->set_size(Vector2i(700, 670));
-    window->set_min_size(Vector2i(700, 670));
-    window->set_flag(Window::FLAG_RESIZE_DISABLED, true);
-    window->set_transient(true);
-    window->set_exclusive(true);
-    window->hide();
-    window->add_controls();
-    return window;
+    auto scene = presentation::instantiate_scene("res://scenes/level_up_dialog.tscn");
+    auto *dialog = Object::cast_to<LevelUpDialog>(scene.get());
+    if (!dialog)
+        throw std::runtime_error("Invalid level-up dialog scene");
+    dialog->set_title(i18n::text(N_("Level up")));
+    dialog->bind_controls();
+    return scene;
 }
 
 void LevelUpDialog::connect_host(CampaignAccess campaign, std::function<void()> advanced,
@@ -61,87 +57,51 @@ opengold::CampaignParty &LevelUpDialog::campaign()
     return campaign_();
 }
 
-void LevelUpDialog::add_controls()
+void LevelUpDialog::bind_controls()
 {
     connect("close_requested", presentation::guarded(this, &LevelUpDialog::close));
-    auto *spell_page = presentation::add_control<ScrollContainer>(*this, "SpellChoicesPage",
-        Rect2(24, 70, 652, 475));
-    spell_page->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
-    spell_page->set_follow_focus(true);
-    spell_page->hide();
-    presentation::spell_rows(*spell_page, "Rows");
-    // Skilled reuses the same page area and scrolling behaviour as the spell page.
-    auto *skilled_count = presentation::add_control<Label>(*this, "SkilledCount",
-        Rect2(24, 44, 652, 24));
-    skilled_count->hide();
-    auto *skilled_page = presentation::add_control<ScrollContainer>(*this, "SkilledPage",
-        Rect2(24, 70, 652, 475));
-    skilled_page->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
-    skilled_page->set_follow_focus(true);
-    skilled_page->hide();
-    presentation::spell_rows(*skilled_page, "Rows");
-    auto *back = presentation::add_control<Button>(*this, "Back", Rect2(236, 610, 136, 40));
+    auto *back = &required_node<Button>(*this, "Back");
     back->set_text(i18n::text(N_("Back")));
-    back->hide();
     back->connect("pressed", presentation::guarded(this, &LevelUpDialog::advancement_back));
-    auto *title = presentation::add_control<Label>(*this, "Title", Rect2(24, 20, 652, 40));
-    title->add_theme_font_size_override("font_size", 24);
-    title->set_clip_text(true);
-    presentation::add_control<Label>(*this, "HP", Rect2(24, 70, 652, 42));
-    presentation::add_control<Label>(*this, "FeatLabel", Rect2(24, 122, 652, 28))
-    ->set_text(i18n::text(N_("Feat or ability points")));
-    auto *feat = presentation::add_control<OptionButton>(*this, "Feat", Rect2(24, 155, 652, 38));
+    required_node<Label>(*this, "FeatLabel")
+    .set_text(i18n::text(N_("Feat or ability points")));
+    auto *feat = &required_node<OptionButton>(*this, "Feat");
     feat->connect("item_selected",
                   presentation::guarded(this, &LevelUpDialog::advancement_changed));
-    auto *training_label = presentation::add_control<Label>(*this, "AdvancementTrainingLabel",
-        Rect2(24, 205, 652, 25));
-    training_label->hide();
-    auto *training = presentation::add_control<OptionButton>(*this, "AdvancementTraining",
-        Rect2(24, 236, 652, 36));
-    training->hide();
+    auto *training = &required_node<OptionButton>(*this, "AdvancementTraining");
     training->connect("item_selected",
                       presentation::guarded(this, &LevelUpDialog::advancement_changed));
     const std::array<const char *, 6> abilities{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
     for (unsigned i = 0; i < 6; ++i)
     {
-        presentation::add_control<Label>(*this, String("AbilityLabel") + String::num_uint64(i),
-                                         Rect2(24 + i * 110, 205, 100, 25))
-        ->set_text(i18n::text(abilities[i]));
-        auto *points = presentation::add_control<OptionButton>(
-                           *this, String("Ability") + String::num_uint64(i),
-                           Rect2(24 + i * 110, 236, 100, 36));
+        required_node<Label>(*this, String("AbilityLabel") + String::num_uint64(i))
+        .set_text(i18n::text(abilities[i]));
+        auto *points = &required_node<OptionButton>(
+                           *this, String("Ability") + String::num_uint64(i));
         for (int n = 0; n <= 2; ++n)
             points->add_item(String("+") + String::num_int64(n));
         points->connect("item_selected",
                         presentation::guarded(this, &LevelUpDialog::advancement_changed));
     }
-    presentation::add_control<Label>(*this, "SpellLabel", Rect2(24, 292, 652, 28))
-    ->set_text(i18n::text(N_("Prepared spells")));
-    auto *style =
-        presentation::add_control<OptionButton>(*this, "FightingStyle", Rect2(24, 325, 652, 38));
-    style->hide();
+    required_node<Label>(*this, "SpellLabel").set_text(i18n::text(N_("Prepared spells")));
+    auto *style = &required_node<OptionButton>(*this, "FightingStyle");
     style->connect("item_selected",
                    presentation::guarded(this, &LevelUpDialog::advancement_changed));
     for (int i = 0; i < 4; ++i)
     {
-        auto *spell = presentation::add_control<CheckBox>(
-                          *this, String("Spell") + String::num_int64(i),
-                          Rect2(24, 325 + i * 38, 652, 36));
+        auto *spell = &required_node<CheckBox>(
+                          *this, String("Spell") + String::num_int64(i));
         spell->connect(
             "toggled",
             presentation::guarded(this, &LevelUpDialog::advancement_spell_changed).bind(i));
     }
-    auto *note = presentation::add_control<Label>(*this, "Note", Rect2(24, 489, 652, 66));
+    auto *note = &required_node<Label>(*this, "Note");
     note->set_text(i18n::text(N_(
                                   "Fixed-average HP growth. Existing resource expenditure is preserved.\nAdditional class and subclass features are unavailable in this version.")));
-    note->add_theme_font_size_override("font_size", 14);
-    note->set("autowrap_mode", 3);
-    auto *error = presentation::add_control<Label>(*this, "Error", Rect2(24, 560, 652, 34));
-    error->add_theme_font_size_override("font_size", 15);
-    auto *cancel = presentation::add_control<Button>(*this, "Cancel", Rect2(386, 610, 136, 40));
+    auto *cancel = &required_node<Button>(*this, "Cancel");
     cancel->set_text(i18n::text(N_("Cancel")));
     cancel->connect("pressed", presentation::guarded(this, &LevelUpDialog::close));
-    auto *confirm = presentation::add_control<Button>(*this, "Confirm", Rect2(536, 610, 140, 40));
+    auto *confirm = &required_node<Button>(*this, "Confirm");
     confirm->set_text(i18n::text(N_("Confirm")));
     confirm->connect("pressed", presentation::guarded(this, &LevelUpDialog::confirm));
 }
@@ -268,7 +228,7 @@ void LevelUpDialog::advancement_pages()
     presentation::refresh_spell_groups(
         required_node<VBoxContainer>(*this, "SpellChoicesPage/Rows"), options, choices,
         presentation::guarded(this, &LevelUpDialog::advancement_learning_toggled),
-        i18n::text);
+        i18n::text, true);
 }
 
 // One checkbox per offered proficiency, prefixed so the two catalogs stay
@@ -301,7 +261,7 @@ void LevelUpDialog::refresh_advancement_skilled()
             auto owned = presentation::make_node<CheckBox>();
             owned->set_name(name);
             box = owned.get();
-            presentation::style_choice(*box);
+            box->set_theme_type_variation("LevelUpChoice");
             box->connect("toggled", presentation::guarded(this,
                     &LevelUpDialog::advancement_skilled_toggled)
                          .bind(presentation::training_string(option.id)));
@@ -407,8 +367,12 @@ void LevelUpDialog::open(opengold::MemberId id)
         training->set_visible(has_training);
         required_node<Label>(*this, "AdvancementTrainingLabel").set_visible(has_training);
         required_node<Label>(*this, "AdvancementTrainingLabel")
-        .set_position(Vector2(24, supplemental_training ? 374 : 205));
-        training->set_position(Vector2(24, supplemental_training ? 406 : 236));
+        .set_position(required_node<Control>(*this, supplemental_training
+                                             ? "TrainingSupplementalLabelPosition"
+                                             : "TrainingPrimaryLabelPosition").get_position());
+        training->set_position(required_node<Control>(*this, supplemental_training
+                ? "TrainingSupplementalPosition"
+                : "TrainingPrimaryPosition").get_position());
         for (unsigned i = 0; i < 6; ++i)
         {
             required_node<Control>(*this, String("Ability") + String::num_uint64(i))

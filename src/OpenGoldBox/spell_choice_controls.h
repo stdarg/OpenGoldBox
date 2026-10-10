@@ -24,7 +24,8 @@ template <class Translate>
 void refresh_spell_groups(godot::VBoxContainer &rows,
                           const opengold::rules::SpellChoiceOptions &options,
                           const opengold::rules::SpellChoices &choices,
-                          const godot::Callable &toggled, const Translate &tr)
+                          const godot::Callable &toggled, const Translate &tr,
+                          bool level_up_theme = false)
 {
     using namespace godot;
     for (int i = 0; i < rows.get_child_count(); ++i)
@@ -38,6 +39,11 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
     for (const auto &group : groups)
     {
         auto *section = spell_rows(rows, training_string(group.id).replace(":", "_"));
+        if (level_up_theme)
+        {
+            section->set_theme_type_variation("LevelUpSpellSection");
+            section->remove_theme_constant_override("separation");
+        }
         rows.move_child(section, position++);
         section->show();
         auto *label = Object::cast_to<Label>(section->get_node_or_null("Count"));
@@ -63,7 +69,10 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         {
             pending = add_control<Label>(*section, "Pending", {});
             pending->set("autowrap_mode", 3);
-            pending->add_theme_font_size_override("font_size", 14);
+            if (level_up_theme)
+                pending->set_theme_type_variation("LevelUpPending");
+            else
+                pending->add_theme_font_size_override("font_size", 14);
         }
         pending->set_text(tr(N_("Unsupported choices remain pending.")));
         pending->set_visible(group.options.size() < group.count);
@@ -79,9 +88,18 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                 auto owned = make_node<CheckBox>();
                 owned->set_name(training_string(option.id));
                 box = attach_child(*section, std::move(owned));
-                box->set_custom_minimum_size(Vector2(0, 40));
+                if (level_up_theme)
+                {
+                    box->set_theme_type_variation("LevelUpChoice");
+                    box->set_custom_minimum_size(
+                        Vector2(0, box->get_theme_constant("row_height")));
+                }
+                else
+                {
+                    box->set_custom_minimum_size(Vector2(0, 40));
+                    style_choice(*box);
+                }
                 box->set_focus_mode(Control::FOCUS_ALL);
-                style_choice(*box);
                 box->connect("toggled",
                              toggled.bind(training_string(group.id), training_string(option.id)));
             }

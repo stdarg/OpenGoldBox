@@ -28,7 +28,7 @@ msgstr ""
 msgid " (Savage Attacker)"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:395 src/OpenGoldBox/level_up_dialog.cpp:449 src/OpenGoldBox/level_up_dialog.cpp:532
+#: src/OpenGoldBox/level_up_dialog.cpp:355 src/OpenGoldBox/level_up_dialog.cpp:413 src/OpenGoldBox/level_up_dialog.cpp:496
 msgid " (Unavailable)"
 msgstr ""
 
@@ -445,7 +445,7 @@ msgstr ""
 msgid "Any d20 roll saves"
 msgstr ""
 
-#: src/OpenGoldBox/spell_choice_controls.h:154
+#: src/OpenGoldBox/spell_choice_controls.h:172
 msgid "Apply spell choices"
 msgstr ""
 
@@ -470,7 +470,7 @@ msgstr ""
 msgid "Arcane Recovery restored {first} level-one and {second} level-two spell slots."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:10243 src/OpenGoldBox/level_up_view.cpp:393
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:10243 src/OpenGoldBox/level_up_view.cpp:394
 msgid "Archery"
 msgstr ""
 
@@ -538,7 +538,7 @@ msgstr ""
 msgid "Attributes"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:578 src/OpenGoldBox/godot/scenes/character_creation.tscn:126 src/OpenGoldBox/level_up_dialog.cpp:84
+#: src/OpenGoldBox/character_creation_view.cpp:578 src/OpenGoldBox/godot/scenes/character_creation.tscn:126 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:52 src/OpenGoldBox/level_up_dialog.cpp:64
 msgid "Back"
 msgstr ""
 
@@ -752,6 +752,10 @@ msgstr ""
 msgid "Browse..."
 msgstr ""
 
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:61
+msgid "Build an isolated character, then open the same level-up dialog used in the game."
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Burning"
 msgstr ""
@@ -808,7 +812,7 @@ msgstr ""
 msgid "Campaign saved."
 msgstr ""
 
-#: src/OpenGoldBox/equipment_choice_dialog.cpp:77 src/OpenGoldBox/godot/scenes/startup.tscn:155 src/OpenGoldBox/godot/scenes/startup.tscn:92 src/OpenGoldBox/level_up_dialog.cpp:142 src/OpenGoldBox/nick_controls.h:46 src/OpenGoldBox/rest_dialog_impl.h:228 src/OpenGoldBox/rest_dialog_impl.h:70 src/OpenGoldBox/save_slots.cpp:77 src/OpenGoldBox/spell_choice_controls.h:151 src/OpenGoldBox/startup_view.cpp:272
+#: src/OpenGoldBox/equipment_choice_dialog.cpp:77 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:225 src/OpenGoldBox/godot/scenes/startup.tscn:155 src/OpenGoldBox/godot/scenes/startup.tscn:92 src/OpenGoldBox/level_up_dialog.cpp:102 src/OpenGoldBox/nick_controls.h:46 src/OpenGoldBox/rest_dialog_impl.h:228 src/OpenGoldBox/rest_dialog_impl.h:70 src/OpenGoldBox/save_slots.cpp:77 src/OpenGoldBox/spell_choice_controls.h:169 src/OpenGoldBox/startup_view.cpp:272
 msgid "Cancel"
 msgstr ""
 
@@ -922,6 +926,10 @@ msgstr ""
 msgid "Chaotic Neutral"
 msgstr ""
 
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:209
+msgid "Character"
+msgstr ""
+
 #: src/OpenGoldBox/godot/scenes/party_panel.tscn:92
 msgid "Character Pool"
 msgstr ""
@@ -996,6 +1004,10 @@ msgstr ""
 msgid "Choose a Push destination, or skip."
 msgstr ""
 
+#: src/OpenGoldBox/level_up_lab_view.cpp:192
+msgid "Choose a character and press Create Character."
+msgstr ""
+
 #: src/OpenGoldBox/character_creation_view.cpp:777
 msgid "Choose a name for your character (up to 40 characters)."
 msgstr ""
@@ -1028,7 +1040,7 @@ msgstr ""
 msgid "Choose an existing folder containing the Pool of Radiance game files."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:424 src/OpenGoldBox/training_control.h:242
+#: src/OpenGoldBox/level_up_dialog.cpp:388 src/OpenGoldBox/training_control.h:242
 msgid "Choose an option"
 msgstr ""
 
@@ -1073,7 +1085,7 @@ msgstr ""
 msgid "Choose up to {maximum} creatures. Chosen: {chosen}"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:647
+#: src/OpenGoldBox/level_up_dialog.cpp:611
 msgid "Choose valid options to preview your new HP."
 msgstr ""
 
@@ -1161,7 +1173,7 @@ msgstr ""
 msgid "Circle of the Land"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:57
+#: src/OpenGoldBox/character_creation_view.cpp:57 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:95
 msgid "Class"
 msgstr ""
 
@@ -1311,7 +1323,7 @@ msgstr ""
 msgid "Complete the required training choices."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:145 src/OpenGoldBox/level_up_dialog.cpp:210
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:232 src/OpenGoldBox/level_up_dialog.cpp:105 src/OpenGoldBox/level_up_dialog.cpp:170
 msgid "Confirm"
 msgstr ""
 
@@ -1337,6 +1349,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Covered in oil"
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:185
+msgid "Create Character"
 msgstr ""
 
 #: src/OpenGoldBox/party_preview.cpp:266
@@ -1377,6 +1393,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cure Wounds (level 2 slot)"
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:164
+msgid "Current level"
 msgstr ""
 
 #: src/OpenGoldBox/portrait_picker.cpp:75
@@ -1605,7 +1625,7 @@ msgstr ""
 msgid "Dwarf"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:463 src/OpenGold.Rules.Srd5/src/srd5.cpp:10721 src/OpenGold.Rules.Srd5/src/srd5.cpp:3334 src/OpenGoldBox/level_up_view.cpp:286
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:463 src/OpenGold.Rules.Srd5/src/srd5.cpp:10721 src/OpenGold.Rules.Srd5/src/srd5.cpp:3334 src/OpenGoldBox/level_up_view.cpp:287
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dwarven Toughness: +{hp} maximum HP."
 msgstr ""
@@ -1821,7 +1841,7 @@ msgstr ""
 msgid "Favored Enemy"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:92
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:73 src/OpenGoldBox/level_up_dialog.cpp:67
 msgid "Feat or ability points"
 msgstr ""
 
@@ -1863,7 +1883,7 @@ msgstr ""
 msgid "Fighter skills"
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_dialog.cpp:461
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_dialog.cpp:425
 msgid "Fighting Style"
 msgstr ""
 
@@ -1871,7 +1891,7 @@ msgstr ""
 msgid "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_view.cpp:119 src/OpenGoldBox/level_up_view.cpp:280
+#: src/OpenGoldBox/character_sheet_view.cpp:119 src/OpenGoldBox/level_up_view.cpp:281
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Final score: {score}"
 msgstr ""
@@ -1920,7 +1940,7 @@ msgstr ""
 msgid "Fixed training"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:135
+#: src/OpenGoldBox/level_up_dialog.cpp:99
 msgid "Fixed-average HP growth. Existing resource expenditure is preserved.\nAdditional class and subclass features are unavailable in this version."
 msgstr ""
 
@@ -2051,7 +2071,7 @@ msgstr ""
 msgid "Game file warning"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:41
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:41 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:141
 msgid "Gender"
 msgstr ""
 
@@ -2481,7 +2501,7 @@ msgstr ""
 msgid "Known cantrip: {spell}."
 msgstr ""
 
-#: src/OpenGoldBox/spell_choice_controls.h:168
+#: src/OpenGoldBox/spell_choice_controls.h:186
 msgid "Known cantrips"
 msgstr ""
 
@@ -2574,7 +2594,7 @@ msgstr ""
 msgid "Lessons of the First Ones: Savage Attacker"
 msgstr ""
 
-#: src/OpenGoldBox/spell_choice_controls.h:57
+#: src/OpenGoldBox/spell_choice_controls.h:63
 msgid "Level"
 msgstr ""
 
@@ -2582,16 +2602,16 @@ msgstr ""
 msgid "Level 1-4 subset: HP, selected feats, supported prepared spells and level-one/two slots. Additional class/subclass and species features remain unavailable."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:33 src/OpenGoldBox/rolf_tour_view.cpp:119
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:4 src/OpenGoldBox/level_up_dialog.cpp:35 src/OpenGoldBox/rolf_tour_view.cpp:119
 msgid "Level up"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_view.cpp:86 src/OpenGoldBox/level_up_view.cpp:93
+#: src/OpenGoldBox/level_up_view.cpp:87 src/OpenGoldBox/level_up_view.cpp:94
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Level up {name}"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:10690 src/OpenGoldBox/level_up_view.cpp:279
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:10690 src/OpenGoldBox/level_up_view.cpp:280
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Level {level} Ability Score Improvement"
 msgstr ""
@@ -2604,6 +2624,10 @@ msgstr ""
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:10731 src/OpenGold.Rules.Srd5/src/srd5.cpp:10732
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Level {level}: {hp} maximum HP; gain {growth}. Fixed-average Hit Die growth includes Constitution and any retroactive Constitution increase."
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:47
+msgid "Level-Up Review"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -2815,7 +2839,7 @@ msgstr ""
 msgid "Maximum HP includes level {level}, d{die} Hit Die and Constitution modifier {modifier}."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:635
+#: src/OpenGoldBox/level_up_dialog.cpp:599
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Maximum HP: {old} -> {new} / Current HP: {current}"
 msgstr ""
@@ -3007,7 +3031,7 @@ msgstr ""
 msgid "NPC"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:58
+#: src/OpenGoldBox/character_creation_view.cpp:58 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:72
 msgid "Name"
 msgstr ""
 
@@ -3039,7 +3063,7 @@ msgstr ""
 msgid "New Phlan"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:584 src/OpenGoldBox/godot/scenes/character_creation.tscn:129 src/OpenGoldBox/level_up_dialog.cpp:211
+#: src/OpenGoldBox/character_creation_view.cpp:584 src/OpenGoldBox/godot/scenes/character_creation.tscn:129 src/OpenGoldBox/level_up_dialog.cpp:171
 msgid "Next"
 msgstr ""
 
@@ -3074,6 +3098,10 @@ msgstr ""
 msgid "No additional racial, item or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules."
 msgstr ""
 
+#: src/OpenGoldBox/level_up_lab_view.cpp:193
+msgid "No character created yet."
+msgstr ""
+
 #: src/OpenGoldBox/combat_view.cpp:2689
 msgid "No combat artwork assigned"
 msgstr ""
@@ -3083,8 +3111,12 @@ msgstr ""
 msgid "No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0)."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:390
+#: src/OpenGoldBox/level_up_dialog.cpp:350
 msgid "No feat or ability increase at this level"
+msgstr ""
+
+#: src/OpenGoldBox/level_up_lab_view.cpp:211
+msgid "No further level-up is offered for this character."
 msgstr ""
 
 #: src/OpenGoldBox/portrait_picker.cpp:68
@@ -3103,7 +3135,7 @@ msgstr ""
 msgid "No one else can get away. Your party fights on."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:438
+#: src/OpenGoldBox/level_up_dialog.cpp:402
 msgid "No spell choices for this class"
 msgstr ""
 
@@ -3186,6 +3218,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Only two weapons may be equipped"
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:197
+msgid "Open Level-Up"
 msgstr ""
 
 #: src/OpenGoldBox/combat_view.cpp:2522 src/OpenGoldBox/godot/scenes/combat_demo.tscn:88
@@ -3423,7 +3459,7 @@ msgstr ""
 msgid "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:119 src/OpenGoldBox/rest_dialog_impl.h:847 src/OpenGoldBox/spell_choice_controls.h:167 src/OpenGoldBox/spell_choice_controls.h:177
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:172 src/OpenGoldBox/level_up_dialog.cpp:86 src/OpenGoldBox/rest_dialog_impl.h:847 src/OpenGoldBox/spell_choice_controls.h:185 src/OpenGoldBox/spell_choice_controls.h:195
 msgid "Prepared spells"
 msgstr ""
 
@@ -3435,7 +3471,7 @@ msgstr ""
 msgid "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:439
+#: src/OpenGoldBox/level_up_dialog.cpp:403
 msgid "Prepared spells: select at least one"
 msgstr ""
 
@@ -3546,6 +3582,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/startup.tscn:220
 msgid "Quit to OS"
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:118
+msgid "Race"
 msgstr ""
 
 #: src/OpenGoldBox/character_creation_view.cpp:56
@@ -3668,6 +3708,10 @@ msgstr ""
 msgid "Ready to level up"
 msgstr ""
 
+#: src/OpenGoldBox/level_up_lab_view.cpp:212
+msgid "Ready: Open Level-Up uses the game's real dialog and rules."
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Reckless"
 msgstr ""
@@ -3729,7 +3773,7 @@ msgstr ""
 msgid "Repelling Blast"
 msgstr ""
 
-#: src/OpenGoldBox/spell_choice_controls.h:143
+#: src/OpenGoldBox/spell_choice_controls.h:161
 msgid "Replace cantrip"
 msgstr ""
 
@@ -3854,6 +3898,10 @@ msgstr ""
 msgid "Return to party"
 msgstr ""
 
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:83 src/OpenGoldBox/level_up_lab_view.cpp:155
+msgid "Review character"
+msgstr ""
+
 #: src/OpenGoldBox/character_creation_view.cpp:836
 msgid "Review your character and use the portrait controls to choose a complete portrait before adding it to the party."
 msgstr ""
@@ -3956,7 +4004,7 @@ msgstr ""
 msgid "Sacred Weapon"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:248 src/OpenGoldBox/level_up_view.cpp:277 src/OpenGoldBox/level_up_view.cpp:282
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:248 src/OpenGoldBox/level_up_view.cpp:278 src/OpenGoldBox/level_up_view.cpp:283
 msgid "Sage"
 msgstr ""
 
@@ -4137,7 +4185,7 @@ msgstr ""
 msgid "Selected: {action}. Press Space to use it."
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:285
+#: src/OpenGoldBox/level_up_dialog.cpp:245
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {count}/{total}"
 msgstr ""
@@ -4227,7 +4275,7 @@ msgstr ""
 msgid "Size: Tall"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:314
+#: src/OpenGoldBox/level_up_dialog.cpp:274
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Skill: {name}"
 msgstr ""
@@ -4490,7 +4538,7 @@ msgstr ""
 msgid "Spell slots: {count}"
 msgstr ""
 
-#: src/OpenGoldBox/spell_choice_controls.h:126 src/OpenGoldBox/spell_choice_controls.h:167 src/OpenGoldBox/spell_choice_controls.h:173
+#: src/OpenGoldBox/spell_choice_controls.h:144 src/OpenGoldBox/spell_choice_controls.h:185 src/OpenGoldBox/spell_choice_controls.h:191
 msgid "Spellbook"
 msgstr ""
 
@@ -4803,7 +4851,7 @@ msgstr ""
 msgid "Tiefling"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:315
+#: src/OpenGoldBox/level_up_dialog.cpp:275
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Tool: {name}"
 msgstr ""
@@ -4964,7 +5012,7 @@ msgstr ""
 msgid "Unspecified"
 msgstr ""
 
-#: src/OpenGoldBox/spell_choice_controls.h:68
+#: src/OpenGoldBox/spell_choice_controls.h:77
 msgid "Unsupported choices remain pending."
 msgstr ""
 
@@ -5164,7 +5212,7 @@ msgstr ""
 msgid "Wisdom save: 1d6 Psychic damage and Disadvantage on the target's next attack roll, 60 feet."
 msgstr ""
 
-#: src/OpenGoldBox/spell_choice_controls.h:144
+#: src/OpenGoldBox/spell_choice_controls.h:162
 msgid "With"
 msgstr ""
 
@@ -5254,7 +5302,7 @@ msgstr ""
 msgid "all damage"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:86 src/OpenGoldBox/level_up_view.cpp:411
+#: src/OpenGoldBox/character_sheet_text.cpp:86 src/OpenGoldBox/level_up_view.cpp:412
 msgid "archery"
 msgstr ""
 
@@ -5274,7 +5322,7 @@ msgstr ""
 msgid "dagger"
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:340
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:341
 msgid "defense"
 msgstr ""
 
@@ -5314,7 +5362,7 @@ msgstr ""
 msgid "quarterstaff"
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:340
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_view.cpp:341
 msgid "savage attacker"
 msgstr ""
 
@@ -5379,7 +5427,7 @@ msgstr ""
 msgid "{attacker} hits one of {name}'s duplicates, which vanishes."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:390 src/OpenGoldBox/level_up_view.cpp:277 src/OpenGoldBox/level_up_view.cpp:282
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:390 src/OpenGoldBox/level_up_view.cpp:278 src/OpenGoldBox/level_up_view.cpp:283
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{background} background"
 msgstr ""
@@ -5473,7 +5521,7 @@ msgstr ""
 msgid "{name} / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_dialog.cpp:381
+#: src/OpenGoldBox/level_up_dialog.cpp:341
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / Level {level}"
 msgstr ""
@@ -5491,6 +5539,11 @@ msgstr ""
 #: src/OpenGoldBox/rolf_tour_view.cpp:398
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / {class} / {gold} gp"
+msgstr ""
+
+#: src/OpenGoldBox/level_up_lab_view.cpp:199
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} / {class} / {race} / {gender}\nLevel {level} · HP {current}/{maximum} · XP {xp}"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:6102

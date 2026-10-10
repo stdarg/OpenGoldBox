@@ -5,6 +5,7 @@
 #include "town_sheet_dialog.h"
 #include "equipment_choice_dialog.h"
 #include "level_up_dialog.h"
+#include "level_up_lab_view.h"
 #include "save_slots.h"
 #include "startup_view.h"
 #include "game_lifecycle.h"
@@ -21,6 +22,7 @@ void initialize(godot::ModuleInitializationLevel level)
         godot::ClassDB::register_class<CombatView>();
         godot::ClassDB::register_class<CharacterCreationView>();
         godot::ClassDB::register_class<LevelUpDialog>();
+        godot::ClassDB::register_class<LevelUpLabView>();
         godot::ClassDB::register_class<EquipmentChoiceDialog>();
         godot::ClassDB::register_class<CharacterPoolDialog>();
         godot::ClassDB::register_class<TownSheetDialog>();
