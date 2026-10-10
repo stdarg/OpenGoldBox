@@ -4,6 +4,7 @@
 #include "game_resources.h"
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
+#include "town_sheet_dialog.h"
 #include "rolf_tour_view.h"
 #include "combat_view.h"
 #include "save_slots.h"
@@ -127,8 +128,9 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
         town->set_name("CampaignTown");
         town->hide();
         town->campaign_party(replacement);
+        auto *sheet = &required_node<TownSheetDialog>(*this, "TownSheet");
         town->connect("party_member_selected",
-                      presentation::guarded(this, &CharacterCreationView::town_member_selected));
+                      presentation::guarded(sheet, &TownSheetDialog::show_member));
         town->connect("level_up_requested",
                       presentation::guarded(this, &CharacterCreationView::open_advancement));
         town->connect("save_requested", presentation::guarded(this, &CharacterCreationView::open_saves));

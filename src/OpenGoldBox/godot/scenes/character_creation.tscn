@@ -488,7 +488,7 @@ theme_override_font_sizes/normal_font_size = 17
 [node name="Close" type="Button" parent="PoolModal"]
 text = "Close"
 
-[node name="TownSheet" type="Window" parent="."]
+[node name="TownSheet" type="TownSheetDialog" parent="."]
 visible = false
 transient = true
 exclusive = true

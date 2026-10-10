@@ -6,6 +6,7 @@
 #include "game_resources.h"
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
+#include "town_sheet_dialog.h"
 #include "character_sheet_text.h"
 #include "equipment_choice_dialog.h"
 #include "combat_view.h"
@@ -121,8 +122,18 @@ void CharacterCreationView::setup_party()
     .connect("item_selected", presentation::guarded(this, &CharacterCreationView::party_selected));
     required_node<Button>(*this, "PartyPanel/MakeLeader")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::make_roster_leader));
-    required_node<Button>(*this, "TownSheet/MakeLeader")
-    .connect("pressed", presentation::guarded(this, &CharacterCreationView::make_town_sheet_leader));
+    required_node<TownSheetDialog>(*this, "TownSheet").connect_host([this]() -> CampaignParty &
+    {
+        return *campaign_;
+    },
+    [this]
+    {
+        show_leader_change();
+    },
+    [this](const std::exception & failure)
+    {
+        report_failure(failure);
+    });
     required_node<Button>(*this, "PartyPanel/Pool")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_pool));
     required_node<CharacterPoolDialog>(*this, "PoolModal")
@@ -139,10 +150,6 @@ void CharacterCreationView::setup_party()
     {
         report_failure(failure);
     });
-    required_node<Button>(*this, "TownSheet/Close")
-    .connect("pressed", presentation::guarded(this, &CharacterCreationView::close_town_sheet));
-    required_node<Window>(*this, "TownSheet")
-    .connect("close_requested", presentation::guarded(this, &CharacterCreationView::close_town_sheet));
     required_node<Button>(*this, "PartyPanel/Modifiers")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modifiers));
     required_node<Button>(*this, "PartyPanel/SavingThrows")
@@ -218,7 +225,8 @@ void CharacterCreationView::party_layout()
     place("PartyPanel/Save", Rect2(w - 520, 24, 140, 36));
     place("PartyPanel/Load", Rect2(w - 370, 24, 140, 36));
     place("PartyPanel/Pool", Rect2(w - 220, 24, 196, 36));
-    pool_layout();
+    required_node<CharacterPoolDialog>(*this, "PoolModal").fit(get_size());
+    required_node<TownSheetDialog>(*this, "TownSheet").fit(get_size());
     place("PartyPanel/Status", Rect2(24, h - 39, w - 48, 32));
     for (const auto *name :
             {"CampaignTown", "CampaignCombat"
@@ -315,15 +323,6 @@ void CharacterCreationView::make_roster_leader()
     if (roster_index_ >= roster.size())
         return;
     campaign_->make_leader(roster[roster_index_].id);
-    show_leader_change();
-}
-
-void CharacterCreationView::make_town_sheet_leader()
-{
-    if (!town_sheet_member_)
-        return;
-    campaign_->make_leader(town_sheet_member_);
-    required_node<Button>(*this, "TownSheet/MakeLeader").set_disabled(true);
     show_leader_change();
 }
 
@@ -762,8 +761,9 @@ void CharacterCreationView::party_action(PartyAction action)
                     });
                     town->connect("save_requested",
                                   presentation::guarded(this, &CharacterCreationView::open_saves));
+                    auto *sheet = &required_node<TownSheetDialog>(*this, "TownSheet");
                     town->connect("party_member_selected",
-                                  presentation::guarded(this, &CharacterCreationView::town_member_selected));
+                                  presentation::guarded(sheet, &TownSheetDialog::show_member));
                     town->connect("level_up_requested",
                                   presentation::guarded(this, &CharacterCreationView::open_advancement));
                     presentation::attach_child(*this, std::move(owned));
