@@ -47,66 +47,73 @@ struct ClassSkills
 };
 
 // SRD 5.2.1 Core Traits tables; an empty list denotes Bard's unrestricted list.
-const std::array class_skills
+// Built on first use: its vectors need dynamic initialization, which another
+// file's static initializer could otherwise see unfinished (Effective C++
+// Item 4).
+const auto &class_skills()
 {
-    ClassSkills{
-        "barbarian",
-        "Barbarian skills",
-        2,
-        {"animal_handling", "athletics", "intimidation", "nature", "perception", "survival"}},
-    ClassSkills{"bard", "Bard skills", 3, {}},
-    ClassSkills{
-        "cleric", "Cleric skills", 2, {"history", "insight", "medicine", "persuasion", "religion"}},
-    ClassSkills{"druid",
-        "Druid skills",
-        2,
-        {
-            "animal_handling", "arcana", "insight", "medicine", "nature", "perception",
-            "religion", "survival"
-        }},
-    ClassSkills{"fighter",
-        "Fighter skills",
-        2,
-        {
-            "acrobatics", "animal_handling", "athletics", "history", "insight", "intimidation",
-            "persuasion", "perception", "survival"
-        }},
-    ClassSkills{"monk",
-        "Monk skills",
-        2,
-        {"acrobatics", "athletics", "history", "insight", "religion", "stealth"}},
-    ClassSkills{"paladin",
-        "Paladin skills",
-        2,
-        {"athletics", "insight", "intimidation", "medicine", "persuasion", "religion"}},
-    ClassSkills{"ranger",
-        "Ranger skills",
-        3,
-        {
-            "animal_handling", "athletics", "insight", "investigation", "nature", "perception",
-            "stealth", "survival"
-        }},
-    ClassSkills{"rogue",
-        "Rogue skills",
-        4,
-        {
-            "acrobatics", "athletics", "deception", "insight", "intimidation", "investigation",
-            "perception", "persuasion", "sleight_of_hand", "stealth"
-        }},
-    ClassSkills{"sorcerer",
-        "Sorcerer skills",
-        2,
-        {"arcana", "deception", "insight", "intimidation", "persuasion", "religion"}},
-    ClassSkills{
-        "warlock",
-        "Warlock skills",
-        2,
-        {"arcana", "deception", "history", "intimidation", "investigation", "nature", "religion"}},
-    ClassSkills{
-        "wizard",
-        "Wizard skills",
-        2,
-        {"arcana", "history", "insight", "investigation", "medicine", "nature", "religion"}}};
+    static const std::array table
+    {
+        ClassSkills{
+            "barbarian",
+            "Barbarian skills",
+            2,
+            {"animal_handling", "athletics", "intimidation", "nature", "perception", "survival"}},
+        ClassSkills{"bard", "Bard skills", 3, {}},
+        ClassSkills{
+            "cleric", "Cleric skills", 2, {"history", "insight", "medicine", "persuasion", "religion"}},
+        ClassSkills{"druid",
+            "Druid skills",
+            2,
+            {
+                "animal_handling", "arcana", "insight", "medicine", "nature", "perception",
+                "religion", "survival"
+            }},
+        ClassSkills{"fighter",
+            "Fighter skills",
+            2,
+            {
+                "acrobatics", "animal_handling", "athletics", "history", "insight", "intimidation",
+                "persuasion", "perception", "survival"
+            }},
+        ClassSkills{"monk",
+            "Monk skills",
+            2,
+            {"acrobatics", "athletics", "history", "insight", "religion", "stealth"}},
+        ClassSkills{"paladin",
+            "Paladin skills",
+            2,
+            {"athletics", "insight", "intimidation", "medicine", "persuasion", "religion"}},
+        ClassSkills{"ranger",
+            "Ranger skills",
+            3,
+            {
+                "animal_handling", "athletics", "insight", "investigation", "nature", "perception",
+                "stealth", "survival"
+            }},
+        ClassSkills{"rogue",
+            "Rogue skills",
+            4,
+            {
+                "acrobatics", "athletics", "deception", "insight", "intimidation", "investigation",
+                "perception", "persuasion", "sleight_of_hand", "stealth"
+            }},
+        ClassSkills{"sorcerer",
+            "Sorcerer skills",
+            2,
+            {"arcana", "deception", "insight", "intimidation", "persuasion", "religion"}},
+        ClassSkills{
+            "warlock",
+            "Warlock skills",
+            2,
+            {"arcana", "deception", "history", "intimidation", "investigation", "nature", "religion"}},
+        ClassSkills{
+            "wizard",
+            "Wizard skills",
+            2,
+            {"arcana", "history", "insight", "investigation", "medicine", "nature", "religion"}}};
+    return table;
+}
 
 constexpr std::string_view skilled = "feat:skilled";
 constexpr std::string_view divine_order = "class:cleric:divine_order";
@@ -237,12 +244,12 @@ std::vector<TrainingChoiceGroup> options(std::string_view klass, std::string_vie
     TrainingChoiceControl::single_selection});
     if (!klass.empty())
     {
-        const auto data = std::find_if(class_skills.begin(), class_skills.end(),
+        const auto data = std::find_if(class_skills().begin(), class_skills().end(),
                                        [&](const auto & c)
         {
             return c.id == klass;
         });
-        require(data != class_skills.end());
+        require(data != class_skills().end());
         TrainingChoiceGroup group{"class:" + std::string(klass),
                                   std::string(data->label),
                                   data->count,
