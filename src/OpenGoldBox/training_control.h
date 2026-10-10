@@ -1,6 +1,7 @@
 #ifndef OPENGOLDBOX_TRAINING_CONTROL_H
 #define OPENGOLDBOX_TRAINING_CONTROL_H
 #include "godot_nodes.h"
+#include "localization.h"
 #include "opengold/character_creator.h"
 #include <godot_cpp/classes/check_box.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -10,9 +11,6 @@
 #include <godot_cpp/classes/v_box_container.hpp>
 #include <godot_cpp/classes/style_box_flat.hpp>
 #include <algorithm>
-#ifndef N_
-#define N_(message) message
-#endif
 
 namespace presentation
 {

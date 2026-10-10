@@ -2,15 +2,13 @@
 // outcomes; this adapter only selects a returned operation and commits it.
 #include "godot_nodes.h"
 #include "guarded_handlers.h"
+#include "localization.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
-#ifndef N_
-#define N_(message) message
-#endif
 using namespace godot;
 
 namespace

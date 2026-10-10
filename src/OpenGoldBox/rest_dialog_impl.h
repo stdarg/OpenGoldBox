@@ -1,14 +1,12 @@
 // One implementation for the game and demo; the host supplies rest_text().
 #include "godot_nodes.h"
+#include "localization.h"
 #include "spell_choice_controls.h"
 #include "training_replacement_controls.h"
 #include "vital_fixtures.h"
 #include "guarded_handlers.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
-#ifndef N_
-#define N_(message) message
-#endif
 void RolfTourView::setup_rest()
 {
     auto *spells = presentation::setup_spell_dialog(

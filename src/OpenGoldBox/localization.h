@@ -14,8 +14,13 @@ namespace godot
 class Node;
 }
 
-// Marks static source messages for the catalog extractor without translating IDs.
-#define N_(message) message
+// Marks a static source message for the catalog extractor, which looks for
+// N_("..."), without translating it. A function rather than a macro, so it has
+// a scope and a type (Effective C++ Item 2).
+constexpr const char *N_(const char *message) noexcept
+{
+    return message;
+}
 
 namespace i18n
 {
