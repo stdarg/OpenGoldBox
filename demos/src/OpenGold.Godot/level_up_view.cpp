@@ -793,8 +793,12 @@ void CharacterCreationView::advancement_check()
     case 3:
         capture_dialog("level-up-choices.png");
         press("LevelUp/Confirm");
+        if (!get_node<Control>("LevelUp/SpellChoicesPage")->is_visible())
+            throw std::runtime_error("A Wizard's spell page follows the first page");
+        press("LevelUp/Confirm");
         if (campaign_->member(id).character.sheet().level != 4 ||
-                campaign_->member(id).character.sheet().prepared_spells.size() != 2 ||
+                // The SRD Wizard prepares seven spells at level 4.
+                campaign_->member(id).character.sheet().prepared_spells.size() != 7 ||
                 get_node<Button>(arrow(id))->is_visible())
             throw std::runtime_error("Wizard confirmation did not apply choices and hide arrow");
         show_modifiers();
@@ -838,6 +842,8 @@ void CharacterCreationView::advancement_check()
         if (!get_node<Window>("LevelUp")->is_visible())
             throw std::runtime_error("Town arrow did not open advancement");
         select("LevelUp/Feat", 1);
+        // A level-four Fighter also masters a fourth weapon.
+        select("LevelUp/AdvancementTraining", 1);
         break;
     }
     case 5:

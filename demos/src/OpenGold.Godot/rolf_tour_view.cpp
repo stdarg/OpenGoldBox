@@ -1049,6 +1049,7 @@ void RolfTourView::check_town()
         draft.training.erase("class:fighter");
         draft.training.erase(
             "class:fighter:fighting_style"); // This untrained-shield fixture changes class.
+        draft.training.erase("class:fighter:weapon_mastery");
         member.character = opengold::Character(*opengold::srd5::character_rules(), draft,
                                                member.character.appearance());
         member.character.replace_inventory(std::move(inventory));
@@ -1333,6 +1334,13 @@ void RolfTourView::check_recovery()
                 member.vitals.hit_points != member.character.sheet().hit_points ||
                 member.wealth[4] != 0)
             throw std::runtime_error("Original inn payment and full recovery must persist");
+        // The Fighter's inn rest offers an optional mastery replacement; keep the
+        // current set so the rested party is saved at an editable boundary.
+        if (!campaign_->state().training_rest)
+            throw std::runtime_error("The inn rest must offer the Fighter's mastery choice");
+        get_node<Button>("RestTraining/Cancel")->emit_signal("pressed");
+        if (campaign_->state().training_rest)
+            throw std::runtime_error("Keeping the mastery set must finish the rest choices");
         if (save_check)
             save_check("inn-rest");
         if (save_check)
@@ -1369,9 +1377,17 @@ void RolfTourView::check_recovery()
             save_check("denied-rest");
         if (save_check)
         {
+            // Hit Dice are spent through Heal, so a wounded member gives the
+            // reloaded rest something to heal; the route then continues from
+            // the unwounded party.
+            const auto rested = campaign_->checkpoint();
+            auto wounded = rested;
+            wounded.roster.at(0).vitals.hit_points = 1;
+            campaign_->restore(std::move(wounded));
             (void)campaign_->rest(opengold::RestKind::short_rest);
             save_check("short-rest-spending");
             campaign_->finish_short_rest(campaign_->state().short_rest->ticket);
+            campaign_->restore(rested);
         }
         capture_frame("party-rest");
         recovery_stage_ = 8;

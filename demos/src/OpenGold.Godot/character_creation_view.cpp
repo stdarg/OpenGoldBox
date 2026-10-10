@@ -1638,6 +1638,12 @@ void CharacterCreationView::check_run()
         get_node<CheckBox>("Training/Rows/Group1/history")->set_pressed(true);
         get_node<OptionButton>("Training/Rows/Group0/Choice")->select(2);
         get_node<OptionButton>("Training/Rows/Group0/Choice")->emit_signal("item_selected", 2);
+        // A Fighter also masters three weapons.
+        for (const char *weapon :
+                {"dagger", "longsword", "greataxe"
+                })
+            get_node<CheckBox>(gs(std::string("Training/Rows/Group2/") + weapon))
+            ->set_pressed(true);
         press("Next");
         if (creator_->step() != CreationStep::name)
             throw std::runtime_error("Completed training must advance to Name");
