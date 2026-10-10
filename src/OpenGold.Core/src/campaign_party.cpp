@@ -42,6 +42,20 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
     }
     member.character.replace_inventory(std::move(inventory));
 }
+
+// The definitions of a member's equipped items, which the rules read as gear.
+std::vector<std::string> equipped_definitions(const PartyMember &member)
+{
+    std::vector<std::string> definitions;
+    for (const auto equipped : member.equipped)
+    {
+        const auto item = member.character.inventory().find(equipped);
+        if (!item)
+            throw std::runtime_error("Equipped item is missing");
+        definitions.push_back(item->get().definition_id);
+    }
+    return definitions;
+}
 } // namespace
 
 std::string equipment_conversion(const por::Equipment &item)
@@ -391,30 +405,14 @@ rules::RecoveryInfo CampaignParty::recovery_info(MemberId id) const
 rules::CharacterProfile CampaignParty::profile(MemberId id) const
 {
     const auto &m = member(id);
-    std::vector<std::string> keys;
-    for (auto equipped : m.equipped)
-    {
-        auto item = m.character.inventory().find(equipped);
-        if (!item)
-            throw std::runtime_error("Equipped item is missing");
-        keys.push_back(item->get().definition_id);
-    }
-    return rules_->character_profile(m.character.sheet(), keys);
+    return rules_->character_profile(m.character.sheet(), equipped_definitions(m));
 }
 
 rules::AbilityCheckModifier CampaignParty::ability_check(MemberId id, rules::Ability ability,
         std::string_view skill) const
 {
     const auto &m = member(id);
-    std::vector<std::string> keys;
-    for (auto equipped : m.equipped)
-    {
-        const auto item = m.character.inventory().find(equipped);
-        if (!item)
-            throw std::runtime_error("Equipped item is missing");
-        keys.push_back(item->get().definition_id);
-    }
-    return rules_->ability_check(m.character.sheet(), keys, ability, skill);
+    return rules_->ability_check(m.character.sheet(), equipped_definitions(m), ability, skill);
 }
 
 std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id,
@@ -427,9 +425,7 @@ std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id
     if (selected->get().quantity == 1 &&
             std::find(m.equipped.begin(), m.equipped.end(), item) != m.equipped.end())
         return {};
-    std::vector<std::string> keys;
-    for (auto key : m.equipped)
-        keys.push_back(m.character.inventory().find(key)->get().definition_id);
+    auto keys = equipped_definitions(m);
     keys.push_back(selected->get().definition_id);
     return rules_->equipment_choices(m.character.sheet(), keys, static_cast<unsigned>(keys.size() - 1));
 }
@@ -797,11 +793,8 @@ void CampaignParty::elapse(PartyState &state, std::chrono::milliseconds elapsed,
     {
         if (std::find(in_combat.begin(), in_combat.end(), member.id) != in_combat.end())
             continue;
-        std::vector<std::string> gear;
-        for (auto id : member.equipped)
-            gear.push_back(member.character.inventory().find(id)->get().definition_id);
         const auto profile =
-            rules_->character_profile(member.character.sheet(), gear);
+            rules_->character_profile(member.character.sheet(), equipped_definitions(member));
         participants.push_back({member.id,
                                 "campaign-character",
                                 member.character.sheet().name,
@@ -859,14 +852,7 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
         const auto &m = member(id);
         if (!tries_door(m, method))
             continue;
-        std::vector<std::string> gear;
-        for (auto equipped : m.equipped)
-        {
-            const auto item = m.character.inventory().find(equipped);
-            if (!item)
-                throw std::runtime_error("Equipped item is missing");
-            gear.push_back(item->get().definition_id);
-        }
+        const auto gear = equipped_definitions(m);
 
         const auto roll =
             method == DoorMethod::bash
@@ -1197,12 +1183,7 @@ void CampaignParty::restore(PartyState state)
     outside_combat();
     validate_rest_choices(state, *rules_);
     for (const auto &m : state.roster)
-    {
-        std::vector<std::string> gear;
-        for (auto id : m.equipped)
-            gear.push_back(m.character.inventory().find(id)->get().definition_id);
-        (void)rules_->character_profile(m.character.sheet(), gear);
-    }
+        (void)rules_->character_profile(m.character.sheet(), equipped_definitions(m));
     state_ = std::move(state);
 }
 
@@ -1215,10 +1196,7 @@ std::vector<rules::Participant> CampaignParty::participants() const
             const auto &m = member(id);
             if (m.vitals.dead)
                 continue;
-            std::vector<std::string> gear;
-            for (const auto equipped : m.equipped)
-                gear.push_back(m.character.inventory().find(equipped)->get().definition_id);
-            const auto p = rules_->character_profile(m.character.sheet(), gear);
+            const auto p = rules_->character_profile(m.character.sheet(), equipped_definitions(m));
             result.push_back({id,
                               "campaign-character",
                               m.character.sheet().name,
@@ -1284,10 +1262,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                     actor.max_hit_points != rules_->hit_point_maximum(it->character.sheet(),
                             actor.persistent))
                 throw std::runtime_error("Combat party identity mismatch");
-            std::vector<std::string> gear;
-            for (auto id : it->equipped)
-                gear.push_back(it->character.inventory().find(id)->get().definition_id);
-            (void)rules_->character_profile(it->character.sheet(), gear);
+            (void)rules_->character_profile(it->character.sheet(), equipped_definitions(*it));
             it->vitals = actor.persistent;
             for (const auto &[definition, left] : actor.thrown_gear_left)
                 keep_thrown_gear(*it, definition, left);
