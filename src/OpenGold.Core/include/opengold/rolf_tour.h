@@ -241,6 +241,9 @@ class RolfTourSession
 
   private:
     friend struct opengold::SaveCodec;
+    // Clears everything one run of the tour builds up; restart() also reloads
+    // the town's map and a fresh script machine.
+    void reset_run();
     GeoMap map_;
     std::shared_ptr<const EclProgram> program_;
     std::array<opengold::Image, 3> sprites_;

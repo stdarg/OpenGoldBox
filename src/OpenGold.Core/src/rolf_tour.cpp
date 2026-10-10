@@ -323,25 +323,35 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
 RolfTourSession::RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
                                  std::array<opengold::Image, 3> sprites, std::uint32_t entry,
                                  WallArtSet wall_art, std::shared_ptr<const PhlanResources> town)
-    : map_(std::move(map)), program_(std::move(program)), sprites_(std::move(sprites)),
-      wall_art_(std::move(wall_art)), machine_(program_), entry_(entry), town_(std::move(town))
+    // A town supplies its own map and wall art, as restart() reloads them.
+    : map_(town && town->map ? *town->map : std::move(map)), program_(std::move(program)),
+      sprites_(std::move(sprites)),
+      wall_art_(town && town->map ? town->wall_art : std::move(wall_art)), machine_(program_),
+      entry_(entry), town_(std::move(town))
 {
-    restart();
+    // The members above are initialized once; only the per-run state is reset
+    // here (Effective C++ Item 4).
+    reset_run();
 }
 
 void RolfTourSession::restart()
 {
-    current_area_ = 0;
-    visited_areas_.clear();
-    seen_areas_.clear();
-    rest_checks_ = 0;
     if (town_ && town_->map)
     {
         map_ = *town_->map;
         wall_art_ = town_->wall_art;
     }
-    const auto revision = snapshot_.revision + 1;
     machine_ = EclMachine(program_);
+    reset_run();
+}
+
+void RolfTourSession::reset_run()
+{
+    current_area_ = 0;
+    visited_areas_.clear();
+    seen_areas_.clear();
+    rest_checks_ = 0;
+    const auto revision = snapshot_.revision + 1;
     snapshot_ = {};
     snapshot_.revision = revision;
     menu_request_ = delayed_request_ = 0;
