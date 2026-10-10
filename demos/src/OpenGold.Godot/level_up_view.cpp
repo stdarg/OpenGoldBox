@@ -472,7 +472,7 @@ void CharacterCreationView::open_advancement(std::int64_t id)
     }
     for (unsigned i = 0; i < 6; ++i)
         window->get_node<OptionButton>(String("Ability") + String::num_uint64(i))
-        ->select(advancement_choice_.abilities[i]);
+        ->select(advancement_choice_.abilities[opengold::rules::all_abilities[i]]);
     window->get_node<Label>("SpellLabel")
     ->set_text(advancement_options_.spells.empty() ? "No spell choices for this class"
                : "Prepared spells: select at least one");
@@ -575,12 +575,13 @@ void CharacterCreationView::advancement_changed(std::int64_t)
         points->set_disabled(!ability);
         if (!ability)
             points->select(0);
-        advancement_choice_.abilities[i] = ability ? points->get_selected() : 0;
-        const auto value = campaign_->member(advancing_).character.sheet().scores[i];
+        const auto shown = opengold::rules::all_abilities[i];
+        advancement_choice_.abilities[shown] = ability ? points->get_selected() : 0;
+        const auto value = campaign_->member(advancing_).character.sheet().scores[shown];
         const std::array<const char *, 6> labels{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
         window->get_node<Label>(String("AbilityLabel") + String::num_uint64(i))
         ->set_text(String(labels[i]) + " " + String::num_int64(value) + String::utf8(" → ") +
-                   String::num_int64(value + advancement_choice_.abilities[i]));
+                   String::num_int64(value + advancement_choice_.abilities[shown]));
     }
     if (!advancement_choice_.spell_learning)
     {

@@ -473,8 +473,8 @@ void CharacterCreationView::party_check()
         creator_->name("Party check fighter");
         for (unsigned i = 0; i < 6; ++i)
             creator_->assign_roll(i, static_cast<rules::Ability>(i));
-        for (unsigned attempt = 0; !creator_->rules().class_eligible(creator_->draft(), "fighter");
-                ++attempt)
+        for (unsigned attempt = 0;
+                !rules::class_eligible(creator_->rules(), creator_->draft(), "fighter"); ++attempt)
         {
             if (attempt == 100)
                 throw std::runtime_error("Could not roll qualified party-check fixture");

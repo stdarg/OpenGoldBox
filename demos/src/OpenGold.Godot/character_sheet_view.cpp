@@ -51,7 +51,9 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
             !creator_->draft().rolled || index < 0 || index >= 12)
         return {};
     const auto &d = creator_->draft();
-    const unsigned roll = index < 6 ? index : d.assignment[index - 6];
+    // Indices 0-5 are the dice boxes, 6-11 the score boxes of each ability.
+    const unsigned roll =
+        index < 6 ? index : d.assignment[static_cast<rules::Ability>(index - 6)];
     if (roll >= 6 || (index < 6 && std::find(d.assignment.begin(), d.assignment.end(), roll) !=
                       d.assignment.end()))
         return {};
@@ -155,14 +157,16 @@ String CharacterCreationView::sheet_text(const Character &character,
         "\n\n[table=3][cell][b]Attribute     [/b][/cell][cell][b]Score     [/b][/cell][cell][b]Saving throw[/b][/cell]";
     for (unsigned i = 0; i < 6; ++i)
     {
-        const auto score = std::to_string(s.scores[i]);
+        const auto ability = rules::all_abilities[i];
+        const auto score = std::to_string(s.scores[ability]);
         const auto colored =
-            s.modifiers[i] == 0
+            s.modifiers[ability] == 0
             ? score
-            : "[color=" + std::string(s.modifiers[i] > 0 ? "#f3d55b" : "#f08080") + "]" +
+            : "[color=" + std::string(s.modifiers[ability] > 0 ? "#f3d55b" : "#f08080") + "]" +
             score + "[/color]";
         text += "[cell]" + std::string(names[i]) + "[/cell][cell]" + colored + "[/cell][cell]" +
-                number(s.saving_throws[i]) + (s.save_proficiencies[i] ? " *" : "") + "[/cell]";
+                number(s.saving_throws[ability]) + (s.save_proficiencies[ability] ? " *" : "") +
+                "[/cell]";
     }
     text += "[/table]\n* Proficient saving throw";
     if (member)
@@ -216,14 +220,15 @@ void CharacterCreationView::show_modifiers()
     std::string text = "[b]Ability score adjustments[/b]\n";
     for (unsigned i = 0; i < 6; ++i)
     {
-        if (s.bonuses[i] == 0)
+        const auto ability = rules::all_abilities[i];
+        if (s.bonuses[ability] == 0)
             continue;
-        text += "[b]" + std::string(names[i]) + "[/b]\nRolled score: " + std::to_string(s.base[i]) +
-                "\n";
+        text += "[b]" + std::string(names[i]) + "[/b]\nRolled score: " +
+                std::to_string(s.base[ability]) + "\n";
         for (const auto &source : s.ability_adjustments)
-            if (source.bonuses[i])
-                text += source.label + " (" + number(source.bonuses[i]) + ")\n";
-        text += "Final score: " + std::to_string(s.scores[i]) + "\n\n";
+            if (source.bonuses[ability])
+                text += source.label + " (" + number(source.bonuses[ability]) + ")\n";
+        text += "Final score: " + std::to_string(s.scores[ability]) + "\n\n";
     }
     text += "\n[b]Race / " + s.race + "[/b]\n" + s.racial_modifiers;
     text += "\n\n[b]Class / " + s.character_class + "[/b]\n" + s.class_modifiers;
@@ -290,14 +295,18 @@ void CharacterCreationView::update_saving_throws(String value)
                        std::to_string(dc) + " to save.\n\n";
     for (unsigned i = 0; i < 6; ++i)
     {
-        const int needed = srd5::minimum_save_roll(dc, s.saving_throws[i]);
-        text += "[b]" + std::string(names[i]) + " save: " + number(s.saving_throws[i]) + " | ";
+        const auto ability = rules::all_abilities[i];
+        const int needed = srd5::minimum_save_roll(dc, s.saving_throws[ability]);
+        text += "[b]" + std::string(names[i]) + " save: " + number(s.saving_throws[ability]) +
+                " | ";
         text += needed > 20   ? "Cannot reach this DC on a d20"
                 : needed == 1 ? "Any d20 roll saves"
                 : "Roll " + std::to_string(needed) + " or higher";
-        text += "[/b]\n" + number(s.modifiers[i]) + " from " + names[i] + " score " +
-                std::to_string(s.scores[i]) + " (score minus 10, divided by 2, rounded down).\n";
-        text += s.save_proficiencies[i] ? number(s.saving_throws[i] - s.modifiers[i]) + " from " +
+        text += "[/b]\n" + number(s.modifiers[ability]) + " from " + names[i] + " score " +
+                std::to_string(s.scores[ability]) +
+                " (score minus 10, divided by 2, rounded down).\n";
+        text += s.save_proficiencies[ability]
+                ? number(s.saving_throws[ability] - s.modifiers[ability]) + " from " +
                 s.character_class + " saving throw proficiency."
                 : "+0 proficiency: " + s.character_class +
                             " does not grant proficiency in this save.";
