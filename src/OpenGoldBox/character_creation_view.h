@@ -64,26 +64,6 @@ class CharacterCreationView : public godot::Control
     void target_toggled(bool selected, int index);
     void bonus_selected(std::int64_t index);
     void creation_spell_toggled(bool selected, godot::String group, godot::String option);
-    // The level-up window is a sequence of pages, not a single optional extra:
-    // Skilled and a Wizard's spell choices can both follow the first page, so a
-    // flag cannot say which one is showing.
-    enum class AdvancementPage
-    {
-        choices,
-        skilled,
-        spells
-    };
-    AdvancementPage advancement_page_{};
-    void advancement_pages();
-    [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_skilled_group() const;
-    // The single training dropdown never shows Skilled, which owns a whole page.
-    [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_dropdown_group() const;
-    [[nodiscard]] AdvancementPage advancement_next_page(AdvancementPage from) const;
-    [[nodiscard]] AdvancementPage advancement_previous_page(AdvancementPage from) const;
-    void refresh_advancement_skilled();
-    void advancement_skilled_toggled(bool selected, godot::String option);
-    void advancement_back();
-    void advancement_learning_toggled(bool selected, godot::String group, godot::String option);
     void cantrip_toggled(bool selected, godot::String option);
     void training_toggled(bool selected, godot::String group, godot::String option);
     void training_selected(std::int64_t index, godot::String group);
@@ -141,15 +121,6 @@ class CharacterCreationView : public godot::Control
     void setup_advancement();
     void refresh_advancement_arrows();
     void open_advancement(std::int64_t id);
-    void advancement_changed(std::int64_t unused = 0);
-    void drop_unoffered_learning();
-    void advancement_spell_changed(bool checked, int index);
-    void close_advancement();
-    void confirm_advancement();
-    opengold::MemberId advancing_{};
-    opengold::rules::AdvancementOptions advancement_options_;
-    opengold::rules::AdvancementChoice advancement_choice_;
-    bool advancement_refreshing_{};
     void advancement_check();
     bool advancement_check_{}, advancement_review_{};
     unsigned advancement_stage_{}, advancement_frames_{};

@@ -1,6 +1,7 @@
 #include "rolf_tour_view.h"
 #include "combat_view.h"
 #include "character_creation_view.h"
+#include "level_up_dialog.h"
 #include "save_slots.h"
 #include "startup_view.h"
 #include "game_lifecycle.h"
@@ -16,6 +17,7 @@ void initialize(godot::ModuleInitializationLevel level)
         godot::ClassDB::register_class<RolfTourView>();
         godot::ClassDB::register_class<CombatView>();
         godot::ClassDB::register_class<CharacterCreationView>();
+        godot::ClassDB::register_class<LevelUpDialog>();
         godot::ClassDB::register_class<SaveSlots>();
         godot::ClassDB::register_class<StartupView>();
         godot::ClassDB::register_class<GameLifecycle>();
