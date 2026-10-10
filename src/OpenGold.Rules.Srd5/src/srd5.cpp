@@ -1417,6 +1417,20 @@ void restore_vitals(Actor &a, const VitalState &state)
         throw std::runtime_error("Earned recovery requires active healing prevention");
 }
 
+// An actor for a rules call outside combat: full Second Winds and slots from
+// its definition, then its saved vitals. One place, so a new resource cannot be
+// missed in one of the many callers.
+Actor actor_from(const Definition &definition, const VitalState &state)
+{
+    Actor actor;
+    actor.definition = definition;
+    actor.winds = definition.winds;
+    actor.slots = definition.slots;
+    actor.slots2 = definition.slots2;
+    restore_vitals(actor, state);
+    return actor;
+}
+
 VitalState vitals(const Actor &a)
 {
     std::ostringstream out;
@@ -10353,12 +10367,7 @@ class Module final : public RulesModule
         }
         if (!options.spells.empty() && choice.spells.empty())
             throw std::runtime_error("Choose at least one supported spell");
-        Actor actor;
-        actor.definition = old;
-        actor.winds = old.winds;
-        actor.slots = old.slots;
-        actor.slots2 = old.slots2;
-        restore_vitals(actor, state);
+        auto actor = actor_from(old, state);
         auto next = spell_choice_sheet(sheet, choice);
         for (const auto &[id, values] : choice.training)
         {
@@ -10673,12 +10682,7 @@ class Module final : public RulesModule
     void validate_character_state(const CharacterSheet &sheet,
                                   const VitalState &state) const override
     {
-        Actor actor;
-        actor.definition = character_definition(character_profile(sheet, {}).data);
-        actor.winds = actor.definition.winds;
-        actor.slots = actor.definition.slots;
-        actor.slots2 = actor.definition.slots2;
-        restore_vitals(actor, state);
+        auto actor = camp_actor(sheet, state);
     }
 
     // SRD Long Rest: eight hours, then sixteen hours before the next one begins.
@@ -10747,12 +10751,7 @@ class Module final : public RulesModule
     void recover(VitalState &state, const CharacterSheet &sheet) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
-        Actor actor;
-        actor.definition = d;
-        actor.winds = d.winds;
-        actor.slots = d.slots;
-        actor.slots2 = d.slots2;
-        restore_vitals(actor, state);
+        auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp < 1)
             throw std::runtime_error("Long rest requires at least one HP at its start");
         (void)detail::heal_life(actor.life, max_hp(actor), max_hp(actor),
@@ -10782,12 +10781,7 @@ class Module final : public RulesModule
     RecoveryInfo recovery_info(const CharacterSheet &sheet, const VitalState &state) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
-        Actor actor;
-        actor.definition = d;
-        actor.winds = d.winds;
-        actor.slots = d.slots;
-        actor.slots2 = d.slots2;
-        restore_vitals(actor, state);
+        auto actor = actor_from(d, state);
         RecoveryInfo result{unsigned(d.hit_die),
                             unsigned(actor.hit_dice),
                             unsigned(d.level),
@@ -10808,12 +10802,7 @@ class Module final : public RulesModule
                                     TemporaryHpChoice choice) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
-        Actor actor;
-        actor.definition = d;
-        actor.winds = d.winds;
-        actor.slots = d.slots;
-        actor.slots2 = d.slots2;
-        restore_vitals(actor, state);
+        auto actor = actor_from(d, state);
         detail::grant_temporary_hp(actor.life, offered, choice);
         auto next = vitals(actor);
         state = std::move(next);
@@ -10822,12 +10811,7 @@ class Module final : public RulesModule
     void recover_short_rest(VitalState &state, const CharacterSheet &sheet) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
-        Actor actor;
-        actor.definition = d;
-        actor.winds = d.winds;
-        actor.slots = d.slots;
-        actor.slots2 = d.slots2;
-        restore_vitals(actor, state);
+        auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp < 1)
             throw std::runtime_error("Short rest requires at least one HP at its start");
         actor.winds = std::min(d.winds, actor.winds + 1);
@@ -10847,12 +10831,7 @@ class Module final : public RulesModule
                                 std::string_view choice_id) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
-        Actor actor;
-        actor.definition = d;
-        actor.winds = d.winds;
-        actor.slots = d.slots;
-        actor.slots2 = d.slots2;
-        restore_vitals(actor, state);
+        auto actor = actor_from(d, state);
         const auto choice = std::find_if(arcane_allocations.begin(), arcane_allocations.end(),
                                          [&](const auto & value)
         {
@@ -10876,12 +10855,7 @@ class Module final : public RulesModule
                                RandomState &random_state) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
-        Actor actor;
-        actor.definition = d;
-        actor.winds = d.winds;
-        actor.slots = d.slots;
-        actor.slots2 = d.slots2;
-        restore_vitals(actor, state);
+        auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp < 1 || actor.hit_dice < 1)
             throw std::runtime_error("No Hit Die can be spent by this character");
         auto rng = random_state.value;
@@ -10901,12 +10875,7 @@ class Module final : public RulesModule
     {
         if (hp < 0 || hp > sheet.hit_points || (state.dead && hp))
             throw std::runtime_error("Unsupported script HP change");
-        Actor actor;
-        actor.definition = character_definition(character_profile(sheet, {}).data);
-        actor.winds = actor.definition.winds;
-        actor.slots = actor.definition.slots;
-        actor.slots2 = actor.definition.slots2;
-        restore_vitals(actor, state);
+        auto actor = camp_actor(sheet, state);
         if (hp == state.hit_points ||
                 (hp > state.hit_points && detail::healing_blocked(actor.effects)))
             return;
@@ -10951,25 +10920,14 @@ class Module final : public RulesModule
     // A character's actor outside combat, its resources read from `state`.
     Actor camp_actor(const CharacterSheet &sheet, const VitalState &state) const
     {
-        Actor actor;
-        actor.definition = character_definition(character_profile(sheet, {}).data);
-        actor.winds = actor.definition.winds;
-        actor.slots = actor.definition.slots;
-        actor.slots2 = actor.definition.slots2;
-        restore_vitals(actor, state);
-        return actor;
+        return actor_from(character_definition(character_profile(sheet, {}).data), state);
     }
 
     void temple_heal(VitalState &state, const CharacterSheet &sheet,
                      RandomState &random_state) const override
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
-        Actor actor;
-        actor.definition = d;
-        actor.winds = d.winds;
-        actor.slots = d.slots;
-        actor.slots2 = d.slots2;
-        restore_vitals(actor, state);
+        auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp >= max_hp(actor))
             throw std::runtime_error("Cure Wounds requires a wounded living member");
         // Authored temple caster: Cure Wounds, Wisdom +3. Same SplitMix64 as combat.
