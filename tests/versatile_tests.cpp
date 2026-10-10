@@ -197,10 +197,10 @@ void campaign()
     auto rules = module();
     CampaignParty party(module());
     auto character = hero();
-    const auto staff = character.inventory().add({.definition_id = "quarterstaff",
+    const auto staff = character.add_item({.definition_id = "quarterstaff",
                                                   .name = "Quarterstaff",
                                                   .quantity = 1}),
-               shield = character.inventory().add({.definition_id = "shield",
+               shield = character.add_item({.definition_id = "shield",
                                                    .name = "Shield",
                                                    .quantity = 1});
     const auto id = party.add_pc(std::move(character));

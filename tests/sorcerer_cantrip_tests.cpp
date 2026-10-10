@@ -394,7 +394,7 @@ void campaign()
         {
             CampaignParty party(module());
             auto h = hero();
-            h.inventory().add({.definition_id = "quarterstaff", .name = "Quarterstaff"});
+            h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
             const auto id = npc ? party.recruit("fixture:sorcerer-cantrip", std::move(h))
                             : party.add_pc(std::move(h));
             party.equip(id, 1);

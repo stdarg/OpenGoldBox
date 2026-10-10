@@ -163,7 +163,7 @@ void alternate_rules_boundary()
 {
     CampaignParty party(std::make_unique<AlternateRestRules>());
     auto person = hero();
-    const auto armor = person.inventory().add({.definition_id = "chain_mail",
+    const auto armor = person.add_item({.definition_id = "chain_mail",
                                                .name = "Alternate rest armor"});
     const auto id = party.add_pc(std::move(person));
     party.equip(id, armor);
@@ -682,7 +682,7 @@ void watch_interruption_and_rollback()
     {
         auto party = std::make_shared<CampaignParty>(module());
         auto person = hero();
-        const auto sword = person.inventory().add({.definition_id = "longsword",
+        const auto sword = person.add_item({.definition_id = "longsword",
                                                    .name = "Watch camp sword",
                                                    .quantity = 1,
                                                    .original_type = 34});

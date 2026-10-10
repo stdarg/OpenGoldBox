@@ -594,7 +594,7 @@ void asi_conformance()
         {
             CampaignParty baseline(module());
             auto h = character(klass);
-            h.inventory().add({.definition_id = "quarterstaff", .name = "Quarterstaff"});
+            h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
             const auto id = npc ? baseline.recruit("asi:recruited", std::move(h))
                             : baseline.add_pc(std::move(h));
             baseline.equip(id, 1);

@@ -549,12 +549,12 @@ void CharacterCreationView::equipment_art_check()
                 por::Equipment item;
                 item.stored.type = option.original_type;
                 item.stored.stack_size = 1;
-                character.inventory().add({.definition_id = equipment_conversion(item),
+                character.add_item({.definition_id = equipment_conversion(item),
                                            .name = option.label,
                                            .quantity = 1,
                                            .original_type = option.original_type});
             }
-        character.inventory().add({.definition_id = "shield",
+        character.add_item({.definition_id = "shield",
                                    .name = "Shield",
                                    .quantity = 1,
                                    .original_type = 59});

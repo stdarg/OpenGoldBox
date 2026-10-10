@@ -430,10 +430,10 @@ void creation_tests()
           saved.hit_die == sheet.hit_die && saved.hit_points == sheet.hit_points &&
           saved.hp_explanation == sheet.hp_explanation && saved.level == 1,
           "Character retains rules identity and evaluated sheet values");
-    const auto sword = finished.inventory().add({.definition_id = "test:longsword",
+    const auto sword = finished.add_item({.definition_id = "test:longsword",
                                                  .name = "Longsword"});
     auto copy = finished;
-    copy.inventory().remove(sword);
+    copy.remove_item(sword);
     auto recolored = appearance;
     recolored.colors[0][0] = 2;
     copy.appearance(recolored);

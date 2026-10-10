@@ -306,8 +306,8 @@ void physical_attacks_and_reactions()
         {
             CampaignParty party(rules());
             auto h = hero("handaxe");
-            h.inventory().add({.definition_id = "handaxe", .name = "First"});
-            h.inventory().add({.definition_id = "handaxe", .name = "Second"});
+            h.add_item({.definition_id = "handaxe", .name = "First"});
+            h.add_item({.definition_id = "handaxe", .name = "Second"});
             const auto id = npc ? party.recruit("mastery:npc", h) : party.add_pc(h);
             party.equip(id, 1);
             party.equip(id, 2, EquipmentOperation::equip_other);

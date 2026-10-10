@@ -53,9 +53,22 @@ class Character
         return inventory_;
     }
 
-    [[nodiscard]] Inventory &inventory()
+    // The inventory changes only through these calls rather than through a
+    // writable handle, so each change is visible at its call site (Effective
+    // C++ Item 28).
+    std::uint64_t add_item(NewItem item)
     {
-        return inventory_;
+        return inventory_.add(std::move(item));
+    }
+
+    void remove_item(std::uint64_t id, std::uint32_t quantity = 1)
+    {
+        inventory_.remove(id, quantity);
+    }
+
+    void replace_inventory(Inventory inventory)
+    {
+        inventory_ = std::move(inventory);
     }
 
     bool advance(const rules::RulesModule &rules, rules::VitalState &state);

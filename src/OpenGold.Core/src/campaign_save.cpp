@@ -369,7 +369,9 @@ struct SaveCodec
                             "Unsupported saved advancement choice");
                     replay();
                 }
-                field(character.inventory());
+                Inventory inventory;
+                field(inventory);
+                character.replace_inventory(std::move(inventory));
                 PartyMember m{0, std::move(character)};
                 member(m);
                 v.roster.push_back(std::move(m));
@@ -386,7 +388,8 @@ struct SaveCodec
                 auto edits = m.character.spell_edits();
                 auto training = m.character.training_edits();
                 fields(history, edits, training);
-                field(m.character.inventory());
+                auto inventory = m.character.inventory();
+                field(inventory);
                 member(m);
             }
         if (reading)

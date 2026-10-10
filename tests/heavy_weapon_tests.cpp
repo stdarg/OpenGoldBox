@@ -321,13 +321,13 @@ void campaign()
     auto rules = module(true);
     CampaignParty party(module(true));
     auto h = hero();
-    const auto sword = h.inventory().add({.definition_id = "greatsword",
+    const auto sword = h.add_item({.definition_id = "greatsword",
                                           .name = "Greatsword",
                                           .quantity = 1}),
-               bow = h.inventory().add({.definition_id = "longbow",
+               bow = h.add_item({.definition_id = "longbow",
                                         .name = "Longbow",
                                         .quantity = 1}),
-               shield = h.inventory().add({.definition_id = "shield",
+               shield = h.add_item({.definition_id = "shield",
                                            .name = "Shield",
                                            .quantity = 1});
     const auto id = party.add_pc(std::move(h));

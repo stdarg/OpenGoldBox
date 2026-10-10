@@ -75,7 +75,7 @@ void run()
         {
             CampaignParty party(module());
             auto h = mastery_grant_checks::chosen(klass);
-            h.inventory().add({.definition_id = "dagger", .name = "Retained dagger"});
+            h.add_item({.definition_id = "dagger", .name = "Retained dagger"});
             const auto id = npc ? party.recruit("mastery-rest:npc", h) : party.add_pc(h);
             check(!party.state().training_rest, "Creation does not invent a rest entitlement");
             rejects(

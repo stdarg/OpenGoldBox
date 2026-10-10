@@ -40,7 +40,7 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
         if (used == stack->second)
             member.item_sources.erase(stack->first);
     }
-    member.character.inventory() = std::move(inventory);
+    member.character.replace_inventory(std::move(inventory));
 }
 } // namespace
 
@@ -493,7 +493,7 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
     auto &target = edit(id);
     if (inventory_changed)
     {
-        target.character.inventory() = std::move(inventory);
+        target.character.replace_inventory(std::move(inventory));
         target.item_sources = std::move(sources);
     }
     target.equipped = std::move(next);
@@ -523,7 +523,7 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
                        .quantity = std::max(1u, unsigned(item.stored.stack_size)),
                        .original_type = item.stored.type});
     sources.emplace(key, item);
-    m.character.inventory() = std::move(inventory);
+    m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
     m.wealth[3] -= item.stored.value;
 }
@@ -584,7 +584,7 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         });
         auto &m = next.roster[recipient];
         // Encounter rewards are retained even beyond the shop's purchase cap.
-        const auto id = m.character.inventory().add(
+        const auto id = m.character.add_item(
         {
             .definition_id = equipment_conversion(item),
             .name = item.label(),

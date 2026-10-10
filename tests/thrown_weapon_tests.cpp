@@ -60,8 +60,8 @@ CampaignParty thrown_party()
     CampaignParty party(module());
     auto character = hero();
     for (const auto weapon : weapons)
-        character.inventory().add({.definition_id = weapon, .name = weapon, .quantity = 3});
-    const auto shield = character.inventory().add({.definition_id = "shield",
+        character.add_item({.definition_id = weapon, .name = weapon, .quantity = 3});
+    const auto shield = character.add_item({.definition_id = "shield",
                                                    .name = "Baseline shield"});
     const auto id = party.add_pc(std::move(character));
     party.equip(id, 3); // Javelin in the ordered inventory above.
@@ -95,12 +95,12 @@ void physical_inventory()
                 draft.character_class = klass;
                 draft.background = "sage";
                 Character pc(*srd5::character_rules(), draft, {});
-                const auto held = pc.inventory().add({.definition_id = "longsword",
+                const auto held = pc.add_item({.definition_id = "longsword",
                                                       .name = "Held sword"});
-                const auto stack = pc.inventory().add({.definition_id = weapon,
+                const auto stack = pc.add_item({.definition_id = weapon,
                                                        .name = "Carried weapon",
                                                        .quantity = 3});
-                const auto shield = pc.inventory().add({.definition_id = "shield",
+                const auto shield = pc.add_item({.definition_id = "shield",
                                                         .name = "Held shield"});
                 const auto id = party.add_pc(std::move(pc));
                 party.equip(id, held);
@@ -227,8 +227,8 @@ void large_stack()
     draft.background = "sage";
     CampaignParty party(module());
     Character pc(*srd5::character_rules(), draft, {});
-    const auto sword = pc.inventory().add({.definition_id = "longsword", .name = "Keep in hand"});
-    const auto stack = pc.inventory().add({.definition_id = "javelin",
+    const auto sword = pc.add_item({.definition_id = "longsword", .name = "Keep in hand"});
+    const auto stack = pc.add_item({.definition_id = "javelin",
                                            .name = "Large stack",
                                            .quantity = 1000000});
     const auto first = party.add_pc(std::move(pc));
@@ -265,10 +265,10 @@ void control_fixture()
     auto draft = pc.creation_data();
     draft.background = "sage";
     pc = Character(*srd5::character_rules(), draft, {});
-    const auto sword = pc.inventory().add({.definition_id = "longsword", .name = "Sword"});
-    const auto shield = pc.inventory().add({.definition_id = "shield", .name = "Shield"});
+    const auto sword = pc.add_item({.definition_id = "longsword", .name = "Sword"});
+    const auto shield = pc.add_item({.definition_id = "shield", .name = "Shield"});
     for (auto weapon : weapons)
-        pc.inventory().add({.definition_id = weapon, .name = weapon, .quantity = 3});
+        pc.add_item({.definition_id = weapon, .name = weapon, .quantity = 3});
     CampaignParty party(module());
     auto id = party.add_pc(std::move(pc));
     party.equip(id, sword);

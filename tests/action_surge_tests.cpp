@@ -436,7 +436,7 @@ void campaign()
     {
         CampaignParty p(module());
         auto h = hero();
-        h.inventory().add({.definition_id = "longsword", .name = "Longsword"});
+        h.add_item({.definition_id = "longsword", .name = "Longsword"});
         const auto id = npc ? p.recruit("surge:companion", h) : p.add_pc(h);
         p.equip(id, 1);
         p.award_experience(2700, "surge-xp");

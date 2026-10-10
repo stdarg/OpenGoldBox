@@ -264,7 +264,7 @@ void run()
             {
                 CampaignParty p(rogue_attack_checks::rules_module());
                 auto thrower = h;
-                thrower.inventory().add({.definition_id = "spear", .name = "Spear"});
+                thrower.add_item({.definition_id = "spear", .name = "Spear"});
                 p.add_pc(std::move(thrower));
                 p.equip(1, 1);
                 auto actors = p.participants();
@@ -355,7 +355,7 @@ void run()
             {
                 CampaignParty p(rogue_attack_checks::rules_module());
                 auto h = starter(klass);
-                h.inventory().add({.definition_id = "greatsword", .name = "Greatsword"});
+                h.add_item({.definition_id = "greatsword", .name = "Greatsword"});
                 const auto id =
                     npc ? p.recruit("fixture:styles", std::move(h)) : p.add_pc(std::move(h));
                 p.equip(id, 1);

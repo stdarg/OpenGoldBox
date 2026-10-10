@@ -357,9 +357,9 @@ void campaign()
     for (const auto &e : expectations())
     {
         auto h = hero();
-        const auto item = h.inventory().add({.definition_id = e.key, .name = e.key, .quantity = 1}),
+        const auto item = h.add_item({.definition_id = e.key, .name = e.key, .quantity = 1}),
                    other =
-                       h.inventory().add({.definition_id =
+                       h.add_item({.definition_id =
                                               e.category == "shield" ? "shield" : "leather",
                                           .name = "Other",
                                           .quantity = 1});

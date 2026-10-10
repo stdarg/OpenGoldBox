@@ -399,7 +399,7 @@ void campaign_and_cancellation()
         {
             CampaignParty party(module());
             auto h = hero(1);
-            h.inventory().add({.definition_id = "longsword", .name = "Sword"});
+            h.add_item({.definition_id = "longsword", .name = "Sword"});
             const auto id = party.add_pc(std::move(h));
             party.equip(id, 1);
             party.award_experience(2700, "champion-levels");

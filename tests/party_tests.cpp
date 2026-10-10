@@ -245,13 +245,13 @@ void equipment_rule_boundary()
 {
     CampaignParty party(std::make_unique<AlternateEquipmentRules>());
     auto person = character();
-    const auto sword = person.inventory().add({.definition_id = "longsword", .name = "Sword"});
-    const auto dagger = person.inventory().add({.definition_id = "dagger", .name = "Dagger"});
+    const auto sword = person.add_item({.definition_id = "longsword", .name = "Sword"});
+    const auto dagger = person.add_item({.definition_id = "dagger", .name = "Dagger"});
     std::vector<std::uint64_t> invalid;
     for (const char *key :
             {"bad_index", "duplicate_index", "rejected"
             })
-        invalid.push_back(person.inventory().add({.definition_id = key, .name = key}));
+        invalid.push_back(person.add_item({.definition_id = key, .name = key}));
     const auto id = party.add_pc(std::move(person));
     const auto vitals = party.member(id).vitals;
     party.equip(id, sword);
@@ -292,13 +292,13 @@ void two_weapon_equipment()
     {
         CampaignParty party(module());
         auto c = character("fighter", "Hands");
-        const auto sword = c.inventory().add({.definition_id = "longsword", .name = "Longsword"}),
-                   daggers = c.inventory().add({.definition_id = "dagger",
+        const auto sword = c.add_item({.definition_id = "longsword", .name = "Longsword"}),
+                   daggers = c.add_item({.definition_id = "dagger",
                                                 .name = "Dagger",
                                                 .quantity = 3,
                                                 .original_type = 8});
-        const auto shield = c.inventory().add({.definition_id = "shield", .name = "Shield"}),
-                   great = c.inventory().add({.definition_id = "greatsword", .name = "Greatsword"});
+        const auto shield = c.add_item({.definition_id = "shield", .name = "Shield"}),
+                   great = c.add_item({.definition_id = "greatsword", .name = "Greatsword"});
         const auto id = recruited ? party.recruit("hands:npc", c) : party.add_pc(c);
         const auto vitals = party.member(id).vitals;
         auto sourced = party.checkpoint();
@@ -474,7 +474,7 @@ void party_combat_appearance()
     // Native definitions without original provenance still use the same mapping.
     auto native = party.member(pc_id);
     native.equipped.clear();
-    native.equipped.push_back(native.character.inventory().add({.definition_id = "mace",
+    native.equipped.push_back(native.character.add_item({.definition_id = "mace",
                                                                 .name = "Authored mace",
                                                                 .quantity = 1}));
     check(por::resolve_combat_appearance(native, catalog).selection.combination == "type_23",
@@ -489,11 +489,11 @@ void all_weapon_equipment()
     auto hero = character();
     for (const auto &option : catalog.options)
         if (option.original_type)
-            hero.inventory().add({.definition_id = equipment_conversion(item(option.original_type)),
+            hero.add_item({.definition_id = equipment_conversion(item(option.original_type)),
                                   .name = option.label,
                                   .quantity = 1,
                                   .original_type = option.original_type});
-    const auto shield = hero.inventory().add({.definition_id = "shield",
+    const auto shield = hero.add_item({.definition_id = "shield",
                                               .name = "Shield",
                                               .quantity = 1,
                                               .original_type = 59});
@@ -655,7 +655,7 @@ void roster_and_equipment()
     CampaignParty party(module());
     auto original = character();
     const auto pc = party.add_pc(original);
-    original.inventory().add({.definition_id = "other", .name = "External item"});
+    original.add_item({.definition_id = "other", .name = "External item"});
     check(party.member(pc).character.inventory().empty(), "Party owns character independently");
     for (unsigned i = 1; i < 6; ++i)
         party.add_pc(character());
@@ -843,7 +843,7 @@ void class_weapon_proficiency()
                 })
         {
             auto pc = make_character(klass);
-            const auto item_id = pc.inventory().add({.definition_id = weapon, .name = weapon});
+            const auto item_id = pc.add_item({.definition_id = weapon, .name = weapon});
             CampaignParty party(module());
             const auto id = party.add_pc(std::move(pc));
             party.equip(id, item_id);
@@ -2414,9 +2414,9 @@ void party_strength()
 {
     CampaignParty party(module());
     auto armored = character("fighter", "Armored");
-    const auto mail = armored.inventory().add({.definition_id = "chain_mail",
+    const auto mail = armored.add_item({.definition_id = "chain_mail",
                                                .name = "Chain mail"});
-    const auto shield = armored.inventory().add({.definition_id = "shield", .name = "Shield"});
+    const auto shield = armored.add_item({.definition_id = "shield", .name = "Shield"});
     const auto fighter = party.add_pc(std::move(armored));
     party.equip(fighter, mail);
     party.equip(fighter, shield);

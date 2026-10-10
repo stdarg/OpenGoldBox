@@ -1388,7 +1388,7 @@ void RolfTourView::check_town()
         draft.training.erase("class:fighter:weapon_mastery");
         member.character = opengold::Character(*opengold::srd5::character_rules(), draft,
                                                member.character.appearance());
-        member.character.inventory() = std::move(inventory);
+        member.character.replace_inventory(std::move(inventory));
         member.equipped.clear();
         member.vitals = {member.character.sheet().hit_points, false, {}};
         campaign_->restore(changed);
@@ -1401,7 +1401,7 @@ void RolfTourView::check_town()
             throw std::runtime_error("Equip must display the untrained penalty");
         auto staff_fixture = retained;
         auto &wielder = staff_fixture.roster.at(0);
-        const auto staff = wielder.character.inventory().add({.definition_id = "quarterstaff",
+        const auto staff = wielder.character.add_item({.definition_id = "quarterstaff",
                                                               .name = "Quarterstaff",
                                                               .quantity = 1});
         wielder.equipped.push_back(staff);

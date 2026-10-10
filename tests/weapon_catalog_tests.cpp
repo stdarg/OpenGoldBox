@@ -386,8 +386,8 @@ void campaign()
     for (const auto &e : expectations())
     {
         auto c = h;
-        const auto item = c.inventory().add({.definition_id = e.key, .name = e.key, .quantity = 1});
-        const auto shield = c.inventory().add({.definition_id = "shield",
+        const auto item = c.add_item({.definition_id = e.key, .name = e.key, .quantity = 1});
+        const auto shield = c.add_item({.definition_id = "shield",
                                                .name = "Shield",
                                                .quantity = 1});
         CampaignParty party(module());

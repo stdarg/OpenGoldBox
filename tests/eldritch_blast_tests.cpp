@@ -442,7 +442,7 @@ void campaign()
         {
             CampaignParty p(module());
             auto h = hero(level);
-            h.inventory().add({.definition_id = "quarterstaff", .name = "Quarterstaff"});
+            h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
             const auto id =
                 npc ? p.recruit("fixture:eldritch", std::move(h)) : p.add_pc(std::move(h));
             p.equip(id, 1);

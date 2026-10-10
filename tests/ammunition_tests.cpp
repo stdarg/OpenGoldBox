@@ -58,8 +58,8 @@ void purchased_ammunition()
     for (auto &roll : draft.rolls)
         roll = {{6, 5, 4, 1}, 3};
     Character hero(*srd5::character_rules(), draft, {});
-    const auto bow = hero.inventory().add({.definition_id = "longbow", .name = "Baseline longbow"});
-    hero.inventory().add({.definition_id = "dagger", .name = "Carried dagger", .quantity = 2});
+    const auto bow = hero.add_item({.definition_id = "longbow", .name = "Baseline longbow"});
+    hero.add_item({.definition_id = "dagger", .name = "Carried dagger", .quantity = 2});
     CampaignParty party(module());
     const auto id = party.add_pc(std::move(hero));
     party.equip(id, bow);
@@ -134,8 +134,8 @@ void inventory_paths()
         for (const auto key :
                 {"arrow", "bolt", "sling_bullet", "firearm_bullet", "needle"
                 })
-            hero.inventory().add({.definition_id = key, .name = key, .quantity = 21});
-        const auto bow = hero.inventory().add({.definition_id = "shortbow", .name = "Shortbow"});
+            hero.add_item({.definition_id = key, .name = key, .quantity = 21});
+        const auto bow = hero.add_item({.definition_id = "shortbow", .name = "Shortbow"});
         CampaignParty party(module());
         const auto id = party.add_pc(std::move(hero));
         party.equip(id, bow);

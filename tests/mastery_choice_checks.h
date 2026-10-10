@@ -10,7 +10,7 @@ std::string critical_before(std::string_view weapon)
     auto r = module();
     CampaignParty p(module());
     auto h = hero(std::string(weapon), "fighter", "soldier");
-    h.inventory().add({.definition_id = std::string(weapon), .name = "Mastery weapon"});
+    h.add_item({.definition_id = std::string(weapon), .name = "Mastery weapon"});
     p.add_pc(h);
     p.equip(1, 1);
     p.award_experience(900, "choice-baseline");
