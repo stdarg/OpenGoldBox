@@ -1,42 +1,11 @@
-// A combat command applies completely or not at all (Effective C++ Item 29).
-// Legal commands on valid content never reach the rules' consistency checks,
-// so this test makes the Nth memory allocation fail instead: whichever step of
-// a command fails, the fight must be exactly as it was before the command.
+// A combat command applies completely or not at all (Effective C++ Item 29):
+// whichever step of a command fails, the fight is exactly as it was before.
+#include "failing_allocation.h"
 #include "opengold/srd5.h"
-#include <atomic>
-#include <cstdlib>
 #include <filesystem>
 #include <iostream>
-#include <new>
 #include <stdexcept>
 #include <string>
-
-namespace
-{
-// Allocations left before one fails; negative means none fails.
-std::atomic<long> allocations_until_failure{-1};
-} // namespace
-
-void *operator new (std::size_t size)
-{
-    if (allocations_until_failure.load() == 0)
-        throw std::bad_alloc();
-    if (allocations_until_failure.load() > 0)
-        --allocations_until_failure;
-    if (void *memory = std::malloc(size == 0 ? 1 : size))
-        return memory;
-    throw std::bad_alloc();
-}
-
-void operator delete (void *memory) noexcept
-{
-    std::free(memory);
-}
-
-void operator delete (void *memory, std::size_t) noexcept
-{
-    std::free(memory);
-}
 
 using namespace opengold;
 using namespace opengold::rules;
@@ -68,16 +37,19 @@ unsigned fail_at_every_step(const RulesModule &rules, std::size_t command_index)
         const auto command = session->legal_commands().at(command_index);
         const auto before = session->save();
         bool failed = false;
-        allocations_until_failure = failing;
-        try
         {
-            (void)session->submit(command);
+            // Every allocation from the failing one on fails, so restoring
+            // the fight must not need memory either.
+            const test::FailingAllocation failure(failing, test::FailureSpan::rest);
+            try
+            {
+                (void)session->submit(command);
+            }
+            catch (const std::bad_alloc &)
+            {
+                failed = true;
+            }
         }
-        catch (const std::bad_alloc &)
-        {
-            failed = true;
-        }
-        allocations_until_failure = -1;
         if (!failed)
             return static_cast<unsigned>(failing);
         check(session->save() == before, "A failed command leaves the fight unchanged");

@@ -1,4 +1,5 @@
 #include "combat_fixture.h"
+#include "failing_allocation.h"
 #include "forwarding_module.h"
 #include "opengold/campaign_party.h"
 #include "opengold/ecl_party_host.h"
@@ -2113,6 +2114,58 @@ void victory_when_every_monster_fled()
           "Monsters that all got away are worth no experience or treasure");
 }
 
+// Resolving a fight loses members and claims rewards before the original
+// script hears the result. Whichever step fails, the party ends either fully
+// rewarded or exactly as it was before the event (Effective C++ Item 29).
+void failed_combat_result_rolls_back()
+{
+    const auto resources = orc_encounter_resources();
+    for (long failing = 0;; ++failing)
+    {
+        check(failing < 100000, "Resolving the fight eventually completes");
+        auto party = std::make_shared<CampaignParty>(module());
+        const auto fighter = party->add_pc(character("fighter"));
+        const auto before_event = encode_campaign(*party, nullptr, "rollback");
+        por::RolfTourSession town({}, resources->programs.at(0), {}, 0x9914, {}, resources);
+        auto result = start_orc_encounter(town, party);
+        result.outcome = Outcome::victory;
+        for (auto &unit : result.combatants)
+            if (unit.side == Side::opposition)
+                unit.hit_points = 0;
+        const auto before_result = encode_campaign(*party, nullptr, "rollback");
+        bool failed = false;
+        bool escaped = false;
+        {
+            const test::FailingAllocation failure(failing, test::FailureSpan::one);
+            try
+            {
+                (void)town.resolve_combat(result);
+            }
+            catch (const std::bad_alloc &)
+            {
+                escaped = true;
+            }
+            failed = failure.failed();
+        }
+        if (!failed)
+        {
+            check(party->member(fighter).experience > 0 &&
+                  town.snapshot().phase != por::TourPhase::combat,
+                  "Without a failure the victory is paid and the fight ends");
+            return;
+        }
+        const auto after = encode_campaign(*party, nullptr, "rollback");
+        if (escaped)
+            check(after == before_result, "A failure that escapes leaves the party untouched");
+        else if (!town.script_diagnostics().empty())
+            check(after == before_event,
+                  "A failed result rolls the party back to the event's start");
+        else
+            check(party->member(fighter).experience > 0,
+                  "A failure survived on the way still pays");
+    }
+}
+
 void recovery_hosts()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -2472,6 +2525,7 @@ int main()
         shop_buyer_switch();
         rejected_combat_handoff();
         victory_beside_dead_member();
+        failed_combat_result_rolls_back();
         victory_when_every_monster_fled();
         monster_picture_before_combat();
         recovery_hosts();
