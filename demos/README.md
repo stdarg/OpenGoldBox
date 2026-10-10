@@ -79,6 +79,4 @@ are written to `build/equipment-demo-screenshots/` and remain untracked.
 
 The demo build and all 12 native tests pass. Headless character, training combat,
 map inspector, and sound-board checks pass from this directory.
-The standalone Rolf `--tour-check` currently crashes during startup while
-looking up `SaveGame`; its control initialization is unchanged by the relocation.
-That demo needs a separate startup fix before it can be used reliably.
+The standalone Rolf `--tour-check` starts and passes.
