@@ -34,8 +34,8 @@ std::vector<MemberRestInfo> CampaignParty::rest_info(RestKind kind) const
                 if (elapsed <= timing.wait_after_rest_minutes)
                 {
                     const auto needed =
-                        std::uint64_t(timing.wait_after_rest_minutes - elapsed) * 60000 +
-                        m.last_rest_subminute_milliseconds;
+                        static_cast<std::uint64_t>(timing.wait_after_rest_minutes - elapsed) *
+                        60000 + m.last_rest_subminute_milliseconds;
                     if (needed > state_.subminute_milliseconds)
                         info.wait_milliseconds = needed - state_.subminute_milliseconds;
                 }
