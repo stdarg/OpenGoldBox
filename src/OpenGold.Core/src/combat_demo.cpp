@@ -261,11 +261,12 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
 CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                                  const CharacterRules &characters,
                                  const std::filesystem::path &game_directory,
-                                 const std::filesystem::path &body_catalog_file,
-                                 std::span<const std::string> classes, unsigned level,
-                                 std::span<const std::string> enemies,
-                                 std::span<const std::string> gear)
+                                 const CombatDemoOptions &options)
 {
+    const auto &body_catalog_file = options.body_catalog_file;
+    const std::span<const std::string> classes = options.classes, enemies = options.enemies,
+                                       gear = options.gear;
+    const unsigned level = options.level;
     if (!rules)
         throw std::runtime_error("Combat demo requires combat rules");
     auto art = CharacterArt::load(game_directory);

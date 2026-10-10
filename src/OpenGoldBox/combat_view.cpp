@@ -341,8 +341,14 @@ void CombatView::prepare_combat()
         }
         auto showcase = make_combat_demo(
                             srd5::load(presentation::path_from_godot(game_rules_file())), *characters,
-                            directory, presentation::path_from_godot(game_combat_body_file()),
-                            classes, level, enemies, gear);
+                            directory,
+        {
+            .body_catalog_file = presentation::path_from_godot(game_combat_body_file()),
+            .classes = std::move(classes),
+            .level = level,
+            .enemies = std::move(enemies),
+            .gear = std::move(gear)
+        });
         campaign_ = std::move(showcase.party);
         encounter_ = std::move(showcase.encounter);
     }

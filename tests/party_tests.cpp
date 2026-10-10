@@ -1754,7 +1754,8 @@ void combat_demo_fixture()
     {
         // Play-testing: chosen classes in their kits at a chosen level.
         const std::vector<std::string> classes{"druid", "warlock", "druid"};
-        const auto custom = make_combat_demo(module(), *characters, directory, {}, classes, 4);
+        const auto custom = make_combat_demo(module(), *characters, directory,
+        {.classes = classes, .level = 4});
         const auto &roster = custom.party->state().roster;
         check(roster.size() == 3 && custom.encounter.positions.size() ==
               3 + custom.encounter.enemies.size() &&
@@ -1766,8 +1767,10 @@ void combat_demo_fixture()
         "A play-test party has the chosen classes, kits and level, two Druids distinct");
     }
     auto mapped = make_combat_demo(module(), *characters, directory,
-                                   std::filesystem::path(OPENGOLD_SOURCE_DIR) /
-                                   "data/art/combat-body-looks.tsv");
+    {
+        .body_catalog_file =
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art/combat-body-looks.tsv"
+    });
     const auto character_art = por::CharacterArt::load(directory);
     const auto looks = por::CombatBodyCatalog::load(
                            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art/combat-body-looks.tsv",

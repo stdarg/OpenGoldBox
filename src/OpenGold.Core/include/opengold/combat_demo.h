@@ -6,6 +6,9 @@
 #include "opengold/formats.h"
 #include "opengold/campaign_party.h"
 #include "opengold/dungeon_battlefield.h"
+#include <filesystem>
+#include <string>
+#include <vector>
 
 namespace opengold
 {
@@ -148,12 +151,21 @@ struct CombatDemoSetup
 // replace the kobolds with `enemies` (combat definitions such as "troll" and
 // "ogre") and give each member one of each `gear` item ("oil",
 // "alchemists_fire", "acid").
+// A play-test's choices: the body catalog to dress the party from, its classes
+// in their kits at one level, the enemies it faces and the gear it carries.
+// Named fields keep the lists of names (enemies, gear) from being swapped
+// (Effective C++ Item 18).
+struct CombatDemoOptions
+{
+    std::filesystem::path body_catalog_file;
+    std::vector<std::string> classes;
+    unsigned level{1};
+    std::vector<std::string> enemies, gear;
+};
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,
         const rules::CharacterRules &characters,
         const std::filesystem::path &game_directory,
-        const std::filesystem::path &body_catalog_file = {},
-        std::span<const std::string> classes = {}, unsigned level = 1,
-        std::span<const std::string> enemies = {}, std::span<const std::string> gear = {});
+        const CombatDemoOptions &options = {});
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
 [[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session);
 // The party's flee policy: a member fast enough to flee runs for the nearest
