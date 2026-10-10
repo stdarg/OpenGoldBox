@@ -2,10 +2,12 @@
 #include "opengold/campaign_party.h"
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <fstream>
 #include <set>
 #include <stdexcept>
 #include <string_view>
+#include <system_error>
 
 namespace opengold::por
 {
@@ -13,12 +15,16 @@ namespace
 {
 unsigned index_field(std::string_view field, unsigned limit)
 {
-    if (field.empty() || field.find_first_not_of("0123456789") != std::string_view::npos)
+    // from_chars parses in place, with this module's errors and the same range
+    // everywhere (Effective C++ Item 54).
+    unsigned value{};
+    const auto end = field.data() + field.size();
+    const auto [stop, error] = std::from_chars(field.data(), end, value);
+    if (field.empty() || stop != end || error == std::errc::invalid_argument)
         throw std::runtime_error("Invalid combat catalog number");
-    const auto value = std::stoul(std::string(field));
-    if (value >= limit)
+    if (error != std::errc{} || value >= limit)
         throw std::runtime_error("Combat catalog number out of range");
-    return static_cast<unsigned>(value);
+    return value;
 }
 
 std::string strip_cr(std::string text)

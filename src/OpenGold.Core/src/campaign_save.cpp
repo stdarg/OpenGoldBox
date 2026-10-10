@@ -1,9 +1,11 @@
 #include "opengold/campaign_save.h"
 #include "opengold/save_file.h"
 #include <algorithm>
+#include <charconv>
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <system_error>
 #include <utility>
 
 namespace opengold
@@ -78,9 +80,10 @@ struct SaveCodec
                 require(!token.empty() &&
                         token.find_first_not_of("0123456789") == std::string::npos,
                         "Invalid save integer");
-                std::size_t used{};
-                auto n = std::stoull(token, &used);
-                require(used == token.size() &&
+                std::uint64_t n{};
+                const auto end = token.data() + token.size();
+                const auto [stop, error] = std::from_chars(token.data(), end, n);
+                require(stop == end && error == std::errc{} &&
                         n <= static_cast<std::uint64_t>(std::numeric_limits<T>::max()),
                         "Save integer out of range");
                 value = static_cast<T>(n);
@@ -648,7 +651,9 @@ unsigned saved_format(std::string_view digits)
     require(!digits.empty() && digits.size() <= 9 &&
             digits.find_first_not_of("0123456789") == std::string_view::npos,
             "Unsupported campaign save version");
-    return static_cast<unsigned>(std::stoul(std::string(digits)));
+    unsigned format{};
+    (void)std::from_chars(digits.data(), digits.data() + digits.size(), format);
+    return format;
 }
 
 void validate_saved_member(const PartyMember &member, const rules::RulesModule &module)
