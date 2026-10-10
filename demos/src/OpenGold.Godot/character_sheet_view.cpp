@@ -85,7 +85,7 @@ void CharacterCreationView::drop_roll(Vector2 position, const Variant &data, int
     perform(
         [&]
     {
-        creator_->assign_roll(roll, index);
+        creator_->assign_roll(roll, static_cast<rules::Ability>(index));
         selected_score_ = -1;
     });
 }

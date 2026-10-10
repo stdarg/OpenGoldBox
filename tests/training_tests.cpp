@@ -340,7 +340,7 @@ void creation_controls()
         check(tries < 100, "Roll a qualified Rogue fixture");
         creator.roll();
         for (unsigned i = 0; i < 6; ++i)
-            creator.assign_roll(i, i);
+            creator.assign_roll(i, static_cast<Ability>(i));
         if (rules::class_eligible(creator.rules(), creator.draft(), "rogue"))
             break;
     }

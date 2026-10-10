@@ -182,7 +182,7 @@ void paladin_choices_checks()
     CharacterCreator creator(srd5::character_rules(), 1);
     creator.roll();
     for (unsigned n = 0; n < 6; ++n)
-        creator.assign_roll(n, n);
+        creator.assign_roll(n, static_cast<rules::Ability>(n));
     creator.select(CreationField::character_class, "paladin");
     check(creator.has_spell_choices(), "The Spell Choices step appears for a Paladin");
 

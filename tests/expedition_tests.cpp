@@ -63,7 +63,9 @@ Character character(std::string name, std::uint64_t seed = 42,
     {
         return rolls[a].total() > rolls[b].total();
     });
-    constexpr std::array<unsigned, 6> priority{0, 2, 1, 4, 5, 3};
+    using enum rules::Ability;
+    constexpr std::array priority{strength, constitution, dexterity,
+                                  wisdom, charisma, intelligence};
     for (unsigned i = 0; i < 6; ++i)
         creator.assign_roll(best[i], priority[i]);
     return Character(creator.rules(), creator.draft(), creator.appearance());

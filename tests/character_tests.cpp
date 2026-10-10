@@ -37,6 +37,16 @@ template <class F> void rejects(F action, const char *message)
     check(rejected, message);
 }
 
+// A roll and an ability are different kinds of number, so passing them in the
+// wrong order must not compile (Effective C++ Item 18).
+template <class Roll, class Target>
+concept AssignsRoll = requires(CharacterCreator &creator, Roll roll, Target target)
+{
+    creator.assign_roll(roll, target);
+};
+static_assert(AssignsRoll<unsigned, rules::Ability>);
+static_assert(!AssignsRoll<unsigned, unsigned>);
+
 void creation_tests()
 {
     using namespace rules;
@@ -238,7 +248,7 @@ void creation_tests()
         creator.next();
     },
     "Cannot continue with empty ability boxes");
-    creator.assign_roll(0, 3);
+    creator.assign_roll(0, Ability::intelligence);
     creator.select(CreationField::background, "acolyte");
     const auto intelligence = [&]
     {
@@ -255,22 +265,28 @@ void creation_tests()
           "Bonus changes update assigned scores and leave empty abilities empty");
     check(creator.draft().rolls == original, "Bonus changes preserve original dice");
     creator.select(CreationField::background, "acolyte");
-    creator.assign_roll(1, 1);
-    creator.assign_roll(0, 1);
+    creator.assign_roll(1, Ability::dexterity);
+    creator.assign_roll(0, Ability::dexterity);
     check(creator.draft().assignment[1] == 0 && creator.draft().assignment[3] == 1,
           "Assigned results swap when dropped on another ability");
-    creator.assign_roll(2, 1);
+    creator.assign_roll(2, Ability::dexterity);
     check(std::find(creator.draft().assignment.begin(), creator.draft().assignment.end(), 0) ==
           creator.draft().assignment.end(),
           "A displaced result returns to unassigned rolls");
     rejects(
         [&]
     {
-        creator.assign_roll(6, 0);
+        creator.assign_roll(6, Ability::strength);
     },
     "Invalid dice assignment rejected");
+    rejects(
+        [&]
+    {
+        creator.assign_roll(0, static_cast<Ability>(6));
+    },
+    "An ability converted from an out-of-range box index is rejected");
     for (unsigned i = 0; i < 6; ++i)
-        creator.assign_roll(i, i);
+        creator.assign_roll(i, static_cast<Ability>(i));
     check(creator.scores_assigned(), "All six assignments permit review");
     creator.swap_scores(0, 2);
     check(creator.sheet().base[0] == original[2].total() && creator.draft().rolls == original,
@@ -287,7 +303,7 @@ void creation_tests()
     check(creator.draft().rolls != original && creator.draft().assignment[0] == 6,
           "Full reroll replaces all rolls and empties assignments");
     for (unsigned i = 0; i < 6; ++i)
-        creator.assign_roll(i, i);
+        creator.assign_roll(i, static_cast<Ability>(i));
     creator.target_class("wizard", true);
     creator.target_class("wizard", true);
     check(creator.draft().target_classes.size() == 1, "Repeated target selection is idempotent");

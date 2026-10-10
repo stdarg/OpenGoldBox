@@ -845,7 +845,7 @@ void CharacterCreationView::party_check()
                        ? "Party check Orc fighter"
                        : "Party check Dwarf fighter");
         for (unsigned i = 0; i < 6; ++i)
-            creator_->assign_roll(i, i);
+            creator_->assign_roll(i, static_cast<rules::Ability>(i));
         for (unsigned attempt = 0;
                 !rules::class_eligible(creator_->rules(), creator_->draft(), "fighter");
                 ++attempt)
@@ -854,7 +854,7 @@ void CharacterCreationView::party_check()
                 throw std::runtime_error("Could not roll qualified party-check fixture");
             creator_->roll();
             for (unsigned i = 0; i < 6; ++i)
-                creator_->assign_roll(i, i);
+                creator_->assign_roll(i, static_cast<rules::Ability>(i));
         }
         while (creator_->step() != CreationStep::sheet)
         {

@@ -367,16 +367,18 @@ bool CharacterCreator::scores_assigned() const
     });
 }
 
-void CharacterCreator::assign_roll(unsigned roll, unsigned ability)
+void CharacterCreator::assign_roll(unsigned roll, rules::Ability ability)
 {
     require_editable();
-    if (!draft_.rolled || roll >= 6 || ability >= 6)
+    const auto target = rules::ability_index(ability);
+    // The game converts a box index from the UI, so an ability can still be out of range.
+    if (!draft_.rolled || roll >= 6 || target >= 6)
         throw std::runtime_error("Invalid roll assignment");
     const auto source = std::find(draft_.assignment.begin(), draft_.assignment.end(), roll);
     if (source != draft_.assignment.end())
-        std::swap(*source, draft_.assignment[ability]);
+        std::swap(*source, draft_.assignment[target]);
     else
-        draft_.assignment[ability] = roll; // A displaced result returns to the unassigned rolls.
+        draft_.assignment[target] = roll; // A displaced result returns to the unassigned rolls.
 }
 
 void CharacterCreator::swap_scores(unsigned first, unsigned second)

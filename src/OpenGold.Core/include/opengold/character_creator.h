@@ -64,7 +64,7 @@ class CharacterCreator
     void cantrip_choice(std::string_view option, bool selected);
     [[nodiscard]] bool training_complete() const;
     void roll();
-    void assign_roll(unsigned roll, unsigned ability);
+    void assign_roll(unsigned roll, rules::Ability ability);
     [[nodiscard]] bool scores_assigned() const;
     void swap_scores(unsigned first, unsigned second);
     void name(std::string text);

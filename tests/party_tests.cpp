@@ -171,7 +171,7 @@ Character character(std::string klass = "fighter", std::string name = "Ada")
     creator.roll();
     creator.name(std::move(name));
     for (unsigned i = 0; i < 6; ++i)
-        creator.assign_roll(i, i);
+        creator.assign_roll(i, static_cast<Ability>(i));
     // Authored fixtures may have scores below the creator's optional starting-class minimums.
     return Character(creator.rules(), creator.draft(), creator.appearance());
 }

@@ -32,11 +32,26 @@ std::unique_ptr<rules::RulesModule> module()
     return srd5::load(content_pack);
 }
 
+// Abilities from best roll to worst.
+using AbilityPriority = std::array<rules::Ability, 6>;
+
+constexpr AbilityPriority fighter_priority{
+    rules::Ability::strength, rules::Ability::constitution, rules::Ability::dexterity,
+    rules::Ability::wisdom, rules::Ability::charisma, rules::Ability::intelligence};
+constexpr AbilityPriority cleric_priority{
+    rules::Ability::wisdom, rules::Ability::constitution, rules::Ability::strength,
+    rules::Ability::dexterity, rules::Ability::charisma, rules::Ability::intelligence};
+constexpr AbilityPriority rogue_priority{
+    rules::Ability::dexterity, rules::Ability::constitution, rules::Ability::wisdom,
+    rules::Ability::strength, rules::Ability::charisma, rules::Ability::intelligence};
+constexpr AbilityPriority wizard_priority{
+    rules::Ability::intelligence, rules::Ability::dexterity, rules::Ability::constitution,
+    rules::Ability::wisdom, rules::Ability::charisma, rules::Ability::strength};
+
 struct Member
 {
     const char *name, *character_class;
-    // Ability indices (Str, Dex, Con, Int, Wis, Cha) from best roll to worst.
-    std::array<unsigned, 6> priority;
+    AbilityPriority priority;
     std::vector<const char *> gear;
     std::vector<const char *> cantrips{};
     std::vector<const char *> prepared{};
@@ -46,21 +61,21 @@ struct Member
 const std::vector<Member> &composition(bool mixed)
 {
     static const std::vector<Member> fighters{
-        {"Arden", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Bryn", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Cora", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Darin", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Elin", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Fenn", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}}};
+        {"Arden", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Bryn", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Cora", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Darin", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Elin", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Fenn", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}}};
     static const std::vector<Member> party{
-        {"Arden", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Bryn", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Cora", "cleric", {4, 2, 0, 1, 5, 3}, {"mace", "scale_mail", "shield"},
+        {"Arden", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Bryn", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Cora", "cleric", cleric_priority, {"mace", "scale_mail", "shield"},
             {"sacred_flame"}, {"cure_wounds", "healing_word", "inflict_wounds"}},
-        {"Darin", "cleric", {4, 2, 0, 1, 5, 3}, {"mace", "scale_mail", "shield"},
+        {"Darin", "cleric", cleric_priority, {"mace", "scale_mail", "shield"},
             {"sacred_flame"}, {"cure_wounds", "healing_word", "inflict_wounds"}},
-        {"Elin", "rogue", {1, 2, 4, 0, 5, 3}, {"shortsword", "leather"}},
-        {"Fenn", "wizard", {3, 1, 2, 4, 5, 0}, {"quarterstaff"}}};
+        {"Elin", "rogue", rogue_priority, {"shortsword", "leather"}},
+        {"Fenn", "wizard", wizard_priority, {"quarterstaff"}}};
     return mixed ? party : fighters;
 }
 
