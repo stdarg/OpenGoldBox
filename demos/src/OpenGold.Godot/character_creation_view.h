@@ -4,6 +4,7 @@
 #include "opengold/campaign_party.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
+#include <exception>
 #include <optional>
 #include <functional>
 
@@ -14,6 +15,9 @@ class CharacterCreationView : public godot::Control
     void _ready() override;
     void _draw() override;
     void _process(double delta) override;
+    // Shows a failed handler's error; called by presentation::run_guarded
+    // for the hand-choice dialog's guarded handlers.
+    void report_failure(const std::exception &failure);
 
   protected:
     static void _bind_methods();
