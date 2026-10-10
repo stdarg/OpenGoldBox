@@ -1526,9 +1526,9 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
                                  std::to_string(check_refused_edges_.size()));
     while (previous[next] != origin)
         next = previous[next];
-    const auto facing = next % 16 > int(s.pose.x)   ? MapDirection::east
-                        : next % 16 < int(s.pose.x) ? MapDirection::west
-                        : next / 16 > int(s.pose.y) ? MapDirection::south
+    const auto facing = next % 16 > static_cast<int>(s.pose.x)   ? MapDirection::east
+                        : next % 16 < static_cast<int>(s.pose.x) ? MapDirection::west
+                        : next / 16 > static_cast<int>(s.pose.y) ? MapDirection::south
                         : MapDirection::north;
     if (s.pose.facing == facing)
         check_pending_edge_ = {{origin, next}};

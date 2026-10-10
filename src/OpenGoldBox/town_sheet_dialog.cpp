@@ -37,7 +37,7 @@ void TownSheetDialog::report_failure(const std::exception &failure)
 
 void TownSheetDialog::fit(Vector2 view_size)
 {
-    const double w = std::min(1000.0, double(view_size.x) - 64), h = view_size.y - 120;
+    const double w = std::min(1000.0, static_cast<double>(view_size.x) - 64), h = view_size.y - 120;
     const auto place = [&](const char *path, Rect2 r)
     {
         auto *n = &required_node<Control>(*this, path);

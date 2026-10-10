@@ -71,7 +71,7 @@ void refresh_optional_effect(godot::Node &root,
     for (const auto &option : choice->options)
     {
         options->add_item(render(option.title), option.id);
-        if (int(option.id) == prior)
+        if (static_cast<int>(option.id) == prior)
             selected = options->get_item_count() - 1;
     }
     if (!choice->options.empty())
@@ -102,7 +102,7 @@ inline unsigned optional_effect_item(godot::Node &root, const opengold::rules::S
     if (state.effect_targeting)
         return 1;
     const auto *options = &required_node<godot::OptionButton>(root, "OptionalEffect/Resolve");
-    return options->get_item_count() ? unsigned(options->get_selected_id()) : 0;
+    return options->get_item_count() ? static_cast<unsigned>(options->get_selected_id()) : 0;
 }
 
 template <class Act, class Refresh>

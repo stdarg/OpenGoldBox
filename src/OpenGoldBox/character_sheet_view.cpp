@@ -74,7 +74,8 @@ bool CharacterCreationView::can_drop_roll(Vector2, const Variant &data, int inde
         return false;
     const Dictionary payload = data;
     const Variant roll = payload.get("opengold_ability_roll", Variant());
-    return roll.get_type() == Variant::INT && int(roll) >= 0 && int(roll) < 6;
+    return roll.get_type() == Variant::INT && static_cast<int>(roll) >= 0 &&
+           static_cast<int>(roll) < 6;
 }
 
 void CharacterCreationView::drop_roll(Vector2 position, const Variant &data, int index)
@@ -82,7 +83,7 @@ void CharacterCreationView::drop_roll(Vector2 position, const Variant &data, int
     if (!can_drop_roll(position, data, index))
         return;
     const Dictionary payload = data;
-    const unsigned roll = int(payload["opengold_ability_roll"]);
+    const unsigned roll = static_cast<int>(payload["opengold_ability_roll"]);
     perform(
         [&]
     {

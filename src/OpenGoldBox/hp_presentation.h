@@ -7,7 +7,7 @@ namespace presentation
 {
 inline godot::String hp_color(int hp, int maximum)
 {
-    return hp <= 0 || std::int64_t(hp) * 5 <= maximum ? "#f08080"
+    return hp <= 0 || static_cast<std::int64_t>(hp) * 5 <= maximum ? "#f08080"
            : hp < maximum                             ? "#f3d55b"
            : "#80d99a";
 }

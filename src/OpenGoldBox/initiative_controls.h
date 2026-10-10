@@ -62,8 +62,8 @@ inline bool initiative_command(godot::Node &root, const opengold::rules::Command
         required_node<godot::OptionButton>(root, "InitiativeChoice/Resolve").get_selected_id();
     const auto ally =
         required_node<godot::OptionButton>(root, "InitiativeChoice/Ally").get_selected_id();
-    return command.actor == unsigned(owner) &&
-           (command.verb != "initiative_swap" || command.target == unsigned(ally));
+    return command.actor == static_cast<unsigned>(owner) &&
+           (command.verb != "initiative_swap" || command.target == static_cast<unsigned>(ally));
 }
 
 template <class Text, class Render>
@@ -104,7 +104,7 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     for (auto id : state.initiative_choices)
     {
         owners->add_item(label(id), id);
-        if (int(id) == prior)
+        if (static_cast<int>(id) == prior)
             selected = owners->get_item_count() - 1;
     }
     owners->select(selected);
@@ -118,10 +118,10 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     allies->add_item(text(N_("Choose an ally")), 0);
     selected = 0;
     for (const auto &c : commands)
-        if (c.verb == "initiative_swap" && c.actor == unsigned(owner))
+        if (c.verb == "initiative_swap" && c.actor == static_cast<unsigned>(owner))
         {
             allies->add_item(label(c.target), c.target);
-            if (owner == prior && int(c.target) == prior_ally)
+            if (owner == prior && static_cast<int>(c.target) == prior_ally)
                 selected = allies->get_item_count() - 1;
         }
     allies->select(selected);
@@ -130,7 +130,7 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     const bool swaps = allies->get_item_count() > 1;
     const bool metabolism = std::any_of(commands.begin(), commands.end(), [&](const auto & c)
     {
-        return c.verb == "uncanny_metabolism" && c.actor == unsigned(owner);
+        return c.verb == "uncanny_metabolism" && c.actor == static_cast<unsigned>(owner);
     });
     for (const char *name : {"AllyLabel", "Ally", "Swap"})
         required_node<Control>(*w, name).set_visible(swaps);

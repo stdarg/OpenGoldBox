@@ -338,7 +338,7 @@ void CombatView::prepare_combat()
                 for (const auto &item : arg.trim_prefix("--combat-demo-gear=").split(","))
                     gear.emplace_back(item.utf8().get_data());
             if (arg.begins_with("--combat-demo-level="))
-                level = unsigned(std::clamp<std::int64_t>(
+                level = static_cast<unsigned>(std::clamp<std::int64_t>(
                                      arg.trim_prefix("--combat-demo-level=").to_int(), 1, 4));
         }
         auto showcase = make_combat_demo(
@@ -791,7 +791,8 @@ void CombatView::layout_status()
     auto *turn = &required_node<Label>(*this, "Turn");
     turn->set_size(Vector2(358, 0));
     auto *roster = &required_node<RichTextLabel>(*this, "Roster");
-    const double top = std::max(148.0, double(turn->get_position().y + turn->get_size().y + 8));
+    const double top =
+        std::max(148.0, static_cast<double>(turn->get_position().y + turn->get_size().y + 8));
     roster->set_position(Vector2(turn->get_position().x, top));
     roster->set_size(Vector2(358, std::max(0.0, 308 - top)));
 }
@@ -1043,7 +1044,8 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
                 if (input.bad())
                     throw std::runtime_error("Cannot read combat art");
                 auto ready = decode_ega_combat_icon(bytes, entry.icon, 0);
-                auto action = decode_ega_combat_icon(bytes, std::uint8_t(entry.icon + 128), 0);
+                auto action =
+                    decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(entry.icon + 128), 0);
                 if (!ready)
                     continue;
                 CombatArt source{0, std::move(ready.image), {}, {}};
@@ -1241,9 +1243,9 @@ void CombatView::thrown_selected(std::int64_t index)
 
 void CombatView::item_selected(std::int64_t index)
 {
-    if (index < 0 || index >= std::int64_t(item_verbs_.size()))
+    if (index < 0 || index >= static_cast<std::int64_t>(item_verbs_.size()))
         return;
-    item_verb_ = item_verbs_[std::size_t(index)];
+    item_verb_ = item_verbs_[static_cast<std::size_t>(index)];
     mode_ = "move";
     refresh();
 }
@@ -1645,7 +1647,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
             });
             const auto index =
                 found == targets.end() ? std::size_t{0} :
-                std::size_t(found - targets.begin());
+                static_cast<std::size_t>(found - targets.begin());
             const auto code = key->get_keycode();
             if (code == Key::KEY_LEFT || code == Key::KEY_RIGHT)
             {
@@ -1760,7 +1762,8 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                 mode_ =
                     actions[current == actions.end()
                             ? 0
-                            : (std::size_t(current - actions.begin()) + 1) % actions.size()];
+                            : (static_cast<std::size_t>(current - actions.begin()) + 1) %
+                            actions.size()];
                 if ((mode_.starts_with("light_") || mode_.starts_with("nick_")))
                     for (const auto &c : demo_->combat().legal_commands())
                         if (c.verb == mode_)
@@ -2150,7 +2153,7 @@ void CombatView::refresh()
     {
         auto *label = &required_node<RichTextLabel>(*this, gs("PartyHP" + std::to_string(slot)));
         const auto id = campaign_ ? campaign_->state().slots[slot] : 0;
-        label->set_visible(bool(id));
+        label->set_visible(static_cast<bool>(id));
         if (!id)
             continue;
         const auto found = std::find_if(s.combatants.begin(), s.combatants.end(),
@@ -2185,7 +2188,7 @@ void CombatView::refresh()
     if (std::find(known.begin(), known.end(), cantrip_) == known.end())
         cantrip_ = known.empty() ? "" : known.front();
     // Preserve the live popup and keyboard selection during unrelated refreshes.
-    bool changed = cantrips->get_item_count() != int(known.size());
+    bool changed = cantrips->get_item_count() != static_cast<int>(known.size());
     for (int i = 0; !changed && i < cantrips->get_item_count(); ++i)
         changed = String(cantrips->get_item_metadata(i)) != gs(known[i]);
     if (changed)
@@ -2206,7 +2209,8 @@ void CombatView::refresh()
         }
     }
     if (!known.empty())
-        cantrips->select(int(std::find(known.begin(), known.end(), cantrip_) - known.begin()));
+        cantrips->select(
+            static_cast<int>(std::find(known.begin(), known.end(), cantrip_) - known.begin()));
     for (const char *name :
             {"CantripLabel", "Cantrip", "CastCantrip"
             })
@@ -2336,7 +2340,7 @@ void CombatView::refresh()
         }
     int throw_index = -1;
     for (int i = 0; i < thrown->get_item_count(); ++i)
-        if (thrown->get_item_id(i) == int(thrown_item_))
+        if (thrown->get_item_id(i) == static_cast<int>(thrown_item_))
             throw_index = i;
     if (throw_index < 0 && thrown->get_item_count())
         throw_index = 0;
@@ -2384,8 +2388,8 @@ void CombatView::refresh()
                 for (const auto &[gear, left] : throwing->thrown_gear_left)
                     if (gear == verb.substr(6))
                         label = i18n::format("{action} ({count} left)",
-                    {{"action", label}, {"count", int(left)}});
-            items->add_item(label, int(item_verbs_.size()));
+                    {{"action", label}, {"count", static_cast<int>(left)}});
+            items->add_item(label, static_cast<int>(item_verbs_.size()));
             item_verbs_.emplace_back(verb);
         }
     const auto chosen = std::find(item_verbs_.begin(), item_verbs_.end(), item_verb_);
@@ -2393,7 +2397,8 @@ void CombatView::refresh()
                  : item_verbs_.empty()       ? std::string{}
                  : item_verbs_.front();
     if (!item_verbs_.empty())
-        items->select(int(std::find(item_verbs_.begin(), item_verbs_.end(), item_verb_) -
+        items->select(static_cast<int>(
+                          std::find(item_verbs_.begin(), item_verbs_.end(), item_verb_) -
                           item_verbs_.begin()));
     items_quiet.unblock();
     const bool show_items = s.outcome == Outcome::ongoing && !item_verbs_.empty();
@@ -2769,7 +2774,9 @@ void CombatView::draw_view()
             draw_texture_rect(sprite->second.texture, image_rect, false);
         draw_rect(Rect2(right + 5, portrait_y + size + 2, size, 5), Color("37191d"));
         draw_rect(Rect2(right + 5, portrait_y + size + 2,
-                        size * std::clamp(double(hp) / std::max(1, maximum), 0.0, 1.0), 5),
+                        size * std::clamp(static_cast<double>(hp) / std::max(1, maximum),
+                                          0.0, 1.0),
+                        5),
                   Color(presentation::hp_color(hp, maximum)));
         const double text_x = right + 82;
         const auto line = [&](String value, double y, int size, Color color)

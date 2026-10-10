@@ -347,7 +347,7 @@ bool RolfTourView::refresh_rest_use(const std::vector<opengold::MemberRestInfo> 
     const bool visible = !actions.empty();
     // A whole-party action chooses its own members.
     const auto selected = action->get_selected();
-    const bool party = selected >= 0 && actions.at(std::size_t(selected)).whole_party;
+    const bool party = selected >= 0 && actions.at(static_cast<std::size_t>(selected)).whole_party;
     presentation::required_node<Label>(*w, "UseLabel").set_visible(visible);
     action->set_visible(visible);
     target->set_visible(visible && !party);
@@ -865,7 +865,9 @@ void RolfTourView::check_rest_controls()
             auto *target = &presentation::required_node<OptionButton>(*w, "UseTarget");
             check(action->is_visible() && action->get_item_count() >= 2 &&
                   action->get_item_text(0) == rest_text(N_("Cure Wounds")) &&
-                  target->get_item_count() == int(campaign_->rest_info(opengold::RestKind::long_rest).size()) &&
+                  target->get_item_count() ==
+                  static_cast<int>(
+                      campaign_->rest_info(opengold::RestKind::long_rest).size()) &&
                   !presentation::required_node<Control>(*w, "RecoveryLabel").is_visible(),
                   "The Cleric's Cast / Use row offers its healing spells");
             for (int n = 0; n < target->get_item_count(); ++n)

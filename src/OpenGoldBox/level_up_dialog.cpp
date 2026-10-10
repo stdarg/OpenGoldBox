@@ -282,7 +282,9 @@ void LevelUpDialog::refresh_advancement_skilled()
     auto &rows = required_node<VBoxContainer>(*this, "SkilledPage/Rows");
     const auto &picked = advancement_choice_.training["feat:skilled"];
     required_node<Label>(*this, "SkilledCount")
-    .set_text(i18n::format("Selected: {count}/{total}", {{"count", unsigned(picked.size())},
+    .set_text(i18n::format("Selected: {count}/{total}",
+    {
+        {"count", static_cast<unsigned>(picked.size())},
         {"total", group->count}
     }));
     // Hide every row first; the loop below shows only what is still offered, so

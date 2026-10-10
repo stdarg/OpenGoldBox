@@ -87,7 +87,8 @@ void ScreenshotService::_process(double delta)
         const Vector2 minimum(std::max(1, std::min(800, size.x - 40)), 0);
         panel->set_custom_minimum_size(minimum);
         panel->set_size(minimum);
-        panel->set_position(Vector2(20, std::max(0.0, double(size.y - panel->get_size().y - 20))));
+        const double bottom = static_cast<double>(size.y - panel->get_size().y - 20);
+        panel->set_position(Vector2(20, std::max(0.0, bottom)));
         if (notice_time_ <= 0)
             panel->hide();
     }

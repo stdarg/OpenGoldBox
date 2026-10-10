@@ -10409,7 +10409,8 @@ class Module final : public RulesModule
                 const auto ability =
                     all_abilities[(ability_index(primary) + n) % all_abilities.size()];
                 choice.abilities[ability] =
-                    std::min(remaining, unsigned(std::max(0, 20 - sheet.scores[ability])));
+                    std::min(remaining,
+                             static_cast<unsigned>(std::max(0, 20 - sheet.scores[ability])));
                 remaining -= choice.abilities[ability];
             }
         }
@@ -10438,7 +10439,8 @@ class Module final : public RulesModule
                 return g.source_id == source;
             });
             next.grants.push_back(
-            {fighting_style_grant(*choice.fighting_style), source, unsigned(next.level), {}});
+            {fighting_style_grant(*choice.fighting_style), source,
+             static_cast<unsigned>(next.level), {}});
         }
         return next;
     }
@@ -10539,7 +10541,7 @@ class Module final : public RulesModule
                 : id == "subclass:druid:land" ? "land:" + value
                 : "mastery:" + value,
                 id,
-                unsigned(next.level),
+                static_cast<unsigned>(next.level),
                 {}});
         }
         if (klass == CharacterClass::warlock && next.level == 2)
@@ -10673,9 +10675,9 @@ class Module final : public RulesModule
             AbilityAdjustment adjustment{"feat:" + choice.feat,
                                          "Level " + std::to_string(next.level) +
                                          " Ability Score Improvement",
-                                         unsigned(next.level)};
+                                         static_cast<unsigned>(next.level)};
             for (const auto ability : all_abilities)
-                adjustment.bonuses[ability] = int(choice.abilities[ability]);
+                adjustment.bonuses[ability] = static_cast<int>(choice.abilities[ability]);
             adjustment.label_message = {"Level {level} Ability Score Improvement",
                 {{"level", std::to_string(next.level)}}
             };
@@ -10919,9 +10921,9 @@ class Module final : public RulesModule
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
         auto actor = actor_from(d, state);
-        RecoveryInfo result{unsigned(d.hit_die),
-                            unsigned(actor.hit_dice),
-                            unsigned(d.level),
+        RecoveryInfo result{static_cast<unsigned>(d.hit_die),
+                            static_cast<unsigned>(actor.hit_dice),
+                            static_cast<unsigned>(d.level),
                             !actor.life.dead && actor.life.hp > 0,
                             {},
                             actor.life.temporary_hp};
@@ -10976,8 +10978,8 @@ class Module final : public RulesModule
         });
         if (choice == arcane_allocations.end() || !can_recover(actor, *choice))
             throw std::runtime_error("This rest recovery choice is unavailable");
-        actor.slots += int(choice->first);
-        actor.slots2 += int(choice->second);
+        actor.slots += static_cast<int>(choice->first);
+        actor.slots2 += static_cast<int>(choice->second);
         --actor.arcane;
         auto next = vitals(actor);
         Message result
@@ -11000,8 +11002,8 @@ class Module final : public RulesModule
         const int healing = detail::heal_life(actor.life, std::max(1, rolled + d.constitution), max_hp(actor),
                                               !detail::healing_blocked(actor.effects));
         --actor.hit_dice;
-        HitDieResult result{unsigned(d.hit_die), rolled, d.constitution, healing,
-                            unsigned(actor.hit_dice)};
+        HitDieResult result{static_cast<unsigned>(d.hit_die), rolled, d.constitution, healing,
+                            static_cast<unsigned>(actor.hit_dice)};
         auto next = vitals(actor);
         state = std::move(next);
         random_state.value = rng;
@@ -11038,7 +11040,7 @@ class Module final : public RulesModule
         {
             int rolled = attack.damage_bonus;
             for (unsigned n = 0; n < attack.dice * (result.critical ? 2 : 1); ++n)
-                rolled += roll_die(rng, int(attack.sides));
+                rolled += roll_die(rng, static_cast<int>(attack.sides));
             const detail::DamagePart part{detail::damage_type(attack.damage_type),
                                           std::max(0, rolled)};
             const auto &d = actor.form ? *actor.form : actor.definition;
@@ -11175,8 +11177,11 @@ class Module final : public RulesModule
                 --caster.slots;
             // Disciple of Life adds 2 + the slot's level.
             int amount = caster.definition.casting - 2 +
-                         (caster.definition.life_domain ? 2 + (upcast ? 2 : int(spell.level)) : 0);
-            const int count = spell.dice.count + (upcast ? int(spell.upcast.extra_dice) : 0);
+                         (caster.definition.life_domain
+                          ? 2 + (upcast ? 2 : static_cast<int>(spell.level))
+                          : 0);
+            const int count =
+                spell.dice.count + (upcast ? static_cast<int>(spell.upcast.extra_dice) : 0);
             for (int n = 0; n < count; ++n)
                 amount += roll_die(rng, spell.dice.sides);
             (void)detail::heal_life(patient.life, std::max(0, amount), maximum, can_heal);
@@ -11268,7 +11273,7 @@ class Module final : public RulesModule
         {
             // Disciple of Life adds 2 + the slot's level.
             int amount = caster.definition.casting - 2 +
-                         (caster.definition.life_domain ? 2 + int(spell.level) : 0);
+                         (caster.definition.life_domain ? 2 + static_cast<int>(spell.level) : 0);
             for (int n = 0; n < spell.dice.count; ++n)
                 amount += roll_die(rng, spell.dice.sides);
             (void)detail::heal_life(patient->life, std::max(0, amount), max_hp(*patient),
