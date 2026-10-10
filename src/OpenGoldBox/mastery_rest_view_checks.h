@@ -1,3 +1,6 @@
+#ifndef OPENGOLDBOX_MASTERY_REST_VIEW_CHECKS_H
+#define OPENGOLDBOX_MASTERY_REST_VIEW_CHECKS_H
+
 // Native acceptance hooks follow the existing rest control checks. They drive
 // the live campaign and the same button signals used by the player.
 #include "godot_nodes.h"
@@ -208,3 +211,4 @@ void RolfTourView::check_mastery_rest_controls()
         get_tree()->quit(1);
     }
 }
+#endif

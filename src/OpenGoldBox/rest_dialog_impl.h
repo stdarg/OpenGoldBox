@@ -1,3 +1,6 @@
+#ifndef OPENGOLDBOX_REST_DIALOG_IMPL_H
+#define OPENGOLDBOX_REST_DIALOG_IMPL_H
+
 // One implementation for the game and demo; the host supplies rest_text().
 #include "godot_nodes.h"
 #include "localization.h"
@@ -1149,3 +1152,4 @@ void RolfTourView::rest_training_input(const Ref<InputEvent> &event)
 }
 
 #include "mastery_rest_view_checks.h"
+#endif

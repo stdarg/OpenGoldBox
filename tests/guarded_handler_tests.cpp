@@ -71,6 +71,32 @@ void every_handler_is_guarded()
     }
     check(sources > 20, "The game's sources are found");
 }
+
+// A header, mixins included, changes nothing in the file that includes it
+// beyond what it declares (Effective C++ Items 30 and 31): it has an include
+// guard, and no namespace-scope using-directive or unnamed namespace.
+void headers_keep_to_themselves()
+{
+    const auto game = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "src/OpenGoldBox";
+    unsigned headers = 0;
+    for (const auto &entry : std::filesystem::directory_iterator(game))
+    {
+        if (entry.path().extension() != ".h")
+            continue;
+        ++headers;
+        std::ifstream in(entry.path());
+        const std::string text{std::istreambuf_iterator<char>(in), {}};
+        const auto name = entry.path().filename().string();
+        check(text.find("#ifndef ") != std::string::npos &&
+              text.find("#define ") != std::string::npos,
+              name + " has no include guard");
+        check(text.find("\nusing namespace ") == std::string::npos,
+              name + " has a using-directive at namespace scope");
+        check(text.find("\nnamespace\n") == std::string::npos,
+              name + " has an unnamed namespace");
+    }
+    check(headers > 20, "The game's headers are found");
+}
 } // namespace
 
 int main()
@@ -79,6 +105,7 @@ int main()
     {
         scoped_flag_clears_however_the_scope_ends();
         every_handler_is_guarded();
+        headers_keep_to_themselves();
         std::cout << "Guarded handler checks passed\n";
         return 0;
     }

@@ -8,6 +8,14 @@
 #include <exception>
 #include <optional>
 #include <functional>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 class CharacterCreationView : public godot::Control
 {

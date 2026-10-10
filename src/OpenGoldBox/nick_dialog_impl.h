@@ -1,3 +1,6 @@
+#ifndef OPENGOLDBOX_NICK_DIALOG_IMPL_H
+#define OPENGOLDBOX_NICK_DIALOG_IMPL_H
+
 // Included in both native combat views; only presents rules-provided commands.
 #include "godot_nodes.h"
 void CombatView::begin_nick()
@@ -43,3 +46,4 @@ void CombatView::confirm_nick()
     presentation::required_node<Button>(*this, "Nick").release_focus();
     select_mode(key.get_slice("#", 0));
 }
+#endif
