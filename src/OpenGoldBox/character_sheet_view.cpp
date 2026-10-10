@@ -55,7 +55,10 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
     preview->set_text(gs(std::to_string(d.rolls[roll].total())));
     get_node<Control>(gs(std::string(index < 6 ? "Dice" : "Score") + std::to_string(index % 6)))
     ->set_drag_preview(preview.get());
-    preview.release();
+    // Godot adopts the preview only while a drag can show it; one it refused
+    // stays with NodeOwner and is freed (Effective C++ Item 13).
+    if (preview->get_parent())
+        (void)preview.release();
     Dictionary data;
     data["opengold_ability_roll"] = roll;
     return data;
