@@ -91,9 +91,45 @@ func run() -> void:
             if not confirm.disabled: confirm.pressed.emit(); await settle()
             check((lab.get_node("Summary") as Label).text.contains("Level 2"),
                   "Confirm applies a level and refreshes the review screen")
+            var sheet: Window = lab.get_node("CharacterSheet")
+            check(sheet.visible, "Completed level-up opens the character sheet")
+            check((sheet.get_node("Text") as RichTextLabel).text.contains("Level 2"),
+                  "Character sheet shows the attained level")
+            (sheet.get_node("Close") as Button).pressed.emit(); await settle()
+            check(not sheet.visible, "Character sheet closes")
+            check((lab.get_node("CurrentLevelLabel") as Label).text == "Starting level",
+                  "Creation level selector is labeled as a starting value")
+            (lab.get_node("SaveCharacter") as Button).pressed.emit(); await settle()
+            var slots: Window = lab.get_node("SaveSlots")
+            check(slots.visible, "Save Character opens named slots")
+            (slots.get_node("Name") as LineEdit).text = "Fighter route"
+            (slots.get_node("Action") as Button).pressed.emit(); await settle()
+            check(not slots.visible, "Character save completes")
+            change_scene_to_file("res://scenes/level_up_lab.tscn")
+            await settle(6)
+            lab = current_scene
+            check((lab.get_node("SaveCharacter") as Button).disabled,
+                  "Fresh review scene starts without a character")
+            (lab.get_node("LoadCharacter") as Button).pressed.emit(); await settle()
+            slots = lab.get_node("SaveSlots")
+            var list: ItemList = slots.get_node("Slots")
+            check(list.item_count == 1, "Separate review directory contains the saved character")
+            if list.item_count == 1:
+                list.select(0)
+                (slots.get_node("Action") as Button).pressed.emit(); await settle()
+                check(slots.visible, "Loading asks before discarding current state")
+                (slots.get_node("Action") as Button).pressed.emit(); await settle()
+                check(not slots.visible, "Confirmed character load completes")
+                check((lab.get_node("Summary") as Label).text.contains("Level 2"),
+                      "Reloaded character retains its attained level")
+                (lab.get_node("ViewCharacter") as Button).pressed.emit(); await settle()
+                sheet = lab.get_node("CharacterSheet")
+                check((sheet.get_node("Text") as RichTextLabel).text.contains("Level 2"),
+                      "Reloaded full sheet shows the attained level")
+                (sheet.get_node("Close") as Button).pressed.emit(); await settle()
     for failure in failures: printerr("Level-up lab: " + failure)
     if failures.is_empty():
-        print("Level-up lab passed: %d combinations, Wizard pages, Cancel and Fighter confirmation" % tested)
+        print("Level-up lab passed: %d combinations, Wizard pages, Cancel, Fighter confirmation, character sheet and save/load" % tested)
         quit(0)
     else:
         printerr("Level-up lab failed: %d findings" % failures.size())

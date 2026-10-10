@@ -5,11 +5,12 @@
 #include "opengold/character_rules.h"
 #include <godot_cpp/classes/control.hpp>
 #include <exception>
+#include <filesystem>
 #include <memory>
 #include <vector>
 
 // A developer-facing entry point into the game's real advancement dialog.
-// Its generated characters and campaign exist only for this review session.
+// Its single-character campaigns are isolated from the normal game saves.
 class LevelUpLabView : public godot::Control
 {
     GDCLASS(LevelUpLabView, godot::Control)
@@ -28,6 +29,12 @@ class LevelUpLabView : public godot::Control
 
     void create_character();
     void open_level_up();
+    void open_saves(bool saving);
+    void save_character(const std::filesystem::path &path);
+    void load_character(const std::filesystem::path &path);
+    void show_sheet();
+    void close_sheet();
+    void advanced();
     void refresh_result();
 };
 

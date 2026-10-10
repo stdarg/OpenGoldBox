@@ -18,6 +18,8 @@ class SaveSlots : public godot::Window
     using FileAction = std::function<void(const std::filesystem::path &)>;
     // The campaign host's save and load, set once; both are required.
     void connect_host(FileAction save, FileAction load);
+    // Keep review characters separate from normal campaign slots.
+    void use_character_directory(std::filesystem::path directory);
 
   protected:
     static void _bind_methods()
@@ -29,6 +31,7 @@ class SaveSlots : public godot::Window
     // Item 22).
     FileAction save_, load_;
     bool saving_{}, confirmed_{};
+    bool character_saves_{};
     std::filesystem::path directory_, pending_;
     std::vector<std::filesystem::path> paths_;
     void select(std::int64_t index);

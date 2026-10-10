@@ -44,7 +44,7 @@ msgstr " (disadvantage)"
 msgid " (one-handed)"
 msgstr " (one-handed)"
 
-#: src/OpenGoldBox/save_slots.cpp:136
+#: src/OpenGoldBox/save_slots.cpp:152
 msgid " (previous version)"
 msgstr " (previous version)"
 
@@ -812,7 +812,7 @@ msgstr "Campaign loaded."
 msgid "Campaign saved."
 msgstr "Campaign saved."
 
-#: src/OpenGoldBox/equipment_choice_dialog.cpp:77 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:225 src/OpenGoldBox/godot/scenes/startup.tscn:155 src/OpenGoldBox/godot/scenes/startup.tscn:92 src/OpenGoldBox/level_up_dialog.cpp:102 src/OpenGoldBox/nick_controls.h:46 src/OpenGoldBox/rest_dialog_impl.h:228 src/OpenGoldBox/rest_dialog_impl.h:70 src/OpenGoldBox/save_slots.cpp:77 src/OpenGoldBox/spell_choice_controls.h:169 src/OpenGoldBox/startup_view.cpp:272
+#: src/OpenGoldBox/equipment_choice_dialog.cpp:77 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:225 src/OpenGoldBox/godot/scenes/startup.tscn:155 src/OpenGoldBox/godot/scenes/startup.tscn:92 src/OpenGoldBox/level_up_dialog.cpp:102 src/OpenGoldBox/nick_controls.h:46 src/OpenGoldBox/rest_dialog_impl.h:228 src/OpenGoldBox/rest_dialog_impl.h:70 src/OpenGoldBox/save_slots.cpp:78 src/OpenGoldBox/spell_choice_controls.h:169 src/OpenGoldBox/startup_view.cpp:272
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -926,7 +926,7 @@ msgstr "Chaotic Good"
 msgid "Chaotic Neutral"
 msgstr "Chaotic Neutral"
 
-#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:209
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:244
 msgid "Character"
 msgstr "Character"
 
@@ -946,11 +946,23 @@ msgstr "Character Sheet"
 msgid "Character art could not be loaded. Restart with --reset-game-path to choose your Pool of Radiance folder."
 msgstr "Character art could not be loaded. Restart with --reset-game-path to choose your Pool of Radiance folder."
 
+#: src/OpenGoldBox/level_up_lab_view.cpp:247
+msgid "Character loaded."
+msgstr "Character loaded."
+
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:421
 msgid "Character modifiers"
 msgstr "Character modifiers"
 
-#: src/OpenGoldBox/character_creation_view.cpp:58
+#: src/OpenGoldBox/save_slots.cpp:124
+msgid "Character save name"
+msgstr "Character save name"
+
+#: src/OpenGoldBox/level_up_lab_view.cpp:227
+msgid "Character saved."
+msgstr "Character saved."
+
+#: src/OpenGoldBox/character_creation_view.cpp:58 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:269
 msgid "Character sheet"
 msgstr "Character sheet"
 
@@ -1004,7 +1016,7 @@ msgstr "Choose a Nick weapon and attack. This uses the Light extra attack for th
 msgid "Choose a Push destination, or skip."
 msgstr "Choose a Push destination, or skip."
 
-#: src/OpenGoldBox/level_up_lab_view.cpp:192
+#: src/OpenGoldBox/level_up_lab_view.cpp:282
 msgid "Choose a character and press Create Character."
 msgstr "Choose a character and press Create Character."
 
@@ -1218,7 +1230,7 @@ msgstr "Cleric skills"
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:439 src/OpenGoldBox/godot/scenes/character_creation.tscn:472 src/OpenGoldBox/godot/scenes/character_creation.tscn:489 src/OpenGoldBox/godot/scenes/character_creation.tscn:506 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:145
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:439 src/OpenGoldBox/godot/scenes/character_creation.tscn:472 src/OpenGoldBox/godot/scenes/character_creation.tscn:489 src/OpenGoldBox/godot/scenes/character_creation.tscn:506 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:298 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:145
 msgid "Close"
 msgstr "Close"
 
@@ -1327,7 +1339,7 @@ msgstr "Complete the required training choices."
 msgid "Confirm"
 msgstr "Confirm"
 
-#: src/OpenGoldBox/save_slots.cpp:199
+#: src/OpenGoldBox/save_slots.cpp:217
 msgid "Confirm load"
 msgstr "Confirm load"
 
@@ -1354,6 +1366,10 @@ msgstr "Covered in oil"
 #: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:185
 msgid "Create Character"
 msgstr "Create Character"
+
+#: src/OpenGoldBox/level_up_lab_view.cpp:217 src/OpenGoldBox/level_up_lab_view.cpp:224
+msgid "Create a character before saving"
+msgstr "Create a character before saving"
 
 #: src/OpenGoldBox/party_preview.cpp:266
 msgid "Create a character, finish its sheet, then Add to party.\n\nSix PC positions and two NPC positions. Removed members remain in the roster."
@@ -1394,10 +1410,6 @@ msgstr "Cure Wounds"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cure Wounds (level 2 slot)"
 msgstr "Cure Wounds (level 2 slot)"
-
-#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:164
-msgid "Current level"
-msgstr "Current level"
 
 #: src/OpenGoldBox/portrait_picker.cpp:75
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -2705,23 +2717,35 @@ msgstr "Lit (Starry Wisp)"
 msgid "Lizardfolk"
 msgstr "Lizardfolk"
 
-#: src/OpenGoldBox/save_slots.cpp:146 src/OpenGoldBox/save_slots.cpp:158 src/OpenGoldBox/save_slots.cpp:213
+#: src/OpenGoldBox/save_slots.cpp:162 src/OpenGoldBox/save_slots.cpp:174 src/OpenGoldBox/save_slots.cpp:231
 msgid "Load"
 msgstr "Load"
+
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:220
+msgid "Load Character"
+msgstr "Load Character"
 
 #: src/OpenGoldBox/party_preview.cpp:1234
 msgid "Load a saved game to continue."
 msgstr "Load a saved game to continue."
 
+#: src/OpenGoldBox/save_slots.cpp:115
+msgid "Load character"
+msgstr "Load character"
+
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:94
 msgid "Load combat"
 msgstr "Load combat"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:68 src/OpenGoldBox/rolf_tour_view.cpp:143 src/OpenGoldBox/save_slots.cpp:105
+#: src/OpenGoldBox/campaign_save_view.cpp:68 src/OpenGoldBox/rolf_tour_view.cpp:143 src/OpenGoldBox/save_slots.cpp:116
 msgid "Load game"
 msgstr "Load game"
 
-#: src/OpenGoldBox/save_slots.cpp:197
+#: src/OpenGoldBox/save_slots.cpp:214
+msgid "Load this character? Any unsaved demo progress will be discarded."
+msgstr "Load this character? Any unsaved demo progress will be discarded."
+
+#: src/OpenGoldBox/save_slots.cpp:215
 msgid "Load this save? Any unsaved campaign progress will be discarded."
 msgstr "Load this save? Any unsaved campaign progress will be discarded."
 
@@ -3098,7 +3122,7 @@ msgstr "Nick throw — {weapon} ({hand})"
 msgid "No additional racial, item or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules."
 msgstr "No additional racial, item or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules."
 
-#: src/OpenGoldBox/level_up_lab_view.cpp:193
+#: src/OpenGoldBox/level_up_lab_view.cpp:283
 msgid "No character created yet."
 msgstr "No character created yet."
 
@@ -3115,7 +3139,7 @@ msgstr "No equipment modifiers. Source: unarmed strike rules and Strength score 
 msgid "No feat or ability increase at this level"
 msgstr "No feat or ability increase at this level"
 
-#: src/OpenGoldBox/level_up_lab_view.cpp:211
+#: src/OpenGoldBox/level_up_lab_view.cpp:301
 msgid "No further level-up is offered for this character."
 msgstr "No further level-up is offered for this character."
 
@@ -3265,11 +3289,11 @@ msgstr "Other racial traits and conditional effects are not implemented."
 msgid "Outlined (Faerie Fire)"
 msgstr "Outlined (Faerie Fire)"
 
-#: src/OpenGoldBox/save_slots.cpp:199
+#: src/OpenGoldBox/save_slots.cpp:217
 msgid "Overwrite"
 msgstr "Overwrite"
 
-#: src/OpenGoldBox/save_slots.cpp:196
+#: src/OpenGoldBox/save_slots.cpp:212
 msgid "Overwrite this save? Its previous version will be retained."
 msgstr "Overwrite this save? Its previous version will be retained."
 
@@ -3708,7 +3732,7 @@ msgstr "Ready"
 msgid "Ready to level up"
 msgstr "Ready to level up"
 
-#: src/OpenGoldBox/level_up_lab_view.cpp:212
+#: src/OpenGoldBox/level_up_lab_view.cpp:302
 msgid "Ready: Open Level-Up uses the game's real dialog and rules."
 msgstr "Ready: Open Level-Up uses the game's real dialog and rules."
 
@@ -3898,7 +3922,7 @@ msgstr "Retain the class-granted Fighting Style."
 msgid "Return to party"
 msgstr "Return to party"
 
-#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:83 src/OpenGoldBox/level_up_lab_view.cpp:155
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:83 src/OpenGoldBox/level_up_lab_view.cpp:185
 msgid "Review character"
 msgstr "Review character"
 
@@ -4037,19 +4061,27 @@ msgstr "Savage Attacker"
 msgid "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically."
 msgstr "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically."
 
-#: src/OpenGoldBox/save_slots.cpp:146 src/OpenGoldBox/save_slots.cpp:158 src/OpenGoldBox/save_slots.cpp:213
+#: src/OpenGoldBox/save_slots.cpp:162 src/OpenGoldBox/save_slots.cpp:174 src/OpenGoldBox/save_slots.cpp:231
 msgid "Save"
 msgstr "Save"
+
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:209
+msgid "Save Character"
+msgstr "Save Character"
+
+#: src/OpenGoldBox/save_slots.cpp:115
+msgid "Save character"
+msgstr "Save character"
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:92
 msgid "Save combat"
 msgstr "Save combat"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:68 src/OpenGoldBox/rest_dialog_impl.h:30 src/OpenGoldBox/rest_dialog_impl.h:68 src/OpenGoldBox/rolf_tour_view.cpp:143 src/OpenGoldBox/save_slots.cpp:105
+#: src/OpenGoldBox/campaign_save_view.cpp:68 src/OpenGoldBox/rest_dialog_impl.h:30 src/OpenGoldBox/rest_dialog_impl.h:68 src/OpenGoldBox/rolf_tour_view.cpp:143 src/OpenGoldBox/save_slots.cpp:116
 msgid "Save game"
 msgstr "Save game"
 
-#: src/OpenGoldBox/save_slots.cpp:67
+#: src/OpenGoldBox/save_slots.cpp:124 src/OpenGoldBox/save_slots.cpp:68
 msgid "Save name"
 msgstr "Save name"
 
@@ -4123,6 +4155,14 @@ msgstr "Seeking Spell rerolls the missed attack."
 msgid "Seeks to help others, with flexibility about rules."
 msgstr "Seeks to help others, with flexibility about rules."
 
+#: src/OpenGoldBox/save_slots.cpp:119
+msgid "Select a character save to overwrite, or enter a new name."
+msgstr "Select a character save to overwrite, or enter a new name."
+
+#: src/OpenGoldBox/save_slots.cpp:120
+msgid "Select a character save. Previous versions are available for recovery."
+msgstr "Select a character save. Previous versions are available for recovery."
+
 #: src/OpenGoldBox/character_creation_view.cpp:779
 msgid "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
 msgstr "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
@@ -4131,11 +4171,11 @@ msgstr "Select a part's Color-1 or Color-2, then a swatch. Watch both poses chan
 msgid "Select a save first."
 msgstr "Select a save first."
 
-#: src/OpenGoldBox/save_slots.cpp:107
+#: src/OpenGoldBox/save_slots.cpp:121
 msgid "Select a save to overwrite, or enter a new name."
 msgstr "Select a save to overwrite, or enter a new name."
 
-#: src/OpenGoldBox/save_slots.cpp:108
+#: src/OpenGoldBox/save_slots.cpp:122
 msgid "Select a save. Previous versions are available for recovery."
 msgstr "Select a save. Previous versions are available for recovery."
 
@@ -4591,6 +4631,10 @@ msgstr "Start"
 msgid "Start over"
 msgstr "Start over"
 
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:164
+msgid "Starting level"
+msgstr "Starting level"
+
 #: src/OpenGoldBox/character_creation_view.cpp:629
 msgid "Starting-class minimums use the multiclass prerequisites as an OpenGoldBox house rule. Disabled classes do not qualify; go Back to reassign scores or bonuses."
 msgstr "Starting-class minimums use the multiclass prerequisites as an OpenGoldBox house rule. Disabled classes do not qualify; go Back to reassign scores or bonuses."
@@ -4802,6 +4846,10 @@ msgstr "These files do not match the supported Pool of Radiance PC 1.3 checksums
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr "This armor imposes Disadvantage on Dexterity (Stealth) checks."
+
+#: src/OpenGoldBox/level_up_lab_view.cpp:239
+msgid "This is not a single-character level-up demo save"
+msgstr "This is not a single-character level-up demo save"
 
 #: src/OpenGoldBox/rest_dialog_impl.h:173
 msgid "This member did not complete the rest."
@@ -5092,6 +5140,10 @@ msgstr "Victory"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Victory."
 msgstr "Victory."
+
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:232
+msgid "View Character"
+msgstr "View Character"
 
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:406
 msgid "View party"
@@ -5541,7 +5593,7 @@ msgstr "{name} / Saving Throws"
 msgid "{name} / {class} / {gold} gp"
 msgstr "{name} / {class} / {gold} gp"
 
-#: src/OpenGoldBox/level_up_lab_view.cpp:199
+#: src/OpenGoldBox/level_up_lab_view.cpp:289
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / {class} / {race} / {gender}\nLevel {level} · HP {current}/{maximum} · XP {xp}"
 msgstr "{name} / {class} / {race} / {gender}\nLevel {level} · HP {current}/{maximum} · XP {xp}"

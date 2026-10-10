@@ -63,6 +63,7 @@ void SaveSlots::_ready()
     presentation::add_control<Label>(*this, "Status", Rect2(20, 354, 580, 58));
     presentation::add_control<Button>(*this, "Action", Rect2(300, 420, 145, 36));
     presentation::add_control<Button>(*this, "Cancel", Rect2(455, 420, 145, 36));
+    required_node<Label>(*this, "Help").set("autowrap_mode", 3);
     required_node<Label>(*this, "Status").set("autowrap_mode", 3);
     required_node<LineEdit>(*this, "Name").set_placeholder(i18n::text(N_("Save name")));
     required_node<LineEdit>(*this, "Name").set_max_length(60);
@@ -91,6 +92,14 @@ void SaveSlots::connect_host(FileAction save, FileAction load)
     load_ = std::move(load);
 }
 
+void SaveSlots::use_character_directory(std::filesystem::path directory)
+{
+    if (directory.empty())
+        throw std::invalid_argument("Character save directory is empty");
+    directory_ = std::move(directory);
+    character_saves_ = true;
+}
+
 void SaveSlots::report_failure(const std::exception &failure)
 {
     required_node<Label>(*this, "Status").set_text(i18n::text(failure.what()));
@@ -102,10 +111,17 @@ void SaveSlots::open(bool saving)
     confirmed_ = false;
     pending_.clear();
     paths_.clear();
-    set_title(i18n::text(saving ? N_("Save game") : N_("Load game")));
+    set_title(i18n::text(character_saves_
+                         ? (saving ? N_("Save character") : N_("Load character"))
+                         : (saving ? N_("Save game") : N_("Load game"))));
     required_node<Label>(*this, "Help").set_text(
-        i18n::text(saving ? N_("Select a save to overwrite, or enter a new name.")
-                   : N_("Select a save. Previous versions are available for recovery.")));
+        i18n::text(character_saves_
+                   ? (saving ? N_("Select a character save to overwrite, or enter a new name.")
+                      : N_("Select a character save. Previous versions are available for recovery."))
+                   : (saving ? N_("Select a save to overwrite, or enter a new name.")
+                      : N_("Select a save. Previous versions are available for recovery."))));
+    required_node<LineEdit>(*this, "Name").set_placeholder(
+        i18n::text(character_saves_ ? N_("Character save name") : N_("Save name")));
     auto *list = &required_node<ItemList>(*this, "Slots");
     list->clear();
     try
@@ -194,6 +210,8 @@ void SaveSlots::act()
             pending_ = path;
             required_node<Label>(*this, "Status").set_text(i18n::text(
                         saving_ ? N_("Overwrite this save? Its previous version will be retained.")
+                        : character_saves_
+                        ? N_("Load this character? Any unsaved demo progress will be discarded.")
                         : N_("Load this save? Any unsaved campaign progress will be discarded.")));
             required_node<Button>(*this, "Action").set_text(
                 i18n::text(saving_ ? N_("Overwrite") : N_("Confirm load")));

@@ -1,18 +1,25 @@
 #include "level_up_lab_view.h"
+#include "character_sheet_text.h"
 #include "game_resources.h"
 #include "godot_nodes.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
 #include "level_up_dialog.h"
-#include "localization.h"
+#include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "localization.h"
+#include "save_slots.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/line_edit.hpp>
 #include <godot_cpp/classes/option_button.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/classes/rich_text_label.hpp>
+#include <godot_cpp/classes/window.hpp>
 #include <algorithm>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 
 using namespace godot;
@@ -20,6 +27,7 @@ using presentation::required_node;
 
 namespace
 {
+constexpr std::string_view lab_asset_identity = "level-up-lab";
 std::string selected_id(const OptionButton &control,
                         const std::vector<opengold::rules::CreationChoice> &options)
 {
@@ -117,6 +125,28 @@ void LevelUpLabView::_ready()
     .connect("pressed", presentation::guarded(this, &LevelUpLabView::create_character));
     required_node<Button>(*this, "OpenLevelUp")
     .connect("pressed", presentation::guarded(this, &LevelUpLabView::open_level_up));
+    required_node<Button>(*this, "SaveCharacter")
+    .connect("pressed", presentation::guarded(this, &LevelUpLabView::open_saves).bind(true));
+    required_node<Button>(*this, "LoadCharacter")
+    .connect("pressed", presentation::guarded(this, &LevelUpLabView::open_saves).bind(false));
+    required_node<Button>(*this, "ViewCharacter")
+    .connect("pressed", presentation::guarded(this, &LevelUpLabView::show_sheet));
+    required_node<Button>(*this, "CharacterSheet/Close")
+    .connect("pressed", presentation::guarded(this, &LevelUpLabView::close_sheet));
+    required_node<Window>(*this, "CharacterSheet")
+    .connect("close_requested", presentation::guarded(this, &LevelUpLabView::close_sheet));
+    auto save_slots = presentation::make_node<SaveSlots>();
+    save_slots->set_name("SaveSlots");
+    save_slots->connect_host([this](const auto & path)
+    {
+        save_character(path);
+    }, [this](const auto & path)
+    {
+        load_character(path);
+    });
+    auto *slots = presentation::attach_child(*this, std::move(save_slots));
+    slots->use_character_directory(presentation::path_from_godot(
+                                       ProjectSettings::get_singleton()->globalize_path("user://level-up-lab/saves")));
     auto dialog = LevelUpDialog::create();
     auto *level_up = Object::cast_to<LevelUpDialog>(dialog.get());
     level_up->connect_host([this]() -> opengold::CampaignParty &
@@ -124,7 +154,7 @@ void LevelUpLabView::_ready()
         return *campaign_;
     }, [this]
     {
-        refresh_result();
+        advanced();
     }, [this](const std::exception & failure)
     {
         report_failure(failure);
@@ -135,7 +165,7 @@ void LevelUpLabView::_ready()
 
 void LevelUpLabView::report_failure(const std::exception &failure)
 {
-    required_node<Label>(*this, "Status").set_text(String::utf8(failure.what()));
+    required_node<Label>(*this, "Status").set_text(i18n::text(failure.what()));
 }
 
 void LevelUpLabView::create_character()
@@ -181,10 +211,70 @@ void LevelUpLabView::open_level_up()
     required_node<LevelUpDialog>(*this, "LevelUp").open(member_);
 }
 
+void LevelUpLabView::open_saves(bool saving)
+{
+    if (saving && (!campaign_ || !member_))
+        throw std::runtime_error(N_("Create a character before saving"));
+    required_node<SaveSlots>(*this, "SaveSlots").open(saving);
+}
+
+void LevelUpLabView::save_character(const std::filesystem::path &path)
+{
+    if (!campaign_ || !member_)
+        throw std::runtime_error(N_("Create a character before saving"));
+    opengold::write_campaign_file(path,
+                                  opengold::encode_campaign(*campaign_, nullptr, lab_asset_identity));
+    required_node<Label>(*this, "Status").set_text(i18n::text(N_("Character saved.")));
+}
+
+void LevelUpLabView::load_character(const std::filesystem::path &path)
+{
+    auto module = opengold::srd5::load(presentation::path_from_godot(game_rules_file()));
+    auto saved = opengold::decode_campaign(opengold::read_campaign_file(path),
+                                           *opengold::srd5::character_rules(), *module,
+                                           lab_asset_identity,
+                                           static_cast<const opengold::por::RolfTourSession *>(nullptr));
+    if (saved.town || saved.party.roster.size() != 1 ||
+            saved.party.slots[0] != saved.party.roster.front().id)
+        throw std::runtime_error(N_("This is not a single-character level-up demo save"));
+    auto next = std::make_unique<opengold::CampaignParty>(std::move(module));
+    next->restore(std::move(saved.party));
+    const auto id = next->state().roster.front().id;
+    (void)next->profile(id);
+    campaign_ = std::move(next);
+    member_ = id;
+    refresh_result();
+    required_node<Label>(*this, "Status").set_text(i18n::text(N_("Character loaded.")));
+}
+
+void LevelUpLabView::show_sheet()
+{
+    if (!campaign_ || !member_)
+        return;
+    required_node<RichTextLabel>(*this, "CharacterSheet/Text")
+    .set_text(presentation::sheet_text(*campaign_, campaign_->member(member_)));
+    auto &sheet = required_node<Window>(*this, "CharacterSheet");
+    sheet.popup_centered();
+    required_node<Button>(*this, "CharacterSheet/Close").grab_focus();
+}
+
+void LevelUpLabView::close_sheet()
+{
+    required_node<Window>(*this, "CharacterSheet").hide();
+}
+
+void LevelUpLabView::advanced()
+{
+    refresh_result();
+    show_sheet();
+}
+
 void LevelUpLabView::refresh_result()
 {
     auto &button = required_node<Button>(*this, "OpenLevelUp");
     button.set_disabled(!campaign_ || !member_ || !campaign_->can_advance(member_));
+    required_node<Button>(*this, "SaveCharacter").set_disabled(!campaign_ || !member_);
+    required_node<Button>(*this, "ViewCharacter").set_disabled(!campaign_ || !member_);
     auto &summary = required_node<Label>(*this, "Summary");
     auto &status = required_node<Label>(*this, "Status");
     if (!campaign_ || !member_)
