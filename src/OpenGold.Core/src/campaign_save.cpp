@@ -636,7 +636,10 @@ std::string encode_campaign(const CampaignParty &party, const por::RolfTourSessi
     out.field(has_town);
     if (town)
     {
-        auto copy = *town;
+        // The codec visits the session through one function for both reading
+        // and writing, which keeps the two formats in step; writing from an
+        // explicit copy keeps the caller's session const.
+        auto copy = town->detached_copy();
         out.town(copy);
     }
     out.rest(state);
@@ -692,7 +695,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     if (town_template)
         make_town = [town_template]
     {
-        return *town_template;
+        return town_template->detached_copy();
     };
     return decode_campaign(bytes, creation, module, assets, make_town);
 }

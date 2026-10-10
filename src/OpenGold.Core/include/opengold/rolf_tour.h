@@ -140,6 +140,14 @@ enum class ExplorationCommand
 class RolfTourSession
 {
   public:
+    // A session drives a shared party, so it is not copied by accident: a
+    // copy would be a second session acting on the same party (Effective C++
+    // Item 6). detached_copy() is an explicit copy without the party.
+    RolfTourSession(RolfTourSession &&) = default;
+    RolfTourSession &operator=(RolfTourSession &&) = default;
+    ~RolfTourSession() = default;
+    [[nodiscard]] RolfTourSession detached_copy() const;
+
     [[nodiscard]] static RolfTourSession load(const std::filesystem::path &directory);
     // Also accepts wholly synthetic resources for asset-free host tests.
     RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
@@ -241,6 +249,8 @@ class RolfTourSession
     bool reject_combat(std::string diagnostic);
 
   private:
+    RolfTourSession(const RolfTourSession &) = default;
+    RolfTourSession &operator=(const RolfTourSession &) = default;
     friend struct opengold::SaveCodec;
     // Clears everything one run of the tour builds up; restart() also reloads
     // the town's map and a fresh script machine.

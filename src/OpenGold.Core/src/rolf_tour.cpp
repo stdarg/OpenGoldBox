@@ -335,6 +335,13 @@ RolfTourSession::RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> p
     reset_run();
 }
 
+RolfTourSession RolfTourSession::detached_copy() const
+{
+    RolfTourSession copy(*this);
+    copy.campaign_.reset();
+    return copy;
+}
+
 void RolfTourSession::restart()
 {
     if (town_ && town_->map)

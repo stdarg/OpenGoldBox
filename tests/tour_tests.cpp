@@ -14,6 +14,12 @@ using namespace opengold::por;
 
 namespace
 {
+// A session drives a shared party, so copying is explicit (detached_copy)
+// and moving is free (Effective C++ Item 6).
+static_assert(!std::is_copy_constructible_v<por::RolfTourSession> &&
+              !std::is_copy_assignable_v<por::RolfTourSession> &&
+              std::is_move_constructible_v<por::RolfTourSession>);
+
 using Bytes = std::vector<std::uint8_t>;
 
 void check(bool ok, const char *message)
@@ -468,7 +474,7 @@ void installed_town(const RolfTourSession &finished)
             const auto event = finished.map().at(x, y).event_number();
             if (!event)
                 continue;
-            auto town = finished;
+            auto town = finished.detached_copy();
             if (!walk_to(town, x, y))
             {
                 std::cout << "Town route unavailable " << x << ',' << y << " event " << event
@@ -516,7 +522,7 @@ void installed_town(const RolfTourSession &finished)
              ShopCase{8, 10, 11, "NPCs/phlan-jeweler-08-10.png"},
          })
     {
-        auto town = finished;
+        auto town = finished.detached_copy();
         check(walk_to(town, target.x, target.y, true), "Walk to original shop");
         check(town.snapshot().phase == TourPhase::shopping,
               "Entering shop and answering Yes opens actual stock");
