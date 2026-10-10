@@ -27,10 +27,10 @@ template <class Render>
 bool refresh_weapons(godot::Node &root, const opengold::rules::CombatantView *actor, bool player,
                      Render render)
 {
-    auto *choices = root.get_node<godot::OptionButton>("Weapons");
+    auto *choices = &required_node<godot::OptionButton>(root, "Weapons");
     const bool visible = actor && actor->weapons.size() > 1;
     const bool changed = choices->is_visible() != visible;
-    root.get_node<godot::Control>("WeaponLabel")->set_visible(visible);
+    required_node<godot::Control>(root, "WeaponLabel").set_visible(visible);
     choices->set_visible(visible);
     choices->clear();
     bool enabled = false;
@@ -124,16 +124,16 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         })});
         options.insert(options.end(), actor->light_attacks.begin(), actor->light_attacks.end());
     }
-    auto *choices = root.get_node<godot::OptionButton>("CunningAction");
+    auto *choices = &required_node<godot::OptionButton>(root, "CunningAction");
     choices->set_fit_to_longest_item(false);
     choices->set_clip_text(true);
     const bool changed = choices->is_visible() != !options.empty();
     for (const char *name :
             {"CunningActionLabel", "CunningAction", "UseCunningAction"
             })
-        root.get_node<godot::Control>(name)->set_visible(!options.empty());
-    root.get_node<godot::Label>("CunningActionLabel")->set_text(text("Bonus Action"));
-    root.get_node<godot::Button>("UseCunningAction")->set_text(text("Use Bonus Action"));
+        required_node<godot::Control>(root, name).set_visible(!options.empty());
+    required_node<godot::Label>(root, "CunningActionLabel").set_text(text("Bonus Action"));
+    required_node<godot::Button>(root, "UseCunningAction").set_text(text("Use Bonus Action"));
     const godot::String previous =
         choices->get_selected() >= 0
         ? godot::String(choices->get_item_metadata(choices->get_selected()))
@@ -164,8 +164,8 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
     choices->set_disabled(!player || !any);
     const auto selected = choices->get_selected();
     choices->set_tooltip_text(selected >= 0 ? choices->get_item_text(selected) : godot::String());
-    root.get_node<godot::Button>("UseCunningAction")
-    ->set_disabled(!player || selected < 0 || !options[selected].available);
+    required_node<godot::Button>(root, "UseCunningAction")
+    .set_disabled(!player || selected < 0 || !options[selected].available);
     return changed;
 }
 } // namespace presentation

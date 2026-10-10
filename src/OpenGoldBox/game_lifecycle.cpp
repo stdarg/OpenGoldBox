@@ -2,6 +2,7 @@
 #include "localization.h"
 #include "screenshot_service.h"
 #include "guarded_handlers.h"
+#include "godot_nodes.h"
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -9,6 +10,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
+using presentation::required_node;
 
 void GameLifecycle::_bind_methods()
 {
@@ -59,7 +61,7 @@ void GameLifecycle::shortcut(const Ref<InputEvent> &event, Viewport &viewport)
     if (key->get_keycode() == KEY_X)
         request_quit();
     else
-        get_node<ScreenshotService>("/root/Screenshots")->request_capture();
+        required_node<ScreenshotService>(*this, "/root/Screenshots").request_capture();
 }
 
 void GameLifecycle::request_quit()

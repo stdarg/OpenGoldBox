@@ -73,9 +73,9 @@ bool CharacterCreationView::open_equipment_choice(opengold::MemberId member, std
     equipment_member_ = member;
     equipment_item_ = item;
     equipment_choices_ = choices;
-    window->get_node<Label>("Item")->set_text(
+    presentation::required_node<Label>(*window, "Item").set_text(
         review_text(campaign_->member(member).character.inventory().find(item)->get().name));
-    auto *hand = window->get_node<OptionButton>("Hand");
+    auto *hand = &presentation::required_node<OptionButton>(*window, "Hand");
     hand->clear();
     int first = -1;
     for (unsigned i = 0; i < choices.size(); ++i)
@@ -98,15 +98,17 @@ void CharacterCreationView::equipment_choice_selected(std::int64_t index)
     if (index < 0 || static_cast<std::size_t>(index) >= equipment_choices_.size())
         return;
     const auto &choice = equipment_choices_[index];
-    auto *window = get_node<Window>("EquipmentChoice");
-    window->get_node<Label>("Explanation")->set_text(equipment_message(choice.explanation));
-    window->get_node<Button>("Equip")->set_disabled(!choice.available || campaign_->in_combat());
+    auto *window = &presentation::required_node<Window>(*this, "EquipmentChoice");
+    presentation::required_node<Label>(*window,
+                                       "Explanation").set_text(equipment_message(choice.explanation));
+    presentation::required_node<Button>(*window, "Equip").set_disabled(!choice.available
+            || campaign_->in_combat());
 }
 
 void CharacterCreationView::apply_equipment_choice()
 {
-    auto *window = get_node<Window>("EquipmentChoice");
-    const auto selected = window->get_node<OptionButton>("Hand")->get_selected();
+    auto *window = &presentation::required_node<Window>(*this, "EquipmentChoice");
+    const auto selected = presentation::required_node<OptionButton>(*window, "Hand").get_selected();
     if (selected < 0 || static_cast<std::size_t>(selected) >= equipment_choices_.size() ||
             !equipment_choices_[selected].available)
         return;
@@ -120,17 +122,17 @@ void CharacterCreationView::apply_equipment_choice()
     }
     catch (const std::exception &e)
     {
-        window->get_node<Label>("Explanation")->set_text(review_text(e.what()));
+        presentation::required_node<Label>(*window, "Explanation").set_text(review_text(e.what()));
     }
 }
 
 void CharacterCreationView::close_equipment_choice()
 {
-    get_node<Window>("EquipmentChoice")->hide();
+    presentation::required_node<Window>(*this, "EquipmentChoice").hide();
     equipment_choices_.clear();
     equipment_member_ = 0;
     equipment_item_ = 0;
-    get_node<Button>("PartyPanel/Equip")->grab_focus();
+    presentation::required_node<Button>(*this, "PartyPanel/Equip").grab_focus();
 }
 
 void CharacterCreationView::equipment_choice_input(const Ref<InputEvent> &event)
@@ -139,6 +141,6 @@ void CharacterCreationView::equipment_choice_input(const Ref<InputEvent> &event)
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && key->get_keycode() == KEY_ESCAPE)
     {
         close_equipment_choice();
-        get_node<Window>("EquipmentChoice")->set_input_as_handled();
+        presentation::required_node<Window>(*this, "EquipmentChoice").set_input_as_handled();
     }
 }

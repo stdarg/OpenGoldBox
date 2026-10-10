@@ -170,17 +170,17 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                                const opengold::rules::TrainingChoices &locked = {})
 {
     using namespace godot;
-    auto *rows = parent.get_node<VBoxContainer>("Training/Rows");
+    auto *rows = &required_node<VBoxContainer>(parent, "Training/Rows");
     auto fixed = creator.draft();
     fixed.training.clear();
-    parent.get_node<RichTextLabel>("TrainingFixed")
-    ->set_text("[b]" + tr(N_("Fixed training")) + "[/b]\n" +
+    required_node<RichTextLabel>(parent, "TrainingFixed")
+    .set_text("[b]" + tr(N_("Fixed training")) + "[/b]\n" +
                training_summary(
                    creator.rules().evaluate(fixed, opengold::rules::NameRequirement::optional).training,
                    tr, true));
     const auto groups = creator.training_options();
     for (auto i = static_cast<unsigned>(groups.size()); i < static_cast<unsigned>(rows->get_child_count()); ++i)
-        rows->get_node<Control>(String("Group") + String::num_uint64(i))->hide();
+        required_node<Control>(*rows, String("Group") + String::num_uint64(i)).hide();
     for (unsigned i = 0; i < groups.size(); ++i)
     {
         const auto &group = groups[i];
@@ -203,7 +203,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         const auto found = creator.draft().training.find(group.id);
         const std::vector<std::string> empty;
         const auto &picked = found == creator.draft().training.end() ? empty : found->second;
-        auto *title = box->get_node<Label>("Title");
+        auto *title = &required_node<Label>(*box, "Title");
         title->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
         title->set_text(tr(group.label) + " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
@@ -313,13 +313,14 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         signature += training_string(group.id) + ";";
     if (!rows->has_meta("training_groups") ||
             String(rows->get_meta("training_groups")) != signature)
-        parent.get_node<ScrollContainer>("Training")->set_v_scroll(0);
+        required_node<ScrollContainer>(parent, "Training").set_v_scroll(0);
     rows->set_meta("training_groups", signature);
     unsigned first = 0;
     for (unsigned i = 0; i < groups.size(); ++i)
         if (groups[i].control == opengold::rules::TrainingChoiceControl::single_selection)
-            rows->move_child(rows->get_node<VBoxContainer>(String("Group") + String::num_uint64(i)),
-                             first++);
+            rows->move_child(
+                &required_node<VBoxContainer>(*rows, String("Group") + String::num_uint64(i)),
+                first++);
 }
 } // namespace presentation
 #endif

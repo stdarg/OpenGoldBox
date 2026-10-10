@@ -4,6 +4,7 @@
 #include "rolf_tour_view.h"
 #include "opengold/character_pool.h"
 #include "opengold/srd5.h"
+#include "godot_nodes.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -14,6 +15,7 @@
 #include <algorithm>
 using namespace godot;
 using namespace opengold;
+using presentation::required_node;
 
 namespace
 {
@@ -28,14 +30,14 @@ void CharacterCreationView::pool_layout()
     const double w = std::min(1000.0, double(get_size().x) - 64), h = get_size().y - 120;
     const auto place = [&](const char *path, Rect2 r)
     {
-        auto *n = get_node<Control>(path);
+        auto *n = &required_node<Control>(*this, path);
         n->set_position(r.position);
         n->set_size(r.size);
     };
     for (const char *name :
             {"PoolModal", "TownSheet"
             })
-        get_node<Window>(name)->set_size(Vector2i(w, h));
+        required_node<Window>(*this, name).set_size(Vector2i(w, h));
     place("PoolModal/Background", Rect2(0, 0, w, h));
     place("TownSheet/Background", Rect2(0, 0, w, h));
     place("PoolModal/Title", Rect2(20, 16, w - 40, 36));
@@ -66,18 +68,18 @@ void CharacterCreationView::show_pool()
                 c.appearance(a);
             }
         }
-        auto *list = get_node<ItemList>("PoolModal/List");
+        auto *list = &required_node<ItemList>(*this, "PoolModal/List");
         list->clear();
         for (const auto &character : pool_)
             list->add_item(i18n::text(character.sheet().character_class) + " / " +
                            gs(character.sheet().name));
         list->select(pool_index_);
         pool_selected(pool_index_);
-        get_node<Window>("PoolModal")->popup_centered();
+        required_node<Window>(*this, "PoolModal").popup_centered();
     }
     catch (const std::exception &e)
     {
-        get_node<Label>("PartyPanel/Status")->set_text(i18n::text(e.what()));
+        required_node<Label>(*this, "PartyPanel/Status").set_text(i18n::text(e.what()));
     }
 }
 
@@ -87,17 +89,17 @@ void CharacterCreationView::pool_selected(std::int64_t index)
         return;
     pool_index_ = static_cast<unsigned>(index);
     const auto &character = pool_[pool_index_];
-    get_node<RichTextLabel>("PoolModal/Text")->set_text(sheet_text(character));
-    get_node<TextureRect>("PoolModal/Portrait")
-    ->set_texture(portrait_texture(character.appearance(), character.creation_data()));
+    required_node<RichTextLabel>(*this, "PoolModal/Text").set_text(sheet_text(character));
+    required_node<TextureRect>(*this, "PoolModal/Portrait")
+    .set_texture(portrait_texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)
     {
         const auto source = art_->icon(character.appearance(),
                                          i == 2 ? por::IconPose::action : por::IconPose::ready);
-        get_node<TextureRect>(i == 0   ? "PoolModal/Portrait"
+        required_node<TextureRect>(*this, i == 0   ? "PoolModal/Portrait"
                               : i == 1 ? "PoolModal/Ready"
                               : "PoolModal/Action")
-        ->set_texture(presentation::image_texture(source));
+        .set_texture(presentation::image_texture(source));
     }
     const bool added =
         std::find(pool_added_.begin(), pool_added_.end(), pool_index_) != pool_added_.end();
@@ -107,10 +109,10 @@ void CharacterCreationView::pool_selected(std::int64_t index)
     {
         return !id;
     });
-    get_node<Button>("PoolModal/Add")->set_disabled(added || full);
+    required_node<Button>(*this, "PoolModal/Add").set_disabled(added || full);
     const auto &c = character.sheet().character_class;
-    get_node<Label>("PoolModal/Status")
-    ->set_text(i18n::text(
+    required_node<Label>(*this, "PoolModal/Status")
+    .set_text(i18n::text(
                    added  ? N_("Already added. Use Rejoin party for a reserved member.")
                    : full ? N_("All six PC positions are occupied.")
                    : (c == "Fighter" || c == "Cleric" || c == "Wizard")
@@ -132,13 +134,13 @@ void CharacterCreationView::pool_add()
     }
     catch (const std::exception &e)
     {
-        get_node<Label>("PoolModal/Status")->set_text(i18n::text(e.what()));
+        required_node<Label>(*this, "PoolModal/Status").set_text(i18n::text(e.what()));
     }
 }
 
 void CharacterCreationView::close_pool()
 {
-    get_node<Window>("PoolModal")->hide();
+    required_node<Window>(*this, "PoolModal").hide();
 }
 
 void CharacterCreationView::town_member_selected(std::int64_t slot)
@@ -147,12 +149,12 @@ void CharacterCreationView::town_member_selected(std::int64_t slot)
         return;
     const auto &m = campaign_->member(campaign_->state().slots[slot]);
     town_sheet_member_ = m.id;
-    get_node<RichTextLabel>("TownSheet/Text")->set_text(sheet_text(m.character, &m));
-    get_node<Button>("TownSheet/MakeLeader")->set_disabled(m.id == campaign_->leader());
-    get_node<Window>("TownSheet")->popup_centered();
+    required_node<RichTextLabel>(*this, "TownSheet/Text").set_text(sheet_text(m.character, &m));
+    required_node<Button>(*this, "TownSheet/MakeLeader").set_disabled(m.id == campaign_->leader());
+    required_node<Window>(*this, "TownSheet").popup_centered();
 }
 
 void CharacterCreationView::close_town_sheet()
 {
-    get_node<Window>("TownSheet")->hide();
+    required_node<Window>(*this, "TownSheet").hide();
 }

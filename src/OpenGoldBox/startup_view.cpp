@@ -2,6 +2,7 @@
 #include "localization.h"
 #include "application_settings.h"
 #include "guarded_handlers.h"
+#include "godot_nodes.h"
 #include <godot_cpp/classes/line_edit.hpp>
 #include <godot_cpp/classes/file_dialog.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
@@ -22,6 +23,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
+using presentation::required_node;
 
 namespace
 {
@@ -44,28 +46,28 @@ void StartupView::_ready()
 void StartupView::choose_game_path()
 {
     // Translate these dialogs only after language selection has been confirmed.
-    i18n::prepare_ui(*get_node<Window>("PathDialog"));
-    i18n::prepare_ui(*get_node<Window>("ChecksumWarning"));
-    auto *dialog = get_node<Window>("PathDialog"); // scene-owned
+    i18n::prepare_ui(required_node<Window>(*this, "PathDialog"));
+    i18n::prepare_ui(required_node<Window>(*this, "ChecksumWarning"));
+    auto *dialog = &required_node<Window>(*this, "PathDialog"); // scene-owned
     dialog->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
-    dialog->get_node<Button>("Cancel")->connect("pressed",
+    required_node<Button>(*dialog, "Cancel").connect("pressed",
             presentation::guarded(this, &StartupView::close_language));
-    dialog->get_node<Button>("Continue")
-    ->connect("pressed", presentation::guarded(this, &StartupView::accept_path));
-    dialog->get_node<Button>("Browse")->connect("pressed",
+    required_node<Button>(*dialog, "Continue")
+    .connect("pressed", presentation::guarded(this, &StartupView::accept_path));
+    required_node<Button>(*dialog, "Browse").connect("pressed",
             presentation::guarded(this, &StartupView::browse_path));
-    dialog->get_node<LineEdit>("Path")->connect("text_submitted",
+    required_node<LineEdit>(*dialog, "Path").connect("text_submitted",
             presentation::guarded(this, &StartupView::submitted_path));
-    dialog->get_node<LineEdit>("Path")->connect("text_changed",
+    required_node<LineEdit>(*dialog, "Path").connect("text_changed",
             presentation::guarded(this, &StartupView::path_edited));
-    dialog->get_node<FileDialog>("BrowseDialog")
-    ->connect("dir_selected", presentation::guarded(this, &StartupView::picked_path));
-    auto *warning = get_node<Window>("ChecksumWarning");
+    required_node<FileDialog>(*dialog, "BrowseDialog")
+    .connect("dir_selected", presentation::guarded(this, &StartupView::picked_path));
+    auto *warning = &required_node<Window>(*this, "ChecksumWarning");
     warning->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
-    warning->get_node<Button>("Quit")->connect("pressed",
+    required_node<Button>(*warning, "Quit").connect("pressed",
             presentation::guarded(this, &StartupView::close_language));
-    warning->get_node<Button>("Continue")
-    ->connect("pressed", presentation::guarded(this, &StartupView::continue_path));
+    required_node<Button>(*warning, "Continue")
+    .connect("pressed", presentation::guarded(this, &StartupView::continue_path));
     const auto saved = settings::saved_game_path();
     pending_path_ = settings::game_path();
     if (pending_path_.is_empty())
@@ -84,11 +86,11 @@ void StartupView::choose_language()
     if (settings::flag("--reset-lang") || !settings::valid_language(settings::saved_language()))
     {
         choosing_language_ = true;
-        auto *dialog = get_node<Window>("LanguageDialog"); // scene-owned
+        auto *dialog = &required_node<Window>(*this, "LanguageDialog"); // scene-owned
         // Native language names remain stable; other text previews the selected locale.
         dialog->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
         dialog->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
-        auto *choices = dialog->get_node<ItemList>("Choices");
+        auto *choices = &required_node<ItemList>(*dialog, "Choices");
         choices->add_item("English");
         choices->set_item_metadata(0, "en");
         choices->add_item(String::utf8("Español"));
@@ -97,11 +99,11 @@ void StartupView::choose_language()
         choices->connect("item_selected", presentation::guarded(this, &StartupView::preview_language));
         preview_language(choices->get_selected_items()[0]);
         choices->connect("item_activated", presentation::guarded(this, &StartupView::activate_language));
-        dialog->get_node<Button>("Continue")
-        ->connect("pressed", presentation::guarded(this, &StartupView::accept_language));
+        required_node<Button>(*dialog, "Continue")
+        .connect("pressed", presentation::guarded(this, &StartupView::accept_language));
         dialog->popup_centered();
         choices->grab_focus();
-        dialog->get_node<Button>("Cancel")->connect(
+        required_node<Button>(*dialog, "Cancel").connect(
             "pressed", presentation::guarded(this, &StartupView::close_language));
         return;
     }
@@ -111,31 +113,31 @@ void StartupView::choose_language()
 void StartupView::show_path(const String &message)
 {
     choosing_path_ = true;
-    auto *dialog = get_node<Window>("PathDialog");
-    dialog->get_node<LineEdit>("Path")->set_text(pending_path_);
-    dialog->get_node<Label>("Status")->set_text(message);
+    auto *dialog = &required_node<Window>(*this, "PathDialog");
+    required_node<LineEdit>(*dialog, "Path").set_text(pending_path_);
+    required_node<Label>(*dialog, "Status").set_text(message);
     dialog->popup_centered();
-    dialog->get_node<LineEdit>("Path")->grab_focus();
+    required_node<LineEdit>(*dialog, "Path").grab_focus();
 }
 
 void StartupView::browse_path()
 {
-    auto *browser = get_node<FileDialog>("PathDialog/BrowseDialog");
-    browser->set_current_dir(get_node<LineEdit>("PathDialog/Path")->get_text());
+    auto *browser = &required_node<FileDialog>(*this, "PathDialog/BrowseDialog");
+    browser->set_current_dir(required_node<LineEdit>(*this, "PathDialog/Path").get_text());
     browser->popup_centered_ratio(.7);
 }
 
 void StartupView::picked_path(const String &directory)
 {
-    get_node<LineEdit>("PathDialog/Path")->set_text(directory);
+    required_node<LineEdit>(*this, "PathDialog/Path").set_text(directory);
     // Programmatic text changes do not emit LineEdit's text_changed signal.
     path_edited(directory);
-    get_node<Button>("PathDialog/Continue")->grab_focus();
+    required_node<Button>(*this, "PathDialog/Continue").grab_focus();
 }
 
 void StartupView::path_edited(const String &)
 {
-    get_node<Label>("PathDialog/Status")->set_text(String());
+    required_node<Label>(*this, "PathDialog/Status").set_text(String());
 }
 
 void StartupView::submitted_path(const String &)
@@ -145,7 +147,7 @@ void StartupView::submitted_path(const String &)
 
 void StartupView::accept_path()
 {
-    pending_path_ = get_node<LineEdit>("PathDialog/Path")->get_text().strip_edges();
+    pending_path_ = required_node<LineEdit>(*this, "PathDialog/Path").get_text().strip_edges();
     save_pending_path_ = true;
     check_path();
 }
@@ -164,15 +166,15 @@ void StartupView::check_path()
         show_path(message);
         return;
     }
-    get_node<Window>("PathDialog")->hide();
+    required_node<Window>(*this, "PathDialog").hide();
     if (!result.different.is_empty())
     {
         choosing_path_ = true;
-        auto *warning = get_node<Window>("ChecksumWarning");
-        warning->get_node<RichTextLabel>("Files")->set_text(pending_path_ + "\n\n" +
+        auto *warning = &required_node<Window>(*this, "ChecksumWarning");
+        required_node<RichTextLabel>(*warning, "Files").set_text(pending_path_ + "\n\n" +
                 String("\n").join(result.different));
         warning->popup_centered();
-        warning->get_node<Button>("Quit")->grab_focus();
+        required_node<Button>(*warning, "Quit").grab_focus();
         return;
     }
     continue_path();
@@ -180,7 +182,7 @@ void StartupView::check_path()
 
 void StartupView::continue_path()
 {
-    get_node<Window>("ChecksumWarning")->hide();
+    required_node<Window>(*this, "ChecksumWarning").hide();
     if (save_pending_path_ && !settings::save_game_path(pending_path_))
     {
         show_path(i18n::text(
@@ -208,8 +210,8 @@ void StartupView::accept_language()
 {
     if (!choosing_language_ || finishing_)
         return;
-    auto *dialog = get_node<Window>("LanguageDialog");
-    auto *choices = dialog->get_node<ItemList>("Choices");
+    auto *dialog = &required_node<Window>(*this, "LanguageDialog");
+    auto *choices = &required_node<ItemList>(*dialog, "Choices");
     const auto selected = choices->get_selected_items();
     if (selected.is_empty())
         return;
@@ -234,8 +236,8 @@ void StartupView::activate_language(std::int64_t)
 
 void StartupView::preview_language(std::int64_t index)
 {
-    auto *dialog = get_node<Window>("LanguageDialog");
-    auto *choices = dialog->get_node<ItemList>("Choices");
+    auto *dialog = &required_node<Window>(*this, "LanguageDialog");
+    auto *choices = &required_node<ItemList>(*dialog, "Choices");
     if (index < 0 || index >= choices->get_item_count())
         return;
     // Preview does not change the active or saved language until
@@ -265,10 +267,10 @@ void StartupView::preview_language(std::int64_t index)
     const RestoreLocale restore(*translations);
     translations->set_locale(choices->get_item_metadata(static_cast<std::int32_t>(index)));
     dialog->set_title(i18n::text("Language"));
-    dialog->get_node<Label>("Title")->set_text(i18n::text("Choose language"));
-    dialog->get_node<Button>("Continue")->set_text(i18n::text("Continue"));
-    dialog->get_node<Button>("Cancel")->set_text(i18n::text("Cancel"));
-    dialog->get_node<Label>("Status")->set_text(
+    required_node<Label>(*dialog, "Title").set_text(i18n::text("Choose language"));
+    required_node<Button>(*dialog, "Continue").set_text(i18n::text("Continue"));
+    required_node<Button>(*dialog, "Cancel").set_text(i18n::text("Cancel"));
+    required_node<Label>(*dialog, "Status").set_text(
         language_save_failed_ ? i18n::text("Cannot save language.") : String());
 }
 
@@ -280,7 +282,7 @@ void StartupView::close_language()
 
 void StartupView::show_screen()
 {
-    auto *image = get_node<TextureRect>("Image"); // scene-owned
+    auto *image = &required_node<TextureRect>(*this, "Image"); // scene-owned
     // Load once: advancing changes only text, never the backdrop texture or geometry.
     if (image->get_texture().is_null())
     {
@@ -305,7 +307,7 @@ void StartupView::show_screen()
         finish();
         return;
     }
-    auto *text = get_node<TextureRect>("Text"); // scene-owned
+    auto *text = &required_node<TextureRect>(*this, "Text"); // scene-owned
     text->set_texture(lettering);
     text->set_self_modulate(Color(1, 1, 1, 0));
     fade_elapsed_ = 0;
@@ -318,7 +320,7 @@ void StartupView::_process(double delta)
     if (finishing_)
         return;
     fade_elapsed_ = std::min(text_fade_seconds, fade_elapsed_ + std::max(0.0, delta));
-    get_node<TextureRect>("Text")->set_self_modulate(
+    required_node<TextureRect>(*this, "Text").set_self_modulate(
         Color(1, 1, 1, fade_elapsed_ / text_fade_seconds));
     if (fade_elapsed_ >= text_fade_seconds)
         set_process(false);
@@ -333,7 +335,7 @@ void StartupView::_notification(int what)
 void StartupView::layout_text()
 {
     // The text uses the same centered, uniform fit as the shared background.
-    const auto texture = get_node<TextureRect>("Image")->get_texture();
+    const auto texture = required_node<TextureRect>(*this, "Image").get_texture();
     if (texture.is_null())
         return;
     const auto source = texture->get_size();
@@ -342,7 +344,7 @@ void StartupView::layout_text()
     const auto origin = (get_size() - fitted) * .5;
     // Keep the lettering proportions and comfortable margins from the reference.
     const auto lettering_size = fitted * .8;
-    auto *lettering = get_node<TextureRect>("Text"); // scene-owned
+    auto *lettering = &required_node<TextureRect>(*this, "Text"); // scene-owned
     lettering->set_position(origin + (fitted - lettering_size) * .5 - Vector2(0, fitted.y * .03));
     lettering->set_size(lettering_size);
 }

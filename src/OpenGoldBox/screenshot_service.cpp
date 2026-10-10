@@ -23,6 +23,7 @@
 #include <algorithm>
 
 using namespace godot;
+using presentation::required_node;
 
 void ScreenshotService::_bind_methods()
 {
@@ -78,7 +79,7 @@ void ScreenshotService::_ready()
 
 void ScreenshotService::_process(double delta)
 {
-    auto *panel = get_node<PanelContainer>("NoticeLayer/Notice"); // scene-owned
+    auto *panel = &required_node<PanelContainer>(*this, "NoticeLayer/Notice"); // scene-owned
     if (notice_time_ > 0)
     {
         notice_time_ -= delta;
@@ -123,7 +124,7 @@ bool ScreenshotService::request_capture()
         return false;
     pending_ = true;
     capture_wait_ = 0;
-    get_node<PanelContainer>("NoticeLayer/Notice")->hide();
+    required_node<PanelContainer>(*this, "NoticeLayer/Notice").hide();
     notice_time_ = 0;
     if (directory_.is_empty() || DirAccess::make_dir_recursive_absolute(directory_) != OK ||
             !DirAccess::dir_exists_absolute(directory_))
@@ -242,8 +243,8 @@ void ScreenshotService::complete(const Array &files, String error)
     const auto message = error.is_empty()
     ? i18n::format("Screenshot saved to {path}", {{"path", directory_}})
         : error;
-    get_node<Label>("NoticeLayer/Notice/Text")->set_text(message);
-    get_node<PanelContainer>("NoticeLayer/Notice")->show();
+    required_node<Label>(*this, "NoticeLayer/Notice/Text").set_text(message);
+    required_node<PanelContainer>(*this, "NoticeLayer/Notice").show();
     notice_time_ = 5;
     if (error.is_empty())
         UtilityFunctions::print(message);

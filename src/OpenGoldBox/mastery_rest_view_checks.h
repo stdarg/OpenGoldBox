@@ -1,5 +1,6 @@
 // Native acceptance hooks follow the existing rest control checks. They drive
 // the live campaign and the same button signals used by the player.
+#include "godot_nodes.h"
 void RolfTourView::check_mastery_rest_controls()
 {
     try
@@ -9,7 +10,7 @@ void RolfTourView::check_mastery_rest_controls()
             if (!ok)
                 throw std::runtime_error(message);
         };
-        auto *w = get_node<Window>("RestTraining");
+        auto *w = &presentation::required_node<Window>(*this, "RestTraining");
         if (rest_check_stage_ == 0)
         {
             auto rules = opengold::srd5::character_rules();
@@ -68,16 +69,18 @@ void RolfTourView::check_mastery_rest_controls()
             session_->campaign_party(campaign_);
             session_->advance(1);
             camp();
-            auto *picker = get_node<Window>("RestDialog");
-            picker->get_node<OptionButton>("Kind")->select(1);
-            picker->get_node<OptionButton>("Kind")->emit_signal("item_selected", 1);
-            picker->get_node<Button>("Start")->emit_signal("pressed");
+            auto *picker = &presentation::required_node<Window>(*this, "RestDialog");
+            presentation::required_node<OptionButton>(*picker, "Kind").select(1);
+            presentation::required_node<OptionButton>(*picker, "Kind")
+            .emit_signal("item_selected", 1);
+            presentation::required_node<Button>(*picker, "Start").emit_signal("pressed");
             check(campaign_->state().spell_rest && campaign_->state().training_rest &&
                   campaign_->state().training_rest->members.size() == 5,
                   "Completed camp creates independent spell and mastery windows");
-            check(get_node<Window>("RestSpells")->is_visible() && !w->is_visible(),
+            check(presentation::required_node<Window>(*this, "RestSpells").is_visible() &&
+                  !w->is_visible(),
                   "Spell choices precede mastery choices");
-            get_node<Button>("RestSpells/Cancel")->emit_signal("pressed");
+            presentation::required_node<Button>(*this, "RestSpells/Cancel").emit_signal("pressed");
             check(w->is_visible() && !campaign_->state().spell_rest,
                   "Mastery opens after spell choices");
         }
@@ -94,10 +97,11 @@ void RolfTourView::check_mastery_rest_controls()
                     .party);
                 rest_training_member_ = 0;
                 refresh_rest();
-                check(w->is_visible() && !w->get_node<Button>("Apply")->is_disabled(),
+                check(w->is_visible() &&
+                      !presentation::required_node<Button>(*w, "Apply").is_disabled(),
                       "Reload restores a valid selected mastery set");
-                auto *box = w->get_node<CheckBox>(
-                                "Choices/Rows/" + presentation::training_string(rest_training_choice_.front()));
+                auto *box = &presentation::required_node<CheckBox>(*w,
+                    "Choices/Rows/" + presentation::training_string(rest_training_choice_.front()));
                 box->grab_focus();
             }
             else if (phase == 1 || phase == 2)
@@ -112,11 +116,11 @@ void RolfTourView::check_mastery_rest_controls()
             {
                 const auto original = *campaign_->rule_module().rest_training_options(
                                           campaign_->member(rest_training_member_).character.sheet());
-                auto *box = w->get_node<CheckBox>(
-                                "Choices/Rows/" + presentation::training_string(original.selected.front()));
+                auto *box = &presentation::required_node<CheckBox>(*w,
+                    "Choices/Rows/" + presentation::training_string(original.selected.front()));
                 check(box->has_focus(), "Keyboard deselection preserves checkbox focus");
                 check(!box->is_pressed(), "Keyboard Space toggles the selected checkbox");
-                check(w->get_node<Button>("Apply")->is_disabled(),
+                check(presentation::required_node<Button>(*w, "Apply").is_disabled(),
                       "Incomplete mastery selections disable Apply");
                 const auto options = *campaign_->rule_module().rest_training_options(
                                          campaign_->member(rest_training_member_).character.sheet());
@@ -124,12 +128,12 @@ void RolfTourView::check_mastery_rest_controls()
                     if (std::find(options.selected.begin(), options.selected.end(), o.id) ==
                             options.selected.end())
                     {
-                        auto *other = w->get_node<CheckBox>("Choices/Rows/" +
-                                                            presentation::training_string(o.id));
+                        auto *other = &presentation::required_node<CheckBox>(*w, "Choices/Rows/" +
+                            presentation::training_string(o.id));
                         other->set_pressed(true);
                         break;
                     }
-                check(!w->get_node<Button>("Apply")->is_disabled(),
+                check(!presentation::required_node<Button>(*w, "Apply").is_disabled(),
                       "A legal replacement enables Apply");
             }
             else if (phase == 4)
@@ -149,7 +153,7 @@ void RolfTourView::check_mastery_rest_controls()
             }
             else if (phase == 5)
             {
-                w->get_node<Button>("Apply")->grab_focus();
+                presentation::required_node<Button>(*w, "Apply").grab_focus();
             }
             else if (phase == 6)
             {
@@ -170,7 +174,7 @@ void RolfTourView::check_mastery_rest_controls()
                 {
                     const auto expected = campaign_->preview_rest_training(
                                               rest_training_ticket_, id, rest_training_choice_);
-                    w->get_node<Button>("Apply")->grab_focus();
+                    presentation::required_node<Button>(*w, "Apply").grab_focus();
                     for (bool down :
                             {
                                 true, false

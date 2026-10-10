@@ -59,9 +59,9 @@ inline bool initiative_command(godot::Node &root, const opengold::rules::Command
             command.verb != "uncanny_metabolism")
         return true;
     const auto owner =
-        root.get_node<godot::OptionButton>("InitiativeChoice/Resolve")->get_selected_id();
+        required_node<godot::OptionButton>(root, "InitiativeChoice/Resolve").get_selected_id();
     const auto ally =
-        root.get_node<godot::OptionButton>("InitiativeChoice/Ally")->get_selected_id();
+        required_node<godot::OptionButton>(root, "InitiativeChoice/Ally").get_selected_id();
     return command.actor == unsigned(owner) &&
            (command.verb != "initiative_swap" || command.target == unsigned(ally));
 }
@@ -72,18 +72,18 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
                         Render render)
 {
     using namespace godot;
-    auto *w = root.get_node<Window>("InitiativeChoice");
+    auto *w = &required_node<Window>(root, "InitiativeChoice");
     if (state.initiative_choices.empty())
     {
         if (w->is_visible())
         {
             w->hide();
-            root.get_node<Button>("End")->grab_focus();
+            required_node<Button>(root, "End").grab_focus();
         }
         return;
     }
-    auto *owners = w->get_node<OptionButton>("Resolve");
-    auto *allies = w->get_node<OptionButton>("Ally");
+    auto *owners = &required_node<OptionButton>(*w, "Resolve");
+    auto *allies = &required_node<OptionButton>(*w, "Ally");
     const int prior = w->is_visible() ? owners->get_selected_id() : -1;
     const int prior_ally = w->is_visible() ? allies->get_selected_id() : -1;
     const auto label = [&](unsigned id)
@@ -112,7 +112,7 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     const auto owner = owners->get_selected_id();
     const bool multiple = state.initiative_choices.size() > 1;
     owners->set_visible(multiple);
-    w->get_node<Label>("ResolveLabel")->set_visible(multiple);
+    required_node<Label>(*w, "ResolveLabel").set_visible(multiple);
     SignalsBlocked allies_quiet(*allies);
     allies->clear();
     allies->add_item(text(N_("Choose an ally")), 0);
@@ -133,13 +133,13 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
         return c.verb == "uncanny_metabolism" && c.actor == unsigned(owner);
     });
     for (const char *name : {"AllyLabel", "Ally", "Swap"})
-        w->get_node<Control>(name)->set_visible(swaps);
-    w->get_node<Button>("Metabolism")->set_visible(metabolism);
-    w->get_node<Label>("Text")->set_text(
+        required_node<Control>(*w, name).set_visible(swaps);
+    required_node<Button>(*w, "Metabolism").set_visible(metabolism);
+    required_node<Label>(*w, "Text").set_text(
         label(owner) + "\n\n" +
         (swaps ? text(N_("Swap these Initiative totals, or keep your Initiative. No turn has started yet."))
          : text(N_("Use Uncanny Metabolism to regain all Focus Points and 1d6 + your Monk level Hit Points (once per Long Rest), or keep going. No turn has started yet."))));
-    w->get_node<Button>("Swap")->set_disabled(selected == 0);
+    required_node<Button>(*w, "Swap").set_disabled(selected == 0);
     if (!w->is_visible())
     {
         w->popup_centered();

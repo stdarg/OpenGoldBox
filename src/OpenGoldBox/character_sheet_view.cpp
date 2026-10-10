@@ -16,6 +16,7 @@
 
 using namespace godot;
 using namespace opengold;
+using presentation::required_node;
 
 namespace
 {
@@ -53,8 +54,9 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
         return {};
     auto preview = presentation::make_node<Label>();
     preview->set_text(gs(std::to_string(d.rolls[roll].total())));
-    get_node<Control>(gs(std::string(index < 6 ? "Dice" : "Score") + std::to_string(index % 6)))
-    ->set_drag_preview(preview.get());
+    required_node<Control>(*this,
+                           gs(std::string(index < 6 ? "Dice" : "Score") + std::to_string(index % 6)))
+    .set_drag_preview(preview.get());
     // Godot adopts the preview only while a drag can show it; one it refused
     // stays with NodeOwner and is freed (Effective C++ Item 13).
     if (preview->get_parent())
@@ -262,29 +264,29 @@ void CharacterCreationView::show_modifiers()
                     "\n\n[b]Items[/b]\nNo equipped item modifiers.\n\n[b]Spells[/b]\nNo active spell modifiers. Persistent spell effects are not implemented.");
         text += "\n\n" + literal(e.what());
     }
-    get_node<RichTextLabel>("ModifiersModal/Text")->set_text(gs(text));
-    get_node<Label>("ModifiersModal/Title")
-    ->set_text(i18n::format("{name} / Modifiers", {{"name", gs(s.name)}}));
-    auto *modal = get_node<Window>("ModifiersModal");
+    required_node<RichTextLabel>(*this, "ModifiersModal/Text").set_text(gs(text));
+    required_node<Label>(*this, "ModifiersModal/Title")
+    .set_text(i18n::format("{name} / Modifiers", {{"name", gs(s.name)}}));
+    auto *modal = &required_node<Window>(*this, "ModifiersModal");
     modal->popup_centered();
-    get_node<Button>("ModifiersModal/Close")->grab_focus();
+    required_node<Button>(*this, "ModifiersModal/Close").grab_focus();
 }
 
 void CharacterCreationView::close_modifiers()
 {
-    get_node<Window>("ModifiersModal")->hide();
+    required_node<Window>(*this, "ModifiersModal").hide();
 }
 
 void CharacterCreationView::show_saving_throws()
 {
-    update_saving_throws(get_node<LineEdit>("SavingThrowsModal/DC")->get_text());
-    get_node<Window>("SavingThrowsModal")->popup_centered();
-    get_node<LineEdit>("SavingThrowsModal/DC")->grab_focus();
+    update_saving_throws(required_node<LineEdit>(*this, "SavingThrowsModal/DC").get_text());
+    required_node<Window>(*this, "SavingThrowsModal").popup_centered();
+    required_node<LineEdit>(*this, "SavingThrowsModal/DC").grab_focus();
 }
 
 void CharacterCreationView::close_saving_throws()
 {
-    get_node<Window>("SavingThrowsModal")->hide();
+    required_node<Window>(*this, "SavingThrowsModal").hide();
 }
 
 void CharacterCreationView::update_saving_throws(String value)
@@ -295,9 +297,9 @@ void CharacterCreationView::update_saving_throws(String value)
     if (!member && !completed_)
         return;
     const auto &s = member ? member->character.sheet() : completed_->sheet();
-    get_node<Label>("SavingThrowsModal/Title")
-    ->set_text(i18n::format("{name} / Saving Throws", {{"name", gs(s.name)}}));
-    auto *label = get_node<RichTextLabel>("SavingThrowsModal/Text");
+    required_node<Label>(*this, "SavingThrowsModal/Title")
+    .set_text(i18n::format("{name} / Saving Throws", {{"name", gs(s.name)}}));
+    auto *label = &required_node<RichTextLabel>(*this, "SavingThrowsModal/Text");
     if (!value.is_valid_int() || value.to_int() < 1 || value.to_int() > 999)
     {
         label->set_text(i18n::text(N_("Enter a whole-number target DC from 1 to 999.")));

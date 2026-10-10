@@ -179,7 +179,7 @@ void spell_known(godot::Window &w, const opengold::rules::SpellAccess &access,
         for (const auto &s : preparation)
             if (s.id == id)
                 text += tr(s.label) + "; ";
-    w.get_node<godot::RichTextLabel>("Known")->set_text(text);
+    required_node<godot::RichTextLabel>(w, "Known").set_text(text);
 }
 } // namespace presentation
 #endif

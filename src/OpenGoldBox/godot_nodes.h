@@ -48,6 +48,20 @@ template <class T> [[nodiscard]] NodeOwner<T> detach_child(godot::Node &parent, 
     return NodeOwner<T>(&child);
 }
 
+// Node::get_node<T> returns null for a missing or differently typed node, and
+// nothing makes its caller check. required_node reports the path instead, as
+// an error a guarded handler shows rather than a crash, and returns a
+// reference so callers can see the node is always there (Effective C++ Item 18).
+template <class T>
+[[nodiscard]] T &required_node(const godot::Node &parent, const godot::NodePath &path)
+{
+    auto *node = godot::Object::cast_to<T>(parent.get_node_or_null(path));
+    if (!node)
+        throw std::runtime_error("Missing or mistyped node: " +
+                                 std::string(godot::String(path).utf8().get_data()));
+    return *node;
+}
+
 template <class T> T *add_control(godot::Node &parent, const godot::String &name, godot::Rect2 rect)
 {
     auto child = make_node<T>();

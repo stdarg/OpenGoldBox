@@ -61,6 +61,13 @@ void every_handler_is_guarded()
               text.find("remove_child(") == std::string::npos,
               entry.path().filename().string() +
               " removes a child by hand; use presentation::detach_child");
+        // get_node<T> returns null for a missing node and every caller
+        // dereferenced it; a lookup that may fail says so with
+        // get_node_or_null.
+        check(entry.path().filename() == "godot_nodes.h" ||
+              text.find("get_node<") == std::string::npos,
+              entry.path().filename().string() +
+              " looks up a node with get_node<T>; use presentation::required_node");
     }
     check(sources > 20, "The game's sources are found");
 }

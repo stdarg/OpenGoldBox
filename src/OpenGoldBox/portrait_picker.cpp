@@ -1,6 +1,7 @@
 #include "character_creation_view.h"
 #include "localization.h"
 #include "guarded_handlers.h"
+#include "godot_nodes.h"
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -10,6 +11,7 @@
 #include <set>
 #include <stdexcept>
 using namespace godot;
+using presentation::required_node;
 
 namespace
 {
@@ -76,7 +78,7 @@ void CharacterCreationView::load_portraits()
     {
         const char *names[] {"PortraitGender", "PortraitClass", "PortraitRace"};
         const char *labels[] {N_("All genders"), N_("All classes"), N_("All races")};
-        auto *control = get_node<OptionButton>(names[field]);
+        auto *control = &required_node<OptionButton>(*this, names[field]);
         control->add_item(i18n::text(labels[field]));
         std::set<std::string> values;
         for (const auto &p : portraits_)
@@ -135,11 +137,11 @@ CharacterCreationView::portrait_texture(const opengold::por::CharacterAppearance
 void CharacterCreationView::refresh_portraits()
 {
     filtered_portraits_.clear();
-    auto *list = get_node<OptionButton>("PortraitSelect");
+    auto *list = &required_node<OptionButton>(*this, "PortraitSelect");
     list->clear();
     const auto matches = [&](const char *node, const std::string & value)
     {
-        auto *c = get_node<OptionButton>(node);
+        auto *c = &required_node<OptionButton>(*this, node);
         return c->get_selected() <= 0 ||
                String(c->get_item_metadata(c->get_selected())) == gs(value);
     };
@@ -162,8 +164,8 @@ void CharacterCreationView::refresh_portraits()
                                   : N_("Choose portrait")));
     const bool disabled = added_to_party_ || filtered_portraits_.empty();
     list->set_disabled(disabled);
-    get_node<Button>("PortraitPrevious")->set_disabled(disabled);
-    get_node<Button>("PortraitNext")->set_disabled(disabled);
+    required_node<Button>(*this, "PortraitPrevious").set_disabled(disabled);
+    required_node<Button>(*this, "PortraitNext").set_disabled(disabled);
     const auto &filename = creator_->appearance().portrait;
     list->set_tooltip_text(i18n::format(
                                "Current portrait: {file}\n{matches} Filters do not change your character.",
@@ -186,7 +188,7 @@ void CharacterCreationView::portrait_part(int direction)
 {
     if (added_to_party_ || filtered_portraits_.empty())
         return;
-    const int current = get_node<OptionButton>("PortraitSelect")->get_selected(),
+    const int current = required_node<OptionButton>(*this, "PortraitSelect").get_selected(),
               count = static_cast<int>(filtered_portraits_.size());
     portrait_selected(current < 0 ? (direction > 0 ? 0 : count - 1)
                       : (current + direction + count) % count);

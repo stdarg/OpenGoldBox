@@ -29,6 +29,7 @@
 #include <utility>
 
 using namespace godot;
+using presentation::required_node;
 
 namespace
 {
@@ -41,7 +42,8 @@ String gs(std::string_view s)
 
 void CharacterCreationView::setup_advancement()
 {
-    get_node<ItemList>("PartyPanel/Roster")->add_theme_constant_override("v_separation", 8);
+    required_node<ItemList>(*this, "PartyPanel/Roster")
+    .add_theme_constant_override("v_separation", 8);
     const auto args = OS::get_singleton()->get_cmdline_user_args();
     advancement_check_ = args.has("--advancement-check") || args.has("--champion-creator");
     advancement_review_ = args.has("--level-up-review");
@@ -182,28 +184,28 @@ void CharacterCreationView::advancement_pages()
 {
     if (!advancing_)
         return;
-    auto *w = get_node<Window>("LevelUp");
+    auto *w = &required_node<Window>(*this, "LevelUp");
     // Wizards and Clerics choose spells on a second page.
     const bool spell_page = advancement_choice_.spell_learning.has_value();
     const auto *skilled = advancement_skilled_group();
     const bool on_first = advancement_page_ == AdvancementPage::choices;
-    w->get_node<Control>("SpellChoicesPage")
-    ->set_visible(spell_page && advancement_page_ == AdvancementPage::spells);
-    w->get_node<Control>("SkilledPage")
-    ->set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
-    w->get_node<Control>("SkilledCount")
-    ->set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
+    required_node<Control>(*w, "SpellChoicesPage")
+    .set_visible(spell_page && advancement_page_ == AdvancementPage::spells);
+    required_node<Control>(*w, "SkilledPage")
+    .set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
+    required_node<Control>(*w, "SkilledCount")
+    .set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
     // Back appears on any page after the first rather than only a Wizard's
     // spell page, so a non-Wizard taking Skilled can still step back.
-    w->get_node<Button>("Back")->set_visible(!on_first);
-    w->get_node<Button>("Confirm")
-    ->set_text(advancement_next_page(advancement_page_) == advancement_page_
-               ? i18n::text(N_("Confirm"))
-               : i18n::text(N_("Next")));
+    required_node<Button>(*w, "Back").set_visible(!on_first);
+    required_node<Button>(*w, "Confirm")
+    .set_text(advancement_next_page(advancement_page_) == advancement_page_
+              ? i18n::text(N_("Confirm"))
+              : i18n::text(N_("Next")));
     for (const char *name :
             {"HP", "FeatLabel", "Feat", "Note"
             })
-        w->get_node<Control>(name)->set_visible(on_first);
+        required_node<Control>(*w, name).set_visible(on_first);
     // Match open_advancement exactly: a dropdown alongside a feat choice is
     // supplemental, and then the ability controls stay visible beside it.
     const bool has_training = advancement_dropdown_group() != nullptr;
@@ -211,27 +213,27 @@ void CharacterCreationView::advancement_pages()
     for (const char *name :
             {"AdvancementTrainingLabel", "AdvancementTraining"
             })
-        w->get_node<Control>(name)->set_visible(on_first && has_training);
+        required_node<Control>(*w, name).set_visible(on_first && has_training);
     for (unsigned i = 0; i < 6; ++i)
     {
-        w->get_node<Control>(String("Ability") + String::num_uint64(i))
-        ->set_visible(on_first && (!has_training || supplemental));
-        w->get_node<Control>(String("AbilityLabel") + String::num_uint64(i))
-        ->set_visible(on_first && (!has_training || supplemental));
+        required_node<Control>(*w, String("Ability") + String::num_uint64(i))
+        .set_visible(on_first && (!has_training || supplemental));
+        required_node<Control>(*w, String("AbilityLabel") + String::num_uint64(i))
+        .set_visible(on_first && (!has_training || supplemental));
     }
     if (advancement_page_ == AdvancementPage::skilled)
         refresh_advancement_skilled();
     if (!spell_page)
     {
-        w->get_node<Control>("SpellLabel")->set_visible(on_first);
+        required_node<Control>(*w, "SpellLabel").set_visible(on_first);
         for (unsigned i = 0; i < 4; ++i)
-            w->get_node<Control>(String("Spell") + String::num_uint64(i))
-            ->set_visible(on_first && i < advancement_options_.spells.size());
+            required_node<Control>(*w, String("Spell") + String::num_uint64(i))
+            .set_visible(on_first && i < advancement_options_.spells.size());
         return;
     }
-    w->get_node<Control>("SpellLabel")->hide();
+    required_node<Control>(*w, "SpellLabel").hide();
     for (unsigned i = 0; i < 4; ++i)
-        w->get_node<Control>(String("Spell") + String::num_uint64(i))->hide();
+        required_node<Control>(*w, String("Spell") + String::num_uint64(i)).hide();
     if (advancement_page_ != AdvancementPage::spells)
         return;
     auto sheet = campaign_->rule_module().spell_choice_sheet(
@@ -257,7 +259,7 @@ void CharacterCreationView::advancement_pages()
     {
     } // Invalid edits remain visible; final preview reports the error.
     presentation::refresh_spell_groups(
-        *w->get_node<VBoxContainer>("SpellChoicesPage/Rows"), options, choices,
+        required_node<VBoxContainer>(*w, "SpellChoicesPage/Rows"), options, choices,
         presentation::guarded(this, &CharacterCreationView::advancement_learning_toggled),
         i18n::text);
 }
@@ -270,11 +272,11 @@ void CharacterCreationView::refresh_advancement_skilled()
     const auto *group = advancement_skilled_group();
     if (!group)
         return;
-    auto *w = get_node<Window>("LevelUp");
-    auto &rows = *w->get_node<VBoxContainer>("SkilledPage/Rows");
+    auto *w = &required_node<Window>(*this, "LevelUp");
+    auto &rows = required_node<VBoxContainer>(*w, "SkilledPage/Rows");
     const auto &picked = advancement_choice_.training["feat:skilled"];
-    w->get_node<Label>("SkilledCount")
-    ->set_text(i18n::format("Selected: {count}/{total}", {{"count", unsigned(picked.size())},
+    required_node<Label>(*w, "SkilledCount")
+    .set_text(i18n::format("Selected: {count}/{total}", {{"count", unsigned(picked.size())},
         {"total", group->count}
     }));
     // Hide every row first; the loop below shows only what is still offered, so
@@ -357,7 +359,7 @@ void CharacterCreationView::advancement_learning_toggled(bool selected, String g
 
 void CharacterCreationView::refresh_advancement_arrows()
 {
-    auto *list = get_node<ItemList>("PartyPanel/Roster");
+    auto *list = &required_node<ItemList>(*this, "PartyPanel/Roster");
     if (!list->is_visible_in_tree())
         return;
     list->force_update_list_size();
@@ -416,19 +418,20 @@ void CharacterCreationView::open_advancement(std::int64_t member)
     advancing_ = id;
     advancement_options_ = campaign_->advancement_options(id);
     advancement_choice_ = campaign_->default_advancement(id);
-    auto *window = get_node<Window>("LevelUp");
+    auto *window = &required_node<Window>(*this, "LevelUp");
     {
         const presentation::ScopedFlag refreshing(advancement_refreshing_);
         for (const char *name :
                 {"HP", "FeatLabel", "Feat", "Note", "SpellLabel"
                 })
-            window->get_node<Control>(name)->show();
-        window->get_node<Label>("Title")->set_text(i18n::format(
+            required_node<Control>(*window, name).show();
+        required_node<Label>(*window, "Title").set_text(i18n::format(
         "{name} / Level {level}", {{"name", gs(campaign_->member(id).character.sheet().name)},
             {"level", advancement_options_.level}
         }));
-        window->get_node<Label>("Note")->set_text(i18n::text(advancement_options_.description));
-        auto *feat = window->get_node<OptionButton>("Feat");
+        required_node<Label>(*window, "Note")
+        .set_text(i18n::text(advancement_options_.description));
+        auto *feat = &required_node<OptionButton>(*window, "Feat");
         feat->clear();
         if (advancement_options_.feats.empty())
             feat->add_item(i18n::text(N_("No feat or ability increase at this level")));
@@ -446,24 +449,25 @@ void CharacterCreationView::open_advancement(std::int64_t member)
         const auto *dropdown = advancement_dropdown_group();
         const bool has_training = dropdown != nullptr;
         const bool supplemental_training = has_training && !advancement_options_.feats.empty();
-        auto *training = window->get_node<OptionButton>("AdvancementTraining");
+        auto *training = &required_node<OptionButton>(*window, "AdvancementTraining");
         training->clear();
         training->set_visible(has_training);
-        window->get_node<Label>("AdvancementTrainingLabel")->set_visible(has_training);
-        window->get_node<Label>("AdvancementTrainingLabel")
-        ->set_position(Vector2(24, supplemental_training ? 374 : 205));
+        required_node<Label>(*window, "AdvancementTrainingLabel").set_visible(has_training);
+        required_node<Label>(*window, "AdvancementTrainingLabel")
+        .set_position(Vector2(24, supplemental_training ? 374 : 205));
         training->set_position(Vector2(24, supplemental_training ? 406 : 236));
         for (unsigned i = 0; i < 6; ++i)
         {
-            window->get_node<Control>(String("Ability") + String::num_uint64(i))
-            ->set_visible(!has_training || supplemental_training);
-            window->get_node<Control>(String("AbilityLabel") + String::num_uint64(i))
-            ->set_visible(!has_training || supplemental_training);
+            required_node<Control>(*window, String("Ability") + String::num_uint64(i))
+            .set_visible(!has_training || supplemental_training);
+            required_node<Control>(*window, String("AbilityLabel") + String::num_uint64(i))
+            .set_visible(!has_training || supplemental_training);
         }
         if (has_training)
         {
             const auto &group = *dropdown;
-            window->get_node<Label>("AdvancementTrainingLabel")->set_text(i18n::text(group.label));
+            required_node<Label>(*window, "AdvancementTrainingLabel")
+            .set_text(i18n::text(group.label));
             training->add_item(i18n::text("Choose an option"));
             for (const auto &option : group.options)
                 training->add_item(i18n::text(option.label) +
@@ -474,15 +478,16 @@ void CharacterCreationView::open_advancement(std::int64_t member)
             advancement_choice_.training.clear();
         }
         for (unsigned i = 0; i < 6; ++i)
-            window->get_node<OptionButton>(String("Ability") + String::num_uint64(i))
-            ->select(advancement_choice_.abilities[i]);
-        window->get_node<Label>("SpellLabel")
-        ->set_text(i18n::text(advancement_options_.spells.empty()
-                              ? N_("No spell choices for this class")
-                              : N_("Prepared spells: select at least one")));
+            required_node<OptionButton>(*window, String("Ability") + String::num_uint64(i))
+            .select(advancement_choice_.abilities[i]);
+        required_node<Label>(*window, "SpellLabel")
+        .set_text(i18n::text(advancement_options_.spells.empty()
+                             ? N_("No spell choices for this class")
+                             : N_("Prepared spells: select at least one")));
         for (unsigned i = 0; i < 4; ++i)
         {
-            auto *spell = window->get_node<CheckBox>(String("Spell") + String::num_uint64(i));
+            auto *spell =
+                &required_node<CheckBox>(*window, String("Spell") + String::num_uint64(i));
             spell->set_visible(i < advancement_options_.spells.size());
             if (i >= advancement_options_.spells.size())
                 continue;
@@ -495,12 +500,12 @@ void CharacterCreationView::open_advancement(std::int64_t member)
                                                    advancement_choice_.spells.end(),
                                                    option.id) != advancement_choice_.spells.end());
         }
-        auto *style = window->get_node<OptionButton>("FightingStyle");
+        auto *style = &required_node<OptionButton>(*window, "FightingStyle");
         style->clear();
         style->set_visible(!advancement_options_.fighting_styles.empty());
         if (!advancement_options_.fighting_styles.empty())
         {
-            window->get_node<Label>("SpellLabel")->set_text(i18n::text("Fighting Style"));
+            required_node<Label>(*window, "SpellLabel").set_text(i18n::text("Fighting Style"));
             for (const auto &option : advancement_options_.fighting_styles)
             {
                 const int i = style->get_item_count();
@@ -517,7 +522,7 @@ void CharacterCreationView::open_advancement(std::int64_t member)
     advancement_pages();
     advancement_changed();
     window->popup_centered();
-    window->get_node<Button>("Cancel")->grab_focus();
+    required_node<Button>(*window, "Cancel").grab_focus();
 }
 
 void CharacterCreationView::advancement_spell_changed(bool, int)
@@ -551,10 +556,10 @@ void CharacterCreationView::advancement_changed(std::int64_t)
 {
     if (advancement_refreshing_ || !advancing_)
         return;
-    auto *window = get_node<Window>("LevelUp");
+    auto *window = &required_node<Window>(*this, "LevelUp");
     if (!advancement_options_.fighting_styles.empty())
     {
-        const auto index = window->get_node<OptionButton>("FightingStyle")->get_selected();
+        const auto index = required_node<OptionButton>(*window, "FightingStyle").get_selected();
         if (index >= 0)
         {
             const auto &option = advancement_options_.fighting_styles.at(index);
@@ -565,7 +570,7 @@ void CharacterCreationView::advancement_changed(std::int64_t)
         }
         advancement_options_ = campaign_->advancement_options(advancing_, advancement_choice_);
         drop_unoffered_learning();
-        auto *feats = window->get_node<OptionButton>("Feat");
+        auto *feats = &required_node<OptionButton>(*window, "Feat");
         for (unsigned i = 0; i < advancement_options_.feats.size(); ++i)
         {
             const auto &option = advancement_options_.feats[i];
@@ -578,7 +583,8 @@ void CharacterCreationView::advancement_changed(std::int64_t)
     if (!advancement_options_.feats.empty())
     {
         advancement_choice_.feat =
-            advancement_options_.feats.at(window->get_node<OptionButton>("Feat")->get_selected())
+            advancement_options_.feats
+            .at(required_node<OptionButton>(*window, "Feat").get_selected())
             .id;
         // The Skilled page is offered by the rules only while Skilled is the
         // selection, so the options have to follow the feat for every class, not
@@ -591,7 +597,8 @@ void CharacterCreationView::advancement_changed(std::int64_t)
     advancement_choice_.training.clear();
     if (const auto *group = advancement_dropdown_group())
     {
-        const auto index = window->get_node<OptionButton>("AdvancementTraining")->get_selected();
+        const auto index =
+            required_node<OptionButton>(*window, "AdvancementTraining").get_selected();
         if (index > 0 && static_cast<std::size_t>(index) <= group->options.size())
             advancement_choice_.training[group->id] = {group->options[index - 1].id};
     }
@@ -600,17 +607,18 @@ void CharacterCreationView::advancement_changed(std::int64_t)
     const bool ability = advancement_choice_.feat == "ability_score_improvement";
     for (unsigned i = 0; i < 6; ++i)
     {
-        auto *points = window->get_node<OptionButton>(String("Ability") + String::num_uint64(i));
+        auto *points =
+            &required_node<OptionButton>(*window, String("Ability") + String::num_uint64(i));
         points->set_disabled(!ability);
         if (!ability)
             points->select(0);
         advancement_choice_.abilities[i] = ability ? points->get_selected() : 0;
         const auto value = campaign_->member(advancing_).character.sheet().scores[i];
         const std::array<const char *, 6> labels{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
-        window->get_node<Label>(String("AbilityLabel") + String::num_uint64(i))
-        ->set_text(i18n::text(labels[i]) + " " + String::num_int64(value) +
-                   String::utf8(" → ") +
-                   String::num_int64(value + advancement_choice_.abilities[i]));
+        required_node<Label>(*window, String("AbilityLabel") + String::num_uint64(i))
+        .set_text(i18n::text(labels[i]) + " " + String::num_int64(value) +
+                  String::utf8(" → ") +
+                  String::num_int64(value + advancement_choice_.abilities[i]));
     }
     if (!advancement_choice_.spell_learning)
     {
@@ -621,7 +629,8 @@ void CharacterCreationView::advancement_changed(std::int64_t)
         // control asked for a node that does not exist and aborted every Cleric
         // level-up, so this bound matches the controls that were actually built.
         for (unsigned i = 0; i < std::min<std::size_t>(4, advancement_options_.spells.size()); ++i)
-            if (window->get_node<CheckBox>(String("Spell") + String::num_uint64(i))->is_pressed())
+            if (required_node<CheckBox>(*window, String("Spell") + String::num_uint64(i))
+                    .is_pressed())
                 advancement_choice_.spells.push_back(advancement_options_.spells[i].id);
     }
     auto preview_choice = advancement_choice_;
@@ -669,22 +678,22 @@ void CharacterCreationView::advancement_changed(std::int64_t)
     {
         const auto preview = campaign_->preview_advancement(advancing_, preview_choice);
         const auto &old = campaign_->member(advancing_);
-        window->get_node<Label>("HP")->set_text(
+        required_node<Label>(*window, "HP").set_text(
             i18n::format("Maximum HP: {old} -> {new} / Current HP: {current}",
         {
             {"old", old.character.sheet().hit_points},
             {"new", preview.character.sheet().hit_points},
             {"current", preview.vitals.hit_points}
         }));
-        window->get_node<Label>("Error")->set_text("");
-        window->get_node<Button>("Confirm")->set_disabled(false);
+        required_node<Label>(*window, "Error").set_text("");
+        required_node<Button>(*window, "Confirm").set_disabled(false);
     }
     catch (const std::exception &e)
     {
-        window->get_node<Label>("HP")->set_text(
+        required_node<Label>(*window, "HP").set_text(
             i18n::text(N_("Choose valid options to preview your new HP.")));
-        window->get_node<Label>("Error")->set_text(i18n::text(e.what()));
-        window->get_node<Button>("Confirm")->set_disabled(true);
+        required_node<Label>(*window, "Error").set_text(i18n::text(e.what()));
+        required_node<Button>(*window, "Confirm").set_disabled(true);
     }
     // Selecting or leaving Skilled changes which pages exist, so the page state
     // has to follow every choice change, not only Back/Next. Nothing reached
@@ -694,7 +703,7 @@ void CharacterCreationView::advancement_changed(std::int64_t)
 
 void CharacterCreationView::close_advancement()
 {
-    get_node<Window>("LevelUp")->hide();
+    required_node<Window>(*this, "LevelUp").hide();
     advancing_ = 0;
 }
 
@@ -722,7 +731,7 @@ void CharacterCreationView::confirm_advancement()
     }
     catch (const std::exception &e)
     {
-        get_node<Label>("LevelUp/Error")->set_text(i18n::text(e.what()));
+        required_node<Label>(*this, "LevelUp/Error").set_text(i18n::text(e.what()));
     }
 }
 
@@ -735,7 +744,7 @@ void CharacterCreationView::advancement_check()
     refresh_advancement_arrows();
     const auto press = [&](const String &path)
     {
-        auto *button = get_node<Button>(path);
+        auto *button = &required_node<Button>(*this, path);
         if (button->is_disabled())
             throw std::runtime_error("Disabled advancement check control");
         button->emit_signal("pressed");
@@ -748,14 +757,14 @@ void CharacterCreationView::advancement_check()
     {
         if (!capture_)
             return;
-        const auto image = get_node<Window>("LevelUp")->get_texture()->get_image();
+        const auto image = required_node<Window>(*this, "LevelUp").get_texture()->get_image();
         if (image.is_null() || image->save_png(ProjectSettings::get_singleton()->globalize_path(
                 String("user://checks/") + name)) != OK)
             throw std::runtime_error("Level-up capture failed");
     };
     const auto select = [&](const String &path, int index)
     {
-        auto *option = get_node<OptionButton>(path);
+        auto *option = &required_node<OptionButton>(*this, path);
         option->select(index);
         option->emit_signal("item_selected", index);
     };
@@ -828,10 +837,10 @@ void CharacterCreationView::advancement_check()
     }
     case 1:
     {
-        auto *list = get_node<ItemList>("PartyPanel/Roster");
+        auto *list = &required_node<ItemList>(*this, "PartyPanel/Roster");
         for (unsigned i = 0; i < 4; ++i)
         {
-            auto *button = get_node<Button>(arrow(campaign_->state().slots[i]));
+            auto *button = &required_node<Button>(*this, arrow(campaign_->state().slots[i]));
             if (std::cmp_not_equal(
                         list->get_item_at_position(button->get_position() + button->get_size() / 2,
                                                    true),
@@ -852,10 +861,10 @@ void CharacterCreationView::advancement_check()
         press(arrow(id));
         for (int i = 0; i < 6; ++i)
             select(String("LevelUp/Ability") + String::num_int64(i), 0);
-        if (!get_node<Button>("LevelUp/Confirm")->is_disabled())
+        if (!required_node<Button>(*this, "LevelUp/Confirm").is_disabled())
             throw std::runtime_error("Incomplete points can be confirmed");
         select("LevelUp/Ability2", 2);
-        get_node<CheckBox>("LevelUp/Spell1")->set_pressed(true);
+        required_node<CheckBox>(*this, "LevelUp/Spell1").set_pressed(true);
         break;
     }
     case 3:
@@ -863,11 +872,11 @@ void CharacterCreationView::advancement_check()
         press("LevelUp/Confirm");
         if (campaign_->member(id).character.sheet().level != 4 ||
                 campaign_->member(id).character.sheet().prepared_spells.size() != 2 ||
-                get_node<Button>(arrow(id))->is_visible())
+                required_node<Button>(*this, arrow(id)).is_visible())
             throw std::runtime_error("Wizard confirmation did not apply choices and hide arrow");
         show_modifiers();
         {
-            const auto text = get_node<RichTextLabel>("ModifiersModal/Text")->get_text();
+            const auto text = required_node<RichTextLabel>(*this, "ModifiersModal/Text").get_text();
             if (!text.contains(
             i18n::format("{background} background", {{"background", i18n::text("Sage")}}) +
             " (+2)\n" +
@@ -888,7 +897,7 @@ void CharacterCreationView::advancement_check()
                 *module, "bonus-ui-check", nullptr);
             campaign_->restore(std::move(restored.party));
             show_modifiers();
-            if (get_node<RichTextLabel>("ModifiersModal/Text")->get_text() != text)
+            if (required_node<RichTextLabel>(*this, "ModifiersModal/Text").get_text() != text)
                 throw std::runtime_error(
                     "Saved bonus sources must reconstruct the same modifier dialog");
         }
@@ -897,20 +906,20 @@ void CharacterCreationView::advancement_check()
         break;
     case 4:
     {
-        auto *town = get_node<RolfTourView>("CampaignTown");
+        auto *town = &required_node<RolfTourView>(*this, "CampaignTown");
         if (!town->can_leave())
         {
-            auto *next = town->get_node<Button>("Continue");
+            auto *next = &required_node<Button>(*town, "Continue");
             if (next->is_visible() && !next->is_disabled())
                 next->emit_signal("pressed");
             return;
         }
         town->resume_party();
-        auto *button = town->get_node<Button>("PartyList/Rows/Member1/Advance");
+        auto *button = &required_node<Button>(*town, "PartyList/Rows/Member1/Advance");
         if (!button->is_visible())
             throw std::runtime_error("Town level-up arrow is missing");
         button->emit_signal("pressed");
-        if (!get_node<Window>("LevelUp")->is_visible())
+        if (!required_node<Window>(*this, "LevelUp").is_visible())
             throw std::runtime_error("Town arrow did not open advancement");
         select("LevelUp/Feat", 1);
         break;
@@ -933,11 +942,11 @@ void CharacterCreationView::advancement_check()
         if (!text.contains(i18n::text("savage attacker")) || !text.contains(i18n::text("defense")))
             throw std::runtime_error("Sheet must display both acquired feats");
     }
-    get_node<RolfTourView>("CampaignTown")
-    ->get_node<Button>("PartyList/Rows/Member2/Advance")
-    ->emit_signal("pressed");
+    required_node<Button>(required_node<RolfTourView>(*this, "CampaignTown"),
+                          "PartyList/Rows/Member2/Advance")
+    .emit_signal("pressed");
     select("LevelUp/Feat", 2);
-    get_node<CheckBox>("LevelUp/Spell1")->set_pressed(true);
+    required_node<CheckBox>(*this, "LevelUp/Spell1").set_pressed(true);
     break;
     case 6:
     {
@@ -965,10 +974,10 @@ void CharacterCreationView::advancement_check()
         campaign_->restore(std::move(restored.party));
         if (!has_feat() || opengold::encode_campaign(*campaign_, nullptr, "feat-ui-check") != saved)
             throw std::runtime_error("UI-acquired feat must survive campaign reload");
-        get_node<RolfTourView>("CampaignTown")
-        ->get_node<Button>("PartyList/Rows/Member3/Advance")
-        ->emit_signal("pressed");
-        auto *feats = get_node<OptionButton>("LevelUp/Feat");
+        required_node<Button>(required_node<RolfTourView>(*this, "CampaignTown"),
+                              "PartyList/Rows/Member3/Advance")
+        .emit_signal("pressed");
+        auto *feats = &required_node<OptionButton>(*this, "LevelUp/Feat");
         const auto archery =
             std::find_if(advancement_options_.feats.begin(), advancement_options_.feats.end(),
                          [](const auto & f)

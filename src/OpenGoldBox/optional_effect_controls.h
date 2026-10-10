@@ -52,18 +52,18 @@ void refresh_optional_effect(godot::Node &root,
                              bool player, Render render)
 {
     using namespace godot;
-    auto *w = root.get_node<Window>("OptionalEffect");
+    auto *w = &required_node<Window>(root, "OptionalEffect");
     if (!player || !choice)
     {
         if (w->is_visible())
         {
             w->hide();
             if (player)
-                root.get_node<Button>("End")->grab_focus();
+                required_node<Button>(root, "End").grab_focus();
         }
         return;
     }
-    auto *options = w->get_node<OptionButton>("Resolve");
+    auto *options = &required_node<OptionButton>(*w, "Resolve");
     const int prior = w->is_visible() ? options->get_selected_id() : -1;
     SignalsBlocked options_quiet(*options);
     options->clear();
@@ -79,21 +79,21 @@ void refresh_optional_effect(godot::Node &root,
     options_quiet.unblock();
     const bool multiple = choice->options.size() > 1;
     options->set_visible(multiple);
-    w->get_node<Label>("ResolveLabel")->set_visible(multiple);
+    required_node<Label>(*w, "ResolveLabel").set_visible(multiple);
     w->set_size(Vector2i(640, multiple ? 360 : 300));
-    auto *label = w->get_node<Label>("Text");
+    auto *label = &required_node<Label>(*w, "Text");
     label->set_position(Vector2(24, multiple ? 76 : 18));
     label->set_size(Vector2(592, multiple ? 198 : 194));
-    w->get_node<Button>("Use")->set_position(Vector2(446, multiple ? 296 : 236));
-    w->get_node<Button>("Skip")->set_position(Vector2(284, multiple ? 296 : 236));
+    required_node<Button>(*w, "Use").set_position(Vector2(446, multiple ? 296 : 236));
+    required_node<Button>(*w, "Skip").set_position(Vector2(284, multiple ? 296 : 236));
     const auto *option = choice->options.empty() ? nullptr : &choice->options[selected];
     w->set_title(render(option ? option->title : choice->title));
     label->set_text(render(option ? option->description : choice->description));
-    w->get_node<Button>("Use")->set_disabled(option && !option->available);
+    required_node<Button>(*w, "Use").set_disabled(option && !option->available);
     if (!w->is_visible())
     {
         w->popup_centered();
-        w->get_node<Button>("Use")->grab_focus();
+        required_node<Button>(*w, "Use").grab_focus();
     }
 }
 
@@ -101,7 +101,7 @@ inline unsigned optional_effect_item(godot::Node &root, const opengold::rules::S
 {
     if (state.effect_targeting)
         return 1;
-    const auto *options = root.get_node<godot::OptionButton>("OptionalEffect/Resolve");
+    const auto *options = &required_node<godot::OptionButton>(root, "OptionalEffect/Resolve");
     return options->get_item_count() ? unsigned(options->get_selected_id()) : 0;
 }
 

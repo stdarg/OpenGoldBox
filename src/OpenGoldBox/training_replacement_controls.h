@@ -58,12 +58,12 @@ void refresh_training_replacement(godot::Window &w,
         for (const auto &option : options.group.options)
             if (option.id == id)
                 current += tr(option.label) + "; ";
-    w.get_node<Label>("Current")->set_text(current);
-    w.get_node<Label>("Limit")->set_text(
+    required_node<Label>(w, "Current").set_text(current);
+    required_node<Label>(w, "Limit").set_text(
         tr(N_("Selected")) + ": " + String::num_uint64(selected.size()) + " / " +
         String::num_uint64(options.group.count) + "    " + tr(N_("Replacement limit")) + ": " +
         String::num_uint64(options.replacement_limit));
-    auto *rows = w.get_node<VBoxContainer>("Choices/Rows");
+    auto *rows = &required_node<VBoxContainer>(w, "Choices/Rows");
     for (int n = 0; n < rows->get_child_count(); ++n)
         if (auto *box = Object::cast_to<CheckBox>(rows->get_child(n)))
         {
