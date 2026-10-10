@@ -17,7 +17,7 @@ rules::SpellAccess spell_access(std::span<const rules::FeatureGrant>, std::strin
 rules::SpellChoiceOptions spell_choice_options(const rules::CharacterSheet &,
         rules::SpellChoiceContext);
 void apply_spell_choices(rules::CharacterSheet &, const rules::SpellChoices &,
-                         rules::SpellChoiceContext, bool require_complete = true);
+                         rules::SpellChoiceContext, rules::ChoiceCompleteness);
 // Known and prepared spells as ids. Ids rather than a packed mask because an
 // int caps the catalog at 31 spells.
 std::vector<std::string> known_cantrip_ids(const rules::SpellAccess &);

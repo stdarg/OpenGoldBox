@@ -246,7 +246,8 @@ void CharacterCreationView::advancement_pages()
     try
     {
         campaign_->rule_module().apply_spell_choices(
-            sheet, learning, opengold::rules::SpellChoiceContext::advancement, false);
+            sheet, learning, opengold::rules::SpellChoiceContext::advancement,
+            opengold::rules::ChoiceCompleteness::partial);
         options.preparation =
             campaign_->rule_module()
             .spell_choice_options(sheet, opengold::rules::SpellChoiceContext::advancement)

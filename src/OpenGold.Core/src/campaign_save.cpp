@@ -351,7 +351,7 @@ struct SaveCodec
                     for (const auto &edit : edits)
                         if (edit.level == unsigned(character.sheet().level))
                             character.choose_spells(*module, edit.choices, edit.rest_session,
-                                                    false);
+                                                    rules::ChoiceCompleteness::partial);
                     for (const auto &edit : training)
                         if (edit.level == unsigned(character.sheet().level))
                             character.replace_rest_training(*module, edit.selections,

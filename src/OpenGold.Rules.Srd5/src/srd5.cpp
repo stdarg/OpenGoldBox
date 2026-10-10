@@ -10221,7 +10221,8 @@ class Module final : public RulesModule
                 }
             }
             detail::apply_spell_choices(next, SpellChoices{*choice.spell_learning, {}, {}, {}},
-                                        SpellChoiceContext::advancement, false);
+                                        SpellChoiceContext::advancement,
+                                        ChoiceCompleteness::partial);
             const auto preparation =
                 detail::spell_choice_options(next, SpellChoiceContext::advancement);
             choice.spells = preparation.locked_prepared;
@@ -10529,7 +10530,8 @@ class Module final : public RulesModule
             next.prepared_spells = sheet.prepared_spells;
             detail::apply_spell_choices(next,
                                         SpellChoices{*choice.spell_learning, choice.spells, {}, {}},
-                                        SpellChoiceContext::advancement);
+                                        SpellChoiceContext::advancement,
+                                        ChoiceCompleteness::complete);
         }
         else if (detail::prepares_spells(sheet.character_class))
             throw std::runtime_error("Independent spell learning choices are required");
@@ -11177,9 +11179,10 @@ class Module final : public RulesModule
     }
 
     void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choice,
-                             SpellChoiceContext context, bool complete) const override
+                             SpellChoiceContext context,
+                             ChoiceCompleteness completeness) const override
     {
-        detail::apply_spell_choices(sheet, choice, context, complete);
+        detail::apply_spell_choices(sheet, choice, context, completeness);
     }
 
     SpellAccess spell_access(const CharacterSheet &sheet) const override

@@ -487,7 +487,8 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
                      d.character_class == "ranger" || d.character_class == "sorcerer" ||
                      d.character_class == "warlock" || d.character_class == "bard" ||
                      d.character_class == "druid"))
-        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement, false);
+        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement,
+                                    ChoiceCompleteness::partial);
     else if (d.spells)
     {
         if (d.character_class != "wizard")
@@ -498,7 +499,8 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
             return g.id == "spell:magic_missile";
         });
         s.prepared_spells.clear();
-        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement, false);
+        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement,
+                                    ChoiceCompleteness::partial);
     }
     return s;
 }

@@ -62,7 +62,8 @@ class Character
     bool advance(const rules::RulesModule &rules, rules::VitalState &state,
                  const rules::AdvancementChoice &choice);
     void choose_spells(const rules::RulesModule &, const rules::SpellChoices &,
-                       std::uint64_t rest_session, bool require_complete = true);
+                       std::uint64_t rest_session,
+                       rules::ChoiceCompleteness completeness = rules::ChoiceCompleteness::complete);
     void replace_rest_training(const rules::RulesModule &, std::span<const std::string>,
                                std::uint64_t rest_session);
 

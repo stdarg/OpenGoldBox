@@ -46,6 +46,15 @@ enum class SpellChoiceContext
     long_rest
 };
 
+// Whether spell choices must settle every open choice, or may leave some for
+// later (a level-up's new spells, chosen before its preparation). Named
+// rather than a bool so a call site says which (Effective C++ Item 18).
+enum class ChoiceCompleteness
+{
+    partial,
+    complete
+};
+
 struct TrainingReplacementOptions
 {
     TrainingChoiceGroup group;
@@ -622,8 +631,10 @@ class RulesModule
         return {};
     }
 
+    // No default for the completeness: an override cannot redefine one
+    // (Effective C++ Item 37), and every caller says which it means.
     virtual void apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
-                                     bool require_complete = true) const;
+                                     ChoiceCompleteness) const;
     [[nodiscard]] virtual AbilityCheckModifier
     ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
                   std::string_view skill = {}) const;

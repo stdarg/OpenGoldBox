@@ -804,8 +804,9 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
 }
 
 void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
-                         SpellChoiceContext context, bool complete)
+                         SpellChoiceContext context, ChoiceCompleteness completeness)
 {
+    const bool complete = completeness == ChoiceCompleteness::complete;
     const auto *caster = prepared_caster(sheet.character_class);
     require(sheet.character_class == "Wizard" || caster);
     const auto origin = class_source(sheet.character_class);

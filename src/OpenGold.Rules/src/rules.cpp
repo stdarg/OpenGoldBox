@@ -44,7 +44,7 @@ CharacterSheet RulesModule::spell_choice_sheet(const CharacterSheet &sheet,
 }
 
 void RulesModule::apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
-                                      bool) const
+                                      ChoiceCompleteness) const
 {
     throw std::runtime_error("Spell choices are not supported");
 }
