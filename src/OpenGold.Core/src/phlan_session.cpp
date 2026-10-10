@@ -1,5 +1,6 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/random_treasure.h"
+#include "opengold/ecl_party_host.h"
 #include <algorithm>
 #include <set>
 
@@ -54,8 +55,6 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
 
 namespace
 {
-constexpr std::array<std::uint16_t, 7> money{0x6BBB, 0x6BBD, 0x6BBF, 0x6BC1,
-    0x6BC3, 0x6BC5, 0x6BC7};
 constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
 
 // GEO door code 2. The original engine answers it with "Locked." and Bash/Pick/
@@ -147,7 +146,7 @@ EclHostReply RolfTourSession::clock_reply() const
 EclHostReply RolfTourSession::character_reply(unsigned index) const
 {
     if (campaign_)
-        return campaign_->character_reply(index);
+        return party_character_reply(*campaign_, index);
     EclHostReply reply;
     std::array<std::uint16_t, 285> fields{};
     if (index == 0)
@@ -157,8 +156,8 @@ EclHostReply RolfTourSession::character_reply(unsigned index) const
         fields[0x18] = 14; // Verified GBVM Constitution field; no guessed raw-record offsets.
         fields[0x100] = 1;
         fields[0x119] = party_.hit_points;
-        for (unsigned n = 0; n < money.size(); ++n)
-            fields[money[n] - 0x6B00] = party_.wealth[n];
+        for (unsigned n = 0; n < ecl_coin_addresses.size(); ++n)
+            fields[ecl_coin_addresses[n] - 0x6B00] = party_.wealth[n];
     }
     for (unsigned n = 0; n < fields.size(); ++n)
         reply.writes.push_back({static_cast<std::uint16_t>(0x6B00 + n), fields[n]});
@@ -182,8 +181,8 @@ void RolfTourSession::read_character()
     }
     if (selected_character_ != 0)
         return;
-    for (unsigned n = 0; n < money.size(); ++n)
-        party_.wealth[n] = machine_.variable(money[n]);
+    for (unsigned n = 0; n < ecl_coin_addresses.size(); ++n)
+        party_.wealth[n] = machine_.variable(ecl_coin_addresses[n]);
     party_.hit_points = machine_.variable(0x6C19);
 }
 
@@ -1316,13 +1315,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         read_character();
         reply = character_reply(selected_character_);
         reply.writes.push_back({static_cast<std::uint16_t>(arg(0)),
-                                static_cast<std::uint16_t>(campaign_->strength())});
+                                static_cast<std::uint16_t>(party_strength(*campaign_))});
         break;
     case 30:
     {
         read_character();
         reply = character_reply(selected_character_);
-        const auto values = campaign_->query(arg(0), arg(1));
+        const auto values = check_party(*campaign_, arg(0), arg(1));
         std::map<std::uint16_t, std::uint16_t> outputs;
         for (unsigned n = 0; n < 4; ++n)
             outputs[static_cast<std::uint16_t>(arg(n + 2))] = values[n];
@@ -1492,7 +1491,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     case 50:
     {
-        const bool found = campaign_ ? campaign_->has_item(arg(0))
+        const bool found = campaign_ ? party_has_item(*campaign_, arg(0))
                            : std::any_of(party_.inventory.begin(), party_.inventory.end(),
                                          [&](const auto & i)
         {

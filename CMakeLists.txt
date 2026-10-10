@@ -120,6 +120,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/character_pool.cpp
     src/OpenGold.Core/src/character.cpp
     src/OpenGold.Core/src/campaign_party.cpp
+    src/OpenGold.Core/src/ecl_party_host.cpp
     src/OpenGold.Core/src/coin_purse.cpp
     src/OpenGold.Core/src/campaign_rest.cpp
     src/OpenGold.Core/src/campaign_save.cpp

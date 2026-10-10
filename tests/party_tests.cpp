@@ -1,5 +1,6 @@
 #include "combat_fixture.h"
 #include "opengold/campaign_party.h"
+#include "opengold/ecl_party_host.h"
 #include "opengold/character_creator.h"
 #include "opengold/combat_demo.h"
 #include "opengold/combat_body_catalog.h"
@@ -678,7 +679,7 @@ void roster_and_equipment()
     party.equip(pc, shield);
     check(party.profile(pc).armor_class == ac + 2 && party.member(pc).wealth[3] == 80,
           "Purchased shield changes actual rules AC");
-    check(party.has_item(59) && !party.has_item(55), "Party item query uses original types");
+    check(por::party_has_item(party, 59) && !por::party_has_item(party, 55), "Party item query uses original types");
     party.purchase(pc, item(55));
     party.equip(pc, party.member(pc).character.inventory().items()[2].id);
     check(party.profile(pc).armor_class == 18, "Armor and shield combine in rules module");
@@ -2333,7 +2334,7 @@ void script_handoff()
     check(town.buy(town.snapshot().continue_ticket, 0), "Buy for selected member");
     check(party->member(second).wealth[3] == 190 && party->member(first).wealth[3] == 100,
           "Purchase debits only selected purse");
-    check(party->has_item(59), "Script item query sees purchase");
+    check(por::party_has_item(*party, 59), "Script item query sees purchase");
     town.leave_shop(town.snapshot().continue_ticket);
     settle(town);
     check(town.script_variable(0x6BC1) == 190 && town.can_leave(),
@@ -2426,7 +2427,7 @@ void party_strength()
     // Wizard (5 + 8 x level 1, THAC0 21) / 10 = 1; Rogue (4 + 5) / 10 = 0.
     // Chain mail and shield are AD&D AC 4, which adds nothing above AC 0.
     set_hit_points({{fighter, 5}, {cleric, 5}, {wizard, 5}, {rogue, 4}});
-    check(party.strength() == 3, "Level-one party strength uses AD&D-equivalent values");
+    check(por::party_strength(party) == 3, "Level-one party strength uses AD&D-equivalent values");
 
     party.award_experience(900, "strength-levels");
     for (const auto id : {fighter, wizard})
@@ -2434,11 +2435,11 @@ void party_strength()
             party.advance(id, party.default_advancement(id));
     // Fighter level 3 is THAC0 18: (5 + 15) / 10 = 2. Wizard level 3: (5 + 24) / 10 = 2.
     set_hit_points({{fighter, 5}, {cleric, 5}, {wizard, 5}, {rogue, 4}});
-    check(party.strength() == 5, "Fighter THAC0 and magic-user levels follow the original");
+    check(por::party_strength(party) == 5, "Fighter THAC0 and magic-user levels follow the original");
 
     // Fighter (20 + 15) / 10 = 3.
     set_hit_points({{fighter, 20}, {cleric, 5}, {wizard, 5}, {rogue, 4}});
-    check(party.strength() == 6, "Current hit points add with the other terms");
+    check(por::party_strength(party) == 6, "Current hit points add with the other terms");
 }
 
 int main()

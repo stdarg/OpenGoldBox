@@ -13,6 +13,7 @@
 #include "opengold/encounter_budget.h"
 #include "opengold/map_catalog.h"
 #include "opengold/srd5.h"
+#include "opengold/ecl_party_host.h"
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
@@ -640,7 +641,7 @@ RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::
             }
             continue;
         }
-        auto fight = step.fight(party->strength());
+        auto fight = step.fight(por::party_strength(*party));
         // Experience is the original encounter's, however many fight.
         std::vector<unsigned> paying;
         for (const auto &group : fight.groups)

@@ -213,10 +213,6 @@ class CampaignParty
     [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, unsigned ability,
             std::string_view skill = {}) const;
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
-    [[nodiscard]] bool has_item(unsigned original_type) const;
-    [[nodiscard]] unsigned strength() const;
-    [[nodiscard]] std::array<unsigned, 4> query(unsigned address, unsigned effect) const;
-    [[nodiscard]] por::EclHostReply character_reply(unsigned slot) const;
     // Applies the script's HP and coin changes. Coins are seen and settled as
     // script_coins() describes; the result reports any change the purse made.
     [[nodiscard]] std::optional<CoinExchange> read_character(unsigned slot,

@@ -11,6 +11,7 @@
 #include "opengold/encounter_budget.h"
 #include "opengold/map_catalog.h"
 #include "opengold/srd5.h"
+#include "opengold/ecl_party_host.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -245,7 +246,7 @@ int main(int argc, char **argv)
                 const unsigned members = 6;
                 const auto party = party_of(mixed, level);
                 const auto start = party->checkpoint();
-                const unsigned strength = party->strength();
+                const unsigned strength = por::party_strength(*party);
                 for (const bool rope_guild : {false, true})
                     for (const unsigned record : {0u, 2u, 4u})
                         for (const unsigned challenge : {25u, 33u, 50u, 67u, 100u})
