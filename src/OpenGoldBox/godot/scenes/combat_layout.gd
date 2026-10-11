@@ -7,6 +7,10 @@ var _authored_offsets: Dictionary = {}
 var _show_controls := false
 
 
+func _ready() -> void:
+    _view().get_node("Cantrip").resized.connect(_follow_cantrip)
+
+
 func _view() -> Control:
     return get_parent() as Control
 
@@ -15,11 +19,15 @@ func _metric(name: String) -> float:
     return _view().get_theme_constant(name, "OpenGoldMetrics")
 
 
-func _restore(control: Control) -> void:
+func _authored(control: Control) -> Array:
     if not _authored_offsets.has(control):
         _authored_offsets[control] = [control.offset_left, control.offset_top,
             control.offset_right, control.offset_bottom]
-    var offsets: Array = _authored_offsets[control]
+    return _authored_offsets[control]
+
+
+func _restore(control: Control) -> void:
+    var offsets := _authored(control)
     control.offset_left = offsets[0]
     control.offset_top = offsets[1]
     control.offset_right = offsets[2]
@@ -87,10 +95,21 @@ func layout_reaction_controls(show_controls: bool) -> void:
     for child in view.get_children():
         if child is Control and child.has_meta("action_items"):
             child.position.y = item_y
+    _follow_cantrip()
     var cunning_layout: AnimationPlayer = view.get_node("CunningLayout")
     cunning_layout.play("aid" if view.get_node("Stabilize").visible else "normal")
     cunning_layout.advance(0)
     layout_log()
+
+
+# A translated spell name widens the dropdown, so Cast keeps its authored gap
+# after the dropdown's edge rather than its authored position.
+func _follow_cantrip() -> void:
+    var view := _view()
+    var cantrip: Control = view.get_node("Cantrip")
+    var cast: Control = view.get_node("CastCantrip")
+    var gap: float = _authored(cast)[0] - _authored(cantrip)[2]
+    cast.position.x = cantrip.position.x + cantrip.size.x + gap
 
 
 func layout_log() -> void:
