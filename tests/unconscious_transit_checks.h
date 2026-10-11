@@ -42,10 +42,9 @@ void run()
                     e.battlefield.terrain[8] = Terrain::difficult;
                 auto session = hero_first(*module, e);
                 const auto before = unit(*session, 1);
-                auto saved = session->save();
-                check(!session->submit({session->snapshot().revision, 1, 0, "move", {2, 1}}) &&
-                      session->save() == saved,
-                      "Cannot voluntarily stop on an Unconscious creature");
+                // As in the original game, the downed do not hold their squares.
+                check(command(*session, "move", {2, 1}).destination == Cell{2, 1},
+                      "A mover may stop on a creature at 0 Hit Points");
                 check(session->submit(command(*session, "move", {3, 1})),
                       "Both sides cross an Unconscious enemy");
                 check(!session->snapshot().reaction_pending && unit(*session, 1).cell == Cell{3, 1},
@@ -61,7 +60,7 @@ void run()
                 session = hero_first(*module, e);
                 if (!allied)
                 {
-                    saved = session->save();
+                    const auto saved = session->save();
                     check(!session->submit({session->snapshot().revision, 1, 0, "move", {3, 1}}) &&
                           saved == session->save(),
                           "Awake enemy blocks route atomically");

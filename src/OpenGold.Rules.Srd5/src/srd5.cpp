@@ -3010,10 +3010,12 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
     for (const auto &other : actors_)
     {
         // Unconscious actors still occupy space; corpses do not. The mover's
-        // current cell is the path origin, not an obstacle.
+        // current cell is the path origin, not an obstacle. As in the original
+        // game, a creature may stop on the downed (dying heroes walling in the
+        // last one could otherwise leave a fight no one can end).
         if (!other.life.dead && !downed_riser(other) && other.source.id != mover.source.id)
-            occupants.push_back(
-        {other.source.cell, other.source.side != mover.source.side, unconscious(other)});
+            occupants.push_back({other.source.cell, other.source.side != mover.source.side,
+                                 unconscious(other), other.life.hp == 0});
     }
     return {zoned_board(), mover.source.cell, occupants, mover.effects.prone};
 }
@@ -9494,7 +9496,7 @@ void Session::validate_restored_state() const
             if ((in_transit && (actor.source.side == other.source.side || unconscious(actor) ||
                                 unconscious(other))) ||
                     actor.involuntary_overlap || other.involuntary_overlap ||
-                    downed_riser(actor) || downed_riser(other))
+                    actor.life.hp == 0 || other.life.hp == 0)
                 continue;
             throw std::runtime_error("Invalid overlapping checkpoint actors");
         }
@@ -9532,7 +9534,8 @@ void Session::validate_pending_movement() const
                                  : champion_move_ && other.source.id == champion_move_->actor
                                  ? champion_move_->origin
                                  : other.source.cell,
-                                 other.source.side != mover.source.side, unconscious(other)});
+                                 other.source.side != mover.source.side, unconscious(other),
+                                 other.life.hp == 0});
     const detail::MovementGrid grid{board_, mover.source.cell, occupants, mover.effects.prone};
     auto cell = mover.source.cell;
     int remaining =

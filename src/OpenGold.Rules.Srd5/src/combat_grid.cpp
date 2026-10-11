@@ -34,10 +34,13 @@ MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
     if (board_.at(origin_) == Terrain::obstacle)
         throw std::runtime_error("Invalid movement origin");
     occupancy_.resize(board_.terrain.size(), Occupancy::empty);
+    held_.resize(board_.terrain.size());
     for (const auto &occupant : occupants)
     {
         if (!board_.contains(occupant.cell))
             throw std::runtime_error("Invalid occupant cell");
+        if (!occupant.downed)
+            held_[index(occupant.cell)] = true;
         auto &entry = occupancy_[index(occupant.cell)];
         // Apply the strongest restriction when several creatures overlap:
         // a conscious enemy blocks; an incapacitated enemy adds difficult terrain.
@@ -57,7 +60,7 @@ int MovementGrid::index(Cell cell) const
 bool MovementGrid::can_stop_at(Cell destination) const
 {
     return board_.at(destination) != Terrain::obstacle && destination != origin_ &&
-           occupancy_[index(destination)] == Occupancy::empty;
+           !held_[index(destination)];
 }
 
 std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const

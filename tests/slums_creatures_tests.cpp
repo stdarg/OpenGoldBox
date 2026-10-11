@@ -258,6 +258,32 @@ void troll_stays_down()
           "With every enemy down the fight is won and the Troll stays down");
 }
 
+// As in the original game, a downed creature does not hold its square. In a
+// one-square corridor a monster (1) drops the hero beside it (2); the hero
+// behind (3) can be reached only by standing where the first one fell. (Dying
+// heroes walling in the last one left a Slums troll and that hero unable to
+// reach each other, and the fight never ended.)
+void downed_square_stood_on()
+{
+    const auto module = rules("creature poker 1 1000 20 30 20 1 2 1 0 0 0 0 0 0 0 0 0 1 0\n"
+                              "creature frail 1 2 0 30 0 1 2 0 0 0 0 0 0 0 0 0 0 1 0\n");
+    std::vector<Terrain> corridor(30, Terrain::obstacle);
+    for (int x = 0; x < 10; ++x)
+        corridor[static_cast<std::size_t>(10 + x)] = Terrain::open;
+    auto c = module->create({{10, 3, corridor},
+        {   {1, "poker", "Monster", Side::opposition, {1, 1}},
+            {2, "frail", "Hero", Side::party, {2, 1}}, {3, "target", "Friend", Side::party, {3, 1}}
+        }},
+    7);
+    turn_of(*c, 1);
+    check(submit(*c, "melee", 1, 2) && unit(*c, 2).hit_points == 0 && !unit(*c, 2).dead,
+          "The monster drops the hero beside it");
+    check(move_to(*c, 1, {2, 1}), "The monster stands where the hero fell");
+    check(submit(*c, "end", 1), "The monster ends its turn");
+    turn_of(*c, 1);
+    check(offered(*c, "melee", 1, 3), "From there it reaches the hero behind");
+}
+
 // A Hobgoblin Warrior's arrow adds 3d4 Poison damage.
 void hobgoblin_arrows()
 {
@@ -295,6 +321,7 @@ int main()
         troll_burns();
         troll_held_down();
         troll_stays_down();
+        downed_square_stood_on();
         hobgoblin_arrows();
         std::cout << "Slums creature tests passed\n";
         return 0;

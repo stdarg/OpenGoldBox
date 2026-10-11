@@ -90,7 +90,10 @@ with all its Hit Points, once 3d6 rounds have passed since it fell, rather
 than regenerating on its next turn. Acid or Fire on it still kills it; someone
 standing on its square now keeps it down rather than killing it, and it gets
 up once the square is clear. Combat checkpoints become `OGCOMBAT 48` (the round
-it may get up).
+it may get up). A creature may also stop on any creature at 0 Hit Points, as
+the original's downed left the map; crossing one costs what it did. Dying
+fighters walling in the last one had left a troll and that fighter unable to
+reach each other, and a play-test fight ran over a thousand rounds.
 
 ## Slums set-encounter creatures
 
