@@ -382,8 +382,9 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             result.identity != campaign_->identity())
         return false;
     unsigned defeated = 0;
-    // Monsters that ran off the field are worth neither experience nor treasure.
-    std::vector<unsigned> escaped_records;
+    // Monsters that ran off the field, or that the original placement had no
+    // room for (PLACE-1), are worth neither experience nor treasure.
+    std::vector<unsigned> unpaid_records;
     std::set<rules::EntityId> enemies, party_ids;
     std::set<rules::EntityId> expected_party;
     for (auto id : campaign_->state().slots)
@@ -399,7 +400,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             if (unit.hit_points == 0)
                 ++defeated;
             else if (unit.fled)
-                escaped_records.push_back(staged_records_.at(unit.id - 1000));
+                unpaid_records.push_back(staged_records_.at(unit.id - 1000));
         }
         else if (unit.side != rules::Side::party || !expected_party.contains(unit.id) ||
                  !party_ids.insert(unit.id).second ||
@@ -410,10 +411,13 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     for (auto id : expected_party)
         if (!party_ids.contains(id) && !campaign_->member(id).vitals.dead)
             return false;
-    if (enemies.size() != staged_records_.size() ||
+    if (enemies.empty() ||
             (result.outcome == rules::Outcome::victory &&
-             defeated + escaped_records.size() != enemies.size()))
+             defeated + unpaid_records.size() != enemies.size()))
         return false;
+    for (std::size_t n = 0; n < staged_records_.size(); ++n)
+        if (!enemies.contains(static_cast<rules::EntityId>(1000 + n)))
+            unpaid_records.push_back(staged_records_[n]);
     if (result.outcome == rules::Outcome::defeat)
     {
         snapshot_.phase = TourPhase::defeated;
@@ -456,9 +460,9 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         else
         {
             // Experience and loot stay the original encounter's, however many fought,
-            // less a record for each monster that got away.
+            // less a record for each monster that got away or was left out.
             auto paying = encounter_records_;
-            for (const auto record : escaped_records)
+            for (const auto record : unpaid_records)
                 if (const auto it = std::find(paying.begin(), paying.end(), record); it != paying.end())
                     paying.erase(it);
             // Monsters that all got away leave nothing to pay.

@@ -11,8 +11,9 @@ described in [combat-geometry.md](combat-geometry.md). The party and the enemies
 start where the original engine put them ([PLACE-1](SRD-DECISIONS.md#place-1-2026-10-10-starting-positions-as-the-original-game-had-them)):
 two groups facing each other, the enemies as many exploration squares ahead as
 the script's encounter distance, which never reaches past a wall ahead.
-Placement never removes obstacles or omits requested enemies: a creature the
-original had no room for takes the nearest free square the party can reach.
+Placement never removes obstacles. As in the original, a monster with no room is
+left out of the fight and is worth nothing; if no monster has room, the first
+takes the nearest free square the party can reach.
 
 ## Encounter conversion
 

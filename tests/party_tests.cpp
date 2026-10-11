@@ -1410,6 +1410,59 @@ void camp_ambush_encounter()
               "Each interrupted sleeper wakes up Prone, once");
 }
 
+// The party's exploration square walled in on every side, in an open arena:
+// a band facing a party at distance 0 has only the half of that square ahead
+// of the party, which holds 23 monsters (PLACE-1).
+CampaignEncounter walled_in_band(std::size_t monsters)
+{
+    CampaignEncounter encounter;
+    encounter.field.geometry = {50, 25, std::vector<Terrain>(50 * 25)};
+    encounter.field.tiles.resize(50 * 25, 7);
+    encounter.field.walled[2][6] = {true, true, true, true};
+    for (std::size_t n = 0; n < monsters; ++n)
+        encounter.enemies.push_back({static_cast<EntityId>(1000 + n), "bandit", "Bandit",
+                                     Side::opposition, {}});
+    return encounter;
+}
+
+// Ids of the monsters that reached the rules module.
+std::vector<EntityId> placed_monsters(const Encounter &encounter)
+{
+    std::vector<EntityId> ids;
+    for (const auto &participant : encounter.participants)
+        if (participant.side == Side::opposition)
+            ids.push_back(participant.id);
+    return ids;
+}
+
+// Where the original engine had no room for a monster it left it out of the
+// fight (PLACE-1), but a fight never starts without any monster.
+void crowded_band_leaves_monsters_out()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(character("fighter"));
+    auto observed = std::make_shared<EncounterObservation>();
+    {
+        CombatDemo fight(std::make_unique<ObservedModule>(observed));
+        fight.campaign_party(party);
+        fight.encounter(walled_in_band(25), 1234);
+        const auto ids = placed_monsters(observed->encounter);
+        check(ids.size() == 23 && ids.front() == 1000 && ids.back() == 1022,
+              "The first 23 monsters fill their half-square and the last two are left out");
+    }
+    auto rubble = walled_in_band(3);
+    for (int y = 10; y <= 12; ++y)
+        for (int x = 16; x <= 30; ++x)
+            rubble.field.geometry.terrain[y * 50 + x] = Terrain::obstacle;
+    {
+        CombatDemo fight(std::make_unique<ObservedModule>(observed));
+        fight.campaign_party(party);
+        fight.encounter(rubble, 1234);
+        check(placed_monsters(observed->encounter) == std::vector<EntityId> {1000},
+              "With no room for any monster, the first still fights and the rest are left out");
+    }
+}
+
 void allied_campaign_movement()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -2093,11 +2146,11 @@ void rejected_combat_handoff()
     }
 }
 
-// A synthetic district whose gate starts one encounter with a Test orc.
-std::shared_ptr<por::PhlanResources> orc_encounter_resources()
+// A synthetic district whose gate starts one encounter with `orcs` Test orcs.
+std::shared_ptr<por::PhlanResources> orc_encounter_resources(std::uint8_t orcs = 1)
 {
     auto gate = program({32, 0, 20, 0});
-    auto encounter = program({58, 33, 0, 20, 0, 2, 0, 255, 11, 0, 4, 0, 1, 0, 4, 36, 0});
+    auto encounter = program({58, 33, 0, 20, 0, 2, 0, 255, 11, 0, 4, 0, orcs, 0, 4, 36, 0});
     auto resources = std::make_shared<por::PhlanResources>();
     resources->map = por::GeoMap{};
     resources->programs[0] = gate;
@@ -2179,6 +2232,46 @@ void victory_when_every_monster_fled()
     check(party->state().claimed_rewards == before.claimed_rewards &&
           party->state().roster[0].experience == before.roster[0].experience,
           "Monsters that all got away are worth no experience or treasure");
+}
+
+// A monster the original engine had no room for was left out of the fight
+// (PLACE-1): the result does not name it, and it is worth neither experience
+// nor treasure.
+void victory_with_a_monster_left_out()
+{
+    const auto resources = orc_encounter_resources(2);
+    // Weak enough that the session's fit keeps both for a party of two.
+    auto district = std::make_shared<por::PhlanResources>(*resources->districts.at(20));
+    district->conversions[4].fit_xp = 10;
+    resources->districts[20] = district;
+    const auto experience_won = [&](bool leave_one_out)
+    {
+        auto party = std::make_shared<CampaignParty>(module());
+        (void)party->add_pc(character("fighter"));
+        (void)party->add_pc(character("fighter", "Bo"));
+        por::RolfTourSession town({}, resources->programs.at(0), {}, 0x9914, {}, resources);
+        auto result = start_orc_encounter(town, party);
+        check(std::count_if(result.combatants.begin(), result.combatants.end(),
+                            [](const auto & unit)
+        {
+            return unit.side == Side::opposition;
+        }) == 2,
+        "Both orcs are staged for the fight");
+        if (leave_one_out)
+            std::erase_if(result.combatants, [](const auto & unit)
+        {
+            return unit.id == 1001;
+        });
+        result.outcome = Outcome::victory;
+        for (auto &unit : result.combatants)
+            if (unit.side == Side::opposition)
+                unit.hit_points = 0;
+        check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
+              "The victory resolves whether or not every monster fought");
+        return party->state().roster[0].experience;
+    };
+    const auto both = experience_won(false), one = experience_won(true);
+    check(one > 0 && one < both, "A monster left out of the fight is worth no experience");
 }
 
 // Resolving a fight loses members and claims rewards before the original
@@ -2580,6 +2673,7 @@ int main()
         combat_handoff();
         campaign_encounters();
         camp_ambush_encounter();
+        crowded_band_leaves_monsters_out();
         allied_campaign_movement();
         standalone_checkpoints();
         combat_ownership();
@@ -2594,6 +2688,7 @@ int main()
         victory_beside_dead_member();
         failed_combat_result_rolls_back();
         victory_when_every_monster_fled();
+        victory_with_a_monster_left_out();
         monster_picture_before_combat();
         recovery_hosts();
         reward_reentry();

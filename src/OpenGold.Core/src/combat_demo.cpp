@@ -63,9 +63,9 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
 }
 
 // Stands the party and the enemies where the original engine did (PLACE-1).
-// Where it found no room, the free square of `reachable` nearest the side's
-// first member (or `centre`) keeps everyone in the fight; taken squares leave
-// `reachable`.
+// A monster it had no room for is left out of the fight, as there. A party
+// member without room takes the free square of `reachable` nearest the side's
+// first member (or `centre`); taken squares leave `reachable`.
 void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &party,
                        std::vector<Cell> &reachable, Cell centre)
 {
@@ -89,6 +89,8 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
         {
             if (starts[n])
                 continue;
+            if (reachable.empty())
+                throw std::runtime_error("Original battlefield cannot fit the complete encounter");
             const auto target = starts.front().value_or(centre);
             const auto nearest = std::min_element(reachable.begin(), reachable.end(),
                                                   [&](Cell a, Cell b)
@@ -104,7 +106,24 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
     claim(party, formation.party);
     claim(encounter.enemies, formation.enemies);
     fill_in(party, formation.party);
-    fill_in(encounter.enemies, formation.enemies);
+    // The original would start a fight with none of the band; the first monster
+    // stays, standing like a party member without room.
+    auto enemy_starts = formation.enemies;
+    const bool no_monster_fits = std::none_of(enemy_starts.begin(), enemy_starts.end(),
+                                 [](const auto & start)
+    {
+        return start.has_value();
+    });
+    if (!enemy_starts.empty() && no_monster_fits)
+    {
+        fill_in(std::span(encounter.enemies).first(1), {std::nullopt});
+        enemy_starts.front() = encounter.enemies.front().cell;
+    }
+    std::vector<Participant> fighting;
+    for (std::size_t n = 0; n < encounter.enemies.size(); ++n)
+        if (enemy_starts[n])
+            fighting.push_back(std::move(encounter.enemies[n]));
+    encounter.enemies = std::move(fighting);
 }
 } // namespace
 
@@ -199,9 +218,9 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
             board.terrain.size() != static_cast<std::size_t>(board.width * board.height) ||
             encounter.surprise > Surprise::both || encounter.distance > 2)
         throw std::runtime_error("Invalid campaign battlefield");
-    // Anyone the original formation has no room for stands inside one
-    // reachable component of the original geometry. Never erase walls or
-    // silently omit a participant.
+    // A party member the original formation has no room for, or the one
+    // monster kept when none had room, stands inside one reachable component
+    // of the original geometry. Never erase walls.
     std::vector<Cell> cells;
     for (int y = 0; y < board.height; ++y)
         for (int x = 0; x < board.width; ++x)
@@ -248,7 +267,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     auto participants = campaign_->participants();
     for (auto &participant : participants)
         participant.resting = encounter.party_resting;
-    if (cells.size() < participants.size() + encounter.enemies.size())
+    if (cells.size() < participants.size() + 1)
         throw std::runtime_error("Original battlefield cannot fit the complete encounter");
     if (!encounter.positions.empty())
     {

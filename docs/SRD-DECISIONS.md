@@ -738,6 +738,12 @@ code was copied.
   the squares to its sides, each filled from the edge it shares with the
   group's square. A solid wall (a doorway is not one) closes a square off. The
   groups never surround each other.
-- Where the original found no room at all, it left the creature out. OpenGold
-  never omits a combatant: that creature takes the nearest free square the
-  party can reach.
+- Where the original found no room at all for a monster, it left the monster
+  out, and the user chose (2026-10-10) to do the same. A monster left out never
+  fights: it gives no experience or treasure, and the band's morale counts only
+  the monsters that fight. It is not held back for later; whether the band
+  meets the party again is the script's, as for any fight. The original could
+  leave out a whole band and start an empty fight that the party won at once
+  for nothing; OpenGold keeps the band's first monster instead, on the nearest
+  free square the party can reach. A party member with no room takes that
+  nearest free square too.

@@ -734,6 +734,23 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members,
                 }
                 else if (unit.side == rules::Side::opposition && unit.surrendered)
                     ++result.surrendered;
+            // ...and one the original placement had no room for (PLACE-1) never
+            // fought and is worth nothing.
+            for (const auto &enemy : encounter.enemies)
+            {
+                const auto fought = std::any_of(result_snapshot.combatants.begin(),
+                                                result_snapshot.combatants.end(),
+                                                [&](const auto & unit)
+                {
+                    return unit.id == enemy.id;
+                });
+                if (fought)
+                    continue;
+                const auto record = enemy_record(fight, enemy.id);
+                if (const auto it = std::find(paying.begin(), paying.end(), record);
+                        it != paying.end())
+                    paying.erase(it);
+            }
         }
         if (outcome != rules::Outcome::victory)
         {
