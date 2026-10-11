@@ -37,7 +37,7 @@ func is_splash(index: int) -> bool:
 	if not require(lettering.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "Lettering must preserve its proportions"): return false
 	var pixels := lettering.texture.get_image()
 	if not require(pixels.detect_alpha() != Image.ALPHA_NONE and pixels.get_pixel(0, 0).a == 0, "Lettering must have a transparent background"): return false
-	return require(image.texture != null and image.texture.resource_path.ends_with(filename), "Wrong splash image") and require(image.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "Splash must preserve aspect ratio") and require(current_scene.get_node("Background").color == Color.BLACK, "Letterbox must be black")
+	return require(image.texture != null and image.texture.resource_path.ends_with(filename), "Wrong splash image") and require(image.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "Splash must preserve aspect ratio") and require(current_scene.get_node("Background").get_theme_stylebox("panel").bg_color == Color.BLACK, "Letterbox must be black")
 
 func key(code: Key, pressed := true, echo := false) -> void:
 	var event := InputEventKey.new()

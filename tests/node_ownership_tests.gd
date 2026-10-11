@@ -13,6 +13,8 @@ func require(ok: bool, message: String) -> void:
 func run_checks() -> void:
     for iteration in range(3):
         var dialog := ClassDB.instantiate("SaveSlots") as Window
+        # Its layout scene is found by the node name the game's scenes give it.
+        dialog.name = "SaveSlots"
         root.add_child(dialog)
         require(dialog.get_child_count() == 6, "Native save dialog must attach all controls")
         var children: Array[WeakRef] = []
