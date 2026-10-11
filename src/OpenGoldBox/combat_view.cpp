@@ -664,15 +664,6 @@ void CombatView::layout_reaction_controls(bool show_controls)
     cast.set_position(Vector2(cantrip.get_position().x + cantrip.get_size().x +
                               get_theme_constant("combat_cantrip_button_gap", "OpenGoldMetrics"),
                               cast.get_position().y));
-    auto &flee = required_node<Button>(*this, "Flee");
-    flee.set_position(Vector2(board_rect_.get_end().x - flee.get_size().x, flee.get_position().y));
-    const double quick_gap = get_theme_constant("combat_quick_gap", "OpenGoldMetrics");
-    auto &quick = required_node<Button>(*this, "Quick");
-    quick.set_position(Vector2(flee.get_position().x - quick_gap - quick.get_size().x,
-                               quick.get_position().y));
-    auto &quick_magic = required_node<Button>(*this, "QuickMagic");
-    quick_magic.set_position(Vector2(flee.get_position().x - quick_gap, quick_magic.get_position().y));
-    quick_magic.set_size(Vector2(flee.get_size().x + quick_gap, quick_magic.get_size().y));
     log_area_ = Rect2(board_rect_.position.x, top + inset, board_rect_.size.x,
                       std::max(0.0, get_size().y -
                                get_theme_constant("combat_log_bottom_margin", "OpenGoldMetrics") -

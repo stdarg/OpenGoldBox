@@ -502,7 +502,6 @@ OpenGoldMetrics/constants/combat_aid_action_rows = 3
 OpenGoldMetrics/constants/combat_low_hp_percent = 20
 OpenGoldMetrics/constants/combat_action_top_gap = 16
 OpenGoldMetrics/constants/combat_cantrip_button_gap = 10
-OpenGoldMetrics/constants/combat_quick_gap = 10
 OpenGoldMetrics/constants/combat_log_bottom_margin = 48
 OpenGoldMetrics/constants/combat_log_header_gap = 8
 OpenGoldMetrics/constants/combat_party_row_gap = 4
