@@ -31,7 +31,9 @@ func check() -> void:
         if combat == null:
             continue
         if combat.get_node("LogStack/Log").text.contains("Oren Quickwater falls unconscious."):
-            await RenderingServer.frame_post_draw
+            # The combat view can stop requesting frames after this event; force
+            # the capture instead of waiting forever for frame_post_draw.
+            RenderingServer.force_draw(false)
             var path := ProjectSettings.globalize_path("res://../../../build/checks/combat-unconscious.png")
             if root.get_texture().get_image().save_png(path) != OK:
                 push_error("Could not capture the unconscious combatant")

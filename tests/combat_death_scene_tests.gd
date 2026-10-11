@@ -57,7 +57,9 @@ func check() -> void:
         push_error("Lethal attack did not play the original death sound")
         quit(1)
         return
-    await RenderingServer.frame_post_draw
+    # Allow the combat canvas to update its action state before forcing capture.
+    await process_frame
+    RenderingServer.force_draw(false)
     var first := root.get_texture().get_image()
     var sample: Vector2 = canvas.get_global_transform_with_canvas() * Vector2(7 * tile + 12, 4 * tile + 12)
     if first.get_pixelv(Vector2i(sample)).r < 0.6:
@@ -67,7 +69,7 @@ func check() -> void:
     var first_path := ProjectSettings.globalize_path("res://../../../build/checks/combat-death-skull.png")
     first.save_png(first_path)
     await create_timer(1.2).timeout
-    await RenderingServer.frame_post_draw
+    RenderingServer.force_draw(false)
     var after := root.get_texture().get_image()
     sample = canvas.get_global_transform_with_canvas() * Vector2(7 * tile + 12, 4 * tile + 12)
     # Merric can still move into the emptied square, so it is lit grey (red about 0.31)
