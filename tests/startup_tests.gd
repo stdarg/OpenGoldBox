@@ -25,12 +25,12 @@ func restart_startup() -> void:
 func is_splash(index: int) -> bool:
 	if not require(current_scene != null and current_scene.name == "Startup", "Expected splash scene"):
 		return false
-	var image: TextureRect = current_scene.get_node("Image")
+	var image: TextureRect = current_scene.get_node("ImageFit/Image")
 	var filename := "OpenGoldBoxSplashBackground.png"
 	if shared_texture == null:
 		shared_texture = image.texture
 	if not require(image.texture == shared_texture, "Both splash screens must use the same background texture"): return false
-	var lettering: TextureRect = current_scene.get_node("Text")
+	var lettering: TextureRect = current_scene.get_node("ImageFit/Image/Text")
 	var expected := "OpenGoldBoxEngineLettering" if index == 0 else "OpenGoldBoxGameLettering"
 	expected += ".es.png" if TranslationServer.get_locale() == "es" else ".png"
 	if not require(lettering.texture != null and lettering.texture.resource_path.ends_with(expected), "Wrong splash lettering"): return false
@@ -56,7 +56,7 @@ func capture(filename: String) -> void:
 			var image := root.get_texture().get_image()
 			require(image != null and image.save_png(directory.path_join(filename)) == OK, "Splash capture failed")
 			# Compare the actual rendered backdrop, including sampling and placement.
-			current_scene.get_node("Text").hide()
+			current_scene.get_node("ImageFit/Image/Text").hide()
 			await settle()
 			await RenderingServer.frame_post_draw
 			var pixels := root.get_texture().get_image().get_data()
@@ -65,12 +65,12 @@ func capture(filename: String) -> void:
 			else:
 				require(pixels == background_pixels, "Splash backgrounds differ at the pixel level")
 				print("Splash backgrounds are pixel-identical")
-			current_scene.get_node("Text").show()
+			current_scene.get_node("ImageFit/Image/Text").show()
 			await settle()
 
 func check_fade(prefix: String) -> bool:
-	var text: TextureRect = current_scene.get_node("Text")
-	var backdrop: TextureRect = current_scene.get_node("Image")
+	var text: TextureRect = current_scene.get_node("ImageFit/Image/Text")
+	var backdrop: TextureRect = current_scene.get_node("ImageFit/Image")
 	if not require(text.self_modulate.a == 0.0, "Each splash must start with invisible lettering"): return false
 	if not require(backdrop.self_modulate.a == 1.0 and backdrop.modulate.a == 1.0, "Background must appear immediately"): return false
 	await capture(prefix + "-background.png")

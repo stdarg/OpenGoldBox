@@ -31,12 +31,12 @@ func capture(name: String) -> void:
     root.get_texture().get_image().save_png(out.path_join(name + ".png"))
 
 func turn_text(combat: Node) -> String:
-    return combat.get_node("Turn").text.get_slice("\n", 0)
+    return combat.get_node("StatusStack/Turn").text.get_slice("\n", 0)
 
 func record_turn(combat: Node, index: int) -> String:
     var who := turn_text(combat)
     report.append("== " + who)
-    report.append("Status: " + combat.get_node("Turn").text.replace("\n", " | "))
+    report.append("Status: " + combat.get_node("StatusStack/Turn").text.replace("\n", " | "))
     var dropdown: OptionButton = combat.get_node("CunningAction")
     if dropdown.visible:
         for i in range(dropdown.item_count):
@@ -107,10 +107,10 @@ func run() -> void:
             if await select_in_cycle(combat, "Wild Shape: Wolf"):
                 await key(KEY_SPACE)
                 await capture("%02d-wild-shape" % index)
-                report.append("  After Wild Shape: " + combat.get_node("Turn").text.replace("\n", " | "))
+                report.append("  After Wild Shape: " + combat.get_node("StatusStack/Turn").text.replace("\n", " | "))
                 index += 1
             end_button.pressed.emit()
-        if done.size() >= 6 or combat.get_node("Turn").text.contains("Victory") or combat.get_node("Turn").text.contains("defeat"):
+        if done.size() >= 6 or combat.get_node("StatusStack/Turn").text.contains("Victory") or combat.get_node("StatusStack/Turn").text.contains("defeat"):
             break
         await settle(30)
     var file := FileAccess.open(out.path_join("report.txt"), FileAccess.WRITE)

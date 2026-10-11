@@ -55,7 +55,7 @@ func run_checks() -> void:
         var stayed := log.contains(tr("{name} cannot get away and must stay.").format({"name": "Hero"}))
         require(fled or stayed, "Moving off the edge tries to flee: " + log.left(300))
         if fled:
-            require(current_scene.get_node("Turn").text.contains(tr("Your party flees the battle.")), "With nobody left on the field, the party has fled")
+            require(current_scene.get_node("StatusStack/Turn").text.contains(tr("Your party flees the battle.")), "With nobody left on the field, the party has fled")
         else:
             await key(KEY_LEFT)
             require(current_scene.get_node("Prompt").text == tr("You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."), "A member who must stay is told why it cannot leave")

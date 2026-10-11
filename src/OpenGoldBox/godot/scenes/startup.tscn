@@ -18,13 +18,21 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Image" type="TextureRect" parent="."]
+[node name="ImageFit" type="AspectRatioContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+ratio = 1.776833156216791
+stretch_mode = 2
+alignment_horizontal = 1
+alignment_vertical = 1
+
+[node name="Image" type="TextureRect" parent="ImageFit"]
+layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
@@ -77,7 +85,12 @@ offset_right = 536.0
 offset_bottom = 306.0
 text = "Continue"
 
-[node name="Text" type="TextureRect" parent="."]
+[node name="Text" type="TextureRect" parent="ImageFit/Image"]
+layout_mode = 1
+anchor_left = 0.1
+anchor_top = 0.07
+anchor_right = 0.9
+anchor_bottom = 0.87
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5

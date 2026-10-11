@@ -98,7 +98,7 @@ func run_checks() -> void:
             require(current_scene.get_node("Log").get_parsed_text().contains("Hero -> Troll"), "After looking at an ally, a chosen action still strikes the clicked target")
             await click(Vector2i(1, 3))
             current_scene.get_node("End").pressed.emit(); await settle()
-            require(current_scene.get_node("Turn").text.contains(tr("Troll")), "The troll acts next: " + current_scene.get_node("Turn").text)
+            require(current_scene.get_node("StatusStack/Turn").text.contains(tr("Troll")), "The troll acts next: " + current_scene.get_node("StatusStack/Turn").text)
             require(prompt() == tr("Enemy turn"), "An enemy's turn says so even with an ally selected: " + prompt())
             await load_fixture("gear-bow")
             require(item_index("Shoot") < 0, "A shield keeps the bow from being shot")

@@ -72,7 +72,7 @@ func run_checks() -> void:
             require(current_scene.get_node("Log").get_parsed_text().contains("cannot regain HP" if locale == "en" else "no puede recuperar PG"), "Actual hit reports healing prevention")
             cast.release_focus()
             await load_fixture(klass + "-blocked")
-            require(cast.disabled and current_scene.get_node("Roster").get_parsed_text().contains("Chill Touch" if locale == "en" else "Toque helado"), "Internal checkpoint retains spent action and visible sourced effect")
+            require(cast.disabled and current_scene.get_node("StatusStack/Roster").get_parsed_text().contains("Chill Touch" if locale == "en" else "Toque helado"), "Internal checkpoint retains spent action and visible sourced effect")
             require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No player combat saving")
     restore_files()
     print("Chill Touch view checks passed")

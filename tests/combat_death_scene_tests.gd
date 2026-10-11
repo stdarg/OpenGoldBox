@@ -35,14 +35,14 @@ func check() -> void:
     root.push_input(click)
     # Merric acts eighth, after four Kobold turns of about 155 frames each.
     for frame in range(2000):
-        if combat.get_node("Turn").text.contains("Merric Mistvale turn"):
+        if combat.get_node("StatusStack/Turn").text.contains("Merric Mistvale turn"):
             break
         var end_key := InputEventKey.new()
         end_key.keycode = KEY_ENTER
         end_key.pressed = true
         root.push_input(end_key)
         await process_frame
-    if not combat.get_node("Turn").text.contains("Merric Mistvale turn"):
+    if not combat.get_node("StatusStack/Turn").text.contains("Merric Mistvale turn"):
         push_error("Merric did not receive a turn to attack Kobold 3")
         quit(1)
         return

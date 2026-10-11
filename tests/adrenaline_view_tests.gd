@@ -74,7 +74,7 @@ func run_checks() -> void:
             await settle()
             require(rush.disabled and rush.text.contains("1/2") and not dash.disabled, "Button spends Bonus Action/use while retaining Action Dash")
             require(not modal.visible, "First pool needs no replacement decision")
-            var roster: String = combat.get_node("Roster").text
+            var roster: String = combat.get_node("StatusStack/Roster").text
             require(roster.contains("#f3d55b") and roster.contains("#80d99a") and roster.contains("[hint=") and roster.contains("Adrenaline" if not spanish else "adrenalina"), "Wounded HP is yellow; separate Temporary HP is green and names its source")
             for dimensions in [Vector2i(1920, 1080), Vector2i(1120, 800)]:
                 root.size = dimensions
@@ -102,11 +102,11 @@ func run_checks() -> void:
             modal.push_input(up)
             await settle()
             require(not modal.visible and rush.text.contains("1/2") and not dash.disabled, "Keyboard Use new resolves without refunding costs")
-            require(not combat.get_node("Roster").text.contains("spell:fixture"), "Smaller new pool replaces old source")
+            require(not combat.get_node("StatusStack/Roster").text.contains("spell:fixture"), "Smaller new pool replaces old source")
             combat.get_node("Load").pressed.emit()
             require(modal.visible, "Pending checkpoint can be restored again")
             modal.get_node("Keep").pressed.emit()
-            require(not modal.visible and combat.get_node("Roster").text.contains("spell:fixture"), "Keep current preserves existing source and amount")
+            require(not modal.visible and combat.get_node("StatusStack/Roster").text.contains("spell:fixture"), "Keep current preserves existing source and amount")
     restore_files()
     print("Adrenaline view checks passed: real buttons, keyboard replacement, HP presentation, checkpoint continuation")
     quit(0)

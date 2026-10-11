@@ -48,7 +48,7 @@ func load_fixture(name: String) -> void:
     # Every play-test save starts on the Hero's turn. Anything else means it
     # did not load, usually a save older than the rules: stop and say so
     # rather than play the demo's own fight (tools/playtest.py writes fresh ones).
-    if not combat().get_node("Turn").text.get_slice("\n", 0).ends_with("Hero turn"):
+    if not combat().get_node("StatusStack/Turn").text.get_slice("\n", 0).ends_with("Hero turn"):
         report.append("FAILED: play-test save " + name + " did not load: " + combat().get_node("Prompt").text)
         var f := FileAccess.open(out.path_join("report.txt"), FileAccess.WRITE)
         f.store_string("\n".join(report) + "\n"); f.close()
@@ -60,7 +60,7 @@ func select(label: String) -> bool:
     for i in range(60):
         await key(KEY_A)
         if prompt().contains("Selected: " + label + "."): return true
-    report.append("  NOT IN A CYCLE: " + label + " | " + combat().get_node("Turn").text.replace("\n", " | "))
+    report.append("  NOT IN A CYCLE: " + label + " | " + combat().get_node("StatusStack/Turn").text.replace("\n", " | "))
     report.append("    log: " + log_text().right(900).replace("\n", "\n    log: "))
     var seen := {}
     for i in range(60):
@@ -107,7 +107,7 @@ func next_turn() -> void:
         var decline: Button = combat().get_node("Decline")
         if decline.visible and not decline.disabled:
             decline.pressed.emit()
-        var turn: String = combat().get_node("Turn").text.get_slice("\n", 0)
+        var turn: String = combat().get_node("StatusStack/Turn").text.get_slice("\n", 0)
         var end: Button = combat().get_node("End")
         if not end.visible or end.disabled:
             continue

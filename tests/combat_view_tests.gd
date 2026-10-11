@@ -127,7 +127,7 @@ func run_checks() -> void:
     await settle()
     require(scroll.scroll_horizontal <= canvas.size.x and scroll.scroll_vertical <= canvas.size.y, "Scrolling must clamp to battlefield bounds")
     var before := Vector2(scroll.scroll_horizontal, scroll.scroll_vertical)
-    mouse_button(combat.get_node("Turn").global_position, MOUSE_BUTTON_WHEEL_UP, true)
+    mouse_button(combat.get_node("StatusStack/Turn").global_position, MOUSE_BUTTON_WHEEL_UP, true)
     require(Vector2(scroll.scroll_horizontal, scroll.scroll_vertical) == before, "Wheel outside battlefield must not pan it")
     combat.get_node("ZoomOut100").pressed.emit()
     await settle()

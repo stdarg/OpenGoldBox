@@ -71,7 +71,7 @@ func run_checks() -> void:
         require(current_scene.get_node("Log").get_parsed_text().contains("cannot make Opportunity Attacks" if locale == "en" else "no puede realizar ataques de oportunidad"), "Actual hit reports Opportunity Attack suppression")
         cast.release_focus()
         await load_fixture("suppressed")
-        require(cast.disabled and current_scene.get_node("Roster").get_parsed_text().contains("Shocking Grasp" if locale == "en" else "Toque electrizante"), "Internal checkpoint retains spent action and visible sourced effect")
+        require(cast.disabled and current_scene.get_node("StatusStack/Roster").get_parsed_text().contains("Shocking Grasp" if locale == "en" else "Toque electrizante"), "Internal checkpoint retains spent action and visible sourced effect")
         require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No player combat saving")
     restore_files()
     print("Shocking Grasp view checks passed")

@@ -52,7 +52,7 @@ func load_fixture(name: String) -> void:
     # Every play-test save starts on the Hero's turn. Anything else means it
     # did not load, usually a save older than the rules: stop and say so
     # rather than play the demo's own fight (tools/playtest.py writes fresh ones).
-    if not combat().get_node("Turn").text.get_slice("\n", 0).ends_with("Hero turn"):
+    if not combat().get_node("StatusStack/Turn").text.get_slice("\n", 0).ends_with("Hero turn"):
         report.append("FAILED: play-test save " + name + " did not load: " + combat().get_node("Prompt").text)
         var f := FileAccess.open(out.path_join("report.txt"), FileAccess.WRITE)
         f.store_string("\n".join(report) + "\n"); f.close()
@@ -97,10 +97,10 @@ func hover_enemies() -> void:
 
 # The standalone demo hides End turn; Enter and End's signal still end a turn.
 func hero_turn() -> bool:
-    return combat().get_node("Turn").text.get_slice("\n", 0).ends_with("Hero turn")
+    return combat().get_node("StatusStack/Turn").text.get_slice("\n", 0).ends_with("Hero turn")
 
 func fight_over() -> bool:
-    return not combat().get_node("Turn").text.begins_with("Round")
+    return not combat().get_node("StatusStack/Turn").text.begins_with("Round")
 
 # Waits until the hero acts again or the fight ends, declining reactions and
 # ending the turns of other party members.
@@ -112,7 +112,7 @@ func wait_for_hero() -> void:
             decline.pressed.emit()
         if hero_turn() or fight_over():
             return
-        if combat().get_node("Turn").text.get_slice("\n", 0).ends_with("Ally turn"):
+        if combat().get_node("StatusStack/Turn").text.get_slice("\n", 0).ends_with("Ally turn"):
             combat().get_node("End").pressed.emit()
 
 # Reports each watched line the log gained since `before`.
@@ -157,7 +157,7 @@ func morale(name: String) -> void:
             await capture(name + "-2-round-%d" % (round + 1))
     report.append("  log: " + log_text().replace("\n", "\n  log: "))
     await capture(name + "-3-end")
-    report.append("  turn panel: " + combat().get_node("Turn").text.replace("\n", " | "))
+    report.append("  turn panel: " + combat().get_node("StatusStack/Turn").text.replace("\n", " | "))
 
 func bandage() -> void:
     report.append("== bandage")
@@ -173,7 +173,7 @@ func bandage() -> void:
     await settle(20)
     report_new_lines(before)
     await capture("bandage-2-end")
-    report.append("  turn panel: " + combat().get_node("Turn").text.replace("\n", " | "))
+    report.append("  turn panel: " + combat().get_node("StatusStack/Turn").text.replace("\n", " | "))
 
 func flee() -> void:
     report.append("== flee button")
@@ -194,7 +194,7 @@ func flee() -> void:
     report_new_lines(before)
     report.append("  log: " + log_text().replace("\n", "\n  log: "))
     await capture("flee-3-end")
-    report.append("  turn panel: " + combat().get_node("Turn").text.replace("\n", " | "))
+    report.append("  turn panel: " + combat().get_node("StatusStack/Turn").text.replace("\n", " | "))
 
 func run() -> void:
     DirAccess.make_dir_recursive_absolute(out)

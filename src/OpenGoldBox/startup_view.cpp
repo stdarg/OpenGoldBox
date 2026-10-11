@@ -282,7 +282,7 @@ void StartupView::close_language()
 
 void StartupView::show_screen()
 {
-    auto *image = &required_node<TextureRect>(*this, "Image"); // scene-owned
+    auto *image = &required_node<TextureRect>(*this, "ImageFit/Image"); // scene-owned
     // Load once: advancing changes only text, never the backdrop texture or geometry.
     if (image->get_texture().is_null())
     {
@@ -307,14 +307,13 @@ void StartupView::show_screen()
         finish();
         return;
     }
-    auto *text = &required_node<TextureRect>(*this, "Text"); // scene-owned
+    auto *text = &required_node<TextureRect>(*this, "ImageFit/Image/Text"); // scene-owned
     text->set_texture(lettering);
     auto tint = get_theme_color("startup_fade_tint", "OpenGoldPalette");
     tint.a = 0;
     text->set_self_modulate(tint);
     fade_elapsed_ = 0;
     set_process(true);
-    layout_text();
 }
 
 void StartupView::_process(double delta)
@@ -324,37 +323,9 @@ void StartupView::_process(double delta)
     fade_elapsed_ = std::min(text_fade_seconds, fade_elapsed_ + std::max(0.0, delta));
     auto tint = get_theme_color("startup_fade_tint", "OpenGoldPalette");
     tint.a = fade_elapsed_ / text_fade_seconds;
-    required_node<TextureRect>(*this, "Text").set_self_modulate(tint);
+    required_node<TextureRect>(*this, "ImageFit/Image/Text").set_self_modulate(tint);
     if (fade_elapsed_ >= text_fade_seconds)
         set_process(false);
-}
-
-void StartupView::_notification(int what)
-{
-    if (what == NOTIFICATION_RESIZED && is_node_ready())
-        layout_text();
-}
-
-void StartupView::layout_text()
-{
-    // The text uses the same centered, uniform fit as the shared background.
-    const auto texture = required_node<TextureRect>(*this, "Image").get_texture();
-    if (texture.is_null())
-        return;
-    const auto source = texture->get_size();
-    const double fit = std::min(get_size().x / source.x, get_size().y / source.y);
-    const auto fitted = source * fit;
-    const auto origin = (get_size() - fitted) * .5;
-    // Keep the lettering proportions and comfortable margins from the reference.
-    const double lettering_scale = get_theme_constant("startup_lettering_percent", "OpenGoldMetrics") / 100.0;
-    const double vertical_offset = get_theme_constant("startup_lettering_up_percent", "OpenGoldMetrics") / 100.0;
-    const Vector2 scene_offset(get_theme_constant("startup_lettering_offset_x", "OpenGoldMetrics"),
-                               get_theme_constant("startup_lettering_offset_y", "OpenGoldMetrics"));
-    const auto lettering_size = fitted * lettering_scale;
-    auto *lettering = &required_node<TextureRect>(*this, "Text"); // scene-owned
-    lettering->set_position(origin + (fitted - lettering_size) * .5 -
-                            Vector2(0, fitted.y * vertical_offset) + scene_offset);
-    lettering->set_size(lettering_size);
 }
 
 void StartupView::_input(const Ref<InputEvent> &event)

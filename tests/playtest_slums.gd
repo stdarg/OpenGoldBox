@@ -132,7 +132,7 @@ func play_story(wanted: Array) -> void:
 # A won or lost fight leaves the combat screen up (a defeat under its dialog);
 # its turn panel then no longer names a round.
 func fighting() -> bool:
-    return in_combat() and combat().get_node("Turn").text.begins_with("Round")
+    return in_combat() and combat().get_node("StatusStack/Turn").text.begins_with("Round")
 
 func combat() -> Control:
     return current_scene.get_node("CampaignCombat")
@@ -255,7 +255,7 @@ func play_fight(name: String) -> void:
             await approach()
             await try_attack()
         if party_turn(): await key(KEY_ENTER)
-    report.append("  fight over: " + (combat().get_node("Turn").text.get_slice("\n", 0) if in_combat() else "left combat"))
+    report.append("  fight over: " + (combat().get_node("StatusStack/Turn").text.get_slice("\n", 0) if in_combat() else "left combat"))
     await watch_log()
     await capture(name + "-end")
     if not in_combat(): await play_story([])
@@ -282,7 +282,7 @@ func flee_run() -> void:
             continue
         await create_timer(0.3).timeout
     await watch_log()
-    report.append("  fight over: " + (combat().get_node("Turn").text.get_slice("\n", 0) if in_combat() else "left combat"))
+    report.append("  fight over: " + (combat().get_node("StatusStack/Turn").text.get_slice("\n", 0) if in_combat() else "left combat"))
     await capture("flee-end")
     if not in_combat(): await play_story([])
 

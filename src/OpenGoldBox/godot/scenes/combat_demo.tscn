@@ -46,24 +46,23 @@ offset_bottom = 54
 metadata/layout_reference = Rect2(1778, 20, 118, 34)
 text = "Restart"
 
-[node name="Turn" type="Label" parent="."]
+[node name="StatusStack" type="VBoxContainer" parent="."]
 anchor_left = 1
 anchor_right = 1
 offset_left = -382
 offset_right = -24
 offset_top = 70
-offset_bottom = 154
-metadata/layout_reference = Rect2(1538, 70, 358, 84)
+offset_bottom = 308
+theme_type_variation = &"CombatStatusStack"
+
+[node name="Turn" type="Label" parent="StatusStack"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 84)
 theme_type_variation = &"LabelTealText18"
 autowrap_mode = 2
-[node name="Roster" type="RichTextLabel" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -382
-offset_right = -24
-offset_top = 162
-offset_bottom = 308
-metadata/layout_reference = Rect2(1538, 162, 358, 146)
+[node name="Roster" type="RichTextLabel" parent="StatusStack"]
+layout_mode = 2
+size_flags_vertical = 3
 theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = true

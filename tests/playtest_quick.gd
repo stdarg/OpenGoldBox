@@ -28,7 +28,7 @@ func prompt() -> String:
     return combat().get_node("Prompt").text
 
 func turn() -> String:
-    return combat().get_node("Turn").text.get_slice("\n", 0)
+    return combat().get_node("StatusStack/Turn").text.get_slice("\n", 0)
 
 func key(code: Key) -> void:
     for down in [true, false]:

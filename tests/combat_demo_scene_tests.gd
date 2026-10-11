@@ -41,7 +41,7 @@ func check_demo() -> void:
     require(combat.get_node("ZoomLevel").text == "100%", "Demo shows the combat zoom level")
     require(combat.get_node("Footer").text.contains("Shift+arrow: diagonal"),
         "Demo explains the combat keyboard controls")
-    require(not combat.get_node("Roster").visible and not combat.get_node("Turn").visible,
+    require(not combat.get_node("StatusStack/Roster").visible and not combat.get_node("StatusStack/Turn").visible,
         "The upper-right text window is removed")
     require(combat.get_node("LogHeader").text.contains("Dorian Nightwind turn"),
         "Turn text moved below the battlefield")
@@ -121,7 +121,7 @@ func check_demo() -> void:
         "Attack effects use one-eighth volume")
     require(combat.get_node("Log").text.contains("Dorian Nightwind -> Kobold"),
         "Arrow key submits a melee attack against the occupied enemy square")
-    require(combat.get_node("Turn").text.contains("Dorian Nightwind turn") and not combat.get_node("End").disabled,
+    require(combat.get_node("StatusStack/Turn").text.contains("Dorian Nightwind turn") and not combat.get_node("End").disabled,
         "Attack preserves the hero's remaining turn and explicit End control")
     await RenderingServer.frame_post_draw
     var attack_screenshot := root.get_texture().get_image()
@@ -154,7 +154,7 @@ func check_demo() -> void:
     require(combat.selected_character_id() == 3, "Reset demo begins with the Cleric's normal turn")
     var movement_pattern := RegEx.new()
     movement_pattern.compile("Move ([0-9]+) ft")
-    var initial_movement := int(movement_pattern.search(combat.get_node("Turn").text).get_string(1))
+    var initial_movement := int(movement_pattern.search(combat.get_node("StatusStack/Turn").text).get_string(1))
     combat.get_node("Disengage").pressed.emit()
     combat.get_node("Move").pressed.emit()
     var canvas: Control = combat.get_node("BattlefieldScroll/Canvas")
@@ -168,7 +168,7 @@ func check_demo() -> void:
     root.push_input(click)
     require(combat.selected_character_cell() == Vector2i(4, 5),
         "Clicking a free square moves the active character through two allied spaces")
-    require(combat.get_node("Turn").text.contains("Move %d ft" % (initial_movement - 15)) and combat.get_node("Turn").text.contains("Action spent"),
+    require(combat.get_node("StatusStack/Turn").text.contains("Move %d ft" % (initial_movement - 15)) and combat.get_node("StatusStack/Turn").text.contains("Action spent"),
         "Transit costs fifteen feet and preserves the spent Disengage action")
     root.push_input(active_key)
     require(combat.selected_character_cell() == Vector2i(4, 5) and combat.get_node("Log").text.contains("That square is occupied."),

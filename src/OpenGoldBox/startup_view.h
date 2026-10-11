@@ -17,7 +17,6 @@ class StartupView : public godot::Control
 
     void _ready() override;
     void _process(double delta) override;
-    void _notification(int what);
     void _input(const godot::Ref<godot::InputEvent> &event) override;
 
   protected:
@@ -33,7 +32,6 @@ class StartupView : public godot::Control
     godot::String pending_path_;
     double fade_elapsed_{};
     void show_screen();
-    void layout_text();
     void finish();
     void open_character_creation();
     void begin_startup();

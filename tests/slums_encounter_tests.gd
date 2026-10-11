@@ -88,7 +88,7 @@ func lose_the_fight() -> void:
     combat.set_process(true)
     for step in range(3000):
         await settle(2)
-        if combat.get_node("Turn").text.contains(tr("Party incapacitated / defeat")): return
+        if combat.get_node("StatusStack/Turn").text.contains(tr("Party incapacitated / defeat")): return
         for name in ["Decline", "End"]:
             var b: Button = combat.get_node(name)
             if b.is_visible_in_tree() and not b.disabled:

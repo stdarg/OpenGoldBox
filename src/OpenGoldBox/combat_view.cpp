@@ -538,7 +538,7 @@ void CombatView::_ready()
         required_node<Label>(*this, "Footer").set_text(i18n::text(N_(
                     "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end")));
         for (const char *name :
-                {"Turn", "Roster", "Prompt", "Help"
+                {"StatusStack", "Prompt", "Help"
                 })
             required_node<Control>(*this, name).hide();
         for (const char *name :
@@ -599,7 +599,6 @@ void CombatView::layout()
     required_node<Button>(*this, "ZoomIn10").set_disabled(zoom_percent >= 1000);
     required_node<Button>(*this, "ZoomIn100").set_disabled(zoom_percent >= 1000);
     layout_reaction_controls(party_controls);
-    layout_status();
 }
 
 // How far below the battlefield the log starts: the rows of controls showing.
@@ -701,25 +700,6 @@ void CombatView::layout_log()
     auto *log = &required_node<RichTextLabel>(*this, "Log");
     log->set_position(log_area_.position + Vector2(0, header_height));
     log->set_size(Vector2(log_area_.size.x, std::max(0.0, log_area_.size.y - header_height)));
-}
-
-void CombatView::layout_status()
-{
-    // Let the translated status summary determine its height. The roster keeps
-    // the remaining space above the action prompt and scrolls when necessary.
-    auto *turn = &required_node<Label>(*this, "Turn");
-    turn->set_size(Vector2(turn->get_size().x, 0));
-    auto *roster = &required_node<RichTextLabel>(*this, "Roster");
-    presentation::restore_scene_control(*roster);
-    const double top =
-        std::max<double>(roster->get_position().y,
-                         turn->get_position().y + turn->get_size().y +
-                         get_theme_constant("combat_status_gap", "OpenGoldMetrics"));
-    roster->set_position(Vector2(turn->get_position().x, top));
-    const auto &prompt = required_node<Control>(*this, "Prompt");
-    roster->set_size(Vector2(roster->get_size().x,
-                     std::max(0.0, prompt.get_position().y -
-                              get_theme_constant("combat_roster_bottom_gap", "OpenGoldMetrics") - top)));
 }
 
 #include "nick_dialog_impl.h"
@@ -2062,8 +2042,7 @@ void CombatView::refresh()
         selected_ = s.actor;
     if (loaded)
         last_actor_ = s.actor;
-    required_node<Label>(*this, "Turn").set_text(turn);
-    layout_status();
+    required_node<Label>(*this, "StatusStack/Turn").set_text(turn);
     String roster;
     for (const auto &a : s.combatants)
     {
@@ -2075,7 +2054,7 @@ void CombatView::refresh()
         if (!a.conditions.empty())
             roster += "    " + presentation::bbcode_literal(i18n::render(a.conditions)) + "\n";
     }
-    required_node<RichTextLabel>(*this, "Roster").set_text(roster);
+    required_node<RichTextLabel>(*this, "StatusStack/Roster").set_text(roster);
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         auto *label = &required_node<RichTextLabel>(*this, gs("PartyHP" + std::to_string(slot)));

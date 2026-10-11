@@ -57,7 +57,7 @@ func run_checks() -> void:
     var combat := creation.get_node_or_null("CampaignCombat")
     require(combat != null and combat.is_visible_in_tree(), "Supported party must start combat after a rejection")
     require(not creation.get_node("PartyPanel").visible, "Successful handoff opens the combat screen")
-    require(not combat.get_node("Roster").text.is_empty(), "Successful handoff must contain actual combatants")
+    require(not combat.get_node("StatusStack/Roster").text.is_empty(), "Successful handoff must contain actual combatants")
     var scroll: ScrollContainer = combat.get_node("BattlefieldScroll")
     var canvas: Control = scroll.get_node("Canvas")
     # The board is scaled to fill the view along its larger ratio, then zoomed.

@@ -71,7 +71,7 @@ func run_checks() -> void:
         require(current_scene.get_node("Log").get_parsed_text().contains("slowed by Ray of Frost" if locale == "en" else "ralentizado por Rayo de escarcha"), "Actual hit reports the slow")
         cast.release_focus()
         await load_fixture("slow")
-        require(cast.disabled and current_scene.get_node("Roster").get_parsed_text().contains("Ray of Frost" if locale == "en" else "Rayo de escarcha"), "Internal checkpoint retains spent action and visible sourced effect")
+        require(cast.disabled and current_scene.get_node("StatusStack/Roster").get_parsed_text().contains("Ray of Frost" if locale == "en" else "Rayo de escarcha"), "Internal checkpoint retains spent action and visible sourced effect")
         require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No player combat saving")
     restore_files()
     print("Ray of Frost view checks passed")

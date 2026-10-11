@@ -83,17 +83,17 @@ func run_checks() -> void:
     require(header.begins_with("OGCOMBAT "), "The game writes a combat checkpoint header")
 
     load_checkpoint(combat, path, header, MOVEMENT_BODY)
-    require(combat.get_node("Turn").text.contains("Second guard reaction"), "Movement queue retains its next reactor")
+    require(combat.get_node("StatusStack/Turn").text.contains("Second guard reaction"), "Movement queue retains its next reactor")
     require(combat.selected_character_cell() == Vector2i(2, 2), "Mover still waits before leaving reach")
-    var before: String = combat.get_node("Turn").text
+    var before: String = combat.get_node("StatusStack/Turn").text
     key(KEY_ENTER)
-    require(combat.get_node("Turn").text == before, "Keyboard cannot bypass the enemy's pending reaction")
-    var expected_turn: String = combat.get_node("Turn").text
-    var expected_roster: String = combat.get_node("Roster").text
+    require(combat.get_node("StatusStack/Turn").text == before, "Keyboard cannot bypass the enemy's pending reaction")
+    var expected_turn: String = combat.get_node("StatusStack/Turn").text
+    var expected_roster: String = combat.get_node("StatusStack/Roster").text
     combat.get_node("Save").pressed.emit()
     require(combat.get_node("Prompt").text.contains("saved"), "Pending movement saves through existing controls")
     combat.get_node("Load").pressed.emit()
-    require(combat.get_node("Turn").text == expected_turn and combat.get_node("Roster").text == expected_roster,
+    require(combat.get_node("StatusStack/Turn").text == expected_turn and combat.get_node("StatusStack/Roster").text == expected_roster,
         "Subsequent reload preserves turn, resources and pending movement")
 
     # The existing movement input crosses an Unconscious enemy. The occupied

@@ -173,7 +173,6 @@ class CombatView : public godot::Control
     std::optional<std::pair<opengold::rules::EntityId, opengold::rules::Cell>> followed_;
     bool panning_{}, check_target_centered_{};
     void layout();
-    void layout_status();
     void layout_log();
     [[nodiscard]] double controls_height(bool show_controls) const;
     void layout_reaction_controls(bool reaction);

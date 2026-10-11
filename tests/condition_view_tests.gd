@@ -37,7 +37,7 @@ func run_checks() -> void:
     var combat := current_scene
     combat.set_process(false) # Keep the real enemy AI from racing UI assertions.
     var blindness: Button = combat.get_node("Blindness")
-    var roster: RichTextLabel = combat.get_node("Roster")
+    var roster: RichTextLabel = combat.get_node("StatusStack/Roster")
     var log: RichTextLabel = combat.get_node("Log")
     require(not blindness.disabled, "Prepared fixture offers Blindness")
     require(blindness.focus_mode == Control.FOCUS_ALL, "Blindness has keyboard focus")
@@ -67,8 +67,8 @@ func run_checks() -> void:
     require(roster.text.contains("Blinded"), "Failed save displays condition beside monster")
     require(log.text.contains("Constitution save") and log.text.contains("DC 13"), "Log explains the saving throw")
     require(blindness.disabled, "Casting spends action and disables another cast")
-    require(not combat.get_node("Turn").get_global_rect().intersects(roster.get_global_rect()), "Turn status does not overlap roster")
-    require(combat.get_node("Turn").text.contains("L2 slots: 1"), "Level-two slot expenditure is visible")
+    require(not combat.get_node("StatusStack/Turn").get_global_rect().intersects(roster.get_global_rect()), "Turn status does not overlap roster")
+    require(combat.get_node("StatusStack/Turn").text.contains("L2 slots: 1"), "Level-two slot expenditure is visible")
     var expected_roster := roster.text
     var expected_log := log.text
     combat.get_node("Save").emit_signal("pressed")
