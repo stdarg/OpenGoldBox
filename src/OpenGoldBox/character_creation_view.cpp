@@ -305,12 +305,9 @@ void CharacterCreationView::_ready()
 
 void CharacterCreationView::layout()
 {
-    // Godot anchors and offsets own the default rectangles. Restore them when
-    // leaving a step whose scene-authored variant moved shared controls.
-    for (int i = 0; i < get_child_count(); ++i)
-        if (auto *control = Object::cast_to<Control>(get_child(i));
-                control && control->has_meta("layout_reference"))
-            presentation::restore_scene_control(*control);
+    auto &creation_layout = required_node<Node>(*this, "CreationLayout");
+    creation_layout.call("play", "normal");
+    creation_layout.call("advance", 0);
 
     const auto rect = [&](const char *name)
     {
@@ -323,27 +320,15 @@ void CharacterCreationView::layout()
     ready_rect_ = rect("ReadyBounds");
     action_rect_ = rect("ActionBounds");
 
-    const auto apply_variant = [&](const char *group)
-    {
-        auto &guides = required_node<Control>(*this, group);
-        for (int i = 0; i < guides.get_child_count(); ++i)
-        {
-            auto *guide = Object::cast_to<Control>(guides.get_child(i));
-            if (!guide)
-                continue;
-            auto &target = required_node<Control>(*this, NodePath(guide->get_name()));
-            target.set_position(guide->get_position());
-            target.set_size(guide->get_size());
-        }
-    };
     if (creator_)
     {
         if (creator_->step() == CreationStep::race)
-            apply_variant("RaceLayout");
+            creation_layout.call("play", "race");
         else if (creator_->step() == CreationStep::attributes)
-            apply_variant("AttributeLayout");
+            creation_layout.call("play", "attributes");
         else if (creator_->step() == CreationStep::sheet)
-            apply_variant("SheetLayout");
+            creation_layout.call("play", "sheet");
+        creation_layout.call("advance", 0);
     }
 
     // Split the available width among the scene-authored number of columns.
