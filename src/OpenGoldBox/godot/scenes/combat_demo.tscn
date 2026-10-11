@@ -1,4 +1,6 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="AnimationLibrary" path="res://scenes/combat_cunning_layout.tres" id="1_cunning_layout"]
 
 [node name="CombatDemo" type="CombatView"]
 layout_mode = 3
@@ -700,7 +702,6 @@ offset_bottom = 3
 metadata/layout_reference = Rect2(24, 885, 180, 36)
 metadata/action_row = true
 metadata/action_after_weapon = true
-metadata/aid_layout = Rect2(24, 885, 150, 36)
 visible = false
 text = "Cunning Action"
 
@@ -714,7 +715,6 @@ offset_bottom = 3
 metadata/layout_reference = Rect2(214, 885, 200, 36)
 metadata/action_row = true
 metadata/action_after_weapon = true
-metadata/aid_layout = Rect2(184, 885, 160, 36)
 visible = false
 
 [node name="UseCunningAction" type="Button" parent="."]
@@ -727,7 +727,6 @@ offset_bottom = 3
 metadata/layout_reference = Rect2(424, 885, 330, 36)
 metadata/action_row = true
 metadata/action_after_weapon = true
-metadata/aid_layout = Rect2(354, 885, 180, 36)
 visible = false
 text = "Use Bonus Action"
 
@@ -874,6 +873,12 @@ metadata/action_row = true
 metadata/action_after_weapon = true
 visible = false
 text = "Stabilize"
+
+[node name="CunningLayout" type="AnimationPlayer" parent="."]
+root_node = NodePath("..")
+libraries = {
+"": ExtResource("1_cunning_layout")
+}
 
 [node name="WeaponLabel" type="Label" parent="."]
 anchor_top = 0.85

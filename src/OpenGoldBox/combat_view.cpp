@@ -651,14 +651,10 @@ void CombatView::layout_reaction_controls(bool show_controls)
         if (auto *control = Object::cast_to<Control>(get_child(i));
                 control && control->has_meta("action_items"))
             control->set_position(Vector2(control->get_position().x, item_y));
-    if (required_node<Button>(*this, "Stabilize").is_visible())
-        for (const char *name : {"CunningActionLabel", "CunningAction", "UseCunningAction"})
-        {
-            auto &control = required_node<Control>(*this, name);
-            const Rect2 aid = control.get_meta("aid_layout");
-            control.set_position(Vector2(aid.position.x, control.get_position().y));
-            control.set_size(Vector2(aid.size.x, control.get_size().y));
-        }
+    auto &cunning_layout = required_node<Node>(*this, "CunningLayout");
+    cunning_layout.call("play", required_node<Button>(*this, "Stabilize").is_visible()
+                        ? "aid" : "normal");
+    cunning_layout.call("advance", 0);
     auto &cantrip = required_node<OptionButton>(*this, "Cantrip");
     auto &cast = required_node<Button>(*this, "CastCantrip");
     cast.set_position(Vector2(cantrip.get_position().x + cantrip.get_size().x +
