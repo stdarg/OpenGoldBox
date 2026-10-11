@@ -51,8 +51,7 @@ void RolfTourView::setup_rest()
     list->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
     auto *info = presentation::dialog_control<RichTextLabel>(*w, "Info");
     info->set_scroll_active(true);
-    auto *result = presentation::dialog_control<Label>(*w, "Result");
-    result->set("autowrap_mode", 3);
+    presentation::dialog_control<Label>(*w, "Result");
     auto button = [&](const char *name, const char *text, Callable callback)
     {
         auto *b = presentation::dialog_control<Button>(*w, name);

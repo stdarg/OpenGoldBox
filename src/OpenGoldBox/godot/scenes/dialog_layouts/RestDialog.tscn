@@ -1,8 +1,11 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/dialog_layouts/rest_dialog_layout.tres" id="1_layout"]
 
+[ext_resource type="Script" path="res://scenes/dialog_window_size.gd" id="99_window_size"]
+
 [node name="RestDialog" type="Control"]
+script = ExtResource("99_window_size")
 offset_right = 720.0
 offset_bottom = 640.0
 
@@ -31,6 +34,7 @@ offset_right = 696.0
 offset_bottom = 482.0
 
 [node name="Result" type="Label" parent="."]
+autowrap_mode = 3
 offset_left = 24.0
 offset_top = 490.0
 offset_right = 696.0

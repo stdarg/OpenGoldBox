@@ -25,8 +25,6 @@ godot::Window *setup_training_replacement(godot::Node &parent, const godot::Call
     dialog_control<Label>(*w, "Current");
     dialog_control<Label>(*w, "Limit");
     auto *scroll = dialog_control<ScrollContainer>(*w, "Choices");
-    scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
-    scroll->set_follow_focus(true);
     auto rows = instantiate_control<VBoxContainer>(
         "res://scenes/control_templates/training_replacement_rows.tscn");
     attach_child(*scroll, std::move(rows));
@@ -77,7 +75,6 @@ void refresh_training_replacement(godot::Window &w,
             auto owned = instantiate_control<CheckBox>(
                 "res://scenes/control_templates/training_replacement.tscn");
             owned->set_name(name);
-            style_choice(*owned);
             box = attach_child(*rows, std::move(owned));
             box->connect("toggled", toggled.bind(name));
         }

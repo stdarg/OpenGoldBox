@@ -100,7 +100,7 @@ void CharacterPoolDialog::select(std::int64_t index)
         return;
     pool_index_ = static_cast<unsigned>(index);
     const auto &character = pool_[pool_index_];
-    required_node<RichTextLabel>(*this, "Text").set_text(presentation::sheet_text(character));
+    required_node<RichTextLabel>(*this, "Text").call("render", presentation::sheet_text(character));
     required_node<TextureRect>(*this, "Portrait")
     .set_texture(portraits_->texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)

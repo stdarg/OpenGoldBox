@@ -47,7 +47,7 @@ void TownSheetDialog::show_member(std::int64_t slot)
         return;
     const auto &m = campaign.member(campaign.state().slots[slot]);
     member_ = m.id;
-    required_node<RichTextLabel>(*this, "Text").set_text(presentation::sheet_text(campaign, m));
+    required_node<RichTextLabel>(*this, "Text").call("render", presentation::sheet_text(campaign, m));
     required_node<Button>(*this, "MakeLeader").set_disabled(m.id == campaign.leader());
     popup_centered();
 }

@@ -5,6 +5,7 @@ extends Node
 # keeps the current geometry when action rows appear without rebuilding C++.
 var _authored_offsets: Dictionary = {}
 var _show_controls := false
+var base_tile := 0.0
 
 
 func _ready() -> void:
@@ -68,11 +69,47 @@ func apply_layout(board_size: Vector2i, zoom: float, show_controls: bool) -> Dic
     var height := minf(scroll.size.y, view.size.y - _metric("combat_board_bottom_reserve")
         - reserved - _metric("combat_min_log_height"))
     scroll.offset_bottom = scroll.position.y + height - scroll.anchor_bottom * view.size.y
-    var base_tile := maxf(scroll.size.x / board_size.x, scroll.size.y / board_size.y)
+    base_tile = maxf(scroll.size.x / board_size.x, scroll.size.y / board_size.y)
     var canvas: Control = view.get_node("BattlefieldScroll/Canvas")
     canvas.custom_minimum_size = Vector2(board_size) * base_tile * zoom
     layout_reaction_controls(show_controls)
     return {"controls_height": reserved, "base_tile": base_tile}
+
+
+func center_on(cell: Vector2i, zoom: float) -> void:
+    var scroll: ScrollContainer = _view().get_node("BattlefieldScroll")
+    var tile := base_tile * zoom
+    scroll.scroll_horizontal = int((cell.x + 0.5) * tile - scroll.size.x * 0.5)
+    scroll.scroll_vertical = int((cell.y + 0.5) * tile - scroll.size.y * 0.5)
+
+
+func cell_pixels(zoom: float) -> float:
+    return base_tile * zoom
+
+
+func cell_at_canvas(point: Vector2, zoom: float) -> Vector2i:
+    var tile := cell_pixels(zoom)
+    return Vector2i(floori(point.x / tile), floori(point.y / tile))
+
+
+func canvas_center_of(cell: Vector2i, zoom: float) -> Vector2:
+    return (Vector2(cell) + Vector2(0.5, 0.5)) * cell_pixels(zoom)
+
+
+func is_on_scrollbar(pointer: Vector2) -> bool:
+    var scroll: ScrollContainer = _view().get_node("BattlefieldScroll")
+    for child in scroll.get_children(true):
+        if child is ScrollBar and child.visible:
+            var local: Vector2 = child.get_global_transform_with_canvas().affine_inverse() * pointer
+            if Rect2(Vector2.ZERO, child.size).has_point(local):
+                return true
+    return false
+
+
+func pan_by(delta: Vector2) -> void:
+    var scroll: ScrollContainer = _view().get_node("BattlefieldScroll")
+    scroll.scroll_horizontal -= int(delta.x)
+    scroll.scroll_vertical -= int(delta.y)
 
 
 func layout_reaction_controls(show_controls: bool) -> void:

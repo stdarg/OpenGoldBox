@@ -34,12 +34,9 @@ void setup_nick(godot::Node &root, Text text, const godot::Callable &open,
     auto *explanation = dialog_control<Label>(*dialog, "Text");
     explanation->set_text(text(N_(
                                    "Choose a Nick weapon and attack. This uses the Light extra attack for this turn and does not spend your Bonus Action.")));
-    explanation->set("autowrap_mode", 3);
     auto *label = dialog_control<Label>(*dialog, "Label");
     label->set_text(text(N_("Weapon and attack")));
     auto *choices = dialog_control<OptionButton>(*dialog, "Choices");
-    choices->set_fit_to_longest_item(false);
-    choices->set_clip_text(true);
     choices->connect("item_selected", chosen);
     auto *no = dialog_control<Button>(*dialog, "Cancel");
     no->set_text(text(N_("Cancel")));

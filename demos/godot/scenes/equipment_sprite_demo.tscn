@@ -1,12 +1,19 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" path="res://scenes/window_minimum.gd" id="99_window_minimum"]
+
 [node name="EquipmentSpriteDemo" type="EquipmentSpriteDemo"]
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="WindowMinimum" type="Node" parent="."]
+script = ExtResource("99_window_minimum")
+metric_prefix = "equipment_sprite"
 
 [node name="Title" type="Label" parent="."]
 anchor_right = 1.0

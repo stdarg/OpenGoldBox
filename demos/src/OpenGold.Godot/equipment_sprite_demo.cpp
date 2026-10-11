@@ -35,10 +35,6 @@ std::filesystem::path path(const String &s)
 
 void EquipmentSpriteDemo::_ready()
 {
-    set_texture_filter(TEXTURE_FILTER_NEAREST);
-    get_window()->set_min_size(Vector2i(
-        get_theme_constant("equipment_sprite_min_width", "OpenGoldMetrics"),
-        get_theme_constant("equipment_sprite_min_height", "OpenGoldMetrics")));
     auto *list = get_node<ItemList>("Items");
     list->connect("item_selected", callable_mp(this, &EquipmentSpriteDemo::select));
     list->connect("item_activated", callable_mp(this, &EquipmentSpriteDemo::activate));

@@ -25,11 +25,6 @@
 using namespace godot;
 using presentation::required_node;
 
-namespace
-{
-constexpr double text_fade_seconds = 0.6;
-}
-
 void StartupView::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("open_character_creation"),
@@ -38,7 +33,6 @@ void StartupView::_bind_methods()
 
 void StartupView::_ready()
 {
-    set_process(false);
     i18n::initialize();
     choose_language();
 }
@@ -309,23 +303,7 @@ void StartupView::show_screen()
     }
     auto *text = &required_node<TextureRect>(*this, "ImageFit/Image/Text"); // scene-owned
     text->set_texture(lettering);
-    auto tint = get_theme_color("startup_fade_tint", "OpenGoldPalette");
-    tint.a = 0;
-    text->set_self_modulate(tint);
-    fade_elapsed_ = 0;
-    set_process(true);
-}
-
-void StartupView::_process(double delta)
-{
-    if (finishing_)
-        return;
-    fade_elapsed_ = std::min(text_fade_seconds, fade_elapsed_ + std::max(0.0, delta));
-    auto tint = get_theme_color("startup_fade_tint", "OpenGoldPalette");
-    tint.a = fade_elapsed_ / text_fade_seconds;
-    required_node<TextureRect>(*this, "ImageFit/Image/Text").set_self_modulate(tint);
-    if (fade_elapsed_ >= text_fade_seconds)
-        set_process(false);
+    text->call("begin");
 }
 
 void StartupView::_input(const Ref<InputEvent> &event)
@@ -354,7 +332,7 @@ void StartupView::finish()
     if (finishing_)
         return;
     finishing_ = true;
-    set_process(false);
+    required_node<TextureRect>(*this, "ImageFit/Image/Text").call("cancel");
     // Scene changes must occur after ready/input dispatch has completed.
     call_deferred("open_character_creation");
 }

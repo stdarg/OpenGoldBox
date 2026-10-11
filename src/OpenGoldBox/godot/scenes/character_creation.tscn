@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/creation_layout.tres" id="1_creation_layout"]
 [ext_resource type="Script" path="res://scenes/creation_column_layout.gd" id="2_column_layout"]
@@ -7,13 +7,24 @@
 [ext_resource type="Script" path="res://scenes/creation_score.gd" id="5_creation_score"]
 [ext_resource type="Script" path="res://scenes/creation_canvas.gd" id="6_creation_canvas"]
 
+[ext_resource type="Script" path="res://scenes/window_minimum.gd" id="99_window_minimum"]
+
+[ext_resource type="Script" path="res://scenes/themed_rich_text.gd" id="98_rich_text"]
+
+[ext_resource type="Script" path="res://scenes/training_scroll.gd" id="96_training_scroll"]
+
 [node name="CharacterCreation" type="CharacterCreationView"]
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="WindowMinimum" type="Node" parent="."]
+script = ExtResource("99_window_minimum")
+metric_prefix = "creation"
 
 [node name="CreationCanvas" type="Control" parent="."]
 anchors_preset = 15
@@ -87,6 +98,7 @@ max_columns = 2
 same_column_width = true
 
 [node name="Description" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
@@ -1403,6 +1415,7 @@ metadata/layout_reference = Rect2(0, 0, 1000, 960)
 theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="PoolModal"]
+script = ExtResource("98_rich_text")
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 508
@@ -1447,6 +1460,7 @@ metadata/layout_reference = Rect2(0, 0, 1000, 960)
 theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="TownSheet"]
+script = ExtResource("98_rich_text")
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 24
@@ -1834,6 +1848,7 @@ bbcode_enabled = true
 auto_translate_mode = 2
 
 [node name="Training" type="ScrollContainer" parent="."]
+script = ExtResource("96_training_scroll")
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 238

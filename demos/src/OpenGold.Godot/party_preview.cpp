@@ -114,7 +114,6 @@ void CharacterCreationView::setup_party()
     ->connect("pressed", callable_mp(this, &CharacterCreationView::show_modifiers));
     get_node<Button>("PartyPanel/SavingThrows")
     ->connect("pressed", callable_mp(this, &CharacterCreationView::show_saving_throws));
-    get_node<RichTextLabel>("PartyPanel/Sheet")->set_use_bbcode(true);
     setup_saves();
     setup_defeat();
     setup_advancement();
@@ -190,7 +189,7 @@ void CharacterCreationView::refresh_party()
                 {"PartyPanel/Portrait", "PartyPanel/ReadySprite", "PartyPanel/ActionSprite"
                 })
             get_node<TextureRect>(name)->set_texture({});
-    get_node<RichTextLabel>("PartyPanel/Sheet")->set_text(gs(sheet));
+    get_node<RichTextLabel>("PartyPanel/Sheet")->call("render", gs(sheet));
     get_node<Label>("PartyPanel/Status")
     ->set_text(error_.is_empty()
                ? "New PCs receive 250 gp / Save game stores this campaign on disk."

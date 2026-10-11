@@ -19,6 +19,31 @@ func keep_initiative(combat: Node) -> void:
         for frame in range(4):
             await process_frame
 
+
+func check_sprite_geometry(canvas: Control) -> void:
+    var image := Image.create(24, 24, false, Image.FORMAT_RGBA8)
+    var texture := ImageTexture.create_from_image(image)
+    for visible in [Rect2(2, 1, 20, 22), Rect2(1, 3, 22, 19), Rect2(6, 0, 12, 24)]:
+        for tile in [2.4, 24.0, 60.0, 72.0, 240.0]:
+            var occupied := Rect2(Vector2(4.0, 5.0) * tile, Vector2.ONE * tile)
+            var goliath: Rect2 = canvas.call("_sprite_rect", texture, visible, occupied, true)
+            var rendered := Rect2(goliath.position + visible.position * goliath.size / 24.0,
+                visible.size * goliath.size / 24.0)
+            require(rendered.size.is_equal_approx(Vector2(tile, 1.25 * tile)),
+                "Goliath visible art spans one cell by 1.25 cells")
+            require(is_equal_approx(rendered.position.x, occupied.position.x) and
+                is_equal_approx(rendered.end.y, occupied.end.y),
+                "Goliath visible feet align with the occupied cell")
+            var normal: Rect2 = canvas.call("_sprite_rect", texture, visible, occupied, false)
+            var normal_art := Rect2(normal.position + visible.position * normal.size / 24.0,
+                visible.size * normal.size / 24.0)
+            require(normal_art.get_center().is_equal_approx(occupied.get_center()),
+                "Normal visible art stays centered despite transparent padding")
+            require(is_equal_approx(maxf(normal_art.size.x, normal_art.size.y), 0.9 * tile),
+                "Normal visible art fills 90 percent of its cell")
+    require(canvas.call("_sprite_rect", texture, Rect2(), Rect2(0, 0, 24, 24), true) == Rect2(),
+        "Empty visible art does not divide by zero")
+
 func check_demo() -> void:
     root.size = Vector2i(1920, 1080)
     # This window takes the keyboard focus when it opens, so keys and clicks meant
@@ -32,6 +57,7 @@ func check_demo() -> void:
         await process_frame
     var combat := current_scene
     await keep_initiative(combat)
+    check_sprite_geometry(combat.get_node("BattlefieldScroll/Canvas"))
     require(not combat.has_node("Title") and not combat.has_node("Subtitle"),
         "Demo uses the header-free campaign combat layout")
     require(combat.get_node("BattlefieldScroll").position.y == 16,

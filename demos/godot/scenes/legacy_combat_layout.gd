@@ -3,6 +3,17 @@ extends Node
 var _free_movement := false
 
 
+func cell_at_local(point: Vector2, columns: int) -> Vector2i:
+	var board := (get_parent().get_node("BattlefieldBounds") as Control).get_rect()
+	var tile := board.size.x / columns
+	return Vector2i((point - board.position) / tile)
+
+
+func cell_center(cell: Vector2i, columns: int) -> Vector2:
+	var board := (get_parent().get_node("BattlefieldBounds") as Control).get_rect()
+	return board.position + (Vector2(cell) + Vector2(0.5, 0.5)) * board.size.x / columns
+
+
 func _place(path: String, rect: Rect2) -> void:
 	var control := get_parent().get_node(path) as Control
 	control.position = rect.position

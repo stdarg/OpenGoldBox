@@ -37,9 +37,8 @@ String formatted_sheet(const Character &character, const PartyMember *member,
 {
     const auto &s = character.sheet();
     std::string text = i18n::formatted(
-                           "[font_size={title_size}]{name}[/font_size]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n",
+                           "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n",
     {
-        {"title_size", presentation::palette_metric("sheet_title_font_size")},
         {"name", gs(literal(s.name))},
         {"level", s.level},
         {"race", i18n::text(s.race)},
@@ -102,11 +101,11 @@ String formatted_sheet(const Character &character, const PartyMember *member,
             spells += gs(display(spell)) + "  ";
         text += "\n" + i18n::formatted("Prepared spells: {spells}", {{"spells", spells}});
     }
-    text += "\n[font_size=" + std::to_string(presentation::palette_metric("sheet_note_font_size")) + "]" +
+    text += "\n[theme_font=sheet_note]" +
             std::string(i18n::render(s.hp_messages).utf8().get_data()) +
-            "[/font_size]";
+            "[/theme_font]";
     text += i18n::utf8(
-                "\n\n[table=3][cell][b]Attribute     [/b][/cell][cell][b]Score     [/b][/cell][cell][b]Saving throw[/b][/cell]");
+                "\n\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]");
     for (unsigned i = 0; i < 6; ++i)
     {
         const auto ability = opengold::rules::all_abilities[i];
@@ -114,15 +113,14 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         const auto colored =
             s.modifiers[ability] == 0
             ? score
-            : "[color=#" + std::string(presentation::palette_color(
-                s.modifiers[ability] > 0 ? "score_positive" : "score_negative")
-                .to_html(false).utf8().get_data()) + "]" +
-            score + "[/color]";
+            : "[theme_color=" + std::string(s.modifiers[ability] > 0
+                ? "score_positive" : "score_negative") + "]" +
+            score + "[/theme_color]";
         text += "[cell]" + i18n::utf8(i18n::ability_names[i]) + "[/cell][cell]" + colored +
                 "[/cell][cell]" + number(s.saving_throws[ability]) +
                 (s.save_proficiencies[ability] ? " *" : "") + "[/cell]";
     }
-    text += "[/table]\n" + i18n::utf8("* Proficient saving throw");
+    text += "[/theme_table]\n" + i18n::utf8("* Proficient saving throw");
     if (member)
     {
         try

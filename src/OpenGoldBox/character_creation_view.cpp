@@ -89,12 +89,6 @@ std::string signed_number(int n)
     return (n >= 0 ? "+" : "") + std::to_string(n);
 }
 
-Color ega(unsigned index)
-{
-    const auto c = por::character_color(index);
-    return Color(c[0] / 255.f, c[1] / 255.f, c[2] / 255.f);
-}
-
 std::string selection(const CharacterDraft &d, CreationField f)
 {
     switch (f)
@@ -134,9 +128,6 @@ void CharacterCreationView::_ready()
     required_node<Label>(*this, "PreviewName").set_auto_translate_mode(
         Node::AUTO_TRANSLATE_MODE_DISABLED);
     ready_ = true;
-    get_window()->set_min_size(Vector2i(get_theme_constant("creation_min_width", "OpenGoldMetrics"),
-                                        get_theme_constant("creation_min_height", "OpenGoldMetrics")));
-    set_texture_filter(TEXTURE_FILTER_NEAREST);
     // All node pointers here and below are borrowed from the owning scene tree.
     required_node<Button>(*this, "Next").connect("pressed", presentation::guarded(this,
             &CharacterCreationView::next));
@@ -237,7 +228,7 @@ void CharacterCreationView::_ready()
         button->connect("pressed",
                         presentation::guarded(this, &CharacterCreationView::palette_selected).bind(i));
         button->set_tooltip_text(i18n::text(colors[i]));
-        button->call("configure_palette", ega(i));
+        button->call("configure_palette_index", i);
     }
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -642,7 +633,6 @@ void CharacterCreationView::refresh()
                 auto *button = &required_node<Button>(*this,
                                                       gs("Color" + std::to_string(bank) + "_" + std::to_string(part)));
                 const bool selected = bank == color_bank_ && part == color_part_;
-                const auto color = ega(a.colors[bank][part]);
                 const bool present = usage.contains(bank, part);
                 button->set_disabled(!present);
                 button->set_tooltip_text(i18n::text(
@@ -652,7 +642,7 @@ void CharacterCreationView::refresh()
                 button->set_text(present ? String(selected ? "> " : "") +
                                  i18n::text(colors[a.colors[bank][part]])
                                  : i18n::text("Not present"));
-                button->call("configure_part", color, selected);
+                button->call("configure_part_index", a.colors[bank][part], selected);
             }
     }
     if (step == CreationStep::sheet)
@@ -660,7 +650,7 @@ void CharacterCreationView::refresh()
         instructions = N_(
                            "Review your character and use the portrait controls to choose a complete portrait before adding it to the party.");
         required_node<RichTextLabel>(*this, "Description")
-        .set_text(presentation::sheet_text(*completed_));
+        .call("render", presentation::sheet_text(*completed_));
     }
     required_node<Label>(*this, "Instructions").set_text(i18n::text(instructions));
     required_node<Label>(*this, "PreviewTitle")

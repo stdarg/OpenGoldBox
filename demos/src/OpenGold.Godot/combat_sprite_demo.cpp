@@ -45,7 +45,7 @@ String dimensions(Vector2 size)
 
 void color_button(Button &button, unsigned index, bool selected)
 {
-    button.call("configure", presentation::character_color(index), selected);
+    button.call("configure_index", index, selected);
 }
 
 // Original archives remain local. RAII owns both the file and decoded buffers.
@@ -90,36 +90,17 @@ Ref<ImageTexture> icon(const std::vector<std::uint8_t> &bytes, unsigned record, 
 }
 } // namespace
 
-double CombatSpriteDemo::tile_pixels() const
-{
-    return get_theme_constant("combat_sprite_tile_pixels", "OpenGoldMetrics");
-}
-
-double CombatSpriteDemo::goliath_height() const
-{
-    return get_theme_constant("combat_sprite_goliath_height_percent", "OpenGoldMetrics") / 100.0;
-}
-
-Color CombatSpriteDemo::figure_color(unsigned index) const
-{
-    return get_theme_color(index < 2 ? "combat_party" : index == 2 ? "score_active_border"
-                           : index == 3 ? "combat_sprite_goliath" : "combat_enemy",
-                           "OpenGoldPalette");
-}
 
 void CombatSpriteDemo::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("request_capture"), &CombatSpriteDemo::request_capture);
+    ClassDB::bind_method(D_METHOD("sprite_visuals"), &CombatSpriteDemo::sprite_visuals);
     ADD_SIGNAL(MethodInfo("capture_completed", PropertyInfo(Variant::STRING, "path"),
                           PropertyInfo(Variant::STRING, "error")));
 }
 
 void CombatSpriteDemo::_ready()
 {
-    set_texture_filter(TEXTURE_FILTER_NEAREST);
-    get_window()->set_min_size(Vector2i(
-        get_theme_constant("combat_sprite_min_width", "OpenGoldMetrics"),
-        get_theme_constant("combat_sprite_min_height", "OpenGoldMetrics")));
     create_controls();
     if (Engine::get_singleton()->is_editor_hint())
         return;
@@ -165,8 +146,6 @@ void CombatSpriteDemo::create_controls()
         button->set_tooltip_text(gs(presentation::character_colors[index]));
         color_button(*button, index, false);
     }
-    get_node<Control>("BattlefieldScroll/Canvas")
-        ->connect("draw", callable_mp(this, &CombatSpriteDemo::draw_map));
 }
 
 void CombatSpriteDemo::load_art()
@@ -293,7 +272,6 @@ void CombatSpriteDemo::refresh_figures()
     canvas->call("set_board_dimensions", battlefield_.geometry.width,
                  battlefield_.geometry.height, zoom_);
     center_pending_ = true;
-    const double scale = zoom_ / 100.0;
     get_node<Label>("Zoom")->set_text(gs("Zoom ") + String::num_int64(zoom_) + "%");
     get_node<Label>("Pose")->set_text(
         gs(action_ ? "Action pose · 1 second" : "Ready pose · 1 second"));
@@ -305,7 +283,7 @@ void CombatSpriteDemo::refresh_figures()
             {"Plus100", "Plus10"
             })
         get_node<Button>(name)->set_disabled(zoom_ == max_zoom);
-    String sizes = "[b]" + gs("Sprite dimensions — source → displayed pixels") + "[/b]\n";
+    String sizes = canvas->call("report_heading");
     for (unsigned i = 0; i < figures_.size(); ++i)
     {
         const auto &figure = figures_[i];
@@ -313,93 +291,53 @@ void CombatSpriteDemo::refresh_figures()
         auto *sprite = get_node<TextureRect>(String("BattlefieldScroll/Canvas/") + figure.node);
         const Vector2 source(texture->get_width(), texture->get_height());
         const auto bounds = figure.visible_bounds[action_];
-        Vector2 art_scale(1, 1);
-        if (figure.sizing != Sizing::original && bounds.size.x > 0 && bounds.size.y > 0)
-        {
-            const double height_scale = goliath_height() * tile_pixels() / bounds.size.y;
-            art_scale = Vector2(figure.sizing == Sizing::stretched ? tile_pixels() / bounds.size.x
-                                : height_scale,
-                                height_scale);
-        }
         sprite->set_texture(texture);
         canvas->call("place_figure", figure.node, source, bounds, figure.cell,
                      static_cast<int>(figure.sizing), zoom_);
-        const String color = figure_color(i).to_html(false);
-        sizes += "[color=#" + color + "]" + gs(figure.label) + "[/color]  " + dimensions(source) +
+        sizes += String(canvas->call("report_figure_label", gs(figure.label), static_cast<int>(i))) +
+                 "  " + dimensions(source) +
                  gs(" → ") + dimensions(sprite->get_size()) + " px";
         if (i < player_count)
             sizes += gs("  · ") + gs("Visible figure: ") +
-                     dimensions(bounds.size * art_scale * scale) + " px";
+                     dimensions(Vector2(canvas->call("visible_size", figure.node, source, bounds))) + " px";
         sizes += "\n";
     }
     get_node<RichTextLabel>("Sizes")->set_text(sizes);
     canvas->queue_redraw();
 }
 
-void CombatSpriteDemo::draw_map()
+Dictionary CombatSpriteDemo::sprite_visuals() const
 {
+    Dictionary data;
     if (!loaded_)
-        return;
-    auto *canvas = get_node<Control>("BattlefieldScroll/Canvas");
-    const double tile = tile_pixels() * zoom_ / 100.0;
+        return data;
+    data["width"] = battlefield_.geometry.width;
+    data["height"] = battlefield_.geometry.height;
+    data["zoom"] = zoom_;
+    Array tiles, figures;
     for (int y = 0; y < battlefield_.geometry.height; ++y)
         for (int x = 0; x < battlefield_.geometry.width; ++x)
-        {
-            const Rect2 cell(x * tile, y * tile, tile, tile);
-            canvas->draw_texture_rect(
-                terrain_.at(battlefield_.tiles[y * battlefield_.geometry.width + x]), cell, false);
-            canvas->draw_rect(cell,
-                              get_theme_color("combat_sprite_grid", "OpenGoldPalette"), false,
-                              get_theme_constant("combat_sprite_grid_width", "OpenGoldMetrics"));
-        }
-    for (unsigned i = 0; i < figures_.size(); ++i)
+            tiles.push_back(terrain_.at(battlefield_.tiles[y * battlefield_.geometry.width + x]));
+    for (const auto &figure : figures_)
     {
-        const auto &figure = figures_[i];
-        const auto color = figure_color(i);
-        const Rect2 guide(figure.cell * tile, Vector2(tile, tile) * figure.footprint);
-        canvas->draw_rect(guide, color, false,
-                          get_theme_constant("combat_sprite_guide_width", "OpenGoldMetrics"));
-        if (figure.sizing != Sizing::original)
-        {
-            // The lower quarter of the upper square is the target headroom.
-            const Vector2 top = guide.position + Vector2(0, tile * (2 - goliath_height()));
-            auto headroom = color;
-            headroom.a = get_theme_constant("combat_sprite_headroom_percent", "OpenGoldMetrics") /
-                         100.0;
-            canvas->draw_rect(Rect2(top, Vector2(tile, tile * .25)), headroom);
-            canvas->draw_line(top, top + Vector2(tile, 0), color,
-                              get_theme_constant("combat_sprite_grid_width", "OpenGoldMetrics"));
-            canvas->draw_line(guide.position + Vector2(0, tile),
-                              guide.position + Vector2(tile, tile), color,
-                              get_theme_constant("combat_sprite_grid_width", "OpenGoldMetrics"));
-            canvas->draw_line(guide.position + Vector2(0, 2 * tile),
-                              guide.position + Vector2(tile, 2 * tile), color,
-                              get_theme_constant("combat_sprite_baseline_width", "OpenGoldMetrics"));
-        }
-        if (i < player_count && tile >= tile_pixels())
-        {
-            constexpr std::array<const char *, player_count> captions
-            {
-                "Short", "Human", "1 — Stretched", "2 — Proportional"};
-            // draw_string's optional TextServer enums are omitted from the demo's trimmed bindings.
-            canvas->call("draw_string", get_theme_default_font(),
-                         guide.position + Vector2(-tile * .75, guide.size.y + 18), gs(captions[i]),
-                         HORIZONTAL_ALIGNMENT_CENTER, tile * 2.5,
-                         get_theme_constant("combat_sprite_caption_size", "OpenGoldMetrics"),
-                         color);
-        }
+        Dictionary entry;
+        entry["cell"] = figure.cell;
+        entry["footprint"] = figure.footprint;
+        entry["sizing"] = static_cast<int>(figure.sizing);
+        figures.push_back(entry);
     }
+    data["tiles"] = tiles;
+    data["figures"] = figures;
+    return data;
 }
 
 void CombatSpriteDemo::zoom_by(int amount)
 {
     if (!loaded_)
         return;
-    auto *scroll = get_node<ScrollContainer>("BattlefieldScroll");
     if (!center_pending_)
-        center_cell_ =
-            (Vector2(scroll->get_h_scroll(), scroll->get_v_scroll()) + scroll->get_size() * .5) /
-            (tile_pixels() * zoom_ / 100.0);
+        center_cell_ = get_node<Control>("BattlefieldScroll/Canvas")
+                       ->call("center_cell", zoom_);
     zoom_ = std::clamp(zoom_ + amount, min_zoom, max_zoom);
     refresh_figures();
 }
@@ -438,19 +376,8 @@ void CombatSpriteDemo::_process(double delta)
     if (!loaded_ || !std::isfinite(delta) || delta < 0)
         return;
     if (center_pending_)
-    {
-        auto *canvas = get_node<Control>("BattlefieldScroll/Canvas");
-        const auto minimum = canvas->get_custom_minimum_size();
-        if (canvas->get_size().x >= minimum.x && canvas->get_size().y >= minimum.y)
-        {
-            auto *scroll = get_node<ScrollContainer>("BattlefieldScroll");
-            const auto offset =
-                center_cell_ * (tile_pixels() * zoom_ / 100.0) - scroll->get_size() * .5;
-            scroll->set_h_scroll(std::max(0, int(offset.x)));
-            scroll->set_v_scroll(std::max(0, int(offset.y)));
-            center_pending_ = false;
-        }
-    }
+        center_pending_ = !static_cast<bool>(get_node<Control>("BattlefieldScroll/Canvas")
+                                             ->call("center_when_ready", center_cell_, zoom_));
     elapsed_ = std::fmod(elapsed_ + delta, 2.0);
     const bool action = elapsed_ >= 1;
     if (action != action_)

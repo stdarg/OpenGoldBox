@@ -2,41 +2,12 @@
 #define OPENGOLDBOX_COMBAT_SPRITE_LAYOUT_H
 
 #include "opengold/rules.h"
-#include <godot_cpp/variant/rect2.hpp>
 #include <algorithm>
 #include <numeric>
 #include <span>
 
 namespace presentation
 {
-// Rendering bounds only. The occupied cell remains the rules module's one cell.
-inline godot::Rect2 bottom_aligned_sprite(godot::Vector2 source, godot::Rect2 visible,
-        godot::Rect2 cell, godot::Vector2 visible_squares)
-{
-    if (source.x <= 0 || source.y <= 0 || visible.size.x <= 0 || visible.size.y <= 0)
-        return {};
-    const auto extent = cell.size * visible_squares;
-    const auto scale = extent / visible.size;
-    const auto top =
-        cell.position + godot::Vector2((cell.size.x - extent.x) * .5, cell.size.y - extent.y);
-    return {top - visible.position * scale, source * scale};
-}
-
-inline godot::Rect2 combat_sprite_rect(godot::Vector2 source, godot::Rect2 visible,
-                                       godot::Rect2 cell, bool goliath,
-                                       double fit, godot::Vector2 goliath_visible_squares)
-{
-    if (goliath)
-        return bottom_aligned_sprite(source, visible, cell, goliath_visible_squares);
-    if (source.x <= 0 || source.y <= 0 || visible.size.x <= 0 || visible.size.y <= 0)
-        return {};
-    // Transparent margins in the source image must not shrink the figure.
-    const auto scale = cell.size.x * fit / std::max(visible.size.x, visible.size.y);
-    const auto size = source * scale;
-    const auto visible_center = visible.get_center() * scale;
-    return {cell.get_center() - visible_center, size};
-}
-
 // Godot Y grows downward: draw lower rows first, then upper rows on top.
 // Sort indices so initiative order and rules snapshots remain untouched.
 inline std::vector<std::size_t>

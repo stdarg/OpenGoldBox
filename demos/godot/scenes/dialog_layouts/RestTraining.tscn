@@ -1,6 +1,9 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/dialog_window_size.gd" id="99_window_size"]
 
 [node name="RestTraining" type="Control"]
+script = ExtResource("99_window_size")
 offset_right = 700.0
 offset_bottom = 670.0
 
@@ -24,6 +27,8 @@ offset_right = 676.0
 offset_bottom = 166.0
 
 [node name="Choices" type="ScrollContainer" parent="."]
+horizontal_scroll_mode = 0
+follow_focus = true
 offset_left = 24.0
 offset_top = 176.0
 offset_right = 676.0

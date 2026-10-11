@@ -1,16 +1,15 @@
 #ifndef OPENGOLD_HP_PRESENTATION_H
 #define OPENGOLD_HP_PRESENTATION_H
 #include "localization.h"
-#include "ui_palette.h"
 #include "opengold/rules.h"
 
 namespace presentation
 {
-inline godot::String hp_color(int hp, int maximum)
+inline godot::String hp_color_name(int hp, int maximum)
 {
     const auto name = hp <= 0 || static_cast<std::int64_t>(hp) * 5 <= maximum
                       ? "score_negative" : hp < maximum ? "score_positive" : "hp_full";
-    return "#" + palette_color(name).to_html(false);
+    return name;
 }
 
 inline godot::String bbcode_literal(const godot::String &value)
@@ -62,18 +61,18 @@ inline godot::String hp_text(int hp, int maximum, bool dead,
 {
     auto text = hp_hint_tag(
                     hp_hint(hp, maximum, dead, sources),
-                    "[color=" + hp_color(hp, maximum) + "]" +
+                    "[theme_color=" + hp_color_name(hp, maximum) + "]" +
     i18n::format("HP {current} / {maximum}", {{"current", hp}, {"maximum", maximum}}) +
-    "[/color]");
+    "[/theme_color]");
     if (pool.amount)
     {
         const auto hint = i18n::format(
                               "Temporary HP from {source}. Absorbs damage before ordinary HP; does not heal or stack.",
         {{"source", temporary_hp_source(pool)}});
         text += "   " +
-                hp_hint_tag(hint, "[color=#" + palette_color("hp_full").to_html(false) + "]" +
+                hp_hint_tag(hint, "[theme_color=hp_full]" +
         i18n::format("Temp HP {amount}", {{"amount", pool.amount}}) +
-        "[/color]");
+        "[/theme_color]");
     }
     return text;
 }

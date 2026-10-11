@@ -62,8 +62,6 @@ void SaveSlots::_ready()
     presentation::dialog_control<Label>(*this, "Status");
     presentation::dialog_control<Button>(*this, "Action");
     presentation::dialog_control<Button>(*this, "Cancel");
-    required_node<Label>(*this, "Help").set("autowrap_mode", 3);
-    required_node<Label>(*this, "Status").set("autowrap_mode", 3);
     required_node<LineEdit>(*this, "Name").set_placeholder(i18n::text(N_("Save name")));
     required_node<LineEdit>(*this, "Name").set_max_length(60);
     required_node<ItemList>(*this, "Slots")

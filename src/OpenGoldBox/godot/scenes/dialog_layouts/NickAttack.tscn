@@ -1,10 +1,14 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/dialog_window_size.gd" id="99_window_size"]
 
 [node name="NickAttack" type="Control"]
+script = ExtResource("99_window_size")
 offset_right = 640.0
 offset_bottom = 300.0
 
 [node name="Text" type="Label" parent="."]
+autowrap_mode = 3
 offset_left = 24.0
 offset_top = 18.0
 offset_right = 616.0
@@ -17,6 +21,8 @@ offset_right = 616.0
 offset_bottom = 140.0
 
 [node name="Choices" type="OptionButton" parent="."]
+fit_to_longest_item = false
+clip_text = true
 offset_left = 24.0
 offset_top = 148.0
 offset_right = 616.0

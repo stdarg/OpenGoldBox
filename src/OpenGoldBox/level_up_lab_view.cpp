@@ -252,7 +252,7 @@ void LevelUpLabView::show_sheet()
     if (!campaign_ || !member_)
         return;
     required_node<RichTextLabel>(*this, "CharacterSheet/Text")
-    .set_text(presentation::sheet_text(*campaign_, campaign_->member(member_)));
+    .call("render", presentation::sheet_text(*campaign_, campaign_->member(member_)));
     auto &sheet = required_node<Window>(*this, "CharacterSheet");
     sheet.popup_centered();
     required_node<Button>(*this, "CharacterSheet/Close").grab_focus();

@@ -46,10 +46,7 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
             owned->set_name(section_name);
             section = attach_child(rows, std::move(owned));
         }
-        if (level_up_theme)
-        {
-            section->set_theme_type_variation("LevelUpSpellSection");
-        }
+        section->call("set_level_up", level_up_theme);
         rows.move_child(section, position++);
         section->show();
         auto *label = &required_node<Label>(*section, "Count");
@@ -66,7 +63,6 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                         " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
         auto *pending = &required_node<Label>(*section, "Pending");
-        pending->set_theme_type_variation(level_up_theme ? "LevelUpPending" : "TrainingPending");
         pending->set_text(tr(N_("Unsupported choices remain pending.")));
         pending->set_visible(group.options.size() < group.count);
         for (int i = 0; i < section->get_child_count(); ++i)
@@ -82,10 +78,6 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                     "res://scenes/control_templates/spell_choice.tscn");
                 owned->set_name(training_string(option.id));
                 box = attach_child(*section, std::move(owned));
-                if (level_up_theme)
-                    box->set_theme_type_variation("LevelUpChoice");
-                else
-                    style_choice(*box);
                 box->connect("toggled",
                              toggled.bind(training_string(group.id), training_string(option.id)));
             }
@@ -139,8 +131,6 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     auto *known = dialog_control<RichTextLabel>(*w, "Known");
     known->set_scroll_active(true);
     auto *scroll = dialog_control<ScrollContainer>(*w, "Choices");
-    scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
-    scroll->set_follow_focus(true);
     spell_rows(*scroll, "Rows");
     dialog_control<Label>(*w, "ReplaceLabel")
     ->set_text(tr(N_("Replace cantrip")));

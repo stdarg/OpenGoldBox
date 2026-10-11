@@ -24,8 +24,15 @@ func configure(fill: Color, selected: bool) -> void:
 		get_theme_constant("combat_swatch_pressed_darkening_percent", metrics) / 100.0),
 		get_theme_color("score_active_border", palette),
 		get_theme_constant("combat_swatch_selected_width", metrics)))
-	var contrast := (fill.r * 0.299 + fill.g * 0.587 + fill.b * 0.114)
+	var contrast := (fill.r * get_theme_constant("swatch_red_luma", metrics)
+		+ fill.g * get_theme_constant("swatch_green_luma", metrics)
+		+ fill.b * get_theme_constant("swatch_blue_luma", metrics))
 	var foreground := get_theme_color(
-		"swatch_dark_text" if contrast > 0.5 else "swatch_light_text", palette)
+		"swatch_dark_text" if contrast > get_theme_constant("swatch_contrast_threshold", metrics)
+		else "swatch_light_text", palette)
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		add_theme_color_override(state, foreground)
+
+
+func configure_index(index: int, selected: bool) -> void:
+	configure(get_theme_color("character_palette_" + str(index), "OpenGoldPalette"), selected)

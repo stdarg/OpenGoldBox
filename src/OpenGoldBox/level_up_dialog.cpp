@@ -258,10 +258,10 @@ void LevelUpDialog::refresh_advancement_skilled()
         auto *box = Object::cast_to<CheckBox>(rows.get_node_or_null(name));
         if (!box)
         {
-            auto owned = presentation::make_node<CheckBox>();
+            auto owned = presentation::instantiate_control<CheckBox>(
+                "res://scenes/control_templates/skilled_choice.tscn");
             owned->set_name(name);
             box = owned.get();
-            box->set_theme_type_variation("LevelUpChoice");
             box->connect("toggled", presentation::guarded(this,
                     &LevelUpDialog::advancement_skilled_toggled)
                          .bind(presentation::training_string(option.id)));

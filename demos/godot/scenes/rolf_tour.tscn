@@ -1,16 +1,25 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/control_templates/party_advance.tscn" id="1_advance"]
 [ext_resource type="Script" path="res://scenes/legacy_tour_layout.gd" id="2_layout"]
 [ext_resource type="Script" path="res://scenes/legacy_tour_backdrop.gd" id="3_backdrop"]
 
+[ext_resource type="Script" path="res://scenes/tour_visuals.gd" id="4_tour_visuals"]
+
+[ext_resource type="Script" path="res://scenes/window_minimum.gd" id="99_window_minimum"]
+
 [node name="RolfTour" type="RolfTourView"]
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="WindowMinimum" type="Node" parent="."]
+script = ExtResource("99_window_minimum")
+metric_prefix = "tour"
 
 [node name="TourBackdrop" type="Control" parent="."]
 anchors_preset = 15
@@ -19,6 +28,13 @@ anchor_bottom = 1.0
 mouse_filter = 2
 z_index = -1
 script = ExtResource("3_backdrop")
+
+[node name="TourVisuals" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("4_tour_visuals")
 
 [node name="Title" type="Label" parent="."]
 theme_type_variation = &"LabelGoldText27"

@@ -40,9 +40,6 @@ void SoundBoardView::_bind_methods()
 
 void SoundBoardView::_ready()
 {
-    get_window()->set_min_size(Vector2i(
-        get_theme_constant("sound_board_min_width", "OpenGoldMetrics"),
-        get_theme_constant("sound_board_min_height", "OpenGoldMetrics")));
     get_window()->set_title("OpenGoldBox - Pool of Radiance Sound Board");
     // Node lookups are borrowed from the scene tree; resources use Godot Ref RAII.
     for (int i = 0; i < 21; ++i)
@@ -115,8 +112,7 @@ void SoundBoardView::refresh_buttons()
     {
         auto *button = get_node<Button>(button_name(i));
         button->set_disabled(!loaded_);
-        button->set_theme_type_variation(i == selected_ ? "SoundBoardButtonSelected"
-                                         : "SoundBoardButton");
+        button->call("set_selected_style", i == selected_);
     }
 }
 

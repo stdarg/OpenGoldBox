@@ -55,10 +55,7 @@ class CombatSpriteDemo : public godot::Control
     void refresh_players();
     void refresh_colors();
     void refresh_figures();
-    double tile_pixels() const;
-    double goliath_height() const;
-    godot::Color figure_color(unsigned index) const;
-    void draw_map();
+    [[nodiscard]] godot::Dictionary sprite_visuals() const;
     void zoom_by(int amount);
     void change_part(int part, int direction);
     void select_color(int bank, int part);

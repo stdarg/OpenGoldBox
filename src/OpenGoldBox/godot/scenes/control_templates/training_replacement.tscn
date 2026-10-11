@@ -1,5 +1,6 @@
 [gd_scene format=3]
 
 [node name="TrainingReplacement" type="CheckBox"]
+theme_type_variation = &"LevelUpChoice"
 custom_minimum_size = Vector2(0, 40)
 focus_mode = 2

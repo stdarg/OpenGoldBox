@@ -1,10 +1,14 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/dialog_window_size.gd" id="99_window_size"]
 
 [node name="SaveSlots" type="Control"]
+script = ExtResource("99_window_size")
 offset_right = 620.0
 offset_bottom = 470.0
 
 [node name="Help" type="Label" parent="."]
+autowrap_mode = 3
 offset_left = 20.0
 offset_top = 16.0
 offset_right = 600.0
@@ -23,6 +27,7 @@ offset_right = 600.0
 offset_bottom = 346.0
 
 [node name="Status" type="Label" parent="."]
+autowrap_mode = 3
 offset_left = 20.0
 offset_top = 354.0
 offset_right = 600.0

@@ -151,7 +151,6 @@ void CharacterCreationView::setup_party()
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modifiers));
     required_node<Button>(*this, "PartyPanel/ActionRow2/SavingThrows")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_saving_throws));
-    required_node<RichTextLabel>(*this, "PartyPanel/Sheet").set_use_bbcode(true);
     setup_saves();
     setup_defeat();
     setup_advancement();
@@ -204,8 +203,7 @@ void CharacterCreationView::refresh_party()
         list->add_item((leader ? String::utf8("★ ") : String()) + gs(m.character.sheet().name) +
                        (slot == state.slots.end() ? i18n::text(" (Reserve)") : String()));
         if (leader)
-            list->set_item_custom_fg_color(list->get_item_count() - 1,
-                                           get_theme_color("gold", "OpenGoldPalette"));
+            list->call("mark_leader", list->get_item_count() - 1);
     }
     auto *items = &required_node<ItemList>(*this, "PartyPanel/Inventory");
     items->clear();
@@ -245,7 +243,7 @@ void CharacterCreationView::refresh_party()
                 {"PartyPanel/Portrait", "PartyPanel/ReadySprite", "PartyPanel/ActionSprite"
                 })
             required_node<TextureRect>(*this, name).set_texture({});
-    required_node<RichTextLabel>(*this, "PartyPanel/Sheet").set_text(gs(sheet));
+    required_node<RichTextLabel>(*this, "PartyPanel/Sheet").call("render", gs(sheet));
     required_node<Label>(*this, "PartyPanel/Status")
     .set_text(
         error_.is_empty()

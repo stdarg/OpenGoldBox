@@ -110,9 +110,7 @@ inline void attach_dialog_layout(godot::Window &window, const godot::String &gro
     auto *layout = godot::Object::cast_to<godot::Control>(scene.get());
     if (!layout)
         throw std::runtime_error("Invalid dialog layout root");
-    const godot::Vector2i configured(layout->get_size());
-    window.set_size(configured);
-    window.set_min_size(configured);
+    layout->call("apply_window", &window);
     while (layout->get_child_count() > 0)
     {
         auto *child = layout->get_child(0);

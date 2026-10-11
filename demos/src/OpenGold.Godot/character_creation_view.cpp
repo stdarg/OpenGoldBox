@@ -73,11 +73,6 @@ std::string signed_number(int n)
     return (n >= 0 ? "+" : "") + std::to_string(n);
 }
 
-Color ega(unsigned index)
-{
-    return presentation::character_color(index);
-}
-
 std::string selection(const CharacterDraft &d, CreationField f)
 {
     switch (f)
@@ -113,10 +108,6 @@ void CharacterCreationView::_notification(int what)
 void CharacterCreationView::_ready()
 {
     ready_ = true;
-    get_window()->set_min_size(Vector2i(
-        get_theme_constant("creation_min_width", "OpenGoldMetrics"),
-        get_theme_constant("creation_min_height", "OpenGoldMetrics")));
-    set_texture_filter(TEXTURE_FILTER_NEAREST);
     // All node pointers here and below are borrowed from the owning scene tree.
     get_node<Button>("Next")->connect("pressed", callable_mp(this, &CharacterCreationView::next));
     get_node<Button>("Back")->connect("pressed", callable_mp(this, &CharacterCreationView::back));
@@ -209,7 +200,7 @@ void CharacterCreationView::_ready()
         button->connect("pressed",
                         callable_mp(this, &CharacterCreationView::palette_selected).bind(i));
         button->set_tooltip_text(colors[i]);
-        button->call("configure_palette", ega(i));
+        button->call("configure_palette_index", i);
     }
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -614,7 +605,6 @@ void CharacterCreationView::refresh()
                 auto *button = get_node<Button>(
                                    gs("Color" + std::to_string(bank) + "_" + std::to_string(part)));
                 const bool selected = bank == color_bank_ && part == color_part_;
-                const auto color = ega(a.colors[bank][part]);
                 const bool present = usage.contains(bank, part);
                 button->set_disabled(!present);
                 button->set_tooltip_text(
@@ -624,14 +614,14 @@ void CharacterCreationView::refresh()
                 button->set_text(
                     present ? gs(std::string(selected ? "> " : "") + colors[a.colors[bank][part]])
                     : String("Not present"));
-                button->call("configure_part", color, selected);
+                button->call("configure_part_index", a.colors[bank][part], selected);
             }
     }
     if (step == CreationStep::sheet)
     {
         instructions =
             "Review your character and use the portrait controls to choose a complete portrait before adding it to the party.";
-        get_node<RichTextLabel>("Description")->set_text(sheet_text(*completed_));
+        get_node<RichTextLabel>("Description")->call("render", sheet_text(*completed_));
     }
     get_node<Label>("Instructions")->set_text(gs(instructions));
     get_node<Label>("PreviewTitle")->set_text(icon ? "COMBAT PREVIEW" : "CHARACTER PREVIEW");

@@ -61,7 +61,7 @@ void CharacterCreationView::pool_selected(std::int64_t index)
         return;
     pool_index_ = static_cast<unsigned>(index);
     const auto &character = pool_[pool_index_];
-    get_node<RichTextLabel>("PoolModal/Text")->set_text(sheet_text(character));
+    get_node<RichTextLabel>("PoolModal/Text")->call("render", sheet_text(character));
     get_node<TextureRect>("PoolModal/Portrait")
     ->set_texture(portrait_texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)
@@ -128,7 +128,7 @@ void CharacterCreationView::town_member_selected(std::int64_t slot)
     if (slot < 0 || slot >= 8 || !campaign_->state().slots[slot])
         return;
     const auto &m = campaign_->member(campaign_->state().slots[slot]);
-    get_node<RichTextLabel>("TownSheet/Text")->set_text(sheet_text(m.character, &m));
+    get_node<RichTextLabel>("TownSheet/Text")->call("render", sheet_text(m.character, &m));
     get_node<Window>("TownSheet")->popup_centered();
 }
 

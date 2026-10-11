@@ -1,17 +1,27 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/combat_cunning_layout.tres" id="1_cunning_layout"]
 [ext_resource type="Script" path="res://scenes/combat_layout.gd" id="2_combat_layout"]
 [ext_resource type="Script" path="res://scenes/combat_party_rows.gd" id="3_party_rows"]
 [ext_resource type="Script" path="res://scenes/combat_backdrop.gd" id="4_combat_backdrop"]
+[ext_resource type="Script" path="res://scenes/combat_battlefield.gd" id="5_battlefield"]
+
+[ext_resource type="Script" path="res://scenes/window_minimum.gd" id="99_window_minimum"]
+
+[ext_resource type="Script" path="res://scenes/themed_rich_text.gd" id="98_rich_text"]
 
 [node name="CombatDemo" type="CombatView"]
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="WindowMinimum" type="Node" parent="."]
+script = ExtResource("99_window_minimum")
+metric_prefix = "combat"
 
 [node name="CombatBackdrop" type="Control" parent="."]
 anchors_preset = 15
@@ -78,6 +88,7 @@ custom_minimum_size = Vector2(0, 84)
 theme_type_variation = &"LabelTealText18"
 autowrap_mode = 2
 [node name="Roster" type="RichTextLabel" parent="StatusStack"]
+script = ExtResource("98_rich_text")
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
@@ -432,6 +443,7 @@ horizontal_scroll_mode = 2
 vertical_scroll_mode = 2
 
 [node name="HoverInfo" type="PanelContainer" parent="."]
+theme_type_variation = &"CombatHover"
 offset_left = 0
 offset_right = 260
 offset_top = 0
@@ -447,6 +459,7 @@ theme_type_variation = &"LabelText16"
 mouse_filter = 2
 
 [node name="Canvas" type="Control" parent="BattlefieldScroll"]
+script = ExtResource("5_battlefield")
 offset_left = 0
 offset_top = 0
 offset_right = 1490
@@ -581,6 +594,7 @@ metadata/layout_reference = Rect2(288, 230, 248, 40)
 text = "Use new"
 
 [node name="PartyHP0" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_left = 1
 anchor_right = 1
 offset_left = -300
@@ -595,6 +609,7 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP1" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_left = 1
 anchor_right = 1
 anchor_top = 0.125
@@ -611,6 +626,7 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP2" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_left = 1
 anchor_right = 1
 anchor_top = 0.25
@@ -627,6 +643,7 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP3" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_left = 1
 anchor_right = 1
 anchor_top = 0.375
@@ -643,6 +660,7 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP4" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_left = 1
 anchor_right = 1
 anchor_top = 0.5
@@ -659,6 +677,7 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP5" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_left = 1
 anchor_right = 1
 anchor_top = 0.625
@@ -675,6 +694,7 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP6" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_left = 1
 anchor_right = 1
 anchor_top = 0.75
@@ -691,6 +711,7 @@ scroll_active = false
 mouse_filter = 1
 
 [node name="PartyHP7" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_left = 1
 anchor_right = 1
 anchor_top = 0.875
@@ -720,6 +741,8 @@ visible = false
 text = "Cunning Action"
 
 [node name="CunningAction" type="OptionButton" parent="."]
+fit_to_longest_item = false
+clip_text = true
 anchor_top = 0.85
 anchor_bottom = 0.85
 offset_left = 214
@@ -771,6 +794,7 @@ visible = false
 text = "Thrown weapon"
 
 [node name="ThrownWeapon" type="OptionButton" parent="."]
+fit_to_longest_item = false
 anchor_top = 0.85
 anchor_bottom = 0.85
 offset_left = 234
@@ -809,6 +833,7 @@ visible = false
 text = "Items"
 
 [node name="ItemAction" type="OptionButton" parent="."]
+fit_to_longest_item = false
 anchor_top = 0.85
 anchor_bottom = 0.85
 offset_left = 234

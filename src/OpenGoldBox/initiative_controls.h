@@ -31,15 +31,12 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
     auto *who = dialog_control<Label>(*w, "ResolveLabel");
     who->set_text(text(N_("Resolve next")));
     auto *owners = dialog_control<OptionButton>(*w, "Resolve");
-    owners->set_fit_to_longest_item(false);
     owners->connect("item_selected", select);
     auto *label = dialog_control<Label>(*w, "AllyLabel");
     label->set_text(text(N_("Ally")));
     auto *allies = dialog_control<OptionButton>(*w, "Ally");
-    allies->set_fit_to_longest_item(false);
     allies->connect("item_selected", select);
-    auto *description = dialog_control<Label>(*w, "Text");
-    description->set("autowrap_mode", 3);
+    dialog_control<Label>(*w, "Text");
     auto *no = dialog_control<Button>(*w, "Keep");
     no->set_text(text(N_("Keep initiative")));
     no->connect("pressed", keep);

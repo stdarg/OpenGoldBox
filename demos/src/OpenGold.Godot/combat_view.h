@@ -12,7 +12,6 @@ class CombatView : public godot::Control
   public:
     void _ready() override;
     void _process(double delta) override;
-    void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
 
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party,
@@ -52,6 +51,8 @@ class CombatView : public godot::Control
         auto s = demo_->combat().snapshot();
         return s.outcome == opengold::rules::Outcome::ongoing ? std::nullopt : std::optional{s};
     }
+
+    [[nodiscard]] godot::Dictionary combat_visuals();
 
   protected:
     static void _bind_methods();

@@ -1,6 +1,9 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/dialog_window_size.gd" id="99_window_size"]
 
 [node name="InitiativeChoice" type="Control"]
+script = ExtResource("99_window_size")
 offset_right = 640.0
 offset_bottom = 410.0
 
@@ -11,6 +14,7 @@ offset_right = 154.0
 offset_bottom = 60.0
 
 [node name="Resolve" type="OptionButton" parent="."]
+fit_to_longest_item = false
 offset_left = 164.0
 offset_top = 24.0
 offset_right = 616.0
@@ -23,12 +27,14 @@ offset_right = 154.0
 offset_bottom = 118.0
 
 [node name="Ally" type="OptionButton" parent="."]
+fit_to_longest_item = false
 offset_left = 164.0
 offset_top = 82.0
 offset_right = 616.0
 offset_bottom = 122.0
 
 [node name="Text" type="Label" parent="."]
+autowrap_mode = 3
 offset_left = 24.0
 offset_top = 140.0
 offset_right = 616.0

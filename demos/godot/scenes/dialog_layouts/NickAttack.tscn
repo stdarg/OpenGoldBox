@@ -1,6 +1,9 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/dialog_window_size.gd" id="99_window_size"]
 
 [node name="NickAttack" type="Control"]
+script = ExtResource("99_window_size")
 offset_right = 640.0
 offset_bottom = 300.0
 

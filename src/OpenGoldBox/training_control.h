@@ -118,11 +118,6 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
     return text;
 }
 
-inline void style_choice(godot::CheckBox &control)
-{
-    control.set_theme_type_variation("LevelUpChoice");
-}
-
 // The scene owns every node. Reuse controls across refreshes so toggling does
 // not destroy the focused checkbox or its keyboard navigation position.
 template <class Translate>
@@ -237,7 +232,6 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                     "res://scenes/control_templates/training_checkbox.tscn");
                 owned->set_name(node_name);
                 check = attach_child(*box, std::move(owned));
-                style_choice(*check);
             }
             // A reused row can now belong to another class's skill group.
             if (check->has_meta("training_callback"))
@@ -266,10 +260,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     String signature;
     for (const auto &group : groups)
         signature += training_string(group.id) + ";";
-    if (!rows->has_meta("training_groups") ||
-            String(rows->get_meta("training_groups")) != signature)
-        required_node<ScrollContainer>(parent, "Training").set_v_scroll(0);
-    rows->set_meta("training_groups", signature);
+    required_node<ScrollContainer>(parent, "Training").call("reset_for", signature);
     unsigned first = 0;
     for (unsigned i = 0; i < groups.size(); ++i)
         if (groups[i].control == opengold::rules::TrainingChoiceControl::single_selection)

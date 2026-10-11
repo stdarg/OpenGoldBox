@@ -29,7 +29,7 @@ class CombatView : public godot::Control
 
     [[nodiscard]] godot::Vector2i selected_character_cell() const;
     // Pixels per battlefield square at the current zoom, for play-test clicks.
-    [[nodiscard]] double cell_pixels() const;
+    [[nodiscard]] double cell_pixels();
     // Squares of the enemies still standing, for play-test scripts.
     [[nodiscard]] godot::Array enemy_cells() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
@@ -138,7 +138,6 @@ class CombatView : public godot::Control
     opengold::rules::EntityId last_actor_{};
     // The rows of controls the battlefield was last sized to leave room for.
     double laid_out_controls_height_{};
-    double base_tile_{};
     double combat_zoom_{1.0};
     std::string mode_{"move"}, error_;
     opengold::rules::EntityId aid_target_{};
@@ -164,7 +163,7 @@ class CombatView : public godot::Control
     bool party_check_{}, defeat_check_{}, expedition_check_{};
     unsigned check_steps_{}, completion_frames_{};
     unsigned zoom_center_frames_{};
-    void draw_battlefield();
+    [[nodiscard]] godot::Dictionary battlefield_visuals();
     void update_hover(const godot::Vector2 &pointer);
     void center_on(opengold::rules::Cell cell);
     std::optional<std::pair<opengold::rules::EntityId, opengold::rules::Cell>> followed_;

@@ -61,15 +61,13 @@ void EquipmentChoiceDialog::add_controls()
 {
     connect("close_requested", presentation::guarded(this, &EquipmentChoiceDialog::close));
     connect("window_input", presentation::guarded(this, &EquipmentChoiceDialog::window_input));
-    auto *name = presentation::dialog_control<Label>(*this, "Item");
-    name->set("autowrap_mode", 3);
+    presentation::dialog_control<Label>(*this, "Item");
     auto *label = presentation::dialog_control<Label>(*this, "HandLabel");
     label->set_text(i18n::text(N_("Weapon hand")));
     auto *selection = presentation::dialog_control<OptionButton>(*this, "Hand");
     selection->connect("item_selected",
                        presentation::guarded(this, &EquipmentChoiceDialog::choice_selected));
-    auto *note = presentation::dialog_control<Label>(*this, "Explanation");
-    note->set("autowrap_mode", 3);
+    presentation::dialog_control<Label>(*this, "Explanation");
     auto *cancel = presentation::dialog_control<Button>(*this, "Cancel");
     cancel->set_text(i18n::text(N_("Cancel")));
     cancel->connect("pressed", presentation::guarded(this, &EquipmentChoiceDialog::close));

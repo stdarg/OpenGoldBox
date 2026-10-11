@@ -96,9 +96,8 @@ String CharacterCreationView::sheet_text(const Character &character,
         const PartyMember *member) const
 {
     const auto &s = character.sheet();
-    std::string text = "[font_size=" + std::to_string(
-        get_theme_constant("sheet_title_font_size", "OpenGoldMetrics")) + "]" +
-        literal(s.name) + "[/font_size]\nLevel " +
+    std::string text = "[theme_font=sheet_title]" +
+        literal(s.name) + "[/theme_font]\nLevel " +
                        std::to_string(s.level) + " " + s.race + " " + s.gender + " " +
                        s.character_class + "\n" + s.alignment + " / " + s.background + "\n\n";
     if (!character.creation_data().target_classes.empty())
@@ -123,8 +122,8 @@ String CharacterCreationView::sheet_text(const Character &character,
     {
         const auto value = std::to_string(hp);
         return hp_modifier == 0 ? value
-               : "[color=" + std::string(hp_modifier > 0 ? "#f3d55b" : "#f08080") +
-               "]" + value + "[/color]";
+               : "[theme_color=" + std::string(hp_modifier > 0 ? "score_positive"
+                   : "score_negative") + "]" + value + "[/theme_color]";
     };
     text += "[b]HP " + hp_number(member ? member->vitals.hit_points : s.hit_points) + " / " +
             hp_number(s.hit_points) + "[/b]   Hit Dice: " + std::to_string(s.level) + "d" +
@@ -154,11 +153,10 @@ String CharacterCreationView::sheet_text(const Character &character,
         for (const auto &spell : s.prepared_spells)
             text += display(spell) + "  ";
     }
-    text += "\n[font_size=" + std::to_string(
-        get_theme_constant("sheet_note_font_size", "OpenGoldMetrics")) + "]" +
-        literal(s.hp_explanation) + "[/font_size]";
+    text += "\n[theme_font=sheet_note]" + literal(s.hp_explanation) +
+            "[/theme_font]";
     text +=
-        "\n\n[table=3][cell][b]Attribute     [/b][/cell][cell][b]Score     [/b][/cell][cell][b]Saving throw[/b][/cell]";
+        "\n\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]";
     for (unsigned i = 0; i < 6; ++i)
     {
         const auto ability = rules::all_abilities[i];
@@ -166,13 +164,14 @@ String CharacterCreationView::sheet_text(const Character &character,
         const auto colored =
             s.modifiers[ability] == 0
             ? score
-            : "[color=" + std::string(s.modifiers[ability] > 0 ? "#f3d55b" : "#f08080") + "]" +
-            score + "[/color]";
+            : "[theme_color=" + std::string(s.modifiers[ability] > 0
+                ? "score_positive" : "score_negative") + "]" +
+            score + "[/theme_color]";
         text += "[cell]" + std::string(names[i]) + "[/cell][cell]" + colored + "[/cell][cell]" +
                 number(s.saving_throws[ability]) + (s.save_proficiencies[ability] ? " *" : "") +
                 "[/cell]";
     }
-    text += "[/table]\n* Proficient saving throw";
+    text += "[/theme_table]\n* Proficient saving throw";
     if (member)
     {
         try

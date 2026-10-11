@@ -1,4 +1,6 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/themed_rich_text.gd" id="98_rich_text"]
 
 [node name="LevelUpLab" type="LevelUpLabView"]
 layout_mode = 3
@@ -283,6 +285,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 
 [node name="Text" type="RichTextLabel" parent="CharacterSheet"]
+script = ExtResource("98_rich_text")
 theme_type_variation = &"RichTextLabelText17"
 offset_left = 24.0
 offset_top = 24.0

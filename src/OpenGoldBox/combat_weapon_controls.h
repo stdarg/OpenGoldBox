@@ -18,8 +18,6 @@ void setup_weapon_controls(godot::Node &root, Text text, const godot::Callable &
     label->hide();
     auto *choices = &required_node<godot::OptionButton>(root, "Weapons");
     choices->hide();
-    choices->set_fit_to_longest_item(false);
-    choices->set_clip_text(true);
     choices->connect("item_selected", selected);
 }
 
@@ -125,8 +123,6 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         options.insert(options.end(), actor->light_attacks.begin(), actor->light_attacks.end());
     }
     auto *choices = &required_node<godot::OptionButton>(root, "CunningAction");
-    choices->set_fit_to_longest_item(false);
-    choices->set_clip_text(true);
     const bool changed = choices->is_visible() != !options.empty();
     for (const char *name :
             {"CunningActionLabel", "CunningAction", "UseCunningAction"

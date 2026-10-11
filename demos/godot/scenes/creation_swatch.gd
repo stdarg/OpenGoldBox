@@ -25,6 +25,10 @@ func configure_palette(fill: Color) -> void:
         get_theme_constant("swatch_focus_border_width", "OpenGoldMetrics")))
 
 
+func configure_palette_index(index: int) -> void:
+    configure_palette(get_theme_color("character_palette_" + str(index), "OpenGoldPalette"))
+
+
 func configure_part(fill: Color, selected: bool) -> void:
     add_theme_stylebox_override("normal", _box(fill,
         get_theme_color("swatch_selected" if selected else "swatch_border", "OpenGoldPalette"),
@@ -44,3 +48,7 @@ func configure_part(fill: Color, selected: bool) -> void:
         else "swatch_light_text", "OpenGoldPalette")
     add_theme_color_override("font_color", foreground)
     add_theme_color_override("font_hover_color", foreground)
+
+
+func configure_part_index(index: int, selected: bool) -> void:
+    configure_part(get_theme_color("character_palette_" + str(index), "OpenGoldPalette"), selected)

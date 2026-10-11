@@ -32,11 +32,9 @@ void setup_optional_effect(godot::Node &root, Text text, const godot::Callable &
     caption->set_text(text(N_("Resolve next")));
     caption->hide();
     auto *options = dialog_control<OptionButton>(*w, "Resolve");
-    options->set_fit_to_longest_item(false);
     options->connect("item_selected", select);
     options->hide();
-    auto *label = dialog_control<Label>(*w, "Text");
-    label->set("autowrap_mode", 3);
+    dialog_control<Label>(*w, "Text");
     auto *no = dialog_control<Button>(*w, "Skip");
     no->set_text(text(N_("Skip")));
     no->connect("pressed", skip);

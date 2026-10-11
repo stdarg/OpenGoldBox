@@ -17,7 +17,6 @@ class RolfTourView : public godot::Control
   public:
     void _ready() override;
     void _process(double delta) override;
-    void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
 
     // The shared rest dialog's handlers are guarded. A failed handler is
@@ -79,6 +78,8 @@ class RolfTourView : public godot::Control
     }
 
     bool check_expedition_step();
+
+    [[nodiscard]] godot::Dictionary tour_visuals();
 
   protected:
     static void _bind_methods();
@@ -159,8 +160,6 @@ class RolfTourView : public godot::Control
     void leave_shop();
     void map_mode();
     void movement(opengold::por::ExplorationCommand command);
-    void draw_scene();
-    void draw_map();
     void check_run();
     void check_town();
     void check_recovery();

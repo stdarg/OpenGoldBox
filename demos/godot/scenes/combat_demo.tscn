@@ -1,15 +1,23 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/legacy_combat_layout.gd" id="1_layout"]
 [ext_resource type="Script" path="res://scenes/legacy_combat_backdrop.gd" id="2_backdrop"]
+[ext_resource type="Script" path="res://scenes/legacy_combat_visuals.gd" id="3_visuals"]
+
+[ext_resource type="Script" path="res://scenes/window_minimum.gd" id="99_window_minimum"]
 
 [node name="CombatDemo" type="CombatView"]
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="WindowMinimum" type="Node" parent="."]
+script = ExtResource("99_window_minimum")
+metric_prefix = "combat"
 
 [node name="CombatBackdrop" type="Control" parent="."]
 anchors_preset = 15
@@ -18,6 +26,13 @@ anchor_bottom = 1.0
 mouse_filter = 2
 z_index = -1
 script = ExtResource("2_backdrop")
+
+[node name="BattlefieldVisuals" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("3_visuals")
 
 [node name="Title" type="Label" parent="."]
 theme_type_variation = &"LabelGoldText27"
@@ -109,6 +124,8 @@ visible = false
 text = "Bonus Action"
 
 [node name="CunningAction" type="OptionButton" parent="."]
+fit_to_longest_item = false
+clip_text = true
 visible = false
 
 [node name="UseCunningAction" type="Button" parent="."]
@@ -124,6 +141,7 @@ visible = false
 text = "Thrown weapon"
 
 [node name="ThrownWeapon" type="OptionButton" parent="."]
+fit_to_longest_item = false
 visible = false
 
 [node name="Throw" type="Button" parent="."]

@@ -41,7 +41,6 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
                 "res://scenes/control_templates/cantrip_choice.tscn");
             owned->set_name(name);
             check = attach_child(*rows, std::move(owned));
-            style_choice(*check);
             check->connect("toggled", toggled.bind(name));
         }
         const bool selected = std::find(picked.begin(), picked.end(), option.id) != picked.end();

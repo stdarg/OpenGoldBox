@@ -58,7 +58,6 @@ void SaveSlots::_ready()
     presentation::dialog_control<Label>(*this, "Status");
     presentation::dialog_control<Button>(*this, "Action");
     presentation::dialog_control<Button>(*this, "Cancel");
-    get_node<Label>("Status")->set("autowrap_mode", 3);
     get_node<LineEdit>("Name")->set_placeholder("Save name");
     get_node<LineEdit>("Name")->set_max_length(60);
     get_node<ItemList>("Slots")->connect("item_selected", callable_mp(this, &SaveSlots::select));

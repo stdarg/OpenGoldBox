@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 [ext_resource type="AnimationLibrary" path="res://scenes/tour_shopping_layout.tres" id="2_shopping_layout"]
 [ext_resource type="Script" path="res://scenes/tour_layout.gd" id="3_tour_layout"]
 [ext_resource type="Script" path="res://scenes/window_layout.gd" id="4_window_layout"]
@@ -6,13 +6,24 @@
 
 [ext_resource type="AnimationLibrary" path="res://scenes/tour_dialogue_layout.tres" id="1_dialogue_layout"]
 
+[ext_resource type="Script" path="res://scenes/tour_visuals.gd" id="6_tour_visuals"]
+
+[ext_resource type="Script" path="res://scenes/window_minimum.gd" id="99_window_minimum"]
+
+[ext_resource type="Script" path="res://scenes/party_member_row.gd" id="95_party_row"]
+
 [node name="RolfTour" type="RolfTourView"]
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="WindowMinimum" type="Node" parent="."]
+script = ExtResource("99_window_minimum")
+metric_prefix = "tour"
 
 [node name="Backdrop" type="Control" parent="."]
 anchors_preset = 15
@@ -21,6 +32,13 @@ anchor_bottom = 1.0
 mouse_filter = 2
 z_index = -1
 script = ExtResource("5_tour_backdrop")
+
+[node name="TourVisuals" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("6_tour_visuals")
 
 [node name="HeaderRule" type="Control" parent="."]
 visible = false
@@ -449,6 +467,7 @@ metadata/layout_reference = Rect2(1630, 900, 130, 36)
 text = "Close"
 
 [node name="Member0" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
 offset_left = 0
 offset_top = 0
 offset_right = 843
@@ -461,6 +480,7 @@ alignment = 0
 clip_text = true
 
 [node name="Member1" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
 offset_left = 0
 offset_top = 0
 offset_right = 12
@@ -473,6 +493,7 @@ alignment = 0
 clip_text = true
 
 [node name="Member2" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
 offset_left = 0
 offset_top = 0
 offset_right = 12
@@ -485,6 +506,7 @@ alignment = 0
 clip_text = true
 
 [node name="Member3" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
 offset_left = 0
 offset_top = 0
 offset_right = 12
@@ -497,6 +519,7 @@ alignment = 0
 clip_text = true
 
 [node name="Member4" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
 offset_left = 0
 offset_top = 0
 offset_right = 12
@@ -509,6 +532,7 @@ alignment = 0
 clip_text = true
 
 [node name="Member5" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
 offset_left = 0
 offset_top = 0
 offset_right = 12
@@ -521,6 +545,7 @@ alignment = 0
 clip_text = true
 
 [node name="Member6" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
 offset_left = 0
 offset_top = 0
 offset_right = 12
@@ -533,6 +558,7 @@ alignment = 0
 clip_text = true
 
 [node name="Member7" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
 offset_left = 0
 offset_top = 0
 offset_right = 12

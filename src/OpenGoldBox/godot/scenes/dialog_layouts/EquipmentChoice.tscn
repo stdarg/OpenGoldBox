@@ -1,10 +1,14 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/dialog_window_size.gd" id="99_window_size"]
 
 [node name="EquipmentChoice" type="Control"]
+script = ExtResource("99_window_size")
 offset_right = 660.0
 offset_bottom = 340.0
 
 [node name="Item" type="Label" parent="."]
+autowrap_mode = 3
 offset_left = 24.0
 offset_top = 20.0
 offset_right = 636.0
@@ -23,6 +27,7 @@ offset_right = 636.0
 offset_bottom = 118.0
 
 [node name="Explanation" type="Label" parent="."]
+autowrap_mode = 3
 offset_left = 24.0
 offset_top = 138.0
 offset_right = 636.0

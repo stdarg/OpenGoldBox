@@ -133,11 +133,12 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("enemy_cells"), &CombatView::enemy_cells);
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
+    ClassDB::bind_method(D_METHOD("battlefield_visuals"), &CombatView::battlefield_visuals);
 }
 
-double CombatView::cell_pixels() const
+double CombatView::cell_pixels()
 {
-    return combat_zoom_ * base_tile_;
+    return required_node<Node>(*this, "CombatLayout").call("cell_pixels", combat_zoom_);
 }
 
 Array CombatView::enemy_cells() const
@@ -388,10 +389,6 @@ void CombatView::_ready()
 {
     combat_zoom_ = settings::combat_zoom_percent() / 100.0;
     i18n::prepare_ui(*this);
-    required_node<Control>(*this, "BattlefieldScroll/Canvas")
-    .connect("draw", presentation::guarded(this, &CombatView::draw_battlefield));
-    auto *hover = &required_node<PanelContainer>(*this, "HoverInfo");
-    hover->set_theme_type_variation("CombatHover");
     presentation::setup_nick(
         *this, i18n::text, presentation::guarded(this, &CombatView::begin_nick),
         presentation::guarded(this, &CombatView::nick_selected), presentation::guarded(this, &CombatView::confirm_nick),
@@ -410,9 +407,6 @@ void CombatView::_ready()
     presentation::setup_weapon_controls(*this, i18n::text,
                                         presentation::guarded(this, &CombatView::weapon_selected));
     ready_ = true;
-    get_window()->set_min_size(Vector2i(get_theme_constant("combat_min_width", "OpenGoldMetrics"),
-                                        get_theme_constant("combat_min_height", "OpenGoldMetrics")));
-    set_texture_filter(TEXTURE_FILTER_NEAREST);
     layout();
     if (Engine::get_singleton()->is_editor_hint())
         return;
@@ -575,7 +569,6 @@ void CombatView::layout()
                                 .call("apply_layout", Vector2i(board.width, board.height),
                                       combat_zoom_, party_controls);
     laid_out_controls_height_ = geometry["controls_height"];
-    base_tile_ = geometry["base_tile"];
     auto &scroll = required_node<ScrollContainer>(*this, "BattlefieldScroll");
     required_node<Control>(*this, "CombatBackdrop").queue_redraw();
     for (int i = 0; i < scroll.get_child_count(true); ++i)
@@ -1647,8 +1640,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         }
         const auto inverse = get_global_transform_with_canvas().affine_inverse();
         const auto delta = inverse.basis_xform(motion->get_relative());
-        scroll->set_h_scroll(scroll->get_h_scroll() - static_cast<int>(delta.x));
-        scroll->set_v_scroll(scroll->get_v_scroll() - static_cast<int>(delta.y));
+        required_node<Node>(*this, "CombatLayout").call("pan_by", delta);
         get_viewport()->set_input_as_handled();
         return;
     }
@@ -1678,15 +1670,9 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
     // Keep clicks on the scrollbars out of combat targeting.
     if (!scroll->get_rect().has_point(local))
         return;
-    for (int i = 0; i < scroll->get_child_count(true); ++i)
-    {
-        auto *bar = Object::cast_to<ScrollBar>(scroll->get_child(i, true));
-        if (bar && bar->is_visible() &&
-                Rect2(Vector2(), bar->get_size())
-                .has_point(bar->get_global_transform_with_canvas().affine_inverse().xform(
-                               mouse->get_position())))
-            return;
-    }
+    if (bool(required_node<Node>(*this, "CombatLayout").call(
+                 "is_on_scrollbar", mouse->get_position())))
+        return;
     if (mouse->get_button_index() == MouseButton::MOUSE_BUTTON_MIDDLE && mouse->is_pressed())
     {
         panning_ = true;
@@ -1700,9 +1686,9 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                         .get_global_transform_with_canvas()
                         .affine_inverse()
                         .xform(mouse->get_position());
-    const auto relative = canvas / (combat_zoom_ * base_tile_);
-    const Cell cell{static_cast<int>(std::floor(relative.x)),
-                    static_cast<int>(std::floor(relative.y))};
+    const Vector2i chosen = required_node<Node>(*this, "CombatLayout")
+                            .call("cell_at_canvas", canvas, combat_zoom_);
+    const Cell cell{chosen.x, chosen.y};
     // Area spells (CLASS-5): a left click aims (starting the aim when the spell
     // is selected), a right click casts at the preview.
     const bool aiming = demo_.snapshot().area_targeting.has_value();
@@ -1805,8 +1791,9 @@ void CombatView::update_hover(const Vector2 &pointer)
                         .get_global_transform_with_canvas()
                         .affine_inverse()
                         .xform(pointer);
-    const Cell cell{static_cast<int>(std::floor(canvas.x / (combat_zoom_ * base_tile_))),
-                    static_cast<int>(std::floor(canvas.y / (combat_zoom_ * base_tile_)))};
+    const Vector2i chosen = required_node<Node>(*this, "CombatLayout")
+                            .call("cell_at_canvas", canvas, combat_zoom_);
+    const Cell cell{chosen.x, chosen.y};
     const auto &state = demo_.snapshot();
     if (!state.battlefield.contains(cell))
         return;
@@ -1954,7 +1941,7 @@ void CombatView::refresh()
         if (!a.conditions.empty())
             roster += "    " + presentation::bbcode_literal(i18n::render(a.conditions)) + "\n";
     }
-    required_node<RichTextLabel>(*this, "StatusStack/Roster").set_text(roster);
+    required_node<RichTextLabel>(*this, "StatusStack/Roster").call("render", roster);
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         auto *label = &required_node<RichTextLabel>(*this, gs("PartyHP" + std::to_string(slot)));
@@ -1973,7 +1960,7 @@ void CombatView::refresh()
             continue;
         }
         const auto &a = *found;
-        label->set_text(presentation::hp_text(a.hit_points, a.max_hit_points, a.dead,
+        label->call("render", presentation::hp_text(a.hit_points, a.max_hit_points, a.dead,
                                               a.temporary_hp, a.hp_messages) +
         "  " + i18n::format("AC {ac}", {{"ac", a.armor_class}}));
     }
@@ -2127,7 +2114,6 @@ void CombatView::refresh()
     };
     auto *thrown = &required_node<OptionButton>(*this, "ThrownWeapon");
     presentation::SignalsBlocked thrown_quiet(*thrown);
-    thrown->set_fit_to_longest_item(false);
     thrown->clear();
     const auto throwing = std::find_if(s.combatants.begin(), s.combatants.end(),
                                        [&](const auto & a)
@@ -2173,7 +2159,6 @@ void CombatView::refresh()
     // Items: the gear actions this character can take now (GEAR-1).
     auto *items = &required_node<OptionButton>(*this, "ItemAction");
     presentation::SignalsBlocked items_quiet(*items);
-    items->set_fit_to_longest_item(false);
     items->clear();
     item_verbs_.clear();
     if (player && throwing != s.combatants.end())
@@ -2521,10 +2506,8 @@ void CombatView::refresh()
 
 void CombatView::center_on(Cell cell)
 {
-    auto *scroll = &required_node<ScrollContainer>(*this, "BattlefieldScroll");
-    const double tile = combat_zoom_ * base_tile_;
-    scroll->set_h_scroll(static_cast<int>((cell.x + .5) * tile - scroll->get_size().x * .5));
-    scroll->set_v_scroll(static_cast<int>((cell.y + .5) * tile - scroll->get_size().y * .5));
+    required_node<Node>(*this, "CombatLayout").call("center_on",
+            Vector2i(cell.x, cell.y), combat_zoom_);
 }
 
 void CombatView::_draw()
@@ -2584,183 +2567,134 @@ void CombatView::draw_view()
     required_node<Control>(*this, "PartyRowsBounds").call("set_rows", rows);
 }
 
-void CombatView::draw_battlefield()
+Dictionary CombatView::battlefield_visuals()
 {
+    Dictionary data;
     if (!demo_ || !demo_->has_combat())
-        return;
-    auto *canvas = &required_node<Control>(*this, "BattlefieldScroll/Canvas");
-    canvas->draw_set_transform(Vector2(), 0, Vector2(combat_zoom_, combat_zoom_));
+        return data;
     const auto &s = demo_.snapshot();
-    const double tile = base_tile_;
-    const auto font = get_theme_default_font();
-    const int marker_size = get_theme_constant("combat_marker_font_size", "OpenGoldMetrics");
-    const int marker_advance = get_theme_constant("combat_marker_digit_advance", "OpenGoldMetrics");
-    const double inset = get_theme_constant("combat_tile_inset", "OpenGoldMetrics");
+    data["width"] = s.battlefield.width;
+    data["height"] = s.battlefield.height;
+    data["zoom"] = combat_zoom_;
+    Array terrain, terrain_textures, overlays, actors;
     for (int y = 0; y < s.battlefield.height; ++y)
         for (int x = 0; x < s.battlefield.width; ++x)
         {
-            const Rect2 cell(Vector2(x * tile, y * tile), Vector2(tile, tile));
-            const auto terrain = s.battlefield.at({x, y});
-            canvas->draw_rect(cell, terrain == Terrain::obstacle ? get_theme_color("terrain_obstacle", "OpenGoldPalette")
-                              : terrain == Terrain::difficult
-                              ? get_theme_color("terrain_difficult", "OpenGoldPalette")
-                              : ((x + y) % 2 ? get_theme_color("terrain_odd", "OpenGoldPalette") : get_theme_color("terrain_even", "OpenGoldPalette")));
+            const auto kind = s.battlefield.at({x, y});
+            terrain.push_back(kind == Terrain::obstacle ? 2 : kind == Terrain::difficult ? 1 : 0);
             const auto index = y * s.battlefield.width + x;
             if (std::cmp_less(index, demo_->battlefield_tiles().size()) &&
                     demo_->battlefield_tiles()[index] < terrain_art_.size())
-                canvas->draw_texture_rect(terrain_art_[demo_->battlefield_tiles()[index]], cell,
-                                          false);
+                terrain_textures.push_back(terrain_art_[demo_->battlefield_tiles()[index]]);
             else
-                canvas->draw_rect(cell, get_theme_color("terrain_missing", "OpenGoldPalette"), false);
+                terrain_textures.push_back(Variant());
         }
-    const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                     [&](const auto & a)
+    const auto add_overlay = [&](Cell cell, const char *kind)
     {
-        return a.id == s.actor;
-    });
+        Dictionary entry;
+        entry["cell"] = Vector2i(cell.x, cell.y);
+        entry["kind"] = kind;
+        overlays.push_back(entry);
+    };
+    const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
+                                     [&](const auto &a) { return a.id == s.actor; });
     const auto selected = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                       [&](const auto & a)
+                                       [&](const auto &a)
     {
         return a.id == selected_ && a.side == rules::Side::party;
     });
     if (selected != s.combatants.end() && !selected->dead)
     {
         if (selected_ == s.actor)
-            for (const auto p : demo_->combat().movement_reach(selected_))
-                canvas->draw_rect(
-                    Rect2(Vector2(p.x * tile + inset, p.y * tile + inset),
-                          Vector2(tile - 2 * inset, tile - 2 * inset)),
-                    get_theme_color("combat_reachable_overlay", "OpenGoldPalette"));
-        canvas->draw_rect(Rect2(Vector2(selected->cell.x * tile + inset,
-                                        selected->cell.y * tile + inset),
-                                Vector2(tile - 2 * inset, tile - 2 * inset)),
-                          get_theme_color("combat_selected", "OpenGoldPalette"), false,
-                          get_theme_constant("combat_selected_border_width", "OpenGoldMetrics"));
+            for (const auto cell : demo_->combat().movement_reach(selected_))
+                add_overlay(cell, "reachable");
+        add_overlay(selected->cell, "selected");
     }
     if (active != s.combatants.end() && active->side == rules::Side::party && mode_ != "move")
-        for (const auto &c : demo_->combat().legal_commands())
-            if (c.verb == mode_ && matches_item(c) && c.target && !s.effect_targeting)
+        for (const auto &command : demo_->combat().legal_commands())
+            if (command.verb == mode_ && matches_item(command) && command.target &&
+                    !s.effect_targeting)
             {
                 const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                                 [&](const auto & a)
+                                                 [&](const auto &a)
                 {
-                    return a.id == c.target;
+                    return a.id == command.target;
                 });
                 if (target != s.combatants.end())
-                    canvas->draw_rect(
-                        Rect2(Vector2(target->cell.x * tile + inset,
-                                      target->cell.y * tile + inset),
-                              Vector2(tile - 2 * inset, tile - 2 * inset)),
-                        get_theme_color(
-                            (mode_ == "stabilize" || mode_ == "throw" ||
-                             mode_.starts_with("light_") || mode_.starts_with("nick_")) &&
-                            c.target == aid_target_
-                            ? "combat_target_focus_overlay" : "combat_target_overlay",
-                            "OpenGoldPalette"));
+                    add_overlay(target->cell,
+                                (mode_ == "stabilize" || mode_ == "throw" ||
+                                 mode_.starts_with("light_") || mode_.starts_with("nick_")) &&
+                                command.target == aid_target_ ? "target_focus" : "target");
             }
-    // Silence's squares, then Heavily Obscured ones such as Fog Cloud's.
     for (const auto cell : s.silenced)
-        canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          get_theme_color("combat_silence_overlay", "OpenGoldPalette"));
-    // Spiritual Weapon's spectral force.
+        add_overlay(cell, "silence");
     for (const auto cell : s.spiritual_weapons)
-        canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile),
-                            tile * get_theme_constant("combat_spiritual_radius_percent", "OpenGoldMetrics") / 100.0,
-                            get_theme_color("combat_spiritual_overlay", "OpenGoldPalette"));
-    // Flaming Sphere's ball of fire.
+        add_overlay(cell, "spiritual");
     for (const auto cell : s.flaming_spheres)
-        canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile),
-                            tile * get_theme_constant("combat_flame_radius_percent", "OpenGoldMetrics") / 100.0,
-                            get_theme_color("combat_flame_overlay", "OpenGoldPalette"));
-    // Moonbeam's pale light.
+        add_overlay(cell, "flame");
     for (const auto cell : s.moonbeams)
-        canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          get_theme_color("combat_moonbeam_overlay", "OpenGoldPalette"));
+        add_overlay(cell, "moonbeam");
     for (const auto cell : s.obscured)
-        canvas->draw_rect(Rect2(Vector2(cell.x * tile, cell.y * tile), Vector2(tile, tile)),
-                          get_theme_color("combat_obscured_overlay", "OpenGoldPalette"));
+        add_overlay(cell, "obscured");
     if (s.area_targeting)
         for (const auto cell : s.area_targeting->cells)
-            canvas->draw_rect(Rect2(Vector2(cell.x * tile + inset, cell.y * tile + inset),
-                                    Vector2(tile - 2 * inset, tile - 2 * inset)),
-                              get_theme_color("combat_area_overlay", "OpenGoldPalette"));
+            add_overlay(cell, "area");
     if (s.effect_targeting && active != s.combatants.end() && active->side == rules::Side::party)
     {
         unsigned index = 0;
-        for (const auto &c : demo_->combat().legal_commands())
-            if (c.verb == s.effect_targeting->verb)
+        for (const auto &command : demo_->combat().legal_commands())
+            if (command.verb == s.effect_targeting->verb)
             {
-                auto cell = c.destination;
+                auto cell = command.destination;
                 if (!s.effect_targeting->destination)
                 {
                     const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                                     [&](const auto & a)
+                                                     [&](const auto &a)
                     {
-                        return a.id == c.target;
+                        return a.id == command.target;
                     });
                     if (target == s.combatants.end())
                         continue;
                     cell = target->cell;
                 }
-                canvas->draw_rect(Rect2(Vector2(cell.x * tile + inset, cell.y * tile + inset),
-                                        Vector2(tile - 2 * inset, tile - 2 * inset)),
-                                  get_theme_color(index++ == effect_target_index_
-                                                  ? "combat_effect_focus_overlay"
-                                                  : "combat_target_overlay", "OpenGoldPalette"));
+                add_overlay(cell, index++ == effect_target_index_ ? "effect_focus" : "target");
             }
     }
     for (const auto index : presentation::combat_sprite_draw_order(s.combatants))
     {
-        const auto &a = s.combatants[index];
-        // One who ran off the field, or surrendered, is no longer on it.
-        if (a.fled || a.surrendered)
+        const auto &actor = s.combatants[index];
+        if (actor.fled || actor.surrendered)
             continue;
-        const auto center = Vector2((a.cell.x + .5) * tile, (a.cell.y + .5) * tile);
-        if (a.dead)
+        Dictionary entry;
+        entry["cell"] = Vector2i(actor.cell.x, actor.cell.y);
+        entry["party"] = actor.side == rules::Side::party;
+        if (actor.dead)
         {
-            if (skull_art_.is_valid() && skull_seconds_.contains(a.id))
-                canvas->draw_texture_rect(
-                    skull_art_,
-                    Rect2(Vector2(a.cell.x * tile, a.cell.y * tile), Vector2(tile, tile)), false);
-            continue;
+            if (skull_art_.is_valid() && skull_seconds_.contains(actor.id))
+                entry["skull"] = skull_art_;
         }
-        if (const auto *found = combatant_art(a))
+        else if (const auto *found = combatant_art(actor))
         {
-            const auto &art = *found;
-            const bool left = a.facing_left;
-            const bool acting = action_seconds_.contains(a.id) && art.action.is_valid();
-            const bool unconscious = a.prone || !a.conscious;
-            const auto texture = unconscious ? art.unconscious
-                                 : left      ? (acting ? art.left_action : art.left_texture)
-                                 : (acting ? art.action : art.texture);
-            const auto rect = presentation::combat_sprite_rect(
-                                  texture->get_size(),
-                                  unconscious ? art.unconscious_visible
-                                  : left      ? art.left_visible
-                                  : art.visible,
-                                  Rect2(Vector2(a.cell.x * tile, a.cell.y * tile), Vector2(tile, tile)),
-                                  art.goliath && !unconscious,
-                                  get_theme_constant("combat_sprite_fit_percent", "OpenGoldMetrics") / 100.0,
-                                  Vector2(1, get_theme_constant(
-                                          "combat_goliath_height_percent", "OpenGoldMetrics") / 100.0));
-            canvas->draw_texture_rect(texture, rect, false,
-                                      !a.conscious ? get_theme_color("combat_unconscious", "OpenGoldPalette")
-                                      : get_theme_color("combat_reachable", "OpenGoldPalette"));
+            const bool left = actor.facing_left;
+            const bool acting = action_seconds_.contains(actor.id) && found->action.is_valid();
+            const bool unconscious = actor.prone || !actor.conscious;
+            entry["texture"] = unconscious ? found->unconscious
+                               : left ? (acting ? found->left_action : found->left_texture)
+                               : (acting ? found->action : found->texture);
+            entry["visible"] = unconscious ? found->unconscious_visible
+                               : left ? found->left_visible : found->visible;
+            entry["goliath"] = found->goliath && !unconscious;
+            entry["conscious"] = actor.conscious;
         }
         else
-        {
-            const auto number = std::to_string(a.id);
-            auto cursor = center + Vector2(-marker_advance * .5 * number.size(),
-                                           get_theme_constant("combat_marker_baseline", "OpenGoldMetrics"));
-            for (const char digit : number)
-            {
-                canvas->draw_char(font, cursor, gs(std::string(1, digit)), marker_size,
-                                  a.side == rules::Side::party ? get_theme_color("combat_party", "OpenGoldPalette")
-                                  : get_theme_color("combat_enemy", "OpenGoldPalette"));
-                cursor.x += marker_advance;
-            }
-        }
+            entry["number"] = String::num_uint64(actor.id);
+        actors.push_back(entry);
     }
+    data["terrain"] = terrain;
+    data["terrain_textures"] = terrain_textures;
+    data["overlays"] = overlays;
+    data["actors"] = actors;
+    return data;
 }
 
 void CombatView::_process(double delta)
@@ -2891,8 +2825,9 @@ void CombatView::_process(double delta)
                         mouse->set_position(
                             required_node<Control>(*this, "BattlefieldScroll/Canvas")
                             .get_global_transform_with_canvas()
-                            .xform(Vector2(target->cell.x + .5, target->cell.y + .5) *
-                                   (combat_zoom_ * base_tile_)));
+                            .xform(Vector2(required_node<Node>(*this, "CombatLayout").call(
+                                       "canvas_center_of", Vector2i(target->cell.x, target->cell.y),
+                                       combat_zoom_))));
                         get_viewport()->push_input(mouse, true);
                         if (demo_.snapshot().revision != s.revision + 1)
                             throw std::runtime_error(

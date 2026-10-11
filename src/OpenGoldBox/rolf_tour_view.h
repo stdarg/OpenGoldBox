@@ -25,7 +25,6 @@ class RolfTourView : public godot::Control
 
     void _ready() override;
     void _process(double delta) override;
-    void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
 
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party)
@@ -96,6 +95,8 @@ class RolfTourView : public godot::Control
 
     // Redraws from the session and party, e.g. after the leader changes.
     void refresh();
+
+    [[nodiscard]] godot::Dictionary tour_visuals();
 
   protected:
     static void _bind_methods();
@@ -198,8 +199,6 @@ class RolfTourView : public godot::Control
     void leave_shop();
     void movement(opengold::por::ExplorationCommand command);
     godot::Ref<godot::Texture2D> npc_portrait(std::string_view file);
-    void draw_scene();
-    void draw_map();
     void check_run();
     void check_town();
     void check_recovery();

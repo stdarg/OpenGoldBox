@@ -67,6 +67,7 @@ void RolfTourView::_bind_methods()
     ADD_SIGNAL(MethodInfo("save_requested", PropertyInfo(Variant::BOOL, "saving")));
     ADD_SIGNAL(MethodInfo("party_member_selected", PropertyInfo(Variant::INT, "slot")));
     ADD_SIGNAL(MethodInfo("level_up_requested", PropertyInfo(Variant::INT, "id")));
+    ClassDB::bind_method(D_METHOD("tour_visuals"), &RolfTourView::tour_visuals);
 }
 
 void RolfTourView::_notification(int what)
@@ -74,7 +75,7 @@ void RolfTourView::_notification(int what)
     if (what == NOTIFICATION_RESIZED && ready_)
     {
         layout();
-        queue_redraw();
+        required_node<Control>(*this, "TourVisuals").queue_redraw();
     }
 }
 
@@ -83,7 +84,6 @@ void RolfTourView::_ready()
     i18n::prepare_ui(*this);
     // Resizing the window can notify this view before dynamic controls exist.
     ready_ = false;
-    set_texture_filter(CanvasItem::TEXTURE_FILTER_NEAREST);
     // Child nodes are scene-owned; these lookups are temporary non-owning views.
     required_node<Button>(*this, "Continue")
     .connect("pressed", presentation::guarded(this, &RolfTourView::next));
@@ -126,8 +126,6 @@ void RolfTourView::_ready()
     .connect("close_requested", presentation::guarded(this, &RolfTourView::close_sheet));
     required_node<Button>(*this, "LeaveShop")
     .connect("pressed", presentation::guarded(this, &RolfTourView::leave_shop));
-    get_window()->set_min_size(Vector2i(get_theme_constant("tour_min_width", "OpenGoldMetrics"),
-                                        get_theme_constant("tour_min_height", "OpenGoldMetrics")));
     for (bool saving :
             {
                 true, false
@@ -615,7 +613,7 @@ void RolfTourView::advance_frame(double delta)
         if (shown_monster_picture_)
         {
             monster_picture_seconds_ += delta;
-            queue_redraw();
+            required_node<Control>(*this, "TourVisuals").queue_redraw();
         }
     }
     if (OS::get_singleton()->get_cmdline_user_args().has("--mastery-rest-check"))
@@ -976,9 +974,7 @@ void RolfTourView::refresh()
             continue;
         // While shopping, the buyer's row is drawn in gold; otherwise the leader's.
         const bool leader = id == campaign_->leader();
-        button->set_theme_type_variation(
-            (shopping ? campaign_->state().selected_slot.index == slot : leader)
-            ? "BuyerRow" : "ButtonText16");
+        button->call("set_highlight", shopping ? campaign_->state().selected_slot.index == slot : leader);
         const auto &m = campaign_->member(id);
         const auto &cs = m.character.sheet();
         const auto name = (leader ? String::utf8("★ ") : String()) + String::utf8(cs.name.c_str());
@@ -996,16 +992,10 @@ void RolfTourView::refresh()
         arrow->call("place_in_member_row", name);
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());
     }
-    queue_redraw();
+    required_node<Control>(*this, "TourVisuals").queue_redraw();
     // Marked shown only once everything above succeeded, so a failed refresh
     // is tried again on the next frame (Effective C++ Item 29).
     shown_revision_ = s.revision;
-}
-
-void RolfTourView::_draw()
-{
-    draw_scene();
-    draw_map();
 }
 
 Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
@@ -1021,104 +1011,54 @@ Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
     return found->second;
 }
 
-void RolfTourView::draw_scene()
+Dictionary RolfTourView::tour_visuals()
 {
-    if (!session_ || session_->snapshot().visited.none() || wall_view_.is_null())
-        return;
-    // Fit the complete original wall view. DOS EGA pixels were displayed taller
-    // than wide; letterboxing preserves art and door framing on resize.
-    const Vector2 source_size = wall_view_->get_size();
-    const double stretch = get_theme_constant("tour_wall_vertical_percent", "OpenGoldMetrics") / 100.0;
-    const double scale = std::min<double>(scene_rect_.size.x / source_size.x,
-                                          scene_rect_.size.y / (source_size.y * stretch));
-    const Vector2 pixel_scale(scale, scale * stretch);
-    const Vector2 size(source_size.x * pixel_scale.x, source_size.y * pixel_scale.y);
-    const Rect2 view(scene_rect_.position + (scene_rect_.size - size) * .5, size);
-    draw_texture_rect(wall_view_, view, false);
-    if (shown_monster_picture_ && !monster_frames_.empty())
-    {
-        // The 88x88 close-up covers the whole 3D view, as in the original.
-        draw_texture_rect(monster_frames_[current_monster_frame()], view, false);
-        return;
-    }
+    Dictionary data;
+    if (!session_ || wall_view_.is_null() || session_->snapshot().visited.none())
+        return data;
     const auto &state = session_->snapshot();
-    // A speaking NPC's portrait replaces the small encounter sprite. It is cut to
-    // the view's 5:6 on-screen shape (see docs/PORTRAITS.md), so it fills the view.
-    const auto portrait_file = opengold::speaking_npc_portrait(state);
-    const auto portrait = portrait_file.empty() ? Ref<Texture2D>() : npc_portrait(portrait_file);
-    if (portrait.is_valid())
-        draw_texture_rect(portrait, view, false);
-    else if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
+    data["wall"] = wall_view_;
+    if (shown_monster_picture_ && !monster_frames_.empty())
+        data["picture"] = monster_frames_[current_monster_frame()];
+    else
     {
-        const auto &source = session_->sprites()[state.sprite_frame];
-        const Vector2 sprite_size(source.width * pixel_scale.x, source.height * pixel_scale.y);
-        draw_texture_rect(sprites_[state.sprite_frame],
-                          Rect2(view.position + Vector2((view.size.x - sprite_size.x) * .5,
-                                  view.size.y - sprite_size.y),
-                                sprite_size),
-                          false);
+        const auto portrait_file = opengold::speaking_npc_portrait(state);
+        const auto portrait = portrait_file.empty() ? Ref<Texture2D>() : npc_portrait(portrait_file);
+        if (portrait.is_valid())
+            data["picture"] = portrait;
+        else if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
+        {
+            const auto &source = session_->sprites()[state.sprite_frame];
+            data["sprite"] = sprites_[state.sprite_frame];
+            data["sprite_size"] = Vector2(source.width, source.height);
+        }
     }
-}
-
-void RolfTourView::draw_map()
-{
-    if (!session_)
-        return;
-    const auto &s = session_->snapshot();
-    if (s.visited.none())
-        return; // The opening script has not placed the party yet.
-    const double cell = map_rect_.size.x / 16;
+    Array cells;
+    cells.resize(256);
     for (unsigned y = 0; y < 16; ++y)
         for (unsigned x = 0; x < 16; ++x)
         {
-            const auto origin = map_rect_.position + Vector2(x * cell, y * cell);
-            // The override affects drawing only. It must never discover cells or
-            // alter the history later written to a campaign save.
-            if (!no_fog_ && !s.seen.test(y * 16 + x))
-                continue;
-            draw_rect(Rect2(origin, Vector2(cell, cell)),
-                      get_theme_color(s.visited.test(y * 16 + x) ? "map_visited" : "map_seen",
-                                      "OpenGoldPalette"));
-            draw_rect(Rect2(origin, Vector2(cell, cell)),
-                      get_theme_color("map_grid", "OpenGoldPalette"), false);
-            const auto &c = session_->map().at(x, y);
-            const double inset = get_theme_constant("tour_map_grid_inset_tenths", "OpenGoldMetrics") / 10.0;
-            const std::array<Vector2, 4> corners{origin + Vector2(inset, inset),
-                                                 origin + Vector2(cell - inset, inset),
-                                                 origin + Vector2(cell - inset, cell - inset),
-                                                 origin + Vector2(inset, cell - inset)};
-            for (unsigned d = 0; d < 4; ++d)
+            const unsigned index = y * 16 + x;
+            if (!no_fog_ && !state.seen.test(index))
             {
-                if (c.walls[d])
-                    draw_line(corners[d], corners[(d + 1) % 4],
-                              get_theme_color("map_wall", "OpenGoldPalette"),
-                              get_theme_constant("tour_map_wall_width_tenths", "OpenGoldMetrics") / 10.0);
-                if (c.doors[d])
-                    draw_line(corners[d].lerp(corners[(d + 1) % 4],
-                                              get_theme_constant("tour_map_door_start_percent", "OpenGoldMetrics") / 100.0),
-                              corners[d].lerp(corners[(d + 1) % 4],
-                                              get_theme_constant("tour_map_door_end_percent", "OpenGoldMetrics") / 100.0),
-                              get_theme_color("gold", "OpenGoldPalette"),
-                              get_theme_constant("tour_map_door_width", "OpenGoldMetrics"));
+                cells[index] = -1;
+                continue;
             }
+            const auto &cell = session_->map().at(x, y);
+            int flags = state.visited.test(index) ? 1 : 0;
+            for (unsigned direction = 0; direction < 4; ++direction)
+            {
+                if (cell.walls[direction])
+                    flags |= 1 << (1 + direction);
+                if (cell.doors[direction])
+                    flags |= 1 << (5 + direction);
+            }
+            cells[index] = flags;
         }
-    const auto center =
-        map_rect_.position + Vector2((s.pose.x + .5) * cell, (s.pose.y + .5) * cell);
-    const auto forward = direction[index(s.pose.facing)], right = Vector2(-forward.y, forward.x);
-    PackedVector2Array arrow;
-    const auto fraction = [this](const char *name)
-    {
-        return get_theme_constant(name, "OpenGoldMetrics") / 100.0;
-    };
-    arrow.push_back(center + forward * cell * fraction("tour_map_arrow_tip_percent"));
-    arrow.push_back(center - forward * cell * fraction("tour_map_arrow_back_percent") +
-                    right * cell * fraction("tour_map_arrow_side_percent"));
-    arrow.push_back(center - forward * cell * fraction("tour_map_arrow_notch_percent"));
-    arrow.push_back(center - forward * cell * fraction("tour_map_arrow_back_percent") -
-                    right * cell * fraction("tour_map_arrow_side_percent"));
-    draw_circle(center, cell * fraction("tour_map_arrow_disc_percent"),
-                get_theme_color("background", "OpenGoldPalette"));
-    draw_colored_polygon(arrow, get_theme_color("party", "OpenGoldPalette"));
+    data["cells"] = cells;
+    data["pose"] = Vector2i(state.pose.x, state.pose.y);
+    data["facing"] = static_cast<int>(index(state.pose.facing));
+    return data;
 }
 
 void RolfTourView::capture_frame(const String &name)

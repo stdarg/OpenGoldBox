@@ -43,7 +43,7 @@ String gs(std::string_view s)
 void CharacterCreationView::setup_advancement()
 {
     required_node<ItemList>(*this, "PartyPanel/Roster")
-    .set_theme_type_variation("LevelUpRoster");
+    .call("set_advancement", true);
     const auto args = OS::get_singleton()->get_cmdline_user_args();
     advancement_check_ = args.has("--advancement-check") || args.has("--champion-creator");
     advancement_review_ = args.has("--level-up-review");

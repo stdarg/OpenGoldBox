@@ -389,8 +389,9 @@ selected in the [combat sprite demo](SPRITE-DEMO.md).
   same rendering order and existing tint treatment.
 
 The game identifies Goliaths using the character's stable `goliath` species ID.
-The game and demo share `combat_sprite_layout.h` for the visible-bounds fitting.
-Native layout tests verify size, padding, anchoring, zoom, and row order. Party
+The game battlefield fits sprites in `combat_battlefield.gd`; the demo preview uses
+`combat_sprite_canvas.gd`. Godot checks verify size, padding, anchoring, and zoom;
+the native draw-order check verifies row order. Party
 tests verify a monster can move into the square above a Goliath and retain that
 position through save/restore. Combat input continues using logical cells.
 
