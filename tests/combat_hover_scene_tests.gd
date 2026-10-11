@@ -44,7 +44,10 @@ func check() -> void:
         push_error("Leader hover omitted its type, AC, HP, or current melee weapon: " + details)
         quit(1)
         return
-    await RenderingServer.frame_post_draw
+    # A hidden or minimized window skips drawing, so frame_post_draw may never
+    # come; draw explicitly after one processed frame.
+    await process_frame
+    RenderingServer.force_draw(false)
     var path := ProjectSettings.globalize_path("res://../../../build/checks/combat-hover.png")
     if root.get_texture().get_image().save_png(path) != OK:
         push_error("Could not capture combat hover")

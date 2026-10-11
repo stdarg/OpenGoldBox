@@ -54,7 +54,10 @@ func run_checks() -> void:
     scroll.scroll_horizontal = 0
     scroll.scroll_vertical = 0
     await settle()
-    await RenderingServer.frame_post_draw
+    # A hidden or minimized window skips drawing, so frame_post_draw may never
+    # come; draw explicitly after one processed frame.
+    await process_frame
+    RenderingServer.force_draw(false)
     var rendered := root.get_texture().get_image()
     var canvas: Control = scroll.get_node("Canvas")
     var tile := canvas.size.x / 12.0

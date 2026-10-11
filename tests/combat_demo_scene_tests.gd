@@ -85,7 +85,10 @@ func check_demo() -> void:
     require(not combat.get_node("React").visible and not combat.get_node("Decline").visible,
         "Reaction choices stay hidden until a reaction is pending")
     require(combat.get_node("ZoomLevel").text == "100%", "Showcase uses 100 percent zoom")
-    await RenderingServer.frame_post_draw
+    # A hidden or minimized window skips drawing, so frame_post_draw may never
+    # come; draw explicitly after one processed frame.
+    await process_frame
+    RenderingServer.force_draw(false)
     var screenshot := root.get_texture().get_image()
     require(screenshot.get_pixel(1015, 415).r > screenshot.get_pixel(1140, 415).r,
         "Reachable movement squares visibly lighten in the surrounded demo")
@@ -94,7 +97,8 @@ func check_demo() -> void:
     click.pressed = true
     click.position = Vector2(1550, 90)
     root.push_input(click)
-    await RenderingServer.frame_post_draw
+    await process_frame
+    RenderingServer.force_draw(false)
     var other_selected := root.get_texture().get_image()
     require(combat.selected_character_id() == 1 and combat.selected_character_cell() == Vector2i(5, 5),
         "Selecting the portrait row selects its party character")
@@ -112,7 +116,8 @@ func check_demo() -> void:
         "Arrow keys do not bypass the selected character's turn")
     click.position = Vector2(940, 460)
     root.push_input(click)
-    await RenderingServer.frame_post_draw
+    await process_frame
+    RenderingServer.force_draw(false)
     screenshot = root.get_texture().get_image()
     require(combat.selected_character_id() == 3 and combat.selected_character_cell() == Vector2i(7, 5),
         "Selecting the combat sprite selects the same active party character")
@@ -154,7 +159,8 @@ func check_demo() -> void:
         "Arrow key submits a melee attack against the occupied enemy square")
     require(combat.get_node("StatusStack/Turn").text.contains("Dorian Nightwind turn") and not combat.get_node("End").disabled,
         "Attack preserves the hero's remaining turn and explicit End control")
-    await RenderingServer.frame_post_draw
+    await process_frame
+    RenderingServer.force_draw(false)
     var attack_screenshot := root.get_texture().get_image()
     require(attack_screenshot.save_png(ProjectSettings.globalize_path("res://../../../build/checks/combat-attack.png")) == OK,
         "Action pose screenshot saves")
@@ -171,7 +177,8 @@ func check_demo() -> void:
     require(combat.get_node("LogStack/Log").text.contains("Kobold 7 -> Dorian Nightwind"),
         "Kobold on the right attacks the hero to its left")
     require(combat.sprite_facing_left(1007), "Kobold faces left toward its attack target")
-    await RenderingServer.frame_post_draw
+    await process_frame
+    RenderingServer.force_draw(false)
     require(root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../../../build/checks/combat-left-facing.png")) == OK,
         "Left-facing attack screenshot saves")
     var output := ProjectSettings.globalize_path("res://../../../build/checks/combat-demo.png")
