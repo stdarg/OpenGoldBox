@@ -366,13 +366,9 @@ void LevelUpDialog::open(opengold::MemberId id)
         training->clear();
         training->set_visible(has_training);
         required_node<Label>(*this, "AdvancementTrainingLabel").set_visible(has_training);
-        required_node<Label>(*this, "AdvancementTrainingLabel").set_position(
-            required_node<Control>(*this, supplemental_training
-                                   ? "TrainingSupplementalLabelPosition"
-                                   : "TrainingPrimaryLabelPosition").get_position());
-        training->set_position(required_node<Control>(*this, supplemental_training
-                            ? "TrainingSupplementalPosition"
-                            : "TrainingPrimaryPosition").get_position());
+        auto &training_layout = required_node<Node>(*this, "TrainingLayout");
+        training_layout.call("play", supplemental_training ? "supplemental" : "primary");
+        training_layout.call("advance", 0);
         for (unsigned i = 0; i < 6; ++i)
         {
             required_node<Control>(*this, String("Ability") + String::num_uint64(i))

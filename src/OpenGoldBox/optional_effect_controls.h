@@ -79,21 +79,10 @@ void refresh_optional_effect(godot::Node &root,
     const bool multiple = choice->options.size() > 1;
     options->set_visible(multiple);
     required_node<Label>(*w, "ResolveLabel").set_visible(multiple);
-    const String group = multiple ? "OptionalEffectMultiple" : "OptionalEffect";
-    const auto window_size = dialog_layout_size_group(group);
-    w->set_min_size(window_size);
-    w->set_size(window_size);
+    auto &layout = required_node<Node>(*w, "Layout");
+    layout.call("play", multiple ? "multiple" : "single");
+    layout.call("advance", 0);
     auto *label = &required_node<Label>(*w, "Text");
-    const auto text_rect = dialog_layout_rect_group(group, "Text");
-    label->set_position(text_rect.position);
-    label->set_size(text_rect.size);
-    for (const char *name : {"Use", "Skip"})
-    {
-        auto &button = required_node<Button>(*w, name);
-        const auto rect = dialog_layout_rect_group(group, name);
-        button.set_position(rect.position);
-        button.set_size(rect.size);
-    }
     const auto *option = choice->options.empty() ? nullptr : &choice->options[selected];
     w->set_title(render(option ? option->title : choice->title));
     label->set_text(render(option ? option->description : choice->description));

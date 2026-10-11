@@ -153,30 +153,6 @@ inline void size_scene_window(godot::Window &window, const godot::Vector2i &calc
     return NodeOwner<>(packed->instantiate());
 }
 
-[[nodiscard]] inline godot::Rect2 dialog_layout_rect_group(const godot::String &group,
-                                                           const godot::String &name)
-{
-    auto guides = dialog_layout_scene(group);
-    if (!guides)
-        throw std::runtime_error("Missing dialog layout scene: " +
-                                 std::string(group.utf8().get_data()));
-    auto &guide = required_node<godot::Control>(*guides, godot::NodePath(name));
-    return {guide.get_position(), guide.get_size()};
-}
-
-[[nodiscard]] inline godot::Vector2i dialog_layout_size_group(const godot::String &group)
-{
-    auto guides = dialog_layout_scene(group);
-    if (!guides)
-        throw std::runtime_error("Missing dialog layout scene: " +
-                                 std::string(group.utf8().get_data()));
-    auto *guide = godot::Object::cast_to<godot::Control>(guides.get());
-    if (!guide)
-        throw std::runtime_error("Invalid dialog layout root: " +
-                                 std::string(group.utf8().get_data()));
-    return godot::Vector2i(guide->get_size());
-}
-
 inline void attach_dialog_layout(godot::Window &window)
 {
     auto scene = dialog_layout_scene(godot::String(window.get_name()));
@@ -188,9 +164,7 @@ inline void attach_dialog_layout(godot::Window &window)
     window.set_min_size(configured);
     while (layout->get_child_count() > 0)
     {
-        auto *child = godot::Object::cast_to<godot::Control>(layout->get_child(0));
-        if (!child)
-            throw std::runtime_error("Invalid dialog layout child");
+        auto *child = layout->get_child(0);
         child->set_owner(nullptr);
         attach_child(window, detach_child(*layout, *child));
     }

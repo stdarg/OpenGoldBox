@@ -1,4 +1,6 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="AnimationLibrary" path="res://scenes/level_up_training_layout.tres" id="1_training"]
 
 [node name="LevelUp" type="LevelUpDialog"]
 title = "Level up"
@@ -91,6 +93,12 @@ offset_top = 236.0
 offset_right = 676.0
 offset_bottom = 272.0
 visible = false
+
+[node name="TrainingLayout" type="AnimationPlayer" parent="."]
+root_node = NodePath("..")
+libraries = {
+"": ExtResource("1_training")
+}
 
 [node name="AbilityLabel0" type="Label" parent="."]
 offset_left = 24.0
@@ -230,35 +238,3 @@ offset_top = 610.0
 offset_right = 676.0
 offset_bottom = 650.0
 text = "Confirm"
-
-[node name="TrainingPrimaryLabelPosition" type="Control" parent="."]
-offset_left = 24.0
-offset_top = 205.0
-offset_right = 24.0
-offset_bottom = 205.0
-visible = false
-mouse_filter = 2
-
-[node name="TrainingPrimaryPosition" type="Control" parent="."]
-offset_left = 24.0
-offset_top = 236.0
-offset_right = 24.0
-offset_bottom = 236.0
-visible = false
-mouse_filter = 2
-
-[node name="TrainingSupplementalLabelPosition" type="Control" parent="."]
-offset_left = 24.0
-offset_top = 374.0
-offset_right = 24.0
-offset_bottom = 374.0
-visible = false
-mouse_filter = 2
-
-[node name="TrainingSupplementalPosition" type="Control" parent="."]
-offset_left = 24.0
-offset_top = 406.0
-offset_right = 24.0
-offset_bottom = 406.0
-visible = false
-mouse_filter = 2

@@ -209,12 +209,9 @@ void RolfTourView::refresh_rest()
     const bool use_visible = refresh_rest_use(infos, spending);
     presentation::required_node<RichTextLabel>(*w, "Info").set_text(details);
     presentation::required_node<Label>(*w, "Result").set_text(rest_result_);
-    const auto info_rect = presentation::dialog_layout_rect_group(
-                               recovery_visible || use_visible ? "RestDialogOptions" : "RestDialog",
-                               "Info");
-    auto &info_control = presentation::required_node<RichTextLabel>(*w, "Info");
-    info_control.set_position(info_rect.position);
-    info_control.set_size(info_rect.size);
+    auto &layout = presentation::required_node<Node>(*w, "Layout");
+    layout.call("play", recovery_visible || use_visible ? "options" : "plain");
+    layout.call("advance", 0);
     presentation::required_node<Label>(*w, "RecoveryLabel").set_visible(recovery_visible);
     recovery->set_visible(recovery_visible);
     recovery->set_disabled(recovery->get_item_count() == 0);

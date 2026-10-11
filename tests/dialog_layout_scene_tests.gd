@@ -31,6 +31,47 @@ func _initialize() -> void:
         return
     defeat.free()
 
+    var level_up: Window = load("res://scenes/level_up_dialog.tscn").instantiate()
+    root.add_child(level_up)
+    var positions := []
+    var training_layout: AnimationPlayer = level_up.get_node("TrainingLayout")
+    for variant in ["primary", "supplemental"]:
+        training_layout.play(variant)
+        training_layout.advance(0)
+        var label: Label = level_up.get_node("AdvancementTrainingLabel")
+        var choice: OptionButton = level_up.get_node("AdvancementTraining")
+        if label.position.x != choice.position.x or label.position.y >= choice.position.y:
+            _fail("Training label and choice are misaligned in " + variant)
+            return
+        positions.append(choice.position.y)
+    if positions[1] <= positions[0]:
+        _fail("Supplemental training did not move below the primary position")
+        return
+    level_up.free()
+
+    for group in ["OptionalEffect", "RestDialog"]:
+        var authored: Control = load("res://scenes/dialog_layouts/%s.tscn" % group).instantiate()
+        var window := Window.new()
+        window.size = Vector2i(authored.size)
+        root.add_child(window)
+        while authored.get_child_count() > 0:
+            var child := authored.get_child(0)
+            child.owner = null
+            authored.remove_child(child)
+            window.add_child(child)
+        var animation: AnimationPlayer = window.get_node("Layout")
+        var names := ["single", "multiple"] if group == "OptionalEffect" else ["plain", "options"]
+        var heights := []
+        for variant in names:
+            animation.play(variant)
+            animation.advance(0)
+            heights.append(window.size.y if group == "OptionalEffect" else window.get_node("Info").size.y)
+        if (group == "OptionalEffect" and heights[1] <= heights[0]) or (group == "RestDialog" and heights[1] >= heights[0]):
+            _fail("Dialog state layout did not change: " + group)
+            return
+        window.free()
+        authored.free()
+
     var guide: Control = load("res://scenes/dialog_layouts/SaveSlots.tscn").instantiate()
     var expected := Rect2(guide.get_node("Slots").position, guide.get_node("Slots").size)
     guide.free()

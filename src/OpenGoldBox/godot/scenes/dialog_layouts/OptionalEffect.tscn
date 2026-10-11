@@ -1,4 +1,6 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="AnimationLibrary" path="res://scenes/dialog_layouts/optional_effect_layout.tres" id="1_layout"]
 
 [node name="OptionalEffect" type="Control"]
 offset_right = 640.0
@@ -33,3 +35,9 @@ offset_left = 446.0
 offset_top = 236.0
 offset_right = 616.0
 offset_bottom = 276.0
+
+[node name="Layout" type="AnimationPlayer" parent="."]
+root_node = NodePath("..")
+libraries = {
+"": ExtResource("1_layout")
+}
