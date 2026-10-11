@@ -51,41 +51,22 @@ bool CharacterCreationView::open_equipment_choice(opengold::MemberId member, std
     auto *window = godot::Object::cast_to<godot::Window>(get_node_or_null("EquipmentChoice"));
     if (!window)
     {
-        auto owned = presentation::make_node<godot::Window>();
-        owned->set_name("EquipmentChoice");
-        owned->set_title(review_text(N_("Choose weapon hand")));
-        owned->set_size(godot::Vector2i(660, 340));
-        owned->set_min_size(godot::Vector2i(660, 340));
-        owned->set_flag(godot::Window::FLAG_RESIZE_DISABLED, true);
-        owned->set_transient(true);
-        owned->set_exclusive(true);
-        owned->hide();
-        window = presentation::attach_child(*this, std::move(owned));
+        auto owned = presentation::instantiate_scene("res://scenes/equipment_choice.tscn");
+        window = godot::Object::cast_to<godot::Window>(owned.get());
+        if (!window)
+            throw std::runtime_error("Invalid equipment choice scene");
+        presentation::attach_child(*this, std::move(owned));
         window->connect("close_requested",
                         guarded(this, &CharacterCreationView::close_equipment_choice));
         window->connect("window_input",
                         guarded(this, &CharacterCreationView::equipment_choice_input));
-        auto *name = presentation::add_control<godot::Label>(*window, "Item",
-            godot::Rect2(24, 20, 612, 48));
-        name->set("autowrap_mode", 3);
-        auto *label = presentation::add_control<godot::Label>(*window, "HandLabel",
-            godot::Rect2(24, 80, 160, 38));
-        label->set_text(review_text(N_("Weapon hand")));
-        auto *selection = presentation::add_control<godot::OptionButton>(*window, "Hand",
-            godot::Rect2(190, 80, 446, 38));
+        auto *selection = &presentation::required_node<godot::OptionButton>(*window, "Hand");
         selection->connect("item_selected",
                            guarded(this, &CharacterCreationView::equipment_choice_selected));
-        auto *note = presentation::add_control<godot::Label>(*window, "Explanation",
-            godot::Rect2(24, 138, 612, 116));
-        note->set("autowrap_mode", 3);
-        auto *cancel = presentation::add_control<godot::Button>(*window, "Cancel",
-            godot::Rect2(316, 278, 150, 40));
-        cancel->set_text(review_text(N_("Cancel")));
+        auto *cancel = &presentation::required_node<godot::Button>(*window, "Cancel");
         cancel->connect("pressed",
                         guarded(this, &CharacterCreationView::close_equipment_choice));
-        auto *apply = presentation::add_control<godot::Button>(*window, "Equip",
-            godot::Rect2(478, 278, 158, 40));
-        apply->set_text(review_text(N_("Equip")));
+        auto *apply = &presentation::required_node<godot::Button>(*window, "Equip");
         apply->connect("pressed",
                        guarded(this, &CharacterCreationView::apply_equipment_choice));
     }

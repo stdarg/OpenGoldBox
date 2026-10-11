@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[node name="EquipmentChoice" type="Window"]
+title = "Choose weapon hand"
+size = Vector2i(660, 340)
+min_size = Vector2i(660, 340)
+visible = false
+unresizable = true
+transient = true
+exclusive = true
+
+[node name="Item" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 636.0
+offset_bottom = 68.0
+autowrap_mode = 3
+
+[node name="HandLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 80.0
+offset_right = 184.0
+offset_bottom = 118.0
+text = "Weapon hand"
+
+[node name="Hand" type="OptionButton" parent="."]
+offset_left = 190.0
+offset_top = 80.0
+offset_right = 636.0
+offset_bottom = 118.0
+
+[node name="Explanation" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 138.0
+offset_right = 636.0
+offset_bottom = 254.0
+autowrap_mode = 3
+
+[node name="Cancel" type="Button" parent="."]
+offset_left = 316.0
+offset_top = 278.0
+offset_right = 466.0
+offset_bottom = 318.0
+text = "Cancel"
+
+[node name="Equip" type="Button" parent="."]
+offset_left = 478.0
+offset_top = 278.0
+offset_right = 636.0
+offset_bottom = 318.0
+text = "Equip"
