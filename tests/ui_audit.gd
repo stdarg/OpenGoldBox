@@ -103,7 +103,7 @@ func load_slums(name: String) -> bool:
         if list.get_item_text(i) == slot:
             list.select(i); list.item_selected.emit(i)
     await press("SaveSlots/Action"); await press("SaveSlots/Action")
-    if not town().visible: await press("PartyPanel/Explore")
+    if not town().visible: await press("PartyPanel/ActionRow2/Explore")
     return town().visible
 
 # The town, then the hobgoblins' story with its choices, then their fight.

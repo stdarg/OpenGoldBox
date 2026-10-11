@@ -23,14 +23,15 @@ inline godot::Rect2 bottom_aligned_sprite(godot::Vector2 source, godot::Rect2 vi
 }
 
 inline godot::Rect2 combat_sprite_rect(godot::Vector2 source, godot::Rect2 visible,
-                                       godot::Rect2 cell, bool goliath)
+                                       godot::Rect2 cell, bool goliath,
+                                       double fit, godot::Vector2 goliath_visible_squares)
 {
     if (goliath)
-        return bottom_aligned_sprite(source, visible, cell, {1, 1.25});
+        return bottom_aligned_sprite(source, visible, cell, goliath_visible_squares);
     if (source.x <= 0 || source.y <= 0 || visible.size.x <= 0 || visible.size.y <= 0)
         return {};
     // Transparent margins in the source image must not shrink the figure.
-    const auto scale = cell.size.x * .9 / std::max(visible.size.x, visible.size.y);
+    const auto scale = cell.size.x * fit / std::max(visible.size.x, visible.size.y);
     const auto size = source * scale;
     const auto visible_center = visible.get_center() * scale;
     return {cell.get_center() - visible_center, size};

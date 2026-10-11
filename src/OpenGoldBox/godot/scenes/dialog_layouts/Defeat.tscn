@@ -1,29 +1,39 @@
 [gd_scene format=3]
 
-[node name="Defeat" type="Control"]
-offset_right = 520.0
-offset_bottom = 240.0
+[node name="Defeat" type="Window"]
+title = "Defeat"
+size = Vector2i(520, 240)
+min_size = Vector2i(520, 240)
+visible = false
+unresizable = true
+transient = true
+exclusive = true
 
-[node name="Title" type="Control" parent="."]
+[node name="Title" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 30.0
 offset_right = 496.0
 offset_bottom = 74.0
+theme_type_variation = &"PartyPreviewTitle"
+text = "Your party has been defeated."
 
-[node name="Body" type="Control" parent="."]
+[node name="Body" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 90.0
 offset_right = 496.0
 offset_bottom = 126.0
+text = "Load a saved game to continue."
 
-[node name="Reload" type="Control" parent="."]
+[node name="Reload" type="Button" parent="."]
 offset_left = 24.0
 offset_top = 170.0
 offset_right = 292.0
 offset_bottom = 214.0
+text = "Reload a Saved Game"
 
-[node name="Exit" type="Control" parent="."]
+[node name="Exit" type="Button" parent="."]
 offset_left = 308.0
 offset_top = 170.0
 offset_right = 496.0
 offset_bottom = 214.0
+text = "Exit to OS"

@@ -4,49 +4,49 @@
 offset_right = 700.0
 offset_bottom = 670.0
 
-[node name="Title" type="Control" parent="."]
+[node name="Title" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 18.0
 offset_right = 676.0
 offset_bottom = 52.0
 
-[node name="Current" type="Control" parent="."]
+[node name="Current" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 60.0
 offset_right = 676.0
 offset_bottom = 130.0
 
-[node name="Limit" type="Control" parent="."]
+[node name="Limit" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 138.0
 offset_right = 676.0
 offset_bottom = 166.0
 
-[node name="Choices" type="Control" parent="."]
+[node name="Choices" type="ScrollContainer" parent="."]
 offset_left = 24.0
 offset_top = 176.0
 offset_right = 676.0
 offset_bottom = 538.0
 
-[node name="Error" type="Control" parent="."]
+[node name="Error" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 548.0
 offset_right = 676.0
 offset_bottom = 603.0
 
-[node name="Cancel" type="Control" parent="."]
+[node name="Cancel" type="Button" parent="."]
 offset_left = 280.0
 offset_top = 614.0
 offset_right = 430.0
 offset_bottom = 654.0
 
-[node name="Apply" type="Control" parent="."]
+[node name="Apply" type="Button" parent="."]
 offset_left = 442.0
 offset_top = 614.0
 offset_right = 676.0
 offset_bottom = 654.0
 
-[node name="Save" type="Control" parent="."]
+[node name="Save" type="Button" parent="."]
 offset_left = 24.0
 offset_top = 614.0
 offset_right = 258.0

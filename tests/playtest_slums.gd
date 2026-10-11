@@ -86,7 +86,7 @@ func load_fixture(name: String) -> void:
             list.select(i); list.item_selected.emit(i)
     await press("SaveSlots/Action"); await press("SaveSlots/Action")
     if current_scene.has_node("CampaignTown") and not town().visible:
-        await press("PartyPanel/Explore")
+        await press("PartyPanel/ActionRow2/Explore")
     # A save that did not load (one older than the rules, say) leaves no
     # town: stop and say so (tools/playtest.py writes fresh ones).
     if not current_scene.has_node("CampaignTown") or not town().visible:

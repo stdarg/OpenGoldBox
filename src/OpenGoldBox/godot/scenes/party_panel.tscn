@@ -76,115 +76,91 @@ offset_bottom = -7
 metadata/layout_reference = Rect2(24, 1041, 1872, 32)
 autowrap_mode = 2
 
-[node name="Create" type="Button" parent="."]
+[node name="ActionRow1" type="HBoxContainer" parent="."]
+anchor_right = 1.0
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 24
-offset_top = -125
-offset_right = 397.2
-offset_bottom = -89
-metadata/layout_reference = Rect2(24, 955, 373.2, 36)
+offset_left = 24.0
+offset_top = -125.0
+offset_right = -24.0
+offset_bottom = -89.0
+theme_type_variation = &"PartyActionRow"
+
+[node name="Create" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 373.2
 text = "Create character"
 
-[node name="Remove" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 401.2
-offset_top = -125
-offset_right = 777.4
-offset_bottom = -89
-metadata/layout_reference = Rect2(401.2, 955, 376.2, 36)
+[node name="Remove" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 376.2
 text = "Remove member"
 
-[node name="Rejoin" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 781.4
-offset_top = -125
-offset_right = 1118.6
-offset_bottom = -89
-metadata/layout_reference = Rect2(781.4, 955, 337.2, 36)
+[node name="Rejoin" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 337.2
 text = "Rejoin party"
 
-[node name="Recruit" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 1122.6
-offset_top = -125
-offset_right = 1536.8
-offset_bottom = -89
-metadata/layout_reference = Rect2(1122.6, 955, 414.2, 36)
+[node name="Recruit" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 414.2
 text = "Recruit preview guard"
 
-[node name="Equip" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 1540.8
-offset_top = -125
-offset_right = 1896
-offset_bottom = -89
-metadata/layout_reference = Rect2(1540.8, 955, 355.2, 36)
+[node name="Equip" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 355.2
 text = "Equip selected"
 
-[node name="Unequip" type="Button" parent="."]
+[node name="ActionRow2" type="HBoxContainer" parent="."]
+anchor_right = 1.0
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 24
-offset_top = -81
-offset_right = 356.833333
-offset_bottom = -45
-metadata/layout_reference = Rect2(24, 999, 332.83333333333337, 36)
+offset_left = 24.0
+offset_top = -81.0
+offset_right = -24.0
+offset_bottom = -45.0
+theme_type_variation = &"PartyActionRow"
+
+[node name="Unequip" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 332.833333
 text = "Unequip selected"
 
-[node name="Explore" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 360.833333
-offset_top = -81
-offset_right = 704.666667
-offset_bottom = -45
-metadata/layout_reference = Rect2(360.83333333333337, 999, 343.83333333333337, 36)
+[node name="Explore" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 343.833333
 text = "Explore New Phlan"
 
-[node name="Combat" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 708.666667
-offset_top = -81
-offset_right = 1010.5
-offset_bottom = -45
-metadata/layout_reference = Rect2(708.6666666666667, 999, 301.83333333333337, 36)
+[node name="Combat" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 301.833333
 text = "Party combat"
 
-[node name="Close" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 1014.5
-offset_top = -81
-offset_right = 1330.33333
-offset_bottom = -45
-metadata/layout_reference = Rect2(1014.5000000000001, 999, 315.83333333333337, 36)
+[node name="Close" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 315.833333
 text = "Back to creator"
 
-[node name="Modifiers" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 1334.33333
-offset_top = -81
-offset_right = 1596.16667
-offset_bottom = -45
-metadata/layout_reference = Rect2(1334.3333333333335, 999, 261.83333333333337, 36)
+[node name="Modifiers" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 261.833333
 theme_type_variation = &"ButtonText14"
 text = "Modifiers"
 
-[node name="SavingThrows" type="Button" parent="."]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 1600.16667
-offset_top = -81
-offset_right = 1896
-offset_bottom = -45
-metadata/layout_reference = Rect2(1600.166666666667, 999, 295.83333333333337, 36)
+[node name="SavingThrows" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 295.833333
 theme_type_variation = &"ButtonText14"
 text = "Saving Throws"
 

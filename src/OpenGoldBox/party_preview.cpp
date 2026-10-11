@@ -44,9 +44,6 @@ using presentation::required_node;
 
 namespace
 {
-// The exploration screen's gold, which marks the leader in both lists.
-const Color leader_gold(215 / 255.f, 180 / 255.f, 121 / 255.f);
-
 String gs(std::string_view text)
 {
     return String::utf8(text.data(), text.size());
@@ -109,15 +106,15 @@ void CharacterCreationView::setup_party()
     connect_party_button("Party", PartyAction::open);
     connect_party_button("AddParty", PartyAction::add_created);
     connect_party_button("ReturnParty", PartyAction::return_to_party);
-    connect_party_button("PartyPanel/Create", PartyAction::create);
-    connect_party_button("PartyPanel/Remove", PartyAction::remove);
-    connect_party_button("PartyPanel/Rejoin", PartyAction::rejoin);
-    connect_party_button("PartyPanel/Recruit", PartyAction::recruit);
-    connect_party_button("PartyPanel/Equip", PartyAction::equip);
-    connect_party_button("PartyPanel/Unequip", PartyAction::unequip);
-    connect_party_button("PartyPanel/Explore", PartyAction::explore);
-    connect_party_button("PartyPanel/Combat", PartyAction::combat);
-    connect_party_button("PartyPanel/Close", PartyAction::close);
+    connect_party_button("PartyPanel/ActionRow1/Create", PartyAction::create);
+    connect_party_button("PartyPanel/ActionRow1/Remove", PartyAction::remove);
+    connect_party_button("PartyPanel/ActionRow1/Rejoin", PartyAction::rejoin);
+    connect_party_button("PartyPanel/ActionRow1/Recruit", PartyAction::recruit);
+    connect_party_button("PartyPanel/ActionRow1/Equip", PartyAction::equip);
+    connect_party_button("PartyPanel/ActionRow2/Unequip", PartyAction::unequip);
+    connect_party_button("PartyPanel/ActionRow2/Explore", PartyAction::explore);
+    connect_party_button("PartyPanel/ActionRow2/Combat", PartyAction::combat);
+    connect_party_button("PartyPanel/ActionRow2/Close", PartyAction::close);
     required_node<ItemList>(*this, "PartyPanel/Roster")
     .connect("item_selected", presentation::guarded(this, &CharacterCreationView::party_selected));
     required_node<Button>(*this, "PartyPanel/MakeLeader")
@@ -150,9 +147,9 @@ void CharacterCreationView::setup_party()
     {
         report_failure(failure);
     });
-    required_node<Button>(*this, "PartyPanel/Modifiers")
+    required_node<Button>(*this, "PartyPanel/ActionRow2/Modifiers")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modifiers));
-    required_node<Button>(*this, "PartyPanel/SavingThrows")
+    required_node<Button>(*this, "PartyPanel/ActionRow2/SavingThrows")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_saving_throws));
     required_node<RichTextLabel>(*this, "PartyPanel/Sheet").set_use_bbcode(true);
     setup_saves();
@@ -179,32 +176,6 @@ void CharacterCreationView::show_pool()
 
 void CharacterCreationView::party_layout()
 {
-    // A row of buttons across the window: each as wide as its label needs
-    // (longer in some languages) plus an equal share of the room left.
-    const auto place_row = [&](std::initializer_list<const char *> names)
-    {
-        double needed = 0;
-        for (const auto *name : names)
-            needed += required_node<Control>(*this, gs("PartyPanel/") + name)
-                      .get_combined_minimum_size()
-                      .x;
-        const double gap = get_theme_constant("party_action_gap", "OpenGoldMetrics");
-        const auto &first = required_node<Control>(*this, gs("PartyPanel/") + *names.begin());
-        const double spare = std::max(0.0, get_size().x - first.get_position().x -
-                                     get_theme_constant("party_action_right_margin", "OpenGoldMetrics") -
-                                     needed - gap * (names.size() - 1));
-        double x = first.get_position().x;
-        for (const auto *name : names)
-        {
-            auto *button = &required_node<Control>(*this, gs("PartyPanel/") + name);
-            const double width = button->get_combined_minimum_size().x + spare / names.size();
-            button->set_position(Vector2(x, button->get_position().y));
-            button->set_size(Vector2(width, button->get_size().y));
-            x += width + gap;
-        }
-    };
-    place_row({"Create", "Remove", "Rejoin", "Recruit", "Equip"});
-    place_row({"Unequip", "Explore", "Combat", "Close", "Modifiers", "SavingThrows"});
     required_node<CharacterPoolDialog>(*this, "PoolModal").fit(get_size());
     required_node<TownSheetDialog>(*this, "TownSheet").fit(get_size());
     for (const auto *name :
@@ -238,7 +209,8 @@ void CharacterCreationView::refresh_party()
         list->add_item((leader ? String::utf8("★ ") : String()) + gs(m.character.sheet().name) +
                        (slot == state.slots.end() ? i18n::text(" (Reserve)") : String()));
         if (leader)
-            list->set_item_custom_fg_color(list->get_item_count() - 1, leader_gold);
+            list->set_item_custom_fg_color(list->get_item_count() - 1,
+                                           get_theme_color("gold", "OpenGoldPalette"));
     }
     auto *items = &required_node<ItemList>(*this, "PartyPanel/Inventory");
     items->clear();
@@ -331,7 +303,7 @@ void CharacterCreationView::equipment_art_check()
     const auto gear = [&](unsigned index, bool equip)
     {
         required_node<ItemList>(*this, "PartyPanel/Inventory").select(index);
-        press(equip ? "PartyPanel/Equip" : "PartyPanel/Unequip");
+        press(equip ? "PartyPanel/ActionRow1/Equip" : "PartyPanel/ActionRow2/Unequip");
         if (auto *choice = Object::cast_to<Window>(get_node_or_null("EquipmentChoice"));
                 choice && choice->is_visible())
         {
@@ -505,7 +477,7 @@ void CharacterCreationView::equipment_art_check()
         verify_preview(0, 34);
         party_selected(1);
         verify_preview(1, 34);
-        press("PartyPanel/Combat");
+        press("PartyPanel/ActionRow2/Combat");
         verify_combat();
     }
     else if (check_stage_ == 18)
@@ -618,7 +590,7 @@ bool CharacterCreationView::open_equipment_choice(MemberId member, std::uint64_t
         },
         [this]
         {
-            required_node<Button>(*this, "PartyPanel/Equip").grab_focus();
+            required_node<Button>(*this, "PartyPanel/ActionRow1/Equip").grab_focus();
         },
         [this]
         {
@@ -924,18 +896,18 @@ void CharacterCreationView::party_check()
         if (completed_->appearance() != chosen ||
                 campaign_->member(campaign_->state().slots[0]).character.appearance() != chosen)
             throw std::runtime_error("Party portrait changed after adding");
-        press("PartyPanel/Recruit");
+        press("PartyPanel/ActionRow1/Recruit");
         if (!campaign_->state().slots[6])
             throw std::runtime_error("Recruit callback failed");
-        press("PartyPanel/Remove");
-        press("PartyPanel/Rejoin");
+        press("PartyPanel/ActionRow1/Remove");
+        press("PartyPanel/ActionRow1/Rejoin");
         party_selected(0);
         capture("party-roster.png");
         ++party_check_stage_;
         break;
     }
     case 1:
-        press("PartyPanel/Explore");
+        press("PartyPanel/ActionRow2/Explore");
         ++party_check_stage_;
         break;
     case 2:
@@ -946,7 +918,7 @@ void CharacterCreationView::party_check()
         if (campaign_->member(campaign_->selected()).character.inventory().items().size() != 1)
             throw std::runtime_error("Town purchase missing from party inventory");
         required_node<ItemList>(*this, "PartyPanel/Inventory").select(0);
-        press("PartyPanel/Equip");
+        press("PartyPanel/ActionRow1/Equip");
         ++party_check_stage_;
         break;
     case 3:
@@ -954,7 +926,7 @@ void CharacterCreationView::party_check()
                 .get_text()
                 .contains("Saving throw"))
             throw std::runtime_error("Party selection did not display the character sheet");
-        press("PartyPanel/Modifiers");
+        press("PartyPanel/ActionRow2/Modifiers");
         if (!required_node<RichTextLabel>(*this, "ModifiersModal/Text")
                 .get_text()
                 .contains("Shield: +2 AC"))
@@ -966,7 +938,7 @@ void CharacterCreationView::party_check()
                           : "Resistance to Poison damage"))
             throw std::runtime_error("Created Dwarf is missing its sourced damage resistance");
         press("ModifiersModal/Close");
-        press("PartyPanel/SavingThrows");
+        press("PartyPanel/ActionRow2/SavingThrows");
         if (!required_node<Label>(*this, "SavingThrowsModal/Title")
                 .get_text()
                 .contains(
@@ -977,7 +949,7 @@ void CharacterCreationView::party_check()
             throw std::runtime_error("Party saving throws did not use selected character");
         press("SavingThrowsModal/Close");
         capture("party-equipped.png");
-        press("PartyPanel/Combat");
+        press("PartyPanel/ActionRow2/Combat");
         ++party_check_stage_;
         break;
     case 4:
@@ -1019,7 +991,7 @@ void CharacterCreationView::party_check()
         break;
     }
     case 5:
-        press("PartyPanel/Explore");
+        press("PartyPanel/ActionRow2/Explore");
         required_node<RolfTourView>(*this, "CampaignTown").start_recovery_check();
         ++party_check_stage_;
         break;
@@ -1031,7 +1003,7 @@ void CharacterCreationView::party_check()
         break;
     case 7:
         capture("party-recovered.png");
-        press("PartyPanel/Combat");
+        press("PartyPanel/ActionRow2/Combat");
         ++party_check_stage_;
         break;
     case 8:
@@ -1191,47 +1163,24 @@ void CharacterCreationView::expedition_check()
 
 void CharacterCreationView::setup_defeat()
 {
-    auto window = presentation::make_node<Window>();
-    window->set_name("Defeat");
-    window->set_title(i18n::text(N_("Defeat")));
-    presentation::set_dialog_window_size(*window);
-    window->set_flag(Window::FLAG_RESIZE_DISABLED, true);
-    window->set_transient(true);
-    window->set_exclusive(true);
-    window->hide();
+    auto window = presentation::instantiate_scene("res://scenes/dialog_layouts/Defeat.tscn");
     presentation::attach_child(*this, std::move(window));
     auto *dialog = &required_node<Window>(*this, "Defeat");
-    auto title = presentation::make_node<Label>();
-    title->set_name("Title");
-    title->set_text(i18n::text(N_("Your party has been defeated.")));
-    const auto title_rect = presentation::dialog_layout_rect(*dialog, "Title");
-    title->set_position(title_rect.position);
-    title->set_size(title_rect.size);
-    title->set_theme_type_variation("PartyPreviewTitle");
-    presentation::attach_child(*dialog, std::move(title));
-    auto body = presentation::make_node<Label>();
-    body->set_name("Body");
-    body->set_text(i18n::text(N_("Load a saved game to continue.")));
-    const auto body_rect = presentation::dialog_layout_rect(*dialog, "Body");
-    body->set_position(body_rect.position);
-    body->set_size(body_rect.size);
-    presentation::attach_child(*dialog, std::move(body));
+    dialog->set_title(i18n::text(N_("Defeat")));
+    required_node<Label>(*dialog, "Title")
+    .set_text(i18n::text(N_("Your party has been defeated.")));
+    required_node<Label>(*dialog, "Body")
+    .set_text(i18n::text(N_("Load a saved game to continue.")));
     for (bool reload :
             {
                 true, false
             })
     {
-        auto button = presentation::make_node<Button>();
-        button->set_name(reload ? "Reload" : "Exit");
+        auto *button = &required_node<Button>(*dialog, reload ? "Reload" : "Exit");
         button->set_text(i18n::text(reload ? N_("Reload a Saved Game") : N_("Exit to OS")));
-        const auto button_rect = presentation::dialog_layout_rect(
-                                     *dialog, reload ? "Reload" : "Exit");
-        button->set_position(button_rect.position);
-        button->set_size(button_rect.size);
         button->connect("pressed",
                         reload ? presentation::guarded(this, &CharacterCreationView::reload_after_defeat)
                         : presentation::guarded(this, &CharacterCreationView::exit_after_defeat));
-        presentation::attach_child(*dialog, std::move(button));
     }
     dialog->connect("close_requested", presentation::guarded(this, &CharacterCreationView::show_defeat));
     required_node<SaveSlots>(*this, "SaveSlots")

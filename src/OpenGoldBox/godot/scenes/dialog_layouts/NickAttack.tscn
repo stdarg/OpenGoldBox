@@ -4,31 +4,31 @@
 offset_right = 640.0
 offset_bottom = 300.0
 
-[node name="Text" type="Control" parent="."]
+[node name="Text" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 18.0
 offset_right = 616.0
 offset_bottom = 102.0
 
-[node name="Label" type="Control" parent="."]
+[node name="Label" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 112.0
 offset_right = 616.0
 offset_bottom = 140.0
 
-[node name="Choices" type="Control" parent="."]
+[node name="Choices" type="OptionButton" parent="."]
 offset_left = 24.0
 offset_top = 148.0
 offset_right = 616.0
 offset_bottom = 188.0
 
-[node name="Cancel" type="Control" parent="."]
+[node name="Cancel" type="Button" parent="."]
 offset_left = 284.0
 offset_top = 236.0
 offset_right = 434.0
 offset_bottom = 276.0
 
-[node name="Target" type="Control" parent="."]
+[node name="Target" type="Button" parent="."]
 offset_left = 446.0
 offset_top = 236.0
 offset_right = 616.0

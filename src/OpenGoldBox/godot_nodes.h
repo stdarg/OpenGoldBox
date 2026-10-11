@@ -134,8 +134,8 @@ inline void size_scene_window(godot::Window &window, const godot::Vector2i &calc
     return scene;
 }
 
-// Some existing dialogs are assembled in C++. Their editable rectangles live
-// in Godot scenes alongside the main screen layouts.
+// Dialog scenes own their controls and rectangles. Existing native window
+// classes attach those authored children before connecting their behavior.
 [[nodiscard]] inline NodeOwner<> dialog_layout_scene(const godot::String &group)
 {
     const godot::String path =
@@ -164,12 +164,6 @@ inline void size_scene_window(godot::Window &window, const godot::Vector2i &calc
     return {guide.get_position(), guide.get_size()};
 }
 
-[[nodiscard]] inline godot::Rect2 dialog_layout_rect(const godot::Node &parent,
-                                                     const godot::String &name)
-{
-    return dialog_layout_rect_group(godot::String(parent.get_name()), name);
-}
-
 [[nodiscard]] inline godot::Vector2i dialog_layout_size_group(const godot::String &group)
 {
     auto guides = dialog_layout_scene(group);
@@ -183,21 +177,28 @@ inline void size_scene_window(godot::Window &window, const godot::Vector2i &calc
     return godot::Vector2i(guide->get_size());
 }
 
-inline void set_dialog_window_size(godot::Window &window)
+inline void attach_dialog_layout(godot::Window &window)
 {
-    const auto configured = dialog_layout_size_group(godot::String(window.get_name()));
+    auto scene = dialog_layout_scene(godot::String(window.get_name()));
+    auto *layout = godot::Object::cast_to<godot::Control>(scene.get());
+    if (!layout)
+        throw std::runtime_error("Invalid dialog layout root");
+    const godot::Vector2i configured(layout->get_size());
     window.set_size(configured);
     window.set_min_size(configured);
+    while (layout->get_child_count() > 0)
+    {
+        auto *child = godot::Object::cast_to<godot::Control>(layout->get_child(0));
+        if (!child)
+            throw std::runtime_error("Invalid dialog layout child");
+        child->set_owner(nullptr);
+        attach_child(window, detach_child(*layout, *child));
+    }
 }
 
-template <class T> T *add_control(godot::Node &parent, const godot::String &name)
+template <class T> T *dialog_control(godot::Node &parent, const godot::String &name)
 {
-    const auto rect = dialog_layout_rect(parent, name);
-    auto child = make_node<T>();
-    child->set_name(name);
-    child->set_position(rect.position);
-    child->set_size(rect.size);
-    return attach_child(parent, std::move(child));
+    return &required_node<T>(parent, godot::NodePath(name));
 }
 
 // Blocks an object's signals while a control is refilled, and restores them

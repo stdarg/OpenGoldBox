@@ -26,13 +26,13 @@ void RolfTourView::setup_rest()
                          presentation::guarded(this, &RolfTourView::rest_training_apply), rest_text);
     training->connect("window_input", presentation::guarded(this, &RolfTourView::rest_training_input));
     auto *training_save =
-        presentation::add_control<Button>(*training, "Save");
+        presentation::dialog_control<Button>(*training, "Save");
     training_save->set_text(rest_text(N_("Save game")));
     training_save->connect("pressed", presentation::guarded(this, &RolfTourView::rest_save));
     auto owned = presentation::make_node<Window>();
     owned->set_name("RestDialog");
     owned->set_title(rest_text(N_("Rest")));
-    presentation::set_dialog_window_size(*owned);
+    presentation::attach_dialog_layout(*owned);
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
@@ -40,22 +40,22 @@ void RolfTourView::setup_rest()
     auto *w = presentation::attach_child(*this, std::move(owned));
     w->connect("close_requested", presentation::guarded(this, &RolfTourView::rest_finish));
     w->connect("window_input", presentation::guarded(this, &RolfTourView::rest_input));
-    auto *label = presentation::add_control<Label>(*w, "KindLabel");
+    auto *label = presentation::dialog_control<Label>(*w, "KindLabel");
     label->set_text(rest_text(N_("Rest type")));
-    auto *kind = presentation::add_control<OptionButton>(*w, "Kind");
+    auto *kind = presentation::dialog_control<OptionButton>(*w, "Kind");
     kind->add_item(rest_text(N_("Short Rest")), 0);
     kind->add_item(rest_text(N_("Long Rest")), 1);
     kind->select(1);
     kind->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
-    auto *list = presentation::add_control<ItemList>(*w, "Members");
+    auto *list = presentation::dialog_control<ItemList>(*w, "Members");
     list->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
-    auto *info = presentation::add_control<RichTextLabel>(*w, "Info");
+    auto *info = presentation::dialog_control<RichTextLabel>(*w, "Info");
     info->set_scroll_active(true);
-    auto *result = presentation::add_control<Label>(*w, "Result");
+    auto *result = presentation::dialog_control<Label>(*w, "Result");
     result->set("autowrap_mode", 3);
     auto button = [&](const char *name, const char *text, Callable callback)
     {
-        auto *b = presentation::add_control<Button>(*w, name);
+        auto *b = presentation::dialog_control<Button>(*w, name);
         b->set_text(rest_text(text));
         b->connect("pressed", callback);
         return b;
@@ -69,18 +69,18 @@ void RolfTourView::setup_rest()
     button("Finish", N_("Cancel"),
            presentation::guarded(this, &RolfTourView::rest_finish));
     auto *recovery_label =
-        presentation::add_control<Label>(*w, "RecoveryLabel");
+        presentation::dialog_control<Label>(*w, "RecoveryLabel");
     recovery_label->set_text(rest_text(N_("Arcane Recovery")));
-    presentation::add_control<OptionButton>(*w, "RecoveryChoice");
+    presentation::dialog_control<OptionButton>(*w, "RecoveryChoice");
     button("Recover", N_("Recover slots"),
            presentation::guarded(this, &RolfTourView::rest_recover));
     // Cast / Use (CLASS-3) shares the Arcane Recovery row: that row appears only
     // during a Short Rest, this one only before resting. The selected member acts.
-    auto *use_label = presentation::add_control<Label>(*w, "UseLabel");
+    auto *use_label = presentation::dialog_control<Label>(*w, "UseLabel");
     use_label->set_text(rest_text(N_("Cast / Use")));
-    presentation::add_control<OptionButton>(*w, "UseAction")
+    presentation::dialog_control<OptionButton>(*w, "UseAction")
     ->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
-    presentation::add_control<OptionButton>(*w, "UseTarget");
+    presentation::dialog_control<OptionButton>(*w, "UseTarget");
     button("Use", N_("Use"), presentation::guarded(this, &RolfTourView::rest_use));
 }
 

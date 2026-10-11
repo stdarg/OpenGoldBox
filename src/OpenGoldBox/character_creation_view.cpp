@@ -346,13 +346,14 @@ void CharacterCreationView::layout()
             apply_variant("SheetLayout");
     }
 
-    // Each choice column grows by half the change in the page width.
+    // Split the available width among the scene-authored number of columns.
     auto &choices = required_node<ItemList>(*this, "Choices");
     if (!choices.has_meta("_layout_column_width"))
         choices.set_meta("_layout_column_width", choices.get_fixed_column_width());
     const Rect2 page_design = required_node<Control>(*this, "PageBounds").get_meta("layout_reference");
     choices.set_fixed_column_width(int(choices.get_meta("_layout_column_width")) +
-                                   static_cast<int>((page_rect_.size.x - page_design.size.x) / 2));
+                                   static_cast<int>((page_rect_.size.x - page_design.size.x) /
+                                                    std::max(1, choices.get_max_columns())));
     required_node<Control>(*this, "PreviewSummary").set_visible(
         page_rect_.size.y >= get_theme_constant("preview_summary_min_height", "OpenGoldMetrics"));
 
@@ -734,7 +735,12 @@ void CharacterCreationView::refresh()
                 button->add_theme_stylebox_override("disabled",
                     box(*button, get_theme_color("swatch_disabled_bg", "OpenGoldPalette"),
                         get_theme_color("swatch_disabled_border", "OpenGoldPalette")));
-                const auto foreground = (color.r * .299 + color.g * .587 + color.b * .114) > .5
+                const double contrast =
+                    (color.r * get_theme_constant("swatch_red_luma", "OpenGoldMetrics") +
+                     color.g * get_theme_constant("swatch_green_luma", "OpenGoldMetrics") +
+                     color.b * get_theme_constant("swatch_blue_luma", "OpenGoldMetrics"));
+                const auto foreground = contrast >
+                                        get_theme_constant("swatch_contrast_threshold", "OpenGoldMetrics")
                                         ? get_theme_color("swatch_dark_text", "OpenGoldPalette")
                                         : get_theme_color("swatch_light_text", "OpenGoldPalette");
                 button->add_theme_color_override("font_color", foreground);

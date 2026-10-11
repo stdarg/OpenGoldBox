@@ -68,7 +68,7 @@ func load_fixture(fixture: String, slot: String) -> void:
         if list.get_item_text(i) == slot:
             list.select(i); list.item_selected.emit(i)
     await press("SaveSlots/Action"); await press("SaveSlots/Action")
-    if not town().visible: await press("PartyPanel/Explore")
+    if not town().visible: await press("PartyPanel/ActionRow2/Explore")
     report.append("Loaded " + slot + ": " + town().get_node("Location").text + " / " + town().get_node("Coordinates").text)
 
 # Answers each prompt, choosing `wanted` when offered, until `until` appears in

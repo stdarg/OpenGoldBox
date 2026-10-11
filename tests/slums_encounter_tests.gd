@@ -107,7 +107,7 @@ func run_checks() -> void:
     change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
     await press("Party")
     await press("PartyPanel/Load"); await open_slot(SLOT)
-    await press("PartyPanel/Explore")
+    await press("PartyPanel/ActionRow2/Explore")
     require(town().get_node("Title").text == "OPENGOLDBOX  /  Slums", "The title names the area: " + town().get_node("Title").text)
     require(not dialogue().contains("Rolf"), "Exploring the Slums does not follow Rolf: " + dialogue())
     await check_leader()

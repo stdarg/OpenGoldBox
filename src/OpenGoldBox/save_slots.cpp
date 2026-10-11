@@ -52,16 +52,16 @@ std::string decoded(std::string_view stem)
 
 void SaveSlots::_ready()
 {
-    presentation::set_dialog_window_size(*this);
+    presentation::attach_dialog_layout(*this);
     set_flag(Window::FLAG_RESIZE_DISABLED, true);
     set_exclusive(true);
     set_transient(true);
-    presentation::add_control<Label>(*this, "Help");
-    presentation::add_control<ItemList>(*this, "Slots");
-    presentation::add_control<LineEdit>(*this, "Name");
-    presentation::add_control<Label>(*this, "Status");
-    presentation::add_control<Button>(*this, "Action");
-    presentation::add_control<Button>(*this, "Cancel");
+    presentation::dialog_control<Label>(*this, "Help");
+    presentation::dialog_control<ItemList>(*this, "Slots");
+    presentation::dialog_control<LineEdit>(*this, "Name");
+    presentation::dialog_control<Label>(*this, "Status");
+    presentation::dialog_control<Button>(*this, "Action");
+    presentation::dialog_control<Button>(*this, "Cancel");
     required_node<Label>(*this, "Help").set("autowrap_mode", 3);
     required_node<Label>(*this, "Status").set("autowrap_mode", 3);
     required_node<LineEdit>(*this, "Name").set_placeholder(i18n::text(N_("Save name")));

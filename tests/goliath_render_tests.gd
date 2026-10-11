@@ -46,7 +46,7 @@ func run_checks() -> void:
                 colors.append(color)
     creation.get_node("PoolModal/Add").pressed.emit()
     creation.get_node("PoolModal/Close").pressed.emit()
-    creation.get_node("PartyPanel/Combat").pressed.emit()
+    creation.get_node("PartyPanel/ActionRow2/Combat").pressed.emit()
     await settle()
     var combat: Control = creation.get_node("CampaignCombat")
     combat.set_process(false)

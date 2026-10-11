@@ -1089,10 +1089,14 @@ void RolfTourView::draw_scene()
     draw_rect(scene_rect_, get_theme_color("panel", "OpenGoldPalette"));
     if (!session_ || session_->snapshot().visited.none() || wall_view_.is_null())
         return;
-    // Fit the complete original 88x88 view. DOS EGA pixels were displayed 6/5
-    // as tall as wide; letterboxing preserves art and door framing on resize.
-    const double scale = std::min(scene_rect_.size.x / 88.0, scene_rect_.size.y / 105.6);
-    const Vector2 pixel_scale(scale, scale * 1.2), size(88 * pixel_scale.x, 88 * pixel_scale.y);
+    // Fit the complete original wall view. DOS EGA pixels were displayed taller
+    // than wide; letterboxing preserves art and door framing on resize.
+    const Vector2 source_size = wall_view_->get_size();
+    const double stretch = get_theme_constant("tour_wall_vertical_percent", "OpenGoldMetrics") / 100.0;
+    const double scale = std::min<double>(scene_rect_.size.x / source_size.x,
+                                          scene_rect_.size.y / (source_size.y * stretch));
+    const Vector2 pixel_scale(scale, scale * stretch);
+    const Vector2 size(source_size.x * pixel_scale.x, source_size.y * pixel_scale.y);
     const Rect2 view(scene_rect_.position + (scene_rect_.size - size) * .5, size);
     draw_texture_rect(wall_view_, view, false);
     if (shown_monster_picture_ && !monster_frames_.empty())

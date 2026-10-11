@@ -32,7 +32,7 @@ presentation::NodeOwner<EquipmentChoiceDialog> EquipmentChoiceDialog::create()
     auto window = presentation::make_node<EquipmentChoiceDialog>();
     window->set_name("EquipmentChoice");
     window->set_title(i18n::text(N_("Choose weapon hand")));
-    presentation::set_dialog_window_size(*window);
+    presentation::attach_dialog_layout(*window);
     window->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     window->set_transient(true);
     window->set_exclusive(true);
@@ -61,19 +61,19 @@ void EquipmentChoiceDialog::add_controls()
 {
     connect("close_requested", presentation::guarded(this, &EquipmentChoiceDialog::close));
     connect("window_input", presentation::guarded(this, &EquipmentChoiceDialog::window_input));
-    auto *name = presentation::add_control<Label>(*this, "Item");
+    auto *name = presentation::dialog_control<Label>(*this, "Item");
     name->set("autowrap_mode", 3);
-    auto *label = presentation::add_control<Label>(*this, "HandLabel");
+    auto *label = presentation::dialog_control<Label>(*this, "HandLabel");
     label->set_text(i18n::text(N_("Weapon hand")));
-    auto *selection = presentation::add_control<OptionButton>(*this, "Hand");
+    auto *selection = presentation::dialog_control<OptionButton>(*this, "Hand");
     selection->connect("item_selected",
                        presentation::guarded(this, &EquipmentChoiceDialog::choice_selected));
-    auto *note = presentation::add_control<Label>(*this, "Explanation");
+    auto *note = presentation::dialog_control<Label>(*this, "Explanation");
     note->set("autowrap_mode", 3);
-    auto *cancel = presentation::add_control<Button>(*this, "Cancel");
+    auto *cancel = presentation::dialog_control<Button>(*this, "Cancel");
     cancel->set_text(i18n::text(N_("Cancel")));
     cancel->connect("pressed", presentation::guarded(this, &EquipmentChoiceDialog::close));
-    auto *equip = presentation::add_control<Button>(*this, "Equip");
+    auto *equip = presentation::dialog_control<Button>(*this, "Equip");
     equip->set_text(i18n::text(N_("Equip")));
     equip->connect("pressed", presentation::guarded(this, &EquipmentChoiceDialog::apply));
 }

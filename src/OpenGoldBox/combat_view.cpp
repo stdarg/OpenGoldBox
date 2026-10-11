@@ -615,9 +615,10 @@ double CombatView::controls_height(bool show_controls) const
     const bool aid = required_node<Button>(*this, "Stabilize").is_visible();
     const bool standing = required_node<Button>(*this, "StandUp").is_visible();
     double inset = weapon_height +
-        (required_node<OptionButton>(*this, "ThrownWeapon").is_visible() ? 5 * row
-         : standing ? 4 * row
-         : (cunning || aid) ? 3 * row
+        (required_node<OptionButton>(*this, "ThrownWeapon").is_visible()
+         ? get_theme_constant("combat_thrown_action_rows", "OpenGoldMetrics") * row
+         : standing ? get_theme_constant("combat_standing_action_rows", "OpenGoldMetrics") * row
+         : (cunning || aid) ? get_theme_constant("combat_aid_action_rows", "OpenGoldMetrics") * row
          : (show_controls ? row : 0) + ((rush || spells || surge) ? row : 0));
     if (required_node<OptionButton>(*this, "ItemAction").is_visible())
         inset += row;
@@ -2715,8 +2716,8 @@ void CombatView::draw_view()
                         size * std::clamp(static_cast<double>(hp) / std::max(1, maximum),
                                           0.0, 1.0),
                         metric("combat_party_hp_height")),
-                  get_theme_color(hp <= 0 || static_cast<std::int64_t>(hp) *
-                                  metric("combat_party_hp_height") <= maximum
+                  get_theme_color(hp <= 0 || static_cast<std::int64_t>(hp) * 100 <=
+                                  static_cast<std::int64_t>(maximum) * metric("combat_low_hp_percent")
                                       ? "score_negative" : hp < maximum ? "score_positive" : "hp_full",
                                   "OpenGoldPalette"));
         const double text_x = rows.position.x + metric("combat_party_text_left");
@@ -2838,11 +2839,13 @@ void CombatView::draw_battlefield()
                           get_theme_color("combat_silence_overlay", "OpenGoldPalette"));
     // Spiritual Weapon's spectral force.
     for (const auto cell : s.spiritual_weapons)
-        canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .3,
+        canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile),
+                            tile * get_theme_constant("combat_spiritual_radius_percent", "OpenGoldMetrics") / 100.0,
                             get_theme_color("combat_spiritual_overlay", "OpenGoldPalette"));
     // Flaming Sphere's ball of fire.
     for (const auto cell : s.flaming_spheres)
-        canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile), tile * .4,
+        canvas->draw_circle(Vector2((cell.x + .5) * tile, (cell.y + .5) * tile),
+                            tile * get_theme_constant("combat_flame_radius_percent", "OpenGoldMetrics") / 100.0,
                             get_theme_color("combat_flame_overlay", "OpenGoldPalette"));
     // Moonbeam's pale light.
     for (const auto cell : s.moonbeams)
@@ -2911,7 +2914,10 @@ void CombatView::draw_battlefield()
                                   : left      ? art.left_visible
                                   : art.visible,
                                   Rect2(Vector2(a.cell.x * tile, a.cell.y * tile), Vector2(tile, tile)),
-                                  art.goliath && !unconscious);
+                                  art.goliath && !unconscious,
+                                  get_theme_constant("combat_sprite_fit_percent", "OpenGoldMetrics") / 100.0,
+                                  Vector2(1, get_theme_constant(
+                                          "combat_goliath_height_percent", "OpenGoldMetrics") / 100.0));
             canvas->draw_texture_rect(texture, rect, false,
                                       !a.conscious ? get_theme_color("combat_unconscious", "OpenGoldPalette")
                                       : get_theme_color("combat_reachable", "OpenGoldPalette"));

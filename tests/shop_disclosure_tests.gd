@@ -76,7 +76,7 @@ func run_checks() -> void:
         change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
         await press("Party")
         await press("PartyPanel/Load"); await open_slot(SLOT)
-        await press("PartyPanel/Explore")
+        await press("PartyPanel/ActionRow2/Explore")
         require(label("Coordinates").contains("(8, 10)"), "The party stands outside the jeweler")
         await open_shop()
         var stock: ItemList = town().get_node("Choices")
