@@ -76,6 +76,17 @@ rules 0.6.154 the same seeds gave the same figures but for martial's deaths
 Fire or Acid clear the arc as often as six with them, losing more members on
 the way (0.35 deaths a run against 0.15).
 
+Re-measured with 50 runs per party (2026-10-11, rules 0.6.155, with fights
+starting where the original engine placed each side, PLACE-1): 6 defeats in
+800 runs, all six Warlocks' (88% success): two at the trolls and ogres and one
+each at the four orcs, the street orcs, the guild orcs and the plaza
+lizardmen; two of these left no one dead. Every other party succeeded every
+time. Flawless runs: classic 88%, martial 94%, casters 98%, no-fire 76% (0.24
+deaths a run), six Fighters 92%, six Monks 98%, six Rangers 96%, six Rogues
+94%, six Warlocks 78% (0.30 deaths a run), six Wizards 88%, the other classes
+100%. Every fight here starts in contact (distance 0), so six Warlocks, who
+fight mostly with Eldritch Blast, begin each fight beside their foes.
+
 Martial parties' remaining deaths (2026-10-09) were neither the fight areas nor
 their gear: shields taken off for bows preceded only 4 of 27 Fighter and
 Barbarian deaths, and the troll arena is won at every width. Three in four
@@ -109,6 +120,13 @@ campaign fits it, with its script's morale of 75) for each party at level four, 
 the trolls' own room in the Slums. Each party fights with four loadouts: the
 starting kit (with its torch and bow), and 2 Oil, 2 Alchemist's Fire, or both,
 per member. It prints win rates and writes `arena.csv`.
+
+Measured with 20 runs per party and area (2026-10-11, rules 0.6.155, a downed
+troll getting up after 3d6 rounds): every party wins at least 90% in every area
+with every loadout. The `no-fire` party wins 90% to 100%. Without Alchemist's
+Fire, six Bards win 95% in the open areas, six Fighters 95% in the areas 4 or
+more squares wide and in the trolls' own room, six Rogues 90% and six Wizards
+95% in that room. Every party carrying Alchemist's Fire wins every time.
 
 ## Parties
 
