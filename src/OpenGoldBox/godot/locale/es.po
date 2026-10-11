@@ -445,11 +445,11 @@ msgstr "Trato con animales"
 msgid "Any d20 roll saves"
 msgstr "Cualquier resultado del d20 supera la salvación"
 
-#: src/OpenGoldBox/spell_choice_controls.h:167
+#: src/OpenGoldBox/spell_choice_controls.h:155
 msgid "Apply spell choices"
 msgstr "Aplicar selección"
 
-#: src/OpenGoldBox/training_replacement_controls.h:43
+#: src/OpenGoldBox/training_replacement_controls.h:38
 msgid "Apply training"
 msgstr "Aplicar formación"
 
@@ -490,11 +490,11 @@ msgstr "Armadura de sombras (Armadura de mago)"
 msgid "Arms"
 msgstr "Brazos"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:209
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:218
 msgid "Arrow keys: move / turn   •   L: look   •   Original New Phlan scripts and shop stock"
 msgstr "Flechas: avanzar / girar   •   L: mirar   •   Guiones y existencias originales de Nueva Phlan"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:81
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:90
 msgid "Arrow: party & facing\nGold: doors   Teal: visited"
 msgstr "Flecha: grupo y orientación\nDorado: puertas   Turquesa: visitado"
 
@@ -796,7 +796,7 @@ msgstr "CON"
 msgid "CRITICAL"
 msgstr "CRÍTICO"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:281
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:290
 msgid "Camp [C]"
 msgstr "Acampar [C]"
 
@@ -812,11 +812,11 @@ msgstr "Campaña cargada."
 msgid "Campaign saved."
 msgstr "Campaña guardada."
 
-#: src/OpenGoldBox/equipment_choice_dialog.cpp:74 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:233 src/OpenGoldBox/godot/scenes/startup.tscn:103 src/OpenGoldBox/godot/scenes/startup.tscn:166 src/OpenGoldBox/level_up_dialog.cpp:102 src/OpenGoldBox/nick_controls.h:45 src/OpenGoldBox/rest_dialog_impl.h:228 src/OpenGoldBox/rest_dialog_impl.h:69 src/OpenGoldBox/save_slots.cpp:77 src/OpenGoldBox/spell_choice_controls.h:164 src/OpenGoldBox/startup_view.cpp:272
+#: src/OpenGoldBox/equipment_choice_dialog.cpp:74 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:233 src/OpenGoldBox/godot/scenes/startup.tscn:103 src/OpenGoldBox/godot/scenes/startup.tscn:166 src/OpenGoldBox/level_up_dialog.cpp:102 src/OpenGoldBox/nick_controls.h:45 src/OpenGoldBox/rest_dialog_impl.h:228 src/OpenGoldBox/rest_dialog_impl.h:69 src/OpenGoldBox/save_slots.cpp:77 src/OpenGoldBox/spell_choice_controls.h:152 src/OpenGoldBox/startup_view.cpp:272
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: src/OpenGoldBox/screenshot_service.cpp:124 src/OpenGoldBox/screenshot_service.cpp:143 src/OpenGoldBox/screenshot_service.cpp:184 src/OpenGoldBox/screenshot_service.cpp:81
+#: src/OpenGoldBox/screenshot_service.cpp:119 src/OpenGoldBox/screenshot_service.cpp:138 src/OpenGoldBox/screenshot_service.cpp:179 src/OpenGoldBox/screenshot_service.cpp:76
 msgid "Cannot capture the current game frame."
 msgstr "No se puede capturar la imagen actual del juego."
 
@@ -824,7 +824,7 @@ msgstr "No se puede capturar la imagen actual del juego."
 msgid "Cannot cast spells while wearing untrained armor."
 msgstr "No puedes lanzar conjuros con una armadura para la que no tienes entrenamiento."
 
-#: src/OpenGoldBox/screenshot_service.cpp:111
+#: src/OpenGoldBox/screenshot_service.cpp:106
 msgid "Cannot create the screenshots folder."
 msgstr "No se puede crear la carpeta de capturas de pantalla."
 
@@ -840,7 +840,7 @@ msgstr "No se puede leer la lista de comprobación de archivos del juego."
 msgid "Cannot save language."
 msgstr "No se puede guardar el idioma."
 
-#: src/OpenGoldBox/screenshot_service.cpp:149
+#: src/OpenGoldBox/screenshot_service.cpp:144
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cannot save screenshot: {path}"
 msgstr "No se puede guardar la captura de pantalla: {path}"
@@ -938,7 +938,7 @@ msgstr "Reserva de personajes"
 msgid "Character Pool / 48 level-one characters"
 msgstr "Reserva / 48 personajes de nivel 1"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:414
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:423
 msgid "Character Sheet"
 msgstr "Hoja de personaje"
 
@@ -1052,7 +1052,7 @@ msgstr "Elige un Estilo de combate válido"
 msgid "Choose an existing folder containing the Pool of Radiance game files."
 msgstr "Elige una carpeta existente con los archivos de Pool of Radiance."
 
-#: src/OpenGoldBox/level_up_dialog.cpp:384 src/OpenGoldBox/training_control.h:202
+#: src/OpenGoldBox/level_up_dialog.cpp:384 src/OpenGoldBox/training_control.h:199
 msgid "Choose an option"
 msgstr "Elige una opción"
 
@@ -1230,11 +1230,11 @@ msgstr "Habilidades de clérigo"
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr "Clic: elegir o quitar | Espacio o Lanzar conjuro: lanzar | Escape: cancelar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1298 src/OpenGoldBox/godot/scenes/character_creation.tscn:1382 src/OpenGoldBox/godot/scenes/character_creation.tscn:1426 src/OpenGoldBox/godot/scenes/character_creation.tscn:1470 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:298 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:440
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1298 src/OpenGoldBox/godot/scenes/character_creation.tscn:1382 src/OpenGoldBox/godot/scenes/character_creation.tscn:1426 src/OpenGoldBox/godot/scenes/character_creation.tscn:1470 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:298 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:449
 msgid "Close"
 msgstr "Cerrar"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:341
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:350
 msgid "Close inventory"
 msgstr "Cerrar inventario"
 
@@ -1351,7 +1351,7 @@ msgstr "Constitución"
 msgid "Continue"
 msgstr "Continuar"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:120
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:129
 msgid "Continue  [Enter]"
 msgstr "Continuar  [Enter]"
 
@@ -1416,7 +1416,7 @@ msgstr "Curar heridas (espacio de nivel 2)"
 msgid "Current portrait: {file}\n{matches} Filters do not change your character."
 msgstr "Retrato actual: {file}\n{matches} Los filtros no cambian tu personaje."
 
-#: src/OpenGoldBox/training_replacement_controls.h:55
+#: src/OpenGoldBox/training_replacement_controls.h:50
 msgid "Current selections"
 msgstr "Selecciones actuales"
 
@@ -1739,7 +1739,7 @@ msgstr "Introduce un nombre de partida de hasta 120 bytes UTF-8."
 msgid "Enter a whole-number target DC from 1 to 999."
 msgstr "Introduce una CD entera entre 1 y 999."
 
-#: src/OpenGoldBox/equipment_choice_dialog.cpp:77 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:395
+#: src/OpenGoldBox/equipment_choice_dialog.cpp:77 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:404
 msgid "Equip"
 msgstr "Equipar"
 
@@ -2455,7 +2455,7 @@ msgstr "Opciones u origen de Maestría con armas no válidos"
 msgid "Invalid advancement training choice"
 msgstr "Selección de formación de nivel no válida"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:141 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:295
+#: src/OpenGoldBox/character_sheet_text.cpp:141 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:304
 msgid "Inventory"
 msgstr "Inventario"
 
@@ -2492,7 +2492,7 @@ msgstr "Objetos"
 msgid "Javelin"
 msgstr "Jabalina"
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:10155 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:573 src/OpenGoldBox/rest_dialog_impl.h:18 src/OpenGoldBox/rest_dialog_impl.h:957 src/OpenGoldBox/training_replacement_controls.h:40
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:10155 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:573 src/OpenGoldBox/rest_dialog_impl.h:18 src/OpenGoldBox/rest_dialog_impl.h:957 src/OpenGoldBox/training_replacement_controls.h:35
 msgid "Keep current"
 msgstr "Conservar actuales"
 
@@ -2513,7 +2513,7 @@ msgstr "Apertura"
 msgid "Known cantrip: {spell}."
 msgstr "Truco conocido: {spell}."
 
-#: src/OpenGoldBox/spell_choice_controls.h:181
+#: src/OpenGoldBox/spell_choice_controls.h:169
 msgid "Known cantrips"
 msgstr "Trucos conocidos"
 
@@ -2570,7 +2570,7 @@ msgstr "Armadura de cuero"
 msgid "Leave Wild Shape"
 msgstr "Abandonar la Forma salvaje"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:255
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:264
 msgid "Leave shop"
 msgstr "Salir de la tienda"
 
@@ -2737,7 +2737,7 @@ msgstr "Cargar personaje"
 msgid "Load combat"
 msgstr "Cargar combate"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:241 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:594 src/OpenGoldBox/rolf_tour_view.cpp:137 src/OpenGoldBox/save_slots.cpp:115
+#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:241 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:603 src/OpenGoldBox/rolf_tour_view.cpp:137 src/OpenGoldBox/save_slots.cpp:115
 msgid "Load game"
 msgstr "Cargar partida"
 
@@ -2781,7 +2781,7 @@ msgstr "Zancada prodigiosa (espacio de nivel 2)"
 msgid "Longsword"
 msgstr "Espada larga"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:268
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:277
 msgid "Look [L]"
 msgstr "Mirar [L]"
 
@@ -3187,11 +3187,11 @@ msgstr "Ausente"
 msgid "Not yet qualified. You may still plan for this class."
 msgstr "Aún no cumples los requisitos. Puedes mantener esta clase como objetivo."
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:33 src/OpenGoldBox/rolf_tour_view.cpp:835
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:42 src/OpenGoldBox/rolf_tour_view.cpp:835
 msgid "OPENGOLDBOX  /  Rolf's welcome"
 msgstr "OPENGOLDBOX  /  La bienvenida de Rolf"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1489 src/OpenGoldBox/rolf_tour_view.cpp:834
+#: src/OpenGoldBox/rolf_tour_view.cpp:1476 src/OpenGoldBox/rolf_tour_view.cpp:834
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "OPENGOLDBOX  /  {district}"
 msgstr "OPENGOLDBOX  /  {district}"
@@ -3483,7 +3483,7 @@ msgstr "Conjuros de druida preparados y una orden primigenia: Mago (un truco adi
 msgid "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
 msgstr "Conjuros de hechicero preparados e Hechicería innata; puntos de hechicería de Fuente de magia en el nivel dos; Hechicería dracónica en el nivel tres: Resistencia dracónica (puntos de golpe y CA sin armadura 10 + Destreza + Carisma) y Orbe cromático, Orden imperiosa y Aliento de dragón siempre preparados. El nivel cuatro concede un quinto truco y una dote disponible o puntos de característica."
 
-#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:180 src/OpenGoldBox/level_up_dialog.cpp:86 src/OpenGoldBox/rest_dialog_impl.h:847 src/OpenGoldBox/spell_choice_controls.h:180 src/OpenGoldBox/spell_choice_controls.h:190
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:180 src/OpenGoldBox/level_up_dialog.cpp:86 src/OpenGoldBox/rest_dialog_impl.h:847 src/OpenGoldBox/spell_choice_controls.h:168 src/OpenGoldBox/spell_choice_controls.h:178
 msgid "Prepared spells"
 msgstr "Conjuros preparados"
 
@@ -3797,15 +3797,15 @@ msgstr "Desgarrar"
 msgid "Repelling Blast"
 msgstr "Descarga repulsora"
 
-#: src/OpenGoldBox/spell_choice_controls.h:156
+#: src/OpenGoldBox/spell_choice_controls.h:146
 msgid "Replace cantrip"
 msgstr "Reemplazar truco"
 
-#: src/OpenGoldBox/training_replacement_controls.h:63
+#: src/OpenGoldBox/training_replacement_controls.h:58
 msgid "Replacement limit"
 msgstr "Límite de sustituciones"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:197
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:206
 msgid "Replay tour"
 msgstr "Repetir recorrido"
 
@@ -4004,7 +4004,7 @@ msgstr "Asalto {round} / Turno de {name}\nMovimiento {feet} pies | {action}"
 msgid "Round {round}: {name} acts."
 msgstr "Asalto {round}: actúa {name}."
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:282
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:291
 msgid "Run the area's pre-camp check and attempt an eight-hour long rest."
 msgstr "Comprueba si se puede acampar e intenta un descanso largo de ocho horas."
 
@@ -4077,7 +4077,7 @@ msgstr "Guardar personaje"
 msgid "Save combat"
 msgstr "Guardar combate"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:231 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:584 src/OpenGoldBox/rest_dialog_impl.h:30 src/OpenGoldBox/rest_dialog_impl.h:67 src/OpenGoldBox/rolf_tour_view.cpp:137 src/OpenGoldBox/save_slots.cpp:115
+#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:231 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:593 src/OpenGoldBox/rest_dialog_impl.h:30 src/OpenGoldBox/rest_dialog_impl.h:67 src/OpenGoldBox/rolf_tour_view.cpp:137 src/OpenGoldBox/save_slots.cpp:115
 msgid "Save game"
 msgstr "Guardar partida"
 
@@ -4109,16 +4109,16 @@ msgstr "Abrasado (Calentar metal)"
 msgid "Scorching Ray"
 msgstr "Rayo abrasador"
 
-#: src/OpenGoldBox/screenshot_service.cpp:223
+#: src/OpenGoldBox/screenshot_service.cpp:218
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Screenshot saved to {path}"
 msgstr "Captura de pantalla guardada en {path}"
 
-#: src/OpenGoldBox/screenshot_service.cpp:116
+#: src/OpenGoldBox/screenshot_service.cpp:111
 msgid "Screenshots require a running graphical game window."
 msgstr "Las capturas requieren una ventana gráfica del juego en ejecución."
 
-#: src/OpenGoldBox/screenshot_service.cpp:217
+#: src/OpenGoldBox/screenshot_service.cpp:212
 msgid "Screenshots saved, but the capture report could not be written."
 msgstr "Se guardaron las capturas, pero no se pudo escribir el informe de captura."
 
@@ -4191,7 +4191,7 @@ msgstr "Elige una opción y continúa."
 msgid "Select weapon"
 msgstr "Seleccionar arma"
 
-#: src/OpenGoldBox/training_replacement_controls.h:62
+#: src/OpenGoldBox/training_replacement_controls.h:57
 msgid "Selected"
 msgstr "Seleccionadas"
 
@@ -4578,7 +4578,7 @@ msgstr "Elegir conjuros"
 msgid "Spell slots: {count}"
 msgstr "Espacios de conjuro: {count}"
 
-#: src/OpenGoldBox/spell_choice_controls.h:140 src/OpenGoldBox/spell_choice_controls.h:180 src/OpenGoldBox/spell_choice_controls.h:186
+#: src/OpenGoldBox/spell_choice_controls.h:130 src/OpenGoldBox/spell_choice_controls.h:168 src/OpenGoldBox/spell_choice_controls.h:174
 msgid "Spellbook"
 msgstr "Libro de conjuros"
 
@@ -4984,7 +4984,7 @@ msgstr "Golpe certero (radiante)"
 msgid "Turn Undead"
 msgstr "Expulsar muertos vivientes"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:184
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:193
 msgid "Turn →"
 msgstr "Girar →"
 
@@ -5036,7 +5036,7 @@ msgstr "Inconsciente"
 msgid "Unconscious (Sleep)"
 msgstr "Inconsciente (Dormir)"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:405
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:414
 msgid "Unequip"
 msgstr "Desequipar"
 
@@ -5060,7 +5060,7 @@ msgstr "Personaje sin nombre"
 msgid "Unspecified"
 msgstr "Sin especificar"
 
-#: src/OpenGoldBox/spell_choice_controls.h:80
+#: src/OpenGoldBox/spell_choice_controls.h:70
 msgid "Unsupported choices remain pending."
 msgstr "Las elecciones aún no implementadas quedan pendientes."
 
@@ -5264,7 +5264,7 @@ msgstr "Sabiduría"
 msgid "Wisdom save: 1d6 Psychic damage and Disadvantage on the target's next attack roll, 60 feet."
 msgstr "Salvación de Sabiduría: 1d6 de daño psíquico y desventaja en la siguiente tirada de ataque del objetivo, 60 pies."
 
-#: src/OpenGoldBox/spell_choice_controls.h:157
+#: src/OpenGoldBox/spell_choice_controls.h:147
 msgid "With"
 msgstr "Por"
 
@@ -5533,7 +5533,7 @@ msgstr "{count} pp"
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr "{die} (máximo de d{die}) {modifier} (Constitución) + {racial} (bonificación de raza) = {hp} PG"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1486 src/OpenGoldBox/rolf_tour_view.cpp:831
+#: src/OpenGoldBox/rolf_tour_view.cpp:1473 src/OpenGoldBox/rolf_tour_view.cpp:831
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district}    N ↑"
 msgstr "{district}    N ↑"
@@ -6393,10 +6393,10 @@ msgstr "{source} ({bonus})"
 msgid "{type}\nAC {ac}  HP {hp}/{maximum}\nWeapon: {weapon}"
 msgstr "{type}\nCA {ac}  PG {hp}/{maximum}\nArma: {weapon}"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:158
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:167
 msgid "← Turn"
 msgstr "← Girar"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:171
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:180
 msgid "↑ Step"
 msgstr "↑ Avanzar"
