@@ -1,4 +1,6 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="AnimationLibrary" path="res://scenes/tour_dialogue_layout.tres" id="1_dialogue_layout"]
 
 [node name="RolfTour" type="RolfTourView"]
 layout_mode = 3
@@ -215,6 +217,12 @@ metadata/layout_reference = Rect2(42, 874, 1382, 84)
 metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 theme_type_variation = &"ItemListText17"
 visible = false
+
+[node name="DialogueLayout" type="AnimationPlayer" parent="."]
+root_node = NodePath("..")
+libraries = {
+"": ExtResource("1_dialogue_layout")
+}
 
 [node name="Answer" type="LineEdit" parent="."]
 anchor_right = 0.8825

@@ -946,31 +946,10 @@ void RolfTourView::refresh()
         }
         displayed_ticket_ = s.continue_ticket;
     }
-    auto &dialogue = required_node<RichTextLabel>(*this, "Dialogue");
-    if (shopping || multiple)
-        dialogue.set_size(Vector2(dialogue.get_size().x,
-                         get_theme_constant("tour_dialogue_short_height", "OpenGoldMetrics")));
-    else if (answer)
-        dialogue.set_size(Vector2(dialogue.get_size().x,
-                         dialogue_rect_.size.y - get_theme_constant(
-                             "tour_dialogue_answer_reserve", "OpenGoldMetrics")));
-    if (multiple)
-    {
-        const double text_height = std::min(
-            (dialogue_rect_.size.y - get_theme_constant("tour_dialogue_text_reserve", "OpenGoldMetrics")) *
-                get_theme_constant("tour_dialogue_text_percent", "OpenGoldMetrics") / 100.0,
-            std::max<double>(get_theme_constant("tour_dialogue_text_min", "OpenGoldMetrics"),
-                             dialogue_rect_.size.y - get_theme_constant(
-                                 "tour_dialogue_text_max_reserve", "OpenGoldMetrics")));
-        dialogue.set_size(Vector2(dialogue.get_size().x, text_height));
-        const double left = choices->get_position().x;
-        choices->set_position(Vector2(left, dialogue_rect_.position.y +
-                              get_theme_constant("tour_multiple_choices_top", "OpenGoldMetrics") +
-                              text_height));
-        choices->set_size(Vector2(choices->get_size().x,
-                         dialogue_rect_.size.y - get_theme_constant(
-                             "tour_multiple_choices_reserve", "OpenGoldMetrics") - text_height));
-    }
+    auto &dialogue_layout = required_node<Node>(*this, "DialogueLayout");
+    dialogue_layout.call("play", shopping ? "shopping" : multiple ? "multiple"
+                         : answer ? "answer" : "normal");
+    dialogue_layout.call("advance", 0);
     if (shopping)
         required_node<RichTextLabel>(*this, "Dialogue")
         .set_text(s.diagnostic.empty() ? i18n::text("Prices are per listed item or bundle.")
