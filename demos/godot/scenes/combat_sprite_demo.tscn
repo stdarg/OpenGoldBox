@@ -1,4 +1,7 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/combat_sprite_canvas.gd" id="1_canvas"]
+[ext_resource type="Script" path="res://scenes/combat_sprite_swatch.gd" id="2_swatch"]
 
 [node name="CombatSpriteDemo" type="CombatSpriteDemo"]
 layout_mode = 3
@@ -7,3 +10,630 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Background" type="Panel" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+theme_type_variation = &"DemoBackdrop"
+mouse_filter = 2
+z_index = -1
+
+[node name="Title" type="Label" parent="."]
+anchor_right = 1.0
+offset_left = 24
+offset_top = 16
+offset_right = -24
+offset_bottom = 52
+theme_type_variation = &"LabelGoldText27"
+text = "Combat sprite scale demo"
+
+[node name="Subtitle" type="Label" parent="."]
+anchor_right = 1.0
+offset_left = 24
+offset_top = 58
+offset_right = -24
+offset_bottom = 88
+theme_type_variation = &"LabelText16"
+text = "Compare original sprite sizes on the same battlefield. All poses change together every second."
+
+[node name="Minus100" type="Button" parent="."]
+offset_left = 24
+offset_top = 98
+offset_right = 116
+offset_bottom = 136
+text = "−100%"
+
+[node name="Minus10" type="Button" parent="."]
+offset_left = 124
+offset_top = 98
+offset_right = 216
+offset_bottom = 136
+text = "−10%"
+
+[node name="Plus10" type="Button" parent="."]
+offset_left = 224
+offset_top = 98
+offset_right = 316
+offset_bottom = 136
+text = "+10%"
+
+[node name="Plus100" type="Button" parent="."]
+offset_left = 324
+offset_top = 98
+offset_right = 416
+offset_bottom = 136
+text = "+100%"
+
+[node name="Zoom" type="Label" parent="."]
+offset_left = 436
+offset_top = 100
+offset_right = 596
+offset_bottom = 134
+theme_type_variation = &"LabelText16"
+
+[node name="Pose" type="Label" parent="."]
+anchor_right = 1.0
+offset_left = 24
+offset_top = 144
+offset_right = -488
+offset_bottom = 172
+theme_type_variation = &"LabelText16"
+
+[node name="BattlefieldScroll" type="ScrollContainer" parent="."]
+anchor_bottom = 1.0
+anchor_right = 1.0
+offset_left = 24
+offset_top = 182
+offset_right = -488
+offset_bottom = -96
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 2
+focus_mode = 2
+
+[node name="Canvas" type="Control" parent="BattlefieldScroll"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+mouse_filter = 2
+script = ExtResource("1_canvas")
+
+[node name="SmallPlayer" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="NormalPlayer" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="GoliathStretched" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="GoliathProportional" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="Monster0" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="Monster1" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="Monster2" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="Monster3" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="Monster4" type="TextureRect" parent="BattlefieldScroll/Canvas"]
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 1
+
+[node name="Sizes" type="RichTextLabel" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+anchor_right = 1.0
+offset_left = 24
+offset_top = -272
+offset_right = -488
+offset_bottom = -42
+theme_type_variation = &"RichTextLabelText16"
+bbcode_enabled = true
+scroll_active = true
+
+[node name="Status" type="Label" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+anchor_right = 1.0
+offset_left = 24
+offset_top = -36
+offset_right = -24
+offset_bottom = -8
+theme_type_variation = &"LabelText16"
+text = "100% = original pixels • Scrollbars / wheel: pan • Ctrl+S: screenshot"
+
+[node name="AppearanceTitle" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 100
+offset_right = -24
+offset_bottom = 134
+theme_type_variation = &"LabelText22"
+text = "Player customization"
+
+[node name="HeadPrevious" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 144
+offset_right = -416
+offset_bottom = 182
+text = "‹"
+
+[node name="HeadNext" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -72
+offset_top = 144
+offset_right = -24
+offset_bottom = 182
+text = "›"
+
+[node name="BodyPrevious" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 188
+offset_right = -416
+offset_bottom = 226
+text = "‹"
+
+[node name="BodyNext" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -72
+offset_top = 188
+offset_right = -24
+offset_bottom = 226
+text = "›"
+
+[node name="Head" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -402
+offset_top = 144
+offset_right = -86
+offset_bottom = 182
+theme_type_variation = &"LabelText16"
+
+[node name="Body" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -402
+offset_top = 188
+offset_right = -86
+offset_bottom = 226
+theme_type_variation = &"LabelText16"
+
+[node name="Color1" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340
+offset_top = 234
+offset_right = -192
+offset_bottom = 262
+theme_type_variation = &"LabelText16"
+text = "Color-1"
+
+[node name="Color2" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180
+offset_top = 234
+offset_right = -32
+offset_bottom = 262
+theme_type_variation = &"LabelText16"
+text = "Color-2"
+
+[node name="Part0" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 266
+offset_right = -344
+offset_bottom = 300
+theme_type_variation = &"LabelText16"
+text = "Weapon"
+
+[node name="Color0_0" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340
+offset_top = 266
+offset_right = -192
+offset_bottom = 300
+
+[node name="Color1_0" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180
+offset_top = 266
+offset_right = -32
+offset_bottom = 300
+
+[node name="Part1" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 304
+offset_right = -344
+offset_bottom = 338
+theme_type_variation = &"LabelText16"
+text = "Body"
+
+[node name="Color0_1" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340
+offset_top = 304
+offset_right = -192
+offset_bottom = 338
+
+[node name="Color1_1" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180
+offset_top = 304
+offset_right = -32
+offset_bottom = 338
+
+[node name="Part2" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 342
+offset_right = -344
+offset_bottom = 376
+theme_type_variation = &"LabelText16"
+text = "Hair / Face"
+
+[node name="Color0_2" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340
+offset_top = 342
+offset_right = -192
+offset_bottom = 376
+
+[node name="Color1_2" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180
+offset_top = 342
+offset_right = -32
+offset_bottom = 376
+
+[node name="Part3" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 380
+offset_right = -344
+offset_bottom = 414
+theme_type_variation = &"LabelText16"
+text = "Shield"
+
+[node name="Color0_3" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340
+offset_top = 380
+offset_right = -192
+offset_bottom = 414
+
+[node name="Color1_3" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180
+offset_top = 380
+offset_right = -32
+offset_bottom = 414
+
+[node name="Part4" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 418
+offset_right = -344
+offset_bottom = 452
+theme_type_variation = &"LabelText16"
+text = "Arms"
+
+[node name="Color0_4" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340
+offset_top = 418
+offset_right = -192
+offset_bottom = 452
+
+[node name="Color1_4" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180
+offset_top = 418
+offset_right = -32
+offset_bottom = 452
+
+[node name="Part5" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 456
+offset_right = -344
+offset_bottom = 490
+theme_type_variation = &"LabelText16"
+text = "Legs"
+
+[node name="Color0_5" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340
+offset_top = 456
+offset_right = -192
+offset_bottom = 490
+
+[node name="Color1_5" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180
+offset_top = 456
+offset_right = -32
+offset_bottom = 490
+
+[node name="PaletteHint" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 500
+offset_right = -24
+offset_bottom = 540
+theme_type_variation = &"LabelText16"
+autowrap_mode = 3
+
+[node name="Palette0" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 546
+offset_right = -416
+offset_bottom = 584
+text = "1"
+script = ExtResource("2_swatch")
+
+[node name="Palette1" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -409
+offset_top = 546
+offset_right = -361
+offset_bottom = 584
+text = "2"
+script = ExtResource("2_swatch")
+
+[node name="Palette2" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -354
+offset_top = 546
+offset_right = -306
+offset_bottom = 584
+text = "3"
+script = ExtResource("2_swatch")
+
+[node name="Palette3" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -299
+offset_top = 546
+offset_right = -251
+offset_bottom = 584
+text = "4"
+script = ExtResource("2_swatch")
+
+[node name="Palette4" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -244
+offset_top = 546
+offset_right = -196
+offset_bottom = 584
+text = "5"
+script = ExtResource("2_swatch")
+
+[node name="Palette5" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -189
+offset_top = 546
+offset_right = -141
+offset_bottom = 584
+text = "6"
+script = ExtResource("2_swatch")
+
+[node name="Palette6" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -134
+offset_top = 546
+offset_right = -86
+offset_bottom = 584
+text = "7"
+script = ExtResource("2_swatch")
+
+[node name="Palette7" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -79
+offset_top = 546
+offset_right = -31
+offset_bottom = 584
+text = "8"
+script = ExtResource("2_swatch")
+
+[node name="Palette8" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 590
+offset_right = -416
+offset_bottom = 628
+text = "9"
+script = ExtResource("2_swatch")
+
+[node name="Palette9" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -409
+offset_top = 590
+offset_right = -361
+offset_bottom = 628
+text = "10"
+script = ExtResource("2_swatch")
+
+[node name="Palette10" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -354
+offset_top = 590
+offset_right = -306
+offset_bottom = 628
+text = "11"
+script = ExtResource("2_swatch")
+
+[node name="Palette11" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -299
+offset_top = 590
+offset_right = -251
+offset_bottom = 628
+text = "12"
+script = ExtResource("2_swatch")
+
+[node name="Palette12" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -244
+offset_top = 590
+offset_right = -196
+offset_bottom = 628
+text = "13"
+script = ExtResource("2_swatch")
+
+[node name="Palette13" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -189
+offset_top = 590
+offset_right = -141
+offset_bottom = 628
+text = "14"
+script = ExtResource("2_swatch")
+
+[node name="Palette14" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -134
+offset_top = 590
+offset_right = -86
+offset_bottom = 628
+text = "15"
+script = ExtResource("2_swatch")
+
+[node name="Palette15" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -79
+offset_top = 590
+offset_right = -31
+offset_bottom = 628
+text = "16"
+script = ExtResource("2_swatch")
+
+[node name="AppearanceHelp" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 636
+offset_right = -24
+offset_bottom = 682
+theme_type_variation = &"LabelText14"
+text = "Head, weapon and colors update all four player figures. Short and tall use the original art banks."
+autowrap_mode = 3
+
+[node name="GoliathHelp" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -464
+offset_top = 692
+offset_right = -24
+offset_bottom = 762
+theme_type_variation = &"LabelText14"
+text = "Goliath: 1.25 squares tall, feet on the baseline.\n1 — Stretched: exactly one square wide.\n2 — Proportional: natural width, overflow allowed."
+autowrap_mode = 3

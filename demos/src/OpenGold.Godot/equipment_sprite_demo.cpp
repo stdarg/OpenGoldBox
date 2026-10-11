@@ -36,50 +36,17 @@ std::filesystem::path path(const String &s)
 void EquipmentSpriteDemo::_ready()
 {
     set_texture_filter(TEXTURE_FILTER_NEAREST);
-    get_window()->set_min_size({1120, 800});
-    for (const char *name :
-            {"Title", "Help", "ReadyLabel", "ActionLabel", "Equipment", "Status"
-            })
-        presentation::add_control<Label>(*this, name, {});
-    get_node<Label>("Title")->set_text("Equipment sprite demo");
-    get_node<Label>("Title")->add_theme_font_size_override("font_size", 28);
-    get_node<Label>("Help")->set_text(
-        "Double-click a weapon (or press Enter) to equip. Toggle the shield separately.");
-    get_node<Label>("ReadyLabel")->set_text("Ready");
-    get_node<Label>("ActionLabel")->set_text("Action");
-    for (const char *name :
-            {"Equipment", "Status"
-            })
-        get_node<Label>(name)->set("autowrap_mode", 3);
-    auto *list = presentation::add_control<ItemList>(*this, "Items", {});
+    get_window()->set_min_size(Vector2i(
+        get_theme_constant("equipment_sprite_min_width", "OpenGoldMetrics"),
+        get_theme_constant("equipment_sprite_min_height", "OpenGoldMetrics")));
+    auto *list = get_node<ItemList>("Items");
     list->connect("item_selected", callable_mp(this, &EquipmentSpriteDemo::select));
     list->connect("item_activated", callable_mp(this, &EquipmentSpriteDemo::activate));
-    auto *shield = presentation::add_control<Button>(*this, "Shield", {});
-    shield->set_toggle_mode(true);
-    shield->set_text("Shield: Off");
-    shield->set_disabled(true);
-    shield->connect("pressed", callable_mp(this, &EquipmentSpriteDemo::toggle_shield));
-    for (bool equip :
-            {
-                true, false
-            })
-    {
-        auto *button = presentation::add_control<Button>(*this, equip ? "Equip" : "Unequip", {});
-        button->set_text(equip ? "Equip" : "Unequip");
-        button->connect("pressed",
-                        callable_mp(this, &EquipmentSpriteDemo::change_equipment).bind(equip));
-        button->set_disabled(true);
-    }
-    for (const char *name :
-            {"Ready", "Action"
-            })
-    {
-        auto *preview = presentation::add_control<TextureRect>(*this, name, {});
-        preview->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
-        preview->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
-    }
-    ready_ = true;
-    layout();
+    get_node<Button>("Shield")->connect("pressed",
+            callable_mp(this, &EquipmentSpriteDemo::toggle_shield));
+    for (bool equip : {true, false})
+        get_node<Button>(equip ? "Equip" : "Unequip")->connect("pressed",
+                callable_mp(this, &EquipmentSpriteDemo::change_equipment).bind(equip));
     if (Engine::get_singleton()->is_editor_hint())
         return;
     try
@@ -140,38 +107,6 @@ void EquipmentSpriteDemo::_ready()
         campaign_.reset();
         get_node<Label>("Status")->set_text(gs(e.what()));
     }
-}
-
-void EquipmentSpriteDemo::layout()
-{
-    if (!ready_)
-        return;
-    const auto w = get_size().x, h = get_size().y;
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = get_node<Control>(name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
-    };
-    place("Title", {24, 18, w - 48, 42});
-    place("Help", {24, 66, w - 48, 32});
-    place("Items", {24, 116, 380, h - 300});
-    place("Shield", {24, h - 168, 380, 44});
-    place("Equip", {24, h - 112, 182, 44});
-    place("Unequip", {222, h - 112, 182, 44});
-    const float half = (w - 464) / 2;
-    place("ReadyLabel", {440, 116, half, 32});
-    place("ActionLabel", {456 + half, 116, half, 32});
-    place("Ready", {440, 166, half, 384});
-    place("Action", {456 + half, 166, half, 384});
-    place("Equipment", {440, 570, w - 464, 112});
-    place("Status", {24, h - 60, w - 48, 52});
-}
-
-void EquipmentSpriteDemo::_notification(int what)
-{
-    if (what == NOTIFICATION_RESIZED)
-        layout();
 }
 
 void EquipmentSpriteDemo::_input(const Ref<InputEvent> &event)

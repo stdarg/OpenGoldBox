@@ -1,4 +1,6 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/sound_board_backdrop.gd" id="1_backdrop"]
 
 [node name="SoundBoard" type="SoundBoardView"]
 layout_mode = 3
@@ -8,146 +10,369 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="Backdrop" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+z_index = -1
+script = ExtResource("1_backdrop")
+
 [node name="Eyebrow" type="Label" parent="."]
+anchor_right = 1.000000000
+offset_left = 28.000000000
+offset_top = 18.000000000
+offset_right = -28.000000000
+offset_bottom = 40.000000000
 theme_type_variation = &"LabelText14Teal"
 text = "OPENGOLDBOX / POOL OF RADIANCE"
 
 [node name="Title" type="Label" parent="."]
+anchor_right = 1.000000000
+offset_left = 28.000000000
+offset_top = 43.000000000
+offset_right = -28.000000000
+offset_bottom = 87.000000000
 theme_type_variation = &"LabelText34Gold"
 text = "Sound board"
 
 [node name="Subtitle" type="Label" parent="."]
+anchor_right = 1.000000000
+offset_left = 28.000000000
+offset_top = 93.000000000
+offset_right = -28.000000000
+offset_bottom = 121.000000000
 theme_type_variation = &"LabelText17"
 text = "19 original effects  /  PC speaker  /  Select a button to play or replay"
 
 [node name="Sound1" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_right = 0.333333333
+anchor_bottom = 0.142857143
+offset_left = 28.000000000
+offset_top = 140.000000000
+offset_right = 1.333333333
+offset_bottom = 90.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "01   Loading..."
 disabled = true
 
 [node name="Sound2" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.333333333
+anchor_right = 0.666666667
+anchor_bottom = 0.142857143
+offset_left = 13.333333333
+offset_top = 140.000000000
+offset_right = -13.333333333
+offset_bottom = 90.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "02   Loading..."
 disabled = true
 
 [node name="Sound3" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.666666667
+anchor_right = 1.000000000
+anchor_bottom = 0.142857143
+offset_left = -1.333333333
+offset_top = 140.000000000
+offset_right = -28.000000000
+offset_bottom = 90.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "03   Loading..."
 disabled = true
 
 [node name="Sound4" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_top = 0.142857143
+anchor_right = 0.333333333
+anchor_bottom = 0.285714286
+offset_left = 28.000000000
+offset_top = 102.000000000
+offset_right = 1.333333333
+offset_bottom = 52.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "04   Loading..."
 disabled = true
 
 [node name="Sound5" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.333333333
+anchor_top = 0.142857143
+anchor_right = 0.666666667
+anchor_bottom = 0.285714286
+offset_left = 13.333333333
+offset_top = 102.000000000
+offset_right = -13.333333333
+offset_bottom = 52.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "05   Loading..."
 disabled = true
 
 [node name="Sound6" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.666666667
+anchor_top = 0.142857143
+anchor_right = 1.000000000
+anchor_bottom = 0.285714286
+offset_left = -1.333333333
+offset_top = 102.000000000
+offset_right = -28.000000000
+offset_bottom = 52.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "06   Loading..."
 disabled = true
 
 [node name="Sound7" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_top = 0.285714286
+anchor_right = 0.333333333
+anchor_bottom = 0.428571429
+offset_left = 28.000000000
+offset_top = 64.000000000
+offset_right = 1.333333333
+offset_bottom = 14.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "07   Loading..."
 disabled = true
 
 [node name="Sound8" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.333333333
+anchor_top = 0.285714286
+anchor_right = 0.666666667
+anchor_bottom = 0.428571429
+offset_left = 13.333333333
+offset_top = 64.000000000
+offset_right = -13.333333333
+offset_bottom = 14.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "08   Loading..."
 disabled = true
 
 [node name="Sound9" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.666666667
+anchor_top = 0.285714286
+anchor_right = 1.000000000
+anchor_bottom = 0.428571429
+offset_left = -1.333333333
+offset_top = 64.000000000
+offset_right = -28.000000000
+offset_bottom = 14.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "09   Loading..."
 disabled = true
 
 [node name="Sound10" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_top = 0.428571429
+anchor_right = 0.333333333
+anchor_bottom = 0.571428571
+offset_left = 28.000000000
+offset_top = 26.000000000
+offset_right = 1.333333333
+offset_bottom = -24.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "10   Loading..."
 disabled = true
 
 [node name="Sound11" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.333333333
+anchor_top = 0.428571429
+anchor_right = 0.666666667
+anchor_bottom = 0.571428571
+offset_left = 13.333333333
+offset_top = 26.000000000
+offset_right = -13.333333333
+offset_bottom = -24.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "11   Loading..."
 disabled = true
 
 [node name="Sound12" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.666666667
+anchor_top = 0.428571429
+anchor_right = 1.000000000
+anchor_bottom = 0.571428571
+offset_left = -1.333333333
+offset_top = 26.000000000
+offset_right = -28.000000000
+offset_bottom = -24.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "12   Loading..."
 disabled = true
 
 [node name="Sound13" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_top = 0.571428571
+anchor_right = 0.333333333
+anchor_bottom = 0.714285714
+offset_left = 28.000000000
+offset_top = -12.000000000
+offset_right = 1.333333333
+offset_bottom = -62.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "13   Loading..."
 disabled = true
 
 [node name="Sound14" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.333333333
+anchor_top = 0.571428571
+anchor_right = 0.666666667
+anchor_bottom = 0.714285714
+offset_left = 13.333333333
+offset_top = -12.000000000
+offset_right = -13.333333333
+offset_bottom = -62.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "14   Loading..."
 disabled = true
 
 [node name="Sound15" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.666666667
+anchor_top = 0.571428571
+anchor_right = 1.000000000
+anchor_bottom = 0.714285714
+offset_left = -1.333333333
+offset_top = -12.000000000
+offset_right = -28.000000000
+offset_bottom = -62.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "15   Loading..."
 disabled = true
 
 [node name="Sound16" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_top = 0.714285714
+anchor_right = 0.333333333
+anchor_bottom = 0.857142857
+offset_left = 28.000000000
+offset_top = -50.000000000
+offset_right = 1.333333333
+offset_bottom = -100.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "16   Loading..."
 disabled = true
 
 [node name="Sound17" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.333333333
+anchor_top = 0.714285714
+anchor_right = 0.666666667
+anchor_bottom = 0.857142857
+offset_left = 13.333333333
+offset_top = -50.000000000
+offset_right = -13.333333333
+offset_bottom = -100.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "17   Loading..."
 disabled = true
 
 [node name="Sound18" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.666666667
+anchor_top = 0.714285714
+anchor_right = 1.000000000
+anchor_bottom = 0.857142857
+offset_left = -1.333333333
+offset_top = -50.000000000
+offset_right = -28.000000000
+offset_bottom = -100.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "18   Loading..."
 disabled = true
 
 [node name="Sound19" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_top = 0.857142857
+anchor_right = 0.333333333
+anchor_bottom = 1.000000000
+offset_left = 28.000000000
+offset_top = -88.000000000
+offset_right = 1.333333333
+offset_bottom = -138.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "19   Loading..."
 disabled = true
 
 [node name="Sound20" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.333333333
+anchor_top = 0.857142857
+anchor_right = 0.666666667
+anchor_bottom = 1.000000000
+offset_left = 13.333333333
+offset_top = -88.000000000
+offset_right = -13.333333333
+offset_bottom = -138.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "20   Loading..."
 disabled = true
 
 [node name="Sound21" type="Button" parent="."]
-theme_type_variation = &"ButtonText17"
+anchor_left = 0.666666667
+anchor_top = 0.857142857
+anchor_right = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = -1.333333333
+offset_top = -88.000000000
+offset_right = -28.000000000
+offset_bottom = -138.000000000
+theme_type_variation = &"SoundBoardButton"
 text = "21   Loading..."
 disabled = true
 
 [node name="Status" type="Label" parent="."]
+anchor_top = 1.000000000
+anchor_right = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 28.000000000
+offset_top = -123.000000000
+offset_right = -28.000000000
+offset_bottom = -85.000000000
 theme_type_variation = &"LabelText16Gold"
 text = "Reading START.EXE..."
 autowrap_mode = 2
 
 [node name="Stop" type="Button" parent="."]
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 28.000000000
+offset_top = -70.000000000
+offset_right = 136.000000000
+offset_bottom = -32.000000000
 theme_type_variation = &"ButtonText16"
 text = "Stop"
 
 [node name="Mute" type="Button" parent="."]
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 148.000000000
+offset_top = -70.000000000
+offset_right = 256.000000000
+offset_bottom = -32.000000000
 theme_type_variation = &"ButtonText16"
 text = "Mute"
 toggle_mode = true
 
 [node name="VolumeLabel" type="Label" parent="."]
+anchor_left = 1.000000000
+anchor_top = 1.000000000
+anchor_right = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = -372.000000000
+offset_top = -66.000000000
+offset_right = -267.000000000
+offset_bottom = -36.000000000
 theme_type_variation = &"LabelText15"
 text = "Volume 70%"
 
 [node name="Volume" type="HSlider" parent="."]
+anchor_left = 1.000000000
+anchor_top = 1.000000000
+anchor_right = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = -262.000000000
+offset_top = -66.000000000
+offset_right = -28.000000000
+offset_bottom = -36.000000000
 value = 70.0
 step = 1.0
 
 [node name="Source" type="Label" parent="."]
+anchor_top = 1.000000000
+anchor_right = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 28.000000000
+offset_top = -27.000000000
+offset_right = -28.000000000
+offset_bottom = -7.000000000
 theme_type_variation = &"LabelText12SoftMuted"
 text = "Source: your START.EXE  /  Loaded in memory, no extracted audio files"
 

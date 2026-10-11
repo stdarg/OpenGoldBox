@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[node name="TrainingDropdown" type="OptionButton"]
+custom_minimum_size = Vector2(0, 38)
+focus_mode = 2
+auto_translate_mode = 2

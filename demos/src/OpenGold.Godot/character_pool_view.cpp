@@ -23,30 +23,8 @@ String gs(std::string_view s)
 
 void CharacterCreationView::pool_layout()
 {
-    const double w = std::min(1000.0, double(get_size().x) - 64), h = get_size().y - 120;
-    const auto place = [&](const char *path, Rect2 r)
-    {
-        auto *n = get_node<Control>(path);
-        n->set_position(r.position);
-        n->set_size(r.size);
-    };
-    for (const char *name :
-            {"PoolModal", "TownSheet"
-            })
-        get_node<Window>(name)->set_size(Vector2i(w, h));
-    place("PoolModal/Background", Rect2(0, 0, w, h));
-    place("TownSheet/Background", Rect2(0, 0, w, h));
-    place("PoolModal/Title", Rect2(20, 16, w - 40, 36));
-    place("PoolModal/List", Rect2(20, 64, 260, h - 154));
-    place("PoolModal/Portrait", Rect2(300, 64, 188, 188));
-    place("PoolModal/Ready", Rect2(300, 270, 88, 88));
-    place("PoolModal/Action", Rect2(400, 270, 88, 88));
-    place("PoolModal/Text", Rect2(508, 64, w - 528, h - 154));
-    place("PoolModal/Status", Rect2(20, h - 82, w - 350, 62));
-    place("PoolModal/Add", Rect2(w - 310, h - 58, 150, 36));
-    place("PoolModal/Close", Rect2(w - 146, h - 58, 126, 36));
-    place("TownSheet/Text", Rect2(24, 24, w - 48, h - 100));
-    place("TownSheet/Close", Rect2(w - 154, h - 56, 130, 36));
+    for (const char *name : {"PoolModal", "TownSheet"})
+        get_node<Window>(name)->call("fit", Vector2i(get_size()));
 }
 
 void CharacterCreationView::show_pool()

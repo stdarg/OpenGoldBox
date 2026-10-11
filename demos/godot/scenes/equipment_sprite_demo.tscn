@@ -7,3 +7,112 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Title" type="Label" parent="."]
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 18.0
+offset_right = -24.0
+offset_bottom = 60.0
+theme_type_variation = &"LabelText28"
+text = "Equipment sprite demo"
+
+[node name="Help" type="Label" parent="."]
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 66.0
+offset_right = -24.0
+offset_bottom = 98.0
+text = "Double-click a weapon (or press Enter) to equip. Toggle the shield separately."
+
+[node name="Items" type="ItemList" parent="."]
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 116.0
+offset_right = 404.0
+offset_bottom = -184.0
+
+[node name="Shield" type="Button" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -168.0
+offset_right = 404.0
+offset_bottom = -124.0
+toggle_mode = true
+disabled = true
+text = "Shield: Off"
+
+[node name="Equip" type="Button" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -112.0
+offset_right = 206.0
+offset_bottom = -68.0
+disabled = true
+text = "Equip"
+
+[node name="Unequip" type="Button" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 222.0
+offset_top = -112.0
+offset_right = 404.0
+offset_bottom = -68.0
+disabled = true
+text = "Unequip"
+
+[node name="ReadyLabel" type="Label" parent="."]
+anchor_right = 0.5
+offset_left = 440.0
+offset_top = 116.0
+offset_right = 208.0
+offset_bottom = 148.0
+text = "Ready"
+
+[node name="ActionLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 1.0
+offset_left = 224.0
+offset_top = 116.0
+offset_right = -8.0
+offset_bottom = 148.0
+text = "Action"
+
+[node name="Ready" type="TextureRect" parent="."]
+anchor_right = 0.5
+offset_left = 440.0
+offset_top = 166.0
+offset_right = 208.0
+offset_bottom = 550.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Action" type="TextureRect" parent="."]
+anchor_left = 0.5
+anchor_right = 1.0
+offset_left = 224.0
+offset_top = 166.0
+offset_right = -8.0
+offset_bottom = 550.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Equipment" type="Label" parent="."]
+anchor_right = 1.0
+offset_left = 440.0
+offset_top = 570.0
+offset_right = -24.0
+offset_bottom = 682.0
+autowrap_mode = 3
+
+[node name="Status" type="Label" parent="."]
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -60.0
+offset_right = -24.0
+offset_bottom = -8.0
+autowrap_mode = 3

@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 [ext_resource type="AnimationLibrary" path="res://scenes/tour_shopping_layout.tres" id="2_shopping_layout"]
 [ext_resource type="Script" path="res://scenes/tour_layout.gd" id="3_tour_layout"]
 [ext_resource type="Script" path="res://scenes/window_layout.gd" id="4_window_layout"]
+[ext_resource type="Script" path="res://scenes/tour_backdrop.gd" id="5_tour_backdrop"]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/tour_dialogue_layout.tres" id="1_dialogue_layout"]
 
@@ -12,6 +13,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Backdrop" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+z_index = -1
+script = ExtResource("5_tour_backdrop")
 
 [node name="HeaderRule" type="Control" parent="."]
 visible = false

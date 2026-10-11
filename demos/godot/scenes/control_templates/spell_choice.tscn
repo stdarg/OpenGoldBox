@@ -1,0 +1,5 @@
+[gd_scene format=3]
+
+[node name="SpellChoice" type="CheckBox"]
+custom_minimum_size = Vector2(0, 40)
+focus_mode = 2

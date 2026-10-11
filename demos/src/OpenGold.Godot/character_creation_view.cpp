@@ -124,8 +124,6 @@ void CharacterCreationView::_notification(int what)
 
 void CharacterCreationView::_ready()
 {
-    presentation::setup_training_controls(*this);
-    presentation::setup_cantrip_controls(*this);
     ready_ = true;
     get_window()->set_min_size(Vector2i(1120, 800));
     set_texture_filter(TEXTURE_FILTER_NEAREST);

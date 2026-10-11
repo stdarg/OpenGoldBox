@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/control_templates/party_advance.gd" id="1_advance_layout"]
+
+[node name="Advance" type="Button"]
+offset_right = 30.0
+offset_bottom = 26.0
+theme_type_variation = &"PartyAdvance"
+text = "↑"
+tooltip_text = "Level up"
+script = ExtResource("1_advance_layout")

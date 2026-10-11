@@ -14,13 +14,11 @@ class CombatSpriteDemo : public godot::Control
   public:
     void _ready() override;
     void _process(double delta) override;
-    void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
     void request_capture();
 
   protected:
     static void _bind_methods();
-    void _notification(int what);
 
   private:
     enum class Sizing
@@ -49,7 +47,7 @@ class CombatSpriteDemo : public godot::Control
     unsigned color_bank_{}, color_part_{};
     int zoom_{250};
     double elapsed_{};
-    bool action_{}, ready_{}, loaded_{}, center_pending_{};
+    bool action_{}, loaded_{}, center_pending_{};
     bool capture_pending_{};
     godot::Vector2 center_cell_{26, 14};
     void create_controls();
@@ -57,7 +55,6 @@ class CombatSpriteDemo : public godot::Control
     void refresh_players();
     void refresh_colors();
     void refresh_figures();
-    void layout();
     void draw_map();
     void zoom_by(int amount);
     void change_part(int part, int direction);

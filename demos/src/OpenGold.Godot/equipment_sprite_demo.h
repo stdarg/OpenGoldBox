@@ -18,8 +18,6 @@ class EquipmentSpriteDemo : public godot::Control
     {
     }
 
-    void _notification(int what);
-
   private:
     std::unique_ptr<opengold::CampaignParty> campaign_;
     opengold::MemberId member_{};
@@ -27,8 +25,6 @@ class EquipmentSpriteDemo : public godot::Control
     opengold::por::CombatBodyCatalog catalog_;
     std::vector<unsigned> hands_;
     int selected_{};
-    bool ready_{};
-    void layout();
     void refresh();
     void select(std::int64_t index);
     void activate(std::int64_t index);

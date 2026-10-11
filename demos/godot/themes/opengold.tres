@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=28 format=3]
+[gd_resource type="Theme" load_steps=33 format=3]
 
 [sub_resource type="StyleBoxFlat" id="normal"]
 content_margin_left = 6.0
@@ -357,6 +357,86 @@ corner_radius_bottom_left = 4
 [sub_resource type="StyleBoxFlat" id="demo_backdrop"]
 bg_color = Color(0.035, 0.043, 0.055, 1)
 
+[sub_resource type="StyleBoxFlat" id="sound_button_normal"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.10980392156862745, 0.15294117647058825, 0.1803921568627451, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25098039215686274, 0.3137254901960784, 0.34509803921568627, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="sound_button_selected"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.23137254901960785, 0.2196078431372549, 0.17647058823529413, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.8431372549019608, 0.7058823529411765, 0.4745098039215686, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="sound_button_hover"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.18823529411764706, 0.2549019607843137, 0.29411764705882354, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.8431372549019608, 0.7058823529411765, 0.4745098039215686, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="sound_button_pressed"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.29411764705882354, 0.2627450980392157, 0.20392156862745098, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.9294117647058824, 0.792156862745098, 0.5568627450980392, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="sound_button_focus"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4745098039215686, 0.8392156862745098, 0.8313725490196079, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
 [resource]
 BoxContainer/constants/separation = 4
 HBoxContainer/constants/separation = 4
@@ -369,6 +449,14 @@ MarginContainer/constants/margin_right = 0
 MarginContainer/constants/margin_bottom = 0
 ButtonText17/base_type = &"Button"
 ButtonText17/font_sizes/font_size = 17
+SoundBoardButton/base_type = &"Button"
+SoundBoardButton/font_sizes/font_size = 17
+SoundBoardButton/styles/normal = SubResource("sound_button_normal")
+SoundBoardButton/styles/hover = SubResource("sound_button_hover")
+SoundBoardButton/styles/pressed = SubResource("sound_button_pressed")
+SoundBoardButton/styles/focus = SubResource("sound_button_focus")
+SoundBoardButtonSelected/base_type = &"SoundBoardButton"
+SoundBoardButtonSelected/styles/normal = SubResource("sound_button_selected")
 DemoBackdrop/base_type = &"Panel"
 DemoBackdrop/styles/panel = SubResource("demo_backdrop")
 HBoxContainerGap48/base_type = &"HBoxContainer"
@@ -497,10 +585,32 @@ OpenGoldMetrics/constants/combat_hover_offset_x = 18
 OpenGoldMetrics/constants/combat_hover_offset_y = 18
 OpenGoldMetrics/constants/creation_min_width = 1120
 OpenGoldMetrics/constants/creation_min_height = 800
+OpenGoldMetrics/constants/equipment_sprite_min_width = 1120
+OpenGoldMetrics/constants/equipment_sprite_min_height = 800
 OpenGoldMetrics/constants/combat_min_width = 1120
 OpenGoldMetrics/constants/combat_min_height = 800
 OpenGoldMetrics/constants/tour_min_width = 960
 OpenGoldMetrics/constants/tour_min_height = 720
+OpenGoldMetrics/constants/sound_board_min_width = 960
+OpenGoldMetrics/constants/sound_board_min_height = 760
+OpenGoldMetrics/constants/sound_board_margin = 28
+OpenGoldMetrics/constants/sound_board_rule_y = 127
+OpenGoldMetrics/constants/combat_sprite_tile_pixels = 24
+OpenGoldMetrics/constants/combat_sprite_min_width = 1120
+OpenGoldMetrics/constants/combat_sprite_min_height = 800
+OpenGoldMetrics/constants/combat_swatch_corner_radius = 4
+OpenGoldMetrics/constants/combat_swatch_padding = 6
+OpenGoldMetrics/constants/combat_swatch_width = 1
+OpenGoldMetrics/constants/combat_swatch_hover_width = 2
+OpenGoldMetrics/constants/combat_swatch_selected_width = 3
+OpenGoldMetrics/constants/combat_swatch_pressed_darkening_percent = 20
+OpenGoldMetrics/constants/level_training_label_y = 205
+OpenGoldMetrics/constants/level_training_choice_y = 236
+OpenGoldMetrics/constants/level_training_supplemental_label_y = 374
+OpenGoldMetrics/constants/level_training_supplemental_choice_y = 406
+OpenGoldMetrics/constants/pool_max_width = 1000
+OpenGoldMetrics/constants/pool_horizontal_margin = 64
+OpenGoldMetrics/constants/pool_vertical_margin = 120
 OpenGoldMetrics/constants/tour_arrow_top_inset = 2
 OpenGoldPalette/colors/swatch_selected = Color(0.9450980392156862, 0.8235294117647058, 0.611764705882353, 1)
 OpenGoldPalette/colors/swatch_hover = Color(1.0, 1.0, 1.0, 1)

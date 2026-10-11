@@ -1,4 +1,5 @@
 #include "save_slots.h"
+#include "../../../src/OpenGoldBox/godot_nodes.h"
 #include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/item_list.hpp>
@@ -13,24 +14,6 @@ using namespace godot;
 
 namespace
 {
-struct DeleteNode
-{
-    void operator()(Node *n) const
-    {
-        memdelete(n);
-    }
-};
-
-template <class T> void add(Window &parent, const char *name, Rect2 rect)
-{
-    std::unique_ptr<T, DeleteNode> child(memnew(T));
-    child->set_name(name);
-    child->set_position(rect.position);
-    child->set_size(rect.size);
-    parent.add_child(child.get());
-    child.release();
-}
-
 std::string encoded(std::string_view name)
 {
     static constexpr char hex[] = "0123456789abcdef";
@@ -65,17 +48,16 @@ std::string decoded(std::string_view stem)
 
 void SaveSlots::_ready()
 {
-    set_size(Vector2i(620, 470));
-    set_min_size(Vector2i(620, 470));
+    presentation::attach_dialog_layout(*this);
     set_flag(Window::FLAG_RESIZE_DISABLED, true);
     set_exclusive(true);
     set_transient(true);
-    add<Label>(*this, "Help", Rect2(20, 16, 580, 42));
-    add<ItemList>(*this, "Slots", Rect2(20, 66, 580, 230));
-    add<LineEdit>(*this, "Name", Rect2(20, 310, 580, 36));
-    add<Label>(*this, "Status", Rect2(20, 354, 580, 58));
-    add<Button>(*this, "Action", Rect2(300, 420, 145, 36));
-    add<Button>(*this, "Cancel", Rect2(455, 420, 145, 36));
+    presentation::dialog_control<Label>(*this, "Help");
+    presentation::dialog_control<ItemList>(*this, "Slots");
+    presentation::dialog_control<LineEdit>(*this, "Name");
+    presentation::dialog_control<Label>(*this, "Status");
+    presentation::dialog_control<Button>(*this, "Action");
+    presentation::dialog_control<Button>(*this, "Cancel");
     get_node<Label>("Status")->set("autowrap_mode", 3);
     get_node<LineEdit>("Name")->set_placeholder("Save name");
     get_node<LineEdit>("Name")->set_max_length(60);

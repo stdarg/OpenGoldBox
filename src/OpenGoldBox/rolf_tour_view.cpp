@@ -1004,20 +1004,8 @@ void RolfTourView::refresh()
 
 void RolfTourView::_draw()
 {
-    draw_rect(Rect2(Vector2(), get_size()), get_theme_color("background", "OpenGoldPalette"));
-    const auto header = required_node<Control>(*this, "HeaderRule").get_rect();
-    draw_line(header.position, header.get_end(), get_theme_color("line", "OpenGoldPalette"),
-              get_theme_constant("tour_header_line_width", "OpenGoldMetrics"));
-    draw_rect(dialogue_rect_, get_theme_color("panel", "OpenGoldPalette"));
-    draw_rect(dialogue_rect_, get_theme_color("line", "OpenGoldPalette"), false);
-    draw_line(dialogue_rect_.position, dialogue_rect_.position + Vector2(dialogue_rect_.size.x, 0),
-              get_theme_color("gold", "OpenGoldPalette"),
-              get_theme_constant("tour_dialogue_line_width", "OpenGoldMetrics"));
-    draw_rect(map_rect_, get_theme_color("map_black", "OpenGoldPalette"));
     draw_scene();
     draw_map();
-    draw_rect(scene_rect_, get_theme_color("line", "OpenGoldPalette"), false);
-    draw_rect(map_rect_, get_theme_color("line", "OpenGoldPalette"), false);
 }
 
 Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
@@ -1035,7 +1023,6 @@ Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
 
 void RolfTourView::draw_scene()
 {
-    draw_rect(scene_rect_, get_theme_color("panel", "OpenGoldPalette"));
     if (!session_ || session_->snapshot().visited.none() || wall_view_.is_null())
         return;
     // Fit the complete original wall view. DOS EGA pixels were displayed taller

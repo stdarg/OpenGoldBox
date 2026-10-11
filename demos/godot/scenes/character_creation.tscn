@@ -1,4 +1,7 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/level_up_dialog.tscn" id="1_level_up"]
+[ext_resource type="Script" path="res://scenes/pool_window_layout.gd" id="2_pool_layout"]
 
 [node name="CharacterCreation" type="CharacterCreationView"]
 layout_mode = 3
@@ -482,15 +485,36 @@ transient = true
 exclusive = true
 unresizable = true
 size = Vector2i(1000, 680)
+script = ExtResource("2_pool_layout")
 
 [node name="Background" type="Panel" parent="PoolModal"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
 theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="PoolModal"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 508
+offset_top = 64
+offset_right = -20
+offset_bottom = -90
 theme_type_variation = &"RichTextLabelText17"
 bbcode_enabled = true
 
 [node name="Close" type="Button" parent="PoolModal"]
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -146
+offset_top = -58
+offset_right = -20
+offset_bottom = -22
 text = "Close"
 
 [node name="TownSheet" type="Window" parent="."]
@@ -499,41 +523,100 @@ transient = true
 exclusive = true
 unresizable = true
 size = Vector2i(1000, 680)
+script = ExtResource("2_pool_layout")
 
 [node name="Background" type="Panel" parent="TownSheet"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
 theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="TownSheet"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24
+offset_top = 24
+offset_right = -24
+offset_bottom = -76
 theme_type_variation = &"RichTextLabelText17"
 bbcode_enabled = true
 
 [node name="Close" type="Button" parent="TownSheet"]
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -154
+offset_top = -56
+offset_right = -24
+offset_bottom = -20
 text = "Close"
 
 [node name="List" type="ItemList" parent="PoolModal"]
+anchor_bottom = 1.0
+offset_left = 20
+offset_top = 64
+offset_right = 280
+offset_bottom = -90
 theme_type_variation = &"ItemListText16"
 
 [node name="Title" type="Label" parent="PoolModal"]
+anchor_right = 1.0
+offset_left = 20
+offset_top = 16
+offset_right = -20
+offset_bottom = 52
 theme_type_variation = &"LabelText23"
 text = "Character Pool / 48 level-one characters"
 
 [node name="Add" type="Button" parent="PoolModal"]
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -310
+offset_top = -58
+offset_right = -160
+offset_bottom = -22
 text = "Add to party"
 
 [node name="Status" type="Label" parent="PoolModal"]
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20
+offset_top = -82
+offset_right = -330
+offset_bottom = -20
 autowrap_mode = 2
 
 [node name="Portrait" type="TextureRect" parent="PoolModal"]
+offset_left = 300
+offset_top = 64
+offset_right = 488
+offset_bottom = 252
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="Ready" type="TextureRect" parent="PoolModal"]
+offset_left = 300
+offset_top = 270
+offset_right = 388
+offset_bottom = 358
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="Action" type="TextureRect" parent="PoolModal"]
+offset_left = 400
+offset_top = 270
+offset_right = 488
+offset_bottom = 358
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
@@ -639,3 +722,33 @@ theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
 text = "Does not meet targeted class requirements"
+
+[node name="LevelUp" parent="." instance=ExtResource("1_level_up")]
+
+[node name="TrainingFixed" type="RichTextLabel" parent="."]
+visible = false
+theme_type_variation = &"TrainingFixed"
+bbcode_enabled = true
+
+[node name="Training" type="ScrollContainer" parent="."]
+visible = false
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Rows" type="VBoxContainer" parent="Training"]
+size_flags_horizontal = 3
+theme_type_variation = &"TrainingRows"
+
+[node name="SpellChoices" type="ScrollContainer" parent="."]
+visible = false
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Rows" type="VBoxContainer" parent="SpellChoices"]
+size_flags_horizontal = 3
+theme_type_variation = &"CantripRows"
+
+[node name="Count" type="Label" parent="SpellChoices/Rows"]
+
+[node name="Pending" type="Label" parent="SpellChoices/Rows"]
+theme_type_variation = &"TrainingPending"

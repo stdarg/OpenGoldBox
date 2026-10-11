@@ -11,7 +11,6 @@
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
-#include <godot_cpp/classes/style_box_flat.hpp>
 #include <godot_cpp/classes/texture_rect.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -52,31 +51,9 @@ String dimensions(Vector2 size)
     return String::num(size.x, 1) + gs(" × ") + String::num(size.y, 1);
 }
 
-Ref<StyleBoxFlat> swatch(Color color, Color border, int width)
-{
-    Ref<StyleBoxFlat> box;
-    box.instantiate();
-    box->set_bg_color(color);
-    box->set_border_color(border);
-    box->set_border_width_all(width);
-    box->set_corner_radius_all(4);
-    box->set_content_margin_all(6);
-    return box;
-}
-
 void color_button(Button &button, unsigned index, bool selected)
 {
-    const auto color = presentation::character_color(index);
-    button.add_theme_stylebox_override(
-        "normal", swatch(color, selected ? Color("e6c28a") : Color("687d88"), selected ? 3 : 1));
-    button.add_theme_stylebox_override("hover", swatch(color, Color("ffffff"), 2));
-    button.add_theme_stylebox_override("pressed", swatch(color.darkened(.2), Color("e6c28a"), 3));
-    const auto foreground =
-        color.r * .299 + color.g * .587 + color.b * .114 > .5 ? Color("101820") : Color("ffffff");
-    for (const char *state :
-            {"font_color", "font_hover_color", "font_pressed_color", "font_focus_color"
-            })
-        button.add_theme_color_override(state, foreground);
+    button.call("configure", presentation::character_color(index), selected);
 }
 
 // Original archives remain local. RAII owns both the file and decoded buffers.
@@ -131,10 +108,10 @@ void CombatSpriteDemo::_bind_methods()
 void CombatSpriteDemo::_ready()
 {
     set_texture_filter(TEXTURE_FILTER_NEAREST);
-    get_window()->set_min_size(Vector2i(1120, 800));
+    get_window()->set_min_size(Vector2i(
+        get_theme_constant("combat_sprite_min_width", "OpenGoldMetrics"),
+        get_theme_constant("combat_sprite_min_height", "OpenGoldMetrics")));
     create_controls();
-    ready_ = true;
-    layout();
     if (Engine::get_singleton()->is_editor_hint())
         return;
     try
@@ -142,7 +119,6 @@ void CombatSpriteDemo::_ready()
         load_art();
         loaded_ = true;
         refresh_players();
-        layout();
     }
     catch (const std::exception &error)
     {
@@ -157,86 +133,31 @@ void CombatSpriteDemo::_ready()
 
 void CombatSpriteDemo::create_controls()
 {
-    const auto label =
-        [&](const char *name, const char *text, int font_size = 16, bool wrap = false)
+    const auto connect_button = [this](const char *name, const Callable &pressed)
     {
-        auto *result = presentation::add_control<Label>(*this, name, {});
-        if (wrap)
-            result->set("autowrap_mode", 3);
-        result->set_text(gs(text));
-        result->add_theme_font_size_override("font_size", font_size);
-        result->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-        return result;
+        get_node<Button>(name)->connect("pressed", pressed);
     };
-    const auto button = [&](const char *name, const char *text, const Callable & pressed)
-    {
-        auto *result = presentation::add_control<Button>(*this, name, {});
-        result->set_text(gs(text));
-        result->connect("pressed", pressed);
-        result->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-        return result;
-    };
-    label("Title", "Combat sprite scale demo", 27)
-    ->add_theme_color_override("font_color", Color("e6c28a"));
-    label(
-        "Subtitle",
-        "Compare original sprite sizes on the same battlefield. All poses change together every second.");
-    label("Zoom", "");
-    label("Pose", "");
-    button("Minus100", "−100%", callable_mp(this, &CombatSpriteDemo::zoom_by).bind(-100));
-    button("Minus10", "−10%", callable_mp(this, &CombatSpriteDemo::zoom_by).bind(-10));
-    button("Plus10", "+10%", callable_mp(this, &CombatSpriteDemo::zoom_by).bind(10));
-    button("Plus100", "+100%", callable_mp(this, &CombatSpriteDemo::zoom_by).bind(100));
-    label("AppearanceTitle", "Player customization", 22);
-    label("Head", "");
-    label("Body", "");
-    button("HeadPrevious", "‹", callable_mp(this, &CombatSpriteDemo::change_part).bind(0, -1))
-    ->set_tooltip_text(gs("Previous head"));
-    button("HeadNext", "›", callable_mp(this, &CombatSpriteDemo::change_part).bind(0, 1))
-    ->set_tooltip_text(gs("Next head"));
-    button("BodyPrevious", "‹", callable_mp(this, &CombatSpriteDemo::change_part).bind(1, -1))
-    ->set_tooltip_text(gs("Previous weapon"));
-    button("BodyNext", "›", callable_mp(this, &CombatSpriteDemo::change_part).bind(1, 1))
-    ->set_tooltip_text(gs("Next weapon"));
-    label("Color1", "Color-1");
-    label("Color2", "Color-2");
+    connect_button("Minus100", callable_mp(this, &CombatSpriteDemo::zoom_by).bind(-100));
+    connect_button("Minus10", callable_mp(this, &CombatSpriteDemo::zoom_by).bind(-10));
+    connect_button("Plus10", callable_mp(this, &CombatSpriteDemo::zoom_by).bind(10));
+    connect_button("Plus100", callable_mp(this, &CombatSpriteDemo::zoom_by).bind(100));
+    connect_button("HeadPrevious", callable_mp(this, &CombatSpriteDemo::change_part).bind(0, -1));
+    connect_button("HeadNext", callable_mp(this, &CombatSpriteDemo::change_part).bind(0, 1));
+    connect_button("BodyPrevious", callable_mp(this, &CombatSpriteDemo::change_part).bind(1, -1));
+    connect_button("BodyNext", callable_mp(this, &CombatSpriteDemo::change_part).bind(1, 1));
     for (unsigned part = 0; part < 6; ++part)
-    {
-        label(("Part" + std::to_string(part)).c_str(), presentation::character_regions[part]);
         for (unsigned bank = 0; bank < 2; ++bank)
-            button(("Color" + std::to_string(bank) + "_" + std::to_string(part)).c_str(), "",
-                   callable_mp(this, &CombatSpriteDemo::select_color).bind(bank, part));
-    }
-    label("PaletteHint", "", 16, true);
+            connect_button(("Color" + std::to_string(bank) + "_" + std::to_string(part)).c_str(),
+                           callable_mp(this, &CombatSpriteDemo::select_color).bind(bank, part));
     for (unsigned index = 0; index < 16; ++index)
     {
-        auto *control = button(("Palette" + std::to_string(index)).c_str(), "",
-                               callable_mp(this, &CombatSpriteDemo::recolor).bind(index));
-        control->set_tooltip_text(gs(presentation::character_colors[index]));
-        color_button(*control, index, false);
-        // Text plus color keeps each swatch identifiable with keyboard focus.
-        control->set_text(String::num_int64(index + 1));
+        auto *button = get_node<Button>(gs("Palette" + std::to_string(index)));
+        button->connect("pressed", callable_mp(this, &CombatSpriteDemo::recolor).bind(index));
+        button->set_tooltip_text(gs(presentation::character_colors[index]));
+        color_button(*button, index, false);
     }
-    label(
-        "AppearanceHelp",
-        "Head, weapon and colors update all four player figures. Short and tall use the original art banks.",
-        14, true);
-    label(
-        "GoliathHelp",
-        "Goliath: 1.25 squares tall, feet on the baseline.\n1 — Stretched: exactly one square wide.\n2 — Proportional: natural width, overflow allowed.",
-        14, true);
-    auto *scroll = presentation::add_control<ScrollContainer>(*this, "BattlefieldScroll", {});
-    scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_SHOW_ALWAYS);
-    scroll->set_vertical_scroll_mode(ScrollContainer::SCROLL_MODE_SHOW_ALWAYS);
-    scroll->set_focus_mode(FOCUS_ALL);
-    auto *canvas = presentation::add_control<Control>(*scroll, "Canvas", {});
-    canvas->set_mouse_filter(MOUSE_FILTER_IGNORE);
-    canvas->connect("draw", callable_mp(this, &CombatSpriteDemo::draw_map));
-    auto *sizes = presentation::add_control<RichTextLabel>(*this, "Sizes", {});
-    sizes->set_use_bbcode(true);
-    sizes->set_scroll_active(true);
-    sizes->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-    label("Status", "100% = original pixels • Scrollbars / wheel: pan • Ctrl+S: screenshot");
+    get_node<Control>("BattlefieldScroll/Canvas")
+        ->connect("draw", callable_mp(this, &CombatSpriteDemo::draw_map));
 }
 
 void CombatSpriteDemo::load_art()
@@ -291,15 +212,9 @@ void CombatSpriteDemo::load_art()
         }
         figures_.push_back(std::move(figure));
     }
-    auto *canvas = get_node<Control>("BattlefieldScroll/Canvas");
     for (const auto &figure : figures_)
-    {
-        auto *sprite = presentation::add_control<TextureRect>(*canvas, figure.node, {});
-        sprite->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
-        sprite->set_stretch_mode(TextureRect::STRETCH_SCALE);
-        sprite->set_tooltip_text(gs(figure.label));
-        sprite->set_mouse_filter(MOUSE_FILTER_PASS);
-    }
+        get_node<TextureRect>(String("BattlefieldScroll/Canvas/") + figure.node)
+            ->set_tooltip_text(gs(figure.label));
 }
 
 void CombatSpriteDemo::refresh_players()
@@ -365,6 +280,10 @@ void CombatSpriteDemo::refresh_colors()
 
 void CombatSpriteDemo::refresh_figures()
 {
+    get_node<Control>("BattlefieldScroll/Canvas")
+        ->call("set_board_dimensions", battlefield_.geometry.width,
+               battlefield_.geometry.height, zoom_);
+    center_pending_ = true;
     const double scale = zoom_ / 100.0;
     get_node<Label>("Zoom")->set_text(gs("Zoom ") + String::num_int64(zoom_) + "%");
     get_node<Label>("Pose")->set_text(
@@ -414,75 +333,6 @@ void CombatSpriteDemo::refresh_figures()
     }
     get_node<RichTextLabel>("Sizes")->set_text(sizes);
     get_node<Control>("BattlefieldScroll/Canvas")->queue_redraw();
-}
-
-void CombatSpriteDemo::layout()
-{
-    if (!ready_)
-        return;
-    const auto size = get_size();
-    const float sidebar = 440, right = size.x - sidebar - 24, left = right - 48;
-    const auto place = [&](const String &name, Rect2 rect)
-    {
-        auto *node = get_node<Control>(name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
-    };
-    place("Title", {24, 16, size.x - 48, 36});
-    place("Subtitle", {24, 58, size.x - 48, 30});
-    for (unsigned i = 0; i < 4; ++i)
-        place(std::array<const char *, 4> {"Minus100", "Minus10", "Plus10", "Plus100"} [i],
-    {24 + i * 100.0f, 98, 92, 38});
-    place("Zoom", {436, 100, 160, 34});
-    place("Pose", {24, 144, left, 28});
-    place("BattlefieldScroll", {24, 182, left, size.y - 460});
-    place("Sizes", {24, size.y - 272, left, 230});
-    place("Status", {24, size.y - 36, size.x - 48, 28});
-    place("AppearanceTitle", {right, 100, sidebar, 34});
-    place("HeadPrevious", {right, 144, 48, 38});
-    place("Head", {right + 62, 144, sidebar - 124, 38});
-    place("HeadNext", {right + sidebar - 48, 144, 48, 38});
-    place("BodyPrevious", {right, 188, 48, 38});
-    place("Body", {right + 62, 188, sidebar - 124, 38});
-    place("BodyNext", {right + sidebar - 48, 188, 48, 38});
-    place("Color1", {right + 124, 234, 148, 28});
-    place("Color2", {right + 284, 234, 148, 28});
-    for (unsigned part = 0; part < 6; ++part)
-    {
-        place(gs("Part" + std::to_string(part)), {right, 266 + part * 38.0f, 120, 34});
-        for (unsigned bank = 0; bank < 2; ++bank)
-            place(gs("Color" + std::to_string(bank) + "_" + std::to_string(part)),
-        {right + 124 + bank * 160.0f, 266 + part * 38.0f, 148, 34});
-    }
-    place("PaletteHint", {right, 500, sidebar, 40});
-    for (unsigned index = 0; index < 16; ++index)
-        place(gs("Palette" + std::to_string(index)),
-    {right + (index % 8) * 55.0f, 546 + (index / 8) * 44.0f, 48, 38});
-    place("AppearanceHelp", {right, 636, sidebar, 46});
-    place("GoliathHelp", {right, 692, sidebar, 70});
-    if (loaded_)
-    {
-        get_node<Control>("BattlefieldScroll/Canvas")
-        ->set_custom_minimum_size(
-            Vector2(battlefield_.geometry.width, battlefield_.geometry.height) * tile_pixels *
-            (zoom_ / 100.0));
-        center_pending_ = true;
-        refresh_figures();
-    }
-}
-
-void CombatSpriteDemo::_notification(int what)
-{
-    if (what == NOTIFICATION_RESIZED && ready_)
-    {
-        layout();
-        queue_redraw();
-    }
-}
-
-void CombatSpriteDemo::_draw()
-{
-    draw_rect(Rect2({}, get_size()), Color("121a20"));
 }
 
 void CombatSpriteDemo::draw_map()
@@ -540,7 +390,7 @@ void CombatSpriteDemo::zoom_by(int amount)
             (Vector2(scroll->get_h_scroll(), scroll->get_v_scroll()) + scroll->get_size() * .5) /
             (tile_pixels * zoom_ / 100.0);
     zoom_ = std::clamp(zoom_ + amount, min_zoom, max_zoom);
-    layout();
+    refresh_figures();
 }
 
 void CombatSpriteDemo::change_part(int part, int direction)

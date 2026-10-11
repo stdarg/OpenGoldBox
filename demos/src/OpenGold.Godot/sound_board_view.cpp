@@ -9,7 +9,6 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
-#include <godot_cpp/classes/style_box_flat.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
@@ -33,51 +32,28 @@ String button_name(int index)
     return "Sound" + String::num_int64(index + 1);
 }
 
-Ref<StyleBoxFlat> box(Color color, Color border, int width = 1)
-{
-    Ref<StyleBoxFlat> result;
-    result.instantiate();
-    result->set_bg_color(color);
-    result->set_border_color(border);
-    result->set_border_width_all(width);
-    result->set_corner_radius_all(6);
-    result->set_content_margin_all(10);
-    return result;
-}
 } // namespace
 
 void SoundBoardView::_bind_methods()
 {
 }
 
-void SoundBoardView::_notification(int what)
-{
-    if (what == NOTIFICATION_RESIZED && ready_)
-    {
-        layout();
-        queue_redraw();
-    }
-}
-
 void SoundBoardView::_ready()
 {
-    ready_ = true;
-    get_window()->set_min_size(Vector2i(960, 760));
+    get_window()->set_min_size(Vector2i(
+        get_theme_constant("sound_board_min_width", "OpenGoldMetrics"),
+        get_theme_constant("sound_board_min_height", "OpenGoldMetrics")));
     get_window()->set_title("OpenGoldBox - Pool of Radiance Sound Board");
     // Node lookups are borrowed from the scene tree; resources use Godot Ref RAII.
     for (int i = 0; i < 21; ++i)
     {
         auto *button = get_node<Button>(button_name(i));
         button->connect("pressed", callable_mp(this, &SoundBoardView::play).bind(i));
-        button->add_theme_stylebox_override("hover", box(Color("30414b"), Color("d7b479")));
-        button->add_theme_stylebox_override("pressed", box(Color("4b4334"), Color("edca8e"), 2));
-        button->add_theme_stylebox_override("focus", box(Color(0, 0, 0, 0), Color("79d6d4"), 2));
     }
     get_node<Button>("Stop")->connect("pressed", callable_mp(this, &SoundBoardView::stop));
     get_node<Button>("Mute")->connect("toggled", callable_mp(this, &SoundBoardView::mute));
     get_node<HSlider>("Volume")->connect("value_changed",
                                          callable_mp(this, &SoundBoardView::volume));
-    layout();
     refresh_buttons();
     volume(get_node<HSlider>("Volume")->get_value());
     if (Engine::get_singleton()->is_editor_hint())
@@ -133,46 +109,14 @@ void SoundBoardView::_exit_tree()
     selected_ = -1;
 }
 
-void SoundBoardView::layout()
-{
-    const auto width = get_size().x, height = get_size().y;
-    const auto place = [&](const String &name, Rect2 rect)
-    {
-        auto *control = get_node<Control>(name);
-        control->set_position(rect.position);
-        control->set_size(rect.size);
-    };
-    place("Eyebrow", Rect2(28, 18, width - 56, 22));
-    place("Title", Rect2(28, 43, width - 56, 44));
-    place("Subtitle", Rect2(28, 93, width - 56, 28));
-    const double gap = 12, tile_width = (width - 56 - gap * 2) / 3,
-                 tile_height = (height - 278 - gap * 6) / 7;
-    for (int i = 0; i < 21; ++i)
-        place(button_name(i), Rect2(28 + (i % 3) * (tile_width + gap),
-                                    140 + (i / 3) * (tile_height + gap), tile_width, tile_height));
-    place("Status", Rect2(28, height - 123, width - 56, 38));
-    place("Stop", Rect2(28, height - 70, 108, 38));
-    place("Mute", Rect2(148, height - 70, 108, 38));
-    place("VolumeLabel", Rect2(width - 372, height - 66, 105, 30));
-    place("Volume", Rect2(width - 262, height - 66, 234, 30));
-    place("Source", Rect2(28, height - 27, width - 56, 20));
-}
-
-void SoundBoardView::_draw()
-{
-    draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
-    draw_line(Vector2(28, 127), Vector2(get_size().x - 28, 127), Color("405058"));
-}
-
 void SoundBoardView::refresh_buttons()
 {
     for (int i = 0; i < 21; ++i)
     {
         auto *button = get_node<Button>(button_name(i));
         button->set_disabled(!loaded_);
-        button->add_theme_stylebox_override("normal",
-                                            box(Color(i == selected_ ? "3b382d" : "1c272e"),
-                                                Color(i == selected_ ? "d7b479" : "405058")));
+        button->set_theme_type_variation(i == selected_ ? "SoundBoardButtonSelected"
+                                         : "SoundBoardButton");
     }
 }
 
