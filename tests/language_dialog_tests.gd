@@ -63,7 +63,7 @@ func run_checks() -> void:
 	choices.select(0)
 	choices.item_selected.emit(0)
 	require(dialog.title == "Language" and dialog.get_node("Title").text == "Choose language" and dialog.get_node("Continue").text == "Continue", "English dialog preview is incorrect")
-	require(current_scene.get_node("Image").texture == null and current_scene.get_node("Text").texture == null, "Splash must not start behind the language dialog")
+	require(current_scene.get_node("ImageFit/Image").texture == null and current_scene.get_node("ImageFit/Image/Text").texture == null, "Splash must not start behind the language dialog")
 	await capture(dialog, "language-dialog")
 	if args.has("--language-close"):
 		current_scene.tree_exiting.connect(func(): print("Language dialog close: scene teardown passed."))
@@ -93,24 +93,24 @@ func run_checks() -> void:
 	require(config.load("res://settings.cfg") == OK and config.get_value("interface", "language") == "es", "Spanish preference was not saved")
 	if args.has("--splash"):
 		require(current_scene.name == "Startup" and not dialog.visible, "Language selection should continue to splash")
-		var background: Texture2D = current_scene.get_node("Image").texture
-		require(current_scene.get_node("Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "Confirmation key skipped the first Spanish splash")
+		var background: Texture2D = current_scene.get_node("ImageFit/Image").texture
+		require(current_scene.get_node("ImageFit/Image/Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "Confirmation key skipped the first Spanish splash")
 		await create_timer(0.65).timeout
 		await capture(root, "spanish-engine-splash")
-		current_scene.get_node("Text").hide()
+		current_scene.get_node("ImageFit/Image/Text").hide()
 		await settle()
 		var pixels: PackedByteArray
 		if not capture_dir.is_empty():
 			await RenderingServer.frame_post_draw
 			pixels = root.get_texture().get_image().get_data()
-		current_scene.get_node("Text").show()
+		current_scene.get_node("ImageFit/Image/Text").show()
 		await key(root, KEY_SPACE)
-		require(current_scene.get_node("Text").texture.resource_path.ends_with("OpenGoldBoxGameLettering.es.png"), "Second Spanish splash lettering is wrong")
-		require(current_scene.get_node("Image").texture == background, "Language flow changed the shared background")
+		require(current_scene.get_node("ImageFit/Image/Text").texture.resource_path.ends_with("OpenGoldBoxGameLettering.es.png"), "Second Spanish splash lettering is wrong")
+		require(current_scene.get_node("ImageFit/Image").texture == background, "Language flow changed the shared background")
 		await create_timer(0.65).timeout
 		await capture(root, "spanish-game-splash")
 		if not capture_dir.is_empty():
-			current_scene.get_node("Text").hide()
+			current_scene.get_node("ImageFit/Image/Text").hide()
 			await settle()
 			await RenderingServer.frame_post_draw
 			require(root.get_texture().get_image().get_data() == pixels, "Spanish splash backgrounds are not pixel-identical")

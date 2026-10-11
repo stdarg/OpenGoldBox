@@ -12,7 +12,7 @@ func settle() -> void:
 func splash_texture() -> Texture2D:
 	if current_scene.name != "Startup":
 		return null
-	return current_scene.get_node("Image").texture
+	return current_scene.get_node("ImageFit/Image").texture
 
 func run_check() -> void:
 	var args := OS.get_cmdline_user_args()
