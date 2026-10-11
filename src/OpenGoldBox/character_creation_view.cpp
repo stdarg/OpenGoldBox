@@ -95,21 +95,6 @@ Color ega(unsigned index)
     return Color(c[0] / 255.f, c[1] / 255.f, c[2] / 255.f);
 }
 
-Ref<StyleBoxFlat> box(Control &control, Color color, Color border, int width = 0)
-{
-    Ref<StyleBoxFlat> result;
-    result.instantiate();
-    result->set_bg_color(color);
-    result->set_border_color(border);
-    result->set_border_width_all(width ? width :
-                                 control.get_theme_constant("swatch_border_width", "OpenGoldMetrics"));
-    result->set_corner_radius_all(
-        control.get_theme_constant("swatch_corner_radius", "OpenGoldMetrics"));
-    result->set_content_margin_all(
-        control.get_theme_constant("swatch_padding", "OpenGoldMetrics"));
-    return result;
-}
-
 std::string selection(const CharacterDraft &d, CreationField f)
 {
     switch (f)
@@ -252,15 +237,7 @@ void CharacterCreationView::_ready()
         button->connect("pressed",
                         presentation::guarded(this, &CharacterCreationView::palette_selected).bind(i));
         button->set_tooltip_text(i18n::text(colors[i]));
-        button->add_theme_stylebox_override("normal", box(*button, ega(i),
-            get_theme_color("swatch_border", "OpenGoldPalette")));
-        button->add_theme_stylebox_override("hover", box(*button, ega(i),
-            get_theme_color("score_active_border", "OpenGoldPalette"),
-            get_theme_constant("swatch_selected_border_width", "OpenGoldMetrics")));
-        button->add_theme_stylebox_override("focus", box(*button,
-            get_theme_color("swatch_focus_bg", "OpenGoldPalette"),
-            get_theme_color("swatch_hover", "OpenGoldPalette"),
-            get_theme_constant("swatch_focus_border_width", "OpenGoldMetrics")));
+        button->call("configure_palette", ega(i));
     }
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -590,16 +567,9 @@ void CharacterCreationView::refresh()
             auto *score_box = &required_node<Button>(*this, gs("Score" + std::to_string(i)));
             score_box->set_text(score ? gs(std::to_string(*score)) : String());
             const bool unmet = rules::unmet_targets(creator_->rules(), d)[ability];
-            score_box->set_theme_type_variation(unmet ? "ScoreUnmet" : "ScoreNormal");
             const int change =
                 score ? *score - d.rolls[d.assignment[ability]].total() : 0;
-            const auto color = get_theme_color(change > 0 ? "score_positive"
-                                               : change < 0 ? "score_negative" : "score_neutral",
-                                               "OpenGoldPalette");
-            for (const auto *state :
-                    {"font_color", "font_hover_color", "font_pressed_color", "font_focus_color"
-                    })
-                score_box->add_theme_color_override(state, color);
+            score_box->call("configure_score", unmet, change);
             std::string modifier;
             if (score && change)
             {
@@ -693,29 +663,7 @@ void CharacterCreationView::refresh()
                 button->set_text(present ? String(selected ? "> " : "") +
                                  i18n::text(colors[a.colors[bank][part]])
                                  : i18n::text("Not present"));
-                button->add_theme_stylebox_override(
-                    "normal",
-                    box(*button, color,
-                        get_theme_color(selected ? "swatch_selected" : "swatch_border",
-                                        "OpenGoldPalette"),
-                        get_theme_constant(selected ? "swatch_selected_border_width"
-                                           : "swatch_border_width", "OpenGoldMetrics")));
-                button->add_theme_stylebox_override("hover", box(*button, color,
-                    get_theme_color("swatch_hover", "OpenGoldPalette"),
-                    get_theme_constant("swatch_hover_border_width", "OpenGoldMetrics")));
-                button->add_theme_stylebox_override("disabled",
-                    box(*button, get_theme_color("swatch_disabled_bg", "OpenGoldPalette"),
-                        get_theme_color("swatch_disabled_border", "OpenGoldPalette")));
-                const double contrast =
-                    (color.r * get_theme_constant("swatch_red_luma", "OpenGoldMetrics") +
-                     color.g * get_theme_constant("swatch_green_luma", "OpenGoldMetrics") +
-                     color.b * get_theme_constant("swatch_blue_luma", "OpenGoldMetrics"));
-                const auto foreground = contrast >
-                                        get_theme_constant("swatch_contrast_threshold", "OpenGoldMetrics")
-                                        ? get_theme_color("swatch_dark_text", "OpenGoldPalette")
-                                        : get_theme_color("swatch_light_text", "OpenGoldPalette");
-                button->add_theme_color_override("font_color", foreground);
-                button->add_theme_color_override("font_hover_color", foreground);
+                button->call("configure_part", color, selected);
             }
     }
     if (step == CreationStep::sheet)

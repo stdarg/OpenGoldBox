@@ -6,7 +6,7 @@ The game project uses Godot's built-in Theme resource at `src/OpenGoldBox/godot/
 
 | Change | Edit |
 | --- | --- |
-| Control location, width, height, anchors, or visibility | The corresponding `src/OpenGoldBox/godot/scenes/*.tscn` scene. Some current screens also calculate geometry in their C++ view's `layout()` method; those positions still require code changes until that screen's geometry is moved into its scene. |
+| Control location, width, height, anchors, or visibility | The corresponding `src/OpenGoldBox/godot/scenes/*.tscn` scene. Its Godot layout script or animation handles conditional placement. |
 | Shared colors, font sizes, spacing, borders, padding, and control states | `src/OpenGoldBox/godot/themes/opengold.tres`. |
 | A player preference such as combat zoom | Application settings, not the theme. |
 | Portrait and sprite palette colors | Art/content data, not the UI theme. |
@@ -23,12 +23,12 @@ The `OpenGoldPalette/colors/*` entries supply named colors for C++ drawing code 
 
 The separate review project at `demos/godot` has its own `themes/opengold.tres`, including a few variations for review-only scenes. Keep shared entries in that copy aligned with the game theme when changing them. The playable game's theme is the copy under `src/OpenGoldBox/godot`.
 
-Some character appearance swatches must display a color chosen from the game's EGA art palette. Their fill is content data; their borders, disabled appearance, and text contrast colors come from the theme. Temporary animation opacity, such as the startup fade, remains controlled by runtime behavior.
+Some character appearance swatches must display a color chosen from the game's EGA art palette. Their fill is content data; `scenes/creation_swatch.gd` reads border, disabled, padding, and text contrast settings from the theme. `scenes/creation_score.gd` reads score colors from the theme. Edit those theme entries to change the styling without recompiling. Temporary animation opacity, such as the startup fade, remains controlled by runtime behavior.
 
 ## Editing and checking a change
 
 1. Open `src/OpenGoldBox/godot/project.godot` in Godot and edit `themes/opengold.tres`, or edit the text resource directly. Change one theme item or variation at a time.
-2. For position and size, edit the control's `.tscn` scene. Inspect the view's `layout()` method if a scene value seems to be overwritten during play.
+2. For position and size, edit the control's `.tscn` scene. Inspect its attached Godot layout script or animation if a scene value changes during play. Custom drawing, such as combat tiles and the exploration map, still calculates runtime positions in C++ from the scene bounds and theme metrics.
 3. Save, restart the game or demo scene, and check normal, hover, pressed, disabled, selected, and keyboard focus states where relevant. Check long Spanish labels as well as English.
 4. Run the project's relevant Godot UI checks from the repository root, for example `ctest --test-dir build-game --output-on-failure -R '^opengold_godot_(ui_audit|level_up_lab|screenshots|creation_character|combat_demo_scene|startup)$'`. Set `OPENGOLD_GAME_DIR=/path/to/POOLRAD` for checks that need the original assets. Use `ctest --test-dir build-game -N` to see the exact configured names. The full UI audit is described in `docs/UI-AUDIT.md` in the repository.
 

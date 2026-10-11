@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/creation_layout.tres" id="1_creation_layout"]
 [ext_resource type="Script" path="res://scenes/creation_column_layout.gd" id="2_column_layout"]
 [ext_resource type="Script" path="res://scenes/window_layout.gd" id="3_window_layout"]
+[ext_resource type="Script" path="res://scenes/creation_swatch.gd" id="4_creation_swatch"]
+[ext_resource type="Script" path="res://scenes/creation_score.gd" id="5_creation_score"]
 
 [node name="CharacterCreation" type="CharacterCreationView"]
 layout_mode = 3
@@ -468,6 +470,7 @@ bbcode_enabled = true
 scroll_active = false
 
 [node name="Score0" type="Button" parent="."]
+script = ExtResource("5_creation_score")
 offset_left = 362
 offset_right = 426
 offset_top = 356
@@ -497,6 +500,7 @@ bbcode_enabled = true
 scroll_active = false
 
 [node name="Score1" type="Button" parent="."]
+script = ExtResource("5_creation_score")
 offset_left = 362
 offset_right = 426
 offset_top = 403
@@ -526,6 +530,7 @@ bbcode_enabled = true
 scroll_active = false
 
 [node name="Score2" type="Button" parent="."]
+script = ExtResource("5_creation_score")
 offset_left = 362
 offset_right = 426
 offset_top = 450
@@ -555,6 +560,7 @@ bbcode_enabled = true
 scroll_active = false
 
 [node name="Score3" type="Button" parent="."]
+script = ExtResource("5_creation_score")
 offset_left = 362
 offset_right = 426
 offset_top = 497
@@ -584,6 +590,7 @@ bbcode_enabled = true
 scroll_active = false
 
 [node name="Score4" type="Button" parent="."]
+script = ExtResource("5_creation_score")
 offset_left = 362
 offset_right = 426
 offset_top = 544
@@ -613,6 +620,7 @@ bbcode_enabled = true
 scroll_active = false
 
 [node name="Score5" type="Button" parent="."]
+script = ExtResource("5_creation_score")
 offset_left = 362
 offset_right = 426
 offset_top = 591
@@ -629,6 +637,7 @@ metadata/layout_reference = Rect2(238, 412, 105, 28)
 text = "Weapon"
 
 [node name="Color0_0" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 348
 offset_right = -27
@@ -638,6 +647,7 @@ metadata/layout_reference = Rect2(348, 406, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_0" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
 offset_left = -19
@@ -656,6 +666,7 @@ metadata/layout_reference = Rect2(238, 447, 105, 28)
 text = "Body"
 
 [node name="Color0_1" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 348
 offset_right = -27
@@ -665,6 +676,7 @@ metadata/layout_reference = Rect2(348, 441, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_1" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
 offset_left = -19
@@ -683,6 +695,7 @@ metadata/layout_reference = Rect2(238, 482, 105, 28)
 text = "Hair / Face"
 
 [node name="Color0_2" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 348
 offset_right = -27
@@ -692,6 +705,7 @@ metadata/layout_reference = Rect2(348, 476, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_2" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
 offset_left = -19
@@ -710,6 +724,7 @@ metadata/layout_reference = Rect2(238, 517, 105, 28)
 text = "Shield"
 
 [node name="Color0_3" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 348
 offset_right = -27
@@ -719,6 +734,7 @@ metadata/layout_reference = Rect2(348, 511, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_3" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
 offset_left = -19
@@ -737,6 +753,7 @@ metadata/layout_reference = Rect2(238, 552, 105, 28)
 text = "Arms"
 
 [node name="Color0_4" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 348
 offset_right = -27
@@ -746,6 +763,7 @@ metadata/layout_reference = Rect2(348, 546, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_4" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
 offset_left = -19
@@ -764,6 +782,7 @@ metadata/layout_reference = Rect2(238, 587, 105, 28)
 text = "Legs"
 
 [node name="Color0_5" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 348
 offset_right = -27
@@ -773,6 +792,7 @@ metadata/layout_reference = Rect2(348, 581, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_5" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
 offset_left = -19
@@ -783,6 +803,7 @@ metadata/layout_reference = Rect2(941, 581, 585, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Palette0" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_right = 0.125
 anchor_top = 1
 anchor_bottom = 1
@@ -794,6 +815,7 @@ metadata/layout_reference = Rect2(238, 928, 156.75, 25)
 
 
 [node name="Palette1" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.125
 anchor_right = 0.25
 anchor_top = 1
@@ -806,6 +828,7 @@ metadata/layout_reference = Rect2(400.75, 928, 156.75, 25)
 
 
 [node name="Palette2" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.25
 anchor_right = 0.375
 anchor_top = 1
@@ -818,6 +841,7 @@ metadata/layout_reference = Rect2(563.5, 928, 156.75, 25)
 
 
 [node name="Palette3" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.375
 anchor_right = 0.5
 anchor_top = 1
@@ -830,6 +854,7 @@ metadata/layout_reference = Rect2(726.25, 928, 156.75, 25)
 
 
 [node name="Palette4" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 0.625
 anchor_top = 1
@@ -842,6 +867,7 @@ metadata/layout_reference = Rect2(889, 928, 156.75, 25)
 
 
 [node name="Palette5" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.625
 anchor_right = 0.75
 anchor_top = 1
@@ -854,6 +880,7 @@ metadata/layout_reference = Rect2(1051.75, 928, 156.75, 25)
 
 
 [node name="Palette6" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.75
 anchor_right = 0.875
 anchor_top = 1
@@ -866,6 +893,7 @@ metadata/layout_reference = Rect2(1214.5, 928, 156.75, 25)
 
 
 [node name="Palette7" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.875
 anchor_right = 1
 anchor_top = 1
@@ -878,6 +906,7 @@ metadata/layout_reference = Rect2(1377.25, 928, 156.75, 25)
 
 
 [node name="Palette8" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_right = 0.125
 anchor_top = 1
 anchor_bottom = 1
@@ -889,6 +918,7 @@ metadata/layout_reference = Rect2(238, 958, 156.75, 25)
 
 
 [node name="Palette9" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.125
 anchor_right = 0.25
 anchor_top = 1
@@ -901,6 +931,7 @@ metadata/layout_reference = Rect2(400.75, 958, 156.75, 25)
 
 
 [node name="Palette10" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.25
 anchor_right = 0.375
 anchor_top = 1
@@ -913,6 +944,7 @@ metadata/layout_reference = Rect2(563.5, 958, 156.75, 25)
 
 
 [node name="Palette11" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.375
 anchor_right = 0.5
 anchor_top = 1
@@ -925,6 +957,7 @@ metadata/layout_reference = Rect2(726.25, 958, 156.75, 25)
 
 
 [node name="Palette12" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 0.625
 anchor_top = 1
@@ -937,6 +970,7 @@ metadata/layout_reference = Rect2(889, 958, 156.75, 25)
 
 
 [node name="Palette13" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.625
 anchor_right = 0.75
 anchor_top = 1
@@ -949,6 +983,7 @@ metadata/layout_reference = Rect2(1051.75, 958, 156.75, 25)
 
 
 [node name="Palette14" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.75
 anchor_right = 0.875
 anchor_top = 1
@@ -961,6 +996,7 @@ metadata/layout_reference = Rect2(1214.5, 958, 156.75, 25)
 
 
 [node name="Palette15" type="Button" parent="."]
+script = ExtResource("4_creation_swatch")
 anchor_left = 0.875
 anchor_right = 1
 anchor_top = 1
