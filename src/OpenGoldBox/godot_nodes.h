@@ -134,6 +134,16 @@ inline void size_scene_window(godot::Window &window, const godot::Vector2i &calc
     return scene;
 }
 
+template <class T> [[nodiscard]] NodeOwner<T> instantiate_control(const char *path)
+{
+    auto scene = instantiate_scene(path);
+    auto *control = godot::Object::cast_to<T>(scene.get());
+    if (!control)
+        throw std::runtime_error(std::string("Invalid control scene: ") + path);
+    scene.release();
+    return NodeOwner<T>(control);
+}
+
 // Dialog scenes own their controls and rectangles. Existing native window
 // classes attach those authored children before connecting their behavior.
 [[nodiscard]] inline NodeOwner<> dialog_layout_scene(const godot::String &group)

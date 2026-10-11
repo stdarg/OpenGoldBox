@@ -88,22 +88,14 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                 Object::cast_to<CheckBox>(section->get_node_or_null(training_string(option.id)));
             if (!box)
             {
-                auto owned = make_node<CheckBox>();
+                auto owned = instantiate_control<CheckBox>(
+                    "res://scenes/control_templates/spell_choice.tscn");
                 owned->set_name(training_string(option.id));
                 box = attach_child(*section, std::move(owned));
                 if (level_up_theme)
-                {
                     box->set_theme_type_variation("LevelUpChoice");
-                    box->set_custom_minimum_size(
-                        Vector2(0, box->get_theme_constant("row_height")));
-                }
                 else
-                {
                     style_choice(*box);
-                    box->set_custom_minimum_size(
-                        Vector2(0, box->get_theme_constant("row_height")));
-                }
-                box->set_focus_mode(Control::FOCUS_ALL);
                 box->connect("toggled",
                              toggled.bind(training_string(group.id), training_string(option.id)));
             }

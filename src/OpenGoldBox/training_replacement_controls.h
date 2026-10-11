@@ -79,11 +79,9 @@ void refresh_training_replacement(godot::Window &w,
         auto *box = Object::cast_to<CheckBox>(rows->get_node_or_null(name));
         if (!box)
         {
-            auto owned = make_node<CheckBox>();
+            auto owned = instantiate_control<CheckBox>(
+                "res://scenes/control_templates/training_replacement.tscn");
             owned->set_name(name);
-            owned->set_custom_minimum_size(Vector2(0, rows->get_theme_constant(
-                    "training_replacement_height", "OpenGoldMetrics")));
-            owned->set_focus_mode(Control::FOCUS_ALL);
             style_choice(*owned);
             box = attach_child(*rows, std::move(owned));
             box->connect("toggled", toggled.bind(name));

@@ -25,6 +25,17 @@ func _initialize() -> void:
                 return
         layout.free()
 
+    for template in ["cantrip_choice", "training_dropdown", "training_checkbox", "training_replacement", "spell_choice"]:
+        var scene: PackedScene = load("res://scenes/control_templates/%s.tscn" % template)
+        if scene == null:
+            _fail("Missing generated control template: " + template)
+            return
+        var control: Control = scene.instantiate()
+        if control.custom_minimum_size.y <= 0 or control.focus_mode != Control.FOCUS_ALL:
+            _fail("Incomplete generated control template: " + template)
+            return
+        control.free()
+
     var defeat: Window = load("res://scenes/dialog_layouts/Defeat.tscn").instantiate()
     if not defeat.get_node("Reload") is Button or not defeat.get_node("Exit") is Button:
         _fail("Defeat controls are missing")
