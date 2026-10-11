@@ -82,7 +82,7 @@ are prepared in an owned candidate before replacing live campaign state.
 
 ## Persistence and boundaries
 
-- **OGCOMBAT 39** checkpoints contain source scope,
+- **OGCOMBAT 40** checkpoints contain source scope,
   elapsed time and each actor's effect collection. The checkpoint byte limit is
   4 MiB; each creature supports at most 128 simultaneous applications. A full
   collection offers no further Blindness command.
@@ -93,7 +93,7 @@ are prepared in an owned candidate before replacing live campaign state.
   [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation):
   a character whose rest an encounter interrupts starts awake and Prone, and
   Prone does not outlast combat.
-- **OPENGOLD-CAMPAIGN 21** stores sub-minute time, precise rest-completion offsets
+- **OPENGOLD-CAMPAIGN 23** stores sub-minute time, precise rest-completion offsets
   and the next encounter scope. Older formats and other rules identities reject;
   see the [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
 - Campaign saves and PC42 profiles store acquired feature/feat provenance and

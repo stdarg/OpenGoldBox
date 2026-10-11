@@ -8,21 +8,21 @@ namespace opengold::srd5::detail
 
 void validate_battlefield(const rules::Battlefield &board);
 
-// Endpoints are cell centers. Touching either wall at a diagonal corner blocks
-// sight. Callers supply a validated battlefield; actors do not obstruct sight.
-[[nodiscard]] bool has_line_of_sight(const rules::Battlefield &board, rules::Cell from,
-                                     rules::Cell to);
+using rules::has_line_of_sight;
 
 struct Occupant
 {
     rules::Cell cell;
     bool hostile{}, incapacitated{};
+    // At 0 Hit Points. As in the original game, its square can be stopped on.
+    bool downed{};
 };
 
 class ReachableCells
 {
   public:
-    // The origin and occupied spaces are transit cells, never destinations.
+    // The origin and spaces held by a creature not downed are transit cells,
+    // never destinations.
     [[nodiscard]] std::optional<int> cost_to(rules::Cell destination) const;
     // Excludes the origin, includes the destination. Empty means no legal move.
     [[nodiscard]] std::vector<rules::Cell> path_to(rules::Cell destination) const;
@@ -57,6 +57,7 @@ class MovementGrid
     rules::Cell origin_;
     bool crawling_{};
     std::vector<Occupancy> occupancy_;
+    std::vector<bool> held_; // A creature not downed stands there.
     [[nodiscard]] int index(rules::Cell cell) const;
 };
 

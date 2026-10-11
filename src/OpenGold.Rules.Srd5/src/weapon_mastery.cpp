@@ -13,28 +13,29 @@ void require(bool value)
         throw std::runtime_error("Invalid Weapon Mastery choices or provenance");
 }
 
-unsigned count(std::string_view klass, unsigned acquired)
+unsigned count(CharacterClass klass, unsigned acquired)
 {
     if (acquired == 4)
-        return klass == "fighter" || klass == "barbarian" ? 1 : 0;
+        return klass == CharacterClass::fighter || klass == CharacterClass::barbarian ? 1 : 0;
     if (acquired != 1)
         return 0;
-    return klass == "fighter" ? 3
-           : klass == "barbarian" || klass == "paladin" || klass == "ranger" || klass == "rogue"
+    return klass == CharacterClass::fighter ? 3
+           : klass == CharacterClass::barbarian || klass == CharacterClass::paladin ||
+           klass == CharacterClass::ranger || klass == CharacterClass::rogue
            ? 2
            : 0;
 }
 
-std::string source(std::string_view klass, unsigned acquired)
+std::string source(CharacterClass klass, unsigned acquired)
 {
-    return "class:" + std::string(klass) + ":weapon_mastery" +
+    return "class:" + std::string(class_id(klass)) + ":weapon_mastery" +
            (acquired == 1 ? "" : ":" + std::to_string(acquired));
 }
 
-bool eligible(std::string_view klass, const Weapon &item)
+bool eligible(CharacterClass klass, const Weapon &item)
 {
     return count(klass, 1) && item.mastery != Mastery::none && weapon_proficient(klass, item) &&
-           (klass != "barbarian" || !item.ranged);
+           (klass != CharacterClass::barbarian || !item.ranged);
 }
 } // namespace
 
@@ -68,7 +69,7 @@ bool is_mastery_grant(const rules::FeatureGrant &grant)
     return grant.id.starts_with("mastery:");
 }
 
-rules::TrainingChoiceGroup mastery_options(std::string_view klass, unsigned acquired,
+rules::TrainingChoiceGroup mastery_options(CharacterClass klass, unsigned acquired,
         std::span<const rules::FeatureGrant> grants)
 {
     rules::TrainingChoiceGroup group
@@ -92,7 +93,7 @@ rules::TrainingChoiceGroup mastery_options(std::string_view klass, unsigned acqu
 }
 
 rules::TrainingChoices mastery_choices(std::span<const rules::FeatureGrant> grants,
-                                       std::string_view klass, unsigned level)
+                                       CharacterClass klass, unsigned level)
 {
     require(level >= 1 && level <= 20);
     rules::TrainingChoices result;
@@ -116,15 +117,17 @@ rules::TrainingChoices mastery_choices(std::span<const rules::FeatureGrant> gran
     return result;
 }
 
-unsigned mastery_replacements(std::string_view klass)
+unsigned mastery_replacements(CharacterClass klass)
 {
-    return klass == "fighter" || klass == "barbarian"                    ? 1
-           : klass == "rogue" || klass == "paladin" || klass == "ranger" ? 2
+    return klass == CharacterClass::fighter || klass == CharacterClass::barbarian ? 1
+           : klass == CharacterClass::rogue || klass == CharacterClass::paladin ||
+           klass == CharacterClass::ranger
+           ? 2
            : 0;
 }
 
 std::vector<rules::FeatureGrant> replace_masteries(std::span<const rules::FeatureGrant> grants,
-        std::string_view klass, unsigned level,
+        CharacterClass klass, unsigned level,
         std::span<const std::string> selected)
 {
     require(level <= 4);

@@ -46,8 +46,24 @@ func run_checks() -> void:
     require(scroll.position.y == 16, "Battlefield begins at the top of the screen")
     require(is_equal_approx(scroll.size.y, (combat.size.y - 180) * 0.85),
         "Battlefield is 15 percent shorter to make room for the combat log")
-    require(combat.get_node("Log").position.y > scroll.position.y + scroll.size.y,
+    require(combat.get_node("LogStack/Log").global_position.y > scroll.position.y + scroll.size.y,
         "Combat log occupies the space below the battlefield")
+    # Fixed geometry from the pre-migration combat layout at each supported size.
+    for baseline in [
+        [Vector2i(1120, 800), Vector2(690, 527), 559.0, Vector2(603, 149)],
+        [Vector2i(1600, 1000), Vector2(1170, 697), 729.0, Vector2(773, 179)],
+        [Vector2i(1920, 1080), Vector2(1490, 765), 797.0, Vector2(841, 191)],
+    ]:
+        root.size = baseline[0]
+        await settle()
+        var baseline_log: Control = combat.get_node("LogStack")
+        require(scroll.position.is_equal_approx(Vector2(24, 16))
+            and scroll.size.is_equal_approx(baseline[1]), "Battlefield keeps its established rectangle")
+        require(is_equal_approx(combat.get_node("Flee").position.y, baseline[2]),
+            "Combat actions keep their established row")
+        require(baseline_log.position.is_equal_approx(Vector2(24, baseline[3].x))
+            and baseline_log.size.is_equal_approx(Vector2(baseline[1].x, baseline[3].y)),
+            "Combat log keeps its established rectangle")
     require(not combat.has_node("Title") and not combat.has_node("Subtitle"),
         "Combat header and instruction text are removed from the shared scene")
     require(combat.get_node("ZoomLevel").text == "100%", "Zoom readout shows the initial level")
@@ -127,7 +143,7 @@ func run_checks() -> void:
     await settle()
     require(scroll.scroll_horizontal <= canvas.size.x and scroll.scroll_vertical <= canvas.size.y, "Scrolling must clamp to battlefield bounds")
     var before := Vector2(scroll.scroll_horizontal, scroll.scroll_vertical)
-    mouse_button(combat.get_node("Turn").global_position, MOUSE_BUTTON_WHEEL_UP, true)
+    mouse_button(combat.get_node("StatusStack/Turn").global_position, MOUSE_BUTTON_WHEEL_UP, true)
     require(Vector2(scroll.scroll_horizontal, scroll.scroll_vertical) == before, "Wheel outside battlefield must not pan it")
     combat.get_node("ZoomOut100").pressed.emit()
     await settle()
@@ -200,7 +216,7 @@ func run_checks() -> void:
     base_tile = maxf(alternate_scroll.size.x / 12.0, alternate_scroll.size.y / 9.0)
     require(alternate_canvas.custom_minimum_size.is_equal_approx(Vector2(12, 9) * base_tile * 3),
         "Combat reads 300% from settings.cfg")
-    var log_view: RichTextLabel = current_scene.get_node("Log")
+    var log_view: RichTextLabel = current_scene.get_node("LogStack/Log")
     log_view.size.y = 60
     current_scene.get_node("Move").pressed.emit()
     await settle()

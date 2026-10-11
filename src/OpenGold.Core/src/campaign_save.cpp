@@ -1,9 +1,12 @@
 #include "opengold/campaign_save.h"
 #include "opengold/save_file.h"
 #include <algorithm>
+#include <charconv>
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <system_error>
+#include <utility>
 
 namespace opengold
 {
@@ -12,7 +15,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 21;
+constexpr unsigned campaign_format = 25;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -31,22 +34,40 @@ std::uint64_t fingerprint(std::string_view data)
     }
     return n;
 }
+
+// The containers the codec visits, const or not: the writer sees const values.
+// Arrays of a fixed size are written element by element, in order. An
+// AbilityArray is one: its six values go out from Strength to Charisma.
+template <class T> constexpr bool is_fixed_array = false;
+template <class T, std::size_t N> constexpr bool is_fixed_array<std::array<T, N>> = true;
+template <class T> constexpr bool is_fixed_array<rules::AbilityArray<T>> = true;
+template <class T> constexpr bool is_std_vector = false;
+template <class T> constexpr bool is_std_vector<std::vector<T>> = true;
+template <class T> constexpr bool is_std_map = false;
+template <class K, class V> constexpr bool is_std_map<std::map<K, V>> = true;
+template <class T> constexpr bool is_std_optional = false;
+template <class T> constexpr bool is_std_optional<std::optional<T>> = true;
 } // namespace
 
 // Explicit field encoding: no pointers, native object layouts or derived sheets.
-struct SaveCodec
+// One function per type serves both directions, which keeps the two formats in
+// step. The writer visits const values, so saving copies nothing it encodes
+// (Effective C++ Item 3).
+template <bool Reading> struct SaveCodec
 {
-    bool reading{};
+    static constexpr bool reading = Reading;
+    // What a visit receives: a value to fill when reading, one to encode when writing.
+    template <class T> using Visited = std::conditional_t<reading, T &, const T &>;
     std::stringstream stream;
     const rules::CharacterRules *creation{};
     const rules::RulesModule *module {};
 
-    explicit SaveCodec(std::string_view bytes) : reading(true), stream(std::string(bytes))
+    explicit SaveCodec(std::string_view bytes) requires reading : stream(std::string(bytes))
     {
         stream.imbue(std::locale::classic());
     }
 
-    SaveCodec()
+    SaveCodec() requires(!reading)
     {
         stream.imbue(std::locale::classic());
     }
@@ -60,7 +81,7 @@ struct SaveCodec
     requires std::is_integral_v<T>
     void field(T &value)
     {
-        if (reading)
+        if constexpr (reading)
         {
             if constexpr(std::is_signed_v<T>)
             {
@@ -77,9 +98,10 @@ struct SaveCodec
                 require(!token.empty() &&
                         token.find_first_not_of("0123456789") == std::string::npos,
                         "Invalid save integer");
-                std::size_t used{};
-                auto n = std::stoull(token, &used);
-                require(used == token.size() &&
+                std::uint64_t n{};
+                const auto end = token.data() + token.size();
+                const auto [stop, error] = std::from_chars(token.data(), end, n);
+                require(stop == end && error == std::errc{} &&
                         n <= static_cast<std::uint64_t>(std::numeric_limits<T>::max()),
                         "Save integer out of range");
                 value = static_cast<T>(n);
@@ -89,35 +111,39 @@ struct SaveCodec
             stream << static_cast<std::int64_t>(value) << ' ';
         else
             stream << static_cast<std::uint64_t>(value) << ' ';
-        require(bool(stream), "Truncated or invalid campaign save");
+        require(static_cast<bool>(stream), "Truncated or invalid campaign save");
     }
 
-    void field(std::string &value)
+    void field(Visited<std::string> value)
     {
-        if (reading)
+        if constexpr (reading)
             stream >> std::quoted(value);
         else
             stream << std::quoted(value) << ' ';
-        require(bool(stream) && value.size() <= limit, "Invalid save string");
+        require(static_cast<bool>(stream) && value.size() <= limit, "Invalid save string");
     }
 
-    template <class T, std::size_t N> void field(std::array<T, N> &values)
+    template <class Array>
+    requires is_fixed_array<std::remove_const_t<Array>>
+    void field(Array &values)
     {
         for (auto &v : values)
             field(v);
     }
 
-    template <class T> void field(std::vector<T> &values)
+    template <class Vector>
+    requires is_std_vector<std::remove_const_t<Vector>>
+    void field(Vector &values)
     {
         std::uint64_t count = values.size();
         field(count);
         require(count <= 65536, "Save collection too large");
-        if (reading)
+        if constexpr (reading)
         {
             values.clear();
             for (std::uint64_t i = 0; i < count; ++i)
             {
-                T v{};
+                typename Vector::value_type v{};
                 field(v);
                 values.push_back(std::move(v));
             }
@@ -127,35 +153,36 @@ struct SaveCodec
                 field(v);
     }
 
-    template <class K, class V> void field(std::map<K, V> &values)
+    template <class Map>
+    requires is_std_map<std::remove_const_t<Map>>
+    void field(Map &values)
     {
         std::uint64_t count = values.size();
         field(count);
         require(count <= 65536, "Save map too large");
-        if (reading)
+        if constexpr (reading)
         {
             values.clear();
             for (std::uint64_t i = 0; i < count; ++i)
             {
-                K k{};
-                V v{};
+                typename Map::key_type k{};
+                typename Map::mapped_type v{};
                 fields(k, v);
                 require(values.emplace(k, std::move(v)).second, "Duplicate save map key");
             }
         }
         else
-            for (auto &[key, v] : values)
-            {
-                auto k = key;
-                fields(k, v);
-            }
+            for (const auto &[key, v] : values)
+                fields(key, v);
     }
 
-    template <class T> void field(std::optional<T> &value)
+    template <class Optional>
+    requires is_std_optional<std::remove_const_t<Optional>>
+    void field(Optional &value)
     {
         bool present = value.has_value();
         field(present);
-        if (reading)
+        if constexpr (reading)
         {
             if (present)
                 value.emplace();
@@ -166,63 +193,68 @@ struct SaveCodec
             field(*value);
     }
 
-    void field(rules::Identity &v)
+    void field(Visited<PartySlot> v)
+    {
+        field(v.index);
+    }
+
+    void field(Visited<rules::Identity> v)
     {
         fields(v.module, v.version, v.content);
     }
 
-    void field(rules::AbilityRoll &v)
+    void field(Visited<rules::AbilityRoll> v)
     {
         fields(v.dice, v.discarded);
     }
 
-    void field(rules::FeatureGrant &v)
+    void field(Visited<rules::FeatureGrant> v)
     {
         fields(v.id, v.source_id, v.level, v.choices);
     }
 
-    void field(rules::AdvancementChoice &v)
+    void field(Visited<rules::AdvancementChoice> v)
     {
         fields(v.feat, v.abilities, v.spells, v.training, v.spell_learning, v.fighting_style);
     }
 
-    void field(rules::CharacterDraft &v)
+    void field(Visited<rules::CharacterDraft> v)
     {
         fields(v.race, v.gender, v.character_class, v.alignment, v.background, v.name,
                v.target_classes, v.rolls, v.assignment, v.adjustment, v.rolled, v.training,
                v.cantrips, v.spells);
     }
 
-    void field(rules::SpellChoices &v)
+    void field(Visited<rules::SpellChoices> v)
     {
         fields(v.learning, v.prepared, v.replace_cantrip, v.replacement);
     }
 
-    void field(SpellChoiceEdit &v)
+    void field(Visited<SpellChoiceEdit> v)
     {
         fields(v.level, v.rest_session, v.choices);
     }
 
-    void field(TrainingChoiceEdit &v)
+    void field(Visited<TrainingChoiceEdit> v)
     {
         fields(v.level, v.rest_session, v.selections);
     }
 
-    void field(por::CharacterAppearance &v)
+    void field(Visited<por::CharacterAppearance> v)
     {
         fields(v.portrait_head, v.portrait_body, v.combat_head, v.combat_body, v.tall, v.colors,
                v.portrait);
     }
 
-    void field(InventoryItem &v)
+    void field(Visited<InventoryItem> v)
     {
         fields(v.id, v.definition_id, v.name, v.quantity, v.original_type);
     }
 
-    void field(Inventory &v)
+    void field(Visited<Inventory> v)
     {
         fields(v.next_id_, v.items_);
-        if (reading)
+        if constexpr (reading)
         {
             std::set<std::uint64_t> ids;
             require(v.next_id_ != 0, "Invalid next inventory ID");
@@ -233,59 +265,59 @@ struct SaveCodec
         }
     }
 
-    void field(por::DamageDice &v)
+    void field(Visited<por::DamageDice> v)
     {
         fields(v.count, v.sides, v.modifier);
     }
 
-    void field(por::ItemRecord &v)
+    void field(Visited<por::ItemRecord> v)
     {
         fields(v.raw, v.stored_name, v.type, v.name_components, v.magic_bonus, v.save_bonus,
                v.readied_raw, v.revealed_components, v.cursed_raw, v.weight, v.value, v.stack_size,
                v.effect_codes);
     }
 
-    void field(por::ItemTemplate &v)
+    void field(Visited<por::ItemTemplate> v)
     {
         fields(v.raw, v.worn_location, v.hands, v.rate_of_fire, v.protection_raw, v.damage_type,
                v.melee_flag, v.large_damage, v.small_medium_damage, v.range, v.class_restrictions,
                v.ammunition_type);
     }
 
-    void field(por::EquipmentBonuses &v)
+    void field(Visited<por::EquipmentBonuses> v)
     {
         fields(v.weapon_to_hit, v.weapon_damage, v.armor_base_ac, v.ac_adjustment, v.save_bonus);
     }
 
-    void field(por::Equipment &v)
+    void field(Visited<por::Equipment> v)
     {
         fields(v.index, v.stored, v.base, v.bonuses);
     }
 
-    void field(RestTicket &v)
+    void field(Visited<RestTicket> v)
     {
         fields(v.session, v.revision);
     }
 
-    void field(ShortRestSession &v)
+    void field(Visited<ShortRestSession> v)
     {
         fields(v.ticket, v.completed_minutes, v.completed_subminute_milliseconds, v.members);
     }
 
-    void rest(PartyState &v)
+    void rest(Visited<PartyState> v)
     {
         fields(v.next_rest_session, v.short_rest, v.spell_rest, v.training_rest);
     }
 
-    void field(rules::VitalState &v)
+    void field(Visited<rules::VitalState> v)
     {
         fields(v.hit_points, v.dead, v.resources, v.description);
     }
 
-    void member(PartyMember &v)
+    void member(Visited<PartyMember> v)
     {
         fields(v.id, v.npc_source, v.vitals, v.wealth, v.equipped, v.morale, v.experience,
-               v.last_rest_minutes, v.item_sources, v.creation_source);
+               v.last_rest_minutes, v.item_sources, v.creation_source, v.quick);
         // Grants are derived by replaying creation and advancement. Storing them
         // lets a load detect rules that would rebuild a different character.
         auto grants = v.character.sheet().grants;
@@ -294,11 +326,12 @@ struct SaveCodec
                 "Saved grants disagree with creation or advancement choices");
     }
 
-    void field(PartyState &v)
+    void field(Visited<PartyState> v)
     {
-        fields(v.slots, v.next_id, v.selected, v.time_minutes, v.random_state, v.claimed_rewards);
+        fields(v.slots, v.next_id, v.selected_slot, v.leader, v.quick_magic, v.time_minutes,
+               v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
-        if (!reading)
+        if constexpr (!reading)
             for (const auto &member : v.roster)
                 if (member.last_rest_subminute_milliseconds)
                     rest_offsets.emplace(member.id, member.last_rest_subminute_milliseconds);
@@ -306,7 +339,7 @@ struct SaveCodec
         std::uint64_t count = v.roster.size();
         field(count);
         require(count <= 128, "Too many saved party members");
-        if (reading)
+        if constexpr (reading)
         {
             v.roster.clear();
             for (std::uint64_t i = 0; i < count; ++i)
@@ -316,19 +349,18 @@ struct SaveCodec
                 int level{};
                 fields(draft, appearance, level);
                 require(level >= 1 && level <= 4, "Unsupported saved character level");
-                Character character(*creation, std::move(draft), appearance);
-                rules::VitalState scratch;
                 std::vector<rules::AdvancementChoice> history;
                 std::vector<SpellChoiceEdit> edits;
                 std::vector<TrainingChoiceEdit> training;
                 fields(history, edits, training);
-                require(history.size() == level - 1,
+                require(std::cmp_equal(history.size(), level - 1),
                         "Saved advancement history disagrees with level");
                 unsigned prior_level = 1;
                 std::uint64_t prior_session = 0;
                 for (const auto &edit : training)
                 {
-                    require(edit.level >= prior_level && edit.level <= unsigned(level) &&
+                    require(edit.level >= prior_level &&
+                            edit.level <= static_cast<unsigned>(level) &&
                             edit.rest_session > prior_session,
                             "Invalid training replacement history");
                     prior_level = edit.level;
@@ -338,20 +370,24 @@ struct SaveCodec
                 std::uint64_t rest = 0;
                 for (const auto &edit : edits)
                 {
-                    require(edit.level >= previous && edit.level <= unsigned(level),
+                    require(edit.level >= previous && edit.level <= static_cast<unsigned>(level),
                             "Invalid spell-choice history level");
                     require(edit.rest_session > rest, "Repeated spell-choice rest");
                     previous = edit.level;
                     rest = edit.rest_session;
                 }
+                // Built once the history is known to be sound: evaluating the
+                // character is the expensive part (Effective C++ Item 26).
+                Character character(*creation, std::move(draft), appearance);
+                rules::VitalState scratch;
                 auto replay = [&]
                 {
                     for (const auto &edit : edits)
-                        if (edit.level == unsigned(character.sheet().level))
+                        if (edit.level == static_cast<unsigned>(character.sheet().level))
                             character.choose_spells(*module, edit.choices, edit.rest_session,
-                                                    false);
+                                                    rules::ChoiceCompleteness::partial);
                     for (const auto &edit : training)
-                        if (edit.level == unsigned(character.sheet().level))
+                        if (edit.level == static_cast<unsigned>(character.sheet().level))
                             character.replace_rest_training(*module, edit.selections,
                                                             edit.rest_session);
                 };
@@ -362,27 +398,29 @@ struct SaveCodec
                             "Unsupported saved advancement choice");
                     replay();
                 }
-                field(character.inventory());
+                Inventory inventory;
+                field(inventory);
+                character.replace_inventory(std::move(inventory));
                 PartyMember m{0, std::move(character)};
                 member(m);
                 v.roster.push_back(std::move(m));
             }
         }
         else
-            for (auto &m : v.roster)
+            for (const auto &m : v.roster)
             {
-                auto draft = m.character.creation_data();
-                auto appearance = m.character.appearance();
+                const auto &draft = m.character.creation_data();
+                const auto &appearance = m.character.appearance();
                 auto level = m.character.sheet().level;
                 fields(draft, appearance, level);
-                auto history = m.character.advancements();
-                auto edits = m.character.spell_edits();
-                auto training = m.character.training_edits();
+                const auto &history = m.character.advancements();
+                const auto &edits = m.character.spell_edits();
+                const auto &training = m.character.training_edits();
                 fields(history, edits, training);
                 field(m.character.inventory());
                 member(m);
             }
-        if (reading)
+        if constexpr (reading)
             for (const auto &[id, offset] : rest_offsets)
             {
                 auto member = std::find_if(v.roster.begin(), v.roster.end(),
@@ -396,14 +434,14 @@ struct SaveCodec
             }
     }
 
-    void machine(por::EclMachine &v)
+    void machine(Visited<por::EclMachine> v)
     {
         require(v.state_ == por::EclState::idle || v.state_ == por::EclState::completed || reading,
                 "Cannot save a pending script");
         fields(v.variables_, v.image_, v.instruction_spans_, v.conditions_, v.next_request_,
                v.total_instructions_);
         std::string rng;
-        if (!reading)
+        if constexpr (!reading)
         {
             std::ostringstream out;
             out.imbue(std::locale::classic());
@@ -411,13 +449,13 @@ struct SaveCodec
             rng = out.str();
         }
         field(rng);
-        if (reading)
+        if constexpr (reading)
         {
             require(v.image_.size() == v.program_->raw().size(), "Script image size mismatch");
             std::istringstream in(rng);
             in.imbue(std::locale::classic());
             in >> v.random_;
-            require(bool(in), "Invalid saved script RNG");
+            require(static_cast<bool>(in), "Invalid saved script RNG");
             in >> std::ws;
             require(in.eof(), "Trailing script RNG data");
             v.state_ = por::EclState::completed;
@@ -430,28 +468,33 @@ struct SaveCodec
         }
     }
 
-    void town(por::RolfTourSession &v)
+    void town(Visited<por::RolfTourSession> v)
     {
-        require(reading || (v.can_leave() && v.snapshot_.tour_finished && !v.checkpoint_ &&
+        require(reading || (v.can_leave() && v.snapshot_.tour_finished && !v.event_checkpoint_ &&
                             !v.pending_movement_),
                 "Save only during idle town exploration");
         fields(v.current_script_, v.selected_character_, v.next_ticket_, v.rest_checks_);
         unsigned area = v.current_area_;
         field(area);
         std::map<unsigned, std::string> explored;
-        if (!reading)
+        if constexpr (!reading)
         {
             for (const auto &[id, cells] : v.visited_areas_)
                 explored[id] = cells.to_string();
             explored[v.current_area_] = v.snapshot_.visited.to_string();
         }
         field(explored);
-        if (reading)
+        if constexpr (reading)
         {
             require(v.town_ && (area == 0 || v.town_->districts.contains(area)),
                     "Unsupported saved district");
-            require((v.current_script_ == 20) == (area == 20),
-                    "Saved district and script disagree");
+            require(area == 0 ? !std::any_of(v.town_->districts.begin(), v.town_->districts.end(),
+                                             [&](const auto & d)
+            {
+                return d.second->script == v.current_script_;
+            })
+            : v.town_->districts.at(area)->script == v.current_script_,
+            "Saved district and script disagree");
             v.current_area_ = 0;
             v.snapshot_.area_id = 0;
             if (v.town_->map)
@@ -472,7 +515,7 @@ struct SaveCodec
         std::uint64_t pending = v.pending_loot_.size();
         field(pending);
         require(pending <= 1024, "Too many pending rewards");
-        if (reading)
+        if constexpr (reading)
             v.pending_loot_.clear();
         for (std::uint64_t index = 0; index < pending; ++index)
         {
@@ -480,23 +523,25 @@ struct SaveCodec
             std::string reward;
             bool items = true;
             std::array<unsigned, 7> wealth{};
-            if (!reading)
+            unsigned area{};
+            if constexpr (!reading)
             {
                 const auto &loot = v.pending_loot_[index];
                 records = loot.records;
                 reward = loot.reward_id;
                 items = loot.include_items;
                 wealth = loot.wealth;
+                area = loot.area;
             }
-            fields(records, reward, items, wealth);
+            fields(records, reward, items, wealth, area);
             if (records.empty())
             {
                 // Script treasure has no creature records; its generated items are saved.
                 std::vector<por::Equipment> generated;
-                if (!reading)
+                if constexpr (!reading)
                     generated = v.pending_loot_[index].items;
                 field(generated);
-                if (reading)
+                if constexpr (reading)
                 {
                     require(!reward.empty() && reward.size() <= 160 && !items &&
                             generated.size() <= 127,
@@ -505,20 +550,18 @@ struct SaveCodec
                     {wealth, std::move(generated), std::move(reward), {}, false});
                 }
             }
-            else if (reading)
+            else if constexpr (reading)
             {
-                require(v.town_->districts.contains(20),
-                        "Pending Slums loot requires original resources");
                 v.pending_loot_.push_back(
-                    v.slums_loot(std::move(records), std::move(reward), items));
+                    v.encounter_loot(area, std::move(records), std::move(reward), items));
                 require(v.pending_loot_.back().wealth == wealth,
                         "Saved loot does not match its original creatures");
             }
         }
-        if (reading)
+        if constexpr (reading)
         {
             require(v.town_ && v.town_->programs.contains(v.current_script_) &&
-                    v.selected_character_ < 8 && v.rest_checks_ < 24,
+                    v.selected_character_.index < 8 && v.rest_checks_ < 24,
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
             for (const std::uint8_t op :
@@ -529,7 +572,7 @@ struct SaveCodec
             v.configure_town();
         }
         machine(v.machine_);
-        if (reading)
+        if constexpr (reading)
         {
             v.combat_request_ = 0;
             v.staged_treasure_.reset();
@@ -545,21 +588,21 @@ struct SaveCodec
         fields(s.dialogue, s.prompts, s.redraws, s.footsteps, s.event_runs);
         std::string visited = s.visited.to_string();
         field(visited);
-        if (reading)
+        if constexpr (reading)
         {
             require(visited.size() == 256 && visited.find_first_not_of("01") == std::string::npos,
                     "Invalid visited map");
             s.visited = std::bitset<256>(visited);
         }
         std::map<unsigned, std::string> known;
-        if (!reading)
+        if constexpr (!reading)
         {
             for (const auto &[id, cells] : v.seen_areas_)
                 known[id] = cells.to_string();
             known[v.current_area_] = s.seen.to_string();
         }
         field(known);
-        if (reading)
+        if constexpr (reading)
         {
             v.seen_areas_.clear();
             for (const auto &[id, cells] : known)
@@ -576,7 +619,7 @@ struct SaveCodec
                 require(v.seen_areas_.contains(id) && (cells & ~v.seen_areas_.at(id)).none(),
                         "Missing visited district knowledge");
         }
-        if (reading)
+        if constexpr (reading)
         {
             s.phase = por::TourPhase::completed;
             s.tour_finished = true;
@@ -587,39 +630,58 @@ struct SaveCodec
             s.diagnostic.clear();
             ++s.picture_revision;
             v.picture_.reset();
-            v.checkpoint_.reset();
-            v.saved_campaign_.reset();
+            v.event_checkpoint_.reset();
             v.pending_movement_.reset();
             v.treasure_.clear();
             v.who_slots_.clear();
+            v.encounter_outcome_.clear();
+            v.member_chosen_ = false;
+            v.meeting_pose_.reset();
+            v.robbed_ = false;
             v.temple_targets_.clear();
             v.menu_request_ = v.delayed_request_ = v.who_request_ = v.temple_request_ =
-            v.shop_request_ = 0;
+            v.shop_request_ = v.damage_request_ = 0;
             v.remaining_delay_ = 0;
             v.transition_ = v.message_only_ = false;
-            v.event_stage_ = 0;
+            v.event_stage_ = por::RolfTourSession::EventStage::none;
             v.publish_pose();
             v.campaign_.reset();
         }
     }
 };
 
+using SaveReader = SaveCodec<true>;
+using SaveWriter = SaveCodec<false>;
+
+namespace
+{
+// Saving must encode the caller's state in place rather than a copy of it.
+template <class Codec>
+concept encodes_const_campaign =
+    requires(Codec &codec, const PartyState &party, const por::RolfTourSession &town)
+{
+    codec.field(party);
+    codec.rest(party);
+    codec.town(town);
+};
+
+static_assert(encodes_const_campaign<SaveWriter>);
+static_assert(!encodes_const_campaign<SaveReader>, "Only the writer may visit const state");
+} // namespace
+
 std::string encode_campaign(const CampaignParty &party, const por::RolfTourSession *town,
                             std::string_view assets)
 {
     require(!party.in_combat(), "Cannot save during combat");
-    SaveCodec out;
+    SaveWriter out;
     auto identity = party.identity();
     std::string asset(assets);
-    auto state = party.checkpoint();
+    const auto &state = party.state();
     out.fields(identity, asset, state);
     bool has_town = town != nullptr;
     out.field(has_town);
     if (town)
-    {
-        auto copy = *town;
-        out.town(copy);
-    }
+        out.town(*town);
     out.rest(state);
     auto body = out.stream.str();
     require(body.size() <= limit, "Campaign save too large");
@@ -635,7 +697,9 @@ unsigned saved_format(std::string_view digits)
     require(!digits.empty() && digits.size() <= 9 &&
             digits.find_first_not_of("0123456789") == std::string_view::npos,
             "Unsupported campaign save version");
-    return static_cast<unsigned>(std::stoul(std::string(digits)));
+    unsigned format{};
+    (void)std::from_chars(digits.data(), digits.data() + digits.size(), format);
+    return format;
 }
 
 void validate_saved_member(const PartyMember &member, const rules::RulesModule &module)
@@ -667,6 +731,19 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
                               const rules::RulesModule &module, std::string_view assets,
                               const por::RolfTourSession *town_template)
 {
+    std::function<por::RolfTourSession()> make_town;
+    if (town_template)
+        make_town = [town_template]
+    {
+        return town_template->detached_copy();
+    };
+    return decode_campaign(bytes, creation, module, assets, make_town);
+}
+
+SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRules &creation,
+                              const rules::RulesModule &module, std::string_view assets,
+                              const std::function<por::RolfTourSession()> &make_town_template)
+{
     require(bytes.size() <= limit, "Campaign save too large");
     const auto header_end = bytes.find('\n');
     require(bytes.starts_with(campaign_magic) && header_end != bytes.npos,
@@ -682,7 +759,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     require(bytes.substr(header_end + 1, end - header_end - 1) ==
             std::to_string(fingerprint(body)),
             "Campaign save checksum mismatch");
-    SaveCodec in(body);
+    SaveReader in(body);
     in.creation = &creation;
     in.module = &module;
     rules::Identity identity;
@@ -700,8 +777,8 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     in.field(has_town);
     if (has_town)
     {
-        require(town_template != nullptr, "This save requires town resources");
-        result.town = *town_template;
+        require(static_cast<bool>(make_town_template), "This save requires town resources");
+        result.town = make_town_template();
         in.town(*result.town);
     }
     in.rest(result.party);

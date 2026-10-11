@@ -64,10 +64,13 @@ TrainingChoices choices()
         {"class:rogue:weapon_mastery", {"dagger", "shortbow"}}};
 }
 
+// Fills the class's other required choices: Weapon Mastery and a Warlock's
+// Eldritch Invocation.
 void complete_mastery(CharacterDraft &d)
 {
     for (const auto &group : srd5::character_rules()->training_options(d))
-        if (group.id.ends_with(":weapon_mastery"))
+        if (group.id.ends_with(":weapon_mastery") || group.id == "class:warlock:invocations" ||
+                group.id == "class:druid:primal_order")
         {
             auto &selected = d.training[group.id];
             for (const auto &option : group.options)
@@ -228,8 +231,8 @@ void all_class_skills()
                                     FeatureGrant{"skill:" + id, "class:" + klass.id, 1, {}}) !=
                           h.sheet().grants.end(),
                           "Class skill has exact level-one provenance");
-                    check(item.bonus ==
-                          h.sheet().modifiers[item.ability] + (item.expertise ? 4 : 2),
+                    check(item.bonus == h.sheet().modifiers[item.ability] +
+                          (item.expertise ? 4 : 2),
                           "Overlapping background and class grants add proficiency once");
                 }
                 auto bad = d;
@@ -302,7 +305,9 @@ void all_class_skills()
             creator.select(CreationField::character_class, from.id);
             auto expected = chosen_class_skills(from.id);
             for (const auto &id : expected)
-                creator.training_choice("class:" + from.id, id, true);
+                creator.training_choice({.group = "class:" + from.id,
+                                         .option = id,
+                                         .selected = true});
             const auto allowed = expected_class_skills(to.id);
             std::erase_if(expected,
                           [&](const auto & id)
@@ -335,8 +340,8 @@ void creation_controls()
         check(tries < 100, "Roll a qualified Rogue fixture");
         creator.roll();
         for (unsigned i = 0; i < 6; ++i)
-            creator.assign_roll(i, i);
-        if (creator.rules().class_eligible(creator.draft(), "rogue"))
+            creator.assign_roll(i, static_cast<Ability>(i));
+        if (rules::class_eligible(creator.rules(), creator.draft(), "rogue"))
             break;
     }
     creator.next();
@@ -351,12 +356,14 @@ void creation_controls()
     rejects(
         [&]
     {
-        creator.training_choice("unknown", "stealth", true);
+        creator.training_choice({.group = "unknown", .option = "stealth", .selected = true});
     });
     rejects(
         [&]
     {
-        creator.training_choice("class:rogue:expertise", "arcana", true);
+        creator.training_choice({.group = "class:rogue:expertise",
+                                 .option = "arcana",
+                                 .selected = true});
     });
     // Independent, authored choices exercise dependent groups in UI order.
     const auto selected = choices();
@@ -364,27 +371,29 @@ void creation_controls()
             {"class:rogue", "class:rogue:expertise", "class:rogue:weapon_mastery"
             })
         for (const auto &value : selected.at(group))
-            creator.training_choice(group, value, true);
+            creator.training_choice({.group = group, .option = value, .selected = true});
     check(creator.training_complete() && creator.sheet().training.complete,
           "Every required choice permits completion");
     const auto before = creator.draft().training;
-    creator.training_choice("class:rogue", "acrobatics", true);
+    creator.training_choice({.group = "class:rogue", .option = "acrobatics", .selected = true});
     rejects(
         [&]
     {
-        creator.training_choice("class:rogue", "stealth", true);
+        creator.training_choice({.group = "class:rogue", .option = "stealth", .selected = true});
     });
     check(creator.draft().training == before,
           "Duplicate selection is idempotent; excessive selection rejects atomically");
     creator.next();
     creator.back();
     check(creator.draft().training == before, "Back preserves selected training");
-    creator.training_choice("class:rogue", "perception", false);
+    creator.training_choice({.group = "class:rogue", .option = "perception", .selected = false});
     check(creator.draft().training.at("class:rogue:expertise") ==
           std::vector<std::string> {"stealth"},
           "Removing a skill removes only its dependent Expertise");
-    creator.training_choice("class:rogue", "perception", true);
-    creator.training_choice("class:rogue:expertise", "perception", true);
+    creator.training_choice({.group = "class:rogue", .option = "perception", .selected = true});
+    creator.training_choice({.group = "class:rogue:expertise",
+                             .option = "perception",
+                             .selected = true});
     creator.back();
     creator.back();
     creator.select(CreationField::background, "sage");
@@ -396,19 +405,27 @@ void creation_controls()
                               selected.at("class:rogue").begin(), selected.at("class:rogue").end()),
           "Changing background preserves valid skill choices");
     creator.select(CreationField::background, "criminal");
-    creator.training_choice("class:rogue:expertise", "stealth", true);
+    creator.training_choice({.group = "class:rogue:expertise",
+                             .option = "stealth",
+                             .selected = true});
     creator.select(CreationField::character_class, "fighter");
     check(creator.draft().training.size() == 2,
           "Class change preserves compatible skills and mastery while clearing Rogue-only groups");
     check(!creator.training_complete(), "Fighter requires its own starting style choice");
-    creator.training_choice("class:fighter:fighting_style", "defense", true);
+    creator.training_choice({.group = "class:fighter:fighting_style",
+                             .option = "defense",
+                             .selected = true});
     check(creator.draft().training.at("class:fighter") ==
           std::vector<std::string>({"acrobatics", "persuasion"}),
           "Class change keeps the first two valid selected skills");
-    creator.training_choice("class:fighter:weapon_mastery", "longsword", true);
+    creator.training_choice({.group = "class:fighter:weapon_mastery",
+                             .option = "longsword",
+                             .selected = true});
     check(creator.training_complete(),
           "Fighter style, skills and three mastery kinds complete supported training");
-    creator.training_choice("class:fighter:fighting_style", "archery", true);
+    creator.training_choice({.group = "class:fighter:fighting_style",
+                             .option = "archery",
+                             .selected = true});
     check(creator.draft().training.at("class:fighter:fighting_style") ==
           std::vector<std::string> {"archery"},
           "Single selection replaces the prior style atomically");
@@ -416,7 +433,9 @@ void creation_controls()
     rejects(
         [&]
     {
-        creator.training_choice("class:fighter:fighting_style", "unimplemented", true);
+        creator.training_choice({.group = "class:fighter:fighting_style",
+                                 .option = "unimplemented",
+                                 .selected = true});
     });
     check(creator.draft().training == style_before,
           "Invalid replacement preserves the prior style");
@@ -431,7 +450,7 @@ void creation_controls()
             {"class:rogue", "class:rogue:expertise", "class:rogue:weapon_mastery"
             })
         for (const auto &value : selected.at(group))
-            creator.training_choice(group, value, true);
+            creator.training_choice({.group = group, .option = value, .selected = true});
     creator.next();
     creator.next();
     creator.next();
@@ -453,7 +472,9 @@ void creation_controls()
     rejects(
         [&]
     {
-        creator.training_choice("class:rogue", "acrobatics", false);
+        creator.training_choice({.group = "class:rogue",
+                                 .option = "acrobatics",
+                                 .selected = false});
     });
     creator.restart();
     check(creator.draft().training.empty() && !creator.training_complete(),
@@ -471,8 +492,8 @@ void pool_starting_gear()
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.heads.emplace(1, por::PortraitPart{"fixture", head});
-    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
     const std::set<std::string> ranged{"longbow", "shortbow", "light_crossbow"},
           ammunition{"arrow", "bolt"}, body_armor{"leather", "chain_mail"},
           unarmored{"barbarian", "monk", "sorcerer", "wizard"},
@@ -481,11 +502,11 @@ void pool_starting_gear()
     {
         const auto klass = preset.creation_data().character_class;
         CampaignParty party(module());
-        const auto id = party.add_pc(preset);
-        party.set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
-        outfit_pool_member(party, id);
+        const auto id = add_pool_member(party, preset, 3);
         const auto &member = party.member(id);
         check(member.wealth[3] == 250, "Starting gear is free");
+        check(member.creation_source == "pool:v1:3" && party.state().roster.size() == 1,
+              "A pool member joins once, recording which pool character it is");
         std::vector<std::string> held, carried;
         for (const auto &item : member.character.inventory().items())
         {
@@ -506,16 +527,17 @@ void pool_starting_gear()
                 return kinds.contains(item);
             });
         };
-        check(held.size() == 1 + count_in(held, body_armor) +
+        check(std::ssize(held) == 1 + count_in(held, body_armor) +
               std::count(held.begin(), held.end(), "shield") && !count_in(held, ranged),
               "Hold exactly one melee weapon");
         check(count_in(held, body_armor) == (unarmored.contains(klass) ? 0 : 1),
               "Wear body armor unless the class relies on no armor");
         check(std::count(held.begin(), held.end(), "shield") == (no_shield.contains(klass) ? 0 : 1),
               "Carry a shield only when the class is trained with one");
-        check(carried.size() == 2 && count_in(carried, ranged) == 1 &&
-              count_in(carried, ammunition) == 1,
-              "Pack a bow or crossbow with its ammunition");
+        check(carried.size() == 3 && count_in(carried, ranged) == 1 &&
+              count_in(carried, ammunition) == 1 &&
+              std::count(carried.begin(), carried.end(), "torch") == 1,
+              "Pack a bow or crossbow with its ammunition, and a torch");
     }
 }
 
@@ -530,8 +552,8 @@ void preset_training()
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.heads.emplace(1, por::PortraitPart{"fixture", head});
-    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
     auto creation = srd5::character_rules();
     const auto pool = character_pool(*creation, art), again = character_pool(*creation, art);
     check(pool.size() == 48, "Pool contains four presets for all twelve classes");
@@ -593,25 +615,25 @@ void grants_and_checks()
           "Proficient and untrained skills use different bonuses");
     check(skill(sheet, "stealth").sources.size() == 2,
           "Expertise and background proficiency have separate provenance");
-    auto result = creation->ability_check(sheet, 1, "sleight_of_hand");
+    auto result = creation->ability_check(sheet, Ability::dexterity, "sleight_of_hand");
     check(result.ability_modifier == 3 && result.proficiency == 2 && result.total == 5 &&
           !result.expertise && !result.advantage && result.sources.size() == 1,
           "A proficient skill adds proficiency once");
-    result = creation->ability_check(sheet, 1, "stealth");
+    result = creation->ability_check(sheet, Ability::dexterity, "stealth");
     check(result.total == 7 && result.expertise && result.sources.size() == 2,
           "Expertise doubles proficiency and keeps both sources");
-    result = creation->ability_check(sheet, 0, "stealth");
+    result = creation->ability_check(sheet, Ability::strength, "stealth");
     check(result.total == 6,
           "A rule can choose another governing ability without changing training");
     rejects(
         [&]
     {
-        creation->ability_check(sheet, 6, "stealth");
+        (void)creation->ability_check(sheet, static_cast<Ability>(6), "stealth");
     });
     rejects(
         [&]
     {
-        creation->ability_check(sheet, 1, "unknown");
+        (void)creation->ability_check(sheet, Ability::dexterity, "unknown");
     });
     // Independent proficiency table boundaries. This query is shared math,
     // not a claim that Rogue advancement beyond level one is integrated.
@@ -623,7 +645,7 @@ void grants_and_checks()
     {
         auto later = sheet;
         later.level = level;
-        check(creation->ability_check(later, 1, "stealth").total == 3 + 2 * bonus,
+        check(creation->ability_check(later, Ability::dexterity, "stealth").total == 3 + 2 * bonus,
               "Expertise uses the character-level proficiency table");
     }
     d.training["class:rogue"] = {"stealth", "investigation", "perception", "persuasion"};
@@ -729,8 +751,8 @@ void persistence()
     auto rules = module();
     auto members = party.participants();
     members[0].cell = {1, 1};
-    members.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
+    members.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     const auto checkpoint = combat->save();
     check(checkpoint.find("expertise:stealth") != checkpoint.npos &&
           rules->restore(checkpoint)->save() == checkpoint,
@@ -750,7 +772,7 @@ void persistence()
         growing.advance(f, growing.default_advancement(f));
     auto choice = growing.default_advancement(f);
     choice.abilities = {};
-    choice.abilities[1] = 2;
+    choice.abilities[Ability::dexterity] = 2;
     growing.advance(f, choice);
     check(skill(growing.member(f).character.sheet(), "stealth").bonus == 6,
           "Level-up rebuilds skill totals after an ability modifier changes");
@@ -765,13 +787,13 @@ void sage_training()
         auto d = draft(klass.id, "sage");
         const auto adjustments = creation->adjustments("sage");
         for (unsigned i = 0; i < adjustments.size(); ++i)
-            if (adjustments[i].bonuses[3] == 0)
+            if (adjustments[i].bonuses[Ability::intelligence] == 0)
             {
                 d.adjustment = i;
                 break;
             }
         auto sheet = hero(d).sheet();
-        check(sheet.scores[3] == 15, "Authored Intelligence stays 15");
+        check(sheet.scores[Ability::intelligence] == 15, "Authored Intelligence stays 15");
         for (const auto id :
                 {"arcana", "history"
                 })
@@ -781,7 +803,7 @@ void sage_training()
                   trained.sources[0].source_id == "background:sage",
                   "Every starting class gets sourced +2 Sage proficiency");
         }
-        const auto arcana = creation->ability_check(sheet, 3, "arcana");
+        const auto arcana = creation->ability_check(sheet, Ability::intelligence, "arcana");
         check(arcana.total == 4 && arcana.proficiency == 2 && arcana.sources.size() == 1 &&
               arcana.sources[0].id == "skill:arcana",
               "Fixed skill proficiency participates in ability-check API");
@@ -833,16 +855,16 @@ void sage_training()
           "Current Sage campaign is canonical after reload");
     auto members = party.participants();
     members[0].cell = {1, 1};
-    members.push_back({99, "vanguard", "Enemy", 1, {6, 6}});
-    const auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
+    members.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 6}});
+    const auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     check(rules->restore(combat->save())->save() == combat->save(),
           "Sage recipe retains combat continuation");
     party.award_experience(1800, "sage-four");
     auto choice = party.default_advancement(id);
     choice.abilities = {};
-    choice.abilities[3] = 2;
+    choice.abilities[Ability::intelligence] = 2;
     party.advance(id, choice);
-    check(party.member(id).character.sheet().scores[3] == 18 &&
+    check(party.member(id).character.sheet().scores[Ability::intelligence] == 18 &&
           skill(party.member(id).character.sheet(), "history").bonus == 6,
           "Intelligence ASI recomputes Sage skill bonus at level four");
     rejects(
@@ -939,8 +961,8 @@ void remaining_backgrounds()
     auto members = party.participants();
     members[0].cell = {1, 1};
     members[1].cell = {2, 1};
-    members.push_back({99, "vanguard", "Enemy", 1, {6, 6}});
-    const auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, members}, 42);
+    members.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 6}});
+    const auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     check(rules->restore(combat->save())->save() == combat->save(),
           "Background recipes preserve combat continuation");
     for (MemberId id :
@@ -950,7 +972,7 @@ void remaining_backgrounds()
     {
         auto choice = party.default_advancement(id);
         choice.abilities = {};
-        choice.abilities[id == 1 ? 4 : 0] = 2;
+        choice.abilities[id == 1 ? Ability::wisdom : Ability::strength] = 2;
         party.advance(id, choice);
     }
     check(skill(party.member(1).character.sheet(), "insight").bonus == 6 &&
@@ -1011,9 +1033,9 @@ void starting_styles()
             });
             auto profile =
                 rules->character_profile(sheet, std::array<std::string, 1> {"shortbow"}).data;
-            Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
-                {   {1, "campaign-character", "Starter", 0, {1, 1}, profile},
-                    {99, "vanguard", "Enemy", 1, {5, 1}}
+            Encounter encounter{{8, 8, std::vector<Terrain>(64)},
+                {   {1, "campaign-character", "Starter", Side::party, {1, 1}, profile},
+                    {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
                 }};
             auto battle = rules->create(encounter, 13);
             check(battle->snapshot().actor == 1, "Independent starting-style initiative seed");
@@ -1026,7 +1048,7 @@ void starting_styles()
             check(attack != actions.end() && battle->submit(*attack),
                   "Starting style participates in ordinary attack");
             bool checked = false;
-            for (const auto &m : battle->snapshot().log_messages)
+            for (const auto &m : battle->snapshot().log_messages())
                 if (m.source.starts_with("{actor} -> {target}: d20"))
                     for (const auto &arg : m.arguments)
                         if (arg.name == "bonus")
@@ -1056,9 +1078,9 @@ void starting_styles()
                   "Duplicate style cannot consume a level-four entitlement");
             choice = p.default_advancement(id);
             choice.abilities = {};
-            choice.abilities[2] = 2;
+            choice.abilities[Ability::constitution] = 2;
             p.advance(id, choice);
-            check(p.member(id).character.sheet().scores[2] == 19,
+            check(p.member(id).character.sheet().scores[Ability::constitution] == 19,
                   "Starting style coexists with a Constitution ASI");
             const auto bytes = encode_campaign(p, nullptr, "starting-style");
             CampaignParty again(module());

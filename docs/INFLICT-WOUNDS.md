@@ -5,7 +5,7 @@ spell, SRD 5.2.1 p. 143. Rules module 0.6.64.
 
 ## Rules
 
-- Action; Touch (an enemy within 5 feet); Verbal and Somatic components.
+- Action; Touch (an enemy within 5 feet).
 - The target makes a Constitution saving throw against the caster's spell save
   DC. It takes 2d10 Necrotic damage on a failure, or half the same roll,
   rounded down, on a success. Halving comes before resistance or vulnerability.

@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/control_templates/spell_group.gd" id="1_spell_group"]
+
+[node name="SpellGroup" type="VBoxContainer"]
+script = ExtResource("1_spell_group")
+size_flags_horizontal = 3
+theme_type_variation = &"SpellRows"
+
+[node name="Count" type="Label" parent="."]
+autowrap_mode = 3
+
+[node name="Pending" type="Label" parent="."]
+autowrap_mode = 3
+theme_type_variation = &"TrainingPending"

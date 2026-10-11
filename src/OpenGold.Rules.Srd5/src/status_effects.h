@@ -1,21 +1,14 @@
 #ifndef OPENGOLD_SRD5_STATUS_EFFECTS_H
 #define OPENGOLD_SRD5_STATUS_EFFECTS_H
 
+#include "character_class.h"
 #include "opengold/rules.h"
 #include <functional>
 #include <iosfwd>
 
 namespace opengold::srd5::detail
 {
-enum class Ability : unsigned
-{
-    strength,
-    dexterity,
-    constitution,
-    intelligence,
-    wisdom,
-    charisma
-};
+using rules::Ability;
 enum class EffectKind : unsigned
 {
     blindness = 1,
@@ -40,8 +33,7 @@ enum class EffectKind : unsigned
     // Protection from Evil and Good: Aberrations, Celestials, Elementals, Fey,
     // Fiends and Undead have Disadvantage on attack rolls against the target.
     protection_from_evil_and_good = 13,
-    // Command: the target obeys on its next turn; `dc` holds the option, an
-    // index into command_options plus one.
+    // Command: the target obeys on its next turn; `dc` holds its CommandOption.
     command = 14,
     // Sacred Weapon: `dc` (the Charisma modifier, at least 1) is added to
     // attack rolls with Melee weapons; they may deal Radiant damage.
@@ -129,7 +121,46 @@ enum class EffectKind : unsigned
     raging = 50,
     // Reckless Attack: until the start of the Barbarian's next turn; `dc` is 1
     // once this turn's Frenzy has struck.
-    reckless = 51
+    reckless = 51,
+    // Open Hand Technique's Addle: no Opportunity Attacks until the start of
+    // the creature's next turn.
+    addled = 52,
+    // Innate Sorcery: +1 spell save DC and Advantage on spell attack rolls.
+    innate_sorcery = 53,
+    // A Metamagic option readied for the Sorcerer's next spell this turn; `dc`
+    // is the option, or 10 + the type for Transmuted Spell.
+    metamagic = 54,
+    // Extended Spell: Advantage on saves to keep this Concentration.
+    extended = 55,
+    // Hex: the caster's attack-roll hits deal 1d6 more Necrotic damage.
+    hex = 56,
+    // Faerie Fire: attack rolls against the creature have Advantage if the
+    // attacker sees it, and it cannot be Invisible.
+    outlined = 57,
+    // Starry Wisp: it cannot be Invisible until the end of the caster's next turn.
+    lit = 58,
+    // Bardic Inspiration: `dc` is the die the creature may add to a failed
+    // attack roll or save.
+    inspired = 59,
+    // Shillelagh: the caster's Club or Quarterstaff uses the spellcasting
+    // ability and a d8.
+    shillelagh = 60,
+    // Produce Flame: a flame in hand the caster may hurl as an Action.
+    produce_flame = 61,
+    // Barkskin: the creature's AC is at least 17.
+    barkskin = 62,
+    // Flame Blade: a fiery blade in hand the caster attacks with as an Action.
+    flame_blade = 63,
+    // Moonbeam: the creature has made this turn's save against a Moonbeam.
+    moonlit = 64,
+    // Heat Metal: the creature's armor glows red-hot; `dc` is 1 during the
+    // turn it was cast, before the caster may heat it again.
+    heated = 65,
+    // Heat Metal: Disadvantage on attack rolls until the caster's next turn.
+    scorched = 66,
+    // Wild Shape: `dc` is the Beast form, one past its index in beast_forms.
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    wild_shape = 67
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -144,7 +175,7 @@ struct RollModifiers
     // Multiple sources never add extra dice. Opposing sources cancel.
     [[nodiscard]] int mode() const
     {
-        return int(advantage) - int(disadvantage);
+        return static_cast<int>(advantage) - static_cast<int>(disadvantage);
     }
 };
 
@@ -158,7 +189,7 @@ struct SaveResult
 [[nodiscard]] SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifiers,
                                       std::uint64_t &rng);
 [[nodiscard]] int d20(RollModifiers modifiers, std::uint64_t &rng);
-[[nodiscard]] std::array<unsigned, 2> class_save_proficiencies(std::string_view class_name);
+[[nodiscard]] std::array<Ability, 2> class_save_proficiencies(CharacterClass character_class);
 
 // A source is provenance, never a borrowed Actor pointer. Scope distinguishes
 // encounter-local monster IDs when a lasting effect reaches another encounter.
@@ -198,43 +229,67 @@ struct EffectEvent
 };
 
 using EffectObserver = std::function<void(const EffectEvent &)>;
+
+// Command's options, numbered as a Command effect stores them in its `dc`.
+enum class CommandOption : int
+{
+    approach = 1,
+    flee,
+    grovel,
+    halt
+};
+
+// Who imposes an effect: the encounter's scope and the creature's ID in it.
+// Passed apart, the two integers converted silently into each other's place
+// (Effective C++ Item 18).
+struct EffectSource
+{
+    std::uint64_t scope{};
+    rules::EntityId actor{};
+};
+
+// A condition's save DC and how far away its first repeated save is; an int
+// and an unsigned side by side were just as easy to swap.
+struct RepeatingSave
+{
+    int dc{};
+    unsigned first_save_ms{};
+};
+
 // At a future boundary, effects expiring at that boundary no longer prevent healing.
 [[nodiscard]] bool healing_blocked(const EffectState &effects, std::uint64_t after_ms = 0);
-void apply_chill_touch(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_chill_touch(EffectState &effects, EffectSource source,
                        std::string name, unsigned duration_ms);
-void apply_guiding_bolt(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_guiding_bolt(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
 // Poisoned or Color Spray's Blinded, lasting `duration_ms` (to the end of the
 // caster's next turn).
-void apply_poisoned(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_poisoned(EffectState &effects, EffectSource source,
                     std::string name, unsigned duration_ms, EffectKind kind = EffectKind::poisoned);
 [[nodiscard]] bool opportunity_blocked(const EffectState &effects);
-void apply_shocking_grasp(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_shocking_grasp(EffectState &effects, EffectSource source,
                           std::string name, unsigned duration_ms);
 // The net Speed reduction from effects; negative when Longstrider raises Speed,
 // and enough to bring any Speed to 0 while Restrained.
 [[nodiscard]] int speed_penalty(const EffectState &effects);
 [[nodiscard]] bool slowed(const EffectState &effects);
 [[nodiscard]] bool frosted(const EffectState &effects);
-void apply_ray_of_frost(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_ray_of_frost(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
 [[nodiscard]] bool sapped(const EffectState &effects);
-[[nodiscard]] bool vexed_by(const EffectState &effects, std::uint64_t scope,
-                            rules::EntityId source);
+[[nodiscard]] bool vexed_by(const EffectState &effects, EffectSource source);
 [[nodiscard]] bool has_attack_mastery(const EffectState &effects);
-[[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, std::uint64_t scope,
-        rules::EntityId source);
-void apply_attack_mastery(EffectState &, EffectKind, std::uint64_t scope, rules::EntityId source,
+[[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, EffectSource source);
+void apply_attack_mastery(EffectState &, EffectKind, EffectSource source,
                           std::string name, unsigned duration_ms);
-void consume_attack_masteries(EffectState &attacker, EffectState &target, std::uint64_t scope,
-                              rules::EntityId source);
+void consume_attack_masteries(EffectState &attacker, EffectState &target, EffectSource source);
 [[nodiscard]] bool blinded(const EffectState &effects);
 [[nodiscard]] bool can_apply(const EffectState &effects);
-void apply_blindness(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
-                     std::string name, int dc, unsigned first_save_ms);
-void apply_ensnaring_strike(EffectState &, std::uint64_t scope, rules::EntityId caster,
+void apply_blindness(EffectState &effects, EffectSource source,
+                     std::string name, RepeatingSave save);
+void apply_ensnaring_strike(EffectState &, EffectSource source,
                             std::string name, int dc);
-void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, std::string name,
+void apply_entangle(EffectState &, EffectSource source, std::string name,
                     int dc, EffectKind kind = EffectKind::entangle);
 // Restrained: Speed 0, attacks against it have Advantage, its attacks and
 // Dexterity saves have Disadvantage.
@@ -246,29 +301,36 @@ void apply_entangle(EffectState &, std::uint64_t scope, rules::EntityId caster, 
 [[nodiscard]] bool incapacitated(const EffectState &effects);
 // A spell's repeated save condition with its first save `first_save_ms` away:
 // Sleep's drowsiness or Hideous Laughter.
-void apply_repeating_condition(EffectState &effects, EffectKind kind, std::uint64_t scope,
-                               rules::EntityId caster, std::string name, int dc,
-                               unsigned first_save_ms);
-void apply_hold_person(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
-                       std::string name, int dc, unsigned first_save_ms);
-void apply_sanctuary(EffectState &effects, std::uint64_t scope, rules::EntityId caster,
+void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSource source,
+                               std::string name, RepeatingSave save);
+void apply_hold_person(EffectState &effects, EffectSource source,
+                       std::string name, RepeatingSave save);
+void apply_sanctuary(EffectState &effects, EffectSource source,
                      std::string name, int dc);
-void apply_searing_smite(EffectState &, std::uint64_t scope, rules::EntityId caster,
+void apply_searing_smite(EffectState &, EffectSource source,
                          std::string name, int dc);
 // Applies a spell benefit that has no save. `value` is kind-specific.
-void apply_spell_benefit(EffectState &, std::uint64_t scope, rules::EntityId caster,
+void apply_spell_benefit(EffectState &, EffectSource source,
                          std::string name, EffectKind kind, int value);
 // Lasts until the end of the target's next turn, `duration_ms` from now.
-void apply_command(EffectState &, std::uint64_t scope, rules::EntityId caster, std::string name,
-                   int option, unsigned duration_ms);
+void apply_command(EffectState &, EffectSource source, std::string name,
+                   CommandOption option, unsigned duration_ms);
 // The Command the target must obey, if any.
 [[nodiscard]] const Effect *command_effect(const EffectState &);
 bool has_effect(const EffectState &, EffectKind);
 // Aid's increase to the Hit Point maximum; Aid does not stack with itself.
 [[nodiscard]] int hit_point_bonus(const EffectState &);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);
-[[nodiscard]] RollModifiers attack_modifiers(bool attacker_blind, bool target_blind,
-        bool target_dodging, bool other_disadvantage);
+// What decides an attack roll's Advantage and Disadvantage. Four flags in a row
+// are easy to pass in the wrong order, so callers name each one.
+struct AttackConditions
+{
+    bool attacker_blind{};
+    bool target_blind{};
+    bool target_dodging{};
+    bool other_disadvantage{};
+};
+[[nodiscard]] RollModifiers attack_modifiers(const AttackConditions &conditions);
 // All subjects share one chronological event queue. Advancing 12 seconds once
 // must consume exactly the same rolls as advancing 1 second twelve times.
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,

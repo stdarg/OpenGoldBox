@@ -1,0 +1,4 @@
+[gd_scene format=3]
+
+[node name="SkilledChoice" type="CheckBox"]
+theme_type_variation = &"LevelUpChoice"

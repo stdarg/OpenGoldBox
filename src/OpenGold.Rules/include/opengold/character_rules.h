@@ -27,7 +27,7 @@ struct AbilityRoll
 struct ScoreAdjustment
 {
     std::string label;
-    std::array<int, 6> bonuses{};
+    AbilityArray<int> bonuses{};
 };
 
 // Derived from creation and advancement choices, with stable source identity.
@@ -36,7 +36,7 @@ struct AbilityAdjustment
 {
     std::string source_id, label;
     unsigned level{};
-    std::array<int, 6> bonuses{};
+    AbilityArray<int> bonuses{};
     Message label_message;
 };
 
@@ -53,7 +53,7 @@ struct FeatureGrant
 struct SkillTraining
 {
     std::string id, label;
-    unsigned ability{};
+    Ability ability{};
     int bonus{};
     bool proficient{}, expertise{};
     std::vector<FeatureGrant> sources;
@@ -83,7 +83,7 @@ struct AbilityCheckModifier
 
 struct ClassRequirements
 {
-    std::vector<unsigned> abilities;
+    std::vector<Ability> abilities;
     bool any{};
     int minimum{13};
     std::string description;
@@ -95,7 +95,7 @@ struct CharacterDraft
     std::vector<std::string> target_classes; // Future intentions, not acquired class levels.
     std::array<AbilityRoll, 6> rolls{};
     // Each assigned ability owns a unique result; 6 means not yet assigned.
-    std::array<unsigned, 6> assignment{0, 1, 2, 3, 4, 5};
+    AbilityArray<unsigned> assignment{0, 1, 2, 3, 4, 5};
     unsigned adjustment{};
     bool rolled{};
     TrainingChoices training;
@@ -109,12 +109,12 @@ struct CharacterSheet
 {
     Identity identity;
     std::string name, race, gender, character_class, alignment, background;
-    std::array<int, 6> base{}, bonuses{}, scores{},
-        modifiers{}; // bonuses is the sum of all sources.
+    AbilityArray<int> base{}, bonuses{}, scores{},
+                 modifiers{}; // bonuses is the sum of all sources.
     int level{1}, hit_die{}, hit_points{};
     std::string hp_explanation;
-    std::array<int, 6> saving_throws{};
-    std::array<bool, 6> save_proficiencies{};
+    AbilityArray<int> saving_throws{};
+    AbilityArray<bool> save_proficiencies{};
     std::string racial_modifiers, class_modifiers, background_modifiers;
     // Derived presentation messages; not character identity or save-file keys.
     std::vector<Message> hp_messages, racial_messages, class_messages, background_messages;
@@ -129,6 +129,17 @@ struct CharacterSheet
 
 // Creation is a separate optional capability: campaign and Godot code do not
 // embed edition-specific tables, rolling policies, or HP arithmetic.
+// Whether a draft must already be named: a finished character must be, a draft
+// still being created need not be. Named rather than a bool so a call site says
+// which (Effective C++ Item 18).
+enum class NameRequirement
+{
+    optional,
+    required
+};
+
+// Every operation is pure, so a module that omits one fails to compile
+// instead of failing in play (Effective C++ Item 34).
 class CharacterRules
 {
   public:
@@ -137,41 +148,40 @@ class CharacterRules
     [[nodiscard]] virtual std::vector<CreationChoice> choices(CreationField field) const = 0;
     [[nodiscard]] virtual std::vector<ScoreAdjustment>
     adjustments(std::string_view background) const = 0;
-    [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(std::uint64_t &random_state) const = 0;
+    [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(RandomState &random_state) const = 0;
     [[nodiscard]] virtual std::optional<int> ability_score(const CharacterDraft &draft,
-            unsigned ability) const = 0;
+            Ability ability) const = 0;
 
-    [[nodiscard]] virtual std::array<unsigned, 6> preset_ability_priority(std::string_view,
-            unsigned) const
-    {
-        return {0, 1, 2, 3, 4, 5};
-    }
-
+    [[nodiscard]] virtual std::array<Ability, 6> preset_ability_priority(std::string_view,
+            unsigned) const = 0;
     [[nodiscard]] virtual ClassRequirements class_requirements(std::string_view id) const = 0;
-    [[nodiscard]] bool class_eligible(const CharacterDraft &draft, std::string_view id) const;
-    [[nodiscard]] std::array<bool, 6> unmet_targets(const CharacterDraft &draft) const;
     [[nodiscard]] virtual CharacterSheet evaluate(const CharacterDraft &draft,
-            bool require_name) const = 0;
-
+            NameRequirement name) const = 0;
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
-    training_options(const CharacterDraft &) const
-    {
-        return {};
-    }
-
-    [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterDraft &) const
-    {
-        return {};
-    }
-
-    [[nodiscard]] virtual TrainingChoiceGroup cantrip_options(const CharacterDraft &) const
-    {
-        return {};
-    }
-
+    training_options(const CharacterDraft &) const = 0;
+    [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterDraft &) const = 0;
+    [[nodiscard]] virtual TrainingChoiceGroup cantrip_options(const CharacterDraft &) const = 0;
+    // An empty skill is a plain ability check. No default: an override cannot
+    // redefine one (Effective C++ Item 37).
     [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
-            unsigned ability,
-            std::string_view skill = {}) const;
+            Ability ability, std::string_view skill) const = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    CharacterRules() = default;
+    CharacterRules(const CharacterRules &) = default;
+    CharacterRules(CharacterRules &&) = default;
+    CharacterRules &operator=(const CharacterRules &) = default;
+    CharacterRules &operator=(CharacterRules &&) = default;
 };
+// Whether the draft's scores meet a class's requirements, and which target
+// scores the chosen class leaves unmet. They need only the public interface,
+// so they are not members (Effective C++ Item 23).
+[[nodiscard]] bool class_eligible(const CharacterRules &rules, const CharacterDraft &draft,
+                                  std::string_view id);
+[[nodiscard]] AbilityArray<bool> unmet_targets(const CharacterRules &rules,
+        const CharacterDraft &draft);
 } // namespace opengold::rules
 #endif

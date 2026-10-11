@@ -1,36 +1,18 @@
 #ifndef OPENGOLD_COMBAT_DEMO_H
 #define OPENGOLD_COMBAT_DEMO_H
+#include "opengold/campaign_encounter.h"
 #include "opengold/rules.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
 #include "opengold/campaign_party.h"
 #include "opengold/dungeon_battlefield.h"
+#include <filesystem>
+#include <string>
+#include <vector>
 
 namespace opengold
 {
-struct CombatArt
-{
-    rules::EntityId entity{};
-    Image image;
-    std::optional<Image> action;
-    std::string missing_combination;
-};
-
-struct CampaignEncounter
-{
-    por::DungeonBattlefield field;
-    std::vector<rules::Participant> enemies;
-    std::vector<CombatArt> art;
-    std::vector<Image> terrain_art;
-    unsigned facing{};
-    unsigned surprise{};
-    // The encounter interrupted the party's rest.
-    bool party_resting{};
-    // Optional authored formation. Empty means the usual campaign placement.
-    std::vector<rules::Cell> positions;
-};
-
 // A bounded demonstration/campaign adapter. It depends on the rules interface,
 // never on a specific edition. The application supplies the selected module.
 class CombatDemo
@@ -90,7 +72,7 @@ class CombatDemo
         return vm_ && vm_->state() == por::EclState::completed;
     }
 
-    [[nodiscard]] unsigned script_variable(std::uint16_t address) const;
+    [[nodiscard]] unsigned script_variable(por::EclAddress address) const;
 
     [[nodiscard]] const auto &art() const noexcept
     {
@@ -141,11 +123,34 @@ struct CombatDemoSetup
     CampaignEncounter encounter;
 };
 
+// The showcase party, or up to six pool characters of the given classes in their
+// starting kits, advanced to `level`, for play-testing. Play-testing can also
+// replace the kobolds with `enemies` (combat definitions such as "troll" and
+// "ogre") and give each member one of each `gear` item ("oil",
+// "alchemists_fire", "acid").
+// A play-test's choices: the body catalog to dress the party from, its classes
+// in their kits at one level, the enemies it faces and the gear it carries.
+// Named fields keep the lists of names (enemies, gear) from being swapped
+// (Effective C++ Item 18).
+struct CombatDemoOptions
+{
+    std::filesystem::path body_catalog_file;
+    std::vector<std::string> classes;
+    unsigned level{1};
+    std::vector<std::string> enemies, gear;
+};
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,
         const rules::CharacterRules &characters,
         const std::filesystem::path &game_directory,
-        const std::filesystem::path &body_catalog_file = {});
+        const CombatDemoOptions &options = {});
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
 [[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session);
+// The party's flee policy: a member fast enough to flee runs for the nearest
+// open edge of the field (Dashing when it must, whatever reactions it
+// provokes) and steps off it; everyone else acts as choose_demo_command does.
+[[nodiscard]] rules::Command choose_flee_command(const rules::CombatSession &session);
+// Quick combat, as in the original: the computer plays the active party
+// member as choose_demo_command does, casting no spells unless `magic`.
+[[nodiscard]] rules::Command choose_quick_command(const rules::CombatSession &session, bool magic);
 } // namespace opengold
 #endif

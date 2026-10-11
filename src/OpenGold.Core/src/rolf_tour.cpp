@@ -1,3 +1,4 @@
+#include "opengold/authored_items.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/exploration_view.h"
 #include <algorithm>
@@ -9,6 +10,8 @@ namespace opengold::por
 {
 namespace
 {
+// The ITEM3.DAX list of New Phlan's general store, the shop that sells oil.
+constexpr unsigned general_store_list = 54;
 std::filesystem::path resolve_archive(const std::filesystem::path &directory, std::string_view name)
 {
     std::optional<std::filesystem::path> path;
@@ -43,7 +46,6 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
     return data;
 }
 
-constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
 } // namespace
 
 RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
@@ -61,12 +63,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             intro.opcode != 18 || intro.operands[0].tag != 128 || setup.opcode != 12 ||
             setup.operands[0].value != 12)
         throw EclError("This ECL3:0 does not match the supported Rolf entry profile");
-    const auto maps = MapCatalog::load(directory);
-    const auto map = maps.find({"GEO3.DAX", 0});
-    if (!map)
-        throw EclError("Rolf tour requires GEO3.DAX record 0");
     // Explicit, verified Phlan profile. This does not implement general 127
     // operand semantics or assume that every map shares its GEO/art record ID.
+    // Checked before the maps are loaded: it needs only the program
+    // (Effective C++ Item 26).
     const auto pieces = program->instruction(0x9B11);
     if (pieces.opcode != 55 || pieces.operands.size() != 3 ||
             std::any_of(pieces.operands.begin(), pieces.operands.end(),
@@ -75,6 +75,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     return a.tag != 0 || a.value != 127;
 }))
     throw EclError("Unsupported Phlan wall resource profile");
+    const auto maps = MapCatalog::load(directory);
+    const auto map = maps.find({"GEO3.DAX", 0});
+    if (!map)
+        throw EclError("Rolf tour requires GEO3.DAX record 0");
     const auto archive = [&](const char *name)
     {
         auto records = decode_dax_archive(read_archive(resolve_archive(directory, name)));
@@ -133,22 +137,54 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     const auto templates = decode_item_templates(read_archive(resolve_archive(directory, "ITEMS")));
     if (!templates)
         throw EclError("Invalid item templates");
-    for (const auto &record : archive("ITEM3.DAX").records)
+    // An archive's fixed item lists (shop stock in town, script treasure in areas).
+    const auto item_lists = [&](const std::string &name)
     {
-        const auto items = decode_items(record.bytes);
-        if (!items)
-            throw EclError("Invalid town treasure record");
-        auto &stock = town->treasure[record.id];
-        for (const auto &item : *items)
+        std::map<unsigned, std::vector<Equipment>> lists;
+        for (const auto &record : archive(name.c_str()).records)
         {
-            if (item.type >= templates->size())
-                throw EclError("Invalid town item type");
-            Equipment equipment;
-            equipment.index = stock.size();
-            equipment.stored = item;
-            equipment.base = (*templates)[item.type];
-            stock.push_back(std::move(equipment));
+            const auto items = decode_items(record.bytes);
+            if (!items)
+                throw EclError("Invalid treasure record in " + name);
+            auto &stock = lists[record.id];
+            for (const auto &item : *items)
+            {
+                if (item.type >= templates->size())
+                    throw EclError("Invalid item type in " + name);
+                Equipment equipment;
+                equipment.index = stock.size();
+                equipment.stored = item;
+                equipment.base = (*templates)[item.type];
+                stock.push_back(std::move(equipment));
+            }
         }
+        return lists;
+    };
+    town->treasure = item_lists("ITEM3.DAX");
+    // The general store, which sells the original's oil, also stocks the SRD
+    // gear OpenGoldBox adds: torches (sold by ten, as prices are whole gold),
+    // Acid and Alchemist's Fire at their SRD prices.
+    struct StockedGear
+    {
+        std::uint8_t type;
+        const char *name;
+        std::uint16_t price_gp;
+        std::uint8_t quantity;
+    };
+    constexpr std::array<StockedGear, 3> added_gear{
+        {   {authored_item::torch, "10 Torches", 1, 10}, {authored_item::acid, "Vial of Acid", 25, 1},
+            {authored_item::alchemists_fire, "Flask of Alchemist's Fire", 50, 1}
+        }};
+    auto &general_store = town->treasure[general_store_list];
+    for (const auto &gear : added_gear)
+    {
+        Equipment item;
+        item.index = general_store.size();
+        item.stored.type = gear.type;
+        item.stored.stored_name = gear.name;
+        item.stored.value = gear.price_gp;
+        item.stored.stack_size = gear.quantity;
+        general_store.push_back(std::move(item));
     }
     town->item_templates = *templates;
     town->sprite_archive = bytes;
@@ -166,63 +202,121 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     pictures("PIC3.DAX", town->pictures);
     town->map = map->get();
     town->wall_art = *wall_art;
-    auto district = std::make_shared<PhlanResources>();
-    const auto slums_program = catalog.find({"ECL2.DAX", 20});
-    const auto slums_map = maps.find({"GEO2.DAX", 20});
-    if (!slums_program || !slums_map)
-        throw EclError("Slums requires ECL2:20 and GEO2:20");
-    town->programs.emplace(20, slums_program);
-    district->map = slums_map->get();
-    const auto slums_definitions = archive("WALLDEF2.DAX"), slums_tiles = archive("8X8D2.DAX");
-    // LOAD PIECES 2,4,1: three five-appearance banks, each with common tiles
-    // followed by its own 70 tiles. Decode independently before concatenating.
-    for (unsigned id :
-            {
-                2, 4, 1
-            })
+    // The districts beyond New Phlan, one row per area: its script, its archive
+    // bank (ECLn, GEOn, WALLDEFn, MONnCHA and so on), the maps its script loads
+    // with each map's three wall banks (`LOAD PIECES`), and the original
+    // creature records its encounters convert.
+    struct DistrictMap
     {
-        WallTiles bank(1);
-        auto common = decode_wall_tiles(find_record(shared, 203));
-        auto local_bank = decode_wall_tiles(find_record(slums_tiles, id));
-        if (!common || common->size() != 45 || !local_bank || local_bank->size() != 70)
-            throw EclError("Invalid Slums wall tile bank");
-        bank.insert(bank.end(), common->begin(), common->end());
-        bank.insert(bank.end(), local_bank->begin(), local_bank->end());
-        auto decoded = decode_wall_art(find_record(slums_definitions, id), bank);
-        if (!decoded || decoded->appearances.size() != 5)
-            throw EclError("Invalid Slums wall definition bank");
-        district->wall_art.appearances.insert(district->wall_art.appearances.end(),
-                                              decoded->appearances.begin(),
-                                              decoded->appearances.end());
-    }
-    district->sprite_archive = read_archive(resolve_archive(directory, "SPRIT2.DAX"));
+        unsigned id;
+        std::array<unsigned, 3> pieces;
+    };
+    struct Conversion
+    {
+        std::uint8_t record;
+        const char *definition;
+        unsigned fit_xp, award_xp;
+    };
+    struct AreaSource
+    {
+        unsigned script, bank;
+        std::vector<DistrictMap> maps;
+        std::vector<Conversion> creatures;
+    };
+    // The original Slums creatures' experience follows docs/EXPEDITION.md; the
+    // set-encounter creatures added later and Kuto's Well award each stat
+    // block's XP, a leader double (docs/audits/kutos-well.md).
+    const std::array areas{
+        AreaSource{20, 2, {{20, {2, 4, 1}}},
+            {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
+                {11, "slums-kobold-leader-sword", 25, 50}, {2, "slums-goblin", 50, 50},
+                {3, "slums-goblin-leader", 50, 100}, {12, "slums-goblin-leader", 50, 100},
+                {4, "slums-orc", 100, 75}, {13, "slums-orc", 100, 75},
+                {5, "slums-orc-leader", 100, 150}, {14, "slums-orc-leader", 100, 150},
+                {15, "slums-orc-leader", 100, 150}, {63, "slums-bugbear", 200, 200},
+                {6, "slums-hobgoblin", 100, 100}, {7, "slums-hobgoblin", 100, 200},
+                {8, "ogre", 450, 450}, {31, "troll", 1800, 1800},
+                {73, "gnoll-warrior", 100, 100}, {94, "slums-magic-user", 200, 200}
+            }},
+        AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}},
+            {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
+                {57, "lizardfolk", 100, 100}, {59, "giant-lizard", 50, 50},
+                {73, "gnoll-warrior", 100, 100}, {32, "norris-the-gray", 450, 450}
+            }}};
     const auto creatures = CreatureCatalog::load(directory);
-    for (unsigned id :
-            {
-                0, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 63
-            })
-    {
-        const auto creature = creatures.find({2, static_cast<std::uint8_t>(id)});
-        if (!creature)
-            throw EclError("Missing original Slums creature");
-        district->encounter_creatures.emplace(id, creature->get());
-    }
-    district->combat_archive = read_archive(resolve_archive(directory, "CPIC2.DAX"));
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
+    std::vector<Image> terrain_art;
     for (unsigned tile = 0; tile < 25; ++tile)
     {
         auto image = decode_ega_combat_icon(dungeon, 1, tile);
         if (!image || image.image.width != 24 || image.image.height != 24)
             throw EclError("Invalid dungeon tactical tile");
-        district->terrain_art.push_back(std::move(image.image));
+        terrain_art.push_back(std::move(image.image));
     }
-    pictures("HEAD2.DAX", district->heads);
-    pictures("BODY2.DAX", district->bodies);
-    pictures("PIC2.DAX", district->pictures);
-    for (const auto &record : archive("PIC2.DAX").records)
-        if (auto animation = decode_ega_animation(record.bytes))
-            district->animations.emplace(record.id, std::move(animation.frames));
-    town->districts.emplace(20, std::move(district));
+    for (const auto &area : areas)
+    {
+        const auto bank = std::to_string(area.bank);
+        const auto program = catalog.find({"ECL" + bank + ".DAX", static_cast<std::uint8_t>(area.script)});
+        if (!program)
+            throw EclError("Missing area script ECL" + bank + ":" + std::to_string(area.script));
+        town->programs.emplace(area.script, program);
+        const auto definitions = archive(("WALLDEF" + bank + ".DAX").c_str()),
+                   tiles = archive(("8X8D" + bank + ".DAX").c_str());
+        for (const auto &geo : area.maps)
+        {
+            auto district = std::make_shared<PhlanResources>();
+            const auto map = maps.find({"GEO" + bank + ".DAX", static_cast<std::uint8_t>(geo.id)});
+            if (!map)
+                throw EclError("Missing area map GEO" + bank + ":" + std::to_string(geo.id));
+            district->map = map->get();
+            district->script = area.script;
+            district->bank = area.bank;
+            district->pieces = geo.pieces;
+            district->treasure = item_lists("ITEM" + bank + ".DAX");
+            // Three five-appearance banks, each with the common tiles followed
+            // by its own 70 tiles. Decode independently before concatenating.
+            for (const auto id : geo.pieces)
+            {
+                WallTiles walls(1);
+                auto common = decode_wall_tiles(find_record(shared, 203));
+                auto local_bank = decode_wall_tiles(find_record(tiles, id));
+                if (!common || common->size() != 45 || !local_bank || local_bank->size() != 70)
+                    throw EclError("Invalid wall tile bank " + std::to_string(id));
+                walls.insert(walls.end(), common->begin(), common->end());
+                walls.insert(walls.end(), local_bank->begin(), local_bank->end());
+                auto decoded = decode_wall_art(find_record(definitions, id), walls);
+                if (!decoded || decoded->appearances.size() != 5)
+                    throw EclError("Invalid wall definition bank " + std::to_string(id));
+                district->wall_art.appearances.insert(district->wall_art.appearances.end(),
+                                                      decoded->appearances.begin(),
+                                                      decoded->appearances.end());
+            }
+            district->sprite_archive =
+                read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));
+            for (const auto &conversion : area.creatures)
+            {
+                const auto id = conversion.record;
+                const auto creature = creatures.find({static_cast<std::uint8_t>(area.bank), id});
+                if (!creature)
+                    throw EclError("Missing original creature MON" + bank + "CHA:" +
+                                   std::to_string(id));
+                district->encounter_creatures.emplace(id, creature->get());
+                district->conversions.emplace(
+                    id, EncounterConversion{conversion.definition, conversion.fit_xp,
+                                            conversion.award_xp});
+            }
+            district->combat_archive =
+                read_archive(resolve_archive(directory, "CPIC" + bank + ".DAX"));
+            district->terrain_art = terrain_art;
+            pictures(("HEAD" + bank + ".DAX").c_str(), district->heads);
+            pictures(("BODY" + bank + ".DAX").c_str(), district->bodies);
+            pictures(("PIC" + bank + ".DAX").c_str(), district->pictures);
+            for (const auto &record : archive(("PIC" + bank + ".DAX").c_str()).records)
+                if (auto animation = decode_ega_animation(record.bytes))
+                    district->animations.emplace(record.id, std::move(animation.frames));
+            town->districts.emplace(geo.id, std::move(district));
+        }
+    }
     return RolfTourSession(map->get(), program, std::move(sprites), 0xB071, std::move(*wall_art),
                            std::move(town));
 }
@@ -230,25 +324,42 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
 RolfTourSession::RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
                                  std::array<opengold::Image, 3> sprites, std::uint32_t entry,
                                  WallArtSet wall_art, std::shared_ptr<const PhlanResources> town)
-    : map_(std::move(map)), program_(std::move(program)), sprites_(std::move(sprites)),
-      wall_art_(std::move(wall_art)), machine_(program_), entry_(entry), town_(std::move(town))
+    // A town supplies its own map and wall art, as restart() reloads them.
+    : map_(town && town->map ? *town->map : std::move(map)), program_(std::move(program)),
+      sprites_(std::move(sprites)),
+      wall_art_(town && town->map ? town->wall_art : std::move(wall_art)), machine_(program_),
+      entry_(entry), town_(std::move(town))
 {
-    restart();
+    // The members above are initialized once; only the per-run state is reset
+    // here (Effective C++ Item 4).
+    reset_run();
+}
+
+RolfTourSession RolfTourSession::detached_copy() const
+{
+    RolfTourSession copy(*this);
+    copy.campaign_.reset();
+    return copy;
 }
 
 void RolfTourSession::restart()
 {
-    current_area_ = 0;
-    visited_areas_.clear();
-    seen_areas_.clear();
-    rest_checks_ = 0;
     if (town_ && town_->map)
     {
         map_ = *town_->map;
         wall_art_ = town_->wall_art;
     }
-    const auto revision = snapshot_.revision + 1;
     machine_ = EclMachine(program_);
+    reset_run();
+}
+
+void RolfTourSession::reset_run()
+{
+    current_area_ = 0;
+    visited_areas_.clear();
+    seen_areas_.clear();
+    rest_checks_ = 0;
+    const auto revision = snapshot_.revision + 1;
     snapshot_ = {};
     snapshot_.revision = revision;
     menu_request_ = delayed_request_ = 0;
@@ -256,9 +367,11 @@ void RolfTourSession::restart()
     party_ = {};
     treasure_.clear();
     picture_.reset();
-    checkpoint_.reset();
+    event_checkpoint_.reset();
     diagnostics_.clear();
-    current_script_ = selected_character_ = event_stage_ = 0;
+    current_script_ = 0;
+    event_stage_ = EventStage::none;
+    selected_character_ = {};
     camp_kind_ = RestKind::long_rest;
     staged_enemies_.clear();
     staged_art_.clear();
@@ -269,14 +382,12 @@ void RolfTourSession::restart()
     showing_monster_picture_ = false;
     combat_request_ = 0;
     pending_loot_.clear();
-    saved_pending_loot_.clear();
     staged_treasure_.reset();
     door_menu_ = pick_tried_ = false;
     door_choices_.clear();
-    who_request_ = temple_request_ = 0;
+    who_request_ = temple_request_ = damage_request_ = 0;
     who_slots_.clear();
     temple_targets_.clear();
-    saved_campaign_.reset();
     pending_movement_.reset();
     transition_ = message_only_ = false;
     shop_request_ = 0;
@@ -294,8 +405,8 @@ void RolfTourSession::restart()
                 0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
                 0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F
             })
-        machine_.bind_variable(address, 0);
-    machine_.bind_variable(0x49C9, 12); // Research fixture: midday.
+        machine_.bind_variable(EclAddress{address}, 0);
+    machine_.bind_variable(ecl_clock_hour, 12); // Research fixture: midday.
     for (const std::uint8_t opcode :
             {
                 12, 13, 14, 45, 49, 58
@@ -309,54 +420,22 @@ void RolfTourSession::restart()
 
 void RolfTourSession::fail(std::string diagnostic)
 {
-    if (snapshot_.tour_finished && checkpoint_)
+    if (snapshot_.tour_finished && event_checkpoint_)
     {
         diagnostics_.push_back(diagnostic);
-        machine_ = std::move(*checkpoint_);
-        checkpoint_.reset();
-        party_ = saved_party_;
-        current_script_ = saved_script_;
-        change_area(saved_area_);
-        map_ = saved_map_;
-        pending_loot_ = saved_pending_loot_;
-        staged_treasure_.reset();
-        door_menu_ = false;
-        door_choices_.clear();
-        visited_areas_ = saved_visited_areas_;
-        seen_areas_ = saved_seen_areas_;
-        rest_checks_ = saved_rest_checks_;
-        if (saved_snapshot_)
+        try
         {
-            const auto revision = snapshot_.revision + 1;
-            snapshot_ = *saved_snapshot_;
-            snapshot_.revision = revision;
+            roll_back_event();
+            notice("This event is not supported yet: " + diagnostic +
+                   "\nThe event's changes were rolled back. You can continue exploring.");
+            return;
         }
-        if (campaign_ && saved_campaign_)
-            campaign_->restore(*saved_campaign_);
-        who_request_ = temple_request_ = 0;
-        who_slots_.clear();
-        temple_targets_.clear();
-        selected_character_ = saved_selected_character_;
-        pending_movement_.reset();
-        transition_ = false;
-        delayed_request_ = shop_request_ = 0;
-        treasure_.clear();
-        staged_enemies_.clear();
-        staged_art_.clear();
-        staged_records_.clear();
-        encounter_menu_.reset();
-        encounter_.reset();
-        monster_picture_id_.reset();
-        showing_monster_picture_ = false;
-        combat_request_ = 0;
-        snapshot_.sprite_frame = -1;
-        picture_.reset();
-        ++snapshot_.picture_revision;
-        publish_pose();
-        snapshot_.script_id = current_script_;
-        notice("This event is not supported yet: " + diagnostic +
-               "\nThe event's changes were rolled back. You can continue exploring.");
-        return;
+        catch (const std::exception &error)
+        {
+            // A rollback that cannot finish leaves the tour faulted rather than
+            // half restored.
+            diagnostic += "\nRolling the event back failed: " + std::string(error.what());
+        }
     }
     snapshot_.phase = TourPhase::faulted;
     snapshot_.diagnostic = std::move(diagnostic);
@@ -364,11 +443,58 @@ void RolfTourSession::fail(std::string diagnostic)
     ++snapshot_.revision;
 }
 
+void RolfTourSession::roll_back_event()
+{
+    auto saved = std::move(*event_checkpoint_);
+    event_checkpoint_.reset();
+    // The steps that can throw come first: the party's restore checks before
+    // it changes anything, and the area change needs the district's map.
+    if (campaign_ && saved.campaign)
+        campaign_->restore(std::move(*saved.campaign));
+    change_area(saved.area);
+    machine_ = std::move(saved.machine);
+    party_ = std::move(saved.party);
+    current_script_ = saved.script;
+    map_ = std::move(saved.map);
+    pending_loot_ = std::move(saved.pending_loot);
+    staged_treasure_.reset();
+    door_menu_ = false;
+    door_choices_.clear();
+    visited_areas_ = std::move(saved.visited_areas);
+    seen_areas_ = std::move(saved.seen_areas);
+    rest_checks_ = saved.rest_checks;
+    const auto revision = snapshot_.revision + 1;
+    snapshot_ = std::move(saved.snapshot);
+    snapshot_.revision = revision;
+    who_request_ = temple_request_ = damage_request_ = 0;
+    who_slots_.clear();
+    temple_targets_.clear();
+    selected_character_ = saved.selected_character;
+    pending_movement_.reset();
+    transition_ = false;
+    delayed_request_ = shop_request_ = 0;
+    treasure_.clear();
+    staged_enemies_.clear();
+    staged_art_.clear();
+    staged_records_.clear();
+    encounter_menu_.reset();
+    encounter_.reset();
+    monster_picture_id_.reset();
+    showing_monster_picture_ = false;
+    combat_request_ = 0;
+    snapshot_.sprite_frame = -1;
+    picture_.reset();
+    ++snapshot_.picture_revision;
+    publish_pose();
+    snapshot_.script_id = current_script_;
+}
+
 void RolfTourSession::publish_pose()
 {
-    const PartyPose next{machine_.variable(0xC04B), machine_.variable(0xC04C),
-                         machine_.variable(0xC04D)};
-    if (next.x >= 16 || next.y >= 16 || next.facing >= 4)
+    const auto facing = map_direction(machine_.variable(ecl_party_facing));
+    const PartyPose next{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
+                         facing.value_or(MapDirection::north)};
+    if (next.x >= 16 || next.y >= 16 || !facing)
         throw EclError("Tour wrote an invalid party pose");
     snapshot_.pose = next;
     snapshot_.visited.set(next.y * 16 + next.x);
@@ -402,17 +528,19 @@ void RolfTourSession::handle_host(const EclRequest &request)
     switch (opcode)
     {
     case 12:
-        if (request.arguments[0].value != 12 || request.arguments[1].value != 2 ||
-                request.arguments[2].value != 9)
+        if (request.arguments[0].number() != 12 || request.arguments[1].number() != 2 ||
+                request.arguments[2].number() != 9)
             throw EclError("Unsupported encounter setup in Rolf tour");
         snapshot_.sprite_frame = 2;
         break;
     case 13:
         if (snapshot_.sprite_frame > 0)
             --snapshot_.sprite_frame;
+        if (encounter_distance_ > 0)
+            --encounter_distance_;
         break;
     case 14:
-        if (request.arguments[0].value != 255)
+        if (request.arguments[0].number() != 255)
             throw EclError("Tour requested an unsupported picture");
         snapshot_.sprite_frame = -1;
         break;
@@ -426,40 +554,43 @@ void RolfTourSession::handle_host(const EclRequest &request)
         return;
     case 45:
     {
-        const auto service = request.arguments[0].value;
-        if (service == 0xC01E)
+        // The address of the original engine routine the script calls.
+        const auto service = request.arguments[0].address();
+        if (service == EclAddress{0xC01E})
         {
-            PartyPose pose{machine_.variable(0xC04B), machine_.variable(0xC04C),
-                           machine_.variable(0xC04D)};
-            if (pose.x >= 16 || pose.y >= 16 || pose.facing >= 4)
+            const auto facing = map_direction(machine_.variable(ecl_party_facing));
+            PartyPose pose{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
+                           facing.value_or(MapDirection::north)};
+            if (pose.x >= 16 || pose.y >= 16 || !facing)
                 throw EclError("Invalid scripted movement pose");
-            pose.x = (static_cast<int>(pose.x) + dx[pose.facing] + 16) % 16;
-            pose.y = (static_cast<int>(pose.y) + dy[pose.facing] + 16) % 16;
+            pose.x = (static_cast<int>(pose.x) + step_x(pose.facing) + 16) % 16;
+            pose.y = (static_cast<int>(pose.y) + step_y(pose.facing) + 16) % 16;
             const auto &cell = map_.at(pose.x, pose.y);
-            reply.writes = {{0xC04B, static_cast<std::uint16_t>(pose.x)},
-                {0xC04C, static_cast<std::uint16_t>(pose.y)},
-                {0xC04E, cell.walls[pose.facing]},
-                {0xC04F, cell.event_raw}
+            reply.writes = {{ecl_party_x, static_cast<std::uint16_t>(pose.x)},
+                {ecl_party_y, static_cast<std::uint16_t>(pose.y)},
+                {ecl_wall_ahead, cell.walls[index(pose.facing)]},
+                {ecl_cell_event, cell.event_raw}
             };
         }
-        else if (service == 0x2C90 || service == 0xC018)
+        else if (service == EclAddress{0x2C90} || service == EclAddress{0xC018})
         {
-            const auto x = machine_.variable(0xC04B), y = machine_.variable(0xC04C),
-                       f = machine_.variable(0xC04D);
+            const auto x = machine_.variable(ecl_party_x), y = machine_.variable(ecl_party_y),
+                       f = machine_.variable(ecl_party_facing);
             if (x >= 16 || y >= 16 || f >= 4)
                 throw EclError("Invalid redraw pose");
             const auto &cell = map_.at(x, y);
-            reply.writes = {{0xC04E, cell.walls[f]}, {0xC04F, cell.event_raw}};
+            reply.writes = {{ecl_wall_ahead, cell.walls[f]}, {ecl_cell_event, cell.event_raw}};
             ++snapshot_.redraws;
         }
-        else if (service == 0xBA03)
+        else if (service == EclAddress{0xBA03})
         {
-            if (machine_.variable(0x03DE) != 8)
+            if (machine_.variable(EclAddress{0x03DE}) != 8)
                 throw EclError("Unsupported tour sound selector");
             ++snapshot_.footsteps; // Presentation plays an original OpenGoldBox footstep cue.
         }
         else
-            throw EclError("Unsupported native service in tour: " + std::to_string(service));
+            throw EclError("Unsupported native service in tour: " +
+                           std::to_string(service.location));
         break;
     }
     default:
@@ -468,7 +599,8 @@ void RolfTourSession::handle_host(const EclRequest &request)
     if (!machine_.resume_host(request.id, reply))
         throw EclError("Tour host reply rejected");
     if (opcode == 45 &&
-            (request.arguments[0].value == 0x2C90 || request.arguments[0].value == 0xC01E))
+            (request.arguments[0].address() == EclAddress{0x2C90} ||
+             request.arguments[0].address() == EclAddress{0xC01E}))
         publish_pose();
     ++snapshot_.revision;
 }
@@ -528,6 +660,8 @@ void RolfTourSession::advance(double seconds)
             {
                 if (request.vertical && !request.text.empty())
                     snapshot_.dialogue += "\n" + request.text;
+                if (request.instruction && request.instruction->opcode == 44)
+                    announce_spokesman();
                 snapshot_.choices = request.choices;
                 menu_request_ = request.id;
                 snapshot_.continue_ticket = ++next_ticket_;
@@ -581,7 +715,7 @@ bool RolfTourSession::camp(RestKind kind)
             campaign_->state().training_rest)
         return false;
     camp_kind_ = kind;
-    begin_event(2);
+    begin_event(EventTrigger::camp);
     advance(0);
     return true;
 }
@@ -599,10 +733,10 @@ bool RolfTourSession::explore(ExplorationCommand command)
         if (command == ExplorationCommand::forward)
         {
             pending_movement_ = command;
-            begin_event(0);
+            begin_event(EventTrigger::step);
         }
         else if (command == ExplorationCommand::look)
-            begin_event(1);
+            begin_event(EventTrigger::look);
         else
         {
             move_party(command);
@@ -613,32 +747,32 @@ bool RolfTourSession::explore(ExplorationCommand command)
     }
     auto pose = snapshot_.pose;
     if (command == ExplorationCommand::turn_left)
-        pose.facing = (pose.facing + 3) % 4;
+        pose.facing = turned_left(pose.facing);
     else if (command == ExplorationCommand::turn_right)
-        pose.facing = (pose.facing + 1) % 4;
+        pose.facing = turned_right(pose.facing);
     else if (command == ExplorationCommand::turn_around)
-        pose.facing = (pose.facing + 2) % 4;
+        pose.facing = reversed(pose.facing);
     else
     {
         const auto &edge = map_.at(pose.x, pose.y);
-        const int x = static_cast<int>(pose.x) + dx[pose.facing],
-                  y = static_cast<int>(pose.y) + dy[pose.facing];
-        if (x < 0 || y < 0 || x >= 16 || y >= 16 || edge.walls[pose.facing] ||
-                edge.doors[pose.facing])
+        const int x = static_cast<int>(pose.x) + step_x(pose.facing),
+                  y = static_cast<int>(pose.y) + step_y(pose.facing);
+        if (x < 0 || y < 0 || x >= 16 || y >= 16 || edge.walls[index(pose.facing)] ||
+                edge.doors[index(pose.facing)])
             return false;
         const auto &other = map_.at(x, y);
-        const auto reverse = (pose.facing + 2) % 4;
-        if (other.walls[reverse] || other.doors[reverse])
+        const auto reverse = reversed(pose.facing);
+        if (other.walls[index(reverse)] || other.doors[index(reverse)])
             return false;
         pose.x = x;
         pose.y = y;
     }
-    machine_.bind_variable(0xC04B, pose.x);
-    machine_.bind_variable(0xC04C, pose.y);
-    machine_.bind_variable(0xC04D, pose.facing);
+    machine_.bind_variable(ecl_party_x, pose.x);
+    machine_.bind_variable(ecl_party_y, pose.y);
+    machine_.bind_variable(ecl_party_facing, static_cast<std::uint16_t>(index(pose.facing)));
     const auto &cell = map_.at(pose.x, pose.y);
-    machine_.bind_variable(0xC04E, cell.walls[pose.facing]);
-    machine_.bind_variable(0xC04F, cell.event_raw);
+    machine_.bind_variable(ecl_wall_ahead, cell.walls[index(pose.facing)]);
+    machine_.bind_variable(ecl_cell_event, cell.event_raw);
     publish_pose();
     return true;
 }

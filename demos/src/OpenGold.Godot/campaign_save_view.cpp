@@ -4,6 +4,7 @@
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -35,16 +36,14 @@ std::filesystem::path game_directory()
     auto dir = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
     if (dir.is_empty())
         dir = ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
-    return std::filesystem::u8path(dir.utf8().get_data());
+    return presentation::path_from_godot(dir);
 }
 
 auto rules_module()
 {
-    return srd5::load(std::filesystem::u8path(
+    return srd5::load(presentation::path_from_godot(
                           ProjectSettings::get_singleton()
-                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                          .utf8()
-                          .get_data()));
+                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")));
 }
 } // namespace
 
@@ -67,15 +66,9 @@ void CharacterCreationView::setup_saves()
             {
                 true, false
             })
-    {
-        std::unique_ptr<Button, DeleteNode> button(memnew(Button));
-        button->set_name(saving ? "Save" : "Load");
-        button->set_text(saving ? "Save game" : "Load game");
-        button->connect("pressed",
-                        callable_mp(this, &CharacterCreationView::open_saves).bind(saving));
-        get_node<Control>("PartyPanel")->add_child(button.get());
-        button.release();
-    }
+        get_node<Button>(saving ? "PartyPanel/Save" : "PartyPanel/Load")
+            ->connect("pressed",
+                      callable_mp(this, &CharacterCreationView::open_saves).bind(saving));
 }
 
 void CharacterCreationView::open_saves(bool saving)
@@ -208,10 +201,8 @@ void RolfTourView::request_save(bool saving)
 void CharacterCreationView::save_checkpoint_check(const std::string &name)
 {
     auto directory =
-        std::filesystem::u8path(ProjectSettings::get_singleton()
-                                ->globalize_path("res://../../user-data/save-check")
-                                .utf8()
-                                .get_data());
+        presentation::path_from_godot(ProjectSettings::get_singleton()
+                                      ->globalize_path("res://../../user-data/save-check"));
     save_campaign(directory / (name + ".ogs"));
     error_ = "";
     if (name == "final")
@@ -232,10 +223,8 @@ void CharacterCreationView::save_checkpoint_check(const std::string &name)
 void CharacterCreationView::load_checkpoint_check()
 {
     auto directory =
-        std::filesystem::u8path(ProjectSettings::get_singleton()
-                                ->globalize_path("res://../../user-data/save-check")
-                                .utf8()
-                                .get_data());
+        presentation::path_from_godot(ProjectSettings::get_singleton()
+                                      ->globalize_path("res://../../user-data/save-check"));
     const auto assets = campaign_asset_identity(game_directory());
     for (const char *name :
             {"advancement", "interrupted-rest", "cancelled-service", "temple-payment", "inn-rest",
@@ -282,9 +271,9 @@ void CharacterCreationView::load_checkpoint_check()
                 throw std::runtime_error("Rest save did not use existing save dialog");
             get_node<SaveSlots>("SaveSlots")->get_node<Button>("Cancel")->emit_signal("pressed");
             town->get_node<Button>("Camp")->emit_signal("pressed");
-            rest->get_node<Button>("Spend")->emit_signal("pressed");
+            rest->get_node<Button>("Heal")->emit_signal("pressed");
             if (encode_campaign(*campaign_, town->saved_session(), assets) == before)
-                throw std::runtime_error("Reloaded rest could not spend its next die");
+                throw std::runtime_error("Reloaded rest could not heal with its Hit Dice");
             rest->get_node<Button>("Finish")->emit_signal("pressed");
             town->hide();
         }

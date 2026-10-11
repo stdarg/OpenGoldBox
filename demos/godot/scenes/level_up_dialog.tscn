@@ -1,0 +1,243 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/level_up_dialog.gd" id="1_layout"]
+
+[node name="LevelUp" type="Window"]
+title = "Level up"
+size = Vector2i(700, 670)
+min_size = Vector2i(700, 670)
+unresizable = true
+transient = true
+exclusive = true
+visible = false
+script = ExtResource("1_layout")
+
+[node name="SpellChoicesPage" type="ScrollContainer" parent="."]
+offset_left = 24
+offset_top = 70
+offset_right = 676
+offset_bottom = 545
+horizontal_scroll_mode = 0
+follow_focus = true
+visible = false
+
+[node name="Rows" type="VBoxContainer" parent="SpellChoicesPage"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"SpellRows"
+
+[node name="SkilledCount" type="Label" parent="."]
+offset_left = 24
+offset_top = 44
+offset_right = 676
+offset_bottom = 68
+visible = false
+
+[node name="SkilledPage" type="ScrollContainer" parent="."]
+offset_left = 24
+offset_top = 70
+offset_right = 676
+offset_bottom = 545
+horizontal_scroll_mode = 0
+follow_focus = true
+visible = false
+
+[node name="Rows" type="VBoxContainer" parent="SkilledPage"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"SpellRows"
+
+[node name="Back" type="Button" parent="."]
+offset_left = 236
+offset_top = 610
+offset_right = 372
+offset_bottom = 650
+text = "Back"
+visible = false
+
+[node name="Title" type="Label" parent="."]
+offset_left = 24
+offset_top = 20
+offset_right = 676
+offset_bottom = 60
+theme_type_variation = &"LabelText24"
+clip_text = true
+
+[node name="HP" type="Label" parent="."]
+offset_left = 24
+offset_top = 70
+offset_right = 676
+offset_bottom = 112
+
+[node name="FeatLabel" type="Label" parent="."]
+offset_left = 24
+offset_top = 122
+offset_right = 676
+offset_bottom = 150
+text = "Feat or ability points"
+
+[node name="Feat" type="OptionButton" parent="."]
+offset_left = 24
+offset_top = 155
+offset_right = 676
+offset_bottom = 193
+
+[node name="AdvancementTrainingLabel" type="Label" parent="."]
+offset_left = 24
+offset_top = 205
+offset_right = 676
+offset_bottom = 230
+visible = false
+
+[node name="AdvancementTraining" type="OptionButton" parent="."]
+offset_left = 24
+offset_top = 236
+offset_right = 676
+offset_bottom = 272
+visible = false
+
+[node name="AbilityLabel0" type="Label" parent="."]
+offset_left = 24
+offset_top = 205
+offset_right = 124
+offset_bottom = 230
+text = "STR"
+
+[node name="Ability0" type="OptionButton" parent="."]
+offset_left = 24
+offset_top = 236
+offset_right = 124
+offset_bottom = 272
+
+[node name="AbilityLabel1" type="Label" parent="."]
+offset_left = 134
+offset_top = 205
+offset_right = 234
+offset_bottom = 230
+text = "DEX"
+
+[node name="Ability1" type="OptionButton" parent="."]
+offset_left = 134
+offset_top = 236
+offset_right = 234
+offset_bottom = 272
+
+[node name="AbilityLabel2" type="Label" parent="."]
+offset_left = 244
+offset_top = 205
+offset_right = 344
+offset_bottom = 230
+text = "CON"
+
+[node name="Ability2" type="OptionButton" parent="."]
+offset_left = 244
+offset_top = 236
+offset_right = 344
+offset_bottom = 272
+
+[node name="AbilityLabel3" type="Label" parent="."]
+offset_left = 354
+offset_top = 205
+offset_right = 454
+offset_bottom = 230
+text = "INT"
+
+[node name="Ability3" type="OptionButton" parent="."]
+offset_left = 354
+offset_top = 236
+offset_right = 454
+offset_bottom = 272
+
+[node name="AbilityLabel4" type="Label" parent="."]
+offset_left = 464
+offset_top = 205
+offset_right = 564
+offset_bottom = 230
+text = "WIS"
+
+[node name="Ability4" type="OptionButton" parent="."]
+offset_left = 464
+offset_top = 236
+offset_right = 564
+offset_bottom = 272
+
+[node name="AbilityLabel5" type="Label" parent="."]
+offset_left = 574
+offset_top = 205
+offset_right = 674
+offset_bottom = 230
+text = "CHA"
+
+[node name="Ability5" type="OptionButton" parent="."]
+offset_left = 574
+offset_top = 236
+offset_right = 674
+offset_bottom = 272
+
+[node name="SpellLabel" type="Label" parent="."]
+offset_left = 24
+offset_top = 292
+offset_right = 676
+offset_bottom = 320
+text = "Prepared spells"
+
+[node name="FightingStyle" type="OptionButton" parent="."]
+offset_left = 24
+offset_top = 325
+offset_right = 676
+offset_bottom = 363
+visible = false
+
+[node name="Spell0" type="CheckBox" parent="."]
+offset_left = 24
+offset_top = 325
+offset_right = 676
+offset_bottom = 361
+
+[node name="Spell1" type="CheckBox" parent="."]
+offset_left = 24
+offset_top = 363
+offset_right = 676
+offset_bottom = 399
+
+[node name="Spell2" type="CheckBox" parent="."]
+offset_left = 24
+offset_top = 401
+offset_right = 676
+offset_bottom = 437
+
+[node name="Spell3" type="CheckBox" parent="."]
+offset_left = 24
+offset_top = 439
+offset_right = 676
+offset_bottom = 475
+
+[node name="Note" type="Label" parent="."]
+offset_left = 24
+offset_top = 489
+offset_right = 676
+offset_bottom = 555
+theme_type_variation = &"LabelText14"
+text = "Fixed-average HP growth. Existing resource expenditure is preserved.\nAdditional class and subclass features are unavailable in this version."
+autowrap_mode = 3
+
+[node name="Error" type="Label" parent="."]
+offset_left = 24
+offset_top = 560
+offset_right = 676
+offset_bottom = 594
+theme_type_variation = &"LabelText15"
+
+[node name="Cancel" type="Button" parent="."]
+offset_left = 386
+offset_top = 610
+offset_right = 522
+offset_bottom = 650
+text = "Cancel"
+
+[node name="Confirm" type="Button" parent="."]
+offset_left = 536
+offset_top = 610
+offset_right = 676
+offset_bottom = 650
+text = "Confirm"

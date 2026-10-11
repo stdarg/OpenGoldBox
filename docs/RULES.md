@@ -9,10 +9,8 @@ The [shared party preview](PARTY.md) extends this module with created-character
 recipes, equipment and persistent vitals/resources. The standalone combat modes
 below retain their fixed fixtures; the character scene injects the actual party.
 
-[Spell component eligibility](SPELL-COMPONENTS.md) blocks Somatic spells when an
-equipped weapon/wand and shield occupy both hands, while retaining Verbal-only
-spells. Speech-blocking sources and material components remain
-separate increments.
+Spells have no components ([spell components](SPELL-COMPONENTS.md)): a weapon,
+wand or shield in hand never blocks casting, and Silence does not stop spells.
 
 ## Run from Windows CMD
 
@@ -61,8 +59,9 @@ An opportunity reaction pauses combat until you choose Opportunity attack or
 Decline reaction above the log; movement and End turn wait for that choice.
 Hovering over a monster or NPC shows a tooltip beside the pointer with its
 type, current and maximum HP, AC, and the weapon it would use at its present
-distance from the party. When an encounter has no named weapon, it shows
-`Unspecified` rather than inventing one.
+distance from the party. Every Slums monster names its weapons (a Troll's
+Rend, an Ogre's Greatclub and Javelin); when an encounter has no named weapon,
+it shows `Unspecified` rather than inventing one.
 Melee, ranged, and damaging spell attacks spend the action and any required
 spell slot while preserving remaining movement and Bonus Actions. Move before
 or after attacking, use Second Wind if available, then choose **End turn** or
@@ -134,7 +133,7 @@ Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plu
 the same accepted command sequence reproducible. Checkpoints include the RNG,
 turn budgets, HP, slots, death saves and unfinished opportunity reactions.
 
-Rules module **0.6.88** writes **OGCOMBAT 39**, including an
+Rules module **0.6.88** writes **OGCOMBAT 40**, including an
 involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP.
 A saved leave-reach queue retains its order, partially resolved position and
 deterministic continuation. Older formats and other module or content identities
@@ -215,7 +214,7 @@ not an automatic conversion of original AD&D values.
 Not yet implemented (as of 2026-10-02): full class features or equipment,
 additional saving-throw effects and conditions, partial cover, multiple sizes,
 concentration spells (the [foundation](CONCENTRATION.md) exists), most other
-spells, split-target Magic Missile/Scorching Ray, retreat, morale, or complete
+spells, split-target Magic Missile/Scorching Ray, or complete
 campaign encounter coverage. Weapon mastery, typed damage and resistance, and
 Prone are implemented; grappling was dropped
 ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)). The shared campaign now includes named saves,

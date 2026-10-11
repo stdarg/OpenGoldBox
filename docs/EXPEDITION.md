@@ -7,10 +7,13 @@ automatically. Victory resumes the waiting script and exploration; defeat opens
 the saved-game reload / Exit to OS screen.
 
 The arena uses the verified 50 by 25 dungeon geometry and original DUNGCOM tiles
-described in [combat-geometry.md](combat-geometry.md). Party and enemy placement
-is an authored formation inside a shared reachable component of that geometry.
-Placement never removes obstacles or omits requested enemies. It is not a claim
-to reproduce the original game's formation algorithm.
+described in [combat-geometry.md](combat-geometry.md). The party and the enemies
+start where the original engine put them ([PLACE-1](SRD-DECISIONS.md#place-1-2026-10-10-starting-positions-as-the-original-game-had-them)):
+two groups facing each other, the enemies as many exploration squares ahead as
+the script's encounter distance, which never reaches past a wall ahead.
+Placement never removes obstacles. As in the original, a monster with no room is
+left out of the fight and is worth nothing; if no monster has room, the first
+takes the nearest free square the party can reach.
 
 ## Encounter conversion
 
@@ -31,7 +34,9 @@ complete official monster stat blocks or translations of AD&D statistics:
 The four-orc event retains its approved 300 XP reward and stable completion
 identity. Existing campaign semantics award that amount to each living active
 member. Roaming encounters use a distinct persisted reward identity each time.
-Original groups can be large and dangerous to a new party; counts are preserved.
+Original groups can be large and dangerous to a new party; they are scaled back
+to the party's XP budget as the [encounter size](SRD-DECISIONS.md) decision
+describes, the four-orc search included.
 
 **Decision (2026-09-30, issue #14): AD&D-equivalent encounter sizing.** Roaming
 group sizes come from the original PARTY STRENGTH, which is fed what an
@@ -39,15 +44,27 @@ equivalent AD&D character would have (class THAC0 by level, worn armor AC,
 current HP, spellcaster levels) instead of converted SRD bonuses; see
 [party strength](PARTY.md). Six level-two fighters in chain and shield now meet
 eight goblins and four leaders where the SRD-bonus conversion produced sixteen
-and four. Group counts still follow the original script exactly.
+and four. Group counts start from the original script and are then scaled back to the XP
+budget.
 
 When the script starts combat, the approached monster's animated close-up
-fills the 3D view until any key is pressed, then combat opens. See
+fills the 3D view, with "Press any key to fight.", until any key or Continue is
+pressed, then combat opens. See
 [close-up animations](graphics-format.md#close-up-animations).
 
-The pre-combat menu uses Fight, Wait, Flee, Advance and Parley with the script's
-response table. Pre-combat escape is separate from retreat during combat, which
-remains deferred. Supported modern profiles have no original party surprise
+The pre-combat menu offers Fight, Wait, Flee and Advance with the script's
+response table; once the monsters are adjacent, Parley replaces Advance. The
+party's leader parleys ([LEADER-1](SRD-DECISIONS.md#leader-1-2026-10-08-a-party-leader-speaks-for-the-party)),
+and a meeting that ends without a fight says so. A successful Flee lets the
+script move the party, as the original's wild flight does. A parley that goes well
+enough reaches the Slums script's other outcomes, each tested: a toll (Pay
+enough and the monsters take half the party's coins, too little and they
+attack; Surrender costs every coin and moves the party; Run escapes when the
+party is as fast as the monsters) or an order to leave (Leave ends the meeting,
+Stay or Fight starts one). The best outcome, the leader's advice, needs a
+reaction total over 95: Charisma 19 or more with an Abusive parley. Pre-combat escape is separate from fleeing during combat, which follows the
+original: move a member off the field's edge
+([FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did)). Supported modern profiles have no original party surprise
 modifiers. Surprise rolls share the checkpointed ECL random stream; the resulting
 surprise uses initiative disadvantage in the selected SRD module. Original
 movement thresholds use the explicit conversion 30 modern feet = 12 original
@@ -68,6 +85,67 @@ combat rules accept all twelve created classes with basic combat actions.
 Additional class abilities are available only for Fighter, Cleric, and Wizard.
 A rejected training fight keeps the party screen
 open so the party can be edited and retried.
+
+Leaving the Slums through a west doorway enters Kuto's Well (`ECL8:29`, maps
+`GEO8:29` and `GEO8:32`). Its fights, camping, the catacombs' arrow volleys,
+Norris the Gray's band (fought or surrendered to), his treasure and the hideout
+are supported; finds that seem to need the original Search mode are not, see the
+[Kuto's Well audit](audits/kutos-well.md).
+
+`tests/playtest_kutos_well.gd` play-tests the area in the game window. The
+expedition test writes its two campaign fixtures when asked: beside the well
+(`OPENGOLD_KUTO_WELL_FIXTURE`) and beside Norris's hall
+(`OPENGOLD_KUTO_NORRIS_FIXTURE`). The script loads each through Load game,
+climbs down into the arrow volley, meets Norris and starts his fight, and
+saves a screenshot at each step with a dialogue report. It is not a CTest
+check; run it with a window and a scratch `HOME`:
+
+```sh
+OPENGOLD_KUTO_WELL_FIXTURE=/tmp/kuto/well.ogs OPENGOLD_KUTO_NORRIS_FIXTURE=/tmp/kuto/norris.ogs \
+OPENGOLD_GAME_DIR=/path/to/POOLRAD build/opengold_expedition_tests
+HOME=/tmp/kuto/home OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path src/OpenGoldBox/godot \
+    --script ../../../tests/playtest_kutos_well.gd -- --kuto-well=/tmp/kuto/well.ogs \
+    --kuto-norris=/tmp/kuto/norris.ogs --playtest-out=/tmp/kuto/out
+```
+
+`tests/playtest_slums.gd` play-tests the Slums' set encounters the same way.
+The expedition test writes its saves when `OPENGOLD_SLUMS_FIXTURES` names a
+folder: beside the arguing hobgoblins (met coming south from (0, 1)), beside
+the monster leaders and south of the trolls' room. The script walks into each
+fight and plays every party turn like a person: it cycles actions with A,
+clicks the enemies, otherwise clicks the Move square nearest one, and ends the
+turn. (It first stepped with the arrow keys, which stall on the Slums'
+diagonal walls: its fighters lost fights without reaching the enemy.) Its
+report lists each distinct prompt and error with a screenshot of its first
+sight. `tools/playtest.py` writes fresh saves from the
+game build, runs it with a scratch home folder and prints the report; a save
+that does not load (one older than the rules) stops the play-test with a
+FAILED line:
+
+```sh
+python3 tools/playtest.py slums --game-dir /path/to/POOLRAD
+python3 tools/playtest.py slums --game-dir /path/to/POOLRAD -- --strong
+```
+
+The expedition test also writes each save with the party at level four
+(`NAME-strong.ogs`); `--strong` plays those, to reach morale breaking in the
+real fights (the monster leaders' gnolls broke in the first such run) and
+what follows a won fight.
+
+The play-test is not a difficulty measure. Its party is the expedition test's
+six created Fighters at level two, each with only
+the Long Sword, Chain Mail and Shield it bought: no Torch, Oil, Acid or
+Alchemist's Fire. Each fight starts from its own save at full Hit Points, and
+the session fits it as in the game (two hobgoblins at level two, five at four;
+an ogre, a gnoll and a hobgoblin leader; an ogre and a troll). On 2026-10-10
+the game's own combat AI (what Quick plays) won the hobgoblins and the leaders
+from these saves 30 times in 30 at both levels, and the trolls none in 30 at
+level two and 2 in 30 at level four: without Fire or Acid
+([GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party))
+the troll regenerates faster than the fighters can hurt it. With 2 Oil and 2
+Alchemist's Fire each, as the [campaign simulator](CAMPAIGN-SIM.md) carries
+(their packs emptied of loot to make room), the same party won it 17 times in
+30 at level two and 30 in 30 at four.
 
 Locked doors offer the original Bash, Pick (with a Rogue) and Exit, and Ohlo's potion delivery is
 supported from commission to reward; see [QUESTS.md](QUESTS.md). The installed

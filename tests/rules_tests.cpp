@@ -9,6 +9,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -52,10 +53,11 @@ std::string creature_resources(int second_winds, int successes = 0, int failures
 
 Encounter duel(std::string profile = "vanguard")
 {
-    Battlefield b{12, 9, std::vector<std::uint8_t>(108, 0)};
-    b.terrain[4 * 12 + 4] = 1;
-    b.terrain[2 * 12 + 1] = 2;
-    return {b, {{1, profile, "Hero", 0, {2, 2}}, {2, "bandit", "Bandit", 1, {3, 2}}}};
+    Battlefield b{12, 9, std::vector<Terrain>(108)};
+    b.terrain[4 * 12 + 4] = Terrain::obstacle;
+    b.terrain[2 * 12 + 1] = Terrain::difficult;
+    return {b, {{1, profile, "Hero", Side::party, {2, 2}},
+                {2, "bandit", "Bandit", Side::opposition, {3, 2}}}};
 }
 
 Command command(const CombatSession &session, std::string_view verb, Cell cell = {})
@@ -155,7 +157,7 @@ void turn_budget_tests()
     draft.rolled = true;
     for (auto &roll : draft.rolls)
         roll = {{6, 5, 4, 1}, 3};
-    auto sheet = srd5::character_rules()->evaluate(draft, true);
+    auto sheet = srd5::character_rules()->evaluate(draft, NameRequirement::required);
     VitalState unused;
     for (unsigned level = 2; level <= 3; ++level)
     {
@@ -178,7 +180,7 @@ void turn_budget_tests()
         {
             auto e = duel();
             e.participants[1].definition = "vanguard";
-            e.participants.push_back({3, "vanguard", "Reserve enemy", 1, {10, 7}});
+            e.participants.push_back({3, "vanguard", "Reserve enemy", Side::opposition, {10, 7}});
             const bool weapon =
                 std::string_view(verb) == "melee" || std::string_view(verb) == "ranged";
             if (weapon)
@@ -254,7 +256,7 @@ void turn_budget_tests()
         auto e = duel(std::string_view(verb) == "blindness" ? "blindness-adept" : "vanguard");
         e.participants[0].facing_left = true;
         e.participants[1].definition = "vanguard";
-        e.participants.push_back({3, "vanguard", "Behind attacker", 1, {1, 2}});
+        e.participants.push_back({3, "vanguard", "Behind attacker", Side::opposition, {1, 2}});
         if (std::string_view(verb) != "melee" && std::string_view(verb) != "ranged" &&
                 std::string_view(verb) != "blindness")
             e.participants[0].character_profile = module->character_profile(sheet, {}).data;
@@ -304,7 +306,7 @@ void turn_budget_tests()
     // Multiple leave-reach reactions resolve in order before the move resumes.
     e = duel();
     e.participants[1].definition = "vanguard";
-    e.participants.push_back({3, "bandit", "Other guard", 1, {3, 1}});
+    e.participants.push_back({3, "bandit", "Other guard", Side::opposition, {3, 1}});
     session = hero_first(*module, e);
     session->submit(command(*session, "melee"));
     check(session->submit(command(*session, "move", {1, 2})),
@@ -370,7 +372,7 @@ void boundary_tests()
     }
     check(reduced, "Surprise affects initiative across deterministic seeds");
     auto wide = duel();
-    wide.battlefield = {50, 25, std::vector<std::uint8_t>(1250)};
+    wide.battlefield = {50, 25, std::vector<Terrain>(1250)};
     auto original = module->create(wide, 42);
     check(module->restore(original->save())->snapshot().battlefield.width == 50,
           "Original arena dimensions round trip");
@@ -388,7 +390,7 @@ void boundary_tests()
                         [](const auto & c)
     {
         return c.verb == "move";
-    }) == preview.size(),
+    }) == std::ssize(preview),
                  "Active movement preview matches legal move count");
     for (const auto &cell : preview)
         check(std::any_of(legal.begin(), legal.end(),
@@ -482,8 +484,8 @@ void boundary_tests()
 
     auto vulnerable = duel();
     vulnerable.participants[0].state = VitalState{1, false, creature_resources(1)};
-    vulnerable.participants.push_back({3, "vanguard", "Second reactor", 1, {3, 1}});
-    vulnerable.participants.push_back({4, "vanguard", "Conscious ally", 0, {8, 6}});
+    vulnerable.participants.push_back({3, "vanguard", "Second reactor", Side::opposition, {3, 1}});
+    vulnerable.participants.push_back({4, "vanguard", "Conscious ally", Side::party, {8, 6}});
     bool interrupted = false;
     for (unsigned seed = 0; seed < 100 && !interrupted; ++seed)
     {
@@ -506,7 +508,7 @@ void boundary_tests()
 
     auto flank = duel();
     flank.participants[1].cell = {1, 2};
-    flank.participants.push_back({3, "bandit", "Right Guard", 1, {3, 2}});
+    flank.participants.push_back({3, "bandit", "Right Guard", Side::opposition, {3, 2}});
     session = hero_first(*module, flank);
     const auto left_attack = [&](const CombatSession & combat, EntityId target)
     {
@@ -536,7 +538,7 @@ void boundary_tests()
 
     auto reverse = duel();
     reverse.participants[0].facing_left = true;
-    reverse.participants.push_back({3, "bandit", "Left Guard", 1, {1, 2}});
+    reverse.participants.push_back({3, "bandit", "Left Guard", Side::opposition, {1, 2}});
     session = hero_first(*module, reverse);
     check(session->submit(left_attack(*session, 2)),
           "Hero attacks to the right from a left-facing pose");
@@ -547,7 +549,7 @@ void boundary_tests()
     auto monster_flank = duel();
     monster_flank.participants[0].cell = {1, 2};
     monster_flank.participants[1].cell = {2, 2};
-    monster_flank.participants.push_back({3, "vanguard", "Right Hero", 0, {3, 2}});
+    monster_flank.participants.push_back({3, "vanguard", "Right Hero", Side::party, {3, 2}});
     session = actor_first(*module, monster_flank, 2);
     check(session->submit(left_attack(*session, 1)), "Monster attacks to the left");
     check(unit(*session, 2).facing_left && !session->snapshot().reaction_pending &&
@@ -594,6 +596,21 @@ void mechanics_tests()
         check(!offers(*fight, "melee") && fight->submit(command(*fight, "ranged")),
               "A distant kobold throws its Dagger");
     }
+    // Every Slums monster names the weapons it fights with, so its hover panel
+    // never shows an unspecified weapon.
+    const std::vector<std::array<std::string_view, 3>> named_weapons{
+        {"troll", "Rend", ""}, {"ogre", "Greatclub", "Javelin"},
+        {"slums-hobgoblin", "Longsword", "Longbow"}, {"gnoll-warrior", "Rend", "Bone bow"},
+        {"lizardfolk", "Bite", "Javelin"}, {"giant-lizard", "Bite", ""},
+        {"norris-the-gray", "Scimitar", ""}, {"slums-magic-user", "Dagger", ""}};
+    for (const auto &[key, melee, ranged] : named_weapons)
+    {
+        auto encounter = duel();
+        encounter.participants[1].definition = std::string(key);
+        const auto monster = unit(*first_turn(*kobold_rules, encounter, 2), 2);
+        check(monster.melee_weapon == melee && monster.ranged_weapon == ranged,
+              "Every Slums monster names its weapons");
+    }
     CombatDemo training(srd5::load(pack()));
     training.training();
     for (unsigned i = 0; training.combat().snapshot().outcome == Outcome::ongoing; ++i)
@@ -604,8 +621,8 @@ void mechanics_tests()
     }
     auto module = srd5::load(pack());
     auto encounter = duel("adept");
-    encounter.participants[1] = {2, "vanguard", "Enemy", 1, {8, 2}};
-    encounter.participants.push_back({3, "vanguard", "Reserve", 1, {8, 6}});
+    encounter.participants[1] = {2, "vanguard", "Enemy", Side::opposition, {8, 2}};
+    encounter.participants.push_back({3, "vanguard", "Reserve", Side::opposition, {8, 6}});
     auto session = hero_first(*module, encounter);
     for (int cast = 0; cast < 2; ++cast)
     {
@@ -623,19 +640,19 @@ void mechanics_tests()
 
     encounter = duel("adept");
     encounter.participants[1].cell = {6, 2};
-    encounter.battlefield.terrain[2 * 12 + 4] = 1;
+    encounter.battlefield.terrain[2 * 12 + 4] = Terrain::obstacle;
     session = hero_first(*module, encounter);
     check(!offers(*session, "ranged") && !offers(*session, "fire_bolt") &&
           !offers(*session, "magic_missile"),
           "Opaque obstacles block weapon and spell targeting");
-    encounter.battlefield.terrain[2 * 12 + 4] = 0;
+    encounter.battlefield.terrain[2 * 12 + 4] = Terrain::open;
     session = hero_first(*module, encounter);
     check(offers(*session, "ranged") && offers(*session, "magic_missile"),
           "Clear sight enables targeting");
     encounter = duel();
     session = hero_first(*module, encounter);
     session->submit(command(*session, "ranged"));
-    const auto ranged_log = session->snapshot().log;
+    const auto ranged_log = session->snapshot().log();
     check(std::any_of(ranged_log.begin(), ranged_log.end(),
                       [](const auto & line)
     {
@@ -645,7 +662,7 @@ void mechanics_tests()
 
     // A critical can kill the adjacent bandit; its vacated cell is traversable
     // and a checkpoint may legitimately contain a living actor over a corpse.
-    encounter.participants.push_back({3, "bandit", "Reserve", 1, {10, 7}});
+    encounter.participants.push_back({3, "bandit", "Reserve", Side::opposition, {10, 7}});
     bool tested = false;
     for (unsigned seed = 0; seed < 500 && !tested; ++seed)
     {
@@ -657,7 +674,7 @@ void mechanics_tests()
             continue;
         check(session->snapshot().actor == 1,
               "Lethal attack preserves the actor's turn while other enemies remain");
-        const auto log = session->snapshot().log;
+        const auto log = session->snapshot().log();
         if (std::none_of(log.begin(), log.end(),
                          [](const auto & line)
     {
@@ -677,7 +694,7 @@ void mechanics_tests()
             })
     {
         encounter = duel(profile);
-        encounter.participants[1] = {2, "adept", "Enemy caster", 1, {8, 2}};
+        encounter.participants[1] = {2, "adept", "Enemy caster", Side::opposition, {8, 2}};
         session = hero_first(*module, encounter);
         session->submit(command(*session, "end"));
         check(session->snapshot().actor == 2, "Enemy caster turn");
@@ -696,8 +713,8 @@ void mechanics_tests()
     }
 
     encounter = duel("bandit");
-    encounter.participants[1] = {2, "adept", "Enemy caster", 1, {8, 2}};
-    encounter.participants.push_back({3, "vanguard", "Ally", 0, {1, 5}});
+    encounter.participants[1] = {2, "adept", "Enemy caster", Side::opposition, {8, 2}};
+    encounter.participants.push_back({3, "vanguard", "Ally", Side::party, {1, 5}});
     tested = false;
     for (unsigned seed = 0; seed < 100 && !tested; ++seed)
     {
@@ -713,7 +730,7 @@ void mechanics_tests()
               "Zero HP incapacitates player while ally can fight");
         for (int i = 0; i < 3; ++i)
             session->submit(command(*session, "end"));
-        const auto log = session->snapshot().log;
+        const auto log = session->snapshot().log();
         check(std::any_of(log.begin(), log.end(),
                           [](const auto & line)
         {
@@ -725,7 +742,7 @@ void mechanics_tests()
     check(tested, "Exercised player unconscious/death-save flow");
 
     encounter = duel("bandit");
-    encounter.participants[1] = {2, "adept", "Enemy caster", 1, {8, 2}};
+    encounter.participants[1] = {2, "adept", "Enemy caster", Side::opposition, {8, 2}};
     tested = false;
     for (unsigned seed = 0; seed < 500 && !tested; ++seed)
     {
@@ -748,11 +765,11 @@ void death_save_turn_entry_tests()
 {
     auto module = srd5::load(pack());
     auto encounter = duel();
-    encounter.participants.push_back({3, "vanguard", "Ally", 0, {1, 5}});
+    encounter.participants.push_back({3, "vanguard", "Ally", Side::party, {1, 5}});
     const auto death_rolls = [](const CombatSession & session)
     {
         std::vector<int> rolls;
-        for (const auto &line : session.snapshot().log)
+        for (const auto &line : session.snapshot().log())
             if (line.starts_with("Hero death save: "))
                 rolls.push_back(std::stoi(line.substr(17)));
         return rolls;
@@ -865,26 +882,27 @@ void death_save_turn_entry_tests()
 void allied_transit_tests()
 {
     auto module = srd5::load(pack());
-    Battlefield corridor{7, 3, std::vector<std::uint8_t>(21, 1)};
+    Battlefield corridor{7, 3, std::vector<Terrain>(21, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
-        corridor.terrain[7 + x] = 0;
-    for (const unsigned side :
+        corridor.terrain[7 + x] = Terrain::open;
+    for (const Side side :
             {
-                0u, 1u
+                Side::party, Side::opposition
             })
         for (const bool difficult :
                 {
                     false, true
                 })
         {
+            const auto other_side = side == Side::party ? Side::opposition : Side::party;
             Encounter e{corridor,
                 {   {1, "vanguard", "Mover", side, {0, 1}},
-                    {2, "bandit", "Enemy", 1 - side, {6, 1}},
+                    {2, "bandit", "Enemy", other_side, {6, 1}},
                     {3, "vanguard", "Ally", side, {1, 1}},
                     {4, "vanguard", "Second ally", side, {2, 1}}
                 }};
             if (difficult)
-                e.battlefield.terrain[8] = 2;
+                e.battlefield.terrain[8] = Terrain::difficult;
             auto session = hero_first(*module, e);
             const auto saved = session->save();
             const auto moves = session->movement_reach(1);
@@ -907,14 +925,14 @@ void allied_transit_tests()
                   "Completed allied transit round trips");
         }
     // Pause on an allied space after a travelled prefix, before leaving reach.
-    Battlefield board{5, 3, std::vector<std::uint8_t>(15, 1)};
+    Battlefield board{5, 3, std::vector<Terrain>(15, Terrain::obstacle)};
     for (int x = 0; x < 5; ++x)
-        board.terrain[5 + x] = 0;
-    board.terrain[1] = board.terrain[2] = 0;
+        board.terrain[5 + x] = Terrain::open;
+    board.terrain[1] = board.terrain[2] = Terrain::open;
     Encounter e{board,
-        {   {1, "vanguard", "Mover", 0, {0, 1}},
-            {2, "bandit", "Reactor", 1, {1, 0}},
-            {3, "healer", "Ally", 0, {2, 1}}
+        {   {1, "vanguard", "Mover", Side::party, {0, 1}},
+            {2, "bandit", "Reactor", Side::opposition, {1, 0}},
+            {3, "healer", "Ally", Side::party, {2, 1}}
         }};
     for (const auto response :
             {"decline", "opportunity"
@@ -1024,7 +1042,7 @@ void opportunity_reuse_tests()
 {
     auto module = srd5::load(pack());
     auto e = duel();
-    e.participants.push_back({3, "bandit", "Other guard", 1, {3, 1}});
+    e.participants.push_back({3, "bandit", "Other guard", Side::opposition, {3, 1}});
     auto session = hero_first(*module, e);
     check(session->submit(command(*session, "dash")), "Dash for repeated departures");
     check(session->submit(command(*session, "move", {1, 3})) &&
@@ -1161,7 +1179,10 @@ void checkpoint_validation_tests()
 
     auto invalid_overlap = lines[4];
     auto no_clocks = invalid_overlap;
-    for (unsigned n = 0; n < 6; ++n)
+    // Strip the fourteen trailing fields: Horde Breaker's two, Smite's melee
+    // flag, Resistance's use, Regeneration's block and getting-up round, the
+    // thrown-gear state (five), the removed shield and Concentration's two.
+    for (unsigned n = 0; n < 14; ++n)
         no_clocks.resize(no_clocks.find_last_of(' '));
     const auto grip_separator = no_clocks.rfind(' ', no_clocks.find_last_of(' ') - 1);
     invalid_overlap[grip_separator - 1] = '1';
@@ -1169,14 +1190,14 @@ void checkpoint_validation_tests()
 
     // A route pauses after spending 10 feet while leaving an enemy's reach.
     // Only its remaining movement may be charged when validating a restore.
-    Battlefield corridor{5, 3, std::vector<std::uint8_t>(15, 1)};
+    Battlefield corridor{5, 3, std::vector<Terrain>(15, Terrain::obstacle)};
     for (int x = 0; x < 5; ++x)
-        corridor.terrain[5 + x] = 0;
-    corridor.terrain[1] = corridor.terrain[2] = 0; // Clear sight from the reactor.
+        corridor.terrain[5 + x] = Terrain::open;
+    corridor.terrain[1] = corridor.terrain[2] = Terrain::open; // Clear sight from the reactor.
     Encounter encounter{corridor,
-        {   {1, "vanguard", "Mover", 0, {0, 1}},
-            {2, "bandit", "Reactor", 1, {1, 0}},
-            {3, "vanguard", "Ally", 0, {2, 1}}
+        {   {1, "vanguard", "Mover", Side::party, {0, 1}},
+            {2, "bandit", "Reactor", Side::opposition, {1, 0}},
+            {3, "vanguard", "Ally", Side::party, {2, 1}}
         }};
     session = hero_first(*module, encounter);
     check(session->submit(command(*session, "move", {4, 1})), "Clear corridor move accepted");
@@ -1212,7 +1233,7 @@ void checkpoint_cutoff_tests()
         }
         return false;
     };
-    check(checkpoint.starts_with("OGCOMBAT 39 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 48 "), "Checkpoints use the current format");
     auto older_format = checkpoint;
     older_format.replace(9, 2, "26");
     check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");
@@ -1245,17 +1266,19 @@ void installed()
     while (demo.waiting())
         demo.continue_script();
     check(demo.script_complete(), "Original ECL resumes after real combat");
-    check(demo.script_variable(0x6DC7) == (outcome == Outcome::victory ? 0 : 128),
+    check(demo.script_variable(por::ecl_combat_result) == (outcome == Outcome::victory ? 0 : 128),
           "Actual outcome mapped to original ECL");
     if (outcome == Outcome::victory)
     {
-        check(demo.script_variable(0x6DC8) == 4, "Actual defeated count returned");
-        check(demo.script_variable(0x4ACA) == 255 && demo.script_variable(0x4ABB) == 1,
+        check(demo.script_variable(por::ecl_monsters_defeated) == 4,
+              "Actual defeated count returned");
+        check(demo.script_variable(por::ecl_slums_orc_victory) == 255 &&
+              demo.script_variable(por::EclAddress{0x4ABB}) == 1,
               "Victory updates original event state");
         demo.revisit();
         check(demo.script_complete() && !demo.waiting(),
               "Completed event does not replay the fight");
-        check(demo.script_variable(0x4ABB) == 1, "Revisit preserves fight count");
+        check(demo.script_variable(por::EclAddress{0x4ABB}) == 1, "Revisit preserves fight count");
     }
     std::cout << "Original Slums event completed with real rules combat: "
               << (outcome == Outcome::victory ? "victory" : "defeat") << ".\n";
@@ -1270,7 +1293,7 @@ void monster_trait_tests()
     auto rules = srd5::load(pack());
     const auto logged = [](const CombatSession &session, std::string_view text)
     {
-        const auto log = session.snapshot().log;
+        const auto log = session.snapshot().log();
         return std::any_of(log.begin(), log.end(), [&](const auto & line)
         {
             return line.find(text) != std::string::npos;
@@ -1282,7 +1305,7 @@ void monster_trait_tests()
     auto alone = first_turn(*rules, kobolds, 2);
     check(alone->submit(command(*alone, "melee")) && !logged(*alone, "(advantage)"),
           "A lone kobold attacks without Advantage");
-    kobolds.participants.push_back({3, "slums-kobold", "Second kobold", 1, {2, 3}});
+    kobolds.participants.push_back({3, "slums-kobold", "Second kobold", Side::opposition, {2, 3}});
     auto pair = first_turn(*rules, kobolds, 2);
     check(pair->submit(command(*pair, "melee")) && logged(*pair, "(advantage)"),
           "Pack Tactics: another kobold beside the target grants Advantage");
@@ -1320,6 +1343,96 @@ void monster_trait_tests()
     check(rules->restore(orc->save())->save() == orc->save(),
           "A checkpoint keeps Aggressive's extra movement");
 }
+
+namespace
+{
+// A module that implements only combat. Every campaign operation is pure, so
+// such a module cannot be instantiated rather than throwing "not supported"
+// when the campaign first calls one (Effective C++ Item 34).
+class CombatOnlyModule : public RulesModule
+{
+  public:
+    Identity identity() const override
+    {
+        return {"test.combat-only", "1", "none"};
+    }
+
+    std::vector<std::string> supported_features() const override
+    {
+        return {};
+    }
+
+    std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
+    {
+        throw std::runtime_error("Unused test create");
+    }
+
+    std::unique_ptr<CombatSession> restore(std::string_view) const override
+    {
+        throw std::runtime_error("Unused test restore");
+    }
+};
+static_assert(std::is_abstract_v<CombatOnlyModule>,
+              "A module must implement every campaign operation");
+
+// A square's terrain is named, not a bare number (Effective C++ Item 18); the
+// enumerators keep the combat checkpoint's encoding.
+static_assert(std::is_same_v<decltype(Battlefield{}.at(Cell{})), Terrain> &&
+              std::is_same_v<decltype(Battlefield::terrain)::value_type, Terrain>);
+static_assert(static_cast<int>(Terrain::open) == 0 && static_cast<int>(Terrain::obstacle) == 1 &&
+              static_cast<int>(Terrain::difficult) == 2);
+
+// So is an encounter side; a checkpoint stores party as 0 and opposition as 1.
+static_assert(std::is_same_v<decltype(Participant::side), Side> &&
+              std::is_same_v<decltype(CombatantView::side), Side>);
+static_assert(static_cast<int>(Side::party) == 0 && static_cast<int>(Side::opposition) == 1);
+
+// An ability check names its ability; a bare number, which could be a score or
+// an array position, is refused (Effective C++ Item 18).
+template <class Value>
+concept checks_ability_with =
+requires(const RulesModule &rules, const CharacterRules &creation, const CharacterSheet &sheet,
+         Value ability)
+{
+    rules.ability_check(sheet, std::span<const std::string> {}, ability, std::string_view{});
+    creation.ability_check(sheet, ability, std::string_view{});
+};
+static_assert(checks_ability_with<Ability> && !checks_ability_with<unsigned>,
+              "Ability checks take an Ability");
+
+// advance_character has one overridable form; a second overload that delegated
+// to it in the opposite direction let a module recurse forever (Effective C++
+// Item 34).
+template <class Rules>
+concept advances_without_a_choice =
+requires(const Rules &rules, CharacterSheet &sheet, VitalState &state)
+{
+    rules.advance_character(sheet, state);
+};
+static_assert(!advances_without_a_choice<RulesModule>,
+              "advance_character has a single overridable form, taking the choice");
+
+// The dice state has its own type, so the campaign clock or another counter
+// cannot be handed to the rules in its place (Effective C++ Item 18).
+template <class State>
+concept rolls_dice_with =
+requires(const RulesModule &rules, VitalState &vitals, const CharacterSheet &sheet, State &state)
+{
+    rules.spend_hit_die(vitals, sheet, state);
+};
+static_assert(rolls_dice_with<RandomState> && !rolls_dice_with<std::uint64_t>,
+              "Only a RandomState can stand for the dice state");
+
+// Copying through an interface would copy only the empty base part of a
+// session or module, so the interfaces cannot be copied or assigned from
+// outside (Effective C++ Items 5 and 6).
+static_assert(!std::is_copy_constructible_v<CombatSession> &&
+              !std::is_copy_assignable_v<CombatSession>);
+static_assert(!std::is_copy_constructible_v<RulesModule> &&
+              !std::is_copy_assignable_v<RulesModule>);
+static_assert(!std::is_copy_constructible_v<CharacterRules> &&
+              !std::is_copy_assignable_v<CharacterRules>);
+} // namespace
 
 int main()
 {

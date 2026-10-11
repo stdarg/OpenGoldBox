@@ -97,12 +97,12 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 auto battle(const RulesModule &rules, const Character &h, unsigned seed,
 std::vector<std::string> gear = {"longsword"}, bool prone = false)
 {
-    auto c = rules.create({{8, 8, std::vector<std::uint8_t>(64)},
+    auto c = rules.create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
                 "Champion",
-                0,
+                Side::party,
                 {2, 2},
                 rules.character_profile(h.sheet(), gear).data,
                 prone ? std::optional<VitalState>{{
@@ -112,7 +112,7 @@ std::vector<std::string> gear = {"longsword"}, bool prone = false)
                 }
 : std::nullopt
             },
-            {2, "dummy", "Target", 1, {3, 2}}
+            {2, "dummy", "Target", Side::opposition, {3, 2}}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -122,8 +122,8 @@ std::vector<std::string> gear = {"longsword"}, bool prone = false)
 
 int attack_roll(const CombatSession &c)
 {
-    const auto state = c.snapshot();
-    for (auto it = state.log_messages.rbegin(); it != state.log_messages.rend(); ++it)
+    const auto messages = c.snapshot().log_messages();
+    for (auto it = messages.rbegin(); it != messages.rend(); ++it)
         if (it->source.starts_with("{actor} ->"))
             for (const auto &a : it->arguments)
                 if (a.name == "roll")
@@ -162,13 +162,14 @@ void grants_and_checks()
               "Subclass and both feature grants follow ordinary level three acquisition");
         check(rules->character_profile(h.sheet(), {}).data.starts_with("PC42 "),
               "Every profile uses the current profile tag");
-        const auto athletics = rules->ability_check(h.sheet(), {}, 0, "athletics");
+        const auto athletics = rules->ability_check(h.sheet(), {}, Ability::strength, "athletics");
         check(athletics.advantage == champion,
               "Strength Athletics gains Advantage only for Champion");
-        check(!rules->ability_check(h.sheet(), {}, 1, "athletics").advantage &&
-              !rules->ability_check(h.sheet(), {}, 0, "acrobatics").advantage,
+        check(!rules->ability_check(h.sheet(), {}, Ability::dexterity, "athletics").advantage &&
+              !rules->ability_check(h.sheet(), {}, Ability::strength, "acrobatics").advantage,
               "Other ability/skill combinations excluded");
-        const auto armored = rules->ability_check(h.sheet(), std::vector<std::string> {"hide"}, 0,
+        const auto armored = rules->ability_check(h.sheet(), std::vector<std::string> {"hide"},
+            Ability::strength,
             "athletics");
         check(armored.advantage == champion && !armored.disadvantage,
               "Trained Fighter armor does not cancel Advantage");
@@ -192,7 +193,8 @@ void grants_and_checks()
             const int first = srd5::roll_die(rng, 20);
             const int second = champion ? srd5::roll_die(rng, 20) : first;
             auto c = battle(*custom(), h, seed);
-            check(unit(*c).initiative == std::max(first, second) + h.sheet().modifiers[1],
+            check(unit(*c).initiative == std::max(first, second) +
+                  h.sheet().modifiers[Ability::dexterity],
                   "Independent maximum-of-two initiative expectation");
         }
     }
@@ -231,10 +233,10 @@ void critical_and_movement()
                 if (critical)
                 {
                     // The longsword has an empty other hand, so it is wielded as a d10.
-                    const int expected_damage = unarmed ? 1 + h.sheet().modifiers[0]
+                    const int expected_damage = unarmed ? 1 + h.sheet().modifiers[Ability::strength]
                                                 : srd5::roll_die(expected_rng, 10) +
                                                 srd5::roll_die(expected_rng, 10) +
-                                                h.sheet().modifiers[0];
+                                                h.sheet().modifiers[Ability::strength];
                     check(
                         unit(*c, 2).hit_points == 1000 - expected_damage &&
                         random_state(*c) == expected_rng,
@@ -292,7 +294,7 @@ void savage_and_prone()
         act(*c, "melee", 2);
         if (!c->snapshot().free_movement)
             continue;
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         check(std::any_of(log.begin(), log.end(), [](const auto & line)
         {
             return line.find("(Savage Attacker)") != std::string::npos;
@@ -327,12 +329,12 @@ void reaction_continuation()
                 auto h = hero();
                 auto c = rules->create(
                 {
-                    {8, 8, std::vector<std::uint8_t>(64)},
+                    {8, 8, std::vector<Terrain>(64)},
                     {   {
                             1,
                             "campaign-character",
                             "Champion",
-                            0,
+                            Side::party,
                             {2, 2},
                             rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"})
                             .data
@@ -341,12 +343,12 @@ void reaction_continuation()
                             2,
                             "dummy",
                             "Mover",
-                            1,
+                            Side::opposition,
                             {3, 2},
                             {},
 lethal ? std::optional<VitalState>{{1, false, {}}} : std::nullopt
                         },
-                        {3, "dummy", "Reserve", 1, {7, 7}}
+                        {3, "dummy", "Reserve", Side::opposition, {7, 7}}
                     }},
                 seed);
                 while (c->snapshot().actor != 2)
@@ -399,7 +401,7 @@ void campaign_and_cancellation()
         {
             CampaignParty party(module());
             auto h = hero(1);
-            h.inventory().add("longsword", "Sword");
+            h.add_item({.definition_id = "longsword", .name = "Sword"});
             const auto id = party.add_pc(std::move(h));
             party.equip(id, 1);
             party.award_experience(2700, "champion-levels");
@@ -410,9 +412,9 @@ void campaign_and_cancellation()
             party.restore(state);
             auto actors = party.participants();
             actors[0].cell = {2, 2};
-            actors.push_back({2, "vanguard", "Enemy", 1, {3, 2}});
-            actors.push_back({3, "vanguard", "Reserve", 1, {6, 6}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, seed);
+            actors.push_back({2, "vanguard", "Enemy", Side::opposition, {3, 2}});
+            actors.push_back({3, "vanguard", "Reserve", Side::opposition, {6, 6}});
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
             while (c->snapshot().actor != id)
                 act(*c, "end");
             act(*c, "second_wind");
@@ -432,13 +434,13 @@ void campaign_and_cancellation()
                                          "champion-current", nullptr)
                          .party);
             check(encode_campaign(copy, nullptr, "champion-current") == bytes &&
-                  copy.ability_check(id, 0, "athletics").advantage,
+                  copy.ability_check(id, Ability::strength, "athletics").advantage,
                   "Ordinary campaign save/reload keeps subclass and check source");
             check(bool(copy.rest(RestKind::short_rest)), "Champion uses ordinary Short Rest");
             if (copy.state().short_rest)
                 copy.finish_short_rest(copy.state().short_rest->ticket);
             check(bool(copy.rest(RestKind::long_rest)), "Champion uses ordinary Long Rest");
-            check(copy.ability_check(id, 0, "athletics").advantage,
+            check(copy.ability_check(id, Ability::strength, "athletics").advantage,
                   "Rests retain Champion entitlement");
             check(copy.member(id).equipped == std::vector<std::uint64_t> {1},
                   "Resting never unequips the held sword");
@@ -452,14 +454,14 @@ void campaign_and_cancellation()
         Participant p{1,
                       "campaign-character",
                       "Surprised Champion",
-                      0,
+                      Side::party,
         {1, 1},
         rules->character_profile(h.sheet(), {}).data};
         p.surprised = true;
         std::uint64_t rng = seed;
-        const int expected = srd5::roll_die(rng, 20) + h.sheet().modifiers[1];
+        const int expected = srd5::roll_die(rng, 20) + h.sheet().modifiers[Ability::dexterity];
         auto c = rules->create(
-        {{8, 8, std::vector<std::uint8_t>(64)}, {p, {2, "vanguard", "Enemy", 1, {6, 6}}}},
+        {{8, 8, std::vector<Terrain>(64)}, {p, {2, "vanguard", "Enemy", Side::opposition, {6, 6}}}},
         seed);
         check(unit(*c).initiative == expected,
               "Surprise Disadvantage cancels Champion Initiative Advantage without extra dice");
@@ -473,8 +475,8 @@ void repeated_criticals_and_terrain()
     for (unsigned seed = 0; seed < 1000 && !covered; ++seed)
     {
         auto h = hero();
-        Battlefield board{8, 8, std::vector<std::uint8_t>(64)};
-        board.terrain[2 * 8 + 1] = 2;
+        Battlefield board{8, 8, std::vector<Terrain>(64)};
+        board.terrain[2 * 8 + 1] = Terrain::difficult;
         auto c = rules->create(
         {
             board,
@@ -482,11 +484,11 @@ void repeated_criticals_and_terrain()
                     1,
                     "campaign-character",
                     "Champion",
-                    0,
+                    Side::party,
                     {2, 2},
                     rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data
                 },
-                {2, "dummy", "Target", 1, {3, 2}}
+                {2, "dummy", "Target", Side::opposition, {3, 2}}
             }},
         seed);
         while (c->snapshot().actor != 1)
@@ -530,17 +532,17 @@ void fixtures()
         auto h = hero();
         auto c = rules->create(
         {
-            {8, 8, std::vector<std::uint8_t>(64)},
+            {8, 8, std::vector<Terrain>(64)},
             {   {
                     1,
                     "campaign-character",
                     "Champion",
-                    0,
+                    Side::party,
                     {2, 2},
                     rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data
                 },
-                {2, "vanguard", "Enemy", 1, {3, 2}},
-                {3, "vanguard", "Reserve", 1, {6, 6}}
+                {2, "vanguard", "Enemy", Side::opposition, {3, 2}},
+                {3, "vanguard", "Reserve", Side::opposition, {6, 6}}
             }},
         seed);
         while (c->snapshot().actor != 1)

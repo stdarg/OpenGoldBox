@@ -72,7 +72,7 @@ void choices_and_sources()
             }),
             "Scholar source remains level two");
             const auto bytes = encode_campaign(party, nullptr, "scholar");
-            check(bytes.starts_with("OPENGOLD-CAMPAIGN 21\n"),
+            check(bytes.starts_with("OPENGOLD-CAMPAIGN 25\n"),
                   "Wizard spell history is written in the current campaign format");
             CampaignParty restored(module());
             restored.restore(
@@ -138,18 +138,18 @@ void medicine_combat()
     check(profile.starts_with("PC42 "), "Scholar combat uses the current profile version");
     auto encounter = [&](const std::string & data)
     {
-        return Encounter{{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Scholar", 0, {1, 1}, data},
+        return Encounter{{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Scholar", Side::party, {1, 1}, data},
                 {
                     2,
                     "recovery_target",
                     "Patient",
-                    0,
+                    Side::party,
                     {2, 1},
                     {},
                     VitalState{0, false, "SRD11 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"}
                 },
-                {99, "vanguard", "Enemy", 1, {6, 6}}
+                {99, "vanguard", "Enemy", Side::opposition, {6, 6}}
             }};
     };
     bool success = false, failure = false;
@@ -182,7 +182,7 @@ void medicine_combat()
         check(combat->save() == copy->save(),
               "Scholar combat continuation preserves roll and recovery RNG");
         bool observed = false;
-        for (const auto &message : combat->snapshot().log_messages)
+        for (const auto &message : combat->snapshot().log_messages())
         {
             int roll = -1, total = -1;
             for (const auto &arg : message.arguments)
@@ -194,7 +194,7 @@ void medicine_combat()
             }
             if (roll >= 0 && total >= 0)
             {
-                check(total - roll == character.sheet().modifiers[4] + 4,
+                check(total - roll == character.sheet().modifiers[Ability::wisdom] + 4,
                       "Actual Medicine roll uses Scholar Expertise");
                 observed = true;
                 success |= total >= 10;
@@ -233,7 +233,7 @@ void verify_ui(const char *path)
     expected.advance(1, expected.default_advancement(1));
     auto saved = decode_campaign(read_campaign_file(path), *creation, *rules, assets, nullptr);
     auto state = expected.checkpoint();
-    state.selected = saved.party.selected;
+    state.selected_slot = saved.party.selected_slot;
     expected.restore(std::move(state));
     CampaignParty actual(module());
     actual.restore(std::move(saved.party));

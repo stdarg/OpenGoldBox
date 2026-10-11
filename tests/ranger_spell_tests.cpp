@@ -78,7 +78,7 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -110,10 +110,10 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile =
         module.character_profile(hero.sheet(), std::vector<std::string> {std::move(weapon)}).data;
-    auto c = module.create({{8, 4, std::vector<std::uint8_t>(32)},
-        {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
-            {98, "weakling", "Weakling", 1, {2, 1}},
-            {99, std::move(sturdy), "Target", 1, {2, 2}}
+    auto c = module.create({{8, 4, std::vector<Terrain>(32)},
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+            {98, "weakling", "Weakling", Side::opposition, {2, 1}},
+            {99, std::move(sturdy), "Target", Side::opposition, {2, 2}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -201,9 +201,9 @@ void write_ui_fixture()
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     const auto profile = module->character_profile(ranger({"cure_wounds", "longstrider"}).sheet(),
                          std::vector<std::string> {"longsword"}).data;
-    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
-        {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+    auto c = module->create({{12, 9, std::vector<Terrain>(108)},
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -217,10 +217,10 @@ void write_ui_fixture()
     // A Horde Breaker beside two adjacent vanguards.
     const auto hunter_profile = module->character_profile(hunter("horde_breaker").sheet(),
                                 std::vector<std::string> {"longsword"}).data;
-    auto h = module->create({{12, 9, std::vector<std::uint8_t>(108)},
-        {   {1, "campaign-character", "Ranger", 0, {1, 1}, hunter_profile},
-            {98, "vanguard", "First", 1, {2, 1}},
-            {99, "vanguard", "Second", 1, {2, 2}}
+    auto h = module->create({{12, 9, std::vector<Terrain>(108)},
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, hunter_profile},
+            {98, "vanguard", "First", Side::opposition, {2, 1}},
+            {99, "vanguard", "Second", Side::opposition, {2, 2}}
         }},
     2);
     for (unsigned turns = 0; h->snapshot().actor != 1 && turns < 4; ++turns)
@@ -235,9 +235,9 @@ void write_ui_fixture()
                                   std::vector<std::string> {"longsword"}).data;
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto e = module->create({{12, 9, std::vector<std::uint8_t>(108)},
-            {   {1, "campaign-character", "Ranger", 0, {1, 1}, ensnaring_profile},
-                {99, "vanguard", "Target", 1, {2, 1}}
+        auto e = module->create({{12, 9, std::vector<Terrain>(108)},
+            {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, ensnaring_profile},
+                {99, "vanguard", "Target", Side::opposition, {2, 1}}
             }},
         seed);
         for (unsigned turns = 0; e->snapshot().actor != 1 && turns < 4; ++turns)
@@ -267,10 +267,10 @@ void write_entangle_fixture()
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     const auto profile = module->character_profile(ranger({"cure_wounds", "entangle"}).sheet(),
                          std::vector<std::string> {"longsword"}).data;
-    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
-        {   {1, "campaign-character", "Ranger", 0, {1, 1}, profile},
-            {98, "vanguard", "First", 1, {6, 1}},
-            {99, "vanguard", "Second", 1, {6, 2}}
+    auto c = module->create({{12, 9, std::vector<Terrain>(108)},
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+            {98, "vanguard", "First", Side::opposition, {6, 1}},
+            {99, "vanguard", "Second", Side::opposition, {6, 2}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -481,7 +481,7 @@ void entangle_checks()
           !restrained(*c, 1),
           "Entangle spends the Action and a slot and spares its caster");
     check(c->movement_reach(1).size() < reach_before &&
-          c->snapshot().battlefield.at(Cell{2, 1}) == 2,
+          c->snapshot().battlefield.at(Cell{2, 1}) == Terrain::difficult,
           "The square is Difficult Terrain, shown on the battlefield");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "The plants survive a checkpoint");

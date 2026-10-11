@@ -35,16 +35,16 @@ auto battle(const Character &h)
     auto rules = module();
     auto c = rules->create(
     {
-        {10, 8, std::vector<std::uint8_t>(80)},
+        {10, 8, std::vector<Terrain>(80)},
         {   {
                 1,
                 "campaign-character",
                 "Rogue",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), std::array<std::string, 1>{"dagger"}).data
             },
-            {99, "vanguard", "Enemy", 1, {2, 1}}
+            {99, "vanguard", "Enemy", Side::opposition, {2, 1}}
         }},
     2);
     test::keep_initiative(*c);
@@ -82,7 +82,8 @@ void run()
         VitalState state{hp - 2};
         check(h.advance(*rules, state), "Normal Rogue advancement reaches level two");
         check(h.sheet().level == 2 && h.sheet().hit_die == 8 &&
-              h.sheet().hit_points == hp + 5 + h.sheet().modifiers[2] + (d.race == "dwarf") &&
+              h.sheet().hit_points == hp + 5 + h.sheet().modifiers[Ability::constitution] +
+                  (d.race == "dwarf") &&
               state.hit_points == h.sheet().hit_points - 2,
               "Independent d8 fixed-average growth preserves wounds");
         check(h.sheet().training.complete && h.sheet().hit_point_modifiers.size() == 2 &&
@@ -202,12 +203,12 @@ void run()
     auto wizard_draft = draft("wizard", "sage");
     wizard_draft.cantrips = std::vector<std::string> {"ray_of_frost"};
     auto wizard = hero(wizard_draft);
-    auto slow = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto slow = rules->create({{10, 8, std::vector<Terrain>(80)},
         {   {
                 1,
                 "campaign-character",
                 "Rogue",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(rogue.sheet(), {}).data
             },
@@ -215,7 +216,7 @@ void run()
                 99,
                 "campaign-character",
                 "Wizard",
-                1,
+                Side::opposition,
                 {5, 1},
                 rules->character_profile(wizard.sheet(), {}).data
             }
@@ -237,17 +238,17 @@ void run()
                 false, true
             })
     {
-        auto down = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        auto down = rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {
                     1,
                     "campaign-character",
                     "Down Rogue",
-                    0,
+                    Side::party,
                     {1, 1},
                     rules->character_profile(rogue.sheet(), {}).data,
                     VitalState{0, dead, {}}
                 },
-                {99, "vanguard", "Enemy", 1, {5, 5}}
+                {99, "vanguard", "Enemy", Side::opposition, {5, 5}}
             }},
         2);
         check(!has(*down, "cunning_dash"), "Unconscious/dead actors cannot use Cunning Action");

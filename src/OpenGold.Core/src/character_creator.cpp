@@ -7,7 +7,7 @@ namespace opengold
 using namespace rules;
 
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::uint64_t seed)
-    : rules_(std::move(rules)), random_(seed)
+    : rules_(std::move(rules)), random_{seed}
 {
     if (!rules_)
         throw std::runtime_error("Character creator requires a rules module");
@@ -54,7 +54,7 @@ void CharacterCreator::select(CreationField field, std::string_view id)
 }))
     throw std::runtime_error("Unknown character choice");
     if (field == CreationField::character_class && step_ >= CreationStep::character_class &&
-            !rules_->class_eligible(draft_, id))
+            !rules::class_eligible(*rules_, draft_, id))
         throw std::runtime_error("This class requires " +
                                  rules_->class_requirements(id).description + ".");
     auto candidate = draft_;
@@ -144,8 +144,9 @@ void CharacterCreator::cantrip_choice(std::string_view option, bool selected)
     draft_ = std::move(candidate);
 }
 
-void CharacterCreator::spell_choice(std::string_view group, std::string_view option, bool selected)
+void CharacterCreator::spell_choice(ChoiceToggle toggle)
 {
+    const auto [group, option, selected] = toggle;
     require_editable();
     const auto options = rules_->spell_choice_options(draft_);
     auto next = draft_;
@@ -206,7 +207,7 @@ void CharacterCreator::spell_choice(std::string_view group, std::string_view opt
         }))
         next.spells->prepared->push_back(id);
     }
-    (void)rules_->evaluate(next, false);
+    (void)rules_->evaluate(next, NameRequirement::optional);
     draft_ = std::move(next);
 }
 
@@ -282,8 +283,9 @@ void CharacterCreator::prune_training(CharacterDraft &candidate) const
     }
 }
 
-void CharacterCreator::training_choice(std::string_view id, std::string_view option, bool selected)
+void CharacterCreator::training_choice(ChoiceToggle toggle)
 {
+    const auto [id, option, selected] = toggle;
     require_editable();
     auto candidate = draft_;
     const auto groups = training_options();
@@ -353,7 +355,7 @@ void CharacterCreator::roll()
     require_editable();
     draft_.rolls = rules_->roll(random_);
     draft_.rolled = true;
-    draft_.assignment.fill(6);
+    draft_.assignment = {6, 6, 6, 6, 6, 6}; // Every rolled result starts unassigned.
 }
 
 bool CharacterCreator::scores_assigned() const
@@ -365,10 +367,11 @@ bool CharacterCreator::scores_assigned() const
     });
 }
 
-void CharacterCreator::assign_roll(unsigned roll, unsigned ability)
+void CharacterCreator::assign_roll(unsigned roll, rules::Ability ability)
 {
     require_editable();
-    if (!draft_.rolled || roll >= 6 || ability >= 6)
+    // The game converts a box index from the UI, so an ability can still be out of range.
+    if (!draft_.rolled || roll >= 6 || rules::ability_index(ability) >= 6)
         throw std::runtime_error("Invalid roll assignment");
     const auto source = std::find(draft_.assignment.begin(), draft_.assignment.end(), roll);
     if (source != draft_.assignment.end())
@@ -377,10 +380,11 @@ void CharacterCreator::assign_roll(unsigned roll, unsigned ability)
         draft_.assignment[ability] = roll; // A displaced result returns to the unassigned rolls.
 }
 
-void CharacterCreator::swap_scores(unsigned first, unsigned second)
+void CharacterCreator::swap_scores(rules::Ability first, rules::Ability second)
 {
     require_editable();
-    if (!draft_.rolled || first >= 6 || second >= 6)
+    // As in assign_roll, an ability converted from a UI index may be out of range.
+    if (!draft_.rolled || rules::ability_index(first) >= 6 || rules::ability_index(second) >= 6)
         throw std::runtime_error("Invalid score swap");
     std::swap(draft_.assignment[first], draft_.assignment[second]);
 }
@@ -400,7 +404,9 @@ void CharacterCreator::appearance(por::CharacterAppearance value)
 
 CharacterSheet CharacterCreator::sheet() const
 {
-    return rules_->evaluate(draft_, step_ >= CreationStep::combat_icon);
+    return rules_->evaluate(draft_, step_ >= CreationStep::combat_icon
+                            ? rules::NameRequirement::required
+                            : rules::NameRequirement::optional);
 }
 
 Character CharacterCreator::create_character() const
@@ -409,7 +415,7 @@ Character CharacterCreator::create_character() const
         throw std::runtime_error("Finish character creation before exporting the character");
     if (!training_complete())
         throw std::runtime_error("Complete the required training choices.");
-    if (!rules_->class_eligible(draft_, draft_.character_class))
+    if (!rules::class_eligible(*rules_, draft_, draft_.character_class))
         throw std::runtime_error("Starting class prerequisites are not met.");
     return Character(*rules_, draft_, appearance_);
 }
@@ -423,9 +429,11 @@ void CharacterCreator::next()
     if (step_ >= CreationStep::training && !training_complete())
         throw std::runtime_error("Complete the required training choices.");
     if (step_ >= CreationStep::attributes)
-        (void)rules_->evaluate(draft_, step_ >= CreationStep::name);
+        (void)rules_->evaluate(draft_, step_ >= CreationStep::name
+                               ? rules::NameRequirement::required
+                               : rules::NameRequirement::optional);
     if (step_ >= CreationStep::character_class &&
-            !rules_->class_eligible(draft_, draft_.character_class))
+            !rules::class_eligible(*rules_, draft_, draft_.character_class))
         throw std::runtime_error("Choose a qualified starting class. Requires " +
                                  rules_->class_requirements(draft_.character_class).description +
                                  ".");

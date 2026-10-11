@@ -89,7 +89,7 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -111,10 +111,11 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile =
         module.character_profile(hero.sheet(), std::vector<std::string> {"mace"}).data;
-    auto c = module.create({{12, 4, std::vector<std::uint8_t>(48)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, {1, 2}, {}, VitalState{3, false, std::move(ally_state)}},
-            {99, std::move(enemy), "Enemy", 1, {3, 1}}
+    auto c = module.create({{12, 4, std::vector<Terrain>(48)},
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, {1, 2},
+                                               {}, VitalState{3, false, std::move(ally_state)}},
+            {99, std::move(enemy), "Enemy", Side::opposition, {3, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -197,10 +198,10 @@ void write_ui_fixture()
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     const auto profile =
         module->character_profile(cleric(2).sheet(), std::vector<std::string> {"mace"}).data;
-    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
-            {2, "vanguard", "Ally", 0, {1, 2}, {}, VitalState{3, false, {}}},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+    auto c = module->create({{12, 9, std::vector<Terrain>(108)},
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile},
+            {2, "vanguard", "Ally", Side::party, {1, 2}, {}, VitalState{3, false, {}}},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -214,7 +215,7 @@ void write_ui_fixture()
 // HP restored, read from the last "recovers N HP" line.
 int recovered(const CombatSession &c)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
         if (const auto at = line->find(" recovers "); at != std::string::npos)
             return std::stoi(line->substr(at + 10));
@@ -289,7 +290,7 @@ void aid_expiry_checks()
     };
     party.restore(state);
     check(party.hit_point_maximum(id) == sheet_maximum + 5, "Aid raises the campaign maximum");
-    party.advance_time(481);
+    party.advance_time(std::chrono::minutes(481));
     check(party.hit_point_maximum(id) == sheet_maximum &&
           party.member(id).vitals.hit_points == sheet_maximum,
           "When Aid ends after 8 hours the maximum and the extra Hit Points go");
@@ -297,7 +298,7 @@ void aid_expiry_checks()
 // The attack bonus a log line shows: "... d20 N + B vs AC ...".
 int logged_bonus(const CombatSession &c)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
         if (const auto at = line->find(" + "); at != std::string::npos &&
                 line->find(" vs AC ") != std::string::npos)
@@ -349,10 +350,10 @@ void spare_the_dying_checks()
     auto hero = cleric(1);
     const auto profile =
         module->character_profile(hero.sheet(), std::vector<std::string> {"mace"}).data;
-    auto c = module->create({{12, 4, std::vector<std::uint8_t>(48)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, {3, 1}, {}, VitalState{0, false, {}}},
-            {99, "target", "Enemy", 1, {9, 1}}
+    auto c = module->create({{12, 4, std::vector<Terrain>(48)},
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, {3, 1}, {}, VitalState{0, false, {}}},
+            {99, "target", "Enemy", Side::opposition, {9, 1}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -507,8 +508,8 @@ void silence_checks()
     check(submit(*c, "end"), "End the Cleric's turn");
     while (c->snapshot().actor != 1)
         check(submit(*c, "end") || submit(*c, "move"), "Back to the Cleric");
-    check(!submit(*c, "sacred_flame", 99) && !submit(*c, "cure_wounds", 2),
-          "No spell with a Verbal component inside Silence");
+    check(submit(*c, "sacred_flame", 99),
+          "Spells have no components (CLASS-11), so Silence does not stop casting");
 }
 void spiritual_weapon_checks()
 {

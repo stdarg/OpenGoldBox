@@ -89,7 +89,7 @@ bool offered(const CombatSession &c, std::string_view verb)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -119,9 +119,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::uint64_t seed = 5)
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
-    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
-        {   {1, "campaign-character", "Barbarian", 0, {1, 1}, profile},
-            {98, "target", "Enemy", 1, {2, 1}}
+    auto c = module.create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Barbarian", Side::party, {1, 1}, profile},
+            {98, "target", "Enemy", Side::opposition, {2, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -215,9 +215,9 @@ void reckless_checks()
           !unit(*c, 1).action,
           "A Reckless attack is the Attack action's attack, with Advantage");
     reach(*c, 98);
-    const auto before = c->snapshot().log.size();
+    const auto before = c->snapshot().log().size();
     check(submit(*c, "melee", 1), "The enemy attacks");
-    const auto log = c->snapshot().log;
+    const auto log = c->snapshot().log();
     check(std::any_of(log.begin() + std::ptrdiff_t(before), log.end(), [](const auto & line)
     {
         return line.find("Enemy -> Barbarian") != std::string::npos &&

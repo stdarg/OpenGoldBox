@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 using namespace opengold;
 using namespace opengold::rules;
@@ -91,8 +92,8 @@ PartyState baseline(unsigned level)
 
     auto participants = party.participants();
     participants.front().cell = {1, 1};
-    participants.push_back({99, "recovery_target", "Target", 1, {5, 1}});
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, participants}, 13);
+    participants.push_back({99, "recovery_target", "Target", Side::opposition, {5, 1}});
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, participants}, 13);
     party.begin_combat();
     party.apply_combat(combat->snapshot());
     spend_slots(party, *combat);
@@ -122,7 +123,7 @@ void baseline_spending()
     {
         CampaignParty party(module());
         party.restore(baseline(level));
-        check(party.member(1).character.sheet().level == level && party.state().short_rest &&
+        check(std::cmp_equal(party.member(1).character.sheet().level, level) && party.state().short_rest &&
               party.state().short_rest->members == std::vector<MemberId> {1},
               "Attained Wizard level and pending Short Rest eligibility survive");
         const auto resources = party.recovery_info(1).resources;
@@ -314,7 +315,7 @@ void eligibility_and_effects()
     check(state.resources.starts_with("SRD11 "), "Spent use has a versioned vital record");
     // A lasting effect must still expire when its host resource record is SRD11.
     srd5::detail::EffectState effects;
-    srd5::detail::apply_ray_of_frost(effects, 1, 99, "Recovery test", 6000);
+    srd5::detail::apply_ray_of_frost(effects, {.scope = 1, .actor = 99}, "Recovery test", 6000);
     std::ostringstream encoded;
     srd5::detail::write_effects(encoded, effects);
     const auto at = state.resources.find("FX");
@@ -323,11 +324,11 @@ void eligibility_and_effects()
     rules->validate_character_state(sheet, state);
     auto participants = party.participants();
     participants.front().state = state;
-    std::uint64_t rng = 123;
-    rules->elapse(participants, 6000, rng);
+    RandomState rng{123};
+    rules->elapse(participants, std::chrono::milliseconds(6000), rng);
     const auto &elapsed = *participants.front().state;
     std::istringstream decoded(elapsed.resources.substr(elapsed.resources.find("FX")));
-    check(srd5::detail::read_effects(decoded).active.empty() && rng == 123 &&
+    check(srd5::detail::read_effects(decoded).active.empty() && rng.value == 123 &&
           remaining(rules->recovery_info(sheet, elapsed), "arcane_recovery") == 0,
           "Campaign time expires effects without refreshing the spent feature or consuming RNG");
     auto invalid = sheet;
@@ -369,12 +370,12 @@ void combat_and_advancement()
         }
         auto participants = party.participants();
         participants.front().cell = {1, 1};
-        participants.push_back({99, "recovery_target", "Target", 1, {5, 1}});
-        auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, participants}, 13);
+        participants.push_back({99, "recovery_target", "Target", Side::opposition, {5, 1}});
+        auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, participants}, 13);
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         const auto before = combat->save();
-        check(before.starts_with("OGCOMBAT 39 "),
+        check(before.starts_with("OGCOMBAT 48 "),
               "Spent recovery uses a versioned combat checkpoint");
         auto copy = rules->restore(before);
         check(copy->save() == before && copy->snapshot().physical_inventory == physical,

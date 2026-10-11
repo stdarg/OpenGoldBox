@@ -77,7 +77,7 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 
 bool logged(const CombatSession &c, std::string_view prefix)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(prefix) != std::string::npos;
@@ -91,10 +91,10 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
     const auto profile =
         module.character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data;
     const auto ally = module.character_profile(paladin({}).sheet(), {}).data;
-    auto c = module.create({{8, 4, std::vector<std::uint8_t>(32)},
-        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-            {2, "campaign-character", "Ally", 0, {1, 2}, ally},
-            {99, std::move(enemy), "Enemy", 1, {2, 1}}
+    auto c = module.create({{8, 4, std::vector<Terrain>(32)},
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+            {2, "campaign-character", "Ally", Side::party, {1, 2}, ally},
+            {99, std::move(enemy), "Enemy", Side::opposition, {2, 1}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -131,7 +131,7 @@ void heroism_checks()
     check(submit(*c, "heroism", 2), "Heroism touches the ally");
     while (c->snapshot().actor != 2)
         check(submit(*c, "end"), "Reach the ally's turn");
-    const int charisma = hero.sheet().modifiers[5];
+    const int charisma = hero.sheet().modifiers[Ability::charisma];
     check(unit(*c, 2).temporary_hp.amount == std::max(0, charisma),
           "Heroism grants Temporary HP equal to the caster's spellcasting modifier");
 }
@@ -186,7 +186,7 @@ void protection_from_evil_and_good_checks()
 // The attack bonus a log line shows: "... d20 N + B vs AC ...".
 int logged_bonus(const CombatSession &c)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
         if (const auto at = line->find(" + "); at != std::string::npos && line->find(" vs AC ") != std::string::npos)
             return std::stoi(line->substr(at + 3));
@@ -244,10 +244,10 @@ void write_ui_fixture()
     const auto profile =
         module->character_profile(paladin({"bless", "cure_wounds"}).sheet(), std::vector<std::string> {"longsword"}).data;
     const auto ally = module->character_profile(paladin({}).sheet(), {}).data;
-    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
-        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-            {2, "campaign-character", "Ally", 0, {2, 1}, ally},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+    auto c = module->create({{12, 9, std::vector<Terrain>(108)},
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+            {2, "campaign-character", "Ally", Side::party, {2, 1}, ally},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)

@@ -105,7 +105,7 @@ std::uint64_t rng(const CombatSession &c)
 
 Message attack(const CombatSession &c)
 {
-    for (const auto &m : c.snapshot().log_messages)
+    for (const auto &m : c.snapshot().log_messages())
         if (m.source.starts_with("{actor} -> {target}: d20"))
             return m;
     throw std::runtime_error("Missing attack log");
@@ -136,12 +136,12 @@ auto custom(std::string affinity = {})
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-std::vector<std::string> gear = {}, unsigned side = 1,
+std::vector<std::string> gear = {}, Side side = Side::opposition,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
-    auto c = rules.create({{28, 8, std::vector<std::uint8_t>(224)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+    auto c = rules.create({{28, 8, std::vector<Terrain>(224)},
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
     seed);
@@ -158,10 +158,10 @@ void access()
     auto rules = module();
     auto d = draft();
     auto options = creation->cantrip_options(d);
-    check(options.count == 2 && options.options.size() == 3 &&
+    check(options.count == 2 && options.options.size() == 4 &&
           options.options[0].id == "eldritch_blast",
           "Two Warlock choices, supported catalog is explicit");
-    check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
+    check(rules->spell_access(creation->evaluate(d, NameRequirement::required)).cantrips.empty(),
           "Missing choices stay pending");
     auto access = rules->spell_access(hero().sheet());
     check(access.cantrip_choices == 2 && access.cantrips.size() == 1 &&
@@ -176,7 +176,7 @@ void access()
         rejects(
             [&]
         {
-            (void)creation->evaluate(d, true);
+            (void)creation->evaluate(d, NameRequirement::required);
         });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
@@ -188,7 +188,7 @@ void access()
             rejects(
                 [&]
             {
-                (void)creation->evaluate(d, true);
+                (void)creation->evaluate(d, NameRequirement::required);
             });
         }
     auto invalid = hero().sheet();
@@ -207,9 +207,9 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {2, "vanguard", "Enemy", 1, {3, 1}}
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
             }},
         13);
     });
@@ -222,8 +222,8 @@ void access()
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.heads.emplace(1, por::PortraitPart{"fixture", head});
-    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
     unsigned count = 0;
     for (const auto &preset : character_pool(*creation, art))
         if (preset.sheet().character_class == "Warlock")
@@ -327,26 +327,26 @@ void eligibility()
         while (c->snapshot().actor != 1)
             check(c->submit(command(*c, "end")), "Reach armored caster");
         check(unit(*c).known_cantrips == std::vector<std::string> {"eldritch_blast"},
-              "Knowledge remains visible while armor or hands block casting");
-        const bool allowed = gear.size() < 2 && (gear.empty() || gear[0] != "plate");
-        check(has(*c, "eldritch_blast", 2) == allowed,
-              "Sourced spell honors occupied hands and untrained armor");
+              "Knowledge remains visible while armor blocks casting");
+        // Full hands block nothing (CLASS-11); untrained armor does.
+        const bool allowed = gear.empty() || gear[0] != "plate";
+        check(has(*c, "eldritch_blast", 2) == allowed, "Sourced spell honors untrained armor");
         if (!allowed)
         {
             const auto before = c->save();
             check(!c->submit({c->snapshot().revision, 1, 2, "eldritch_blast"}) &&
                   c->save() == before,
-                  "Unavailable Somatic cast is atomic");
+                  "Unavailable cast is atomic");
         }
     }
     auto unknown = battle(*rules, hero(1, false));
     check(!has(*unknown, "eldritch_blast"), "Unlearned cantrip is never auto-granted to Warlocks");
     auto profile = rules->character_profile(h.sheet(), {});
-    Battlefield board{28, 8, std::vector<std::uint8_t>(224)};
-    board.terrain[1 * 28 + 2] = 1;
+    Battlefield board{28, 8, std::vector<Terrain>(224)};
+    board.terrain[1 * 28 + 2] = Terrain::obstacle;
     auto blocked = rules->create({board,
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-            {2, "target", "Enemy", 1, {3, 1}}
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+            {2, "target", "Enemy", Side::opposition, {3, 1}}
         }},
     13);
     check(!has(*blocked, "eldritch_blast", 2), "Opaque obstruction blocks the path");
@@ -365,10 +365,10 @@ void eligibility()
     check(normal->submit(command(*normal, "eldritch_blast", 1)) &&
           unit(*normal).hit_points == hp - 8,
           "Self-targeting resolves an actual spell attack and damage");
-    auto dead = rules->create({{28, 8, std::vector<std::uint8_t>(224)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-            {2, "target", "Dead", 1, {3, 1}, {}, VitalState{0, true, {}}},
-            {3, "target", "Enemy", 1, {8, 1}}
+    auto dead = rules->create({{28, 8, std::vector<Terrain>(224)},
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+            {2, "target", "Dead", Side::opposition, {3, 1}, {}, VitalState{0, true, {}}},
+            {3, "target", "Enemy", Side::opposition, {8, 1}}
         }},
     13);
     check(!has(*dead, "eldritch_blast", 2), "A corpse is not an eligible creature target");
@@ -392,19 +392,19 @@ void allies_and_unconscious()
                     false, true
                 })
         {
-            Encounter e{{28, 8, std::vector<std::uint8_t>(224)},
-                {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+            Encounter e{{28, 8, std::vector<Terrain>(224)},
+                {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
                     {
                         2,
                         "target",
                         "Ally",
-                        0,
+                        Side::party,
                         {adjacent ? 2 : 3, 1},
                         {},
 unconscious ? std::optional<VitalState>{{0, false, {}}} :
                         std::nullopt
                     },
-                    {3, "target", "Enemy", 1, {8, 1}}
+                    {3, "target", "Enemy", Side::opposition, {8, 1}}
                 }};
             auto c = rules->create(e, 13);
             while (c->snapshot().actor != 1)
@@ -442,19 +442,19 @@ void campaign()
         {
             CampaignParty p(module());
             auto h = hero(level);
-            h.inventory().add("quarterstaff", "Quarterstaff");
+            h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
             const auto id =
                 npc ? p.recruit("fixture:eldritch", std::move(h)) : p.add_pc(std::move(h));
             p.equip(id, 1);
             auto state = p.checkpoint();
             state.roster[0].vitals.hit_points -= 3;
-            state.random_state = 123;
+            state.random_state.value = 123;
             state.roster[0].wealth[3] = 37;
             p.restore(std::move(state));
             auto actors = p.participants();
             actors[0].cell = {1, 1};
-            actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+            actors.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             const auto old = unit(*c, id).persistent;
             check(c->submit(command(*c, "eldritch_blast", 99)),
                   "Ordinary party grants produce actual casting commands");
@@ -464,7 +464,7 @@ void campaign()
             check(p.member(id).vitals == old && p.profile(id).weapon_hands == 2,
                   "Cantrip handoff retains wounds, pools and the two-handed staff");
             const auto saved = encode_campaign(p, nullptr, "eldritch");
-            check(saved.starts_with("OPENGOLD-CAMPAIGN 21\n"),
+            check(saved.starts_with("OPENGOLD-CAMPAIGN 25\n"),
                   "Every campaign uses the current save format");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "eldritch", nullptr).party);
@@ -511,16 +511,25 @@ void ui_fixtures()
     {
         const auto h = hero(1, std::string_view(name) != "unknown");
         const auto profile =
+            // Untrained armor blocks casting; full hands do not (CLASS-11).
             rules->character_profile(h.sheet(), std::string_view(name) == "blocked"
-                                     ? std::vector<std::string> {"wand", "shield"}
+                                     ? std::vector<std::string> {"plate"}
                                      : std::vector<std::string> {"quarterstaff"});
         const auto c =
-        rules->create({{12, 9, std::vector<std::uint8_t>(108)},
-            {   {1, "campaign-character", "Eldritch Warlock", 0, {1, 1}, profile.data},
-                {2, "vanguard", "Ally", 0, {3, 1}},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+        rules->create({{12, 9, std::vector<Terrain>(108)},
+            {   {1, "campaign-character", "Eldritch Warlock", Side::party, {1, 1}, profile.data},
+                {2, "vanguard", "Ally", Side::party, {3, 1}},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         2);
+        // Untrained armor's initiative Disadvantage may put the caster later.
+        for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+            for (const auto &end : c->legal_commands())
+                if (end.verb == "end")
+                {
+                    (void)c->submit(end);
+                    break;
+                }
         write(path / (std::string(name) + ".save"), c->save());
     }
 }

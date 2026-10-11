@@ -115,18 +115,18 @@ auto battle(const Character &h, std::vector<std::string> gear = {},
 std::optional<VitalState> state = {}, unsigned seed = 2)
 {
     auto rules = module();
-    auto c = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
+    auto c = rules->create({{10, 8, std::vector<Terrain>(80)},
         {   {
                 1,
                 "campaign-character",
                 "Fighter",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), gear).data,
                 state
             },
-            {2, "vanguard", "Enemy", 1, {2, 1}},
-            {3, "vanguard", "Enemy 2", 1, {8, 1}}
+            {2, "vanguard", "Enemy", Side::opposition, {2, 1}},
+            {3, "vanguard", "Enemy 2", Side::opposition, {8, 1}}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -192,9 +192,9 @@ void grants()
             rejects(
                 [&]
             {
-                (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                    {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                        {2, "vanguard", "Enemy", 1, {3, 1}}
+                (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+                    {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                        {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
                     }},
                 2);
             });
@@ -287,17 +287,17 @@ void actions()
     act(*copy, "decline");
     check(c->save() == copy->save() && unit(*c).action,
           "Pending reaction preserves both action allowances");
-    auto dead = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+    auto dead = rules->create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
                 "Dead Fighter",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), {}).data,
                 VitalState{0, true, {}}
             },
-            {2, "vanguard", "Enemy", 1, {3, 1}}
+            {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
         }},
     2);
     check(!has(*dead, "action_surge"), "Dead character cannot activate");
@@ -436,7 +436,7 @@ void campaign()
     {
         CampaignParty p(module());
         auto h = hero();
-        h.inventory().add("longsword", "Longsword");
+        h.add_item({.definition_id = "longsword", .name = "Longsword"});
         const auto id = npc ? p.recruit("surge:companion", h) : p.add_pc(h);
         p.equip(id, 1);
         p.award_experience(2700, "surge-xp");

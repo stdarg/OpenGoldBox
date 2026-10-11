@@ -5,7 +5,9 @@ var saved_files := {}
 # Checkpoint bodies in the current combat format for content creatures, which
 # carry no character profile. The header, with the current rules identity, is
 # taken from a checkpoint the game itself writes.
-const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 CN1 0"
+const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 10 CN1 0"
+# Each body adds one empty carried-inventory line per actor after it, then an
+# empty list of members who fled.
 const CONTINUATION_TAIL := "0\n0 0\n0\n0\n0\n0\n0 0\n0\n0\n0 \n0\n0\n0\n0\n0\n"
 
 # The mover left an attack and a Second Wind behind, then tried to step from
@@ -20,7 +22,7 @@ const MOVEMENT_BODY := "8 6\n" \
     + "1 0\n1 2 \n3 1\n3 4 2 \n4\n" \
     + "\"Combat begins. Each square is 5 feet.\"\n\"Round 1: Mover acts.\"\n" \
     + "\"Mover recovers 10 HP.\"\n\"Mover -> Target: d20 16 + 5 vs AC 17 hits for 4 damage.\"\n" \
-    + "1 0 4\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL
+    + "1 0 100 4\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL + "0\n0\n0\n0\n0\n"
 
 # A mover in a walled corridor with a Stable, Unconscious enemy between it and a guard.
 const TRANSIT_BODY := "6 3\n1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1 1 \n" \
@@ -29,7 +31,7 @@ const TRANSIT_BODY := "6 3\n1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1 1 \n" \
     + "3 \"bandit\" \"Guard\" 1 5 1 11 11 30 0 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
     + "2 \"bandit\" \"Unconscious enemy\" 1 2 1 0 3 30 0 0 0 0 1 1 1 0 0 1 0 \"\"" + ACTOR_TAIL + "\n" \
     + "0 0\n\n0 0\n\n2\n\"Combat begins. Each square is 5 feet.\"\n\"Round 1: Mover acts.\"\n" \
-    + "1 0 3\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL
+    + "1 0 100 3\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL + "0\n0\n0\n0\n"
 
 func _initialize() -> void:
     call_deferred("run_checks")
@@ -81,21 +83,21 @@ func run_checks() -> void:
     require(header.begins_with("OGCOMBAT "), "The game writes a combat checkpoint header")
 
     load_checkpoint(combat, path, header, MOVEMENT_BODY)
-    require(combat.get_node("Turn").text.contains("Second guard reaction"), "Movement queue retains its next reactor")
+    require(combat.get_node("StatusStack/Turn").text.contains("Second guard reaction"), "Movement queue retains its next reactor")
     require(combat.selected_character_cell() == Vector2i(2, 2), "Mover still waits before leaving reach")
-    var before: String = combat.get_node("Turn").text
+    var before: String = combat.get_node("StatusStack/Turn").text
     key(KEY_ENTER)
-    require(combat.get_node("Turn").text == before, "Keyboard cannot bypass the enemy's pending reaction")
-    var expected_turn: String = combat.get_node("Turn").text
-    var expected_roster: String = combat.get_node("Roster").text
+    require(combat.get_node("StatusStack/Turn").text == before, "Keyboard cannot bypass the enemy's pending reaction")
+    var expected_turn: String = combat.get_node("StatusStack/Turn").text
+    var expected_roster: String = combat.get_node("StatusStack/Roster").text
     combat.get_node("Save").pressed.emit()
     require(combat.get_node("Prompt").text.contains("saved"), "Pending movement saves through existing controls")
     combat.get_node("Load").pressed.emit()
-    require(combat.get_node("Turn").text == expected_turn and combat.get_node("Roster").text == expected_roster,
+    require(combat.get_node("StatusStack/Turn").text == expected_turn and combat.get_node("StatusStack/Roster").text == expected_roster,
         "Subsequent reload preserves turn, resources and pending movement")
 
-    # The existing movement input crosses an Unconscious enemy. The occupied
-    # square itself remains forbidden.
+    # The existing movement input stops on an Unconscious enemy at 0 Hit Points
+    # (as in the original game, the downed hold no square), then steps on.
     load_checkpoint(combat, path, header, TRANSIT_BODY)
     combat.get_node("Move").pressed.emit()
     root.size = Vector2i(1920, 1080)
@@ -109,8 +111,8 @@ func run_checks() -> void:
             click.position = canvas.get_global_transform_with_canvas() * ((Vector2(cell) + Vector2(0.5, 0.5)) * tile)
             root.push_input(click)
         for frame in range(4): await process_frame
-        require(combat.selected_character_cell() == (Vector2i(0, 1) if cell.x == 2 else cell), "Actual mouse input rejects occupied destination and crosses to free destination")
-    require(combat.get_node("Log").get_parsed_text().contains("Move 10 ft | Action ready"), "UI reports twenty feet spent and preserves the Action")
+        require(combat.selected_character_cell() == cell, "Actual mouse input stops on the downed enemy, then steps to a free square")
+    require(combat.get_node("LogStack/LogHeader").text.contains("Move 10 ft | Action ready"), "UI reports twenty feet spent and preserves the Action")
     restore_files()
     print("Opportunity view checks passed: remaining movement, pending reaction, save/load, unconscious transit")
     quit(0)

@@ -17,6 +17,15 @@ enum class CreationStep
     sheet
 };
 
+// One option of a choice group switched on or off. Group and option are both
+// strings, so they are named fields rather than adjacent parameters
+// (Effective C++ Item 18).
+struct ChoiceToggle
+{
+    std::string_view group, option;
+    bool selected{};
+};
+
 class CharacterCreator
 {
   public:
@@ -48,16 +57,16 @@ class CharacterCreator
     void select(rules::CreationField field, std::string_view id);
     void target_class(std::string_view id, bool selected);
     void select_adjustment(unsigned index);
-    void training_choice(std::string_view group, std::string_view option, bool selected);
-    void spell_choice(std::string_view group, std::string_view option, bool selected);
+    void training_choice(ChoiceToggle toggle);
+    void spell_choice(ChoiceToggle toggle);
     [[nodiscard]] bool has_spell_choices() const;
     [[nodiscard]] bool spell_choices_complete() const;
     void cantrip_choice(std::string_view option, bool selected);
     [[nodiscard]] bool training_complete() const;
     void roll();
-    void assign_roll(unsigned roll, unsigned ability);
+    void assign_roll(unsigned roll, rules::Ability ability);
     [[nodiscard]] bool scores_assigned() const;
-    void swap_scores(unsigned first, unsigned second);
+    void swap_scores(rules::Ability first, rules::Ability second);
     void name(std::string text);
     void appearance(por::CharacterAppearance value);
     void next();
@@ -66,7 +75,7 @@ class CharacterCreator
 
   private:
     std::unique_ptr<rules::CharacterRules> rules_;
-    std::uint64_t random_;
+    RandomState random_;
     rules::CharacterDraft draft_;
     por::CharacterAppearance appearance_;
     CreationStep step_{CreationStep::race};

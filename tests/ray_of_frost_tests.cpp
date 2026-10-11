@@ -127,16 +127,16 @@ std::uint64_t rng(const CombatSession &c)
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
 std::vector<std::string> gear = {})
 {
-    auto c = rules.create({{20, 8, std::vector<std::uint8_t>(160)},
+    auto c = rules.create({{20, 8, std::vector<Terrain>(160)},
         {   {
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), gear).data
             },
-            {2, "target", "Target", 1, target}
+            {2, "target", "Target", Side::opposition, target}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -160,9 +160,9 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {2, "vanguard", "Enemy", 1, {3, 1}}
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
             }},
         13);
     });
@@ -271,10 +271,10 @@ void multiple_casters()
 {
     auto rules = custom();
     const auto profile = rules->character_profile(hero(3).sheet(), {}).data;
-    auto c = rules->create({{20, 8, std::vector<std::uint8_t>(160)},
-        {   {1, "campaign-character", "First", 0, {1, 1}, profile},
-            {2, "target", "Target", 1, {8, 1}},
-            {3, "campaign-character", "Second", 0, {3, 1}, profile}
+    auto c = rules->create({{20, 8, std::vector<Terrain>(160)},
+        {   {1, "campaign-character", "First", Side::party, {1, 1}, profile},
+            {2, "target", "Target", Side::opposition, {8, 1}},
+            {3, "campaign-character", "Second", Side::party, {3, 1}, profile}
         }},
     2);
     while (c->snapshot().actor != 1)
@@ -310,9 +310,9 @@ void multiple_casters()
 void effect_lifecycle()
 {
     fx::EffectState state;
-    fx::apply_ray_of_frost(state, 5, 1, "First", 2000);
-    fx::apply_ray_of_frost(state, 5, 2, "Second", 6000);
-    fx::apply_ray_of_frost(state, 6, 1, "Other encounter", 4000);
+    fx::apply_ray_of_frost(state, {.scope = 5, .actor = 1}, "First", 2000);
+    fx::apply_ray_of_frost(state, {.scope = 5, .actor = 2}, "Second", 6000);
+    fx::apply_ray_of_frost(state, {.scope = 6, .actor = 1}, "Other encounter", 4000);
     check(fx::speed_penalty(state) == 10, "Same spell from multiple sources does not stack");
     std::ostringstream out;
     fx::write_effects(out, state);
@@ -355,27 +355,24 @@ void legality()
         }
     }
     auto c = battle(*rules, hero(), 13, {3, 1}, {"quarterstaff", "shield"});
-    check(!has(*c, "ray_of_frost"), "Somatic component obeys occupied hands");
-    auto before = c->save();
-    check(!c->submit({c->snapshot().revision, 1, 2, "ray_of_frost"}) && c->save() == before,
-          "Blocked gesture is atomic");
-    auto board = Battlefield{20, 8, std::vector<std::uint8_t>(160)};
-    board.terrain[22] = 1;
+    check(has(*c, "ray_of_frost"), "Full hands do not block casting (CLASS-11)");
+    auto board = Battlefield{20, 8, std::vector<Terrain>(160)};
+    board.terrain[22] = Terrain::obstacle;
     c = rules->create({board,
         {   {
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(hero().sheet(), {}).data
             },
-            {2, "target", "Target", 1, {3, 1}}
+            {2, "target", "Target", Side::opposition, {3, 1}}
         }},
     13);
     check(!has(*c, "ray_of_frost", 2), "Opaque terrain blocks casting");
     c = battle(*rules, hero());
-    before = c->save();
+    auto before = c->save();
     for (EntityId target :
             {
                 0u, 999u
@@ -392,8 +389,8 @@ void campaign()
     auto id = party.add_pc(hero(3));
     auto actors = party.participants();
     actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {13, 1}});
-    auto c = rules->create({{20, 8, std::vector<std::uint8_t>(160)}, actors}, 13);
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {13, 1}});
+    auto c = rules->create({{20, 8, std::vector<Terrain>(160)}, actors}, 13);
     while (c->snapshot().actor != id)
         act(*c, "end");
     act(*c, "ray_of_frost", id);
@@ -409,12 +406,12 @@ void campaign()
     check(encode_campaign(restored, nullptr, "frost") == saved,
           "Campaign reload retains exact unresolved duration and grants");
     auto participants = restored.participants();
-    std::uint64_t random = 123;
-    rules->elapse(participants, 5999, random);
-    check(fx::speed_penalty(effects(*participants[0].state)) == 10 && random == 123,
+    RandomState random{123};
+    rules->elapse(participants, std::chrono::milliseconds(5999), random);
+    check(fx::speed_penalty(effects(*participants[0].state)) == 10 && random.value == 123,
           "Campaign timeline preserves a still-active slow without save rolls");
-    rules->elapse(participants, 1, random);
-    check(effects(*participants[0].state).active.empty() && random == 123,
+    rules->elapse(participants, std::chrono::milliseconds(1), random);
+    check(effects(*participants[0].state).active.empty() && random.value == 123,
           "Campaign effect ends at exact deadline");
     auto rest = restored.rest(RestKind::short_rest);
     check(bool(rest) && effects(restored.member(id).vitals).active.empty(),
@@ -434,10 +431,10 @@ void fixtures()
     auto h = hero(3);
     auto profile =
         rules->character_profile(h.sheet(), std::vector<std::string> {"quarterstaff"}).data;
-    auto c = rules->create({{20, 8, std::vector<std::uint8_t>(160)},
-        {   {1, "campaign-character", "Frost Wizard", 0, {1, 1}, profile},
-            {2, "vanguard", "Ally", 0, {3, 1}},
-            {99, "vanguard", "Enemy", 1, {8, 1}}
+    auto c = rules->create({{20, 8, std::vector<Terrain>(160)},
+        {   {1, "campaign-character", "Frost Wizard", Side::party, {1, 1}, profile},
+            {2, "vanguard", "Ally", Side::party, {3, 1}},
+            {99, "vanguard", "Enemy", Side::opposition, {8, 1}}
         }},
     2);
     while (c->snapshot().actor != 1)

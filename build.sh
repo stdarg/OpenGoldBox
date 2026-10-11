@@ -21,9 +21,19 @@ JOBS="${JOBS:-$( (command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu) \
               || echo 4 )}"
 
 # "./build.sh debug" runs the slower Debug preset; the default is optimized.
-PRESET="${1:-default}"
+# "--werror" makes every compiler warning fail the build.
+PRESET=default
+WARNINGS_AS_ERRORS=OFF
+for arg in "$@"; do
+    case "$arg" in
+        --werror) WARNINGS_AS_ERRORS=ON ;;
+        *) PRESET="$arg" ;;
+    esac
+done
 
-"$CMAKE" --preset "$PRESET"
+# Passed on every run, so a tree configured with --werror goes back to
+# warnings when the flag is dropped.
+"$CMAKE" --preset "$PRESET" -DCMAKE_COMPILE_WARNING_AS_ERROR="$WARNINGS_AS_ERRORS"
 "$CMAKE" --build --preset "$PRESET" --parallel "$JOBS"
 
 # Exclude the Godot runtime checks: they need a Godot install and share a

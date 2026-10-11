@@ -17,6 +17,9 @@ func settle() -> void:
 
 func run_checks() -> void:
     root.size = Vector2i(1920, 1080)
+    # This window takes the keyboard focus when it opens, so keys and clicks meant
+    # for another app would reach it. Only the check's own pushed input drives it.
+    DisplayServer.window_set_input_event_callback(func(_event: InputEvent) -> void: pass)
     change_scene_to_file("res://scenes/character_creation.tscn")
     await settle()
     var creation := current_scene as Control
@@ -43,7 +46,7 @@ func run_checks() -> void:
                 colors.append(color)
     creation.get_node("PoolModal/Add").pressed.emit()
     creation.get_node("PoolModal/Close").pressed.emit()
-    creation.get_node("PartyPanel/Combat").pressed.emit()
+    creation.get_node("PartyPanel/ActionRow2/Combat").pressed.emit()
     await settle()
     var combat: Control = creation.get_node("CampaignCombat")
     combat.set_process(false)

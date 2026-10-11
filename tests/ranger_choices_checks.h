@@ -32,12 +32,12 @@ void ranger_choices_checks()
     rejects(
         [&]
     {
-        (void)creation_rules->evaluate(ranger_draft({"hunters_mark"}), true);
+        (void)creation_rules->evaluate(ranger_draft({"hunters_mark"}), NameRequirement::required);
     });
     rejects(
         [&]
     {
-        (void)creation_rules->evaluate(ranger_draft({"bless"}), true);
+        (void)creation_rules->evaluate(ranger_draft({"bless"}), NameRequirement::required);
     });
     const auto messages = rules->character_profile(ranger.sheet(), {}).spell_messages;
     check(std::any_of(messages.begin(), messages.end(), [](const auto & m)
@@ -48,7 +48,7 @@ void ranger_choices_checks()
     CharacterCreator creator(srd5::character_rules(), 1);
     creator.roll();
     for (unsigned n = 0; n < 6; ++n)
-        creator.assign_roll(n, n);
+        creator.assign_roll(n, static_cast<rules::Ability>(n));
     creator.select(CreationField::character_class, "ranger");
     check(creator.has_spell_choices(), "The Spell Choices step appears for a Ranger");
 
@@ -103,7 +103,9 @@ void druidic_warrior_checks()
                          SpellChoiceContext::advancement);
     check(options.learning.size() == 1 && options.learning.front().count == 2 &&
           option_ids(options.learning.front().options) ==
-          std::vector<std::string> {"poison_spray", "resistance", "spare_the_dying"},
+          std::vector<std::string> {"poison_spray", "produce_flame", "resistance", "shillelagh",
+                                    "spare_the_dying", "starry_wisp"
+                                   },
           "Druidic Warrior learns two Druid cantrips at level two");
     auto cleric_cantrip = choice;
     (*cleric_cantrip.spell_learning)["cantrips:2"] = {"sacred_flame"};

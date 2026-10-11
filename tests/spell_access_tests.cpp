@@ -90,9 +90,9 @@ CombatantView unit(const CombatSession &c)
 auto battle(const RulesModule &rules, const CharacterSheet &sheet, VitalState state)
 {
     const auto profile = rules.character_profile(sheet, {});
-    return rules.create({{8, 8, std::vector<std::uint8_t>(64)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile.data, state},
-            {99, "vanguard", "Target", 1, {5, 1}}
+    return rules.create({{8, 8, std::vector<Terrain>(64)},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile.data, state},
+            {99, "vanguard", "Target", Side::opposition, {5, 1}}
         }},
     13);
 }
@@ -304,9 +304,9 @@ void invalid()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Wizard", 0, {1, 1}, bad},
-                {99, "vanguard", "Target", 1, {5, 1}}
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, bad},
+                {99, "vanguard", "Target", Side::opposition, {5, 1}}
             }},
         13);
     });
@@ -315,9 +315,9 @@ void invalid()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Wizard", 0, {1, 1}, bad},
-                {99, "vanguard", "Target", 1, {5, 1}}
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, bad},
+                {99, "vanguard", "Target", Side::opposition, {5, 1}}
             }},
         13);
     });

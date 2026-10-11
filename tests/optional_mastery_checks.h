@@ -63,7 +63,7 @@ void matrix()
                                                              };
             auto e = encounter(*r, Character(*srd5::character_rules(), draft, {}),
                                std::string(weapon.key), ranged);
-            e.participants.push_back({98, "mastery_target", "Second", 1, {2, 2}});
+            e.participants.push_back({98, "mastery_target", "Second", Side::opposition, {2, 2}});
             bool tested = false;
             for (unsigned seed = 1; seed < 32 && !tested; ++seed)
             {
@@ -180,7 +180,7 @@ void reactions()
         {
             CampaignParty p(module());
             auto h = hero(key, "fighter", "soldier");
-            h.inventory().add(key, "Mastery weapon");
+            h.add_item({.definition_id = key, .name = "Mastery weapon"});
             p.add_pc(h);
             p.equip(1, 1);
             p.award_experience(900, "reaction-mastery");
@@ -188,13 +188,14 @@ void reactions()
                 p.advance(1, p.default_advancement(1));
             auto actors = p.participants();
             actors.front().cell = {1, 1};
-            const int edge = std::string_view(key) == "halberd" ? 3 : 2;
-            actors.push_back({99, "mastery_target", "Mover", 1, {edge, 1}});
-            actors.push_back({98, "mastery_target", "Second", 1, {edge, 2}});
+            // Melee reaches adjacent squares only (MELEE-1), the halberd's too.
+            const int edge = 2;
+            actors.push_back({99, "mastery_target", "Mover", Side::opposition, {edge, 1}});
+            actors.push_back({98, "mastery_target", "Second", Side::opposition, {edge, 2}});
             bool tested = false;
             for (unsigned seed = 1; seed < 128 && !tested; ++seed)
             {
-                auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
+                auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
                 turn(*c, 99);
                 Command move;
                 for (const auto &cmd : c->legal_commands())
@@ -248,7 +249,7 @@ void cleave_criticals()
     auto r = rules();
     CampaignParty p(module());
     auto h = hero("greataxe", "fighter", "soldier");
-    h.inventory().add("greataxe", "Axe");
+    h.add_item({.definition_id = "greataxe", .name = "Axe"});
     p.add_pc(h);
     p.equip(1, 1);
     p.award_experience(900, "cleave-champion");
@@ -256,12 +257,12 @@ void cleave_criticals()
         p.advance(1, p.default_advancement(1));
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "mastery_target", "First", 1, {2, 1}});
-    actors.push_back({98, "mastery_target", "Second", 1, {2, 2}});
+    actors.push_back({99, "mastery_target", "First", Side::opposition, {2, 1}});
+    actors.push_back({98, "mastery_target", "Second", Side::opposition, {2, 2}});
     bool tested = false;
     for (unsigned seed = 1; seed < 1000 && !tested; ++seed)
     {
-        auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
+        auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
         turn(*c, 1);
         act(*c, "melee", 99);
         if (!critical(*c))
@@ -319,7 +320,10 @@ void ui_fixtures()
         auto e = encounter(*r, hero(key), key);
         e.participants.back().definition = "vanguard";
         e.participants.push_back(
-        {98, "vanguard", "Second", std::string_view(key) == "greataxe" ? 0u : 1u, {2, 2}});
+        {
+            98, "vanguard", "Second",
+            std::string_view(key) == "greataxe" ? Side::party : Side::opposition, {2, 2}
+        });
         bool written = false;
         for (unsigned seed = 1; seed < 64 && !written; ++seed)
         {
@@ -421,7 +425,7 @@ void boundaries()
     {
         auto e = encounter(*r, hero("warhammer"), "warhammer");
         if (blocked)
-            e.battlefield.terrain[1 * 12 + 3] = 1;
+            e.battlefield.terrain[1 * 12 + 3] = Terrain::obstacle;
         auto c = r->create(e, 11);
         turn(*c, 1);
         act(*c, "melee", 99);
@@ -452,7 +456,8 @@ void boundaries()
         if (!c->snapshot().optional_effect_choice)
             continue;
         const auto description = c->snapshot().optional_effect_choice->description;
-        check(arg(description, "dc") == std::to_string(10 + hero("maul").sheet().modifiers[0]),
+        check(arg(description, "dc") == std::to_string(10 +
+              hero("maul").sheet().modifiers[Ability::strength]),
               "Topple DC uses actual Strength and proficiency");
         const auto before = c->save();
         choose(*c, "effect_use", 1);
@@ -471,7 +476,7 @@ void movement_enables_mastery()
     {
         CampaignParty p(module());
         auto h = hero(key, "fighter", "soldier");
-        h.inventory().add(key, "Weapon");
+        h.add_item({.definition_id = key, .name = "Weapon"});
         p.add_pc(h);
         p.equip(1, 1);
         p.award_experience(900, "positioning");
@@ -480,12 +485,14 @@ void movement_enables_mastery()
         auto roster = p.participants();
         roster.front().cell = {1, 1};
         const bool cleave = std::string_view(key) == "halberd";
-        roster.push_back({99, "mastery_target", "First", 1, {cleave ? 3 : 2, 1}});
+        // Melee reaches adjacent squares only (MELEE-1): Cleave's second target
+        // beside the first is out of reach until the Champion steps to (2,2).
+        roster.push_back({99, "mastery_target", "First", Side::opposition, {2, 1}});
         if (cleave)
-            roster.push_back({98, "mastery_target", "Second", 1, {4, 1}});
-        Battlefield board{12, 8, std::vector<std::uint8_t>(96)};
+            roster.push_back({98, "mastery_target", "Second", Side::opposition, {3, 2}});
+        Battlefield board{12, 8, std::vector<Terrain>(96)};
         if (!cleave)
-            board.terrain[15] = 1;
+            board.terrain[15] = Terrain::obstacle;
         bool tested = false;
         for (unsigned seed = 1; seed < 128 && !tested; ++seed)
         {
@@ -500,8 +507,7 @@ void movement_enables_mastery()
                   "Position-dependent effect retained while Champion can enable it");
             roundtrip(*r, *c);
             choose(*c, "effect_use", 2);
-            const Cell destination = cleave ? Cell{2, 1} :
-                                     Cell{2, 2};
+            const Cell destination{2, 2};
             bool moved = false;
             for (const auto &cmd : c->legal_commands())
                 if (cmd.verb == "move" && cmd.destination == destination)
@@ -530,20 +536,20 @@ void slain_reaction_mover()
     auto r = rules();
     CampaignParty p(module());
     auto h = hero("greataxe", "fighter", "soldier");
-    h.inventory().add("greataxe", "Axe");
+    h.add_item({.definition_id = "greataxe", .name = "Axe"});
     p.add_pc(h);
     p.equip(1, 1);
     auto roster = p.participants();
     roster.front().cell = {1, 1};
-    roster.push_back({99, "mastery_target", "Mover", 1, {2, 1}});
-    roster.push_back({98, "mastery_target", "Second", 1, {2, 2}});
-    auto baseline = r->create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
+    roster.push_back({99, "mastery_target", "Mover", Side::opposition, {2, 1}});
+    roster.push_back({98, "mastery_target", "Second", Side::opposition, {2, 2}});
+    auto baseline = r->create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, 1);
     roster[1].state = unit(*baseline, 99).persistent;
     roster[1].state->hit_points = 1;
     bool tested = false;
     for (unsigned seed = 1; seed < 64 && !tested; ++seed)
     {
-        auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, seed);
+        auto c = r->create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, seed);
         turn(*c, 99);
         for (const auto &cmd : c->legal_commands())
             if (cmd.verb == "move" && cmd.destination == Cell{3, 1})
@@ -579,16 +585,16 @@ void physical_and_damage()
         {
             CampaignParty p(module());
             auto h = hero(key, "fighter", background);
-            h.inventory().add(key, "Thrown weapon");
+            h.add_item({.definition_id = key, .name = "Thrown weapon"});
             p.add_pc(h);
             p.equip(1, 1);
             auto roster = p.participants();
             roster.front().cell = {1, 1};
-            roster.push_back({99, "mastery_target", "Target", 1, {3, 1}});
+            roster.push_back({99, "mastery_target", "Target", Side::opposition, {3, 1}});
             bool tested = false;
             for (unsigned seed = 1; seed < 32 && !tested; ++seed)
             {
-                auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, seed);
+                auto c = r->create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, seed);
                 turn(*c, 1);
                 act(*c, "throw", 99);
                 if (!c->snapshot().optional_effect_choice)
@@ -613,7 +619,7 @@ void physical_and_damage()
             roll = {{face, face, face, 1}, 3};
         Character h(*srd5::character_rules(), draft, {});
         auto e = encounter(*r, h, "greataxe");
-        e.participants.push_back({98, "mastery_target", "Ally", 0, {2, 2}});
+        e.participants.push_back({98, "mastery_target", "Ally", Side::party, {2, 2}});
         bool tested = false;
         for (unsigned seed = 1; seed < 64 && !tested; ++seed)
         {
@@ -628,7 +634,7 @@ void physical_and_damage()
             act(*c, "effect_attack", 98);
             if (!hit(*c))
                 continue;
-            check(greataxe_damage_within(*c, std::min(0, h.sheet().modifiers[0])),
+            check(greataxe_damage_within(*c, std::min(0, h.sheet().modifiers[Ability::strength])),
                   "Cleave retains negative ability modifiers and omits positive ones");
             roundtrip(*r, *c);
             tested = true;
@@ -648,7 +654,7 @@ void malformed()
     check(start != bytes.npos, "Find pending mastery record");
     const auto end = bytes.find('\n', start + 1);
     const auto row = bytes.substr(start + 1, end - start - 1);
-    for (const auto replacement :
+    for (const auto &replacement :
             {
                 std::string("99999 99 ") + row.substr(5), std::string("1 1 ") + row.substr(5),
                 std::string("1 99 99 20 0 0 \"maul\" 1 1 0")
@@ -689,7 +695,7 @@ void unconscious_cleave()
 {
     auto r = rules();
     auto e = encounter(*r, hero("greataxe", "fighter", "soldier"), "greataxe");
-    e.participants.push_back({98, "mastery_target", "Unconscious ally", 0, {2, 2}});
+    e.participants.push_back({98, "mastery_target", "Unconscious ally", Side::party, {2, 2}});
     e.participants.back().state =
         VitalState{0, false, "SRD11 0 0 0 0 0 1 0 0 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"};
     bool tested = false;

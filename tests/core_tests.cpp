@@ -1,4 +1,3 @@
-#include "opengold/core.h"
 #include "opengold/formats.h"
 
 #include <algorithm>
@@ -103,9 +102,7 @@ void sprite_boundaries()
 void decode_tests()
 {
     const std::array<std::uint8_t, 4> bytes{0x4f, 0x50, 0x47, 0x44};
-    const opengold::Core core;
-
-    check(core.checksum(bytes) == 0xcb4b7229u, "Known checksum");
+    check(opengold::formats_checksum(bytes) == 0xcb4b7229u, "Known checksum");
 
     // One 2x1-byte (16x1 pixel) synthetic EGA sprite frame in a DAX record.
     const std::array<std::uint8_t, 42> dax

@@ -15,7 +15,7 @@ std::vector<EntityId> Session::cleave_targets(const PendingMastery &m,
         return result;
     const auto reach = def(mastery_actor(m)).reach;
     for (const auto &target : actors_)
-        if (target.source.id != m.actor && target.source.id != m.target && !target.dead &&
+        if (target.source.id != m.actor && target.source.id != m.target && !target.life.dead &&
                 distance(first.source.cell, target.source.cell) <= 5 &&
                 distance(from.value_or(a.source.cell), target.source.cell) <= reach &&
                 line_of_sight(from.value_or(a.source.cell), target.source.cell))
@@ -34,7 +34,7 @@ std::vector<Cell> Session::push_cells(const PendingMastery &m, std::optional<Cel
     std::vector<Cell> result;
     const auto &a = actor(m.actor);
     const auto &target = actor(m.target);
-    if (target.dead || def(target).size > 3)
+    if (target.life.dead || def(target).size > 3)
         return result;
     const auto start = target.source.cell, origin = from.value_or(a.source.cell);
     const int dx = start.x - origin.x, dy = start.y - origin.y;
@@ -42,10 +42,10 @@ std::vector<Cell> Session::push_cells(const PendingMastery &m, std::optional<Cel
         return result;
     auto obstacles = board_;
     for (const auto &other : actors_)
-        if (!other.dead && other.source.id != target.source.id)
+        if (!other.life.dead && other.source.id != target.source.id)
         {
             const auto cell = other.source.id == a.source.id ? origin : other.source.cell;
-            obstacles.terrain[cell.y * board_.width + cell.x] = 1;
+            obstacles.terrain[cell.y * board_.width + cell.x] = Terrain::obstacle;
         }
     for (int y = std::max(0, start.y - 2); y <= std::min(board_.height - 1, start.y + 2); ++y)
         for (int x = std::max(0, start.x - 2); x <= std::min(board_.width - 1, start.x + 2); ++x)
@@ -53,7 +53,7 @@ std::vector<Cell> Session::push_cells(const PendingMastery &m, std::optional<Cel
             const int step_x = x - start.x, step_y = y - start.y;
             const Cell cell{x, y};
             if (step_x * dy != step_y * dx || step_x * dx + step_y * dy <= 0 ||
-                    obstacles.at(cell) == 1)
+                    obstacles.at(cell) == Terrain::obstacle)
                 continue;
             if (detail::has_line_of_sight(obstacles, start, cell))
                 result.push_back(cell);
@@ -69,15 +69,15 @@ bool Session::mastery_available(const PendingMastery &m) const
         return false;
     if (m.kind == detail::Mastery::cleave)
         return !cleave_targets(m).empty();
-    if (target.dead)
+    if (target.life.dead)
         return false;
     if (m.kind == detail::Mastery::push)
         return !push_cells(m).empty();
     if (m.kind == detail::Mastery::topple)
         return !target.effects.prone;
     if (m.kind != detail::Mastery::slow ||
-            !detail::can_apply_attack_mastery(target.effects, detail::EffectKind::slow, scope_,
-                    m.actor))
+            !detail::can_apply_attack_mastery(target.effects, detail::EffectKind::slow,
+                    effect_source(source)))
         return false;
     const auto duration = next_turn_ms(source);
     if (std::any_of(target.effects.active.begin(), target.effects.active.end(),
@@ -88,21 +88,22 @@ bool Session::mastery_available(const PendingMastery &m) const
 }))
     return false;
     auto after = target.effects;
-    detail::apply_attack_mastery(after, detail::EffectKind::slow, scope_, m.actor,
+    detail::apply_attack_mastery(after, detail::EffectKind::slow, effect_source(source),
                                  source.source.name, next_turn_ms(source));
     return after != target.effects;
 }
 
-void Session::offer_mastery(const Actor &a, const Actor &target, int natural, bool ranged,
+void Session::offer_mastery(const Actor &a, const Actor &target, int natural, AttackRange range,
                             int damage, bool critical)
 {
-    const auto kind = weapon_mastery(a, ranged);
+    const bool ranged = range == AttackRange::ranged;
+    const auto kind = weapon_mastery(a, range);
     if (kind != detail::Mastery::slow && kind != detail::Mastery::topple &&
             kind != detail::Mastery::cleave && kind != detail::Mastery::push)
         return;
     if ((kind == detail::Mastery::slow && damage <= 0) ||
             (kind == detail::Mastery::cleave && (ranged || actor(a.source.id).cleave_used)) ||
-            (kind != detail::Mastery::cleave && target.dead) ||
+            (kind != detail::Mastery::cleave && target.life.dead) ||
             (kind == detail::Mastery::push && def(target).size > 3))
         return;
     std::string key;
@@ -117,7 +118,7 @@ void Session::offer_mastery(const Actor &a, const Actor &target, int natural, bo
     if (!mastery_available(m))
     {
         bool possible = false;
-        if (critical && def(a).champion && actors_[turn_].source.side == 0 &&
+        if (critical && def(a).champion && actors_[turn_].source.side == Side::party &&
                 (kind == detail::Mastery::cleave || kind == detail::Mastery::push))
         {
             const auto reachable =
@@ -175,7 +176,7 @@ OptionalEffectChoice Session::effect_choices() const
         choice.options.push_back({1, {label, {}}, description, mastery_available(m)});
     }
     // On an enemy turn, the predetermined order is mastery before movement.
-    if (!mastery_ || actors_[turn_].source.side == 0)
+    if (!mastery_ || actors_[turn_].source.side == Side::party)
         for (unsigned i = 0; i < champion_offers_.size(); ++i)
         {
             const auto &move = champion_offers_[i];
@@ -212,7 +213,7 @@ bool Session::use_effect(const Command &command)
         source.cleave_used = true;
         auto attacking = source;
         attacking.cleave_damage = true;
-        attack(attacking, actor(command.target), false);
+        attack(attacking, actor(command.target), AttackRange::melee);
         source.facing_left = attacking.facing_left;
     }
     else if (command.verb == "effect_push")
@@ -252,8 +253,9 @@ bool Session::use_effect(const Command &command)
             const auto &source = actor(m.actor);
             if (m.kind == detail::Mastery::slow)
             {
-                detail::apply_attack_mastery(target.effects, detail::EffectKind::slow, scope_,
-                                             m.actor, source.source.name, next_turn_ms(source));
+                detail::apply_attack_mastery(target.effects, detail::EffectKind::slow,
+                                             effect_source(source), source.source.name,
+                                             next_turn_ms(source));
                 log(target.source.name + " gains Slow from " + source.source.name + ".",
                 {
                     "{name} gains {mastery} from {source}.",
@@ -307,12 +309,14 @@ void Session::validate_mastery_state() const
                 (m.kind != detail::Mastery::slow && m.kind != detail::Mastery::topple &&
                  m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push) ||
                 m.natural < 2 || m.natural > 20 || m.origin.x < 0 || m.origin.y < 0 ||
-                m.origin.x >= board_.width || m.origin.y >= board_.height || board_.at(m.origin) == 1 ||
+                m.origin.x >= board_.width || m.origin.y >= board_.height ||
+                board_.at(m.origin) == Terrain::obstacle ||
                 (m.targeting && m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push))
             throw std::runtime_error("Invalid pending mastery source");
         const auto attacking = mastery_actor(m);
         const auto &d = def(attacking);
-        if (weapon_mastery(attacking, m.ranged) != m.kind ||
+        const auto range = m.ranged ? AttackRange::ranged : AttackRange::melee;
+        if (weapon_mastery(attacking, range) != m.kind ||
                 distance(m.origin, t->source.cell) > (m.ranged ? d.long_range : d.reach) ||
                 !line_of_sight(m.origin, t->source.cell) ||
                 (!(d.champion && m.natural == 19) &&
@@ -323,7 +327,7 @@ void Session::validate_mastery_state() const
                  ? (a->actions.normal && (!a->surge_used || a->actions.surge))
                  : (a->reaction ||
                     (pending() ? pending() != m.actor
-                     : (m.target != actors_[turn_].source.id || actors_[turn_].hp > 0)))))
+                     : (m.target != actors_[turn_].source.id || actors_[turn_].life.hp > 0)))))
             throw std::runtime_error("Invalid pending mastery trigger");
         if (!m.thrown_item)
         {
@@ -366,31 +370,34 @@ void Session::validate_mastery_state() const
         });
         if (!targets.insert(c.target).second ||
                 (c.cleave ? std::exchange(cleave, true) : std::exchange(ordinary, true)) ||
-                !board_.contains(c.origin) || board_.at(c.origin) == 1 ||
-                !board_.contains(c.trigger_origin) || board_.at(c.trigger_origin) == 1 ||
-                !board_.contains(c.target_origin) || board_.at(c.target_origin) == 1 ||
+                !board_.contains(c.origin) || board_.at(c.origin) == Terrain::obstacle ||
+                !board_.contains(c.trigger_origin) ||
+                board_.at(c.trigger_origin) == Terrain::obstacle ||
+                !board_.contains(c.target_origin) ||
+                board_.at(c.target_origin) == Terrain::obstacle ||
                 c.origin != c.trigger_origin || (champion_move_ && champion_move_->actor != c.actor) ||
                 who == actors_.end() || target == actors_.end() || !c.triggered ||
                 !def(*who).champion || !conscious(*who) || c.actor == c.target || c.natural < 2 ||
                 c.natural > 20 ||
                 c.remaining != std::max(0, def(*who).speed - detail::speed_penalty(who->effects)) / 2 ||
                 !(c.natural == 20 || (!c.spell && c.natural == 19) ||
-                  ((c.helpless || target->hp == 0) &&
+                  ((c.helpless || target->life.hp == 0) &&
                    distance(c.trigger_origin, c.target_origin) <= 5)) ||
                 (c.cleave && !who->cleave_used) || (mastery_ && mastery_->actor != c.actor) ||
                 (c.actor == actors_[turn_].source.id
                  ? (who->actions.normal && (!who->surge_used || who->actions.surge))
-                 : (who->reaction || (pending() ? pending() != c.actor : actors_[turn_].hp > 0))))
+                 : (who->reaction || (pending() ? pending() != c.actor : actors_[turn_].life.hp > 0))))
             throw std::runtime_error("Invalid queued Champion effect");
     }
     if (effect_reaction_origin_)
     {
         const auto &r = *effect_reaction_origin_;
         const auto p = r.source;
-        if (!board_.contains(p) || board_.at(p) == 1 || !board_.contains(r.mover) ||
-                board_.at(r.mover) == 1 || r.movement < 0 || r.movement > actors_[turn_].movement ||
+        if (!board_.contains(p) || board_.at(p) == Terrain::obstacle || !board_.contains(r.mover) ||
+                board_.at(r.mover) == Terrain::obstacle || r.movement < 0 ||
+                r.movement > actors_[turn_].movement ||
                 r.actor == actors_[turn_].source.id || (pending() && pending() != r.actor) ||
-                (!pending() && actors_[turn_].hp > 0) ||
+                (!pending() && actors_[turn_].life.hp > 0) ||
                 (!effect_waiting() && !champion_move_))
             throw std::runtime_error("Invalid mastery reaction origin");
     }

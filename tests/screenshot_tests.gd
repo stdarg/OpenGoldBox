@@ -105,6 +105,16 @@ func run_checks() -> void:
     require(notice.position.x >= 0 and notice.position.y >= 0 and
         notice.position.x + notice.size.x <= root.size.x and notice.position.y + notice.size.y <= root.size.y,
         "Confirmation stays inside the viewport: position=%s size=%s viewport=%s" % [notice.position, notice.size, root.size])
+    require(is_equal_approx(notice.position.x, 20.0) and is_equal_approx(notice.size.x, 600.0)
+        and is_equal_approx(notice.get_rect().end.y, 460.0),
+        "Notice keeps its established 640-pixel layout")
+    root.size = Vector2i(1920, 1080)
+    await settle()
+    require(is_equal_approx(notice.position.x, 20.0) and is_equal_approx(notice.size.x, 800.0)
+        and is_equal_approx(notice.get_rect().end.y, 1060.0),
+        "Notice keeps its established large-window width and bottom inset")
+    root.size = Vector2i(640, 480)
+    await settle()
     if graphical:
         await RenderingServer.frame_post_draw
         require(root.get_texture().get_image().save_png(directory.path_join("notice-check.png")) == OK,

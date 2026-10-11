@@ -213,7 +213,8 @@ void arithmetic()
     });
     damage::LifeState state{0, 0, 0, true, false, {0, 7200000}};
     const auto before = state;
-    damage::damage_life(state, resolve({{DamageType::fire, 1}}, {resist}).total, 20, true);
+    damage::damage_life(state, resolve({{DamageType::fire, 1}}, {resist}).total, 20,
+                        {.critical = true});
     check(state == before,
           "Damage reduced to zero neither ends Stable nor adds a critical death failure");
     state = {5, 0, 0, false, false, {}};
@@ -287,9 +288,9 @@ void species_combat()
         const auto encounter = [&](const Character & h)
         {
             auto profile = rules->character_profile(h.sheet(), {});
-            return Encounter{{8, 8, std::vector<std::uint8_t>(64)},
-                {   {1, "campaign-character", "Target", 0, {2, 2}, profile.data},
-                    {2, "toxin", "Poison attacker", 1, {3, 2}}
+            return Encounter{{8, 8, std::vector<Terrain>(64)},
+                {   {1, "campaign-character", "Target", Side::party, {2, 2}, profile.data},
+                    {2, "toxin", "Poison attacker", Side::opposition, {3, 2}}
                 }};
         };
         auto d = rules->create(encounter(dwarf), 42), h = rules->create(encounter(human), 42);
@@ -308,8 +309,8 @@ void species_combat()
               "A created Dwarf halves actual poison damage independently of class");
         check(!unit(*d, 1).dead && unit(*d, 2).action == false,
               "Resistance preserves normal action expenditure and vitality");
-        const auto snapshot = d->snapshot();
-        check(std::any_of(snapshot.log_messages.begin(), snapshot.log_messages.end(),
+        const auto messages = d->snapshot().log_messages();
+        check(std::any_of(messages.begin(), messages.end(),
                           [](const auto & m)
         {
             return m.source == "{name}: {type} damage {before} -> {after}.";
@@ -327,6 +328,7 @@ void weapons_and_spells()
     const auto target = "creature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     const std::map<std::string_view, DamageType> expected_types
     {
+        {"torch", DamageType::fire},
         {"club", DamageType::bludgeoning},
         {"dagger", DamageType::piercing},
         {"handaxe", DamageType::slashing},
@@ -384,9 +386,9 @@ void weapons_and_spells()
         const std::array gear{std::string(weapon.key)};
         const auto profile = rules->character_profile(character.sheet(), gear);
         auto combat =
-        rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Armed fighter", 0, {2, 2}, profile.data},
-                {2, "target", "Target", 1, {3, 2}}
+        rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Armed fighter", Side::party, {2, 2}, profile.data},
+                {2, "target", "Target", Side::opposition, {3, 2}}
             }},
         42);
         turn(*combat, 1);
@@ -394,7 +396,7 @@ void weapons_and_spells()
         check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
               "Weapon damage uses its SRD type before HP loss");
         check(unit(*combat, 2).hit_points == 1000, "Selected damage remains immune");
-        const auto logs = combat->snapshot().log_messages;
+        const auto logs = combat->snapshot().log_messages();
         check(std::any_of(logs.begin(), logs.end(),
                           [](const auto & m)
         {
@@ -410,14 +412,16 @@ void weapons_and_spells()
         auto rules = srd5::parse_content(content() + attacker() + target +
                                          "affinity target shell immunity " + type + '\n');
         auto combat =
-        rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {{1, "toxin", "Caster", 0, {0, 0}}, {2, "target", "Target", 1, {7, 7}}}},
+        rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "toxin", "Caster", Side::party, {0, 0}},
+                {2, "target", "Target", Side::opposition, {7, 7}}
+            }},
         42);
         turn(*combat, 1);
         check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
               "Fire Bolt, Scorching Ray and Magic Missile respect typed immunity");
         check(unit(*combat, 2).hit_points == 1000, "Selected damage remains immune");
-        const auto logs = combat->snapshot().log_messages;
+        const auto logs = combat->snapshot().log_messages();
         check(std::any_of(logs.begin(), logs.end(),
                           [](const auto & m)
         {
@@ -429,8 +433,10 @@ void weapons_and_spells()
     auto base = srd5::parse_content(content() + attacker() + target);
     auto protected_rules = srd5::parse_content(content() + attacker() + target +
         "affinity target ward resistance force\n");
-    Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
-        {{1, "toxin", "Caster", 0, {0, 0}}, {2, "target", "Target", 1, {7, 7}}}};
+    Encounter encounter{{8, 8, std::vector<Terrain>(64)},
+        {   {1, "toxin", "Caster", Side::party, {0, 0}},
+            {2, "target", "Target", Side::opposition, {7, 7}}
+        }};
     auto raw = base->create(encounter, 42), resisted = protected_rules->create(encounter, 42);
     turn(*raw, 1);
     turn(*resisted, 1);
@@ -440,7 +446,7 @@ void weapons_and_spells()
     check(rng(*raw) == rng(*resisted),
           "Dart resistance preserves the established per-dart RNG sequence");
     int expected = 0, instances = 0;
-    for (const auto &m : resisted->snapshot().log_messages)
+    for (const auto &m : resisted->snapshot().log_messages())
         if (m.source == "{name}: {type} damage {before} -> {after}.")
         {
             for (const auto &a : m.arguments)

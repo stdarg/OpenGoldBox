@@ -110,7 +110,7 @@ void golden_transitions()
     check(!state.stable && !state.dead && state.failures == 1 &&
           state.recovery == life::RecoveryClock{6000, 0},
           "Damage at zero HP ends Stable, adds a failure and cancels natural recovery");
-    life::damage_life(state, 1, 20, true);
+    life::damage_life(state, 1, 20, {.critical = true});
     check(state.dead && state.failures == 3 && state.recovery == life::RecoveryClock{},
           "A critical hit at zero HP adds two failures");
     const auto dead = state;
@@ -139,7 +139,7 @@ void validation()
     life::start_stable_recovery(state, rng);
     check(state.recovery.stable_recovery_in_ms == 7200000 && rng == 11400714819323198527ULL,
           "Starting Stable recovery rolls its duration once");
-    for (const auto invalid : std::vector<life::LifeState> {{1, 0, 0, false, false, {1, 0}},
+    for (const auto &invalid : std::vector<life::LifeState> {{1, 0, 0, false, false, {1, 0}},
     {0, 0, 0, false, true, {1, 0}},
     {0, 0, 0, false, false, {6001, 0}},
     {0, 0, 0, true, false, {1, 1}},
@@ -202,10 +202,10 @@ void combat_and_campaign()
     // Only combat leaves a recovered character Prone.
     const std::string recovered = "SRD11 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 0";
     const std::string recovered_prone = "SRD11 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 1";
-    Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
-        {   {1, "campaign-character", "Patient", 0, {0, 0}, profile.data, stable},
-            {2, "vanguard", "Companion", 0, {2, 0}},
-            {99, "vanguard", "Enemy", 1, {7, 7}}
+    Encounter encounter{{8, 8, std::vector<Terrain>(64)},
+        {   {1, "campaign-character", "Patient", Side::party, {0, 0}, profile.data, stable},
+            {2, "vanguard", "Companion", Side::party, {2, 0}},
+            {99, "vanguard", "Enemy", Side::opposition, {7, 7}}
         }};
     encounter.participants[0].state->resources =
         "SRD11 1 0 0 0 0 1 1 0 10000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0";
@@ -253,7 +253,7 @@ void combat_and_campaign()
           "SRD11 1 0 0 0 0 1 2 0 1000 0 \"\" 0 1 0 0 0 0 FX8 1 0 0",
           "Advancement adds only its new Hit Die and retains the exact Stable deadline");
     auto healed = stable;
-    auto rng = std::uint64_t{42};
+    RandomState rng{42};
     rules->temple_heal(healed, character.sheet(), rng);
     check(healed.hit_points > 0 && healed.resources == recovered,
           "Temple healing cancels the recovery clock without replenishing pools");

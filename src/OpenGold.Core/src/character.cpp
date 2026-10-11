@@ -4,11 +4,22 @@
 
 namespace opengold
 {
+namespace
+{
+// Checked before the member is built, so a Character never holds an invalid look.
+por::CharacterAppearance validated(por::CharacterAppearance appearance)
+{
+    por::validate_character_appearance(appearance);
+    return appearance;
+}
+} // namespace
+
 Character::Character(const rules::CharacterRules &rules, rules::CharacterDraft creation,
                      por::CharacterAppearance appearance)
-    : creation_(std::move(creation)), sheet_(rules.evaluate(creation_, true))
+    : creation_(std::move(creation)),
+      sheet_(rules.evaluate(creation_, rules::NameRequirement::required)),
+      appearance_(validated(std::move(appearance)))
 {
-    this->appearance(appearance);
 }
 
 void Character::appearance(por::CharacterAppearance value)
@@ -38,7 +49,8 @@ bool Character::advance(const rules::RulesModule &rules, rules::VitalState &stat
 }
 
 void Character::choose_spells(const rules::RulesModule &rules, const rules::SpellChoices &choices,
-                              std::uint64_t rest_session, bool complete)
+                              std::uint64_t rest_session,
+                              rules::ChoiceCompleteness completeness)
 {
     if (!rest_session)
         throw std::runtime_error("Spell choices require a completed Long Rest");
@@ -50,8 +62,9 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
     throw std::runtime_error("Spell choices already used for this rest");
     auto candidate = sheet_;
     auto history = spell_edits_;
-    rules.apply_spell_choices(candidate, choices, rules::SpellChoiceContext::long_rest, complete);
-    history.push_back({unsigned(sheet_.level), rest_session, choices});
+    rules.apply_spell_choices(candidate, choices, rules::SpellChoiceContext::long_rest,
+                              completeness);
+    history.push_back({static_cast<unsigned>(sheet_.level), rest_session, choices});
     (void)rules.character_profile(candidate, {});
     sheet_ = std::move(candidate);
     spell_edits_ = std::move(history);
@@ -70,7 +83,8 @@ void Character::replace_rest_training(const rules::RulesModule &rules,
     auto candidate = sheet_;
     auto history = training_edits_;
     (void)rules.replace_rest_training(candidate, selections);
-    history.push_back({unsigned(sheet_.level), session, {selections.begin(), selections.end()}});
+    history.push_back({static_cast<unsigned>(sheet_.level), session,
+                       {selections.begin(), selections.end()}});
     (void)rules.character_profile(candidate, {});
     sheet_ = std::move(candidate);
     training_edits_ = std::move(history);

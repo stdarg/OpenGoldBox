@@ -3,11 +3,25 @@
 #include "opengold/character_creator.h"
 #include "opengold/campaign_party.h"
 #include "opengold/combat_body_catalog.h"
+#include "portrait_catalog.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
+#include <exception>
 #include <optional>
 #include <functional>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
 
+// The creation wizard, party panel, save/load and drag-and-drop stay in this
+// class on purpose: they all read and write its creator, campaign and party
+// state. The parts with state of their own are separate classes (Effective
+// C++ Item 31): PortraitCatalog, LevelUpDialog, EquipmentChoiceDialog,
+// CharacterPoolDialog, TownSheetDialog and presentation::sheet_text.
 class CharacterCreationView : public godot::Control
 {
     GDCLASS(CharacterCreationView, godot::Control)
@@ -15,19 +29,21 @@ class CharacterCreationView : public godot::Control
     void _ready() override;
     void _draw() override;
     void _process(double delta) override;
+    // Shows a failed handler's error; called by presentation::run_guarded.
+    void report_failure(const std::exception &failure);
 
   protected:
     static void _bind_methods();
     void _notification(int what);
 
   private:
+    void draw_view();
     std::unique_ptr<opengold::CharacterCreator> creator_;
     std::optional<opengold::Character> completed_;
     std::optional<opengold::por::CharacterArt> art_;
     std::optional<opengold::por::CombatBodyCatalog> body_catalog_;
     std::optional<opengold::por::CharacterAppearance> rendered_;
     std::array<godot::Ref<godot::ImageTexture>, 3> images_;
-    godot::Rect2 page_rect_, preview_rect_, portrait_rect_, ready_rect_, action_rect_;
     godot::String error_;
     int selected_score_{-1}, color_bank_{}, color_part_{};
     unsigned check_stage_{}, check_frames_{}, check_head_{}, check_default_{};
@@ -37,22 +53,11 @@ class CharacterCreationView : public godot::Control
     void refresh();
     void refresh_art();
     void recommend_portrait();
-
-    struct Portrait
-    {
-        std::string filename, gender, klass, race;
-    };
-
-    std::vector<Portrait> portraits_;
-    std::map<std::string, godot::Ref<godot::ImageTexture>> portrait_textures_;
+    std::optional<PortraitCatalog> portraits_;
     std::vector<std::size_t> filtered_portraits_;
     void load_portraits();
     void refresh_portraits();
     void portrait_filter_selected(std::int64_t index);
-    std::string recommended_portrait(const opengold::rules::CharacterDraft &draft) const;
-    godot::Ref<godot::ImageTexture>
-    portrait_texture(const opengold::por::CharacterAppearance &appearance,
-                     const opengold::rules::CharacterDraft &draft);
     void perform(const std::function<void()> &action);
     void next();
     void back();
@@ -63,26 +68,6 @@ class CharacterCreationView : public godot::Control
     void target_toggled(bool selected, int index);
     void bonus_selected(std::int64_t index);
     void creation_spell_toggled(bool selected, godot::String group, godot::String option);
-    // The level-up window is a sequence of pages, not a single optional extra:
-    // Skilled and a Wizard's spell choices can both follow the first page, so a
-    // flag cannot say which one is showing.
-    enum class AdvancementPage
-    {
-        choices,
-        skilled,
-        spells
-    };
-    AdvancementPage advancement_page_{};
-    void advancement_pages();
-    [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_skilled_group() const;
-    // The single training dropdown never shows Skilled, which owns a whole page.
-    [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_dropdown_group() const;
-    [[nodiscard]] AdvancementPage advancement_next_page(AdvancementPage from) const;
-    [[nodiscard]] AdvancementPage advancement_previous_page(AdvancementPage from) const;
-    void refresh_advancement_skilled();
-    void advancement_skilled_toggled(bool selected, godot::String option);
-    void advancement_back();
-    void advancement_learning_toggled(bool selected, godot::String group, godot::String option);
     void cantrip_toggled(bool selected, godot::String option);
     void training_toggled(bool selected, godot::String group, godot::String option);
     void training_selected(std::int64_t index, godot::String group);
@@ -91,8 +76,6 @@ class CharacterCreationView : public godot::Control
     godot::Variant drag_roll(godot::Vector2 position, int index);
     bool can_drop_roll(godot::Vector2 position, const godot::Variant &data, int index);
     void drop_roll(godot::Vector2 position, const godot::Variant &data, int index);
-    godot::String sheet_text(const opengold::Character &character,
-                             const opengold::PartyMember *member = nullptr) const;
     void show_modifiers();
     void close_modifiers();
     void show_saving_throws();
@@ -113,37 +96,17 @@ class CharacterCreationView : public godot::Control
     bool equipment_art_check_{};
     void equipment_art_check();
     unsigned party_check_stage_{};
-    std::vector<opengold::Character> pool_;
-    std::vector<unsigned> pool_added_;
-    unsigned pool_index_{}, pool_check_stage_{};
+    unsigned pool_check_stage_{};
     void show_pool();
-    void pool_selected(std::int64_t index);
-    void pool_add();
-    void close_pool();
-    void pool_layout();
-    void town_member_selected(std::int64_t slot);
-    void close_town_sheet();
+    // The leader speaks for the party and deals with shopkeepers.
+    void make_roster_leader();
+    void show_leader_change();
+    // Offers a choice of hands when the item has one; false when it has none.
     bool open_equipment_choice(opengold::MemberId member, std::uint64_t item);
-    void equipment_choice_selected(std::int64_t index);
-    void apply_equipment_choice();
-    void close_equipment_choice();
-    void equipment_choice_input(const godot::Ref<godot::InputEvent> &event);
-    opengold::MemberId equipment_member_{};
-    std::uint64_t equipment_item_{};
-    std::vector<opengold::rules::EquipmentChoice> equipment_choices_;
     void setup_party();
     void setup_advancement();
     void refresh_advancement_arrows();
     void open_advancement(std::int64_t id);
-    void advancement_changed(std::int64_t unused = 0);
-    void drop_unoffered_learning();
-    void advancement_spell_changed(bool checked, int index);
-    void close_advancement();
-    void confirm_advancement();
-    opengold::MemberId advancing_{};
-    opengold::rules::AdvancementOptions advancement_options_;
-    opengold::rules::AdvancementChoice advancement_choice_;
-    bool advancement_refreshing_{};
     void advancement_check();
     bool advancement_check_{}, advancement_review_{};
     unsigned advancement_stage_{}, advancement_frames_{};
@@ -168,7 +131,26 @@ class CharacterCreationView : public godot::Control
     bool save_read_check_{};
     unsigned save_capture_frames_{};
     void capture_save_ui();
-    void party_action(int action);
+    // The party panel's commands, named so a call says which one it means
+    // rather than passing a bare number (Effective C++ Item 18).
+    enum class PartyAction
+    {
+        open,
+        add_created,
+        create,
+        remove,
+        rejoin,
+        recruit,
+        equip,
+        unequip,
+        explore,
+        combat,
+        return_to_party,
+        close,
+    };
+    void connect_party_button(const char *path, PartyAction action);
+    void party_button_pressed(int action);
+    void party_action(PartyAction action);
     void party_selected(std::int64_t index);
     void refresh_party();
     void party_layout();

@@ -35,9 +35,9 @@ auto combat(const RulesModule &r, const Character &h, std::vector<std::string> g
             unsigned seed = 13, bool ranged = false)
 {
     auto profile = r.character_profile(h.sheet(), gear);
-    auto c = r.create({{12, 8, std::vector<std::uint8_t>(96)},
-        {   {1, "campaign-character", "Style tester", 0, {1, 1}, profile.data},
-            {99, "target", "Target", 1, ranged ? Cell{5, 1} : Cell{2, 1}}
+    auto c = r.create({{12, 8, std::vector<Terrain>(96)},
+        {   {1, "campaign-character", "Style tester", Side::party, {1, 1}, profile.data},
+            {99, "target", "Target", Side::opposition, ranged ? Cell{5, 1} : Cell{2, 1}}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -109,13 +109,13 @@ void run()
                 auto c = combat(*rules, h, {"shortbow"}, 13, true);
                 act(*c, "ranged");
                 bool attack = false;
-                for (const auto &m : c->snapshot().log_messages)
+                for (const auto &m : c->snapshot().log_messages())
                     if (m.source.starts_with("{actor} -> {target}: d20"))
                         for (const auto &a : m.arguments)
                             if (a.name == "bonus")
                             {
                                 check(std::stoi(a.value) ==
-                                      h.sheet().modifiers[1] + 2 +
+                                      h.sheet().modifiers[Ability::dexterity] + 2 +
                                       (entitled && std::string_view(style) == "archery"
                                        ? 2
                                        : 0),
@@ -186,8 +186,9 @@ void run()
                     }
                     const int modifier =
                         (std::string_view(w.id) == "dagger" || std::string_view(w.id) == "dart")
-                        ? std::max(h.sheet().modifiers[0], h.sheet().modifiers[1])
-                        : h.sheet().modifiers[w.ranged ? 1 : 0];
+                        ? std::max(h.sheet().modifiers[Ability::strength],
+                            h.sheet().modifiers[Ability::dexterity])
+                        : h.sheet().modifiers[w.ranged ? Ability::dexterity : Ability::strength];
                     const auto roll = [&]
                     {
                         int total = modifier;
@@ -206,7 +207,7 @@ void run()
                             (rogue_attack_checks::last_hit(*c) == "CRITICAL") != critical)
                         std::cerr << klass << " level=" << level << " weapon=" << w.id
                                   << " seed=" << seed << " natural=" << natural
-                                  << " expected=" << savage << " log=" << c->snapshot().log.back()
+                                  << " expected=" << savage << " log=" << c->snapshot().log().back()
                                   << "\n";
                     check(test::logged(*c, savage) &&
                           (rogue_attack_checks::last_hit(*c) == "CRITICAL") == critical,
@@ -249,7 +250,7 @@ void run()
                 act(*c, "opportunity");
                 if (natural != 1)
                 {
-                    int expected = h.sheet().modifiers[0];
+                    int expected = h.sheet().modifiers[Ability::strength];
                     for (int i = 0; i < (natural == 20 ? 4 : 2); ++i)
                         expected += std::max(3, die(rng, 6));
                     check(test::logged(*c, "(Savage Attacker): " + std::to_string(expected) + " and "),
@@ -264,13 +265,13 @@ void run()
             {
                 CampaignParty p(rogue_attack_checks::rules_module());
                 auto thrower = h;
-                thrower.inventory().add("spear", "Spear");
+                thrower.add_item({.definition_id = "spear", .name = "Spear"});
                 p.add_pc(std::move(thrower));
                 p.equip(1, 1);
                 auto actors = p.participants();
                 actors.front().cell = {1, 1};
-                actors.push_back({99, "target", "Target", 1, {4, 1}});
-                auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, seed);
+                actors.push_back({99, "target", "Target", Side::opposition, {4, 1}});
+                auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
                 while (c->snapshot().actor != 1)
                     act(*c, "end");
                 auto rng = random_state(*c);
@@ -278,7 +279,7 @@ void run()
                 act(*c, "throw");
                 if (natural != 1)
                 {
-                    int expected = h.sheet().modifiers[0];
+                    int expected = h.sheet().modifiers[Ability::strength];
                     for (int i = 0; i < (natural == 20 ? 2 : 1); ++i)
                         expected += die(rng, 6);
                     check(test::logged(*c, "(Savage Attacker): " + std::to_string(expected) + " and "),
@@ -355,7 +356,7 @@ void run()
             {
                 CampaignParty p(rogue_attack_checks::rules_module());
                 auto h = starter(klass);
-                h.inventory().add("greatsword", "Greatsword");
+                h.add_item({.definition_id = "greatsword", .name = "Greatsword"});
                 const auto id =
                     npc ? p.recruit("fixture:styles", std::move(h)) : p.add_pc(std::move(h));
                 p.equip(id, 1);
@@ -371,8 +372,8 @@ void run()
                     p.advance(id, choice);
                     auto actors = p.participants();
                     actors.front().cell = {1, 1};
-                    actors.push_back({99, "target", "Target", 1, {2, 1}});
-                    auto fight = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+                    actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
+                    auto fight = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
                     while (fight->snapshot().actor != id)
                         act(*fight, "end");
                     act(*fight, "melee");
@@ -383,7 +384,7 @@ void run()
                     p.end_combat();
                 }
                 const auto saved = encode_campaign(p, nullptr, "style-routes");
-                check(saved.starts_with("OPENGOLD-CAMPAIGN 21\n"),
+                check(saved.starts_with("OPENGOLD-CAMPAIGN 25\n"),
                       "Style history is written in the current campaign format");
                 CampaignParty restored(rogue_attack_checks::rules_module());
                 restored.restore(
@@ -461,7 +462,7 @@ void verify_ui(const char *klass, const char *file, bool light = false)
     actual.restore(
         decode_campaign(read_campaign_file(file), *creation, *rules, assets, nullptr).party);
     auto state = expected.checkpoint();
-    state.selected = actual.state().selected;
+    state.selected_slot = actual.state().selected_slot;
     expected.restore(std::move(state));
     check(encode_campaign(actual, nullptr, assets) == encode_campaign(expected, nullptr, assets),
           "Style UI advancement exactly matches native grants, HP, wounds, resources and history");

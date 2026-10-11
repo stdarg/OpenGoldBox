@@ -1,6 +1,7 @@
 #ifndef OPENGOLDBOX_TRAINING_CONTROL_H
 #define OPENGOLDBOX_TRAINING_CONTROL_H
 #include "godot_nodes.h"
+#include "localization.h"
 #include "opengold/character_creator.h"
 #include <godot_cpp/classes/check_box.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -8,11 +9,7 @@
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
-#include <godot_cpp/classes/style_box_flat.hpp>
 #include <algorithm>
-#ifndef N_
-#define N_(message) message
-#endif
 
 namespace presentation
 {
@@ -35,6 +32,8 @@ template <class Translate> godot::String training_source(std::string_view id, co
         return tr(N_("Cleric Divine Order"));
     if (id == "class:druid")
         return tr(N_("Druid class"));
+    if (id == "class:druid:primal_order")
+        return tr(N_("Druid Primal Order"));
     if (id.ends_with(":weapon_mastery:4"))
         return training_source(id.substr(0, id.size() - 17), tr) + " / " + tr(N_("Weapon Mastery"));
     if (id.ends_with(":weapon_mastery"))
@@ -90,7 +89,7 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
 {
     godot::String text;
     if (!fixed)
-        text = "\n\n[b]" + tr(N_("Training")) + "[/b]\n" +
+        text = "\n\n[theme_emphasis]" + tr(N_("Training")) + "[/theme_emphasis]\n" +
                tr(profile.complete ? N_("Supported training choices complete")
                   : N_("Training choices pending")) +
                "\n";
@@ -119,48 +118,6 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
     return text;
 }
 
-inline void style_choice(godot::CheckBox &control)
-{
-    using namespace godot;
-    auto *check = &control;
-    for (const char *state :
-            {"normal", "hover", "pressed", "hover_pressed", "disabled", "focus"
-            })
-    {
-        Ref<StyleBoxFlat> style;
-        style.instantiate();
-        style->set_bg_color(
-            Color(state == std::string_view("pressed") || state == std::string_view("hover_pressed")
-                  ? "304851"
-                  : "19262e"));
-        style->set_border_color(Color(state == std::string_view("focus")   ? "ebcb80"
-                                      : state == std::string_view("hover") ? "b0c5cc"
-                                      : "506570"));
-        style->set_border_width_all(state == std::string_view("focus") ? 2 : 1);
-        style->set_corner_radius_all(3);
-        style->set_content_margin_all(7);
-        if (state == std::string_view("focus"))
-            style->set_draw_center(false);
-        check->add_theme_stylebox_override(state, style);
-    }
-}
-
-inline void setup_training_controls(godot::Node &parent)
-{
-    auto *fixed = add_control<godot::RichTextLabel>(parent, "TrainingFixed", {});
-    fixed->set_use_bbcode(true);
-    fixed->set_auto_translate_mode(godot::Node::AUTO_TRANSLATE_MODE_DISABLED);
-    fixed->add_theme_font_size_override("normal_font_size", 14);
-    auto *scroll = add_control<godot::ScrollContainer>(parent, "Training", {});
-    scroll->set_horizontal_scroll_mode(godot::ScrollContainer::SCROLL_MODE_DISABLED);
-    scroll->set_follow_focus(true);
-    auto owned = make_node<godot::VBoxContainer>();
-    owned->set_name("Rows");
-    owned->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    owned->add_theme_constant_override("separation", 12);
-    attach_child(*scroll, std::move(owned));
-}
-
 // The scene owns every node. Reuse controls across refreshes so toggling does
 // not destroy the focused checkbox or its keyboard navigation position.
 template <class Translate>
@@ -170,15 +127,17 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                                const opengold::rules::TrainingChoices &locked = {})
 {
     using namespace godot;
-    auto *rows = parent.get_node<VBoxContainer>("Training/Rows");
+    auto *rows = &required_node<VBoxContainer>(parent, "Training/Rows");
     auto fixed = creator.draft();
     fixed.training.clear();
-    parent.get_node<RichTextLabel>("TrainingFixed")
-    ->set_text("[b]" + tr(N_("Fixed training")) + "[/b]\n" +
-               training_summary(creator.rules().evaluate(fixed, false).training, tr, true));
+    required_node<RichTextLabel>(parent, "TrainingFixed")
+    .call("render", "[theme_emphasis]" + tr(N_("Fixed training")) + "[/theme_emphasis]\n" +
+               training_summary(
+                   creator.rules().evaluate(fixed, opengold::rules::NameRequirement::optional).training,
+                   tr, true));
     const auto groups = creator.training_options();
-    for (unsigned i = groups.size(); i < static_cast<unsigned>(rows->get_child_count()); ++i)
-        rows->get_node<Control>(String("Group") + String::num_uint64(i))->hide();
+    for (auto i = static_cast<unsigned>(groups.size()); i < static_cast<unsigned>(rows->get_child_count()); ++i)
+        required_node<Control>(*rows, String("Group") + String::num_uint64(i)).hide();
     for (unsigned i = 0; i < groups.size(); ++i)
     {
         const auto &group = groups[i];
@@ -188,20 +147,17 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         auto *box = Object::cast_to<VBoxContainer>(rows->get_node_or_null(name));
         if (!box)
         {
-            auto owned = make_node<VBoxContainer>();
+            auto owned = instantiate_control<VBoxContainer>(
+                "res://scenes/control_templates/training_group.tscn");
             owned->set_name(name);
             box = attach_child(*rows, std::move(owned));
-            box->add_theme_constant_override("separation", 5);
-            auto label = make_node<Label>();
-            label->set_name("Title");
-            attach_child(*box, std::move(label));
         }
         box->show();
         rows->move_child(box, i);
         const auto found = creator.draft().training.find(group.id);
         const std::vector<std::string> empty;
         const auto &picked = found == creator.draft().training.end() ? empty : found->second;
-        auto *title = box->get_node<Label>("Title");
+        auto *title = &required_node<Label>(*box, "Title");
         title->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
         title->set_text(tr(group.label) + " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
@@ -221,12 +177,10 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                 }
             if (!choice)
             {
-                auto owned = make_node<OptionButton>();
+                auto owned = instantiate_control<OptionButton>(
+                    "res://scenes/control_templates/training_dropdown.tscn");
                 owned->set_name("Choice");
                 choice = attach_child(*box, std::move(owned));
-                choice->set_focus_mode(Control::FOCUS_ALL);
-                choice->set_custom_minimum_size(Vector2(0, 38));
-                choice->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
             }
             if (choice->has_meta("training_callback"))
             {
@@ -274,13 +228,10 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             auto *check = Object::cast_to<CheckBox>(box->get_node_or_null(node_name));
             if (!check)
             {
-                auto owned = make_node<CheckBox>();
+                auto owned = instantiate_control<CheckBox>(
+                    "res://scenes/control_templates/training_checkbox.tscn");
                 owned->set_name(node_name);
                 check = attach_child(*box, std::move(owned));
-                check->set_focus_mode(Control::FOCUS_ALL);
-                check->set_custom_minimum_size(Vector2(0, 34));
-                check->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-                style_choice(*check);
             }
             // A reused row can now belong to another class's skill group.
             if (check->has_meta("training_callback"))
@@ -309,15 +260,13 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     String signature;
     for (const auto &group : groups)
         signature += training_string(group.id) + ";";
-    if (!rows->has_meta("training_groups") ||
-            String(rows->get_meta("training_groups")) != signature)
-        parent.get_node<ScrollContainer>("Training")->set_v_scroll(0);
-    rows->set_meta("training_groups", signature);
+    required_node<ScrollContainer>(parent, "Training").call("reset_for", signature);
     unsigned first = 0;
     for (unsigned i = 0; i < groups.size(); ++i)
         if (groups[i].control == opengold::rules::TrainingChoiceControl::single_selection)
-            rows->move_child(rows->get_node<VBoxContainer>(String("Group") + String::num_uint64(i)),
-                             first++);
+            rows->move_child(
+                &required_node<VBoxContainer>(*rows, String("Group") + String::num_uint64(i)),
+                first++);
 }
 } // namespace presentation
 #endif

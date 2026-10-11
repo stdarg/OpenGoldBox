@@ -1,4 +1,5 @@
 #include "opengold/por_sound.h"
+#include "little_endian.h"
 
 #include <algorithm>
 #include <bit>
@@ -27,7 +28,9 @@ std::uint8_t byte(std::span<const std::uint8_t> data, std::size_t p)
 
 std::uint16_t word(std::span<const std::uint8_t> data, std::size_t p)
 {
-    return static_cast<std::uint16_t>(byte(data, p) | (byte(data, p + 1) << 8));
+    if (p >= data.size() || data.size() - p < 2)
+        invalid("truncated data or out-of-range pointer");
+    return format::read_u16(data, p);
 }
 
 // Byte offsets are field identifiers in the sound data, not CPU registers.

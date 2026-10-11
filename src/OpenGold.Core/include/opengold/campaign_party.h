@@ -2,12 +2,30 @@
 #define OPENGOLD_CAMPAIGN_PARTY_H
 #include "opengold/character.h"
 #include "opengold/coin_purse.h"
-#include "opengold/creature_catalog.h"
-#include "opengold/ecl_machine.h"
+#include "opengold/equipment.h"
+#include <chrono>
+
+namespace opengold::por
+{
+// Only read_character() names the script machine, by reference, so files that
+// include this header do not compile the machine (Effective C++ Item 31).
+class EclMachine;
+} // namespace opengold::por
 
 namespace opengold
 {
 using MemberId = rules::EntityId;
+
+// A place in the party's marching order: 0-5 hold PCs and 6-7 hold NPCs. A slot
+// is not a MemberId, because the member in a slot changes as the party changes
+// (Effective C++ Item 18).
+struct PartySlot
+{
+    unsigned index{};
+
+    friend bool operator==(PartySlot, PartySlot) = default;
+};
+
 using RestKind = rules::RestKind;
 enum class RestDenial
 {
@@ -72,7 +90,7 @@ struct PartyMember
     Character character;
     std::string npc_source; // Empty for PCs; explicit campaign conversion identity for NPCs.
     rules::VitalState vitals;
-    std::array<std::uint16_t, 7> wealth{};
+    Purse wealth{};
     std::vector<std::uint64_t> equipped;
     unsigned morale{100};
     unsigned experience{};
@@ -80,6 +98,13 @@ struct PartyMember
     unsigned last_rest_subminute_milliseconds{};
     std::map<std::uint64_t, por::Equipment> item_sources;
     std::string creation_source; // Stable pool candidate identity, empty for authored PCs.
+    bool quick{}; // The computer plays it in fights (Quick) until the player takes control.
+};
+
+struct HazardHit
+{
+    MemberId target{};
+    rules::HazardAttackResult result;
 };
 
 struct PartyState
@@ -87,8 +112,11 @@ struct PartyState
     std::vector<PartyMember> roster;
     std::array<MemberId, 8> slots{};
     MemberId next_id{1};
-    unsigned selected{};
-    std::uint64_t time_minutes{}, random_state{42};
+    PartySlot selected_slot{};
+    MemberId leader{}; // Speaks for the party and buys in shops; 0 means the first member.
+    bool quick_magic{}; // Members on Quick may cast spells.
+    std::uint64_t time_minutes{};
+    RandomState random_state{42};
     std::vector<std::string> claimed_rewards;
     unsigned subminute_milliseconds{};
     std::uint64_t next_combat_scope{1};
@@ -115,10 +143,25 @@ class CampaignParty
 
     [[nodiscard]] MemberId selected() const
     {
-        return state_.slots.at(state_.selected);
+        return state_.slots.at(state_.selected_slot.index);
     }
 
-    void select(unsigned slot);
+    void select(PartySlot slot);
+    // The designated leader, or the first member when none is designated.
+    [[nodiscard]] MemberId leader() const;
+    void make_leader(MemberId id);
+    // Quick combat, as in the original: the computer plays a member on Quick
+    // in this fight and later ones until the player takes control of the
+    // party. Settings, so they change during a fight too.
+    void set_quick(MemberId id);
+    void take_control();
+    void set_quick_magic(bool on);
+    // A member left on the field when the party flees is lost for good: dead
+    // and out of the party (the original's rule).
+    void lose(MemberId id);
+    // Who speaks for the party now: the leader, or the first conscious member
+    // when the leader is down. 0 when nobody can speak.
+    [[nodiscard]] MemberId spokesman() const;
     MemberId add_pc(Character character);
     MemberId recruit(std::string source, Character converted, unsigned morale = 100);
     void rejoin(MemberId id);
@@ -130,7 +173,7 @@ class CampaignParty
     void unequip(MemberId id, std::uint64_t item);
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
     void purchase(MemberId id, const por::Equipment &item);
-    void set_wealth(MemberId id, std::array<std::uint16_t, 7> wealth);
+    void set_wealth(MemberId id, Purse wealth);
     void award_experience(unsigned amount, std::string reward_id);
     [[nodiscard]] bool can_advance(MemberId id) const;
     [[nodiscard]] rules::AdvancementOptions
@@ -163,6 +206,9 @@ class CampaignParty
             std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
+    // An attack from outside combat, such as an arrow trap, on a random active
+    // conscious member; nothing when none is conscious.
+    std::optional<HazardHit> hazard_attack(const rules::HazardAttack &attack);
     // The member's current Hit Point maximum, raised by Aid.
     [[nodiscard]] int hit_point_maximum(MemberId id) const;
     // Spells and features an active member can use outside combat (CLASS-3).
@@ -173,8 +219,9 @@ class CampaignParty
     // the difficulty. Returns every attempt; the door opens if the last succeeded.
     [[nodiscard]] std::vector<DoorAttempt> try_door(DoorMethod method, int difficulty);
     [[nodiscard]] bool can_try_door(DoorMethod method) const;
-    void advance_time(unsigned minutes);
-    void advance_time_milliseconds(std::uint64_t milliseconds);
+    // Minutes, seconds and milliseconds all convert; a bare number does not
+    // (Effective C++ Item 18).
+    void advance_time(std::chrono::milliseconds elapsed);
 
     [[nodiscard]] std::uint64_t time_hours() const noexcept
     {
@@ -182,16 +229,12 @@ class CampaignParty
     }
 
     [[nodiscard]] rules::CharacterProfile profile(MemberId id) const;
-    [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, unsigned ability,
+    [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, rules::Ability ability,
             std::string_view skill = {}) const;
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
-    [[nodiscard]] bool has_item(unsigned original_type) const;
-    [[nodiscard]] unsigned strength() const;
-    [[nodiscard]] std::array<unsigned, 4> query(unsigned address, unsigned effect) const;
-    [[nodiscard]] por::EclHostReply character_reply(unsigned slot) const;
     // Applies the script's HP and coin changes. Coins are seen and settled as
     // script_coins() describes; the result reports any change the purse made.
-    [[nodiscard]] std::optional<CoinExchange> read_character(unsigned slot,
+    [[nodiscard]] std::optional<CoinExchange> read_character(PartySlot slot,
             const por::EclMachine &vm);
 
     [[nodiscard]] PartyState checkpoint() const
@@ -222,7 +265,7 @@ class CampaignParty
         return *rules_;
     }
 
-    [[nodiscard]] const rules::Identity identity() const
+    [[nodiscard]] rules::Identity identity() const
     {
         return rules_->identity();
     }
@@ -235,8 +278,12 @@ class CampaignParty
     bool combat_{};
     bool combat_registered_{};
     std::uint64_t combat_elapsed_{};
-    void elapse(PartyState &state, std::uint64_t milliseconds,
+    void elapse(PartyState &state, std::chrono::milliseconds elapsed,
                 std::span<const MemberId> in_combat = {}) const;
+    // A member of `state`, which may be a working copy of state_. Throws for a
+    // missing id rather than dereferencing the end of the roster.
+    [[nodiscard]] static const PartyMember &member_in(const PartyState &state, MemberId id);
+    [[nodiscard]] static PartyMember &member_in(PartyState &state, MemberId id);
     void editable() const;
     void outside_combat() const;
     void require_rest_ticket(RestTicket ticket) const;

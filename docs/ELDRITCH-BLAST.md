@@ -16,7 +16,7 @@ This delivers only the cantrip portion of Pact Magic, not slots or preparation.
 The existing Spell dropdown and Cast button perform a Charisma-based ranged
 spell attack against a living creature within 120 feet, including allies/self.
 A hit deals 1d10 Force damage; criticals double dice. Shared attack modifiers,
-typed defenses, line of effect, occupied Somatic hands and armor training apply.
+typed defenses, line of effect and armor training apply.
 The Magic action is spent; movement, Bonus Action, Reaction and resources remain.
 V/S metadata is registered; general speech blocking remains #39.
 

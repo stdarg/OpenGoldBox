@@ -75,6 +75,15 @@ std::shared_ptr<const EclProgram> EclCatalog::find(const ScriptId &id) const
 
 namespace
 {
+// A machine runs nothing without a program, so a missing one is refused
+// before any member is built from it.
+std::shared_ptr<const EclProgram> required_program(std::shared_ptr<const EclProgram> program)
+{
+    if (!program)
+        throw EclError("EclMachine requires a program");
+    return program;
+}
+
 std::uint16_t encoded_address(const EclOperand &arg)
 {
     if (arg.tag >= 128)
@@ -82,17 +91,21 @@ std::uint16_t encoded_address(const EclOperand &arg)
     return arg.value;
 }
 
-std::uint16_t indexed_address(std::uint16_t base, std::size_t index)
+EclAddress indexed_address(EclAddress base, std::size_t index)
 {
-    if (index > 65535U - base)
+    if (index > 65535U - base.location)
         throw EclError("Address calculation overflow");
-    return static_cast<std::uint16_t>(base + index);
+    return EclAddress(static_cast<std::uint16_t>(base.location + index));
 }
 
-bool byte_address(std::uint16_t address)
+bool program_address(EclAddress address)
 {
-    return (address >= EclProgram::origin && address < EclProgram::limit) ||
-           (address >= 0xC04B && address <= 0xC04F);
+    return address.location >= EclProgram::origin && address.location < EclProgram::limit;
+}
+
+bool byte_address(EclAddress address)
+{
+    return program_address(address) || (address >= ecl_party_x && address <= ecl_cell_event);
 }
 
 EclConditions relation(int c)
@@ -105,7 +118,7 @@ EclConditions equality(bool equal)
     return {equal, !equal, false, false, false, false};
 }
 
-void validate_string(std::uint16_t address, std::string_view value)
+void validate_string(EclAddress address, std::string_view value)
 {
     if (value.size() > 255 || value.find('\0') != std::string_view::npos)
         throw EclError("ECL string exceeds 255 characters or contains NUL");
@@ -113,11 +126,9 @@ void validate_string(std::uint16_t address, std::string_view value)
 }
 } // namespace
 
-EclMachine::EclMachine(std::shared_ptr<const EclProgram> program) : program_(std::move(program))
+EclMachine::EclMachine(std::shared_ptr<const EclProgram> program)
+    : program_(required_program(std::move(program))), image_(program_->raw())
 {
-    if (!program_)
-        throw EclError("EclMachine requires a program");
-    image_ = program_->raw();
 }
 
 void EclMachine::require_configurable() const
@@ -140,23 +151,22 @@ void EclMachine::enable_host(std::uint8_t opcode)
     host_opcodes_.insert(opcode);
 }
 
-void EclMachine::bind_variable(std::uint16_t address, std::uint16_t v)
+void EclMachine::bind_variable(EclAddress address, std::uint16_t v)
 {
     require_configurable();
-    if (address >= EclProgram::origin && address < EclProgram::limit)
+    if (program_address(address))
         throw EclError("Program addresses cannot be bound as variables");
-    variables_[address] = byte_address(address) ? v & 255 : v;
+    variables_[address.location] = byte_address(address) ? v & 255 : v;
 }
 
-void EclMachine::bind_string(std::uint16_t address, std::string_view v)
+void EclMachine::bind_string(EclAddress address, std::string_view v)
 {
     require_configurable();
     validate_string(address, v);
     // Check the whole range before changing any binding.
     for (std::size_t n = 0; n <= v.size(); ++n)
     {
-        const auto loc = indexed_address(address, n);
-        if (loc >= EclProgram::origin && loc < EclProgram::limit)
+        if (program_address(indexed_address(address, n)))
             throw EclError("Program addresses cannot be bound as strings");
     }
     for (std::size_t n = 0; n <= v.size(); ++n)
@@ -164,22 +174,22 @@ void EclMachine::bind_string(std::uint16_t address, std::string_view v)
                       n == v.size() ? 0 : static_cast<unsigned char>(v[n]));
 }
 
-std::uint16_t EclMachine::variable(std::uint16_t address) const
+std::uint16_t EclMachine::variable(EclAddress address) const
 {
-    if (address >= EclProgram::origin && address < EclProgram::limit)
+    if (program_address(address))
     {
-        const auto offset = address - EclProgram::origin + 2;
+        const auto offset = address.location - EclProgram::origin + 2;
         if (offset >= image_.size())
             throw EclError("Read beyond loaded script image");
         return image_[offset];
     }
-    const auto it = variables_.find(address);
+    const auto it = variables_.find(address.location);
     if (it == variables_.end())
-        throw EclError("Unbound variable address " + std::to_string(address));
+        throw EclError("Unbound variable address " + std::to_string(address.location));
     return it->second;
 }
 
-std::string EclMachine::string(std::uint16_t address) const
+std::string EclMachine::string(EclAddress address) const
 {
     std::string result;
     for (std::size_t n = 0; n <= 255; ++n)
@@ -194,27 +204,27 @@ std::string EclMachine::string(std::uint16_t address) const
     throw EclError("Unterminated ECL string");
 }
 
-void EclMachine::write(std::uint16_t address, std::uint16_t v)
+void EclMachine::write(EclAddress address, std::uint16_t v)
 {
     (void)variable(address);
-    if (address >= EclProgram::origin && address < EclProgram::limit)
+    if (program_address(address))
     {
-        image_[address - EclProgram::origin + 2] = static_cast<std::uint8_t>(v);
+        image_[address.location - EclProgram::origin + 2] = static_cast<std::uint8_t>(v);
         // A table may share the script image with code. Invalidate affected decoded
         // spans after a write so subsequent fetches see this machine's new bytes.
         for (auto it = instruction_spans_.begin(); it != instruction_spans_.end();)
         {
-            if (address >= it->first && address < it->second)
+            if (address.location >= it->first && address.location < it->second)
                 it = instruction_spans_.erase(it);
             else
                 ++it;
         }
     }
     else
-        variables_.at(address) = byte_address(address) ? v & 255 : v;
+        variables_.at(address.location) = byte_address(address) ? v & 255 : v;
 }
 
-void EclMachine::write_string(std::uint16_t address, std::string_view v)
+void EclMachine::write_string(EclAddress address, std::string_view v)
 {
     validate_string(address, v);
     for (std::size_t n = 0; n <= v.size(); ++n)
@@ -229,17 +239,18 @@ std::uint16_t EclMachine::value(const EclOperand &a) const
     if (a.tag == 0 || a.tag == 2 || a.tag == 128 || a.tag == 129)
         return a.value;
     if (a.tag == 1 || a.tag == 3)
-        return variable(a.value);
+        return variable(EclAddress{a.value});
     throw EclError("Numeric operand required");
 }
 
-std::uint16_t EclMachine::destination(const EclOperand &a) const
+EclAddress EclMachine::destination(const EclOperand &a) const
 {
     if (a.tag == 128)
         throw EclError("Inline text is not a destination");
     // String destinations in real scripts use tag 129 as well as numeric address tags.
-    (void)variable(a.value); // Validate before any mutation or request.
-    return a.value;
+    const EclAddress address{a.value};
+    (void)variable(address); // Validate before any mutation or request.
+    return address;
 }
 
 std::string EclMachine::text(const EclOperand &a) const
@@ -247,7 +258,7 @@ std::string EclMachine::text(const EclOperand &a) const
     if (a.tag == 128)
         return a.text;
     if (a.tag == 129)
-        return string(a.value);
+        return string(EclAddress{a.value});
     return std::to_string(value(a));
 }
 
@@ -472,15 +483,16 @@ void EclMachine::execute(const EclInstruction &i)
     }
     case 42:
     {
-        const auto source = indexed_address(encoded_address(a[0]), value(a[1]));
-        const auto v = variable(source), dest = destination(a[2]);
+        const auto source = indexed_address(EclAddress{encoded_address(a[0])}, value(a[1]));
+        const auto v = variable(source);
+        const auto dest = destination(a[2]);
         write(dest, v);
         break;
     }
     case 53:
     {
         const auto v = value(a[0]);
-        const auto dest = indexed_address(encoded_address(a[1]), value(a[2]));
+        const auto dest = indexed_address(EclAddress{encoded_address(a[1])}, value(a[2]));
         write(dest, v);
         break;
     }
@@ -587,6 +599,42 @@ void EclMachine::execute(const EclInstruction &i)
     pc_ = i.next;
 }
 
+EclHostArgument::EclHostArgument(std::uint16_t number) noexcept
+    : kind_(EclArgumentKind::number), value_(number)
+{
+}
+
+EclHostArgument::EclHostArgument(EclAddress address) noexcept
+    : kind_(EclArgumentKind::address), value_(address.location)
+{
+}
+
+EclHostArgument::EclHostArgument(std::string text) noexcept
+    : kind_(EclArgumentKind::text), text_(std::move(text))
+{
+}
+
+std::uint16_t EclHostArgument::number() const
+{
+    if (kind_ != EclArgumentKind::number)
+        throw EclError("Host argument is not a number");
+    return value_;
+}
+
+EclAddress EclHostArgument::address() const
+{
+    if (kind_ != EclArgumentKind::address)
+        throw EclError("Host argument is not an address");
+    return EclAddress{value_};
+}
+
+const std::string &EclHostArgument::text() const
+{
+    if (kind_ != EclArgumentKind::text)
+        throw EclError("Host argument is not text");
+    return text_;
+}
+
 void EclMachine::request_host(const EclInstruction &i)
 {
     if (!host_opcodes_.contains(i.opcode))
@@ -603,27 +651,20 @@ void EclMachine::request_host(const EclInstruction &i)
         const bool address =
             output || (op == 30 && n == 0) || (op == 35 && n < 2) || op == 45 || op == 60;
         const bool is_text = op == 57 || (op == 41 && n >= 9 && n <= 11);
-        EclHostArgument arg;
         if (address)
-        {
-            arg.kind = EclArgumentKind::address;
-            arg.value = output ? destination(operand)
-                        : (op == 60 && operand.tag == 129 ? operand.value
-                           : encoded_address(operand));
-        }
+            request.arguments.emplace_back(
+                output ? destination(operand)
+                : EclAddress{op == 60 && operand.tag == 129 ? operand.value
+                             : encoded_address(operand)});
         else if (is_text)
-        {
-            arg.kind = EclArgumentKind::text;
-            arg.text = text(operand);
-        }
+            request.arguments.emplace_back(text(operand));
         else
         {
-            arg.kind = EclArgumentKind::number;
-            arg.value = value(operand);
+            std::uint16_t number = value(operand);
             if (op != 39 || n == 7)
-                arg.value &= 255;
+                number &= 255;
+            request.arguments.emplace_back(number);
         }
-        request.arguments.push_back(std::move(arg));
     }
     request.id = next_request_++;
     pending_ = std::move(request);
@@ -764,7 +805,7 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
 })))
     return false;
     // Validate the entire reply, including required output arguments, before applying writes.
-    std::set<std::uint16_t> addresses;
+    std::set<EclAddress> addresses;
     try
     {
         for (const auto &w : reply.writes)
@@ -776,7 +817,7 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         for (std::size_t n = 0; n < pending_->arguments.size(); ++n)
             if (((opcode == 29 && n == 0) || (opcode == 30 && n >= 2) || opcode == 34 ||
                     (opcode == 41 && n == 3)) &&
-                    !addresses.contains(pending_->arguments[n].value))
+                    !addresses.contains(pending_->arguments[n].address()))
                 return false;
     }
     catch (const EclError &)

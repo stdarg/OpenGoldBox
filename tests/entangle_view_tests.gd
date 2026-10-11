@@ -78,7 +78,7 @@ func run_checks() -> void:
         require(combat.get_node("Prompt").text.contains(aim), "A left click starts aiming at the square: " + locale)
         await click_cell(Vector2(6, 1), MOUSE_BUTTON_RIGHT)
         var cast := "Ranger casts Entangle." if locale == "en" else "Ranger lanza Enmarañar."
-        require(combat.get_node("Log").get_parsed_text().contains(cast), "A right click casts: " + locale)
+        require(combat.get_node("LogStack/Log").get_parsed_text().contains(cast), "A right click casts: " + locale)
     TranslationServer.set_locale("en")
     restore_files()
     print("Entangle view checks passed")

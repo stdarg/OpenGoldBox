@@ -64,8 +64,8 @@ void prepare_script(const std::filesystem::path& directory)
     const auto program = catalog.find({"ECL2.DAX", 20});
     if (!program) return;
     EclMachine machine(program);
-    machine.bind_variable(0xC04F, 1); // Explicit research input: event byte.
-    machine.seed_random(1234);      // Reproducible OpenGoldBox sequence.
+    machine.bind_variable(ecl_cell_event, 1); // Explicit research input: event byte.
+    machine.seed_random(1234);                // Reproducible OpenGoldBox sequence.
     // Bind all other required variables and provide real engine services.
     if (!machine.start(1)) return;
     const auto result = machine.run(1000);
@@ -106,7 +106,9 @@ terminator; a reference in a numeric destination supplies its encoded address.
 The Slums encounter descriptions exercise the string-to-string case.
 
 `bind_variable()` and `bind_string()` establish research state while idle or
-completed. Program bytes have a private writable copy per machine, including
+completed. Addresses are `EclAddress` values, never bare numbers, so an address
+and the value stored there cannot be swapped; `ecl_address.h` names the cells the
+engine itself uses, such as `ecl_cell_event`. Program bytes have a private writable copy per machine, including
 embedded tables; fetches observe changes and affected instruction spans are
 invalidated. The shared catalog remains unchanged. Script space is bounded to
 `0x9900..0xB6FF` and the loaded image's actual length. Its cells and the five map
@@ -171,7 +173,7 @@ and state changes described here.
 | 0E | PICTURE | Display the selected picture/composite/animation, or restore the map view. |
 | 1C | CLEAR MONSTERS | Apply encounter-flag and treasure cleanup; do not assume this deletes every creature. |
 | 1D | PARTY STRENGTH | Calculate and write the party-strength result. |
-| 1E | CHECK PARTY | Query the requested attribute/effect and supply all four output values. |
+| 1E | CHECK PARTY | Query the requested attribute/effect and supply all four output values. For movement: lowest, highest, average and (an assumption; the Slums' Run after a parley reads it as the party's speed) lowest again. |
 | 20 | NEW ECL | Resolve and supply the replacement program, update resource context, and schedule its initial entry. |
 | 21 | LOAD FILES | Load the requested map/resources and refresh the view without implicitly replacing ECL. |
 | 22 | PARTY SURPRISE | Initialize party surprise modifiers from the real party. |

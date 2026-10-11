@@ -67,9 +67,9 @@ void blessed_warrior_checks()
           access.cantrips.front().id == "sacred_flame",
           "The Paladin knows Sacred Flame and Spare the Dying");
     const auto profile = rules->character_profile(warrior, {}).data;
-    auto fight = rules->create({{8, 4, std::vector<std::uint8_t>(32)},
-        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-            {99, "bandit", "Enemy", 1, {4, 1}}
+    auto fight = rules->create({{8, 4, std::vector<Terrain>(32)},
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+            {99, "bandit", "Enemy", Side::opposition, {4, 1}}
         }},
     5);
     bool offered = false;
@@ -170,7 +170,7 @@ void paladin_choices_checks()
     rejects(
         [&]
     {
-        (void)creation_rules->evaluate(paladin_draft(bad), true);
+        (void)creation_rules->evaluate(paladin_draft(bad), NameRequirement::required);
     });
     const auto messages = rules->character_profile(paladin.sheet(), {}).spell_messages;
     check(std::any_of(messages.begin(), messages.end(), [&](const auto & m)
@@ -182,7 +182,7 @@ void paladin_choices_checks()
     CharacterCreator creator(srd5::character_rules(), 1);
     creator.roll();
     for (unsigned n = 0; n < 6; ++n)
-        creator.assign_roll(n, n);
+        creator.assign_roll(n, static_cast<rules::Ability>(n));
     creator.select(CreationField::character_class, "paladin");
     check(creator.has_spell_choices(), "The Spell Choices step appears for a Paladin");
 

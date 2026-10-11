@@ -68,7 +68,7 @@ func run_checks() -> void:
         var label := "Command: Grovel" if locale == "en" else "Orden imperiosa: Arrástrate"
         require(await cycle_to(combat, label), "The A cycle offers Command's options: " + locale)
         await click_cell(Vector2(6, 1))
-        var log: String = combat.get_node("Log").get_parsed_text()
+        var log: String = combat.get_node("LogStack/Log").get_parsed_text()
         var obeys := "must obey Paladin's Command: Grovel" if locale == "en" else "debe obedecer la orden imperiosa de Paladin: Arrástrate"
         require(log.contains(obeys), "Clicking the enemy commands it to grovel: " + locale)
         require(not await cycle_to(combat, label), "The spent Action ends further casting this turn")

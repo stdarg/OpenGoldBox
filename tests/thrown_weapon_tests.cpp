@@ -60,8 +60,9 @@ CampaignParty thrown_party()
     CampaignParty party(module());
     auto character = hero();
     for (const auto weapon : weapons)
-        character.inventory().add(weapon, weapon, 3);
-    const auto shield = character.inventory().add("shield", "Baseline shield");
+        character.add_item({.definition_id = weapon, .name = weapon, .quantity = 3});
+    const auto shield = character.add_item({.definition_id = "shield",
+                                                   .name = "Baseline shield"});
     const auto id = party.add_pc(std::move(character));
     party.equip(id, 3); // Javelin in the ordered inventory above.
     party.equip(id, shield);
@@ -94,9 +95,13 @@ void physical_inventory()
                 draft.character_class = klass;
                 draft.background = "sage";
                 Character pc(*srd5::character_rules(), draft, {});
-                const auto held = pc.inventory().add("longsword", "Held sword");
-                const auto stack = pc.inventory().add(weapon, "Carried weapon", 3);
-                const auto shield = pc.inventory().add("shield", "Held shield");
+                const auto held = pc.add_item({.definition_id = "longsword",
+                                                      .name = "Held sword"});
+                const auto stack = pc.add_item({.definition_id = weapon,
+                                                       .name = "Carried weapon",
+                                                       .quantity = 3});
+                const auto shield = pc.add_item({.definition_id = "shield",
+                                                        .name = "Held shield"});
                 const auto id = party.add_pc(std::move(pc));
                 party.equip(id, held);
                 party.equip(id, shield);
@@ -105,16 +110,16 @@ void physical_inventory()
                     party.advance(id, party.default_advancement(id));
                 auto actors = party.participants();
                 actors.front().cell = {1, 1};
-                actors.push_back({2, "vanguard", "Target", 1, {2, 1}});
-                actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
+                actors.push_back({2, "vanguard", "Target", Side::opposition, {2, 1}});
+                actors.push_back({3, "vanguard", "Reserve", Side::opposition, {7, 7}});
                 auto rules = module();
-                auto combat = rules->create({{10, 8, std::vector<std::uint8_t>(80)}, actors}, 19);
+                auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 19);
                 party.begin_combat();
                 party.apply_combat(combat->snapshot());
                 while (combat->snapshot().actor != id)
                     act(*combat, "end");
                 auto before = combat->save();
-                check(before.starts_with("OGCOMBAT 39 "),
+                check(before.starts_with("OGCOMBAT 48 "),
                       "New physical encounters use the current checkpoint format");
                 check(rules->restore(before)->save() == before,
                       "Physical inventory round trips before throw");
@@ -167,9 +172,9 @@ void critical_stack()
         auto party = thrown_party();
         auto actors = party.participants();
         actors.front().cell = {1, 1};
-        actors.push_back({2, "vanguard", "Target", 1, {5, 1}});
-        actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
-        auto combat = rules->create({{10, 8, std::vector<std::uint8_t>(80)}, actors}, seed);
+        actors.push_back({2, "vanguard", "Target", Side::opposition, {5, 1}});
+        actors.push_back({3, "vanguard", "Reserve", Side::opposition, {7, 7}});
+        auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, seed);
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         while (combat->snapshot().actor != 1)
@@ -222,14 +227,16 @@ void large_stack()
     draft.background = "sage";
     CampaignParty party(module());
     Character pc(*srd5::character_rules(), draft, {});
-    const auto sword = pc.inventory().add("longsword", "Keep in hand");
-    const auto stack = pc.inventory().add("javelin", "Large stack", 1000000);
+    const auto sword = pc.add_item({.definition_id = "longsword", .name = "Keep in hand"});
+    const auto stack = pc.add_item({.definition_id = "javelin",
+                                           .name = "Large stack",
+                                           .quantity = 1000000});
     const auto first = party.add_pc(std::move(pc));
     party.equip(first, sword);
     auto actors = party.participants();
     actors[0].cell = {1, 1};
-    actors.push_back({99, "vanguard", "Target", 1, {3, 1}});
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 1);
+    actors.push_back({99, "vanguard", "Target", Side::opposition, {3, 1}});
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 1);
     party.begin_combat();
     party.apply_combat(combat->snapshot());
     while (combat->snapshot().actor != first)
@@ -258,20 +265,20 @@ void control_fixture()
     auto draft = pc.creation_data();
     draft.background = "sage";
     pc = Character(*srd5::character_rules(), draft, {});
-    const auto sword = pc.inventory().add("longsword", "Sword");
-    const auto shield = pc.inventory().add("shield", "Shield");
+    const auto sword = pc.add_item({.definition_id = "longsword", .name = "Sword"});
+    const auto shield = pc.add_item({.definition_id = "shield", .name = "Shield"});
     for (auto weapon : weapons)
-        pc.inventory().add(weapon, weapon, 3);
+        pc.add_item({.definition_id = weapon, .name = weapon, .quantity = 3});
     CampaignParty party(module());
     auto id = party.add_pc(std::move(pc));
     party.equip(id, sword);
     party.equip(id, shield);
     auto actors = party.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({2, "vanguard", "Target", 1, {2, 1}});
-    actors.push_back({3, "vanguard", "Reserve", 1, {7, 7}});
+    actors.push_back({2, "vanguard", "Target", Side::opposition, {2, 1}});
+    actors.push_back({3, "vanguard", "Reserve", Side::opposition, {7, 7}});
     auto rules = module();
-    auto combat = rules->create({{10, 8, std::vector<std::uint8_t>(80)}, actors}, 1);
+    auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 1);
     while (combat->snapshot().actor != id)
         act(*combat, "end");
     const auto folder = std::filesystem::path(OPENGOLD_BINARY_DIR) / "thrown-fixtures";

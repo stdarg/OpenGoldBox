@@ -35,8 +35,8 @@ func run_checks() -> void:
         require(current_scene.get_node("PartyPanel/Sheet").text == before, "Cancel preserves source records and wounds")
         await press("PartyPanel/Roster/Advance1"); await allocate_points()
         level.get_node("Confirm").grab_focus(); await key(level, KEY_ENTER)
-        if klass == "wizard":
-            require(level.visible and level.get_node("SpellChoicesPage").visible, "Wizard uses approved second spell page")
+        if klass in ["wizard", "cleric", "paladin", "ranger"]:
+            require(level.visible and level.get_node("SpellChoicesPage").visible, "Spellcasters use the second spell page")
             level.get_node("Confirm").grab_focus(); await key(level, KEY_ENTER)
         require(not level.visible and not current_scene.get_node("PartyPanel/Roster/Advance1").visible, "Keyboard commits one level-four entitlement")
         await press("PartyPanel/Save"); current_scene.get_node("SaveSlots/Name").text = SLOT

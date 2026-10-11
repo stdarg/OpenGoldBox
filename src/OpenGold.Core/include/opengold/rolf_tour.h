@@ -7,20 +7,21 @@
 #include "opengold/wall_art.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/campaign_party.h"
-#include "opengold/combat_demo.h"
+#include "opengold/campaign_encounter.h"
 #include "opengold/encounter_budget.h"
 #include <bitset>
 
 namespace opengold
 {
-struct SaveCodec;
+template <bool Reading> struct SaveCodec;
 }
 
 namespace opengold::por
 {
 struct PartyPose
 {
-    unsigned x{}, y{}, facing{}; // GEO coordinates, 0=N, 1=E, 2=S, 3=W.
+    unsigned x{}, y{}; // GEO coordinates.
+    MapDirection facing{MapDirection::north};
     auto operator<=>(const PartyPose &) const = default;
 };
 enum class TourPhase
@@ -39,7 +40,7 @@ struct TownParty
 {
     std::string name{"Fighter"};
     unsigned level{1}, hit_points{12}, max_hit_points{12};
-    std::array<std::uint16_t, 7> wealth{0, 0, 0, 9999, 0, 0, 0};
+    Purse wealth{0, 0, 0, 9999, 0, 0, 0};
     std::vector<Equipment> inventory;
 };
 
@@ -52,6 +53,15 @@ struct PendingLoot
     std::string reward_id;
     std::vector<unsigned> records;
     bool include_items{true};
+    unsigned area{}; // the district whose original creature records these are
+};
+
+// What an original creature record fights as: its combat creature, the XP of
+// that stat block (which sizes encounters) and the experience it awards.
+struct EncounterConversion
+{
+    std::string definition;
+    unsigned fit_xp{}, award_xp{};
 };
 
 struct PhlanResources
@@ -71,6 +81,10 @@ struct PhlanResources
     std::optional<GeoMap> map;
     WallArtSet wall_art;
     std::map<unsigned, Creature> encounter_creatures;
+    std::map<unsigned, EncounterConversion> conversions;
+    // A district's script, archive bank and LOAD PIECES wall banks; zero for the town.
+    unsigned script{}, bank{};
+    std::array<unsigned, 3> pieces{};
     std::vector<std::uint8_t> combat_archive;
     std::vector<Image> terrain_art;
 };
@@ -126,6 +140,14 @@ enum class ExplorationCommand
 class RolfTourSession
 {
   public:
+    // A session drives a shared party, so it is not copied by accident: a
+    // copy would be a second session acting on the same party (Effective C++
+    // Item 6). detached_copy() is an explicit copy without the party.
+    RolfTourSession(RolfTourSession &&) = default;
+    RolfTourSession &operator=(RolfTourSession &&) = default;
+    ~RolfTourSession() = default;
+    [[nodiscard]] RolfTourSession detached_copy() const;
+
     [[nodiscard]] static RolfTourSession load(const std::filesystem::path &directory);
     // Also accepts wholly synthetic resources for asset-free host tests.
     RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
@@ -205,7 +227,7 @@ class RolfTourSession
         return picture_;
     }
 
-    [[nodiscard]] std::uint16_t script_variable(std::uint16_t address) const
+    [[nodiscard]] std::uint16_t script_variable(EclAddress address) const
     {
         return machine_.variable(address);
     }
@@ -227,7 +249,12 @@ class RolfTourSession
     bool reject_combat(std::string diagnostic);
 
   private:
-    friend struct opengold::SaveCodec;
+    RolfTourSession(const RolfTourSession &) = default;
+    RolfTourSession &operator=(const RolfTourSession &) = default;
+    template <bool Reading> friend struct opengold::SaveCodec;
+    // Clears everything one run of the tour builds up; restart() also reloads
+    // the town's map and a fresh script machine.
+    void reset_run();
     GeoMap map_;
     std::shared_ptr<const EclProgram> program_;
     std::array<opengold::Image, 3> sprites_;
@@ -238,23 +265,47 @@ class RolfTourSession
     std::uint64_t next_ticket_{}, menu_request_{}, delayed_request_{};
     double remaining_delay_{};
     std::shared_ptr<const PhlanResources> town_;
-    TownParty party_, saved_party_;
+    TownParty party_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
-    std::optional<opengold::PartyState> saved_campaign_;
     std::uint64_t who_request_{}, temple_request_{};
+    // A DAMAGE volley waits here until its results are acknowledged.
+    std::uint64_t damage_request_{};
     std::vector<opengold::MemberId> temple_targets_;
-    std::vector<unsigned> who_slots_;
+    std::vector<PartySlot> who_slots_;
+    // How a pre-combat meeting ended without a fight, said when its event ends.
+    std::string encounter_outcome_;
+    // Whether this event's script asked which member acts (WHO).
+    bool member_chosen_{};
+    // Where the party met monsters this event, and whether it was robbed.
+    std::optional<PartyPose> meeting_pose_;
+    bool robbed_{};
     std::vector<Equipment> treasure_;
     std::optional<Image> picture_;
-    std::optional<EclMachine> checkpoint_;
+    // Everything an event can change, saved when it begins so a failed event
+    // rolls back as a whole rather than member by hand-paired member
+    // (Effective C++ Item 29).
+    struct EventCheckpoint
+    {
+        EclMachine machine;
+        TownParty party;
+        std::optional<opengold::PartyState> campaign;
+        unsigned script{}, area{};
+        std::map<unsigned, std::bitset<256>> visited_areas, seen_areas;
+        unsigned rest_checks{};
+        GeoMap map;
+        std::vector<PendingLoot> pending_loot;
+        TourSnapshot snapshot;
+        PartySlot selected_character{};
+    };
+    std::optional<EventCheckpoint> event_checkpoint_;
+    void roll_back_event();
     std::vector<std::string> diagnostics_;
     std::optional<ExplorationCommand> pending_movement_;
-    unsigned current_script_{}, saved_script_{}, selected_character_{};
-    unsigned current_area_{}, saved_area_{};
+    unsigned current_script_{};
+    PartySlot selected_character_{};
+    unsigned current_area_{};
     std::map<unsigned, std::bitset<256>> visited_areas_;
-    std::map<unsigned, std::bitset<256>> saved_visited_areas_;
-    std::map<unsigned, std::bitset<256>> seen_areas_, saved_seen_areas_;
-    std::optional<TourSnapshot> saved_snapshot_;
+    std::map<unsigned, std::bitset<256>> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;
     std::vector<opengold::CombatArt> staged_art_;
     std::vector<unsigned> staged_records_;
@@ -267,11 +318,11 @@ class RolfTourSession
     unsigned encounter_challenge_{opengold::default_encounter_challenge};
     // The original encounter before fitting: its experience and loot are awarded.
     std::vector<unsigned> encounter_records_;
-    std::vector<PendingLoot> pending_loot_, saved_pending_loot_;
+    std::vector<PendingLoot> pending_loot_;
     // Money from a non-shop TREASURE, awarded by the COMBAT that follows it.
     std::optional<PendingLoot> staged_treasure_;
-    // Doors forced open stay open until the district map is reloaded.
-    GeoMap saved_map_;
+    // Doors forced open stay open until the district map is reloaded; the
+    // event checkpoint keeps the map as the event found it.
     bool door_menu_{};
     // As in the original, one Pick per lock until the party moves again.
     bool pick_tried_{};
@@ -284,20 +335,34 @@ class RolfTourSession
     void show_locked_door();
     void try_locked_door(opengold::DoorMethod method);
     void search_destination();
-    [[nodiscard]] PendingLoot slums_loot(std::vector<unsigned> records, std::string reward,
+    // The coins and items of an encounter's original creature records.
+    [[nodiscard]] PendingLoot encounter_loot(unsigned area, std::vector<unsigned> records,
+            std::string reward,
                                          bool items) const;
     void show_encounter_menu();
     void fit_staged_encounter();
+    void announce_spokesman();
     bool choose_encounter(std::size_t choice);
     [[nodiscard]] const PhlanResources &area_resources() const;
     void change_area(unsigned id);
-    unsigned saved_selected_character_{};
-    unsigned
-    event_stage_{}; // 0 tour, 1 before step, 2 search, 3 area entry, 4 pre-camp, 5 interrupted.
+
+    // Which script of an exploration event is running, so finish_event knows
+    // what follows it.
+    enum class EventStage : std::uint8_t
+    {
+        none, // No event: the tour itself.
+        step, // Before the party steps forward.
+        search,
+        area_entry,
+        pre_camp,
+        camp_interrupted
+    };
+
+    EventStage event_stage_{EventStage::none};
     RestKind camp_kind_{RestKind::long_rest};
     // Five-minute rest steps since the last interruption check. Like the
     // original engine's counter, it carries over between rests; it is saved.
-    unsigned rest_checks_{}, saved_rest_checks_{};
+    unsigned rest_checks_{};
     [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
     void announce_camp_attack();
     bool transition_{}, message_only_{};
@@ -305,16 +370,28 @@ class RolfTourSession
     void configure_town();
     void synchronize_clock();
     [[nodiscard]] EclHostReply clock_reply() const;
-    void begin_event(unsigned slot);
+
+    // What the player did to start an event. Each value is the original script
+    // entry slot that runs it.
+    enum class EventTrigger : std::uint8_t
+    {
+        step = 0,
+        look = 1,
+        camp = 2
+    };
+
+    void begin_event(EventTrigger trigger);
     void finish_event();
     bool handle_town_host(const EclRequest &request);
     // Scripts change coins relative to the view they were given, so the script
     // must receive a fresh character_reply after every read before it continues.
     void read_character();
-    [[nodiscard]] EclHostReply character_reply(unsigned index) const;
+    [[nodiscard]] EclHostReply character_reply(PartySlot slot) const;
     void bind_pose(PartyPose pose);
     bool move_party(ExplorationCommand command);
     void notice(std::string message);
+    // Each arrow attacks a random conscious active member; returns a report line for each.
+    [[nodiscard]] std::string shoot_arrows(unsigned arrows, const rules::HazardAttack &arrow);
     void publish_pose();
     void handle_host(const EclRequest &request);
     void fail(std::string diagnostic);

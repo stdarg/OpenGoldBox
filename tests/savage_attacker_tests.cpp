@@ -101,16 +101,16 @@ auto battle(const RulesModule &rules, const Character &h, std::string gear = "gr
     std::vector<std::string> equipment;
     if (!gear.empty())
         equipment.push_back(gear);
-    return rules.create({{8, 8, std::vector<std::uint8_t>(64)},
+    return rules.create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
                 "Hero",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), equipment).data
             },
-            {99, "target", "Target", 1, ranged ? Cell{4, 1} : Cell{2, 1}}
+            {99, "target", "Target", Side::opposition, ranged ? Cell{4, 1} : Cell{2, 1}}
         }},
     seed);
 }
@@ -123,7 +123,7 @@ void roundtrip(const RulesModule &r, const CombatSession &c)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -143,7 +143,8 @@ void automatic_higher_roll()
     {
         ++count;
         const auto h = hero(klass.id);
-        check(h.sheet().modifiers[0] == 3 && h.sheet().modifiers[1] == 3,
+        check(h.sheet().modifiers[Ability::strength] == 3 &&
+              h.sheet().modifiers[Ability::dexterity] == 3,
               "Independent Soldier ability oracle");
         auto c = battle(*rules, h);
         const auto before = unit(*c);
@@ -159,7 +160,7 @@ void automatic_higher_roll()
         check(rng(*c) == random + 5 * 0x9e3779b97f4a7c15ULL &&
               c->snapshot().elapsed_milliseconds == 0,
               "Attack roll, both weapon dice sets and nothing else consume RNG");
-        const auto &message = c->snapshot().log_messages;
+        const auto &message = c->snapshot().log_messages();
         check(std::any_of(message.begin(), message.end(), [](const auto & m)
         {
             return m.source ==
@@ -212,14 +213,14 @@ void exceptions_and_turns()
     act(*c, "melee");
     check(logged(*c, "(Savage Attacker): 11 and "),
           "A Versatile weapon with an empty other hand rerolls its two-handed die");
-    const auto first_turn = c->snapshot().log.size();
+    const auto first_turn = c->snapshot().log().size();
     act(*c, "end");
     auto move = command(*c, "move");
     move.destination = {3, 1};
     check(c->submit(move) && c->snapshot().reaction_pending,
           "Enemy movement triggers next-turn reaction");
     act(*c, "opportunity");
-    const auto log = c->snapshot().log;
+    const auto log = c->snapshot().log();
     check(std::any_of(log.begin() + first_turn, log.end(), [](const auto & line)
     {
         return line.find("(Savage Attacker)") != std::string::npos;
@@ -243,10 +244,13 @@ void lethal_and_queues()
     {
         auto c = rules->create(
         {
-            {8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "First", 0, {1, 1}, profile},
-                {2, "campaign-character", "Second", 0, {2, 0}, profile},
-                {99, "target", "Target", 1, {2, 1}, "", VitalState{lethal ? 1 : 1000, false, {}}}
+            {8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "First", Side::party, {1, 1}, profile},
+                {2, "campaign-character", "Second", Side::party, {2, 0}, profile},
+                {
+                    99, "target", "Target", Side::opposition, {2, 1}, "",
+                    VitalState{lethal ? 1 : 1000, false, {}}
+                }
             }},
         13);
         while (c->snapshot().actor != 99)
@@ -285,13 +289,13 @@ void defenses()
     const auto profile =
         rules->character_profile(h.sheet(), std::array<std::string, 1> {"greatsword"}).data;
     auto c =
-    rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile},
+    rules->create({{8, 8, std::vector<Terrain>(64)},
+        {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile},
             {
                 99,
                 "target",
                 "Target",
-                1,
+                Side::opposition,
                 {2, 1},
                 "",
                 VitalState{1000, false, "SRD11 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 0 0 0 0 0 FX8 1 0 0"}

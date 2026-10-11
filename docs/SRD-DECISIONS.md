@@ -293,11 +293,12 @@ Prone, Q38/Q39 and the rest of Q43 stand.
   the party rests again. The city watch's interruption says "The rest was
   interrupted. Rest again to recover." Camp and inn restrictions and the paid
   inn Long Rest are unchanged. See [Rest resources](REST-RESOURCES.md).
-- **Death saves outside combat:** when a fight is won, each dying character's
-  remaining death saves are rolled at once until it is Stable or dead (a
-  natural 20 restores 1 HP), and the combat log lists every roll and the
-  outcome. Outside combat a dying character is resolved the same way the moment
-  campaign time passes. Stable still recovers 1 HP after 1d4 hours. Combat
+- **Death saves outside combat:** when a fight is won, each character still
+  dying is bandaged and becomes Stable, as in the original game, where anyone
+  who survived a fight while dying was assumed bandaged afterward (the user,
+  2026-10-09, replacing the first rule, which rolled the remaining death saves
+  at once). Outside combat a dying character rolls its remaining death saves at
+  once the moment campaign time passes. Stable still recovers 1 HP after 1d4 hours. Combat
   death saves are unchanged. See [Recovery clocks](RECOVERY-CLOCKS.md).
 - **Thrown weapons work like ammunition:** throwing never removes or drops the
   weapon, which stays held or carried. There is no landing square, ground item,
@@ -383,6 +384,31 @@ the earlier authored Slums conversions.
 - **Stat blocks:** monsters are SRD stat blocks, unchanged. In the Slums: Kobold
   Warrior, Goblin Warrior and Bugbear Warrior (SRD 5.2.1). The 2024 SRD has no
   orc, so orcs are the SRD 5.1 Orc (the user: orcs are tougher than goblins).
+  In Kuto's Well (2026-10-08): Giant Lizard and Gnoll Warrior (SRD 5.2.1) and,
+  as the 2024 SRD has none, the SRD 5.1 Lizardfolk, unchanged at the user's
+  choice. Lizardfolk Multiattack is two melee attacks. Norris the Gray is the
+  SRD 5.2.1 Bandit Captain at its own AC 15, matching his portrait's leather
+  rather than his record's chain mail and shield (the user, 2026-10-08).
+  The Slums' set encounters (2026-10-08): Hobgoblin Warrior (its leaders the
+  same, as their records ready no armor), Ogre and Troll (SRD 5.2.1). The user
+  chose the Troll's full Regeneration, then (the same day) to kill trolls as the
+  original game does: the fight ends once every enemy is down and downed
+  trolls stay dead. On 2026-10-10 the user chose the original's timing too: a
+  downed troll gets back up, with all its Hit Points, only once 3d6 rounds have
+  passed since it fell, and Acid or Fire on it keeps it down for good. As in
+  the original engine, someone standing on its square keeps it down; it gets up
+  on its first turn after the delay with its square clear. Standing, it
+  regenerates as the SRD says. The Hobgoblin's poisoned arrows as
+  written, and, as SRD 5.2.1 has no apprentice mage, a level-3 Wizard profile
+  for the magic-user defending Ohlo. The Troll's Charge and Loathsome Limbs
+  are not modeled.
+- **Script hazards and robbery (Kuto's Well, the user, 2026-10-08):** an
+  original `DAMAGE` arrow volley is one SRD attack roll per arrow, at +4 (the
+  hidden archers are Norris's kobolds, as the SRD Kobold Warrior; corrected
+  from +3 for bandits after checking the original cluebook), against a random conscious
+  member, for the original dice as Piercing damage. A member it drops rolls
+  death saves at once, as any dying member outside combat does. Surrendering to Norris (`ROB`) takes
+  the money the script names but no items.
 - **Leaders** are their base stat block wearing the armor their original record
   readies. A leader shoots a bow only when its combat art shows one; otherwise
   its better gear is loot. Of the Slums icons only the orc leader's (CPIC2 5)
@@ -391,7 +417,9 @@ the earlier authored Slums conversions.
   Nimble Escape. The Bugbear's Grab hits an adjacent character for its damage
   with no grapple (consistent with [SCOPE-2](#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
   Aggressive adds the orc's speed as a bonus action; only monsters have it, so
-  "toward a hostile creature" is left to the monster's policy.
+  "toward a hostile creature" is left to the monster's policy. The Lizardfolk's
+  bite and club both deal piercing damage, and the Gnoll Warrior has no Rampage.
+  Norris has no Pistol (out of place in Phlan) and no Parry reaction.
 - **Encounter size:** when an original encounter is too strong, it is scaled
   back. The `[combat] encounter_challenge` setting in `settings.cfg` (0–200,
   default 33) is a percentage of the SRD 5.2.1 Moderate XP budget (p. 202). An
@@ -529,3 +557,193 @@ CLASS-3's holy water, the spell costs only its slot.
 A creature that targets a creature warded by Sanctuary with an attack or a
 harmful spell and fails its Wisdom save loses that attack or spell; it does not
 choose another target.
+
+## CLASS-10 (2026-10-06): Wild Shape forms and Heat Metal
+
+- **Wild Shape forms** are the Beasts the game has combat art for that the SRD
+  allows a Druid of levels 2-4 (CR 1/4, or 1/2 from level 4, and no Fly
+  Speed): Wolf, Boar (the game's Wild Boar), Giant Lizard and Giant Snake (the
+  SRD Constrictor Snake). Giant Snake is kept although it has a Swim Speed,
+  which goes unused; this replaces the earlier "no swim forms" for it. Every
+  Druid knows all of them, and the form is picked from the Bonus Action
+  dropdown.
+- **Heat Metal** targets only a creature wearing metal armor. Monsters' armor
+  comes from `equipment` rows in combat.rules, derived from the armor their
+  original records ready ([#231](https://github.com/stdarg/OpenGold/issues/231);
+  [creature equipment](CREATURE-EQUIPMENT.md)). The user chose rows in the
+  rules file over a separate JSON file on 2026-10-07.
+
+## CLASS-11 (2026-10-06): no spell components
+
+The user removed spell components for all casters. Spells have no Verbal,
+Somatic or Material components and need no spellcasting focus: a weapon, wand or
+shield in hand never blocks casting, and Silence no longer stops spells (it
+still protects from Thunder damage). Subtle Spell, which only removed
+components, is no longer offered. Untrained armor, Rage and Wild Shape still
+prevent casting. See [spell components](SPELL-COMPONENTS.md).
+
+## GEAR-1 (2026-10-08): Fire and Acid for every party
+
+SRD trolls stay down only after Acid or Fire, and the user chose to give every
+party those rather than design the trolls fight around standing on a downed
+troll (a rule kept from the original game that players cannot easily know).
+
+- **Torch:** a Simple Melee weapon that can be equipped; a hit deals 1 Fire
+  damage (SRD 5.2.1 adventuring gear). Every starting kit carries one, as the
+  SRD's starting packs do.
+- **Acid, Alchemist's Fire and Oil:** thrown in place of one attack at a
+  creature within 20 feet, which makes a Dexterity save (DC 8 + Dexterity
+  modifier + Proficiency Bonus). Acid deals 2d6 Acid, Alchemist's Fire 1d4 Fire
+  and Burning, and Oil covers the target so its next Fire damage deals 5 more.
+  Each throw uses one up. Oil is the original's Flask of Oil; Acid and
+  Alchemist's Fire are added to New Phlan's general store at SRD prices, and
+  Torches are sold ten for 1 gp.
+- **Simulated parties** set a standing troll Burning with Alchemist's Fire
+  (its Fire each turn stops Regeneration), oiling it first when anyone on the
+  side can follow with Alchemist's Fire (before a Fire spell or a Torch, an
+  action spent on Oil is worth less than a second attack). At a standing troll
+  whose Regeneration nothing has stopped this round, a character casts a Fire
+  spell (Fire Bolt rather than Magic Missile) or, beside it, strikes with its
+  Torch. They finish a downed troll with a Fire or Acid spell, a Torch or a
+  flask, in that order. A character that sees no enemy steps to the nearest
+  square with a clear line to one; one with a ranged attack cantrip does so
+  before walking up to the enemy. A Wild Shape form uses no gear. A character who cannot get closer to an
+  enemy draws a carried bow or crossbow and shoots, taking off its shield
+  first (an action) when the bow needs both hands and no enemy is beside it.
+
+## MELEE-1 (2026-10-08): adjacent-only melee
+
+The user chose to keep melee as the original game had it: a melee attack
+reaches adjacent squares only. SRD 5.2.1's 10-foot reach (the Glaive, Halberd,
+Lance, Pike and Whip, and monsters such as the Troll) is not used; the weapon
+catalog keeps the SRD's Reach property as data. This restores the original's
+tactic, which the cluebook recommends against trolls, of a front rank in melee
+with archers one square behind it. The Troll's `reach` row is removed.
+
+## LEADER-1 (2026-10-08): a party leader speaks for the party
+
+The original asks which character speaks each time the party parleys. The user
+chose a standing leader instead: the first member until another is made leader
+with **Make leader** on a character's sheet (exploration) or under the party
+roster. The leader's name shows with a gold star. The leader parleys: twice its
+Charisma goes into the scripts' reaction rolls (variable `0x6DCF`). The
+original's formula is unknown; plain Charisma left the scripts' better outcomes
+out of reach, New Phlan's own script doubles the value, and the user chose
+twice Charisma (Charisma 12 avoids a Slums kobold fight 30% of the time
+parleying Abusive, Charisma 18 70%). The leader is the
+first buyer in a shop unless the script has just asked which member acts. A
+leader who is down hands the parley to the next conscious member. As in the
+original, Parley replaces Advance once the monsters are adjacent, and a meeting
+that ends without a fight says so ("The monsters go on their way.", "You get
+away.").
+
+## FLEE-1 (2026-10-08): fleeing a fight, as the original game did
+
+Fleeing follows the original manual. A party member flees by moving off the
+edge of the battlefield (an arrow key from an open edge square; there is no
+separate command). Faster than every conscious enemy, it gets away; as fast as
+the fastest enemy, it has an even chance, and on a failure it must stay until
+the fight ends; slower than any enemy, it cannot leave. Leaving an enemy's
+reach provokes an opportunity attack as any move does. One who got away is out
+of the fight and rejoins the party after it. When no party member is left on
+the field and someone got away, the party has fled: everyone left on the field
+is lost for good (dead and out of the party), the treasure stays, and the
+original script receives its "fled" result (128; a party wiped out is 129).
+Experience comes from the monsters the party killed (the user's ruling): a
+flight earns the experience of those it killed, and members who fled share
+the experience of a fight the rest went on to win.
+
+The user added a **Flee** button beside End turn (not in the original): it
+hands every party member to the game AI until the fight ends. A member who can
+flee (no conscious enemy is faster and it has not failed a flight) runs for
+the nearest open edge, around walls and Dashing when it must, whatever
+opportunity attacks it provokes, and steps off; the rest fight on as the AI
+would. Keys and clicks no longer act for the party; the prompt says "Your party
+is fleeing." Once no member on the field can still flee (each has failed a
+flight or is outpaced), the player takes the party back and the prompt says
+"No one else can get away. Your party fights on." (the user, 2026-10-09).
+
+## MORALE-1 (2026-10-09): monster morale, as the original game had it
+
+Monsters check morale at the start of each of their turns, following the Gold
+Box engine (read from the original data, the Curse of the Azure Bonds engine
+reimplementation as reference, and the original's own messages; no code
+copied). The encounter's morale is what the original script stores in `0x6DC6`
+before COMBAT (0 to 101 across the game, mostly 50 to 100; 100 never breaks). A creature's own
+morale is its record byte `0x84` (`(byte & 0x7F) * 2` from `0x80` up; above
+102 it has none): most Pool of Radiance monsters have none, and nine never
+break. A creature with its own morale holds while it has lost no more of its
+Hit Points, in percent, than that morale; otherwise it holds while its side
+keeps at least 100 less the encounter's morale percent of its Hit Points
+(rounded down to 5). Broken, it flees in panic when no living opponent is
+faster: it runs for an edge away from the party and off the field by the same
+rule as the party (FLEE-1), and may rally on a later turn; cornered (it failed
+to get away), it fights on.
+When an opponent is faster, a creature with Intelligence above 5 surrenders,
+leaving the fight counted as defeated; a witless one fights on. A monster that
+gets away is worth neither experience nor treasure; the fight is won when none
+is left on the field. Hovering a panicked monster lists "Fleeing in panic"
+among its conditions (the user, 2026-10-09). Not adopted: Curse's
+Bless/Curse/charm morale modifiers
+(unconfirmed for Pool) and morale for allied NPCs (ours are player-controlled).
+
+
+## QUICK-1 (2026-10-09): Quick combat, as the original game had it
+
+The original let the computer play any party member in combat (Quick), and
+kept playing it in later fights until the player took over; a key set the
+whole party to Quick, Space while the computer was moving a member returned
+every member to the player, and a Magic toggle decided whether Quick members
+cast spells (read from the original manual and cluebook; no text copied).
+OpenGold follows it, with the layout the user approved on 2026-10-09:
+
+- On a member's turn, **Quick** (beside Flee) hands it to the computer at once.
+  Q puts the whole party on Quick.
+- While the computer plays a member, its action controls are hidden, **Take
+  control** stands where End turn does and the prompt says so; Take control
+  or Space returns every member to the player. The highlight follows the
+  member acting. Each Quick member's card carries a gold QUICK tag.
+- **Quick magic** (Off unless switched on with M, as the original's Magic
+  appears to start) decides whether the computer casts spells, cantrips
+  included, for Quick members; the button shows while the computer plays,
+  where Flee stands, and M works on any turn.
+- The campaign party keeps who is on Quick and Quick magic between fights and
+  in saves (campaign format 25). The computer plays a Quick member as the
+  automated demo policy does.
+
+## PLACE-1 (2026-10-10): starting positions, as the original game had them
+
+The user chose (2026-10-10) to start every scripted fight with the monsters
+placed as the original Gold Box engine placed them, instead of the authored
+stand-in that always stood them one exploration square ahead of the party. The
+rules were read from the Curse of the Azure Bonds engine reimplementation (coab)
+as reference; Pool of Radiance's START.EXE carries the same placement tables. No
+code was copied.
+
+- The encounter distance is the script's. SETUP MONSTER and ENCOUNTER MENU set
+  it to their maximum, but no further than the party can see ahead (at most two
+  squares, stopping at a wall or door); APPROACH and Advance bring it one square
+  closer, and COMBAT caps it by the view ahead once more. The approaching
+  monster's picture and the menu follow the same distance.
+- Each side is one group facing the other, standing in the back half of its
+  exploration square: the party in its own square, the monsters in the square
+  that many squares ahead. At distance 0 they share the party's square and the
+  two front ranks touch.
+- A group forms ranks from its front centre backwards, each rank filling
+  outwards from the centre, alternately to the group's right and left. The first
+  rank holds half the group (rounded up); later ranks run to the square's edge.
+  A party facing east or west leaves the rank behind its first empty when it has
+  a square to spill into. Obstacles and taken squares are skipped.
+- A group too big for its square spills into the square behind it, then into
+  the squares to its sides, each filled from the edge it shares with the
+  group's square. A solid wall (a doorway is not one) closes a square off. The
+  groups never surround each other.
+- Where the original found no room at all for a monster, it left the monster
+  out, and the user chose (2026-10-10) to do the same. A monster left out never
+  fights: it gives no experience or treasure, and the band's morale counts only
+  the monsters that fight. It is not held back for later; whether the band
+  meets the party again is the script's, as for any fight. The original could
+  leave out a whole band and start an empty fight that the party won at once
+  for nothing; OpenGold keeps the band's first monster instead, on the nearest
+  free square the party can reach. A party member with no room takes that
+  nearest free square too.

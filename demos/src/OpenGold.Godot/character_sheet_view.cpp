@@ -1,6 +1,7 @@
 #include "../../../src/OpenGoldBox/training_control.h"
 #include "character_creation_view.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/line_edit.hpp>
@@ -50,7 +51,9 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
             !creator_->draft().rolled || index < 0 || index >= 12)
         return {};
     const auto &d = creator_->draft();
-    const unsigned roll = index < 6 ? index : d.assignment[index - 6];
+    // Indices 0-5 are the dice boxes, 6-11 the score boxes of each ability.
+    const unsigned roll =
+        index < 6 ? index : d.assignment[static_cast<rules::Ability>(index - 6)];
     if (roll >= 6 || (index < 6 && std::find(d.assignment.begin(), d.assignment.end(), roll) !=
                       d.assignment.end()))
         return {};
@@ -84,7 +87,7 @@ void CharacterCreationView::drop_roll(Vector2 position, const Variant &data, int
     perform(
         [&]
     {
-        creator_->assign_roll(roll, index);
+        creator_->assign_roll(roll, static_cast<rules::Ability>(index));
         selected_score_ = -1;
     });
 }
@@ -93,7 +96,8 @@ String CharacterCreationView::sheet_text(const Character &character,
         const PartyMember *member) const
 {
     const auto &s = character.sheet();
-    std::string text = "[font_size=24]" + literal(s.name) + "[/font_size]\nLevel " +
+    std::string text = "[theme_font=sheet_title]" +
+        literal(s.name) + "[/theme_font]\nLevel " +
                        std::to_string(s.level) + " " + s.race + " " + s.gender + " " +
                        s.character_class + "\n" + s.alignment + " / " + s.background + "\n\n";
     if (!character.creation_data().target_classes.empty())
@@ -118,11 +122,11 @@ String CharacterCreationView::sheet_text(const Character &character,
     {
         const auto value = std::to_string(hp);
         return hp_modifier == 0 ? value
-               : "[color=" + std::string(hp_modifier > 0 ? "#f3d55b" : "#f08080") +
-               "]" + value + "[/color]";
+               : "[theme_color=" + std::string(hp_modifier > 0 ? "score_positive"
+                   : "score_negative") + "]" + value + "[/theme_color]";
     };
-    text += "[b]HP " + hp_number(member ? member->vitals.hit_points : s.hit_points) + " / " +
-            hp_number(s.hit_points) + "[/b]   Hit Dice: " + std::to_string(s.level) + "d" +
+    text += "[theme_emphasis]HP " + hp_number(member ? member->vitals.hit_points : s.hit_points) + " / " +
+            hp_number(s.hit_points) + "[/theme_emphasis]   Hit Dice: " + std::to_string(s.level) + "d" +
             std::to_string(s.hit_die);
     if (member)
         text +=
@@ -130,7 +134,7 @@ String CharacterCreationView::sheet_text(const Character &character,
     if (member)
         text += "   XP " + std::to_string(member->experience);
     if (member && campaign_->can_advance(member->id))
-        text += "   [b]Ready to level up[/b]";
+        text += "   [theme_emphasis]Ready to level up[/theme_emphasis]";
     const auto display = [](const std::string & id)
     {
         std::string label = id;
@@ -149,21 +153,25 @@ String CharacterCreationView::sheet_text(const Character &character,
         for (const auto &spell : s.prepared_spells)
             text += display(spell) + "  ";
     }
-    text += "\n[font_size=14]" + literal(s.hp_explanation) + "[/font_size]";
+    text += "\n[theme_font=sheet_note]" + literal(s.hp_explanation) +
+            "[/theme_font]";
     text +=
-        "\n\n[table=3][cell][b]Attribute     [/b][/cell][cell][b]Score     [/b][/cell][cell][b]Saving throw[/b][/cell]";
+        "\n\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]";
     for (unsigned i = 0; i < 6; ++i)
     {
-        const auto score = std::to_string(s.scores[i]);
+        const auto ability = rules::all_abilities[i];
+        const auto score = std::to_string(s.scores[ability]);
         const auto colored =
-            s.modifiers[i] == 0
+            s.modifiers[ability] == 0
             ? score
-            : "[color=" + std::string(s.modifiers[i] > 0 ? "#f3d55b" : "#f08080") + "]" +
-            score + "[/color]";
+            : "[theme_color=" + std::string(s.modifiers[ability] > 0
+                ? "score_positive" : "score_negative") + "]" +
+            score + "[/theme_color]";
         text += "[cell]" + std::string(names[i]) + "[/cell][cell]" + colored + "[/cell][cell]" +
-                number(s.saving_throws[i]) + (s.save_proficiencies[i] ? " *" : "") + "[/cell]";
+                number(s.saving_throws[ability]) + (s.save_proficiencies[ability] ? " *" : "") +
+                "[/cell]";
     }
-    text += "[/table]\n* Proficient saving throw";
+    text += "[/theme_table]\n* Proficient saving throw";
     if (member)
     {
         try
@@ -179,7 +187,7 @@ String CharacterCreationView::sheet_text(const Character &character,
         if (!member->vitals.description.empty())
             text += "\n" + literal(member->vitals.description);
     }
-    text += "\n\n[b]Inventory[/b]";
+    text += "\n\n[theme_emphasis]Inventory[/theme_emphasis]";
     if (character.inventory().empty())
         text += "\nEmpty";
     const auto positions =
@@ -212,40 +220,39 @@ void CharacterCreationView::show_modifiers()
     if (!member && !completed_)
         return;
     const auto &s = member ? member->character.sheet() : completed_->sheet();
-    std::string text = "[b]Ability score adjustments[/b]\n";
+    std::string text = "[theme_emphasis]Ability score adjustments[/theme_emphasis]\n";
     for (unsigned i = 0; i < 6; ++i)
     {
-        if (s.bonuses[i] == 0)
+        const auto ability = rules::all_abilities[i];
+        if (s.bonuses[ability] == 0)
             continue;
-        text += "[b]" + std::string(names[i]) + "[/b]\nRolled score: " + std::to_string(s.base[i]) +
-                "\n";
+        text += "[theme_emphasis]" + std::string(names[i]) + "[/theme_emphasis]\nRolled score: " +
+                std::to_string(s.base[ability]) + "\n";
         for (const auto &source : s.ability_adjustments)
-            if (source.bonuses[i])
-                text += source.label + " (" + number(source.bonuses[i]) + ")\n";
-        text += "Final score: " + std::to_string(s.scores[i]) + "\n\n";
+            if (source.bonuses[ability])
+                text += source.label + " (" + number(source.bonuses[ability]) + ")\n";
+        text += "Final score: " + std::to_string(s.scores[ability]) + "\n\n";
     }
-    text += "\n[b]Race / " + s.race + "[/b]\n" + s.racial_modifiers;
-    text += "\n\n[b]Class / " + s.character_class + "[/b]\n" + s.class_modifiers;
-    text += "\n\n[b]Background / " + s.background + "[/b]\n" + s.background_modifiers;
+    text += "\n[theme_emphasis]Race / " + s.race + "[/theme_emphasis]\n" + s.racial_modifiers;
+    text += "\n\n[theme_emphasis]Class / " + s.character_class + "[/theme_emphasis]\n" + s.class_modifiers;
+    text += "\n\n[theme_emphasis]Background / " + s.background + "[/theme_emphasis]\n" + s.background_modifiers;
     try
     {
-        const auto pack = std::filesystem::u8path(
+        const auto pack = presentation::path_from_godot(
                               ProjectSettings::get_singleton()
-                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                              .utf8()
-                              .get_data());
+                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules"));
         const auto profile =
             member ? campaign_->profile(member->id) : srd5::load(pack)->character_profile(s, {});
-        text += "\n\n[b]Items[/b]\n" + profile.item_modifiers + "\n\n[b]Spells[/b]\n" +
+        text += "\n\n[theme_emphasis]Items[/theme_emphasis]\n" + profile.item_modifiers + "\n\n[theme_emphasis]Spells[/theme_emphasis]\n" +
                 profile.spell_modifiers + "\n\n" + profile.description;
     }
     catch (const std::exception &e)
     {
         text +=
-            "\n\n[b]Items[/b]\nNo equipped item modifiers.\n\n[b]Spells[/b]\nNo active spell modifiers. Persistent spell effects are not implemented.";
+            "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented.";
         text += "\n\n" + literal(e.what());
     }
-    get_node<RichTextLabel>("ModifiersModal/Text")->set_text(gs(text));
+    get_node<RichTextLabel>("ModifiersModal/Text")->call("render", gs(text));
     get_node<Label>("ModifiersModal/Title")->set_text(gs(s.name + " / Modifiers"));
     auto *modal = get_node<Window>("ModifiersModal");
     modal->popup_centered();
@@ -291,14 +298,18 @@ void CharacterCreationView::update_saving_throws(String value)
                        std::to_string(dc) + " to save.\n\n";
     for (unsigned i = 0; i < 6; ++i)
     {
-        const int needed = srd5::minimum_save_roll(dc, s.saving_throws[i]);
-        text += "[b]" + std::string(names[i]) + " save: " + number(s.saving_throws[i]) + " | ";
+        const auto ability = rules::all_abilities[i];
+        const int needed = srd5::minimum_save_roll(dc, s.saving_throws[ability]);
+        text += "[theme_emphasis]" + std::string(names[i]) + " save: " + number(s.saving_throws[ability]) +
+                " | ";
         text += needed > 20   ? "Cannot reach this DC on a d20"
                 : needed == 1 ? "Any d20 roll saves"
                 : "Roll " + std::to_string(needed) + " or higher";
-        text += "[/b]\n" + number(s.modifiers[i]) + " from " + names[i] + " score " +
-                std::to_string(s.scores[i]) + " (score minus 10, divided by 2, rounded down).\n";
-        text += s.save_proficiencies[i] ? number(s.saving_throws[i] - s.modifiers[i]) + " from " +
+        text += "[/theme_emphasis]\n" + number(s.modifiers[ability]) + " from " + names[i] + " score " +
+                std::to_string(s.scores[ability]) +
+                " (score minus 10, divided by 2, rounded down).\n";
+        text += s.save_proficiencies[ability]
+                ? number(s.saving_throws[ability] - s.modifiers[ability]) + " from " +
                 s.character_class + " saving throw proficiency."
                 : "+0 proficiency: " + s.character_class +
                             " does not grant proficiency in this save.";
@@ -308,5 +319,5 @@ void CharacterCreationView::update_saving_throws(String value)
     }
     text +=
         "No additional racial, item or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules.";
-    label->set_text(gs(text));
+    label->call("render", gs(text));
 }

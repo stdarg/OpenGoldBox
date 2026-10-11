@@ -21,53 +21,9 @@ void validate_battlefield(const Battlefield &board)
             std::any_of(board.terrain.begin(), board.terrain.end(),
                         [](auto tile)
 {
-    return tile > 2;
+    return tile > Terrain::difficult;
 }))
     throw std::runtime_error("Invalid battlefield");
-}
-
-bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
-{
-    if (board.at(from) == 1 || board.at(to) == 1)
-        return false;
-    const int columns = std::abs(to.x - from.x), rows = std::abs(to.y - from.y);
-    const int step_x = to.x > from.x ? 1 : -1, step_y = to.y > from.y ? 1 : -1;
-    int crossed_x = 0, crossed_y = 0;
-    Cell current = from;
-    while (crossed_x < columns || crossed_y < rows)
-    {
-        // Compare the next vertical and horizontal boundary crossings without
-        // division. Cell centers are half a cell from their first boundary:
-        // t_x = (1 + 2*crossed_x)/(2*columns), similarly for t_y.
-        // Cross multiplication also handles horizontal/vertical rays (a zero
-        // denominator means that boundary is never crossed).
-        const int order = (1 + 2 * crossed_x) * rows - (1 + 2 * crossed_y) * columns;
-        if (order == 0)
-        {
-            // Exact corner contact touches both side cells as well as the
-            // diagonal cell. Checking all three prevents sight through walls.
-            if (board.at({current.x + step_x, current.y}) == 1 ||
-                    board.at({current.x, current.y + step_y}) == 1)
-                return false;
-            current.x += step_x;
-            current.y += step_y;
-            ++crossed_x;
-            ++crossed_y;
-        }
-        else if (order < 0)
-        {
-            current.x += step_x;
-            ++crossed_x;
-        }
-        else
-        {
-            current.y += step_y;
-            ++crossed_y;
-        }
-        if (board.at(current) == 1)
-            return false;
-    }
-    return true;
 }
 
 MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
@@ -75,13 +31,16 @@ MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
     : board_(board), origin_(origin), crawling_(crawling)
 {
     validate_battlefield(board_);
-    if (board_.at(origin_) == 1)
+    if (board_.at(origin_) == Terrain::obstacle)
         throw std::runtime_error("Invalid movement origin");
     occupancy_.resize(board_.terrain.size(), Occupancy::empty);
+    held_.resize(board_.terrain.size());
     for (const auto &occupant : occupants)
     {
         if (!board_.contains(occupant.cell))
             throw std::runtime_error("Invalid occupant cell");
+        if (!occupant.downed)
+            held_[index(occupant.cell)] = true;
         auto &entry = occupancy_[index(occupant.cell)];
         // Apply the strongest restriction when several creatures overlap:
         // a conscious enemy blocks; an incapacitated enemy adds difficult terrain.
@@ -100,23 +59,26 @@ int MovementGrid::index(Cell cell) const
 
 bool MovementGrid::can_stop_at(Cell destination) const
 {
-    return board_.at(destination) != 1 && destination != origin_ &&
-           occupancy_[index(destination)] == Occupancy::empty;
+    return board_.at(destination) != Terrain::obstacle && destination != origin_ &&
+           !held_[index(destination)];
 }
 
 std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
 {
-    if (board_.at(from) == 1 || board_.at(to) == 1)
+    if (board_.at(from) == Terrain::obstacle || board_.at(to) == Terrain::obstacle)
         return std::nullopt;
     const int dx = std::abs(to.x - from.x), dy = std::abs(to.y - from.y);
     if (std::max(dx, dy) != 1)
         return std::nullopt;
-    if (dx && dy && (board_.at({from.x, to.y}) == 1 || board_.at({to.x, from.y}) == 1))
+    if (dx && dy && (board_.at({from.x, to.y}) == Terrain::obstacle ||
+                     board_.at({to.x, from.y}) == Terrain::obstacle))
         return std::nullopt;
     const auto occupant = occupancy_[index(to)];
     if (occupant == Occupancy::enemy)
         return std::nullopt;
-    return (board_.at(to) == 2 || occupant == Occupancy::incapacitated_enemy ? 10 : 5) +
+    const bool difficult =
+        board_.at(to) == Terrain::difficult || occupant == Occupancy::incapacitated_enemy;
+    return (difficult ? 10 : 5) +
            (crawling_ ? 5 : 0);
 }
 

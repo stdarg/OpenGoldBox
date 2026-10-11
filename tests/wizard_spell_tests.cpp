@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -106,7 +107,7 @@ bool aim(CombatSession &c, Cell cell)
 
 bool logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::any_of(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -135,11 +136,11 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::vector<std::string> equipment = {})
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
-    auto c = module.create({{12, 6, std::vector<std::uint8_t>(72)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile},
-            {2, "target", "Ally", 0, ally},
-            {98, enemy, "First", 1, first},
-            {99, "target", "Second", 1, second}
+    auto c = module.create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+            {2, "target", "Ally", Side::party, ally},
+            {98, enemy, "First", Side::opposition, first},
+            {99, "target", "Second", Side::opposition, second}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -401,7 +402,7 @@ void color_spray_checks()
 
 bool difficult(const CombatSession &c, Cell cell)
 {
-    return c.snapshot().battlefield.at(cell) == 2;
+    return c.snapshot().battlefield.at(cell) == Terrain::difficult;
 }
 
 void grease_checks()
@@ -424,6 +425,42 @@ void grease_checks()
         return;
     }
     throw std::runtime_error("No seed fails the Dexterity save");
+}
+
+std::optional<Command> offered(const CombatSession &c, std::string_view verb, Cell destination)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == verb && command.destination == destination)
+            return command;
+    return std::nullopt;
+}
+
+// Grease is not Concentration: it lasts its minute after the Wizard runs off
+// the field, and creatures in it still save against the Wizard's spell DC.
+void grease_outlasts_its_fled_caster()
+{
+    auto module = rules();
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "grease"}), {4, 1}, {11, 5}, seed);
+        check(submit(*c, "grease") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast"),
+              "Cast Grease on the enemy");
+        const auto edge = offered(*c, "move", Cell{0, 1});
+        check(edge && c->submit(*edge), "The Wizard steps to the field's edge");
+        const auto flee = offered(*c, "flee", Cell{-1, 1});
+        check(flee && c->submit(*flee), "The Wizard may try to run off the field");
+        if (!logged(*c, "Wizard flees the battle."))
+            continue;
+        check(difficult(*c, {4, 1}), "The Grease stays after its caster has fled");
+        const auto saved = c->save();
+        check(module->restore(saved)->save() == saved,
+              "A checkpoint with a fled caster's Grease restores");
+        for (unsigned turns = 0; turns < 40 && c->snapshot().outcome == Outcome::ongoing; ++turns)
+            check(submit(*c, "end"), "Let the minute pass");
+        check(!difficult(*c, {4, 1}), "Grease vanishes after a minute");
+        return;
+    }
+    throw std::runtime_error("No seed lets the Wizard get away");
 }
 
 bool move_to(CombatSession &c, Cell cell)
@@ -476,7 +513,7 @@ bool offered(const CombatSession &c, std::string_view verb)
 
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     return std::count_if(log.begin(), log.end(), [&](const auto & line)
     {
         return line.find(text) != std::string::npos;
@@ -534,9 +571,9 @@ void shield_missile_checks()
     {
         return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
     };
-    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
-            {98, "campaign-character", "Foe", 1, {6, 1}, profile(foe)}
+    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile(foe)}
         }},
     5);
     reach(*c, 98);
@@ -680,7 +717,7 @@ void mirror_image_checks()
 // The attack bonus in the Wizard's first "d20 N + B vs" log line.
 int logged_attack_bonus(const CombatSession &c)
 {
-    for (const auto &line : c.snapshot().log)
+    for (const auto &line : c.snapshot().log())
         if (line.starts_with("Wizard -> First: d20 "))
         {
             const auto plus = line.find(" + ");
@@ -729,9 +766,9 @@ void see_invisibility_checks()
     {
         return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
     };
-    auto c = module->create({{12, 6, std::vector<std::uint8_t>(72)},
-        {   {1, "campaign-character", "Wizard", 0, {1, 1}, profile(hero)},
-            {98, "campaign-character", "Foe", 1, {8, 1}, profile(foe)}
+    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", Side::opposition, {8, 1}, profile(foe)}
         }},
     5);
     reach(*c, 98);
@@ -743,6 +780,39 @@ void see_invisibility_checks()
     check(submit(*c, "end"), "The foe waits");
     reach(*c, 1);
     check(submit(*c, "magic_missile", 98), "See Invisibility reveals the foe");
+}
+
+// A reaction is asked mid-spell by undoing the spell and replaying it with the
+// answer. Invisibility ends with the replayed spell, once, not while the
+// spell is being undone.
+void invisible_caster_awaits_a_reaction()
+{
+    auto module = rules();
+    const auto hero = wizard(1, {"magic_missile", "shield"});
+    const auto foe = wizard(3, {"magic_missile"}, {"invisibility", "shatter"});
+    const auto profile = [&](const Character &who)
+    {
+        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+    };
+    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+            {98, "campaign-character", "Foe", Side::opposition, {8, 1}, profile(foe)}
+        }},
+    5);
+    reach(*c, 98);
+    check(submit(*c, "invisibility", 98), "The foe turns Invisible");
+    reach(*c, 1);
+    check(submit(*c, "end"), "The Wizard waits");
+    reach(*c, 98);
+    check(submit(*c, "magic_missile", 1) && c->snapshot().reaction_pending,
+          "The Invisible foe's Magic Missile asks the Wizard about Shield");
+    check(has_condition(*c, 98, "Invisible") && !logged(*c, "Foe is no longer Invisible."),
+          "While the Wizard decides, the foe is still Invisible");
+    check(submit(*c, "decline"), "The Wizard declines");
+    const auto log = c->snapshot().log();
+    check(std::count(log.begin(), log.end(), "Foe is no longer Invisible.") == 1 &&
+          !has_condition(*c, 98, "Invisible"),
+          "The replayed spell ends the Invisibility once");
 }
 
 void darkness_checks()
@@ -979,6 +1049,8 @@ int main()
         hideous_laughter_checks();
         color_spray_checks();
         grease_checks();
+        grease_outlasts_its_fled_caster();
+        invisible_caster_awaits_a_reaction();
         web_checks();
         shield_checks();
         shield_missile_checks();

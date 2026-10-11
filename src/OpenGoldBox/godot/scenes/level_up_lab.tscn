@@ -1,0 +1,301 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/themed_rich_text.gd" id="98_rich_text"]
+
+[node name="LevelUpLab" type="LevelUpLabView"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Backdrop" type="Panel" parent="."]
+theme_type_variation = &"LabBackdrop"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -325.0
+offset_right = 500.0
+offset_bottom = 355.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="."]
+theme_type_variation = &"LabelText28"
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -290.0
+offset_right = 460.0
+offset_bottom = -244.0
+text = "Level-Up Review"
+
+[node name="Instructions" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -239.0
+offset_right = 460.0
+offset_bottom = -195.0
+autowrap_mode = 3
+text = "Build an isolated character, then open the same level-up dialog used in the game."
+
+[node name="NameLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -175.0
+offset_right = -40.0
+offset_bottom = -149.0
+text = "Name"
+
+[node name="Name" type="LineEdit" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -143.0
+offset_right = -40.0
+offset_bottom = -101.0
+placeholder_text = "Review character"
+max_length = 40
+
+[node name="ClassLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -175.0
+offset_right = 210.0
+offset_bottom = -149.0
+text = "Class"
+
+[node name="Class" type="OptionButton" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -143.0
+offset_right = 210.0
+offset_bottom = -101.0
+fit_to_longest_item = false
+clip_text = true
+
+[node name="RaceLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 240.0
+offset_top = -175.0
+offset_right = 460.0
+offset_bottom = -149.0
+text = "Race"
+
+[node name="Race" type="OptionButton" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 240.0
+offset_top = -143.0
+offset_right = 460.0
+offset_bottom = -101.0
+fit_to_longest_item = false
+clip_text = true
+
+[node name="GenderLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -70.0
+offset_right = -270.0
+offset_bottom = -44.0
+text = "Gender"
+
+[node name="Gender" type="OptionButton" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -38.0
+offset_right = -270.0
+offset_bottom = 4.0
+fit_to_longest_item = false
+clip_text = true
+
+[node name="CurrentLevelLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -70.0
+offset_right = -50.0
+offset_bottom = -44.0
+text = "Starting level"
+
+[node name="CurrentLevel" type="OptionButton" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -38.0
+offset_right = -50.0
+offset_bottom = 4.0
+
+[node name="CreateCharacter" type="Button" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -38.0
+offset_right = 210.0
+offset_bottom = 4.0
+text = "Create Character"
+
+[node name="OpenLevelUp" type="Button" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 240.0
+offset_top = -38.0
+offset_right = 460.0
+offset_bottom = 4.0
+disabled = true
+text = "Open Level-Up"
+
+[node name="SaveCharacter" type="Button" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = 37.0
+offset_right = -170.0
+offset_bottom = 79.0
+disabled = true
+text = "Save Character"
+
+[node name="LoadCharacter" type="Button" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -145.0
+offset_top = 37.0
+offset_right = 145.0
+offset_bottom = 79.0
+text = "Load Character"
+
+[node name="ViewCharacter" type="Button" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 170.0
+offset_top = 37.0
+offset_right = 460.0
+offset_bottom = 79.0
+disabled = true
+text = "View Character"
+
+[node name="SummaryHeading" type="Label" parent="."]
+theme_type_variation = &"LabelText20"
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = 107.0
+offset_right = 460.0
+offset_bottom = 139.0
+text = "Character"
+
+[node name="Summary" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = 145.0
+offset_right = 460.0
+offset_bottom = 227.0
+autowrap_mode = 3
+
+[node name="Status" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = 260.0
+offset_right = 460.0
+offset_bottom = 325.0
+autowrap_mode = 3
+
+[node name="CharacterSheet" type="Window" parent="."]
+title = "Character sheet"
+initial_position = 1
+size = Vector2i(900, 680)
+min_size = Vector2i(900, 680)
+visible = false
+unresizable = true
+transient = true
+exclusive = true
+
+[node name="Background" type="Panel" parent="CharacterSheet"]
+theme_type_variation = &"DialogSurface"
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Text" type="RichTextLabel" parent="CharacterSheet"]
+script = ExtResource("98_rich_text")
+theme_type_variation = &"RichTextLabelText17"
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 876.0
+offset_bottom = 604.0
+bbcode_enabled = true
+
+[node name="Close" type="Button" parent="CharacterSheet"]
+offset_left = 746.0
+offset_top = 620.0
+offset_right = 876.0
+offset_bottom = 656.0
+text = "Close"

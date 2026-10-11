@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 using namespace opengold::por;
+using opengold::rules::Terrain;
 
 namespace
 {
@@ -96,16 +97,23 @@ void collision_tests()
     auto &c = map.cells[8 * 16 + 8];
     c.walls[0] = 1;
     auto solid = dungeon_battlefield(map, 8, 8);
-    check(solid.geometry.at({24, 10}) == 1 && solid.geometry.at({24, 11}) == 0,
+    check(solid.geometry.at({24, 10}) == Terrain::obstacle &&
+          solid.geometry.at({24, 11}) == Terrain::open,
           "Wall face blocks but wall base remains passable");
+    check(solid.walled[2][6][0] && solid.walled[1][6][2] && !solid.walled[2][6][1] &&
+          !solid.walled[2][6][2],
+          "The party's square records its walled north side, seen from both squares");
     for (unsigned door = 1; door <= 3; ++door)
     {
         c.doors[0] = door;
         auto field = dungeon_battlefield(map, 8, 8);
-        check(field.geometry.at({24, 10}) == 0 && field.geometry.at({25, 10}) == 0,
+        check(field.geometry.at({24, 10}) == Terrain::open &&
+              field.geometry.at({25, 10}) == Terrain::open,
               "All original door codes preserve two-tile opening");
-        check(field.geometry.at({23, 10}) == 1 && field.geometry.at({26, 10}) == 1,
+        check(field.geometry.at({23, 10}) == Terrain::obstacle &&
+              field.geometry.at({26, 10}) == Terrain::obstacle,
               "Door posts remain blocking");
+        check(!field.walled[2][6][0], "A doorway is not a solid side");
     }
     bool rejected = false;
     try

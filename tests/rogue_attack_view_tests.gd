@@ -66,7 +66,7 @@ func run_checks() -> void:
             if demo:
                 require(choices.position.x == 214 and choices.size.x == 200 and use_bonus.position.x == 424 and use_bonus.size.x == 240, "Approved demo Bonus Action widths/placement")
                 require(choices.position.y + 44 == current_scene.get_node("Stabilize").position.y, "Bonus row precedes recovery row by 44 pixels")
-                require(use_bonus.get_rect().end.y <= current_scene.get_node("Log").position.y and current_scene.get_node("Log").get_rect().end.y <= current_scene.get_node("Footer").position.y, "Bonus row, log and footer do not overlap")
+                require(use_bonus.get_rect().end.y <= current_scene.get_node("LogStack/Log").global_position.y and current_scene.get_node("LogStack/Log").get_global_rect().end.y <= current_scene.get_node("Footer").position.y, "Bonus row, log and footer do not overlap")
             for index in range(2):
                 await load_fixture("aim-available")
                 choices.select(index); choices.item_selected.emit(index); await settle()

@@ -111,8 +111,10 @@ func run_checks() -> void:
 	await press("Next")
 	root.size = Vector2i(1120, 800)
 	await settle()
-	await pick(0, "religion")
-	await pick(0, "investigation")
+	# The first Training group is the Eldritch Invocation; class skills follow it.
+	await pick(0, "eldritch_mind")
+	await pick(1, "religion")
+	await pick(1, "investigation")
 	await press("Next")
 	require(current_scene.get_node("PageTitle").text == "Spell Choices", "Spell Choices follows Training")
 	var blast: CheckBox = current_scene.get_node("SpellChoices/Rows/eldritch_blast")
@@ -121,16 +123,31 @@ func run_checks() -> void:
 	await keyboard(KEY_SPACE)
 	require(blast.button_pressed and blast.has_focus(), "Keyboard selection retains focus")
 	require(current_scene.get_node("SpellChoices/Rows/Count").text.ends_with("(1 / 2)"), "Two SRD choices")
-	require(current_scene.get_node("SpellChoices/Rows/Pending").visible, "Missing supported catalog stays pending")
+	# Warlocks now prepare spells, and a preparing caster must fill every
+	# cantrip and preparation before Name.
+	var pending: Label = current_scene.get_node("SpellChoices/Rows/Pending")
+	require(current_scene.get_node("Next").disabled and pending.visible,
+			"Unfilled starting choices stay pending")
+	var poison: CheckBox = current_scene.get_node("SpellChoices/Rows/poison_spray")
+	poison.grab_focus()
+	await keyboard(KEY_SPACE)
+	var count: Label = current_scene.get_node("SpellChoices/Rows/Count")
+	require(poison.button_pressed and count.text.ends_with("(2 / 2)"),
+			"Second supported cantrip completes Warlock cantrips")
+	var prepared := "SpellChoices/Rows/BookChoices/prepared"
+	require(current_scene.get_node(prepared + "/Count").text == "Prepared spells (0 / 2)",
+			"Two prepared spells")
+	var ready := 0
+	for entry in current_scene.get_node(prepared).get_children():
+		if entry is CheckBox and entry.visible and not entry.disabled and ready < 2:
+			entry.set_pressed(true)
+			await settle()
+			ready += 1
+	require(not pending.visible, "No starting choice remains pending")
 	await press("Next")
 	require(current_scene.get_node("PageTitle").text == "Name", "Name follows choices")
 	await press("Back")
 	require(blast.button_pressed, "Back retains choice")
-	var poison: CheckBox = current_scene.get_node("SpellChoices/Rows/poison_spray")
-	poison.grab_focus()
-	await keyboard(KEY_SPACE)
-	require(poison.button_pressed and current_scene.get_node("SpellChoices/Rows/Count").text.ends_with("(2 / 2)"), "Second supported cantrip completes Warlock choices")
-	require(not current_scene.get_node("SpellChoices/Rows/Pending").visible, "No starting cantrip remains pending")
 	for locale in ["en", "es"]:
 		TranslationServer.set_locale(locale)
 		await press("Back")

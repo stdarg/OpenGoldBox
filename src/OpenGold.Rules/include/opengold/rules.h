@@ -1,8 +1,16 @@
 #ifndef OPENGOLD_RULES_H
 #define OPENGOLD_RULES_H
+// One header on purpose. RulesModule is the interface class that keeps rule
+// sets apart from their callers (Effective C++ Item 31), and it needs both the
+// combat and the character types, so splitting them would spare only about 10
+// of the 106 files that include this one (measured 2026-10-10).
 #include "opengold/message.h"
+#include "opengold/random_state.h"
+#include <chrono>
 #include <compare>
+#include <functional>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <map>
@@ -17,6 +25,86 @@ namespace opengold::rules
 struct CharacterSheet;
 struct AbilityCheckModifier;
 struct FeatureGrant;
+
+// The six abilities, in the order of a sheet's score arrays, named so an
+// ability cannot be confused with a score, a count or an array position
+// (Effective C++ Item 18).
+enum class Ability : unsigned
+{
+    strength,
+    dexterity,
+    constitution,
+    intelligence,
+    wisdom,
+    charisma
+};
+
+// The position of an ability in a sheet's six-element arrays.
+[[nodiscard]] constexpr std::size_t ability_index(Ability ability) noexcept
+{
+    return static_cast<std::size_t>(ability);
+}
+
+// Every ability, in order, for loops that need to know which one they are on.
+inline constexpr std::array<Ability, 6> all_abilities
+{
+    Ability::strength,     Ability::dexterity, Ability::constitution,
+    Ability::intelligence, Ability::wisdom,    Ability::charisma};
+
+// One value per ability, reachable only by naming the Ability, so code such
+// as scores[2] cannot silently mean Constitution (Effective C++ Item 18).
+// Iteration still visits the abilities in order, as saves write them.
+template <class T> class AbilityArray
+{
+  public:
+    constexpr AbilityArray() = default;
+
+    constexpr AbilityArray(T strength, T dexterity, T constitution, T intelligence, T wisdom,
+                           T charisma)
+        : values_{strength, dexterity, constitution, intelligence, wisdom, charisma}
+    {
+    }
+
+    [[nodiscard]] constexpr T &operator[](Ability ability)
+    {
+        return values_[ability_index(ability)];
+    }
+
+    [[nodiscard]] constexpr const T &operator[](Ability ability) const
+    {
+        return values_[ability_index(ability)];
+    }
+
+    [[nodiscard]] constexpr auto begin()
+    {
+        return values_.begin();
+    }
+
+    [[nodiscard]] constexpr auto end()
+    {
+        return values_.end();
+    }
+
+    [[nodiscard]] constexpr auto begin() const
+    {
+        return values_.begin();
+    }
+
+    [[nodiscard]] constexpr auto end() const
+    {
+        return values_.end();
+    }
+
+    [[nodiscard]] static constexpr std::size_t size() noexcept
+    {
+        return 6;
+    }
+
+    bool operator==(const AbilityArray &) const = default;
+
+  private:
+    std::array<T, 6> values_{};
+};
 
 struct CreationChoice
 {
@@ -43,6 +131,15 @@ enum class SpellChoiceContext
 {
     advancement,
     long_rest
+};
+
+// Whether spell choices must settle every open choice, or may leave some for
+// later (a level-up's new spells, chosen before its preparation). Named
+// rather than a bool so a call site says which (Effective C++ Item 18).
+enum class ChoiceCompleteness
+{
+    partial,
+    complete
 };
 
 struct TrainingReplacementOptions
@@ -72,7 +169,7 @@ struct SpellChoiceOptions
 struct AdvancementChoice
 {
     std::string feat;
-    std::array<unsigned, 6> abilities{};
+    AbilityArray<unsigned> abilities{}; // Ability Score Improvement points per ability
     std::vector<std::string> spells;
     TrainingChoices training;
     std::optional<std::string>
@@ -123,7 +220,7 @@ enum class EquipmentOperation
 
 struct EquipmentChoice
 {
-    EquipmentOperation operation;
+    EquipmentOperation operation{EquipmentOperation::equip};
     Message label, explanation;
     bool available{};
 };
@@ -192,6 +289,24 @@ enum class RestKind
     long_rest
 };
 
+// An attack on a party member outside combat, such as an original arrow trap:
+// an attack roll against the member's AC, then the damage dice on a hit.
+struct HazardAttack
+{
+    int attack_bonus{};
+    unsigned dice{}, sides{};
+    int damage_bonus{};
+    std::string damage_type;
+};
+
+struct HazardAttackResult
+{
+    int natural{}, total{}, armor_class{}, damage{};
+    bool hit{}, critical{};
+    // With no turns outside combat, a member dropped to 0 HP rolls these at once.
+    std::vector<int> death_saves;
+};
+
 // A rest either completes or is interrupted; an interrupted rest grants nothing.
 struct RestPolicy
 {
@@ -218,14 +333,16 @@ struct CampAction
     std::string id;
     Message label;
     bool whole_party{}; // affects several members at once; no target is chosen
-    bool operator==(const CampAction &) const = default;
 };
 
-// A party member a whole-party camp action may affect.
+// A party member a whole-party camp action may affect: its sheet is read and
+// its state changed. References, so neither can be null, and the action takes
+// a non-const span, so the call shows that party state changes (Effective C++
+// Item 18).
 struct CampTarget
 {
-    const CharacterSheet *sheet{};
-    VitalState *state{};
+    std::reference_wrapper<const CharacterSheet> sheet;
+    std::reference_wrapper<VitalState> state;
 };
 
 struct RecoveryInfo
@@ -258,14 +375,28 @@ struct Cell
     auto operator<=>(const Cell &) const = default;
 };
 
+// A square's geometry, named so a comparison cannot mistake one kind for
+// another (Effective C++ Item 18). The values are the combat checkpoint's
+// encoding and must not change.
+enum class Terrain : std::uint8_t
+{
+    open = 0,
+    obstacle = 1, // Opaque: blocks movement and sight.
+    difficult = 2
+};
+
 struct Battlefield
 {
     int width{}, height{};
-    // Geometry facts: 0=open, 1=opaque obstacle, 2=difficult terrain.
-    std::vector<std::uint8_t> terrain;
+    std::vector<Terrain> terrain;
     [[nodiscard]] bool contains(Cell p) const noexcept;
-    [[nodiscard]] unsigned at(Cell p) const noexcept;
+    // Outside the board, or past a short terrain list, is an obstacle.
+    [[nodiscard]] Terrain at(Cell p) const noexcept;
 };
+
+// Endpoints are cell centers. Touching either wall at a diagonal corner blocks
+// sight. Callers supply a validated battlefield; creatures do not obstruct sight.
+[[nodiscard]] bool has_line_of_sight(const Battlefield &board, Cell from, Cell to);
 
 // Stable encounter item identity references the original participant and equipment
 // ordinal. Items never leave their holder: downed characters keep their gear and
@@ -290,11 +421,20 @@ struct CarriedEquipment
     int equipment_index{-1};
 };
 
+// Which side of an encounter a participant fights on, named so a comparison
+// cannot mistake one for the other (Effective C++ Item 18). The values are the
+// combat checkpoint's encoding and must not change.
+enum class Side : std::uint8_t
+{
+    party = 0,
+    opposition = 1
+};
+
 struct Participant
 {
     EntityId id{};
     std::string definition, name;
-    unsigned side{}; // 0=party, 1=opposition in this first encounter adapter.
+    Side side{Side::party};
     Cell cell;
     std::string character_profile;
     std::optional<VitalState> state;
@@ -304,6 +444,11 @@ struct Participant
     // decides how it starts (SRD: awake and Prone).
     bool resting{};
     std::vector<CarriedEquipment> inventory;
+    // Morale (the original's rule, for creatures the rules control): its own,
+    // 0-100, where 0 leaves it to the encounter's; and the Intelligence that
+    // decides whether a broken creature that cannot run surrenders.
+    unsigned morale{};
+    unsigned intelligence{10};
 };
 
 struct Encounter
@@ -311,6 +456,8 @@ struct Encounter
     Battlefield battlefield;
     std::vector<Participant> participants;
     std::uint64_t scope{1};
+    // The encounter's morale, 0-100, set by the original script; 100 never breaks.
+    unsigned morale{100};
 };
 
 struct Identity
@@ -327,7 +474,8 @@ enum class Outcome
 {
     ongoing,
     victory,
-    defeat
+    defeat,
+    fled // No party member is left on the field and at least one got away.
 };
 
 struct ThrownWeaponOption
@@ -349,7 +497,7 @@ struct CombatantView
 {
     EntityId id{};
     std::string name, definition;
-    unsigned side{};
+    Side side{Side::party};
     Cell cell;
     int hit_points{}, max_hit_points{}, armor_class{}, initiative{}, movement_feet{};
     bool action{}, bonus_action{}, reaction{}, conscious{}, dead{}, facing_left{};
@@ -365,6 +513,7 @@ struct CombatantView
     std::vector<std::string>
     bonus_actions; // Entitlements remain visible after spending the Bonus Action.
     std::vector<std::string> known_cantrips; // Knowledge persists while casting is unavailable.
+    std::string form; // Wild Shape's Beast form, such as "wolf"; empty otherwise.
     bool prone{};
     std::vector<ThrownWeaponOption> thrown_weapons;
     std::vector<ThrownWeaponOption> weapons;
@@ -372,6 +521,23 @@ struct CombatantView
     std::vector<ItemAttackOption> light_attacks;
     bool nick_mastery{};
     std::vector<ItemAttackOption> nick_attacks;
+    // Thrown gear the combatant still carries, by item definition; the campaign
+    // trims its inventory to these counts.
+    std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
+    // Regenerates Hit Points each turn unless Acid or Fire stops it (stopped: it
+    // already took Acid or Fire since its last turn); burning; covered in oil
+    // (its next Fire damage deals 5 more); carries or wields a Torch.
+    bool regenerates{}, regeneration_stopped{}, burning{}, oiled{}, has_torch{};
+    bool fled{}; // Ran off the field; it rejoins the party when the fight ends.
+    // A party member fast enough to run off the field (no conscious enemy is
+    // faster) that has not failed a flight this fight.
+    bool can_flee{};
+    // Its morale broke and it runs for the edge (it may rally); or it gave up
+    // and left the fight, counted as defeated.
+    bool panicked{}, surrendered{};
+    // Every spell it knows, cantrips included: a command whose verb is one of
+    // these, or one of these and a suffix (an upcast form), casts a spell.
+    std::vector<std::string> spells;
 };
 
 struct TemporaryHpOffer
@@ -435,6 +601,15 @@ struct FreeMovement
     int remaining_feet{};
 };
 
+// One line of the combat log: the English text and the message the game
+// translates, kept together so a module cannot let them drift apart
+// (Effective C++ Item 18).
+struct LogEntry
+{
+    std::string english;
+    Message message;
+};
+
 struct Snapshot
 {
     Identity identity;
@@ -444,8 +619,7 @@ struct Snapshot
     Outcome outcome{};
     Battlefield battlefield;
     std::vector<CombatantView> combatants; // Initiative order.
-    std::vector<std::string> log;
-    std::vector<Message> log_messages;
+    std::vector<LogEntry> log_entries; // Oldest first.
     bool reaction_pending{};
     std::uint64_t elapsed_milliseconds{};
     std::optional<TemporaryHpOffer> temporary_hp_offer;
@@ -463,10 +637,32 @@ struct Snapshot
     std::vector<Cell> spiritual_weapons;
     // Where each Flaming Sphere burns.
     std::vector<Cell> flaming_spheres;
+    // Squares inside a Moonbeam.
+    std::vector<Cell> moonbeams;
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;
     bool physical_inventory{};
+
+    // The log's English lines, oldest first.
+    [[nodiscard]] std::vector<std::string> log() const
+    {
+        std::vector<std::string> lines;
+        lines.reserve(log_entries.size());
+        for (const auto &entry : log_entries)
+            lines.push_back(entry.english);
+        return lines;
+    }
+
+    // The log's messages, oldest first.
+    [[nodiscard]] std::vector<Message> log_messages() const
+    {
+        std::vector<Message> messages;
+        messages.reserve(log_entries.size());
+        for (const auto &entry : log_entries)
+            messages.push_back(entry.message);
+        return messages;
+    }
 };
 
 // Verbs are owned by a module, not an enumeration of edition-specific rules.
@@ -493,8 +689,21 @@ class CombatSession
 
     virtual bool submit(const Command &command) = 0;
     [[nodiscard]] virtual std::string save() const = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    CombatSession() = default;
+    CombatSession(const CombatSession &) = default;
+    CombatSession(CombatSession &&) = default;
+    CombatSession &operator=(const CombatSession &) = default;
+    CombatSession &operator=(CombatSession &&) = default;
 };
 
+// Every operation is pure: a module states each rule it applies, so a module
+// that omits one fails to compile instead of failing in play (Effective C++
+// Item 34).
 class RulesModule
 {
   public:
@@ -506,139 +715,111 @@ class RulesModule
     [[nodiscard]] virtual std::unique_ptr<CombatSession>
     restore(std::string_view checkpoint) const = 0;
     [[nodiscard]] virtual CharacterProfile character_profile(const CharacterSheet &,
-            std::span<const std::string>) const;
-
-    [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const
-    {
-        return {};
-    }
-
+            std::span<const std::string>) const = 0;
+    [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;
     [[nodiscard]] virtual std::vector<EquipmentChoice>
-    equipment_choices(const CharacterSheet &, std::span<const std::string>, unsigned) const
-    {
-        return {};
-    }
-
+    equipment_choices(const CharacterSheet &, std::span<const std::string>, unsigned) const = 0;
     [[nodiscard]] virtual EquipmentChange equipment_change(const CharacterSheet &,
             std::span<const std::string> candidates, unsigned selected,
-            EquipmentOperation) const;
-
-    [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const
-    {
-        return {};
-    }
-
+            EquipmentOperation) const = 0;
+    [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const = 0;
     [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterSheet &,
-            SpellChoiceContext) const
-    {
-        return {};
-    }
-
+            SpellChoiceContext) const = 0;
+    // No default for the completeness: an override cannot redefine one
+    // (Effective C++ Item 37), and every caller says which it means.
     virtual void apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
-                                     bool require_complete = true) const;
+                                     ChoiceCompleteness) const = 0;
+    // An empty skill is a plain ability check. No default: an override cannot
+    // redefine one (Effective C++ Item 37).
     [[nodiscard]] virtual AbilityCheckModifier
-    ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
-                  std::string_view skill = {}) const;
+    ability_check(const CharacterSheet &, std::span<const std::string> gear, Ability ability,
+                  std::string_view skill) const = 0;
     // Rolls that check outside combat, advancing the campaign service random state.
     [[nodiscard]] virtual AbilityCheckRoll
-    roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, unsigned ability,
-                       std::string_view skill, std::uint64_t &random_state) const;
-    [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const;
-    // False means this module's supported advancement ceiling was reached.
-    virtual bool advance_character(CharacterSheet &sheet, VitalState &state) const;
-
+    roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, Ability ability,
+                       std::string_view skill, RandomState &random_state) const = 0;
+    [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const = 0;
     [[nodiscard]] virtual std::optional<TrainingReplacementOptions>
-    rest_training_options(const CharacterSheet &) const
-    {
-        return {};
-    }
-
+    rest_training_options(const CharacterSheet &) const = 0;
     // Returns the effective source-group selections after applying a legal edit.
     virtual TrainingChoices replace_rest_training(CharacterSheet &,
-            std::span<const std::string>) const;
-
+            std::span<const std::string>) const = 0;
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
-    training_options(const CharacterSheet &) const
-    {
-        return {};
-    }
-
-    [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &) const
-    {
-        return {};
-    }
-
+    training_options(const CharacterSheet &) const = 0;
+    [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &) const = 0;
     [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &sheet,
-            const AdvancementChoice &) const
-    {
-        return advancement_options(sheet);
-    }
-
-    [[nodiscard]] virtual AdvancementChoice default_advancement(const CharacterSheet &) const
-    {
-        return {};
-    }
-
+            const AdvancementChoice &) const = 0;
+    [[nodiscard]] virtual AdvancementChoice default_advancement(const CharacterSheet &) const = 0;
     // The sheet a level-up's spell choices are offered for: one level higher,
     // with the choice's features that change them (such as a Fighting Style).
     [[nodiscard]] virtual CharacterSheet spell_choice_sheet(const CharacterSheet &,
-            const AdvancementChoice &) const;
-
+            const AdvancementChoice &) const = 0;
+    // The only form a module overrides; default_advancement() supplies the
+    // choice when the player makes none. False means this module's supported
+    // advancement ceiling was reached.
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state,
-                                   const AdvancementChoice &) const;
-    virtual void recover(VitalState &state, const CharacterSheet &sheet) const;
+                                   const AdvancementChoice &) const = 0;
+    virtual void recover(VitalState &state, const CharacterSheet &sheet) const = 0;
     [[nodiscard]] virtual RecoveryInfo recovery_info(const CharacterSheet &,
-            const VitalState &) const;
+            const VitalState &) const = 0;
     // A granting feature must establish entitlement and spend its costs before
     // calling this operation. The choice is explicit; pools never stack.
     virtual void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
-                                            const TemporaryHitPoints &, TemporaryHpChoice) const;
+                                            const TemporaryHitPoints &,
+                                            TemporaryHpChoice) const = 0;
     // The campaign must establish completed-rest eligibility before invoking
     // these resource operations. Each spend commits one die and its RNG draw.
-    virtual void recover_short_rest(VitalState &, const CharacterSheet &) const;
+    virtual void recover_short_rest(VitalState &, const CharacterSheet &) const = 0;
     [[nodiscard]] virtual Message recover_rest_choice(VitalState &, const CharacterSheet &,
-            std::string_view) const;
-    virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &, std::uint64_t &) const;
-
+            std::string_view) const = 0;
+    virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &,
+                                       RandomState &) const = 0;
     // Advances module-owned lasting effects for a group in deterministic order.
-    virtual void elapse(std::span<Participant>, std::uint64_t, std::uint64_t &) const
-    {
-    }
-
-    virtual void validate_character_state(const CharacterSheet &, const VitalState &) const;
-
-    [[nodiscard]] virtual RestPolicy long_rest_policy() const;
-    [[nodiscard]] virtual RestPolicy short_rest_policy() const;
-
-    virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const;
+    // A duration, not a bare count, so minutes or the dice state cannot be
+    // passed where milliseconds belong (Effective C++ Item 18).
+    virtual void elapse(std::span<Participant>, std::chrono::milliseconds,
+                        RandomState &) const = 0;
+    virtual void validate_character_state(const CharacterSheet &, const VitalState &) const = 0;
+    [[nodiscard]] virtual RestPolicy long_rest_policy() const = 0;
+    [[nodiscard]] virtual RestPolicy short_rest_policy() const = 0;
+    virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const = 0;
     virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,
-                             std::uint64_t &random_state) const;
+                             RandomState &random_state) const = 0;
+    // `gear` is what the member wears, so the attack meets its armor and shield.
+    [[nodiscard]] virtual HazardAttackResult hazard_attack(VitalState &state,
+            const CharacterSheet &sheet, std::span<const std::string> gear,
+            const HazardAttack &attack, RandomState &random_state) const = 0;
     // The current Hit Point maximum, which a lasting effect such as Aid raises
     // above the sheet's.
-    [[nodiscard]] virtual int hit_point_maximum(const CharacterSheet &, const VitalState &) const;
+    [[nodiscard]] virtual int hit_point_maximum(const CharacterSheet &,
+            const VitalState &) const = 0;
     [[nodiscard]] virtual std::vector<CampAction> camp_actions(const CharacterSheet &,
-            const VitalState &) const
-    {
-        return {};
-    }
+            const VitalState &) const = 0;
     // Uses one of camp_actions() on the target. A character acting on itself
     // passes the same VitalState as both user and target.
     virtual void use_camp_action(const CharacterSheet &user, VitalState &user_state,
                                  const CharacterSheet &target, VitalState &target_state,
-                                 std::string_view action, std::uint64_t &random_state) const;
+                                 std::string_view action, RandomState &random_state) const = 0;
     // Uses a whole_party camp action on the members it chooses among `party`,
     // which may include the user's own state.
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
-                                       std::span<const CampTarget> party, std::string_view action,
-                                       std::uint64_t &random_state) const;
+                                       std::span<CampTarget> party, std::string_view action,
+                                       RandomState &random_state) const = 0;
     // A spell cast while exploring, such as Knock on a locked door.
     [[nodiscard]] virtual bool can_cast_exploration_spell(const CharacterSheet &,
-            const VitalState &, std::string_view) const
-    {
-        return false;
-    }
+            const VitalState &, std::string_view) const = 0;
     virtual void cast_exploration_spell(const CharacterSheet &caster, VitalState &state,
-                                        std::string_view spell) const;
+                                        std::string_view spell) const = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    RulesModule() = default;
+    RulesModule(const RulesModule &) = default;
+    RulesModule(RulesModule &&) = default;
+    RulesModule &operator=(const RulesModule &) = default;
+    RulesModule &operator=(RulesModule &&) = default;
 };
 } // namespace opengold::rules
 #endif

@@ -105,7 +105,19 @@ enum class Rider : unsigned
     enlarge_reduce,
     dragons_breath,
     charm_person,
-    gust_of_wind
+    gust_of_wind,
+    hex,
+    vicious_mockery,
+    starry_wisp,
+    dissonant_whispers,
+    faerie_fire,
+    shillelagh,
+    produce_flame,
+    barkskin,
+    flame_blade,
+    moonbeam,
+    spike_growth,
+    heat_metal
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -123,9 +135,8 @@ struct SpellDef
     SpellPattern pattern{};
     SpellTarget target{};
     int range{}; // feet
-    bool verbal{true}, somatic{true};
     bool bonus_action{};
-    bool melee{};                    // passes ranged=false to attack()
+    bool melee{};                    // a melee spell attack, not a ranged one
     bool requires_sight{};           // gated on can_see()
     bool requires_effect_capacity{}; // gated on can_apply()
     Ability save{Ability::strength}; // save patterns only
@@ -269,7 +280,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::save_condition,
         .target = SpellTarget::enemy,
         .range = 120,
-        .somatic = false,
         .requires_sight = true,
         .requires_effect_capacity = true,
         .save = Ability::constitution,
@@ -312,7 +322,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::smite,
         .target = SpellTarget::enemy,
         .range = 5,
-        .somatic = false,
         .bonus_action = true,
         .damage = DamageType::radiant,
         .dice = {2, 8, 0},
@@ -324,7 +333,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::smite,
         .target = SpellTarget::enemy,
         .range = 5,
-        .somatic = false,
         .bonus_action = true,
         .save = Ability::constitution,
         .damage = DamageType::fire,
@@ -340,7 +348,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::smite,
         .target = SpellTarget::enemy,
         .range = 5,
-        .somatic = false,
         .bonus_action = true,
         .save = Ability::strength,
         .damage = DamageType::piercing,
@@ -355,7 +362,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::save_condition,
         .target = SpellTarget::area,
         .range = 90,
-        .somatic = true,
         .save = Ability::strength,
         .rider = Rider::entangle,
         .concentration = true,
@@ -457,8 +463,9 @@ inline constexpr std::array spell_table
         .range = 5,
         .rider = Rider::resistance,
         .concentration = true},
-    // SRD 5.2.1 p. 162: a 20-foot-radius sphere where no spell with a Verbal
-    // component can be cast and Thunder damage is ignored.
+    // SRD 5.2.1 p. 162: a 20-foot-radius sphere where Thunder damage is
+    // ignored. Spells have no components here (CLASS-11), so it does not stop
+    // spellcasting.
     SpellDef{
         .id = "silence",
         .label = "Silence",
@@ -696,7 +703,7 @@ inline constexpr std::array spell_table
         .target = SpellTarget::self,
         .range = 5},
     // SRD 5.2.1 p. 154: a Bonus Action teleport of up to 30 feet to an
-    // unoccupied space the caster can see. Verbal only.
+    // unoccupied space the caster can see.
     SpellDef{
         .id = "misty_step",
         .label = "Misty Step",
@@ -704,9 +711,8 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::area,
         .range = 30,
-        .somatic = false,
-        .rider = Rider::misty_step,
         .bonus_action = true,
+        .rider = Rider::misty_step,
         .area = 5},
     // SRD 5.2.1 p. 107: 4d4 Acid on a hit and 2d4 more at the end of the
     // target's next turn; half the initial damage on a miss.
@@ -722,7 +728,7 @@ inline constexpr std::array spell_table
         .rider = Rider::acid_arrow,
         .evocation = true},
     // SRD 5.2.1 p. 149: a Wisdom save against 3d8 Psychic, half on a success.
-    // Somatic only; the location it reveals has no use here.
+    // The location it reveals has no use here.
     SpellDef{
         .id = "mind_spike",
         .label = "Mind Spike",
@@ -731,11 +737,10 @@ inline constexpr std::array spell_table
         .target = SpellTarget::enemy,
         .range = 120,
         .requires_sight = true,
-        .verbal = false,
         .save = Ability::wisdom,
+        .half_on_success = true,
         .damage = DamageType::psychic,
         .dice = {3, 8, 0},
-        .half_on_success = true,
         .concentration = true},
     // SRD 5.2.1 p. 157: a failed Constitution save enfeebles the target; a
     // success gives Disadvantage on its next attack roll.
@@ -758,7 +763,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::self,
         .range = 5,
-        .somatic = false,
         .rider = Rider::blur,
         .concentration = true},
     // SRD 5.2.1 p. 150: three duplicates that may each take a hit.
@@ -808,7 +812,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::area,
         .range = 60,
-        .somatic = false,
         .rider = Rider::darkness,
         .concentration = true,
         .radius = 15},
@@ -822,9 +825,9 @@ inline constexpr std::array spell_table
         .target = SpellTarget::area,
         .range = 60,
         .save = Ability::dexterity,
+        .half_on_success = true,
         .damage = DamageType::fire,
         .dice = {2, 6, 0},
-        .half_on_success = true,
         .rider = Rider::flaming_sphere,
         .concentration = true,
         .area = 5},
@@ -850,8 +853,7 @@ inline constexpr std::array spell_table
         .level = 0,
         .pattern = SpellPattern::weapon_strike,
         .target = SpellTarget::enemy,
-        .range = 5,
-        .verbal = false},
+        .range = 5},
     // SRD 5.2.1 p. 124: a touched willing creature may exhale a cone of the
     // chosen type as an action, each offered as "dragons_breath_<type>".
     SpellDef{
@@ -874,10 +876,24 @@ inline constexpr std::array spell_table
         .target = SpellTarget::area,
         .range = 15,
         .save = Ability::dexterity,
+        .half_on_success = true,
         .damage = DamageType::fire,
         .dice = {3, 6, 0},
-        .half_on_success = true,
         .cone = 15},
+    // Land's Aid (SRD 5.2.1 p. 46), aimed by a Circle of the Land Druid as
+    // "lands_aid" with a use of Wild Shape. No one learns it as a spell.
+    SpellDef{
+        .id = "lands_aid",
+        .label = "Land's Aid",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::necrotic,
+        .dice = {2, 6, 0},
+        .radius = 10},
     // SRD 5.2.1 p. 115: a Humanoid saves, with Advantage while the caster's side
     // is fighting it, or is Charmed by the caster until damaged; one more
     // creature from a level-two slot.
@@ -906,16 +922,110 @@ inline constexpr std::array spell_table
         .rider = Rider::gust_of_wind,
         .concentration = true,
         .line = 60},
+    // SRD 5.2.1 p. 163: a spell attack for 1d8 of a chosen type, offered as
+    // "sorcerous_burst_<type>"; each 8 rolls another d8, up to the
+    // spellcasting modifier in extra dice.
+    SpellDef{
+        .id = "sorcerous_burst",
+        .label = "Sorcerous Burst",
+        .level = 0,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 120,
+        .dice = {1, 8, 0}},
+    // SRD 5.2.1 p. 140: a curse adding 1d6 Necrotic to the caster's attack-roll
+    // hits; moved after the target drops as a later Bonus Action. The ability
+    // check Disadvantage has no use here.
+    SpellDef{
+        .id = "hex",
+        .label = "Hex",
+        .level = 1,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::enemy,
+        .range = 90,
+        .bonus_action = true,
+        .requires_sight = true,
+        .rider = Rider::hex,
+        .concentration = true},
+    // SRD 5.2.1 p. 140: a Reaction to taking damage from a creature within 60
+    // feet: it makes a Dexterity save against 2d10 Fire, half on a success.
+    SpellDef{
+        .id = "hellish_rebuke",
+        .label = "Hellish Rebuke",
+        .level = 1,
+        .pattern = SpellPattern::reaction,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {2, 10, 0},
+        .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 p. 171: a Wisdom save against 1d6 Psychic; a failure also
+    // gives Disadvantage on the target's next attack roll.
+    SpellDef{
+        .id = "vicious_mockery",
+        .label = "Vicious Mockery",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .save = Ability::wisdom,
+        .damage = DamageType::psychic,
+        .dice = {1, 6, 0},
+        .rider = Rider::vicious_mockery},
+    // SRD 5.2.1 p. 165: a spell attack for 1d8 Radiant; the target cannot be
+    // Invisible until the end of the caster's next turn.
+    SpellDef{
+        .id = "starry_wisp",
+        .label = "Starry Wisp",
+        .level = 0,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .damage = DamageType::radiant,
+        .dice = {1, 8, 0},
+        .rider = Rider::starry_wisp},
+    // SRD 5.2.1 p. 124: a Wisdom save against 3d6 Psychic, half on a success;
+    // a failure spends the target's Reaction fleeing from the caster.
+    SpellDef{
+        .id = "dissonant_whispers",
+        .label = "Dissonant Whispers",
+        .level = 1,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .save = Ability::wisdom,
+        .half_on_success = true,
+        .damage = DamageType::psychic,
+        .dice = {3, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::dissonant_whispers},
+    // SRD 5.2.1 p. 129: creatures in a 20-foot cube that fail a Dexterity save
+    // are outlined: attackers who see them have Advantage, and they cannot be
+    // Invisible.
+    SpellDef{
+        .id = "faerie_fire",
+        .label = "Faerie Fire",
+        .level = 1,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .rider = Rider::faerie_fire,
+        .concentration = true,
+        .area = 20},
     // SRD 5.2.1 p. 143: unlocks a door held by a mundane lock. Offered at a
-    // locked door while exploring. Verbal only.
+    // locked door while exploring.
     SpellDef{
         .id = "knock",
         .label = "Knock",
         .level = 2,
         .pattern = SpellPattern::exploration,
         .target = SpellTarget::self,
-        .range = 60,
-        .somatic = false},
+        .range = 60},
     // SRD 5.2.1 p. 163: a creature at 0 Hit Points within 15 feet becomes Stable.
     SpellDef{
         .id = "spare_the_dying",
@@ -998,7 +1108,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::save_condition,
         .target = SpellTarget::any_creature,
         .range = 60,
-        .somatic = false,
         .requires_sight = true,
         .save = Ability::wisdom,
         .upcast = {.extra_instances = 1},
@@ -1012,7 +1121,6 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::enemy,
         .range = 90,
-        .somatic = false,
         .bonus_action = true,
         .requires_sight = true,
         .rider = Rider::hunters_mark,
@@ -1053,35 +1161,123 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::heal,
         .target = SpellTarget::wounded_ally,
         .range = 60,
-        .somatic = false,
         .bonus_action = true,
         .requires_sight = true,
         .dice = {2, 4, 0},
         .add_casting_modifier = true,
-        .upcast = {.extra_dice = 2}}};
+        .upcast = {.extra_dice = 2}},
+    // SRD 5.2.1 p. 162: the held Club or Quarterstaff uses the spellcasting
+    // ability and a d8 for a minute. Offered only while holding one.
+    SpellDef{
+        .id = "shillelagh",
+        .label = "Shillelagh",
+        .level = 0,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::shillelagh},
+    // SRD 5.2.1 p. 157: a flame in the hand; while it lasts, an Action hurls
+    // it as a ranged spell attack ("hurl_flame").
+    SpellDef{
+        .id = "produce_flame",
+        .label = "Produce Flame",
+        .level = 0,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::produce_flame},
+    // SRD 5.2.1 p. 115: the touched creature's AC is at least 17 for an hour.
+    SpellDef{
+        .id = "barkskin",
+        .label = "Barkskin",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::barkskin},
+    // SRD 5.2.1 p. 131: a fiery blade in hand; while it lasts, an Action makes
+    // a melee spell attack with it ("flame_blade_strike") for 3d6 + the
+    // spellcasting modifier Fire.
+    SpellDef{
+        .id = "flame_blade",
+        .label = "Flame Blade",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .bonus_action = true,
+        .rider = Rider::flame_blade,
+        .concentration = true},
+    // SRD 5.2.1 p. 150: a 5-foot-radius beam; creatures in it save against
+    // 2d10 Radiant, half on a success, at most once a turn: when it appears or
+    // moves onto them, and when they enter it or end their turn there.
+    SpellDef{
+        .id = "moonbeam",
+        .label = "Moonbeam",
+        .level = 2,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::radiant,
+        .dice = {2, 10, 0},
+        .rider = Rider::moonbeam,
+        .concentration = true,
+        .radius = 5},
+    // SRD 5.2.1 p. 164: a 20-foot-radius Sphere of Difficult Terrain; a
+    // creature takes 2d4 Piercing for every 5 feet it moves into or within it.
+    SpellDef{
+        .id = "spike_growth",
+        .label = "Spike Growth",
+        .level = 2,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 150,
+        .damage = DamageType::piercing,
+        .dice = {2, 4, 0},
+        .rider = Rider::spike_growth,
+        .concentration = true,
+        .radius = 20},
+    // SRD 5.2.1 p. 139: metal armor a creature wears glows red-hot: 2d8 Fire,
+    // then a Constitution save or Disadvantage on attack rolls until the
+    // caster's next turn. A Bonus Action on later turns repeats it. Offered
+    // only against a creature known to wear metal armor; worn armor cannot be
+    // dropped.
+    SpellDef{
+        .id = "heat_metal",
+        .label = "Heat Metal",
+        .level = 2,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::any_creature,
+        .range = 60,
+        .requires_sight = true,
+        .save = Ability::constitution,
+        .damage = DamageType::fire,
+        .dice = {2, 8, 0},
+        .rider = Rider::heat_metal,
+        .concentration = true}};
 
 // Accepts the "_2" upcast verb form, so callers can pass a command verb directly.
-// Command's options, in the order the effect stores them (1-based).
+// Command's options, in CommandOption order.
 inline constexpr std::array<std::string_view, 4> command_options{"approach", "flee", "grovel",
     "halt"};
-enum class CommandOption : int
-{
-    approach = 1,
-    flee,
-    grovel,
-    halt
-};
 
-// The option a Command verb names, 1-based; 0 when the verb is not one.
-inline int command_option(std::string_view verb)
+// The option a Command verb names, if it is one.
+inline std::optional<CommandOption> command_option(std::string_view verb)
 {
     if (verb.ends_with("_2"))
         verb.remove_suffix(2);
     if (!verb.starts_with("command_"))
-        return 0;
+        return std::nullopt;
     verb.remove_prefix(8);
     const auto found = std::find(command_options.begin(), command_options.end(), verb);
-    return found == command_options.end() ? 0 : int(found - command_options.begin()) + 1;
+    if (found == command_options.end())
+        return std::nullopt;
+    return static_cast<CommandOption>(found - command_options.begin() + 1);
 }
 
 // Chromatic Orb's damage types, each offered as "chromatic_orb_<type>".
@@ -1120,6 +1316,21 @@ inline std::optional<DamageType> dragon_type(std::string_view verb)
     return std::nullopt;
 }
 
+// Sorcerous Burst's damage types, each offered as "sorcerous_burst_<type>".
+inline constexpr std::array<std::string_view, 7> burst_types{"acid", "cold", "fire", "lightning",
+    "poison", "psychic", "thunder"};
+
+// The damage type a Sorcerous Burst verb names, if it is one.
+inline std::optional<DamageType> burst_type(std::string_view verb)
+{
+    if (!verb.starts_with("sorcerous_burst_"))
+        return std::nullopt;
+    verb.remove_prefix(16);
+    if (std::find(burst_types.begin(), burst_types.end(), verb) == burst_types.end())
+        return std::nullopt;
+    return damage_type(verb);
+}
+
 // Resistance's damage types (CLASS-7), each offered as "resistance_<type>".
 inline constexpr std::array<std::string_view, 11> resistance_types{"acid", "bludgeoning", "cold",
     "fire", "lightning", "necrotic", "piercing", "poison", "radiant", "slashing", "thunder"};
@@ -1150,6 +1361,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "enlarge_reduce";
     if (id == "true_strike_radiant")
         id = "true_strike";
+    if (burst_type(id))
+        id = "sorcerous_burst";
     if (dragon_type(id))
         id = id.starts_with("dragons_breath_exhale_") ? "dragons_breath_exhale" : "dragons_breath";
     for (const auto &spell : spell_table)

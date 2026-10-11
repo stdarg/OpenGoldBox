@@ -5,6 +5,7 @@
 #include "combat_view.h"
 #include "opengold/srd5.h"
 #include "opengold/combat_body_catalog.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
@@ -26,6 +27,7 @@
 #include <array>
 #include <cmath>
 #include <fstream>
+#include <utility>
 using namespace godot;
 using namespace opengold;
 using namespace opengold::rules;
@@ -69,6 +71,7 @@ std::string spell_verb(std::string verb, unsigned slot)
 
 void CombatView::_bind_methods()
 {
+    ClassDB::bind_method(D_METHOD("combat_visuals"), &CombatView::combat_visuals);
 }
 
 void CombatView::_notification(int what)
@@ -76,14 +79,14 @@ void CombatView::_notification(int what)
     if (what == NOTIFICATION_RESIZED && ready_)
     {
         layout();
-        queue_redraw();
+        get_node<Control>("BattlefieldVisuals")->queue_redraw();
     }
 }
 
 std::filesystem::path CombatView::local_path(const char *path) const
 {
-    return std::filesystem::u8path(
-               ProjectSettings::get_singleton()->globalize_path(path).utf8().get_data());
+    return presentation::path_from_godot(
+               ProjectSettings::get_singleton()->globalize_path(path));
 }
 
 void CombatView::_ready()
@@ -95,6 +98,7 @@ void CombatView::_ready()
     presentation::setup_initiative(
         *this, gs, callable_mp(this, &CombatView::immediate).bind("initiative_swap"),
         callable_mp(this, &CombatView::immediate).bind("initiative_keep"),
+        callable_mp(this, &CombatView::immediate).bind("uncanny_metabolism"),
         callable_mp(this, &CombatView::initiative_input),
         callable_mp(this, &CombatView::refresh).unbind(1));
     presentation::setup_optional_effect(
@@ -104,8 +108,6 @@ void CombatView::_ready()
         callable_mp(this, &CombatView::refresh).unbind(1));
     presentation::setup_weapon_controls(*this, gs, callable_mp(this, &CombatView::weapon_selected));
     ready_ = true;
-    get_window()->set_min_size(Vector2i(1120, 800));
-    set_texture_filter(TEXTURE_FILTER_NEAREST);
     layout();
     if (Engine::get_singleton()->is_editor_hint())
         return;
@@ -195,78 +197,10 @@ void CombatView::_ready()
 
 void CombatView::layout()
 {
-    const double width = get_size().x, height = get_size().y, sidebar = 358,
-                 left_width = width - sidebar - 72;
     const auto board = demo_ && demo_->has_combat() ? demo_->combat().snapshot().battlefield
                        : Battlefield{12, 9, {}};
-    const bool recovery =
-        get_node<Button>("Stabilize")->is_visible() || get_node<Button>("StandUp")->is_visible();
-    const double weapon_height = get_node<OptionButton>("Weapons")->is_visible() ? 44 : 0;
-    const double bonus_height = get_node<OptionButton>("CunningAction")->is_visible() ? 44 : 0;
-    const double tile = std::min(left_width / board.width,
-                                 (height - weapon_height - bonus_height -
-                                  (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 368
-                                   : recovery                                           ? 324
-                                   : 280)) /
-                                 board.height);
-    board_rect_ = Rect2(24, 116, tile * board.width, tile * board.height);
-    const double right = width - sidebar - 24;
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = get_node<Control>(name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
-    };
-    place("Title", Rect2(24, 18, left_width, 34));
-    place("Subtitle", Rect2(24, 62, left_width, 45));
-    place("Training", Rect2(right, 20, 112, 34));
-    place("Slums", Rect2(right + 120, 20, 112, 34));
-    place("Replay", Rect2(right + 240, 20, 118, 34));
-    place("Turn", Rect2(right, 70, sidebar, 70));
-    place("Roster", Rect2(right, 148, sidebar, 160));
-    place("Prompt", Rect2(right, 318, sidebar, 46));
-    unsigned index = 0;
-    for (const char *name :
-            {"Move", "Melee", "Ranged", "FireBolt", "MagicMissile", "CureWounds",
-             "HealingWord", "ScorchingRay", "SpellSlot", "SecondWind", "Dash",
-             "Dodge", "Disengage", "End", "Continue"
-            })
-    {
-        const unsigned row = index / 3, column = index % 3;
-        place(name, Rect2(right + column * 122, 370 + row * 43, 114, 36));
-        ++index;
-    }
-    place("React", Rect2(right, 590, 174, 36));
-    place("Decline", Rect2(right + 184, 590, 174, 36));
-    place("Nick", Rect2(right + 184, 590, 174, 36));
-    place("Save", Rect2(right, 639, 112, 34));
-    place("Load", Rect2(right + 122, 639, 112, 34));
-    place("Revisit", Rect2(right + 244, 639, 114, 34));
-    place("Help", Rect2(right, 686, sidebar, height - 732));
-    const double weapon_top = board_rect_.get_end().y + 16;
-    place("WeaponLabel", Rect2(24, weapon_top, 180, 36));
-    place("Weapons", Rect2(214, weapon_top, 450, 36));
-    const double bonus_top = weapon_top + weapon_height;
-    place("CunningActionLabel", Rect2(24, bonus_top, 180, 36));
-    place("CunningAction", Rect2(214, bonus_top, 200, 36));
-    place("UseCunningAction", Rect2(424, bonus_top, 240, 36));
-    const double top = bonus_top + bonus_height;
-    place("Stabilize", Rect2(24 + left_width - 170, top, 170, 36));
-    place("StandUp", Rect2(24, top + 44, 180, 36));
-    place("ThrownWeaponLabel", Rect2(24, top + 88, 190, 36));
-    place("ThrownWeapon", Rect2(224, top + 88, 276, 36));
-    place("Throw", Rect2(510, top + 88, 204, 36));
-    place("Log",
-          Rect2(24,
-                top + (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 132
-                       : recovery                                           ? 88
-                       : 0),
-                left_width,
-                std::max(0.0, height - board_rect_.get_end().y - 64 - weapon_height - bonus_height -
-                         (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 132
-                          : recovery                                           ? 88
-                          : 0))));
-    place("Footer", Rect2(24, height - 34, width - 48, 24));
+    get_node<Node>("Layout")->call("apply", Vector2i(board.width, board.height));
+    board_rect_ = get_node<Control>("BattlefieldBounds")->get_rect();
 }
 
 #include "../../../src/OpenGoldBox/nick_dialog_impl.h"
@@ -297,7 +231,7 @@ void CombatView::slums()
         if (directory.is_empty())
             directory =
                 ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
-        demo_->slums(std::filesystem::u8path(directory.utf8().get_data()));
+        demo_->slums(presentation::path_from_godot(directory));
         mode_ = "move";
         sync_art();
         refresh();
@@ -379,7 +313,7 @@ void CombatView::sync_art()
             directory =
                 ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
         const auto originals =
-            por::CharacterArt::load(std::filesystem::u8path(directory.utf8().get_data()));
+            por::CharacterArt::load(presentation::path_from_godot(directory));
         const auto catalog = por::CombatBodyCatalog::load(
                                  local_path("res://../../data/art/combat-body-looks.tsv"),
                                  local_path("res://../../data/art/combat-weapon-options.tsv"));
@@ -391,7 +325,8 @@ void CombatView::sync_art()
                     por::resolve_combat_appearance(campaign_->member(id), catalog);
                 campaign_art_.push_back(
                 {
-                    id, resolved.icon(originals, false), resolved.icon(originals, true),
+                    id, resolved.icon(originals, por::IconPose::ready),
+                    resolved.icon(originals, por::IconPose::action),
 resolved.selection.matched ? std::string{} : resolved.selection.label});
             }
     }
@@ -487,7 +422,7 @@ void CombatView::thrown_selected(std::int64_t index)
     auto *choices = get_node<OptionButton>("ThrownWeapon");
     if (index < 0 || index >= choices->get_item_count())
         return;
-    thrown_item_ = choices->get_item_id(index);
+    thrown_item_ = choices->get_item_id(static_cast<std::int32_t>(index));
     mode_ = "move";
     refresh();
 }
@@ -518,7 +453,9 @@ void CombatView::weapon_selected(std::int64_t index)
     if (!demo_ || !demo_->has_combat() || index < 0 || index >= choices->get_item_count())
         return;
     for (const auto &c : demo_->combat().legal_commands())
-        if (c.verb == "weapon_select" && c.item == unsigned(choices->get_item_id(index)))
+        if (c.verb == "weapon_select" &&
+                c.item == static_cast<unsigned>(
+                    choices->get_item_id(static_cast<std::int32_t>(index))))
         {
             act(c);
             return;
@@ -534,7 +471,7 @@ void CombatView::use_bonus_action()
     const String verb = key.get_slice("#", 0);
     if (verb.begins_with("light_"))
     {
-        light_item_ = key.get_slice("#", 1).to_int();
+        light_item_ = static_cast<unsigned>(key.get_slice("#", 1).to_int());
         get_node<Button>("UseCunningAction")->release_focus();
         select_mode(verb);
     }
@@ -560,7 +497,7 @@ void CombatView::immediate(String verb)
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
                      [&](const auto & a)
 {
-    return a.id == state.actor && a.side == 0;
+    return a.id == state.actor && a.side == rules::Side::party;
 }))
     return;
     for (const auto &c : demo_->combat().legal_commands())
@@ -677,7 +614,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
             const auto actor = std::find_if(state.combatants.begin(), state.combatants.end(),
                                             [&](const auto & a)
             {
-                return a.id == state.actor && a.side == 0;
+                return a.id == state.actor && a.side == rules::Side::party;
             });
             if (actor != state.combatants.end())
                 for (const auto &command : demo_->combat().legal_commands())
@@ -710,7 +647,7 @@ void CombatView::_input(const Ref<InputEvent> &event)
         const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
                                          [&](const auto & a)
         {
-            return a.id == state.actor && a.side == 0;
+            return a.id == state.actor && a.side == rules::Side::party;
         });
         std::vector<Command> targets;
         for (const auto &command : demo_->combat().legal_commands())
@@ -785,11 +722,11 @@ void CombatView::_input(const Ref<InputEvent> &event)
     {
         return a.id == s.actor;
     });
-    if (current == s.combatants.end() || current->side != 0)
+    if (current == s.combatants.end() || current->side != rules::Side::party)
         return;
-    const auto relative = (local - board_rect_.position) /
-                          (board_rect_.size.x / demo_->combat().snapshot().battlefield.width);
-    const Cell cell{static_cast<int>(relative.x), static_cast<int>(relative.y)};
+    const Vector2i chosen = get_node<Node>("Layout")->call(
+                                "cell_at_local", local, s.battlefield.width);
+    const Cell cell{chosen.x, chosen.y};
     for (const auto &c : demo_->combat().legal_commands())
         if (c.verb == mode_ && matches_item(c))
         {
@@ -829,7 +766,7 @@ void CombatView::refresh()
         for (const auto &a : s.combatants)
             if (a.id == s.actor)
             {
-                player = a.side == 0;
+                player = a.side == rules::Side::party;
                 turn = "Round " + std::to_string(s.round) + " / " + a.name +
                        (s.reaction_pending ? " reaction" : " turn") + "\nMove " +
                        std::to_string(a.movement_feet) + " ft | " +
@@ -870,13 +807,7 @@ void CombatView::refresh()
     get_node<Button>("End")->set_text(gs(s.effect_targeting ? "Skip effect"
                                          : s.free_movement  ? "Finish free move"
                                          : "End turn"));
-    get_node<Button>("End")->set_size(Vector2(s.free_movement
-            ? get_node<Button>("Continue")->get_position().x +
-            get_node<Button>("Continue")->get_size().x -
-            get_node<Button>("End")->get_position().x
-            : get_node<Button>("Continue")->get_size().x,
-            36));
-    get_node<Button>("Continue")->set_visible(!s.free_movement);
+    get_node<Node>("Layout")->call("set_free_movement", s.free_movement.has_value());
     if (s.free_movement)
         mode_ = "move";
     if (s.effect_targeting)
@@ -895,7 +826,7 @@ void CombatView::refresh()
     const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
                                      [&](const auto & a)
     {
-        return a.id == s.actor && a.side == 0;
+        return a.id == s.actor && a.side == rules::Side::party;
     });
     const auto *choice_actor =
         active != s.combatants.end() && s.outcome == Outcome::ongoing ? &*active : nullptr;
@@ -933,12 +864,11 @@ void CombatView::refresh()
         layout();
     auto *thrown = get_node<OptionButton>("ThrownWeapon");
     thrown->set_block_signals(true);
-    thrown->set_fit_to_longest_item(false);
     thrown->clear();
     const auto throwing = std::find_if(s.combatants.begin(), s.combatants.end(),
                                        [&](const auto & a)
     {
-        return a.id == s.actor && a.side == 0;
+        return a.id == s.actor && a.side == rules::Side::party;
     });
     if (throwing != s.combatants.end())
         for (const auto &option : throwing->thrown_weapons)
@@ -965,7 +895,6 @@ void CombatView::refresh()
     thrown->set_block_signals(false);
     thrown->set_tooltip_text(throw_index >= 0 ? thrown->get_item_text(throw_index) : String());
     const bool show_thrown = s.outcome == Outcome::ongoing && thrown->get_item_count() > 0;
-    const bool thrown_layout_changed = thrown->is_visible() != show_thrown;
     for (const char *name :
             {"ThrownWeaponLabel", "ThrownWeapon", "Throw"
             })
@@ -991,7 +920,7 @@ void CombatView::refresh()
                         [&](const auto & a)
     {
         return a.id == s.actor &&
-               a.side == 0 && a.prone;
+               a.side == rules::Side::party && a.prone;
     }));
     get_node<Button>("StandUp")->set_disabled(!enabled("stand_up"));
     layout();
@@ -1024,8 +953,8 @@ void CombatView::refresh()
            : player ? "Selected: " + mode_ + ". Click a highlighted square."
            : "Enemy turn"));
     std::string log = demo_ ? demo_->dialogue() + "\n\n" : "";
-    for (const auto &entry : s.log)
-        log += entry + "\n";
+    for (const auto &entry : s.log_entries)
+        log += entry.english + "\n";
     if (!error_.empty())
         log += "\n" + error_;
     get_node<RichTextLabel>("Log")->set_text(gs(log));
@@ -1067,99 +996,81 @@ void CombatView::refresh()
         get_node<Label>("Prompt")->set_text(render_weapon_message(s.effect_targeting->prompt) +
                                             "\n" +
                                             gs("Arrows: choose | Space: use | Escape: skip"));
-    queue_redraw();
+    get_node<Control>("BattlefieldVisuals")->queue_redraw();
 }
 
-void CombatView::_draw()
+Dictionary CombatView::combat_visuals()
 {
-    draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
-    draw_rect(board_rect_, Color("202d33"));
+    Dictionary data;
     if (!demo_ || !demo_->has_combat())
-        return;
+        return data;
     const auto s = demo_->combat().snapshot();
-    const double tile = board_rect_.size.x / s.battlefield.width;
-    const auto font = get_theme_default_font();
+    data["width"] = s.battlefield.width;
+    data["height"] = s.battlefield.height;
+    Array terrain, textures, overlays, actors;
     for (int y = 0; y < s.battlefield.height; ++y)
         for (int x = 0; x < s.battlefield.width; ++x)
         {
-            const Rect2 cell(board_rect_.position + Vector2(x * tile, y * tile),
-                             Vector2(tile, tile));
-            const auto terrain = s.battlefield.at({x, y});
-            draw_rect(cell, terrain == 1   ? Color("64716d")
-                      : terrain == 2 ? Color("665238")
-                      : ((x + y) % 2 ? Color("29373c") : Color("253137")));
+            const auto kind = s.battlefield.at({x, y});
+            terrain.push_back(kind == Terrain::obstacle ? 2 : kind == Terrain::difficult ? 1 : 0);
             const auto index = y * s.battlefield.width + x;
-            if (index < demo_->battlefield_tiles().size() &&
+            if (std::cmp_less(index, demo_->battlefield_tiles().size()) &&
                     demo_->battlefield_tiles()[index] < terrain_art_.size())
-                draw_texture_rect(terrain_art_[demo_->battlefield_tiles()[index]], cell, false);
+                textures.push_back(terrain_art_[demo_->battlefield_tiles()[index]]);
             else
-                draw_rect(cell, Color("172228"), false);
+                textures.push_back(Variant());
         }
     const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                     [&](const auto & a)
-    {
-        return a.id == s.actor;
-    });
+                                     [&](const auto &a) { return a.id == s.actor; });
     unsigned effect_index = 0;
-    if (active != s.combatants.end() && active->side == 0)
-        for (const auto &c : demo_->combat().legal_commands())
-            if (c.verb == mode_ && matches_item(c))
+    if (active != s.combatants.end() && active->side == rules::Side::party)
+        for (const auto &command : demo_->combat().legal_commands())
+            if (command.verb == mode_ && matches_item(command))
             {
-                auto p = c.destination;
-                if (c.target && c.verb != "effect_push")
+                auto cell = command.destination;
+                if (command.target && command.verb != "effect_push")
                 {
                     const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                                     [&](const auto & a)
+                                                     [&](const auto &a)
                     {
-                        return a.id == c.target;
+                        return a.id == command.target;
                     });
                     if (target == s.combatants.end())
                         continue;
-                    p = target->cell;
+                    cell = target->cell;
                 }
-                draw_rect(Rect2(board_rect_.position + Vector2(p.x * tile + 2, p.y * tile + 2),
-                                Vector2(tile - 4, tile - 4)),
-                          Color(.4, .8, .75,
-                                s.effect_targeting
-                                ? (effect_index++ == effect_target_index_ ? .65 : .17)
-                                : (mode_ == "stabilize" || mode_ == "throw" ||
-                                   (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
-                                c.target == aid_target_
-                                ? .6
-                                : .17));
+                const bool focused_effect = s.effect_targeting &&
+                                            effect_index++ == effect_target_index_;
+                const bool focused_target = !s.effect_targeting &&
+                    (mode_ == "stabilize" || mode_ == "throw" ||
+                     mode_.starts_with("light_") || mode_.starts_with("nick_")) &&
+                    command.target == aid_target_;
+                Dictionary entry;
+                entry["cell"] = Vector2i(cell.x, cell.y);
+                entry["kind"] = focused_effect ? "effect_focus" : focused_target
+                                ? "target_focus" : "target";
+                overlays.push_back(entry);
             }
-    for (const auto &a : s.combatants)
+    for (const auto &actor : s.combatants)
     {
-        const auto center =
-            board_rect_.position + Vector2((a.cell.x + .5) * tile, (a.cell.y + .5) * tile);
-        const auto color = a.side == 0 ? Color("79d6d4") : Color("dd9874");
-        draw_circle(center, tile * .34, a.conscious ? color : Color("51595b"));
-        if (a.id == s.actor && s.outcome == Outcome::ongoing)
-            draw_arc(center, tile * .42, 0, 6.283185, 32, Color("e6c28a"), 2);
-        if (art_.contains(a.id))
-        {
-            const auto texture = art_.at(a.id);
-            const double scale = tile * .9 / std::max(texture->get_width(), texture->get_height());
-            const Vector2 size(texture->get_width() * scale, texture->get_height() * scale);
-            draw_texture_rect(texture, Rect2(center - size * .5, size), false,
-                              a.conscious ? Color(1, 1, 1) : Color(.5, .5, .5));
-        }
+        Dictionary entry;
+        entry["cell"] = Vector2i(actor.cell.x, actor.cell.y);
+        entry["party"] = actor.side == rules::Side::party;
+        entry["conscious"] = actor.conscious;
+        entry["active"] = actor.id == s.actor && s.outcome == Outcome::ongoing;
+        entry["hp"] = actor.hit_points;
+        entry["maximum"] = actor.max_hit_points;
+        if (const auto art = art_.find(actor.id); art != art_.end())
+            entry["texture"] = art->second;
         else
-        {
-            const auto number = std::to_string(a.id);
-            auto cursor = center + Vector2(-5.5 * number.size(), 7);
-            for (const char digit : number)
-            {
-                draw_char(font, cursor, gs(std::string(1, digit)), 20, Color("142027"));
-                cursor.x += 11;
-            }
-        }
-        draw_rect(Rect2(center + Vector2(-tile * .35, tile * .38), Vector2(tile * .7, 4)),
-                  Color("101719"));
-        draw_rect(Rect2(center + Vector2(-tile * .35, tile * .38),
-                        Vector2(tile * .7 * a.hit_points / a.max_hit_points, 4)),
-                  color);
+            entry["number"] = String::num_uint64(actor.id);
+        actors.push_back(entry);
     }
+    data["terrain"] = terrain;
+    data["textures"] = textures;
+    data["overlays"] = overlays;
+    data["actors"] = actors;
+    return data;
 }
 
 void CombatView::_process(double delta)
@@ -1220,7 +1131,7 @@ void CombatView::_process(double delta)
         {
             return a.id == s.actor;
         });
-        if (checking_ && active->side == 1)
+        if (checking_ && active->side == rules::Side::opposition)
         {
             Ref<InputEventKey> key;
             key.instantiate();
@@ -1230,7 +1141,8 @@ void CombatView::_process(double delta)
             if (demo_->combat().snapshot().revision != s.revision)
                 throw std::runtime_error("Keyboard skipped enemy turn");
         }
-        if (checking_ && !checked_input_ && active->side == 0 && !s.reaction_pending)
+        if (checking_ && !checked_input_ && active->side == rules::Side::party &&
+                !s.reaction_pending)
         {
             const auto command = choose_demo_command(demo_->combat());
             if (command.target)
@@ -1247,10 +1159,9 @@ void CombatView::_process(double delta)
                         mouse.instantiate();
                         mouse->set_button_index(MouseButton::MOUSE_BUTTON_LEFT);
                         mouse->set_pressed(true);
-                        mouse->set_position(board_rect_.position +
-                                            Vector2(target->cell.x + .5, target->cell.y + .5) *
-                                            (board_rect_.size.x /
-                                             demo_->combat().snapshot().battlefield.width));
+                        mouse->set_position(Vector2(get_node<Node>("Layout")->call(
+                            "cell_center", Vector2i(target->cell.x, target->cell.y),
+                            s.battlefield.width)));
                         get_viewport()->push_input(mouse, true);
                         if (demo_->combat().snapshot().revision != s.revision + 1)
                             throw std::runtime_error(
@@ -1260,7 +1171,7 @@ void CombatView::_process(double delta)
                         return;
                     }
         }
-        if (checking_ || party_check_ || defeat_check_ || active->side == 1)
+        if (checking_ || party_check_ || defeat_check_ || active->side == rules::Side::opposition)
         {
             ai_delay_ += delta;
             if (!checking_ && !party_check_ && !defeat_check_ && ai_delay_ < .65)
@@ -1270,7 +1181,7 @@ void CombatView::_process(double delta)
             {
                 if (++check_steps_ > 2000)
                     throw std::runtime_error("Defeat check command limit exceeded");
-                if (active->side == 0)
+                if (active->side == rules::Side::party)
                 {
                     const auto offered = demo_->combat().legal_commands();
                     const auto pass =
@@ -1288,8 +1199,8 @@ void CombatView::_process(double delta)
             if (checking_ && ++check_steps_ > 1000)
             {
                 std::string details = "Combat check command limit exceeded";
-                for (const auto &line : s.log)
-                    details += "\n" + line;
+                for (const auto &entry : s.log_entries)
+                    details += "\n" + entry.english;
                 throw std::runtime_error(details);
             }
             act(choose_demo_command(demo_->combat()));

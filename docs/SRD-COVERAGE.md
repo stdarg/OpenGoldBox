@@ -19,8 +19,184 @@ Scope since the [2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplifi
 progression targets level 15 and multiclassing is deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
 Tools, languages, DM-adjudicated spells and Ritual Adept are removed (DM-1);
 Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1);
-natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1). Entries
-below that describe those features are delivery history, not current behavior.
+natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1); spells
+have no components and Subtle Spell is gone (CLASS-11). Entries below that
+describe those features are delivery history, not current behavior.
+
+## Torches, Acid, Alchemist's Fire and Oil
+
+Rules 0.6.135 adds the Torch to the weapon table (a Simple Melee weapon dealing
+1 Fire damage) and Acid, Alchemist's Fire and Oil as carried gear; see
+[GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
+
+Rules 0.6.136 uses them in combat. A character carrying a Torch it does not
+wield can make a "Torch attack" (the SRD lets a weapon be equipped with each
+attack of the Attack action). Acid, Alchemist's Fire and Oil are thrown in place
+of an attack at a creature within 20 feet, which makes a Dexterity save against
+8 + the thrower's Dexterity modifier and Proficiency Bonus; each throw uses one,
+and the campaign removes it from the inventory. Alchemist's Fire sets the target
+Burning (1d4 Fire at the start of each of its turns until it uses its action to
+roll on the ground, which leaves it Prone); Oil makes its next Fire damage within
+ten rounds deal 5 more. In the combat screen these are reached with the A key.
+Combat checkpoints become `OGCOMBAT 42`.
+
+Rules 0.6.138 makes melee reach adjacent squares only, as in the original game
+([MELEE-1](SRD-DECISIONS.md#melee-1-2026-10-08-adjacent-only-melee)): the SRD's
+10-foot reach (polearms, the whip, the Troll) is not used. Rules 0.6.139 lets a
+character draw a carried bow or crossbow to "Shoot" as part of the Attack
+action, and a shield-bearer "Take off shield" (an action) to free both hands
+for one; the shield stays off for the rest of the fight. Combat checkpoints
+become `OGCOMBAT 43`. Rules 0.6.140 shows Burning and Covered in oil as
+conditions and marks regenerating creatures in the combat snapshot. Rules
+0.6.141 saves what each character carries in combat checkpoints, so a carried
+Torch or bow can still be drawn after a saved fight is loaded (`OGCOMBAT 44`).
+Rules 0.6.142 names the weapons of the Troll, Ogre, Hobgoblin, Gnoll Warrior,
+Lizardfolk, Giant Lizard, Norris the Gray and the magic-user for the hover
+panel.
+Rules 0.6.143 offers a Wild Shape form no Torch, bow or thrown item, since a
+form cannot wield its equipment.
+Rules 0.6.144 lets a party member flee a fight by running off the field's edge
+([FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did)),
+with a new "fled" outcome; combat checkpoints become `OGCOMBAT 45`.
+Rules 0.6.145 adds monster morale: broken creatures flee in panic or surrender
+([MORALE-1](SRD-DECISIONS.md#morale-1-2026-10-09-monster-morale-as-the-original-game-had-it));
+combat checkpoints become `OGCOMBAT 46`.
+Rules 0.6.146 stops a mover whose route a reaction made illegal, as a
+Champion's free move already did: a creature the Wolf's bite knocks Prone
+mid-route that cannot crawl the rest stops where it is, keeping its movement.
+Rules 0.6.147 bandages whoever is still dying when a fight is won, as the
+original game did, instead of rolling their remaining death saves (SIMPLIFY-1).
+Rules 0.6.148 announces a fight's outcome once; "Victory." was logged again
+on each later outcome check.
+Rules 0.6.149 lists "Fleeing in panic" among a panicked creature's conditions.
+Rules 0.6.150 has a broken creature that failed to get away fight on, instead
+of running back to the edge between its attacks.
+Rules 0.6.151 lists each creature's spells in the combat snapshot, so Quick
+combat can leave them out
+([QUICK-1](SRD-DECISIONS.md#quick-1-2026-10-09-quick-combat-as-the-original-game-had-it)).
+Rules 0.6.152 keeps a Grease's spell DC in the Grease itself, so the Grease
+lasts its minute after its caster flees the fight; combat checkpoints become
+`OGCOMBAT 47`.
+Rules 0.6.153 has a broken creature fight on from the moment it fails to get
+away; until its next turn it still showed "Fleeing in panic" and could spend
+its Action on a Dash back toward the edge.
+Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
+and shield, as the original engine did, instead of an unarmored AC. A creature
+that surrenders as its turn begins, right after a party member drops, now
+leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.155 has a downed troll get back up as the original game's did
+([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)):
+with all its Hit Points, once 3d6 rounds have passed since it fell, rather
+than regenerating on its next turn. Acid or Fire on it still kills it; someone
+standing on its square now keeps it down rather than killing it, and it gets
+up once the square is clear. Combat checkpoints become `OGCOMBAT 48` (the round
+it may get up). A creature may also stop on any creature at 0 Hit Points, as
+the original's downed left the map; crossing one costs what it did. Dying
+fighters walling in the last one had left a troll and that fighter unable to
+reach each other, and a play-test fight ran over a thousand rounds.
+
+## Slums set-encounter creatures
+
+Rules 0.6.133 adds the Hobgoblin Warrior, Ogre and Troll and a level-3
+magic-user profile, with three creature rows: `reach`, `regeneration` and
+`ranged_extra_damage` (a ranged hit's second damage type). A creature with
+Regeneration regains its Hit Points at the start of each turn; Acid or Fire
+damage stops it for that turn. At 0 HP it makes no death saves and can still be
+targeted; it dies if its turn starts at 0 HP without regenerating. Combat
+checkpoints become `OGCOMBAT 41`. Rules 0.6.134 follows the original game for
+killing trolls: a fight ends once every enemy is down (downed trolls then stay
+dead), a downed troll's square can be stood on, and standing there keeps it
+from regenerating.
+
+## Creature equipment
+
+Rules 0.6.131 adds `equipment` rows to combat.rules: the Slums goblin and orc
+leaders wear metal armor, so Heat Metal can target them. See
+[creature equipment](CREATURE-EQUIPMENT.md).
+
+## No spell components
+
+Rules 0.6.129 removes spell components for all casters: a weapon, wand or
+shield in hand never blocks casting, Silence no longer stops spells, and Subtle
+Spell is no longer offered. See [spell components](SPELL-COMPONENTS.md).
+
+## Wild Shape and Land's Aid
+
+Rules 0.6.127 adds the Druid's Wild Shape (Wolf, Boar, Giant Lizard and Giant
+Snake) and the Circle of the Land's Land's Aid, finishing the Druid through
+level 4. See [Druid](DRUID.md#wild-shape-and-lands-aid).
+
+## Flame Blade, Moonbeam, Spike Growth and Heat Metal
+
+Rules 0.6.126 adds the Druid's Flame Blade, Moonbeam, Spike Growth and Heat
+Metal (also Bard). See
+[Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal).
+
+## Druid spellcasting
+
+Rules 0.6.125 makes the Druid a preparing caster through level 4 with a Primal
+Order, Produce Flame, Shillelagh, Barkskin and the Circle of the Land's Circle
+Spells. See
+[Druid](DRUID.md#spellcasting-primal-order-and-the-circle-of-the-land).
+
+## Bardic Inspiration and Cutting Words
+
+Rules 0.6.124 adds Bardic Inspiration and the Lore Bard's Cutting Words. See
+[Bard](BARD.md#bardic-inspiration-and-cutting-words).
+
+## Bard spellcasting
+
+Rules 0.6.123 makes the Bard a preparing caster through level 4 with Vicious
+Mockery, Starry Wisp, Dissonant Whispers, Faerie Fire, Jack of All Trades and
+the College of Lore. See
+[Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore).
+
+## Fiend Patron
+
+Rules 0.6.122 adds the Warlock's Fiend Patron. See
+[Warlock](WARLOCK.md#the-fiend-patron-level-3).
+
+## Eldritch Invocations
+
+Rules 0.6.121 adds the Warlock's Eldritch Invocations through level 4 and
+makes magical Darkness its own zone. See [Warlock](WARLOCK.md#eldritch-invocations).
+
+## Warlock Pact Magic
+
+Rules 0.6.120 makes the Warlock a preparing caster through level 4 with Pact
+Magic slots, Hex, Hellish Rebuke and Magical Cunning. See
+[Warlock](WARLOCK.md#pact-magic-hex-hellish-rebuke-and-magical-cunning).
+
+## Metamagic
+
+Rules 0.6.119 adds the Sorcerer's ten Metamagic options, readied before a
+spell. See [Sorcerer](SORCERER.md#metamagic-level-2).
+
+## Font of Magic
+
+Rules 0.6.118 adds the Sorcerer's Font of Magic. See
+[Sorcerer](SORCERER.md#font-of-magic-level-2).
+
+## Sorcerer spellcasting
+
+Rules 0.6.117 makes the Sorcerer a preparing caster through level 4 with
+Sorcerous Burst, Innate Sorcery and Draconic Sorcery. See
+[Sorcerer](SORCERER.md#spellcasting-innate-sorcery-and-draconic-sorcery).
+
+## Deflect Attacks and Open Hand Technique
+
+Rules 0.6.116 adds the Monk's Deflect Attacks (a hit Reaction, with an optional
+redirect) and Open Hand Technique; checkpoints become `OGCOMBAT 40`. See
+[Monk](MONK.md#deflect-attacks-and-open-hand-technique-level-3).
+
+## Monk levels 2–4
+
+Rules 0.6.115 lets Monks advance to level 4 with Monk's Focus, Unarmored
+Movement and Uncanny Metabolism. See [Monk](MONK.md#levels-24).
+
+## Monk Martial Arts
+
+Rules 0.6.114 adds the Monk's Martial Arts. See [Monk](MONK.md#martial-arts-level-1).
 
 ## Barbarian levels 2–4
 
@@ -519,8 +695,7 @@ no compatibility reduction, no agents/new tasks/model changes; goal remains paus
 interrupted and grants nothing; there is no resumable activity, partial credit,
 natural sleep, Wake ally, dropped gear, Ground item/Pick up or safe recovery.
 A character resting when an encounter interrupts starts awake and Prone, and a
-won fight rolls its dying characters' remaining death saves at once, logging
-each. [Rest resources](REST-RESOURCES.md#current-behavior-simplify-1-2026-09-30)
+won fight bandages its dying characters, who become Stable. [Rest resources](REST-RESOURCES.md#current-behavior-simplify-1-2026-09-30)
 and [Recovery clocks](RECOVERY-CLOCKS.md) describe it. The history below
 records the #30/#193 delivery.
 
@@ -585,7 +760,7 @@ and no migration code remains.
 
 | [F04a](https://github.com/stdarg/OpenGold/issues/194): mortality recovery clocks | SRD 5.2.1 pp. 17–18. Shared death-save, stabilization, damage and healing transitions; one rolled 1d4-hour Stable delay, combat elapsed countdown and exact next-turn death-save timing. | [life_cycle.cpp](../src/OpenGold.Rules.Srd5/src/life_cycle.cpp) stores value-based recovery state. [recovery_clock_tests.cpp](../tests/recovery_clock_tests.cpp) verifies golden RNG/rolls, deadlines, damage/healing, migration, rejected timers, campaign/combat persistence, training/advancement and pending reactions. No new controls. | Module 0.6.11 / SRD5 / combat 10; campaign 10 and PC7 unchanged. Frozen 0.6.10 saves preserve spent dice/slots, Stable and unstable members, a dead member, a reserve and pending movement. Legacy delays initialize without inventing elapsed time or rolling on load. [Campaign scheduling #195](https://github.com/stdarg/OpenGold/issues/195) completes F04 separately. |
 
-| [F04c](https://github.com/stdarg/OpenGold/issues/195): campaign recovery | SRD 5.2.1 pp. 17–18. One rolled Stable deadline continues through exploration, waits, rests and encounter boundaries. The six-second outside-combat death-save turns were replaced by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation): remaining death saves resolve at once after a won fight or when campaign time passes. | [recovery_timeline.cpp](../src/OpenGold.Rules.Srd5/src/recovery_timeline.cpp) combines mortality and effect deadlines. [campaign_recovery_tests.cpp](../tests/campaign_recovery_tests.cpp) verifies fixed rolls, time partitions, reserves, saves, encounters, rest eligibility and failed-event rollback; the Godot route exercises a zero-HP companion and reserve through original camp/temple/inn callbacks. | Module 0.6.12; existing campaign 10 / combat 10 / SRD5 / PC7 schemas. No load-time rolls, double combat processing, rest benefits from natural recovery or UI changes. Completes #31; Help/Medicine remains #32. |
+| [F04c](https://github.com/stdarg/OpenGold/issues/195): campaign recovery | SRD 5.2.1 pp. 17–18. One rolled Stable deadline continues through exploration, waits, rests and encounter boundaries. The six-second outside-combat death-save turns were replaced by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation): remaining death saves resolve at once when campaign time passes, and a won fight bandages the dying. | [recovery_timeline.cpp](../src/OpenGold.Rules.Srd5/src/recovery_timeline.cpp) combines mortality and effect deadlines. [campaign_recovery_tests.cpp](../tests/campaign_recovery_tests.cpp) verifies fixed rolls, time partitions, reserves, saves, encounters, rest eligibility and failed-event rollback; the Godot route exercises a zero-HP companion and reserve through original camp/temple/inn callbacks. | Module 0.6.12; existing campaign 10 / combat 10 / SRD5 / PC7 schemas. No load-time rolls, double combat processing, rest benefits from natural recovery or UI changes. Completes #31; Help/Medicine remains #32. |
 
 | [F05](https://github.com/stdarg/OpenGold/issues/33): typed damage and defenses | SRD 5.2.1 pp. 16–17, 84, 91, 146. Typed damage; nonstacking resistance/vulnerability/immunity; type-specific rounding; Dwarf Poison resistance. | [damage.cpp](../src/OpenGold.Rules.Srd5/src/damage.cpp) resolves mixed damage and sourced defenses. [damage_tests.cpp](../tests/damage_tests.cpp) runs Poison attacks against Dwarves in all twelve classes, every supported weapon, Fire Bolt/Scorching Ray/Magic Missile, migration and malformed data. Existing Godot Modifiers/log presentation is reused. | Module 0.6.13 / PC8; campaign/combat 10 and SRD1–5 retained. Frozen 0.6.12 writer fixtures preserve resources, RNG, clocks and pending reactions; newly supported fixed resistance is sourced to the saved species. Temporary HP #34, remaining Dwarf traits #66 and full spell conformance remain separate. |
 

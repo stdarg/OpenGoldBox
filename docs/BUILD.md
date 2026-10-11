@@ -81,6 +81,28 @@ than every change:
 .\build.cmd debug
 ```
 
+The project's own targets build at a high warning level: `-Wall -Wextra` with
+Clang and GCC (plus `-Wshorten-64-to-32` on Clang, which reports the narrowing
+MSVC warns about) and `/W4 /permissive-` with MSVC. Fetched code such as
+godot-cpp keeps its own flags. Pass `--werror` to either script, alone or beside
+a preset name, to make every compiler warning fail the build. The native and
+game builds are warning-free with Apple Clang; leaving the flag off on a later
+run turns warnings back into warnings:
+
+```bash
+./build.sh --werror
+./build.sh --werror debug
+```
+
+The game and demo builds are warning-free too. Add
+`-DCMAKE_COMPILE_WARNING_AS_ERROR=ON` to their configure step (or to
+`.\build-opengoldbox.cmd` and `.\demos\build-rolf.cmd`, which pass CMake options
+through), for example:
+
+```bash
+cmake --preset macos-universal -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+```
+
 When running these by hand, check the build output for errors before trusting
 `ctest`: a target that fails to relink leaves its previous binary in place, and
 `ctest` then reports a pass against stale code.

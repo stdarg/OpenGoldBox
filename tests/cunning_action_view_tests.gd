@@ -66,7 +66,7 @@ func run_checks() -> void:
         for size in [Vector2i(1120, 800), Vector2i(1920, 1080)]:
             root.size = size; await settle()
             require(button.position.y > current_scene.get_node("AdrenalineRush").position.y, "Approved row is below combat buttons")
-            require(button.get_rect().end.x < root.size.x - 300 and button.get_rect().end.y <= current_scene.get_node("Log").position.y, "Controls fit before sidebar and log")
+            require(button.get_rect().end.x < root.size.x - 300 and button.get_rect().end.y <= current_scene.get_node("LogStack/Log").global_position.y, "Controls fit before sidebar and log")
             require(choice.focus_mode == Control.FOCUS_ALL and button.focus_mode == Control.FOCUS_ALL, "Both controls support keyboard focus")
             if not captures.is_empty():
                 DirAccess.make_dir_recursive_absolute(captures)
@@ -75,7 +75,7 @@ func run_checks() -> void:
         choice.grab_focus(); await key(KEY_ENTER); await key(KEY_DOWN); await key(KEY_ENTER)
         require(choice.selected == 1, "Keyboard chooses Disengage without executing an action")
         button.grab_focus(); await key(KEY_ENTER)
-        require(button.disabled and current_scene.get_node("Log").get_parsed_text().contains("disengages" if locale == "en" else "se destraba"), "Focused Enter executes Bonus Disengage")
+        require(button.disabled and current_scene.get_node("LogStack/Log").get_parsed_text().contains("disengages" if locale == "en" else "se destraba"), "Focused Enter executes Bonus Disengage")
         await load_fixture("available")
         choice.select(0)
         button.grab_focus(); await key(KEY_SPACE)

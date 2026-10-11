@@ -134,16 +134,16 @@ std::uint64_t rng(const CombatSession &c)
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {2, 1},
 std::vector<std::string> gear = {})
 {
-    auto c = rules.create({{20, 8, std::vector<std::uint8_t>(160)},
+    auto c = rules.create({{20, 8, std::vector<Terrain>(160)},
         {   {
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), gear).data
             },
-            {2, "target", "Target", 1, target}
+            {2, "target", "Target", Side::opposition, target}
         }},
     seed);
     while (c->snapshot().actor != 1)
@@ -170,11 +170,12 @@ void access()
         auto c = battle(*custom(), h);
         act(*c, "chill_touch", 2);
         bool checked = false;
-        for (const auto &message : c->snapshot().log_messages)
+        for (const auto &message : c->snapshot().log_messages())
             for (const auto &arg : message.arguments)
                 if (arg.name == "bonus")
                 {
-                    const auto ability = std::string(klass) == "wizard" ? 3 : 5;
+                    const auto ability = std::string(klass) == "wizard" ? Ability::intelligence
+                                         : Ability::charisma;
                     check(arg.value == std::to_string(2 + (h.sheet().scores[ability] - 10) / 2),
                           "Class Intelligence/Charisma casting bonus");
                     checked = true;
@@ -187,9 +188,9 @@ void access()
         rejects(
             [&]
         {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                    {2, "vanguard", "Enemy", 1, {2, 1}}
+            (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+                {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                    {2, "vanguard", "Enemy", Side::opposition, {2, 1}}
                 }},
             13);
         });
@@ -310,18 +311,18 @@ void skipped_caster()
         for (unsigned seed = 0; seed < 50 && !covered; ++seed)
         {
             auto h = hero();
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
                 {   {
                         1,
                         "campaign-character",
                         "Caster",
-                        0,
+                        Side::party,
                         {1, 1},
                         rules->character_profile(h.sheet(), {}).data,
                         VitalState{1, false, {}}
                     },
-                    {2, "reaper", "Enemy", 1, {2, 1}},
-                    {3, "vanguard", "Companion", 0, {6, 1}}
+                    {2, "reaper", "Enemy", Side::opposition, {2, 1}},
+                    {3, "vanguard", "Companion", Side::party, {6, 1}}
                 }},
             seed);
             while (c->snapshot().actor != 1)
@@ -368,8 +369,8 @@ void campaign_handoff()
         const auto id = npc ? party.recruit("fixture:chill", h) : party.add_pc(h);
         auto actors = party.participants();
         actors[0].cell = {1, 1};
-        actors.push_back({99, "vanguard", "Enemy", 1, {6, 1}});
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+        actors.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 1}});
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         while (c->snapshot().actor != id)
             act(*c, "end");
         act(*c, "chill_touch", id);
@@ -415,25 +416,28 @@ void legality()
                   "Out of range is atomic");
         }
     }
+    // Full hands block nothing (CLASS-11); untrained armor does.
     for (auto gear : std::vector<std::vector<std::string>>
 {
-    {"quarterstaff", "shield"}, {"wand", "shield"}, {"plate"}
+    {"quarterstaff", "shield"}, {"wand", "shield"}
 })
+    check(has(*battle(*rules, hero(), 13, {2, 1}, gear), "chill_touch"),
+          "Full hands do not block casting");
     {
-        auto c = battle(*rules, hero(), 13, {2, 1}, gear);
+        auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
         auto saved = c->save();
         check(!has(*c, "chill_touch") &&
               !c->submit({c->snapshot().revision, 1, 2, "chill_touch"}) && c->save() == saved,
-              "Components and armor prevent casting");
+              "Untrained armor prevents casting");
     }
 }
 
 void lifecycle()
 {
     fx::EffectState state;
-    fx::apply_chill_touch(state, 5, 1, "First", 2000);
-    fx::apply_chill_touch(state, 5, 2, "Second", 9000);
-    fx::apply_ray_of_frost(state, 6, 1, "Cold", 4000);
+    fx::apply_chill_touch(state, {.scope = 5, .actor = 1}, "First", 2000);
+    fx::apply_chill_touch(state, {.scope = 5, .actor = 2}, "Second", 9000);
+    fx::apply_ray_of_frost(state, {.scope = 6, .actor = 1}, "Cold", 4000);
     state.prone = true;
     std::ostringstream out;
     fx::write_effects(out, state);
@@ -480,9 +484,9 @@ void recovery()
     auto h = hero("fighter", 2);
     auto state = blocked_state(*rules, h, 1);
     const auto hp = state.hit_points;
-    std::uint64_t random = 13;
+    RandomState random{13};
     rules->temple_heal(state, h.sheet(), random);
-    check(state.hit_points == hp && random != 13, "Temple cast consumes rolls but cannot heal");
+    check(state.hit_points == hp && random.value != 13, "Temple cast consumes rolls but cannot heal");
     rules->set_hit_points(state, h.sheet(), h.sheet().hit_points);
     check(state.hit_points == hp, "Positive script HP assignment is blocked");
     const auto spent = rules->spend_hit_die(state, h.sheet(), random);
@@ -515,9 +519,12 @@ void recovery()
     auto target = rules->character_profile(h.sheet(), {}).data;
     auto c = rules->create(
     {
-        {8, 8, std::vector<std::uint8_t>(64)},
-        {   {1, "campaign-character", "Fighter", 0, {1, 1}, target, blocked_state(*rules, h, 1)},
-            {2, "target", "Enemy", 1, {2, 1}}
+        {8, 8, std::vector<Terrain>(64)},
+        {   {
+                1, "campaign-character", "Fighter", Side::party, {1, 1}, target,
+                blocked_state(*rules, h, 1)
+            },
+            {2, "target", "Enemy", Side::opposition, {2, 1}}
         }},
     13);
     while (c->snapshot().actor != 1)
@@ -536,12 +543,12 @@ void healing_spells()
             {"cure_wounds", "healing_word"
             })
     {
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {
                     1,
                     "campaign-character",
                     "Cleric",
-                    0,
+                    Side::party,
                     {1, 1},
                     rules->character_profile(cleric, {}).data
                 },
@@ -549,12 +556,12 @@ void healing_spells()
                     2,
                     "campaign-character",
                     "Fighter",
-                    0,
+                    Side::party,
                     {2, 1},
                     rules->character_profile(fighter.sheet(), {}).data,
                     blocked_state(*rules, fighter, 1)
                 },
-                {99, "target", "Enemy", 1, {5, 1}}
+                {99, "target", "Enemy", Side::opposition, {5, 1}}
             }},
         13);
         while (c->snapshot().actor != 1)
@@ -580,23 +587,23 @@ void combat_death_save()
     bool covered = false;
     for (unsigned seed = 0; seed < 100 && !covered; ++seed)
     {
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
             {   {
                     1,
                     "campaign-character",
                     "Fighter",
-                    0,
+                    Side::party,
                     {1, 1},
                     rules->character_profile(h.sheet(), {}).data,
                     vitality
                 },
-                {2, "target", "Enemy", 1, {2, 1}},
-                {3, "vanguard", "Companion", 0, {6, 1}}
+                {2, "target", "Enemy", Side::opposition, {2, 1}},
+                {3, "vanguard", "Companion", Side::party, {6, 1}}
             }},
         seed);
         for (unsigned turns = 0; turns < 3 && !covered; ++turns)
         {
-            for (const auto &message : c->snapshot().log_messages)
+            for (const auto &message : c->snapshot().log_messages())
                 if (message.source == "{name} death save: {roll}")
                 {
                     bool fighter = false, natural20 = false;
@@ -640,20 +647,20 @@ void death_saves_outside_combat()
     const auto id = whole.add_pc(h);
     auto state = whole.checkpoint();
     state.roster[0].vitals = vitality;
-    state.random_state = 17;
+    state.random_state.value = 17;
     state.next_combat_scope = 6;
     whole.restore(state);
     CampaignParty pieces(module());
     pieces.restore(state);
-    whole.advance_time_milliseconds(6000);
-    pieces.advance_time_milliseconds(1);
+    whole.advance_time(std::chrono::milliseconds(6000));
+    pieces.advance_time(std::chrono::milliseconds(1));
     const auto settled = encode_campaign(pieces, nullptr, "chill-death-saves");
     CampaignParty loaded(module());
     loaded.restore(
         decode_campaign(settled, *srd5::character_rules(), *rules, "chill-death-saves", nullptr)
         .party);
-    loaded.advance_time_milliseconds(1999);
-    loaded.advance_time_milliseconds(4000);
+    loaded.advance_time(std::chrono::milliseconds(1999));
+    loaded.advance_time(std::chrono::milliseconds(4000));
     check(encode_campaign(loaded, nullptr, "chill-death-saves") ==
           encode_campaign(whole, nullptr, "chill-death-saves"),
           "Death saves resolved in the first moment continue identically after save/load");
@@ -663,7 +670,7 @@ void death_saves_outside_combat()
     check(settled_vitals.hit_points == 0 &&
           (settled_vitals.dead ||
            settled_vitals.description.find("Stable") != std::string::npos) &&
-          whole.state().random_state != 17 + 0x9e3779b97f4a7c15ULL,
+          whole.state().random_state.value != 17 + 0x9e3779b97f4a7c15ULL,
           "While Chill Touch prevents healing, a natural 20 is a success, not 1 HP");
 }
 
@@ -687,11 +694,11 @@ void persistence()
         check(encode_campaign(copy, nullptr, "chill") == bytes,
               "Campaign grant and effect round trip");
         auto actors = copy.participants();
-        std::uint64_t random = 17;
-        rules->elapse(actors, 8999, random);
+        RandomState random{17};
+        rules->elapse(actors, std::chrono::milliseconds(8999), random);
         check(fx::healing_blocked(effects(*actors[0].state)), "Campaign expiry not early");
-        rules->elapse(actors, 1, random);
-        check(!fx::healing_blocked(effects(*actors[0].state)) && random == 17,
+        rules->elapse(actors, std::chrono::milliseconds(1), random);
+        check(!fx::healing_blocked(effects(*actors[0].state)) && random.value == 17,
               "Exact outside combat expiry, no RNG");
         (void)id;
     }
@@ -727,7 +734,7 @@ void earned_lifecycle()
     check(fx::advance_recovery_clock(life, 1) && life.hp == 1 &&
           life.recovery == fx::RecoveryClock{},
           "Earned recovery grants exactly one HP once allowed");
-    for (const auto invalid : std::vector<fx::LifeState> {{1, 0, 0, true, false, {0, 0, true}},
+    for (const auto &invalid : std::vector<fx::LifeState> {{1, 0, 0, true, false, {0, 0, true}},
     {0, 0, 0, true, true, {0, 0, true}},
     {0, 0, 0, false, false, {0, 0, true}},
     {0, 0, 0, true, false, {0, 1, true}}
@@ -752,10 +759,11 @@ void stable_timeline()
         {
             fx::LifeState life{0, 0, 0, true, false, {0, deadline}}, other{10};
             fx::EffectState effect, other_effect;
-            fx::apply_chill_touch(effect, 1, 99, "First", 1000);
-            fx::apply_chill_touch(effect, 1, 98, "Second", 3000);
-            fx::apply_blindness(effect, 1, 98, "Blind", 30, 1000);
-            fx::apply_blindness(other_effect, 1, 99, "Blind", 30, 1000);
+            fx::apply_chill_touch(effect, {.scope = 1, .actor = 99}, "First", 1000);
+            fx::apply_chill_touch(effect, {.scope = 1, .actor = 98}, "Second", 3000);
+            const fx::RepeatingSave blind_save{.dc = 30, .first_save_ms = 1000};
+            fx::apply_blindness(effect, {.scope = 1, .actor = 98}, "Blind", blind_save);
+            fx::apply_blindness(other_effect, {.scope = 1, .actor = 99}, "Blind", blind_save);
             auto pieces = life, other_pieces = other;
             auto piece_effect = effect, other_piece_effect = other_effect;
             std::vector<fx::RecoverySubject> whole{{{2, other_effect, {}}, other},
@@ -797,13 +805,13 @@ void stable_continuation()
     const auto id = party.add_pc(h);
     auto stage = party.checkpoint();
     stage.roster[0].vitals = stable_blocked();
-    stage.random_state = 17;
+    stage.random_state.value = 17;
     stage.next_combat_scope = 6;
     party.restore(stage);
-    party.advance_time_milliseconds(1000);
+    party.advance_time(std::chrono::milliseconds(1000));
     const auto pending = party.member(id).vitals;
     check(pending.hit_points == 0 && pending.resources.find("14400001") != pending.resources.npos &&
-          party.state().random_state == 17,
+          party.state().random_state.value == 17,
           "Earned recovery stored without additional d4 draw");
     auto bytes = encode_campaign(party, nullptr, "earned-recovery");
     CampaignParty loaded(module());
@@ -818,27 +826,27 @@ void stable_continuation()
     {
         rules->validate_character_state(h.sheet(), no_block);
     });
-    loaded.advance_time_milliseconds(7999);
-    check(loaded.member(id).vitals.hit_points == 0 && loaded.state().random_state == 17,
+    loaded.advance_time(std::chrono::milliseconds(7999));
+    check(loaded.member(id).vitals.hit_points == 0 && loaded.state().random_state.value == 17,
           "Deferred recovery waits without reroll");
-    loaded.advance_time_milliseconds(1);
-    party.advance_time_milliseconds(8000);
-    check(loaded.member(id).vitals.hit_points == 1 && loaded.state().random_state == 17 &&
+    loaded.advance_time(std::chrono::milliseconds(1));
+    party.advance_time(std::chrono::milliseconds(8000));
+    check(loaded.member(id).vitals.hit_points == 1 && loaded.state().random_state.value == 17 &&
           encode_campaign(loaded, nullptr, "earned-recovery") ==
           encode_campaign(party, nullptr, "earned-recovery"),
           "Saved earned recovery resumes at exact expiry");
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+    auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
                 "Patient",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), {}).data,
                 pending
             },
-            {2, "vanguard", "Companion", 0, {3, 1}},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+            {2, "vanguard", "Companion", Side::party, {3, 1}},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     13);
     check(unit(*c).hit_points == 0, "Combat retains due recovery while blocked");
@@ -858,12 +866,12 @@ void stable_actual_cast()
 {
     auto rules = custom("affinity target test immunity necrotic\n");
     auto h = hero();
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
+    auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
                 "Caster",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(h.sheet(), {}).data
             },
@@ -871,12 +879,12 @@ void stable_actual_cast()
                 2,
                 "target",
                 "Patient",
-                0,
+                Side::party,
                 {2, 1},
                 {},
                 VitalState{0, false, "SRD11 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"}
             },
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     13);
     while (c->snapshot().actor != 1)
@@ -916,10 +924,10 @@ void fixtures()
     {
         auto h = hero(klass);
         auto profile = rules->character_profile(h.sheet(), {}).data;
-        auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
-            {   {1, "campaign-character", "Caster", 0, {1, 1}, profile},
-                {2, "vanguard", "Ally", 0, {2, 1}},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+        auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
+            {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile},
+                {2, "vanguard", "Ally", Side::party, {2, 1}},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         2);
         while (c->snapshot().actor != 1)

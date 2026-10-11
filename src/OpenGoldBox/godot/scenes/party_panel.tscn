@@ -1,4 +1,7 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/themed_rich_text.gd" id="98_rich_text"]
+[ext_resource type="Script" path="res://scenes/party_roster.gd" id="97_party_roster"]
 
 [node name="PartyPanel" type="Control"]
 layout_mode = 3
@@ -8,85 +11,247 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Panel" parent="."]
+theme_type_variation = &"DialogSurface"
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.07, 0.1, 0.125, 1)
 
 [node name="Title" type="Label" parent="."]
+anchor_right = 1.0
+offset_left = 24
+offset_top = 22
+offset_right = -24
+offset_bottom = 62
+metadata/layout_reference = Rect2(24, 22, 1872, 40)
+theme_type_variation = &"LabelText28"
 text = "OPENGOLDBOX / Party roster"
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 28
 
 [node name="Roster" type="ItemList" parent="."]
+script = ExtResource("97_party_roster")
+anchor_bottom = 1.0
+offset_left = 24
+offset_top = 90
+offset_right = 324
+offset_bottom = -260
+metadata/layout_reference = Rect2(24, 90, 300, 730)
 
 [node name="Sheet" type="RichTextLabel" parent="."]
-theme_override_constants/table_h_separation = 16
-theme_override_font_sizes/normal_font_size = 18
+bbcode_enabled = true
+script = ExtResource("98_rich_text")
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 350
+offset_top = 90
+offset_right = -300
+offset_bottom = -290
+metadata/layout_reference = Rect2(350, 90, 1270, 700)
+theme_type_variation = &"RichTextLabelTableGap16Text18"
 
 [node name="Inventory" type="ItemList" parent="."]
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 350
+offset_top = -280
+offset_right = -24
+offset_bottom = -184
+metadata/layout_reference = Rect2(350, 800, 1546, 96)
 
 [node name="Portrait" type="TextureRect" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -284
+offset_top = 90
+offset_right = -20
+offset_bottom = 354
+metadata/layout_reference = Rect2(1636, 90, 264, 264)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="Status" type="Label" parent="."]
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24
+offset_top = -39
+offset_right = -24
+offset_bottom = -7
+metadata/layout_reference = Rect2(24, 1041, 1872, 32)
 autowrap_mode = 2
 
-[node name="Create" type="Button" parent="."]
+[node name="ActionRow1" type="HBoxContainer" parent="."]
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -125.0
+offset_right = -24.0
+offset_bottom = -89.0
+theme_type_variation = &"PartyActionRow"
+
+[node name="Create" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 373.2
 text = "Create character"
 
-[node name="Remove" type="Button" parent="."]
+[node name="Remove" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 376.2
 text = "Remove member"
 
-[node name="Rejoin" type="Button" parent="."]
+[node name="Rejoin" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 337.2
 text = "Rejoin party"
 
-[node name="Recruit" type="Button" parent="."]
+[node name="Recruit" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 414.2
 text = "Recruit preview guard"
 
-[node name="Equip" type="Button" parent="."]
+[node name="Equip" type="Button" parent="ActionRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 355.2
 text = "Equip selected"
 
-[node name="Unequip" type="Button" parent="."]
+[node name="ActionRow2" type="HBoxContainer" parent="."]
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -81.0
+offset_right = -24.0
+offset_bottom = -45.0
+theme_type_variation = &"PartyActionRow"
+
+[node name="Unequip" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 332.833333
 text = "Unequip selected"
 
-[node name="Explore" type="Button" parent="."]
+[node name="Explore" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 343.833333
 text = "Explore New Phlan"
 
-[node name="Combat" type="Button" parent="."]
+[node name="Combat" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 301.833333
 text = "Party combat"
 
-[node name="Close" type="Button" parent="."]
+[node name="Close" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 315.833333
 text = "Back to creator"
 
-[node name="Modifiers" type="Button" parent="."]
+[node name="Modifiers" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 261.833333
+theme_type_variation = &"ButtonText14"
 text = "Modifiers"
-theme_override_font_sizes/font_size = 14
 
-[node name="SavingThrows" type="Button" parent="."]
+[node name="SavingThrows" type="Button" parent="ActionRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 295.833333
+theme_type_variation = &"ButtonText14"
 text = "Saving Throws"
-theme_override_font_sizes/font_size = 14
 
 [node name="ReadyLabel" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -284
+offset_top = 488
+offset_right = -164
+offset_bottom = 512
+metadata/layout_reference = Rect2(1636, 488, 120, 24)
 text = "Ready"
 horizontal_alignment = 1
 
 [node name="ActionLabel" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140
+offset_top = 488
+offset_right = -20
+offset_bottom = 512
+metadata/layout_reference = Rect2(1780, 488, 120, 24)
 text = "Action"
 horizontal_alignment = 1
 
 [node name="ReadySprite" type="TextureRect" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -284
+offset_top = 364
+offset_right = -164
+offset_bottom = 484
+metadata/layout_reference = Rect2(1636, 364, 120, 120)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="ActionSprite" type="TextureRect" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140
+offset_top = 364
+offset_right = -20
+offset_bottom = 484
+metadata/layout_reference = Rect2(1780, 364, 120, 120)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="Pool" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220
+offset_top = 24
+offset_right = -24
+offset_bottom = 60
+metadata/layout_reference = Rect2(1700, 24, 196, 36)
 text = "Character Pool"
+
+[node name="Save" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -520
+offset_top = 24
+offset_right = -380
+offset_bottom = 60
+metadata/layout_reference = Rect2(1400, 24, 140, 36)
+text = "Save game"
+
+[node name="Load" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -370
+offset_top = 24
+offset_right = -230
+offset_bottom = 60
+metadata/layout_reference = Rect2(1550, 24, 140, 36)
+text = "Load game"
+
+[node name="MakeLeader" type="Button" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24
+offset_top = -252
+offset_right = 324
+offset_bottom = -216
+metadata/layout_reference = Rect2(24, 828, 300, 36)
+text = "Make leader"

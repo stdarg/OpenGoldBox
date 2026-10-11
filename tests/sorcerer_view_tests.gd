@@ -71,11 +71,11 @@ func run_checks() -> void:
                 event.button_index = MOUSE_BUTTON_LEFT; event.pressed = down; event.position = point
                 root.push_input(event, true)
             await settle()
-            require(cast.disabled and current_scene.selected_character_id() == 1 and current_scene.get_node("Log").get_parsed_text().contains("+ 6"), "Selected spell casts at legal target using Charisma and retains selection")
+            require(cast.disabled and current_scene.selected_character_id() == 1 and current_scene.get_node("LogStack/Log").get_parsed_text().contains("+ 6"), "Selected spell casts at legal target using Charisma and retains selection")
             cast.release_focus()
             require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No player combat saving")
         await load_fixture("blocked")
-        require(current_scene.get_node("CastCantrip").disabled, "Occupied hands block casting")
+        require(current_scene.get_node("CastCantrip").disabled, "Untrained armor blocks casting")
         await load_fixture("unknown")
         require(not current_scene.get_node("CastCantrip").visible, "Missing choices do not invent spells")
     restore_files()

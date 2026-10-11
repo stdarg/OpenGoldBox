@@ -1,3 +1,4 @@
+#include "opengold/authored_items.h"
 #include "opengold/character_pool.h"
 #include <algorithm>
 #include <map>
@@ -28,7 +29,7 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
                 int error = 0;
                 for (unsigned k = 0; k < 3; ++k)
                 {
-                    const int delta = int(rgb[k]) - image.rgba[p + k];
+                    const int delta = static_cast<int>(rgb[k]) - image.rgba[p + k];
                     error += delta * delta;
                 }
                 if (error < distance)
@@ -55,7 +56,7 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                                       const por::CharacterArt &art)
 {
     using namespace rules;
-    if (art.bodies.empty() || art.heads.empty())
+    if (art.bodies().empty() || art.heads().empty())
         throw std::runtime_error("Load character art before opening the pool");
     const auto classes = rules.choices(CreationField::character_class);
     const auto alignments = rules.choices(CreationField::alignment);
@@ -80,7 +81,7 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
         "Hazelridge",   "Kingswell",   "Larkspur",   "Moonwhisper", "Reedwalker",  "Stormglen"};
     const std::array<const char *, 5> races{"gnome", "orc", "goliath", "tiefling", "dragonborn"};
     std::vector<unsigned> bodies;
-    for (const auto &[id, body] : art.bodies)
+    for (const auto &[id, body] : art.bodies())
         bodies.push_back(id);
     std::vector<Character> result;
     for (unsigned c = 0; c < classes.size(); ++c)
@@ -98,16 +99,16 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             const auto primary = priority[0], secondary = priority[1];
             for (unsigned rank = 0; rank < 6; ++rank)
             {
-                const int score = 18 - int(rank) - (variant == 3 && rank == 0 ? 1 : 0);
+                const int score = 18 - static_cast<int>(rank) - (variant == 3 && rank == 0 ? 1 : 0);
                 // Authored, valid 4d6-drop-lowest provenance for each strong score.
-                d.rolls[priority[rank]] =
+                d.rolls[d.assignment[priority[rank]]] =
                 {
                     {6, score >= 17 ? 6 : 5, score - 6 - (score >= 17 ? 6 : 5), 1}, 3
                 };
             }
-            d.background = primary == 0   ? "soldier"
-                           : primary == 1 ? "criminal"
-                           : primary == 3 ? "sage"
+            d.background = primary == Ability::strength       ? "soldier"
+                           : primary == Ability::dexterity    ? "criminal"
+                           : primary == Ability::intelligence ? "sage"
                            : "acolyte";
             const auto bonuses = rules.adjustments(d.background);
             for (unsigned a = 0; a < bonuses.size(); ++a)
@@ -167,9 +168,9 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             }
             por::CharacterAppearance appearance;
             appearance.portrait_head =
-                por::matching_portrait_head(d.race, d.gender).value_or(art.heads.begin()->first);
-            if (!art.heads.contains(appearance.portrait_head))
-                appearance.portrait_head = art.heads.begin()->first;
+                por::matching_portrait_head(d.race, d.gender).value_or(art.heads().begin()->first);
+            if (!art.heads().contains(appearance.portrait_head))
+                appearance.portrait_head = art.heads().begin()->first;
             appearance.portrait_body = bodies[(c * 3 + variant) % bodies.size()];
             appearance.combat_head = (c + variant * 3) % 14;
             appearance.combat_body = (c * 2 + variant * 5) % 32;
@@ -254,5 +255,27 @@ void outfit_pool_member(CampaignParty &party, MemberId member)
     add(kit.shield ? item_type::shield : item_type::none, 1, true);
     add(kit.ranged, 1, false);
     add(kit.ammunition, 20, false);
+    // Every kit carries a torch, as the SRD's starting packs do.
+    add(authored_item::torch, 1, false);
+}
+
+MemberId add_pool_member(CampaignParty &party, const Character &character, unsigned pool_index)
+{
+    const auto before = party.checkpoint();
+    try
+    {
+        const auto id = party.add_pc(character);
+        party.set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
+        outfit_pool_member(party, id);
+        auto state = party.checkpoint();
+        state.roster.back().creation_source = "pool:v1:" + std::to_string(pool_index);
+        party.restore(std::move(state));
+        return id;
+    }
+    catch (...)
+    {
+        party.restore(before);
+        throw;
+    }
 }
 } // namespace opengold

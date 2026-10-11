@@ -32,7 +32,7 @@ inline DamageDice sneak_attack_dice(unsigned rogue_level)
 {
     if (rogue_level < 1 || rogue_level > 20)
         throw std::runtime_error("Invalid Rogue level");
-    return {int((rogue_level + 1) / 2), 6, 0};
+    return {static_cast<int>((rogue_level + 1) / 2), 6, 0};
 }
 } // namespace opengold::srd5::detail
 #endif

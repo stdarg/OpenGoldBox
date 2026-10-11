@@ -11,6 +11,7 @@
 #include "opengold/encounter_budget.h"
 #include "opengold/map_catalog.h"
 #include "opengold/srd5.h"
+#include "opengold/ecl_party_host.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -31,11 +32,26 @@ std::unique_ptr<rules::RulesModule> module()
     return srd5::load(content_pack);
 }
 
+// Abilities from best roll to worst.
+using AbilityPriority = std::array<rules::Ability, 6>;
+
+constexpr AbilityPriority fighter_priority{
+    rules::Ability::strength, rules::Ability::constitution, rules::Ability::dexterity,
+    rules::Ability::wisdom, rules::Ability::charisma, rules::Ability::intelligence};
+constexpr AbilityPriority cleric_priority{
+    rules::Ability::wisdom, rules::Ability::constitution, rules::Ability::strength,
+    rules::Ability::dexterity, rules::Ability::charisma, rules::Ability::intelligence};
+constexpr AbilityPriority rogue_priority{
+    rules::Ability::dexterity, rules::Ability::constitution, rules::Ability::wisdom,
+    rules::Ability::strength, rules::Ability::charisma, rules::Ability::intelligence};
+constexpr AbilityPriority wizard_priority{
+    rules::Ability::intelligence, rules::Ability::dexterity, rules::Ability::constitution,
+    rules::Ability::wisdom, rules::Ability::charisma, rules::Ability::strength};
+
 struct Member
 {
     const char *name, *character_class;
-    // Ability indices (Str, Dex, Con, Int, Wis, Cha) from best roll to worst.
-    std::array<unsigned, 6> priority;
+    AbilityPriority priority;
     std::vector<const char *> gear;
     std::vector<const char *> cantrips{};
     std::vector<const char *> prepared{};
@@ -45,21 +61,21 @@ struct Member
 const std::vector<Member> &composition(bool mixed)
 {
     static const std::vector<Member> fighters{
-        {"Arden", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Bryn", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Cora", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Darin", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Elin", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Fenn", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}}};
+        {"Arden", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Bryn", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Cora", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Darin", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Elin", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Fenn", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}}};
     static const std::vector<Member> party{
-        {"Arden", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Bryn", "fighter", {0, 2, 1, 4, 5, 3}, {"longsword", "chain_mail", "shield"}},
-        {"Cora", "cleric", {4, 2, 0, 1, 5, 3}, {"mace", "scale_mail", "shield"},
+        {"Arden", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Bryn", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
+        {"Cora", "cleric", cleric_priority, {"mace", "scale_mail", "shield"},
             {"sacred_flame"}, {"cure_wounds", "healing_word", "inflict_wounds"}},
-        {"Darin", "cleric", {4, 2, 0, 1, 5, 3}, {"mace", "scale_mail", "shield"},
+        {"Darin", "cleric", cleric_priority, {"mace", "scale_mail", "shield"},
             {"sacred_flame"}, {"cure_wounds", "healing_word", "inflict_wounds"}},
-        {"Elin", "rogue", {1, 2, 4, 0, 5, 3}, {"shortsword", "leather"}},
-        {"Fenn", "wizard", {3, 1, 2, 4, 5, 0}, {"quarterstaff"}}};
+        {"Elin", "rogue", rogue_priority, {"shortsword", "leather"}},
+        {"Fenn", "wizard", wizard_priority, {"quarterstaff"}}};
     return mixed ? party : fighters;
 }
 
@@ -82,7 +98,7 @@ Character create(const Member &member, std::uint64_t seed)
     for (const auto *spell : member.cantrips)
         creator.cantrip_choice(spell, true);
     for (const auto *spell : member.prepared)
-        creator.spell_choice("prepared", spell, true);
+        creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
     return Character(creator.rules(), creator.draft(), creator.appearance());
 }
 
@@ -96,7 +112,7 @@ std::shared_ptr<CampaignParty> party_of(bool mixed, unsigned level)
         auto person = create(member, seed++);
         std::vector<std::uint64_t> items;
         for (const auto *key : member.gear)
-            items.push_back(person.inventory().add(key, key));
+            items.push_back(person.add_item({.definition_id = key, .name = key}));
         const auto id = party->add_pc(std::move(person));
         for (const auto item : items)
             party->equip(id, item);
@@ -195,7 +211,8 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         for (const auto &group : groups)
             for (unsigned n = 0; n < group.count; ++n, ++next)
                 fight.enemies.push_back(
-                {next, group.definition, group.definition + " " + std::to_string(next), 1, {}});
+                {next, group.definition, group.definition + " " + std::to_string(next),
+                 rules::Side::opposition, {}});
         CombatDemo combat(module());
         combat.campaign_party(party);
         combat.encounter(fight, seed);
@@ -208,14 +225,14 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         tally.wins += result.outcome == rules::Outcome::victory;
         int hp = 0, max_hp = 0;
         for (const auto &unit : result.combatants)
-            if (unit.side == 0)
+            if (unit.side == rules::Side::party)
             {
                 tally.deaths += unit.dead;
                 tally.down += !unit.dead && unit.hit_points == 0;
                 hp += unit.hit_points;
                 max_hp += unit.max_hit_points;
             }
-        tally.hp_left += double(hp) / max_hp;
+        tally.hp_left += static_cast<double>(hp) / max_hp;
     }
     return tally;
 }
@@ -230,7 +247,7 @@ int main(int argc, char **argv)
             std::cerr << "Usage: opengold_encounter_balance GAME_DIR [SEEDS [CONTENT_PACK]]\n";
             return 2;
         }
-        const unsigned seeds = argc > 2 ? unsigned(std::stoul(argv[2])) : 40;
+        const unsigned seeds = argc > 2 ? static_cast<unsigned>(std::stoul(argv[2])) : 40;
         if (argc > 3)
             content_pack = argv[3];
         const auto maps = MapCatalog::load(argv[1]);
@@ -245,7 +262,7 @@ int main(int argc, char **argv)
                 const unsigned members = 6;
                 const auto party = party_of(mixed, level);
                 const auto start = party->checkpoint();
-                const unsigned strength = party->strength();
+                const unsigned strength = por::party_strength(*party);
                 for (const bool rope_guild : {false, true})
                     for (const unsigned record : {0u, 2u, 4u})
                         for (const unsigned challenge : {25u, 33u, 50u, 67u, 100u})
@@ -263,8 +280,10 @@ int main(int argc, char **argv)
                                         level, mixed ? "mixed" : "fighters",
                                         rope_guild ? "guild" : "street",
                                         definition(record) + 6, challenge, strength, mix.c_str(),
-                                        100.0 * t.wins / t.fights, double(t.deaths) / t.fights,
-                                        double(t.down) / t.fights, 100.0 * t.hp_left / t.fights);
+                                        100.0 * t.wins / t.fights,
+                                        static_cast<double>(t.deaths) / t.fights,
+                                        static_cast<double>(t.down) / t.fights,
+                                        100.0 * t.hp_left / t.fights);
                             std::fflush(stdout);
                         }
             }

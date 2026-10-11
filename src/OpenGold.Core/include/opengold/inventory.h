@@ -9,7 +9,7 @@
 
 namespace opengold
 {
-struct SaveCodec;
+template <bool Reading> struct SaveCodec;
 }
 
 namespace opengold
@@ -22,6 +22,16 @@ struct InventoryItem
     std::uint32_t quantity{};
     int original_type{-1};
     bool operator==(const InventoryItem &) const = default;
+};
+
+// An item to add. The stable content key and the display name are both
+// strings, so they are named fields rather than adjacent parameters that a
+// call could swap (Effective C++ Item 18).
+struct NewItem
+{
+    std::string definition_id, name;
+    std::uint32_t quantity{1};
+    int original_type{-1};
 };
 
 class Inventory
@@ -41,12 +51,11 @@ class Inventory
     find(std::uint64_t id) const;
     // Each addition creates a separate stack with an inventory-local ID.
     // References from items()/find() must be reacquired after mutation.
-    std::uint64_t add(std::string definition_id, std::string name, std::uint32_t quantity = 1,
-                      int original_type = -1);
+    std::uint64_t add(NewItem item);
     void remove(std::uint64_t id, std::uint32_t quantity = 1);
 
   private:
-    friend struct opengold::SaveCodec;
+    template <bool Reading> friend struct opengold::SaveCodec;
     std::vector<InventoryItem> items_;
     std::uint64_t next_id_{1};
 };

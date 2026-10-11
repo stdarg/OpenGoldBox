@@ -17,17 +17,17 @@ std::optional<std::reference_wrapper<const InventoryItem>> Inventory::find(std::
     return std::cref(*it);
 }
 
-std::uint64_t Inventory::add(std::string definition_id, std::string name, std::uint32_t quantity,
-                             int original_type)
+std::uint64_t Inventory::add(NewItem item)
 {
-    if (!quantity || definition_id.find_first_not_of(" \t\r\n") == std::string::npos ||
-            name.find_first_not_of(" \t\r\n") == std::string::npos)
+    if (!item.quantity || item.definition_id.find_first_not_of(" \t\r\n") == std::string::npos ||
+            item.name.find_first_not_of(" \t\r\n") == std::string::npos)
         throw std::runtime_error(
             "An inventory item needs a definition, name and positive quantity");
     if (next_id_ == std::numeric_limits<std::uint64_t>::max())
         throw std::runtime_error("Inventory item IDs exhausted");
     items_.push_back(
-    {next_id_, std::move(definition_id), std::move(name), quantity, original_type});
+    {next_id_, std::move(item.definition_id), std::move(item.name), item.quantity,
+     item.original_type});
     return next_id_++;
 }
 

@@ -6,19 +6,21 @@ using namespace mastery_combat_checks;
 fx::EffectState slow(bool frost = false)
 {
     fx::EffectState e;
-    fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 99, "Master", 6000);
+    fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 99}, "Master", 6000);
     if (frost)
-        fx::apply_ray_of_frost(e, 777, 98, "Caster", 4000);
+        fx::apply_ray_of_frost(e, {.scope = 777, .actor = 98}, "Caster", 4000);
     return e;
 }
 
 void lifecycle()
 {
     auto e = slow(true);
-    fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 98, "Other master", 5000);
-    fx::apply_ray_of_frost(e, 777, 99, "Other caster", 3000);
+    fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 98}, "Other master",
+                             5000);
+    fx::apply_ray_of_frost(e, {.scope = 777, .actor = 99}, "Other caster", 3000);
     const auto next = e.next_id;
-    fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 99, "Master refreshed", 6000);
+    fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 99},
+                             "Master refreshed", 6000);
     check(e.next_id == next && e.active.size() == 4 && fx::speed_penalty(e) == 20,
           "Slow refreshes its source; repeated Slow/Frost do not stack, distinct effects combine");
     std::ostringstream out;
@@ -52,12 +54,15 @@ void lifecycle()
           "Chunked Slow expiry is exact and consumes no RNG");
     auto full = slow();
     while (full.active.size() < fx::effect_limit)
-        fx::apply_attack_mastery(full, fx::EffectKind::slow, 777, full.active.size() + 100,
-                                 "Source", 6000);
-    check(!fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 999) &&
-          fx::can_apply_attack_mastery(full, fx::EffectKind::slow, 777, 99),
+        fx::apply_attack_mastery(
+            full, fx::EffectKind::slow,
+            {.scope = 777, .actor = static_cast<rules::EntityId>(full.active.size() + 100)},
+            "Source", 6000);
+    check(!fx::can_apply_attack_mastery(full, fx::EffectKind::slow, {.scope = 777, .actor = 999}) &&
+          fx::can_apply_attack_mastery(full, fx::EffectKind::slow, {.scope = 777, .actor = 99}),
           "Full store permits same-source Slow refresh only");
-    fx::apply_attack_mastery(full, fx::EffectKind::slow, 777, 99, "Master", 3000);
+    fx::apply_attack_mastery(full, fx::EffectKind::slow, {.scope = 777, .actor = 99}, "Master",
+                             3000);
     check(full.active.size() == fx::effect_limit, "Refresh does not consume storage");
     for (unsigned duration :
             {
@@ -68,7 +73,8 @@ void lifecycle()
         rejects(
             [&]
         {
-            fx::apply_attack_mastery(e, fx::EffectKind::slow, 777, 99, "Master", duration);
+            fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 99}, "Master",
+                                     duration);
         });
         check(e == before, "Malformed Slow duration rejects atomically");
     }
@@ -93,14 +99,14 @@ void consumers()
         p.advance(1, p.default_advancement(1));
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "mastery_target", "Target", 1, {5, 1}});
+    actors.push_back({99, "mastery_target", "Target", Side::opposition, {5, 1}});
     const auto make = [&](fx::EffectState e)
     {
         auto roster = actors;
         auto base =
-        p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
+        p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, 1);
         inject(roster[0], unit(*base, 1).persistent, e);
-        auto c = p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, roster, 777}, 1);
+        auto c = p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, 1);
         turn(*c, 1);
         return c;
     };
@@ -162,9 +168,9 @@ void consumers()
     copy.restore(decoded.party);
     check(encode_campaign(copy, nullptr, "slow-consumers") == encoded,
           "Campaign Slow continuation retains exact resources and clocks");
-    p.advance_time_milliseconds(6000);
+    p.advance_time(std::chrono::milliseconds(6000));
     for (unsigned n = 0; n < 6; ++n)
-        copy.advance_time_milliseconds(1000);
+        copy.advance_time(std::chrono::milliseconds(1000));
     check(encode_campaign(copy, nullptr, "slow-consumers") ==
           encode_campaign(p, nullptr, "slow-consumers"),
           "Campaign chunking preserves Slow/Frost expiry and random state");

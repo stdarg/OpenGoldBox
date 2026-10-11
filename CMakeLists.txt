@@ -33,6 +33,29 @@ option(OPENGOLD_BUILD_GODOT "Build the C++ Godot tour and combat scenes" OFF)
 option(OPENGOLD_BUILD_GAME "Build the OpenGoldBox Windows game" OFF)
 option(OPENGOLD_BUILD_FUZZERS "Build isolated Clang libFuzzer targets with ASan/UBSan" OFF)
 
+# Effective C++ Item 53: the project's own targets build at a high warning
+# level, while fetched code such as godot-cpp keeps its own flags. Designated
+# initializers that leave fields at their defaults are idiomatic here, so that
+# one warning stays off.
+if(MSVC)
+    set(OPENGOLD_WARNING_FLAGS /W4 /permissive-)
+else()
+    set(OPENGOLD_WARNING_FLAGS -Wall -Wextra -Wno-missing-field-initializers)
+    # Clang can also report the 64-to-32-bit narrowing MSVC's /W4 warns about.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        list(APPEND OPENGOLD_WARNING_FLAGS -Wshorten-64-to-32)
+    endif()
+endif()
+function(opengold_enable_warnings directory)
+    get_property(targets DIRECTORY "${directory}" PROPERTY BUILDSYSTEM_TARGETS)
+    foreach(target IN LISTS targets)
+        get_target_property(type ${target} TYPE)
+        if(type MATCHES "^(EXECUTABLE|STATIC_LIBRARY|SHARED_LIBRARY|MODULE_LIBRARY|OBJECT_LIBRARY)$")
+            target_compile_options(${target} PRIVATE ${OPENGOLD_WARNING_FLAGS})
+        endif()
+    endforeach()
+endfunction()
+
 if(OPENGOLD_BUILD_FUZZERS)
     if(OPENGOLD_BUILD_GAME OR OPENGOLD_BUILD_GODOT)
         message(FATAL_ERROR "Use a separate native-only build directory for fuzzing")
@@ -61,6 +84,7 @@ target_include_directories(opengold_rules PUBLIC src/OpenGold.Rules/include)
 add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/srd5.cpp
     src/OpenGold.Rules.Srd5/src/character_rules.cpp
+    src/OpenGold.Rules.Srd5/src/character_class.cpp
     src/OpenGold.Rules.Srd5/src/weapon_mastery.cpp
     src/OpenGold.Rules.Srd5/src/feature_grants.cpp
     src/OpenGold.Rules.Srd5/src/training.cpp
@@ -89,7 +113,6 @@ target_include_directories(opengold_formats
 )
 
 add_library(opengold_core STATIC
-    src/OpenGold.Core/src/core.cpp
     src/OpenGold.Core/src/character_art.cpp
     src/OpenGold.Core/src/combat_sprite_layers.cpp
     src/OpenGold.Core/src/combat_body_catalog.cpp
@@ -97,6 +120,8 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/character_pool.cpp
     src/OpenGold.Core/src/character.cpp
     src/OpenGold.Core/src/campaign_party.cpp
+    src/OpenGold.Core/src/ecl_party_host.cpp
+    src/OpenGold.Core/src/npc_portraits.cpp
     src/OpenGold.Core/src/coin_purse.cpp
     src/OpenGold.Core/src/campaign_rest.cpp
     src/OpenGold.Core/src/campaign_save.cpp
@@ -113,6 +138,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/encounter_budget.cpp
     src/OpenGold.Core/src/combat_demo.cpp
     src/OpenGold.Core/src/dungeon_battlefield.cpp
+    src/OpenGold.Core/src/encounter_formation.cpp
     src/OpenGold.Core/src/exploration_view.cpp
     src/OpenGold.Core/src/speaker_audio.cpp
     src/OpenGold.Core/src/sound_bank.cpp
@@ -159,6 +185,14 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_status_effect_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_status_effect_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_status_effect_tests COMMAND opengold_status_effect_tests)
+    # It also writes the Weapon Mastery, Nick, Graze and optional mastery screen fixtures.
+    set(mastery_fixture_environment
+        "OPENGOLD_MASTERY_FIXTURES=${PROJECT_BINARY_DIR}/mastery-fixtures"
+        "OPENGOLD_NICK_FIXTURES=${PROJECT_BINARY_DIR}/nick-fixtures"
+        "OPENGOLD_GRAZE_FIXTURES=${PROJECT_BINARY_DIR}/graze-fixtures"
+        "OPENGOLD_OPTIONAL_MASTERY_FIXTURES=${PROJECT_BINARY_DIR}/optional-mastery-fixtures")
+    set_tests_properties(opengold_status_effect_tests PROPERTIES FIXTURES_SETUP mastery_fixtures
+        ENVIRONMENT "${mastery_fixture_environment}")
     add_executable(opengold_combat_grid_tests tests/combat_grid_tests.cpp)
     target_include_directories(opengold_combat_grid_tests PRIVATE src/OpenGold.Rules.Srd5/src)
     target_link_libraries(opengold_combat_grid_tests PRIVATE opengold_rules_srd5)
@@ -171,10 +205,15 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_advancement_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_advancement_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_advancement_tests COMMAND opengold_advancement_tests)
+    # With original files it also writes the ASI and Skilled screen fixtures.
+    set_tests_properties(opengold_advancement_tests PROPERTIES FIXTURES_SETUP asi_fixtures)
     add_executable(opengold_feature_grant_tests tests/feature_grant_tests.cpp)
     target_link_libraries(opengold_feature_grant_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_feature_grant_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_feature_grant_tests COMMAND opengold_feature_grant_tests)
+    # With original files it also writes the pending mastery rest screen fixture.
+    set_tests_properties(opengold_feature_grant_tests PROPERTIES FIXTURES_SETUP mastery_rest_fixture
+        ENVIRONMENT "OPENGOLD_MASTERY_REST_FIXTURE=${PROJECT_BINARY_DIR}/mastery-rest-pending.ogs")
     add_executable(opengold_action_surge_tests tests/action_surge_tests.cpp)
     target_include_directories(opengold_action_surge_tests PRIVATE src/OpenGold.Rules.Srd5/src)
     target_link_libraries(opengold_action_surge_tests PRIVATE opengold_core opengold_rules_srd5)
@@ -208,6 +247,43 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_lay_on_hands_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_lay_on_hands_tests COMMAND opengold_lay_on_hands_tests)
     set_tests_properties(opengold_lay_on_hands_tests PROPERTIES FIXTURES_SETUP lay_fixtures)
+    add_executable(opengold_bard_tests tests/bard_tests.cpp)
+    target_link_libraries(opengold_bard_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_bard_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_bard_tests COMMAND opengold_bard_tests)
+    add_executable(opengold_playtest_fixtures tests/playtest_fixtures.cpp)
+    target_link_libraries(opengold_playtest_fixtures PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_playtest_fixtures PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
+    add_test(NAME opengold_playtest_fixtures COMMAND opengold_playtest_fixtures)
+    set_tests_properties(opengold_playtest_fixtures PROPERTIES FIXTURES_SETUP playtest_fixtures)
+    add_executable(opengold_fire_and_acid_tests tests/fire_and_acid_tests.cpp)
+    target_link_libraries(opengold_fire_and_acid_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_fire_and_acid_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_fire_and_acid_tests COMMAND opengold_fire_and_acid_tests)
+    add_executable(opengold_slums_creatures_tests tests/slums_creatures_tests.cpp)
+    target_link_libraries(opengold_slums_creatures_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_slums_creatures_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_slums_creatures_tests COMMAND opengold_slums_creatures_tests)
+    add_executable(opengold_kutos_well_tests tests/kutos_well_tests.cpp)
+    target_link_libraries(opengold_kutos_well_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_kutos_well_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_kutos_well_tests COMMAND opengold_kutos_well_tests)
+    add_executable(opengold_druid_tests tests/druid_tests.cpp)
+    target_link_libraries(opengold_druid_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_druid_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_druid_tests COMMAND opengold_druid_tests)
+    add_executable(opengold_warlock_tests tests/warlock_tests.cpp)
+    target_link_libraries(opengold_warlock_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_warlock_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_warlock_tests COMMAND opengold_warlock_tests)
+    add_executable(opengold_sorcerer_tests tests/sorcerer_tests.cpp)
+    target_link_libraries(opengold_sorcerer_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_sorcerer_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_sorcerer_tests COMMAND opengold_sorcerer_tests)
+    add_executable(opengold_monk_tests tests/monk_tests.cpp)
+    target_link_libraries(opengold_monk_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_monk_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_monk_tests COMMAND opengold_monk_tests)
     add_executable(opengold_barbarian_tests tests/barbarian_tests.cpp)
     target_link_libraries(opengold_barbarian_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_barbarian_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -272,6 +348,19 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_champion_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_champion_tests COMMAND opengold_champion_tests)
     set_tests_properties(opengold_champion_tests PROPERTIES FIXTURES_SETUP champion_fixtures)
+    add_executable(opengold_flee_tests tests/flee_tests.cpp)
+    target_link_libraries(opengold_flee_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_flee_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_flee_tests COMMAND opengold_flee_tests)
+    add_executable(opengold_combat_rollback_tests tests/combat_rollback_tests.cpp
+        tests/failing_allocation.cpp)
+    target_link_libraries(opengold_combat_rollback_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_combat_rollback_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_combat_rollback_tests COMMAND opengold_combat_rollback_tests)
+    add_executable(opengold_quick_tests tests/quick_tests.cpp)
+    target_link_libraries(opengold_quick_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_quick_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_quick_tests COMMAND opengold_quick_tests)
     add_executable(opengold_thrown_weapon_tests tests/thrown_weapon_tests.cpp)
     target_link_libraries(opengold_thrown_weapon_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_thrown_weapon_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
@@ -306,7 +395,12 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_training_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_training_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_training_tests COMMAND opengold_training_tests)
-    set_tests_properties(opengold_training_tests PROPERTIES FIXTURES_SETUP cunning_fixtures)
+    # With original files it also writes the Fighting Style, Rogue and Scholar
+    # level-up screen fixtures; it always writes the Alert and Light ones.
+    set_tests_properties(opengold_training_tests PROPERTIES
+        FIXTURES_SETUP "cunning_fixtures;advancement_ui_fixtures;alert_fixtures;light_fixtures")
+    add_test(NAME opengold_hands_fixture COMMAND opengold_training_tests --hands-ui)
+    set_tests_properties(opengold_hands_fixture PROPERTIES FIXTURES_SETUP hands_fixtures)
     add_executable(opengold_rest_resource_tests tests/rest_resource_tests.cpp)
     target_link_libraries(opengold_rest_resource_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_rest_resource_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -342,6 +436,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_battlefield_tests tests/battlefield_tests.cpp)
     target_link_libraries(opengold_battlefield_tests PRIVATE opengold_core)
     add_test(NAME opengold_battlefield_tests COMMAND opengold_battlefield_tests)
+    add_executable(opengold_encounter_formation_tests tests/encounter_formation_tests.cpp)
+    target_link_libraries(opengold_encounter_formation_tests PRIVATE opengold_core)
+    add_test(NAME opengold_encounter_formation_tests COMMAND opengold_encounter_formation_tests)
     add_executable(opengold_core_tests
         tests/core_tests.cpp
     )
@@ -369,6 +466,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_spell_access_tests PRIVATE opengold_rules_srd5 opengold_core)
     target_compile_definitions(opengold_spell_access_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_spell_access_tests COMMAND opengold_spell_access_tests)
+    # With original files it also writes the Wizard, Cleric and Blessed Warrior
+    # level-up screen fixtures.
+    set_tests_properties(opengold_spell_access_tests PROPERTIES
+        FIXTURES_SETUP spell_choice_fixtures)
 
     add_executable(opengold_armor_catalog_tests tests/armor_catalog_tests.cpp)
     target_link_libraries(opengold_armor_catalog_tests PRIVATE opengold_rules_srd5 opengold_core)
@@ -401,7 +502,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_art_tests tests/art_tests.cpp)
     target_link_libraries(opengold_art_tests PRIVATE opengold_core)
     add_test(NAME opengold_art_tests COMMAND opengold_art_tests)
-    add_executable(opengold_party_tests tests/party_tests.cpp)
+    add_executable(opengold_party_tests tests/party_tests.cpp tests/failing_allocation.cpp)
     target_link_libraries(opengold_party_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_party_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_party_tests COMMAND opengold_party_tests)
@@ -426,10 +527,14 @@ endif()
 
 add_executable(opengold_creatures tools/creatures.cpp)
 target_link_libraries(opengold_creatures PRIVATE opengold_core)
+target_include_directories(opengold_creatures PRIVATE src/OpenGold.Rules.Srd5/src)
 add_executable(opengold_maps tools/maps.cpp)
 target_link_libraries(opengold_maps PRIVATE opengold_core)
 add_executable(opengold_scripts tools/scripts.cpp)
 target_link_libraries(opengold_scripts PRIVATE opengold_core)
+add_executable(opengold_campaign_sim tools/campaign_sim.cpp)
+target_link_libraries(opengold_campaign_sim PRIVATE opengold_core opengold_rules_srd5)
+target_compile_definitions(opengold_campaign_sim PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 add_executable(opengold_encounter_balance tools/encounter_balance.cpp)
 target_link_libraries(opengold_encounter_balance PRIVATE opengold_core opengold_rules_srd5)
 target_compile_definitions(opengold_encounter_balance PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -451,3 +556,5 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_posture_tests COMMAND opengold_posture_tests)
     set_tests_properties(opengold_posture_tests PROPERTIES FIXTURES_SETUP posture_fixtures)
 endif()
+
+opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

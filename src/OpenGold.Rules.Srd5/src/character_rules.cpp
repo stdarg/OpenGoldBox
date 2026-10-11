@@ -1,4 +1,5 @@
 #include "dice.h"
+#include "character_class.h"
 #include "feature_grants.h"
 #include "training.h"
 #include "spell_access.h"
@@ -15,55 +16,63 @@ using namespace rules;
 
 namespace
 {
-const std::array<std::string, 6> ability_names{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
+const AbilityArray<std::string> ability_names{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
 
 struct Class
 {
-    const char *id;
-    const char *name;
+    detail::CharacterClass character_class;
     int die;
     const char *description;
 };
 
 constexpr std::array<Class, 12> classes
 {
-    {   {"barbarian", "Barbarian", 12, "A fierce warrior. Primary ability: Strength. Hit Die: d12."},
+    {   {
+            detail::CharacterClass::barbarian, 12,
+            "A fierce warrior. Primary ability: Strength. Hit Die: d12."
+        },
         {
-            "bard", "Bard", 8,
+            detail::CharacterClass::bard, 8,
             "An inspiring performer and spellcaster. Primary ability: Charisma. Hit Die: d8."
         },
-        {"cleric", "Cleric", 8, "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."},
-        {"druid", "Druid", 8, "A guardian of nature. Primary ability: Wisdom. Hit Die: d8."},
         {
-            "fighter", "Fighter", 10,
+            detail::CharacterClass::cleric, 8,
+            "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
+        },
+        {
+            detail::CharacterClass::druid, 8,
+            "A guardian of nature. Primary ability: Wisdom. Hit Die: d8."
+        },
+        {
+            detail::CharacterClass::fighter, 10,
             "A master of weapons. Primary ability: Strength or Dexterity. Hit Die: d10."
         },
         {
-            "monk", "Monk", 8,
+            detail::CharacterClass::monk, 8,
             "A disciplined martial artist. Primary abilities: Dexterity and Wisdom. Hit Die: d8."
         },
         {
-            "paladin", "Paladin", 10,
+            detail::CharacterClass::paladin, 10,
             "An oathbound warrior. Primary abilities: Strength and Charisma. Hit Die: d10."
         },
         {
-            "ranger", "Ranger", 10,
+            detail::CharacterClass::ranger, 10,
             "A hunter and wilderness explorer. Primary abilities: Dexterity and Wisdom. Hit Die: d10."
         },
         {
-            "rogue", "Rogue", 8,
+            detail::CharacterClass::rogue, 8,
             "An expert in stealth and precision. Primary ability: Dexterity. Hit Die: d8."
         },
         {
-            "sorcerer", "Sorcerer", 6,
+            detail::CharacterClass::sorcerer, 6,
             "A spellcaster with innate magic. Primary ability: Charisma. Hit Die: d6."
         },
         {
-            "warlock", "Warlock", 8,
+            detail::CharacterClass::warlock, 8,
             "A spellcaster empowered by a pact. Primary ability: Charisma. Hit Die: d8."
         },
         {
-            "wizard", "Wizard", 6,
+            detail::CharacterClass::wizard, 6,
             "A scholar of arcane magic. Primary ability: Intelligence. Hit Die: d6."
         }
     }};
@@ -71,25 +80,31 @@ constexpr std::array<Class, 12> classes
 class CreatorRules final : public CharacterRules
 {
   public:
-    std::array<unsigned, 6> preset_ability_priority(std::string_view id,
+    std::array<Ability, 6> preset_ability_priority(std::string_view id,
             unsigned variant) const override
     {
-        const unsigned primary =
-            id == "wizard"                                          ? 3
-            : (id == "cleric" || id == "druid")                     ? 4
-            : (id == "bard" || id == "sorcerer" || id == "warlock") ? 5
-            : (id == "monk" || id == "ranger" || id == "rogue" || (id == "fighter" && variant % 2))
-            ? 1
-            : 0;
-        const unsigned secondary = (id == "monk" || id == "ranger") ? 4 : id == "paladin" ? 5 : 2;
-        std::vector<unsigned> priority{primary, secondary};
-        for (unsigned n :
+        using enum detail::CharacterClass;
+        const auto klass = detail::class_from_id(id);
+        const Ability primary =
+            klass == wizard                                            ? Ability::intelligence
+            : (klass == cleric || klass == druid)                      ? Ability::wisdom
+            : (klass == bard || klass == sorcerer || klass == warlock) ? Ability::charisma
+            : (klass == monk || klass == ranger || klass == rogue ||
+               (klass == fighter && variant % 2))
+            ? Ability::dexterity
+            : Ability::strength;
+        const Ability secondary = (klass == monk || klass == ranger) ? Ability::wisdom
+                                  : klass == paladin                  ? Ability::charisma
+                                  : Ability::constitution;
+        std::vector<Ability> priority{primary, secondary};
+        for (const auto ability :
                 {
-                    2u, 1u, 4u, 0u, 3u, 5u
+                    Ability::constitution, Ability::dexterity, Ability::wisdom, Ability::strength,
+                    Ability::intelligence, Ability::charisma
                 })
-            if (std::find(priority.begin(), priority.end(), n) == priority.end())
-                priority.push_back(n);
-        std::array<unsigned, 6> result{};
+            if (std::find(priority.begin(), priority.end(), ability) == priority.end())
+                priority.push_back(ability);
+        std::array<Ability, 6> result{};
         std::copy(priority.begin(), priority.end(), result.begin());
         return result;
     }
@@ -103,9 +118,9 @@ class CreatorRules final : public CharacterRules
 
     std::vector<CreationChoice> choices(CreationField field) const override;
     std::vector<ScoreAdjustment> adjustments(std::string_view background) const override;
-    std::array<AbilityRoll, 6> roll(std::uint64_t &state) const override;
-    std::optional<int> ability_score(const CharacterDraft &draft, unsigned ability) const override;
-    CharacterSheet evaluate(const CharacterDraft &draft, bool require_name) const override;
+    std::array<AbilityRoll, 6> roll(RandomState &state) const override;
+    std::optional<int> ability_score(const CharacterDraft &draft, Ability ability) const override;
+    CharacterSheet evaluate(const CharacterDraft &draft, NameRequirement name) const override;
 
     std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft) const override
     {
@@ -114,27 +129,29 @@ class CreatorRules final : public CharacterRules
 
     SpellChoiceOptions spell_choice_options(const CharacterDraft &draft) const override
     {
-        if (draft.character_class == "cleric" || draft.character_class == "paladin" ||
-                draft.character_class == "ranger")
+        using enum detail::CharacterClass;
+        const auto klass = detail::draft_class(draft);
+        if (klass == cleric || klass == paladin || klass == ranger || klass == sorcerer ||
+                klass == warlock || klass == bard || klass == druid)
         {
             // These classes prepare from the class list; the selection never changes it.
             auto base = draft;
             base.spells = SpellChoices{};
-            return detail::spell_choice_options(evaluate(base, false),
+            return detail::spell_choice_options(evaluate(base, NameRequirement::optional),
                                                 SpellChoiceContext::advancement);
         }
-        if (draft.character_class != "wizard")
+        if (klass != wizard)
             return {};
         auto base = draft;
         base.spells = SpellChoices{};
-        auto sheet = evaluate(base, false);
+        auto sheet = evaluate(base, NameRequirement::optional);
         auto options = detail::spell_choice_options(sheet, SpellChoiceContext::advancement);
         std::erase_if(options.learning,
                       [](const auto & g)
         {
             return g.id.starts_with("cantrips:");
         });
-        const auto selected = evaluate(draft, false);
+        const auto selected = evaluate(draft, NameRequirement::optional);
         options.preparation =
             detail::spell_choice_options(selected, SpellChoiceContext::advancement).preparation;
         return options;
@@ -142,20 +159,28 @@ class CreatorRules final : public CharacterRules
 
     TrainingChoiceGroup cantrip_options(const CharacterDraft &draft) const override
     {
-        auto group = detail::starting_cantrip_options(draft.character_class);
+        const auto klass = detail::draft_class(draft);
+        if (!klass)
+            return {};
+        auto group = detail::starting_cantrip_options(*klass);
         // The Thaumaturge Divine Order adds one Cleric cantrip.
         const auto order = draft.training.find("class:cleric:divine_order");
-        if (draft.character_class == "cleric" && order != draft.training.end() &&
+        if (klass == detail::CharacterClass::cleric && order != draft.training.end() &&
                 order->second == std::vector<std::string> {"thaumaturge"})
+            ++group.count;
+        // So does the Druid's Magician Primal Order.
+        const auto primal = draft.training.find("class:druid:primal_order");
+        if (klass == detail::CharacterClass::druid && primal != draft.training.end() &&
+                primal->second == std::vector<std::string> {"magician"})
             ++group.count;
         return group;
     }
 
-    AbilityCheckModifier ability_check(const CharacterSheet &sheet, unsigned ability,
+    AbilityCheckModifier ability_check(const CharacterSheet &sheet, Ability ability,
                                        std::string_view skill) const override
     {
-        return detail::ability_check(sheet.grants, detail::grant_source_id(sheet.character_class),
-                                     detail::grant_source_id(sheet.background), sheet.level,
+        return detail::ability_check(sheet.grants, detail::class_of(sheet),
+                                     detail::background_id(sheet.background), sheet.level,
                                      sheet.scores, ability, skill);
     }
 };
@@ -190,7 +215,8 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
     {
         std::vector<CreationChoice> result;
         for (const auto &c : classes)
-            result.push_back({c.id, c.name, c.description});
+            result.push_back({std::string(detail::class_id(c.character_class)),
+                              std::string(detail::class_label(c.character_class)), c.description});
         return result;
     }
     case CreationField::alignment:
@@ -227,15 +253,16 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
 
 std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view background) const
 {
-    std::array<unsigned, 3> allowed;
+    using enum Ability;
+    std::array<Ability, 3> allowed;
     if (background == "acolyte")
-        allowed = {3, 4, 5};
+        allowed = {intelligence, wisdom, charisma};
     else if (background == "criminal")
-        allowed = {1, 2, 3};
+        allowed = {dexterity, constitution, intelligence};
     else if (background == "sage")
-        allowed = {2, 3, 4};
+        allowed = {constitution, intelligence, wisdom};
     else if (background == "soldier")
-        allowed = {0, 1, 2};
+        allowed = {strength, dexterity, constitution};
     else
         throw std::runtime_error("Unknown background");
     std::vector<ScoreAdjustment> result;
@@ -252,25 +279,30 @@ std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view backgrou
     ScoreAdjustment a;
     a.label = "+1 to " + ability_names[allowed[0]] + ", " + ability_names[allowed[1]] + ", " +
               ability_names[allowed[2]];
-    for (auto n : allowed)
-        a.bonuses[n] = 1;
+    for (auto ability : allowed)
+        a.bonuses[ability] = 1;
     result.push_back(a);
     return result;
 }
 
 ClassRequirements CreatorRules::class_requirements(std::string_view id) const
 {
-    const std::array<std::vector<unsigned>, 12> primary
+    using enum Ability;
+    const std::array<std::vector<Ability>, 12> primary
     {
-        {{0}, {5}, {4}, {4}, {0, 1}, {1, 4}, {0, 5}, {1, 4}, {1}, {5}, {5}, {3}}};
+        {   {strength}, {charisma}, {wisdom}, {wisdom}, {strength, dexterity},
+            {dexterity, wisdom}, {strength, charisma}, {dexterity, wisdom}, {dexterity},
+            {charisma}, {charisma}, {intelligence}
+        }};
     const auto found = std::find_if(classes.begin(), classes.end(),
                                     [&](const auto & c)
     {
-        return c.id == id;
+        return detail::class_id(c.character_class) == id;
     });
     if (found == classes.end())
         throw std::runtime_error("Unknown class prerequisite");
-    ClassRequirements result{primary.at(found - classes.begin()), id == "fighter", 13, {}};
+    ClassRequirements result{primary.at(found - classes.begin()),
+                             found->character_class == detail::CharacterClass::fighter, 13, {}};
     for (auto ability : result.abilities)
     {
         if (!result.description.empty())
@@ -280,7 +312,7 @@ ClassRequirements CreatorRules::class_requirements(std::string_view id) const
     return result;
 }
 
-std::array<AbilityRoll, 6> CreatorRules::roll(std::uint64_t &state) const
+std::array<AbilityRoll, 6> CreatorRules::roll(RandomState &state) const
 {
     std::array<AbilityRoll, 6> result;
     for (auto &r : result)
@@ -293,9 +325,9 @@ std::array<AbilityRoll, 6> CreatorRules::roll(std::uint64_t &state) const
     return result;
 }
 
-std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, unsigned ability) const
+std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, Ability ability) const
 {
-    if (ability >= 6 || d.assignment[ability] > 6)
+    if (ability_index(ability) >= d.assignment.size() || d.assignment[ability] > 6)
         throw std::runtime_error("Invalid ability assignment");
     if (!d.rolled || d.assignment[ability] == 6)
         return std::nullopt;
@@ -309,7 +341,7 @@ std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, unsigned
     return score;
 }
 
-CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name) const
+CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement name) const
 {
     const auto label = [&](CreationField field, const std::string & id)
     {
@@ -329,12 +361,13 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
     s.race = label(CreationField::race, d.race);
     s.gender = label(CreationField::gender, d.gender);
     s.character_class = label(CreationField::character_class, d.character_class);
+    const auto klass = detail::class_from_id(d.character_class);
     s.alignment = label(CreationField::alignment, d.alignment);
     s.background = label(CreationField::background, d.background);
-    s.grants = detail::starting_grants(d.character_class, d.race, d.background);
-    const auto training = detail::training_grants(d.character_class, d.background, d.training);
+    s.grants = detail::starting_grants(klass, d.race, d.background);
+    const auto training = detail::training_grants(klass, d.background, d.training);
     s.grants.insert(s.grants.end(), training.begin(), training.end());
-    if (require_name && (d.name.empty() || d.name.size() > 160 ||
+    if (name == NameRequirement::required && (d.name.empty() || d.name.size() > 160 ||
                          d.name.find_first_not_of(" \t\r\n") == std::string::npos ||
                          std::any_of(d.name.begin(), d.name.end(),
                                      [](unsigned char c)
@@ -356,35 +389,36 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
         s.bonuses,
         {"{background} background", {{"background", s.background, true}}}});
     std::set<unsigned> used;
-    for (unsigned i = 0; i < 6; ++i)
+    for (const auto ability : all_abilities)
     {
-        if (d.assignment[i] >= 6 || !used.insert(d.assignment[i]).second)
+        if (d.assignment[ability] >= 6 || !used.insert(d.assignment[ability]).second)
             throw std::runtime_error("Each roll must be assigned exactly once");
-        s.base[i] = d.rolls[d.assignment[i]].total();
-        s.scores[i] = *ability_score(d, i);
-        s.modifiers[i] = ability_modifier(s.scores[i]);
+        s.base[ability] = d.rolls[d.assignment[ability]].total();
+        s.scores[ability] = *ability_score(d, ability);
+        s.modifiers[ability] = ability_modifier(s.scores[ability]);
     }
     const auto c = std::find_if(classes.begin(), classes.end(),
                                 [&](const auto & c)
     {
-        return c.id == d.character_class;
+        return c.character_class == klass;
     });
     s.hit_die = c->die;
     const int racial_hp = d.race == "dwarf" ? 1 : 0;
     // Core class traits, SRD 5.2.1. Single-class level-one creation.
-    const auto trained = detail::class_save_proficiencies(s.character_class);
-    for (unsigned i = 0; i < 6; ++i)
+    const auto trained = detail::class_save_proficiencies(c->character_class);
+    for (const auto ability : all_abilities)
     {
-        s.save_proficiencies[i] = i == trained[0] || i == trained[1];
-        s.saving_throws[i] = s.modifiers[i] + (s.save_proficiencies[i] ? 2 : 0);
+        s.save_proficiencies[ability] = ability == trained[0] || ability == trained[1];
+        s.saving_throws[ability] = s.modifiers[ability] + (s.save_proficiencies[ability] ? 2 : 0);
     }
     s.class_modifiers = "Source: " + s.character_class +
                         " class, level 1. Saving-throw training adds +2 proficiency to " +
                         ability_names[trained[0]] + " and " + ability_names[trained[1]] +
                         ".\nSource: " + s.character_class + " Hit Die and Constitution score " +
-                        std::to_string(s.scores[2]) + ". Starting HP: maximum d" +
+                        std::to_string(s.scores[Ability::constitution]) +
+                        ". Starting HP: maximum d" +
                         std::to_string(s.hit_die) + " + Constitution modifier (" +
-                        std::to_string(s.modifiers[2]) + ").";
+                        std::to_string(s.modifiers[Ability::constitution]) + ").";
     s.racial_modifiers =
         d.race == "dwarf" ? "Dwarven Toughness: +1 maximum HP."
         : d.race == "goliath"
@@ -396,8 +430,8 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
     s.background_modifiers =
         "Source: " + s.background + " background, selected ability increases. " +
         options[d.adjustment].label + ". Other background features are not implemented.";
-    s.hit_points = s.hit_die + s.modifiers[2] + racial_hp;
-    s.hit_point_modifiers = {s.modifiers[2]};
+    s.hit_points = s.hit_die + s.modifiers[Ability::constitution] + racial_hp;
+    s.hit_point_modifiers = {s.modifiers[Ability::constitution]};
     s.class_messages =
     {
         {
@@ -410,13 +444,13 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
         {
             "Source: {class} Hit Die and Constitution score {score}. Starting HP: maximum d{die} + Constitution modifier ({modifier}).",
             {   {"class", s.character_class, true},
-                {"score", std::to_string(s.scores[2])},
+                {"score", std::to_string(s.scores[Ability::constitution])},
                 {"die", std::to_string(s.hit_die)},
-                {"modifier", std::to_string(s.modifiers[2])}
+                {"modifier", std::to_string(s.modifiers[Ability::constitution])}
             }
         }
     };
-    if (d.character_class == "rogue")
+    if (klass == detail::CharacterClass::rogue)
     {
         s.class_modifiers +=
             "\nSneak Attack: once per turn, extra weapon damage is added automatically to the first eligible hit; the combat log shows the dice.";
@@ -450,38 +484,44 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
     {"Other racial traits and conditional effects are not implemented.", {}});
     s.background_messages.push_back({"Source: {background} background, selected ability increases.",
         {{"background", s.background, true}}});
-    for (unsigned i = 0; i < 6; ++i)
-        if (s.bonuses[i])
+    for (const auto ability : all_abilities)
+        if (s.bonuses[ability])
             s.background_messages.push_back(
         {
             "{ability} +{bonus}",
-            {{"ability", ability_names[i], true}, {"bonus", std::to_string(s.bonuses[i])}}});
+            {   {"ability", ability_names[ability], true},
+                {"bonus", std::to_string(s.bonuses[ability])}
+            }});
     s.background_messages.push_back({"Other background features are not implemented.", {}});
     s.hp_messages.push_back(
     {
         "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP",
         {   {"die", std::to_string(s.hit_die)},
-            {"modifier", std::string(s.modifiers[2] < 0 ? "" : "+") + std::to_string(s.modifiers[2])},
+            {"modifier", std::string(s.modifiers[Ability::constitution] < 0 ? "" : "+") +
+                std::to_string(s.modifiers[Ability::constitution])},
             {"racial", std::to_string(racial_hp)},
             {"hp", std::to_string(s.hit_points)}
         }});
     s.hp_explanation = std::to_string(s.hit_die) + " (maximum d" + std::to_string(s.hit_die) +
-                       ") " + (s.modifiers[2] < 0 ? "- " : "+ ") +
-                       std::to_string(std::abs(s.modifiers[2])) + " (Constitution)" +
+                       ") " + (s.modifiers[Ability::constitution] < 0 ? "- " : "+ ") +
+                       std::to_string(std::abs(s.modifiers[Ability::constitution])) +
+                       " (Constitution)" +
                        (racial_hp ? " + 1 (Dwarven Toughness)" : "") + " = " +
                        std::to_string(s.hit_points) + " HP";
     s.training =
-        detail::training_profile(s.grants, d.character_class, d.background, s.level, s.scores);
-    const auto spells = detail::starting_spell_grants(d.character_class, d.cantrips);
+        detail::training_profile(s.grants, klass, d.background, s.level, s.scores);
+    const auto spells = detail::starting_spell_grants(klass, d.cantrips);
     s.grants.insert(s.grants.end(), spells.begin(), spells.end());
-    if (d.character_class == "wizard")
+    using enum detail::CharacterClass;
+    if (klass == wizard)
         s.prepared_spells = {"magic_missile"};
-    if (d.spells && (d.character_class == "cleric" || d.character_class == "paladin" ||
-                     d.character_class == "ranger"))
-        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement, false);
+    if (d.spells && (klass == cleric || klass == paladin || klass == ranger ||
+                     klass == sorcerer || klass == warlock || klass == bard || klass == druid))
+        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement,
+                                    ChoiceCompleteness::partial);
     else if (d.spells)
     {
-        if (d.character_class != "wizard")
+        if (klass != wizard)
             throw std::runtime_error("Spell choices require a spellcasting class");
         std::erase_if(s.grants,
                       [](const auto & g)
@@ -489,7 +529,8 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, bool require_name
             return g.id == "spell:magic_missile";
         });
         s.prepared_spells.clear();
-        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement, false);
+        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement,
+                                    ChoiceCompleteness::partial);
     }
     return s;
 }

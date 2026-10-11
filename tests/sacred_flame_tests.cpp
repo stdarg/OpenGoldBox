@@ -132,12 +132,12 @@ auto custom(std::string affinity = {}, int dex = 0)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-std::vector<std::string> gear = {}, unsigned side = 1,
+std::vector<std::string> gear = {}, Side side = Side::opposition,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
-    auto c = rules.create({{10, 8, std::vector<std::uint8_t>(80)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+    auto c = rules.create({{10, 8, std::vector<Terrain>(80)},
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
     seed);
@@ -153,7 +153,7 @@ void access()
     auto creation = srd5::character_rules();
     auto rules = module();
     auto d = draft();
-    check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
+    check(rules->spell_access(creation->evaluate(d, NameRequirement::required)).cantrips.empty(),
           "Historical Cleric has no invented cantrips");
     auto h = hero();
     auto access = rules->spell_access(h.sheet());
@@ -180,7 +180,7 @@ void access()
         rejects(
             [&]
         {
-            (void)creation->evaluate(d, true);
+            (void)creation->evaluate(d, NameRequirement::required);
         });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
@@ -192,7 +192,7 @@ void access()
             rejects(
                 [&]
             {
-                (void)creation->evaluate(d, true);
+                (void)creation->evaluate(d, NameRequirement::required);
             });
         }
     const auto profile = rules->character_profile(h.sheet(), {}).data;
@@ -203,9 +203,9 @@ void access()
         rejects(
             [&]
         {
-            (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-                {   {1, "campaign-character", "Forged", 0, {1, 1}, recipe},
-                    {2, "vanguard", "Target", 1, {3, 1}}
+            (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+                {   {1, "campaign-character", "Forged", Side::party, {1, 1}, recipe},
+                    {2, "vanguard", "Target", Side::opposition, {3, 1}}
                 }},
             13);
         });
@@ -230,8 +230,8 @@ void access()
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.heads.emplace(1, por::PortraitPart{"fixture", head});
-    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
     unsigned clerics = 0;
     for (const auto &preset : character_pool(*creation, art))
         if (preset.sheet().character_class == "Cleric")
@@ -246,7 +246,7 @@ void access()
 
 Message save_message(const CombatSession &c)
 {
-    for (const auto &m : c.snapshot().log_messages)
+    for (const auto &m : c.snapshot().log_messages())
         if (m.source.starts_with("{name} Dexterity save:"))
             return m;
     throw std::runtime_error("Missing Dexterity save");
@@ -324,9 +324,9 @@ void targets()
             })
     {
         auto profile = rules->character_profile(h.sheet(), {});
-        auto c = rules->create({{16, 8, std::vector<std::uint8_t>(128)},
-            {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-                {2, "target", "Enemy", 1, {1 + feet / 5, 1}}
+        auto c = rules->create({{16, 8, std::vector<Terrain>(128)},
+            {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+                {2, "target", "Enemy", Side::opposition, {1 + feet / 5, 1}}
             }},
         40);
         check(has(*c, "sacred_flame", 2) == (feet <= 60), "Range includes 60 feet and excludes 65");
@@ -348,9 +348,9 @@ void targets()
 })
     {
         auto c = battle(*rules, h, 13, {3, 1}, gear);
-        const bool allowed = gear.size() < 2 && (gear.empty() || gear[0] != "plate");
-        check(has(*c, "sacred_flame", 2) == allowed,
-              "Somatic hands and untrained heavy armor restrict casting");
+        // Full hands block nothing (CLASS-11); untrained heavy armor does.
+        const bool allowed = gear.empty() || gear[0] != "plate";
+        check(has(*c, "sacred_flame", 2) == allowed, "Untrained heavy armor restricts casting");
         check(unit(*c).known_cantrips == std::vector<std::string> {"sacred_flame"},
               "Known spell remains listed while unavailable");
         if (!allowed)
@@ -363,11 +363,11 @@ void targets()
     check(!has(*battle(*rules, hero(1, false)), "sacred_flame"),
           "Cantrip is not an unconditional class flag");
     auto profile = rules->character_profile(h.sheet(), {});
-    Battlefield board{10, 8, std::vector<std::uint8_t>(80)};
-    board.terrain[12] = 1;
+    Battlefield board{10, 8, std::vector<Terrain>(80)};
+    board.terrain[12] = Terrain::obstacle;
     auto blocked = rules->create({board,
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
-            {2, "target", "Enemy", 1, {3, 1}}
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+            {2, "target", "Enemy", Side::opposition, {3, 1}}
         }},
     13);
     check(!has(*blocked, "sacred_flame", 2), "Total cover remains ineligible");
@@ -395,20 +395,20 @@ void targets()
                     false, true
                 })
         {
-            auto c = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
-                {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+            auto c = rules->create({{10, 8, std::vector<Terrain>(80)},
+                {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
                     {
                         2,
                         "target",
                         "Ally",
-                        0,
+                        Side::party,
                         {2, 1},
                         {},
                         dead   ? std::optional<VitalState>{{0, true, {}}}
 : down ? std::optional<VitalState>{{0, false, {}}}
 : std::nullopt
                     },
-                    {3, "target", "Enemy", 1, {8, 1}}
+                    {3, "target", "Enemy", Side::opposition, {8, 1}}
                 }},
             13);
             check(has(*c, "sacred_flame", 2) == !dead,
@@ -451,9 +451,9 @@ void modifiers()
     Character wizard(*srd5::character_rules(), d, {});
     auto target = rules->character_profile(wizard.sheet(), std::vector<std::string> {"plate"});
     auto caster = rules->character_profile(hero().sheet(), {});
-    auto armored = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
-            {2, "campaign-character", "Armored", 1, {3, 1}, target.data}
+    auto armored = rules->create({{10, 8, std::vector<Terrain>(80)},
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, caster.data},
+            {2, "campaign-character", "Armored", Side::opposition, {3, 1}, target.data}
         }},
     13);
     const auto random = rng(*armored);
@@ -465,9 +465,9 @@ void modifiers()
     bool checked = false;
     for (unsigned seed = 0; seed < 32 && !checked; ++seed)
     {
-        auto blinded = rules->create({{10, 8, std::vector<std::uint8_t>(80)},
-            {   {1, "campaign-character", "Caster", 0, {1, 1}, caster.data},
-                {2, "blindness-adept", "Enemy", 1, {3, 1}}
+        auto blinded = rules->create({{10, 8, std::vector<Terrain>(80)},
+            {   {1, "campaign-character", "Caster", Side::party, {1, 1}, caster.data},
+                {2, "blindness-adept", "Enemy", Side::opposition, {3, 1}}
             }},
         seed);
         if (blinded->snapshot().actor == 1)
@@ -499,7 +499,7 @@ void campaign()
         {
             CampaignParty p(module());
             auto h = hero(level);
-            h.inventory().add("quarterstaff", "Quarterstaff");
+            h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
             const auto id =
                 npc ? p.recruit("fixture:sacred", std::move(h)) : p.add_pc(std::move(h));
             p.equip(id, 1);
@@ -511,8 +511,8 @@ void campaign()
             p.restore(std::move(state));
             auto actors = p.participants();
             actors[0].cell = {1, 1};
-            actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 40);
+            actors.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 40);
             const auto old = unit(*c, id).persistent;
             check(c->submit(command(*c, "sacred_flame", 99)), "Ordinary campaign Cleric casts");
             p.begin_combat();
@@ -540,16 +540,25 @@ void ui_fixtures()
     {
         const auto h = hero(3, std::string_view(name) != "unknown");
         const auto profile =
+            // Untrained armor blocks casting; full hands do not (CLASS-11).
             rules->character_profile(h.sheet(), std::string_view(name) == "blocked"
-                                     ? std::vector<std::string> {"mace", "shield"}
+                                     ? std::vector<std::string> {"plate"}
                                      : std::vector<std::string> {"quarterstaff"});
         auto c =
-        rules->create({{12, 9, std::vector<std::uint8_t>(108)},
-            {   {1, "campaign-character", "Sacred Cleric", 0, {1, 1}, profile.data},
-                {2, "vanguard", "Ally", 0, {3, 1}},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+        rules->create({{12, 9, std::vector<Terrain>(108)},
+            {   {1, "campaign-character", "Sacred Cleric", Side::party, {1, 1}, profile.data},
+                {2, "vanguard", "Ally", Side::party, {3, 1}},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         2);
+        // Untrained armor's initiative Disadvantage may put the caster later.
+        for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+            for (const auto &end : c->legal_commands())
+                if (end.verb == "end")
+                {
+                    (void)c->submit(end);
+                    break;
+                }
         write(path / (std::string(name) + ".save"), c->save());
     }
 }

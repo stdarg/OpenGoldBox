@@ -112,7 +112,7 @@ std::string argument(const Message &m, std::string_view key)
 
 Message attack(const CombatSession &c)
 {
-    for (const auto &m : c.snapshot().log_messages)
+    for (const auto &m : c.snapshot().log_messages())
         if (m.source.starts_with("{actor} -> {target}: d20"))
             return m;
     throw std::runtime_error("Missing attack result");
@@ -125,9 +125,9 @@ bool blind_hero = false)
     const auto profile = rules.character_profile(h.sheet(), gear);
     const std::string effect = "SRD11 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 "
                                "FX8 2 1 1 1 77 99 \"Source caster\" 38 60000 6000 0";
-    Encounter e{{40, 8, std::vector<std::uint8_t>(320)},
-        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-            {2, "target", "Target", 1, target}
+    Encounter e{{40, 8, std::vector<Terrain>(320)},
+        {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
+            {2, "target", "Target", Side::opposition, target}
         }};
     if (blind_target)
         e.participants[1].state = VitalState{1000, false, effect};
@@ -172,7 +172,7 @@ void thresholds()
                 const auto h = hero(klass.id, w.ranged ? 15 : score, w.ranged ? score : 15);
                 // Honor the existing character creator's house prerequisites.
                 const auto requirements = srd5::character_rules()->class_requirements(klass.id);
-                const auto qualifies = [&](unsigned ability)
+                const auto qualifies = [&](Ability ability)
                 {
                     return h.sheet().scores[ability] >= 13;
                 };
@@ -211,7 +211,8 @@ void thresholds()
                         })
                 {
                     auto c = battle(*rules, h, {w.key}, seed, w.ranged ? Cell{3, 1} : Cell{2, 1});
-                    check(unit(*c).initiative == (seed == 40 ? 19 : 16) + h.sheet().modifiers[1],
+                    check(unit(*c).initiative == (seed == 40 ? 19 : 16) +
+                          h.sheet().modifiers[Ability::dexterity],
                           "Heavy never consumes a second initiative roll");
                     auto copy = rules->restore(c->save());
                     const auto before = unit(*c);
@@ -321,9 +322,15 @@ void campaign()
     auto rules = module(true);
     CampaignParty party(module(true));
     auto h = hero();
-    const auto sword = h.inventory().add("greatsword", "Greatsword", 1),
-               bow = h.inventory().add("longbow", "Longbow", 1),
-               shield = h.inventory().add("shield", "Shield", 1);
+    const auto sword = h.add_item({.definition_id = "greatsword",
+                                          .name = "Greatsword",
+                                          .quantity = 1}),
+               bow = h.add_item({.definition_id = "longbow",
+                                        .name = "Longbow",
+                                        .quantity = 1}),
+               shield = h.add_item({.definition_id = "shield",
+                                           .name = "Shield",
+                                           .quantity = 1});
     const auto id = party.add_pc(std::move(h));
     party.equip(id, sword);
     auto state = party.checkpoint();
@@ -353,12 +360,12 @@ void campaign()
         if (level == 4)
         {
             choice.abilities = {};
-            choice.abilities[0] = 1;
-            choice.abilities[4] = 1;
+            choice.abilities[Ability::strength] = 1;
+            choice.abilities[Ability::wisdom] = 1;
         }
         party.advance(id, choice);
     }
-    check(party.member(id).character.sheet().scores[0] == 13 &&
+    check(party.member(id).character.sheet().scores[Ability::strength] == 13 &&
           party.profile(id).item_modifiers.find("Requirement met.") != std::string::npos,
           "Level-four ASI crossing 13 removes the penalty without changing the +1 modifier");
     const auto bytes = encode_campaign(party, nullptr, "heavy");
@@ -368,8 +375,8 @@ void campaign()
           "Campaign reconstruction retains threshold-crossing advancement and spent resources");
     auto actors = copy.participants();
     actors[0].cell = {1, 1};
-    actors.push_back({99, "target", "Target", 1, {2, 1}});
-    auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+    actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
+    auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
     act(*c, "melee");
     check(argument(attack(*c), "roll") == "8" && argument(attack(*c), "disadvantage").empty(),
           "Next campaign encounter uses the advanced score");

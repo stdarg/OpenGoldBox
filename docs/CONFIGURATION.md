@@ -123,5 +123,9 @@ local reference installation and writes the ignored development config; back up
 that file before running the test. Tests should use a workspace-local APPDATA.
 `tests/language_dialog_tests.gd` checks keyboard progression, saved-language
 restoration and the shared splash background with the new reset flag.
+CTest runs both, and `tests/startup_tests.gd`, through `tests/settings_check.cmake`
+(`opengold_godot_setup_*`, `opengold_godot_language*`, `opengold_godot_startup*`;
+skipped without `OPENGOLD_GAME_DIR`), which keeps the development config aside
+while each check runs and puts it back afterwards.
 
 See [LOCALIZATION.md](LOCALIZATION.md) for catalogs and translated splash assets.

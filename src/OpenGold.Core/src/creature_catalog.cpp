@@ -1,3 +1,4 @@
+#include "opengold/authored_items.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
 
@@ -87,6 +88,12 @@ std::string_view item_type_name(std::uint8_t type)
 {
     if (type == 73)
         return "Arrows";
+    if (type == authored_item::torch)
+        return "Torch";
+    if (type == authored_item::acid)
+        return "Acid";
+    if (type == authored_item::alchemists_fire)
+        return "Alchemist's Fire";
     // Type IDs, not names of particular enchanted items. Name components remain exposed.
     constexpr std::string_view names[] = {"Unarmed",
                                           "Battle axe",

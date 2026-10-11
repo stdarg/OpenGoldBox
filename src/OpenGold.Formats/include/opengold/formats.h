@@ -44,6 +44,14 @@ struct Image
     std::vector<std::uint8_t> rgba;
 };
 
+// An image's pixels are width x height RGBA quadruplets, row by row. Image is a
+// plain record the decoders fill; code that accepts an image from elsewhere
+// checks this before indexing it (Effective C++ Item 22).
+[[nodiscard]] inline bool consistent(const Image &image) noexcept
+{
+    return image.rgba.size() == std::size_t{image.width} * image.height * 4;
+}
+
 struct ImageDecodeResult
 {
     FormatResult status{FormatResult::invalid_data};

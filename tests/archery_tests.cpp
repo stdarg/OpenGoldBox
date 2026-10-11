@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -62,7 +63,7 @@ Character hero(std::string klass = "fighter", std::string background = "sage")
 
 void grow(CampaignParty &p, MemberId id, unsigned level)
 {
-    while (p.member(id).character.sheet().level < level)
+    while (std::cmp_less(p.member(id).character.sheet().level, level))
         p.advance(id, p.default_advancement(id));
 }
 
@@ -83,7 +84,7 @@ Command command(const CombatSession &c, std::string_view verb)
 
 Message result(const CombatSession &c)
 {
-    for (const auto &m : c.snapshot().log_messages)
+    for (const auto &m : c.snapshot().log_messages())
         if (m.source.starts_with("{actor} -> {target}: d20"))
             return m;
     throw std::runtime_error("Missing attack log");
@@ -114,9 +115,9 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon, Ce
 unsigned seed = 89)
 {
     const auto profile = rules.character_profile(h.sheet(), std::array<std::string, 1> {weapon});
-    auto c = rules.create({{40, 8, std::vector<std::uint8_t>(320)},
-        {   {1, "campaign-character", "Archer", 0, {1, 1}, profile.data},
-            {99, "target", "Target", 1, target}
+    auto c = rules.create({{40, 8, std::vector<Terrain>(320)},
+        {   {1, "campaign-character", "Archer", Side::party, {1, 1}, profile.data},
+            {99, "target", "Target", Side::opposition, target}
         }},
     seed);
     check(c->snapshot().actor == 1, "Independent initiative seed starts with archer");
@@ -131,14 +132,6 @@ void selection()
         CampaignParty p(module());
         auto id = p.add_pc(hero(klass.id));
         p.award_experience(2700, "archery");
-        if (klass.id != "fighter" && klass.id != "wizard" && klass.id != "cleric" &&
-                klass.id != "rogue" && klass.id != "paladin" && klass.id != "ranger" &&
-                klass.id != "barbarian")
-        {
-            check(!p.can_advance(id),
-                  "Unsupported later advancement does not invent Fighting Style entitlement");
-            continue;
-        }
         grow(p, id, 3);
         auto choice = p.default_advancement(id);
         choice.feat = "archery";
@@ -166,7 +159,7 @@ void selection()
             continue;
         }
         auto invalid = choice;
-        invalid.abilities[0] = 1;
+        invalid.abilities[Ability::strength] = 1;
         rejects(
             [&]
         {
@@ -307,9 +300,9 @@ void forged_profiles()
     auto rules = module();
     auto profile =
         rules->character_profile(leveled().sheet(), std::array<std::string, 1> {"shortbow"}).data;
-    auto encounter = Encounter{{8, 8, std::vector<std::uint8_t>(64)},
-        {   {1, "campaign-character", "Archer", 0, {1, 1}, profile},
-            {99, "vanguard", "Target", 1, {5, 1}}
+    auto encounter = Encounter{{8, 8, std::vector<Terrain>(64)},
+        {   {1, "campaign-character", "Archer", Side::party, {1, 1}, profile},
+            {99, "vanguard", "Target", Side::opposition, {5, 1}}
         }};
     auto wrong_mask = profile;
     replace(wrong_mask, "PC42 4 4 ", "PC42 4 0 ");

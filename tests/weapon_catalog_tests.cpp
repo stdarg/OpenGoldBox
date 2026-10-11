@@ -153,7 +153,7 @@ std::string argument(const Message &m, std::string_view key)
 
 Message attack(const CombatSession &c)
 {
-    for (const auto &m : c.snapshot().log_messages)
+    for (const auto &m : c.snapshot().log_messages())
         if (m.source.starts_with("{actor} -> {target}: d20"))
             return m;
     throw std::runtime_error("Missing attack");
@@ -163,9 +163,9 @@ auto battle(const RulesModule &rules, const Character &h, const std::string &wea
 unsigned seed = 13, Cell target = {3, 1})
 {
     auto profile = rules.character_profile(h.sheet(), std::array{weapon});
-    auto c = rules.create({{64, 4, std::vector<std::uint8_t>(256)},
-        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-            {2, "target", "Target", 1, target}
+    auto c = rules.create({{64, 4, std::vector<Terrain>(256)},
+        {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
+            {2, "target", "Target", Side::opposition, target}
         }},
     seed);
     test::keep_initiative(*c);
@@ -196,8 +196,8 @@ void definitions()
         {"slashing", catalog::DamageType::slashing}};
     const auto expected = expectations();
     std::set<std::string> keys;
-    check(expected.size() == 38 && catalog::weapons.size() == 39,
-          "All 38 SRD weapons plus the existing plain focus");
+    check(expected.size() == 38 && catalog::weapons.size() == 40,
+          "All 38 SRD weapons plus the existing plain focus and the Torch");
     for (const auto &e : expected)
     {
         const auto *w = catalog::weapon(e.key);
@@ -238,7 +238,8 @@ void all_classes()
     {
         ++classes;
         const auto h = hero(klass.id);
-        check(h.sheet().modifiers[0] == 2 && h.sheet().modifiers[1] == 3,
+        check(h.sheet().modifiers[Ability::strength] == 2 &&
+              h.sheet().modifiers[Ability::dexterity] == 3,
               "Asymmetric ability oracle");
         for (const auto &e : expectations())
             for (unsigned seed :
@@ -251,7 +252,11 @@ void all_classes()
                     klass.id == "paladin" || klass.id == "ranger" ||
                     (klass.id == "rogue" && (e.has("finesse") || e.has("light"))) ||
                     (klass.id == "monk" && e.has("light"));
-                const int modifier = e.ranged || e.has("finesse") ? 3 : 2;
+                // Martial Arts: a Monk's Monk weapons use Dexterity and roll at
+                // least a d6.
+                const bool monk_weapon =
+                    klass.id == "monk" && !e.ranged && (!e.martial || e.has("light"));
+                const int modifier = e.ranged || e.has("finesse") || monk_weapon ? 3 : 2;
                 auto c = battle(*rules, h, e.key, seed, e.ranged ? Cell{3, 1} : Cell{2, 1});
                 auto copy = rules->restore(c->save());
                 const auto before = unit(*c);
@@ -266,6 +271,7 @@ void all_classes()
                       "Independent seed and all-class proficiency/ability expectations");
                 // With the other hand empty a Versatile melee weapon uses its larger die.
                 const auto dice = e.versatile && !e.ranged ? "1d" + std::to_string(e.versatile)
+                                  : monk_weapon && e.damage == "1d4" ? std::string("1d6")
                                   : e.damage;
                 const int damage =
                     seed == 40 ? 0
@@ -333,8 +339,9 @@ void boundaries()
         if (!e.ranged)
         {
             auto c = battle(*rules, h, e.key, 13, {3, 1});
-            check(has(*c, "melee") == e.has("reach"),
-                  "Reach weapons alone hit a target ten feet away");
+            // MELEE-1: as in the original game, melee reaches adjacent squares
+            // only, so even the SRD's reach weapons cannot hit ten feet away.
+            check(!has(*c, "melee"), "No melee weapon hits a target ten feet away");
         }
     }
     // No damage dice are rolled or doubled for Blowgun, even with Savage Attacker.
@@ -361,7 +368,8 @@ void boundaries()
 dexterity == 20 ? AbilityRoll{{6, 6, 6, 1}, 3} :
         AbilityRoll{{1, 1, 1, 1}, 3};
         Character extreme(*srd5::character_rules(), draft, {});
-        check(extreme.sheet().scores[1] == dexterity, "Fixed damage extreme ability fixture");
+        check(extreme.sheet().scores[Ability::dexterity] ==
+              dexterity, "Fixed damage extreme ability fixture");
         auto c = battle(*rules, extreme, "blowgun");
         act(*c, "ranged");
         check(unit(*c, 2).hit_points == 999,
@@ -380,8 +388,10 @@ void campaign()
     for (const auto &e : expectations())
     {
         auto c = h;
-        const auto item = c.inventory().add(e.key, e.key, 1);
-        const auto shield = c.inventory().add("shield", "Shield", 1);
+        const auto item = c.add_item({.definition_id = e.key, .name = e.key, .quantity = 1});
+        const auto shield = c.add_item({.definition_id = "shield",
+                                               .name = "Shield",
+                                               .quantity = 1});
         CampaignParty party(module());
         const auto id = party.add_pc(std::move(c));
         auto state = party.checkpoint();

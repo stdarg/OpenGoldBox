@@ -32,7 +32,7 @@ void access()
         rejects(
             [&]
         {
-            (void)srd5::character_rules()->evaluate(d, true);
+            (void)srd5::character_rules()->evaluate(d, NameRequirement::required);
         });
     }
     auto bad = h.sheet();
@@ -51,9 +51,9 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         13);
     });
@@ -125,16 +125,19 @@ void eligibility()
                   "Out-of-range rejection leaves all state intact");
         }
     }
+    // Full hands block nothing (CLASS-11); untrained armor does.
     for (auto gear : std::vector<std::vector<std::string>>
 {
-    {"quarterstaff", "shield"}, {"wand", "shield"}, {"plate"}
+    {"quarterstaff", "shield"}, {"wand", "shield"}
 })
+    check(has(*battle(*rules, selected(), 13, {3, 1}, gear), "poison_spray"),
+          "Full hands do not block the Warlock grant");
     {
-        auto c = battle(*rules, selected(), 13, {3, 1}, gear);
+        auto c = battle(*rules, selected(), 13, {3, 1}, {"plate"});
         const auto before = c->save();
         check(!has(*c, "poison_spray") &&
               !c->submit({c->snapshot().revision, 1, 2, "poison_spray"}) && c->save() == before,
-              "Somatic/untrained armor checks apply to Warlock grant");
+              "Untrained armor checks apply to Warlock grant");
     }
     auto c = battle(*rules, selected(), 13, {2, 1});
     check(c->submit(command(*c, "poison_spray", 2)) && unit(*c, 2).hit_points == 996 &&
@@ -152,7 +155,7 @@ void campaign()
     {
         CampaignParty party(module());
         auto h = selected(true);
-        h.inventory().add("quarterstaff", "Quarterstaff");
+        h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
         const auto id = npc ? party.recruit("fixture:warlock-poison", std::move(h))
                         : party.add_pc(std::move(h));
         party.equip(id, 1);
@@ -162,8 +165,8 @@ void campaign()
         party.restore(state);
         auto actors = party.participants();
         actors[0].cell = {1, 1};
-        actors.push_back({99, "vanguard", "Enemy", 1, {5, 1}});
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+        actors.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         const auto old = unit(*c, id).persistent;
         check(c->submit(command(*c, "poison_spray", 99)),
               "Ordinary party profile provides Warlock cast");
@@ -204,17 +207,17 @@ void fixtures()
 {
     auto rules = module();
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "eldritch-fixtures";
-    auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
+    auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
         {   {
                 1,
                 "campaign-character",
                 "Warlock",
-                0,
+                Side::party,
                 {1, 1},
                 rules->character_profile(selected(true).sheet(), {}).data
             },
-            {2, "vanguard", "Ally", 0, {3, 1}},
-            {99, "vanguard", "Enemy", 1, {5, 1}}
+            {2, "vanguard", "Ally", Side::party, {3, 1}},
+            {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
         }},
     2);
     write(path / "both.save", c->save());

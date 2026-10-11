@@ -39,14 +39,14 @@ int main(int argc, char **argv)
             {
                 if (i)
                     std::cout << ',';
-                std::cout << unsigned(field.tiles[i]);
+                std::cout << static_cast<unsigned>(field.tiles[i]);
             }
             std::cout << "],\"terrain\":[";
             for (std::size_t i = 0; i < field.geometry.terrain.size(); ++i)
             {
                 if (i)
                     std::cout << ',';
-                std::cout << unsigned(field.geometry.terrain[i]);
+                std::cout << static_cast<unsigned>(field.geometry.terrain[i]);
             }
             std::cout << "]}\n";
             return std::cout ? 0 : 1;
@@ -59,7 +59,8 @@ int main(int argc, char **argv)
                 std::cout << ',';
             first = false;
             // Archive names are restricted to GEO + digits + .DAX by the loader.
-            std::cout << "{\"archive\":\"" << id.archive << "\",\"id\":" << unsigned(id.record)
+            std::cout << "{\"archive\":\"" << id.archive << "\",\"id\":"
+                      << static_cast<unsigned>(id.record)
                       << ",\"bytes\":" << map.raw.size() << ",\"cells\":[";
             for (std::size_t i = 0; i < map.cells.size(); ++i)
             {
@@ -71,16 +72,16 @@ int main(int argc, char **argv)
                 {
                     if (d)
                         std::cout << ',';
-                    std::cout << unsigned(c.walls[d]);
+                    std::cout << static_cast<unsigned>(c.walls[d]);
                 }
                 std::cout << "],\"doors\":[";
                 for (unsigned d = 0; d < 4; ++d)
                 {
                     if (d)
                         std::cout << ',';
-                    std::cout << unsigned(c.doors[d]);
+                    std::cout << static_cast<unsigned>(c.doors[d]);
                 }
-                std::cout << "],\"event\":" << unsigned(c.event_raw) << '}';
+                std::cout << "],\"event\":" << static_cast<unsigned>(c.event_raw) << '}';
             }
             std::cout << "]}";
         }

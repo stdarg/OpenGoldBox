@@ -45,7 +45,7 @@ it changes the current formats in place without migration (see the
 Rules 0.6.69 uses this state in combat for Shield of Faith and Heroism: one
 Concentration spell per caster, the damage save, ending at 0 Hit Points, expiry
 with combat time, and `CN1` embedded in each actor of combat checkpoints
-(`OGCOMBAT 39`). Concentration ends when the combat ends; it is not yet kept in
+(`OGCOMBAT 40`). Concentration ends when the combat ends; it is not yet kept in
 campaign saves. See [Paladin](PALADIN.md#buffs-and-concentration).
 
 ## Integration still required

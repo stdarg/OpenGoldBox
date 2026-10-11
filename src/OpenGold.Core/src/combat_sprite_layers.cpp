@@ -30,7 +30,7 @@ unsigned bank(const CharacterAppearance &a, bool action)
 
 const IndexedIcon &body_at(const CharacterArt &art, unsigned id)
 {
-    const auto &body = art.combat_bodies.at(id);
+    const auto &body = art.combat_bodies().at(id);
     if (body.width != 24 || body.height != 24 || body.pixels.size() != 576)
         throw std::runtime_error("Invalid combat layer dimensions");
     return body;
@@ -87,8 +87,9 @@ bool equipment(unsigned color, unsigned id, bool action, bool tall, int x, int y
 }
 } // namespace
 
-IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, bool action) const
+IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, IconPose pose) const
 {
+    const bool action = pose == IconPose::action;
     validate_character_appearance(a);
     const auto offset = bank(a, action);
     const auto &original = body_at(*this, offset + a.combat_body);
@@ -130,9 +131,10 @@ IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, bool acti
 }
 
 Image CharacterArt::equipped_icon(const CharacterAppearance &a, unsigned equipment_body,
-                                  bool action) const
+                                  IconPose pose) const
 {
-    auto composed = combat_anatomy(a, action);
+    const bool action = pose == IconPose::action;
+    auto composed = combat_anatomy(a, pose);
     const auto offset = bank(a, action);
     const auto &wielding = body_at(*this, offset + equipment_body);
     const int top = a.tall ? 8 : 10, waist = top + (robe(equipment_body) ? 6 : 8);
@@ -147,6 +149,6 @@ Image CharacterArt::equipped_icon(const CharacterAppearance &a, unsigned equipme
                     equipment(color, equipment_body, action, a.tall, x, y))
                 composed.pixels[p] = color;
         }
-    return compose_character_icon(combat_heads.at(offset + a.combat_head), composed, a);
+    return compose_character_icon(combat_heads_.at(offset + a.combat_head), composed, a);
 }
 } // namespace opengold::por

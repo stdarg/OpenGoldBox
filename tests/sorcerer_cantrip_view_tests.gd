@@ -121,18 +121,31 @@ func run_checks() -> void:
 	await keyboard(KEY_SPACE)
 	require(blast.button_pressed and blast.has_focus(), "Keyboard selection retains focus")
 	require(current_scene.get_node("SpellChoices/Rows/Count").text.ends_with("(1 / 4)"), "Four SRD choices")
-	require(current_scene.get_node("SpellChoices/Rows/Pending").visible, "Missing supported catalog stays pending")
-	await press("Next")
-	require(current_scene.get_node("PageTitle").text == "Name", "Name follows choices")
-	await press("Back")
-	require(blast.button_pressed, "Back retains choice")
+	# Sorcerers now prepare spells, and a preparing caster must fill every
+	# cantrip and preparation before Name.
+	var pending: Label = current_scene.get_node("SpellChoices/Rows/Pending")
+	require(current_scene.get_node("Next").disabled and pending.visible,
+			"Unfilled starting choices stay pending")
 	for spell in ["poison_spray", "ray_of_frost", "shocking_grasp"]:
 		var choice: CheckBox = current_scene.get_node("SpellChoices/Rows/" + spell)
 		choice.grab_focus()
 		await keyboard(KEY_SPACE)
 		require(choice.button_pressed and choice.has_focus(), "Keyboard selection: " + spell)
 	require(current_scene.get_node("SpellChoices/Rows/Count").text.ends_with("(4 / 4)"), "All four starting choices filled")
+	var prepared := "SpellChoices/Rows/BookChoices/prepared"
+	require(current_scene.get_node(prepared + "/Count").text == "Prepared spells (0 / 2)",
+			"Two prepared spells")
+	var ready := 0
+	for entry in current_scene.get_node(prepared).get_children():
+		if entry is CheckBox and entry.visible and not entry.disabled and ready < 2:
+			entry.set_pressed(true)
+			await settle()
+			ready += 1
 	require(not current_scene.get_node("SpellChoices/Rows/Pending").visible, "No starting choice pending")
+	await press("Next")
+	require(current_scene.get_node("PageTitle").text == "Name", "Name follows choices")
+	await press("Back")
+	require(blast.button_pressed, "Back retains choice")
 	for locale in ["en", "es"]:
 		TranslationServer.set_locale(locale)
 		await press("Back")

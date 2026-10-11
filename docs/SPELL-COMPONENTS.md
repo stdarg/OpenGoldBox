@@ -1,67 +1,43 @@
-# Spell components and occupied hands
+# Spell components
 
-[#201](https://github.com/stdarg/OpenGold/issues/201) delivers the first child of
-[#39](https://github.com/stdarg/OpenGold/issues/39): explicit component definitions
-for existing spells and Somatic hand eligibility. The parent remains open for
-actual speech restrictions such as gagging and magical silence, including their
-sources, persistence, removal and effects on casting. Recording a Verbal flag
-alone does not implement those restrictions.
+**Spells have no components** ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)).
+Verbal, Somatic and Material components and spellcasting focuses are not part
+of the rules. A caster with a weapon, wand or shield in hand casts any spell it
+can otherwise cast; standing in Silence does not stop a spell; no material
+needs to be carried, paid for or consumed.
 
-The source is [SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf),
-p. 105 (components), p. 90 (Two-Handed/Versatile), and the named spell entries.
+What still limits casting:
 
-| Existing spell | Components |
-| --- | --- |
-| Fire Bolt | Verbal, Somatic |
-| Cure Wounds | Verbal, Somatic |
-| Magic Missile | Verbal, Somatic |
-| Healing Word | Verbal |
-| Scorching Ray | Verbal, Somatic |
-| Blindness/Deafness (implemented Blindness option) | Verbal |
+- Untrained armor prevents all spellcasting.
+- A raging Barbarian casts no spells, and a Druid in Wild Shape casts none.
+- Slots, prepared spells, the action economy, range and sight work as before.
 
-Higher-slot variants retain the same components. These six spells have no
-Material components. Material/focus/cost/consumption mechanics remain #40.
+Consequences:
 
-An equipped weapon or wand together with a shield occupies both hands, making
-Somatic spells unavailable. A shield alone, weapon alone or empty hands leaves
-at least one hand usable. Two-Handed weapons require both hands only when
-attacking. A Versatile weapon is wielded two-handed exactly when the other hand
-is empty ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)),
-so that hand is free between attacks and a two-handed Versatile grip never
-blocks a Somatic component; only a shield or second weapon does, as before.
-Casting does not remove equipment, change shield AC or spend an extra action.
+- **Silence** still makes Thunder damage harmless inside its sphere and is
+  still shown on the battlefield, but it no longer stops smites, Hunter's
+  Mark, Armor of Shadows, Shield, Spiritual Weapon's attack or any other spell.
+- **Subtle Spell** is no longer offered as a Metamagic option, since it only
+  removed components. A Sorcerer who chose it before keeps a valid save; the
+  option does nothing and cannot be readied.
+- The character sheet no longer notes that a weapon and shield occupy both
+  hands.
 
-This uses equipment from actual character recipes for PCs and recruited NPCs.
-The abstract standalone training creature profiles have no equipped weapon or
-shield records; their attack dice are not treated as evidence of occupied hands.
-Inventory-only items do not occupy hands. Untrained armor's separate casting
-prohibition remains in force, including for Verbal-only spells.
+## History
 
-The C++20 rules module filters legal commands before execution, so forged or
-stale blocked casts cannot consume actions, slots, RNG, HP or game time. The
-existing Godot game/demo action controls reflect those commands; the game's
-keyboard action cycle excludes blocked spells. The existing Modifiers display
-explains the weapon/wand-plus-shield restriction in English and Spanish. No new
-controls or combat saving options are added.
+From rules 0.6.21 ([#201](https://github.com/stdarg/OpenGold/issues/201)) to
+0.6.128 each spell recorded its Verbal and Somatic components: a weapon or wand
+together with a shield blocked Somatic spells, and Silence blocked Verbal ones.
+Material components were never enforced. Rules 0.6.129 removes all of it. No
+save data changes: campaign and combat saves load and play under the new rule.
 
-## Persistence and verification
+## Verification
 
-The hands rule adds no save data; loaded campaign and combat state uses the
-corrected rule for subsequent spell eligibility.
-
-`opengold_spell_component_tests` independently checks component flags, all live
-spell commands and upcasts, weapon/wand/shield combinations, two-hand and
-two-handed Versatile weapons, normal casting costs, rejected-command atomicity, equipped
-campaign members and unequipping, and repeated saves.
-
-`tests/spell_component_view_tests.gd` uses normally created and advanced caster
-fixtures to check the game and demo's existing spell controls and hidden internal
-checkpoint continuation. The game additionally checks Blindness, the keyboard
-cycle and a Healing Word cast; the older demo lacks the Blindness control.
-CTest registers the game check without original assets. The demo can run the
-same script with `--legacy` and the `--component-fixtures` directory written by
-the native suite.
-
-The remaining magical-silence path is split into concentration transitions #207,
-Silence combat/area/player integration #208 and campaign/ritual integration #209.
-See [concentration](CONCENTRATION.md). These do not imply gagging is supported.
+`opengold_spell_component_tests` checks that every combination of weapon, wand
+and shield leaves every live spell command available with its normal costs,
+that untrained armor still blocks casting, and that a Cleric with mace and
+shield casts in a campaign encounter. `opengold_spell_table_tests` checks every
+spell row with a quarterstaff and shield in hand. `opengold_cleric_channel_tests`
+casts Sacred Flame from inside Silence. `tests/spell_component_view_tests.gd`
+checks that the game's spell controls and keyboard cycle offer casting with
+full hands.

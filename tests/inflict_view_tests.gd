@@ -68,7 +68,7 @@ func run_checks() -> void:
         var label := "Inflict Wounds" if locale == "en" else "Infligir heridas"
         require(await cycle_to(combat, label), "The A cycle offers Inflict Wounds to a Cleric beside an enemy: " + locale)
         await click_cell(Vector2(2, 1))
-        var log: String = combat.get_node("Log").get_parsed_text()
+        var log: String = combat.get_node("LogStack/Log").get_parsed_text()
         require(log.contains(label) and log.contains("Enemy"), "Clicking the enemy casts Inflict Wounds on it: " + locale)
         require(not await cycle_to(combat, label), "The spent Action ends further casting this turn")
     TranslationServer.set_locale("en")

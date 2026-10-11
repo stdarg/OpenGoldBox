@@ -7,17 +7,24 @@
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/classes/audio_stream_wav.hpp>
+#include <map>
 #include <optional>
 #include <set>
 #include <functional>
+#include <exception>
 
 class RolfTourView : public godot::Control
 {
     GDCLASS(RolfTourView, godot::Control)
   public:
+    // A failed handler is already in the log, and this view has no status
+    // line to show it; called by presentation::run_guarded.
+    void report_failure(const std::exception &) noexcept
+    {
+    }
+
     void _ready() override;
     void _process(double delta) override;
-    void _draw() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
 
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party)
@@ -66,7 +73,11 @@ class RolfTourView : public godot::Control
     void restore_campaign(std::shared_ptr<opengold::CampaignParty> party,
                           opengold::por::RolfTourSession session);
     void request_save(bool saving);
-    std::function<void(const std::string &)> save_check;
+    // The party check's save-and-reload hook; only that check sets one.
+    void enable_save_check(std::function<void(const std::string &)> check)
+    {
+        save_check_ = std::move(check);
+    }
 
     [[nodiscard]] bool party_route_checked() const
     {
@@ -82,19 +93,32 @@ class RolfTourView : public godot::Control
 
     bool check_expedition_step();
 
+    // Redraws from the session and party, e.g. after the leader changes.
+    void refresh();
+
+    [[nodiscard]] godot::Dictionary tour_visuals();
+
   protected:
     static void _bind_methods();
     void _notification(int what);
 
   private:
+    // Private, so only enable_save_check sets it (Effective C++ Item 22).
+    std::function<void(const std::string &)> save_check_;
+    void advance_frame(double delta);
+    void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     std::optional<opengold::por::RolfTourSession> session_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::array<godot::Ref<godot::ImageTexture>, 3> sprites_;
     godot::Ref<godot::ImageTexture> wall_view_;
-    godot::Ref<godot::Texture2D> rolf_portrait_;
+    // Complete NPC portraits by file, loaded when first shown.
+    std::map<std::string, godot::Ref<godot::Texture2D>, std::less<>> npc_portraits_;
     // Monster close-up looping before combat; the pointer identifies the frames shown.
+    // Only compared with the session's current close-up, never read: the
+    // frames it points to go when the session is reset or replaced.
     const std::vector<opengold::AnimationFrame> *shown_monster_picture_{};
     std::vector<godot::Ref<godot::ImageTexture>> monster_frames_;
+    std::vector<std::uint32_t> monster_delays_;
     double monster_picture_seconds_{};
     unsigned monster_picture_check_frames_{};
     std::optional<opengold::por::PartyPose> rendered_pose_;
@@ -117,13 +141,13 @@ class RolfTourView : public godot::Control
     std::set<std::pair<unsigned, unsigned>> check_refused_edges_;
     std::optional<std::pair<unsigned, unsigned>> check_pending_edge_;
     void layout();
-    void refresh();
     void check_district_labels(const opengold::por::TourSnapshot &s);
     void select_buyer(unsigned slot);
     [[nodiscard]] std::vector<unsigned> occupied_slots() const;
     void buyer_key(godot::Key keycode);
     void sync_monster_picture();
     [[nodiscard]] std::size_t current_monster_frame() const;
+    void forget_monster_picture();
     void dismiss_monster_picture();
     void restart();
     void next();
@@ -174,8 +198,7 @@ class RolfTourView : public godot::Control
     void close_sheet();
     void leave_shop();
     void movement(opengold::por::ExplorationCommand command);
-    void draw_scene();
-    void draw_map();
+    godot::Ref<godot::Texture2D> npc_portrait(std::string_view file);
     void check_run();
     void check_town();
     void check_recovery();

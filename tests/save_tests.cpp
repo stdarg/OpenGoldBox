@@ -62,7 +62,7 @@ template <class F> std::string rejection_message(F f)
 }
 
 // The only campaign format this build reads and writes.
-constexpr unsigned current_campaign_format = 21;
+constexpr unsigned current_campaign_format = 25;
 
 // The checksum line covers only the body, so rewriting the header number
 // changes nothing but the claimed format.
@@ -176,6 +176,8 @@ void fog_saves(const std::filesystem::path &directory)
     resources->programs[20] = travel_program(20, 0);
     auto district = std::make_shared<por::PhlanResources>();
     district->map = por::GeoMap{};
+    district->script = 20; // the Slums script loads it
+    district->bank = 2;
     resources->districts[20] = district;
     auto party = std::make_shared<CampaignParty>(module());
     party->add_pc(character("fighter"));
@@ -271,11 +273,11 @@ void file_safety(const std::filesystem::path &directory)
     backup += ".bak";
     const auto has_temporary = [&]
     {
-for (const auto &entry : std::filesystem::directory_iterator(directory))
-        if (entry.path().filename().string().starts_with("storage.save.tmp"))
-            return true;
-            return false;
-        };
+        for (const auto &entry : std::filesystem::directory_iterator(directory))
+            if (entry.path().filename().string().starts_with("storage.save.tmp"))
+                return true;
+        return false;
+    };
 const std::string first("first\0checkpoint", 16);
     write_save_file(path, first, 64);
     check(read_save_file(path, 64) == first, "Storage preserves binary checkpoint bytes");
@@ -403,7 +405,7 @@ void roundtrip(const std::filesystem::path &directory)
     settle(town);
     town.explore(por::ExplorationCommand::look);
     settle(town);
-    auto path = directory / std::filesystem::u8path("named save ü.ogs");
+    auto path = directory / std::filesystem::path(u8"named save \u00FC.ogs");
     const auto saved = encode_campaign(*party, &town, "fixture-v1");
     write_campaign_file(path, saved);
     auto base = prototype();
@@ -418,8 +420,8 @@ void roundtrip(const std::filesystem::path &directory)
     check_campaign_format_cutoff(saved, *rules, base);
     const auto encounter = [](const CampaignParty & p)
     {
-        rules::Encounter e{{8, 8, std::vector<std::uint8_t>(64)}, p.participants()};
-        e.participants.push_back({99, "bandit", "Bandit", 1, {6, 6}});
+        rules::Encounter e{{8, 8, std::vector<rules::Terrain>(64)}, p.participants()};
+        e.participants.push_back({99, "bandit", "Bandit", rules::Side::opposition, {6, 6}});
         return e;
     };
     auto combat_a = rules->create(encounter(*party), 42),
@@ -458,7 +460,8 @@ void roundtrip(const std::filesystem::path &directory)
     town.explore(por::ExplorationCommand::look);
     settle(*loaded.town);
     settle(town);
-    check(loaded.town->script_variable(0x9810) == town.script_variable(0x9810),
+    check(loaded.town->script_variable(por::EclAddress{0x9810}) ==
+          town.script_variable(por::EclAddress{0x9810}),
           "Script continuation matches");
     auto next = encode_campaign(*replacement, &*loaded.town, "fixture-v1");
     write_campaign_file(path, next);

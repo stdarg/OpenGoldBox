@@ -107,7 +107,7 @@ std::uint64_t rng(const CombatSession &c)
 
 Message attack(const CombatSession &c)
 {
-    for (const auto &m : c.snapshot().log_messages)
+    for (const auto &m : c.snapshot().log_messages())
         if (m.source.starts_with("{actor} -> {target}: d20"))
             return m;
     throw std::runtime_error("Missing attack log");
@@ -129,12 +129,12 @@ auto custom(std::string affinity = {})
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-std::vector<std::string> gear = {}, unsigned side = 1,
+std::vector<std::string> gear = {}, Side side = Side::opposition,
 std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
-    auto c = rules.create({{28, 8, std::vector<std::uint8_t>(224)},
-        {   {1, "campaign-character", "Caster", 0, {1, 1}, profile.data},
+    auto c = rules.create({{28, 8, std::vector<Terrain>(224)},
+        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
             {2, "target", "Target", side, target, {}, vital}
         }},
     seed);
@@ -170,9 +170,9 @@ void access()
     auto creation = srd5::character_rules();
     auto d = draft();
     auto options = creation->cantrip_options(d);
-    check(options.count == 4 && options.options.size() == 7,
-          "Seven supported Sorcerer options, four choices");
-    check(rules->spell_access(creation->evaluate(d, true)).cantrips.empty(),
+    check(options.count == 4 && options.options.size() == 8,
+          "Eight supported Sorcerer options, four choices");
+    check(rules->spell_access(creation->evaluate(d, NameRequirement::required)).cantrips.empty(),
           "A draft without selections has no invented cantrips");
     const auto h = hero();
     auto access = rules->spell_access(h.sheet());
@@ -192,7 +192,7 @@ void access()
         rejects(
             [&]
         {
-            (void)creation->evaluate(d, true);
+            (void)creation->evaluate(d, NameRequirement::required);
         });
     }
     for (unsigned mode = 0; mode < 4; ++mode)
@@ -224,9 +224,9 @@ void access()
     rejects(
         [&]
     {
-        (void)rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Forged", 0, {1, 1}, profile},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         13);
     });
@@ -242,8 +242,8 @@ void access()
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.heads.emplace(1, por::PortraitPart{"fixture", head});
-    art.bodies.emplace(1, por::PortraitPart{"fixture", body});
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
     unsigned count = 0;
     for (const auto &preset : character_pool(*creation, art))
         if (preset.sheet().character_class == "Sorcerer")
@@ -365,14 +365,15 @@ void eligibility()
                       "Illegal range atomicity");
             }
         }
-        for (auto gear :
-        std::vector<std::vector<std::string>> {{"quarterstaff", "shield"}, {"plate"}})
+        // Full hands block nothing (CLASS-11); untrained armor does.
+        check(has(*battle(*rules, hero(), 13, {2, 1}, {"quarterstaff", "shield"}), spell),
+              "Full hands do not block casting");
         {
-            auto c = battle(*rules, hero(), 13, {2, 1}, gear);
+            auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
             auto saved = c->save();
             check(!has(*c, spell) && !c->submit({c->snapshot().revision, 1, 2, spell}) &&
                   c->save() == saved,
-                  "Hand/armor blockers apply");
+                  "Untrained armor blocks casting");
         }
         auto c = battle(*rules, hero(), 13, {2, 1});
         check(c->submit(command(*c, spell, 2)), "Adjacent cast allowed");
@@ -393,7 +394,7 @@ void campaign()
         {
             CampaignParty party(module());
             auto h = hero();
-            h.inventory().add("quarterstaff", "Quarterstaff");
+            h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
             const auto id = npc ? party.recruit("fixture:sorcerer-cantrip", std::move(h))
                             : party.add_pc(std::move(h));
             party.equip(id, 1);
@@ -403,8 +404,8 @@ void campaign()
             party.restore(state);
             auto actors = party.participants();
             actors[0].cell = {1, 1};
-            actors.push_back({99, "vanguard", "Enemy", 1, {2, 1}});
-            auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+            actors.push_back({99, "vanguard", "Enemy", Side::opposition, {2, 1}});
+            auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             check(c->submit(command(*c, spell, 99)),
                   "Ordinary party profile provides Sorcerer cast");
             party.begin_combat();
@@ -454,14 +455,22 @@ void fixtures()
     {
         auto h = hero(kind == "unknown" ? std::vector<std::string> {} : choices);
         auto profile = rules->character_profile(
-                           h.sheet(), kind == "blocked" ? std::vector<std::string> {"quarterstaff", "shield"}
+                           h.sheet(), kind == "blocked" ? std::vector<std::string> {"plate"}
                            : std::vector<std::string> {});
-        auto c = rules->create({{12, 9, std::vector<std::uint8_t>(108)},
-            {   {1, "campaign-character", "Sorcerer", 0, {1, 1}, profile.data},
-                {2, "vanguard", "Ally", 0, {2, 1}},
-                {99, "vanguard", "Enemy", 1, {5, 1}}
+        auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
+            {   {1, "campaign-character", "Sorcerer", Side::party, {1, 1}, profile.data},
+                {2, "vanguard", "Ally", Side::party, {2, 1}},
+                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
             }},
         2);
+        // Untrained armor's initiative Disadvantage may put the caster later.
+        for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+            for (const auto &end : c->legal_commands())
+                if (end.verb == "end")
+                {
+                    (void)c->submit(end);
+                    break;
+                }
         write(path / (kind + ".save"), c->save());
     }
 }

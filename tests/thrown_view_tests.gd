@@ -54,7 +54,7 @@ func run_checks() -> void:
             require(not ("×" in choices.get_item_text(0)) and not (("stow" if locale == "en" else "guardar") in choices.get_item_text(0)), "Thrown weapons list by name, like ammunition, with no count or stowing")
             require(not current_scene.get_node("Save").visible and not current_scene.get_node("Load").visible, "No combat saving controls added")
             require(button.get_global_rect().end.y <= root.size.y and choices.get_global_rect().end.x <= button.get_global_rect().position.x, "Controls fit without overlap")
-            require(current_scene.get_node("Log").get_rect().end.y <= current_scene.get_node("Footer").position.y, "Combat log remains above footer")
+            require(current_scene.get_node("LogStack/Log").get_global_rect().end.y <= current_scene.get_node("Footer").position.y, "Combat log remains above footer")
             if not demo:
                 require(button.get_rect().end.x <= current_scene.get_node("BattlefieldScroll").get_rect().end.x, "Thrown controls stay inside combat column")
             await capture("choices-" + locale + "-" + str(size.x))

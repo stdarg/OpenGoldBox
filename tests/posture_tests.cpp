@@ -1,6 +1,7 @@
 // Posture, gear and dying rules after SIMPLIFY-1: a rest-interrupting encounter
 // finds sleepers awake but Prone, downed characters keep their gear, Prone ends
-// with combat, and death saves left at victory are rolled at once.
+// with combat, and whoever is still dying at victory is bandaged, as in the
+// original game.
 #include "opengold/campaign_party.h"
 #include "opengold/srd5.h"
 #include "combat_grid.h"
@@ -93,7 +94,7 @@ void turn(CombatSession &s, EntityId id)
 
 std::size_t log_count(const CombatSession &s, std::string_view line)
 {
-    const auto log = s.snapshot().log;
+    const auto log = s.snapshot().log();
     return std::size_t(std::count(log.begin(), log.end(), std::string(line)));
 }
 
@@ -127,8 +128,8 @@ void rest_ambush()
     participants[0].cell = {2, 2};
     participants[0].resting = true;
     participants[1].cell = {2, 3};
-    participants.push_back({3, "bandit", "Enemy", 1, {6, 2}});
-    auto s = rules->create({{9, 7, std::vector<std::uint8_t>(63)}, participants}, 37);
+    participants.push_back({3, "bandit", "Enemy", Side::opposition, {6, 2}});
+    auto s = rules->create({{9, 7, std::vector<Terrain>(63)}, participants}, 37);
     const auto woken = unit(*s, sleeper);
     check(woken.prone && woken.conscious && !unit(*s, watcher).prone,
           "A rest-interrupting encounter starts the resting character awake and Prone");
@@ -161,9 +162,9 @@ void downed_keeps_gear()
     bool witnessed = false;
     for (unsigned seed = 1; seed < 100 && !witnessed; ++seed)
     {
-        auto hit = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "bandit", "Attacker", 1, {2, 2}},
-                {2, "campaign-character", "Wounded", 0, {3, 2}, armed.data, VitalState{1}}
+        auto hit = rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "bandit", "Attacker", Side::opposition, {2, 2}},
+                {2, "campaign-character", "Wounded", Side::party, {3, 2}, armed.data, VitalState{1}}
             }},
         seed);
         if (hit->snapshot().actor != 1)
@@ -195,7 +196,7 @@ VitalState dying()
     return {0, false, "SRD11 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 1"};
 }
 
-void death_saves_at_victory()
+void bandaged_at_victory()
 {
     const auto rules = module();
     const auto person = hero();
@@ -203,10 +204,10 @@ void death_saves_at_victory()
     bool witnessed = false;
     for (unsigned seed = 1; seed < 200 && !witnessed; ++seed)
     {
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Victor", 0, {2, 2}, profile},
-                {2, "campaign-character", "Fallen", 0, {1, 1}, profile, dying()},
-                {3, "bandit", "Enemy", 1, {3, 2}, {}, VitalState{1}}
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Victor", Side::party, {2, 2}, profile},
+                {2, "campaign-character", "Fallen", Side::party, {1, 1}, profile, dying()},
+                {3, "bandit", "Enemy", Side::opposition, {3, 2}, {}, VitalState{1}}
             }},
         seed);
         for (unsigned n = 0; n < 20 && c->snapshot().outcome == Outcome::ongoing; ++n)
@@ -215,25 +216,21 @@ void death_saves_at_victory()
                   "Victory fixture command");
         if (c->snapshot().outcome != Outcome::victory)
             continue;
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         const auto victory = std::find(log.begin(), log.end(), "Victory.");
-        const auto first_save = std::find_if(victory, log.end(),
-                                             [](const auto & line)
-        {
-            return line.starts_with("Fallen death save: ");
-        });
-        if (first_save == log.end())
+        const auto bandaged = std::find(victory, log.end(), "Fallen is bandaged and stable.");
+        if (bandaged == log.end())
             continue;
         witnessed = true;
         const auto fallen = unit(*c, 2);
-        check(fallen.dead || fallen.hit_points == 1 ||
+        check(!fallen.dead && fallen.hit_points == 0 &&
               fallen.persistent.description.find("Stable") != std::string::npos,
-              "Every remaining death save is rolled at once until the character is settled");
-        const auto outcome = fallen.dead ? "Fallen dies."
-                             : fallen.hit_points ? "Fallen regains 1 HP."
-                             : "Fallen is stable.";
-        check(std::find(first_save, log.end(), outcome) != log.end(),
-              "The combat log shows each roll and the outcome");
+              "A character still dying at victory is bandaged and Stable");
+        check(std::none_of(victory, log.end(), [](const auto & line)
+        {
+            return line.starts_with("Fallen death save: ");
+        }), "No death save is rolled after victory");
+        check(std::count(log.begin(), log.end(), "Victory.") == 1, "Victory is announced once");
         check(!fallen.prone && !unit(*c, 1).prone, "Prone does not outlast combat");
         check(rules->restore(c->save())->save() == c->save(), "Resolved victory round trips");
     }
@@ -264,8 +261,8 @@ void campaign_death_saves()
 
 void movement()
 {
-    Battlefield board{5, 5, std::vector<std::uint8_t>(25)};
-    board.terrain[2 * 5 + 3] = 2;
+    Battlefield board{5, 5, std::vector<Terrain>(25)};
+    board.terrain[2 * 5 + 3] = Terrain::difficult;
     fx::MovementGrid grid(board, {2, 2}, {}, true);
     check(grid.step_cost({2, 2}, {2, 3}) == 10 && grid.step_cost({2, 2}, {3, 2}) == 15,
           "Crawling and difficult terrain add independent movement costs");
@@ -282,7 +279,7 @@ int main()
         codec();
         rest_ambush();
         downed_keeps_gear();
-        death_saves_at_victory();
+        bandaged_at_victory();
         campaign_death_saves();
         movement();
         std::cout << "Posture tests passed\n";

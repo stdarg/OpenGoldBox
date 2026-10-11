@@ -14,6 +14,9 @@ FetchContent_Declare(godot_cpp
     GIT_REPOSITORY https://github.com/godotengine/godot-cpp.git
     GIT_TAG e83fd0904c13356ed1d4c3d09f8bb9132bdc6b77)
 FetchContent_MakeAvailable(godot_cpp)
+# godot-cpp's headers are third-party; keep their warnings out of the project's.
+get_target_property(godot_cpp_includes godot-cpp INTERFACE_INCLUDE_DIRECTORIES)
+set_target_properties(godot-cpp PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${godot_cpp_includes}")
 find_program(OPENGOLDBOX_GODOT NAMES godot_console godot Godot
     HINTS "/Applications/Godot.app/Contents/MacOS" "/Applications/Godot_mono.app/Contents/MacOS" REQUIRED)
 set(game_project "${CMAKE_CURRENT_SOURCE_DIR}/godot")
@@ -48,8 +51,8 @@ endif()
 configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
-    portrait_picker.cpp party_preview.cpp equipment_choice.cpp level_up_view.cpp campaign_save_view.cpp save_slots.cpp
-    character_pool_view.cpp character_sheet_view.cpp godot_sound_output.cpp register_types.cpp startup_view.cpp game_lifecycle.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
+    portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
+    character_pool_dialog.cpp town_sheet_dialog.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp startup_view.cpp game_lifecycle.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengoldbox_game PRIVATE cxx_std_20)
 target_compile_definitions(opengoldbox_game PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
@@ -67,13 +70,16 @@ foreach(source IN LISTS portrait_sources)
         DEPENDS "${source}" VERBATIM)
     list(APPEND portrait_outputs "${output}")
 endforeach()
-set(rolf_portrait_source "${PROJECT_SOURCE_DIR}/art/portraits/NPCs/rolf.png")
-set(rolf_portrait_output "${game_project}/bin/portraits/NPCs/rolf.png")
-add_custom_command(OUTPUT "${rolf_portrait_output}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_project}/bin/portraits/NPCs"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${rolf_portrait_source}" "${rolf_portrait_output}"
-    DEPENDS "${rolf_portrait_source}" VERBATIM)
-list(APPEND portrait_outputs "${rolf_portrait_output}")
+file(GLOB npc_portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/art/portraits/NPCs/*.png")
+foreach(source IN LISTS npc_portrait_sources)
+    get_filename_component(name "${source}" NAME)
+    set(output "${game_project}/bin/portraits/NPCs/${name}")
+    add_custom_command(OUTPUT "${output}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_project}/bin/portraits/NPCs"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${source}" "${output}"
+        DEPENDS "${source}" VERBATIM)
+    list(APPEND portrait_outputs "${output}")
+endforeach()
 set(splash_outputs)
 foreach(name OpenGoldBoxSplashBackground OpenGoldBoxEngineLettering OpenGoldBoxGameLettering
     OpenGoldBoxEngineLettering.es OpenGoldBoxGameLettering.es)
@@ -103,8 +109,25 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_combat_sprite_layout_tests "${PROJECT_SOURCE_DIR}/tests/combat_sprite_layout_tests.cpp")
     target_link_libraries(opengold_combat_sprite_layout_tests PRIVATE opengold_rules godot-cpp)
     add_test(NAME opengold_combat_sprite_layout_tests COMMAND opengold_combat_sprite_layout_tests)
+    add_executable(opengold_guarded_handler_tests "${PROJECT_SOURCE_DIR}/tests/guarded_handler_tests.cpp")
+    target_compile_definitions(opengold_guarded_handler_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_guarded_handler_tests COMMAND opengold_guarded_handler_tests)
+    add_executable(opengold_cached_combat_tests "${PROJECT_SOURCE_DIR}/tests/cached_combat_tests.cpp")
+    target_link_libraries(opengold_cached_combat_tests PRIVATE opengold_rules_srd5 opengold_core)
+    target_compile_definitions(opengold_cached_combat_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_cached_combat_tests COMMAND opengold_cached_combat_tests)
+    add_executable(opengold_monster_picture_tests "${PROJECT_SOURCE_DIR}/tests/monster_picture_tests.cpp")
+    target_compile_definitions(opengold_monster_picture_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_monster_picture_tests COMMAND opengold_monster_picture_tests)
+    add_executable(opengold_godot_path_tests "${PROJECT_SOURCE_DIR}/tests/godot_path_tests.cpp")
+    target_link_libraries(opengold_godot_path_tests PRIVATE godot-cpp)
+    target_compile_definitions(opengold_godot_path_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_godot_path_tests COMMAND opengold_godot_path_tests)
     add_test(NAME opengold_screenshot_tool_tests
         COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tests/screenshot_tool_tests.py")
+    # The catalogs must list every message the game shows, with current references.
+    add_test(NAME opengold_localization_check
+        COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tools/localization.py" --check)
     # These checks use synthetic combat and first-run setup, without original
     # game files, export templates, or a packaged application.
     add_custom_target(opengoldbox_test_project
@@ -116,10 +139,17 @@ if(OPENGOLD_BUILD_TESTS)
         --target opengoldbox_test_project --config $<CONFIG>)
     set_tests_properties(opengold_godot_prepare PROPERTIES FIXTURES_SETUP godot_project TIMEOUT 600 LABELS godot
         RESOURCE_LOCK godot_project)
+    # Puts back settings.cfg when a settings check (below) was stopped part way.
+    add_test(NAME opengold_godot_restore_settings COMMAND "${CMAKE_COMMAND}"
+        "-DPROJECT=${game_project}" "-DKEPT=${CMAKE_BINARY_DIR}/settings-checks/developer-settings"
+        -P "${PROJECT_SOURCE_DIR}/tests/restore_settings.cmake")
+    set_tests_properties(opengold_godot_restore_settings PROPERTIES FIXTURES_SETUP godot_project
+        LABELS godot RESOURCE_LOCK godot_project)
     function(opengold_godot_test name script expected)
         add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/${script}.gd" "-DEXPECTED=${expected}" "-DARGS=${ARGN}"
+            "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/${name}"
             -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties("opengold_godot_${name}" PROPERTIES FIXTURES_REQUIRED godot_project
             TIMEOUT 40 LABELS godot RESOURCE_LOCK godot_project
@@ -149,6 +179,15 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_medicine PROPERTIES FIXTURES_REQUIRED "godot_project;medicine_fixtures")
     opengold_godot_test(thrown thrown_view_tests "Thrown weapon controls passed" "--thrown-fixtures=${PROJECT_BINARY_DIR}/thrown-fixtures")
     set_tests_properties(opengold_godot_thrown PROPERTIES FIXTURES_REQUIRED "godot_project;thrown_fixtures")
+    opengold_godot_test(items items_view_tests "Items controls passed" "--playtest-fixtures=${PROJECT_BINARY_DIR}/playtest-fixtures")
+    set_tests_properties(opengold_godot_items PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
+    opengold_godot_test(flee flee_view_tests "Flee controls passed" "--playtest-fixtures=${PROJECT_BINARY_DIR}/playtest-fixtures")
+    set_tests_properties(opengold_godot_flee PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
+    opengold_godot_test(quick quick_view_tests "Quick combat controls passed" "--playtest-fixtures=${PROJECT_BINARY_DIR}/playtest-fixtures")
+    set_tests_properties(opengold_godot_quick PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
+    opengold_godot_test(ui_audit ui_audit "UI audit passed" "--playtest-fixtures=${PROJECT_BINARY_DIR}/playtest-fixtures")
+    set_tests_properties(opengold_godot_ui_audit PROPERTIES FIXTURES_REQUIRED "godot_project;playtest_fixtures")
+    opengold_godot_test(level_up_lab level_up_lab_tests "Level-up lab passed")
     opengold_godot_test(champion champion_view_tests "Champion controls passed" "--champion-fixtures=${PROJECT_BINARY_DIR}/champion-fixtures")
     set_tests_properties(opengold_godot_champion PROPERTIES FIXTURES_REQUIRED "godot_project;champion_fixtures")
     opengold_godot_test(shocking shocking_view_tests "Shocking Grasp view checks passed" "--shocking-fixtures=${PROJECT_BINARY_DIR}/shocking-fixtures")
@@ -179,9 +218,47 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_divine_spark PROPERTIES FIXTURES_REQUIRED "godot_project;cleric_fixtures")
     opengold_godot_test(poison poison_view_tests "Poison Spray view checks passed" "--poison-fixtures=${PROJECT_BINARY_DIR}/poison-fixtures")
     set_tests_properties(opengold_godot_poison PROPERTIES FIXTURES_REQUIRED "godot_project;poison_fixtures")
+    opengold_godot_test(mastery_combat mastery_combat_view_tests "Sap/Vex UI/native checks passed"
+        "--mastery-fixtures=${PROJECT_BINARY_DIR}/mastery-fixtures")
+    set_tests_properties(opengold_godot_mastery_combat PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_fixtures")
+    opengold_godot_test(nick nick_view_tests "Nick UI/native checks passed"
+        "--nick-fixtures=${PROJECT_BINARY_DIR}/nick-fixtures")
+    set_tests_properties(opengold_godot_nick PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_fixtures")
+    opengold_godot_test(graze graze_view_tests "Graze controls passed"
+        "--nick-fixtures=${PROJECT_BINARY_DIR}/graze-fixtures")
+    set_tests_properties(opengold_godot_graze PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_fixtures")
+    opengold_godot_test(optional_mastery optional_mastery_view_tests
+        "Optional mastery controls passed"
+        "--nick-fixtures=${PROJECT_BINARY_DIR}/optional-mastery-fixtures")
+    set_tests_properties(opengold_godot_optional_mastery PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_fixtures")
+    opengold_godot_test(alert alert_view_tests "Alert UI tests passed"
+        "--nick-fixtures=${PROJECT_BINARY_DIR}/alert-fixtures")
+    set_tests_properties(opengold_godot_alert PROPERTIES
+        FIXTURES_REQUIRED "godot_project;alert_fixtures")
+    opengold_godot_test(light_attack light_attack_view_tests "Light attack UI/native checks passed"
+        "--light-fixtures=${PROJECT_BINARY_DIR}/light-fixtures")
+    set_tests_properties(opengold_godot_light_attack PROPERTIES
+        FIXTURES_REQUIRED "godot_project;light_fixtures")
+    # The tour scene runs the mastery rest check; the script's options choose
+    # the locale and the window size.
+    opengold_godot_test(mastery_rest mastery_rest_view_tests "Weapon Mastery rest controls passed"
+        --mastery-rest-check)
+    opengold_godot_test(mastery_rest_es mastery_rest_view_tests
+        "Weapon Mastery rest controls passed"
+        --mastery-rest-check --mastery-locale=es --mastery-large)
     opengold_godot_test(opportunity opportunity_view_tests "Opportunity view checks passed")
     opengold_godot_test(conditions condition_view_tests "Condition view checks passed" --conditions)
     opengold_godot_test(node_ownership node_ownership_tests "Native node ownership checks passed")
+    opengold_godot_test(dialog_layouts dialog_layout_scene_tests "Dialog scenes passed")
+    opengold_godot_test(startup_layout startup_layout_scene_tests "Startup layout scene passed")
+    opengold_godot_test(tour_layout tour_layout_scene_tests "Tour layout scene passed")
+    opengold_godot_test(embedded_view_layout embedded_view_layout_tests "Embedded view layout passed")
+    opengold_godot_test(party_advance_layout party_advance_layout_tests "Party advance layout passed")
+    opengold_godot_test(window_layout window_layout_scene_tests "Window layout scene passed")
     opengold_godot_test(screenshots screenshot_tests "Screenshot checks passed")
     opengold_godot_test(shutdown_key shutdown_tests "Shutdown check passed" --reset-game-path --shutdown-key)
     opengold_godot_test(shutdown_close shutdown_tests "Shutdown check passed" --reset-game-path --shutdown-close)
@@ -202,6 +279,189 @@ if(OPENGOLD_BUILD_TESTS)
         -P "${PROJECT_SOURCE_DIR}/tests/shop_disclosure.cmake")
     set_tests_properties(opengold_godot_shop_disclosure PROPERTIES FIXTURES_REQUIRED godot_project
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    add_test(NAME opengold_godot_slums_encounter COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DWORK=${CMAKE_BINARY_DIR}/slums-encounter"
+        -P "${PROJECT_SOURCE_DIR}/tests/slums_encounter.cmake")
+    set_tests_properties(opengold_godot_slums_encounter PROPERTIES FIXTURES_REQUIRED godot_project
+        TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    add_test(NAME opengold_godot_slums_ui_audit COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DPLAYTEST_FIXTURES=${PROJECT_BINARY_DIR}/playtest-fixtures"
+        "-DWORK=${CMAKE_BINARY_DIR}/slums-ui-audit"
+        -P "${PROJECT_SOURCE_DIR}/tests/ui_audit.cmake")
+    set_tests_properties(opengold_godot_slums_ui_audit PROPERTIES
+        FIXTURES_REQUIRED "godot_project;playtest_fixtures"
+        TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # Godot checks with original files; skipped without OPENGOLD_GAME_DIR. Each
+    # keeps its Godot user data under WORK (see original_view_check.cmake).
+    function(opengold_original_check name expected)
+        add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
+            "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}" "-DEXPECTED=${expected}"
+            "-DWORK=${CMAKE_BINARY_DIR}/original-checks/${name}" ${ARGN}
+            -P "${PROJECT_SOURCE_DIR}/tests/original_view_check.cmake")
+        set_tests_properties("opengold_godot_${name}" PROPERTIES
+            FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot RESOURCE_LOCK godot_project
+            SKIP_REGULAR_EXPRESSION "Skipped: ")
+    endfunction()
+    # Character-creation screens. Arguments holding an escaped ";" must call
+    # opengold_original_check directly: a second function call unescapes it.
+    function(opengold_creation_check name expected)
+        opengold_original_check("creation_${name}" "${expected}" ${ARGN})
+    endfunction()
+    opengold_creation_check(character "Godot C++ character check passed" -DCHECK_FLAG=--character-check)
+    # The party check saves a campaign that the restart check then loads.
+    opengold_creation_check(party "Godot party check passed"
+        -DCHECK_FLAG=--party-check "-DARGS=--save-check-write"
+        "-DWORK=${CMAKE_BINARY_DIR}/creation-checks/saves")
+    set_tests_properties(opengold_godot_creation_party PROPERTIES FIXTURES_SETUP creation_save)
+    opengold_creation_check(save_read "Godot campaign restart check passed"
+        -DCHECK_FLAG=--save-check-read -DKEEP_WORK=ON
+        "-DWORK=${CMAKE_BINARY_DIR}/creation-checks/saves")
+    set_tests_properties(opengold_godot_creation_save_read PROPERTIES
+        FIXTURES_REQUIRED "godot_project;creation_save")
+    opengold_creation_check(advancement "Godot advancement passed" -DCHECK_FLAG=--advancement-check)
+    opengold_creation_check(equipment_art "Equipment artwork checks passed"
+        -DCHECK_FLAG=--equipment-art-check)
+    opengold_creation_check(defeat "Godot defeat check passed" -DCHECK_FLAG=--defeat-check)
+    opengold_creation_check(expedition "Godot expedition passed" -DCHECK_FLAG=--expedition-check)
+    opengold_creation_check(training "Training UI checks passed" -DSCRIPT=training_view_tests)
+    opengold_creation_check(portrait_fallback "Portrait fallback checks passed"
+        -DSCRIPT=portrait_fallback_tests)
+    opengold_creation_check(handoff "Combat handoff checks passed" -DSCRIPT=combat_handoff_tests)
+    # Reads rendered pixels, so it needs a real window rather than --headless.
+    opengold_creation_check(goliath "Goliath game rendering checks passed"
+        -DSCRIPT=goliath_render_tests -DGRAPHICAL=ON)
+    opengold_creation_check(hands "Equipment hand view checks passed"
+        -DSCRIPT=equipment_hand_view_tests "-DARGS=--hands-fixture=${PROJECT_BINARY_DIR}/hands-ui.ogs")
+    set_tests_properties(opengold_godot_creation_hands PROPERTIES
+        FIXTURES_REQUIRED "godot_project;hands_fixtures")
+    foreach(klass cleric fighter paladin ranger rogue wizard)
+        opengold_original_check(creation_asi_${klass} "ASI controls passed" -DSCRIPT=asi_view_tests
+            "-DARGS=--style-class=${klass}\;--style-fixture=${PROJECT_BINARY_DIR}/asi-${klass}-ui.ogs")
+        set_tests_properties(opengold_godot_creation_asi_${klass} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;asi_fixtures")
+    endforeach()
+    foreach(klass fighter wizard)
+        opengold_original_check(creation_skilled_${klass} "Skilled controls passed" -DSCRIPT=skilled_view_tests
+            "-DARGS=--style-class=${klass}\;--style-fixture=${PROJECT_BINARY_DIR}/asi-${klass}-ui.ogs")
+        set_tests_properties(opengold_godot_creation_skilled_${klass} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;asi_fixtures")
+    endforeach()
+    # Spell and cantrip choices while creating a character.
+    opengold_creation_check(cantrip "Cantrip creator checks passed" -DSCRIPT=cantrip_view_tests)
+    opengold_creation_check(chill "Chill creator checks passed" -DSCRIPT=chill_cantrip_view_tests)
+    opengold_creation_check(cleric_cantrip "Cleric cantrip creator checks passed"
+        -DSCRIPT=cleric_cantrip_view_tests)
+    opengold_creation_check(shocking "Shocking creator checks passed"
+        -DSCRIPT=shocking_cantrip_view_tests)
+    opengold_creation_check(sorcerer "Sorcerer creator checks passed"
+        -DSCRIPT=sorcerer_cantrip_view_tests)
+    opengold_creation_check(warlock "Warlock creator checks passed"
+        -DSCRIPT=warlock_cantrip_view_tests)
+    opengold_creation_check(localization "Localization UI passed" -DSCRIPT=localization_tests)
+    # Level-up screens loaded from fixtures the native tests write with original files.
+    opengold_creation_check(blessed_warrior "Blessed Warrior view checks passed"
+        -DSCRIPT=blessed_warrior_view_tests
+        "-DARGS=--blessed-fixture=${PROJECT_BINARY_DIR}/blessed-warrior-ui.ogs")
+    opengold_creation_check(cleric_preparation "Cleric choices view checks passed"
+        -DSCRIPT=cleric_preparation_view_tests
+        "-DARGS=--cleric-fixture=${PROJECT_BINARY_DIR}/cleric-choices-ui.ogs")
+    opengold_creation_check(wizard_choices "Wizard choices view checks passed"
+        -DSCRIPT=wizard_choices_view_tests
+        "-DARGS=--wizard-fixture=${PROJECT_BINARY_DIR}/wizard-choices-ui.ogs")
+    foreach(name blessed_warrior cleric_preparation wizard_choices)
+        set_tests_properties(opengold_godot_creation_${name} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;spell_choice_fixtures")
+    endforeach()
+    opengold_creation_check(scholar "Scholar view checks passed" -DSCRIPT=scholar_view_tests
+        "-DARGS=--scholar-fixture=${PROJECT_BINARY_DIR}/scholar-ui.ogs")
+    opengold_creation_check(rogue_advancement "Rogue advancement UI checks passed"
+        -DSCRIPT=rogue_advancement_view_tests
+        "-DARGS=--rogue-fixture=${PROJECT_BINARY_DIR}/rogue-advancement-ui.ogs")
+    foreach(name scholar rogue_advancement)
+        set_tests_properties(opengold_godot_creation_${name} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
+    endforeach()
+    foreach(klass fighter paladin ranger)
+        set(fixture "${PROJECT_BINARY_DIR}/style-${klass}-ui.ogs")
+        opengold_original_check(creation_style_${klass}
+            "Fighting Style advancement UI checks passed" -DSCRIPT=style_advancement_view_tests
+            "-DARGS=--style-class=${klass}\;--style-fixture=${fixture}")
+        set_tests_properties(opengold_godot_creation_style_${klass} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
+        # The same route with a Light weapon in hand.
+        opengold_original_check(creation_style_light_${klass}
+            "Fighting Style advancement UI checks passed" -DSCRIPT=style_advancement_view_tests
+            "-DARGS=--style-class=${klass}\;--style-fixture=${fixture}\;--style-light")
+        set_tests_properties(opengold_godot_creation_style_light_${klass} PROPERTIES
+            FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
+    endforeach()
+    # A pending Weapon Mastery choice survives saving from the rest dialog.
+    opengold_original_check(mastery_rest_save "Weapon Mastery rest saving controls passed"
+        -DSCRIPT=mastery_rest_save_view_tests
+        "-DARGS=--style-fixture=${PROJECT_BINARY_DIR}/mastery-rest-pending.ogs")
+    set_tests_properties(opengold_godot_mastery_rest_save PROPERTIES
+        FIXTURES_REQUIRED "godot_project;mastery_rest_fixture")
+    # The combat demo's heroes and Kobolds use art decoded from the original
+    # files. These read rendered pixels, so they need a real window.
+    opengold_original_check(combat_demo_scene "Combat demo checks passed"
+        -DSCRIPT=combat_demo_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    opengold_original_check(combat_death_scene "Combat death presentation checks passed"
+        -DSCRIPT=combat_death_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    opengold_original_check(combat_hover_scene "Combat hover checks passed"
+        -DSCRIPT=combat_hover_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    opengold_original_check(combat_unconscious_scene "Unconscious combatant captured"
+        -DSCRIPT=combat_unconscious_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    # Startup and setup checks rewrite the project's settings.cfg; the driver
+    # keeps the developer's own copy aside. Skipped without OPENGOLD_GAME_DIR.
+    function(opengold_settings_check name script expected)
+        add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
+            "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+            "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/${script}.gd" "-DEXPECTED=${expected}"
+            "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/${name}"
+            "-DKEPT=${CMAKE_BINARY_DIR}/settings-checks/developer-settings" ${ARGN}
+            -P "${PROJECT_SOURCE_DIR}/tests/settings_check.cmake")
+        set_tests_properties("opengold_godot_${name}" PROPERTIES
+            FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot RESOURCE_LOCK godot_project
+            SKIP_REGULAR_EXPRESSION "Skipped: ")
+    endfunction()
+    opengold_settings_check(startup startup_tests "Startup check passed: no flag")
+    opengold_settings_check(startup_splash startup_tests "Startup check passed: two"
+        -DARGS=--splash)
+    # The main check leaves Spanish saved for a second process to restore.
+    opengold_settings_check(language language_dialog_tests "Language dialog passed"
+        -DARGS=--reset-lang -DRESTART_ARGS=--language-restore
+        "-DRESTART_EXPECTED=Language restore passed across process restart")
+    opengold_settings_check(language_splash language_dialog_tests "Language dialog passed"
+        "-DARGS=--reset-lang\;--splash")
+    opengold_settings_check(language_close language_dialog_tests
+        "Language dialog close: scene teardown passed" "-DARGS=--reset-lang\;--language-close")
+    opengold_settings_check(language_ctrl_x language_dialog_tests
+        "Language dialog Ctrl.X: scene teardown passed" "-DARGS=--reset-lang\;--language-ctrl-x")
+    # Setup completes before the optional splash screens, which these cases check
+    # start. The reset flags make a complete config ask again.
+    foreach(setup_case first first-warning save-error missing-path valid override missing-lang)
+        string(REPLACE "-" "_" test_name "setup_${setup_case}")
+        opengold_settings_check(${test_name} setup_config_tests
+            "Setup config passed: ${setup_case}" "-DARGS=--setup-case=${setup_case}\;--splash")
+    endforeach()
+    foreach(setup_case mismatch missing-file)
+        string(REPLACE "-" "_" test_name "setup_${setup_case}")
+        opengold_settings_check(${test_name} setup_config_tests
+            "Setup config passed: ${setup_case}"
+            "-DARGS=--setup-case=${setup_case}\;--splash\;--reset-game-path")
+    endforeach()
+    opengold_settings_check(setup_reset setup_config_tests "Setup config passed: reset"
+        "-DARGS=--setup-case=reset\;--splash\;--reset-lang\;--reset-game-path")
+    opengold_settings_check(setup_cancel_path setup_config_tests "Setup cancel-path passed"
+        "-DARGS=--setup-case=cancel-path\;--splash")
+    opengold_settings_check(setup_cancel_lang setup_config_tests "Setup cancel-language passed"
+        "-DARGS=--setup-case=cancel-lang\;--splash\;--reset-lang")
+    opengold_settings_check(setup_warning_quit setup_config_tests "Setup checksum-quit passed"
+        "-DARGS=--setup-case=warning-quit\;--splash\;--reset-game-path")
 endif()
 
 # Godot exports the executable; the C++ game code is its GDExtension.
@@ -232,3 +492,5 @@ add_custom_target(OpenGoldBox ALL
     ${package_commands}
     DEPENDS opengoldbox_game opengoldbox_assets
     VERBATIM)
+
+opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

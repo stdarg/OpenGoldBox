@@ -16,6 +16,8 @@ namespace presentation
 // Keep the engine's RGBA image representation independent of Godot resources.
 [[nodiscard]] inline godot::Ref<godot::Image> rgba_image(const opengold::Image &source)
 {
+    if (!opengold::consistent(source))
+        throw std::runtime_error("Image pixels do not match its size");
     godot::PackedByteArray pixels;
     pixels.resize(source.rgba.size());
     std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());

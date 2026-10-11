@@ -1,6 +1,7 @@
 #include "rolf_tour_view.h"
 #include "opengold/exploration_view.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -31,18 +32,6 @@ using namespace opengold::por;
 
 namespace
 {
-struct DeleteNode
-{
-    void operator()(Node *n) const
-    {
-        memdelete(n);
-    }
-};
-
-// Numeric constructors are safe before Godot initializes the extension interface.
-const Color background(18 / 255.f, 26 / 255.f, 32 / 255.f),
-      panel(28 / 255.f, 39 / 255.f, 46 / 255.f), line(65 / 255.f, 80 / 255.f, 88 / 255.f),
-      gold(215 / 255.f, 180 / 255.f, 121 / 255.f), party_color(121 / 255.f, 214 / 255.f, 212 / 255.f);
 const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0, 1),
     Vector2(-1, 0)};
 const std::array<const char *, 4> direction_name{"North", "East", "South", "West"};
@@ -54,6 +43,7 @@ void RolfTourView::_bind_methods()
     ADD_SIGNAL(MethodInfo("save_requested", PropertyInfo(Variant::BOOL, "saving")));
     ADD_SIGNAL(MethodInfo("party_member_selected", PropertyInfo(Variant::INT, "slot")));
     ADD_SIGNAL(MethodInfo("level_up_requested", PropertyInfo(Variant::INT, "id")));
+    ClassDB::bind_method(D_METHOD("tour_visuals"), &RolfTourView::tour_visuals);
 }
 
 void RolfTourView::_notification(int what)
@@ -61,14 +51,13 @@ void RolfTourView::_notification(int what)
     if (what == NOTIFICATION_RESIZED && ready_)
     {
         layout();
-        queue_redraw();
+        get_node<Control>("TourVisuals")->queue_redraw();
     }
 }
 
 void RolfTourView::_ready()
 {
     ready_ = false;
-    set_texture_filter(CanvasItem::TEXTURE_FILTER_NEAREST);
     // Child nodes are scene-owned; these lookups are temporary non-owning views.
     get_node<Button>("Continue")->connect("pressed", callable_mp(this, &RolfTourView::next));
     get_node<Button>("Restart")->connect("pressed", callable_mp(this, &RolfTourView::restart));
@@ -85,14 +74,8 @@ void RolfTourView::_ready()
     {
         auto *member = get_node<Button>(String("PartyList/Rows/Member") + String::num_uint64(slot));
         member->connect("pressed", callable_mp(this, &RolfTourView::party_selected).bind(slot));
-        std::unique_ptr<Button, DeleteNode> arrow(memnew(Button));
-        arrow->set_name("Advance");
-        arrow->set_text(String::utf8("↑"));
-        arrow->set_size(Vector2(30, 26));
-        arrow->set_tooltip_text("Level up");
-        arrow->connect("pressed", callable_mp(this, &RolfTourView::level_up_requested).bind(slot));
-        member->add_child(arrow.get());
-        arrow.release();
+        member->get_node<Button>("Advance")
+            ->connect("pressed", callable_mp(this, &RolfTourView::level_up_requested).bind(slot));
     }
     get_node<ItemList>("InventoryPanel/Items")
     ->connect("item_selected", callable_mp(this, &RolfTourView::inventory_selected));
@@ -105,19 +88,11 @@ void RolfTourView::_ready()
     get_node<Window>("MemberSheet")
     ->connect("close_requested", callable_mp(this, &RolfTourView::close_sheet));
     get_node<Button>("LeaveShop")->connect("pressed", callable_mp(this, &RolfTourView::leave_shop));
-    get_window()->set_min_size(Vector2i(960, 720));
-    for (bool saving :
-            {
-                true, false
-            })
+    for (bool saving : {true, false})
     {
-        std::unique_ptr<Button, DeleteNode> button(memnew(Button));
-        button->set_name(saving ? "SaveGame" : "LoadGame");
-        button->set_text(saving ? "Save game" : "Load game");
-        add_child(button.get());
+        auto *button = get_node<Button>(saving ? "SaveGame" : "LoadGame");
         button->connect("pressed", callable_mp(this, &RolfTourView::request_save).bind(saving));
         button->set_visible(embedded_party_);
-        button.release();
     }
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -155,80 +130,11 @@ void RolfTourView::_ready()
 
 void RolfTourView::layout()
 {
-    const auto width = get_size().x, height = get_size().y;
-    const double margin = 24, gutter = 24,
-                 sidebar = std::min(std::clamp(width * .30, 270.0, 430.0), height - 380.0);
-    const double main_width = width - margin * 2 - gutter - sidebar;
     const bool shopping = session_ && session_->snapshot().phase == TourPhase::shopping;
-    const double view_height = std::min(main_width * .625, height - (shopping ? 490.0 : 410.0));
-    scene_rect_ = Rect2(margin, 102, view_height / 1.2, view_height);
-    map_rect_ = Rect2(margin + main_width + gutter, 102, sidebar, sidebar);
-    dialogue_rect_ = Rect2(margin, scene_rect_.get_end().y + 18, main_width,
-                           height - scene_rect_.get_end().y - 76);
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = get_node<Control>(name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
-    };
-    place("SaveGame", Rect2(width - 520, 20, 140, 36));
-    place("LoadGame", Rect2(width - 370, 20, 140, 36));
-    place("Title", Rect2(margin, 20, main_width, 34));
-    place("PartyList", Rect2(scene_rect_.get_end().x + 16, 102,
-                             main_width - scene_rect_.size.x - 16, view_height));
-    place("Location", Rect2(margin, 68, main_width, 26));
-    place("MapTitle", Rect2(map_rect_.position.x, 68, sidebar - 130, 26));
-    place("MapMode", Rect2(width - margin - 122, 64, 122, 30));
-    place("Coordinates", Rect2(map_rect_.position.x, map_rect_.get_end().y + 12, sidebar, 28));
-    place("Legend", Rect2(map_rect_.position.x, map_rect_.get_end().y + 48, sidebar, 50));
-    place("Speaker",
-          Rect2(dialogue_rect_.position + Vector2(18, 12), Vector2(main_width - 36, 26)));
-    place("Dialogue", Rect2(dialogue_rect_.position + Vector2(18, 46),
-                            Vector2(main_width - 36, dialogue_rect_.size.y - 112)));
-    place("Continue", Rect2(dialogue_rect_.get_end() - Vector2(182, 54), Vector2(164, 40)));
-    place("Progress", Rect2(dialogue_rect_.position + Vector2(18, dialogue_rect_.size.y - 48),
-                            Vector2(main_width - 220, 30)));
-    place("Movement", Rect2(map_rect_.position.x, height - 178, sidebar, 26));
-    const double button_width = (sidebar - 12) / 3;
-    place("Left", Rect2(map_rect_.position.x, height - 140, button_width, 40));
-    place("Forward",
-          Rect2(map_rect_.position.x + button_width + 6, height - 140, button_width, 40));
-    place("Right",
-          Rect2(map_rect_.position.x + (button_width + 6) * 2, height - 140, button_width, 40));
-    place("Restart", Rect2(map_rect_.position.x, height - 88, sidebar, 34));
-    place("Footer", Rect2(margin, height - 36, width - 2 * margin, 26));
-    place("Party", Rect2(map_rect_.position.x, map_rect_.get_end().y + 46, sidebar, 50));
-    get_node<Label>("Legend")->hide();
-    const double utility_width = (sidebar - 12) / 3;
-    place("Look", Rect2(map_rect_.position.x, height - 226, utility_width, 34));
-    place("Camp", Rect2(map_rect_.position.x + utility_width + 6, height - 226, utility_width, 34));
-    place("Inventory",
-          Rect2(map_rect_.position.x + 2 * (utility_width + 6), height - 226, utility_width, 34));
-    place("Choices", Rect2(dialogue_rect_.position + Vector2(18, 84),
-                           Vector2(main_width - 36, dialogue_rect_.size.y - 148)));
-    place("Answer", Rect2(dialogue_rect_.position + Vector2(18, dialogue_rect_.size.y - 100),
-                          Vector2(main_width - 36, 36)));
-    place("LeaveShop", Rect2(dialogue_rect_.get_end() - Vector2(332, 54), Vector2(140, 40)));
-    place("InventoryPanel", Rect2(margin + 40, 90, width - 2 * margin - 80, height - 160));
-    auto *inventory_panel = get_node<Control>("InventoryPanel");
-    get_node<Control>("InventoryPanel/Items")->set_position(Vector2(20, 70));
-    get_node<Control>("InventoryPanel/Items")
-    ->set_size(inventory_panel->get_size() - Vector2(40, 210));
-    get_node<Control>("InventoryPanel/Close")
-    ->set_position(Vector2(20, inventory_panel->get_size().y - 54));
-    get_node<Control>("InventoryPanel/Close")->set_size(Vector2(180, 36));
-    const auto iw = inventory_panel->get_size().x, ih = inventory_panel->get_size().y;
-    get_node<Control>("InventoryPanel/Header")->set_position(Vector2(20, 18));
-    get_node<Control>("InventoryPanel/Header")->set_size(Vector2(iw - 40, 44));
-    get_node<Control>("InventoryPanel/Status")->set_position(Vector2(20, ih - 132));
-    get_node<Control>("InventoryPanel/Status")->set_size(Vector2(iw - 40, 68));
-    get_node<Control>("InventoryPanel/Equip")->set_position(Vector2(220, ih - 54));
-    get_node<Control>("InventoryPanel/Equip")->set_size(Vector2(150, 36));
-    get_node<Control>("InventoryPanel/Unequip")->set_position(Vector2(390, ih - 54));
-    get_node<Control>("InventoryPanel/Unequip")->set_size(Vector2(150, 36));
-    get_node<Window>("MemberSheet")->set_size(Vector2i(width - 120, height - 120));
-    place("MemberSheet/Text", Rect2(24, 24, width - 168, height - 220));
-    place("MemberSheet/Close", Rect2(width - 290, height - 180, 130, 36));
+    get_node<Node>("Layout")->call("apply", shopping);
+    scene_rect_ = get_node<Control>("SceneBounds")->get_rect();
+    map_rect_ = get_node<Control>("MapBounds")->get_rect();
+    dialogue_rect_ = get_node<Control>("DialogueBounds")->get_rect();
 }
 
 void RolfTourView::restart()
@@ -241,7 +147,7 @@ void RolfTourView::restart()
             const auto pack = ProjectSettings::get_singleton()->globalize_path(
                                   "res://../../data/rules/srd-5.2.1/combat.rules");
             campaign_ = std::make_shared<opengold::CampaignParty>(
-                            opengold::srd5::load(std::filesystem::u8path(pack.utf8().get_data())));
+                            opengold::srd5::load(presentation::path_from_godot(pack)));
             opengold::rules::CharacterDraft d;
             d.race = "human";
             d.gender = "female";
@@ -268,7 +174,7 @@ void RolfTourView::restart()
                 directory =
                     ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
             session_.emplace(
-                RolfTourSession::load(std::filesystem::u8path(directory.utf8().get_data())));
+                RolfTourSession::load(presentation::path_from_godot(directory)));
             if (campaign_)
                 session_->campaign_party(campaign_);
             for (unsigned i = 0; i < sprites_.size(); ++i)
@@ -450,7 +356,7 @@ void RolfTourView::party_selected(std::int64_t index)
         return;
     const auto slot = static_cast<unsigned>(index);
     if (session_->can_leave())
-        campaign_->select(slot);
+        campaign_->select(opengold::PartySlot{slot});
     if (embedded_party_)
         emit_signal("party_member_selected", slot);
     else
@@ -466,8 +372,11 @@ void RolfTourView::party_selected(std::int64_t index)
         const std::array<const char *, 6> names{"Strength",     "Dexterity", "Constitution",
                                                 "Intelligence", "Wisdom",    "Charisma"};
         for (unsigned i = 0; i < 6; ++i)
-            text += std::string(names[i]) + ": " + std::to_string(s.scores[i]) + " / Save " +
-                    std::to_string(s.saving_throws[i]) + "\n";
+        {
+            const auto ability = opengold::rules::all_abilities[i];
+            text += std::string(names[i]) + ": " + std::to_string(s.scores[ability]) +
+                    " / Save " + std::to_string(s.saving_throws[ability]) + "\n";
+        }
         get_node<RichTextLabel>("MemberSheet/Text")->set_text(String::utf8(text.c_str()));
         get_node<Window>("MemberSheet")->popup_centered();
     }
@@ -646,10 +555,10 @@ void RolfTourView::refresh()
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
     get_node<Label>("Location")
-    ->set_text("New Phlan  /  " + String(direction_name[s.pose.facing]) + " view");
+    ->set_text("New Phlan  /  " + String(direction_name[index(s.pose.facing)]) + " view");
     get_node<Label>("Coordinates")
     ->set_text("Party  (" + String::num_uint64(s.pose.x) + ", " + String::num_uint64(s.pose.y) +
-               ")   " + String(direction_name[s.pose.facing]));
+               ")   " + String(direction_name[index(s.pose.facing)]));
     get_node<Label>("Speaker")->set_text(faulted           ? "Unable to continue"
                                          : shopping        ? "Shop / select an item"
                                          : s.tour_finished ? "New Phlan"
@@ -706,25 +615,7 @@ void RolfTourView::refresh()
         }
         displayed_ticket_ = s.continue_ticket;
     }
-    get_node<RichTextLabel>("Dialogue")
-    ->set_size(
-        Vector2(dialogue_rect_.size.x - 36,
-                (shopping || multiple) ? 36 : dialogue_rect_.size.y - (answer ? 160 : 112)));
-    if (multiple)
-    {
-        const double text_height = std::min((dialogue_rect_.size.y - 122) * .55,
-                                            std::max<double>(28.0, dialogue_rect_.size.y - 192));
-        get_node<RichTextLabel>("Dialogue")
-        ->set_size(Vector2(dialogue_rect_.size.x - 36, text_height));
-        choices->set_position(dialogue_rect_.position + Vector2(18, 56 + text_height));
-        choices->set_size(
-            Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 120 - text_height));
-    }
-    else
-    {
-        choices->set_position(dialogue_rect_.position + Vector2(18, 84));
-        choices->set_size(Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 148));
-    }
+    get_node<Node>("Layout")->call("place_dialogue", shopping, multiple, answer);
     if (shopping)
         get_node<RichTextLabel>("Dialogue")
         ->set_text(s.diagnostic.empty() ? "Prices are per listed item or bundle."
@@ -766,96 +657,52 @@ void RolfTourView::refresh()
         button->set_text(String::utf8(text.c_str()));
         button->set_tooltip_text(String::utf8(text.c_str()));
         auto *arrow = button->get_node<Button>("Advance");
-        const auto width = Vector2(button->get_theme_font("font")->call(
-                                       "get_string_size", String::utf8(cs.name.c_str()), 0, -1,
-                                       button->get_theme_font_size("font_size")))
-                           .x;
-        arrow->set_position(Vector2(std::min(width + 16, button->get_size().x - 36), 2));
+        arrow->call("place_in_member_row", String::utf8(cs.name.c_str()));
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());
     }
     get_node<Button>("MapMode")->set_text(full_map_ ? "Map: full" : "Map: visited");
-    queue_redraw();
+    get_node<Control>("TourVisuals")->queue_redraw();
 }
 
-void RolfTourView::_draw()
+Dictionary RolfTourView::tour_visuals()
 {
-    draw_rect(Rect2(Vector2(), get_size()), background);
-    draw_line(Vector2(24, 57), Vector2(get_size().x - 24, 57), line);
-    draw_rect(dialogue_rect_, panel);
-    draw_rect(dialogue_rect_, line, false);
-    draw_line(dialogue_rect_.position, dialogue_rect_.position + Vector2(dialogue_rect_.size.x, 0),
-              gold, 2);
-    draw_rect(map_rect_, Color("162128"));
-    draw_scene();
-    draw_map();
-    draw_rect(scene_rect_, line, false);
-    draw_rect(map_rect_, line, false);
-}
-
-void RolfTourView::draw_scene()
-{
-    draw_rect(scene_rect_, panel);
+    Dictionary data;
     if (!session_ || wall_view_.is_null())
-        return;
-    // Fit the complete original 88x88 view. DOS EGA pixels were displayed 6/5
-    // as tall as wide; letterboxing preserves art and door framing on resize.
-    const double scale = std::min(scene_rect_.size.x / 88.0, scene_rect_.size.y / 105.6);
-    const Vector2 pixel_scale(scale, scale * 1.2), size(88 * pixel_scale.x, 88 * pixel_scale.y);
-    const Rect2 view(scene_rect_.position + (scene_rect_.size - size) * .5, size);
-    draw_texture_rect(wall_view_, view, false);
+        return data;
     const auto &state = session_->snapshot();
+    data["wall"] = wall_view_;
     if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
     {
         const auto &source = session_->sprites()[state.sprite_frame];
-        const Vector2 sprite_size(source.width * pixel_scale.x, source.height * pixel_scale.y);
-        draw_texture_rect(sprites_[state.sprite_frame],
-                          Rect2(view.position + Vector2((view.size.x - sprite_size.x) * .5,
-                                  view.size.y - sprite_size.y),
-                                sprite_size),
-                          false);
+        data["sprite"] = sprites_[state.sprite_frame];
+        data["sprite_size"] = Vector2(source.width, source.height);
     }
-}
-
-void RolfTourView::draw_map()
-{
-    if (!session_)
-        return;
-    const auto &s = session_->snapshot();
-    const double cell = map_rect_.size.x / 16;
+    Array cells;
+    cells.resize(256);
     for (unsigned y = 0; y < 16; ++y)
         for (unsigned x = 0; x < 16; ++x)
         {
-            const auto origin = map_rect_.position + Vector2(x * cell, y * cell);
-            if (!full_map_ && !s.visited.test(y * 16 + x))
-                continue;
-            draw_rect(Rect2(origin, Vector2(cell, cell)),
-                      s.visited.test(y * 16 + x) ? Color("304747") : Color("253038"));
-            draw_rect(Rect2(origin, Vector2(cell, cell)), Color("1b252b"), false);
-            const auto &c = session_->map().at(x, y);
-            const double inset = 1.3;
-            const std::array<Vector2, 4> corners{origin + Vector2(inset, inset),
-                                                 origin + Vector2(cell - inset, inset),
-                                                 origin + Vector2(cell - inset, cell - inset),
-                                                 origin + Vector2(inset, cell - inset)};
-            for (unsigned d = 0; d < 4; ++d)
+            const unsigned index = y * 16 + x;
+            if (!full_map_ && !state.visited.test(index))
             {
-                if (c.walls[d])
-                    draw_line(corners[d], corners[(d + 1) % 4], Color("9ca8a7"), 1.5);
-                if (c.doors[d])
-                    draw_line(corners[d].lerp(corners[(d + 1) % 4], .27),
-                              corners[d].lerp(corners[(d + 1) % 4], .73), gold, 3);
+                cells[index] = -1;
+                continue;
             }
+            const auto &cell = session_->map().at(x, y);
+            int flags = state.visited.test(index) ? 1 : 0;
+            for (unsigned direction = 0; direction < 4; ++direction)
+            {
+                if (cell.walls[direction])
+                    flags |= 1 << (1 + direction);
+                if (cell.doors[direction])
+                    flags |= 1 << (5 + direction);
+            }
+            cells[index] = flags;
         }
-    const auto center =
-        map_rect_.position + Vector2((s.pose.x + .5) * cell, (s.pose.y + .5) * cell);
-    const auto forward = direction[s.pose.facing], right = Vector2(-forward.y, forward.x);
-    PackedVector2Array arrow;
-    arrow.push_back(center + forward * cell * .43);
-    arrow.push_back(center - forward * cell * .3 + right * cell * .32);
-    arrow.push_back(center - forward * cell * .16);
-    arrow.push_back(center - forward * cell * .3 - right * cell * .32);
-    draw_circle(center, cell * .45, background);
-    draw_colored_polygon(arrow, party_color);
+    data["cells"] = cells;
+    data["pose"] = Vector2i(state.pose.x, state.pose.y);
+    data["facing"] = static_cast<int>(index(state.pose.facing));
+    return data;
 }
 
 void RolfTourView::capture_frame(const String &name)
@@ -864,7 +711,7 @@ void RolfTourView::capture_frame(const String &name)
         return;
     const auto directory =
         ProjectSettings::get_singleton()->globalize_path("res://../../user-data");
-    std::filesystem::create_directories(std::filesystem::u8path(directory.utf8().get_data()));
+    std::filesystem::create_directories(presentation::path_from_godot(directory));
     const auto path = directory.path_join(name + String(".png"));
     const auto image = get_viewport()->get_texture()->get_image();
     if (image.is_null() || image->save_png(path) != OK)
@@ -920,7 +767,8 @@ void RolfTourView::check_run()
                         !get_node<Button>("Forward")->is_disabled())
                     throw std::runtime_error("Incorrect input lock at tour prompt");
                 UtilityFunctions::print("Tour pause ", check_prompts_, " at ", s.pose.x, ",",
-                                        s.pose.y, " facing ", s.pose.facing);
+                                        s.pose.y, " facing ",
+                                        static_cast<int64_t>(index(s.pose.facing)));
                 get_node<Button>("MapMode")->grab_focus();
                 const auto pose = s.pose;
                 press_key(Key::KEY_RIGHT);
@@ -942,11 +790,11 @@ void RolfTourView::check_run()
             get_node<Button>("Restart")->grab_focus();
             const auto facing = s.pose.facing;
             press_key(Key::KEY_RIGHT);
-            if (session_->snapshot().pose.facing != (facing + 1) % 4)
+            if (session_->snapshot().pose.facing != turned_right(facing))
                 throw std::runtime_error("Exploration turn did not update native state");
             const auto before = session_->snapshot().pose;
             press_key(Key::KEY_DOWN);
-            if (session_->snapshot().pose != PartyPose{before.x, before.y, (before.facing + 2) % 4})
+            if (session_->snapshot().pose != PartyPose{before.x, before.y, reversed(before.facing)})
                 throw std::runtime_error("Down arrow must turn without moving");
             UtilityFunctions::print("Godot C++ tour integration passed: ", check_prompts_,
                                     " pauses.");
@@ -985,7 +833,7 @@ void RolfTourView::check_town()
         throw std::runtime_error("Town started before the full tour");
     if (shop_check_stage_ == 3 && s.phase == TourPhase::completed)
     {
-        if (inventory_size() != 1 || session_->script_variable(0x6BC1) != gold())
+        if (inventory_size() != 1 || session_->script_variable(EclAddress{0x6BC1}) != gold())
             throw std::runtime_error("Shop results did not persist after leaving");
         party_selected(0);
         auto *sheet = get_node<Window>(embedded_party_ ? "../TownSheet" : "MemberSheet");
@@ -1044,9 +892,10 @@ void RolfTourView::check_town()
         draft.training.erase("class:fighter");
         draft.training.erase(
             "class:fighter:fighting_style"); // This untrained-shield fixture changes class.
+        draft.training.erase("class:fighter:weapon_mastery");
         member.character = opengold::Character(*opengold::srd5::character_rules(), draft,
                                                member.character.appearance());
-        member.character.inventory() = std::move(inventory);
+        member.character.replace_inventory(std::move(inventory));
         member.equipped.clear();
         member.vitals = {member.character.sheet().hit_points, false, {}};
         campaign_->restore(changed);
@@ -1078,7 +927,7 @@ void RolfTourView::check_town()
             selection = 0;
         if (campaign_ && s.dialogue == "Choose a party member.")
             selection = 0;
-        get_node<ItemList>("Choices")->select(selection);
+        get_node<ItemList>("Choices")->select(static_cast<std::int32_t>(selection));
         get_node<Button>("Continue")->emit_signal("pressed");
         return;
     }
@@ -1146,10 +995,10 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
                                  std::to_string(check_refused_edges_.size()));
     while (previous[next] != origin)
         next = previous[next];
-    const unsigned facing = next % 16 > int(s.pose.x)   ? 1
-                            : next % 16 < int(s.pose.x) ? 3
-                            : next / 16 > int(s.pose.y) ? 2
-                            : 0;
+    const auto facing = next % 16 > static_cast<int>(s.pose.x)   ? MapDirection::east
+                        : next % 16 < static_cast<int>(s.pose.x) ? MapDirection::west
+                        : next / 16 > static_cast<int>(s.pose.y) ? MapDirection::south
+                        : MapDirection::north;
     if (s.pose.facing == facing)
         check_pending_edge_ = {{origin, next}};
     get_node<Button>(s.pose.facing == facing ? "Forward" : "Right")->emit_signal("pressed");
@@ -1175,21 +1024,21 @@ bool RolfTourView::check_expedition_step()
         return false;
     if (s.area_id == 0)
     {
-        if (session_->script_variable(0x4ACA) == 255)
+        if (session_->script_variable(ecl_slums_orc_victory) == 255)
             return true;
         if (s.pose.x != 0 || s.pose.y != 4)
             throw std::runtime_error("Unexpected tour destination");
-        if (s.pose.facing != 3)
+        if (s.pose.facing != MapDirection::west)
             right();
         else
             forward();
         return false;
     }
-    if (session_->script_variable(0x4ACA) == 255)
+    if (session_->script_variable(ecl_slums_orc_victory) == 255)
     {
         if (s.pose.x != 15 || s.pose.y != 4)
             check_walk_to(15, 4);
-        else if (s.pose.facing != 1)
+        else if (s.pose.facing != MapDirection::east)
             right();
         else
             forward();
@@ -1224,7 +1073,7 @@ void RolfTourView::check_recovery()
         throw std::runtime_error("Recovery route fault: " + session_->script_diagnostics().back());
     const auto choose = [&](std::size_t choice)
     {
-        get_node<ItemList>("Choices")->select(choice);
+        get_node<ItemList>("Choices")->select(static_cast<std::int32_t>(choice));
         get_node<Button>("Continue")->emit_signal("pressed");
     };
     if (s.phase == TourPhase::awaiting_continue)
@@ -1313,7 +1162,7 @@ void RolfTourView::check_recovery()
     if (recovery_stage_ == 4)
     {
         if (member.wealth[3] != recovery_before_->roster.at(0).wealth[3] - 100 ||
-                member.vitals.hit_points <= 1 || session_->script_variable(0x6de2) != 0)
+                member.vitals.hit_points <= 1 || session_->script_variable(ecl_temple_service) != 0)
             throw std::runtime_error("Original temple must charge 100 gp, heal and resume ECL");
         if (save_check)
             save_check("temple-payment");
@@ -1328,6 +1177,13 @@ void RolfTourView::check_recovery()
                 member.vitals.hit_points != member.character.sheet().hit_points ||
                 member.wealth[4] != 0)
             throw std::runtime_error("Original inn payment and full recovery must persist");
+        // The Fighter's inn rest offers an optional mastery replacement; keep the
+        // current set so the rested party is saved at an editable boundary.
+        if (!campaign_->state().training_rest)
+            throw std::runtime_error("The inn rest must offer the Fighter's mastery choice");
+        get_node<Button>("RestTraining/Cancel")->emit_signal("pressed");
+        if (campaign_->state().training_rest)
+            throw std::runtime_error("Keeping the mastery set must finish the rest choices");
         if (save_check)
             save_check("inn-rest");
         if (save_check)
@@ -1364,9 +1220,17 @@ void RolfTourView::check_recovery()
             save_check("denied-rest");
         if (save_check)
         {
+            // Hit Dice are spent through Heal, so a wounded member gives the
+            // reloaded rest something to heal; the route then continues from
+            // the unwounded party.
+            const auto rested = campaign_->checkpoint();
+            auto wounded = rested;
+            wounded.roster.at(0).vitals.hit_points = 1;
+            campaign_->restore(std::move(wounded));
             (void)campaign_->rest(opengold::RestKind::short_rest);
             save_check("short-rest-spending");
             campaign_->finish_short_rest(campaign_->state().short_rest->ticket);
+            campaign_->restore(rested);
         }
         capture_frame("party-rest");
         recovery_stage_ = 8;

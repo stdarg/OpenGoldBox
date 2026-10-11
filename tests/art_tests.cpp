@@ -12,6 +12,11 @@ using namespace opengold::test;
 
 namespace
 {
+IconPose pose_of(bool action)
+{
+    return action ? IconPose::action : IconPose::ready;
+}
+
 using Bytes = std::vector<std::uint8_t>;
 
 void check(bool condition, const char *message)
@@ -130,9 +135,9 @@ CharacterArt archive_tests()
     "Missing character art");
     fixture.populate();
     auto art = CharacterArt::load(fixture.path());
-    check(art.heads.size() == 1 && art.bodies.size() == 1,
+    check(art.heads().size() == 1 && art.bodies().size() == 1,
           "Identical portrait IDs across disks merge");
-    check(art.combat_heads.size() == 56 && art.combat_bodies.size() == 140,
+    check(art.combat_heads().size() == 56 && art.combat_bodies().size() == 140,
           "Original and derived bodies load in all sizes and poses");
     for (unsigned bank :
             {
@@ -146,9 +151,9 @@ CharacterArt archive_tests()
             const auto source_id = id == 33 ? 7u : 24u;
             const auto original = decode_character_icon(
                                       picture(24, 24, source_id + (bank % 128) / 64 + (bank / 128) * 4));
-            check(art.combat_bodies.at(bank + source_id).pixels == original.pixels,
+            check(art.combat_bodies().at(bank + source_id).pixels == original.pixels,
                   "Dagger derivation leaves source sword intact");
-            const auto &dagger = art.combat_bodies.at(bank + id).pixels;
+            const auto &dagger = art.combat_bodies().at(bank + id).pixels;
             unsigned changes = 0;
             for (unsigned p = 0; p < 576; ++p)
                 if (dagger[p] != original.pixels[p])
@@ -162,7 +167,7 @@ CharacterArt archive_tests()
             check(changes > 0, "Both dagger bodies shorten the blade in every size and pose");
         }
     std::filesystem::rename(fixture.path() / "CHEAD.DAX", fixture.path() / "chead.dax");
-    check(CharacterArt::load(fixture.path()).combat_heads.size() == 56,
+    check(CharacterArt::load(fixture.path()).combat_heads().size() == 56,
           "DOS filenames are case independent");
     std::filesystem::rename(fixture.path() / "chead.dax", fixture.path() / "CHEAD.DAX");
 
@@ -228,7 +233,7 @@ void composition_tests(const CharacterArt &art)
                     appearance.tall = tall;
                     appearance.combat_head = head;
                     appearance.combat_body = body;
-                    const auto icon = art.icon(appearance, action);
+                    const auto icon = art.icon(appearance, pose_of(action));
                     check(icon.width == 24 && icon.height == 24 && icon.rgba.size() == 576 * 4,
                           "Every synthetic head/body/size/pose composes");
                 }
@@ -248,9 +253,9 @@ void composition_tests(const CharacterArt &art)
                 })
         {
             const unsigned source_bank = (tall ? 64 : 0) + (action ? 128 : 0);
-            const auto &head = art.combat_heads.at(source_bank);
-            const auto &body = art.combat_bodies.at(source_bank);
-            const auto before = art.icon(appearance, action);
+            const auto &head = art.combat_heads().at(source_bank);
+            const auto &body = art.combat_bodies().at(source_bank);
+            const auto before = art.icon(appearance, pose_of(action));
             for (unsigned bank = 0; bank < 2; ++bank)
                 for (unsigned part = 0; part < 6; ++part)
                 {
@@ -259,7 +264,7 @@ void composition_tests(const CharacterArt &art)
                     {
                         auto changed = appearance;
                         changed.colors[bank][part] = color;
-                        const auto after = art.icon(changed, action);
+                        const auto after = art.icon(changed, pose_of(action));
                         targeted = 0;
                         for (unsigned p = 0; p < 576; ++p)
                         {
@@ -282,7 +287,7 @@ void composition_tests(const CharacterArt &art)
                           (usage.ready[bank][part] + usage.action[bank][part] > 0),
                           "A control is relevant if either pose uses its region");
                 }
-            check(art.icon(appearance, action).rgba == before.rgba,
+            check(art.icon(appearance, pose_of(action)).rgba == before.rgba,
                   "Recoloring never mutates cached components");
         }
     }
@@ -301,9 +306,9 @@ void composition_tests(const CharacterArt &art)
     // Combat icons never draw the portrait head. A newer race's head is only
     // registered where portraits are shown, so combat must not require it.
     appearance.portrait_head = 260;
-    check(art.icon(appearance, false).width == 24 &&
-          art.equipped_icon(appearance, 0, true).width == 24 &&
-          art.combat_anatomy(appearance, false).width == 24,
+    check(art.icon(appearance, IconPose::ready).width == 24 &&
+          art.equipped_icon(appearance, 0, IconPose::action).width == 24 &&
+          art.combat_anatomy(appearance, IconPose::ready).width == 24,
           "Combat icons do not require the portrait head to be loaded");
     (void)art.color_usage(appearance);
     rejects(
@@ -319,7 +324,7 @@ void composition_tests(const CharacterArt &art)
         (void)art.portrait(appearance);
     },
     "Invalid character appearance selection");
-    auto head = art.combat_heads.at(0), body = art.combat_bodies.at(0);
+    auto head = art.combat_heads().at(0), body = art.combat_bodies().at(0);
     head.pixels[0] = 16;
     rejects(
         [&]
@@ -337,10 +342,49 @@ void composition_tests(const CharacterArt &art)
 }
 } // namespace
 
+// A sprite is asked for by pose, not by a bool that could be swapped
+// (Effective C++ Item 18).
+template <class Pose>
+concept draws_icon_for = requires(const CharacterArt &art, const CharacterAppearance &a, Pose pose)
+{
+    art.icon(a, pose);
+};
+static_assert(draws_icon_for<IconPose> && !draws_icon_for<bool>);
+
+// The art's parts are private, so a part of the wrong size cannot be stored
+// where composition would read past it (Effective C++ Item 22).
+void parts_keep_their_sizes()
+{
+    CharacterArt art;
+    const auto image = [](std::uint16_t width, std::uint16_t height)
+    {
+        return Image{.width = width, .height = height,
+                     .rgba = std::vector<std::uint8_t>(std::size_t{width} * height * 4)};
+    };
+    art.set_original_head(1, PortraitPart{"fixture", image(88, 40), "Head"});
+    art.set_original_body(1, PortraitPart{"fixture", image(88, 48), "Body"});
+    check(art.heads().size() == 1 && art.bodies().size() == 1, "Correctly sized parts are kept");
+    rejects([&]
+    {
+        art.set_original_head(2, PortraitPart{"fixture", image(88, 88), "Too tall"});
+    }, "portrait head is 88x40");
+    rejects([&]
+    {
+        art.set_original_body(2, PortraitPart{"fixture", image(88, 40), "Too short"});
+    }, "portrait body is 88x48");
+    rejects([&]
+    {
+        art.set_combat_body(0, IndexedIcon{24, 24, std::vector<std::uint8_t>(10)});
+    }, "combat icon");
+    check(art.heads().size() == 1 && art.bodies().size() == 1 && art.combat_bodies().empty(),
+          "Refused parts are not stored");
+}
+
 int main()
 {
     try
     {
+        parts_keep_their_sizes();
         auto art = archive_tests();
         composition_tests(art);
         // Distinct authored anatomy makes whole-body substitution observable.
@@ -351,23 +395,32 @@ int main()
                 })
         {
             for (unsigned id = 0; id < 35; ++id)
-                art.combat_bodies.at(bank + id).pixels.assign(576, 0);
-            art.combat_heads.at(bank).pixels.assign(art.combat_heads.at(bank).pixels.size(), 0);
-            art.combat_heads.at(bank).pixels[0] = 12;
-            auto &base = art.combat_bodies.at(bank + 24).pixels;
-            base[10 * 24 + 10] = 1;
-            base[20 * 24 + 10] = 3;
-            base[22 * 24 + 10] = 8;
+            {
+                auto blank = art.combat_bodies().at(bank + id);
+                blank.pixels.assign(576, 0);
+                art.set_combat_body(bank + id, std::move(blank));
+            }
+            auto head = art.combat_heads().at(bank);
+            head.pixels.assign(head.pixels.size(), 0);
+            head.pixels[0] = 12;
+            art.set_combat_head(bank, std::move(head));
+            auto base = art.combat_bodies().at(bank + 24);
+            base.pixels[10 * 24 + 10] = 1;
+            base.pixels[20 * 24 + 10] = 3;
+            base.pixels[22 * 24 + 10] = 8;
+            art.set_combat_body(bank + 24, std::move(base));
             for (unsigned donor :
                     {
                         6u, 28u
                     })
             {
-                auto &pixels = art.combat_bodies.at(bank + donor).pixels;
+                auto body = art.combat_bodies().at(bank + donor);
+                auto &pixels = body.pixels;
                 pixels[10 * 24 + 10] = 9;
                 pixels[20 * 24 + 10] = 11; // Must never replace saved clothing.
                 pixels[10 * 24 + 5] = donor == 6 ? 2 : 10;
                 pixels[4 * 24 + 5] = donor == 6 ? 7 : 15;
+                art.set_combat_body(bank + donor, std::move(body));
             }
         }
         for (bool tall :
@@ -382,9 +435,9 @@ int main()
                 CharacterAppearance a;
                 a.tall = tall;
                 a.combat_body = 24;
-                const auto before = art.icon(a, action);
-                const auto axe = art.equipped_icon(a, 6, action),
-                           staff = art.equipped_icon(a, 28, action);
+                const auto before = art.icon(a, pose_of(action));
+                const auto axe = art.equipped_icon(a, 6, pose_of(action)),
+                           staff = art.equipped_icon(a, 28, pose_of(action));
                 const auto pixel_equal = [](const Image & first, const Image & second, unsigned p)
                 {
                     return std::equal(first.rgba.begin() + 4 * p, first.rgba.begin() + 4 * p + 4,
@@ -399,7 +452,7 @@ int main()
                         "Equipment preserves saved head, torso, legs and boots in both sizes and poses");
                 check(!pixel_equal(axe, staff, 245) && !pixel_equal(axe, staff, 101),
                       "Only wielding arms and equipment change with the donor");
-                check(art.icon(a, action).rgba == before.rgba,
+                check(art.icon(a, pose_of(action)).rgba == before.rgba,
                       "Layered rendering never mutates original decoded art");
             }
         std::cout << "Synthetic art loading and recolor properties passed\n";

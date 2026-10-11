@@ -1,14 +1,19 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=9 format=3]
+[ext_resource type="AnimationLibrary" path="res://scenes/tour_shopping_layout.tres" id="2_shopping_layout"]
+[ext_resource type="Script" path="res://scenes/tour_layout.gd" id="3_tour_layout"]
+[ext_resource type="Script" path="res://scenes/window_layout.gd" id="4_window_layout"]
+[ext_resource type="Script" path="res://scenes/tour_backdrop.gd" id="5_tour_backdrop"]
 
-[sub_resource type="StyleBoxFlat" id="InventoryStyle"]
-bg_color = Color(0.11, 0.15, 0.18, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.843, 0.706, 0.475, 1)
+[ext_resource type="AnimationLibrary" path="res://scenes/tour_dialogue_layout.tres" id="1_dialogue_layout"]
+
+[ext_resource type="Script" path="res://scenes/tour_visuals.gd" id="6_tour_visuals"]
+
+[ext_resource type="Script" path="res://scenes/window_minimum.gd" id="99_window_minimum"]
+
+[ext_resource type="Script" path="res://scenes/party_member_row.gd" id="95_party_row"]
 
 [node name="RolfTour" type="RolfTourView"]
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -16,186 +21,616 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="WindowMinimum" type="Node" parent="."]
+script = ExtResource("99_window_minimum")
+metric_prefix = "tour"
+
+[node name="Backdrop" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+z_index = -1
+script = ExtResource("5_tour_backdrop")
+
+[node name="TourVisuals" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("6_tour_visuals")
+
+[node name="HeaderRule" type="Control" parent="."]
+visible = false
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 57.0
+offset_right = -24.0
+offset_bottom = 57.0
+
 [node name="Title" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.843, 0.706, 0.475, 1)
-theme_override_font_sizes/font_size = 27
+anchor_right = 0.8825
+offset_left = 24
+offset_right = -252.4
+offset_top = 20
+offset_bottom = 57
+metadata/layout_reference = Rect2(24, 20, 1418, 37)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+theme_type_variation = &"LabelGoldText27"
 text = "OPENGOLDBOX  /  Rolf's welcome"
 
 [node name="Location" type="Label" parent="."]
-theme_override_font_sizes/font_size = 19
+anchor_right = 0.8825
+offset_left = 24
+offset_right = -252.4
+offset_top = 68
+offset_bottom = 95
+metadata/layout_reference = Rect2(24, 68, 1418, 27)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+theme_type_variation = &"LabelText19"
 
 [node name="MapTitle" type="Label" parent="."]
-theme_override_font_sizes/font_size = 19
+anchor_left = 0.8825
+anchor_right = 1
+offset_left = -228.4
+offset_right = -24
+offset_top = 68
+offset_bottom = 95
+metadata/layout_reference = Rect2(1466, 68, 430, 27)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 37.6, 0)
+theme_type_variation = &"LabelText19"
 
 [node name="Coordinates" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.475, 0.839, 0.831, 1)
-theme_override_font_sizes/font_size = 18
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 0.335714286
+anchor_bottom = 0.335714286
+offset_left = -228.4
+offset_right = -24
+offset_top = 181.428571
+offset_bottom = 209.428571
+metadata/layout_reference = Rect2(1466, 544, 430, 28)
+metadata/layout_middle_delta = Rect2(-37.6, 26.857143, 37.6, 0)
+theme_type_variation = &"LabelTealText18"
 
 [node name="Legend" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 0.335714286
+anchor_bottom = 0.335714286
+offset_left = -228.4
+offset_right = -24
+offset_top = 217.428571
+offset_bottom = 267.428571
+metadata/layout_reference = Rect2(1466, 580, 430, 50)
+metadata/layout_middle_delta = Rect2(-37.6, 26.857143, 37.6, 0)
+theme_type_variation = &"LabelMuted"
 text = "Arrow: party & facing\nGold: doors   Teal: visited"
 
 [node name="Speaker" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.843, 0.706, 0.475, 1)
-theme_override_font_sizes/font_size = 19
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -270.4
+offset_top = -278
+offset_bottom = -251
+metadata/layout_reference = Rect2(42, 802, 1382, 27)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+theme_type_variation = &"LabelGoldText19"
 
 [node name="Dialogue" type="RichTextLabel" parent="."]
-theme_override_colors/default_color = Color(0.906, 0.902, 0.855, 1)
-theme_override_font_sizes/normal_font_size = 18
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -270.4
+offset_top = -244
+offset_bottom = -124
+metadata/layout_reference = Rect2(42, 836, 1382, 120)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+theme_type_variation = &"RichTextLabelDialogueText18"
 bbcode_enabled = false
 scroll_active = true
 
 [node name="Continue" type="Button" parent="."]
+anchor_left = 0.8825
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -434.4
+offset_right = -270.4
+offset_top = -112
+offset_bottom = -72
+metadata/layout_reference = Rect2(1260, 968, 164, 40)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 1.13686838e-13, 0)
 text = "Continue  [Enter]"
 
 [node name="Progress" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -454.4
+offset_top = -106
+offset_bottom = -76
+metadata/layout_reference = Rect2(42, 974, 1198, 30)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+theme_type_variation = &"LabelMuted"
 
 [node name="Movement" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -24
+offset_top = -178
+offset_bottom = -152
+metadata/layout_reference = Rect2(1466, 902, 430, 26)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 37.6, 0)
+theme_type_variation = &"LabelMuted"
 
 [node name="Left" type="Button" parent="."]
+anchor_left = 0.8825
+anchor_right = 0.921666565
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -164.266553
+offset_top = -140
+offset_bottom = -100
+metadata/layout_reference = Rect2(1466, 940, 139.333252, 40)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 12.533301, 0)
 text = "← Turn"
 
 [node name="Forward" type="Button" parent="."]
+anchor_left = 0.92166687
+anchor_right = 0.960833435
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -158.266895
+offset_right = -94.1334473
+offset_top = -140
+offset_bottom = -100
+metadata/layout_reference = Rect2(1611.3335, 940, 139.333252, 40)
+metadata/layout_middle_delta = Rect2(-25.0666009, 0, 12.5333003, 0)
 text = "↑ Step"
 
 [node name="Right" type="Button" parent="."]
+anchor_left = 0.96083313
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -88.1331055
+offset_right = -24.0002441
+offset_top = -140
+offset_bottom = -100
+metadata/layout_reference = Rect2(1756.6665, 940, 139.333252, 40)
+metadata/layout_middle_delta = Rect2(-12.5333986, 0, 12.5333986, 0)
 text = "Turn →"
 
 [node name="Restart" type="Button" parent="."]
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -24
+offset_top = -88
+offset_bottom = -54
+metadata/layout_reference = Rect2(1466, 992, 430, 34)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 37.6, 0)
 text = "Replay tour"
 
 [node name="Footer" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.690, 0.741, 0.765, 1)
-theme_override_font_sizes/font_size = 14
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 24
+offset_right = -24
+offset_top = -36
+offset_bottom = -10
+metadata/layout_reference = Rect2(24, 1044, 1872, 26)
+theme_type_variation = &"LabelMutedText14"
 text = "Arrow keys: move / turn   •   L: look   •   Original New Phlan scripts and shop stock"
 
 [node name="Choices" type="ItemList" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -270.4
+offset_top = -206
+offset_bottom = -122
+metadata/layout_reference = Rect2(42, 874, 1382, 84)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+theme_type_variation = &"ItemListText17"
 visible = false
-theme_override_font_sizes/font_size = 17
+
+[node name="DialogueLayout" type="AnimationPlayer" parent="."]
+root_node = NodePath("..")
+libraries = {
+"": ExtResource("1_dialogue_layout")
+}
 
 [node name="Answer" type="LineEdit" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 42
+offset_right = -270.4
+offset_top = -158
+offset_bottom = -122
+metadata/layout_reference = Rect2(42, 922, 1382, 36)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
 visible = false
 max_length = 40
 
 [node name="LeaveShop" type="Button" parent="."]
+anchor_left = 0.8825
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -584.4
+offset_right = -444.4
+offset_top = -112
+offset_bottom = -72
+metadata/layout_reference = Rect2(1110, 968, 140, 40)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 0, 0)
 visible = false
 text = "Leave shop"
 
 [node name="Look" type="Button" parent="."]
+anchor_left = 0.8825
+anchor_right = 0.921666565
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -164.266553
+offset_top = -226
+offset_bottom = -192
+metadata/layout_reference = Rect2(1466, 854, 139.333252, 34)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 12.533301, 0)
 text = "Look [L]"
 
 [node name="Camp" type="Button" parent="."]
+anchor_left = 0.92166687
+anchor_right = 0.960833435
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -158.266895
+offset_right = -94.1334473
+offset_top = -226
+offset_bottom = -192
+metadata/layout_reference = Rect2(1611.3335, 854, 139.333252, 34)
+metadata/layout_middle_delta = Rect2(-25.0666009, 0, 12.5333003, 0)
 text = "Camp [C]"
 tooltip_text = "Run the area's pre-camp check and attempt an eight-hour long rest."
 
 [node name="Inventory" type="Button" parent="."]
+anchor_left = 0.96083313
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -88.1331055
+offset_right = -24.0002441
+offset_top = -226
+offset_bottom = -192
+metadata/layout_reference = Rect2(1756.6665, 854, 139.333252, 34)
+metadata/layout_middle_delta = Rect2(-12.5333986, 0, 12.5333986, 0)
 text = "Inventory"
 
 [node name="Party" type="Label" parent="."]
-theme_override_colors/font_color = Color(0.843, 0.706, 0.475, 1)
-theme_override_font_sizes/font_size = 16
+anchor_left = 0.8825
+anchor_right = 1
+anchor_top = 0.335714286
+anchor_bottom = 0.335714286
+offset_left = -228.4
+offset_right = -24
+offset_top = 215.428571
+offset_bottom = 265.428571
+metadata/layout_reference = Rect2(1466, 578, 430, 50)
+metadata/layout_middle_delta = Rect2(-37.6, 26.857143, 37.6, 0)
+theme_type_variation = &"LabelGoldText16"
 
 [node name="InventoryPanel" type="Panel" parent="."]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 64
+offset_right = -64
+offset_top = 90
+offset_bottom = -70
+metadata/layout_reference = Rect2(64, 90, 1792, 920)
+theme_type_variation = &"PanelInventory"
 visible = false
 z_index = 2
 mouse_filter = 0
-theme_override_styles/panel = SubResource("InventoryStyle")
 
 [node name="Items" type="ItemList" parent="InventoryPanel"]
-theme_override_font_sizes/font_size = 18
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 20
+offset_right = -20
+offset_top = 70
+offset_bottom = -184
+metadata/layout_reference = Rect2(20, 70, 1752, 666)
+theme_type_variation = &"ItemListText18"
 
 [node name="Close" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 20
+offset_right = 200
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(20, 866, 180, 36)
 text = "Close inventory"
 
 [node name="Footstep" type="AudioStreamPlayer" parent="."]
 volume_db = -12.0
 
 [node name="PartyList" type="ScrollContainer" parent="."]
+anchor_left = 0.291666641
+anchor_right = 0.882499924
+anchor_bottom = 1
+offset_left = 38.3333618
+offset_right = -252.399854
+offset_top = 102
+offset_bottom = -308
+metadata/layout_reference = Rect2(598.333313, 102, 843.666687, 670)
+metadata/layout_middle_delta = Rect2(26.6666996, 0, -64.266724, 0)
 horizontal_scroll_mode = 0
 
 [node name="Rows" type="VBoxContainer" parent="PartyList"]
+offset_left = 0
+offset_top = 0
+offset_right = 843.6667
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 843.6667, 56)
+theme_type_variation = &"VBoxContainerGap8"
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
 
 [node name="Header" type="Label" parent="InventoryPanel"]
-theme_override_font_sizes/font_size = 20
+anchor_right = 1
+offset_left = 20
+offset_right = -20
+offset_top = 18
+offset_bottom = 62
+metadata/layout_reference = Rect2(20, 18, 1752, 44)
+theme_type_variation = &"LabelText20"
 
 [node name="Status" type="Label" parent="InventoryPanel"]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 20
+offset_right = -20
+offset_top = -132
+offset_bottom = -64
+metadata/layout_reference = Rect2(20, 788, 1752, 68)
 autowrap_mode = 2
 
 [node name="Equip" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 220
+offset_right = 370
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(220, 866, 150, 36)
 text = "Equip"
 
 [node name="Unequip" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 390
+offset_right = 540
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(390, 866, 150, 36)
 text = "Unequip"
 
 [node name="MemberSheet" type="Window" parent="."]
+size = Vector2i(1800, 960)
+metadata/layout_reference_size = Vector2i(1800, 960)
 visible = false
 transient = true
 exclusive = true
 unresizable = true
 title = "Character Sheet"
 
+[node name="WindowLayout" type="Node" parent="MemberSheet"]
+script = ExtResource("4_window_layout")
+layout_kind = "tour_sheet"
+
 [node name="Text" type="RichTextLabel" parent="MemberSheet"]
-theme_override_font_sizes/normal_font_size = 18
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 24
+offset_right = -24
+offset_top = 24
+offset_bottom = -76
+metadata/layout_reference = Rect2(24, 24, 1752, 860)
+theme_type_variation = &"RichTextLabelText18"
 
 [node name="Close" type="Button" parent="MemberSheet"]
+anchor_left = 1
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -170
+offset_right = -40
+offset_top = -60
+offset_bottom = -24
+metadata/layout_reference = Rect2(1630, 900, 130, 36)
 text = "Close"
 
 [node name="Member0" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
+offset_left = 0
+offset_top = 0
+offset_right = 843
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 843, 56)
+theme_type_variation = &"ButtonText16"
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
-theme_override_font_sizes/font_size = 16
 
 [node name="Member1" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
+offset_left = 0
+offset_top = 0
+offset_right = 12
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 12, 56)
+theme_type_variation = &"ButtonText16"
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
-theme_override_font_sizes/font_size = 16
 
 [node name="Member2" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
+offset_left = 0
+offset_top = 0
+offset_right = 12
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 12, 56)
+theme_type_variation = &"ButtonText16"
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
-theme_override_font_sizes/font_size = 16
 
 [node name="Member3" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
+offset_left = 0
+offset_top = 0
+offset_right = 12
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 12, 56)
+theme_type_variation = &"ButtonText16"
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
-theme_override_font_sizes/font_size = 16
 
 [node name="Member4" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
+offset_left = 0
+offset_top = 0
+offset_right = 12
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 12, 56)
+theme_type_variation = &"ButtonText16"
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
-theme_override_font_sizes/font_size = 16
 
 [node name="Member5" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
+offset_left = 0
+offset_top = 0
+offset_right = 12
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 12, 56)
+theme_type_variation = &"ButtonText16"
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
-theme_override_font_sizes/font_size = 16
 
 [node name="Member6" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
+offset_left = 0
+offset_top = 0
+offset_right = 12
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 12, 56)
+theme_type_variation = &"ButtonText16"
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
-theme_override_font_sizes/font_size = 16
 
 [node name="Member7" type="Button" parent="PartyList/Rows"]
+script = ExtResource("95_party_row")
+offset_left = 0
+offset_top = 0
+offset_right = 12
+offset_bottom = 56
+metadata/layout_reference = Rect2(0, 0, 12, 56)
+theme_type_variation = &"ButtonText16"
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
-theme_override_font_sizes/font_size = 16
+
+[node name="SceneBounds" type="Control" parent="."]
+anchor_right = 0.291666641
+anchor_bottom = 1
+offset_left = 24
+offset_right = 22.3333618
+offset_top = 102
+offset_bottom = -308
+metadata/layout_reference = Rect2(24, 102, 558.333313, 670)
+metadata/layout_middle_delta = Rect2(0, 0, 26.6666996, 0)
+visible = false
+mouse_filter = 2
+
+[node name="MapBounds" type="Control" parent="."]
+anchor_left = 0.8825
+anchor_right = 1
+anchor_bottom = 0.335714286
+offset_left = -228.4
+offset_right = -24
+offset_top = 102
+offset_bottom = 169.428571
+metadata/layout_reference = Rect2(1466, 102, 430, 430)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 37.6, 26.857143)
+visible = false
+mouse_filter = 2
+
+[node name="DialogueBounds" type="Control" parent="."]
+anchor_right = 0.8825
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 24
+offset_right = -252.4
+offset_top = -290
+offset_bottom = -58
+metadata/layout_reference = Rect2(24, 790, 1418, 232)
+metadata/layout_middle_delta = Rect2(0, 0, -37.6, 0)
+visible = false
+mouse_filter = 2
+
+[node name="SaveGame" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -520
+offset_top = 20
+offset_right = -380
+offset_bottom = 56
+metadata/layout_reference = Rect2(1400, 20, 140, 36)
+text = "Save game"
+
+[node name="LoadGame" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -370
+offset_top = 20
+offset_right = -230
+offset_bottom = 56
+metadata/layout_reference = Rect2(1550, 20, 140, 36)
+text = "Load game"
+
+[node name="ShoppingLayout" type="AnimationPlayer" parent="."]
+script = ExtResource("3_tour_layout")
+root_node = NodePath("..")
+libraries = {
+"": ExtResource("2_shopping_layout")
+}

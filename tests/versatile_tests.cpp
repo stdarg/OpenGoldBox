@@ -81,7 +81,7 @@ void damage_follows_other_hand()
 {
     auto rules = module();
     const auto sheet = hero().sheet();
-    check(sheet.modifiers[0] == 2 && sheet.modifiers[1] == 2,
+    check(sheet.modifiers[Ability::strength] == 2 && sheet.modifiers[Ability::dexterity] == 2,
           "Fixed damage fixture has +2 Strength/Dexterity");
     // Fixed SplitMix64 seed oracles: two initiative rolls, then attack/damage.
     // Seed 0: critical 20; seed 13: ordinary 17; seed 40: natural 1.
@@ -119,9 +119,9 @@ void damage_follows_other_hand()
                           "Rules report two hands only when the other hand is empty");
                     check(!shield || profile.armor_class == 14,
                           "One-handed grip keeps the trained shield's AC");
-                    Encounter e{{8, 8, std::vector<std::uint8_t>(64)},
-                        {   {1, "campaign-character", "Hero", 0, {1, 1}, profile.data},
-                            {2, "vanguard", "Target", 1, {thrown ? 3 : 2, 1}}
+                    Encounter e{{8, 8, std::vector<Terrain>(64)},
+                        {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
+                            {2, "vanguard", "Target", Side::opposition, {thrown ? 3 : 2, 1}}
                         }};
                     auto combat = rules->create(e, seed);
                     check(combat->snapshot().actor == 1, "Fixed seed starts the hero");
@@ -132,7 +132,7 @@ void damage_follows_other_hand()
                     const int sides = thrown || shield ? weapon.one : weapon.two;
                     check(unit(*combat, 2).hit_points == 28 - damage(seed, sides),
                           "Melee/thrown/critical damage matches fixed SRD dice oracle");
-                    const auto log = combat->snapshot().log;
+                    const auto log = combat->snapshot().log();
                     const std::string grip = thrown ? " damage." : shield ? " damage (one-handed)."
                                              : " damage (two-handed).";
                     check(seed == 40 || log.back().ends_with(grip),
@@ -166,9 +166,9 @@ void reaction_continuation()
     auto rules = module();
     const std::array<std::string, 1> gear{"longsword"};
     const auto profile = rules->character_profile(hero().sheet(), gear);
-    Encounter e{{8, 8, std::vector<std::uint8_t>(64)},
-        {   {1, "campaign-character", "Reactor", 0, {1, 1}, profile.data},
-            {2, "vanguard", "Mover", 1, {2, 1}}
+    Encounter e{{8, 8, std::vector<Terrain>(64)},
+        {   {1, "campaign-character", "Reactor", Side::party, {1, 1}, profile.data},
+            {2, "vanguard", "Mover", Side::opposition, {2, 1}}
         }};
     std::unique_ptr<CombatSession> combat;
     for (unsigned seed = 0; seed < 100; ++seed)
@@ -197,8 +197,12 @@ void campaign()
     auto rules = module();
     CampaignParty party(module());
     auto character = hero();
-    const auto staff = character.inventory().add("quarterstaff", "Quarterstaff", 1),
-               shield = character.inventory().add("shield", "Shield", 1);
+    const auto staff = character.add_item({.definition_id = "quarterstaff",
+                                                  .name = "Quarterstaff",
+                                                  .quantity = 1}),
+               shield = character.add_item({.definition_id = "shield",
+                                                   .name = "Shield",
+                                                   .quantity = 1});
     const auto id = party.add_pc(std::move(character));
     party.equip(id, staff);
     auto wounded = party.checkpoint();

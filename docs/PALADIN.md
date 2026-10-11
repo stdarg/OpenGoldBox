@@ -168,7 +168,7 @@ forced in a test.
   holy water (CLASS-3). Its protection against being Charmed, Frightened or
   possessed waits until a creature can cause those. In the current content the
   Slums goblins and bugbears (Fey) are affected.
-- **Command** (Action, 60 feet, Verbal only; Cleric and Paladin): a creature
+- **Command** (Action, 60 feet; Cleric and Paladin): a creature
   the caster can see makes a Wisdom save or obeys on its next turn. Each option
   is its own entry in the A cycle (Command: Approach, Flee, Grovel, Halt).
   Approach moves it to the reachable cell nearest the caster and ends its turn

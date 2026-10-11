@@ -13,15 +13,14 @@ namespace presentation
 {
 template <class Text>
 void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
-                      const godot::Callable &keep, const godot::Callable &input,
-                      const godot::Callable &select)
+                      const godot::Callable &keep, const godot::Callable &metabolism,
+                      const godot::Callable &input, const godot::Callable &select)
 {
     using namespace godot;
     auto owned = make_node<Window>();
     owned->set_name("InitiativeChoice");
-    owned->set_size(Vector2i(640, 360));
-    owned->set_min_size(Vector2i(640, 360));
-    owned->set_title(text(N_("Alert")));
+    attach_dialog_layout(*owned);
+    owned->set_title(text(N_("Initiative")));
     owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
     owned->set_transient(true);
     owned->set_exclusive(true);
@@ -29,36 +28,38 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
     auto *w = attach_child(root, std::move(owned));
     w->connect("close_requested", keep);
     w->connect("window_input", input);
-    auto *who = add_control<Label>(*w, "ResolveLabel", Rect2(24, 24, 130, 36));
+    auto *who = dialog_control<Label>(*w, "ResolveLabel");
     who->set_text(text(N_("Resolve next")));
-    auto *owners = add_control<OptionButton>(*w, "Resolve", Rect2(164, 24, 452, 40));
-    owners->set_fit_to_longest_item(false);
+    auto *owners = dialog_control<OptionButton>(*w, "Resolve");
     owners->connect("item_selected", select);
-    auto *label = add_control<Label>(*w, "AllyLabel", Rect2(24, 82, 130, 36));
+    auto *label = dialog_control<Label>(*w, "AllyLabel");
     label->set_text(text(N_("Ally")));
-    auto *allies = add_control<OptionButton>(*w, "Ally", Rect2(164, 82, 452, 40));
-    allies->set_fit_to_longest_item(false);
+    auto *allies = dialog_control<OptionButton>(*w, "Ally");
     allies->connect("item_selected", select);
-    auto *description = add_control<Label>(*w, "Text", Rect2(24, 140, 592, 138));
-    description->set("autowrap_mode", 3);
-    auto *no = add_control<Button>(*w, "Keep", Rect2(164, 296, 220, 40));
+    dialog_control<Label>(*w, "Text");
+    auto *no = dialog_control<Button>(*w, "Keep");
     no->set_text(text(N_("Keep initiative")));
     no->connect("pressed", keep);
-    auto *yes = add_control<Button>(*w, "Swap", Rect2(396, 296, 220, 40));
+    auto *yes = dialog_control<Button>(*w, "Swap");
     yes->set_text(text(N_("Swap initiative")));
     yes->connect("pressed", swap);
+    // A Monk's Uncanny Metabolism, used when Initiative is rolled.
+    auto *restore = dialog_control<Button>(*w, "Metabolism");
+    restore->set_text(text(N_("Uncanny Metabolism")));
+    restore->connect("pressed", metabolism);
 }
 
 inline bool initiative_command(godot::Node &root, const opengold::rules::Command &command)
 {
-    if (command.verb != "initiative_keep" && command.verb != "initiative_swap")
+    if (command.verb != "initiative_keep" && command.verb != "initiative_swap" &&
+            command.verb != "uncanny_metabolism")
         return true;
     const auto owner =
-        root.get_node<godot::OptionButton>("InitiativeChoice/Resolve")->get_selected_id();
+        required_node<godot::OptionButton>(root, "InitiativeChoice/Resolve").get_selected_id();
     const auto ally =
-        root.get_node<godot::OptionButton>("InitiativeChoice/Ally")->get_selected_id();
-    return command.actor == unsigned(owner) &&
-           (command.verb == "initiative_keep" || command.target == unsigned(ally));
+        required_node<godot::OptionButton>(root, "InitiativeChoice/Ally").get_selected_id();
+    return command.actor == static_cast<unsigned>(owner) &&
+           (command.verb != "initiative_swap" || command.target == static_cast<unsigned>(ally));
 }
 
 template <class Text, class Render>
@@ -67,18 +68,18 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
                         Render render)
 {
     using namespace godot;
-    auto *w = root.get_node<Window>("InitiativeChoice");
+    auto *w = &required_node<Window>(root, "InitiativeChoice");
     if (state.initiative_choices.empty())
     {
         if (w->is_visible())
         {
             w->hide();
-            root.get_node<Button>("End")->grab_focus();
+            required_node<Button>(root, "End").grab_focus();
         }
         return;
     }
-    auto *owners = w->get_node<OptionButton>("Resolve");
-    auto *allies = w->get_node<OptionButton>("Ally");
+    auto *owners = &required_node<OptionButton>(*w, "Resolve");
+    auto *allies = &required_node<OptionButton>(*w, "Ally");
     const int prior = w->is_visible() ? owners->get_selected_id() : -1;
     const int prior_ally = w->is_visible() ? allies->get_selected_id() : -1;
     const auto label = [&](unsigned id)
@@ -93,39 +94,48 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
             N_("{name}: Initiative {total}"),
             {{"name", a->name}, {"total", std::to_string(a->initiative)}}});
     };
-    owners->set_block_signals(true);
+    SignalsBlocked owners_quiet(*owners);
     owners->clear();
     int selected = 0;
     for (auto id : state.initiative_choices)
     {
         owners->add_item(label(id), id);
-        if (int(id) == prior)
+        if (static_cast<int>(id) == prior)
             selected = owners->get_item_count() - 1;
     }
     owners->select(selected);
-    owners->set_block_signals(false);
+    owners_quiet.unblock();
     const auto owner = owners->get_selected_id();
     const bool multiple = state.initiative_choices.size() > 1;
     owners->set_visible(multiple);
-    w->get_node<Label>("ResolveLabel")->set_visible(multiple);
-    allies->set_block_signals(true);
+    required_node<Label>(*w, "ResolveLabel").set_visible(multiple);
+    SignalsBlocked allies_quiet(*allies);
     allies->clear();
     allies->add_item(text(N_("Choose an ally")), 0);
     selected = 0;
     for (const auto &c : commands)
-        if (c.verb == "initiative_swap" && c.actor == unsigned(owner))
+        if (c.verb == "initiative_swap" && c.actor == static_cast<unsigned>(owner))
         {
             allies->add_item(label(c.target), c.target);
-            if (owner == prior && int(c.target) == prior_ally)
+            if (owner == prior && static_cast<int>(c.target) == prior_ally)
                 selected = allies->get_item_count() - 1;
         }
     allies->select(selected);
-    allies->set_block_signals(false);
-    w->get_node<Label>("Text")->set_text(
+    allies_quiet.unblock();
+    // Alert offers the swap; a Monk's Uncanny Metabolism its own button.
+    const bool swaps = allies->get_item_count() > 1;
+    const bool metabolism = std::any_of(commands.begin(), commands.end(), [&](const auto & c)
+    {
+        return c.verb == "uncanny_metabolism" && c.actor == static_cast<unsigned>(owner);
+    });
+    for (const char *name : {"AllyLabel", "Ally", "Swap"})
+        required_node<Control>(*w, name).set_visible(swaps);
+    required_node<Button>(*w, "Metabolism").set_visible(metabolism);
+    required_node<Label>(*w, "Text").set_text(
         label(owner) + "\n\n" +
-        text(
-            N_("Swap these Initiative totals, or keep your Initiative. No turn has started yet.")));
-    w->get_node<Button>("Swap")->set_disabled(selected == 0);
+        (swaps ? text(N_("Swap these Initiative totals, or keep your Initiative. No turn has started yet."))
+         : text(N_("Use Uncanny Metabolism to regain all Focus Points and 1d6 + your Monk level Hit Points (once per Long Rest), or keep going. No turn has started yet."))));
+    required_node<Button>(*w, "Swap").set_disabled(selected == 0);
     if (!w->is_visible())
     {
         w->popup_centered();

@@ -12,6 +12,11 @@ using namespace opengold::por;
 
 namespace
 {
+IconPose pose_of(bool action)
+{
+    return action ? IconPose::action : IconPose::ready;
+}
+
 void check(bool ok, const char *message)
 {
     if (!ok)
@@ -32,6 +37,36 @@ template <class F> void rejects(F action, const char *message)
     check(rejected, message);
 }
 
+// A roll and an ability are different kinds of number, so passing them in the
+// wrong order must not compile (Effective C++ Item 18).
+template <class Roll, class Target>
+concept AssignsRoll = requires(CharacterCreator &creator, Roll roll, Target target)
+{
+    creator.assign_roll(roll, target);
+};
+static_assert(AssignsRoll<unsigned, rules::Ability>);
+static_assert(!AssignsRoll<unsigned, unsigned>);
+
+// Ability arrays are reached by naming the Ability, so a bare position such as
+// scores[2], which silently meant Constitution, no longer compiles.
+template <class Index>
+concept IndexesAbilities = requires(rules::CharacterSheet sheet, rules::CharacterDraft draft,
+                                    rules::AdvancementChoice choice, Index index)
+{
+    sheet.scores[index];
+    sheet.save_proficiencies[index];
+    draft.assignment[index];
+    choice.abilities[index];
+};
+static_assert(IndexesAbilities<rules::Ability>);
+static_assert(!IndexesAbilities<unsigned> && !IndexesAbilities<int>);
+template <class Ability>
+concept SwapsScores = requires(CharacterCreator &creator, Ability first, Ability second)
+{
+    creator.swap_scores(first, second);
+};
+static_assert(SwapsScores<rules::Ability> && !SwapsScores<unsigned>);
+
 void creation_tests()
 {
     using namespace rules;
@@ -40,7 +75,7 @@ void creation_tests()
     check(module->choices(CreationField::race).size() == 9 &&
           module->choices(CreationField::character_class).size() == 12,
           "SRD species and all twelve classes available");
-    std::uint64_t seed = 123, again = 123;
+    RandomState seed{123}, again{123};
     check(module->roll(seed) == module->roll(again) && seed == again,
           "Seeded rolls reproduce across sessions");
     std::set<int> totals;
@@ -77,10 +112,11 @@ void creation_tests()
         {{4, 4, 4, 1}, {3, 3, 3, 1}, {5, 5, 4, 1}, {1, 1, 1, 1}, {5, 5, 5, 1}, {6, 6, 6, 1}}};
     for (unsigned i = 0; i < 6; ++i)
         d.rolls[i] = {dice[i], 3};
-    auto s = module->evaluate(d, true);
-    check(s.scores[0] == 14 && s.scores[1] == 10 && s.scores[2] == 14 && s.hit_points == 12,
+    auto s = module->evaluate(d, NameRequirement::required);
+    check(s.scores[Ability::strength] == 14 && s.scores[Ability::dexterity] == 10 &&
+          s.scores[Ability::constitution] == 14 && s.hit_points == 12,
           "Fighter has maximum d10 plus Constitution");
-    check(s.modifiers[3] == -4, "Odd negative ability modifiers round down");
+    check(s.modifiers[Ability::intelligence] == -4, "Odd negative ability modifiers round down");
     check(srd5::minimum_save_roll(15, srd5::ability_modifier(20)) == 10,
           "Strength 20 needs 10 to meet DC 15 without proficiency");
     check(srd5::minimum_save_roll(15, -4) == 19, "Negative save bonuses raise the required roll");
@@ -88,11 +124,11 @@ void creation_tests()
           "Natural 20 does not automatically save");
     check(srd5::minimum_save_roll(5, 4) == 1 && srd5::minimum_save_roll(5, 8) == 1,
           "Natural 1 can save when its total meets DC");
-    check(s.saving_throws == std::array<int, 6> {4, 0, 4, -4, 2, 4},
+    check(s.saving_throws == AbilityArray<int> {4, 0, 4, -4, 2, 4},
           "Fighter saves include proficiency only for Strength and Constitution");
     d.character_class = "wizard";
-    const auto wizard = module->evaluate(d, true);
-    check(wizard.saving_throws == std::array<int, 6> {2, 0, 2, -2, 4, 4},
+    const auto wizard = module->evaluate(d, NameRequirement::required);
+    check(wizard.saving_throws == AbilityArray<int> {2, 0, 2, -2, 4, 4},
           "Wizard saves retain negative modifiers and add Intelligence/Wisdom proficiency");
     d.character_class = "fighter";
     const std::array<int, 12> hp{14, 10, 10, 10, 12, 10, 12, 12, 10, 8, 10, 8};
@@ -100,12 +136,12 @@ void creation_tests()
     for (unsigned i = 0; i < classes.size(); ++i)
     {
         d.character_class = classes[i].id;
-        check(module->evaluate(d, true).hit_points == hp[i],
+        check(module->evaluate(d, NameRequirement::required).hit_points == hp[i],
               "Starting HP is correct for each class");
     }
     d.character_class = "fighter";
     d.race = "dwarf";
-    check(module->evaluate(d, true).hit_points == 13, "Dwarven Toughness adds one HP");
+    check(module->evaluate(d, NameRequirement::required).hit_points == 13, "Dwarven Toughness adds one HP");
     for (const auto &bg : module->choices(CreationField::background))
     {
         d.background = bg.id;
@@ -114,12 +150,12 @@ void creation_tests()
         for (unsigned n = 0; n < adjustments.size(); ++n)
         {
             d.adjustment = n;
-            const auto evaluated = module->evaluate(d, true);
+            const auto evaluated = module->evaluate(d, NameRequirement::required);
             int bonus = 0;
-            for (unsigned k = 0; k < 6; ++k)
+            for (const auto ability : all_abilities)
             {
-                bonus += evaluated.bonuses[k];
-                check(evaluated.scores[k] <= 20, "Background bonuses cap at twenty");
+                bonus += evaluated.bonuses[ability];
+                check(evaluated.scores[ability] <= 20, "Background bonuses cap at twenty");
             }
             check(evaluated.ability_adjustments.size() == 1 &&
                   evaluated.ability_adjustments[0].source_id == "background:" + bg.id &&
@@ -131,19 +167,24 @@ void creation_tests()
     }
     d.background = "soldier";
     d.adjustment = 0;
-    check(module->class_eligible(d, "fighter") && module->class_eligible(d, "paladin"),
+    check(rules::class_eligible(*module, d, "fighter") &&
+          rules::class_eligible(*module, d, "paladin"),
           "Bonuses count toward primary prerequisites");
-    check(!module->class_eligible(d, "monk") && !module->class_eligible(d, "wizard"),
+    check(!rules::class_eligible(*module, d, "monk") &&
+          !rules::class_eligible(*module, d, "wizard"),
           "Both Monk primaries and Wizard Intelligence required");
     d.target_classes = {"fighter", "monk", "wizard"};
-    check(module->unmet_targets(d) == std::array<bool, 6> {false, true, false, true, false, false},
+    check(rules::unmet_targets(*module, d) ==
+          AbilityArray<bool> {false, true, false, true, false, false},
           "Warnings flag only failing abilities of unmet targets");
-    std::swap(d.assignment[0], d.assignment[1]);
-    check(module->class_eligible(d, "fighter") && !module->unmet_targets(d)[0],
+    std::swap(d.assignment[Ability::strength], d.assignment[Ability::dexterity]);
+    check(rules::class_eligible(*module, d, "fighter") &&
+          !rules::unmet_targets(*module, d)[Ability::strength],
           "Qualified Dexterity satisfies Fighter without a Strength warning");
-    std::swap(d.assignment[0], d.assignment[1]);
+    std::swap(d.assignment[Ability::strength], d.assignment[Ability::dexterity]);
     d.target_classes.clear();
-    check(module->unmet_targets(d) == std::array<bool, 6> {}, "Removing targets clears warnings");
+    check(rules::unmet_targets(*module, d) == AbilityArray<bool> {},
+          "Removing targets clears warnings");
     for (const auto &option : classes)
     {
         auto boundary = d;
@@ -158,30 +199,30 @@ void creation_tests()
             const auto bonuses =
                 module->adjustments(boundary.background)[boundary.adjustment].bonuses;
             const int total = 13 - bonuses[ability];
-            boundary.rolls[ability] = {{{total - 8, 4, 4, 1}}, 3};
+            boundary.rolls[ability_index(ability)] = {{{total - 8, 4, 4, 1}}, 3};
         }
-        check(module->class_eligible(boundary, option.id),
+        check(rules::class_eligible(*module, boundary, option.id),
               "Every class accepts exactly 13 in its primary abilities");
         for (auto ability : req.abilities)
-            --boundary.rolls[ability].dice[0];
-        check(!module->class_eligible(boundary, option.id),
+            --boundary.rolls[ability_index(ability)].dice[0];
+        check(!rules::class_eligible(*module, boundary, option.id),
               "Every class rejects primaries below 13");
     }
     d.background = "soldier";
     d.adjustment = 0;
-    d.assignment[0] = 1;
+    d.assignment[Ability::strength] = 1;
     rejects(
         [&]
     {
-        (void)module->evaluate(d, true);
+        (void)module->evaluate(d, NameRequirement::required);
     },
     "Duplicate roll assignments rejected");
-    d.assignment[0] = 0;
+    d.assignment[Ability::strength] = 0;
     d.name = "  ";
     rejects(
         [&]
     {
-        (void)module->evaluate(d, true);
+        (void)module->evaluate(d, NameRequirement::required);
     },
     "Blank names rejected");
     d.name = "Mira";
@@ -189,9 +230,35 @@ void creation_tests()
     rejects(
         [&]
     {
-        (void)module->evaluate(d, true);
+        (void)module->evaluate(d, NameRequirement::required);
     },
     "Unknown class rejected");
+    // A misspelt class ID used to match none of the rules' class checks and so
+    // quietly offered nothing; now every rule that reads the class rejects it.
+    d.character_class = "clerik";
+    rejects(
+        [&]
+    {
+        (void)module->cantrip_options(d);
+    },
+    "Cantrip options reject an unknown class");
+    rejects(
+        [&]
+    {
+        (void)module->spell_choice_options(d);
+    },
+    "Spell choice options reject an unknown class");
+    rejects(
+        [&]
+    {
+        (void)module->preset_ability_priority("clerik", 0);
+    },
+    "Preset ability priority rejects an unknown class");
+    d.character_class.clear();
+    check(module->cantrip_options(d).options.empty() &&
+          module->spell_choice_options(d).learning.empty(),
+          "A draft with no class yet is offered no spells");
+    d.character_class = "invented";
     CharacterCreator creator(srd5::character_rules(), 42);
     rejects(
         [&]
@@ -229,52 +296,64 @@ void creation_tests()
         creator.next();
     },
     "Cannot continue with empty ability boxes");
-    creator.assign_roll(0, 3);
+    creator.assign_roll(0, Ability::intelligence);
     creator.select(CreationField::background, "acolyte");
-    check(creator.rules().ability_score(creator.draft(), 3) == original[0].total() + 2,
+    const auto intelligence = [&]
+    {
+        return creator.rules().ability_score(creator.draft(), Ability::intelligence);
+    };
+    check(intelligence() == original[0].total() + 2,
           "Assigned Intelligence includes Acolyte bonus before other rolls are assigned");
     creator.select(CreationField::background, "sage");
-    check(creator.rules().ability_score(creator.draft(), 3) == original[0].total() + 1,
+    check(intelligence() == original[0].total() + 1,
           "Background changes recalculate partial scores");
     creator.select_adjustment(1);
-    check(creator.rules().ability_score(creator.draft(), 3) == original[0].total() &&
-          !creator.rules().ability_score(creator.draft(), 0),
+    check(intelligence() == original[0].total() &&
+          !creator.rules().ability_score(creator.draft(), Ability::strength),
           "Bonus changes update assigned scores and leave empty abilities empty");
     check(creator.draft().rolls == original, "Bonus changes preserve original dice");
     creator.select(CreationField::background, "acolyte");
-    creator.assign_roll(1, 1);
-    creator.assign_roll(0, 1);
-    check(creator.draft().assignment[1] == 0 && creator.draft().assignment[3] == 1,
+    creator.assign_roll(1, Ability::dexterity);
+    creator.assign_roll(0, Ability::dexterity);
+    check(creator.draft().assignment[Ability::dexterity] == 0 &&
+          creator.draft().assignment[Ability::intelligence] == 1,
           "Assigned results swap when dropped on another ability");
-    creator.assign_roll(2, 1);
+    creator.assign_roll(2, Ability::dexterity);
     check(std::find(creator.draft().assignment.begin(), creator.draft().assignment.end(), 0) ==
           creator.draft().assignment.end(),
           "A displaced result returns to unassigned rolls");
     rejects(
         [&]
     {
-        creator.assign_roll(6, 0);
+        creator.assign_roll(6, Ability::strength);
     },
     "Invalid dice assignment rejected");
+    rejects(
+        [&]
+    {
+        creator.assign_roll(0, static_cast<Ability>(6));
+    },
+    "An ability converted from an out-of-range box index is rejected");
     for (unsigned i = 0; i < 6; ++i)
-        creator.assign_roll(i, i);
+        creator.assign_roll(i, static_cast<Ability>(i));
     check(creator.scores_assigned(), "All six assignments permit review");
-    creator.swap_scores(0, 2);
-    check(creator.sheet().base[0] == original[2].total() && creator.draft().rolls == original,
+    creator.swap_scores(Ability::strength, Ability::constitution);
+    check(creator.sheet().base[Ability::strength] == original[2].total() &&
+          creator.draft().rolls == original,
           "Swaps preserve dice provenance");
     const auto assignment = creator.draft().assignment;
     rejects(
         [&]
     {
-        creator.swap_scores(0, 6);
+        creator.swap_scores(Ability::strength, static_cast<Ability>(6));
     },
     "Invalid swap rejected");
     check(creator.draft().assignment == assignment, "Rejected swap is atomic");
     creator.roll();
-    check(creator.draft().rolls != original && creator.draft().assignment[0] == 6,
+    check(creator.draft().rolls != original && creator.draft().assignment[Ability::strength] == 6,
           "Full reroll replaces all rolls and empties assignments");
     for (unsigned i = 0; i < 6; ++i)
-        creator.assign_roll(i, i);
+        creator.assign_roll(i, static_cast<Ability>(i));
     creator.target_class("wizard", true);
     creator.target_class("wizard", true);
     check(creator.draft().target_classes.size() == 1, "Repeated target selection is idempotent");
@@ -291,7 +370,7 @@ void creation_tests()
     bool selected = false;
     for (const auto &option : classes)
     {
-        if (module->class_eligible(creator.draft(), option.id))
+        if (rules::class_eligible(*module, creator.draft(), option.id))
         {
             if (!selected)
             {
@@ -317,15 +396,17 @@ void creation_tests()
         creator.next();
     },
     "Required training blocks Name");
-    creator.training_choice("class:cleric", "medicine", true);
-    creator.training_choice("class:cleric", "persuasion", true);
+    creator.training_choice({.group = "class:cleric", .option = "medicine", .selected = true});
+    creator.training_choice({.group = "class:cleric", .option = "persuasion", .selected = true});
     rejects(
         [&]
     {
         creator.next();
     },
     "A Cleric chooses a Divine Order");
-    creator.training_choice("class:cleric:divine_order", "protector", true);
+    creator.training_choice({.group = "class:cleric:divine_order",
+                             .option = "protector",
+                             .selected = true});
     creator.next();
     check(creator.draft().character_class == "cleric" &&
           creator.step() == CreationStep::spell_choices,
@@ -342,7 +423,7 @@ void creation_tests()
     for (const auto *spell :
             {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"
             })
-        creator.spell_choice("prepared", spell, true);
+        creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
     creator.next();
     check(creator.step() == CreationStep::name, "Spell Choices advances to Name");
     rejects(
@@ -377,6 +458,16 @@ void creation_tests()
     const auto sheet = creator.sheet();
     check(finished.inventory().empty() && finished.appearance() == appearance,
           "Finished character owns appearance and an empty inventory");
+    check(Character(creator.rules(), retained, appearance).appearance() == appearance,
+          "The same draft builds a character with a valid appearance");
+    auto unknown_body = appearance;
+    unknown_body.combat_body = 35;
+    rejects(
+        [&]
+    {
+        (void)Character(creator.rules(), retained, unknown_body);
+    },
+    "A character is never built with an invalid appearance");
     rejects(
         [&]
     {
@@ -395,7 +486,7 @@ void creation_tests()
     check(creator.step() == CreationStep::attributes, "Back navigation reaches attributes");
     creator.select(CreationField::race, "dwarf");
     creator.select(CreationField::character_class, "barbarian");
-    check(creator.sheet().hit_points == 13 + creator.sheet().modifiers[2],
+    check(creator.sheet().hit_points == 13 + creator.sheet().modifiers[Ability::constitution],
           "HP recalculates after earlier edits");
     creator.restart();
     check(!creator.draft().rolled && creator.draft().name.empty() &&
@@ -419,9 +510,10 @@ void creation_tests()
           saved.hit_die == sheet.hit_die && saved.hit_points == sheet.hit_points &&
           saved.hp_explanation == sheet.hp_explanation && saved.level == 1,
           "Character retains rules identity and evaluated sheet values");
-    const auto sword = finished.inventory().add("test:longsword", "Longsword");
+    const auto sword = finished.add_item({.definition_id = "test:longsword",
+                                                 .name = "Longsword"});
     auto copy = finished;
-    copy.inventory().remove(sword);
+    copy.remove_item(sword);
     auto recolored = appearance;
     recolored.colors[0][0] = 2;
     copy.appearance(recolored);
@@ -459,23 +551,27 @@ void inventory_tests()
     rejects(
         [&]
     {
-        inventory.add("", "Arrows");
+        inventory.add({.definition_id = "", .name = "Arrows"});
     },
     "Items require a stable definition key");
     rejects(
         [&]
     {
-        inventory.add("test:arrow", "  ");
+        inventory.add({.definition_id = "test:arrow", .name = "  "});
     },
     "Items require a display name");
     rejects(
         [&]
     {
-        inventory.add("test:arrow", "Arrows", 0);
+        inventory.add({.definition_id = "test:arrow", .name = "Arrows", .quantity = 0});
     },
     "Empty stacks rejected");
-    const auto first = inventory.add("test:arrow", "Arrows", 20),
-               second = inventory.add("test:arrow", "Arrows", 5);
+    const auto first = inventory.add({.definition_id = "test:arrow",
+                                      .name = "Arrows",
+                                      .quantity = 20}),
+               second = inventory.add({.definition_id = "test:arrow",
+                                       .name = "Arrows",
+                                       .quantity = 5});
     check(first != second && inventory.items().size() == 2 &&
           inventory.find(first)->get().definition_id == "test:arrow",
           "Separate stacks have stable IDs");
@@ -508,7 +604,7 @@ void inventory_tests()
     inventory.remove(first);
     check(!inventory.find(first) && inventory.items().size() == 1,
           "Removing the final item removes its stack");
-    const auto third = inventory.add("test:shield", "Shield");
+    const auto third = inventory.add({.definition_id = "test:shield", .name = "Shield"});
     check(third != first && third != second, "Removed stack IDs are not reused");
     inventory.remove(second, 5);
     inventory.remove(third);
@@ -573,12 +669,12 @@ void additional_portrait_tests()
     },
     "Truncated portrait pixels rejected");
     CharacterArt art;
-    art.heads.emplace(1, PortraitPart{"original", panel});
+    art.set_original_head(1, PortraitPart{"original", panel});
     Image body;
     body.width = 88;
     body.height = 48;
     body.rgba.assign(88 * 48 * 4, 128);
-    art.bodies.emplace(1, PortraitPart{"original", body});
+    art.set_original_body(1, PortraitPart{"original", body});
     std::set<unsigned> ids;
     std::set<std::string_view> files;
     const auto additions = additional_portrait_heads();
@@ -597,7 +693,7 @@ void additional_portrait_tests()
               "Additional heads compose a complete portrait");
         check(std::equal(body.rgba.begin(), body.rgba.end(), portrait.rgba.begin() + 88 * 40 * 4),
               "Neck fitting leaves the original body unchanged");
-        check(art.heads.at(head.id).label == head.label,
+        check(art.heads().at(head.id).label == head.label,
               "Additional heads retain readable selection labels");
     }
     check(!matching_portrait_head("human", "female") &&
@@ -676,7 +772,7 @@ void additional_portrait_tests()
             }
             torso.rgba[32 * 4] = 170; // red collar, not skin
             CharacterArt joined;
-            joined.bodies.emplace(1, PortraitPart{"synthetic", torso});
+            joined.set_original_body(1, PortraitPart{"synthetic", torso});
             joined.add_portrait_head(head.id, neck);
             CharacterAppearance a;
             a.portrait_head = head.id;
@@ -793,18 +889,18 @@ void art_tests()
                     })
             {
                 const auto bank = (tall ? 64u : 0u) + (action ? 128u : 0u);
-                auto source = art.combat_bodies.at(bank + 4).pixels;
-                const auto &head_pixels = art.combat_heads.at(bank + 2).pixels;
+                auto source = art.combat_bodies().at(bank + 4).pixels;
+                const auto &head_pixels = art.combat_heads().at(bank + 2).pixels;
                 for (unsigned p = 0; p < head_pixels.size(); ++p)
                     if (head_pixels[p])
                         source[p] = head_pixels[p];
-                const auto original = art.icon(a, action);
+                const auto original = art.icon(a, pose_of(action));
                 for (unsigned color_bank = 0; color_bank < 2; ++color_bank)
                     for (unsigned part = 0; part < 6; ++part)
                     {
                         auto changed = a;
                         changed.colors[color_bank][part] = (a.colors[color_bank][part] + 3) % 16;
-                        const auto recolored = art.icon(changed, action);
+                        const auto recolored = art.icon(changed, pose_of(action));
                         unsigned count = 0;
                         for (unsigned p = 0; p < source.size(); ++p)
                         {
@@ -831,8 +927,8 @@ void art_tests()
                     0u, 64u, 128u, 192u
                 })
         {
-            const auto &original = art.combat_bodies.at(bank + 21).pixels;
-            const auto &derived = art.combat_bodies.at(bank + 32).pixels;
+            const auto &original = art.combat_bodies().at(bank + 21).pixels;
+            const auto &derived = art.combat_bodies().at(bank + 32).pixels;
             check(original.size() == derived.size(),
                   "Derived shield body retains original dimensions");
             unsigned removed = 0;
@@ -855,12 +951,12 @@ void art_tests()
                     a.tall = tall;
                     a.combat_head = h;
                     a.combat_body = b;
-                    check(art.icon(a, false).rgba.size() == 576 * 4 &&
-                          art.icon(a, true).rgba.size() == 576 * 4,
+                    check(art.icon(a, IconPose::ready).rgba.size() == 576 * 4 &&
+                          art.icon(a, IconPose::action).rgba.size() == 576 * 4,
                           "Every original head/body combination has both poses");
                 }
-        std::cout << "Original character art: " << art.heads.size() << " portrait heads, "
-                  << art.bodies.size()
+        std::cout << "Original character art: " << art.heads().size() << " portrait heads, "
+                  << art.bodies().size()
                   << " bodies; 14 combat heads, 35 bodies, both sizes and poses\n";
     }
 }

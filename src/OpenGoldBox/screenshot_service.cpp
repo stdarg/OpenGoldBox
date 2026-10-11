@@ -1,6 +1,7 @@
 #include "screenshot_service.h"
 #include "godot_nodes.h"
 #include "localization.h"
+#include "guarded_handlers.h"
 #include <godot_cpp/classes/canvas_layer.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/display_server.hpp>
@@ -13,7 +14,6 @@
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
-#include <godot_cpp/classes/style_box_flat.hpp>
 #include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -22,6 +22,7 @@
 #include <algorithm>
 
 using namespace godot;
+using presentation::required_node;
 
 void ScreenshotService::_bind_methods()
 {
@@ -48,44 +49,19 @@ void ScreenshotService::_ready()
         DirAccess::make_dir_recursive_absolute(directory_);
         UtilityFunctions::print("OpenGoldBox screenshots: ", directory_);
     }
-    auto layer = presentation::make_node<CanvasLayer>();
-    layer->set_name("NoticeLayer");
-    layer->set_layer(100);
-    auto *canvas = presentation::attach_child(*this, std::move(layer));
-    auto *panel = presentation::add_control<PanelContainer>(*canvas, "Notice", {});
-    panel->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-    panel->hide();
-    Ref<StyleBoxFlat> style;
-    style.instantiate();
-    style->set_bg_color(Color(.04, .05, .08, .96));
-    for (auto side :
-            {
-                SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM
-            })
-    {
-        style->set_content_margin(side, 14);
-        style->set_border_width(side, 1);
-    }
-    style->set_border_color(Color(.7, .6, .4));
-    panel->add_theme_stylebox_override("panel", style);
-    auto *label = presentation::add_control<Label>(*panel, "Text", {});
-    label->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-    label->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-    label->set("autowrap_mode",
-               3); // TextServer::AUTOWRAP_WORD_SMART; matches the game build profile.
+    // The game autoload owns this subtree in its scene. Directly instantiated
+    // services use the same authored scene for the notice.
+    if (!get_node_or_null("NoticeLayer"))
+        presentation::attach_child(*this, presentation::instantiate_scene(
+                                       "res://scenes/control_templates/screenshot_notice.tscn"));
 }
 
 void ScreenshotService::_process(double delta)
 {
-    auto *panel = get_node<PanelContainer>("NoticeLayer/Notice"); // scene-owned
+    auto *panel = &required_node<PanelContainer>(*this, "NoticeLayer/Notice"); // scene-owned
     if (notice_time_ > 0)
     {
         notice_time_ -= delta;
-        const auto size = get_tree()->get_root()->get_size();
-        const Vector2 minimum(std::max(1, std::min(800, size.x - 40)), 0);
-        panel->set_custom_minimum_size(minimum);
-        panel->set_size(minimum);
-        panel->set_position(Vector2(20, std::max(0.0, double(size.y - panel->get_size().y - 20))));
         if (notice_time_ <= 0)
             panel->hide();
     }
@@ -96,7 +72,7 @@ void ScreenshotService::_process(double delta)
         if (capture_wait_ > 5)
         {
             RenderingServer::get_singleton()->disconnect(
-                "frame_post_draw", callable_mp(this, &ScreenshotService::capture_frame));
+                "frame_post_draw", presentation::guarded(this, &ScreenshotService::capture_frame));
             complete({}, i18n::text("Cannot capture the current game frame."));
         }
     }
@@ -122,7 +98,7 @@ bool ScreenshotService::request_capture()
         return false;
     pending_ = true;
     capture_wait_ = 0;
-    get_node<PanelContainer>("NoticeLayer/Notice")->hide();
+    required_node<PanelContainer>(*this, "NoticeLayer/Notice").hide();
     notice_time_ = 0;
     if (directory_.is_empty() || DirAccess::make_dir_recursive_absolute(directory_) != OK ||
             !DirAccess::dir_exists_absolute(directory_))
@@ -137,7 +113,7 @@ bool ScreenshotService::request_capture()
     }
     // Read back the next completed frame, after any preceding notice is hidden.
     const auto error = RenderingServer::get_singleton()->connect(
-                           "frame_post_draw", callable_mp(this, &ScreenshotService::capture_frame),
+                           "frame_post_draw", presentation::guarded(this, &ScreenshotService::capture_frame),
                            Object::CONNECT_ONE_SHOT);
     if (error != OK)
         complete({}, i18n::text("Cannot capture the current game frame."));
@@ -241,8 +217,8 @@ void ScreenshotService::complete(const Array &files, String error)
     const auto message = error.is_empty()
     ? i18n::format("Screenshot saved to {path}", {{"path", directory_}})
         : error;
-    get_node<Label>("NoticeLayer/Notice/Text")->set_text(message);
-    get_node<PanelContainer>("NoticeLayer/Notice")->show();
+    required_node<Label>(*this, "NoticeLayer/Notice/Text").set_text(message);
+    required_node<PanelContainer>(*this, "NoticeLayer/Notice").show();
     notice_time_ = 5;
     if (error.is_empty())
         UtilityFunctions::print(message);

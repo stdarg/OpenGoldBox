@@ -9,7 +9,7 @@ func run_checks() -> void:
         TranslationServer.set_locale(locale)
         var file := FileAccess.open(slot, FileAccess.WRITE); file.store_buffer(FileAccess.get_file_as_bytes(fixture)); file.close()
         change_scene_to_file("res://scenes/character_creation.tscn"); await settle(); await press("Party"); await load_slot()
-        await press("PartyPanel/Explore")
+        await press("PartyPanel/ActionRow2/Explore")
         var mastery: Window = current_scene.get_node("CampaignTown/RestTraining")
         require(mastery.visible, "Loading pending rest reopens mastery")
         var rows: VBoxContainer = mastery.get_node("Choices/Rows")
@@ -38,7 +38,7 @@ func run_checks() -> void:
         require(not original.button_pressed and replacement.button_pressed, "Saving retains local edits without applying them")
         # Discard this local dialog before reloading its saved entitlement.
         await key(mastery, KEY_ESCAPE); require(not mastery.visible, "Escape keeps current")
-        await press("ReturnParty"); await load_slot(); await press("PartyPanel/Explore")
+        await press("ReturnParty"); await load_slot(); await press("PartyPanel/ActionRow2/Explore")
         mastery = current_scene.get_node("CampaignTown/RestTraining")
         require(mastery.visible, "Saved pending entitlement survives load")
         rows = mastery.get_node("Choices/Rows")

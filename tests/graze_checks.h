@@ -61,7 +61,8 @@ void reactions_and_limits()
         auto r = rules("");
         auto e = encounter(*r, hero(key), key);
         e.participants.back().definition = "graze_target";
-        const int edge = std::string_view(key) == "glaive" ? 3 : 2;
+        // Melee reaches adjacent squares only (MELEE-1), the glaive's too.
+        const int edge = 2;
         e.participants.back().cell = {edge, 1};
         bool tested = false;
         for (unsigned seed = 1; seed < 128 && !tested; ++seed)
@@ -115,7 +116,7 @@ void reactions_and_limits()
             auto c = r->create(e, seed);
             turn(*c, 1);
             act(*c, "melee", 99);
-            if (h.sheet().modifiers[0] <= 0)
+            if (h.sheet().modifiers[Ability::strength] <= 0)
             {
                 if (!result(*c).source.ends_with("misses."))
                     continue;
@@ -128,7 +129,8 @@ void reactions_and_limits()
                 continue;
             const int hp = unit(*c, 99).hit_points;
             act(*c, "effect_use");
-            check(unit(*c, 99).hit_points == hp - h.sheet().modifiers[0], "Graze omits style dice");
+            check(unit(*c, 99).hit_points == hp - h.sheet().modifiers[Ability::strength],
+                  "Graze omits style dice");
             tested = true;
         }
         check(tested, "Each ability modifier actually missed");
@@ -158,7 +160,7 @@ void advancement_and_rejection()
             auto r = rules("");
             CampaignParty party(module());
             auto h = hero("greatsword", klass, "soldier");
-            h.inventory().add("greatsword", "Physical blade");
+            h.add_item({.definition_id = "greatsword", .name = "Physical blade"});
             const auto id = party.add_pc(h);
             party.equip(id, 1);
             party.award_experience(2700, "graze-levels");
@@ -166,11 +168,11 @@ void advancement_and_rejection()
                 party.advance(id, party.default_advancement(id));
             auto actors = party.participants();
             actors.front().cell = {1, 1};
-            actors.push_back({99, "graze_target", "Target", 1, {2, 1}});
+            actors.push_back({99, "graze_target", "Target", Side::opposition, {2, 1}});
             bool tested = false;
             for (unsigned seed = 1; seed < 64 && !tested; ++seed)
             {
-                auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
+                auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
                 turn(*c, 1);
                 if (offers(*c, "action_surge"))
                     act(*c, "action_surge");
@@ -184,7 +186,7 @@ void advancement_and_rejection()
                 const int hp = unit(*c, 99).hit_points;
                 act(*c, "effect_use");
                 check(hp - unit(*c, 99).hit_points ==
-                      std::max(0, party.member(id).character.sheet().modifiers[0]),
+                      std::max(0, party.member(id).character.sheet().modifiers[Ability::strength]),
                       "Advancement changes actual attack ability damage");
                 const auto after = c->save();
                 check(!c->submit(stale) && c->save() == after,
@@ -199,9 +201,10 @@ void advancement_and_rejection()
                 {
                     (void)r->restore(bad);
                 });
-                // The spell-selection line comes before the area-aim and zone lines.
+                // The spell-selection line comes before the area-aim, zone and
+                // flight lines.
                 auto selection_line = pending.size() - 1;
-                for (int line = 0; line < 3; ++line)
+                for (int line = 0; line < 4; ++line)
                     selection_line = pending.rfind('\n', selection_line - 1);
                 ++selection_line;
                 const auto selection_end = pending.find('\n', selection_line) + 1;
@@ -246,8 +249,8 @@ void run()
                     e.participants.back().definition = "graze_target";
                     if (npc)
                     {
-                        e.participants.front().side = 1;
-                        e.participants.back().side = 0;
+                        e.participants.front().side = Side::opposition;
+                        e.participants.back().side = Side::party;
                     }
                     bool tested = false;
                     for (unsigned seed = 1; seed < 64 && !tested; ++seed)
@@ -269,7 +272,7 @@ void run()
                             continue;
                         }
                         const auto pending = c->save();
-                        check(pending.starts_with("OGCOMBAT 39 "),
+                        check(pending.starts_with("OGCOMBAT 48 "),
                               "Graze uses the current checkpoint format");
                         check(r->restore(pending)->save() == pending,
                               "Pending Graze round trips exactly");
@@ -284,7 +287,7 @@ void run()
                         act(*skipped, "effect_skip");
                         check(unit(*skipped, 99).hit_points == hp, "Skip leaves damage unchanged");
                         check(!offers(*skipped, "melee"), "Skip does not refund the Action");
-                        const int modifier = h.sheet().modifiers[0];
+                        const int modifier = h.sheet().modifiers[Ability::strength];
                         const int expected = std::string_view(defense) == "immunity" ? 0
                                              : std::string_view(defense).starts_with("resistance")
                                              ? std::max(0, modifier) / 2

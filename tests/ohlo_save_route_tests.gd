@@ -71,7 +71,7 @@ func save_as(slot: String, copy: String) -> void:
     var f := FileAccess.open(output.path_join(copy), FileAccess.WRITE); f.store_buffer(bytes); f.close()
 
 func explore() -> void:
-    await press("PartyPanel/Explore")
+    await press("PartyPanel/ActionRow2/Explore")
     require(town().visible, "Explore shows the saved district")
     require(label("Location").begins_with("Slums / ") and label("Speaker") == "Slums",
         "The loaded campaign is in the Slums: " + label("Location"))

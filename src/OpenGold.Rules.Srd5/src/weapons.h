@@ -2,6 +2,8 @@
 #define OPENGOLD_SRD5_WEAPONS_H
 #include "damage.h"
 #include "ammunition.h"
+#include "character_class.h"
+#include "opengold/rules.h"
 #include <array>
 #include <string_view>
 
@@ -41,14 +43,25 @@ struct Weapon
              cost_cp{};          // Exact quarter-pounds and copper pieces; dash weight is zero.
     std::string_view label; // Human-readable source label, separate from the saved key.
 
-    bool heavy_disadvantage(const std::array<int, 6> &scores) const
+    bool heavy_disadvantage(const rules::AbilityArray<int> &scores) const
     {
-        return heavy && scores[ranged ? 1 : 0] < 13;
+        return heavy && scores[ranged ? rules::Ability::dexterity : rules::Ability::strength] < 13;
     } // SRD 5.2.1 p.89: weapon category determines the ability.
 };
 
 inline constexpr std::array weapons
 {
+    // SRD 5.2.1 adventuring gear: a Torch can be wielded as a Simple Melee weapon;
+    // a hit deals 1 Fire damage.
+    Weapon{
+        .key = "torch",
+        .dice = 0,
+        .sides = 0,
+        .type = DamageType::fire,
+        .fixed_damage = 1,
+        .weight_quarters = 4,
+        .cost_cp = 1,
+        .label = "Torch"},
     Weapon{
         .key = "club",
         .dice = 1,
@@ -522,12 +535,14 @@ inline constexpr std::array weapons
     // A plain wand is a held focus, not a free spell or invented damage profile.
     Weapon{.key = "wand", .dice = 0, .sides = 0, .label = "Wand"}};
 
-// Starting class proficiency. The caller supplies the stable lowercase class ID.
-inline bool weapon_proficient(std::string_view klass, const Weapon &weapon)
+// Starting class proficiency.
+inline bool weapon_proficient(CharacterClass klass, const Weapon &weapon)
 {
-    return !weapon.martial || klass == "barbarian" || klass == "fighter" || klass == "paladin" ||
-           klass == "ranger" || (klass == "rogue" && (weapon.finesse || weapon.light)) ||
-           (klass == "monk" && weapon.light);
+    return !weapon.martial || klass == CharacterClass::barbarian ||
+           klass == CharacterClass::fighter || klass == CharacterClass::paladin ||
+           klass == CharacterClass::ranger ||
+           (klass == CharacterClass::rogue && (weapon.finesse || weapon.light)) ||
+           (klass == CharacterClass::monk && weapon.light);
 }
 
 inline const Weapon *weapon(std::string_view key)

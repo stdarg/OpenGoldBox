@@ -15,6 +15,9 @@ FetchContent_Declare(godot_cpp
     GIT_TAG e83fd0904c13356ed1d4c3d09f8bb9132bdc6b77
 )
 FetchContent_MakeAvailable(godot_cpp)
+# godot-cpp's headers are third-party; keep their warnings out of the project's.
+get_target_property(godot_cpp_includes godot-cpp INTERFACE_INCLUDE_DIRECTORIES)
+set_target_properties(godot-cpp PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${godot_cpp_includes}")
 # Keep the approved source PNGs authoritative, and ship build copies inside
 # the Godot project. Asset changes refresh even when the DLL needs no relink.
 set(portrait_outputs)
@@ -99,5 +102,27 @@ if(OPENGOLD_BUILD_TESTS)
             "-DEXPECTED=Equipment sprite demo checks passed" -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties(opengold_godot_equipment_demo PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo
             RESOURCE_LOCK demo_project)
+        # Synthetic checks, plus the installed ECL scripts and maps when
+        # OPENGOLD_GAME_DIR names the original files. The map inspector reads
+        # maps through build/opengold_maps, which ./build.sh builds.
+        add_test(NAME opengold_godot_ecl_art COMMAND "${CMAKE_COMMAND}"
+            "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
+            "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/ecl_art_tests.gd"
+            "-DEXPECTED=PASS: ECL decoder, script evidence, and review integration"
+            "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/ecl_art"
+            -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
+        set_tests_properties(opengold_godot_ecl_art PROPERTIES FIXTURES_REQUIRED demo_project
+            TIMEOUT 120 LABELS demo RESOURCE_LOCK demo_project)
+        add_test(NAME opengold_godot_map_inspector COMMAND "${CMAKE_COMMAND}"
+            "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
+            "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/map_inspector_tests.gd"
+            "-DEXPECTED=Map inspector tests passed"
+            "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/map_inspector"
+            -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
+        set_tests_properties(opengold_godot_map_inspector PROPERTIES FIXTURES_REQUIRED demo_project
+            TIMEOUT 120 LABELS demo RESOURCE_LOCK demo_project)
     endif()
 endif()
+
+# Build the demo at the project's warning level, as the game does.
+opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

@@ -103,7 +103,7 @@ void golden_life()
     }
     life::LifeState s{0, 0, 0, true, false, {0, 7200000}, {20, "trait:adrenaline_rush"}};
     const auto stable = s;
-    life::damage_life(s, 0, 10, true);
+    life::damage_life(s, 0, 10, {.critical = true});
     check(s == stable, "Zero resolved damage leaves pool, Stable and timer untouched");
     life::damage_life(s, 1, 10);
     check(
@@ -111,7 +111,7 @@ void golden_life()
         s.recovery.death_save_in_ms == 6000,
         "Taking damage at zero HP still ends Stable and causes a failure even when the buffer absorbs it");
     s = stable;
-    life::damage_life(s, 1, 10, true);
+    life::damage_life(s, 1, 10, {.critical = true});
     check(s.failures == 2 && s.temporary_hp.amount == 19,
           "A buffered critical at zero HP causes two failures");
     s = stable;
@@ -149,7 +149,7 @@ void rule_operations()
     check(state.resources ==
           "SRD11 1 0 0 0 0 0 1 0 0 8 \"spell:false_life\" 0 1 0 0 0 0 FX8 1 0 0",
           "Vital state independently records dice, clocks and sourced buffer");
-    auto rng = std::uint64_t{42};
+    RandomState rng{42};
     const auto die = rules->spend_hit_die(state, c.sheet(), rng);
     check(die.roll == 4 && die.healing == 6 && state.hit_points == 10 && pool(c, state).amount == 8,
           "Hit Die healing preserves buffer and spends its own die/RNG");
@@ -165,14 +165,14 @@ void rule_operations()
             1,
             "campaign-character",
             "Patient",
-            0,
+            Side::party,
             {0, 0},
             rules->character_profile(c.sheet(), {}).data,
             state
         }
     };
     const auto before = state;
-    rules->elapse(participants, 24ULL * 60 * 60 * 1000, rng);
+    rules->elapse(participants, std::chrono::milliseconds(24ULL * 60 * 60 * 1000), rng);
     check(*participants[0].state == before,
           "Elapsed time alone does not expire an until-Long-Rest pool");
     rules->recover(state, c.sheet());
@@ -183,10 +183,10 @@ void rule_operations()
                                       TemporaryHpChoice::use_new);
     participants[0].state = stable;
     const auto prior_rng = rng;
-    rules->elapse(participants, 999, rng);
+    rules->elapse(participants, std::chrono::milliseconds(999), rng);
     check(participants[0].state->hit_points == 0 && pool(c, *participants[0].state).amount == 7,
           "Vital state preserves the countdown and buffer before natural recovery");
-    rules->elapse(participants, 1, rng);
+    rules->elapse(participants, std::chrono::milliseconds(1), rng);
     check(participants[0].state->hit_points == 1 && pool(c, *participants[0].state).amount == 7 &&
           rng == prior_rng,
           "Natural recovery preserves the pool and does not reroll a saved deadline");
@@ -270,17 +270,17 @@ void actual_combat()
     VitalState state{c.sheet().hit_points};
     rules->grant_temporary_hit_points(state, c.sheet(), {1, "spell:fixture"},
                                       TemporaryHpChoice::use_new);
-    Encounter encounter{{8, 8, std::vector<std::uint8_t>(64)},
+    Encounter encounter{{8, 8, std::vector<Terrain>(64)},
         {   {
                 1,
                 "campaign-character",
                 "Dwarf",
-                0,
+                Side::party,
                 {2, 2},
                 rules->character_profile(c.sheet(), {}).data,
                 state
             },
-            {2, "toxin", "Poison attacker", 1, {3, 2}}
+            {2, "toxin", "Poison attacker", Side::opposition, {3, 2}}
         }};
     auto combat = rules->create(encounter, 42);
     while (combat->snapshot().actor != 2)
@@ -290,7 +290,7 @@ void actual_combat()
     check(combat->submit(attack) && copy->submit(attack) && combat->save() == copy->save(),
           "Sourced buffer survives checkpoint and deterministic damage continuation");
     int raw = 0, resisted = 0;
-    for (const auto &m : combat->snapshot().log_messages)
+    for (const auto &m : combat->snapshot().log_messages())
         if (m.source == "{name}: {type} damage {before} -> {after}.")
             for (const auto &a : m.arguments)
             {
@@ -386,8 +386,8 @@ void campaign()
                                     copy.state().training_rest->members.front());
     }
     auto actors = copy.participants();
-    actors.push_back({99, "bandit", "Enemy", 1, {7, 7}});
-    auto battle = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);
+    actors.push_back({99, "bandit", "Enemy", Side::opposition, {7, 7}});
+    auto battle = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
     copy.begin_combat();
     copy.apply_combat(battle->snapshot());
     copy.end_combat();

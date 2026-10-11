@@ -49,7 +49,7 @@ func run_checks() -> void:
             hidden.append(portraits.path_join(file))
             require(DirAccess.rename_absolute(hidden.back(), hidden.back() + ".hidden") == OK, "Hide " + file)
     require(not hidden.is_empty(), "Goliath portraits are packaged")
-    creation.get_node("PartyPanel/Combat").pressed.emit()
+    creation.get_node("PartyPanel/ActionRow2/Combat").pressed.emit()
     await settle()
     require(creation.has_node("CampaignCombat"), "Combat opens when a Goliath portrait must be composed")
     restore_portraits()

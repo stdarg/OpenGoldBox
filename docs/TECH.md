@@ -112,7 +112,7 @@ original campaign conversions and prices. The [armor catalog](ARMOR.md)
 uses shared category definitions for equipment, AC and starting-class training;
 equipped ability checks combine these penalties with character skill/tool grants.
 Core only collects equipped IDs and delegates the query to the rules module. The campaign
-save (`OPENGOLD-CAMPAIGN 21`) stores the clock, encounter scopes, rules-owned effect state and
+save (`OPENGOLD-CAMPAIGN 23`) stores the clock, encounter scopes, rules-owned effect state and
 acquired feature/feat grants with source IDs, acquisition levels and choices.
 It also stores training selections and source grants, completed Short Rest
 spending tickets and individual eligibility records.
@@ -389,8 +389,9 @@ selected in the [combat sprite demo](SPRITE-DEMO.md).
   same rendering order and existing tint treatment.
 
 The game identifies Goliaths using the character's stable `goliath` species ID.
-The game and demo share `combat_sprite_layout.h` for the visible-bounds fitting.
-Native layout tests verify size, padding, anchoring, zoom, and row order. Party
+The game battlefield fits sprites in `combat_battlefield.gd`; the demo preview uses
+`combat_sprite_canvas.gd`. Godot checks verify size, padding, anchoring, and zoom;
+the native draw-order check verifies row order. Party
 tests verify a monster can move into the square above a Goliath and retain that
 position through save/restore. Combat input continues using logical cells.
 

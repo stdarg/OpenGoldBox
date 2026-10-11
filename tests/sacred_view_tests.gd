@@ -65,7 +65,7 @@ func run_checks() -> void:
         var spells: OptionButton = combat.get_node("Cantrip")
         require(spells.item_count == (0 if which == "unknown" else 1), "Cleric list omits unlearned cantrips")
         if which != "unknown": require(spells.get_item_metadata(0) == "sacred_flame", "Cleric choice is Sacred Flame")
-        require(sacred.disabled == (which != "known"), "Eligibility follows knowledge and occupied hands")
+        require(sacred.disabled == (which != "known"), "Eligibility follows knowledge and armor training")
         require(sacred.position.x >= combat.get_node("AdrenalineRush").get_rect().end.x and sacred.get_rect().end.x < root.size.x - 300, "Sacred Flame occupies approved first spell position")
         var prompts := ""
         for i in range(18):
@@ -104,7 +104,7 @@ func run_checks() -> void:
     await click_cell(Vector2(3, 1))
     require(sacred.disabled, "Clicking a legal ally casts and consumes Action")
     require(combat.selected_character_id() == 1, "Spell target click does not switch selection to ally")
-    require(combat.get_node("Log").get_parsed_text().contains("Ally"), "Cast log identifies the chosen ally")
+    require(combat.get_node("LogStack/Log").get_parsed_text().contains("Ally"), "Cast log identifies the chosen ally")
     sacred.release_focus()
     await load_fixture("known")
     var selected := false

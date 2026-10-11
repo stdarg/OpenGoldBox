@@ -69,7 +69,7 @@ func run_checks() -> void:
         require(await cycle_to(combat, label), "The A cycle offers Divine Spark: " + locale)
         await click_cell(Vector2(1, 2))
         var used := "Cleric uses Divine Spark on Ally." if locale == "en" else "Cleric usa Chispa divina sobre Ally."
-        require(combat.get_node("Log").get_parsed_text().contains(used), "Clicking the ally uses Divine Spark on it: " + locale)
+        require(combat.get_node("LogStack/Log").get_parsed_text().contains(used), "Clicking the ally uses Divine Spark on it: " + locale)
     TranslationServer.set_locale("en")
     restore_files()
     print("Divine Spark view checks passed")

@@ -83,9 +83,16 @@ func run_checks() -> void:
                 require(not feat.is_item_disabled(4), "Replacing Archery frees independent Archery feat")
                 feat.select(4); feat.item_selected.emit(4); await settle()
             if klass != "fighter":
-                require("unavailable" in level.get_node("Note").text if locale == "en" else "Sin conjuros, trucos alternativos, maestría" in level.get_node("Note").text, "Remaining class scope explicit")
+                # Paladins and Rangers now cast spells, so their note describes the class
+                # path through level four rather than listing unavailable features.
+                var route := "Fighting Style" if locale == "en" else "Estilo de combate"
+                require(route in level.get_node("Note").text, "Class note names the style route")
             require(level.get_node("Note").get_rect().end.y <= level.get_node("Error").position.y, "Class note fits above validation errors: level=" + str(attained) + " locale=" + locale + " note=" + str(level.get_node("Note").get_rect()) + " error=" + str(level.get_node("Error").position) + " lines=" + str(level.get_node("Note").get_line_count()))
-            if klass == "fighter" and attained == 4:
+            # The Fighter's fourth Weapon Mastery and the Ranger's Hunter's Prey are
+            # both required choices in the level-up Training dropdown.
+            var owes_training: bool = ((klass == "fighter" and attained == 4)
+                    or (klass == "ranger" and attained == 3))
+            if owes_training:
                 level.get_node("AdvancementTraining").select(1); level.get_node("AdvancementTraining").item_selected.emit(1); await settle()
             await capture("style-" + klass + "-level-" + str(attained) + "-" + locale, level)
             var before: String = current_scene.get_node("PartyPanel/Sheet").text
@@ -99,9 +106,13 @@ func run_checks() -> void:
                 style.select(selection); style.item_selected.emit(selection); await settle()
             if klass == "fighter" and attained == 4:
                 level.get_node("Feat").select(4); level.get_node("Feat").item_selected.emit(4); await settle()
-            if klass == "fighter" and attained == 4:
+            if owes_training:
                 level.get_node("AdvancementTraining").select(1); level.get_node("AdvancementTraining").item_selected.emit(1); await settle()
             level.get_node("Confirm").grab_focus(); await key(level, KEY_ENTER)
+            if klass != "fighter":
+                require(level.visible and level.get_node("SpellChoicesPage").visible,
+                        "Spellcasters use the second spell page: level=" + str(attained))
+                level.get_node("Confirm").grab_focus(); await key(level, KEY_ENTER)
             require(not level.visible, "Keyboard confirms complete advancement")
         await press("PartyPanel/Save"); current_scene.get_node("SaveSlots/Name").text = SLOT
         await press("SaveSlots/Action"); await press("SaveSlots/Action")

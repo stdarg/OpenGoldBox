@@ -30,19 +30,19 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon = "
         gear.push_back(weapon);
     const Cell target = ranged ? Cell{5, 1} :
                         Cell{2, 1};
-    Encounter e{{12, 8, std::vector<std::uint8_t>(96)},
+    Encounter e{{12, 8, std::vector<Terrain>(96)},
         {   {
                 1,
                 "campaign-character",
                 "Rogue",
-                0,
+                Side::party,
                 {1, 1},
                 rules.character_profile(h.sheet(), gear).data
             },
-            {99, enemy, "Target", 1, target}
+            {99, enemy, "Target", Side::opposition, target}
         }};
     if (ally)
-        e.participants.push_back({2, "vanguard", "Ally", 0, {target.x, 2}});
+        e.participants.push_back({2, "vanguard", "Ally", Side::party, {target.x, 2}});
     auto c = rules.create(std::move(e), seed);
     for (unsigned i = 0; c->snapshot().actor != 1 && i < 5; ++i)
         act(*c, "end");
@@ -70,7 +70,7 @@ void move(CombatSession &c, Cell to)
 std::vector<std::string> sneak_lines(const CombatSession &c)
 {
     std::vector<std::string> lines;
-    for (const auto &line : c.snapshot().log)
+    for (const auto &line : c.snapshot().log())
         if (line.find(" adds Sneak Attack: ") != std::string::npos)
             lines.push_back(line);
     return lines;
@@ -84,7 +84,7 @@ bool sneaked(const CombatSession &c)
 // "hits", "CRITICAL", or empty for a miss, from the latest attack roll.
 std::string last_hit(const CombatSession &c)
 {
-    const auto messages = c.snapshot().log_messages;
+    const auto messages = c.snapshot().log_messages();
     for (auto m = messages.rbegin(); m != messages.rend(); ++m)
         if (m->source.starts_with("{actor} -> {target}: d20"))
         {
@@ -99,7 +99,7 @@ std::string last_hit(const CombatSession &c)
 // Reads the number that follows `before` in the last log line containing `marker`.
 int logged_number(const CombatSession &c, std::string_view marker, std::string_view before)
 {
-    const auto log = c.snapshot().log;
+    const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
         if (line->find(marker) != std::string::npos)
             return std::stoi(line->substr(line->find(before) + before.size()));
@@ -136,7 +136,7 @@ void run()
     {
         if (level > 1)
             check(h.advance(*rules, wounds), "Rogue advances normally through level four");
-        check(h.sheet().level == level && wounds.hit_points == h.sheet().hit_points - 2,
+        check(std::cmp_equal(h.sheet().level, level) && wounds.hit_points == h.sheet().hit_points - 2,
               "Rogue advancement preserves wounds");
         const auto &grants = h.sheet().grants;
         for (const auto *thief : {"subclass:thief", "feature:fast_hands"})
@@ -208,7 +208,7 @@ void run()
         VitalState v;
         for (unsigned n = 2; n <= level; ++n)
             check(pc.advance(*rules, v), "Recruited Rogue ordinary advancement");
-        pc.inventory().add("dagger", "Dagger");
+        pc.add_item({.definition_id = "dagger", .name = "Dagger"});
         const auto id = recruited.recruit("fixture:rogue-attacks", std::move(pc));
         recruited.equip(id, 1);
         recruited.add_pc(hero(d));
@@ -218,8 +218,8 @@ void run()
         auto actors = recruited.participants();
         actors.front().cell = {1, 1};
         actors[1].cell = {2, 2};
-        actors.push_back({99, "target", "Target", 1, {2, 1}});
-        auto c = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 13);
+        actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         while (c->snapshot().actor != id)
             act(*c, "end");
         const auto vitals = unit(*c, id).persistent;
@@ -350,12 +350,12 @@ void run()
         {
             Encounter e
             {
-                {8, 8, std::vector<std::uint8_t>(64)},
+                {8, 8, std::vector<Terrain>(64)},
                 {   {
                         1,
                         "campaign-character",
                         "Rogue",
-                        0,
+                        Side::party,
                         {1, 1},
                         rules->character_profile(h.sheet(), std::array<std::string, 1>{"dagger"}).data
                     },
@@ -363,12 +363,12 @@ void run()
                         2,
                         "campaign-character",
                         "Unconscious ally",
-                        0,
+                        Side::party,
                         {2, 2},
                         rules->character_profile(h.sheet(), {}).data,
                         unconscious
                     },
-                    {99, "target", "Target", 1, {2, 1}}
+                    {99, "target", "Target", Side::opposition, {2, 1}}
                 }};
             auto c = rules->create(std::move(e), seed);
             while (c->snapshot().actor != 1)
@@ -389,14 +389,14 @@ void run()
         {
             CampaignParty party(rules_module());
             auto pc = h;
-            const auto token = pc.inventory().add(weapon, weapon);
+            const auto token = pc.add_item({.definition_id = weapon, .name = weapon});
             const auto id = party.add_pc(std::move(pc));
             party.equip(id, token);
             auto actors = party.participants();
             actors.front().cell = {1, 1};
-            actors.push_back({99, "target", "Target", 1, {5, 1}});
-            actors.push_back({2, "vanguard", "Ally", 0, {5, 2}});
-            auto c = rules->create({{12, 8, std::vector<std::uint8_t>(96)}, actors}, seed);
+            actors.push_back({99, "target", "Target", Side::opposition, {5, 1}});
+            actors.push_back({2, "vanguard", "Ally", Side::party, {5, 2}});
+            auto c = rules->create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
             while (c->snapshot().actor != id)
                 act(*c, "end");
             act(*c, "throw");
@@ -493,7 +493,7 @@ void run()
     if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
     {
         CampaignParty ui(module());
-        const auto ui_id = ui.add_pc(hero(d));
+        (void)ui.add_pc(hero(d));
         ui.award_experience(2700, "rogue-ui");
         auto state = ui.checkpoint();
         state.roster.front().vitals.hit_points -= 2;
@@ -521,7 +521,7 @@ void verify_ui(const char *file)
     actual.restore(
         decode_campaign(read_campaign_file(file), *creation, *rules, assets, nullptr).party);
     auto state = expected.checkpoint();
-    state.selected = actual.state().selected;
+    state.selected_slot = actual.state().selected_slot;
     expected.restore(std::move(state));
     check(
         encode_campaign(actual, nullptr, assets) == encode_campaign(expected, nullptr, assets),

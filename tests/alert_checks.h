@@ -16,7 +16,7 @@ CampaignParty party()
                 for (unsigned i = 0; i < g.count; ++i)
                     d.training[g.id].push_back(g.options.at(i).id);
         auto h = hero(d);
-        h.inventory().add("dagger", "Dagger", 2);
+        h.add_item({.definition_id = "dagger", .name = "Dagger", .quantity = 2});
         const auto id = p.add_pc(std::move(h));
         p.equip(id, 1);
     }
@@ -39,8 +39,8 @@ auto battle(CampaignParty &p, unsigned seed = 37)
     auto actors = p.participants();
     actors[0].cell = {1, 1};
     actors[1].cell = {2, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
-    return p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, actors}, seed);
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
+    return p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
 }
 
 Command command(const CombatSession &c, std::string_view verb, unsigned owner, unsigned ally = 0)
@@ -167,8 +167,10 @@ void run()
     const int champion_first = style_route_checks::die(dice_state, 20);
     const int champion_roll = std::max(champion_first, style_route_checks::die(dice_state, 20));
     const int rogue_roll = style_route_checks::die(dice_state, 20);
-    const int fighter_total = champion_roll + p.member(1).character.sheet().modifiers[1] + 2;
-    const int rogue_total = rogue_roll + p.member(2).character.sheet().modifiers[1] + 2;
+    const int fighter_total = champion_roll +
+        p.member(1).character.sheet().modifiers[Ability::dexterity] + 2;
+    const int rogue_total = rogue_roll +
+        p.member(2).character.sheet().modifiers[Ability::dexterity] + 2;
     check(unit(*c, 1).initiative == fighter_total && unit(*c, 2).initiative == rogue_total,
           "Actual proficiency adds once, including Champion Advantage");
     check(before.initiative_choices.size() == 2 && before.elapsed_milliseconds == 0,
@@ -224,10 +226,10 @@ void run()
     auto actors = p.participants();
     actors[0].cell = {1, 1};
     actors[1].cell = {2, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     actors[1].state->hit_points = 0;
     auto helpless = module()->create(
-    { {12, 8, std::vector<std::uint8_t>(96)}, actors
+    { {12, 8, std::vector<Terrain>(96)}, actors
     }, 37);
     check(helpless->snapshot().initiative_choices == std::vector<EntityId> {1},
           "Incapacitated holder cannot swap");
@@ -243,9 +245,9 @@ void run()
     actors = p.participants();
     actors[0].cell = {1, 1};
     actors[1].cell = {8, 6};
-    actors[1].side = 1;
+    actors[1].side = Side::opposition;
     auto enemy = module()->create(
-    { {12, 8, std::vector<std::uint8_t>(96)}, actors
+    { {12, 8, std::vector<Terrain>(96)}, actors
     }, 37);
     check(enemy->snapshot().initiative_choices == std::vector<EntityId> {1},
           "Enemy holder keeps its roll automatically");
@@ -255,14 +257,15 @@ void run()
     actors[0].cell = {1, 1};
     actors[0].surprised = true;
     actors[1].cell = {2, 1};
-    actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     auto surprised = module()->create(
-    { {12, 8, std::vector<std::uint8_t>(96)}, actors
+    { {12, 8, std::vector<Terrain>(96)}, actors
     }, 37);
     exact(*surprised);
     dice_state = 37;
     const int roll = style_route_checks::die(dice_state, 20);
-    check(unit(*surprised, 1).initiative == roll + p.member(1).character.sheet().modifiers[1] + 2,
+    check(unit(*surprised, 1).initiative == roll +
+          p.member(1).character.sheet().modifiers[Ability::dexterity] + 2,
           "Advantage and Disadvantage cancel before adding Alert once");
     decline(*surprised);
     bool down_first = false;
@@ -270,11 +273,11 @@ void run()
     actors[0].cell = {1, 1};
     actors[1].cell = {2, 1};
     actors[1].state->hit_points = 0;
-    actors.push_back({99, "vanguard", "Enemy", 1, {8, 6}});
+    actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     for (unsigned seed = 1; seed <= 32; ++seed)
     {
         auto pending = module()->create(
-        { {12, 8, std::vector<std::uint8_t>(96)}, actors
+        { {12, 8, std::vector<Terrain>(96)}, actors
         }, seed);
         exact(*pending);
         const auto state = pending->snapshot();
@@ -282,7 +285,7 @@ void run()
         {
             down_first = true;
             check(unit(*pending, 2).hit_points == 0, "No recovery before opening choice");
-            for (const auto &line : state.log)
+            for (const auto &line : state.log())
                 check(line.find("death save") == line.npos,
                       "First-turn processing waits for choice");
         }

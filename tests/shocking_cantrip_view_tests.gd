@@ -70,15 +70,26 @@ func pick(group: int, option: String, selected := true) -> void:
 	check.set_pressed(selected)
 	await settle()
 
-# A Wizard must fill every cantrip slot and prepare a spellbook spell before Name.
+# A Wizard must fill every cantrip slot, write six level-one spells in the
+# spellbook and prepare four of them before Name.
 func complete_wizard_choices() -> void:
 	for cantrip in ["fire_bolt", "ray_of_frost"]:
 		current_scene.get_node("SpellChoices/Rows/" + cantrip).set_pressed(true)
 		await settle()
-	current_scene.get_node("SpellChoices/Rows/BookChoices/spellbook_1/magic_missile").set_pressed(true)
-	await settle()
-	current_scene.get_node("SpellChoices/Rows/BookChoices/prepared/magic_missile").set_pressed(true)
-	await settle()
+	await check_until("SpellChoices/Rows/BookChoices/spellbook_1", 6)
+	await check_until("SpellChoices/Rows/BookChoices/prepared", 4)
+
+# Check the list's open boxes in order until `wanted` of them are checked.
+func check_until(path: String, wanted: int) -> void:
+	var checked := 0
+	for entry in current_scene.get_node(path).get_children():
+		if entry is CheckBox and entry.visible and entry.button_pressed: checked += 1
+	for entry in current_scene.get_node(path).get_children():
+		if checked >= wanted: return
+		if entry is CheckBox and entry.visible and not entry.disabled and not entry.button_pressed:
+			entry.set_pressed(true)
+			await settle()
+			checked += 1
 
 func keyboard(key: Key) -> void:
 	for down in [true, false]:

@@ -1,6 +1,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
+#include "../src/OpenGold.Rules.Srd5/src/feature_grants.h"
 #include "../src/OpenGold.Rules.Srd5/src/weapon_mastery.h"
 #include <algorithm>
 #include <iostream>
@@ -213,8 +214,8 @@ void advancement()
             }
             choice = party.default_advancement(id);
             choice.abilities = {};
-            choice.abilities[2] = 1;
-            choice.abilities[4] = 1;
+            choice.abilities[Ability::constitution] = 1;
+            choice.abilities[Ability::wisdom] = 1;
             const auto preview = party.preview_advancement(id, choice);
             const FeatureGrant expected{"feat:ability_score_improvement",
                                         std::string("class:") + klass +
@@ -274,6 +275,29 @@ void advancement()
         }
 }
 
+// A sheet stores race and background labels. Their grant sources are the
+// creation tables' stable IDs, looked up by label rather than spelt from it,
+// so a relabelled or translated choice keeps its grants and an unknown label
+// is rejected.
+void origin_ids()
+{
+    namespace detail = srd5::detail;
+    const auto rules = srd5::character_rules();
+    for (const auto &race : rules->choices(CreationField::race))
+        check(detail::race_id(race.label) == race.id, "Every race label names its ID");
+    for (const auto &background : rules->choices(CreationField::background))
+        check(detail::background_id(background.label) == background.id,
+              "Every background label names its ID");
+    rejects([]
+    {
+        (void)detail::race_id("Humann");
+    });
+    rejects([]
+    {
+        (void)detail::background_id("sage");
+    });
+}
+
 void profiles()
 {
     auto rules = module();
@@ -284,7 +308,7 @@ void profiles()
         party.advance(id, party.default_advancement(id));
     auto choice = party.default_advancement(id);
     choice.abilities = {};
-    choice.abilities[2] = 2;
+    choice.abilities[Ability::constitution] = 2;
     party.advance(id, choice);
     const auto bytes = saved(party);
     for (const auto &bad :
@@ -301,9 +325,9 @@ void profiles()
     });
     const auto encounter = [&](std::string profile)
     {
-        return Encounter{{8, 8, std::vector<std::uint8_t>(64)},
-            {   {1, "campaign-character", "Hero", 0, {1, 1}, profile},
-                {2, "vanguard", "Target", 1, {2, 1}}
+        return Encounter{{8, 8, std::vector<Terrain>(64)},
+            {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile},
+                {2, "vanguard", "Target", Side::opposition, {2, 1}}
             }};
     };
     auto profile = party.profile(id).data;
@@ -349,6 +373,7 @@ int main()
         creation();
         advancement();
         profiles();
+        origin_ids();
         std::cout << "Feature grant tests passed\n";
         return 0;
     }

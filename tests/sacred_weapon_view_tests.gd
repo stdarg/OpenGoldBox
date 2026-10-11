@@ -68,7 +68,7 @@ func run_checks() -> void:
         var label := "Sacred Weapon" if locale == "en" else "Arma sagrada"
         require(await cycle_to(combat, label), "The A cycle offers Sacred Weapon: " + locale)
         await key(KEY_SPACE)
-        var log: String = combat.get_node("Log").get_parsed_text()
+        var log: String = combat.get_node("LogStack/Log").get_parsed_text()
         var used := "Paladin uses Sacred Weapon." if locale == "en" else "Paladin usa Arma sagrada."
         require(log.contains(used), "Space uses Sacred Weapon: " + locale)
         require(not await cycle_to(combat, label), "Sacred Weapon is not offered again while it lasts: " + locale)

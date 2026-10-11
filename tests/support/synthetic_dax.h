@@ -19,7 +19,7 @@ inline std::vector<std::uint8_t> literal_dax(const std::vector<DaxRecord> &recor
     if (records.size() > 256)
         throw std::logic_error("Too many fixture records");
     std::vector<std::uint8_t> bytes(2 + 9 * records.size());
-    word(bytes, 0, 9 * records.size());
+    word(bytes, 0, static_cast<unsigned>(9 * records.size()));
     for (std::size_t i = 0; i < records.size(); ++i)
     {
         const auto &record = records[i];
@@ -27,8 +27,8 @@ inline std::vector<std::uint8_t> literal_dax(const std::vector<DaxRecord> &recor
         const auto offset = start - 2 - 9 * records.size();
         const auto header = 2 + 9 * i;
         bytes[header] = record.id;
-        word(bytes, header + 1, offset);
-        word(bytes, header + 3, offset >> 16);
+        word(bytes, header + 1, static_cast<unsigned>(offset));
+        word(bytes, header + 3, static_cast<unsigned>(offset >> 16));
         for (std::size_t at = 0; at < record.bytes.size(); at += 128)
         {
             const auto count = std::min<std::size_t>(128, record.bytes.size() - at);
@@ -37,8 +37,8 @@ inline std::vector<std::uint8_t> literal_dax(const std::vector<DaxRecord> &recor
         }
         if (record.bytes.size() > 65535 || bytes.size() - start > 65535)
             throw std::logic_error("Fixture exceeds DAX record limits");
-        word(bytes, header + 5, record.bytes.size());
-        word(bytes, header + 7, bytes.size() - start);
+        word(bytes, header + 5, static_cast<unsigned>(record.bytes.size()));
+        word(bytes, header + 7, static_cast<unsigned>(bytes.size() - start));
     }
     return bytes;
 }

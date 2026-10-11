@@ -143,12 +143,15 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
 {
     if (x >= 16 || y >= 16)
         throw std::out_of_range("Dungeon battlefield requires a valid exploration position");
-    DungeonBattlefield result{{50, 25, std::vector<std::uint8_t>(1250, 0)},
+    DungeonBattlefield result{{50, 25, std::vector<rules::Terrain>(1250)},
         std::vector<std::uint8_t>(1250, 22)};
     for (int row = -2; row <= 2; ++row)
         for (int column = -6; column <= 6; ++column)
         {
             const int gx = static_cast<int>(x) + column, gy = static_cast<int>(y) + row;
+            for (unsigned direction = 0; direction < 4; ++direction)
+                result.walled[row + 2][column + 6][direction] =
+                    edge(map, gx, gy, direction, y) == wall;
             const auto stamp = cell_tiles(edge(map, gx, gy, 3, y), edge(map, gx, gy, 0, y),
                                           edge(map, gx, gy, 1, y), edge(map, gx, gy - 1, 3, y),
                                           edge(map, gx - 1, gy, 0, y), edge(map, gx, gy - 1, 1, y),
@@ -164,7 +167,8 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
                         continue;
                     const auto index = cell.y * 50 + cell.x;
                     result.tiles[index] = tile - 1;
-                    result.geometry.terrain[index] = blocked(tile) ? 1 : 0;
+                    result.geometry.terrain[index] =
+                        blocked(tile) ? rules::Terrain::obstacle : rules::Terrain::open;
                 }
         }
     return result;

@@ -19,7 +19,9 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <algorithm>
+#include <utility>
 
 using namespace godot;
 
@@ -30,120 +32,41 @@ String gs(std::string_view s)
     return String::utf8(s.data(), s.size());
 }
 
-struct DeleteNode
-{
-    void operator()(Node *n) const
-    {
-        memdelete(n);
-    }
-};
-
-template <class T> T *control(Node *parent, const String &name, Rect2 rect)
-{
-    std::unique_ptr<T, DeleteNode> owned(memnew(T));
-    owned->set_name(name);
-    owned->set_position(rect.position);
-    owned->set_size(rect.size);
-    auto *borrowed = owned.get();
-    parent->add_child(owned.get());
-    owned.release();
-    return borrowed;
-}
 } // namespace
 
 void CharacterCreationView::setup_advancement()
 {
-    get_node<ItemList>("PartyPanel/Roster")->add_theme_constant_override("v_separation", 8);
     const auto args = OS::get_singleton()->get_cmdline_user_args();
     advancement_check_ = args.has("--advancement-check");
     advancement_review_ = args.has("--level-up-review");
-    std::unique_ptr<Window, DeleteNode> owned(memnew(Window));
-    owned->set_name("LevelUp");
-    owned->set_title("Level up");
-    owned->set_size(Vector2i(700, 670));
-    owned->set_min_size(Vector2i(700, 670));
-    owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
-    owned->set_transient(true);
-    owned->set_exclusive(true);
-    owned->hide();
-    auto *window = owned.get();
-    add_child(owned.get());
-    owned.release();
+    auto *window = get_node<Window>("LevelUp");
     window->connect("close_requested",
                     callable_mp(this, &CharacterCreationView::close_advancement));
-    auto *spell_page = presentation::add_control<ScrollContainer>(*window, "SpellChoicesPage",
-        Rect2(24, 70, 652, 475));
-    spell_page->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
-    spell_page->set_follow_focus(true);
-    spell_page->hide();
-    presentation::spell_rows(*spell_page, "Rows");
-    // Skilled reuses the same page area and scrolling behaviour as the spell page.
-    auto *skilled_count = presentation::add_control<Label>(*window, "SkilledCount",
-        Rect2(24, 44, 652, 24));
-    skilled_count->hide();
-    auto *skilled_page = presentation::add_control<ScrollContainer>(*window, "SkilledPage",
-        Rect2(24, 70, 652, 475));
-    skilled_page->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
-    skilled_page->set_follow_focus(true);
-    skilled_page->hide();
-    presentation::spell_rows(*skilled_page, "Rows");
-    auto *back = presentation::add_control<Button>(*window, "Back", Rect2(236, 610, 136, 40));
-    back->set_text(gs("Back"));
-    back->hide();
-    back->connect("pressed", callable_mp(this, &CharacterCreationView::advancement_back));
-    auto *title = control<Label>(window, "Title", Rect2(24, 20, 652, 40));
-    title->add_theme_font_size_override("font_size", 24);
-    title->set_clip_text(true);
-    control<Label>(window, "HP", Rect2(24, 70, 652, 42));
-    control<Label>(window, "FeatLabel", Rect2(24, 122, 652, 28))
-    ->set_text("Feat or ability points");
-    auto *feat = control<OptionButton>(window, "Feat", Rect2(24, 155, 652, 38));
-    feat->connect("item_selected", callable_mp(this, &CharacterCreationView::advancement_changed));
-    auto *training_label =
-        control<Label>(window, "AdvancementTrainingLabel", Rect2(24, 205, 652, 25));
-    training_label->hide();
-    auto *training = control<OptionButton>(window, "AdvancementTraining", Rect2(24, 236, 652, 36));
-    training->hide();
-    training->connect("item_selected",
-                      callable_mp(this, &CharacterCreationView::advancement_changed));
-    const std::array<const char *, 6> abilities{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
+    get_node<Button>("LevelUp/Back")
+        ->connect("pressed", callable_mp(this, &CharacterCreationView::advancement_back));
+    get_node<OptionButton>("LevelUp/Feat")
+        ->connect("item_selected", callable_mp(this, &CharacterCreationView::advancement_changed));
+    get_node<OptionButton>("LevelUp/AdvancementTraining")
+        ->connect("item_selected", callable_mp(this, &CharacterCreationView::advancement_changed));
     for (unsigned i = 0; i < 6; ++i)
     {
-        control<Label>(window, String("AbilityLabel") + String::num_uint64(i),
-                       Rect2(24 + i * 110, 205, 100, 25))
-        ->set_text(abilities[i]);
-        auto *points = control<OptionButton>(window, String("Ability") + String::num_uint64(i),
-                                             Rect2(24 + i * 110, 236, 100, 36));
+        auto *points = get_node<OptionButton>(
+            "LevelUp/Ability" + String::num_uint64(i));
         for (int n = 0; n <= 2; ++n)
             points->add_item(String("+") + String::num_int64(n));
         points->connect("item_selected",
                         callable_mp(this, &CharacterCreationView::advancement_changed));
     }
-    control<Label>(window, "SpellLabel", Rect2(24, 292, 652, 28))->set_text("Prepared spells");
-    auto *style = control<OptionButton>(window, "FightingStyle", Rect2(24, 325, 652, 38));
-    style->hide();
-    style->connect("item_selected", callable_mp(this, &CharacterCreationView::advancement_changed));
+    get_node<OptionButton>("LevelUp/FightingStyle")
+        ->connect("item_selected", callable_mp(this, &CharacterCreationView::advancement_changed));
     for (int i = 0; i < 4; ++i)
-    {
-        auto *spell = control<CheckBox>(window, String("Spell") + String::num_int64(i),
-                                        Rect2(24, 325 + i * 38, 652, 36));
-        spell->connect(
-            "toggled",
-            callable_mp(this, &CharacterCreationView::advancement_spell_changed).bind(i));
-    }
-    auto *note = control<Label>(window, "Note", Rect2(24, 489, 652, 66));
-    note->set_text(
-        "Fixed-average HP growth. Existing resource expenditure is preserved.\nAdditional class and subclass features are unavailable in this version.");
-    note->add_theme_font_size_override("font_size", 14);
-    note->set("autowrap_mode", 3);
-    auto *error = control<Label>(window, "Error", Rect2(24, 560, 652, 34));
-    error->add_theme_font_size_override("font_size", 15);
-    auto *cancel = control<Button>(window, "Cancel", Rect2(386, 610, 136, 40));
-    cancel->set_text("Cancel");
-    cancel->connect("pressed", callable_mp(this, &CharacterCreationView::close_advancement));
-    auto *confirm = control<Button>(window, "Confirm", Rect2(536, 610, 140, 40));
-    confirm->set_text("Confirm");
-    confirm->connect("pressed", callable_mp(this, &CharacterCreationView::confirm_advancement));
+        get_node<CheckBox>("LevelUp/Spell" + String::num_int64(i))
+            ->connect("toggled",
+                      callable_mp(this, &CharacterCreationView::advancement_spell_changed).bind(i));
+    get_node<Button>("LevelUp/Cancel")
+        ->connect("pressed", callable_mp(this, &CharacterCreationView::close_advancement));
+    get_node<Button>("LevelUp/Confirm")
+        ->connect("pressed", callable_mp(this, &CharacterCreationView::confirm_advancement));
 }
 
 const opengold::rules::TrainingChoiceGroup *
@@ -254,7 +177,8 @@ void CharacterCreationView::advancement_pages()
     try
     {
         campaign_->rule_module().apply_spell_choices(
-            sheet, learning, opengold::rules::SpellChoiceContext::advancement, false);
+            sheet, learning, opengold::rules::SpellChoiceContext::advancement,
+            opengold::rules::ChoiceCompleteness::partial);
         options.preparation =
             campaign_->rule_module()
             .spell_choice_options(sheet, opengold::rules::SpellChoiceContext::advancement)
@@ -345,8 +269,10 @@ void CharacterCreationView::advancement_learning_toggled(bool selected, String g
     opengold::rules::SpellChoices choices
     {
         *advancement_choice_.spell_learning, advancement_choice_.spells, {}, {}};
-    presentation::toggle_spell(choices, selected, group.utf8().get_data(),
-                               option.utf8().get_data());
+    presentation::toggle_spell(choices, {.group = group.utf8().get_data(),
+                                         .option = option.utf8().get_data(),
+                                         .selected = selected
+                                        });
     advancement_choice_.spell_learning = choices.learning;
     advancement_choice_.spells = *choices.prepared;
     if (group != "prepared" && !selected)
@@ -372,24 +298,19 @@ void CharacterCreationView::refresh_advancement_arrows()
         auto *arrow = Object::cast_to<Button>(list->get_node_or_null(name));
         if (!arrow)
         {
-            arrow = control<Button>(list, name, Rect2(0, 0, 30, 26));
-            arrow->set_text(String::utf8("↑"));
+            auto owned = presentation::instantiate_control<Button>(
+                "res://scenes/control_templates/party_advance.tscn");
+            owned->set_name(name);
+            arrow = presentation::attach_child(*list, std::move(owned));
             arrow->set_tooltip_text("Level up " + gs(member.character.sheet().name));
-            arrow->add_theme_font_size_override("font_size", 14);
             arrow->connect(
                 "pressed",
                 callable_mp(this, &CharacterCreationView::open_advancement).bind(member.id));
         }
         arrow->set_tooltip_text("Level up " + gs(member.character.sheet().name));
-        const auto rect = list->get_item_rect(i);
-        const float y = rect.position.y - list->get_v_scroll_bar()->get_value();
-        const auto font = list->get_theme_font("font");
-        const float width = Vector2(font->call("get_string_size", gs(member.character.sheet().name),
-                                               0, -1, list->get_theme_font_size("font_size")))
-                            .x;
-        arrow->set_position(Vector2(std::min(width + 16, list->get_size().x - 52), y));
-        arrow->set_visible(campaign_->can_advance(member.id) && y >= 0 &&
-                           y + 26 <= list->get_size().y);
+        const bool fits = arrow->call("place_in_roster", static_cast<std::int32_t>(i),
+                                      gs(member.character.sheet().name));
+        arrow->set_visible(campaign_->can_advance(member.id) && fits);
     }
     for (int n = 0; n < list->get_child_count(); ++n)
         if (auto *arrow = Object::cast_to<Button>(list->get_child(n));
@@ -405,8 +326,9 @@ void CharacterCreationView::refresh_advancement_arrows()
         }
 }
 
-void CharacterCreationView::open_advancement(std::int64_t id)
+void CharacterCreationView::open_advancement(std::int64_t member)
 {
+    const auto id = static_cast<opengold::MemberId>(member);
     if (campaign_defeated_ || !campaign_->can_advance(id))
         return;
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
@@ -447,9 +369,7 @@ void CharacterCreationView::open_advancement(std::int64_t id)
     training->clear();
     training->set_visible(has_training);
     window->get_node<Label>("AdvancementTrainingLabel")->set_visible(has_training);
-    window->get_node<Label>("AdvancementTrainingLabel")
-    ->set_position(Vector2(24, supplemental_training ? 374 : 205));
-    training->set_position(Vector2(24, supplemental_training ? 406 : 236));
+    window->call("place_training", supplemental_training);
     for (unsigned i = 0; i < 6; ++i)
     {
         window->get_node<Control>(String("Ability") + String::num_uint64(i))
@@ -471,7 +391,7 @@ void CharacterCreationView::open_advancement(std::int64_t id)
     }
     for (unsigned i = 0; i < 6; ++i)
         window->get_node<OptionButton>(String("Ability") + String::num_uint64(i))
-        ->select(advancement_choice_.abilities[i]);
+        ->select(advancement_choice_.abilities[opengold::rules::all_abilities[i]]);
     window->get_node<Label>("SpellLabel")
     ->set_text(advancement_options_.spells.empty() ? "No spell choices for this class"
                : "Prepared spells: select at least one");
@@ -574,12 +494,13 @@ void CharacterCreationView::advancement_changed(std::int64_t)
         points->set_disabled(!ability);
         if (!ability)
             points->select(0);
-        advancement_choice_.abilities[i] = ability ? points->get_selected() : 0;
-        const auto value = campaign_->member(advancing_).character.sheet().scores[i];
+        const auto shown = opengold::rules::all_abilities[i];
+        advancement_choice_.abilities[shown] = ability ? points->get_selected() : 0;
+        const auto value = campaign_->member(advancing_).character.sheet().scores[shown];
         const std::array<const char *, 6> labels{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
         window->get_node<Label>(String("AbilityLabel") + String::num_uint64(i))
         ->set_text(String(labels[i]) + " " + String::num_int64(value) + String::utf8(" → ") +
-                   String::num_int64(value + advancement_choice_.abilities[i]));
+                   String::num_int64(value + advancement_choice_.abilities[shown]));
     }
     if (!advancement_choice_.spell_learning)
     {
@@ -757,8 +678,10 @@ void CharacterCreationView::advancement_check()
         for (unsigned i = 0; i < 3; ++i)
         {
             auto *button = get_node<Button>(arrow(campaign_->state().slots[i]));
-            if (list->get_item_at_position(button->get_position() + button->get_size() / 2, true) !=
-                    i)
+            if (std::cmp_not_equal(
+                        list->get_item_at_position(button->get_position() + button->get_size() / 2,
+                                                   true),
+                        i))
                 throw std::runtime_error("Level-up arrow is not beside its own character row");
         }
         capture("level-up-arrows.png");
@@ -784,8 +707,12 @@ void CharacterCreationView::advancement_check()
     case 3:
         capture_dialog("level-up-choices.png");
         press("LevelUp/Confirm");
+        if (!get_node<Control>("LevelUp/SpellChoicesPage")->is_visible())
+            throw std::runtime_error("A Wizard's spell page follows the first page");
+        press("LevelUp/Confirm");
         if (campaign_->member(id).character.sheet().level != 4 ||
-                campaign_->member(id).character.sheet().prepared_spells.size() != 2 ||
+                // The SRD Wizard prepares seven spells at level 4.
+                campaign_->member(id).character.sheet().prepared_spells.size() != 7 ||
                 get_node<Button>(arrow(id))->is_visible())
             throw std::runtime_error("Wizard confirmation did not apply choices and hide arrow");
         show_modifiers();
@@ -797,11 +724,9 @@ void CharacterCreationView::advancement_check()
                 throw std::runtime_error(
                     "Modifier dialog must separate background and level-four feat sources");
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "bonus-ui-check");
-            const auto module = opengold::srd5::load(std::filesystem::u8path(
+            const auto module = opengold::srd5::load(presentation::path_from_godot(
                     ProjectSettings::get_singleton()
-                    ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                    .utf8()
-                    .get_data()));
+                    ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")));
             auto restored = opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
                 *module, "bonus-ui-check", nullptr);
             campaign_->restore(std::move(restored.party));
@@ -831,6 +756,8 @@ void CharacterCreationView::advancement_check()
         if (!get_node<Window>("LevelUp")->is_visible())
             throw std::runtime_error("Town arrow did not open advancement");
         select("LevelUp/Feat", 1);
+        // A level-four Fighter also masters a fourth weapon.
+        select("LevelUp/AdvancementTraining", 1);
         break;
     }
     case 5:

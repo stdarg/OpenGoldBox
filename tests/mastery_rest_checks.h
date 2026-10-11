@@ -2,11 +2,12 @@ namespace mastery_rest_checks
 {
 void ui_fixture()
 {
+    // The fixture saves the original town, so without original files there is
+    // nothing to write; the screen check that reads it is skipped then too.
     const auto output = std::getenv("OPENGOLD_MASTERY_REST_FIXTURE");
-    if (!output)
-        return;
     const auto assets = std::getenv("OPENGOLD_GAME_DIR");
-    check(assets, "UI fixture needs original assets");
+    if (!output || !assets || !*assets)
+        return;
     auto party = std::make_shared<CampaignParty>(module());
     party->add_pc(mastery_grant_checks::chosen("fighter"));
     auto town = por::RolfTourSession::load(assets);
@@ -43,10 +44,11 @@ void script_reads_after_rest(CampaignParty &party, MemberId id)
     record.push_back(0); // An EXIT body; the machine only supplies variables here.
     por::EclMachine vm(std::make_shared<const por::EclProgram>(
                            por::EclProgram::decode(record, "inn-read")));
-    vm.bind_variable(0x6C19, static_cast<std::uint16_t>(party.member(id).vitals.hit_points));
+    vm.bind_variable(por::ecl_character_hit_points,
+                     static_cast<std::uint16_t>(party.member(id).vitals.hit_points));
     for (std::uint16_t coin = 0x6BBB; coin <= 0x6BC7; coin += 2)
-        vm.bind_variable(coin, coin == 0x6BC1 ? 7 : 0); // Seven gold coins.
-    party.read_character(0, vm);
+        vm.bind_variable(por::EclAddress{coin}, coin == 0x6BC1 ? 7 : 0); // Seven gold coins.
+    (void)party.read_character(PartySlot{}, vm);
     check(party.member(id).wealth[3] == 7 && party.state().training_rest,
           "Script read after a Long Rest keeps the pending mastery choice");
 }
@@ -75,7 +77,7 @@ void run()
         {
             CampaignParty party(module());
             auto h = mastery_grant_checks::chosen(klass);
-            h.inventory().add("dagger", "Retained dagger");
+            h.add_item({.definition_id = "dagger", .name = "Retained dagger"});
             const auto id = npc ? party.recruit("mastery-rest:npc", h) : party.add_pc(h);
             check(!party.state().training_rest, "Creation does not invent a rest entitlement");
             rejects(
@@ -111,7 +113,7 @@ void run()
             rejects(
                 [&]
             {
-                party.advance_time(1);
+                party.advance_time(std::chrono::minutes(1));
             });
             rejects(
                 [&]
@@ -166,9 +168,9 @@ void run()
                 party.replace_rest_training(ticket, id, selected);
             });
             party = roundtrip(party);
-            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 21\n"),
+            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 25\n"),
                   "Actual training history uses the current campaign format");
-            party.advance_time(24 * 60);
+            party.advance_time(std::chrono::minutes(24 * 60));
             check(bool(party.rest(RestKind::long_rest)),
                   "Next qualified rest can offer a new choice");
             if (party.state().spell_rest)
@@ -198,7 +200,7 @@ void run()
     p = roundtrip(p);
     check(p.member(id).character.sheet().training.masteries.size() == 4,
           "Rest edit replays before later Fighter entitlement");
-    p.advance_time(24 * 60);
+    p.advance_time(std::chrono::minutes(24 * 60));
     check(bool(p.rest(RestKind::long_rest)), "Level4 qualified rest starts");
     const auto options = *rules->rest_training_options(p.member(id).character.sheet());
     check(options.group.count == 4 && options.replacement_limit == 1,

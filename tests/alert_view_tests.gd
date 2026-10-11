@@ -14,7 +14,7 @@ func run_checks() -> void:
             var allies: OptionButton = dialog.get_node("Ally")
             var swap: Button = dialog.get_node("Swap")
             var keep: Button = dialog.get_node("Keep")
-            require(dialog.visible and dialog.size == Vector2i(640,360), "Approved centered Alert dialog")
+            require(dialog.visible and dialog.size == Vector2i(640,410), "Approved centered Alert dialog")
             require(owners.visible and owners.item_count == 2 and allies.item_count == 2, "All holders and eligible allies listed")
             require(swap.disabled and current_scene.get_node("End").disabled, "Select ally first; ordinary actions wait")
             # Select the first holder by entity ID, then use actual keyboard selection.

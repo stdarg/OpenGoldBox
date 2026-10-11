@@ -72,7 +72,7 @@ func run_checks() -> void:
 		return
 	if scenario in ["first", "first-warning", "reset"]:
 		require(language.visible and not path_dialog.visible and not current_scene.get_node("ChecksumWarning").visible, "Language must precede folder setup and checksum warnings")
-		require(current_scene.get_node("Text").texture == null, "Splash began before language selection")
+		require(current_scene.get_node("ImageFit/Image/Text").texture == null, "Splash began before language selection")
 		if scenario == "reset":
 			require(FileAccess.get_file_as_string(CONFIG) == original, "Reset erased saved choices before confirmation")
 			require(TranslationServer.get_locale() == "en", "Reset language did not supersede environment override")
@@ -82,7 +82,7 @@ func run_checks() -> void:
 		original = FileAccess.get_file_as_string(CONFIG)
 	if scenario in ["valid", "override"]:
 		require(not path_dialog.visible and not language.visible, "Complete config should skip setup")
-		require(current_scene.get_node("Text").texture != null, "Splash did not start")
+		require(current_scene.get_node("ImageFit/Image/Text").texture != null, "Splash did not start")
 		require(TranslationServer.get_locale() == ("es" if scenario == "override" else "en"), "Language precedence incorrect")
 		require(FileAccess.get_file_as_string(CONFIG) == original, "Override rewrote config")
 	elif scenario in ["missing-lang", "cancel-lang"]:
@@ -170,9 +170,9 @@ func run_checks() -> void:
 				await settle()
 			require(read_config().get_value("game", "path") == selected, "Confirmed path was not saved")
 			require(not language.visible, "Language was prompted again after folder confirmation")
-			require(current_scene.get_node("Text").texture != null, "Path confirmation did not start splash")
+			require(current_scene.get_node("ImageFit/Image/Text").texture != null, "Path confirmation did not start splash")
 			if scenario in ["first", "reset", "first-warning"]:
-				require(current_scene.get_node("Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "Path confirmation skipped first Spanish splash")
+				require(current_scene.get_node("ImageFit/Image/Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "Path confirmation skipped first Spanish splash")
 	if scenario not in ["first", "first-warning", "save-error"]:
 		require(read_config().get_value("unrelated", "keep") == "retained", "Unrelated setting lost")
 	print("Setup config passed: ", scenario)
@@ -191,4 +191,4 @@ func choose_spanish(dialog: Window, expect_path := false) -> void:
 	await settle()
 	require(read_config().get_value("interface", "language") == "es", "Spanish was not saved")
 	if not expect_path:
-		require(current_scene.get_node("Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "Confirmation skipped first Spanish splash")
+		require(current_scene.get_node("ImageFit/Image/Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "Confirmation skipped first Spanish splash")

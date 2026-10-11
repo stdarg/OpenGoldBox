@@ -113,9 +113,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
                                       std::vector<std::string> gear = {"longsword"})
 {
     const auto profile = rules.character_profile(hero.sheet(), gear).data;
-    auto c = rules.create({{8, 4, std::vector<std::uint8_t>(32)},
-        {   {1, "campaign-character", "Smiter", 0, {1, 1}, profile},
-            {99, "target", "Target", 1, {2, 1}}
+    auto c = rules.create({{8, 4, std::vector<Terrain>(32)},
+        {   {1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
+            {99, "target", "Target", Side::opposition, {2, 1}}
         }},
     3);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -191,7 +191,7 @@ void searing_smite_checks()
         check(first >= 1 && first <= 6, "Searing Smite adds 1d6 Fire damage to the hit");
         check(submit(*c, "end"), "End the Paladin's turn");
         // The target's turn began: it burned, then saved.
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         check(std::any_of(log.begin(), log.end(), [](const auto & line)
         {
             return line.starts_with("Target burns for ");
@@ -201,16 +201,16 @@ void searing_smite_checks()
               "The burning effect survives a checkpoint");
         while (c->snapshot().actor != 1)
             check(submit(*c, "end"), "Return to the Paladin");
-        const auto so_far = c->snapshot().log;
-        const int burned_again = std::count_if(so_far.begin(), so_far.end(), [](const auto & line)
+        const auto so_far = c->snapshot().log();
+        const auto burned_again = std::count_if(so_far.begin(), so_far.end(), [](const auto & line)
         {
             return line.starts_with("Target burns for ");
         });
         check(burned_again == 1, "One burn per target turn so far");
         while (c->snapshot().actor != 99)
             check(submit(*c, "end"), "Reach the target's next turn");
-        const auto later = c->snapshot().log;
-        const int burns = std::count_if(later.begin(), later.end(), [](const auto & line)
+        const auto later = c->snapshot().log();
+        const auto burns = std::count_if(later.begin(), later.end(), [](const auto & line)
         {
             return line.starts_with("Target burns for ");
         });
@@ -227,9 +227,9 @@ void write_ui_fixture()
     const auto profile = rules->character_profile(paladin().sheet(), std::vector<std::string> {"longsword"}).data;
     for (std::uint64_t seed = 1; seed <= 64; ++seed)
     {
-        auto c = rules->create({{8, 4, std::vector<std::uint8_t>(32)},
-            {   {1, "campaign-character", "Smiter", 0, {1, 1}, profile},
-                {99, "vanguard", "Target", 1, {2, 1}}
+        auto c = rules->create({{8, 4, std::vector<Terrain>(32)},
+            {   {1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
+                {99, "vanguard", "Target", Side::opposition, {2, 1}}
             }},
         seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

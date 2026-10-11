@@ -14,7 +14,7 @@ Character level_three_paladin()
 
 int charisma_bonus(const Character &hero)
 {
-    return std::max(1, hero.sheet().modifiers[5]);
+    return std::max(1, hero.sheet().modifiers[Ability::charisma]);
 }
 
 void sacred_weapon_checks()
@@ -59,9 +59,9 @@ void write_sacred_weapon_fixture()
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     const auto profile = module->character_profile(level_three_paladin().sheet(),
                          std::vector<std::string> {"longsword"}).data;
-    auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
-        {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-            {99, "vanguard", "Enemy", 1, {6, 1}}
+    auto c = module->create({{12, 9, std::vector<Terrain>(108)},
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},
     2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

@@ -6,6 +6,7 @@
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "../../../src/OpenGoldBox/godot_path.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
@@ -72,11 +73,9 @@ Character preview_guard()
 
 void CharacterCreationView::setup_party()
 {
-    const auto pack = std::filesystem::u8path(
+    const auto pack = presentation::path_from_godot(
                           ProjectSettings::get_singleton()
-                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                          .utf8()
-                          .get_data());
+                          ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules"));
     campaign_ = std::make_shared<CampaignParty>(srd5::load(pack));
     auto panel = scene("res://scenes/party_panel.tscn");
     add_child(panel.get());
@@ -115,7 +114,6 @@ void CharacterCreationView::setup_party()
     ->connect("pressed", callable_mp(this, &CharacterCreationView::show_modifiers));
     get_node<Button>("PartyPanel/SavingThrows")
     ->connect("pressed", callable_mp(this, &CharacterCreationView::show_saving_throws));
-    get_node<RichTextLabel>("PartyPanel/Sheet")->set_use_bbcode(true);
     setup_saves();
     setup_defeat();
     setup_advancement();
@@ -126,45 +124,7 @@ void CharacterCreationView::setup_party()
 
 void CharacterCreationView::party_layout()
 {
-    const auto w = get_size().x, h = get_size().y;
-    get_node<Control>("PartyPanel")->set_size(get_size());
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = get_node<Control>(name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
-    };
-    place("Party", Rect2(24, h - 158, 166, 36));
-    place("AddParty", Rect2(218 + page_rect_.size.x - 190, h - 60, 190, 38));
-    place("ReturnParty", Rect2(w - 218, 20, 190, 36));
-    place("PartyPanel/Title", Rect2(24, 22, w - 48, 40));
-    place("PartyPanel/Roster", Rect2(24, 90, 300, h - 300));
-    place("PartyPanel/Sheet", Rect2(350, 90, w - 650, h - 380));
-    place("PartyPanel/Portrait", Rect2(w - 284, 90, 264, 264));
-    place("PartyPanel/ReadySprite", Rect2(w - 284, 364, 120, 120));
-    place("PartyPanel/ActionSprite", Rect2(w - 140, 364, 120, 120));
-    place("PartyPanel/ReadyLabel", Rect2(w - 284, 488, 120, 24));
-    place("PartyPanel/ActionLabel", Rect2(w - 140, 488, 120, 24));
-    place("PartyPanel/Inventory", Rect2(350, h - 280, w - 374, 96));
-    const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
-            "Unequip", "Explore", "Combat", "Close"};
-    const double bw = (w - 64) / 5;
-    for (unsigned i = 0; i < buttons.size(); ++i)
-        place((std::string("PartyPanel/") + buttons[i]).c_str(),
-              Rect2(24 + (i % 5) * (bw + 4), h - 125 + (i / 5) * 44, bw, 36));
-    place("PartyPanel/Save", Rect2(w - 520, 24, 140, 36));
-    place("PartyPanel/Load", Rect2(w - 370, 24, 140, 36));
-    place("PartyPanel/Pool", Rect2(w - 220, 24, 196, 36));
     pool_layout();
-    place("PartyPanel/Status", Rect2(24, h - 39, w - 48, 32));
-    place("PartyPanel/Modifiers", Rect2(24 + 4 * (bw + 4), h - 81, bw * 0.42f, 36));
-    place("PartyPanel/SavingThrows",
-          Rect2(28 + 4 * (bw + 4) + bw * 0.42f, h - 81, bw * 0.58f - 4, 36));
-    for (const auto *name :
-            {"CampaignTown", "CampaignCombat"
-            })
-        if (auto *child = Object::cast_to<Control>(get_node_or_null(name)))
-            child->set_size(get_size());
 }
 
 void CharacterCreationView::party_selected(std::int64_t index)
@@ -175,7 +135,7 @@ void CharacterCreationView::party_selected(std::int64_t index)
     const auto id = campaign_->state().roster[index].id;
     for (unsigned slot = 0; slot < 8; ++slot)
         if (campaign_->state().slots[slot] == id)
-            campaign_->select(slot);
+            campaign_->select(opengold::PartySlot{slot});
     refresh_party();
 }
 
@@ -197,7 +157,7 @@ void CharacterCreationView::refresh_party()
     if (!state.roster.empty())
     {
         roster_index_ = std::min(roster_index_, state.roster.size() - 1);
-        list->select(roster_index_);
+        list->select(static_cast<std::int32_t>(roster_index_));
         const auto &m = state.roster[roster_index_];
         sheet = sheet_text(m.character, &m).utf8().get_data();
         const auto profile = campaign_->profile(m.id);
@@ -214,7 +174,8 @@ void CharacterCreationView::refresh_party()
         ->set_texture(portrait_texture(m.character.appearance(), m.character.creation_data()));
         for (unsigned pose = 0; pose < 2; ++pose)
         {
-            const auto icon = art_->icon(m.character.appearance(), pose != 0);
+            const auto icon = art_->icon(m.character.appearance(),
+                                         pose != 0 ? por::IconPose::action : por::IconPose::ready);
             PackedByteArray rgba;
             rgba.resize(icon.rgba.size());
             std::copy(icon.rgba.begin(), icon.rgba.end(), rgba.ptrw());
@@ -228,7 +189,7 @@ void CharacterCreationView::refresh_party()
                 {"PartyPanel/Portrait", "PartyPanel/ReadySprite", "PartyPanel/ActionSprite"
                 })
             get_node<TextureRect>(name)->set_texture({});
-    get_node<RichTextLabel>("PartyPanel/Sheet")->set_text(gs(sheet));
+    get_node<RichTextLabel>("PartyPanel/Sheet")->call("render", gs(sheet));
     get_node<Label>("PartyPanel/Status")
     ->set_text(error_.is_empty()
                ? "New PCs receive 250 gp / Save game stores this campaign on disk."
@@ -344,7 +305,7 @@ void CharacterCreationView::party_action(int action)
                 {
                     participant.id,
                     art_->icon(campaign_->member(participant.id).character.appearance(),
-                    false)});
+                    por::IconPose::ready)});
                 auto owned = scene("res://scenes/combat_demo.tscn");
                 auto *combat = Object::cast_to<CombatView>(owned.get());
                 if (!combat)
@@ -473,15 +434,15 @@ void CharacterCreationView::party_check()
         creator_->roll();
         creator_->name("Party check fighter");
         for (unsigned i = 0; i < 6; ++i)
-            creator_->assign_roll(i, i);
-        for (unsigned attempt = 0; !creator_->rules().class_eligible(creator_->draft(), "fighter");
-                ++attempt)
+            creator_->assign_roll(i, static_cast<rules::Ability>(i));
+        for (unsigned attempt = 0;
+                !rules::class_eligible(creator_->rules(), creator_->draft(), "fighter"); ++attempt)
         {
             if (attempt == 100)
                 throw std::runtime_error("Could not roll qualified party-check fixture");
             creator_->roll();
             for (unsigned i = 0; i < 6; ++i)
-                creator_->assign_roll(i, i);
+                creator_->assign_roll(i, static_cast<rules::Ability>(i));
         }
         while (creator_->step() != CreationStep::sheet)
         {
@@ -490,6 +451,12 @@ void CharacterCreationView::party_check()
             {
                 get_node<CheckBox>("Training/Rows/Group1/athletics")->set_pressed(true);
                 get_node<CheckBox>("Training/Rows/Group1/history")->set_pressed(true);
+                // A Fighter also masters three weapons.
+                for (const char *mastery :
+                        {"longsword", "handaxe", "javelin"
+                        })
+                    get_node<CheckBox>(String("Training/Rows/Group2/") + mastery)
+                    ->set_pressed(true);
                 get_node<OptionButton>("Training/Rows/Group0/Choice")->select(2);
                 get_node<OptionButton>("Training/Rows/Group0/Choice")
                 ->emit_signal("item_selected", 2);
@@ -639,7 +606,8 @@ void CharacterCreationView::update_party_navigation()
             images.push_back(
         {
             participant.id,
-            art_->icon(campaign_->member(participant.id).character.appearance(), false)});
+            art_->icon(campaign_->member(participant.id).character.appearance(),
+            por::IconPose::ready)});
         auto owned = scene("res://scenes/combat_demo.tscn");
         fight = Object::cast_to<CombatView>(owned.get());
         if (!fight)
@@ -741,11 +709,9 @@ void CharacterCreationView::expedition_check()
     if (const auto *state = town->saved_session();
             state && state->can_leave() && state->snapshot().area_id == 20 && !expedition_saved_)
     {
-        const auto pack = std::filesystem::u8path(
+        const auto pack = presentation::path_from_godot(
                               ProjectSettings::get_singleton()
-                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules")
-                              .utf8()
-                              .get_data());
+                              ->globalize_path("res://../../data/rules/srd-5.2.1/combat.rules"));
         const auto saved = encode_campaign(*campaign_, state, "expedition-fixture");
         auto loaded = decode_campaign(saved, *srd5::character_rules(), *srd5::load(pack),
                                       "expedition-fixture", state);
@@ -759,7 +725,7 @@ void CharacterCreationView::expedition_check()
     if (!town->check_expedition_step())
         return;
     const auto *session = town->saved_session();
-    if (!session || session->script_variable(0x4ACA) != 255)
+    if (!session || session->script_variable(por::ecl_slums_orc_victory) != 255)
         throw std::runtime_error("Four-orc victory flag missing");
     const auto &rewards = campaign_->state().claimed_rewards;
     if (std::count(rewards.begin(), rewards.end(), "por:ECL2:20:search1:orcs:v1") != 1)
@@ -772,52 +738,15 @@ void CharacterCreationView::expedition_check()
 
 void CharacterCreationView::setup_defeat()
 {
-    std::unique_ptr<Window, DeleteNode> window(memnew(Window));
-    window->set_name("Defeat");
-    window->set_title("Defeat");
-    window->set_size(Vector2i(520, 240));
-    window->set_min_size(Vector2i(520, 240));
-    window->set_flag(Window::FLAG_RESIZE_DISABLED, true);
-    window->set_transient(true);
-    window->set_exclusive(true);
-    window->hide();
-    add_child(window.get());
-    window.release();
     auto *dialog = get_node<Window>("Defeat");
-    std::unique_ptr<Label, DeleteNode> title(memnew(Label));
-    title->set_name("Title");
-    title->set_text("Your party has been defeated.");
-    title->set_position(Vector2(24, 30));
-    title->set_size(Vector2(472, 44));
-    title->add_theme_font_size_override("font_size", 24);
-    dialog->add_child(title.get());
-    title.release();
-    std::unique_ptr<Label, DeleteNode> body(memnew(Label));
-    body->set_text("Load a saved game to continue.");
-    body->set_position(Vector2(24, 90));
-    body->set_size(Vector2(472, 36));
-    dialog->add_child(body.get());
-    body.release();
-    for (bool reload :
-            {
-                true, false
-            })
-    {
-        std::unique_ptr<Button, DeleteNode> button(memnew(Button));
-        button->set_name(reload ? "Reload" : "Exit");
-        button->set_text(reload ? "Reload a Saved Game" : "Exit to OS");
-        button->set_position(Vector2(reload ? 24 : 308, 170));
-        button->set_size(Vector2(reload ? 268 : 188, 44));
-        button->connect("pressed",
-                        reload ? callable_mp(this, &CharacterCreationView::reload_after_defeat)
-                        : callable_mp(this, &CharacterCreationView::exit_after_defeat));
-        dialog->add_child(button.get());
-        button.release();
-    }
+    get_node<Button>("Defeat/Reload")
+        ->connect("pressed", callable_mp(this, &CharacterCreationView::reload_after_defeat));
+    get_node<Button>("Defeat/Exit")
+        ->connect("pressed", callable_mp(this, &CharacterCreationView::exit_after_defeat));
     dialog->connect("close_requested", callable_mp(this, &CharacterCreationView::show_defeat));
     get_node<SaveSlots>("SaveSlots")
-    ->connect("visibility_changed",
-              callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
+        ->connect("visibility_changed",
+                  callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
     defeat_check_ = OS::get_singleton()->get_cmdline_user_args().has("--defeat-check");
 }
 
@@ -903,11 +832,9 @@ void CharacterCreationView::defeat_check()
         if (!dialog->is_visible())
             throw std::runtime_error("Cancel bypassed defeat");
         auto *fight = get_node<CombatView>("CampaignCombat");
-        const auto broken = std::filesystem::u8path(
+        const auto broken = presentation::path_from_godot(
                                 ProjectSettings::get_singleton()
-                                ->globalize_path("res://../../user-data/save-check/defeat-corrupt.ogs")
-                                .utf8()
-                                .get_data());
+                                ->globalize_path("res://../../user-data/save-check/defeat-corrupt.ogs"));
         write_campaign_file(broken, "corrupt");
         const auto original = campaign_;
         bool rejected = false;

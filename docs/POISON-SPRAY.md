@@ -9,13 +9,13 @@ This is a playable Wizard path, not completion of every source or component rule
 ## Rules and player controls
 
 Authority: [SRD 5.2.1 p. 153](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=153).
-Poison Spray uses an Action and Verbal/Somatic components to make a ranged spell
+Poison Spray uses an Action to make a ranged spell
 attack against a creature within 30 feet. A hit deals 1d12 Poison damage through
 character level 4. It uses the casting ability and proficiency, doubles damage
 dice on a critical hit, applies typed defenses, and does not impose Poisoned or
 request a Constitution save. A living ally, the caster, or an unconscious creature
-is eligible; dead creatures and blocked paths are rejected. Existing Somatic
-hand, untrained-armor, action, sight and adjacent-hostile attack rules apply.
+is eligible; dead creatures and blocked paths are rejected. Existing
+untrained-armor, action, sight and adjacent-hostile attack rules apply.
 
 Attacks against a creature at zero HP now include the Unconscious/Prone attack
 modifiers: Advantage, canceled by Prone's Disadvantage beyond five feet; a hit

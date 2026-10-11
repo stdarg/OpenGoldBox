@@ -68,7 +68,7 @@ func run_checks() -> void:
         require(found >= 0 and not choice.is_item_disabled(found), "The hit offers Ensnaring Strike in the Bonus Action list: " + locale)
         choice.select(found); choice.item_selected.emit(found); await settle()
         combat.get_node("UseCunningAction").pressed.emit(); await settle()
-        var log: String = combat.get_node("Log").get_parsed_text()
+        var log: String = combat.get_node("LogStack/Log").get_parsed_text()
         var cast := "Ranger casts Ensnaring Strike on Target." if locale == "en" else "Ranger lanza Golpe apresador sobre Target."
         require(log.contains(cast), "Use casts Ensnaring Strike on the creature just hit: " + locale)
     TranslationServer.set_locale("en")

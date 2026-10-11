@@ -216,7 +216,7 @@ unsigned enchanted_value(unsigned type, int plus)
                           : type == plate_mail ? 5000
                           : type == bracers ? 3000
                           : 2000;
-    return unsigned(plus * per_plus);
+    return static_cast<unsigned>(plus * per_plus);
 }
 
 // Weapons, armor, arrows, bracers and protection rings: +1 or +2.
@@ -224,7 +224,7 @@ std::optional<unsigned> enchant(GeneratedItem &item, const DieRoller &roll)
 {
     std::optional<unsigned> preset;
     item.plus = rolled(roll, 20) <= 14 ? 1 : 2;
-    const unsigned plus_name = unsigned(item.plus) + 0xA1;
+    const unsigned plus_name = static_cast<unsigned>(item.plus) + 0xA1;
     if (item.type == javelin)
     {
         if (rolled(roll, 5) == 5)
@@ -326,20 +326,20 @@ ItemRecord generate_item(unsigned type, const DieRoller &roll)
     }
 
     std::array<std::uint8_t, 63> raw{};
-    raw[46] = std::uint8_t(item.type);
-    raw[47] = std::uint8_t(item.name1);
-    raw[48] = std::uint8_t(item.name2);
-    raw[49] = std::uint8_t(item.name3);
-    raw[50] = std::uint8_t(item.plus);
-    raw[51] = std::uint8_t(item.plus_save);
-    raw[53] = std::uint8_t(item.hidden_names);
-    raw[55] = std::uint8_t(item.weight & 255);
-    raw[56] = std::uint8_t(item.weight >> 8);
-    raw[57] = std::uint8_t(item.count);
-    raw[58] = std::uint8_t(item.value & 255);
-    raw[59] = std::uint8_t((item.value >> 8) & 255);
+    raw[46] = static_cast<std::uint8_t>(item.type);
+    raw[47] = static_cast<std::uint8_t>(item.name1);
+    raw[48] = static_cast<std::uint8_t>(item.name2);
+    raw[49] = static_cast<std::uint8_t>(item.name3);
+    raw[50] = static_cast<std::uint8_t>(item.plus);
+    raw[51] = static_cast<std::uint8_t>(item.plus_save);
+    raw[53] = static_cast<std::uint8_t>(item.hidden_names);
+    raw[55] = static_cast<std::uint8_t>(item.weight & 255);
+    raw[56] = static_cast<std::uint8_t>(item.weight >> 8);
+    raw[57] = static_cast<std::uint8_t>(item.count);
+    raw[58] = static_cast<std::uint8_t>(item.value & 255);
+    raw[59] = static_cast<std::uint8_t>((item.value >> 8) & 255);
     for (unsigned n = 0; n < 3; ++n)
-        raw[60 + n] = std::uint8_t(item.effects[n]);
+        raw[60 + n] = static_cast<std::uint8_t>(item.effects[n]);
     auto decoded = decode_items(raw);
     if (!decoded || decoded->size() != 1)
         throw std::runtime_error("Generated treasure item is not a valid record");

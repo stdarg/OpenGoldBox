@@ -1,5 +1,6 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/exploration_view.h"
+#include "opengold/npc_portraits.h"
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
@@ -7,11 +8,18 @@
 #include <iostream>
 #include <iterator>
 #include <queue>
+#include <string_view>
 
 using namespace opengold::por;
 
 namespace
 {
+// A session drives a shared party, so copying is explicit (detached_copy)
+// and moving is free (Effective C++ Item 6).
+static_assert(!std::is_copy_constructible_v<RolfTourSession> &&
+              !std::is_copy_assignable_v<RolfTourSession> &&
+              std::is_move_constructible_v<RolfTourSession>);
+
 using Bytes = std::vector<std::uint8_t>;
 
 void check(bool ok, const char *message)
@@ -60,6 +68,45 @@ void animation_tests()
     auto resized = record;
     resized[32] = 2; // Second frame header claims a different width.
     check(!opengold::decode_ega_animation(resized), "Frames of different sizes rejected");
+}
+
+void cluebook_portrait_tests()
+{
+    struct PortraitCase
+    {
+        unsigned script;
+        std::string_view dialogue, portrait;
+    };
+    for (const auto &target : std::array{
+             PortraitCase{0, "THE HARBOR MASTER TELLS YOU BOATS LEAVE", "NPCs/harbor-master.png"},
+             PortraitCase{0, "YOU ARE USHERED INTO THE BISHOP'S STUDY. BISHOP BRACCIO SPEAKS", "NPCs/bishop-braccio.png"},
+             PortraitCase{0, "YOU ARE USHERED INTO THE STUDY WHERE DIRTEN WAITS", "NPCs/dirten.png"},
+             PortraitCase{8, "AT YOUR ENTRY, THE COUNCIL CLERK BEGINS", "NPCs/council-clerk.png"},
+             PortraitCase{8, "COUNCILMAN CADORNA CONFRONTS YOU", "NPCs/councilman-cadorna.png"},
+             PortraitCase{8, "IN THE COUNCIL CHAMBERS, THE ENTIRE CITY COUNCIL IS WAITING", "NPCs/mayor-ulrich-eberhard.png"},
+             PortraitCase{20, "'I MAY HAVE A USE FOR YOU,' THE MAN SAYS", "NPCs/ohlo.png"},
+             PortraitCase{20, "SEATED AT A TABLE IS A RAGGED OLD WOMAN", "NPCs/slums-fortune-teller.png"},
+             PortraitCase{20, "'WAIT A MOMENT,' THE MAN SAYS", "NPCs/ohlos-potion-keeper.png"},
+             PortraitCase{29, "A WIDE-EYED WOMAN IS SEATED ON A RUG", "NPCs/kutos-well-seer.png"},
+         })
+    {
+        TourSnapshot state;
+        state.tour_finished = true;
+        state.script_id = target.script;
+        state.sprite_frame = -1; // Original scene picture, not an approach sprite.
+        state.dialogue = target.dialogue;
+        check(opengold::speaking_npc_portrait(state) == target.portrait,
+              "Cluebook NPC dialogue selects its own portrait");
+        state.sprite_frame = 1;
+        check(opengold::speaking_npc_portrait(state).empty(),
+              "The approach sprite remains until the character reaches the party");
+        state.sprite_frame = 0;
+        check(opengold::speaking_npc_portrait(state) == target.portrait,
+              "The nearest encounter pose can show its NPC portrait");
+        ++state.script_id;
+        check(opengold::speaking_npc_portrait(state).empty(),
+              "A shared line or sprite in another script does not borrow the NPC portrait");
+    }
 }
 
 void wall_art_tests()
@@ -115,24 +162,24 @@ void wall_art_tests()
     map.cells[8 * 16 + 8].walls[0] = 1;
     map.cells[7 * 16 + 8].walls[2] = 2;
     map.cells[7 * 16 + 8].walls[0] = 2;
-    auto view = compose_exploration_view(map, *art, 8, 8, 0);
+    auto view = compose_exploration_view(map, *art, 8, 8, MapDirection::north);
     check(view.width == 88 && view.height == 88 && view.rgba[(40 * 88 + 44) * 4] == 85,
           "Near face hides farther opaque artwork");
     check(view.rgba[(8 * 88 + 16) * 4] == 85 && view.rgba[(71 * 88 + 71) * 4] == 85,
           "Full near face fits inside the frame");
-    view = compose_exploration_view(map, *art, 8, 7, 2);
+    view = compose_exploration_view(map, *art, 8, 7, MapDirection::south);
     check(view.rgba[(40 * 88 + 44) * 4] == 0, "Opposite edge keeps its distinct artwork");
     for (unsigned facing = 0; facing < 4; ++facing)
     {
         GeoMap rotated;
         rotated.cells[8 * 16 + 8].walls[facing] = 1;
-        const auto image = compose_exploration_view(rotated, *art, 8, 8, facing);
+        const auto image = compose_exploration_view(rotated, *art, 8, 8, MapDirection{facing});
         check(image.rgba[(40 * 88 + 44) * 4] == 85, "Directional wall ID follows every facing");
     }
     GeoMap empty;
-    const auto background = compose_exploration_view(empty, *art, 0, 0, 3);
+    const auto background = compose_exploration_view(empty, *art, 0, 0, MapDirection::west);
     empty.cells[0].doors[3] = 1;
-    check(compose_exploration_view(empty, *art, 0, 0, 3).rgba == background.rgba,
+    check(compose_exploration_view(empty, *art, 0, 0, MapDirection::west).rgba == background.rgba,
           "Door interaction bits do not fabricate door artwork at map boundaries");
 }
 
@@ -148,19 +195,19 @@ void fog_visibility_tests()
         cell.walls.fill(1);
     corridor.cells[8 * 16 + 8].walls[0] = 0;
     corridor.cells[7 * 16 + 8].walls[0] = 0;
-    auto view = render_exploration_view(corridor, art, 8, 8, 0);
+    auto view = render_exploration_view(corridor, art, 8, 8, MapDirection::north);
     check(view.visible.count() == 3 && view.visible.test(8 * 16 + 8) &&
           view.visible.test(7 * 16 + 8) && view.visible.test(6 * 16 + 8),
           "The three rendered corridor cells are visible, without rooms behind side walls");
     corridor.cells[7 * 16 + 8].walls[0] = 1;
-    check(render_exploration_view(corridor, art, 8, 8, 0).visible.count() == 2,
+    check(render_exploration_view(corridor, art, 8, 8, MapDirection::north).visible.count() == 2,
           "Middle wall hides the far corridor cell");
     corridor.cells[8 * 16 + 8].walls[0] = 1;
-    view = render_exploration_view(corridor, art, 8, 8, 0);
+    view = render_exploration_view(corridor, art, 8, 8, MapDirection::north);
     check(view.visible.count() == 1 && view.visible.test(8 * 16 + 8),
           "A closed room reveals only the occupied cell");
     corridor.cells[8 * 16 + 8].doors[0] = 1;
-    check(render_exploration_view(corridor, art, 8, 8, 0).visible == view.visible,
+    check(render_exploration_view(corridor, art, 8, 8, MapDirection::north).visible == view.visible,
           "A traversable but opaque door does not reveal what is behind it");
 
     // Cut a window in the exact artwork being rendered. Its hole must expose
@@ -172,16 +219,16 @@ void fog_visibility_tests()
             front.rgba[(y * front.width + x) * 4 + 3] = 0;
     corridor.cells[8 * 16 + 8].walls[0] = 2;
     corridor.cells[7 * 16 + 8].walls[0] = 0;
-    check(render_exploration_view(corridor, art, 8, 8, 0).visible.count() == 3,
+    check(render_exploration_view(corridor, art, 8, 8, MapDirection::north).visible.count() == 3,
           "A transparent opening reveals the cells actually drawn through it");
 
-    const auto open = render_exploration_view({}, {}, 8, 8, 0);
+    const auto open = render_exploration_view({}, {}, 8, 8, MapDirection::north);
     check(open.visible.test(7 * 16 + 8) && open.visible.test(6 * 16 + 8) &&
           !open.visible.test(5 * 16 + 8) && !open.visible.test(9 * 16 + 8),
           "Open floor reveals the forward view, not distant or rear cells");
     for (unsigned facing = 0; facing < 4; ++facing)
     {
-        const auto rotated = render_exploration_view({}, {}, 8, 8, facing);
+        const auto rotated = render_exploration_view({}, {}, 8, 8, MapDirection{facing});
         std::bitset<256> expected;
         for (unsigned y = 0; y < 16; ++y)
             for (unsigned x = 0; x < 16; ++x)
@@ -208,7 +255,7 @@ void fog_visibility_tests()
                 })
             for (unsigned facing = 0; facing < 4; ++facing)
             {
-                const auto edge = render_exploration_view({}, {}, x, y, facing);
+                const auto edge = render_exploration_view({}, {}, x, y, MapDirection{facing});
                 check(edge.visible.test(y * 16 + x) && !edge.visible.test((15 - y) * 16 + (15 - x)),
                       "Viewport clipping never wraps visibility to the other map edge");
             }
@@ -275,7 +322,8 @@ void shopping_tests()
     check(!town.buy(ticket, 0) && town.party().wealth[3] == 9839, "Full inventory does not charge");
     check(town.leave_shop(ticket) && !town.leave_shop(ticket), "Shop reply completes once");
     step_to_prompt(town);
-    check(town.script_variable(0x6E6C) == 0 && town.script_variable(0x6BC1) == 9839,
+    check(town.script_variable(ecl_shop_service) == 0 &&
+          town.script_variable(EclAddress{0x6BC1}) == 9839,
           "Shop results synchronize script purse and mode");
     check(town.explore(ExplorationCommand::look), "Can revisit shop");
     step_to_prompt(town);
@@ -302,7 +350,7 @@ void shopping_tests()
     check(failure.snapshot().phase == TourPhase::awaiting_continue &&
           failure.script_diagnostics().size() == 1,
           "Unsupported service produces a recoverable event notice");
-    check(failure.party().wealth[3] == 9999 && failure.script_variable(0x6BC1) == 9999,
+    check(failure.party().wealth[3] == 9999 && failure.script_variable(EclAddress{0x6BC1}) == 9999,
           "Unsupported event rolls back script and party mutations");
     check(failure.continue_dialogue(failure.snapshot().continue_ticket) &&
           failure.snapshot().phase == TourPhase::completed,
@@ -332,10 +380,16 @@ void settle_town(RolfTourSession &town, unsigned shop_x = 16, unsigned shop_y = 
             return;
         check(s.phase != TourPhase::faulted, s.diagnostic.c_str());
         if (s.phase == TourPhase::awaiting_continue)
+        {
+            if (s.pose.x == shop_x && s.pose.y == shop_y &&
+                    s.dialogue.starts_with("THE SHOP"))
+                check(!opengold::phlan_shopkeeper_portrait(s).empty(),
+                      "The shopkeeper portrait appears for the greeting");
             town.choose(s.continue_ticket, s.pose.x == shop_x && s.pose.y == shop_y &&
                         s.dialogue.find("SHOP") != std::string::npos
                         ? 0
                         : peaceful_choice(s));
+        }
         else if (s.phase == TourPhase::awaiting_input)
             town.input(s.continue_ticket, "0");
         else if (s.phase == TourPhase::shopping)
@@ -396,7 +450,7 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
                                 : 0;
-        const bool forward = p.facing == facing;
+        const bool forward = index(p.facing) == facing;
         town.explore(forward ? ExplorationCommand::forward : ExplorationCommand::turn_right);
         bool reached = false;
         settle_town(town, shop ? tx : 16, shop ? ty : 16, tx, ty, &reached);
@@ -421,7 +475,7 @@ void installed_town(const RolfTourSession &finished)
             const auto event = finished.map().at(x, y).event_number();
             if (!event)
                 continue;
-            auto town = finished;
+            auto town = finished.detached_copy();
             if (!walk_to(town, x, y))
             {
                 std::cout << "Town route unavailable " << x << ',' << y << " event " << event
@@ -446,16 +500,36 @@ void installed_town(const RolfTourSession &finished)
         std::cout << "Town unsupported branch: " << d << '\n';
     check(events.size() >= 30 && scripts == std::set<unsigned> {0, 8, 11},
           "Walkable town includes City Hall and training scripts");
-    for (const auto target : std::array<std::array<unsigned, 3>, 4>
-{
-    {{15, 8, 7}, {8, 10, 11}, {13, 8, 57}, {11, 10, 13}}
-})
+    // The cluebook marks twelve distinct shops, even where stock lists repeat.
+    struct ShopCase
     {
-        auto town = finished;
-        check(walk_to(town, target[0], target[1], true), "Walk to original shop");
+        unsigned x, y, stock;
+        std::string_view portrait;
+    };
+    // Every general store adds Torches, Acid and Alchemist's Fire to its seven
+    // original items.
+    for (const auto target : std::array{
+             ShopCase{13, 8, 57, "NPCs/phlan-arms-13-08.png"},
+             ShopCase{8, 11, 57, "NPCs/phlan-arms-08-11.png"},
+             ShopCase{11, 12, 57, "NPCs/phlan-arms-11-12.png"},
+             ShopCase{9, 13, 57, "NPCs/phlan-arms-09-13.png"},
+             ShopCase{15, 8, 10, "NPCs/phlan-general-15-08.png"},
+             ShopCase{9, 10, 10, "NPCs/phlan-general-09-10.png"},
+             ShopCase{12, 10, 10, "NPCs/phlan-general-12-10.png"},
+             ShopCase{9, 11, 10, "NPCs/phlan-general-09-11.png"},
+             ShopCase{11, 11, 10, "NPCs/phlan-general-11-11.png"},
+             ShopCase{11, 10, 13, "NPCs/phlan-silver-11-10.png"},
+             ShopCase{10, 13, 13, "NPCs/phlan-silver-10-13.png"},
+             ShopCase{8, 10, 11, "NPCs/phlan-jeweler-08-10.png"},
+         })
+    {
+        auto town = finished.detached_copy();
+        check(walk_to(town, target.x, target.y, true), "Walk to original shop");
         check(town.snapshot().phase == TourPhase::shopping,
               "Entering shop and answering Yes opens actual stock");
-        check(town.shop_stock().size() == target[2], "Original shop-specific stock count");
+        check(town.shop_stock().size() == target.stock, "Original shop-specific stock count");
+        check(opengold::speaking_npc_portrait(town.snapshot()) == target.portrait,
+              "Shopping shows this location's unique shopkeeper");
         const auto affordable = std::find_if(town.shop_stock().begin(), town.shop_stock().end(),
                                              [](const auto & item)
         {
@@ -470,6 +544,8 @@ void installed_town(const RolfTourSession &finished)
         check(town.party().wealth[3] == 9999 - price && town.party().inventory.size() == 1,
               "Actual price and inventory persist");
         check(town.leave_shop(ticket), "Exit original shop");
+        check(opengold::phlan_shopkeeper_portrait(town.snapshot()).empty(),
+              "Shopkeeper portrait ends when shopping ends");
         settle_town(town);
     }
 }
@@ -495,11 +571,11 @@ void synthetic()
     check(!tour.explore(ExplorationCommand::forward), "Movement locked while scripts run");
     tour.advance(0);
     check(tour.snapshot().sprite_frame == 2, "Far sprite setup and delay");
-    check(tour.script_variable(0xC04F) == 7, "Redraw derives current map event");
+    check(tour.script_variable(ecl_cell_event) == 7, "Redraw derives current map event");
     tour.advance(0);
     check(tour.snapshot().sprite_frame == 2, "Delay is nonblocking and not reissued");
     step_to_prompt(tour);
-    check(tour.snapshot().pose == PartyPose{3, 4, 1}, "Script controls party pose");
+    check(tour.snapshot().pose == PartyPose{3, 4, MapDirection::east}, "Script controls party pose");
     check(tour.snapshot().sprite_frame == 0 && tour.snapshot().dialogue == "ABC",
           "Near sprite and decoded text");
     const auto ticket = tour.snapshot().continue_ticket;
@@ -508,17 +584,18 @@ void synthetic()
     step_to_prompt(tour);
     check(tour.snapshot().phase == TourPhase::completed && tour.snapshot().sprite_frame == -1,
           "Tour completes and hides encounter");
-    check(tour.snapshot().pose == PartyPose{4, 4, 1}, "Later scripted redraw");
+    check(tour.snapshot().pose == PartyPose{4, 4, MapDirection::east}, "Later scripted redraw");
     const auto before_turn = tour.snapshot().pose;
     check(tour.explore(ExplorationCommand::turn_around), "Turn around succeeds");
     check(tour.snapshot().pose ==
-          PartyPose{before_turn.x, before_turn.y, (before_turn.facing + 2) % 4},
+          PartyPose{before_turn.x, before_turn.y, reversed(before_turn.facing)},
           "Turn around changes facing without moving");
     tour.explore(ExplorationCommand::turn_around);
     check(tour.snapshot().pose == before_turn, "Two half turns restore facing");
     check(!tour.explore(ExplorationCommand::forward), "Wall blocks exploration");
     check(tour.explore(ExplorationCommand::turn_left), "Turn after completion");
-    check(tour.script_variable(0xC04D) == 0, "Exploration and VM share authoritative pose");
+    check(tour.script_variable(ecl_party_facing) == 0,
+          "Exploration and VM share authoritative pose");
     check(tour.explore(ExplorationCommand::forward), "Open edge permits a step");
     check(!tour.explore(ExplorationCommand::forward), "Door blocks inspection movement");
     tour.explore(ExplorationCommand::turn_right);
@@ -586,7 +663,7 @@ void installed(const char *directory)
         const auto &s = tour.snapshot();
         ++prompts;
         std::cout << "Prompt " << prompts << " at " << s.pose.x << ',' << s.pose.y << " facing "
-                  << s.pose.facing << '\n';
+                  << index(s.pose.facing) << '\n';
         // The view shows Rolf's portrait exactly when he is fully approached.
         check((s.sprite_frame == 0) == (prompts == 1),
               "Rolf is fully approached for his welcome only");
@@ -601,7 +678,7 @@ void installed(const char *directory)
     check(prompts == 8, "Welcome, six landmarks, farewell");
     check(tour.snapshot().redraws > 20 && tour.snapshot().footsteps > 20,
           "Tour extends across original table-driven route");
-    check(tour.script_variable(0x4AC5) == 1, "Original tour flag retained");
+    check(tour.script_variable(EclAddress{0x4AC5}) == 1, "Original tour flag retained");
     std::cout << "Installed tour complete: " << prompts << " prompts, " << tour.snapshot().redraws
               << " redraws.\n";
     installed_town(tour);
@@ -614,6 +691,7 @@ int main()
     {
         wall_art_tests();
         animation_tests();
+        cluebook_portrait_tests();
         fog_visibility_tests();
         shopping_tests();
         synthetic();

@@ -48,14 +48,14 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
                         step = 0;
                 }
                 else
-                    step = std::min(step, std::uint64_t(life.recovery.stable_recovery_in_ms));
+                    step = std::min<std::uint64_t>(step, life.recovery.stable_recovery_in_ms);
             }
             for (const auto &effect : subject.effects.effects.get().active)
             {
                 any = true;
-                step = std::min(step, std::uint64_t(effect.remaining_ms));
+                step = std::min<std::uint64_t>(step, effect.remaining_ms);
                 if (effect.save_in_ms)
-                    step = std::min(step, std::uint64_t(effect.save_in_ms));
+                    step = std::min<std::uint64_t>(step, effect.save_in_ms);
             }
         }
         if (!any)

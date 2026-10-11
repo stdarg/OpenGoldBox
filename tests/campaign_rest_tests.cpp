@@ -1,3 +1,4 @@
+#include "forwarding_module.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -95,40 +96,11 @@ unsigned winds(const PartyMember &member)
 }
 
 // Deliberately non-SRD rest behavior proves Core applies module outcomes.
-class AlternateRestRules final : public RulesModule
+class AlternateRestRules final : public test::ForwardingModule
 {
   public:
-    Identity identity() const override
+    AlternateRestRules() : ForwardingModule(module())
     {
-        return module()->identity();
-    }
-
-    std::vector<std::string> supported_features() const override
-    {
-        return {};
-    }
-
-    std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
-    {
-        return {};
-    }
-
-    std::unique_ptr<CombatSession> restore(std::string_view) const override
-    {
-        return {};
-    }
-
-    CharacterProfile character_profile(const CharacterSheet &sheet,
-                                       std::span<const std::string> gear) const override
-    {
-        return module()->character_profile(sheet, gear);
-    }
-
-    EquipmentChange equipment_change(const CharacterSheet &sheet, std::span<const std::string> gear,
-                                     unsigned selected,
-                                     EquipmentOperation operation) const override
-    {
-        return module()->equipment_change(sheet, gear, selected, operation);
     }
 
     RecoveryInfo recovery_info(const CharacterSheet &, const VitalState &) const override
@@ -163,7 +135,8 @@ void alternate_rules_boundary()
 {
     CampaignParty party(std::make_unique<AlternateRestRules>());
     auto person = hero();
-    const auto armor = person.inventory().add("chain_mail", "Alternate rest armor");
+    const auto armor = person.add_item({.definition_id = "chain_mail",
+                                               .name = "Alternate rest armor"});
     const auto id = party.add_pc(std::move(person));
     party.equip(id, armor);
     const auto short_rest = party.rest(RestKind::short_rest);
@@ -190,7 +163,7 @@ void individual_eligibility()
     auto state = party.checkpoint();
     state.time_minutes = 1000;
     state.subminute_milliseconds = 3000;
-    state.random_state = 29;
+    state.random_state.value = 29;
     for (auto &m : state.roster)
         m.vitals = {1, false, spent_resources(m.character.sheet().character_class)};
     state.roster[1].last_rest_minutes = 41;
@@ -212,7 +185,7 @@ void individual_eligibility()
           result->duration_minutes == 480,
           "Only eligible active PCs and NPCs complete the Long Rest");
     check(party.state().time_minutes == 1480 && party.state().subminute_milliseconds == 3000 &&
-          party.state().random_state == 11400714819323198514ULL,
+          party.state().random_state.value == 11400714819323198514ULL,
           "One group rest advances eight hours once, including the known natural-one death save");
     check(party.member(f).last_rest_minutes == 1480 &&
           party.member(f).last_rest_subminute_milliseconds == 3000 &&
@@ -247,7 +220,7 @@ void individual_eligibility()
           "Mixed cooldowns persist across load");
     copy.keep_rest_spells(w);
     copy.remove(f);
-    copy.advance_time_milliseconds(480ULL * 60000 - 1);
+    copy.advance_time(std::chrono::milliseconds(480ULL * 60000 - 1));
     copy.rejoin(f);
     auto status = copy.rest_info(RestKind::long_rest);
     const auto found = std::find_if(status.begin(), status.end(),
@@ -257,7 +230,7 @@ void individual_eligibility()
     });
     check(found != status.end() && found->wait_milliseconds == 1,
           "Removal/rejoin preserves the cooldown down to one millisecond");
-    copy.advance_time_milliseconds(1);
+    copy.advance_time(std::chrono::milliseconds(1));
     status = copy.rest_info(RestKind::long_rest);
     check(std::find_if(
               status.begin(), status.end(),
@@ -271,7 +244,8 @@ void individual_eligibility()
 void spending_and_continuation()
 {
     CampaignParty party(module());
-    const auto f = party.add_pc(hero()), w = party.add_pc(hero("wizard"));
+    const auto f = party.add_pc(hero());
+    (void)party.add_pc(hero("wizard"));
     const auto reserve = party.add_pc(hero());
     party.remove(reserve);
     auto state = party.checkpoint();
@@ -330,7 +304,7 @@ void spending_and_continuation()
     check((rolls.back().remaining == 0 ||
            healed.vitals.hit_points == healed.character.sheet().hit_points) &&
           healed.vitals.hit_points == 1 + healing &&
-          party.state().random_state ==
+          party.state().random_state.value ==
           11400714819323198527ULL + (rolls.size() - 1) * 0x9e3779b97f4a7c15ULL,
           "One action heals until full HP or out of dice, with one RNG draw per die");
     const auto after_heal = saved(party);
@@ -380,12 +354,12 @@ void spending_and_continuation()
     // Compare the next encounter before and after a save, including spent dice.
     auto restored = loaded(saved(copy));
     auto actors = copy.participants();
-    actors.push_back({999, "bandit", "Enemy", 1, {6, 6}});
+    actors.push_back({999, "bandit", "Enemy", Side::opposition, {6, 6}});
     auto other = restored.participants();
     other.push_back(actors.back());
     auto rules = module();
-    auto combat = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, actors}, 42);
-    auto continued = rules->create({{8, 8, std::vector<std::uint8_t>(64)}, other}, 42);
+    auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
+    auto continued = rules->create({{8, 8, std::vector<Terrain>(64)}, other}, 42);
     for (unsigned n = 0; n < 10; ++n)
     {
         const auto commands = combat->legal_commands();
@@ -431,9 +405,9 @@ void expiry_and_atomicity()
     auto rest = party.rest(RestKind::short_rest);
     const auto ticket = *rest->spending;
     const auto before = saved(party);
-    party.advance_time_milliseconds(0);
+    party.advance_time(std::chrono::milliseconds(0));
     check(saved(party) == before, "Zero elapsed time does not expire spending");
-    party.advance_time_milliseconds(1);
+    party.advance_time(std::chrono::milliseconds(1));
     check(!party.state().short_rest, "Positive elapsed time expires spending");
     const auto expired = saved(party);
     rejects(
@@ -458,9 +432,9 @@ void expiry_and_atomicity()
     check(saved(party) == pending,
           "Failed combat initialization preserves the pending window and committed dice");
     auto actors = party.participants();
-    actors.push_back({999, "bandit", "Enemy", 1, {6, 6}});
+    actors.push_back({999, "bandit", "Enemy", Side::opposition, {6, 6}});
     const auto combat = module()->create(
-    { {8, 8, std::vector<std::uint8_t>(64)}, actors
+    { {8, 8, std::vector<Terrain>(64)}, actors
     }, 42);
     party.begin_combat();
     party.apply_combat(combat->snapshot());
@@ -540,7 +514,7 @@ void effects_once()
         party.restore(state);
         CampaignParty elapsed(module());
         elapsed.restore(state);
-        elapsed.advance_time(kind == RestKind::short_rest ? 60 : 480);
+        elapsed.advance_time(std::chrono::minutes(kind == RestKind::short_rest ? 60 : 480));
         check(party.rest(kind).has_value(), "Rest with active effects completes");
         check(party.state().time_minutes == elapsed.state().time_minutes &&
               party.state().subminute_milliseconds == 4321 &&
@@ -608,7 +582,7 @@ void campaign_services()
     check(town.camp(RestKind::short_rest), "Short Rest enters the original pre-camp service");
     settle(town);
     check(town.can_leave() && party->state().short_rest && party->state().time_minutes == 60 &&
-          town.script_variable(0x49c9) == 13,
+          town.script_variable(por::ecl_clock_hour) == 13,
           "Safe camp grants a completed hour and updates original clock registers");
     check(!town.explore(por::ExplorationCommand::forward) && !town.camp(RestKind::long_rest),
           "Campaign events cannot run over pending spending");
@@ -626,7 +600,7 @@ void campaign_services()
     check(disk.town->explore(por::ExplorationCommand::look), "Finish permits exploration");
     settle(*disk.town);
     check(resumed->member(id).vitals.hit_points == healed_hp &&
-          disk.town->script_variable(0x6c19) == healed_hp,
+          disk.town->script_variable(por::ecl_character_hit_points) == healed_hp,
           "Next script cannot overwrite committed Hit Die healing with stale HP");
     for (const auto kind :
             {
@@ -649,7 +623,7 @@ void campaign_services()
                 !party->state().short_rest &&
                 party->member(id).vitals.hit_points == state.roster[0].vitals.hit_points &&
                 party->member(id).vitals.resources == state.roster[0].vitals.resources &&
-                party->state().random_state == 42 &&
+                party->state().random_state.value == 42 &&
                 party->state().time_minutes == ((chance == 100 || chance == 101) ? 5 : 0),
                 "Forbidden, unsupported and five-minute interrupted camps grant neither resources nor spending rights");
             if (chance != 255 && chance != 100 && chance != 101)
@@ -680,7 +654,10 @@ void watch_interruption_and_rollback()
     {
         auto party = std::make_shared<CampaignParty>(module());
         auto person = hero();
-        const auto sword = person.inventory().add("longsword", "Watch camp sword", 1, 34);
+        const auto sword = person.add_item({.definition_id = "longsword",
+                                                   .name = "Watch camp sword",
+                                                   .quantity = 1,
+                                                   .original_type = 34});
         const auto owner = party->add_pc(std::move(person));
         party->equip(owner, sword);
         auto initial = party->checkpoint();
@@ -691,7 +668,7 @@ void watch_interruption_and_rollback()
             bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
         bytes.push_back(0);
         const Bytes pre{9, 0, 1, 1, 0xd2, 0x6d, 9, 0, 101, 1, 0xd3, 0x6d, 0};
-        const unsigned arrival = 0x9915 + pre.size();
+        const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
         bytes[16] = arrival & 255;
         bytes[17] = arrival >> 8;
         bytes.insert(bytes.end(), pre.begin(), pre.end());
@@ -722,7 +699,7 @@ void watch_interruption_and_rollback()
         check(member.equipped == std::vector<std::uint64_t> {sword},
               "An interrupted rest leaves equipment untouched");
         check(member.vitals.hit_points == 1 && winds(member) == 0 &&
-              party->state().random_state == 42,
+              party->state().random_state.value == 42,
               "An interrupted rest grants no recovery and draws no RNG");
     }
 }
@@ -737,7 +714,7 @@ std::shared_ptr<const por::EclProgram> camp_script(std::uint8_t interval, std::u
     for (unsigned n = 0; n < 5; ++n)
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
     bytes.push_back(0);
-    const unsigned arrival = 0x9915 + pre.size();
+    const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
     bytes[16] = arrival & 255;
     bytes[17] = arrival >> 8;
     bytes.insert(bytes.end(), pre.begin(), pre.end());
@@ -911,7 +888,7 @@ std::string payload(std::string body)
         hash ^= c;
         hash *= 1099511628211ULL;
     }
-    return "OPENGOLD-CAMPAIGN 21\n" + std::to_string(hash) + '\n' + body;
+    return "OPENGOLD-CAMPAIGN 25\n" + std::to_string(hash) + '\n' + body;
 }
 
 void malformed_continuation()

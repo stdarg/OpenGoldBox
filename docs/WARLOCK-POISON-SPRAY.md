@@ -13,8 +13,8 @@ No independent control layout or behavior was introduced.
 Poison Spray records a level-one `class:warlock:pact_magic` cantrip grant. The
 existing spell rules use the Warlock's Charisma plus proficiency for a ranged
 spell attack against a living creature within 30 feet, dealing 1d12 Poison on a
-hit. Criticals, typed defenses, line of effect, adjacent-hostile Disadvantage,
-Somatic hands and armor restrictions use the existing implementation. Only the
+hit. Criticals, typed defenses, line of effect, adjacent-hostile Disadvantage
+and armor restrictions use the existing implementation. Only the
 Magic action is spent. The approved Spell dropdown/Cast can choose either learned
 cantrip; ally targeting preserves party selection and keyboard access.
 

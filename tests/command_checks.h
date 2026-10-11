@@ -24,9 +24,9 @@ std::unique_ptr<CombatSession> commanded(const RulesModule &module, const std::s
                          std::vector<std::string> {"longsword"}).data;
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = module.create({{12, 4, std::vector<std::uint8_t>(48)},
-            {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-                {99, "target", "Enemy", 1, {1 + gap, 1}}
+        auto c = module.create({{12, 4, std::vector<Terrain>(48)},
+            {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                {99, "target", "Enemy", Side::opposition, {1 + gap, 1}}
             }},
         seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -139,10 +139,10 @@ std::string cleric_profile(const RulesModule &module)
 void command_upcast_checks()
 {
     auto module = rules();
-    auto c = module->create({{8, 4, std::vector<std::uint8_t>(32)},
-        {   {1, "campaign-character", "Cleric", 0, {1, 1}, cleric_profile(*module)},
-            {98, "target", "First", 1, {3, 1}},
-            {99, "target", "Second", 1, {3, 2}}
+    auto c = module->create({{8, 4, std::vector<Terrain>(32)},
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, cleric_profile(*module)},
+            {98, "target", "First", Side::opposition, {3, 1}},
+            {99, "target", "Second", Side::opposition, {3, 2}}
         }},
     5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -156,7 +156,7 @@ void command_upcast_checks()
           !unit(*c, 1).action,
           "The second creature casts Command");
     unsigned saves = 0;
-    for (const auto &line : c->snapshot().log)
+    for (const auto &line : c->snapshot().log())
         saves += line.find("Wisdom save") != std::string::npos;
     check(saves == 2, "Each chosen creature makes its own Wisdom save");
 }
@@ -171,9 +171,9 @@ void write_command_fixture()
                          std::vector<std::string> {"longsword"}).data;
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = module->create({{12, 9, std::vector<std::uint8_t>(108)},
-            {   {1, "campaign-character", "Paladin", 0, {1, 1}, profile},
-                {99, "vanguard", "Enemy", 1, {6, 1}}
+        auto c = module->create({{12, 9, std::vector<Terrain>(108)},
+            {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
             }},
         seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)

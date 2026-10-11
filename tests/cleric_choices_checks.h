@@ -54,7 +54,7 @@ void cleric_creation_checks()
     rejects(
         [&]
     {
-        (void)creation_rules->evaluate(cleric_draft("protector", bad), true);
+        (void)creation_rules->evaluate(cleric_draft("protector", bad), NameRequirement::required);
     });
 
     // Without preparation a Cleric no longer silently knows Cure Wounds.
@@ -90,15 +90,16 @@ void divine_order_checks()
           srd5::equipment_note(thaumaturge.sheet(), "longsword") != trained &&
           srd5::equipment_note(thaumaturge.sheet(), "scale_mail") == trained,
           "Other Clerics keep their Medium armor and Simple weapon training");
-    const auto wisdom = std::max(1, thaumaturge.sheet().modifiers[4]);
+    const auto wisdom = std::max(1, thaumaturge.sheet().modifiers[Ability::wisdom]);
     for (const auto *skill :
             {"arcana", "religion"
             })
-        check(rules->ability_check(thaumaturge.sheet(), {}, 3, skill).total ==
-              rules->ability_check(protector.sheet(), {}, 3, skill).total + wisdom,
+        check(rules->ability_check(thaumaturge.sheet(), {}, Ability::intelligence, skill).total ==
+              rules->ability_check(protector.sheet(), {}, Ability::intelligence, skill).total +
+              wisdom,
               "Thaumaturge adds Wisdom to Arcana and Religion checks");
-    check(rules->ability_check(thaumaturge.sheet(), {}, 3, "history").total ==
-          rules->ability_check(protector.sheet(), {}, 3, "history").total,
+    check(rules->ability_check(thaumaturge.sheet(), {}, Ability::intelligence, "history").total ==
+          rules->ability_check(protector.sheet(), {}, Ability::intelligence, "history").total,
           "Thaumaturge adds nothing to other Intelligence checks");
 }
 
@@ -142,7 +143,7 @@ void cleric_advancement_checks()
           "Level three prepares a level-two spell");
     party.advance(id, third);
     party.advance(id, party.default_advancement(id));
-    const auto &sheet = party.member(id).character.sheet();
+    const auto sheet = party.member(id).character.sheet();
     const auto access = rules->spell_access(sheet);
     // Aid, Bless, Cure Wounds and Lesser Restoration are Life Domain spells from
     // level three; seven others fill the places. Of four cantrips only Sacred

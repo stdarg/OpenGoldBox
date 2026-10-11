@@ -18,8 +18,8 @@ CampaignParty party(std::string weapon = "dagger", bool style = false, bool nega
         for (auto &roll : draft.rolls)
             roll = {{2, 2, 1, 1}, 3};
     Character h(*srd5::character_rules(), draft, {});
-    h.inventory().add(weapon, "First weapon");
-    h.inventory().add(weapon, "Second weapon");
+    h.add_item({.definition_id = weapon, .name = "First weapon"});
+    h.add_item({.definition_id = weapon, .name = "Second weapon"});
     CampaignParty p(rules());
     const auto id = npc ? p.recruit("nick:npc", h) : p.add_pc(h);
     p.equip(id, 1);
@@ -36,8 +36,8 @@ auto battle(CampaignParty &p, unsigned seed = 1)
 {
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "mastery_target", "Target", 1, {2, 1}});
-    auto c = p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, seed);
+    actors.push_back({99, "mastery_target", "Target", Side::opposition, {2, 1}});
+    auto c = p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
     turn(*c, 1);
     return c;
 }
@@ -67,7 +67,7 @@ void grants_and_budgets()
                     auto p = party(weapon, style, negative, seed % 2);
                     auto c = battle(p, seed);
                     check(
-                        c->save().starts_with("OGCOMBAT 39 ") && unit(*c, 1).nick_mastery &&
+                        c->save().starts_with("OGCOMBAT 48 ") && unit(*c, 1).nick_mastery &&
                         !offers(*c, "nick_melee"),
                         "Chosen Nick creates explicit shared budget, not an attack before qualification");
                     act(*c, "melee", 99);
@@ -191,8 +191,8 @@ void pending_interactions()
     auto draft = hero("shortsword", "rogue", "soldier").creation_data();
     draft.training["class:rogue:weapon_mastery"] = {"shortsword", "scimitar"};
     Character rogue(*srd5::character_rules(), draft, {});
-    rogue.inventory().add("shortsword", "Vex blade");
-    rogue.inventory().add("scimitar", "Nick blade");
+    rogue.add_item({.definition_id = "shortsword", .name = "Vex blade"});
+    rogue.add_item({.definition_id = "scimitar", .name = "Nick blade"});
     CampaignParty p(rules());
     p.add_pc(rogue);
     p.equip(1, 1);
@@ -207,18 +207,19 @@ void pending_interactions()
         act(*c, "steady_aim");
         act(*c, "melee", 99);
         settle(*c);
-        if (!fx::vexed_by(state(*c, 99), 777, 1))
+        if (!fx::vexed_by(state(*c, 99), {.scope = 777, .actor = 1}))
             continue;
         check(logged(*c, "adds Sneak Attack"),
               "The first eligible hit applies Sneak Attack automatically");
         act(*c, "nick_melee", 99);
-        const auto log = c->snapshot().log;
+        const auto log = c->snapshot().log();
         check(std::count_if(log.begin(), log.end(), [](const auto & line)
         {
             return line.find("adds Sneak Attack") != std::string::npos;
         }) == 1, "Sneak Attack applies only once per turn");
         auto copy = p.rule_module().restore(c->save());
-        check(copy->save() == c->save() && !fx::vexed_by(state(*c, 99), 777, 1) &&
+        check(copy->save() == c->save() &&
+              !fx::vexed_by(state(*c, 99), {.scope = 777, .actor = 1}) &&
               !unit(*c, 1).bonus_action && !offers(*c, "nick_melee") &&
               !offers(*c, "light_melee"),
               "Nick consumes Vex and keeps the shared spent allowance and Steady Aim");
@@ -278,7 +279,7 @@ void throwing_and_provenance()
     }
     auto p = party();
     auto h = p.member(1).character;
-    h.inventory().add("club", "Other kind");
+    h.add_item({.definition_id = "club", .name = "Other kind"});
     CampaignParty mixed(rules());
     mixed.add_pc(h);
     mixed.equip(1, 1);
@@ -290,8 +291,8 @@ void throwing_and_provenance()
         !offers(*c, "nick_melee") && offers(*c, "light_melee"),
         "Mastered Nick on the first weapon does not grant Nick to a different non-Nick second weapon");
     auto plain = character("fighter", "Pending mastery");
-    plain.inventory().add("dagger", "One");
-    plain.inventory().add("dagger", "Two");
+    plain.add_item({.definition_id = "dagger", .name = "One"});
+    plain.add_item({.definition_id = "dagger", .name = "Two"});
     CampaignParty missing(rules());
     missing.add_pc(plain);
     missing.equip(1, 1);
@@ -331,9 +332,13 @@ void forged_budgets()
         row = bytes.find('\n', row) + 1;
     while (!bytes.substr(row).starts_with("1 "))
         row = bytes.find('\n', row) + 1;
-    // The actor row ends with the Light budget, the Nick origin and the Cleave flag.
-    const auto end = bytes.find('\n', row), cleave = bytes.rfind(' ', end),
-               origin = bytes.rfind(' ', cleave - 1), budget = bytes.rfind(' ', origin - 1);
+    // The Light budget, the Nick origin and the Cleave flag precede the actor
+    // row's fourteen later fields (Colossus Slayer through Concentration).
+    auto end = bytes.find('\n', row);
+    for (unsigned n = 0; n < 14; ++n)
+        end = bytes.rfind(' ', end - 1);
+    const auto cleave = bytes.rfind(' ', end - 1), origin = bytes.rfind(' ', cleave - 1),
+               budget = bytes.rfind(' ', origin - 1);
     bad = bytes;
     bad.replace(budget + 1, origin - budget - 1, "3");
     rejects(
@@ -366,8 +371,8 @@ void ui_fixtures()
     };
     CampaignParty p(module());
     auto h = hero("handaxe", "fighter", "soldier");
-    h.inventory().add("dagger", "First dagger");
-    h.inventory().add("dagger", "Second dagger");
+    h.add_item({.definition_id = "dagger", .name = "First dagger"});
+    h.add_item({.definition_id = "dagger", .name = "Second dagger"});
     const auto id = p.add_pc(h);
     p.equip(id, 1);
     p.equip(id, 2, EquipmentOperation::equip_other);
@@ -379,8 +384,8 @@ void ui_fixtures()
     p.restore(saved);
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "vanguard", "Target", 1, {2, 1}});
-    auto c = r->create({{12, 8, std::vector<std::uint8_t>(96)}, actors, 777}, 1);
+    actors.push_back({99, "vanguard", "Target", Side::opposition, {2, 1}});
+    auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, 1);
     turn(*c, id);
     write("before", *c);
     const auto before = c->save();

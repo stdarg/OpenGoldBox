@@ -34,12 +34,12 @@ CampaignParty party(bool feat = false, bool negative = false, bool npc = false)
 {
     CampaignParty p(rules());
     auto h = hero_for(feat, negative);
-    h.inventory().add("dagger", "Dagger");
-    h.inventory().add("dagger", "Dagger");
-    h.inventory().add("dagger", "Dagger", 3);
-    h.inventory().add("hand_crossbow", "Hand Crossbow");
-    h.inventory().add("hand_crossbow", "Hand Crossbow");
-    h.inventory().add("shield", "Shield");
+    h.add_item({.definition_id = "dagger", .name = "Dagger"});
+    h.add_item({.definition_id = "dagger", .name = "Dagger"});
+    h.add_item({.definition_id = "dagger", .name = "Dagger", .quantity = 3});
+    h.add_item({.definition_id = "hand_crossbow", .name = "Hand Crossbow"});
+    h.add_item({.definition_id = "hand_crossbow", .name = "Hand Crossbow"});
+    h.add_item({.definition_id = "shield", .name = "Shield"});
     const auto id = npc ? p.recruit("light:npc", h) : p.add_pc(h);
     p.equip(id, 1);
     p.equip(id, 2, EquipmentOperation::equip_other);
@@ -50,8 +50,8 @@ auto battle(CampaignParty &p, unsigned seed = 13, Cell target = {2, 1}, int targ
 {
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "target", "Target", 1, target, {}, VitalState{target_hp}});
-    auto c = p.rule_module().create({{12, 8, std::vector<std::uint8_t>(96)}, actors}, seed);
+    actors.push_back({99, "target", "Target", Side::opposition, target, {}, VitalState{target_hp}});
+    auto c = p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
     for (unsigned n = 0; c->snapshot().actor != 1 && n < 5; ++n)
         cunning_checks::act(*c, "end");
     check(c->snapshot().actor == 1, "Ordinary actor turn");
@@ -95,7 +95,7 @@ bool dagger_damage_within(const CombatSession &c, int modifier)
 {
     const auto hit = rogue_attack_checks::last_hit(c);
     const int count = hit == "CRITICAL" ? 2 : 1;
-    const auto messages = c.snapshot().log_messages;
+    const auto messages = c.snapshot().log_messages();
     for (auto m = messages.rbegin(); m != messages.rend(); ++m)
         if (m->source.starts_with("{actor} -> {target}: d20"))
             for (const auto &a : m->arguments)
@@ -121,7 +121,7 @@ void ui_fixtures()
     auto p = party(true);
     auto actors = p.participants();
     actors.front().cell = {1, 1};
-    actors.push_back({99, "vanguard", "Target", 1, {2, 1}});
+    actors.push_back({99, "vanguard", "Target", Side::opposition, {2, 1}});
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "light-fixtures";
     std::filesystem::create_directories(path);
     const auto write = [&](const char *name, const CombatSession & c)
@@ -130,7 +130,7 @@ void ui_fixtures()
         out << c.save();
         check(bool(out), "Write actual Light UI fixture");
     };
-    auto c = rules->create({{12, 8, std::vector<std::uint8_t>(96)}, actors}, 13);
+    auto c = rules->create({{12, 8, std::vector<Terrain>(96)}, actors}, 13);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     write("before.save", *c);
@@ -250,11 +250,12 @@ void run()
               "Loading allows distinct Action, Surge Action and Light Bonus Action");
         exact_restore(*c);
     }
-    // Selecting a different held reach during an actual reaction is free and cannot earn Light.
+    // A reaction made while another Light weapon is held cannot earn Light. With
+    // adjacent-only melee (MELEE-1), leaving the Whip's square provokes directly.
     {
         auto h = hero_for();
-        h.inventory().add("whip", "Whip");
-        h.inventory().add("dagger", "Dagger");
+        h.add_item({.definition_id = "whip", .name = "Whip"});
+        h.add_item({.definition_id = "dagger", .name = "Dagger"});
         CampaignParty reactions(rules());
         reactions.add_pc(std::move(h));
         reactions.equip(1, 1);
@@ -266,15 +267,12 @@ void run()
         for (const auto &command : c->legal_commands())
             if (command.verb == "move" && command.destination == Cell{3, 1})
             {
-                check(c->submit(command), "Move out of Dagger reach");
+                check(c->submit(command), "Move out of melee reach");
                 moved = true;
                 break;
             }
-        check(moved && c->snapshot().reaction_pending && !offered(*c, "opportunity") &&
-              offered(*c, "weapon_select", 2),
-              "Other held reach can provoke while selected Whip remains in reach");
-        exact_restore(*c);
-        act(*c, "weapon_select", 2);
+        check(moved && c->snapshot().reaction_pending && offered(*c, "opportunity"),
+              "Leaving the adjacent square provokes with the selected Whip");
         exact_restore(*c);
         act(*c, "opportunity");
         settle(*c);
@@ -285,32 +283,32 @@ void run()
     // A Magic action with a Light weapon held never earns an extra weapon attack.
     {
         auto h = hero_for(false, false, "wizard");
-        h.inventory().add("dagger", "Dagger");
-        h.inventory().add("dagger", "Dagger");
+        h.add_item({.definition_id = "dagger", .name = "Dagger"});
+        h.add_item({.definition_id = "dagger", .name = "Dagger"});
         CampaignParty p(rules());
         p.add_pc(std::move(h));
         p.equip(1, 1);
         auto c = battle(p);
-        check(offered(*c, "fire_bolt"), "Known Fire Bolt with a free somatic hand");
+        check(offered(*c, "fire_bolt"), "Known Fire Bolt is offered");
         act(*c, "fire_bolt");
         check(unit(*c).light_attacks.empty(), "Fire Bolt is Magic, not an Attack action");
     }
     {
         auto h = hero_for(false, false, "rogue");
-        h.inventory().add("dagger", "Dagger");
-        h.inventory().add("dagger", "Dagger");
+        h.add_item({.definition_id = "dagger", .name = "Dagger"});
+        h.add_item({.definition_id = "dagger", .name = "Dagger"});
         CampaignParty p(rules());
         p.add_pc(std::move(h));
         p.equip(1, 1);
         p.equip(1, 2, EquipmentOperation::equip_other);
         auto actors = p.participants();
         actors.front().cell = {1, 1};
-        actors.push_back({2, "vanguard", "Ally", 0, {2, 2}});
-        actors.push_back({99, "target", "Target", 1, {2, 1}});
+        actors.push_back({2, "vanguard", "Ally", Side::party, {2, 2}});
+        actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
         bool checked = false;
         for (unsigned seed = 1; seed <= 32 && !checked; ++seed)
         {
-            auto c = rules()->create({{12, 8, std::vector<std::uint8_t>(96)}, actors}, seed);
+            auto c = rules()->create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
             while (c->snapshot().actor != 1)
                 act(*c, "end");
             act(*c, "melee");

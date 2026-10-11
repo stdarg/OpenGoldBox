@@ -55,14 +55,15 @@ Image fit_neck(const Image &head, const Image &body, const AdditionalPortraitHea
     }
     const double source_center = (placement.neck_left + placement.neck_right) / 2.0;
     const double target_center = (left + right) / 2.0;
-    const double neck_scale = double(right - left) / (placement.neck_right - placement.neck_left);
+    const double neck_scale =
+        static_cast<double>(right - left) / (placement.neck_right - placement.neck_left);
     Image result = head;
     for (unsigned y = 0; y < 40; ++y)
         for (unsigned x = 0; x < 88; ++x)
         {
             // Translate the face intact. Only the lowest five rows gradually widen
             // or narrow to the body's opening; never stretch the face or horns.
-            const double blend = y <= 34 ? 0.0 : double(y - 34) / 5.0;
+            const double blend = y <= 34 ? 0.0 : static_cast<double>(y - 34) / 5.0;
             const double scale = 1.0 + (neck_scale - 1.0) * blend;
             const int from_x =
                 static_cast<int>(std::floor(source_center + (x + 0.5 - target_center) / scale));
@@ -169,12 +170,12 @@ Image prepare_portrait_head(const Image &source, unsigned head_id)
 {
     const auto &placement = additional_head(head_id);
     if (!source.width || !source.height || source.width > 8192 || source.height > 8192 ||
-            source.rgba.size() != std::size_t(source.width) * source.height * 4)
+            !consistent(source))
         throw std::runtime_error("Invalid portrait source image");
     unsigned bottom = source.height;
     const auto visible = [&](unsigned x, unsigned y)
     {
-        const auto p = (std::size_t(y) * source.width + x) * 4;
+        const auto p = (static_cast<std::size_t>(y) * source.width + x) * 4;
         return source.rgba[p + 3] > 127 &&
                std::max({source.rgba[p], source.rgba[p + 1], source.rgba[p + 2]}) > 24;
     };
@@ -200,12 +201,14 @@ Image prepare_portrait_head(const Image &source, unsigned head_id)
     for (unsigned y = 0; y < 40; ++y)
         for (unsigned x = 0; x < 88; ++x)
         {
-            const auto source_y = std::size_t(2 * y + 1) * bottom * placement.retained_rows / 3200;
+            const auto source_y =
+                static_cast<std::size_t>(2 * y + 1) * bottom * placement.retained_rows / 3200;
             const auto from = (source_y * source.width + (2 * x + 1) * source.width / 176) * 4;
             const auto to = (y * 88 + x) * 4;
             // Composite alpha on the original portrait's black background.
             for (unsigned c = 0; c < 3; ++c)
-                result.rgba[to + c] = unsigned(source.rgba[from + c]) * source.rgba[from + 3] / 255;
+                result.rgba[to + c] =
+                    static_cast<unsigned>(source.rgba[from + c]) * source.rgba[from + 3] / 255;
             result.rgba[to + 3] = 255;
         }
     return result;
@@ -348,26 +351,26 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
                 if (!decoded || decoded.image.width != 88 ||
                         decoded.image.height != (stem == "HEAD" ? 40 : 48))
                     throw std::runtime_error("Unsupported player portrait layout");
-                auto &parts = stem == "HEAD" ? art.heads : art.bodies;
+                auto &parts = stem == "HEAD" ? art.heads_ : art.bodies_;
                 if (parts.contains(r.id) && parts.at(r.id).image.rgba != decoded.image.rgba)
                     throw std::runtime_error("Conflicting player portrait ID across archives");
                 parts.try_emplace(r.id, PortraitPart{archive, std::move(decoded.image)});
             }
         }
     for (const auto &r : read("CHEAD.DAX"))
-        art.combat_heads.emplace(r.id, decode_character_icon(r.bytes));
+        art.combat_heads_.emplace(r.id, decode_character_icon(r.bytes));
     for (const auto &r : read("CBODY.DAX"))
-        art.combat_bodies.emplace(r.id, decode_character_icon(r.bytes));
+        art.combat_bodies_.emplace(r.id, decode_character_icon(r.bytes));
     for (unsigned bank :
             {
                 0u, 64u, 128u, 192u
             })
     {
-        art.combat_bodies.emplace(bank + 32, without_wand(art.combat_bodies.at(bank + 21), bank));
-        art.combat_bodies.emplace(bank + 33, with_dagger(art.combat_bodies.at(bank + 7), bank));
-        art.combat_bodies.emplace(bank + 34, with_dagger(art.combat_bodies.at(bank + 24), bank));
+        art.combat_bodies_.emplace(bank + 32, without_wand(art.combat_bodies_.at(bank + 21), bank));
+        art.combat_bodies_.emplace(bank + 33, with_dagger(art.combat_bodies_.at(bank + 7), bank));
+        art.combat_bodies_.emplace(bank + 34, with_dagger(art.combat_bodies_.at(bank + 24), bank));
     }
-    if (art.heads.empty() || art.bodies.empty())
+    if (art.heads_.empty() || art.bodies_.empty())
         throw std::runtime_error("Missing portraits");
     for (unsigned size :
             {
@@ -379,10 +382,10 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
                 })
         {
             for (unsigned id = 0; id < 14; ++id)
-                if (!art.combat_heads.contains(size + pose + id))
+                if (!art.combat_heads_.contains(size + pose + id))
                     throw std::runtime_error("Missing combat head pose");
             for (unsigned id = 0; id < 32; ++id)
-                if (!art.combat_bodies.contains(size + pose + id))
+                if (!art.combat_bodies_.contains(size + pose + id))
                     throw std::runtime_error("Missing combat body pose");
         }
     return art;
@@ -391,7 +394,7 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
 void CharacterArt::validate(const CharacterAppearance &a) const
 {
     validate_character_appearance(a);
-    if (!heads.contains(a.portrait_head) || !bodies.contains(a.portrait_body))
+    if (!heads_.contains(a.portrait_head) || !bodies_.contains(a.portrait_body))
         throw std::runtime_error("Invalid character appearance selection");
 }
 
@@ -403,13 +406,49 @@ void CharacterArt::add_portrait_head(unsigned id, Image image)
         return head.id == id;
     });
     if (entry == additional_heads.end() || image.width != 88 || image.height != 40 ||
-            image.rgba.size() != 88 * 40 * 4)
+            !consistent(image))
         throw std::runtime_error("Invalid additional portrait head");
-    if (!heads
+    if (!heads_
             .emplace(id, PortraitPart{std::string(entry->filename), std::move(image),
                                       std::string(entry->label)})
             .second)
         throw std::runtime_error("Duplicate portrait head ID");
+}
+
+void CharacterArt::set_original_head(unsigned id, PortraitPart part)
+{
+    if (part.image.width != 88 || part.image.height != 40 || !consistent(part.image))
+        throw std::runtime_error("A portrait head is 88x40");
+    heads_.insert_or_assign(id, std::move(part));
+}
+
+void CharacterArt::set_original_body(unsigned id, PortraitPart part)
+{
+    if (part.image.width != 88 || part.image.height != 48 || !consistent(part.image))
+        throw std::runtime_error("A portrait body is 88x48");
+    bodies_.insert_or_assign(id, std::move(part));
+}
+
+namespace
+{
+void require_combat_icon(const IndexedIcon &icon)
+{
+    if (icon.width != 24 || !icon.height || icon.height > 24 ||
+            icon.pixels.size() != icon.width * icon.height)
+        throw std::runtime_error("A combat icon is 24 pixels wide and at most 24 high");
+}
+} // namespace
+
+void CharacterArt::set_combat_head(unsigned id, IndexedIcon icon)
+{
+    require_combat_icon(icon);
+    combat_heads_.insert_or_assign(id, std::move(icon));
+}
+
+void CharacterArt::set_combat_body(unsigned id, IndexedIcon icon)
+{
+    require_combat_icon(icon);
+    combat_bodies_.insert_or_assign(id, std::move(icon));
 }
 
 Image CharacterArt::portrait(const CharacterAppearance &a) const
@@ -417,8 +456,8 @@ Image CharacterArt::portrait(const CharacterAppearance &a) const
     validate(a);
     Image result;
     result.width = result.height = 88;
-    const auto &head = heads.at(a.portrait_head).image;
-    const auto &body = bodies.at(a.portrait_body).image;
+    const auto &head = heads_.at(a.portrait_head).image;
+    const auto &body = bodies_.at(a.portrait_body).image;
     result.rgba = a.portrait_head > 255
                   ? fit_neck(head, body, additional_head(a.portrait_head)).rgba
                   : head.rgba;
@@ -426,12 +465,12 @@ Image CharacterArt::portrait(const CharacterAppearance &a) const
     return result;
 }
 
-Image CharacterArt::icon(const CharacterAppearance &a, bool action) const
+Image CharacterArt::icon(const CharacterAppearance &a, IconPose pose) const
 {
     validate_character_appearance(a);
-    const unsigned bank = (a.tall ? 64u : 0u) + (action ? 128u : 0u);
-    return compose_character_icon(combat_heads.at(bank + a.combat_head),
-                                  combat_bodies.at(bank + a.combat_body), a);
+    const unsigned bank = (a.tall ? 64u : 0u) + (pose == IconPose::action ? 128u : 0u);
+    return compose_character_icon(combat_heads_.at(bank + a.combat_head),
+                                  combat_bodies_.at(bank + a.combat_body), a);
 }
 
 CharacterColorUsage CharacterArt::color_usage(const CharacterAppearance &a) const
@@ -444,8 +483,8 @@ CharacterColorUsage CharacterArt::color_usage(const CharacterAppearance &a) cons
             })
     {
         const unsigned bank = (a.tall ? 64u : 0u) + (action ? 128u : 0u);
-        const auto pixels = composed_pixels(combat_heads.at(bank + a.combat_head),
-                                            combat_bodies.at(bank + a.combat_body));
+        const auto pixels = composed_pixels(combat_heads_.at(bank + a.combat_head),
+                                            combat_bodies_.at(bank + a.combat_body));
         auto &counts = action ? usage.action : usage.ready;
         for (auto pixel : pixels)
             if (const auto part = color_regions[pixel & 7]; part >= 0)

@@ -9,10 +9,10 @@ CampaignParty party()
             })
     {
         auto h = style_route_checks::starter(klass);
-        h.inventory().add("greatsword", "Greatsword");
-        h.inventory().add("dagger", "Dagger", 3);
-        h.inventory().add("hand_crossbow", "Hand Crossbow");
-        h.inventory().add("shield", "Shield");
+        h.add_item({.definition_id = "greatsword", .name = "Greatsword"});
+        h.add_item({.definition_id = "dagger", .name = "Dagger", .quantity = 3});
+        h.add_item({.definition_id = "hand_crossbow", .name = "Hand Crossbow"});
+        h.add_item({.definition_id = "shield", .name = "Shield"});
         const auto id = std::string_view(klass) == "fighter"
                         ? p.add_pc(std::move(h))
                         : p.recruit(std::string("baseline:") + klass, std::move(h));
@@ -76,7 +76,7 @@ void verify_hands_ui(const std::filesystem::path &path)
         decode_campaign(read_campaign_file(path), *srd5::character_rules(), *rules, assets, nullptr)
         .party);
     auto expected = p.checkpoint();
-    expected.selected = actual.state().selected;
+    expected.selected_slot = actual.state().selected_slot;
     p.restore(std::move(expected));
     check(encode_campaign(actual, nullptr, assets) == encode_campaign(p, nullptr, assets),
           "UI hand choices exactly match native equipment, inventory, wounds and resources");
